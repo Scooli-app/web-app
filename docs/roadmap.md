@@ -14,7 +14,7 @@
   - Install the Supabase client library.
   - Store Supabase and OpenAI keys in `.env.local`.
 - **Build Core UI Components:**
-  - Create reusable components (`Button`, `Input`, `Card`, `Layout`) based on your style guide.
+  - Create reusable components (`Button`, `Input`, `Card`, `Layout`) based on your style guide. This components should be installed from shadcn and then adapted.
 
 #### **Module 2: 🔐 User Authentication & Onboarding**
 

@@ -194,6 +194,8 @@ Example CTAs:
 - If generating Figma or Storybook code, apply this styleguide visually
 - Use motion only when meaningful (e.g., Framer Motion slide-in for modals)
 - Prioritize using tailwind tokens whenever possible
+- For Icons always use Lucide Icons
+- For base components always use shadcn components.
 </cursor:ai>
 
 ---
