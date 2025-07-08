@@ -3,12 +3,9 @@ import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import pdf from "pdf-parse";
 
-// Configuração dos Clientes
-// As variáveis de ambiente são carregadas automaticamente pelo Next.js no lado do servidor
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const openaiApiKey = process.env.OPENAI_API_KEY;
-
 const BUCKET_NAME = "curriculum-documents";
 const EMBEDDING_MODEL = "text-embedding-ada-002";
 
@@ -19,7 +16,7 @@ function chunkText(text: string, chunkSize = 1500): string[] {
   const chunks: string[] = [];
   let currentChunk = "";
 
-  const paragraphs = text.split(/\n\s*\n/); // Divide por parágrafos (linhas em branco)
+  const paragraphs = text.split(/\n\s*\n/);
 
   for (const paragraph of paragraphs) {
     if (currentChunk.length + paragraph.length + 2 > chunkSize) {
@@ -46,7 +43,6 @@ export async function POST(req: Request) {
     return new NextResponse("Unauthorized", { status: 401 });
   }
 
-  // Validação das variáveis de ambiente
   if (!supabaseUrl || !supabaseServiceKey || !openaiApiKey) {
     return NextResponse.json(
       { error: "Missing Supabase or OpenAI environment variables." },
@@ -62,7 +58,6 @@ export async function POST(req: Request) {
   try {
     logs.push("Iniciando o processamento dos PDFs do currículo...");
 
-    // 1. Listar todos os ficheiros no bucket
     const { data: files, error: listError } = await supabase.storage
       .from(BUCKET_NAME)
       .list();
@@ -83,7 +78,6 @@ export async function POST(req: Request) {
       const documentName = file.name;
       logs.push(`--- Verificando: ${documentName} ---`);
 
-      // Verifica se o documento já foi processado para evitar duplicados
       const { data: existingChunks, error: checkError } = await supabase
         .from("curriculum_chunks")
         .select("id", { count: "exact", head: true })
@@ -93,7 +87,7 @@ export async function POST(req: Request) {
         logs.push(
           `Erro ao verificar chunks existentes para ${documentName}: ${checkError.message}`
         );
-        continue; // Pula para o próximo ficheiro
+        continue;
       }
 
       if (existingChunks && existingChunks.length > 0) {
@@ -121,7 +115,6 @@ export async function POST(req: Request) {
       }
 
       try {
-        // Convert Blob to Buffer for pdf-parse
         const buffer = Buffer.from(await blobData.arrayBuffer());
         const pdfData = await pdf(buffer);
         const text = pdfData.text;
@@ -171,7 +164,6 @@ export async function POST(req: Request) {
           errorMessage = e.message;
         }
         logs.push(`ERRO FATAL ao processar ${documentName}: ${errorMessage}`);
-        // Não retorna aqui para tentar processar os outros ficheiros
       }
     }
 
