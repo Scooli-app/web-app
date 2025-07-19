@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import RichTextEditor from "@/components/ui/rich-text-editor";
+import { MAX_LENGTHS } from "@/lib/constants";
 import { DocumentService } from "@/lib/services/document-service";
 import type { Document } from "@/lib/types/documents";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
@@ -189,8 +190,8 @@ export default function LessonPlanEditor({
     }
 
     // Check character limit
-    if (editingTitle.length > 30) {
-      setError("O título não pode ter mais de 30 caracteres");
+    if (editingTitle.length > MAX_LENGTHS.DOCUMENT_TITLE) {
+      setError(`O título não pode ter mais de ${MAX_LENGTHS.DOCUMENT_TITLE} caracteres`);
       return;
     }
 
@@ -402,12 +403,12 @@ export default function LessonPlanEditor({
                     onChange={(e) => setEditingTitle(e.target.value)}
                     onKeyDown={handleTitleKeyDown}
                     onBlur={handleTitleBlur}
-                    maxLength={30}
+                    maxLength={MAX_LENGTHS.DOCUMENT_TITLE}
                     className="text-3xl font-bold text-[#0B0D17] bg-white border-2 border-[#6753FF] rounded-lg px-4 py-2 focus:ring-2 focus:ring-[#6753FF] focus:border-[#6753FF] min-w-[300px]"
                     placeholder="Título do documento..."
                   />
                   <div className="absolute -bottom-6 right-0 text-xs text-[#6C6F80]">
-                    {editingTitle.length}/30
+                      {editingTitle.length}/{MAX_LENGTHS.DOCUMENT_TITLE}
                   </div>
                 </div>
                 <Edit3 className="h-6 w-6 text-[#6753FF]" />

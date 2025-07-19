@@ -1,4 +1,5 @@
 import { SupabaseProvider } from "@/components/providers/SupabaseProvider";
+import { SidebarLayout } from "@/components/layout/SidebarLayout";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
@@ -22,7 +23,11 @@ export default function RootLayout({
   return (
     <html lang="pt" className={inter.variable}>
       <body className={`${inter.className} antialiased`}>
-        <SupabaseProvider>{children}</SupabaseProvider>
+        <SupabaseProvider>
+          <SidebarLayout>
+            {children}
+          </SidebarLayout>
+        </SupabaseProvider>
       </body>
     </html>
   );

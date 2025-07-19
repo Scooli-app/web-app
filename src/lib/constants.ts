@@ -30,3 +30,7 @@ export const SUCCESS_MESSAGES = {
   PROCESSING: "A processar...",
   ASK_QUESTION: "Perguntar",
 } as const;
+
+export const MAX_LENGTHS = {
+  DOCUMENT_TITLE: 50,
+} as const;
