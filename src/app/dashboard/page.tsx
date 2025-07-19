@@ -137,7 +137,7 @@ export default function DashboardPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <Button
               className="h-20 flex flex-col items-center justify-center space-y-2"
-              disabled
+              onClick={() => router.push("/lesson-plan")}
             >
               <span className="text-2xl">📄</span>
               <span>Plano de Aula</span>

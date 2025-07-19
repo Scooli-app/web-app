@@ -4,4 +4,5 @@
  */
 
 export * from "./curriculum-prompts";
+export * from "./lesson-plan-prompts";
 export * from "./rag-prompts";

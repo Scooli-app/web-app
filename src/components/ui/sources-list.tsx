@@ -14,6 +14,8 @@ export function SourcesList({
     return null;
   }
 
+  const uniqueSources = [...new Set(sources)];
+
   return (
     <Card>
       <CardHeader>
@@ -24,7 +26,7 @@ export function SourcesList({
       </CardHeader>
       <CardContent>
         <ul className="space-y-2">
-          {sources.map((source, index) => (
+          {uniqueSources.map((source, index) => (
             <li
               key={index}
               className="text-sm text-[#6C6F80] flex items-center gap-2"

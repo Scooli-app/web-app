@@ -1,3 +1,5 @@
+@import "tailwindcss/preflight";
+@import "tailwindcss/utilities";
 @import "tailwindcss";
 @import "tw-animate-css";
 
@@ -119,4 +121,172 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* TipTap Editor Styles - Following Official Documentation */
+.tiptap {
+  outline: none;
+  min-height: 600px;
+  padding: 1rem;
+  line-height: 1.6;
+  font-family: Inter, ui-sans-serif, system-ui;
+  font-size: 1rem;
+  color: #2e2f38;
+}
+
+.tiptap:focus {
+  outline: none;
+}
+
+.tiptap :first-child {
+  margin-top: 0;
+}
+
+/* List styles - Based on TipTap documentation with browser defaults */
+.tiptap ul,
+.tiptap ol {
+  padding: 0 1rem;
+  margin: 1.25rem 1rem 1.25rem 0.4rem;
+}
+
+/* Ensure lists display with proper bullet points and numbers */
+.tiptap ul {
+  list-style-type: disc;
+  list-style-position: outside;
+}
+
+.tiptap ol {
+  list-style-type: decimal;
+  list-style-position: outside;
+}
+
+.tiptap li {
+  display: list-item;
+  margin: 0.25em 0;
+}
+
+.tiptap ul li p,
+.tiptap ol li p {
+  margin-top: 0.25em;
+  margin-bottom: 0.25em;
+}
+
+/* Nested list styling with proper bullet points */
+.tiptap ul ul {
+  list-style-type: circle;
+  margin-top: 0.25em;
+  margin-bottom: 0.25em;
+}
+
+.tiptap ul ul ul {
+  list-style-type: square;
+}
+
+.tiptap ol ol {
+  list-style-type: lower-alpha;
+}
+
+.tiptap ol ol ol {
+  list-style-type: lower-roman;
+}
+
+/* Heading styles */
+.tiptap h1,
+.tiptap h2,
+.tiptap h3,
+.tiptap h4,
+.tiptap h5,
+.tiptap h6 {
+  line-height: 1.1;
+  margin-top: 2.5rem;
+  color: #0b0d17;
+  font-weight: 600;
+}
+
+.tiptap h1,
+.tiptap h2 {
+  margin-top: 3.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.tiptap h1 {
+  font-size: 1.875rem;
+  font-weight: 700;
+}
+
+.tiptap h2 {
+  font-size: 1.5rem;
+}
+
+.tiptap h3 {
+  font-size: 1.25rem;
+}
+
+.tiptap h4,
+.tiptap h5,
+.tiptap h6 {
+  font-size: 1rem;
+}
+
+/* Text formatting */
+.tiptap strong {
+  font-weight: 600;
+  color: #0b0d17;
+}
+
+.tiptap em {
+  font-style: italic;
+}
+
+.tiptap mark {
+  background-color: #fef3c7;
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+}
+
+/* Code styles */
+.tiptap code {
+  background-color: #f3f4f6;
+  border-radius: 0.25rem;
+  color: #1f2937;
+  font-size: 0.875rem;
+  padding: 0.125rem 0.25rem;
+  font-family: "JetBrains Mono", "Fira Code", Consolas, "Courier New", monospace;
+}
+
+.tiptap pre {
+  background: #1f2937;
+  border-radius: 0.5rem;
+  color: #f9fafb;
+  font-family: "JetBrains Mono", "Fira Code", Consolas, "Courier New", monospace;
+  margin: 1.5rem 0;
+  padding: 0.75rem 1rem;
+}
+
+.tiptap pre code {
+  background: none;
+  color: inherit;
+  font-size: 0.875rem;
+  padding: 0;
+}
+
+/* Blockquote styles */
+.tiptap blockquote {
+  border-left: 4px solid #6753ff;
+  margin: 1.5rem 0;
+  padding-left: 1rem;
+  font-style: italic;
+  color: #6c6f80;
+}
+
+/* Horizontal rule */
+.tiptap hr {
+  border: none;
+  border-top: 1px solid #e5e7eb;
+  margin: 2rem 0;
+}
+
+/* Paragraph spacing */
+.tiptap p {
+  margin: 0.25rem 0;
 }
