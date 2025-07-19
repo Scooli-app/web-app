@@ -5,8 +5,8 @@ import OpenAI from "openai";
 
 // Initialize Supabase client with service role key
 const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
+  process.env.NEXT_PUBLIC_SUPABASE_URL || "",
+  process.env.SUPABASE_SERVICE_ROLE_KEY || ""
 );
 
 // Initialize OpenAI client
@@ -16,9 +16,12 @@ const openai = new OpenAI({
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Await params to get the id
+    const { id } = await params;
+
     // Check environment variables
     if (!process.env.OPENAI_API_KEY) {
       return NextResponse.json(
@@ -50,7 +53,7 @@ export async function POST(
     const { data: document, error: documentError } = await supabase
       .from("documents")
       .select("*")
-      .eq("id", params.id)
+      .eq("id", id)
       .single();
 
     if (documentError || !document) {
@@ -110,7 +113,7 @@ export async function POST(
       const { error: updateError } = await supabase
         .from("documents")
         .update({ content: parsedResponse.generatedContent })
-        .eq("id", params.id);
+        .eq("id", id);
 
       if (updateError) {
         console.error("Failed to update document:", updateError);
