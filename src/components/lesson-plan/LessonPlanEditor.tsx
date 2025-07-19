@@ -35,6 +35,8 @@ export default function LessonPlanEditor({
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState("");
+  const chatContainerRef = useRef<HTMLDivElement | null>(null);
+  const [editorKey, setEditorKey] = useState(0);
 
   const documentService = useRef(new DocumentService());
   const saveTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
@@ -216,6 +218,7 @@ export default function LessonPlanEditor({
       // Update document content if generated content exists
       if (generatedContent) {
         setContent(generatedContent);
+        setEditorKey((k) => k + 1); // Force RichTextEditor to remount with new content
         handleContentChange(generatedContent);
       }
     } catch (error) {
@@ -225,6 +228,14 @@ export default function LessonPlanEditor({
       setIsStreaming(false);
     }
   };
+
+  // Scroll chat to bottom when chatHistory changes
+  useEffect(() => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop =
+        chatContainerRef.current.scrollHeight;
+    }
+  }, [chatHistory]);
 
   if (loading) {
     return (
@@ -324,6 +335,7 @@ export default function LessonPlanEditor({
               Editor
             </h2>
             <RichTextEditor
+              key={editorKey}
               content={content}
               onChange={handleContentChange}
               className="min-h-[600px] max-w-full"
@@ -338,7 +350,10 @@ export default function LessonPlanEditor({
               </h2>
 
               {/* Chat History */}
-              <div className="flex-1 h-[300px] md:h-[500px] overflow-y-auto mb-4 space-y-4">
+              <div
+                ref={chatContainerRef}
+                className="flex-1 h-[300px] md:h-[500px] overflow-y-auto mb-4 space-y-4"
+              >
                 {chatHistory.map((message, index) => (
                   <div
                     key={index}
