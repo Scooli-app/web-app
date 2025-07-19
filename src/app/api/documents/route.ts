@@ -1,6 +1,9 @@
 import { validateAPIRequest } from "@/lib/auth/apiAuth";
 import { API_CONFIGS } from "@/lib/auth/utils";
-import type { CreateDocumentRequest } from "@/lib/types/documents";
+import type {
+  CreateDocumentRequest,
+  DeleteDocumentRequest,
+} from "@/lib/types/documents";
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 
@@ -53,11 +56,12 @@ export async function GET(request: NextRequest) {
     // Calculate offset for pagination
     const offset = (page - 1) * limit;
 
-    // Build query
+    // Build query - exclude soft-deleted documents
     let query = supabase
       .from("documents")
       .select("*", { count: "exact" })
       .eq("user_id", userId)
+      .is("deleted_at", null) // Exclude soft-deleted documents
       .order("updated_at", { ascending: false });
 
     // Add document type filter if provided
@@ -150,6 +154,85 @@ export async function POST(req: Request) {
     console.error("Error creating document:", error);
     return NextResponse.json(
       { error: "Failed to create document" },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * DELETE /api/documents - Soft delete documents
+ */
+export async function DELETE(request: NextRequest) {
+  // Validate authentication and permissions
+  const validation = await validateAPIRequest(
+    request,
+    API_CONFIGS.DELETE_DOCUMENTS
+  );
+
+  if (!validation.success) {
+    return NextResponse.json(
+      { error: validation.error?.message },
+      { status: validation.error?.status || 500 }
+    );
+  }
+
+  try {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+      return NextResponse.json(
+        { error: "Supabase not configured" },
+        { status: 500 }
+      );
+    }
+
+    const body: DeleteDocumentRequest = await request.json();
+
+    if (!body.ids || !Array.isArray(body.ids) || body.ids.length === 0) {
+      return NextResponse.json(
+        { error: "Document IDs are required" },
+        { status: 400 }
+      );
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const userId = validation.profile?.id;
+
+    if (!userId) {
+      return NextResponse.json({ error: "User ID not found" }, { status: 400 });
+    }
+
+    // Soft delete documents (set deleted_at and deleted_by)
+    const { data: deletedDocuments, error } = await supabase
+      .from("documents")
+      .update({
+        deleted_at: new Date().toISOString(),
+        deleted_by: userId,
+      })
+      .in("id", body.ids)
+      .eq("user_id", userId) // Ensure user can only delete their own documents
+      .is("deleted_at", null) // Only delete documents that aren't already deleted
+      .select();
+
+    if (error) {
+      console.error("Error soft deleting documents:", error);
+      return NextResponse.json(
+        { error: "Failed to delete documents" },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({
+      message: `${
+        deletedDocuments?.length || 0
+      } document(s) deleted successfully`,
+      deletedCount: deletedDocuments?.length || 0,
+    });
+  } catch (error) {
+    console.error("Error deleting documents:", error);
+    return NextResponse.json(
+      { error: "Failed to delete documents" },
       { status: 500 }
     );
   }

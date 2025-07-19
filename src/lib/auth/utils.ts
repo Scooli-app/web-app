@@ -230,37 +230,43 @@ export const API_CONFIGS = {
   // Standard user operations
   USER_DOCUMENTS: {
     requiresAuth: true,
-    requiredPermissions: ["documents.read"] as const,
+    requiredPermissions: ["documents.read"],
   },
 
   // Document creation
   CREATE_DOCUMENTS: {
     requiresAuth: true,
-    requiredPermissions: ["documents.create"] as const,
+    requiredPermissions: ["documents.create"],
   },
 
   // Document editing
   EDIT_DOCUMENTS: {
     requiresAuth: true,
-    requiredPermissions: ["documents.edit"] as const,
+    requiredPermissions: ["documents.edit"],
+  },
+
+  // Document deletion
+  DELETE_DOCUMENTS: {
+    requiresAuth: true,
+    requiredPermissions: ["documents.delete"],
   },
 
   // Admin operations
   ADMIN_ONLY: {
     requiresAuth: true,
-    requiredPermissions: ["admin.access"] as const,
+    requiredPermissions: ["admin.access"],
   },
 
   // User management
   USER_MANAGEMENT: {
     requiresAuth: true,
-    requiredPermissions: ["admin.users.edit"] as const,
+    requiredPermissions: ["admin.users.edit"],
   },
 
   // Curriculum processing (super restricted)
   CURRICULUM_PROCESSING: {
     requiresAuth: true,
-    requiredPermissions: ["curriculum.process"] as const,
+    requiredPermissions: ["curriculum.process"],
     allowedEmails: [
       "admin@scooli.app",
       // Add other specific emails that can process curriculum
@@ -270,18 +276,18 @@ export const API_CONFIGS = {
   // Community moderation
   COMMUNITY_MODERATION: {
     requiresAuth: true,
-    requiredPermissions: ["community.moderate"] as const,
+    requiredPermissions: ["community.moderate"],
   },
 
   // AI generation
   AI_GENERATION: {
     requiresAuth: true,
-    requiredPermissions: ["ai.generate"] as const,
+    requiredPermissions: ["ai.generate"],
   },
 
   // Advanced AI features
   AI_ADVANCED: {
     requiresAuth: true,
-    requiredPermissions: ["ai.advanced"] as const,
+    requiredPermissions: ["ai.advanced"],
   },
 } as const;
