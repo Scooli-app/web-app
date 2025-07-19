@@ -96,100 +96,7 @@ ${currentContent || "Ainda não há conteúdo no plano de aula."}
 
 PERGUNTA DO UTILIZADOR: ${userMessage}
 
-${IMPORTANT_INSTRUCTIONS}
-
-ESTRATÉGIA DE RESPOSTA:
-- Se for um pedido para gerar conteúdo: fornece o conteúdo no editor + explicação no chat
-- Se for uma pergunta sobre melhorias: fornece sugestões no chat + versão melhorada no editor
-- Se for uma pergunta sobre metodologia: explica no chat + fornece exemplo prático no editor se apropriado
-- Se for uma pergunta geral: responde apenas no chat (generatedContent = null)
-- Sempre tenta ser útil tanto no chat quanto no editor quando apropriado
-
-${WHEN_TO_USE_GENERATED_CONTENT}
-
-${WHEN_TO_USE_CHAT_ANSWER}
-
-${WHEN_TO_USE_BOTH}
-
-${WHEN_NOT_TO_MODIFY_CONTENT}
-
-${EXAMPLE_USAGE}
-
 RESPOSTA EM JSON:`,
-
-  /**
-   * Content generation prompt
-   */
-  CONTENT_GENERATION: (
-    topic: string,
-    grade: string,
-    currentContent: string
-  ) => `Gera um plano de aula completo para ${topic} no ${grade} ano.
-
-CONTEÚDO ATUAL:
-${currentContent || "Ainda não há conteúdo."}
-
-${IMPORTANT_INSTRUCTIONS}
-
-ESTRATÉGIA DE RESPOSTA:
-- Gera o plano de aula completo no editor (generatedContent)
-- Fornece uma explicação útil no chat sobre o que foi criado e como usar (chatAnswer)
-- Inclui dicas de implementação e sugestões pedagógicas no chat
-
-${WHEN_TO_USE_GENERATED_CONTENT}
-
-${WHEN_TO_USE_CHAT_ANSWER}
-
-${WHEN_TO_USE_BOTH}
-
-${EXAMPLE_USAGE}
-
-RESPOSTA EM JSON:
-{
-  "chatAnswer": "Explicação do plano criado e dicas de implementação...",
-  "generatedContent": "# Plano de Aula - ${topic}
-
-## Objetivos de Aprendizagem
-[objetivos específicos]
-
-## Conteúdos
-[conteúdos a lecionar]
-
-## Metodologia
-[estratégias de ensino]
-
-## Recursos
-[materiais necessários]
-
-## Avaliação
-[critérios e instrumentos de avaliação]
-
-## Atividades
-[atividades práticas e exercícios]"
-}`,
-
-  /**
-   * Test prompt to ensure AI uses CONTENT_UPDATE format
-   */
-  TEST_PROMPT: (
-    userMessage: string
-  ) => `TESTE: Responde à seguinte pergunta do utilizador.
-
-PERGUNTA: ${userMessage}
-
-${IMPORTANT_INSTRUCTIONS}
-
-${WHEN_TO_USE_GENERATED_CONTENT}
-
-${WHEN_TO_USE_CHAT_ANSWER}
-
-${WHEN_TO_USE_BOTH}
-
-${WHEN_NOT_TO_MODIFY_CONTENT}
-
-${EXAMPLE_USAGE}
-
-RESPOSTA:`,
 } as const;
 
 /**
@@ -208,23 +115,5 @@ export class LessonPlanPromptBuilder {
    */
   static buildChatPrompt(currentContent: string, userMessage: string): string {
     return LESSON_PLAN_PROMPTS.CHAT_PROMPT(currentContent, userMessage);
-  }
-
-  /**
-   * Builds a content generation prompt
-   */
-  static buildContentGeneration(
-    topic: string,
-    grade: string,
-    currentContent: string
-  ): string {
-    return LESSON_PLAN_PROMPTS.CONTENT_GENERATION(topic, grade, currentContent);
-  }
-
-  /**
-   * Builds a test prompt
-   */
-  static buildTestPrompt(userMessage: string): string {
-    return LESSON_PLAN_PROMPTS.TEST_PROMPT(userMessage);
   }
 }

@@ -24,20 +24,12 @@ INSTRUÇÕES IMPORTANTES:
   QUERY_PROMPT: (
     context: string,
     question: string
-  ) => `Com base no seguinte contexto do currículo português e no teu conhecimento pedagógico, responde à pergunta de forma completa e detalhada.
+  ) => `Com base no seguinte contexto do currículo português, nas instruções anteriores e no teu conhecimento pedagógico, responde à pergunta de forma completa e detalhada.
 
 CONTEXTO DO CURRÍCULO PORTUGUÊS:
 ${context}
 
 PERGUNTA: ${question}
-
-INSTRUÇÕES PARA A RESPOSTA:
-- Usa o contexto fornecido como informação PRINCIPAL e mais atualizada
-- Se o contexto contiver informação específica sobre o currículo português, prioriza-a
-- Podes complementar com o teu conhecimento pedagógico geral
-- Para questões curriculares específicas, baseia-te principalmente no contexto
-- Para sugestões pedagógicas, metodologias e atividades, podes usar o teu conhecimento
-- Se a pergunta não estiver no contexto mas souberes responder, podes fazê-lo, mas indica a fonte
 
 RESPOSTA:`,
 
@@ -46,21 +38,6 @@ RESPOSTA:`,
    */
   NO_INFO_FOUND:
     "Não encontrei informação específica no currículo português para responder à tua pergunta. Podes reformular a pergunta ou tentar uma pergunta diferente?",
-
-  /**
-   * Prompt for curriculum analysis
-   */
-  CURRICULUM_ANALYSIS: (
-    context: string,
-    question: string
-  ) => `Analisa o seguinte contexto do currículo português e responde à pergunta de forma estruturada e pedagógica.
-
-Contexto curricular:
-${context}
-
-Pergunta: ${question}
-
-Resposta estruturada:`,
 } as const;
 
 /**
@@ -72,13 +49,6 @@ export class PromptBuilder {
    */
   static buildRagQuery(context: string, question: string): string {
     return RAG_PROMPTS.QUERY_PROMPT(context, question);
-  }
-
-  /**
-   * Builds a curriculum analysis prompt
-   */
-  static buildCurriculumAnalysis(context: string, question: string): string {
-    return RAG_PROMPTS.CURRICULUM_ANALYSIS(context, question);
   }
 
   /**
