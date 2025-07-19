@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import RichTextEditor from "@/components/ui/rich-text-editor";
 import { DocumentService } from "@/lib/services/document-service";
 import type { Document } from "@/lib/types/documents";
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { Loader2, Save, Send } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -178,11 +179,23 @@ export default function LessonPlanEditor({
     try {
       setIsStreaming(true);
 
+      // Get session and include token in request
+      const supabase = createClientComponentClient();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      const headers: HeadersInit = {
+        "Content-Type": "application/json",
+      };
+
+      if (session?.access_token) {
+        headers.Authorization = `Bearer ${session.access_token}`;
+      }
+
       const response = await fetch(`/api/documents/${document.id}/chat`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers,
         body: JSON.stringify({
           message: userMessage,
           currentContent: content,

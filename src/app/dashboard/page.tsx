@@ -8,6 +8,7 @@ import {
   createClientComponentClient,
   type User,
 } from "@supabase/auth-helpers-nextjs";
+import { ArrowRight, FileText } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -16,20 +17,12 @@ interface UserProfile {
   xp_points: number;
 }
 
-interface GeneratedContent {
-  id: number;
-  content_type: string;
-  prompt: string;
-  generated_text: string;
-  created_at: string;
-}
+
 
 export default function DashboardPage() {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [generatedContent, setGeneratedContent] = useState<GeneratedContent[]>(
-    []
-  );
+
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const supabase = createClientComponentClient();
@@ -58,17 +51,7 @@ export default function DashboardPage() {
         setProfile(profileData);
       }
 
-      // Buscar conteúdo gerado pelo utilizador
-      const { data: contentData } = await supabase
-        .from("generated_content")
-        .select("id, content_type, prompt, generated_text, created_at")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(5);
 
-      if (contentData) {
-        setGeneratedContent(contentData);
-      }
 
       setLoading(false);
     };
@@ -169,43 +152,44 @@ export default function DashboardPage() {
           </p>
         </Card>
 
-        {/* Conteúdo gerado recentemente */}
+        {/* Documents Gallery Preview */}
         <Card className="p-6">
-          <h2 className="text-xl font-semibold text-[#0B0D17] mb-4">
-            Conteúdo Recente
-          </h2>
-          {generatedContent.length > 0 ? (
-            <div className="space-y-4">
-              {generatedContent.map((content) => (
-                <div
-                  key={content.id}
-                  className="border border-[#C7C9D9] rounded-xl p-4"
-                >
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="font-medium text-[#0B0D17]">
-                      {content.content_type}
-                    </h3>
-                    <span className="text-xs text-[#6C6F80]">
-                      {new Date(content.created_at).toLocaleDateString("pt-PT")}
-                    </span>
-                  </div>
-                  <p className="text-sm text-[#6C6F80] mb-2">
-                    {content.prompt}
-                  </p>
-                  <p className="text-sm text-[#2E2F38] line-clamp-3">
-                    {content.generated_text.substring(0, 150)}...
-                  </p>
-                </div>
-              ))}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-3">
+              <FileText className="w-6 h-6 text-[#6753FF]" />
+              <h2 className="text-xl font-semibold text-[#0B0D17]">
+                Os Meus Documentos
+              </h2>
             </div>
-          ) : (
-            <div className="text-center py-8">
-              <p className="text-[#6C6F80]">Ainda não gerou nenhum conteúdo.</p>
-              <p className="text-sm text-[#6C6F80] mt-1">
-                Comece por criar o seu primeiro recurso educacional!
-              </p>
-            </div>
-          )}
+            <Button 
+              onClick={() => router.push("/documents")}
+              className="flex items-center space-x-2 px-4 py-2 text-sm"
+            >
+              <span>Ver Todos</span>
+              <ArrowRight className="w-4 h-4" />
+            </Button>
+          </div>
+          <p className="text-sm text-[#6C6F80] mb-6">
+            Aceda a todos os seus planos de aula, avaliações e atividades criadas.
+          </p>
+          
+          {/* Show mini gallery or link */}
+          <div className="bg-[#F4F5F8] rounded-xl p-6 text-center">
+            <div className="text-4xl mb-3">📚</div>
+            <h3 className="font-medium text-[#0B0D17] mb-2">
+              Biblioteca de Documentos
+            </h3>
+            <p className="text-sm text-[#6C6F80] mb-4">
+              Organize, filtre e aceda rapidamente a todos os seus recursos educacionais.
+            </p>
+            <Button 
+              onClick={() => router.push("/documents")}
+              className="w-full"
+            >
+              <FileText className="w-4 h-4 mr-2" />
+              Explorar Documentos
+            </Button>
+          </div>
         </Card>
 
         {/* Assistente Curricular RAG */}

@@ -1,11 +1,26 @@
+import { validateAPIRequest } from "@/lib/auth/apiAuth";
+import { API_CONFIGS } from "@/lib/auth/utils";
 import type { CreateDocumentRequest } from "@/lib/types/documents";
 import { createClient } from "@supabase/supabase-js";
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 
 /**
- * GET /api/documents - Get all documents for the current user
+ * GET /api/documents - Get paginated documents for the current user with filtering
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
+  // Validate authentication and permissions
+  const validation = await validateAPIRequest(
+    request,
+    API_CONFIGS.USER_DOCUMENTS
+  );
+
+  if (!validation.success) {
+    return NextResponse.json(
+      { error: validation.error?.message },
+      { status: validation.error?.status || 500 }
+    );
+  }
+
   try {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseServiceKey =
@@ -20,13 +35,40 @@ export async function GET() {
       );
     }
 
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "20");
+    const documentType = searchParams.get("type");
+    const userId = searchParams.get("user_id");
+
+    if (!userId) {
+      return NextResponse.json(
+        { error: "User ID is required" },
+        { status: 400 }
+      );
+    }
+
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // For now, return all documents (service role bypasses RLS)
-    const { data: documents, error } = await supabase
+    // Calculate offset for pagination
+    const offset = (page - 1) * limit;
+
+    // Build query
+    let query = supabase
       .from("documents")
-      .select("*")
+      .select("*", { count: "exact" })
+      .eq("user_id", userId)
       .order("updated_at", { ascending: false });
+
+    // Add document type filter if provided
+    if (documentType && documentType !== "all") {
+      query = query.eq("document_type", documentType);
+    }
+
+    // Apply pagination
+    query = query.range(offset, offset + limit - 1);
+
+    const { data: documents, error, count } = await query;
 
     if (error) {
       console.error("Error fetching documents:", error);
@@ -36,7 +78,15 @@ export async function GET() {
       );
     }
 
-    return NextResponse.json(documents || []);
+    return NextResponse.json({
+      documents: documents || [],
+      pagination: {
+        page,
+        limit,
+        total: count || 0,
+        hasMore: (count || 0) > offset + limit,
+      },
+    });
   } catch (error) {
     console.error("Error fetching documents:", error);
     return NextResponse.json(
