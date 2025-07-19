@@ -9,6 +9,18 @@ export async function middleware(req: NextRequest) {
     data: { session },
   } = await supabase.auth.getSession();
 
+  // Redirect root to dashboard
+  if (req.nextUrl.pathname === "/") {
+    return NextResponse.redirect(new URL("/dashboard", req.url));
+  }
+
+  // Protect dashboard routes
+  if (req.nextUrl.pathname.startsWith("/dashboard")) {
+    if (!session) {
+      return NextResponse.redirect(new URL("/login", req.url));
+    }
+  }
+
   // Protect lesson plan routes
   if (req.nextUrl.pathname.startsWith("/lesson-plan")) {
     if (!session) {
@@ -30,5 +42,10 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/lesson-plan/:path*", "/api/documents/:path*"],
+  matcher: [
+    "/",
+    "/dashboard/:path*",
+    "/lesson-plan/:path*",
+    "/api/documents/:path*",
+  ],
 };
