@@ -1,6 +1,7 @@
 "use client";
 
 import MainLayout from "@/components/layout/MainLayout";
+import RagQuery from "@/components/RagQuery";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
@@ -206,6 +207,9 @@ export default function DashboardPage() {
             </div>
           )}
         </Card>
+
+        {/* Assistente Curricular RAG */}
+        <RagQuery />
       </div>
     </MainLayout>
   );
