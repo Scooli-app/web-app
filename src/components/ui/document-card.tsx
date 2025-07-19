@@ -57,11 +57,18 @@ export function DocumentCard({
   const [isDeleting, setIsDeleting] = useState(false);
 
   const handleCardClick = (e: React.MouseEvent) => {
-    // Don't navigate if clicking on action buttons or in selection mode
-    if (selectionMode || (e.target as HTMLElement).closest(".action-button")) {
+    // In selection mode, toggle selection on card click (except delete button)
+    if (selectionMode) {
+      if ((e.target as HTMLElement).closest(".action-button")) {
+        return;
+      }
+      onSelect?.(document.id, !isSelected);
       return;
     }
-
+    // Normal navigation
+    if ((e.target as HTMLElement).closest(".action-button")) {
+      return;
+    }
     if (document.document_type === "lesson_plan") {
       router.push(`/lesson-plan/${document.id}`);
     }
@@ -98,13 +105,30 @@ export function DocumentCard({
     if (!content) {
       return "Sem conteúdo disponível";
     }
-    const plainText = content.replace(/<[^>]*>/g, "");
-    return plainText.length > 150 ? `${plainText.substring(0, 150)}...` : plainText;
+    
+    // Remove HTML tags and markdown formatting
+    let plainText = content
+      .replace(/<[^>]*>/g, "") // Remove HTML tags
+      .replace(/#{1,6}\s+/g, "") // Remove markdown headers
+      .replace(/\*\*(.*?)\*\*/g, "$1") // Remove bold
+      .replace(/\*(.*?)\*/g, "$1") // Remove italic
+      .replace(/`(.*?)`/g, "$1") // Remove inline code
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1") // Remove links, keep text
+      .replace(/!\[([^\]]*)\]\([^)]+\)/g, "") // Remove images
+      .replace(/\n{3,}/g, "\n\n") // Normalize line breaks
+      .replace(/^\s+|\s+$/g, ""); // Trim whitespace
+    
+    // Limit to 120 characters for better card layout
+    if (plainText.length > 120) {
+      plainText = `${plainText.substring(0, 120).trim()}...`;
+    }
+    
+    return plainText;
   };
 
   return (
     <Card 
-      className={`p-6 transition-all duration-200 border border-[#E4E4E7] relative ${
+      className={`p-6 transition-all duration-200 border border-[#E4E4E7] relative flex flex-col h-full ${
         selectionMode 
           ? "cursor-default" 
           : "cursor-pointer hover:shadow-lg hover:border-[#6753FF]/20"
@@ -127,9 +151,9 @@ export function DocumentCard({
         </div>
       )}
 
-      <div className={`space-y-4 ${selectionMode ? "ml-6" : ""}`}>
+      <div className={`flex flex-col h-full ${selectionMode ? "ml-6" : ""}`}>
         {/* Header with icon and type */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-3">
             <span className="text-2xl">{getDocumentIcon(document.document_type)}</span>
             <Badge className={`${getDocumentTypeColor(document.document_type)} px-3 py-1 text-xs font-medium`}>
@@ -143,18 +167,18 @@ export function DocumentCard({
         </div>
 
         {/* Title */}
-        <h3 className="text-lg font-semibold text-[#0B0D17] line-clamp-2 leading-tight">
+        <h3 className="text-lg font-semibold text-[#0B0D17] line-clamp-2 leading-tight mb-3">
           {document.title}
         </h3>
 
         {/* Content preview */}
-        <p className="text-sm text-[#6C6F80] line-clamp-3 leading-relaxed">
+        <p className="text-sm text-[#6C6F80] line-clamp-3 leading-relaxed mb-4 flex-grow">
           {getContentPreview(document.content)}
         </p>
 
         {/* Metadata */}
         {document.metadata && Object.keys(document.metadata).length > 0 && (
-          <div className="space-y-2">
+          <div className="space-y-2 mb-4">
             {typeof document.metadata.subject === "string" && document.metadata.subject && (
               <div className="flex items-center text-xs text-[#6C6F80]">
                 <FileText className="w-3 h-3 mr-2" />
@@ -172,8 +196,8 @@ export function DocumentCard({
           </div>
         )}
 
-        {/* Footer with creation date and delete button */}
-        <div className="pt-2 border-t border-[#E4E4E7] flex items-center justify-between">
+        {/* Footer with creation date and delete button - always at bottom */}
+        <div className="pt-3 border-t border-[#E4E4E7] flex items-center justify-between mt-auto">
           <p className="text-xs text-[#6C6F80]">
             Criado em {formatDate(document.created_at)}
           </p>

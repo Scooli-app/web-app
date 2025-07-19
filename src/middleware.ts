@@ -6,6 +6,11 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
 export async function middleware(req: NextRequest) {
+  // Handle root redirect FIRST
+  if (req.nextUrl.pathname === "/") {
+    return NextResponse.redirect(new URL("/dashboard", req.url));
+  }
+
   const res = NextResponse.next();
 
   // Skip non-protected routes
@@ -17,11 +22,6 @@ export async function middleware(req: NextRequest) {
   const routeConfig = getRouteConfig(req.nextUrl.pathname);
   if (!routeConfig) {
     return res;
-  }
-
-  // Handle root redirect
-  if (req.nextUrl.pathname === "/") {
-    return NextResponse.redirect(new URL("/dashboard", req.url));
   }
 
   try {
@@ -151,6 +151,7 @@ export const config = {
   matcher: [
     // Protected pages
     "/",
+    "/dashboard",
     "/dashboard/:path*",
     "/documents/:path*",
     "/lesson-plan/:path*",

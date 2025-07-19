@@ -73,7 +73,7 @@ export default function Header() {
 
   return (
     <header className="w-full max-w-screen-xl mx-auto px-6 md:px-12 py-6 flex items-center justify-between">
-      <span className="text-3xl font-bold text-[#6753FF]">Scooli</span>
+      <span className="text-3xl font-bold text-[#6753FF]" onClick={() => router.push("/")}>Scooli</span>
       {user && (
         <div className="flex items-center space-x-4">
           {/* Badge de Créditos */}

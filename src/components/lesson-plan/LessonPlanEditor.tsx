@@ -8,7 +8,7 @@ import RichTextEditor from "@/components/ui/rich-text-editor";
 import { DocumentService } from "@/lib/services/document-service";
 import type { Document } from "@/lib/types/documents";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
-import { Loader2, Save, Send } from "lucide-react";
+import { Loader2, Save, Send, Edit3 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
@@ -38,6 +38,11 @@ export default function LessonPlanEditor({
   const [error, setError] = useState("");
   const chatContainerRef = useRef<HTMLDivElement | null>(null);
   const [editorKey, setEditorKey] = useState(0);
+
+  // Title editing state
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editingTitle, setEditingTitle] = useState("");
+  const titleInputRef = useRef<HTMLInputElement>(null);
 
   const documentService = useRef(new DocumentService());
   const saveTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
@@ -161,6 +166,64 @@ export default function LessonPlanEditor({
 
   const handleContentChange = (newContent: string) => {
     setContent(newContent);
+  };
+
+  // Title editing handlers
+  const handleTitleClick = () => {
+    if (!document) {
+      return;
+    }
+    setIsEditingTitle(true);
+    setEditingTitle(document.title);
+    // Focus the input after a brief delay to ensure it's rendered
+    setTimeout(() => {
+      titleInputRef.current?.focus();
+      titleInputRef.current?.select();
+    }, 0);
+  };
+
+  const handleTitleSave = async () => {
+    if (!document || !editingTitle.trim()) {
+      setIsEditingTitle(false);
+      return;
+    }
+
+    // Check character limit
+    if (editingTitle.length > 30) {
+      setError("O título não pode ter mais de 30 caracteres");
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      const updatedDoc = await documentService.current.updateDocument(
+        document.id,
+        {
+          title: editingTitle.trim(),
+        }
+      );
+      setDocument(updatedDoc);
+      setIsEditingTitle(false);
+    } catch (error) {
+      console.error("Failed to save title:", error);
+      setError("Erro ao guardar o título");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleTitleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      handleTitleSave();
+    } else if (e.key === "Escape") {
+      setIsEditingTitle(false);
+      setEditingTitle(document?.title || "");
+    }
+  };
+
+  const handleTitleBlur = () => {
+    handleTitleSave();
   };
 
   const handleChatSubmit = async (e: React.FormEvent) => {
@@ -329,9 +392,35 @@ export default function LessonPlanEditor({
     <div className="min-h-screen bg-[#EEF0FF] p-2 md:p-6">
       <div className="max-w-7xl mx-auto w-full">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold text-[#0B0D17]">
-            {document?.title || "Plano de Aula"}
-          </h1>
+          <div className="flex items-center space-x-3">
+            {isEditingTitle ? (
+              <div className="flex items-center space-x-2">
+                <div className="relative">
+                  <Input
+                    ref={titleInputRef}
+                    value={editingTitle}
+                    onChange={(e) => setEditingTitle(e.target.value)}
+                    onKeyDown={handleTitleKeyDown}
+                    onBlur={handleTitleBlur}
+                    maxLength={30}
+                    className="text-3xl font-bold text-[#0B0D17] bg-white border-2 border-[#6753FF] rounded-lg px-4 py-2 focus:ring-2 focus:ring-[#6753FF] focus:border-[#6753FF] min-w-[300px]"
+                    placeholder="Título do documento..."
+                  />
+                  <div className="absolute -bottom-6 right-0 text-xs text-[#6C6F80]">
+                    {editingTitle.length}/30
+                  </div>
+                </div>
+                <Edit3 className="h-6 w-6 text-[#6753FF]" />
+              </div>
+            ) : (
+              <h1 
+                className="text-3xl font-bold text-[#0B0D17] cursor-pointer hover:text-[#6753FF] transition-colors"
+                onClick={handleTitleClick}
+              >
+                {document?.title || "Plano de Aula"}
+              </h1>
+            )}
+          </div>
           {isSaving && (
             <div className="flex items-center text-[#6C6F80]">
               <Save className="h-4 w-4 mr-2" />
