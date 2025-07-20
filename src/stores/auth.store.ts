@@ -1,15 +1,15 @@
-import { create } from "zustand";
-import { subscribeWithSelector } from "zustand/middleware";
-import type { User } from "@/types";
+import type { User } from "@/lib/types";
+import {
+  AuthInitService,
+  type AuthState as AuthStateData,
+} from "@/services/api/auth-init.service";
 import { AuthService } from "@/services/api/auth.service";
 import {
   UserProfileService,
   type UserProfile,
 } from "@/services/api/user-profile.service";
-import {
-  AuthInitService,
-  type AuthState as AuthStateData,
-} from "@/services/api/auth-init.service";
+import { create } from "zustand";
+import { subscribeWithSelector } from "zustand/middleware";
 
 interface AuthState {
   // State

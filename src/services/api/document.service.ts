@@ -1,10 +1,10 @@
+import type { Document, PaginatedResponse } from "@/lib/types";
 import { supabase } from "./client";
-import type { Document, PaginatedResponse } from "@/types";
 
 export interface CreateDocumentData {
   title: string;
   content: string;
-  type: Document["type"];
+  document_type: Document["document_type"];
   subject?: string;
   grade_level?: string;
   tags: string[];
@@ -17,7 +17,7 @@ export interface UpdateDocumentData extends Partial<CreateDocumentData> {
 
 export interface DocumentFilters {
   query?: string;
-  type?: Document["type"];
+  document_type?: Document["document_type"];
   subject?: string;
   grade_level?: string;
   tags?: string[];
@@ -41,8 +41,8 @@ export class DocumentService {
           `title.ilike.%${filters.query}%,content.ilike.%${filters.query}%`
         );
       }
-      if (filters?.type) {
-        query = query.eq("type", filters.type);
+      if (filters?.document_type) {
+        query = query.eq("document_type", filters.document_type);
       }
       if (filters?.subject) {
         query = query.eq("subject", filters.subject);

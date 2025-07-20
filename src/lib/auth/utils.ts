@@ -51,6 +51,35 @@ export function userHasAllPermissions(
 }
 
 /**
+ * Check if user has specific role
+ */
+export function userHasRole(
+  profile: UserProfile | null,
+  role:
+    | "teacher"
+    | "curator"
+    | "admin"
+    | "super_admin"
+    | ("teacher" | "curator" | "admin" | "super_admin")[]
+): boolean {
+  if (!profile || !profile.is_active) {
+    return false;
+  }
+
+  const userRole = profile.role_name as
+    | "teacher"
+    | "curator"
+    | "admin"
+    | "super_admin";
+
+  if (Array.isArray(role)) {
+    return role.includes(userRole);
+  }
+
+  return userRole === role;
+}
+
+/**
  * Get user session and profile with permissions for server components
  */
 export async function getServerAuth(): Promise<{

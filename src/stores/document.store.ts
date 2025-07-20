@@ -1,12 +1,12 @@
-import { create } from "zustand";
-import { subscribeWithSelector } from "zustand/middleware";
-import type { Document } from "@/types";
+import type { Document } from "@/lib/types";
 import {
   DocumentService,
   type CreateDocumentData,
-  type UpdateDocumentData,
   type DocumentFilters,
+  type UpdateDocumentData,
 } from "@/services/api/document.service";
+import { create } from "zustand";
+import { subscribeWithSelector } from "zustand/middleware";
 
 interface DocumentState {
   // State

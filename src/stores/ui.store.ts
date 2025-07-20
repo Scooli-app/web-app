@@ -1,6 +1,6 @@
+import type { UIState } from "@/lib/types";
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
-import type { UIState } from "@/types";
 
 interface UIStoreState extends UIState {
   // Additional UI state

@@ -1,5 +1,5 @@
-import { supabase, createAuthClient } from "./client";
-import type { User } from "@/types";
+import type { User } from "@/lib/types";
+import { createAuthClient, supabase } from "./client";
 
 export interface AuthResponse {
   user: User | null;
@@ -249,7 +249,7 @@ export class AuthService {
         email: profile.email,
         name: profile.full_name || undefined,
         avatar_url: undefined, // Not stored in user_profiles
-        role: profile.role as "teacher" | "admin",
+        role: profile.role as "teacher" | "curator" | "admin" | "super_admin",
         credits: profile.credits_remaining,
         created_at: profile.created_at,
         updated_at: profile.updated_at,

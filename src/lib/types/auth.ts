@@ -1,4 +1,16 @@
-import type { User } from "@supabase/auth-helpers-nextjs";
+/**
+ * Basic user type for the application
+ */
+export interface User {
+  id: string;
+  email: string;
+  name?: string;
+  avatar_url?: string;
+  role: "teacher" | "curator" | "admin" | "super_admin";
+  credits: number;
+  created_at: string;
+  updated_at: string;
+}
 
 /**
  * Permission - granular actions users can perform
@@ -24,6 +36,11 @@ export interface Role {
 }
 
 /**
+ * User role type for role checking
+ */
+export type UserRole = "teacher" | "curator" | "admin" | "super_admin";
+
+/**
  * Extended user profile with role and permissions
  */
 export interface UserProfile {
@@ -42,6 +59,20 @@ export interface UserProfile {
   role_display_name?: string;
   hierarchy_level?: number;
   permissions?: string[];
+}
+
+/**
+ * Auth context data
+ */
+export interface AuthContext {
+  user: User | null;
+  profile: UserProfile | null;
+  permissions: string[];
+  loading: boolean;
+  hasPermission: (permission: string) => boolean;
+  hasAnyPermission: (permissions: string[]) => boolean;
+  hasAllPermissions: (permissions: string[]) => boolean;
+  isAuthenticated: boolean;
 }
 
 /**

@@ -1,5 +1,9 @@
+import type {
+  LessonPlan,
+  LessonPlanForm,
+  PaginatedResponse,
+} from "@/lib/types";
 import { supabase } from "./client";
-import type { LessonPlan, LessonPlanForm, PaginatedResponse } from "@/types";
 
 export interface CreateLessonPlanData extends LessonPlanForm {
   user_id: string;

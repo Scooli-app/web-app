@@ -1,8 +1,11 @@
 "use client";
 
-import type { Permission, UserProfile, UserRole } from "@/lib/types/auth";
 import { userHasPermission, userHasRole } from "@/lib/auth/utils";
-import { createClientComponentClient, type User } from "@supabase/auth-helpers-nextjs";
+import type { UserProfile, UserRole } from "@/lib/types/auth";
+import {
+  createClientComponentClient,
+  type User,
+} from "@supabase/auth-helpers-nextjs";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 
@@ -10,7 +13,7 @@ interface ProtectedRouteProps {
   children: ReactNode;
   requiresAuth?: boolean;
   requiredRole?: UserRole | UserRole[];
-  requiredPermissions?: Permission[];
+  requiredPermissions?: string[];
   redirectTo?: string;
   fallback?: ReactNode;
   showFallback?: boolean;
@@ -129,7 +132,8 @@ export function ProtectedRoute({
             Conta Desativada
           </h1>
           <p className="text-[#6C6F80] mb-4">
-            A sua conta foi desativada. Entre em contacto com o suporte se precisar de ajuda.
+            A sua conta foi desativada. Entre em contacto com o suporte se
+            precisar de ajuda.
           </p>
           <button
             onClick={() => supabase.auth.signOut()}
@@ -183,7 +187,8 @@ export function ProtectedRoute({
                 Permissão Insuficiente
               </h1>
               <p className="text-[#6C6F80] mb-4">
-                Não tem a permissão &quot;{permission}&quot; necessária para esta página.
+                Não tem a permissão &quot;{permission}&quot; necessária para
+                esta página.
               </p>
               <button
                 onClick={() => router.back()}
@@ -270,9 +275,9 @@ export function useAuth() {
   return {
     ...authState,
     isAuthenticated: !!authState.user,
-    hasPermission: (permission: Permission) =>
+    hasPermission: (permission: string) =>
       userHasPermission(authState.profile, permission),
     hasRole: (role: UserRole | UserRole[]) =>
       userHasRole(authState.profile, role),
   };
-} 
+}

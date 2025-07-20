@@ -1,6 +1,6 @@
+import type { User } from "@/lib/types";
 import { AuthService } from "./auth.service";
 import { UserProfileService, type UserProfile } from "./user-profile.service";
-import type { User } from "@/types";
 
 export interface AuthState {
   user: User | null;
