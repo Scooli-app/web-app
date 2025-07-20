@@ -66,7 +66,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 w-full">
       {/* Header com boas-vindas */}
       <div className="text-center">
         <h1 className="text-4xl font-bold text-[#6753FF] mb-2">

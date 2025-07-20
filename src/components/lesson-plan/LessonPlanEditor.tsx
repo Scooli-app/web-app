@@ -331,7 +331,7 @@ export default function LessonPlanEditor({
 
   if (!showEditor) {
     return (
-      <div className="min-h-screen bg-[#EEF0FF] p-6">
+      <div className="min-h-screen bg-[#EEF0FF] p-6 w-full">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-8">
             <h1 className="text-4xl font-bold text-[#0B0D17] mb-4">

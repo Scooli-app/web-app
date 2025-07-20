@@ -216,7 +216,7 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
 
   return (
     <SidebarProvider>
-      <div className="flex h-screen">
+      <div className="flex h-screen w-full">
         {/* Desktop Sidebar */}
         <div className="hidden md:block h-screen">{sidebarContent}</div>
 
