@@ -71,7 +71,7 @@ export default function Header() {
   }
 
   return (
-    <section className="px-6 md:px-6 py-3 flex items-end">
+    <section className="flex items-end">
       {user && (
         <div className="flex items-center space-x-4">
           {/* Badge de Créditos */}

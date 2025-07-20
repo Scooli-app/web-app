@@ -109,7 +109,7 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
   ];
 
   const sidebarContent = (
-    <SidebarPrimitive collapsible="icon" className="pb-12">
+    <SidebarPrimitive collapsible="icon">
       <SidebarHeader className="border-b border-[#E4E4E7] px-6 py-4 group-data-[collapsible=icon]:px-3 group-data-[collapsible=icon]:py-2">
         <div className="flex items-center space-x-2">
           <div className="w-8 h-8 bg-[#6753FF] rounded-lg flex items-center justify-center flex-shrink-0 group-data-[collapsible=icon]:w-6 group-data-[collapsible=icon]:h-6">
@@ -218,7 +218,7 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
     <SidebarProvider>
       <div className="flex h-screen">
         {/* Desktop Sidebar */}
-        <div className="hidden md:block">{sidebarContent}</div>
+        <div className="hidden md:block h-screen">{sidebarContent}</div>
 
         {/* Mobile Sidebar */}
         <Sheet open={open} onOpenChange={setOpen}>
@@ -240,8 +240,8 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
         </Sheet>
 
         {/* Main Content Area */}
-        <div className="flex-1 flex flex-col min-w-0">
-          <header className="flex h-16 shrink-0 items-center gap-2">
+        <div className="flex-1 flex flex-col">
+          <header className="flex h-16 shrink-0 items-center gap-2 bg-[#FFFFFF] w-full">
             <div className="flex items-center gap-2 px-4 justify-between w-full">
               <SidebarTrigger className="hidden md:flex" />
               <Header />
