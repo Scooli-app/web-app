@@ -2,54 +2,16 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  createClientComponentClient,
-  type User,
-} from "@supabase/auth-helpers-nextjs";
 import { Coins, Loader2, LogOut, Star, User as UserIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-
-interface UserProfile {
-  credits_remaining: number;
-  xp_points: number;
-}
+import { useAuthStore } from "@/stores/auth.store";
 
 export default function Header() {
-  const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(true);
   const router = useRouter();
-  const supabase = createClientComponentClient();
-
-  useEffect(() => {
-    const fetchUserData = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      setUser(user);
-
-      if (user) {
-        // Buscar perfil do utilizador
-        const { data: profileData } = await supabase
-          .from("user_profiles")
-          .select("credits_remaining, xp_points")
-          .eq("id", user.id)
-          .single();
-
-        if (profileData) {
-          setProfile(profileData);
-        }
-      }
-
-      setLoading(false);
-    };
-
-    fetchUserData();
-  }, [supabase]);
+  const { user, profile, isLoading, signOut } = useAuthStore();
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    await signOut();
     router.push("/login");
   };
 
@@ -57,7 +19,7 @@ export default function Header() {
     router.push("/profile");
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <header className="w-full mx-auto px-6 md:px-12 py-3 flex items-center justify-between">
         <div className="flex items-center space-x-4">
