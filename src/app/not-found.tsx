@@ -1,9 +1,24 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Home, Search, ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function NotFound() {
+  const router = useRouter();
+
+  const handleGoBack = () => {
+    // Check if there's history to go back to
+    if (window.history.length > 1) {
+      router.back();
+    } else {
+      // Fallback to dashboard if no history
+      router.push("/dashboard");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-transparent flex items-center justify-center p-6 w-full">
       <Card className="w-full max-w-md p-8 text-center">
@@ -28,11 +43,11 @@ export default function NotFound() {
             </Link>
           </Button>
           
-          <Button variant="outline" asChild className="w-full">
-            <Link href="javascript:history.back()">
+          <Button variant="outline" asChild className="w-full border-[#C7C9D9] text-[#0B0D17] bg-white hover:bg-[#EEF0FF]">
+            <button onClick={handleGoBack}>
               <ArrowLeft className="h-4 w-4 mr-2" />
               Voltar atrás
-            </Link>
+            </button>
           </Button>
         </div>
 
