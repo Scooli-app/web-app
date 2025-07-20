@@ -128,7 +128,7 @@ export function DocumentCard({
 
   return (
     <Card
-      className={`p-6 transition-all duration-200 border border-[#E4E4E7] relative flex flex-col h-full w-fit ${
+      className={`p-6 transition-all duration-200 border border-[#E4E4E7] relative flex flex-col h-full w-full ${
         selectionMode
           ? "cursor-default"
           : "cursor-pointer hover:shadow-lg hover:border-[#6753FF]/20"
