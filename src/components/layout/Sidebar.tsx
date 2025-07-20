@@ -2,25 +2,32 @@
 
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
-import { 
-  Sidebar as SidebarPrimitive,
+import {
+  Sheet,
+  SheetContent,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import {
   SidebarContent,
-  SidebarHeader,
   SidebarFooter,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
   SidebarGroup,
+  SidebarGroupContent,
   SidebarGroupLabel,
-  SidebarGroupContent
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  Sidebar as SidebarPrimitive,
 } from "@/components/ui/sidebar";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import {
   BookOpen,
+  FileCheck,
   FileText,
+  HelpCircle,
   Home,
   Menu,
   MessageSquare,
@@ -37,7 +44,12 @@ interface SidebarProps extends React.ComponentProps<typeof SidebarPrimitive> {
   onCollapsedChange?: (collapsed: boolean) => void;
 }
 
-export function Sidebar({ className, collapsed = false, onCollapsedChange: _onCollapsedChange, ...props }: SidebarProps) {
+export function Sidebar({
+  className,
+  collapsed = false,
+  onCollapsedChange: _onCollapsedChange,
+  ...props
+}: SidebarProps) {
   const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
@@ -55,12 +67,30 @@ export function Sidebar({ className, collapsed = false, onCollapsedChange: _onCo
       icon: FileText,
       description: "Gerir os seus documentos",
     },
+  ];
+
+  const contentCreation = [
     {
       title: "Planos de Aula",
       href: "/lesson-plan",
       icon: BookOpen,
       description: "Criar e editar planos de aula",
     },
+    {
+      title: "Testes",
+      href: "/test",
+      icon: FileCheck,
+      description: "Criar e editar testes",
+    },
+    {
+      title: "Quizzes",
+      href: "/quiz",
+      icon: HelpCircle,
+      description: "Criar e editar quizzes",
+    },
+  ];
+
+  const community = [
     {
       title: "Comunidade",
       href: "/community",
@@ -91,8 +121,8 @@ export function Sidebar({ className, collapsed = false, onCollapsedChange: _onCo
   ];
 
   const sidebarContent = (
-    <SidebarPrimitive 
-      className={cn("pb-12", className)} 
+    <SidebarPrimitive
+      className={cn("pb-12", className)}
       {...props}
       data-collapsed={collapsed}
     >
@@ -101,7 +131,9 @@ export function Sidebar({ className, collapsed = false, onCollapsedChange: _onCo
           <div className="w-8 h-8 bg-[#6753FF] rounded-lg flex items-center justify-center">
             <span className="text-white font-bold text-sm">S</span>
           </div>
-          {!collapsed && <h2 className="text-lg font-semibold text-[#0B0D17]">Scooli</h2>}
+          {!collapsed && (
+            <h2 className="text-lg font-semibold text-[#0B0D17]">Scooli</h2>
+          )}
         </div>
       </SidebarHeader>
       <SidebarContent className="py-4">
@@ -141,9 +173,87 @@ export function Sidebar({ className, collapsed = false, onCollapsedChange: _onCo
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-        
+
         <Separator className="my-4" />
-        
+
+        <SidebarGroup>
+          {!collapsed && (
+            <SidebarGroupLabel className="px-4 text-xs font-semibold tracking-tight text-[#6C6F80] uppercase">
+              Criação de Conteúdo
+            </SidebarGroupLabel>
+          )}
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {contentCreation.map((item) => {
+                const isActive = pathname === item.href;
+                return (
+                  <SidebarMenuItem key={item.href}>
+                    <Link
+                      href={item.href}
+                      onClick={() => isMobile && setOpen(false)}
+                      className="w-full"
+                    >
+                      <SidebarMenuButton
+                        isActive={isActive}
+                        tooltip={collapsed ? item.title : undefined}
+                        className={cn(
+                          isActive
+                            ? "bg-[#6753FF] text-white hover:bg-[#4E3BC0]"
+                            : "hover:bg-[#EEF0FF] text-[#2E2F38]"
+                        )}
+                      >
+                        <item.icon className="h-4 w-4" />
+                        {!collapsed && item.title}
+                      </SidebarMenuButton>
+                    </Link>
+                  </SidebarMenuItem>
+                );
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <Separator className="my-4" />
+
+        <SidebarGroup>
+          {!collapsed && (
+            <SidebarGroupLabel className="px-4 text-xs font-semibold tracking-tight text-[#6C6F80] uppercase">
+              Comunidade
+            </SidebarGroupLabel>
+          )}
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {community.map((item) => {
+                const isActive = pathname === item.href;
+                return (
+                  <SidebarMenuItem key={item.href}>
+                    <Link
+                      href={item.href}
+                      onClick={() => isMobile && setOpen(false)}
+                      className="w-full"
+                    >
+                      <SidebarMenuButton
+                        isActive={isActive}
+                        tooltip={collapsed ? item.title : undefined}
+                        className={cn(
+                          isActive
+                            ? "bg-[#6753FF] text-white hover:bg-[#4E3BC0]"
+                            : "hover:bg-[#EEF0FF] text-[#2E2F38]"
+                        )}
+                      >
+                        <item.icon className="h-4 w-4" />
+                        {!collapsed && item.title}
+                      </SidebarMenuButton>
+                    </Link>
+                  </SidebarMenuItem>
+                );
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <Separator className="my-4" />
+
         <SidebarGroup>
           {!collapsed && (
             <SidebarGroupLabel className="px-4 text-xs font-semibold tracking-tight text-[#6C6F80] uppercase">
@@ -181,7 +291,7 @@ export function Sidebar({ className, collapsed = false, onCollapsedChange: _onCo
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      
+
       {!collapsed && (
         <SidebarFooter className="border-t border-[#E4E4E7] px-6 py-4">
           <div className="rounded-lg bg-[#EEF0FF] p-3">
@@ -227,4 +337,4 @@ export function Sidebar({ className, collapsed = false, onCollapsedChange: _onCo
   }
 
   return sidebarContent;
-} 
+}

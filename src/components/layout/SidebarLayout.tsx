@@ -26,8 +26,11 @@ import {
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import {
+  BookOpen,
+  FileCheck,
   FileText,
   FolderArchiveIcon,
+  HelpCircle,
   Home,
   Menu,
   MessageSquare,
@@ -85,6 +88,27 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
     },
   ];
 
+  const contentCreation = [
+    {
+      title: "Planos de Aula",
+      href: "/lesson-plan",
+      icon: BookOpen,
+      description: "Criar e editar planos de aula",
+    },
+    {
+      title: "Testes",
+      href: "/test",
+      icon: FileCheck,
+      description: "Criar e editar testes",
+    },
+    {
+      title: "Quizzes",
+      href: "/quiz",
+      icon: HelpCircle,
+      description: "Criar e editar quizzes",
+    },
+  ];
+
   const secondaryNavigation = [
     {
       title: "Definições",
@@ -116,6 +140,42 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
           <SidebarGroupContent>
             <SidebarMenu>
               {navigation.map((item) => {
+                const isActive = pathname === item.href;
+                return (
+                  <SidebarMenuItem key={item.href}>
+                    <Link
+                      href={item.href}
+                      onClick={() => isMobile && setOpen(false)}
+                      className="w-full"
+                    >
+                      <SidebarMenuButton
+                        isActive={isActive}
+                        className={cn(
+                          isActive
+                            ? "bg-[#6753FF] text-white hover:bg-[#4E3BC0]"
+                            : "hover:bg-[#EEF0FF] text-[#2E2F38]"
+                        )}
+                      >
+                        <item.icon className="h-4 w-4" />
+                        {item.title}
+                      </SidebarMenuButton>
+                    </Link>
+                  </SidebarMenuItem>
+                );
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <Separator className="my-4" />
+
+        <SidebarGroup>
+          <SidebarGroupLabel className="px-4 text-xs font-semibold tracking-tight text-[#6C6F80] uppercase">
+            Criação de Conteúdo
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {contentCreation.map((item) => {
                 const isActive = pathname === item.href;
                 return (
                   <SidebarMenuItem key={item.href}>

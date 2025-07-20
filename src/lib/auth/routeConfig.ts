@@ -23,6 +23,18 @@ export const ROUTE_CONFIGS: RouteConfig[] = [
     requiredPermissions: ["documents.create", "documents.edit"],
     redirectTo: "/login",
   },
+  {
+    path: "/test",
+    requiresAuth: true,
+    requiredPermissions: ["documents.create", "documents.edit"],
+    redirectTo: "/login",
+  },
+  {
+    path: "/quiz",
+    requiresAuth: true,
+    requiredPermissions: ["documents.create", "documents.edit"],
+    redirectTo: "/login",
+  },
 
   // Admin routes
   {

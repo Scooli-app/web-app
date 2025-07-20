@@ -5,12 +5,13 @@ import { createMiddlewareClient } from "@supabase/auth-helpers-nextjs";
 import { createClient, type Session } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 
-// Simple in-memory cache for session data to reduce auth calls
-const sessionCache = new Map<
-  string,
-  { session: Session | null; timestamp: number }
->();
 const CACHE_DURATION = 30 * 1000; // 30 seconds
+
+// Updated cache to store session and profile together
+const authCache = new Map<
+  string,
+  { session: Session | null; profile: UserProfile | null; timestamp: number }
+>();
 
 function getCacheKey(req: NextRequest): string {
   // Use a combination of user agent and IP to create a cache key
@@ -20,20 +21,27 @@ function getCacheKey(req: NextRequest): string {
   return `${userAgent}-${forwardedFor}-${realIp}`;
 }
 
-function getCachedSession(req: NextRequest): Session | null {
+function getCachedAuthData(req: NextRequest): {
+  session: Session | null;
+  profile: UserProfile | null;
+} {
   const key = getCacheKey(req);
-  const cached = sessionCache.get(key);
+  const cached = authCache.get(key);
 
   if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-    return cached.session;
+    return { session: cached.session, profile: cached.profile };
   }
 
-  return null;
+  return { session: null, profile: null };
 }
 
-function setCachedSession(req: NextRequest, session: Session | null) {
+function setCachedAuthData(
+  req: NextRequest,
+  session: Session | null,
+  profile: UserProfile | null
+) {
   const key = getCacheKey(req);
-  sessionCache.set(key, { session, timestamp: Date.now() });
+  authCache.set(key, { session, profile, timestamp: Date.now() });
 }
 
 export async function middleware(req: NextRequest) {
@@ -56,20 +64,56 @@ export async function middleware(req: NextRequest) {
   }
 
   try {
-    // Check cache first
-    let session = getCachedSession(req);
+    // Check cache for both session and profile
+    let { session, profile } = getCachedAuthData(req);
 
-    if (!session) {
-      // Get user session from Supabase
+    // If the session or profile is not cached, fetch from the source
+    if (!session || !profile) {
       const supabase = createMiddlewareClient({ req, res });
       const {
         data: { session: newSession },
       } = await supabase.auth.getSession();
-
       session = newSession;
-      if (session) {
-        setCachedSession(req, session);
+
+      // If a session exists, fetch the user profile
+      if (session?.user) {
+        try {
+          const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+          const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+          if (supabaseUrl && supabaseServiceKey) {
+            const serviceSupabase = createClient(
+              supabaseUrl,
+              supabaseServiceKey
+            );
+            const { data: userProfileData, error } = await serviceSupabase.rpc(
+              "get_user_profile_with_permissions",
+              { user_id: session.user.id }
+            );
+
+            if (error) {
+              console.error(
+                "[Middleware] Error fetching user profile on cache miss:",
+                error
+              );
+              profile = null;
+            } else {
+              profile = (userProfileData?.[0] as UserProfile | null) ?? null;
+            }
+          }
+        } catch (error) {
+          console.error(
+            "[Middleware] Exception fetching user profile on cache miss:",
+            error
+          );
+          profile = null;
+        }
+      } else {
+        profile = null;
       }
+
+      // Update the cache with the newly fetched data
+      setCachedAuthData(req, session, profile);
     }
 
     // Check authentication requirement
@@ -83,32 +127,7 @@ export async function middleware(req: NextRequest) {
       return res;
     }
 
-    // Get user profile with permissions using service role
-    let profile: UserProfile | null = null;
-    if (session.user) {
-      try {
-        // Use service role to call the function directly
-        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-        const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-        if (supabaseUrl && supabaseServiceKey) {
-          const serviceSupabase = createClient(supabaseUrl, supabaseServiceKey);
-          const { data: userProfileData, error } = await serviceSupabase.rpc(
-            "get_user_profile_with_permissions",
-            { user_id: session.user.id }
-          );
-
-          if (error) {
-            console.error("[Middleware] Error fetching user profile:", error);
-          } else {
-            profile = userProfileData?.[0] as UserProfile | null;
-          }
-        }
-      } catch (error) {
-        console.error("[Middleware] Error getting user profile:", error);
-      }
-    }
-
+    // No need to fetch profile again, it's already loaded from cache or source
     // Check if user is active
     if (profile && !profile.is_active) {
       return NextResponse.redirect(new URL("/account-disabled", req.url));
@@ -196,6 +215,8 @@ export const config = {
     "/dashboard/:path*",
     "/documents/:path*",
     "/lesson-plan/:path*",
+    "/test/:path*",
+    "/quiz/:path*",
     "/admin/:path*",
     "/community/:path*",
 
