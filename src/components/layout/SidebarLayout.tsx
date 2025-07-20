@@ -227,13 +227,18 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
 
         {/* Main Content Area */}
         <div className="flex-1 flex flex-col">
-          <header className="flex h-16 shrink-0 items-center gap-2 bg-[#FFFFFF] w-full">
+          <header className="flex h-16 shrink-0 items-center gap-2 bg-[#FFFFFF] w-full border-b border-[#E4E4E7]">
             <div className="flex items-center gap-2 px-4 justify-between w-full">
               <SidebarTrigger className="hidden md:flex" />
               <Header />
             </div>
           </header>
-          <main className={cn("flex-1 overflow-auto w-full bg-[#EEF0FF]", className)}>
+          <main
+            className={cn(
+              "flex-1 overflow-auto w-full bg-[#EEF0FF]",
+              className
+            )}
+          >
             <div className="w-full flex flex-col items-center h-full p-6">
               {children}
             </div>

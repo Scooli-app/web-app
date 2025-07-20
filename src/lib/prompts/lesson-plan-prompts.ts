@@ -20,7 +20,7 @@ FORMATA A RESPOSTA EM JSON:
 }
 
 ESTRUTURA DO PLANO DE AULA:
-- **Título e Metadados**: disciplina, ano, duração, materiais
+- **Título**: disciplina, ano, duração, materiais
 - **Objetivos de Aprendizagem**: específicos e mensuráveis
 - **Conteúdos**: conceitos principais a abordar
 - **Metodologia**: estratégias de ensino (individual, grupo, turma)

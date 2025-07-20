@@ -41,7 +41,7 @@ function MenuBar({ editor }: { editor: Editor }) {
   });
 
   return (
-    <div className="border-b border-[#C7C9D9] p-2 flex flex-wrap gap-1 sticky top-0 z-10">
+    <div className="border-b border-[#C7C9D9] p-2 flex flex-wrap gap-1 sticky top-0 z-10 bg-white rounded-xl">
       <button
         onClick={() => editor.chain().focus().toggleBold().run()}
         disabled={!editorState.canBold}

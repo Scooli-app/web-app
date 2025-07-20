@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import RichTextEditor from "@/components/ui/rich-text-editor";
 import { DocumentService } from "@/lib/services/document-service";
 import type { Document } from "@/lib/types/documents";
+import { useDocumentStore } from "@/stores/document.store";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -34,10 +35,15 @@ export default function LessonPlanEditor({
   const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState("");
   const [editorKey, setEditorKey] = useState(0);
+  const [hasExecutedInitialPrompt, setHasExecutedInitialPrompt] =
+    useState(false);
 
   const documentService = useRef(new DocumentService());
   const saveTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
   const lastSavedContent = useRef<string>("");
+
+  const { pendingInitialPrompt, pendingDocumentId, clearPendingInitialPrompt } =
+    useDocumentStore();
 
   // Load existing document
   useEffect(() => {
@@ -71,6 +77,80 @@ export default function LessonPlanEditor({
       setContent(document.content);
     }
   }, [document]);
+
+  // Check for pending initial prompt and execute it once
+  useEffect(() => {
+    if (
+      document &&
+      !hasExecutedInitialPrompt &&
+      pendingInitialPrompt &&
+      pendingDocumentId === documentId &&
+      (!document.content || document.content.trim() === "")
+    ) {
+      executeInitialPrompt(pendingInitialPrompt);
+    }
+  }, [
+    document,
+    pendingInitialPrompt,
+    pendingDocumentId,
+    documentId,
+    hasExecutedInitialPrompt,
+  ]);
+
+  const executeInitialPrompt = async (prompt: string) => {
+    if (!document) {
+      return;
+    }
+
+    try {
+      setIsStreaming(true);
+      setHasExecutedInitialPrompt(true);
+
+      // Get session and include token in request
+      const supabase = createClientComponentClient();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      const headers: HeadersInit = {
+        "Content-Type": "application/json",
+      };
+
+      if (session?.access_token) {
+        headers.Authorization = `Bearer ${session.access_token}`;
+      }
+
+      const response = await fetch(`/api/documents/${document.id}/chat`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          message: prompt,
+          currentContent: "",
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to get response");
+      }
+
+      const data = await response.json();
+
+      if (data.generatedContent) {
+        setContent(data.generatedContent);
+        setEditorKey((k) => k + 1);
+        handleContentChange(data.generatedContent);
+      }
+
+      // Clear the pending prompt from store
+      clearPendingInitialPrompt();
+    } catch (error) {
+      console.error("Failed to execute initial prompt:", error);
+      setError("Erro ao gerar o plano de aula inicial");
+      clearPendingInitialPrompt();
+    } finally {
+      setIsStreaming(false);
+    }
+  };
 
   // Save content when it changes
   useEffect(() => {
@@ -257,6 +337,25 @@ export default function LessonPlanEditor({
           >
             Voltar aos Planos de Aula
           </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Show loading state when executing initial prompt
+  if (
+    isStreaming &&
+    hasExecutedInitialPrompt &&
+    (!content || content.trim() === "")
+  ) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#EEF0FF]">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-[#6753FF] mx-auto mb-4" />
+          <p className="text-[#6C6F80]">A gerar o seu plano de aula...</p>
+          <p className="text-sm text-[#6C6F80] mt-2">
+            Isto pode demorar alguns segundos
+          </p>
         </div>
       </div>
     );

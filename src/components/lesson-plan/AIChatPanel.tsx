@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Loader2, Send } from "lucide-react";
+import { Send } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 interface ChatMessage {
@@ -47,7 +47,7 @@ export default function AIChatPanel({
   }, [chatHistory]);
 
   return (
-    <div className="lg:fixed lg:right-30 lg:top-30 lg:max-h-fit lg:w-[400px] w-full z-30 flex flex-col border-l border-[#E4E4E7] shadow-md lg:rounded-none rounded-2xl overflow-hidden">
+    <div className="lg:fixed lg:right-30 lg:top-30 lg:max-h-fit lg:w-[400px] w-full z-30 flex flex-col border-l border-[#E4E4E7] lg:rounded-none rounded-2xl overflow-hidden bg-transparent">
       <Card className="p-4 md:p-6 h-full flex flex-col">
         <h2 className="text-xl font-semibold text-[#0B0D17] mb-4">
           AI Assistant
@@ -70,6 +70,28 @@ export default function AIChatPanel({
               {message.content}
             </div>
           ))}
+
+          {/* Typing Indicator */}
+          {isStreaming && (
+            <div className="bg-[#F4F5F8] text-[#2E2F38] mr-8 p-3 rounded-xl">
+              <div className="flex items-center space-x-1">
+                <div className="flex space-x-1">
+                  <div
+                    className="w-2 h-2 bg-[#6C6F80] rounded-full animate-bounce"
+                    style={{ animationDelay: "0ms" }}
+                  />
+                  <div
+                    className="w-2 h-2 bg-[#6C6F80] rounded-full animate-bounce"
+                    style={{ animationDelay: "150ms" }}
+                  />
+                  <div
+                    className="w-2 h-2 bg-[#6C6F80] rounded-full animate-bounce"
+                    style={{ animationDelay: "300ms" }}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Chat Input */}
@@ -84,13 +106,9 @@ export default function AIChatPanel({
           <Button
             type="submit"
             disabled={!chatMessage.trim() || isStreaming}
-            className="bg-[#6753FF] hover:bg-[#4E3BC0] text-white px-4 py-2 rounded-xl"
+            className="bg-[#6753FF] hover:bg-[#4E3BC0] text-white px-4 py-2 rounded-xl disabled:bg-gray-300 disabled:text-gray-500"
           >
-            {isStreaming ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Send className="h-4 w-4" />
-            )}
+            <Send className="h-4 w-4" />
           </Button>
         </form>
 

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { DocumentService } from "@/lib/services/document-service";
+import { useDocumentStore } from "@/stores/document.store";
 import { Loader2, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -15,6 +16,8 @@ export default function LessonPlanPage() {
   const [initialPrompt, setInitialPrompt] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const { setPendingInitialPrompt } = useDocumentStore();
 
   const documentService = new DocumentService();
 
@@ -36,6 +39,9 @@ export default function LessonPlanPage() {
           initial_prompt: initialPrompt,
         },
       });
+
+      // Store the initial prompt in the store for one-time execution
+      setPendingInitialPrompt(newDocument.id, initialPrompt);
 
       // Redirect to the new document page
       router.push(`/lesson-plan/${newDocument.id}`);

@@ -22,6 +22,10 @@ interface DocumentState {
   isLoading: boolean;
   error: string | null;
 
+  // Temporary initial prompt for one-time execution
+  pendingInitialPrompt: string | null;
+  pendingDocumentId: string | null;
+
   // Actions
   fetchDocuments: (
     page?: number,
@@ -38,6 +42,10 @@ interface DocumentState {
   setFilters: (filters: Partial<DocumentFilters>) => void;
   clearError: () => void;
   resetPagination: () => void;
+
+  // Initial prompt actions
+  setPendingInitialPrompt: (documentId: string, prompt: string) => void;
+  clearPendingInitialPrompt: () => void;
 }
 
 export const useDocumentStore = create<DocumentState>()(
@@ -54,6 +62,10 @@ export const useDocumentStore = create<DocumentState>()(
     filters: {},
     isLoading: false,
     error: null,
+
+    // Temporary initial prompt state
+    pendingInitialPrompt: null,
+    pendingDocumentId: null,
 
     // Actions
     fetchDocuments: async (page = 1, limit = 10, filters?: DocumentFilters) => {
@@ -296,6 +308,21 @@ export const useDocumentStore = create<DocumentState>()(
           total: 0,
           hasMore: false,
         },
+      });
+    },
+
+    // Initial prompt actions
+    setPendingInitialPrompt: (documentId: string, prompt: string) => {
+      set({
+        pendingDocumentId: documentId,
+        pendingInitialPrompt: prompt,
+      });
+    },
+
+    clearPendingInitialPrompt: () => {
+      set({
+        pendingDocumentId: null,
+        pendingInitialPrompt: null,
       });
     },
   }))
