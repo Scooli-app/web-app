@@ -1,4 +1,5 @@
 import { LESSON_PLAN_PROMPTS } from "@/lib/prompts/lesson-plan-prompts";
+import { TEST_QUIZ_PROMPTS } from "@/lib/prompts/test-quiz-prompts";
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 import OpenAI from "openai";
@@ -13,6 +14,17 @@ const supabase = createClient(
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
+
+// Helper function to get prompts based on document type
+function getPromptsForDocumentType(documentType: string) {
+  switch (documentType) {
+    case "test_quiz":
+      return TEST_QUIZ_PROMPTS;
+    case "lesson_plan":
+    default:
+      return LESSON_PLAN_PROMPTS;
+  }
+}
 
 export async function POST(
   request: NextRequest,
@@ -63,8 +75,11 @@ export async function POST(
       );
     }
 
+    // Get appropriate prompts based on document type
+    const prompts = getPromptsForDocumentType(document.document_type);
+
     // Build the prompt based on the user message
-    const prompt = LESSON_PLAN_PROMPTS.CHAT_PROMPT(currentContent, message);
+    const prompt = prompts.CHAT_PROMPT(currentContent, message);
 
     // Call OpenAI
     const completion = await openai.chat.completions.create({
@@ -72,7 +87,7 @@ export async function POST(
       messages: [
         {
           role: "system",
-          content: LESSON_PLAN_PROMPTS.SYSTEM_PROMPT,
+          content: prompts.SYSTEM_PROMPT,
         },
         {
           role: "user",

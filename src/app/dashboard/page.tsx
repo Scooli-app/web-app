@@ -129,7 +129,7 @@ export default function DashboardPage() {
           </Button>
           <Button
             className="h-20 flex flex-col items-center justify-center space-y-2"
-            disabled
+            onClick={() => router.push("/test-quiz")}
           >
             <span className="text-2xl">📝</span>
             <span>Teste/Quiz</span>

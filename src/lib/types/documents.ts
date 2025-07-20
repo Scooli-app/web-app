@@ -23,6 +23,7 @@ export interface Document {
 
 export type DocumentType =
   | "lesson_plan"
+  | "test_quiz"
   | "assessment"
   | "activity"
   | "curriculum_analysis";
