@@ -26,14 +26,12 @@ import {
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import {
-  BookOpen,
   FileText,
+  FolderArchiveIcon,
   Home,
   Menu,
   MessageSquare,
   Settings,
-  Users,
-  Zap,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -68,21 +66,15 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
       description: "Visão geral da sua atividade",
     },
     {
-      title: "Documentos",
+      title: "Os meus documentos",
       href: "/documents",
       icon: FileText,
       description: "Gerir os seus documentos",
     },
     {
-      title: "Planos de Aula",
-      href: "/lesson-plan",
-      icon: BookOpen,
-      description: "Criar e editar planos de aula",
-    },
-    {
-      title: "Comunidade",
+      title: "Biblioteca comunitária",
       href: "/community",
-      icon: Users,
+      icon: FolderArchiveIcon,
       description: "Partilhar e descobrir recursos",
     },
     {
@@ -90,12 +82,6 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
       href: "/ai-assistant",
       icon: MessageSquare,
       description: "Chat com inteligência artificial",
-    },
-    {
-      title: "Gerador Rápido",
-      href: "/quick-generator",
-      icon: Zap,
-      description: "Criar recursos rapidamente",
     },
   ];
 

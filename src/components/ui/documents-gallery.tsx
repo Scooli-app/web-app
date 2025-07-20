@@ -304,22 +304,7 @@ export function DocumentsGallery({ userId }: DocumentsGalleryProps) {
           <h2 className="text-3xl font-semibold text-[#0B0D17]">
             Os Meus Documentos
           </h2>
-          <div className="flex items-center space-x-4">
-            <p className="text-sm text-[#6C6F80]">
-              {pagination.total} documento{pagination.total !== 1 ? "s" : ""}
-            </p>
-            {!selectionMode && filteredDocuments.length > 0 && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setSelectionMode(true)}
-                className="flex items-center space-x-2"
-              >
-                <CheckSquare className="w-4 h-4" />
-                <span>Selecionar</span>
-              </Button>
-            )}
-          </div>
+          
         </div>
 
         {/* Compact selection mode header */}
@@ -381,14 +366,32 @@ export function DocumentsGallery({ userId }: DocumentsGalleryProps) {
         )}
 
         {/* Search */}
-        <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[#6C6F80]" />
-          <Input
-            placeholder="Pesquisar documentos..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-          />
+        <div className="relative w-full flex items-center justify-between">
+          <span className="flex items-center">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[#6C6F80]" />
+            <Input
+              placeholder="Pesquisar documentos..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+              />
+          </span>
+          <div className="flex items-center space-x-4">
+            <p className="text-sm text-[#6C6F80]">
+              {pagination.total} documento{pagination.total !== 1 ? "s" : ""}
+            </p>
+            {!selectionMode && filteredDocuments.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSelectionMode(true)}
+                className="flex items-center space-x-2"
+              >
+                <CheckSquare className="w-4 h-4" />
+                <span>Selecionar</span>
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Filters */}
