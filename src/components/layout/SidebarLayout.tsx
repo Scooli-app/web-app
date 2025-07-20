@@ -247,7 +247,7 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
               <Header />
             </div>
           </header>
-          <main className={cn("flex-1 overflow-auto w-full", className)}>
+          <main className={cn("flex-1 overflow-auto w-full bg-[#EEF0FF]", className)}>
             <div className="w-full flex flex-col items-center h-full p-6">
               {children}
             </div>

@@ -57,6 +57,7 @@ module.exports = {
         "text-secondary": "#2E2F38",
         "text-muted": "#6C6F80",
         "bg-muted": "#F4F5F8",
+        "content-bg": "#EEF0FF",
       },
       borderRadius: {
         sm: "0.375rem",
