@@ -8,7 +8,7 @@ export default function LessonPlanPage() {
   const documentId = params.id as string;
 
   return (
-    <div className="min-h-screen bg-[#EEF0FF]">
+    <div className="w-full">
       <LessonPlanEditor documentId={documentId} />
     </div>
   );

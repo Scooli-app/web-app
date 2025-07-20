@@ -1,23 +1,28 @@
 "use client";
 
-import { 
-  SidebarProvider, 
-  SidebarTrigger,
-  Sidebar as SidebarPrimitive,
-  SidebarContent,
-  SidebarHeader,
-  SidebarFooter,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
-  SidebarGroup,
-  SidebarGroupLabel,
-  SidebarGroupContent
-} from "@/components/ui/sidebar";
-import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { Button } from "@/components/ui/button";
+import {
+  Sheet,
+  SheetContent,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import {
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  Sidebar as SidebarPrimitive,
+  SidebarProvider,
+  SidebarTrigger,
+} from "@/components/ui/sidebar";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import {
@@ -33,6 +38,7 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import Header from "./Header";
 
 interface SidebarLayoutProps {
   children: React.ReactNode;
@@ -45,7 +51,10 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
   const pathname = usePathname();
 
   // Don't show sidebar on auth pages
-  const isAuthPage = pathname?.startsWith("/login") || pathname?.startsWith("/signup") || pathname?.startsWith("/auth");
+  const isAuthPage =
+    pathname?.startsWith("/login") ||
+    pathname?.startsWith("/signup") ||
+    pathname?.startsWith("/auth");
 
   if (isAuthPage) {
     return <div className="min-h-screen">{children}</div>;
@@ -104,9 +113,13 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
       <SidebarHeader className="border-b border-[#E4E4E7] px-6 py-4 group-data-[collapsible=icon]:px-3 group-data-[collapsible=icon]:py-2">
         <div className="flex items-center space-x-2">
           <div className="w-8 h-8 bg-[#6753FF] rounded-lg flex items-center justify-center flex-shrink-0 group-data-[collapsible=icon]:w-6 group-data-[collapsible=icon]:h-6">
-            <span className="text-white font-bold text-sm group-data-[collapsible=icon]:text-xs">S</span>
+            <span className="text-white font-bold text-sm group-data-[collapsible=icon]:text-xs">
+              S
+            </span>
           </div>
-          <h2 className="text-lg font-semibold text-[#0B0D17] truncate group-data-[collapsible=icon]:hidden">Scooli</h2>
+          <h2 className="text-lg font-semibold text-[#0B0D17] truncate group-data-[collapsible=icon]:hidden">
+            Scooli
+          </h2>
         </div>
       </SidebarHeader>
       <SidebarContent className="py-4">
@@ -143,9 +156,9 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-        
+
         <Separator className="my-4" />
-        
+
         <SidebarGroup>
           <SidebarGroupLabel className="px-4 text-xs font-semibold tracking-tight text-[#6C6F80] uppercase">
             Sistema
@@ -180,7 +193,7 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      
+
       <SidebarFooter className="border-t border-[#E4E4E7] px-6 py-4 group-data-[collapsible=icon]:px-3 group-data-[collapsible=icon]:py-2">
         <div className="rounded-lg bg-[#EEF0FF] p-3 group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:p-0">
           <div className="flex items-center space-x-2 min-w-0">
@@ -205,10 +218,8 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
     <SidebarProvider>
       <div className="flex h-screen">
         {/* Desktop Sidebar */}
-        <div className="hidden md:block">
-          {sidebarContent}
-        </div>
-        
+        <div className="hidden md:block">{sidebarContent}</div>
+
         {/* Mobile Sidebar */}
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger asChild>
@@ -231,12 +242,13 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
         {/* Main Content Area */}
         <div className="flex-1 flex flex-col min-w-0">
           <header className="flex h-16 shrink-0 items-center gap-2">
-            <div className="flex items-center gap-2 px-4">
+            <div className="flex items-center gap-2 px-4 justify-between w-full">
               <SidebarTrigger className="hidden md:flex" />
+              <Header />
             </div>
           </header>
           <main className={cn("flex-1 overflow-auto w-full", className)}>
-            <div className="w-full max-w-4xl mx-auto px-6">
+            <div className="w-full flex flex-col items-center h-full p-6">
               {children}
             </div>
           </main>
@@ -244,4 +256,4 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
       </div>
     </SidebarProvider>
   );
-} 
+}

@@ -67,14 +67,17 @@ export default function LessonPlanPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#EEF0FF] flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-[#6753FF]" />
+      <div className="flex items-center justify-center min-h-[400px] w-full">
+        <div className="flex items-center space-x-2">
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#6753FF]" />
+          <span className="text-lg text-[#6C6F80]">A carregar...</span>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#EEF0FF] p-6">
+    <div className="w-full p-6">
       <div className="max-w-4xl mx-auto">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-[#0B0D17] mb-4">

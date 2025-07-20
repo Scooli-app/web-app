@@ -1,9 +1,40 @@
 import { getRouteConfig, isProtectedRoute } from "@/lib/auth/routeConfig";
-import { userHasPermission, userHasAllPermissions } from "@/lib/auth/utils";
+import { userHasAllPermissions, userHasPermission } from "@/lib/auth/utils";
 import type { UserProfile } from "@/lib/types/auth";
 import { createMiddlewareClient } from "@supabase/auth-helpers-nextjs";
+import { createClient, type Session } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+
+// Simple in-memory cache for session data to reduce auth calls
+const sessionCache = new Map<
+  string,
+  { session: Session | null; timestamp: number }
+>();
+const CACHE_DURATION = 30 * 1000; // 30 seconds
+
+function getCacheKey(req: NextRequest): string {
+  // Use a combination of user agent and IP to create a cache key
+  const userAgent = req.headers.get("user-agent") || "";
+  const forwardedFor = req.headers.get("x-forwarded-for") || "";
+  const realIp = req.headers.get("x-real-ip") || "";
+  return `${userAgent}-${forwardedFor}-${realIp}`;
+}
+
+function getCachedSession(req: NextRequest): Session | null {
+  const key = getCacheKey(req);
+  const cached = sessionCache.get(key);
+
+  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+    return cached.session;
+  }
+
+  return null;
+}
+
+function setCachedSession(req: NextRequest, session: Session | null) {
+  const key = getCacheKey(req);
+  sessionCache.set(key, { session, timestamp: Date.now() });
+}
 
 export async function middleware(req: NextRequest) {
   // Handle root redirect FIRST
@@ -25,11 +56,21 @@ export async function middleware(req: NextRequest) {
   }
 
   try {
-    // Get user session
-    const supabase = createMiddlewareClient({ req, res });
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
+    // Check cache first
+    let session = getCachedSession(req);
+
+    if (!session) {
+      // Get user session from Supabase
+      const supabase = createMiddlewareClient({ req, res });
+      const {
+        data: { session: newSession },
+      } = await supabase.auth.getSession();
+
+      session = newSession;
+      if (session) {
+        setCachedSession(req, session);
+      }
+    }
 
     // Check authentication requirement
     if (routeConfig.requiresAuth && !session) {

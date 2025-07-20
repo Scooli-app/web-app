@@ -59,8 +59,7 @@ export default function Header() {
 
   if (loading) {
     return (
-      <header className="w-full max-w-screen-xl mx-auto px-6 md:px-12 py-6 flex items-center justify-between">
-        <span className="text-3xl font-bold text-[#6753FF]">Scooli</span>
+      <header className="w-full mx-auto px-6 md:px-12 py-3 flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-2">
             <Loader2 className="h-4 w-4 animate-spin text-[#6C6F80]" />
@@ -72,8 +71,7 @@ export default function Header() {
   }
 
   return (
-    <header className="w-full max-w-screen-xl mx-auto px-6 md:px-12 py-6 flex items-center justify-between">
-      <span className="text-3xl font-bold text-[#6753FF]" onClick={() => router.push("/")}>Scooli</span>
+    <section className="px-6 md:px-6 py-3 flex items-end">
       {user && (
         <div className="flex items-center space-x-4">
           {/* Badge de Créditos */}
@@ -117,6 +115,6 @@ export default function Header() {
           </Button>
         </div>
       )}
-    </header>
+    </section>
   );
 }

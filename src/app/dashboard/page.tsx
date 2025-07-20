@@ -56,8 +56,11 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-lg text-[#6C6F80]">A carregar...</div>
+      <div className="flex items-center justify-center min-h-[400px] w-full">
+        <div className="flex items-center space-x-2">
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#6753FF]" />
+          <span className="text-lg text-[#6C6F80]">A carregar...</span>
+        </div>
       </div>
     );
   }
@@ -153,7 +156,7 @@ export default function DashboardPage() {
               Os Meus Documentos
             </h2>
           </div>
-          <Button 
+          <Button
             onClick={() => router.push("/documents")}
             className="flex items-center space-x-2 px-4 py-2 text-sm"
           >
@@ -164,7 +167,7 @@ export default function DashboardPage() {
         <p className="text-sm text-[#6C6F80] mb-6">
           Aceda a todos os seus planos de aula, avaliações e atividades criadas.
         </p>
-        
+
         {/* Show mini gallery or link */}
         <div className="bg-[#F4F5F8] rounded-xl p-6 text-center">
           <div className="text-4xl mb-3">📚</div>
@@ -172,12 +175,10 @@ export default function DashboardPage() {
             Biblioteca de Documentos
           </h3>
           <p className="text-sm text-[#6C6F80] mb-4">
-            Organize, filtre e aceda rapidamente a todos os seus recursos educacionais.
+            Organize, filtre e aceda rapidamente a todos os seus recursos
+            educacionais.
           </p>
-          <Button 
-            onClick={() => router.push("/documents")}
-            className="w-full"
-          >
+          <Button onClick={() => router.push("/documents")} className="w-full">
             <FileText className="w-4 h-4 mr-2" />
             Explorar Documentos
           </Button>

@@ -3,7 +3,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import type { Document } from "@/lib/types/documents";
-import { Clock, FileText, User, Trash2 } from "lucide-react";
+import { Clock, FileText, Trash2, User } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "./button";
@@ -46,12 +46,12 @@ const getDocumentIcon = (type: string) => {
   return icons[type as keyof typeof icons] || "📄";
 };
 
-export function DocumentCard({ 
-  document, 
-  isSelected = false, 
-  onSelect, 
-  onDelete, 
-  selectionMode = false 
+export function DocumentCard({
+  document,
+  isSelected = false,
+  onSelect,
+  onDelete,
+  selectionMode = false,
 }: DocumentCardProps) {
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
@@ -82,7 +82,7 @@ export function DocumentCard({
 
   const handleDelete = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    
+
     if (window.confirm("Tem a certeza de que quer eliminar este documento?")) {
       setIsDeleting(true);
       try {
@@ -105,7 +105,7 @@ export function DocumentCard({
     if (!content) {
       return "Sem conteúdo disponível";
     }
-    
+
     // Remove HTML tags and markdown formatting
     let plainText = content
       .replace(/<[^>]*>/g, "") // Remove HTML tags
@@ -117,26 +117,22 @@ export function DocumentCard({
       .replace(/!\[([^\]]*)\]\([^)]+\)/g, "") // Remove images
       .replace(/\n{3,}/g, "\n\n") // Normalize line breaks
       .replace(/^\s+|\s+$/g, ""); // Trim whitespace
-    
+
     // Limit to 120 characters for better card layout
     if (plainText.length > 120) {
       plainText = `${plainText.substring(0, 120).trim()}...`;
     }
-    
+
     return plainText;
   };
 
   return (
-    <Card 
-      className={`p-6 transition-all duration-200 border border-[#E4E4E7] relative flex flex-col h-full ${
-        selectionMode 
-          ? "cursor-default" 
+    <Card
+      className={`p-6 transition-all duration-200 border border-[#E4E4E7] relative flex flex-col h-full w-fit ${
+        selectionMode
+          ? "cursor-default"
           : "cursor-pointer hover:shadow-lg hover:border-[#6753FF]/20"
-      } ${
-        isSelected 
-          ? "border-[#6753FF] bg-[#6753FF]/5" 
-          : ""
-      }`}
+      } ${isSelected ? "border-[#6753FF] bg-[#6753FF]/5" : ""}`}
       onClick={handleCardClick}
     >
       {/* Selection checkbox */}
@@ -153,10 +149,16 @@ export function DocumentCard({
 
       <div className={`flex flex-col h-full ${selectionMode ? "ml-6" : ""}`}>
         {/* Header with icon and type */}
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-4 w-full gap-6">
           <div className="flex items-center space-x-3">
-            <span className="text-2xl">{getDocumentIcon(document.document_type)}</span>
-            <Badge className={`${getDocumentTypeColor(document.document_type)} px-3 py-1 text-xs font-medium`}>
+            <span className="text-2xl">
+              {getDocumentIcon(document.document_type)}
+            </span>
+            <Badge
+              className={`${getDocumentTypeColor(
+                document.document_type
+              )} px-3 py-1 text-xs font-medium`}
+            >
               {getDocumentTypeLabel(document.document_type)}
             </Badge>
           </div>
@@ -179,20 +181,22 @@ export function DocumentCard({
         {/* Metadata */}
         {document.metadata && Object.keys(document.metadata).length > 0 && (
           <div className="space-y-2 mb-4">
-            {typeof document.metadata.subject === "string" && document.metadata.subject && (
-              <div className="flex items-center text-xs text-[#6C6F80]">
-                <FileText className="w-3 h-3 mr-2" />
-                <span className="font-medium">Disciplina:</span>
-                <span className="ml-1">{document.metadata.subject}</span>
-              </div>
-            )}
-            {typeof document.metadata.grade === "string" && document.metadata.grade && (
-              <div className="flex items-center text-xs text-[#6C6F80]">
-                <User className="w-3 h-3 mr-2" />
-                <span className="font-medium">Ano:</span>
-                <span className="ml-1">{document.metadata.grade}</span>
-              </div>
-            )}
+            {typeof document.metadata.subject === "string" &&
+              document.metadata.subject && (
+                <div className="flex items-center text-xs text-[#6C6F80]">
+                  <FileText className="w-3 h-3 mr-2" />
+                  <span className="font-medium">Disciplina:</span>
+                  <span className="ml-1">{document.metadata.subject}</span>
+                </div>
+              )}
+            {typeof document.metadata.grade === "string" &&
+              document.metadata.grade && (
+                <div className="flex items-center text-xs text-[#6C6F80]">
+                  <User className="w-3 h-3 mr-2" />
+                  <span className="font-medium">Ano:</span>
+                  <span className="ml-1">{document.metadata.grade}</span>
+                </div>
+              )}
           </div>
         )}
 
@@ -216,4 +220,4 @@ export function DocumentCard({
       </div>
     </Card>
   );
-} 
+}
