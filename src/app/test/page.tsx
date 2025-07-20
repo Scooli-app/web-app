@@ -10,7 +10,7 @@ import { Loader2, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-export default function TestQuizPage() {
+export default function TestPage() {
   const { user, loading } = useSupabase();
   const router = useRouter();
   const [initialPrompt, setInitialPrompt] = useState("");
@@ -23,7 +23,7 @@ export default function TestQuizPage() {
 
   const handleCreateDocument = async () => {
     if (!initialPrompt.trim()) {
-      setError("Por favor, introduza uma descrição do teste/quiz");
+      setError("Por favor, introduza uma descrição do teste");
       return;
     }
 
@@ -32,9 +32,9 @@ export default function TestQuizPage() {
       setError("");
 
       const newDocument = await documentService.createDocument({
-        title: `Teste/Quiz - ${new Date().toLocaleDateString("pt-PT")}`,
+        title: `Teste - ${new Date().toLocaleDateString("pt-PT")}`,
         content: "",
-        document_type: "test_quiz",
+        document_type: "test",
         metadata: {
           initial_prompt: initialPrompt,
         },
@@ -44,7 +44,7 @@ export default function TestQuizPage() {
       setPendingInitialPrompt(newDocument.id, initialPrompt);
 
       // Redirect to the new document page
-      router.push(`/test-quiz/${newDocument.id}`);
+      router.push(`/test/${newDocument.id}`);
     } catch (error) {
       console.error("Failed to create document:", error);
 
@@ -87,11 +87,11 @@ export default function TestQuizPage() {
       <div className="max-w-4xl mx-auto">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-[#0B0D17] mb-4">
-            Criar Teste/Quiz
+            Criar Teste
           </h1>
           <p className="text-lg text-[#6C6F80]">
-            Descreva o que pretende avaliar e o Scooli irá gerar um teste ou
-            quiz completo
+            Descreva o que pretende avaliar e o Scooli irá gerar um teste
+            completo
           </p>
         </div>
 
@@ -102,7 +102,7 @@ export default function TestQuizPage() {
                 htmlFor="prompt"
                 className="block text-sm font-medium text-[#2E2F38] mb-2"
               >
-                Descrição do Teste/Quiz
+                Descrição do Teste
               </label>
               <Input
                 id="prompt"
@@ -137,7 +137,7 @@ export default function TestQuizPage() {
               ) : (
                 <>
                   <Plus className="mr-2 h-4 w-4" />
-                  Criar Teste/Quiz
+                  Criar Teste
                 </>
               )}
             </Button>

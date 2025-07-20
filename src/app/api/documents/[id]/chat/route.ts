@@ -18,7 +18,8 @@ const openai = new OpenAI({
 // Helper function to get prompts based on document type
 function getPromptsForDocumentType(documentType: string) {
   switch (documentType) {
-    case "test_quiz":
+    case "test":
+    case "quiz":
       return TEST_QUIZ_PROMPTS;
     case "lesson_plan":
     default:

@@ -122,24 +122,24 @@ export default function DashboardPage() {
           </Button>
           <Button
             className="h-20 flex flex-col items-center justify-center space-y-2"
+            onClick={() => router.push("/test")}
+          >
+            <span className="text-2xl">📝</span>
+            <span>Teste</span>
+          </Button>
+          <Button
+            className="h-20 flex flex-col items-center justify-center space-y-2"
+            onClick={() => router.push("/quiz")}
+          >
+            <span className="text-2xl">❓</span>
+            <span>Quiz</span>
+          </Button>
+          <Button
+            className="h-20 flex flex-col items-center justify-center space-y-2"
             disabled
           >
             <span className="text-2xl">📊</span>
             <span>Apresentação</span>
-          </Button>
-          <Button
-            className="h-20 flex flex-col items-center justify-center space-y-2"
-            onClick={() => router.push("/test-quiz")}
-          >
-            <span className="text-2xl">📝</span>
-            <span>Teste/Quiz</span>
-          </Button>
-          <Button
-            className="h-20 flex flex-col items-center justify-center space-y-2"
-            disabled
-          >
-            <span className="text-2xl">🎯</span>
-            <span>Atividades</span>
           </Button>
         </div>
         <p className="text-sm text-[#6C6F80] mt-4 text-center">

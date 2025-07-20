@@ -19,7 +19,8 @@ interface DocumentCardProps {
 const getDocumentTypeLabel = (type: string) => {
   const labels = {
     lesson_plan: "Plano de Aula",
-    assessment: "Avaliação",
+    test: "Teste",
+    quiz: "Quiz",
     activity: "Atividade",
     curriculum_analysis: "Análise Curricular",
   };
@@ -29,7 +30,8 @@ const getDocumentTypeLabel = (type: string) => {
 const getDocumentTypeColor = (type: string) => {
   const colors = {
     lesson_plan: "bg-[#6753FF] text-white",
-    assessment: "bg-[#1DB67D] text-white",
+    test: "bg-[#FF6B35] text-white",
+    quiz: "bg-[#FF8C42] text-white",
     activity: "bg-[#FFC857] text-black",
     curriculum_analysis: "bg-[#FF4F4F] text-white",
   };
@@ -39,7 +41,8 @@ const getDocumentTypeColor = (type: string) => {
 const getDocumentIcon = (type: string) => {
   const icons = {
     lesson_plan: "📄",
-    assessment: "📝",
+    test: "📝",
+    quiz: "❓",
     activity: "🎯",
     curriculum_analysis: "📊",
   };
@@ -71,6 +74,10 @@ export function DocumentCard({
     }
     if (document.document_type === "lesson_plan") {
       router.push(`/lesson-plan/${document.id}`);
+    } else if (document.document_type === "test") {
+      router.push(`/test/${document.id}`);
+    } else if (document.document_type === "quiz") {
+      router.push(`/quiz/${document.id}`);
     }
     // Add routing for other document types as they become available
   };
