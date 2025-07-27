@@ -4,6 +4,7 @@ export enum Routes {
   LESSON_PLAN = "/lesson-plan",
   ASSAYS = "/assays",
   QUIZ = "/quiz",
+  PRESENTATION = "/presentation",
   ADMIN = "/admin",
   COMMUNITY = "/community",
   AI_ASSISTANT = "/ai-assistant",

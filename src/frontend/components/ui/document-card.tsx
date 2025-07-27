@@ -7,6 +7,7 @@ import { Clock, FileText, Trash2, User } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "./button";
+import { Routes } from "@/shared/types/routes";
 
 interface DocumentCardProps {
   document: Document;
@@ -17,12 +18,11 @@ interface DocumentCardProps {
 }
 
 const getDocumentTypeLabel = (type: string) => {
-  const labels = {
+  const labels: Record<Document["document_type"], string> = {
     lesson_plan: "Plano de Aula",
-    test: "Teste",
+    assay: "Teste",
     quiz: "Quiz",
-    activity: "Atividade",
-    curriculum_analysis: "Análise Curricular",
+    presentation: "Apresentação",
   };
   return labels[type as keyof typeof labels] || type;
 };
@@ -30,10 +30,9 @@ const getDocumentTypeLabel = (type: string) => {
 const getDocumentTypeColor = (type: string) => {
   const colors = {
     lesson_plan: "bg-[#6753FF] text-white",
-    test: "bg-[#FF6B35] text-white",
+    assay: "bg-[#FF6B35] text-white",
     quiz: "bg-[#FF8C42] text-white",
-    activity: "bg-[#FFC857] text-black",
-    curriculum_analysis: "bg-[#FF4F4F] text-white",
+    presentation: "bg-[#FF4F4F] text-white",
   };
   return colors[type as keyof typeof colors] || "bg-[#C7C9D9] text-[#0B0D17]";
 };
@@ -41,10 +40,9 @@ const getDocumentTypeColor = (type: string) => {
 const getDocumentIcon = (type: string) => {
   const icons = {
     lesson_plan: "📄",
-    test: "📝",
+    assay: "📝",
     quiz: "❓",
-    activity: "🎯",
-    curriculum_analysis: "📊",
+    presentation: "📊",
   };
   return icons[type as keyof typeof icons] || "📄";
 };
@@ -73,11 +71,13 @@ export function DocumentCard({
       return;
     }
     if (document.document_type === "lesson_plan") {
-      router.push(`/lesson-plan/${document.id}`);
-    } else if (document.document_type === "quiz") {
-      router.push(`/quiz/${document.id}`);
+      router.push(`${Routes.LESSON_PLAN}/${document.id}`);
     } else if (document.document_type === "presentation") {
-      router.push(`/presentation/${document.id}`);
+      router.push(`${Routes.PRESENTATION}/${document.id}`);
+    } else if (document.document_type === "assay") {
+      router.push(`${Routes.ASSAYS}/${document.id}`);
+    } else if (document.document_type === "quiz") {
+      router.push(`${Routes.QUIZ}/${document.id}`);
     }
     // Add routing for other document types as they become available
   };
