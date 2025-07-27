@@ -56,9 +56,8 @@ export function useAutoSave(
         clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [content, saveContent]);
+  }, [content, document, saveContent]);
 
-  // Initialize last saved content when document loads
   useEffect(() => {
     if (document?.content) {
       lastSavedContent.current = document.content;

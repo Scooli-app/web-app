@@ -9,7 +9,7 @@ import { useInitialPrompt } from "@/hooks/useInitialPrompt";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import AIChatPanel from "./AIChatPanel";
 import DocumentTitle from "./DocumentTitle";
 
@@ -35,7 +35,7 @@ export default function DocumentEditor({
   chatTitle = "AI Assistant",
   chatPlaceholder = "Faça uma pergunta ou peça ajuda...",
 }: DocumentEditorProps) {
-  const { user, loading } = useSupabase();
+  const { user } = useSupabase();
   const router = useRouter();
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
@@ -53,12 +53,6 @@ export default function DocumentEditor({
 
   const { isSaving } = useAutoSave(document, content, updateDocument);
   const { isExecuting } = useInitialPrompt(document, documentId, generateMessage, handleContentChange);
-
-  useEffect(() => {
-    if (!loading && !user) {
-      router.push("/login");
-    }
-  }, [user, loading, router]);
 
   const handleChatSubmit = useCallback(async (userMessage: string) => {
     if (!document) {
@@ -115,21 +109,7 @@ export default function DocumentEditor({
     }
   }, [document, content, handleContentChange]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#EEF0FF]">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin text-[#6753FF] mx-auto mb-4" />
-          <p className="text-[#6C6F80]">A carregar...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return null;
-  }
-
+  // Loading states
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#EEF0FF]">
@@ -162,6 +142,7 @@ export default function DocumentEditor({
     );
   }
 
+  // Show loading state when executing initial prompt
   if (isExecuting && (!content || content.trim() === "")) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#EEF0FF]">
