@@ -1,11 +1,11 @@
 "use client";
 
-import { DocumentEditor } from "@/components/document-editor";
+import { DocumentEditor } from "@/frontend/components/document-editor";
 import { useParams } from "next/navigation";
 
 export default function LessonPlanEditorPage() {
   const params = useParams();
-  const documentId = params.id as string;
+  const documentId = params.id as string; 
 
   return (
     <div className="w-full">

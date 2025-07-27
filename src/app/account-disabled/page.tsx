@@ -1,5 +1,5 @@
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Button } from "@/frontend/components/ui/button";
+import { Card } from "@/frontend/components/ui/card";
 import { AlertTriangle, Home, Mail } from "lucide-react";
 import Link from "next/link";
 

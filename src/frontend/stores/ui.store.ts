@@ -1,4 +1,4 @@
-import type { UIState } from "@/lib/types";
+import type { UIState } from "@/shared/types/ui";
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
 

@@ -1,7 +1,7 @@
 "use client";
 
-import { Input } from "@/components/ui/input";
-import { MAX_LENGTHS } from "@/lib/constants";
+import { Input } from "@/frontend/components/ui/input";
+import { MAX_LENGTHS } from "@/shared/config/constants";
 import { Edit3, Save } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 

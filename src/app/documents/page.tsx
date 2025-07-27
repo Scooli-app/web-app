@@ -1,6 +1,6 @@
 "use client";
 
-import { DocumentsGallery } from "@/components/ui/documents-gallery";
+import { DocumentsGallery } from "@/frontend/components/ui/documents-gallery";
 import {
   createClientComponentClient,
   type User,

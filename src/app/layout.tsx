@@ -1,6 +1,6 @@
-import { SupabaseProvider } from "@/components/providers/SupabaseProvider";
-import AuthProvider from "@/components/providers/AuthProvider";
-import { SidebarLayout } from "@/components/layout/SidebarLayout";
+import { SupabaseProvider } from "@/frontend/components/providers/SupabaseProvider";
+import AuthProvider from "@/frontend/components/providers/AuthProvider";
+import { SidebarLayout } from "@/frontend/components/layout/SidebarLayout"; 
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";

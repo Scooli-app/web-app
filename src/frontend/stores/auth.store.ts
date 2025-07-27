@@ -1,13 +1,13 @@
-import type { User } from "@/lib/types";
 import {
   AuthInitService,
   type AuthState as AuthStateData,
-} from "@/services/api/auth-init.service";
-import { AuthService } from "@/services/api/auth.service";
+} from "@/backend/services/auth/auth-init.service";
+import { AuthService } from "@/backend/services/auth/auth.service";
 import {
   UserProfileService,
   type UserProfile,
-} from "@/services/api/user-profile.service";
+} from "@/backend/services/users/user-profile.service";
+import type { User } from "@/shared/types";
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
 

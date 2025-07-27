@@ -1,8 +1,8 @@
 "use client";
 
-import RagQuery from "@/components/RagQuery";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import RagQuery from "@/frontend/components/RagQuery";
+import { Button } from "@/frontend/components/ui/button";
+import { Card } from "@/frontend/components/ui/card";
 import {
   createClientComponentClient,
   type User,

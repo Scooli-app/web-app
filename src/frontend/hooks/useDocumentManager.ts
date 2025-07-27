@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { useDocumentStore } from "@/stores/document.store";
+import { useDocumentStore } from "@/frontend/stores/document.store";
 
 export function useDocumentManager(documentId: string) {
   const [content, setContent] = useState("");

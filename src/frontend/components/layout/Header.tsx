@@ -1,10 +1,10 @@
 "use client";
 
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Badge } from "@/frontend/components/ui/badge";
+import { Button } from "@/frontend/components/ui/button";
 import { Coins, Loader2, LogOut, Star, User as UserIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useAuthStore } from "@/stores/auth.store";
+import { useAuthStore } from "@/frontend/stores/auth.store";
 
 export default function Header() {
   const router = useRouter();

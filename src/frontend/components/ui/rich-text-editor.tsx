@@ -1,6 +1,6 @@
 "use client";
 
-import { htmlToMarkdown, markdownToHtml } from "@/lib/utils/markdown";
+import { htmlToMarkdown, markdownToHtml } from "@/shared/utils/utils/markdown";
 import Highlight from "@tiptap/extension-highlight";
 import {
   EditorContent,

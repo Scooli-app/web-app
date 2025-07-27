@@ -1,12 +1,12 @@
 "use client";
 
-import { useSupabase } from "@/components/providers/SupabaseProvider";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { useDocumentStore } from "@/stores/document.store";
+import { useSupabase } from "@/frontend/components/providers/SupabaseProvider";
+import { Button } from "@/frontend/components/ui/button";
+import { Card } from "@/frontend/components/ui/card";
+import { Input } from "@/frontend/components/ui/input";
+import { useDocumentStore } from "@/frontend/stores/document.store";
 import { Loader2, Plus } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";  
 import { useState } from "react";
 
 export default function LessonPlanPage() {

@@ -1,8 +1,8 @@
 "use client";
 
-import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
-import type { Document } from "@/lib/types/documents";
+import { Badge } from "@/frontend/components/ui/badge";
+import { Card } from "@/frontend/components/ui/card";
+import type { Document } from "@/shared/types/domain/document";
 import { Clock, FileText, Trash2, User } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -74,10 +74,10 @@ export function DocumentCard({
     }
     if (document.document_type === "lesson_plan") {
       router.push(`/lesson-plan/${document.id}`);
-    } else if (document.document_type === "test") {
-      router.push(`/test/${document.id}`);
     } else if (document.document_type === "quiz") {
       router.push(`/quiz/${document.id}`);
+    } else if (document.document_type === "presentation") {
+      router.push(`/presentation/${document.id}`);
     }
     // Add routing for other document types as they become available
   };

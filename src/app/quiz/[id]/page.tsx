@@ -1,7 +1,7 @@
 "use client";
 
-import { DocumentEditor } from "@/components/document-editor";
-import { useParams } from "next/navigation";
+import { DocumentEditor } from "@/frontend/components/document-editor";
+import { useParams } from "next/navigation";  
 
 export default function QuizEditorPage() {
   const params = useParams();

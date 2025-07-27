@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
-import { useDocumentStore } from "@/stores/document.store";
-import type { Document } from "@/lib/types";
+import { useDocumentStore } from "@/frontend/stores/document.store";
+import type { Document } from "@/shared/types/domain/document";
 
 export function useInitialPrompt(
   document: Document | null,

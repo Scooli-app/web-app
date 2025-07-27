@@ -1,8 +1,8 @@
 "use client";
 
-import { DocumentCard } from "@/components/ui/document-card";
-import { DocumentFilters } from "@/components/ui/document-filters";
-import type { Document } from "@/lib/types/documents";
+import { DocumentCard } from "@/frontend/components/ui/document-card";
+import { DocumentFilters } from "@/frontend/components/ui/document-filters";
+import type { Document } from "@/shared/types/domain/document";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { Loader2, Search, Trash2, CheckSquare, Square, X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";

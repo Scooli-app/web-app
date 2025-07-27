@@ -1,12 +1,12 @@
 "use client";
 
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@/frontend/components/ui/badge";
 
 interface DocumentFiltersProps {
   selectedType: string;
   onTypeChange: (type: string) => void;
   documentCounts?: Record<string, number>;
-}
+}   
 
 const filterOptions: Array<{ value: string; label: string; icon: string }> = [
   { value: "all", label: "Todos", icon: "📁" },

@@ -1,10 +1,10 @@
-import type { Document } from "@/lib/types";
 import {
-  DocumentService,
   type CreateDocumentData,
   type DocumentFilters,
+  DocumentService,
   type UpdateDocumentData,
-} from "@/services/api/document.service";
+} from "@/backend/services/documents/document.service";
+import type { Document } from "@/shared/types/domain/document";
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
 

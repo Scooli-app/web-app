@@ -1,6 +1,6 @@
 "use client";
 
-import { useRagQuery } from "@/hooks/useRagQuery";
+import { useRagQuery } from "@/frontend/hooks/useRagQuery";
 import { QuestionForm } from "./forms/QuestionForm";
 import { ErrorCard } from "./ui/error-card";
 import { SourcesList } from "./ui/sources-list";

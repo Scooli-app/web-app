@@ -1,6 +1,6 @@
 "use client";
 
-import { Auth } from "@/components/forms/Auth";
+import { Auth } from "@/frontend/components/forms/Auth";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { useState } from "react";
 
