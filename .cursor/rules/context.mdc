@@ -43,6 +43,7 @@ Scooli's primary differentiator is its **Ecossistema Comunitário**, a system de
     - **GPT-4.1-mini:** The workhorse for balanced, standard tasks (e.g., suggesting classroom activities, rephrasing content).
     - **GPT-4.1-nano:** For simple, low-latency tasks (e.g., classifying user input, generating a title).
 - **Infrastructure:** Domain (`scooli.app`) and email are configured. SSL is mandatory.
+- When generating code avoid unnecessary comments
 
 ### 5. Product Roadmap Summary
 

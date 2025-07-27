@@ -8,7 +8,7 @@ import { useDocumentStore } from "@/stores/document.store";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import AIChatPanel from "./AIChatPanel";
 import DocumentTitle from "./DocumentTitle";
 
@@ -26,91 +26,85 @@ interface DocumentEditorProps {
   chatPlaceholder?: string;
 }
 
-export default function DocumentEditor({
-  documentId,
-  defaultTitle,
-  loadingMessage,
-  generateMessage,
-  chatTitle = "AI Assistant",
-  chatPlaceholder = "Faça uma pergunta ou peça ajuda...",
-}: DocumentEditorProps) {
-  const { user, loading } = useSupabase();
-  const router = useRouter();
-  const [document, setDocument] = useState<Document | null>(null);
-  const [content, setContent] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
-  const [isStreaming, setIsStreaming] = useState(false);
-  const [error, setError] = useState("");
-  const [editorKey, setEditorKey] = useState(0);
-  const [hasExecutedInitialPrompt, setHasExecutedInitialPrompt] =
-    useState(false);
-
+// Custom hook for document auto-save
+function useAutoSave(
+  document: Document | null, 
+  content: string, 
+  updateDocument: (data: { id: string; content: string }) => Promise<void>
+) {
   const saveTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
   const lastSavedContent = useRef<string>("");
+  const [isSaving, setIsSaving] = useState(false);
 
-  const { 
-    pendingInitialPrompt, 
-    pendingDocumentId, 
-    clearPendingInitialPrompt,
-    fetchDocument,
-    updateDocument: updateDocumentInStore,
-    currentDocument,
-    isLoading: storeLoading
-  } = useDocumentStore();
-
-  // Load existing document
-  useEffect(() => {
-    if (documentId && !document) {
-      loadDocument(documentId);
-    }
-  }, [documentId, document]);
-
-  const loadDocument = async (id: string) => {
-    try {
-      await fetchDocument(id);
-    } catch (error) {
-      console.error("Failed to load document:", error);
-      setError("Erro ao carregar o documento");
-    }
-  };
-
-  // Listen to store changes for current document
-  useEffect(() => {
-    if (currentDocument) {
-      setDocument(currentDocument);
-      setContent(currentDocument.content || "");
-      setIsLoading(false);
-    }
-  }, [currentDocument]);
-
-  useEffect(() => {
-    setIsLoading(storeLoading);
-  }, [storeLoading]);
-
-  // Initialize lastSavedContent when document is loaded
-  useEffect(() => {
-    if (document && document.content) {
-      lastSavedContent.current = document.content;
-      setContent(document.content);
-    }
-  }, [document]);
-
-  const executeInitialPrompt = async (prompt: string) => {
-    if (!document) {
+  const saveContent = useCallback(async (newContent: string) => {
+    if (!document || newContent === lastSavedContent.current) {
       return;
     }
 
     try {
-      setIsStreaming(true);
-      setHasExecutedInitialPrompt(true);
+      setIsSaving(true);
+      await updateDocument({
+        id: document.id,
+        content: newContent,
+      });
+      lastSavedContent.current = newContent;
+    } catch (error) {
+      console.error("Auto-save failed:", error);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [document, updateDocument]);
 
-      // Get session and include token in request
+  useEffect(() => {
+    if (!document || !content || content.trim() === "" || content === lastSavedContent.current) {
+      return;
+    }
+
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+
+    saveTimeoutRef.current = setTimeout(() => {
+      saveContent(content);
+    }, 2000);
+
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, [content, saveContent]);
+
+  useEffect(() => {
+    if (document?.content) {
+      lastSavedContent.current = document.content;
+    }
+  }, [document]);
+
+  return { isSaving };
+}
+
+function useInitialPrompt(
+  document: Document | null,
+  documentId: string,
+  generateMessage: string,
+  onContentChange: (content: string) => void
+) {
+  const [isExecuting, setIsExecuting] = useState(false);
+  const [hasExecuted, setHasExecuted] = useState(false);
+  const { pendingInitialPrompt, pendingDocumentId, clearPendingInitialPrompt } = useDocumentStore();
+
+  const executePrompt = useCallback(async (prompt: string) => {
+    if (!document || hasExecuted) {
+      return;
+    }
+
+    try {
+      setIsExecuting(true);
+      setHasExecuted(true);
+
       const supabase = createClientComponentClient();
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+      const { data: { session } } = await supabase.auth.getSession();
 
       const headers: HeadersInit = {
         "Content-Type": "application/json",
@@ -136,72 +130,117 @@ export default function DocumentEditor({
       const data = await response.json();
 
       if (data.generatedContent) {
-        setContent(data.generatedContent);
-        setEditorKey((k) => k + 1);
-        handleContentChange(data.generatedContent);
+        onContentChange(data.generatedContent);
       }
 
-      // Clear the pending prompt from store
       clearPendingInitialPrompt();
     } catch (error) {
       console.error("Failed to execute initial prompt:", error);
-      setError("Erro ao gerar o conteúdo inicial");
       clearPendingInitialPrompt();
+      setHasExecuted(false); // Allow retry
     } finally {
-      setIsStreaming(false);
+      setIsExecuting(false);
     }
-  };
+  }, [document, hasExecuted, generateMessage, onContentChange, clearPendingInitialPrompt]);
 
-  // Check for pending initial prompt and execute it once
+  // Execute prompt when conditions are met
   useEffect(() => {
-    if (
+    const shouldExecute = 
       document &&
-      !hasExecutedInitialPrompt &&
+      !hasExecuted &&
       pendingInitialPrompt &&
       pendingDocumentId === documentId &&
-      (!document.content || document.content.trim() === "")
-    ) {
-      executeInitialPrompt(pendingInitialPrompt);
-    }
-  }, [
-    document,
-    pendingInitialPrompt,
-    pendingDocumentId,
-    documentId,
-    hasExecutedInitialPrompt,
-    executeInitialPrompt,
-  ]);
+      (!document.content || document.content.trim() === "");
 
-  // Save content when it changes
+    if (shouldExecute) {
+      executePrompt(pendingInitialPrompt);
+    }
+  }, [document, hasExecuted, pendingInitialPrompt, pendingDocumentId, documentId, executePrompt]);
+
+  return { isExecuting };
+}
+
+// Custom hook for document management
+function useDocumentManager(documentId: string) {
+  const [content, setContent] = useState("");
+  const [editorKey, setEditorKey] = useState(0);
+  const { 
+    fetchDocument, 
+    updateDocument, 
+    currentDocument, 
+    isLoading: storeLoading 
+  } = useDocumentStore();
+
   useEffect(() => {
-    if (
-      document &&
-      content &&
-      content.trim() !== "" &&
-      content !== lastSavedContent.current
-    ) {
-      // Clear existing timeout
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
-
-      // Set new timeout
-      saveTimeoutRef.current = setTimeout(async () => {
-        try {
-          setIsSaving(true);
-          await updateDocumentInStore({
-            id: document.id,
-            content,
-          });
-          lastSavedContent.current = content; // Update last saved content
-        } catch (_error) {
-          setError("Erro ao guardar o documento");
-        } finally {
-          setIsSaving(false);
-        }
-      }, 2000); // Increased delay to 2 seconds
+    if (documentId) {
+      fetchDocument(documentId);
     }
-  }, [content, document]);
+  }, [documentId, fetchDocument]);
+
+  useEffect(() => {
+    if (currentDocument) {
+      setContent(currentDocument.content || "");
+      setEditorKey((prev) => prev + 1);
+    }
+  }, [currentDocument]);
+
+  const handleContentChange = useCallback((newContent: string) => {
+    setContent(newContent);
+  }, []);
+
+  const handleTitleSave = useCallback(async (newTitle: string) => {
+    if (!currentDocument) {
+      return;
+    }
+
+    try {
+      await updateDocument({
+        id: currentDocument.id,
+        title: newTitle,
+      });
+    } catch (error) {
+      console.error("Failed to save title:", error);
+      throw error;
+    }
+  }, [currentDocument, updateDocument]);
+
+  return {
+    document: currentDocument,
+    content,
+    editorKey,
+    isLoading: storeLoading,
+    handleContentChange,
+    handleTitleSave,
+    updateDocument,
+  };
+}
+
+export default function DocumentEditor({
+  documentId,
+  defaultTitle,
+  loadingMessage,
+  generateMessage,
+  chatTitle = "AI Assistant",
+  chatPlaceholder = "Faça uma pergunta ou peça ajuda...",
+}: DocumentEditorProps) {
+  const { user, loading } = useSupabase();
+  const router = useRouter();
+  const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [error, setError] = useState("");
+
+  const { 
+    document, 
+    content, 
+    editorKey, 
+    isLoading, 
+    handleContentChange, 
+    handleTitleSave, 
+    updateDocument 
+  } = useDocumentManager(documentId);
+
+  const { isSaving } = useAutoSave(document, content, updateDocument);
+  const { isExecuting } = useInitialPrompt(document, documentId, generateMessage, handleContentChange);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -210,47 +249,19 @@ export default function DocumentEditor({
     }
   }, [user, loading, router]);
 
-  const handleContentChange = (newContent: string) => {
-    setContent(newContent);
-  };
-
-  const handleTitleSave = async (newTitle: string) => {
+  const handleChatSubmit = useCallback(async (userMessage: string) => {
     if (!document) {
       return;
     }
 
-    try {
-      setIsSaving(true);
-      await updateDocumentInStore({
-        id: document.id,
-        title: newTitle,
-      });
-    } catch (error) {
-      console.error("Failed to save title:", error);
-      setError("Erro ao guardar o título");
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleChatSubmit = async (userMessage: string) => {
-    if (!document) {
-      return;
-    }
-
-    setChatHistory((prev) => [...prev, { role: "user", content: userMessage }]);
-
-    // Clear any previous errors when starting a new query
+    setChatHistory(prev => [...prev, { role: "user", content: userMessage }]);
     setError("");
 
     try {
       setIsStreaming(true);
 
-      // Get session and include token in request
       const supabase = createClientComponentClient();
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+      const { data: { session } } = await supabase.auth.getSession();
 
       const headers: HeadersInit = {
         "Content-Type": "application/json",
@@ -275,31 +286,15 @@ export default function DocumentEditor({
 
       const data = await response.json();
 
-      let chatAnswer = "";
-      let generatedContent = "";
-
-      // Handle the JSON response
       if (data.chatAnswer) {
-        chatAnswer = data.chatAnswer;
-      }
-
-      if (data.generatedContent) {
-        generatedContent = data.generatedContent;
-      }
-
-      // Add chat answer to history if it exists
-      if (chatAnswer) {
-        setChatHistory((prev) => [
+        setChatHistory(prev => [
           ...prev,
-          { role: "assistant", content: chatAnswer },
+          { role: "assistant", content: data.chatAnswer },
         ]);
       }
 
-      // Update document content if generated content exists
-      if (generatedContent) {
-        setContent(generatedContent);
-        setEditorKey((k) => k + 1); // Force RichTextEditor to remount with new content
-        handleContentChange(generatedContent);
+      if (data.generatedContent) {
+        handleContentChange(data.generatedContent);
       }
     } catch (error) {
       console.error("Chat error:", error);
@@ -307,8 +302,9 @@ export default function DocumentEditor({
     } finally {
       setIsStreaming(false);
     }
-  };
+  }, [document, content, handleContentChange]);
 
+  // Loading states
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#EEF0FF]">
@@ -321,7 +317,7 @@ export default function DocumentEditor({
   }
 
   if (!user) {
-    return null; // Will redirect to login
+    return null;
   }
 
   if (isLoading) {
@@ -357,11 +353,7 @@ export default function DocumentEditor({
   }
 
   // Show loading state when executing initial prompt
-  if (
-    isStreaming &&
-    hasExecutedInitialPrompt &&
-    (!content || content.trim() === "")
-  ) {
+  if (isExecuting && (!content || content.trim() === "")) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#EEF0FF]">
         <div className="text-center">
@@ -387,9 +379,7 @@ export default function DocumentEditor({
           />
         </div>
 
-        {/* Responsive grid: editor wide, chat fixed on desktop */}
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6 relative">
-          {/* Editor Panel */}
           <Card className="p-4 md:p-6 w-full min-w-0">
             <h2 className="text-xl font-semibold text-[#0B0D17] mb-4">
               Editor
@@ -402,7 +392,6 @@ export default function DocumentEditor({
             />
           </Card>
 
-          {/* Chat Panel */}
           <AIChatPanel
             onChatSubmit={handleChatSubmit}
             chatHistory={chatHistory}
