@@ -115,8 +115,6 @@ export class DocumentService {
         downloads: 0,
       };
 
-      console.log("Creating document with data:", documentData);
-
       const { data: document, error } = await supabase
         .from("documents")
         .insert(documentData)
