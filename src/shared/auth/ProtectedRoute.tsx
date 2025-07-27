@@ -1,7 +1,7 @@
 "use client";
 
-import { userHasPermission, userHasRole } from "@/lib/auth/utils";
-import type { UserProfile, UserRole } from "@/lib/types/auth";
+import { userHasPermission, userHasRole } from "@/shared/auth/utils";
+import type { UserProfile, UserRole } from "@/shared/types/auth";
 import {
   createClientComponentClient,
   type User,

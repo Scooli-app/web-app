@@ -1,9 +1,9 @@
+import type { LessonPlanForm, PaginatedResponse } from "@/shared/types";
 import type {
   LessonPlan,
-  LessonPlanForm,
-  PaginatedResponse,
-} from "@/lib/types";
-import { supabase } from "./client";
+  LessonActivity,
+} from "@/shared/types/domain/lesson-plan";
+import { supabase } from "../client";
 
 export interface CreateLessonPlanData extends LessonPlanForm {
   user_id: string;
@@ -233,8 +233,9 @@ export class LessonPlanService {
         throw new Error("Lesson plan not found");
       }
 
-      const updatedActivities = lessonPlan.activities.map((activity) =>
-        activity.id === activityId ? { ...activity, ...updates } : activity
+      const updatedActivities = lessonPlan.activities.map(
+        (activity: LessonActivity) =>
+          activity.id === activityId ? { ...activity, ...updates } : activity
       );
 
       const { error } = await supabase
@@ -267,7 +268,7 @@ export class LessonPlanService {
       }
 
       const updatedActivities = lessonPlan.activities.filter(
-        (activity) => activity.id !== activityId
+        (activity: LessonActivity) => activity.id !== activityId
       );
 
       const { error } = await supabase

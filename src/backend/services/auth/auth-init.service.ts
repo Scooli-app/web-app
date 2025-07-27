@@ -1,11 +1,21 @@
-import type { User } from "@/lib/types";
+import type { User, UserProfile } from "@/shared/types";
 import { AuthService } from "./auth.service";
-import { UserProfileService, type UserProfile } from "./user-profile.service";
+import { UserProfileService } from "../users/user-profile.service";
+
+interface AuthSession {
+  user?: {
+    id: string;
+    email: string;
+    user_metadata: Record<string, unknown>;
+    created_at: string;
+    updated_at: string;
+  };
+}
 
 export interface AuthState {
   user: User | null;
   profile: UserProfile | null;
-  session: unknown | null;
+  session: AuthSession | null;
   isAuthenticated: boolean;
 }
 
@@ -19,7 +29,7 @@ export class AuthInitService {
     try {
       // Initialize auth and get subscription
       const subscription = await AuthService.initializeAuth(
-        async (user: User | null, session: unknown) => {
+        async (user: User | null, session: AuthSession | null) => {
           let profile: UserProfile | null = null;
 
           if (user) {

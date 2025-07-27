@@ -55,7 +55,7 @@ export const useAuthStore = create<AuthState>()(
         await AuthInitService.initializeAuth((state) => {
           set({
             user: state.user,
-            profile: state.profile,
+            profile: state.profile as UserProfile,
             session: state.session,
             isAuthenticated: state.isAuthenticated,
             isLoading: false,
@@ -284,7 +284,7 @@ export const useAuthStore = create<AuthState>()(
     setAuthState: (state: AuthStateData) => {
       set({
         user: state.user,
-        profile: state.profile,
+        profile: state.profile as UserProfile,
         session: state.session,
         isAuthenticated: !!state.user,
         isInitialized: true,

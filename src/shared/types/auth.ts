@@ -46,18 +46,15 @@ export type UserRole = "teacher" | "curator" | "admin" | "super_admin";
 export interface UserProfile {
   id: string;
   email: string;
-  full_name?: string;
-  role_id: number;
+  full_name: string | null;
+  role_name: string;
+  role_id?: string;
   credits_remaining: number;
   xp_points: number;
   is_pro: boolean;
   is_active: boolean;
   created_at: string;
   updated_at: string;
-  // Extended fields from views/joins
-  role_name?: string;
-  role_display_name?: string;
-  hierarchy_level?: number;
   permissions?: string[];
 }
 
@@ -67,25 +64,6 @@ export interface UserProfile {
 export interface AuthContext {
   user: User | null;
   profile: UserProfile | null;
-  permissions: string[];
-  loading: boolean;
-  hasPermission: (permission: string) => boolean;
-  hasAnyPermission: (permissions: string[]) => boolean;
-  hasAllPermissions: (permissions: string[]) => boolean;
-  isAuthenticated: boolean;
-}
-
-/**
- * Auth context data
- */
-export interface AuthContext {
-  user: User | null;
-  profile: UserProfile | null;
-  permissions: string[];
-  loading: boolean;
-  hasPermission: (permission: string) => boolean;
-  hasAnyPermission: (permissions: string[]) => boolean;
-  hasAllPermissions: (permissions: string[]) => boolean;
   isAuthenticated: boolean;
 }
 
@@ -94,20 +72,20 @@ export interface AuthContext {
  */
 export interface RouteConfig {
   path: string;
-  requiresAuth?: boolean;
-  requiredPermissions?: string[]; // Array of permission names
-  requiresAllPermissions?: boolean; // Default true - requires ALL permissions
+  requiresAuth: boolean;
+  requiredPermissions?: string[];
   redirectTo?: string;
+  requiresAllPermissions?: boolean;
 }
 
 /**
  * API protection configuration
  */
 export interface APIProtectionConfig {
-  requiresAuth?: boolean;
-  requiredPermissions?: readonly string[];
-  requiresAllPermissions?: boolean; // Default true
-  allowedEmails?: readonly string[]; // For specific account access
+  requiresAuth: boolean;
+  allowedEmails?: string[];
+  requiredPermissions?: string[];
+  requiresAllPermissions?: boolean;
 }
 
 /**

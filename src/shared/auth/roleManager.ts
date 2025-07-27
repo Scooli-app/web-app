@@ -1,4 +1,4 @@
-import type { UserProfile, UserRole } from "@/lib/types/auth";
+import type { UserProfile, UserRole } from "@/shared/types/auth";
 import { createClient } from "@supabase/supabase-js";
 
 /**

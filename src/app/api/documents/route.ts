@@ -1,9 +1,10 @@
-import { validateAPIRequest } from "@/lib/auth/apiAuth";
-import { API_CONFIGS } from "@/lib/auth/utils";
+import { validateAPIRequest } from "@/shared/auth/apiAuth";
+import { API_CONFIGS } from "@/shared/auth/utils";
+import type { APIProtectionConfig } from "@/shared/types/auth";
 import type {
   CreateDocumentRequest,
   DeleteDocumentRequest,
-} from "@/lib/types/documents";
+} from "@/shared/types/documents";
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 
@@ -14,7 +15,7 @@ export async function GET(request: NextRequest) {
   // Validate authentication and permissions
   const validation = await validateAPIRequest(
     request,
-    API_CONFIGS.USER_DOCUMENTS
+    API_CONFIGS.USER_DOCUMENTS as unknown as APIProtectionConfig
   );
 
   if (!validation.success) {
@@ -166,7 +167,7 @@ export async function DELETE(request: NextRequest) {
   // Validate authentication and permissions
   const validation = await validateAPIRequest(
     request,
-    API_CONFIGS.DELETE_DOCUMENTS
+    API_CONFIGS.DELETE_DOCUMENTS as unknown as APIProtectionConfig
   );
 
   if (!validation.success) {

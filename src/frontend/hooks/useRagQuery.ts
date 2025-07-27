@@ -2,7 +2,7 @@ import {
   processRagStream,
   sendRagQuery,
   validateQuestion,
-} from "@/shared/utils/rag-utils";
+} from "@/backend/services/rag/rag.service";
 import { useCallback, useState } from "react";
 
 interface UseRagQueryReturn {

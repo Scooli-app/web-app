@@ -1,6 +1,10 @@
-import { createAuthClient } from "./client";
+import type { UserProfile as SharedUserProfile } from "@/shared/types/auth";
+import { createAuthClient } from "../client";
 
-export interface UserProfile {
+// Extend the shared UserProfile type with any service-specific fields
+export interface UserProfile extends Omit<SharedUserProfile, "role_id"> {
+  // The role_id field will be added by the database trigger
+  // Include all required fields from SharedUserProfile except role_id
   id: string;
   email: string;
   full_name: string | null;

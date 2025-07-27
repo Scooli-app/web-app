@@ -1,4 +1,4 @@
-import type { RouteConfig } from "@/lib/types/auth";
+import type { RouteConfig } from "@/shared/types/auth";
 
 /**
  * Route protection configuration

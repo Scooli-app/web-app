@@ -1,7 +1,7 @@
 import {
   DocumentService,
   type UpdateDocumentData,
-} from "@/services/api/document.service";
+} from "@/backend/services/documents/document.service";
 import { NextResponse, type NextRequest } from "next/server";
 
 /**

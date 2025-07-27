@@ -1,4 +1,4 @@
-import { RagService } from "@/lib/api/rag-service";
+import { RagService } from "@/backend/services/rag/rag.service";
 import { NextResponse } from "next/server";
 
 /**

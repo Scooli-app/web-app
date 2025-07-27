@@ -1,9 +1,20 @@
-import type { User } from "@/lib/types";
-import { createAuthClient, supabase } from "./client";
+import type { User } from "@/shared/types";
+import { createAuthClient, supabase } from "../client";
+import type { Session } from "@supabase/supabase-js";
+
+interface AuthSession {
+  user?: {
+    id: string;
+    email: string;
+    user_metadata: Record<string, unknown>;
+    created_at: string;
+    updated_at: string;
+  };
+}
 
 export interface AuthResponse {
   user: User | null;
-  session: unknown;
+  session: AuthSession | null;
   error?: string;
 }
 
@@ -43,7 +54,7 @@ export class AuthService {
               authData.user as unknown as Record<string, unknown>
             )
           : null,
-        session: authData.session,
+        session: authData.session as AuthSession,
       };
     } catch (error) {
       return {
@@ -74,7 +85,7 @@ export class AuthService {
               authData.user as unknown as Record<string, unknown>
             )
           : null,
-        session: authData.session,
+        session: authData.session as AuthSession,
       };
     } catch (error) {
       return {
@@ -181,7 +192,7 @@ export class AuthService {
 
   // Initialize auth state and listen for changes
   static async initializeAuth(
-    onAuthChange: (user: User | null, session: unknown) => void
+    onAuthChange: (user: User | null, session: AuthSession | null) => void
   ) {
     const authClient = createAuthClient();
 
@@ -193,7 +204,7 @@ export class AuthService {
       const user = await this.transformUser(
         session.user as unknown as Record<string, unknown>
       );
-      onAuthChange(user, session);
+      onAuthChange(user, session as AuthSession);
     } else {
       onAuthChange(null, null);
     }
@@ -201,16 +212,18 @@ export class AuthService {
     // Listen for auth changes
     const {
       data: { subscription },
-    } = authClient.auth.onAuthStateChange(async (event, session) => {
-      if (session?.user) {
-        const user = await this.transformUser(
-          session.user as unknown as Record<string, unknown>
-        );
-        onAuthChange(user, session);
-      } else {
-        onAuthChange(null, null);
+    } = authClient.auth.onAuthStateChange(
+      async (_event: string, session: Session | null) => {
+        if (session?.user) {
+          const user = await this.transformUser(
+            session.user as unknown as Record<string, unknown>
+          );
+          onAuthChange(user, session as AuthSession);
+        } else {
+          onAuthChange(null, null);
+        }
       }
-    });
+    );
 
     return subscription;
   }

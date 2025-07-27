@@ -1,9 +1,9 @@
+import { getRouteConfig, isProtectedRoute } from "@/shared/auth/routeConfig";
+import { userHasAllPermissions, userHasPermission } from "@/shared/auth/utils";
+import type { UserProfile } from "@/shared/types/auth";
 import { createMiddlewareClient } from "@supabase/auth-helpers-nextjs";
 import { createClient, type Session } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
-import type { UserProfile } from "../services";
-import { getRouteConfig, isProtectedRoute } from "@/shared/auth/routeConfig";
-import { userHasAllPermissions, userHasPermission } from "@/shared/auth/utils";
 
 const CACHE_DURATION = 30 * 1000; // 30 seconds
 
@@ -141,7 +141,7 @@ export async function middleware(req: NextRequest) {
       const requiresAll = routeConfig.requiresAllPermissions !== false; // Default true
       const hasPermissions = requiresAll
         ? userHasAllPermissions(profile, routeConfig.requiredPermissions)
-        : routeConfig.requiredPermissions.some((perm: string) =>
+        : routeConfig.requiredPermissions.some((perm) =>
             userHasPermission(profile, perm)
           );
 
@@ -177,7 +177,7 @@ export async function middleware(req: NextRequest) {
         const requiresAll = routeConfig.requiresAllPermissions !== false; // Default true
         const hasPermissions = requiresAll
           ? userHasAllPermissions(profile, routeConfig.requiredPermissions)
-          : routeConfig.requiredPermissions.some((perm: string) =>
+          : routeConfig.requiredPermissions.some((perm) =>
               userHasPermission(profile, perm)
             );
 

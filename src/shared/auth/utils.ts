@@ -1,4 +1,4 @@
-import type { APIProtectionConfig, UserProfile } from "@/lib/types/auth";
+import type { APIProtectionConfig, UserProfile } from "@/shared/types/auth";
 import {
   createServerComponentClient,
   type User,

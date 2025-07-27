@@ -1,5 +1,5 @@
-import type { APIProtectionConfig, UserProfile } from "@/lib/types/auth";
-import { validateAPIAccess } from "@/lib/auth/utils";
+import type { APIProtectionConfig, UserProfile } from "@/shared/types/auth";
+import { validateAPIAccess } from "@/shared/auth/utils";
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 

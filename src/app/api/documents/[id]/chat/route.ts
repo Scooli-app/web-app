@@ -1,5 +1,5 @@
-import { LESSON_PLAN_PROMPTS } from "@/lib/prompts/lesson-plan-prompts";
-import { TEST_QUIZ_PROMPTS } from "@/lib/prompts/test-quiz-prompts";
+import { LESSON_PLAN_PROMPTS } from "@/shared/prompts/lesson-plan-prompts";
+import { TEST_QUIZ_PROMPTS } from "@/shared/prompts/test-quiz-prompts";
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 import OpenAI from "openai";
