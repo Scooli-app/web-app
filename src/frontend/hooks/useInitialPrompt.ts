@@ -77,7 +77,6 @@ export function useInitialPrompt(
     executePrompt,
   ]);
 
-  // Execute pending prompt if available
   useEffect(() => {
     if (
       !isExecuting &&
