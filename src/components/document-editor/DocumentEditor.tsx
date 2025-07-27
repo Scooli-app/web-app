@@ -3,8 +3,7 @@
 import { useSupabase } from "@/components/providers/SupabaseProvider";
 import { Card } from "@/components/ui/card";
 import RichTextEditor from "@/components/ui/rich-text-editor";
-import { DocumentService } from "@/lib/services/document-service";
-import type { Document } from "@/lib/types/documents";
+import type { Document } from "@/lib/types";
 import { useDocumentStore } from "@/stores/document.store";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { Loader2 } from "lucide-react";
@@ -48,12 +47,18 @@ export default function DocumentEditor({
   const [hasExecutedInitialPrompt, setHasExecutedInitialPrompt] =
     useState(false);
 
-  const documentService = useRef(new DocumentService());
   const saveTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
   const lastSavedContent = useRef<string>("");
 
-  const { pendingInitialPrompt, pendingDocumentId, clearPendingInitialPrompt } =
-    useDocumentStore();
+  const { 
+    pendingInitialPrompt, 
+    pendingDocumentId, 
+    clearPendingInitialPrompt,
+    fetchDocument,
+    updateDocument: updateDocumentInStore,
+    currentDocument,
+    isLoading: storeLoading
+  } = useDocumentStore();
 
   // Load existing document
   useEffect(() => {
@@ -64,21 +69,25 @@ export default function DocumentEditor({
 
   const loadDocument = async (id: string) => {
     try {
-      setIsLoading(true);
-      const doc = await documentService.current.getDocument(id);
-      if (doc) {
-        setDocument(doc);
-        setContent(doc.content || "");
-      } else {
-        setError("Documento não encontrado");
-      }
+      await fetchDocument(id);
     } catch (error) {
       console.error("Failed to load document:", error);
       setError("Erro ao carregar o documento");
-    } finally {
-      setIsLoading(false);
     }
   };
+
+  // Listen to store changes for current document
+  useEffect(() => {
+    if (currentDocument) {
+      setDocument(currentDocument);
+      setContent(currentDocument.content || "");
+      setIsLoading(false);
+    }
+  }, [currentDocument]);
+
+  useEffect(() => {
+    setIsLoading(storeLoading);
+  }, [storeLoading]);
 
   // Initialize lastSavedContent when document is loaded
   useEffect(() => {
@@ -87,25 +96,6 @@ export default function DocumentEditor({
       setContent(document.content);
     }
   }, [document]);
-
-  // Check for pending initial prompt and execute it once
-  useEffect(() => {
-    if (
-      document &&
-      !hasExecutedInitialPrompt &&
-      pendingInitialPrompt &&
-      pendingDocumentId === documentId &&
-      (!document.content || document.content.trim() === "")
-    ) {
-      executeInitialPrompt(pendingInitialPrompt);
-    }
-  }, [
-    document,
-    pendingInitialPrompt,
-    pendingDocumentId,
-    documentId,
-    hasExecutedInitialPrompt,
-  ]);
 
   const executeInitialPrompt = async (prompt: string) => {
     if (!document) {
@@ -162,6 +152,26 @@ export default function DocumentEditor({
     }
   };
 
+  // Check for pending initial prompt and execute it once
+  useEffect(() => {
+    if (
+      document &&
+      !hasExecutedInitialPrompt &&
+      pendingInitialPrompt &&
+      pendingDocumentId === documentId &&
+      (!document.content || document.content.trim() === "")
+    ) {
+      executeInitialPrompt(pendingInitialPrompt);
+    }
+  }, [
+    document,
+    pendingInitialPrompt,
+    pendingDocumentId,
+    documentId,
+    hasExecutedInitialPrompt,
+    executeInitialPrompt,
+  ]);
+
   // Save content when it changes
   useEffect(() => {
     if (
@@ -179,13 +189,10 @@ export default function DocumentEditor({
       saveTimeoutRef.current = setTimeout(async () => {
         try {
           setIsSaving(true);
-          const updatedDoc = await documentService.current.updateDocument(
-            document.id,
-            {
-              content,
-            }
-          );
-          setDocument(updatedDoc);
+          await updateDocumentInStore({
+            id: document.id,
+            content,
+          });
           lastSavedContent.current = content; // Update last saved content
         } catch (_error) {
           setError("Erro ao guardar o documento");
@@ -214,13 +221,10 @@ export default function DocumentEditor({
 
     try {
       setIsSaving(true);
-      const updatedDoc = await documentService.current.updateDocument(
-        document.id,
-        {
-          title: newTitle,
-        }
-      );
-      setDocument(updatedDoc);
+      await updateDocumentInStore({
+        id: document.id,
+        title: newTitle,
+      });
     } catch (error) {
       console.error("Failed to save title:", error);
       setError("Erro ao guardar o título");

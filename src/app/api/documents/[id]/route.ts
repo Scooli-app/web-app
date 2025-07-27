@@ -1,8 +1,8 @@
-import { DocumentService } from "@/lib/services/document-service";
-import type { UpdateDocumentRequest } from "@/lib/types/documents";
+import {
+  DocumentService,
+  type UpdateDocumentData,
+} from "@/services/api/document.service";
 import { NextResponse, type NextRequest } from "next/server";
-
-const documentService = new DocumentService(true); // Use server-side client
 
 /**
  * GET /api/documents/[id] - Get a specific document
@@ -13,7 +13,7 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const document = await documentService.getDocument(id);
+    const document = await DocumentService.getDocument(id);
 
     if (!document) {
       return NextResponse.json(
@@ -41,9 +41,16 @@ export async function PUT(
 ) {
   try {
     const { id } = await params;
-    const updates: UpdateDocumentRequest = await req.json();
+    const updates: Partial<UpdateDocumentData> = await req.json();
+    updates.id = id; // Add the ID from the URL parameter
 
-    const document = await documentService.updateDocument(id, updates);
+    const result = await DocumentService.updateDocument(
+      updates as UpdateDocumentData
+    );
+
+    if (result.error) {
+      return NextResponse.json({ error: result.error }, { status: 400 });
+    }
     return NextResponse.json(document);
   } catch (error) {
     console.error("Error updating document:", error);
@@ -63,7 +70,11 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    await documentService.deleteDocument(id);
+    const result = await DocumentService.deleteDocument(id);
+
+    if (result.error) {
+      return NextResponse.json({ error: result.error }, { status: 400 });
+    }
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error deleting document:", error);
