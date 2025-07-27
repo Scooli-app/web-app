@@ -2,6 +2,25 @@
  * Main types index - exports all types from lib/types
  */
 
+// Domain types
+export type {
+  Document,
+  DocumentType,
+  DocumentMetadata,
+  LessonPlan,
+  LessonPlanMetadata,
+  LessonActivity,
+} from "./domain/document";
+
+// API types
+export type {
+  ApiResponse,
+  PaginatedResponse,
+  CreateDocumentRequest,
+  UpdateDocumentRequest,
+  DeleteDocumentRequest,
+} from "./api/document";
+
 // Auth types
 export type {
   APIProtectionConfig,
@@ -14,22 +33,6 @@ export type {
   UserProfile,
   UserRole,
 } from "./auth";
-
-// Document types
-export type {
-  CreateDocumentRequest,
-  DeleteDocumentRequest,
-  Document,
-  DocumentMetadata,
-  DocumentType,
-  LessonActivity,
-  LessonPlan,
-  LessonPlanMetadata,
-  UpdateDocumentRequest,
-} from "./documents";
-
-// API types
-export type { ApiResponse, PaginatedResponse } from "./api";
 
 // UI types
 export type { LessonPlanForm, SearchFilters, UIState } from "./ui";

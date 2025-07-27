@@ -1,5 +1,5 @@
-import type { Document, PaginatedResponse } from "@/lib/types";
-import { supabase } from "./client";
+import type { Document, PaginatedResponse } from "@/shared/types";
+import { supabase } from "../../services/client";
 
 export interface CreateDocumentData {
   title: string;

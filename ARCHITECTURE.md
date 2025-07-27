@@ -1,342 +1,138 @@
-# Scooli Architecture Documentation
+# Scooli Code Organization
 
-## 🏗️ **Architecture Overview**
-
-Scooli follows a **clean architecture** pattern with clear separation of concerns, organized into distinct layers:
+## Directory Structure
 
 ```
 src/
-├── types/           # TypeScript type definitions
-├── services/        # API services and business logic
-├── stores/          # Zustand state management
-├── components/      # React components
-├── hooks/           # Custom React hooks
-├── lib/             # Utilities and helpers
-├── migrations/      # Database migrations
-└── app/             # Next.js app router pages
+├── app/                    # Next.js app router pages (remains unchanged)
+│   ├── api/               # API route handlers
+│   └── ...                # Page components
+│
+├── backend/               # Backend-specific code
+│   ├── services/          # Backend services
+│   │   ├── auth/         # Authentication services
+│   │   ├── documents/    # Document management
+│   │   └── users/        # User management
+│   ├── middleware/       # Backend middleware
+│   └── utils/           # Backend utilities
+│
+├── frontend/             # Frontend-specific code
+│   ├── components/      # React components
+│   │   ├── ui/         # UI components
+│   │   └── features/   # Feature components
+│   ├── hooks/          # React hooks
+│   ├── stores/         # State management
+│   └── utils/          # Frontend utilities
+│
+└── shared/              # Code shared between frontend and backend
+    ├── config/         # Shared configuration
+    │   ├── constants.ts
+    │   └── env.ts
+    ├── types/          # TypeScript type definitions
+    │   ├── api/       # API types (requests/responses)
+    │   ├── domain/    # Domain models
+    │   └── index.ts   # Type exports
+    └── utils/         # Shared utilities
+        ├── date.ts
+        └── validation.ts
 ```
 
-## 📁 **Folder Structure**
+## Code Organization Principles
 
-### **1. Types (`/src/types/`)**
-Centralized TypeScript definitions for all data models:
+### Backend (`src/backend/`)
+- Contains all server-side logic
+- Services that interact with the database
+- API implementation details
+- Server-side utilities and helpers
 
+### Frontend (`src/frontend/`)
+- React components and hooks
+- State management (stores)
+- UI-specific utilities
+- Client-side features
+
+### Shared (`src/shared/`)
+- TypeScript interfaces and types
+- Constants used across the application
+- Utility functions used by both frontend and backend
+- Configuration shared between client and server
+
+## Import Rules
+
+1. Backend code can import from:
+   - `src/backend/*`
+   - `src/shared/*`
+
+2. Frontend code can import from:
+   - `src/frontend/*`
+   - `src/shared/*`
+
+3. Shared code can ONLY import from:
+   - `src/shared/*`
+
+4. App directory can import from:
+   - `src/frontend/*`
+   - `src/backend/*` (only in API routes)
+   - `src/shared/*`
+
+## Type Organization
+
+### API Types (`src/shared/types/api/`)
+- Request/Response interfaces
+- API error types
+- API utility types
+
+### Domain Types (`src/shared/types/domain/`)
+- Business model interfaces
+- Shared enums
+- Domain-specific types
+
+### Frontend Types (`src/frontend/types/`)
+- Component prop types
+- Store types
+- UI-specific types
+
+## Examples
+
+### Backend Service
 ```typescript
-// Core entities
-- User
-- UserProfile
-- Document
-- LessonPlan
-- CommunityResource
+// src/backend/services/documents/document.service.ts
+import { Document } from '@/shared/types/domain';
+import { CreateDocumentRequest } from '@/shared/types/api';
 
-// API responses
-- ApiResponse<T>
-- PaginatedResponse<T>
-
-// UI state
-- UIState
-- AuthState
-- SearchFilters
-```
-
-### **2. Services (`/src/services/`)**
-API layer with business logic separation:
-
-```
-services/
-├── api/
-│   ├── client.ts              # Base API client & error handling
-│   ├── auth.service.ts        # Authentication operations
-│   ├── auth-init.service.ts   # Auth initialization & session management
-│   ├── user-profile.service.ts # User profile operations
-│   ├── document.service.ts    # Document CRUD operations
-│   └── lesson-plan.service.ts # Lesson plan operations
-└── index.ts                   # Service exports
-```
-
-**Key Features:**
-- **Error Handling**: Centralized error management with graceful fallbacks
-- **Type Safety**: Full TypeScript support with proper interfaces
-- **Consistent API**: Standardized request/response patterns
-- **Supabase Integration**: Direct database operations with proper typing
-- **Auth Context**: Client-side Supabase client for proper auth context
-- **Graceful Fallbacks**: Handle missing profiles and auth errors gracefully
-
-### **3. Stores (`/src/stores/`)**
-Zustand-based state management:
-
-```
-stores/
-├── auth.store.ts      # User authentication state
-├── document.store.ts  # Document management state
-├── ui.store.ts        # UI state (sidebar, theme, etc.)
-└── index.ts          # Store exports & types
-```
-
-**Store Features:**
-- **Reactive**: Automatic re-renders on state changes
-- **Persistent**: Optional persistence with middleware
-- **Type Safe**: Full TypeScript support
-- **Modular**: Separate stores for different domains
-- **Centralized Auth**: Single source of truth for auth state
-- **No Refetching**: Avoid repeated API calls on route changes
-
-### **4. Components (`/src/components/`)**
-Organized by feature and complexity:
-
-```
-components/
-├── layout/           # Layout components (Sidebar, Header, MainLayout)
-├── forms/            # Form components (Auth, QuestionForm)
-├── ui/               # Base UI components (shadcn/ui)
-├── lesson-plan/      # Lesson plan specific components
-├── providers/        # Context providers (AuthProvider, SupabaseProvider)
-└── icons/            # Custom icon components
-```
-
-## 🔄 **Data Flow**
-
-### **1. Authentication Flow**
-```typescript
-// Centralized auth initialization
-AuthInitService.initializeAuth((state) => {
-  // Handle auth state changes
-  // User profile fetched automatically
-});
-
-// In components
-const { user, profile, isAuthenticated } = useAuthStore();
-```
-
-### **2. Service Layer Pattern**
-```typescript
-// Service methods return consistent response patterns
-const result = await DocumentService.createDocument(data, userId);
-if (result.error) {
-  // Handle error gracefully
-  return;
+export class DocumentService {
+  async createDocument(data: CreateDocumentRequest): Promise<Document> {
+    // Implementation
+  }
 }
-// Use result.document
 ```
 
-### **3. Store Integration**
+### Frontend Component
 ```typescript
-// Stores use services and manage state
-const { createDocument, documents } = useDocumentStore();
+// src/frontend/components/features/documents/DocumentEditor.tsx
+import { Document } from '@/shared/types/domain';
+import { useDocumentStore } from '@/frontend/stores/document.store';
 
-const handleCreate = async () => {
-  await createDocument(data, userId);
-  // State automatically updates
-};
+export function DocumentEditor({ document }: { document: Document }) {
+  // Implementation
+}
 ```
 
-### **4. Component Usage**
+### Shared Types
 ```typescript
-// Components consume stores
-const { user, signIn } = useAuthStore();
-const { documents, fetchDocuments } = useDocumentStore();
+// src/shared/types/domain/document.ts
+export interface Document {
+  id: string;
+  title: string;
+  content: string;
+  // ...
+}
 ```
 
-## 🎯 **Key Benefits**
+## Migration Strategy
 
-### **1. Performance**
-- **Selective Re-renders**: Zustand only re-renders components that use changed state
-- **Lazy Loading**: Services can be loaded on-demand
-- **Optimistic Updates**: UI updates immediately, syncs with server
-- **No Refetching**: Auth state initialized once, no repeated API calls
-
-### **2. Scalability**
-- **Modular Architecture**: Easy to add new features
-- **Type Safety**: Prevents runtime errors
-- **Consistent Patterns**: Standardized across the app
-- **Database Triggers**: Automatic user profile creation
-
-### **3. Maintainability**
-- **Clear Separation**: Each layer has a specific responsibility
-- **Testable**: Services and stores can be unit tested
-- **Documented**: Clear interfaces and patterns
-- **Error Handling**: Graceful fallbacks for all edge cases
-
-### **4. Developer Experience**
-- **TypeScript**: Full type safety and IntelliSense
-- **Hot Reload**: Fast development with state persistence
-- **Debugging**: Zustand DevTools integration
-- **Clean Logs**: Proper error handling prevents console spam
-
-## 🛠️ **Usage Examples**
-
-### **Authentication Flow**
-```typescript
-// In component
-const { user, profile, signIn, isLoading } = useAuthStore();
-
-const handleLogin = async () => {
-  await signIn(email, password);
-  // User and profile state automatically updates
-};
-```
-
-### **Document Management**
-```typescript
-// In component
-const { documents, createDocument, fetchDocuments } = useDocumentStore();
-
-useEffect(() => {
-  fetchDocuments(1, 10, { is_public: true });
-}, []);
-
-const handleCreate = async () => {
-  await createDocument(data, userId);
-  // Documents list automatically updates
-};
-```
-
-### **UI State Management**
-```typescript
-// In component
-const { sidebarCollapsed, setSidebarCollapsed } = useUIStore();
-
-const toggleSidebar = () => {
-  setSidebarCollapsed(!sidebarCollapsed);
-};
-```
-
-### **User Profile Management**
-```typescript
-// In component
-const { profile, updateProfile } = useAuthStore();
-
-const handleUpdateProfile = async () => {
-  await updateProfile({ full_name: "New Name" });
-  // Profile state automatically updates
-};
-```
-
-## 🔧 **Configuration**
-
-### **Environment Variables**
-```env
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-```
-
-### **Database Setup**
-```sql
--- Automatic user profile creation via trigger
-CREATE TRIGGER on_auth_user_created
-  AFTER INSERT ON auth.users
-  FOR EACH ROW EXECUTE FUNCTION handle_new_user();
-```
-
-### **Store Persistence** (Optional)
-```typescript
-// Add to stores for persistence
-import { persist } from 'zustand/middleware';
-
-export const useAuthStore = create<AuthState>()(
-  persist(
-    (set, get) => ({
-      // ... store implementation
-    }),
-    {
-      name: 'auth-storage',
-    }
-  )
-);
-```
-
-## 🧪 **Testing Strategy**
-
-### **Unit Tests**
-- **Services**: Test API calls and error handling
-- **Stores**: Test state updates and actions
-- **Components**: Test UI interactions
-
-### **Integration Tests**
-- **End-to-End**: Test complete user flows
-- **API Integration**: Test service layer with real API
-- **Auth Flow**: Test authentication and profile creation
-
-## 📈 **Performance Optimizations**
-
-### **1. Store Optimizations**
-- **Selective Subscriptions**: Only subscribe to needed state
-- **Memoization**: Use React.memo for expensive components
-- **Batch Updates**: Group related state changes
-- **Auth Caching**: Single auth initialization, no refetching
-
-### **2. Service Optimizations**
-- **Caching**: Cache frequently accessed data
-- **Debouncing**: Debounce search requests
-- **Pagination**: Load data in chunks
-- **Graceful Errors**: Handle missing data without breaking
-
-### **3. Component Optimizations**
-- **Code Splitting**: Lazy load routes and components
-- **Image Optimization**: Use Next.js Image component
-- **Bundle Analysis**: Monitor bundle size
-- **Accessibility**: Proper ARIA labels and keyboard navigation
-
-## 🚀 **Deployment**
-
-### **Build Process**
-```bash
-npm run build    # TypeScript compilation
-npm run lint     # Code quality checks
-npm run test     # Run tests
-```
-
-### **Environment Setup**
-- **Development**: Local development with hot reload
-- **Staging**: Pre-production testing
-- **Production**: Optimized build with CDN
-
-## 📚 **Best Practices**
-
-### **1. State Management**
-- Keep stores focused and small
-- Use selectors for derived state
-- Avoid storing UI state in global stores
-- Centralize auth state to prevent refetching
-
-### **2. Service Layer**
-- Handle all API logic in services
-- Use consistent error handling
-- Implement proper retry logic
-- Use client-side Supabase client for auth context
-
-### **3. Type Safety**
-- Define interfaces for all data
-- Use strict TypeScript configuration
-- Avoid `any` types
-- Proper error type definitions
-
-### **4. Performance**
-- Monitor bundle size
-- Use React DevTools for profiling
-- Implement proper loading states
-- Graceful error handling
-
-### **5. Authentication**
-- Single auth initialization
-- Database triggers for profile creation
-- Graceful handling of missing profiles
-- Proper session management
-
-## 🔐 **Security & RBAC**
-
-### **Database-Level Security**
-- **RLS Policies**: Row-level security on all tables
-- **User Isolation**: Users can only access their own data
-- **Role-Based Access**: Different permissions per user role
-- **Service Role**: Admin operations use service role
-
-### **Application-Level Security**
-- **Auth Guards**: Route protection based on auth state
-- **Input Validation**: Server-side validation for all inputs
-- **Error Handling**: No sensitive data in error messages
-- **Session Management**: Proper token handling
-
----
-
-This architecture provides a **scalable, maintainable, and performant** foundation for the Scooli application, following modern React and TypeScript best practices with robust authentication and error handling. 
+1. Create the new directory structure
+2. Move files to their new locations
+3. Update import paths
+4. Verify the build works
+5. Update documentation 

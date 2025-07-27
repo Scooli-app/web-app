@@ -1,11 +1,11 @@
 "use client";
 
 
-import { Card } from "@/components/ui/card";
-import RichTextEditor from "@/components/ui/rich-text-editor";
-import { useAutoSave } from "@/hooks/useAutoSave";
-import { useDocumentManager } from "@/hooks/useDocumentManager";
-import { useInitialPrompt } from "@/hooks/useInitialPrompt";
+import { Card } from "@/frontend/components/ui/card";
+import RichTextEditor from "@/frontend/components/ui/rich-text-editor";
+import { useAutoSave } from "@/frontend/hooks/useAutoSave";
+import { useDocumentManager } from "@/frontend/hooks/useDocumentManager";
+import { useInitialPrompt } from "@/frontend/hooks/useInitialPrompt";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
