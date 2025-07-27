@@ -1,6 +1,6 @@
 "use client";
 
-import { useSupabase } from "@/components/providers/SupabaseProvider";
+
 import { Card } from "@/components/ui/card";
 import RichTextEditor from "@/components/ui/rich-text-editor";
 import { useAutoSave } from "@/hooks/useAutoSave";
@@ -35,7 +35,7 @@ export default function DocumentEditor({
   chatTitle = "AI Assistant",
   chatPlaceholder = "Faça uma pergunta ou peça ajuda...",
 }: DocumentEditorProps) {
-  const { user } = useSupabase();
+
   const router = useRouter();
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
