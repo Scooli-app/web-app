@@ -3,12 +3,13 @@
 import { useSupabase } from "@/components/providers/SupabaseProvider";
 import { Card } from "@/components/ui/card";
 import RichTextEditor from "@/components/ui/rich-text-editor";
-import type { Document } from "@/lib/types";
-import { useDocumentStore } from "@/stores/document.store";
+import { useAutoSave } from "@/hooks/useAutoSave";
+import { useDocumentManager } from "@/hooks/useDocumentManager";
+import { useInitialPrompt } from "@/hooks/useInitialPrompt";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import AIChatPanel from "./AIChatPanel";
 import DocumentTitle from "./DocumentTitle";
 
@@ -24,195 +25,6 @@ interface DocumentEditorProps {
   generateMessage: string;
   chatTitle?: string;
   chatPlaceholder?: string;
-}
-
-// Custom hook for document auto-save
-function useAutoSave(
-  document: Document | null, 
-  content: string, 
-  updateDocument: (data: { id: string; content: string }) => Promise<void>
-) {
-  const saveTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
-  const lastSavedContent = useRef<string>("");
-  const [isSaving, setIsSaving] = useState(false);
-
-  const saveContent = useCallback(async (newContent: string) => {
-    if (!document || newContent === lastSavedContent.current) {
-      return;
-    }
-
-    try {
-      setIsSaving(true);
-      await updateDocument({
-        id: document.id,
-        content: newContent,
-      });
-      lastSavedContent.current = newContent;
-    } catch (error) {
-      console.error("Auto-save failed:", error);
-    } finally {
-      setIsSaving(false);
-    }
-  }, [document, updateDocument]);
-
-  useEffect(() => {
-    if (!document || !content || content.trim() === "" || content === lastSavedContent.current) {
-      return;
-    }
-
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
-
-    saveTimeoutRef.current = setTimeout(() => {
-      saveContent(content);
-    }, 2000);
-
-    return () => {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
-    };
-  }, [content, saveContent]);
-
-  useEffect(() => {
-    if (document?.content) {
-      lastSavedContent.current = document.content;
-    }
-  }, [document]);
-
-  return { isSaving };
-}
-
-function useInitialPrompt(
-  document: Document | null,
-  documentId: string,
-  generateMessage: string,
-  onContentChange: (content: string) => void
-) {
-  const [isExecuting, setIsExecuting] = useState(false);
-  const [hasExecuted, setHasExecuted] = useState(false);
-  const { pendingInitialPrompt, pendingDocumentId, clearPendingInitialPrompt } = useDocumentStore();
-
-  const executePrompt = useCallback(async (prompt: string) => {
-    if (!document || hasExecuted) {
-      return;
-    }
-
-    try {
-      setIsExecuting(true);
-      setHasExecuted(true);
-
-      const supabase = createClientComponentClient();
-      const { data: { session } } = await supabase.auth.getSession();
-
-      const headers: HeadersInit = {
-        "Content-Type": "application/json",
-      };
-
-      if (session?.access_token) {
-        headers.Authorization = `Bearer ${session.access_token}`;
-      }
-
-      const response = await fetch(`/api/documents/${document.id}/chat`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({
-          message: `${generateMessage}: ${prompt}`,
-          currentContent: "",
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to get response");
-      }
-
-      const data = await response.json();
-
-      if (data.generatedContent) {
-        onContentChange(data.generatedContent);
-      }
-
-      clearPendingInitialPrompt();
-    } catch (error) {
-      console.error("Failed to execute initial prompt:", error);
-      clearPendingInitialPrompt();
-      setHasExecuted(false); // Allow retry
-    } finally {
-      setIsExecuting(false);
-    }
-  }, [document, hasExecuted, generateMessage, onContentChange, clearPendingInitialPrompt]);
-
-  // Execute prompt when conditions are met
-  useEffect(() => {
-    const shouldExecute = 
-      document &&
-      !hasExecuted &&
-      pendingInitialPrompt &&
-      pendingDocumentId === documentId &&
-      (!document.content || document.content.trim() === "");
-
-    if (shouldExecute) {
-      executePrompt(pendingInitialPrompt);
-    }
-  }, [document, hasExecuted, pendingInitialPrompt, pendingDocumentId, documentId, executePrompt]);
-
-  return { isExecuting };
-}
-
-// Custom hook for document management
-function useDocumentManager(documentId: string) {
-  const [content, setContent] = useState("");
-  const [editorKey, setEditorKey] = useState(0);
-  const { 
-    fetchDocument, 
-    updateDocument, 
-    currentDocument, 
-    isLoading: storeLoading 
-  } = useDocumentStore();
-
-  useEffect(() => {
-    if (documentId) {
-      fetchDocument(documentId);
-    }
-  }, [documentId, fetchDocument]);
-
-  useEffect(() => {
-    if (currentDocument) {
-      setContent(currentDocument.content || "");
-      setEditorKey((prev) => prev + 1);
-    }
-  }, [currentDocument]);
-
-  const handleContentChange = useCallback((newContent: string) => {
-    setContent(newContent);
-  }, []);
-
-  const handleTitleSave = useCallback(async (newTitle: string) => {
-    if (!currentDocument) {
-      return;
-    }
-
-    try {
-      await updateDocument({
-        id: currentDocument.id,
-        title: newTitle,
-      });
-    } catch (error) {
-      console.error("Failed to save title:", error);
-      throw error;
-    }
-  }, [currentDocument, updateDocument]);
-
-  return {
-    document: currentDocument,
-    content,
-    editorKey,
-    isLoading: storeLoading,
-    handleContentChange,
-    handleTitleSave,
-    updateDocument,
-  };
 }
 
 export default function DocumentEditor({
@@ -242,7 +54,6 @@ export default function DocumentEditor({
   const { isSaving } = useAutoSave(document, content, updateDocument);
   const { isExecuting } = useInitialPrompt(document, documentId, generateMessage, handleContentChange);
 
-  // Redirect if not authenticated
   useEffect(() => {
     if (!loading && !user) {
       router.push("/login");
@@ -304,7 +115,6 @@ export default function DocumentEditor({
     }
   }, [document, content, handleContentChange]);
 
-  // Loading states
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#EEF0FF]">
@@ -352,7 +162,6 @@ export default function DocumentEditor({
     );
   }
 
-  // Show loading state when executing initial prompt
   if (isExecuting && (!content || content.trim() === "")) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#EEF0FF]">
