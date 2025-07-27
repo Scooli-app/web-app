@@ -14,7 +14,6 @@ export interface SearchFilters {
   subject?: string;
   grade_level?: string;
   type?: string;
-  tags?: string[];
 }
 
 export interface LessonPlanForm {

@@ -34,22 +34,23 @@ export default function LessonPlanPage() {
       setIsLoading(true);
       setError("");
 
-      await createDocument({
+      const newDoc = await createDocument(
+        {
         title: `Plano de Aula - ${new Date().toLocaleDateString("pt-PT")}`,
         content: "",
         document_type: "lesson_plan",
-        tags: [],
         is_public: false,
-      }, user.id);
+        metadata: {
+            initial_prompt: initialPrompt,
+          },
+        },
+        user.id
+      );
 
-      // We need to get the created document ID from the store
-      // For now, let's create a temporary ID and redirect - the store will handle the creation
-      const tempId = `temp-${Date.now()}`;
-      setPendingInitialPrompt(tempId, initialPrompt);
-
-      // Note: This needs to be improved to get the actual document ID
-      // For now, redirect to the documents page
-      router.push(Routes.DOCUMENTS);
+      if (newDoc) {
+        setPendingInitialPrompt(newDoc.id, initialPrompt);
+        router.push(Routes.LESSON_PLAN_EDITOR.replace(":id", newDoc.id));
+      }
     } catch (error) {
       console.error("Failed to create document:", error);
 

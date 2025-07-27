@@ -107,9 +107,7 @@ export async function GET(request: NextRequest) {
 export async function POST(req: Request) {
   try {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseServiceKey =
-      process.env.SUPABASE_SERVICE_ROLE_KEY ||
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
     if (!supabaseUrl || !supabaseServiceKey) {
       console.error("Missing Supabase environment variables");
@@ -119,6 +117,7 @@ export async function POST(req: Request) {
       );
     }
 
+    // Use service role to bypass RLS
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const body: CreateDocumentRequest = await req.json();
 
@@ -126,6 +125,34 @@ export async function POST(req: Request) {
       return NextResponse.json(
         { error: "Title and document_type are required" },
         { status: 400 }
+      );
+    }
+
+    // Extract user_id from the request if available
+    const authHeader = req.headers.get("authorization");
+    let userId = null;
+
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      const token = authHeader.substring(7);
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser(token);
+
+      if (!userError && user) {
+        userId = user.id;
+      }
+    }
+
+    // If no user ID was found, check if it was provided in the body
+    if (!userId && body.user_id) {
+      userId = body.user_id;
+    }
+
+    if (!userId) {
+      return NextResponse.json(
+        { error: "User ID is required" },
+        { status: 401 }
       );
     }
 
@@ -137,7 +164,11 @@ export async function POST(req: Request) {
         content: body.content || "",
         document_type: body.document_type,
         metadata: body.metadata || {},
-        // Note: user_id will be set by a trigger or default value
+        user_id: userId,
+        is_public: body.is_public || false,
+        subject: body.subject || null,
+        grade_level: body.grade_level || null,
+        downloads: 0,
       })
       .select()
       .single();

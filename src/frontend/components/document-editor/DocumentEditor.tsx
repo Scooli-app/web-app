@@ -9,7 +9,7 @@ import { useInitialPrompt } from "@/frontend/hooks/useInitialPrompt";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useCallback, useState } from "react";
+import { useCallback, useState, useEffect } from "react";
 import AIChatPanel from "./AIChatPanel";
 import DocumentTitle from "./DocumentTitle";
 import { Routes } from "@/shared/types/routes";
@@ -53,6 +53,19 @@ export default function DocumentEditor({
   } = useDocumentManager(documentId);
 
   const { isSaving } = useAutoSave(document, content, updateDocument);
+  
+  // Log the document and initial prompt status for debugging
+  useEffect(() => {
+    if (document) {
+      console.log("Document loaded:", {
+        id: document.id,
+        hasContent: !!content?.trim(),
+        metadata: document.metadata,
+        initialPrompt: document.metadata?.initial_prompt
+      });
+    }
+  }, [document, content]);
+  
   const { isExecuting } = useInitialPrompt(document, documentId, generateMessage, handleContentChange);
 
   const handleChatSubmit = useCallback(async (userMessage: string) => {

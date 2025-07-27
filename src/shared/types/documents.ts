@@ -13,7 +13,6 @@ export interface Document {
   is_public: boolean;
   downloads: number;
   rating: number;
-  tags: string[];
   // Timestamps
   created_at: string;
   updated_at: string;
@@ -33,6 +32,10 @@ export interface CreateDocumentRequest {
   document_type: DocumentType;
   content?: string;
   metadata?: Record<string, unknown>;
+  is_public?: boolean;
+  subject?: string;
+  grade_level?: string;
+  user_id?: string;
 }
 
 export interface UpdateDocumentRequest {

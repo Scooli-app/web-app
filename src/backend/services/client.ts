@@ -32,6 +32,32 @@ export const handleApiResponse = async <T>(response: Response): Promise<T> => {
   return response.json();
 };
 
+// Helper to get auth headers for Supabase requests
+const getSupabaseHeaders = async () => {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    apikey: supabaseAnonKey,
+  };
+
+  // Add auth token if we're in a browser environment
+  if (typeof window !== "undefined") {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (session?.access_token) {
+      headers["Authorization"] = `Bearer ${session.access_token}`;
+    } else {
+      // If no session, use the anon key as the Bearer token as well
+      headers["Authorization"] = `Bearer ${supabaseAnonKey}`;
+    }
+  } else {
+    // For server-side requests, use the anon key as the Bearer token
+    headers["Authorization"] = `Bearer ${supabaseAnonKey}`;
+  }
+
+  return headers;
+};
+
 // Generic API methods
 export const apiClient = {
   async get<T>(
@@ -45,9 +71,7 @@ export const apiClient = {
 
     const response = await fetch(fullUrl, {
       method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: await getSupabaseHeaders(),
     });
 
     return handleApiResponse<T>(response);
@@ -56,9 +80,7 @@ export const apiClient = {
   async post<T>(url: string, data?: Record<string, unknown>): Promise<T> {
     const response = await fetch(url, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: await getSupabaseHeaders(),
       body: data ? JSON.stringify(data) : undefined,
     });
 
@@ -68,9 +90,7 @@ export const apiClient = {
   async put<T>(url: string, data?: Record<string, unknown>): Promise<T> {
     const response = await fetch(url, {
       method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: await getSupabaseHeaders(),
       body: data ? JSON.stringify(data) : undefined,
     });
 
@@ -80,9 +100,7 @@ export const apiClient = {
   async delete<T>(url: string): Promise<T> {
     const response = await fetch(url, {
       method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: await getSupabaseHeaders(),
     });
 
     return handleApiResponse<T>(response);

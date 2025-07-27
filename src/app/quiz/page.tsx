@@ -37,8 +37,10 @@ export default function QuizPage() {
         title: `Quiz - ${new Date().toLocaleDateString("pt-PT")}`,
         content: "",
         document_type: "quiz",
-        tags: [],
         is_public: false,
+        metadata: {
+          initial_prompt: initialPrompt,
+        },
       }, user.id);
 
       // We need to get the created document ID from the store
@@ -68,12 +70,6 @@ export default function QuizPage() {
       setIsLoading(false);
     }
   };
-
-  // Redirect if not authenticated
-  if (!loading && !user) {
-    router.push("/login");
-    return null;
-  }
 
   if (loading) {
     return (

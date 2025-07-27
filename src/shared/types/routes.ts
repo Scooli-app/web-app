@@ -1,6 +1,7 @@
 export enum Routes {
   DASHBOARD = "/dashboard",
   DOCUMENTS = "/documents",
+  LESSON_PLAN_EDITOR = "/lesson-plan/:id",
   LESSON_PLAN = "/lesson-plan",
   ASSAYS = "/assays",
   QUIZ = "/quiz",

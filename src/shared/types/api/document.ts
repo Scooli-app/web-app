@@ -20,7 +20,6 @@ export interface CreateDocumentRequest {
   metadata?: Record<string, unknown>;
   subject?: string;
   grade_level?: string;
-  tags?: string[];
   is_public?: boolean;
 }
 
@@ -31,7 +30,6 @@ export interface UpdateDocumentRequest {
   metadata?: Record<string, unknown>;
   subject?: string;
   grade_level?: string;
-  tags?: string[];
   is_public?: boolean;
 }
 

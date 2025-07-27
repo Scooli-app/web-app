@@ -1,5 +1,4 @@
 import {
-  type CreateDocumentData,
   type DocumentFilters,
   DocumentService,
   type UpdateDocumentData,
@@ -33,7 +32,10 @@ interface DocumentState {
     filters?: DocumentFilters
   ) => Promise<void>;
   fetchDocument: (id: string) => Promise<void>;
-  createDocument: (data: CreateDocumentData, userId: string) => Promise<void>;
+  createDocument: (
+    data: Partial<Document>,
+    userId: string
+  ) => Promise<Document | null | undefined>;
   updateDocument: (data: UpdateDocumentData) => Promise<void>;
   deleteDocument: (id: string) => Promise<void>;
   incrementDownloads: (id: string) => Promise<void>;
@@ -126,7 +128,7 @@ export const useDocumentStore = create<DocumentState>()(
       }
     },
 
-    createDocument: async (data: CreateDocumentData, userId: string) => {
+    createDocument: async (data: Partial<Document>, userId: string) => {
       set({ isLoading: true, error: null });
 
       try {
@@ -134,7 +136,7 @@ export const useDocumentStore = create<DocumentState>()(
 
         if (result.error) {
           set({ error: result.error, isLoading: false });
-          return;
+          return null;
         }
 
         if (result.document) {
@@ -143,6 +145,8 @@ export const useDocumentStore = create<DocumentState>()(
             documents: [result.document, ...documents],
             isLoading: false,
           });
+
+          return result.document;
         }
       } catch (error) {
         set({
@@ -152,6 +156,7 @@ export const useDocumentStore = create<DocumentState>()(
               : "Failed to create document",
           isLoading: false,
         });
+        return null;
       }
     },
 
@@ -233,14 +238,21 @@ export const useDocumentStore = create<DocumentState>()(
 
         const { documents, currentDocument } = get();
         const updatedDocuments = documents.map((doc) =>
-          doc.id === id ? { ...doc, downloads: doc.downloads + 1 } : doc
+          doc.id === id
+            ? { ...doc, downloads: doc.downloads ? doc.downloads + 1 : 1 }
+            : doc
         );
 
         set({
           documents: updatedDocuments,
           currentDocument:
             currentDocument?.id === id
-              ? { ...currentDocument, downloads: currentDocument.downloads + 1 }
+              ? {
+                  ...currentDocument,
+                  downloads: currentDocument.downloads
+                    ? currentDocument.downloads + 1
+                    : 1,
+                }
               : currentDocument,
         });
       } catch (error) {

@@ -1,22 +1,7 @@
-import type {
-  Document,
-  DocumentMetadata,
-  PaginatedResponse,
-} from "@/shared/types";
+import type { Document, PaginatedResponse } from "@/shared/types";
 import { supabase } from "../../services/client";
 
-export interface CreateDocumentData {
-  title: string;
-  content: string;
-  document_type: Document["document_type"];
-  subject?: string;
-  grade_level?: string;
-  tags?: string[];
-  is_public: boolean;
-  metadata?: DocumentMetadata;
-}
-
-export interface UpdateDocumentData extends Partial<CreateDocumentData> {
+export interface UpdateDocumentData extends Partial<Document> {
   id: string;
 }
 
@@ -25,7 +10,6 @@ export interface DocumentFilters {
   document_type?: Document["document_type"];
   subject?: string;
   grade_level?: string;
-  tags?: string[];
   is_public?: boolean;
   user_id?: string;
 }
@@ -114,27 +98,39 @@ export class DocumentService {
 
   // Create a new document
   static async createDocument(
-    data: CreateDocumentData,
+    data: Partial<Document>,
     userId: string
   ): Promise<{ document?: Document; error?: string }> {
     try {
+      // Check if the data already has the user_id field
+      const documentData = {
+        title: data.title || "",
+        content: data.content || "",
+        document_type: data.document_type || "lesson_plan",
+        metadata: data.metadata || {},
+        is_public: data.is_public || false,
+        subject: data.subject || null,
+        grade_level: data.grade_level || null,
+        user_id: userId,
+        downloads: 0,
+      };
+
+      console.log("Creating document with data:", documentData);
+
       const { data: document, error } = await supabase
         .from("documents")
-        .insert({
-          ...data,
-          user_id: userId,
-          downloads: 0,
-          rating: 0,
-        })
+        .insert(documentData)
         .select()
         .single();
 
       if (error) {
+        console.error("Supabase error:", error);
         throw error;
       }
 
       return { document: document as Document };
     } catch (error) {
+      console.error("Error creating document:", error);
       return {
         error:
           error instanceof Error ? error.message : "Failed to create document",
@@ -212,9 +208,9 @@ export class DocumentService {
     rating: number
   ): Promise<{ error?: string }> {
     try {
-      const { error } = await supabase.from("document_ratings").upsert({
-        document_id: id,
-        rating,
+      const { error } = await supabase.rpc("rate_document", {
+        p_document_id: id,
+        p_rating: rating,
       });
 
       if (error) {
@@ -223,6 +219,7 @@ export class DocumentService {
 
       return {};
     } catch (error) {
+      console.error("Error rating document:", error);
       return {
         error:
           error instanceof Error ? error.message : "Failed to rate document",
