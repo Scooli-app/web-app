@@ -10,6 +10,7 @@ import {
 import { ArrowRight, FileText } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { Routes } from "@/shared/types/routes";
 
 interface UserProfile {
   credits_remaining: number;
@@ -115,21 +116,21 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Button
             className="h-20 flex flex-col items-center justify-center space-y-2"
-            onClick={() => router.push("/lesson-plan")}
+            onClick={() => router.push(Routes.LESSON_PLAN)}
           >
             <span className="text-2xl">📄</span>
             <span>Plano de Aula</span>
           </Button>
           <Button
             className="h-20 flex flex-col items-center justify-center space-y-2"
-            onClick={() => router.push("/test")}
+            onClick={() => router.push(Routes.ASSAYS)}
           >
             <span className="text-2xl">📝</span>
             <span>Teste</span>
           </Button>
           <Button
             className="h-20 flex flex-col items-center justify-center space-y-2"
-            onClick={() => router.push("/quiz")}
+            onClick={() => router.push(Routes.QUIZ)}
           >
             <span className="text-2xl">❓</span>
             <span>Quiz</span>
@@ -157,7 +158,7 @@ export default function DashboardPage() {
             </h2>
           </div>
           <Button
-            onClick={() => router.push("/documents")}
+            onClick={() => router.push(Routes.DOCUMENTS)}
             className="flex items-center space-x-2 px-4 py-2 text-sm"
           >
             <span>Ver Todos</span>
@@ -178,7 +179,7 @@ export default function DashboardPage() {
             Organize, filtre e aceda rapidamente a todos os seus recursos
             educacionais.
           </p>
-          <Button onClick={() => router.push("/documents")} className="w-full">
+          <Button onClick={() => router.push(Routes.DOCUMENTS)} className="w-full">
             <FileText className="w-4 h-4 mr-2" />
             Explorar Documentos
           </Button>

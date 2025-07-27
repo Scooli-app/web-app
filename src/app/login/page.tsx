@@ -1,6 +1,7 @@
 "use client";
 
 import { Auth } from "@/frontend/components/forms/Auth";
+import { Routes } from "@/shared/types/routes";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -16,7 +17,7 @@ export default function LoginPage() {
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       if (data.user) {
-        router.replace("/dashboard");
+        router.replace(Routes.DASHBOARD);
       }
     });
   }, [router, supabase]);
@@ -37,7 +38,7 @@ export default function LoginPage() {
           : error.message
       );
     } else {
-      router.push("/dashboard");
+      router.push(Routes.DASHBOARD);
     }
   };
 

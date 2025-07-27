@@ -1,32 +1,27 @@
 "use client";
 
+import { DocumentService } from "@/backend/services";
 import { useSupabase } from "@/frontend/components/providers/SupabaseProvider";
 import { Button } from "@/frontend/components/ui/button";
 import { Card } from "@/frontend/components/ui/card";
 import { Input } from "@/frontend/components/ui/input";
 import { useDocumentStore } from "@/frontend/stores/document.store";
-import { Routes } from "@/shared/types/routes";
 import { Loader2, Plus } from "lucide-react";
-import { useRouter } from "next/navigation";  
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-export default function LessonPlanPage() {
+export default function TestPage() {
   const { user, loading } = useSupabase();
   const router = useRouter();
   const [initialPrompt, setInitialPrompt] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const { setPendingInitialPrompt, createDocument } = useDocumentStore();
+  const { setPendingInitialPrompt } = useDocumentStore();
 
   const handleCreateDocument = async () => {
     if (!initialPrompt.trim()) {
-      setError("Por favor, introduza uma descrição do plano de aula");
-      return;
-    }
-
-    if (!user) {
-      setError("Utilizador não autenticado");
+      setError("Por favor, introduza uma descrição do teste");
       return;
     }
 
@@ -34,22 +29,21 @@ export default function LessonPlanPage() {
       setIsLoading(true);
       setError("");
 
-      await createDocument({
-        title: `Plano de Aula - ${new Date().toLocaleDateString("pt-PT")}`,
+      const newDocument = await DocumentService.createDocument({
+        title: `Teste - ${new Date().toLocaleDateString("pt-PT")}`,
         content: "",
-        document_type: "lesson_plan",
-        tags: [],
+        document_type: "assay",
         is_public: false,
-      }, user.id);
+        metadata: {
+          initial_prompt: initialPrompt,
+        },
+      }, user?.id as string);
 
-      // We need to get the created document ID from the store
-      // For now, let's create a temporary ID and redirect - the store will handle the creation
-      const tempId = `temp-${Date.now()}`;
-      setPendingInitialPrompt(tempId, initialPrompt);
+      // Store the initial prompt in the store for one-time execution
+      setPendingInitialPrompt(newDocument.document?.id as string, initialPrompt);
 
-      // Note: This needs to be improved to get the actual document ID
-      // For now, redirect to the documents page
-      router.push(Routes.DOCUMENTS);
+      // Redirect to the new document page
+      router.push(`/assays/${newDocument.document?.id}`);
     } catch (error) {
       console.error("Failed to create document:", error);
 
@@ -70,6 +64,12 @@ export default function LessonPlanPage() {
     }
   };
 
+  // Redirect if not authenticated
+  if (!loading && !user) {
+    router.push("/login");
+    return null;
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px] w-full">
@@ -86,11 +86,11 @@ export default function LessonPlanPage() {
       <div className="max-w-4xl mx-auto">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-[#0B0D17] mb-4">
-            Criar Plano de Aula
+            Criar Teste
           </h1>
           <p className="text-lg text-[#6C6F80]">
-            Descreva o que pretende ensinar e o Scooli irá gerar um plano de
-            aula completo
+            Descreva o que pretende avaliar e o Scooli irá gerar um teste
+            completo
           </p>
         </div>
 
@@ -101,13 +101,13 @@ export default function LessonPlanPage() {
                 htmlFor="prompt"
                 className="block text-sm font-medium text-[#2E2F38] mb-2"
               >
-                Descrição do Plano de Aula
+                Descrição do Teste
               </label>
               <Input
                 id="prompt"
                 value={initialPrompt}
                 onChange={(e) => setInitialPrompt(e.target.value)}
-                placeholder="Ex: Plano de aula sobre frações para o 3º ano, incluindo atividades práticas e avaliação"
+                placeholder="Ex: Teste sobre frações para o 3º ano, com 10 questões de escolha múltipla e 2 problemas"
                 className="w-full"
                 onKeyPress={(e) => {
                   if (e.key === "Enter" && !isLoading) {
@@ -136,7 +136,7 @@ export default function LessonPlanPage() {
               ) : (
                 <>
                   <Plus className="mr-2 h-4 w-4" />
-                  Criar Plano de Aula
+                  Criar Teste
                 </>
               )}
             </Button>
@@ -145,4 +145,4 @@ export default function LessonPlanPage() {
       </div>
     </div>
   );
-}
+  }

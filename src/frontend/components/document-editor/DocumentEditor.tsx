@@ -12,6 +12,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 import AIChatPanel from "./AIChatPanel";
 import DocumentTitle from "./DocumentTitle";
+import { Routes } from "@/shared/types/routes";
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -132,7 +133,7 @@ export default function DocumentEditor({
             O documento que procura não existe ou não tem permissão para aceder.
           </p>
           <button
-            onClick={() => router.push("/dashboard")}
+            onClick={() => router.push(Routes.DASHBOARD)}
             className="bg-[#6753FF] text-white px-4 py-2 rounded-xl hover:bg-[#4E3BC0] transition-colors"
           >
             Voltar ao Dashboard

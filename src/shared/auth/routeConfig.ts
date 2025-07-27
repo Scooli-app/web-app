@@ -1,4 +1,5 @@
 import type { RouteConfig } from "@/shared/types/auth";
+import { APIRoutes, Routes } from "../types/routes";
 
 /**
  * Route protection configuration
@@ -7,64 +8,64 @@ import type { RouteConfig } from "@/shared/types/auth";
 export const ROUTE_CONFIGS: RouteConfig[] = [
   // Authentication required routes
   {
-    path: "/dashboard",
+    path: Routes.DASHBOARD,
     requiresAuth: true,
-    redirectTo: "/login",
+    redirectTo: Routes.LOGIN,
   },
   {
-    path: "/documents",
+    path: Routes.DOCUMENTS,
     requiresAuth: true,
     requiredPermissions: ["documents.read"],
-    redirectTo: "/login",
+    redirectTo: Routes.LOGIN,
   },
   {
-    path: "/lesson-plan",
+    path: Routes.LESSON_PLAN,
     requiresAuth: true,
     requiredPermissions: ["documents.create", "documents.edit"],
-    redirectTo: "/login",
+    redirectTo: Routes.LOGIN,
   },
   {
-    path: "/test",
+    path: Routes.ASSAYS,
     requiresAuth: true,
     requiredPermissions: ["documents.create", "documents.edit"],
-    redirectTo: "/login",
+    redirectTo: Routes.LOGIN,
   },
   {
-    path: "/quiz",
+    path: Routes.QUIZ,
     requiresAuth: true,
     requiredPermissions: ["documents.create", "documents.edit"],
-    redirectTo: "/login",
+    redirectTo: Routes.LOGIN,
   },
 
   // Admin routes
   {
-    path: "/admin",
+    path: Routes.ADMIN,
     requiresAuth: true,
     requiredPermissions: ["admin.access"],
-    redirectTo: "/dashboard",
+    redirectTo: Routes.DASHBOARD,
   },
 
   // Community moderation routes
   {
-    path: "/community/moderate",
+    path: Routes.COMMUNITY_MODERATE,
     requiresAuth: true,
     requiredPermissions: ["community.moderate"],
-    redirectTo: "/dashboard",
+    redirectTo: Routes.DASHBOARD,
   },
 
   // API routes protection
   {
-    path: "/api/documents",
+    path: APIRoutes.DOCUMENTS,
     requiresAuth: true,
     requiredPermissions: ["documents.read"],
   },
   {
-    path: "/api/process-curriculum",
+    path: APIRoutes.PROCESS_CURRICULUM,
     requiresAuth: true,
     requiredPermissions: ["admin.access"],
   },
   {
-    path: "/api/admin",
+    path: APIRoutes.ADMIN,
     requiresAuth: true,
     requiredPermissions: ["admin.access"],
   },
@@ -102,5 +103,5 @@ export function isProtectedRoute(pathname: string): boolean {
  */
 export function getRedirectUrl(pathname: string): string {
   const config = getRouteConfig(pathname);
-  return config?.redirectTo || "/login";
+  return config?.redirectTo || Routes.LOGIN;
 }

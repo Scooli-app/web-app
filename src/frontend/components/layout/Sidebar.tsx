@@ -22,6 +22,7 @@ import {
   Sidebar as SidebarPrimitive,
 } from "@/frontend/components/ui/sidebar";
 import { useIsMobile } from "@/frontend/hooks/use-mobile";
+import { Routes } from "@/shared/types/routes";
 import { cn } from "@/shared/utils/utils";
 import {
   BookOpen,
@@ -57,13 +58,13 @@ export function Sidebar({
   const navigation = [
     {
       title: "Dashboard",
-      href: "/dashboard",
+      href: Routes.DASHBOARD,
       icon: Home,
       description: "Visão geral da sua atividade",
     },
     {
       title: "Documentos",
-      href: "/documents",
+      href: Routes.DOCUMENTS,
       icon: FileText,
       description: "Gerir os seus documentos",
     },
@@ -72,19 +73,19 @@ export function Sidebar({
   const contentCreation = [
     {
       title: "Planos de Aula",
-      href: "/lesson-plan",
+      href: Routes.LESSON_PLAN,
       icon: BookOpen,
       description: "Criar e editar planos de aula",
     },
     {
       title: "Testes",
-      href: "/test",
+      href: Routes.ASSAYS,
       icon: FileCheck,
       description: "Criar e editar testes",
     },
     {
       title: "Quizzes",
-      href: "/quiz",
+      href: Routes.QUIZ,
       icon: HelpCircle,
       description: "Criar e editar quizzes",
     },
@@ -93,19 +94,19 @@ export function Sidebar({
   const community = [
     {
       title: "Comunidade",
-      href: "/community",
+      href: Routes.COMMUNITY,
       icon: Users,
       description: "Partilhar e descobrir recursos",
     },
     {
       title: "AI Assistant",
-      href: "/ai-assistant",
+      href: Routes.AI_ASSISTANT,
       icon: MessageSquare,
       description: "Chat com inteligência artificial",
     },
     {
       title: "Gerador Rápido",
-      href: "/quick-generator",
+      href: Routes.QUICK_GENERATOR,
       icon: Zap,
       description: "Criar recursos rapidamente",
     },
@@ -114,7 +115,7 @@ export function Sidebar({
   const secondaryNavigation = [
     {
       title: "Definições",
-      href: "/settings",
+      href: Routes.SETTINGS,
       icon: Settings,
       description: "Configurar a sua conta",
     },

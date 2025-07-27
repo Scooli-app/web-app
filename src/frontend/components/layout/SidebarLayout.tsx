@@ -40,6 +40,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import Header from "./Header";
 import { cn } from "@/shared/utils/utils";
+import { Routes } from "@/shared/types/routes";
 
 interface SidebarLayoutProps {
   children: React.ReactNode;
@@ -64,25 +65,25 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
   const navigation = [
     {
       title: "Dashboard",
-      href: "/dashboard",
+      href: Routes.DASHBOARD,
       icon: Home,
       description: "Visão geral da sua atividade",
     },
     {
       title: "Os meus documentos",
-      href: "/documents",
+      href: Routes.DOCUMENTS,
       icon: FileText,
       description: "Gerir os seus documentos",
     },
     {
       title: "Biblioteca comunitária",
-      href: "/community",
+      href: Routes.COMMUNITY,
       icon: FolderArchiveIcon,
       description: "Partilhar e descobrir recursos",
     },
     {
       title: "AI Assistant",
-      href: "/ai-assistant",
+      href: Routes.AI_ASSISTANT,
       icon: MessageSquare,
       description: "Chat com inteligência artificial",
     },
@@ -91,19 +92,19 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
   const contentCreation = [
     {
       title: "Planos de Aula",
-      href: "/lesson-plan",
+      href: Routes.LESSON_PLAN,
       icon: BookOpen,
       description: "Criar e editar planos de aula",
     },
     {
       title: "Testes",
-      href: "/test",
+      href: Routes.ASSAYS,
       icon: FileCheck,
       description: "Criar e editar testes",
     },
     {
       title: "Quizzes",
-      href: "/quiz",
+      href: Routes.QUIZ,
       icon: HelpCircle,
       description: "Criar e editar quizzes",
     },
@@ -112,7 +113,7 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
   const secondaryNavigation = [
     {
       title: "Definições",
-      href: "/settings",
+      href: Routes.SETTINGS,
       icon: Settings,
       description: "Configurar a sua conta",
     },

@@ -1,4 +1,8 @@
-import type { Document, PaginatedResponse } from "@/shared/types";
+import type {
+  Document,
+  DocumentMetadata,
+  PaginatedResponse,
+} from "@/shared/types";
 import { supabase } from "../../services/client";
 
 export interface CreateDocumentData {
@@ -7,8 +11,9 @@ export interface CreateDocumentData {
   document_type: Document["document_type"];
   subject?: string;
   grade_level?: string;
-  tags: string[];
+  tags?: string[];
   is_public: boolean;
+  metadata?: DocumentMetadata;
 }
 
 export interface UpdateDocumentData extends Partial<CreateDocumentData> {

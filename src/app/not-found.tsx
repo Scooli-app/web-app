@@ -5,6 +5,7 @@ import { Card } from "@/frontend/components/ui/card";
 import { Home, Search, ArrowLeft } from "lucide-react";
 import Link from "next/link"; 
 import { useRouter } from "next/navigation";
+import { Routes } from "@/shared/types/routes";
 
 export default function NotFound() {
   const router = useRouter();
@@ -15,7 +16,7 @@ export default function NotFound() {
       router.back();
     } else {
       // Fallback to dashboard if no history
-      router.push("/dashboard");
+      router.push(Routes.DASHBOARD);
     }
   };
 
@@ -37,7 +38,7 @@ export default function NotFound() {
 
         <div className="space-y-3">
           <Button asChild className="w-full bg-[#6753FF] hover:bg-[#4E3BC0] text-white">
-            <Link href="/dashboard">
+            <Link href={Routes.DASHBOARD}>
               <Home className="h-4 w-4 mr-2" />
               Ir para o Dashboard
             </Link>

@@ -1,4 +1,4 @@
-export type DocumentType = "lesson_plan" | "quiz" | "presentation";
+export type DocumentType = "lesson_plan" | "quiz" | "presentation" | "assay";
 
 export interface DocumentMetadata {
   initial_prompt?: string;

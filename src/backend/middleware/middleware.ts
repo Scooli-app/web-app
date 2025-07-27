@@ -215,7 +215,7 @@ export const config = {
     "/dashboard/:path*",
     "/documents/:path*",
     "/lesson-plan/:path*",
-    "/test/:path*",
+    "/assays/:path*",
     "/quiz/:path*",
     "/admin/:path*",
     "/community/:path*",
