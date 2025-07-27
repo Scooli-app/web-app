@@ -58,7 +58,6 @@ export function DocumentCard({
   const [isDeleting, setIsDeleting] = useState(false);
 
   const handleCardClick = (e: React.MouseEvent) => {
-    // In selection mode, toggle selection on card click (except delete button)
     if (selectionMode) {
       if ((e.target as HTMLElement).closest(".action-button")) {
         return;
@@ -66,7 +65,6 @@ export function DocumentCard({
       onSelect?.(document.id, !isSelected);
       return;
     }
-    // Normal navigation
     if ((e.target as HTMLElement).closest(".action-button")) {
       return;
     }
@@ -79,7 +77,6 @@ export function DocumentCard({
     } else if (document.document_type === "quiz") {
       router.push(`${Routes.QUIZ}/${document.id}`);
     }
-    // Add routing for other document types as they become available
   };
 
   const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
