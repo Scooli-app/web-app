@@ -5,8 +5,8 @@
 
 import { BasePromptBuilder } from "./base-prompts";
 
-const TEST_QUIZ_SPECIFIC_INSTRUCTIONS = `ESTRUTURA DO TESTE/QUIZ:
-- **Título e Informações**: disciplina, ano, duração, tipo de teste
+const TEST_QUIZ_SPECIFIC_INSTRUCTIONS = `ESTRUTURA DE AVALIAÇÕES (TESTES/QUIZZES/PROVAS):
+- **Título e Informações**: disciplina, ano, duração, tipo de avaliação
 - **Instruções**: como responder, tempo disponível, pontuação
 - **Questões**: numeradas e organizadas por tipo
   - Escolha múltipla (A, B, C, D)
@@ -27,18 +27,19 @@ TIPOS DE QUESTÕES:
 
 INSTRUÇÕES ESPECÍFICAS:
 - Inclui sempre instruções claras e critérios de avaliação
-- Se a pergunta não for sobre testes/quizzes, responde: "Só posso ajudar com testes e quizzes."`;
+- Adapta o tipo de avaliação conforme solicitado (teste, quiz, prova, ficha de avaliação)
+- Se a pergunta não for sobre avaliações educacionais, responde educadamente que só ajudas com criação de testes, quizzes e avaliações.`;
 
 export const TEST_QUIZ_PROMPTS = {
   SYSTEM_PROMPT: BasePromptBuilder.buildSystemPrompt(
-    "testes, quizzes e avaliação",
-    "Só posso ajudar com testes e quizzes.",
+    "testes, quizzes, provas e avaliações educacionais",
+    "Sou especialista em criar avaliações educacionais de qualidade.",
     TEST_QUIZ_SPECIFIC_INSTRUCTIONS
   ),
 
   CHAT_PROMPT: (currentContent: string, userMessage: string) =>
     BasePromptBuilder.buildChatPrompt(
-      "teste/quiz",
+      "avaliação educacional",
       currentContent,
       userMessage
     ),

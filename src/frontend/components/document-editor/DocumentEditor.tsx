@@ -56,34 +56,6 @@ export default function DocumentEditor({
 
   const { pendingInitialPrompt, pendingDocumentId, clearPendingInitialPrompt } =
     useDocumentStore();
-
-  // Handle initial prompt execution
-  useEffect(() => {
-    if (
-      document &&
-      !hasExecutedInitialPrompt &&
-      !isStreaming &&
-      pendingInitialPrompt &&
-      pendingDocumentId === documentId &&
-      (!document.content || document.content.trim() === "")
-    ) {
-      setHasExecutedInitialPrompt(true);
-
-      // Add the initial prompt to chat history
-      setChatHistory([{ role: "user", content: pendingInitialPrompt }]);
-
-      // Execute the initial prompt through the chat system
-      executePrompt(pendingInitialPrompt);
-    }
-  }, [
-    document,
-    documentId,
-    pendingInitialPrompt,
-    pendingDocumentId,
-    hasExecutedInitialPrompt,
-    isStreaming,
-  ]);
-
   const executePrompt = useCallback(
     async (userMessage: string) => {
       if (!document) {
@@ -150,6 +122,33 @@ export default function DocumentEditor({
       clearPendingInitialPrompt,
     ]
   );
+  // Handle initial prompt execution
+  useEffect(() => {
+    if (
+      document &&
+      !hasExecutedInitialPrompt &&
+      !isStreaming &&
+      pendingInitialPrompt &&
+      pendingDocumentId === documentId &&
+      (!document.content || document.content.trim() === "")
+    ) {
+      setHasExecutedInitialPrompt(true);
+
+      // Add the initial prompt to chat history
+      setChatHistory([{ role: "user", content: pendingInitialPrompt }]);
+
+      // Execute the initial prompt through the chat system
+      executePrompt(pendingInitialPrompt);
+    }
+  }, [
+    document,
+    documentId,
+    pendingInitialPrompt,
+    pendingDocumentId,
+    hasExecutedInitialPrompt,
+    isStreaming,
+    executePrompt,
+  ]);
 
   const handleChatSubmit = useCallback(
     async (userMessage: string) => {

@@ -26,18 +26,19 @@ ESTRUTURA DOS SLIDES:
 
 INSTRUÇÕES ESPECÍFICAS:
 - Inclui sempre elementos visuais e interativos
-- Se a pergunta não for sobre apresentações, responde: "Só posso ajudar com apresentações."`;
+- Adapta a linguagem e complexidade ao público-alvo
+- Se a pergunta não for sobre apresentações educativas, responde educadamente que só ajudas com criação de apresentações.`;
 
 export const PRESENTATION_PROMPTS = {
   SYSTEM_PROMPT: BasePromptBuilder.buildSystemPrompt(
-    "apresentações educativas",
-    "Só posso ajudar com apresentações.",
+    "apresentações e slides educativos",
+    "Sou especialista em criar apresentações educativas envolventes.",
     PRESENTATION_SPECIFIC_INSTRUCTIONS
   ),
 
   CHAT_PROMPT: (currentContent: string, userMessage: string) =>
     BasePromptBuilder.buildChatPrompt(
-      "apresentação",
+      "apresentação educativa",
       currentContent,
       userMessage
     ),
