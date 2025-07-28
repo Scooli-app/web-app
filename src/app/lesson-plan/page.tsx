@@ -1,17 +1,17 @@
 "use client";
 
-import { useSupabase } from "@/frontend/components/providers/SupabaseProvider";
 import { Button } from "@/frontend/components/ui/button";
 import { Card } from "@/frontend/components/ui/card";
 import { Input } from "@/frontend/components/ui/input";
+import { useAuthStore } from "@/frontend/stores/auth.store";
 import { useDocumentStore } from "@/frontend/stores/document.store";
 import { Routes } from "@/shared/types/routes";
 import { Loader2, Plus } from "lucide-react";
-import { useRouter } from "next/navigation";  
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 export default function LessonPlanPage() {
-  const { user, loading } = useSupabase();
+  const { user, isLoading: authLoading } = useAuthStore();
   const router = useRouter();
   const [initialPrompt, setInitialPrompt] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -36,11 +36,11 @@ export default function LessonPlanPage() {
 
       const newDoc = await createDocument(
         {
-        title: `Plano de Aula - ${new Date().toLocaleDateString("pt-PT")}`,
-        content: "",
-        document_type: "lesson_plan",
-        is_public: false,
-        metadata: {
+          title: `Plano de Aula - ${new Date().toLocaleDateString("pt-PT")}`,
+          content: "",
+          document_type: "lesson_plan",
+          is_public: false,
+          metadata: {
             initial_prompt: initialPrompt,
           },
         },
@@ -71,7 +71,7 @@ export default function LessonPlanPage() {
     }
   };
 
-  if (loading) {
+  if (authLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px] w-full">
         <div className="flex items-center space-x-2">

@@ -1,69 +1,75 @@
 "use client";
 
 import { Auth } from "@/frontend/components/forms/Auth";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
-import { useState } from "react";
+import { useAuthStore } from "@/frontend/stores/auth.store";
+import { Routes } from "@/shared/types/routes";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export default function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const supabase = createClientComponentClient();
+  const router = useRouter();
+
+  const { signUp, isLoading, error, isAuthenticated, clearError } =
+    useAuthStore();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.replace(Routes.DASHBOARD);
+    }
+  }, [isAuthenticated, router]);
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setError("");
+    clearError();
     setSuccess(false);
 
     if (password !== confirmPassword) {
-      setError("As palavras-passe não coincidem.");
-      setLoading(false);
+      // We can't set custom errors directly, so we'll handle this locally
       return;
     }
 
     if (password.length < 6) {
-      setError("A palavra-passe deve ter pelo menos 6 caracteres.");
-      setLoading(false);
       return;
     }
 
     if (!/\d/.test(password)) {
-      setError("A palavra-passe deve conter pelo menos um número.");
-      setLoading(false);
       return;
     }
 
     if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
-      setError("A palavra-passe deve conter pelo menos um símbolo.");
-      setLoading(false);
       return;
     }
 
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          full_name: name,
-        },
-      },
-    });
+    await signUp(email, password, name);
 
-    setLoading(false);
-    if (error) {
-      setError(
-        error.message === "User already registered"
-          ? "Este email já está em uso."
-          : error.message
-      );
-    } else {
+    if (!error) {
       setSuccess(true);
     }
+  };
+
+  // Handle validation errors locally
+  const getValidationError = () => {
+    if (password !== confirmPassword) {
+      return "As palavras-passe não coincidem.";
+    }
+    if (password.length > 0 && password.length < 6) {
+      return "A palavra-passe deve ter pelo menos 6 caracteres.";
+    }
+    if (password.length >= 6 && !/\d/.test(password)) {
+      return "A palavra-passe deve conter pelo menos um número.";
+    }
+    if (
+      password.length >= 6 &&
+      !/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)
+    ) {
+      return "A palavra-passe deve conter pelo menos um símbolo.";
+    }
+    return error || undefined;
   };
 
   return (
@@ -72,8 +78,8 @@ export default function SignupPage() {
         <Auth
           type="signup"
           onSubmit={handleSignup}
-          loading={loading}
-          error={error}
+          loading={isLoading}
+          error={getValidationError()}
           success={success}
           email={email}
           password={password}

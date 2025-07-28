@@ -1,17 +1,17 @@
 "use client";
 
 import { DocumentService } from "@/backend/services";
-import { useSupabase } from "@/frontend/components/providers/SupabaseProvider";
 import { Button } from "@/frontend/components/ui/button";
 import { Card } from "@/frontend/components/ui/card";
 import { Input } from "@/frontend/components/ui/input";
+import { useAuthStore } from "@/frontend/stores/auth.store";
 import { useDocumentStore } from "@/frontend/stores/document.store";
 import { Loader2, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 export default function TestPage() {
-  const { user, loading } = useSupabase();
+  const { user, isLoading: authLoading } = useAuthStore();
   const router = useRouter();
   const [initialPrompt, setInitialPrompt] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -29,18 +29,24 @@ export default function TestPage() {
       setIsLoading(true);
       setError("");
 
-      const newDocument = await DocumentService.createDocument({
-        title: `Teste - ${new Date().toLocaleDateString("pt-PT")}`,
-        content: "",
-        document_type: "assay",
-        is_public: false,
-        metadata: {
-          initial_prompt: initialPrompt,
+      const newDocument = await DocumentService.createDocument(
+        {
+          title: `Teste - ${new Date().toLocaleDateString("pt-PT")}`,
+          content: "",
+          document_type: "assay",
+          is_public: false,
+          metadata: {
+            initial_prompt: initialPrompt,
+          },
         },
-      }, user?.id as string);
+        user?.id as string
+      );
 
       // Store the initial prompt in the store for one-time execution
-      setPendingInitialPrompt(newDocument.document?.id as string, initialPrompt);
+      setPendingInitialPrompt(
+        newDocument.document?.id as string,
+        initialPrompt
+      );
 
       // Redirect to the new document page
       router.push(`/assays/${newDocument.document?.id}`);
@@ -65,12 +71,12 @@ export default function TestPage() {
   };
 
   // Redirect if not authenticated
-  if (!loading && !user) {
+  if (!authLoading && !user) {
     router.push("/login");
     return null;
   }
 
-  if (loading) {
+  if (authLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px] w-full">
         <div className="flex items-center space-x-2">
@@ -145,4 +151,4 @@ export default function TestPage() {
       </div>
     </div>
   );
-  }
+}
