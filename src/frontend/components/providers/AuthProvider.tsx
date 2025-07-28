@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
 import { useAuthStore } from "@/frontend/stores/auth.store";
+import { useEffect } from "react";
 
 interface AuthProviderProps {
   children: React.ReactNode;
@@ -17,4 +17,4 @@ export default function AuthProvider({ children }: AuthProviderProps) {
   }, [initializeAuth, isInitialized]);
 
   return children;
-} 
+}

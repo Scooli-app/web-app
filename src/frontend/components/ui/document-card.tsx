@@ -3,11 +3,11 @@
 import { Badge } from "@/frontend/components/ui/badge";
 import { Card } from "@/frontend/components/ui/card";
 import type { Document } from "@/shared/types/domain/document";
+import { Routes } from "@/shared/types/routes";
 import { Clock, FileText, Trash2, User } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "./button";
-import { Routes } from "@/shared/types/routes";
 
 interface DocumentCardProps {
   document: Document;
@@ -153,22 +153,30 @@ export function DocumentCard({
 
       <div className={`flex flex-col h-full ${selectionMode ? "ml-6" : ""}`}>
         {/* Header with icon and type */}
-        <div className="flex items-center justify-between mb-4 w-full gap-6">
-          <div className="flex items-center space-x-3">
-            <span className="text-2xl">
+        <div className="flex items-start justify-between mb-4 w-full gap-2 min-h-[32px]">
+          <div className="flex items-center space-x-2 min-w-0 flex-1">
+            <span className="text-xl sm:text-2xl flex-shrink-0">
               {getDocumentIcon(document.document_type)}
             </span>
             <Badge
               className={`${getDocumentTypeColor(
                 document.document_type
-              )} px-3 py-1 text-xs font-medium`}
+              )} px-2 py-1 text-xs font-medium whitespace-nowrap`}
             >
               {getDocumentTypeLabel(document.document_type)}
             </Badge>
           </div>
-          <div className="flex items-center text-xs text-[#6C6F80]">
+          <div className="flex items-center text-xs text-[#6C6F80] flex-shrink-0">
             <Clock className="w-3 h-3 mr-1" />
-            {formatDate(document.updated_at)}
+            <span className="hidden sm:inline">
+              {formatDate(document.updated_at)}
+            </span>
+            <span className="sm:hidden">
+              {new Date(document.updated_at).toLocaleDateString("pt-PT", {
+                day: "2-digit",
+                month: "2-digit",
+              })}
+            </span>
           </div>
         </div>
 

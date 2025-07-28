@@ -20,4 +20,8 @@ export enum APIRoutes {
   DOCUMENTS = "/api/documents",
   PROCESS_CURRICULUM = "/api/process-curriculum",
   ADMIN = "/api/admin",
+  AUTH_SESSION = "/api/auth/session",
+  AUTH_SIGNIN = "/api/auth/signin",
+  AUTH_SIGNUP = "/api/auth/signup",
+  AUTH_SIGNOUT = "/api/auth/signout",
 }

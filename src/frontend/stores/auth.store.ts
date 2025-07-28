@@ -1,18 +1,9 @@
-import {
-  AuthInitService,
-  type AuthState as AuthStateData,
-} from "@/backend/services/auth/auth-init.service";
-import { AuthService } from "@/backend/services/auth/auth.service";
-import {
-  UserProfileService,
-  type UserProfile,
-} from "@/backend/services/users/user-profile.service";
 import type { User } from "@/shared/types";
+import type { UserProfile } from "@/shared/types/auth";
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
 
 interface AuthState {
-  // State
   user: User | null;
   profile: UserProfile | null;
   session: unknown | null;
@@ -21,25 +12,18 @@ interface AuthState {
   isAuthenticated: boolean;
   isInitialized: boolean;
 
-  // Actions
   initializeAuth: () => Promise<void>;
   signUp: (email: string, password: string, name?: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
-  getUserProfile: () => Promise<void>;
-  updateProfile: (updates: Partial<User>) => Promise<void>;
-  updateUserProfile: (updates: Partial<UserProfile>) => Promise<void>;
-  resetPassword: (email: string) => Promise<void>;
   clearError: () => void;
   setUser: (user: User | null) => void;
   setProfile: (profile: UserProfile | null) => void;
   setSession: (session: unknown) => void;
-  setAuthState: (state: AuthStateData) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
   subscribeWithSelector((set, get) => ({
-    // Initial state
     user: null,
     profile: null,
     session: null,
@@ -48,20 +32,31 @@ export const useAuthStore = create<AuthState>()(
     isAuthenticated: false,
     isInitialized: false,
 
-    // Actions
     initializeAuth: async () => {
       set({ isLoading: true });
       try {
-        await AuthInitService.initializeAuth((state) => {
+        const response = await fetch("/api/auth/session");
+        const data = await response.json();
+
+        if (response.ok && data.user) {
           set({
-            user: state.user,
-            profile: state.profile as UserProfile,
-            session: state.session,
-            isAuthenticated: state.isAuthenticated,
+            user: data.user,
+            profile: data.profile,
+            session: data.session,
+            isAuthenticated: true,
             isLoading: false,
             isInitialized: true,
           });
-        });
+        } else {
+          set({
+            user: null,
+            profile: null,
+            session: null,
+            isAuthenticated: false,
+            isLoading: false,
+            isInitialized: true,
+          });
+        }
       } catch (error) {
         set({
           error:
@@ -78,17 +73,23 @@ export const useAuthStore = create<AuthState>()(
       set({ isLoading: true, error: null });
 
       try {
-        const result = await AuthService.signUp({ email, password, name });
+        const response = await fetch("/api/auth/signup", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password, name }),
+        });
 
-        if (result.error) {
-          set({ error: result.error, isLoading: false });
+        const data = await response.json();
+
+        if (!response.ok) {
+          set({ error: data.error || "Sign up failed", isLoading: false });
           return;
         }
 
         set({
-          user: result.user,
-          session: result.session,
-          isAuthenticated: !!result.user,
+          user: data.user,
+          session: data.session,
+          isAuthenticated: !!data.user,
           isLoading: false,
         });
       } catch (error) {
@@ -103,19 +104,20 @@ export const useAuthStore = create<AuthState>()(
       set({ isLoading: true, error: null });
 
       try {
-        const result = await AuthService.signIn({ email, password });
+        const response = await fetch("/api/auth/signin", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+        });
 
-        if (result.error) {
-          set({ error: result.error, isLoading: false });
+        const data = await response.json();
+
+        if (!response.ok) {
+          set({ error: data.error || "Sign in failed", isLoading: false });
           return;
         }
 
-        set({
-          user: result.user,
-          session: result.session,
-          isAuthenticated: !!result.user,
-          isLoading: false,
-        });
+        await get().initializeAuth();
       } catch (error) {
         set({
           error: error instanceof Error ? error.message : "Sign in failed",
@@ -128,15 +130,19 @@ export const useAuthStore = create<AuthState>()(
       set({ isLoading: true, error: null });
 
       try {
-        const result = await AuthService.signOut();
+        const response = await fetch("/api/auth/signout", {
+          method: "POST",
+        });
 
-        if (result.error) {
-          set({ error: result.error, isLoading: false });
+        if (!response.ok) {
+          const data = await response.json();
+          set({ error: data.error || "Sign out failed", isLoading: false });
           return;
         }
 
         set({
           user: null,
+          profile: null,
           session: null,
           isAuthenticated: false,
           isLoading: false,
@@ -144,119 +150,6 @@ export const useAuthStore = create<AuthState>()(
       } catch (error) {
         set({
           error: error instanceof Error ? error.message : "Sign out failed",
-          isLoading: false,
-        });
-      }
-    },
-
-    getUserProfile: async () => {
-      const { user } = get();
-      if (!user) {
-        set({ error: "No user logged in" });
-        return;
-      }
-
-      set({ isLoading: true, error: null });
-
-      try {
-        const profile = await UserProfileService.getUserProfile(user.id);
-        set({ profile, isLoading: false });
-      } catch (error) {
-        set({
-          error:
-            error instanceof Error
-              ? error.message
-              : "Failed to get user profile",
-          isLoading: false,
-        });
-      }
-    },
-
-    updateProfile: async (updates: Partial<User>) => {
-      const { user } = get();
-      if (!user) {
-        set({ error: "No user logged in" });
-        return;
-      }
-
-      set({ isLoading: true, error: null });
-
-      try {
-        const result = await AuthService.updateProfile(user.id, updates);
-
-        if (result.error) {
-          set({ error: result.error, isLoading: false });
-          return;
-        }
-
-        if (result.user) {
-          set({
-            user: result.user,
-            isLoading: false,
-          });
-        }
-      } catch (error) {
-        set({
-          error:
-            error instanceof Error ? error.message : "Profile update failed",
-          isLoading: false,
-        });
-      }
-    },
-
-    updateUserProfile: async (updates: Partial<UserProfile>) => {
-      const { profile } = get();
-      if (!profile) {
-        set({ error: "No user profile found" });
-        return;
-      }
-
-      set({ isLoading: true, error: null });
-
-      try {
-        const result = await UserProfileService.updateUserProfile(
-          profile.id,
-          updates
-        );
-
-        if (result.error) {
-          set({ error: result.error, isLoading: false });
-          return;
-        }
-
-        if (result.profile) {
-          set({
-            profile: result.profile,
-            isLoading: false,
-          });
-        }
-      } catch (error) {
-        set({
-          error:
-            error instanceof Error
-              ? error.message
-              : "User profile update failed",
-          isLoading: false,
-        });
-      }
-    },
-
-    resetPassword: async (email: string) => {
-      set({ isLoading: true, error: null });
-
-      try {
-        const result = await AuthService.resetPassword(email);
-
-        if (result.error) {
-          set({ error: result.error, isLoading: false });
-          return;
-        }
-
-        set({ isLoading: false });
-      } catch (error) {
-        set({
-          error:
-            error instanceof Error ? error.message : "Password reset failed",
           isLoading: false,
         });
       }
@@ -279,16 +172,6 @@ export const useAuthStore = create<AuthState>()(
 
     setSession: (session: unknown) => {
       set({ session });
-    },
-
-    setAuthState: (state: AuthStateData) => {
-      set({
-        user: state.user,
-        profile: state.profile as UserProfile,
-        session: state.session,
-        isAuthenticated: !!state.user,
-        isInitialized: true,
-      });
     },
   }))
 );
