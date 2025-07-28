@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
       user: {
         id: user.id,
         email: user.email,
-        name: user.user_metadata?.name || profile?.full_name,
+        name: user.user_metadata?.full_name || profile?.full_name,
         role: profile?.role_name || "teacher",
         credits: profile?.credits_remaining || 0,
         created_at: user.created_at,

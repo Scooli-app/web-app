@@ -46,7 +46,7 @@ export type UserRole = "teacher" | "curator" | "admin" | "super_admin";
 export interface UserProfile {
   id: string;
   email: string;
-  full_name: string | null;
+  name: string | null;
   role_name: string;
   role_id?: string;
   credits_remaining: number;

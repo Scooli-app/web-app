@@ -235,7 +235,7 @@ export default function DocumentEditor({
   return (
     <>
       {/* Main Editor */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col">
         <DocumentTitle
           title={document.title}
           defaultTitle={defaultTitle}

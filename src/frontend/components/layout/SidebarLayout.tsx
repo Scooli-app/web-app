@@ -24,6 +24,9 @@ import {
   SidebarTrigger,
 } from "@/frontend/components/ui/sidebar";
 import { useIsMobile } from "@/frontend/hooks/use-mobile";
+import { useAuthStore } from "@/frontend/stores";
+import { Routes } from "@/shared/types/routes";
+import { cn } from "@/shared/utils/utils";
 import {
   BookOpen,
   FileCheck,
@@ -39,8 +42,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import Header from "./Header";
-import { cn } from "@/shared/utils/utils";
-import { Routes } from "@/shared/types/routes";
 
 interface SidebarLayoutProps {
   children: React.ReactNode;
@@ -51,6 +52,7 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
   const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
+  const { user } = useAuthStore();
 
   // Don't show sidebar on auth pages
   const isAuthPage =
@@ -245,15 +247,15 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
         <div className="rounded-lg bg-[#EEF0FF] p-3 group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:p-0">
           <div className="flex items-center space-x-2 min-w-0">
             <div className="w-8 h-8 bg-[#6753FF] rounded-full flex items-center justify-center flex-shrink-0 group-data-[collapsible=icon]:w-6 group-data-[collapsible=icon]:h-6">
-              <span className="text-white font-bold text-xs">U</span>
+              <span className="text-white font-bold text-xs">
+                {user?.name?.charAt(0)}
+              </span>
             </div>
             <div className="flex-1 min-w-0 opacity-100 group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:w-0 group-data-[collapsible=icon]:overflow-hidden">
               <p className="text-sm font-medium text-[#0B0D17] truncate">
-                Utilizador
+                {user?.name}
               </p>
-              <p className="text-xs text-[#6C6F80] truncate">
-                user@example.com
-              </p>
+              <p className="text-xs text-[#6C6F80] truncate">{user?.email}</p>
             </div>
           </div>
         </div>
