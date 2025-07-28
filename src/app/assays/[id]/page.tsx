@@ -1,22 +1,23 @@
 "use client";
 
-import { DocumentEditor } from "@/frontend/components/document-editor";
-import { useParams } from "next/navigation";
+import DocumentEditor from "@/frontend/components/document-editor/DocumentEditor";
+import { use } from "react";
 
-export default function TestEditorPage() {
-  const params = useParams();
-  const documentId = params.id as string;
+interface AssaysEditorPageProps {
+  params: Promise<{ id: string }>;
+}
+
+export default function AssaysEditorPage({ params }: AssaysEditorPageProps) {
+  const { id } = use(params);
 
   return (
-    <div className="w-full">
-      <DocumentEditor
-        documentId={documentId}
-        defaultTitle="Teste"
-        loadingMessage="A carregar teste..."
-        generateMessage="Cria um teste completo baseado nesta descrição"
-        chatTitle="AI Assistant - Testes"
-        chatPlaceholder="Faça perguntas sobre o teste ou peça ajuda para melhorar as questões..."
-      />
-    </div>
+    <DocumentEditor
+      documentId={id}
+      defaultTitle="Novo Teste"
+      loadingMessage="A carregar teste..."
+      generateMessage="Gerar teste"
+      chatTitle="Assistente de Testes"
+      chatPlaceholder="Faça uma pergunta sobre o teste ou peça para modificar algo..."
+    />
   );
 }

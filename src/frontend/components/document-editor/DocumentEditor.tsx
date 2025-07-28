@@ -1,18 +1,17 @@
 "use client";
 
-
 import { Card } from "@/frontend/components/ui/card";
 import RichTextEditor from "@/frontend/components/ui/rich-text-editor";
 import { useAutoSave } from "@/frontend/hooks/useAutoSave";
 import { useDocumentManager } from "@/frontend/hooks/useDocumentManager";
-import { useInitialPrompt } from "@/frontend/hooks/useInitialPrompt";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { useDocumentStore } from "@/frontend/stores/document.store";
+
+import { Routes } from "@/shared/types/routes";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import AIChatPanel from "./AIChatPanel";
 import DocumentTitle from "./DocumentTitle";
-import { Routes } from "@/shared/types/routes";
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -21,102 +20,195 @@ interface ChatMessage {
 
 interface DocumentEditorProps {
   documentId: string;
-  defaultTitle: string;
-  loadingMessage: string;
-  generateMessage: string;
+  defaultTitle?: string;
+  loadingMessage?: string;
+  generateMessage?: string;
   chatTitle?: string;
   chatPlaceholder?: string;
 }
 
 export default function DocumentEditor({
   documentId,
-  defaultTitle,
-  loadingMessage,
-  generateMessage,
+  defaultTitle = "Novo Documento",
+  loadingMessage = "A carregar documento...",
+  generateMessage = "Gerar conteúdo",
   chatTitle = "AI Assistant",
   chatPlaceholder = "Faça uma pergunta ou peça ajuda...",
 }: DocumentEditorProps) {
-
   const router = useRouter();
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState("");
+  const [hasExecutedInitialPrompt, setHasExecutedInitialPrompt] =
+    useState(false);
 
-  const { 
-    document, 
-    content, 
-    editorKey, 
-    isLoading, 
-    handleContentChange, 
-    handleTitleSave, 
-    updateDocument 
+  const {
+    document,
+    content,
+    editorKey,
+    isLoading,
+    handleContentChange,
+    handleTitleSave,
+    updateDocument,
   } = useDocumentManager(documentId);
 
   const { isSaving } = useAutoSave(document, content, updateDocument);
-  const { isExecuting } = useInitialPrompt(document, documentId, generateMessage, handleContentChange);
 
-  const handleChatSubmit = useCallback(async (userMessage: string) => {
-    if (!document) {
-      return;
+  const { pendingInitialPrompt, pendingDocumentId, clearPendingInitialPrompt } =
+    useDocumentStore();
+  const executePrompt = useCallback(
+    async (userMessage: string) => {
+      if (!document) {
+        return;
+      }
+
+      try {
+        setIsStreaming(true);
+        setError("");
+
+        const response = await fetch(`/api/documents/${document.id}/chat`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            message: `${generateMessage}: ${userMessage}`,
+            currentContent: content,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to get response: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        if (data.generatedContent) {
+          handleContentChange(data.generatedContent);
+        }
+
+        if (data.chatAnswer) {
+          setChatHistory((prev) => [
+            ...prev,
+            { role: "assistant", content: data.chatAnswer },
+          ]);
+        }
+
+        // Clear pending prompt after successful execution
+        if (pendingInitialPrompt && pendingDocumentId === documentId) {
+          clearPendingInitialPrompt();
+        }
+      } catch (error) {
+        console.error("Failed to execute prompt:", error);
+        setError("Erro ao gerar conteúdo. Tente novamente.");
+
+        // If it was an initial prompt, clear it to allow retry
+        if (pendingInitialPrompt && pendingDocumentId === documentId) {
+          clearPendingInitialPrompt();
+          setHasExecutedInitialPrompt(false);
+        }
+      } finally {
+        setIsStreaming(false);
+      }
+    },
+    [
+      document,
+      content,
+      generateMessage,
+      handleContentChange,
+      pendingInitialPrompt,
+      pendingDocumentId,
+      documentId,
+      clearPendingInitialPrompt,
+    ]
+  );
+  // Handle initial prompt execution
+  useEffect(() => {
+    if (
+      document &&
+      !hasExecutedInitialPrompt &&
+      !isStreaming &&
+      pendingInitialPrompt &&
+      pendingDocumentId === documentId &&
+      (!document.content || document.content.trim() === "")
+    ) {
+      setHasExecutedInitialPrompt(true);
+
+      // Add the initial prompt to chat history
+      setChatHistory([{ role: "user", content: pendingInitialPrompt }]);
+
+      // Execute the initial prompt through the chat system
+      executePrompt(pendingInitialPrompt);
     }
+  }, [
+    document,
+    documentId,
+    pendingInitialPrompt,
+    pendingDocumentId,
+    hasExecutedInitialPrompt,
+    isStreaming,
+    executePrompt,
+  ]);
 
-    setChatHistory(prev => [...prev, { role: "user", content: userMessage }]);
-    setError("");
-
-    try {
-      setIsStreaming(true);
-
-      const supabase = createClientComponentClient();
-      const { data: { session } } = await supabase.auth.getSession();
-
-      const headers: HeadersInit = {
-        "Content-Type": "application/json",
-      };
-
-      if (session?.access_token) {
-        headers.Authorization = `Bearer ${session.access_token}`;
+  const handleChatSubmit = useCallback(
+    async (userMessage: string) => {
+      if (!document) {
+        return;
       }
 
-      const response = await fetch(`/api/documents/${document.id}/chat`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({
-          message: userMessage,
-          currentContent: content,
-        }),
-      });
+      setChatHistory((prev) => [
+        ...prev,
+        { role: "user", content: userMessage },
+      ]);
+      setError("");
 
-      if (!response.ok) {
-        throw new Error("Failed to get response");
+      try {
+        setIsStreaming(true);
+
+        const response = await fetch(`/api/documents/${document.id}/chat`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            message: userMessage,
+            currentContent: content,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to get response: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        if (data.generatedContent) {
+          handleContentChange(data.generatedContent);
+        }
+
+        if (data.chatAnswer) {
+          setChatHistory((prev) => [
+            ...prev,
+            { role: "assistant", content: data.chatAnswer },
+          ]);
+        }
+      } catch (error) {
+        console.error("Chat error:", error);
+        setError("Erro ao enviar mensagem. Tente novamente.");
+      } finally {
+        setIsStreaming(false);
       }
-
-      const data = await response.json();
-
-      if (data.chatAnswer) {
-        setChatHistory(prev => [
-          ...prev,
-          { role: "assistant", content: data.chatAnswer },
-        ]);
-      }
-
-      if (data.generatedContent) {
-        handleContentChange(data.generatedContent);
-      }
-    } catch (error) {
-      console.error("Chat error:", error);
-      setError("Erro na comunicação com o AI");
-    } finally {
-      setIsStreaming(false);
-    }
-  }, [document, content, handleContentChange]);
+    },
+    [document, content, handleContentChange]
+  );
 
   // Loading states
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#EEF0FF]">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin text-[#6753FF] mx-auto mb-4" />
-          <p className="text-[#6C6F80]">{loadingMessage}</p>
+      <div className="flex items-center justify-center min-h-[400px] w-full">
+        <div className="flex items-center space-x-2">
+          <Loader2 className="w-6 h-6 animate-spin text-[#6753FF]" />
+          <span className="text-lg text-[#6C6F80]">{loadingMessage}</span>
         </div>
       </div>
     );
@@ -124,51 +216,32 @@ export default function DocumentEditor({
 
   if (!document) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#EEF0FF]">
+      <div className="flex items-center justify-center min-h-[400px] w-full">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-[#0B0D17] mb-4">
+          <p className="text-lg text-[#6C6F80] mb-4">
             Documento não encontrado
-          </h1>
-          <p className="text-[#6C6F80] mb-4">
-            O documento que procura não existe ou não tem permissão para aceder.
           </p>
           <button
-            onClick={() => router.push(Routes.DASHBOARD)}
-            className="bg-[#6753FF] text-white px-4 py-2 rounded-xl hover:bg-[#4E3BC0] transition-colors"
+            onClick={() => router.push(Routes.DOCUMENTS)}
+            className="text-[#6753FF] hover:underline"
           >
-            Voltar ao Dashboard
+            Voltar aos documentos
           </button>
         </div>
       </div>
     );
   }
 
-  // Show loading state when executing initial prompt
-  if (isExecuting && (!content || content.trim() === "")) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#EEF0FF]">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin text-[#6753FF] mx-auto mb-4" />
-          <p className="text-[#6C6F80]">A gerar o seu conteúdo...</p>
-          <p className="text-sm text-[#6C6F80] mt-2">
-            Isto pode demorar alguns segundos
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-[#EEF0FF] p-2 md:p-6">
-      <div className="max-w-7xl mx-auto w-full">
-        <div className="flex items-center justify-between mb-6">
-          <DocumentTitle
-            title={document?.title || ""}
-            onSave={handleTitleSave}
-            isSaving={isSaving}
-            defaultTitle={defaultTitle}
-          />
-        </div>
+    <>
+      {/* Main Editor */}
+      <div className="flex-1 flex flex-col">
+        <DocumentTitle
+          title={document.title}
+          defaultTitle={defaultTitle}
+          onSave={handleTitleSave}
+          isSaving={isSaving}
+        />
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6 relative">
           <Card className="p-4 md:p-6 w-full min-w-0">
@@ -182,17 +255,18 @@ export default function DocumentEditor({
               className="min-h-[600px] max-w-full"
             />
           </Card>
-
-          <AIChatPanel
-            onChatSubmit={handleChatSubmit}
-            chatHistory={chatHistory}
-            isStreaming={isStreaming}
-            error={error}
-            title={chatTitle}
-            placeholder={chatPlaceholder}
-          />
         </div>
       </div>
-    </div>
+
+      {/* AI Chat Panel */}
+      <AIChatPanel
+        onChatSubmit={handleChatSubmit}
+        chatHistory={chatHistory}
+        isStreaming={isStreaming}
+        error={error}
+        placeholder={chatPlaceholder}
+        title={chatTitle}
+      />
+    </>
   );
 }

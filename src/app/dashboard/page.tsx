@@ -1,61 +1,34 @@
 "use client";
 
-import RagQuery from "@/frontend/components/RagQuery";
-import { Button } from "@/frontend/components/ui/button";
-import { Card } from "@/frontend/components/ui/card";
-import {
-  createClientComponentClient,
-  type User,
-} from "@supabase/auth-helpers-nextjs";
-import { ArrowRight, FileText } from "lucide-react";
+import { useAuthStore } from "@/frontend/stores";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { Routes } from "@/shared/types/routes";
-
-interface UserProfile {
-  credits_remaining: number;
-  xp_points: number;
-}
+import { useEffect } from "react";
 
 export default function DashboardPage() {
-  const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-
-  const [loading, setLoading] = useState(true);
   const router = useRouter();
-  const supabase = createClientComponentClient();
+
+  // Use the auth store which already contains user profile data
+  const {
+    user,
+    profile,
+    isLoading: authLoading,
+    isAuthenticated,
+  } = useAuthStore();
 
   useEffect(() => {
-    const fetchUserData = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+    // If auth is still loading, wait
+    if (authLoading) {
+      return;
+    }
 
-      if (!user) {
-        router.replace("/login");
-        return;
-      }
+    // If not authenticated, redirect to login
+    if (!isAuthenticated || !user) {
+      router.replace("/login");
+    }
+  }, [user, authLoading, isAuthenticated, router]);
 
-      setUser(user);
-
-      // Buscar perfil do utilizador
-      const { data: profileData } = await supabase
-        .from("user_profiles")
-        .select("credits_remaining, xp_points")
-        .eq("id", user.id)
-        .single();
-
-      if (profileData) {
-        setProfile(profileData);
-      }
-
-      setLoading(false);
-    };
-
-    fetchUserData();
-  }, [supabase, router]);
-
-  if (loading) {
+  // Show loading state while auth is loading
+  if (authLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px] w-full">
         <div className="flex items-center space-x-2">
@@ -66,128 +39,103 @@ export default function DashboardPage() {
     );
   }
 
+  // If no user after loading, this shouldn't happen due to redirect above
+  if (!user) {
+    return null;
+  }
+
   return (
-    <div className="p-6 space-y-6 w-full">
-      {/* Header com boas-vindas */}
-      <div className="text-center">
-        <h1 className="text-4xl font-bold text-[#6753FF] mb-2">
-          Bem-vindo ao Scooli, {user?.user_metadata?.full_name}!
+    <div className="w-full max-w-7xl mx-auto">
+      <div className="mb-8">
+        <h1 className="text-4xl font-bold text-[#0B0D17] mb-2">
+          Bem-vindo de volta{user.name ? `, ${user.name}` : ""}!
         </h1>
         <p className="text-lg text-[#6C6F80]">
-          Crie conteúdo educacional de qualidade em segundos.
+          Aqui está o que pode fazer hoje na Scooli.
         </p>
       </div>
 
-      {/* Cards de informação do utilizador */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        <div className="bg-white p-6 rounded-2xl shadow-md border border-[#E4E4E7]">
+          <h3 className="text-xl font-semibold text-[#0B0D17] mb-2">
+            Créditos Restantes
+          </h3>
+          <p className="text-3xl font-bold text-[#6753FF]">
+            {profile?.credits_remaining ?? 0}
+          </p>
+          <p className="text-sm text-[#6C6F80]">
+            Créditos disponíveis para gerar conteúdo
+          </p>
+        </div>
+
+        <div className="bg-white p-6 rounded-2xl shadow-md border border-[#E4E4E7]">
+          <h3 className="text-xl font-semibold text-[#0B0D17] mb-2">
+            Pontos XP
+          </h3>
+          <p className="text-3xl font-bold text-[#1DB67D]">
+            {profile?.xp_points ?? 0}
+          </p>
+          <p className="text-sm text-[#6C6F80]">
+            Pontos ganhos por contribuições
+          </p>
+        </div>
+
+        <div className="bg-white p-6 rounded-2xl shadow-md border border-[#E4E4E7]">
+          <h3 className="text-xl font-semibold text-[#0B0D17] mb-2">
+            Tipo de Conta
+          </h3>
+          <p className="text-lg font-medium text-[#2E2F38]">
+            {user.role === "teacher" && "Professor"}
+            {user.role === "curator" && "Curador"}
+            {user.role === "admin" && "Administrador"}
+            {user.role === "super_admin" && "Super Admin"}
+          </p>
+          <p className="text-sm text-[#6C6F80]">Conta verificada e ativa</p>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className="p-6">
-          <h3 className="text-xl font-semibold text-[#0B0D17] mb-2">
-            Créditos Disponíveis
-          </h3>
-          <div className="text-3xl font-bold text-[#6753FF]">
-            {profile?.credits_remaining || 0}
+        <div className="bg-white p-8 rounded-2xl shadow-md border border-[#E4E4E7]">
+          <h2 className="text-2xl font-semibold text-[#0B0D17] mb-4">
+            Ações Rápidas
+          </h2>
+          <div className="space-y-3">
+            <button
+              onClick={() => router.push("/lesson-plan")}
+              className="w-full bg-[#6753FF] hover:bg-[#4E3BC0] text-white px-5 py-3 rounded-xl font-medium transition-colors"
+            >
+              Criar Plano de Aula
+            </button>
+            <button
+              onClick={() => router.push("/assays")}
+              className="w-full border border-[#C7C9D9] text-[#0B0D17] bg-white hover:bg-[#EEF0FF] px-5 py-3 rounded-xl font-medium transition-colors"
+            >
+              Gerar Teste
+            </button>
+            <button
+              onClick={() => router.push("/quiz")}
+              className="w-full border border-[#C7C9D9] text-[#0B0D17] bg-white hover:bg-[#EEF0FF] px-5 py-3 rounded-xl font-medium transition-colors"
+            >
+              Criar Quiz
+            </button>
           </div>
-          <p className="text-sm text-[#6C6F80] mt-1">
-            Use créditos para gerar conteúdo educacional
-          </p>
-        </Card>
+        </div>
 
-        <Card className="p-6">
-          <h3 className="text-xl font-semibold text-[#0B0D17] mb-2">
-            Pontos de Impacto
-          </h3>
-          <div className="text-3xl font-bold text-[#1DB67D]">
-            {profile?.xp_points || 0}
+        <div className="bg-white p-8 rounded-2xl shadow-md border border-[#E4E4E7]">
+          <h2 className="text-2xl font-semibold text-[#0B0D17] mb-4">
+            Atividade Recente
+          </h2>
+          <div className="space-y-4">
+            <div className="flex items-center space-x-3">
+              <div className="w-2 h-2 bg-[#6753FF] rounded-full" />
+              <span className="text-[#2E2F38]">Conta criada</span>
+            </div>
+            <p className="text-sm text-[#6C6F80] pl-5">
+              Bem-vindo à Scooli! Comece por explorar as funcionalidades.
+            </p>
           </div>
-          <p className="text-sm text-[#6C6F80] mt-1">
-            Ganhe pontos partilhando recursos na comunidade
-          </p>
-        </Card>
+        </div>
       </div>
-
-      {/* Área de geração de conteúdo */}
-      <Card className="p-8">
-        <h2 className="text-3xl font-semibold text-[#0B0D17] mb-4">
-          Gerar Novo Conteúdo
-        </h2>
-        <p className="text-base text-[#6C6F80] mb-6">
-          Escolha o tipo de conteúdo educacional que pretende criar:
-        </p>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Button
-            className="h-20 flex flex-col items-center justify-center space-y-2"
-            onClick={() => router.push(Routes.LESSON_PLAN)}
-          >
-            <span className="text-2xl">📄</span>
-            <span>Plano de Aula</span>
-          </Button>
-          <Button
-            className="h-20 flex flex-col items-center justify-center space-y-2"
-            onClick={() => router.push(Routes.ASSAYS)}
-          >
-            <span className="text-2xl">📝</span>
-            <span>Teste</span>
-          </Button>
-          <Button
-            className="h-20 flex flex-col items-center justify-center space-y-2"
-            onClick={() => router.push(Routes.QUIZ)}
-          >
-            <span className="text-2xl">❓</span>
-            <span>Quiz</span>
-          </Button>
-          <Button
-            className="h-20 flex flex-col items-center justify-center space-y-2"
-            disabled
-          >
-            <span className="text-2xl">📊</span>
-            <span>Apresentação</span>
-          </Button>
-        </div>
-        <p className="text-sm text-[#6C6F80] mt-4 text-center">
-          Em desenvolvimento - Brevemente disponível!
-        </p>
-      </Card>
-
-      {/* Documents Gallery Preview */}
-      <Card className="p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-3">
-            <FileText className="w-6 h-6 text-[#6753FF]" />
-            <h2 className="text-xl font-semibold text-[#0B0D17]">
-              Os Meus Documentos
-            </h2>
-          </div>
-          <Button
-            onClick={() => router.push(Routes.DOCUMENTS)}
-            className="flex items-center space-x-2 px-4 py-2 text-sm"
-          >
-            <span>Ver Todos</span>
-            <ArrowRight className="w-4 h-4" />
-          </Button>
-        </div>
-        <p className="text-sm text-[#6C6F80] mb-6">
-          Aceda a todos os seus planos de aula, avaliações e atividades criadas.
-        </p>
-
-        {/* Show mini gallery or link */}
-        <div className="bg-[#F4F5F8] rounded-xl p-6 text-center">
-          <div className="text-4xl mb-3">📚</div>
-          <h3 className="font-medium text-[#0B0D17] mb-2">
-            Biblioteca de Documentos
-          </h3>
-          <p className="text-sm text-[#6C6F80] mb-4">
-            Organize, filtre e aceda rapidamente a todos os seus recursos
-            educacionais.
-          </p>
-          <Button onClick={() => router.push(Routes.DOCUMENTS)} className="w-full">
-            <FileText className="w-4 h-4 mr-2" />
-            Explorar Documentos
-          </Button>
-        </div>
-      </Card>
-
-      {/* Assistente Curricular RAG */}
-      <RagQuery />
     </div>
   );
 }

@@ -1,0 +1,233 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# ✅ Cursor Rule: Scooli Architecture & Development Standards
+
+## 🧠 Description
+Enforces architectural patterns, state management, performance optimization, and development standards for the Scooli edtech platform.
+
+---
+
+## 🏗️ **ARCHITECTURE PATTERNS**
+
+### 📊 State Management (Zustand)
+**CRITICAL:** Always use Zustand stores for data management. Never make duplicate API calls if data exists in store.
+
+**Pattern:**
+```typescript
+// ✅ CORRECT: Use store data
+const { user, profile, documents } = useAuthStore();
+const { documents, isLoading } = useDocumentStore();
+
+// ❌ WRONG: Direct API calls when data exists in store
+const fetchUserProfile = async () => { /* avoid this */ }
+```
+
+**Store Architecture:**
+- `useAuthStore` - User authentication, profile, session
+- `useDocumentStore` - Documents, CRUD operations, pagination
+- `useUIStore` - UI state, theme, sidebar, loading states
+- Create new stores by domain when needed
+
+**Data Flow:**
+1. Fetch data once via store actions
+2. Store in Zustand state
+3. Use throughout app from store
+4. Update store on mutations
+5. Never duplicate API calls
+
+---
+
+## 🎨 **UI & STYLING STANDARDS**
+
+### ShadCN/UI Components
+**ALWAYS** use shadcn/ui components as base. Install if missing:
+```bash
+npx shadcn@latest add [component-name]
+```
+
+**Available Components:** button, card, input, badge, tooltip, sheet, scroll-area, separator, skeleton
+
+### Tailwind CSS
+**REQUIRED:** Use only Tailwind classes. No custom CSS unless absolutely necessary.
+
+**Design System:**
+- Colors: `bg-[#6753FF]`, `text-[#0B0D17]`, `border-[#C7C9D9]`
+- Spacing: `p-6`, `gap-6`, `space-y-4`
+- Borders: `rounded-xl`, `rounded-2xl`
+- Shadows: `shadow-md`
+
+### Component Structure
+```typescript
+// ✅ CORRECT Pattern
+interface ComponentProps {
+  // TypeScript interfaces
+}
+
+export function ComponentName({ prop }: ComponentProps) {
+  const { data } = useRelevantStore(); // Use stores
+  
+  return (
+    <div className="bg-white p-6 rounded-2xl shadow-md">
+      {/* shadcn/ui components */}
+    </div>
+  );
+}
+```
+
+---
+
+## 🚀 **PERFORMANCE REQUIREMENTS**
+
+### Essential Optimizations
+1. **Lazy Loading:** Use `lazy()` for route components
+2. **Image Optimization:** Use Next.js `Image` component
+3. **Bundle Analysis:** Avoid large dependencies
+4. **Memoization:** Use `useMemo`/`useCallback` for expensive operations
+5. **Code Splitting:** Split by routes and features
+
+### Caching Strategy
+- Store data in Zustand after first fetch
+- Use React Query for server state (if needed)
+- Implement proper cache invalidation
+- Cache static assets aggressively
+
+---
+
+## ♿ **ACCESSIBILITY (A11Y) STANDARDS**
+
+### Required Patterns
+```typescript
+// ✅ CORRECT: Accessible components
+<button
+  aria-label="Create lesson plan"
+  className="focus:outline-none focus:ring-2 focus:ring-[#6753FF]"
+>
+  Create
+</button>
+
+<input
+  aria-describedby="email-error"
+  aria-invalid={!!error}
+/>
+
+<div role="status" aria-live="polite">
+  {loading && "Loading..."}
+</div>
+```
+
+### Mandatory A11Y Features
+- **Focus Management:** Visible focus states with `focus:ring-[#6753FF]`
+- **ARIA Labels:** All interactive elements need `aria-label`
+- **Color Contrast:** Meet WCAG 2.1 AA standards
+- **Keyboard Navigation:** Support Tab, Enter, Escape
+- **Screen Readers:** Proper heading hierarchy (h1→h2→h3)
+- **Loading States:** Use `aria-live` regions
+
+---
+
+## 🛣️ **ROUTING STANDARDS**
+
+### Route Enum Usage
+**ALWAYS** add new routes to `src/shared/types/routes.ts`:
+
+```typescript
+// ✅ CORRECT: Add to enum first
+export enum Routes {
+  NEW_FEATURE = "/new-feature",
+}
+
+// ✅ CORRECT: Use enum in code
+router.push(Routes.NEW_FEATURE);
+
+// ❌ WRONG: Hardcoded routes
+router.push("/new-feature");
+```
+
+### Route Protection
+Use existing middleware and route config patterns in `shared/auth/routeConfig.ts`.
+
+---
+
+## 🗃️ **SUPABASE INTEGRATION**
+
+### Before Any Supabase Changes
+**MANDATORY:** Always explain what will be done BEFORE executing:
+
+```typescript
+// ✅ CORRECT: Explain first
+/* 
+SUPABASE PLAN:
+1. Create 'course_materials' table
+2. Add RLS policies for teacher access
+3. Create indexes for performance
+4. Add foreign key to user_profiles
+
+REASONING: Need to store course materials with proper access control
+*/
+
+// Then use MCP tools...
+```
+
+### Database Patterns
+- Use RLS (Row Level Security) for all tables
+- Follow naming: `snake_case` for tables/columns
+- Add proper indexes for queries
+- Use foreign keys for relationships
+- Always include `created_at`, `updated_at`
+
+---
+
+## 📝 **CODE STANDARDS**
+
+### Comments Policy
+**MINIMAL COMMENTS:** Only for complex business logic.
+
+```typescript
+// ✅ ACCEPTABLE: Complex logic
+const creditCost = calculateDynamicCredits(contentType, userTier); // XP-based pricing algorithm
+
+// ❌ AVOID: Obvious comments
+const user = useAuthStore(); // Get user from store
+```
+
+### TypeScript Standards
+- Strict type checking
+- Interfaces for props
+- Proper error handling
+- No `any` types (use `unknown` if needed)
+
+### File Organization
+- Components: `PascalCase.tsx`
+- Hooks: `use*.ts`
+- Types: `*.types.ts`
+- Services: `*.service.ts`
+- Follow domain-driven structure
+
+---
+
+## 🎯 **DEVELOPMENT WORKFLOW**
+
+### New Feature Checklist
+1. ✅ Add routes to `Routes` enum
+2. ✅ Create/update Zustand store if needed
+3. ✅ Use shadcn/ui components
+4. ✅ Implement A11Y features
+5. ✅ Optimize for performance
+6. ✅ Test with screen reader
+7. ✅ Explain Supabase changes before implementing
+
+### Quality Gates
+- TypeScript compilation
+- ESLint passing
+- Accessibility validation
+- Performance budget
+- Store integration
+- Route enum usage
+
+---
+
+**Remember:** Scooli serves Portuguese teachers. Prioritize UX, performance, and accessibility to support their educational mission.
+

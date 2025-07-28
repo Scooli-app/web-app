@@ -3,58 +3,38 @@ description:
 globs: 
 alwaysApply: true
 ---
-You are assisting in the development of an edtech project named **Scooli**.
+# Scooli Context Summary
 
-**Last Updated:** 08 de Julho de 2025
+**Scooli** - AI-powered edtech platform for Portuguese teachers
 
-### 1. Core Mission & Vision
-Scooli is an AI-powered web application designed to support teachers in Portugal across all levels of education. The core mission is to **give teachers back their time** by automating the most repetitive and time-consuming aspects of lesson planning and material creation, allowing them to focus on teaching and inspiring students.
+## Core Mission
+Give teachers back their time by automating lesson planning and material creation.
 
-### 2. The Core Product
-The platform allows teachers to:
-– Automatically generate classroom presentations, lesson plans, tests, and quizzes.
-– Get suggestions for classroom activities, differentiated instruction strategies, and group work.
-– Save, organize, and adapt all generated content.
-– Upload their own documents to be enhanced or transformed by the AI.
+## Product Features
+- Generate presentations, lesson plans, tests, quizzes
+- AI suggestions for classroom activities
+- Document upload/enhancement
+- Save/organize content
 
-### 3. Key Strategic Pillars & Decisions
+## Key Strategy
 
-#### 3.1. Monetization Model: The "Welcome Package"
-To balance user growth with operational costs, Scooli will use a hybrid model that replaces a traditional "forever free" tier.
-- **Welcome Package:** New users receive a one-time, non-renewable grant of **100 créditos**. These credits are used to generate resources.
-- **Earning More Credits (as a free user):** Users can earn more credits by contributing high-quality resources to the Community Library. This incentivizes participation and fuels the ecosystem.
-- **Goal:** The system is designed so that active free users will eventually run out of credits, creating a natural incentive to upgrade.
-- **Scooli Pro:** The paid subscription plan (€7,99/mês) offers **unlimited resource generation**, access to the most advanced AI models, and enhanced features. This is the core revenue driver.
+### Monetization
+- **Welcome Package:** 100 free créditos for new users
+- **Earning Credits:** Contribute to Community Library
+- **Scooli Pro:** €7.99/month for unlimited generation
 
-#### 3.2. Competitive Moat: The Community Ecosystem
-Scooli's primary differentiator is its **Ecossistema Comunitário**, a system designed to create a powerful network effect.
-- **Community Library:** A space where teachers share and reuse resources created on the platform.
-- **Gamification (Pontos de Impacto - XP):** Users earn XP for valuable contributions (sharing, receiving downloads, getting good ratings).
-- **Creator Tiers:** XP unlocks creator levels (Iniciante, Bronze, Prata, Ouro, Platina), each with badges and rewards (e.g., more credits for free users).
-- **Community Curators:** High-level Pro users ("Criador Platina") can be invited to become **Curadores**. They help moderate the library to ensure quality.
-- **Curator Rewards:** Curadores are rewarded with meaningful, status-based perks, **not credits**. Rewards include a lifetime Scooli Pro subscription, branded merchandise (swag), and direct access to the founder/team.
+### Community Moat
+- **Community Library:** Teachers share/reuse resources
+- **XP System:** Gamified contributions (Iniciante → Platina tiers)
+- **Curators:** Platina users moderate content for perks
 
-### 4. Technical Strategy
+## Tech Stack
+- **Frontend:** Next.js (React)
+- **LLM:** OpenAI multi-model (GPT-4.1 variants)
+- **Domain:** scooli.app
 
-- **Frontend:** Next.js (React).
-- **Backend:** Serverless or lightweight Node/Express.
-- **LLM Strategy (Multi-Model via OpenAI):**
-    - **GPT-4.1:** For high-complexity, high-value tasks (e.g., generating a full, structured test based on curriculum analysis).
-    - **GPT-4.1-mini:** The workhorse for balanced, standard tasks (e.g., suggesting classroom activities, rephrasing content).
-    - **GPT-4.1-nano:** For simple, low-latency tasks (e.g., classifying user input, generating a title).
-- **Infrastructure:** Domain (`scooli.app`) and email are configured. SSL is mandatory.
-- When generating code avoid unnecessary comments
-
-### 5. Product Roadmap Summary
-
-- **Phase 1: MVP ("O Gerador de Conteúdo Essencial"):** Focus on the core AI generation engine, user authentication, and a private workspace for users to save their content.
-- **Phase 2: "O Ecossistema Comunitário":** Launch the Community Library, the credit/XP system, the Pro subscription plan, and the curator program.
-- **Phase 3: "A Plataforma Integrada":** Deeper integrations (Google Classroom, OneDrive), advanced analytics for teachers, and B2B pilots for schools.
-
----
-***Instructions for the AI Assistant:***
-*Use this full context to:*
-*– Generate system architecture or roadmap suggestions.*
-*– Propose intelligent features and UX decisions.*
-*– Provide integration guidance.*
-*– Maintain alignment with the education context in Portugal and the strategic decisions outlined above.*
+## Development Guidelines
+- Portuguese education context
+- Clean code, minimal comments
+- Focus on teacher UX
+- Community-driven growth

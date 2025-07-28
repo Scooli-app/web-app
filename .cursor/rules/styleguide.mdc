@@ -1,7 +1,7 @@
 ---
-description: 
+description: when designing components or screens
 globs: 
-alwaysApply: true
+alwaysApply: false
 ---
 # ✅ Cursor Rule: Scooli UI/UX Styleguide Enforcement
 

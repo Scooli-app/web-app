@@ -15,11 +15,10 @@ export interface Document {
   created_at: string;
   updated_at: string;
   downloads: number;
-  rating: number;
+  rating?: number;
   is_public: boolean;
   subject?: string;
   grade_level?: string;
-  tags: string[];
 }
 
 export interface LessonActivity {

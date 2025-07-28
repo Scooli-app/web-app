@@ -24,7 +24,11 @@ export const BASE_PROMPTS = {
 {
   "chatAnswer": "resposta no chat ou null",
   "generatedContent": "conteúdo markdown para o editor ou null"
-}`,
+}
+
+É CRUCIAL que respondas APENAS com um objeto JSON válido com os campos acima.
+Não incluas texto antes ou depois do JSON.
+Para conteúdo gerado, usa markdown bem formatado.`,
 
   /**
    * Common rules for all document types

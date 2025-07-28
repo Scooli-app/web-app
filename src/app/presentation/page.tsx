@@ -3,6 +3,6 @@
 import DocumentCreationPage from "@/frontend/components/document-creation/DocumentCreationPage";
 import { documentTypes } from "@/frontend/components/document-creation/documentTypes";
 
-export default function LessonPlanPage() {
-  return <DocumentCreationPage documentType={documentTypes.lesson_plan} />;
+export default function PresentationPage() {
+  return <DocumentCreationPage documentType={documentTypes.presentation} />;
 }

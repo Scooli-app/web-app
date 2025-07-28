@@ -2,39 +2,23 @@
 
 import { Button } from "@/frontend/components/ui/button";
 import { Card } from "@/frontend/components/ui/card";
-import {
-  createClientComponentClient,
-  type User,
-} from "@supabase/auth-helpers-nextjs";
+import { useAuthStore } from "@/frontend/stores/auth.store";
+import { Routes } from "@/shared/types/routes";
 import { Download, Star, Upload, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 
 export default function CommunityPage() {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { user, isLoading } = useAuthStore();
   const router = useRouter();
-  const supabase = createClientComponentClient();
 
   useEffect(() => {
-    const fetchUser = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+    if (!isLoading && !user) {
+      router.replace(Routes.LOGIN);
+    }
+  }, [user, isLoading, router]);
 
-      if (!user) {
-        router.replace("/login");
-        return;
-      }
-
-      setUser(user);
-      setLoading(false);
-    };
-
-    fetchUser();
-  }, [supabase, router]);
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px] w-full">
         <div className="flex items-center space-x-2">

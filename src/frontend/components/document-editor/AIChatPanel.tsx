@@ -51,8 +51,8 @@ export default function AIChatPanel({
   }, [chatHistory]);
 
   return (
-    <div className="lg:fixed lg:right-30 lg:top-30 lg:max-h-fit lg:w-[400px] w-full z-30 flex flex-col border-l border-[#E4E4E7] lg:rounded-none rounded-2xl overflow-hidden bg-transparent">
-      <Card className="p-4 md:p-6 h-full flex flex-col">
+    <div className="lg:fixed lg:right-10 lg:top-30 lg:max-h-fit lg:w-[400px] md:w-[300px] w-full z-30 flex flex-col border-l border-[#E4E4E7] lg:rounded-none rounded-2xl overflow-hidden bg-transparent">
+      <Card className="p-4 md:p-6 h-full flex flex-col min-h-[500px]">
         <h2 className="text-xl font-semibold text-[#0B0D17] mb-4">{title}</h2>
 
         {/* Chat History */}

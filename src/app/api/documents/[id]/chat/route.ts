@@ -1,4 +1,5 @@
 import { LESSON_PLAN_PROMPTS } from "@/shared/prompts/lesson-plan-prompts";
+import { PRESENTATION_PROMPTS } from "@/shared/prompts/presentation-prompts";
 import { TEST_QUIZ_PROMPTS } from "@/shared/prompts/test-quiz-prompts";
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
@@ -18,9 +19,11 @@ const openai = new OpenAI({
 // Helper function to get prompts based on document type
 function getPromptsForDocumentType(documentType: string) {
   switch (documentType) {
-    case "test":
+    case "assay":
     case "quiz":
       return TEST_QUIZ_PROMPTS;
+    case "presentation":
+      return PRESENTATION_PROMPTS;
     case "lesson_plan":
     default:
       return LESSON_PLAN_PROMPTS;

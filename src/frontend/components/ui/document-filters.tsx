@@ -1,20 +1,24 @@
 "use client";
 
 import { Badge } from "@/frontend/components/ui/badge";
+import type { Document } from "@/shared/types/domain/document";
 
 interface DocumentFiltersProps {
   selectedType: string;
   onTypeChange: (type: string) => void;
   documentCounts?: Record<string, number>;
-}   
+}
 
-const filterOptions: Array<{ value: string; label: string; icon: string }> = [
+const filterOptions: Array<{
+  value: Document["document_type"] | "all";
+  label: string;
+  icon: string;
+}> = [
   { value: "all", label: "Todos", icon: "📁" },
   { value: "lesson_plan", label: "Planos de Aula", icon: "📄" },
-  { value: "test", label: "Testes", icon: "📝" },
+  { value: "assay", label: "Testes", icon: "📝" },
   { value: "quiz", label: "Quizzes", icon: "❓" },
-  { value: "activity", label: "Atividades", icon: "🎯" },
-  { value: "curriculum_analysis", label: "Análises Curriculares", icon: "📊" },
+  { value: "presentation", label: "Apresentações", icon: "🎯" },
 ];
 
 export function DocumentFilters({

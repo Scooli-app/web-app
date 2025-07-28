@@ -46,7 +46,7 @@ export type UserRole = "teacher" | "curator" | "admin" | "super_admin";
 export interface UserProfile {
   id: string;
   email: string;
-  full_name: string | null;
+  name: string | null;
   role_name: string;
   role_id?: string;
   credits_remaining: number;
@@ -130,4 +130,6 @@ export const PERMISSION_GROUPS = {
   ],
   AI_BASIC: ["ai.generate"],
   AI_ADVANCED: ["ai.generate", "ai.advanced", "ai.unlimited"],
+  USERS_BASIC: ["users.read"],
+  USERS_FULL: ["users.read", "users.edit", "users.roles", "users.delete"],
 } as const;

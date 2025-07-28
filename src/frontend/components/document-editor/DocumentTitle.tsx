@@ -70,7 +70,7 @@ export default function DocumentTitle({
   };
 
   return (
-    <div className="flex items-center space-x-3">
+    <div className="flex items-center space-x-3 m-1.5">
       {isEditing ? (
         <div className="flex items-center space-x-2">
           <div className="relative">

@@ -1,7 +1,6 @@
-import { useCallback, useEffect, useState } from "react";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { useDocumentStore } from "@/frontend/stores/document.store";
 import type { Document } from "@/shared/types/domain/document";
+import { useCallback, useEffect, useState } from "react";
 
 export function useInitialPrompt(
   document: Document | null,
@@ -16,30 +15,15 @@ export function useInitialPrompt(
 
   const executePrompt = useCallback(
     async (prompt: string) => {
-      if (!document || hasExecuted) {
-        return;
-      }
-
       try {
         setIsExecuting(true);
         setHasExecuted(true);
 
-        const supabase = createClientComponentClient();
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-
-        const headers: HeadersInit = {
-          "Content-Type": "application/json",
-        };
-
-        if (session?.access_token) {
-          headers.Authorization = `Bearer ${session.access_token}`;
-        }
-
-        const response = await fetch(`/api/documents/${document.id}/chat`, {
+        const response = await fetch(`/api/documents/${documentId}/chat`, {
           method: "POST",
-          headers,
+          headers: {
+            "Content-Type": "application/json",
+          },
           body: JSON.stringify({
             message: `${generateMessage}: ${prompt}`,
             currentContent: "",
@@ -47,7 +31,7 @@ export function useInitialPrompt(
         });
 
         if (!response.ok) {
-          throw new Error("Failed to get response");
+          throw new Error(`Failed to get response: ${response.status}`);
         }
 
         const data = await response.json();
@@ -65,34 +49,32 @@ export function useInitialPrompt(
         setIsExecuting(false);
       }
     },
-    [
-      document,
-      hasExecuted,
-      generateMessage,
-      onContentChange,
-      clearPendingInitialPrompt,
-    ]
+    [documentId, generateMessage, onContentChange, clearPendingInitialPrompt]
   );
 
   useEffect(() => {
-    const shouldExecute =
-      document &&
+    if (
+      !isExecuting &&
       !hasExecuted &&
+      document &&
       pendingInitialPrompt &&
-      pendingDocumentId === documentId &&
-      (!document.content || document.content.trim() === "");
-
-    if (shouldExecute) {
+      pendingDocumentId === documentId
+    ) {
       executePrompt(pendingInitialPrompt);
     }
   }, [
     document,
-    hasExecuted,
+    documentId,
     pendingInitialPrompt,
     pendingDocumentId,
-    documentId,
     executePrompt,
+    isExecuting,
+    hasExecuted,
   ]);
 
-  return { isExecuting };
+  return {
+    isExecuting,
+    hasExecuted,
+    executePrompt,
+  };
 }

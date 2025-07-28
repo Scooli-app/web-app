@@ -1,180 +1,190 @@
 import { getRouteConfig, isProtectedRoute } from "@/shared/auth/routeConfig";
-import { userHasAllPermissions, userHasPermission } from "@/shared/auth/utils";
+import {
+  clearAuthCookies,
+  isRefreshTokenError,
+  userHasAllPermissions,
+  userHasPermission,
+} from "@/shared/auth/utils";
 import type { UserProfile } from "@/shared/types/auth";
 import { createMiddlewareClient } from "@supabase/auth-helpers-nextjs";
 import { createClient, type Session } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 
-const CACHE_DURATION = 30 * 1000; // 30 seconds
+const CACHE_DURATION = 10 * 60 * 1000; // Increased to 10 minutes
+const PROFILE_CACHE_DURATION = 30 * 60 * 1000; // 30 minutes for profiles
 
-// Updated cache to store session and profile together
-const authCache = new Map<
+const sessionCache = new Map<
   string,
-  { session: Session | null; profile: UserProfile | null; timestamp: number }
+  { session: Session | null; timestamp: number }
 >();
+const profileCache = new Map<
+  string,
+  { profile: UserProfile | null; timestamp: number }
+>();
+const pendingRequests = new Map<string, Promise<Session | null>>();
 
-function getCacheKey(req: NextRequest): string {
-  // Use a combination of user agent and IP to create a cache key
-  const userAgent = req.headers.get("user-agent") || "";
-  const forwardedFor = req.headers.get("x-forwarded-for") || "";
-  const realIp = req.headers.get("x-real-ip") || "";
-  return `${userAgent}-${forwardedFor}-${realIp}`;
+function getSessionCacheKey(req: NextRequest): string {
+  const sessionToken = req.cookies.get("sb-access-token")?.value || "anonymous";
+  return `session-${sessionToken}`;
 }
 
-function getCachedAuthData(req: NextRequest): {
-  session: Session | null;
-  profile: UserProfile | null;
-} {
-  const key = getCacheKey(req);
-  const cached = authCache.get(key);
+function getProfileCacheKey(userId: string): string {
+  return `profile-${userId}`;
+}
+
+function getCachedSession(req: NextRequest): Session | null {
+  const key = getSessionCacheKey(req);
+  const cached = sessionCache.get(key);
 
   if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-    return { session: cached.session, profile: cached.profile };
+    return cached.session;
   }
-
-  return { session: null, profile: null };
+  return null;
 }
 
-function setCachedAuthData(
+function setCachedSession(req: NextRequest, session: Session | null) {
+  const key = getSessionCacheKey(req);
+  sessionCache.set(key, { session, timestamp: Date.now() });
+}
+
+function getCachedProfile(userId: string): UserProfile | null {
+  const key = getProfileCacheKey(userId);
+  const cached = profileCache.get(key);
+
+  if (cached && Date.now() - cached.timestamp < PROFILE_CACHE_DURATION) {
+    return cached.profile;
+  }
+  return null;
+}
+
+function setCachedProfile(userId: string, profile: UserProfile | null) {
+  const key = getProfileCacheKey(userId);
+  profileCache.set(key, { profile, timestamp: Date.now() });
+}
+
+async function fetchSession(
   req: NextRequest,
-  session: Session | null,
-  profile: UserProfile | null
-) {
-  const key = getCacheKey(req);
-  authCache.set(key, { session, profile, timestamp: Date.now() });
+  res: NextResponse
+): Promise<Session | null> {
+  const cacheKey = getSessionCacheKey(req);
+
+  if (pendingRequests.has(cacheKey)) {
+    return await pendingRequests.get(cacheKey)!;
+  }
+
+  const requestPromise = async (): Promise<Session | null> => {
+    try {
+      const supabase = createMiddlewareClient({ req, res });
+
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        return session;
+      } catch (authError: unknown) {
+        if (isRefreshTokenError(authError)) {
+          sessionCache.delete(cacheKey);
+          clearAuthCookies(res);
+          return null;
+        }
+        throw authError;
+      }
+    } finally {
+      pendingRequests.delete(cacheKey);
+    }
+  };
+
+  const promise = requestPromise();
+  pendingRequests.set(cacheKey, promise);
+  return await promise;
+}
+
+async function fetchProfile(userId: string): Promise<UserProfile | null> {
+  try {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+      return null;
+    }
+
+    const serviceSupabase = createClient(supabaseUrl, supabaseServiceKey);
+    const { data: userProfileData, error } = await serviceSupabase.rpc(
+      "get_user_profile_with_permissions",
+      { user_id: userId }
+    );
+
+    if (error) {
+      return null;
+    }
+
+    return (userProfileData?.[0] as UserProfile | null) ?? null;
+  } catch {
+    return null;
+  }
 }
 
 export async function middleware(req: NextRequest) {
-  // Handle root redirect FIRST
   if (req.nextUrl.pathname === "/") {
     return NextResponse.redirect(new URL("/dashboard", req.url));
   }
 
   const res = NextResponse.next();
 
-  // Skip non-protected routes
   if (!isProtectedRoute(req.nextUrl.pathname)) {
     return res;
   }
 
-  // Get route configuration
   const routeConfig = getRouteConfig(req.nextUrl.pathname);
   if (!routeConfig) {
     return res;
   }
 
   try {
-    // Check cache for both session and profile
-    let { session, profile } = getCachedAuthData(req);
+    let session = getCachedSession(req);
 
-    // If the session or profile is not cached, fetch from the source
-    if (!session || !profile) {
-      const supabase = createMiddlewareClient({ req, res });
-      const {
-        data: { session: newSession },
-      } = await supabase.auth.getSession();
-      session = newSession;
-
-      // If a session exists, fetch the user profile
-      if (session?.user) {
-        try {
-          const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-          const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-          if (supabaseUrl && supabaseServiceKey) {
-            const serviceSupabase = createClient(
-              supabaseUrl,
-              supabaseServiceKey
-            );
-            const { data: userProfileData, error } = await serviceSupabase.rpc(
-              "get_user_profile_with_permissions",
-              { user_id: session.user.id }
-            );
-
-            if (error) {
-              console.error(
-                "[Middleware] Error fetching user profile on cache miss:",
-                error
-              );
-              profile = null;
-            } else {
-              profile = (userProfileData?.[0] as UserProfile | null) ?? null;
-            }
-          }
-        } catch (error) {
-          console.error(
-            "[Middleware] Exception fetching user profile on cache miss:",
-            error
-          );
-          profile = null;
-        }
-      } else {
-        profile = null;
+    if (!session) {
+      session = await fetchSession(req, res);
+      if (session) {
+        setCachedSession(req, session);
       }
-
-      // Update the cache with the newly fetched data
-      setCachedAuthData(req, session, profile);
     }
 
-    // Check authentication requirement
     if (routeConfig.requiresAuth && !session) {
       const redirectUrl = routeConfig.redirectTo || "/login";
       return NextResponse.redirect(new URL(redirectUrl, req.url));
     }
 
-    // If no session but route doesn't require auth, continue
     if (!session) {
       return res;
     }
 
-    // No need to fetch profile again, it's already loaded from cache or source
-    // Check if user is active
-    if (profile && !profile.is_active) {
-      return NextResponse.redirect(new URL("/account-disabled", req.url));
-    }
+    let profile: UserProfile | null = null;
 
-    // Check permission requirements
     if (
-      routeConfig.requiredPermissions &&
-      routeConfig.requiredPermissions.length > 0
+      routeConfig.requiredPermissions?.length ||
+      req.nextUrl.pathname.startsWith("/api/")
     ) {
-      const requiresAll = routeConfig.requiresAllPermissions !== false; // Default true
-      const hasPermissions = requiresAll
-        ? userHasAllPermissions(profile, routeConfig.requiredPermissions)
-        : routeConfig.requiredPermissions.some((perm) =>
-            userHasPermission(profile, perm)
-          );
+      profile = getCachedProfile(session.user.id);
 
-      if (!hasPermissions) {
-        const redirectUrl = routeConfig.redirectTo || "/dashboard";
-        return NextResponse.redirect(new URL(redirectUrl, req.url));
-      }
-    }
-
-    // For API routes, return JSON response instead of redirect
-    if (req.nextUrl.pathname.startsWith("/api/")) {
-      // Authentication required
-      if (routeConfig.requiresAuth && !session) {
-        return NextResponse.json(
-          { error: "Authentication required" },
-          { status: 401 }
-        );
+      if (!profile) {
+        profile = await fetchProfile(session.user.id);
+        if (profile) {
+          setCachedProfile(session.user.id, profile);
+        }
       }
 
-      // User not active
       if (profile && !profile.is_active) {
-        return NextResponse.json(
-          { error: "Account is not active" },
-          { status: 403 }
-        );
+        return req.nextUrl.pathname.startsWith("/api/")
+          ? NextResponse.json(
+              { error: "Account is not active" },
+              { status: 403 }
+            )
+          : NextResponse.redirect(new URL("/account-disabled", req.url));
       }
 
-      // Permission checks
-      if (
-        routeConfig.requiredPermissions &&
-        routeConfig.requiredPermissions.length > 0
-      ) {
-        const requiresAll = routeConfig.requiresAllPermissions !== false; // Default true
+      if (routeConfig.requiredPermissions?.length) {
+        const requiresAll = routeConfig.requiresAllPermissions !== false;
         const hasPermissions = requiresAll
           ? userHasAllPermissions(profile, routeConfig.requiredPermissions)
           : routeConfig.requiredPermissions.some((perm) =>
@@ -182,34 +192,47 @@ export async function middleware(req: NextRequest) {
             );
 
         if (!hasPermissions) {
-          return NextResponse.json(
-            { error: "Missing required permissions" },
-            { status: 403 }
-          );
+          const redirectUrl = routeConfig.redirectTo || "/dashboard";
+          return req.nextUrl.pathname.startsWith("/api/")
+            ? NextResponse.json(
+                { error: "Missing required permissions" },
+                { status: 403 }
+              )
+            : NextResponse.redirect(new URL(redirectUrl, req.url));
         }
       }
     }
 
     return res;
-  } catch (error) {
-    console.error("Middleware error:", error);
-
-    // For API routes, return JSON error
+  } catch {
     if (req.nextUrl.pathname.startsWith("/api/")) {
       return NextResponse.json(
         { error: "Internal server error" },
         { status: 500 }
       );
     }
-
-    // For regular routes, redirect to login
     return NextResponse.redirect(new URL("/login", req.url));
   }
 }
 
+setInterval(() => {
+  const now = Date.now();
+
+  for (const [key, cached] of sessionCache.entries()) {
+    if (now - cached.timestamp > CACHE_DURATION) {
+      sessionCache.delete(key);
+    }
+  }
+
+  for (const [key, cached] of profileCache.entries()) {
+    if (now - cached.timestamp > PROFILE_CACHE_DURATION) {
+      profileCache.delete(key);
+    }
+  }
+}, CACHE_DURATION);
+
 export const config = {
   matcher: [
-    // Protected pages
     "/",
     "/dashboard",
     "/dashboard/:path*",
@@ -219,8 +242,6 @@ export const config = {
     "/quiz/:path*",
     "/admin/:path*",
     "/community/:path*",
-
-    // Protected API routes
     "/api/documents/:path*",
     "/api/process-curriculum/:path*",
     "/api/admin/:path*",
