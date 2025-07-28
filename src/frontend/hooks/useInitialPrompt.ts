@@ -52,11 +52,8 @@ export function useInitialPrompt(
     [documentId, generateMessage, onContentChange, clearPendingInitialPrompt]
   );
 
-  // Check for metadata.initial_prompt in the document if no pending prompt
   useEffect(() => {
     if (
-      document &&
-      !hasExecuted &&
       !isExecuting &&
       (!pendingInitialPrompt || pendingDocumentId !== documentId) &&
       document.metadata?.initial_prompt &&
