@@ -5,7 +5,38 @@ import {
 } from "@supabase/auth-helpers-nextjs";
 import { createClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
-import type { NextRequest } from "next/server";
+import type { NextRequest, NextResponse } from "next/server";
+
+/**
+ * Clear Supabase auth cookies when there are token issues
+ */
+export function clearAuthCookies(response: NextResponse): NextResponse {
+  // Common Supabase cookie names that might store auth data
+  const authCookieNames = [
+    "sb-access-token",
+    "sb-refresh-token",
+    "supabase-auth-token",
+    "supabase.auth.token",
+  ];
+
+  authCookieNames.forEach((cookieName) => {
+    response.cookies.delete(cookieName);
+  });
+
+  return response;
+}
+
+/**
+ * Check if error is a refresh token error
+ */
+export function isRefreshTokenError(error: unknown): boolean {
+  const authError = error as { code?: string; message?: string };
+  return !!(
+    authError?.code === "refresh_token_not_found" ||
+    authError?.message?.includes("refresh_token_not_found") ||
+    authError?.message?.includes("Invalid Refresh Token")
+  );
+}
 
 /**
  * Check if user has specific permission
@@ -320,3 +351,48 @@ export const API_CONFIGS = {
     requiredPermissions: ["ai.advanced"],
   },
 } as const;
+
+/**
+ * Clear auth cache (useful for debugging rate limit issues)
+ */
+export function clearAuthCache(): void {
+  if (typeof window !== "undefined") {
+    // Clear localStorage
+    localStorage.removeItem("supabase.auth.token");
+    localStorage.removeItem("sb-access-token");
+    localStorage.removeItem("sb-refresh-token");
+
+    // Clear sessionStorage
+    sessionStorage.removeItem("supabase.auth.token");
+    sessionStorage.removeItem("sb-access-token");
+    sessionStorage.removeItem("sb-refresh-token");
+
+    console.log("[Auth Utils] Cleared auth cache");
+  }
+}
+
+/**
+ * Get debug info about current auth state (for troubleshooting)
+ */
+export function getAuthDebugInfo(): Record<string, unknown> {
+  if (typeof window === "undefined") {
+    return { location: "server" };
+  }
+
+  return {
+    location: "client",
+    cookies: document.cookie,
+    localStorage: {
+      authToken: localStorage.getItem("supabase.auth.token"),
+      sbAccessToken: localStorage.getItem("sb-access-token"),
+      sbRefreshToken: localStorage.getItem("sb-refresh-token"),
+    },
+    sessionStorage: {
+      authToken: sessionStorage.getItem("supabase.auth.token"),
+      sbAccessToken: sessionStorage.getItem("sb-access-token"),
+      sbRefreshToken: sessionStorage.getItem("sb-refresh-token"),
+    },
+    userAgent: navigator.userAgent,
+    timestamp: new Date().toISOString(),
+  };
+}

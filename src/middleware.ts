@@ -1,24 +1,35 @@
 import { getRouteConfig, isProtectedRoute } from "@/shared/auth/routeConfig";
-import { userHasAllPermissions, userHasPermission } from "@/shared/auth/utils";
+import {
+  clearAuthCookies,
+  isRefreshTokenError,
+  userHasAllPermissions,
+  userHasPermission,
+} from "@/shared/auth/utils";
 import type { UserProfile } from "@/shared/types/auth";
 import { createMiddlewareClient } from "@supabase/auth-helpers-nextjs";
 import { createClient, type Session } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 
-const CACHE_DURATION = 30 * 1000; // 30 seconds
+const CACHE_DURATION = 5 * 60 * 1000;
 
-// Updated cache to store session and profile together
 const authCache = new Map<
   string,
   { session: Session | null; profile: UserProfile | null; timestamp: number }
 >();
 
+const pendingRequests = new Map<
+  string,
+  Promise<{ session: Session | null; profile: UserProfile | null }>
+>();
+
 function getCacheKey(req: NextRequest): string {
-  // Use a combination of user agent and IP to create a cache key
-  const userAgent = req.headers.get("user-agent") || "";
-  const forwardedFor = req.headers.get("x-forwarded-for") || "";
-  const realIp = req.headers.get("x-real-ip") || "";
-  return `${userAgent}-${forwardedFor}-${realIp}`;
+  const sessionToken =
+    req.cookies.get("sb-access-token")?.value ||
+    req.cookies.get("supabase-auth-token")?.value ||
+    "anonymous";
+  const pathname = req.nextUrl.pathname;
+
+  return `${sessionToken}-${pathname}`;
 }
 
 function getCachedAuthData(req: NextRequest): {
@@ -44,38 +55,48 @@ function setCachedAuthData(
   authCache.set(key, { session, profile, timestamp: Date.now() });
 }
 
-export async function middleware(req: NextRequest) {
-  // Handle root redirect FIRST
-  if (req.nextUrl.pathname === "/") {
-    return NextResponse.redirect(new URL("/dashboard", req.url));
+async function fetchAuthData(
+  req: NextRequest,
+  res: NextResponse
+): Promise<{
+  session: Session | null;
+  profile: UserProfile | null;
+}> {
+  const cacheKey = getCacheKey(req);
+
+  if (pendingRequests.has(cacheKey)) {
+    return await pendingRequests.get(cacheKey)!;
   }
 
-  const res = NextResponse.next();
+  const requestPromise = async (): Promise<{
+    session: Session | null;
+    profile: UserProfile | null;
+  }> => {
+    let session: Session | null = null;
+    let profile: UserProfile | null = null;
 
-  // Skip non-protected routes
-  if (!isProtectedRoute(req.nextUrl.pathname)) {
-    return res;
-  }
-
-  // Get route configuration
-  const routeConfig = getRouteConfig(req.nextUrl.pathname);
-  if (!routeConfig) {
-    return res;
-  }
-
-  try {
-    // Check cache for both session and profile
-    let { session, profile } = getCachedAuthData(req);
-
-    // If the session or profile is not cached, fetch from the source
-    if (!session || !profile) {
+    try {
       const supabase = createMiddlewareClient({ req, res });
-      const {
-        data: { session: newSession },
-      } = await supabase.auth.getSession();
-      session = newSession;
 
-      // If a session exists, fetch the user profile
+      try {
+        const {
+          data: { session: newSession },
+        } = await supabase.auth.getSession();
+        session = newSession;
+      } catch (authError: unknown) {
+        if (isRefreshTokenError(authError)) {
+          authCache.delete(cacheKey);
+          session = null;
+          profile = null;
+          clearAuthCookies(res);
+
+          return { session, profile };
+        } else {
+          throw authError;
+        }
+      }
+
+      // If a session exists, fetch the user profile (with reduced frequency)
       if (session?.user) {
         try {
           const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -92,25 +113,58 @@ export async function middleware(req: NextRequest) {
             );
 
             if (error) {
-              console.error(
-                "[Middleware] Error fetching user profile on cache miss:",
-                error
-              );
               profile = null;
             } else {
               profile = (userProfileData?.[0] as UserProfile | null) ?? null;
             }
           }
-        } catch (error) {
-          console.error(
-            "[Middleware] Exception fetching user profile on cache miss:",
-            error
-          );
+        } catch {
           profile = null;
         }
-      } else {
-        profile = null;
       }
+
+      return { session, profile };
+    } finally {
+      // Remove from pending requests
+      pendingRequests.delete(cacheKey);
+    }
+  };
+
+  // Store the promise and execute it
+  const promise = requestPromise();
+  pendingRequests.set(cacheKey, promise);
+
+  return await promise;
+}
+
+export async function middleware(req: NextRequest) {
+  // Handle root redirect FIRST
+  if (req.nextUrl.pathname === "/") {
+    return NextResponse.redirect(new URL("/dashboard", req.url));
+  }
+
+  const res = NextResponse.next();
+
+  // Skip non-protected routes early to avoid unnecessary processing
+  if (!isProtectedRoute(req.nextUrl.pathname)) {
+    return res;
+  }
+
+  // Get route configuration
+  const routeConfig = getRouteConfig(req.nextUrl.pathname);
+  if (!routeConfig) {
+    return res;
+  }
+
+  try {
+    // Check cache for both session and profile
+    let { session, profile } = getCachedAuthData(req);
+
+    // If the session or profile is not cached, fetch from the source
+    if (!session && !profile) {
+      const authData = await fetchAuthData(req, res);
+      session = authData.session;
+      profile = authData.profile;
 
       // Update the cache with the newly fetched data
       setCachedAuthData(req, session, profile);
@@ -127,7 +181,6 @@ export async function middleware(req: NextRequest) {
       return res;
     }
 
-    // No need to fetch profile again, it's already loaded from cache or source
     // Check if user is active
     if (profile && !profile.is_active) {
       return NextResponse.redirect(new URL("/account-disabled", req.url));
@@ -191,10 +244,7 @@ export async function middleware(req: NextRequest) {
     }
 
     return res;
-  } catch (error) {
-    console.error("Middleware error:", error);
-
-    // For API routes, return JSON error
+  } catch {
     if (req.nextUrl.pathname.startsWith("/api/")) {
       return NextResponse.json(
         { error: "Internal server error" },
@@ -202,10 +252,18 @@ export async function middleware(req: NextRequest) {
       );
     }
 
-    // For regular routes, redirect to login
     return NextResponse.redirect(new URL("/login", req.url));
   }
 }
+
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, cached] of authCache.entries()) {
+    if (now - cached.timestamp > CACHE_DURATION) {
+      authCache.delete(key);
+    }
+  }
+}, CACHE_DURATION);
 
 export const config = {
   matcher: [

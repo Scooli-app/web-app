@@ -130,4 +130,6 @@ export const PERMISSION_GROUPS = {
   ],
   AI_BASIC: ["ai.generate"],
   AI_ADVANCED: ["ai.generate", "ai.advanced", "ai.unlimited"],
+  USERS_BASIC: ["users.read"],
+  USERS_FULL: ["users.read", "users.edit", "users.roles", "users.delete"],
 } as const;
