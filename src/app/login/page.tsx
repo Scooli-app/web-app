@@ -11,14 +11,15 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const router = useRouter();
 
-  const { signIn, isLoading, error, isAuthenticated, clearError } =
+  const { signIn, isLoading, error, isAuthenticated, isInitialized, clearError } =
     useAuthStore();
 
   useEffect(() => {
-    if (isAuthenticated) {
+    // Only redirect if auth is initialized and user is authenticated
+    if (isInitialized && isAuthenticated) {
       router.replace(Routes.DASHBOARD);
     }
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, isInitialized, router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
