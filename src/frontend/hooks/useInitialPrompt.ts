@@ -1,5 +1,6 @@
-import { useDocumentStore } from "@/frontend/stores/document.store";
 import type { Document } from "@/shared/types/domain/document";
+import { clearPendingInitialPrompt } from "@/store/documents/documentSlice";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { useCallback, useEffect, useState } from "react";
 
 export function useInitialPrompt(
@@ -10,8 +11,10 @@ export function useInitialPrompt(
 ) {
   const [isExecuting, setIsExecuting] = useState(false);
   const [hasExecuted, setHasExecuted] = useState(false);
-  const { pendingInitialPrompt, pendingDocumentId, clearPendingInitialPrompt } =
-    useDocumentStore();
+  const { pendingInitialPrompt, pendingDocumentId } = useAppSelector(
+    (state) => state.documents
+  );
+  const dispatch = useAppDispatch();
 
   const executePrompt = useCallback(
     async (prompt: string) => {
@@ -40,10 +43,10 @@ export function useInitialPrompt(
           onContentChange(data.generatedContent);
         }
 
-        clearPendingInitialPrompt();
+        dispatch(clearPendingInitialPrompt());
       } catch (error) {
         console.error("Failed to execute initial prompt:", error);
-        clearPendingInitialPrompt();
+        dispatch(clearPendingInitialPrompt());
         setHasExecuted(false);
       } finally {
         setIsExecuting(false);
@@ -51,6 +54,25 @@ export function useInitialPrompt(
     },
     [documentId, generateMessage, onContentChange, clearPendingInitialPrompt]
   );
+
+  useEffect(() => {
+    if (
+      !isExecuting &&
+      (!pendingInitialPrompt || pendingDocumentId !== documentId) &&
+      document?.metadata?.initial_prompt &&
+      (!document.content || document.content.trim() === "")
+    ) {
+      executePrompt(document?.metadata.initial_prompt as string);
+    }
+  }, [
+    document,
+    hasExecuted,
+    isExecuting,
+    pendingInitialPrompt,
+    pendingDocumentId,
+    documentId,
+    executePrompt,
+  ]);
 
   useEffect(() => {
     if (

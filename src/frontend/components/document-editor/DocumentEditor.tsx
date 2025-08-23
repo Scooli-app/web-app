@@ -1,15 +1,19 @@
 "use client";
 
 import { Card } from "@/frontend/components/ui/card";
-import RichTextEditor from "@/frontend/components/ui/rich-text-editor";
-import { useAutoSave } from "@/frontend/hooks/useAutoSave";
 import { useDocumentManager } from "@/frontend/hooks/useDocumentManager";
-import { useDocumentStore } from "@/frontend/stores/document.store";
-
 import { Routes } from "@/shared/types/routes";
+import {
+  clearPendingInitialPrompt,
+  fetchDocument,
+} from "@/store/documents/documentSlice";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { useEditor, type Editor } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import RichTextEditor from "../ui/rich-text-editor";
 import AIChatPanel from "./AIChatPanel";
 import DocumentTitle from "./DocumentTitle";
 
@@ -36,46 +40,71 @@ export default function DocumentEditor({
   chatPlaceholder = "Faça uma pergunta ou peça ajuda...",
 }: DocumentEditorProps) {
   const router = useRouter();
+  const dispatch = useAppDispatch();
+  const { currentDocument, isLoading } = useAppSelector(
+    (state) => state.documents
+  );
+  const {
+    content,
+    handleContentChange,
+    handleTitleSave,
+    isLoading: isSaving,
+    editorKey,
+  } = useDocumentManager(documentId);
+
+  useEffect(() => {
+    if (documentId) {
+      dispatch(fetchDocument(documentId));
+    }
+  }, [dispatch, documentId]);
+
+  const editor = useEditor({
+    extensions: [StarterKit],
+    content: currentDocument?.content || "",
+    editable: true,
+    onUpdate: ({ editor }: { editor: Editor }) => {
+      handleContentChange(editor.getHTML());
+    },
+    immediatelyRender: false,
+  });
+
+  useEffect(() => {
+    if (editor && currentDocument?.content) {
+      editor.commands.setContent(currentDocument.content);
+    }
+  }, [editor, currentDocument?.content]);
+
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState("");
   const [hasExecutedInitialPrompt, setHasExecutedInitialPrompt] =
     useState(false);
 
-  const {
-    document,
-    content,
-    editorKey,
-    isLoading,
-    handleContentChange,
-    handleTitleSave,
-    updateDocument,
-  } = useDocumentManager(documentId);
-
-  const { isSaving } = useAutoSave(document, content, updateDocument);
-
-  const { pendingInitialPrompt, pendingDocumentId, clearPendingInitialPrompt } =
-    useDocumentStore();
+  const { pendingInitialPrompt, pendingDocumentId } = useAppSelector(
+    (state) => state.documents
+  );
   const executePrompt = useCallback(
     async (userMessage: string) => {
-      if (!document) {
+      if (!currentDocument) {
         return;
       }
 
       try {
         setIsStreaming(true);
-        setError("");
 
-        const response = await fetch(`/api/documents/${document.id}/chat`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            message: `${generateMessage}: ${userMessage}`,
-            currentContent: content,
-          }),
-        });
+        const response = await fetch(
+          `/api/documents/${currentDocument?.id}/chat`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              message: `${generateMessage}: ${userMessage}`,
+              currentContent: currentDocument?.content || "",
+            }),
+          }
+        );
 
         if (!response.ok) {
           throw new Error(`Failed to get response: ${response.status}`);
@@ -96,7 +125,7 @@ export default function DocumentEditor({
 
         // Clear pending prompt after successful execution
         if (pendingInitialPrompt && pendingDocumentId === documentId) {
-          clearPendingInitialPrompt();
+          dispatch(clearPendingInitialPrompt());
         }
       } catch (error) {
         console.error("Failed to execute prompt:", error);
@@ -104,7 +133,7 @@ export default function DocumentEditor({
 
         // If it was an initial prompt, clear it to allow retry
         if (pendingInitialPrompt && pendingDocumentId === documentId) {
-          clearPendingInitialPrompt();
+          dispatch(clearPendingInitialPrompt());
           setHasExecutedInitialPrompt(false);
         }
       } finally {
@@ -112,14 +141,13 @@ export default function DocumentEditor({
       }
     },
     [
-      document,
-      content,
+      currentDocument,
       generateMessage,
-      handleContentChange,
       pendingInitialPrompt,
       pendingDocumentId,
       documentId,
-      clearPendingInitialPrompt,
+      handleContentChange,
+      dispatch,
     ]
   );
   // Handle initial prompt execution
@@ -130,7 +158,7 @@ export default function DocumentEditor({
       !isStreaming &&
       pendingInitialPrompt &&
       pendingDocumentId === documentId &&
-      (!document.content || document.content.trim() === "")
+      (!currentDocument?.content || currentDocument?.content.trim() === "")
     ) {
       setHasExecutedInitialPrompt(true);
 
@@ -141,14 +169,21 @@ export default function DocumentEditor({
       executePrompt(pendingInitialPrompt);
     }
   }, [
-    document,
     documentId,
     pendingInitialPrompt,
     pendingDocumentId,
     hasExecutedInitialPrompt,
     isStreaming,
     executePrompt,
+    currentDocument?.content,
   ]);
+
+  useEffect(() => {
+    if (error) {
+      alert(error);
+      setError("");
+    }
+  }, [error]);
 
   const handleChatSubmit = useCallback(
     async (userMessage: string) => {
@@ -165,16 +200,19 @@ export default function DocumentEditor({
       try {
         setIsStreaming(true);
 
-        const response = await fetch(`/api/documents/${document.id}/chat`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            message: userMessage,
-            currentContent: content,
-          }),
-        });
+        const response = await fetch(
+          `/api/documents/${currentDocument?.id}/chat`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              message: userMessage,
+              currentContent: content,
+            }),
+          }
+        );
 
         if (!response.ok) {
           throw new Error(`Failed to get response: ${response.status}`);

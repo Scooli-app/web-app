@@ -2,16 +2,18 @@
 
 import { Badge } from "@/frontend/components/ui/badge";
 import { Button } from "@/frontend/components/ui/button";
+import { signOut } from "@/store/auth/authSlice";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { Coins, Loader2, LogOut, Star, User as UserIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useAuthStore } from "@/frontend/stores/auth.store";
 
 export default function Header() {
   const router = useRouter();
-  const { user, profile, isLoading, signOut } = useAuthStore();
+  const { user, profile, isLoading } = useAppSelector((state) => state.auth);
+  const dispatch = useAppDispatch();
 
   const handleLogout = async () => {
-    await signOut();
+    await dispatch(signOut());
     router.push("/login");
   };
 

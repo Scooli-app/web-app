@@ -14,8 +14,8 @@ interface ChatMessage {
 interface AIChatPanelProps {
   onChatSubmit: (message: string) => Promise<void>;
   chatHistory: ChatMessage[];
-  isStreaming: boolean;
-  error: string;
+  isStreaming?: boolean;
+  error?: string;
   placeholder?: string;
   title?: string;
 }
@@ -23,7 +23,7 @@ interface AIChatPanelProps {
 export default function AIChatPanel({
   onChatSubmit,
   chatHistory,
-  isStreaming,
+  isStreaming = false,
   error,
   placeholder = "Faça uma pergunta ou peça ajuda...",
   title = "AI Assistant",

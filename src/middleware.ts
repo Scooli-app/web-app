@@ -21,7 +21,6 @@ const profileCache = new Map<
   string,
   { profile: UserProfile | null; timestamp: number }
 >();
-const pendingRequests = new Map<string, Promise<Session | null>>();
 
 function getSessionCacheKey(req: NextRequest): string {
   const sessionToken = req.cookies.get("sb-access-token")?.value || "anonymous";
@@ -68,34 +67,25 @@ async function fetchSession(
 ): Promise<Session | null> {
   const cacheKey = getSessionCacheKey(req);
 
-  if (pendingRequests.has(cacheKey)) {
-    return await pendingRequests.get(cacheKey)!;
-  }
-
   const requestPromise = async (): Promise<Session | null> => {
-    try {
-      const supabase = createMiddlewareClient({ req, res });
+    const supabase = createMiddlewareClient({ req, res });
 
-      try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        return session;
-      } catch (authError: unknown) {
-        if (isRefreshTokenError(authError)) {
-          sessionCache.delete(cacheKey);
-          clearAuthCookies(res);
-          return null;
-        }
-        throw authError;
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      return session;
+    } catch (authError: unknown) {
+      if (isRefreshTokenError(authError)) {
+        sessionCache.delete(cacheKey);
+        clearAuthCookies(res);
+        return null;
       }
-    } finally {
-      pendingRequests.delete(cacheKey);
+      throw authError;
     }
   };
 
   const promise = requestPromise();
-  pendingRequests.set(cacheKey, promise);
   return await promise;
 }
 

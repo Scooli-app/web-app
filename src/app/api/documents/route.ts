@@ -1,31 +1,35 @@
-import { validateAPIRequest } from "@/shared/auth/apiAuth";
-import { API_CONFIGS } from "@/shared/auth/utils";
-import type { APIProtectionConfig } from "@/shared/types/auth";
 import type {
   CreateDocumentRequest,
   DeleteDocumentRequest,
 } from "@/shared/types/documents";
+import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
 import { createClient } from "@supabase/supabase-js";
+import { cookies } from "next/headers";
 import { NextResponse, type NextRequest } from "next/server";
 
 /**
  * GET /api/documents - Get paginated documents for the current user with filtering
  */
 export async function GET(request: NextRequest) {
-  // Validate authentication and permissions
-  const validation = await validateAPIRequest(
-    request,
-    API_CONFIGS.USER_DOCUMENTS as unknown as APIProtectionConfig
-  );
+  const cookieStore = cookies();
+  const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
 
-  if (!validation.success) {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  if (!session) {
     return NextResponse.json(
-      { error: validation.error?.message },
-      { status: validation.error?.status || 500 }
+      { error: "Authentication required" },
+      { status: 401 }
     );
   }
 
   try {
+    const { searchParams } = new URL(request.url);
+    const countsOnly = searchParams.get("counts_only") === "true";
+    const userId = searchParams.get("user_id");
+
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseServiceKey =
       process.env.SUPABASE_SERVICE_ROLE_KEY ||
@@ -39,12 +43,6 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "20");
-    const documentType = searchParams.get("type");
-    const userId = searchParams.get("user_id");
-
     if (!userId) {
       return NextResponse.json(
         { error: "User ID is required" },
@@ -52,13 +50,44 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const serviceSupabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    if (countsOnly) {
+      const { data, error } = await serviceSupabase
+        .from("documents")
+        .select("document_type")
+        .eq("user_id", userId)
+        .is("deleted_at", null);
+
+      if (error) {
+        console.error("Error fetching document counts:", error);
+        return NextResponse.json(
+          { error: "Failed to fetch document counts" },
+          { status: 500 }
+        );
+      }
+
+      const counts =
+        data?.reduce(
+          (acc: Record<string, number>, doc: { document_type: string }) => {
+            acc[doc.document_type] = (acc[doc.document_type] || 0) + 1;
+            return acc;
+          },
+          {}
+        ) || {};
+
+      return NextResponse.json({ counts });
+    }
+
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "20");
+    const documentType = searchParams.get("type");
 
     // Calculate offset for pagination
     const offset = (page - 1) * limit;
 
     // Build query - exclude soft-deleted documents
-    let query = supabase
+    let query = serviceSupabase
       .from("documents")
       .select("*", { count: "exact" })
       .eq("user_id", userId)
@@ -195,16 +224,17 @@ export async function POST(req: Request) {
  * DELETE /api/documents - Soft delete documents
  */
 export async function DELETE(request: NextRequest) {
-  // Validate authentication and permissions
-  const validation = await validateAPIRequest(
-    request,
-    API_CONFIGS.DELETE_DOCUMENTS as unknown as APIProtectionConfig
-  );
+  const cookieStore = cookies();
+  const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
 
-  if (!validation.success) {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  if (!session) {
     return NextResponse.json(
-      { error: validation.error?.message },
-      { status: validation.error?.status || 500 }
+      { error: "Authentication required" },
+      { status: 401 }
     );
   }
 
@@ -228,15 +258,15 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    const userId = validation.profile?.id;
+    const serviceSupabase = createClient(supabaseUrl, supabaseServiceKey);
+    const userId = session.user.id;
 
     if (!userId) {
       return NextResponse.json({ error: "User ID not found" }, { status: 400 });
     }
 
     // Soft delete documents (set deleted_at and deleted_by)
-    const { data: deletedDocuments, error } = await supabase
+    const { data: deletedDocuments, error } = await serviceSupabase
       .from("documents")
       .update({
         deleted_at: new Date().toISOString(),

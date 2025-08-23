@@ -1,10 +1,10 @@
 "use client";
 
 import { DocumentsGallery } from "@/frontend/components/ui/documents-gallery";
-import { useAuthStore } from "@/frontend/stores";
+import { useAppSelector } from "@/store/hooks";
 
 export default function DocumentsPage() {
-  const { user} = useAuthStore();
+  const { user } = useAppSelector((state) => state.auth);
 
   return (
     <div className="w-full">

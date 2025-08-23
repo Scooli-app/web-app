@@ -1,34 +1,20 @@
 "use client";
 
-import { useAuthStore } from "@/frontend/stores";
+import { useAppSelector } from "@/store/hooks";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
 
 export default function DashboardPage() {
   const router = useRouter();
 
-  // Use the auth store which already contains user profile data
   const {
     user,
     profile,
     isLoading: authLoading,
     isAuthenticated,
-  } = useAuthStore();
+    isInitialized,
+  } = useAppSelector((state) => state.auth);
 
-  useEffect(() => {
-    // If auth is still loading, wait
-    if (authLoading) {
-      return;
-    }
-
-    // If not authenticated, redirect to login
-    if (!isAuthenticated || !user) {
-      router.replace("/login");
-    }
-  }, [user, authLoading, isAuthenticated, router]);
-
-  // Show loading state while auth is loading
-  if (authLoading) {
+  if (authLoading || !isInitialized) {
     return (
       <div className="flex items-center justify-center min-h-[400px] w-full">
         <div className="flex items-center space-x-2">
@@ -39,8 +25,7 @@ export default function DashboardPage() {
     );
   }
 
-  // If no user after loading, this shouldn't happen due to redirect above
-  if (!user) {
+  if (!isAuthenticated || !user) {
     return null;
   }
 
@@ -85,10 +70,10 @@ export default function DashboardPage() {
             Tipo de Conta
           </h3>
           <p className="text-lg font-medium text-[#2E2F38]">
-            {user.role === "teacher" && "Professor"}
-            {user.role === "curator" && "Curador"}
-            {user.role === "admin" && "Administrador"}
-            {user.role === "super_admin" && "Super Admin"}
+            {profile?.role_name === "teacher" && "Professor"}
+            {profile?.role_name === "curator" && "Curador"}
+            {profile?.role_name === "admin" && "Administrador"}
+            {profile?.role_name === "super_admin" && "Super Admin"}
           </p>
           <p className="text-sm text-[#6C6F80]">Conta verificada e ativa</p>
         </div>

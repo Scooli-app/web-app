@@ -1,8 +1,9 @@
 "use client";
 
 import { Auth } from "@/frontend/components/forms/Auth";
-import { useAuthStore } from "@/frontend/stores/auth.store";
 import { Routes } from "@/shared/types/routes";
+import { clearError, signUp } from "@/store/auth/authSlice";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -11,11 +12,13 @@ export default function SignupPage() {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [success, setSuccess] = useState(false);
+  const [signupSuccess, setSignupSuccess] = useState(false);
   const router = useRouter();
 
-  const { signUp, isLoading, error, isAuthenticated, clearError } =
-    useAuthStore();
+  const dispatch = useAppDispatch();
+  const { isLoading, error, isAuthenticated } = useAppSelector(
+    (state) => state.auth
+  );
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -25,30 +28,26 @@ export default function SignupPage() {
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    clearError();
-    setSuccess(false);
+    dispatch(clearError());
+    setSignupSuccess(false);
 
     if (password !== confirmPassword) {
-      // We can't set custom errors directly, so we'll handle this locally
       return;
     }
-
     if (password.length < 6) {
       return;
     }
-
     if (!/\d/.test(password)) {
       return;
     }
-
     if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
       return;
     }
 
-    await signUp(email, password, name);
+    const result = await dispatch(signUp({ email, password, name }));
 
-    if (!error) {
-      setSuccess(true);
+    if (signUp.fulfilled.match(result)) {
+      setSignupSuccess(true);
     }
   };
 
@@ -80,7 +79,7 @@ export default function SignupPage() {
           onSubmit={handleSignup}
           loading={isLoading}
           error={getValidationError()}
-          success={success}
+          success={signupSuccess}
           email={email}
           password={password}
           setEmail={setEmail}
@@ -90,7 +89,7 @@ export default function SignupPage() {
           confirmPassword={confirmPassword}
           setConfirmPassword={setConfirmPassword}
         >
-          {success && (
+          {signupSuccess && (
             <div className="text-[#1DB67D] bg-[#E6FAF2] rounded-md px-3 py-2 text-sm text-center">
               Conta criada com sucesso!
               <br />
