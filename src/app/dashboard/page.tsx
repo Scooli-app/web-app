@@ -2,7 +2,6 @@
 
 import { useAuthStore } from "@/frontend/stores";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -16,19 +15,6 @@ export default function DashboardPage() {
     isInitialized,
   } = useAuthStore();
 
-  useEffect(() => {
-    // Only make redirect decisions after auth is initialized
-    if (!isInitialized) {
-      return;
-    }
-
-    // If not authenticated after initialization, redirect to login
-    if (!isAuthenticated || !user) {
-      router.replace("/login");
-    }
-  }, [user, isAuthenticated, isInitialized, router]);
-
-  // Show loading state while auth is loading or not initialized
   if (authLoading || !isInitialized) {
     return (
       <div className="flex items-center justify-center min-h-[400px] w-full">
@@ -40,7 +26,6 @@ export default function DashboardPage() {
     );
   }
 
-  // If no user after initialization, this shouldn't happen due to redirect above
   if (!isAuthenticated || !user) {
     return null;
   }

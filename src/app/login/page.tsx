@@ -4,27 +4,21 @@ import { Auth } from "@/frontend/components/forms/Auth";
 import { useAuthStore } from "@/frontend/stores";
 import { Routes } from "@/shared/types/routes";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const router = useRouter();
-
-  const { signIn, isLoading, error, isAuthenticated, isInitialized, clearError } =
-    useAuthStore();
-
-  useEffect(() => {
-    // Only redirect if auth is initialized and user is authenticated
-    if (isInitialized && isAuthenticated) {
-      router.replace(Routes.DASHBOARD);
-    }
-  }, [isAuthenticated, isInitialized, router]);
+  const { signIn, isLoading, error, clearError } = useAuthStore();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     clearError();
-    await signIn(email, password);
+    const success = await signIn(email, password);
+    if (success) {
+      router.push(Routes.DASHBOARD);
+    }
   };
 
   return (

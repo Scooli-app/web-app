@@ -14,7 +14,7 @@ interface AuthState {
 
   initializeAuth: () => Promise<void>;
   signUp: (email: string, password: string, name?: string) => Promise<void>;
-  signIn: (email: string, password: string) => Promise<void>;
+  signIn: (email: string, password: string) => Promise<boolean>;
   signOut: () => Promise<void>;
   clearError: () => void;
   setUser: (user: User | null) => void;
@@ -100,7 +100,7 @@ export const useAuthStore = create<AuthState>()(
       }
     },
 
-    signIn: async (email: string, password: string) => {
+    signIn: async (email: string, password: string): Promise<boolean> => {
       set({ isLoading: true, error: null });
 
       try {
@@ -114,15 +114,17 @@ export const useAuthStore = create<AuthState>()(
 
         if (!response.ok) {
           set({ error: data.error || "Sign in failed", isLoading: false });
-          return;
+          return false;
         }
 
         await get().initializeAuth();
+        return true;
       } catch (error) {
         set({
           error: error instanceof Error ? error.message : "Sign in failed",
           isLoading: false,
         });
+        return false;
       }
     },
 
