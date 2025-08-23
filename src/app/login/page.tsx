@@ -1,24 +1,30 @@
 "use client";
 
 import { Auth } from "@/frontend/components/forms/Auth";
-import { useAuthStore } from "@/frontend/stores";
-import { Routes } from "@/shared/types/routes";
+import { clearError, signIn } from "@/store/auth/authSlice";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const dispatch = useAppDispatch();
+  const { isLoading, error, isAuthenticated } = useAppSelector(
+    (state) => state.auth
+  );
   const router = useRouter();
-  const { signIn, isLoading, error, clearError } = useAuthStore();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.push("/dashboard");
+    }
+  }, [isAuthenticated, router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    clearError();
-    const success = await signIn(email, password);
-    if (success) {
-      router.push(Routes.DASHBOARD);
-    }
+    dispatch(clearError());
+    dispatch(signIn({ email, password }));
   };
 
   return (

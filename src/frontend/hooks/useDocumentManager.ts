@@ -1,21 +1,20 @@
+import { fetchDocument, updateDocument } from "@/store/documents/documentSlice";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { useCallback, useEffect, useState } from "react";
-import { useDocumentStore } from "@/frontend/stores/document.store";
 
 export function useDocumentManager(documentId: string) {
   const [content, setContent] = useState("");
   const [editorKey, setEditorKey] = useState(0);
-  const {
-    fetchDocument,
-    updateDocument,
-    currentDocument,
-    isLoading: storeLoading,
-  } = useDocumentStore();
+  const { currentDocument, isLoading: storeLoading } = useAppSelector(
+    (state) => state.documents
+  );
+  const dispatch = useAppDispatch();
 
   useEffect(() => {
     if (documentId) {
-      fetchDocument(documentId);
+      dispatch(fetchDocument(documentId as string));
     }
-  }, [documentId, fetchDocument]);
+  }, [documentId, dispatch]);
 
   useEffect(() => {
     if (currentDocument) {
@@ -35,16 +34,18 @@ export function useDocumentManager(documentId: string) {
       }
 
       try {
-        await updateDocument({
-          id: currentDocument.id,
-          title: newTitle,
-        });
+        await dispatch(
+          updateDocument({
+            id: currentDocument.id,
+            title: newTitle,
+          })
+        );
       } catch (error) {
         console.error("Failed to save title:", error);
         throw error;
       }
     },
-    [currentDocument, updateDocument]
+    [currentDocument, dispatch]
   );
 
   return {
@@ -54,6 +55,5 @@ export function useDocumentManager(documentId: string) {
     isLoading: storeLoading,
     handleContentChange,
     handleTitleSave,
-    updateDocument,
   };
 }

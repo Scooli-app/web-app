@@ -24,9 +24,9 @@ import {
   SidebarTrigger,
 } from "@/frontend/components/ui/sidebar";
 import { useIsMobile } from "@/frontend/hooks/use-mobile";
-import { useAuthStore } from "@/frontend/stores";
 import { Routes } from "@/shared/types/routes";
 import { cn } from "@/shared/utils/utils";
+import { useAppSelector } from "@/store/hooks";
 import {
   BookOpen,
   FileCheck,
@@ -52,13 +52,13 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
   const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
-  const { user } = useAuthStore();
+  const { user } = useAppSelector((state) => state.auth);
 
   // Don't show sidebar on auth pages
   const isAuthPage =
-    pathname?.startsWith("/login") ||
-    pathname?.startsWith("/signup") ||
-    pathname?.startsWith("/auth");
+    pathname?.startsWith(Routes.LOGIN) ||
+    pathname?.startsWith(Routes.SIGNUP) ||
+    pathname?.startsWith(Routes.ACCOUNT_DISABLED);
 
   if (isAuthPage) {
     return <div className="min-h-screen">{children}</div>;

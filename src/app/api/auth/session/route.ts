@@ -1,8 +1,23 @@
+import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
 import { createClient } from "@supabase/supabase-js";
+import { cookies } from "next/headers";
 import { NextResponse, type NextRequest } from "next/server";
 
 export async function GET(request: NextRequest) {
   try {
+    const cookieStore = cookies();
+    const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
+
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (!session) {
+      return NextResponse.json({ user: null, session: null }, { status: 200 });
+    }
+
+    const { user } = session;
+
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -13,40 +28,9 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const authHeader = request.headers.get("authorization");
-    let token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
+    const serviceSupabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    if (!token) {
-      const cookieNames = ["sb-access-token", "supabase-auth-token"];
-
-      for (const cookieName of cookieNames) {
-        const cookieValue = request.cookies.get(cookieName)?.value;
-        if (cookieValue) {
-          token = cookieValue;
-          break;
-        }
-      }
-
-      if (!token) {
-        return NextResponse.json(
-          { user: null, session: null },
-          { status: 200 }
-        );
-      }
-    }
-
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-    const {
-      data: { user },
-      error,
-    } = await supabase.auth.getUser(token);
-
-    if (error || !user) {
-      return NextResponse.json({ user: null, session: null }, { status: 200 });
-    }
-
-    const { data: userProfileData } = await supabase.rpc(
+    const { data: userProfileData } = await serviceSupabase.rpc(
       "get_user_profile_with_permissions",
       { user_id: user.id }
     );
@@ -64,7 +48,7 @@ export async function GET(request: NextRequest) {
         updated_at: user.updated_at,
       },
       profile,
-      session: { user },
+      session,
     });
   } catch (error) {
     console.error("Session API error:", error);

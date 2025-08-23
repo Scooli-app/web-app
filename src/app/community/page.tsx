@@ -2,14 +2,14 @@
 
 import { Button } from "@/frontend/components/ui/button";
 import { Card } from "@/frontend/components/ui/card";
-import { useAuthStore } from "@/frontend/stores/auth.store";
 import { Routes } from "@/shared/types/routes";
+import { useAppSelector } from "@/store/hooks";
 import { Download, Star, Upload, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 export default function CommunityPage() {
-  const { user, isLoading } = useAuthStore();
+  const { user, isLoading } = useAppSelector((state) => state.auth);
   const router = useRouter();
 
   useEffect(() => {

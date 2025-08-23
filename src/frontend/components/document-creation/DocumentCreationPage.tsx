@@ -1,9 +1,12 @@
 import { Button } from "@/frontend/components/ui/button";
 import { Card } from "@/frontend/components/ui/card";
 import { Input } from "@/frontend/components/ui/input";
-import { useAuthStore } from "@/frontend/stores/auth.store";
-import { useDocumentStore } from "@/frontend/stores/document.store";
 import type { DocumentType } from "@/shared/types/domain/document";
+import {
+  createDocument,
+  setPendingInitialPrompt,
+} from "@/store/documents/documentSlice";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { Loader2, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -24,13 +27,14 @@ interface DocumentCreationPageProps {
 export default function DocumentCreationPage({
   documentType,
 }: DocumentCreationPageProps) {
-  const { user, isLoading: authLoading } = useAuthStore();
+  const { user, isLoading: authLoading } = useAppSelector(
+    (state) => state.auth
+  );
   const router = useRouter();
   const [initialPrompt, setInitialPrompt] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-
-  const { setPendingInitialPrompt, createDocument } = useDocumentStore();
+  const dispatch = useAppDispatch();
 
   const handleCreateDocument = async () => {
     if (!initialPrompt.trim()) {
@@ -49,25 +53,38 @@ export default function DocumentCreationPage({
       setIsLoading(true);
       setError("");
 
-      const newDoc = await createDocument(
-        {
-          title: `${
-            documentType.generateTitlePrefix
-          } - ${new Date().toLocaleDateString("pt-PT")}`,
-          content: "",
-          document_type: documentType.id,
-          is_public: false,
-          metadata: {
-            initial_prompt: initialPrompt,
+      const resultAction = await dispatch(
+        createDocument({
+          data: {
+            title: `${
+              documentType.generateTitlePrefix
+            } - ${new Date().toLocaleDateString("pt-PT")}`,
+            content: "",
+            document_type: documentType.id,
+            is_public: false,
+            metadata: {
+              initial_prompt: initialPrompt,
+            },
           },
-        },
-        user.id
+          userId: user.id,
+        })
       );
 
-      if (newDoc) {
-        setPendingInitialPrompt(newDoc.id, initialPrompt);
+      if (createDocument.fulfilled.match(resultAction)) {
+        const newDoc = resultAction.payload;
+        dispatch(
+          setPendingInitialPrompt({
+            documentId: newDoc.id,
+            prompt: initialPrompt,
+          })
+        );
         const redirectUrl = documentType.redirectPath.replace(":id", newDoc.id);
         router.push(redirectUrl);
+      } else {
+        setError(
+          (resultAction.payload as string) ||
+            "Ocorreu um erro ao criar o documento."
+        );
       }
     } catch (error) {
       console.error("Failed to create document:", error);

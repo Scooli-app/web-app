@@ -1,5 +1,5 @@
 import { SidebarLayout } from "@/frontend/components/layout/SidebarLayout";
-import AuthProvider from "@/frontend/components/providers/AuthProvider";
+import StoreProvider from "@/frontend/components/providers/StoreProvider";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
@@ -23,9 +23,9 @@ export default function RootLayout({
   return (
     <html lang="pt" className={inter.variable}>
       <body className={`${inter.className} antialiased`}>
-        <AuthProvider>
+        <StoreProvider>
           <SidebarLayout>{children}</SidebarLayout>
-        </AuthProvider>
+        </StoreProvider>
       </body>
     </html>
   );

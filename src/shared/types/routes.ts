@@ -17,6 +17,7 @@ export enum Routes {
   COMMUNITY_MODERATE = "/community/moderate",
   LOGIN = "/login",
   SIGNUP = "/signup",
+  ACCOUNT_DISABLED = "/account-disabled",
 }
 
 export enum APIRoutes {
