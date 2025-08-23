@@ -111,7 +111,6 @@ export const signOut = createAsyncThunk(
         const data = await response.json();
         return rejectWithValue(data.error || "Sign out failed");
       }
-      return;
     } catch (error) {
       return rejectWithValue(
         error instanceof Error ? error.message : "Sign out failed"

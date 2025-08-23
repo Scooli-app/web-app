@@ -133,7 +133,7 @@ export default function DocumentEditor({
 
         // If it was an initial prompt, clear it to allow retry
         if (pendingInitialPrompt && pendingDocumentId === documentId) {
-          clearPendingInitialPrompt();
+          dispatch(clearPendingInitialPrompt());
           setHasExecutedInitialPrompt(false);
         }
       } finally {

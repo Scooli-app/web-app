@@ -68,23 +68,20 @@ async function fetchSession(
   const cacheKey = getSessionCacheKey(req);
 
   const requestPromise = async (): Promise<Session | null> => {
-    try {
-      const supabase = createMiddlewareClient({ req, res });
+    const supabase = createMiddlewareClient({ req, res });
 
-      try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        return session;
-      } catch (authError: unknown) {
-        if (isRefreshTokenError(authError)) {
-          sessionCache.delete(cacheKey);
-          clearAuthCookies(res);
-          return null;
-        }
-        throw authError;
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      return session;
+    } catch (authError: unknown) {
+      if (isRefreshTokenError(authError)) {
+        sessionCache.delete(cacheKey);
+        clearAuthCookies(res);
+        return null;
       }
-    } finally {
+      throw authError;
     }
   };
 
