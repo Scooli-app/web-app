@@ -56,10 +56,10 @@ export function useInitialPrompt(
     if (
       !isExecuting &&
       (!pendingInitialPrompt || pendingDocumentId !== documentId) &&
-      document.metadata?.initial_prompt &&
+      document?.metadata?.initial_prompt &&
       (!document.content || document.content.trim() === "")
     ) {
-      executePrompt(document.metadata.initial_prompt as string);
+      executePrompt(document?.metadata.initial_prompt as string);
     }
   }, [
     document,
