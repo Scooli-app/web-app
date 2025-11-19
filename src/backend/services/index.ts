@@ -1,7 +1,3 @@
-// Auth services
-export { AuthService } from "./auth/auth.service";
-export { AuthInitService } from "./auth/auth-init.service";
-
 // User services
 export { UserProfileService } from "./users/user-profile.service";
 
@@ -16,7 +12,6 @@ export { CreditService } from "./credit.service";
 export { supabase, apiClient, ApiError } from "./client";
 
 // Types
-export type { AuthResponse, SignUpData, SignInData } from "./auth/auth.service";
 export type { UserProfile } from "./users/user-profile.service";
 export type {
   CreditCheckResult,

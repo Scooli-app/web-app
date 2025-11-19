@@ -1,10 +1,6 @@
-import type { UserProfile as SharedUserProfile } from "@/shared/types/auth";
-import { createAuthClient } from "../client";
+import { createClient } from "@supabase/supabase-js";
 
-// Extend the shared UserProfile type with any service-specific fields
-export interface UserProfile extends Omit<SharedUserProfile, "role_id"> {
-  // The role_id field will be added by the database trigger
-  // Include all required fields from SharedUserProfile except role_id
+export interface UserProfile {
   id: string;
   email: string;
   full_name: string | null;
@@ -18,10 +14,21 @@ export interface UserProfile extends Omit<SharedUserProfile, "role_id"> {
 }
 
 export class UserProfileService {
+  private static getSupabaseClient() {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+      throw new Error("Supabase not configured");
+    }
+
+    return createClient(supabaseUrl, supabaseServiceKey);
+  }
+
   // Get user profile by ID
   static async getUserProfile(userId: string): Promise<UserProfile | null> {
     try {
-      const supabase = createAuthClient();
+      const supabase = this.getSupabaseClient();
       const { data, error } = await supabase
         .from("user_profiles")
         .select("*")
@@ -51,7 +58,7 @@ export class UserProfileService {
     updates: Partial<UserProfile>
   ): Promise<{ profile?: UserProfile; error?: string }> {
     try {
-      const supabase = createAuthClient();
+      const supabase = this.getSupabaseClient();
       const { data, error } = await supabase
         .from("user_profiles")
         .update(updates)

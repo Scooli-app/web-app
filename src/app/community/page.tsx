@@ -2,36 +2,7 @@
 
 import { Button } from "@/frontend/components/ui/button";
 import { Card } from "@/frontend/components/ui/card";
-import { Routes } from "@/shared/types/routes";
-import { useAppSelector } from "@/store/hooks";
 import { Download, Star, Upload, Users } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
-
-export default function CommunityPage() {
-  const { user, isLoading } = useAppSelector((state) => state.auth);
-  const router = useRouter();
-
-  useEffect(() => {
-    if (!isLoading && !user) {
-      router.replace(Routes.LOGIN);
-    }
-  }, [user, isLoading, router]);
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px] w-full">
-        <div className="flex items-center space-x-2">
-          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#6753FF]" />
-          <span className="text-lg text-[#6C6F80]">A carregar...</span>
-        </div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return null;
-  }
 
   return (
     <div className="w-full">

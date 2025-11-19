@@ -6,7 +6,7 @@ import {
   createDocument,
   setPendingInitialPrompt,
 } from "@/store/documents/documentSlice";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { useAppDispatch } from "@/store/hooks";
 import { Loader2, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -22,14 +22,13 @@ export interface DocumentTypeConfig {
 
 interface DocumentCreationPageProps {
   documentType: DocumentTypeConfig;
+  userId?: string;
 }
 
 export default function DocumentCreationPage({
   documentType,
+  userId = "",
 }: DocumentCreationPageProps) {
-  const { user, isLoading: authLoading } = useAppSelector(
-    (state) => state.auth
-  );
   const router = useRouter();
   const [initialPrompt, setInitialPrompt] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -44,8 +43,8 @@ export default function DocumentCreationPage({
       return;
     }
 
-    if (!user) {
-      setError("Utilizador não autenticado");
+    if (!userId) {
+      setError("User ID é necessário");
       return;
     }
 
@@ -66,7 +65,7 @@ export default function DocumentCreationPage({
               initial_prompt: initialPrompt,
             },
           },
-          userId: user.id,
+          userId: userId,
         })
       );
 
@@ -91,31 +90,14 @@ export default function DocumentCreationPage({
 
       // More specific error messages
       if (error instanceof Error) {
-        if (error.message.includes("not authenticated")) {
-          setError("Erro de autenticação. Por favor, faça login novamente.");
-        } else if (error.message.includes("violates row-level security")) {
-          setError("Erro de permissão. Verifique se está autenticado.");
-        } else {
-          setError(`Erro ao criar o documento: ${error.message}`);
-        }
+        setError(`Erro ao criar o documento: ${error.message}`);
       } else {
-        setError("Erro ao criar o documento. Verifique se está autenticado.");
+        setError("Erro ao criar o documento.");
       }
     } finally {
       setIsLoading(false);
     }
   };
-
-  if (authLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px] w-full">
-        <div className="flex items-center space-x-2">
-          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#6753FF]" />
-          <span className="text-lg text-[#6C6F80]">A carregar...</span>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="w-full p-6">

@@ -2,29 +2,13 @@ import type {
   CreateDocumentRequest,
   DeleteDocumentRequest,
 } from "@/shared/types/documents";
-import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
 import { createClient } from "@supabase/supabase-js";
-import { cookies } from "next/headers";
 import { NextResponse, type NextRequest } from "next/server";
 
 /**
- * GET /api/documents - Get paginated documents for the current user with filtering
+ * GET /api/documents - Get paginated documents with filtering
  */
 export async function GET(request: NextRequest) {
-  const cookieStore = cookies();
-  const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
-
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-
-  if (!session) {
-    return NextResponse.json(
-      { error: "Authentication required" },
-      { status: 401 }
-    );
-  }
-
   try {
     const { searchParams } = new URL(request.url);
     const countsOnly = searchParams.get("counts_only") === "true";
@@ -157,31 +141,13 @@ export async function POST(req: Request) {
       );
     }
 
-    // Extract user_id from the request if available
-    const authHeader = req.headers.get("authorization");
-    let userId = null;
-
-    if (authHeader && authHeader.startsWith("Bearer ")) {
-      const token = authHeader.substring(7);
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser(token);
-
-      if (!userError && user) {
-        userId = user.id;
-      }
-    }
-
-    // If no user ID was found, check if it was provided in the body
-    if (!userId && body.user_id) {
-      userId = body.user_id;
-    }
+    // Extract user_id from the request body
+    const userId = body.user_id;
 
     if (!userId) {
       return NextResponse.json(
         { error: "User ID is required" },
-        { status: 401 }
+        { status: 400 }
       );
     }
 
@@ -224,20 +190,6 @@ export async function POST(req: Request) {
  * DELETE /api/documents - Soft delete documents
  */
 export async function DELETE(request: NextRequest) {
-  const cookieStore = cookies();
-  const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
-
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-
-  if (!session) {
-    return NextResponse.json(
-      { error: "Authentication required" },
-      { status: 401 }
-    );
-  }
-
   try {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -258,19 +210,21 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    const serviceSupabase = createClient(supabaseUrl, supabaseServiceKey);
-    const userId = session.user.id;
-
-    if (!userId) {
-      return NextResponse.json({ error: "User ID not found" }, { status: 400 });
+    if (!body.user_id) {
+      return NextResponse.json(
+        { error: "User ID is required" },
+        { status: 400 }
+      );
     }
+
+    const serviceSupabase = createClient(supabaseUrl, supabaseServiceKey);
+    const userId = body.user_id;
 
     // Soft delete documents (set deleted_at and deleted_by)
     const { data: deletedDocuments, error } = await serviceSupabase
       .from("documents")
       .update({
         deleted_at: new Date().toISOString(),
-        deleted_by: userId,
       })
       .in("id", body.ids)
       .eq("user_id", userId) // Ensure user can only delete their own documents

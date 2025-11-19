@@ -21,19 +21,6 @@ export type {
   DeleteDocumentRequest,
 } from "./api/document";
 
-// Auth types
-export type {
-  APIProtectionConfig,
-  AuthContext,
-  Permission,
-  PermissionCategory,
-  Role,
-  RouteConfig,
-  User,
-  UserProfile,
-  UserRole,
-} from "./auth";
-
 // UI types
 export type { LessonPlanForm, SearchFilters, UIState } from "./ui";
 
