@@ -1,7 +1,7 @@
 "use client";
 
-import { DocumentCard } from "@/frontend/components/ui/document-card";
-import { DocumentFilters } from "@/frontend/components/ui/document-filters";
+import { DocumentCard } from "@/components/ui/document-card";
+import { DocumentFilters } from "@/components/ui/document-filters";
 import type { Document } from "@/shared/types/domain/document";
 
 import { CheckSquare, Loader2, Search, Square, Trash2, X } from "lucide-react";

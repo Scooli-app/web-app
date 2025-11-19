@@ -1,7 +1,6 @@
 "use client";
 
-import DocumentCreationPage from "@/frontend/components/document-creation/DocumentCreationPage";
-import { documentTypes } from "@/frontend/components/document-creation/documentTypes";
+import { DocumentCreationPage, documentTypes } from "@/components/document-creation";
 
 export default function TestPage() {
   return <DocumentCreationPage documentType={documentTypes.assay} />;

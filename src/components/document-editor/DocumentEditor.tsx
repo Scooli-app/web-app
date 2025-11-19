@@ -1,7 +1,7 @@
 "use client";
 
-import { Card } from "@/frontend/components/ui/card";
-import { useDocumentManager } from "@/frontend/hooks/useDocumentManager";
+import { Card } from "@/components/ui/card";
+import { useDocumentManager } from "@/hooks/useDocumentManager";
 import { Routes } from "@/shared/types/routes";
 import {
   clearPendingInitialPrompt,

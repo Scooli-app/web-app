@@ -1,8 +1,8 @@
-import { SidebarLayout } from "@/frontend/components/layout/SidebarLayout";
-import StoreProvider from "@/frontend/components/providers/StoreProvider";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import StoreProvider from "@/components/providers/StoreProvider";
+import { SidebarLayout } from "@/components/layout/SidebarLayout";
 
 const inter = Inter({
   variable: "--font-inter",

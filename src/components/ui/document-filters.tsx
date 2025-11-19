@@ -1,6 +1,6 @@
 "use client";
 
-import { Badge } from "@/frontend/components/ui/badge";
+import { Badge } from "@/components/ui/badge";
 import type { Document } from "@/shared/types/domain/document";
 
 interface DocumentFiltersProps {

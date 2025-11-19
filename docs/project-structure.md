@@ -50,12 +50,12 @@ app/
 └── favicon.ico             # Site icon
 ```
 
-### 📁 **Frontend Directory** (`src/frontend/`)
+### 📁 **Frontend Directory** (`src/`)
 
 Client-side React components, hooks, and state management.
 
 ```
-frontend/
+
 ├── components/
 │   ├── document-editor/    # Document editing components
 │   │   ├── DocumentEditor.tsx
@@ -199,7 +199,7 @@ src/
 ### 🎨 **UI/UX Organization**
 
 - Atomic design principles in UI components
-- Reusable components in `frontend/components/ui/`
+- Reusable components in `components/ui/`
 - Feature-specific components grouped by domain
 - Consistent styling with Tailwind CSS
 
@@ -228,7 +228,7 @@ src/
 
 This structure represents a recent reorganization from a previous flat structure. Key improvements include:
 
-- Better separation of frontend/backend concerns
+- Better separation of backend concerns
 - Centralized authentication system
 - Improved type organization
 - Cleaner component hierarchy

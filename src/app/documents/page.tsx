@@ -1,6 +1,6 @@
 "use client";
 
-import { DocumentsGallery } from "@/frontend/components/ui/documents-gallery";
+import { DocumentsGallery } from "@/components/ui/documents-gallery";
 
 export default function DocumentsPage() {
   // TODO: Get userId from context or props when auth is re-implemented

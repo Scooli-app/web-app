@@ -33,7 +33,7 @@ export enum Routes {
 
 ### 3. Configure Document Type
 
-Add to `src/frontend/components/document-creation/documentTypes.ts`:
+Add to `src/components/document-creation/documentTypes.ts`:
 
 ```typescript
 export const documentTypes: Record<string, DocumentTypeConfig> = {
@@ -61,7 +61,7 @@ Create `src/app/worksheet/page.tsx`:
 import {
   DocumentCreationPage,
   documentTypes,
-} from "@/frontend/components/document-creation";
+} from "@/components/document-creation";
 
 export default function WorksheetPage() {
   return <DocumentCreationPage documentType={documentTypes.worksheet} />;
@@ -73,7 +73,7 @@ Create `src/app/worksheet/[id]/page.tsx`:
 ```typescript
 "use client";
 
-import DocumentEditor from "@/frontend/components/document-editor/DocumentEditor";
+import DocumentEditor from "@/components/document-editor/DocumentEditor";
 import { use } from "react";
 
 interface WorksheetEditorPageProps {

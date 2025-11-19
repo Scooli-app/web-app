@@ -16,7 +16,7 @@ src/
 │   ├── middleware/       # Backend middleware
 │   └── utils/           # Backend utilities
 │
-├── frontend/             # Frontend-specific code
+├──              # Frontend-specific code
 │   ├── components/      # React components
 │   │   ├── ui/         # UI components
 │   │   └── features/   # Feature components
@@ -45,7 +45,7 @@ src/
 - API implementation details
 - Server-side utilities and helpers
 
-### Frontend (`src/frontend/`)
+### Frontend (`src/`)
 - React components and hooks
 - State management (stores)
 - UI-specific utilities
@@ -64,14 +64,14 @@ src/
    - `src/shared/*`
 
 2. Frontend code can import from:
-   - `src/frontend/*`
+   - `src/*`
    - `src/shared/*`
 
 3. Shared code can ONLY import from:
    - `src/shared/*`
 
 4. App directory can import from:
-   - `src/frontend/*`
+   - `src/*`
    - `src/backend/*` (only in API routes)
    - `src/shared/*`
 
@@ -87,7 +87,7 @@ src/
 - Shared enums
 - Domain-specific types
 
-### Frontend Types (`src/frontend/types/`)
+### Frontend Types (`src/types/`)
 - Component prop types
 - Store types
 - UI-specific types
@@ -109,9 +109,9 @@ export class DocumentService {
 
 ### Frontend Component
 ```typescript
-// src/frontend/components/features/documents/DocumentEditor.tsx
+// src/components/features/documents/DocumentEditor.tsx
 import { Document } from '@/shared/types/domain';
-import { useDocumentStore } from '@/frontend/stores/document.store';
+import { useDocumentStore } from '@/stores/document.store';
 
 export function DocumentEditor({ document }: { document: Document }) {
   // Implementation
