@@ -21,7 +21,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="pt" className={inter.variable}>
+    <html lang="pt" className={inter.variable} suppressHydrationWarning>
       <body className={`${inter.className} antialiased`}>
         <StoreProvider>
           <SidebarLayout>{children}</SidebarLayout>

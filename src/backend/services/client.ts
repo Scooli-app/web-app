@@ -1,4 +1,3 @@
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { createClient } from "@supabase/supabase-js";
 
 // API Client Configuration
@@ -6,9 +5,6 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
-// Client-side Supabase client for auth operations
-export const createAuthClient = () => createClientComponentClient();
 
 // API Response Handler
 export class ApiError extends Error {
@@ -32,28 +28,13 @@ export const handleApiResponse = async <T>(response: Response): Promise<T> => {
   return response.json();
 };
 
-// Helper to get auth headers for Supabase requests
+// Helper to get headers for Supabase requests
 const getSupabaseHeaders = async () => {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     apikey: supabaseAnonKey,
+    Authorization: `Bearer ${supabaseAnonKey}`,
   };
-
-  // Add auth token if we're in a browser environment
-  if (typeof window !== "undefined") {
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    if (session?.access_token) {
-      headers["Authorization"] = `Bearer ${session.access_token}`;
-    } else {
-      // If no session, use the anon key as the Bearer token as well
-      headers["Authorization"] = `Bearer ${supabaseAnonKey}`;
-    }
-  } else {
-    // For server-side requests, use the anon key as the Bearer token
-    headers["Authorization"] = `Bearer ${supabaseAnonKey}`;
-  }
 
   return headers;
 };

@@ -1,4 +1,4 @@
-import { createAuthClient } from "./client";
+import { createClient } from "@supabase/supabase-js";
 
 export interface CreditCheckResult {
   canGenerate: boolean;
@@ -21,6 +21,17 @@ export interface CreditStatus {
 }
 
 export class CreditService {
+  private static getSupabaseClient() {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+      throw new Error("Supabase not configured");
+    }
+
+    return createClient(supabaseUrl, supabaseServiceKey);
+  }
+
   /**
    * Check if user can generate content and deduct credits if needed
    * Uses database function for atomic operation
@@ -30,7 +41,7 @@ export class CreditService {
     creditsRequired: number = 1
   ): Promise<CreditCheckResult> {
     try {
-      const supabase = createAuthClient();
+      const supabase = this.getSupabaseClient();
       const { data, error } = await supabase.rpc("check_and_deduct_credits", {
         user_id: userId,
         credits_required: creditsRequired,
@@ -76,7 +87,7 @@ export class CreditService {
     creditsToAdd: number
   ): Promise<CreditDeductionResult> {
     try {
-      const supabase = createAuthClient();
+      const supabase = this.getSupabaseClient();
       const { data, error } = await supabase.rpc("add_user_credits", {
         user_id: userId,
         credits_to_add: creditsToAdd,
@@ -117,7 +128,7 @@ export class CreditService {
    */
   static async getCreditStatus(userId: string): Promise<CreditStatus | null> {
     try {
-      const supabase = createAuthClient();
+      const supabase = this.getSupabaseClient();
       const { data, error } = await supabase.rpc("get_user_credit_status", {
         user_id: userId,
       });
@@ -151,7 +162,7 @@ export class CreditService {
     isPro: boolean
   ): Promise<{ success: boolean; error?: string }> {
     try {
-      const supabase = createAuthClient();
+      const supabase = this.getSupabaseClient();
       const { data, error } = await supabase.rpc("update_user_pro_status", {
         user_id: userId,
         is_pro: isPro,
