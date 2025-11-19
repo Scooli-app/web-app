@@ -1,11 +1,11 @@
-import { Button } from "@/frontend/components/ui/button";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-} from "@/frontend/components/ui/card";
-import { Input } from "@/frontend/components/ui/input";
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { SUCCESS_MESSAGES } from "@/shared/config/constants";
 import { HelpCircle } from "lucide-react";
 

@@ -1,9 +1,8 @@
-"use client";
-
-import { Button } from "@/frontend/components/ui/button";
-import { Card } from "@/frontend/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { Download, Star, Upload, Users } from "lucide-react";
 
+export default function CommunityPage() {
   return (
     <div className="w-full">
       <div className="max-w-7xl mx-auto">

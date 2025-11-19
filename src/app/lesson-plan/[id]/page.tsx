@@ -1,6 +1,6 @@
 "use client";
 
-import DocumentEditor from "@/frontend/components/document-editor/DocumentEditor";
+import DocumentEditor from "@/components/document-editor/DocumentEditor";
 import { use } from "react";
 
 interface LessonPlanEditorPageProps {

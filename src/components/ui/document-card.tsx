@@ -1,7 +1,7 @@
 "use client";
 
-import { Badge } from "@/frontend/components/ui/badge";
-import { Card } from "@/frontend/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 import type { Document } from "@/shared/types/domain/document";
 import { Routes } from "@/shared/types/routes";
 import { Clock, FileText, Trash2, User } from "lucide-react";

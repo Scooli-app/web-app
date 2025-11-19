@@ -1,8 +1,8 @@
 "use client";
 
-import { Button } from "@/frontend/components/ui/button";
-import { Card } from "@/frontend/components/ui/card";
-import { Input } from "@/frontend/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Send } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 

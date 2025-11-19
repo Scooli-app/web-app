@@ -1,14 +1,14 @@
 "use client";
 
-import { Button } from "@/frontend/components/ui/button";
-import { ScrollArea } from "@/frontend/components/ui/scroll-area";
-import { Separator } from "@/frontend/components/ui/separator";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
 import {
   Sheet,
   SheetContent,
   SheetTitle,
   SheetTrigger,
-} from "@/frontend/components/ui/sheet";
+} from "@/components/ui/sheet";
 import {
   SidebarContent,
   SidebarFooter,
@@ -22,8 +22,8 @@ import {
   Sidebar as SidebarPrimitive,
   SidebarProvider,
   SidebarTrigger,
-} from "@/frontend/components/ui/sidebar";
-import { useIsMobile } from "@/frontend/hooks/use-mobile";
+} from "@/components/ui/sidebar";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Routes } from "@/shared/types/routes";
 import { cn } from "@/shared/utils/utils";
 import {
