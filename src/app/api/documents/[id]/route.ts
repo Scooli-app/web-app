@@ -1,7 +1,4 @@
-import {
-  DocumentService,
-  type UpdateDocumentData,
-} from "@/backend/services/documents/document.service";
+import { createClient } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 
 /**
@@ -13,9 +10,26 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const document = await DocumentService.getDocument(id);
 
-    if (!document) {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+      return NextResponse.json(
+        { error: "Supabase not configured" },
+        { status: 500 }
+      );
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const { data: document, error } = await supabase
+      .from("documents")
+      .select("*")
+      .eq("id", id)
+      .is("deleted_at", null)
+      .single();
+
+    if (error || !document) {
       return NextResponse.json(
         { error: "Document not found" },
         { status: 404 }
@@ -41,16 +55,41 @@ export async function PUT(
 ) {
   try {
     const { id } = await params;
-    const updates: Partial<UpdateDocumentData> = await req.json();
-    updates.id = id; // Add the ID from the URL parameter
+    const updates = await req.json();
 
-    const result = await DocumentService.updateDocument(
-      updates as UpdateDocumentData
-    );
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-    if (result.error) {
-      return NextResponse.json({ error: result.error }, { status: 400 });
+    if (!supabaseUrl || !supabaseServiceKey) {
+      return NextResponse.json(
+        { error: "Supabase not configured" },
+        { status: 500 }
+      );
     }
+
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const { data: document, error } = await supabase
+      .from("documents")
+      .update({
+        ...updates,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", id)
+      .is("deleted_at", null)
+      .select()
+      .single();
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+
+    if (!document) {
+      return NextResponse.json(
+        { error: "Document not found" },
+        { status: 404 }
+      );
+    }
+
     return NextResponse.json(document);
   } catch (error) {
     console.error("Error updating document:", error);
@@ -70,11 +109,30 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    const result = await DocumentService.deleteDocument(id);
 
-    if (result.error) {
-      return NextResponse.json({ error: result.error }, { status: 400 });
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+      return NextResponse.json(
+        { error: "Supabase not configured" },
+        { status: 500 }
+      );
     }
+
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const { error } = await supabase
+      .from("documents")
+      .update({
+        deleted_at: new Date().toISOString(),
+      })
+      .eq("id", id)
+      .is("deleted_at", null);
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error deleting document:", error);

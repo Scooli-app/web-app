@@ -20,7 +20,6 @@ export const config = {
     "/admin/:path*",
     "/community/:path*",
     "/api/documents/:path*",
-    "/api/process-curriculum/:path*",
     "/api/admin/:path*",
   ],
 };

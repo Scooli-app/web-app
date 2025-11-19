@@ -1,10 +1,22 @@
-import {
-  DocumentService,
-  type DocumentFilters,
-  type UpdateDocumentData,
-} from "@/backend/services/documents/document.service";
 import type { Document } from "@/shared/types/domain/document";
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+
+export interface DocumentFilters {
+  type?: string;
+  search?: string;
+  subject?: string;
+  grade_level?: string;
+}
+
+export interface UpdateDocumentData {
+  id: string;
+  title?: string;
+  content?: string;
+  metadata?: Record<string, unknown>;
+  is_public?: boolean;
+  subject?: string | null;
+  grade_level?: string | null;
+}
 
 interface DocumentState {
   documents: Document[];
@@ -46,19 +58,44 @@ export const fetchDocuments = createAsyncThunk(
       page = 1,
       limit = 10,
       filters,
-    }: { page?: number; limit?: number; filters?: DocumentFilters },
+      userId,
+    }: {
+      page?: number;
+      limit?: number;
+      filters?: DocumentFilters;
+      userId: string;
+    },
     { getState, rejectWithValue }
   ) => {
     try {
       const currentFilters =
         filters ||
         (getState() as { documents: DocumentState }).documents.filters;
-      const result = await DocumentService.getDocuments(
-        page,
-        limit,
-        currentFilters
-      );
-      return { ...result, filters: currentFilters };
+
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: limit.toString(),
+        user_id: userId,
+      });
+
+      if (currentFilters.type && currentFilters.type !== "all") {
+        params.set("type", currentFilters.type);
+      }
+
+      const response = await fetch(`/api/documents?${params.toString()}`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch documents");
+      }
+
+      const result = await response.json();
+      return {
+        data: result.documents || [],
+        page: result.pagination?.page || page,
+        limit: result.pagination?.limit || limit,
+        total: result.pagination?.total || 0,
+        hasMore: result.pagination?.hasMore || false,
+        filters: currentFilters,
+      };
     } catch (error) {
       return rejectWithValue(
         error instanceof Error ? error.message : "Failed to fetch documents"
@@ -71,10 +108,14 @@ export const fetchDocument = createAsyncThunk(
   "documents/fetchDocument",
   async (id: string, { rejectWithValue }) => {
     try {
-      const document = await DocumentService.getDocument(id);
-      if (!document) {
-        return rejectWithValue("Document not found");
+      const response = await fetch(`/api/documents/${id}`);
+      if (!response.ok) {
+        if (response.status === 404) {
+          return rejectWithValue("Document not found");
+        }
+        throw new Error("Failed to fetch document");
       }
+      const document = await response.json();
       return document;
     } catch (error) {
       return rejectWithValue(
@@ -91,11 +132,24 @@ export const createDocument = createAsyncThunk(
     { rejectWithValue }
   ) => {
     try {
-      const result = await DocumentService.createDocument(data, userId);
-      if (result.error || !result.document) {
-        return rejectWithValue(result.error || "Failed to create document");
+      const response = await fetch("/api/documents", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...data,
+          user_id: userId,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to create document");
       }
-      return result.document;
+
+      const document = await response.json();
+      return document;
     } catch (error) {
       return rejectWithValue(
         error instanceof Error ? error.message : "Failed to create document"
@@ -108,11 +162,21 @@ export const updateDocument = createAsyncThunk(
   "documents/updateDocument",
   async (data: UpdateDocumentData, { rejectWithValue }) => {
     try {
-      const result = await DocumentService.updateDocument(data);
-      if (result.error || !result.document) {
-        return rejectWithValue(result.error || "Failed to update document");
+      const response = await fetch(`/api/documents/${data.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to update document");
       }
-      return result.document;
+
+      const document = await response.json();
+      return document;
     } catch (error) {
       return rejectWithValue(
         error instanceof Error ? error.message : "Failed to update document"
@@ -125,10 +189,15 @@ export const deleteDocument = createAsyncThunk(
   "documents/deleteDocument",
   async (id: string, { rejectWithValue }) => {
     try {
-      const result = await DocumentService.deleteDocument(id);
-      if (result.error) {
-        return rejectWithValue(result.error || "Failed to delete document");
+      const response = await fetch(`/api/documents/${id}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to delete document");
       }
+
       return id; // Return the id on success
     } catch (error) {
       return rejectWithValue(

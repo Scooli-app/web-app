@@ -11,7 +11,6 @@ export enum Routes {
   PRESENTATION = "/presentation",
   ADMIN = "/admin",
   COMMUNITY = "/community",
-  AI_ASSISTANT = "/ai-assistant",
   SETTINGS = "/settings",
   QUICK_GENERATOR = "/quick-generator",
   COMMUNITY_MODERATE = "/community/moderate",
@@ -19,6 +18,5 @@ export enum Routes {
 
 export enum APIRoutes {
   DOCUMENTS = "/api/documents",
-  PROCESS_CURRICULUM = "/api/process-curriculum",
   ADMIN = "/api/admin",
 }
