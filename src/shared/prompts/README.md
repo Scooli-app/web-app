@@ -4,11 +4,11 @@ This folder contains all prompt templates and builders for the Scooli applicatio
 
 ## Philosophy
 
-Our prompts follow a **hybrid approach**:
+Our prompts follow a **model-based approach**:
 
-- **RAG Context as Priority**: Curriculum information from the RAG system is treated as the most current and accurate source
-- **Model Knowledge as Enhancement**: The model can use its own knowledge to complement and enrich responses
+- **Model Knowledge**: The model uses its knowledge to provide accurate and relevant responses
 - **Flexible Generation**: For pedagogical suggestions, methodologies, and activities, the model can leverage its full capabilities
+- **Portuguese Curriculum Alignment**: All prompts are designed to align with Portuguese educational standards
 
 ## Architecture
 
@@ -17,12 +17,11 @@ Our prompts follow a **hybrid approach**:
 We use a **base prompt system** to eliminate duplication and ensure consistency:
 
 ```
-src/lib/prompts/
+src/shared/prompts/
 ├── base-prompts.ts        # Common templates and utilities
 ├── lesson-plan-prompts.ts # Lesson plan specific prompts
 ├── test-quiz-prompts.ts   # Test/quiz specific prompts
 ├── presentation-prompts.ts # Presentation specific prompts
-├── rag-prompts.ts         # RAG system prompts
 ├── index.ts              # Main exports
 └── README.md            # This file
 ```
@@ -38,13 +37,10 @@ All document types share these common elements:
 
 ## Usage
 
-### Basic RAG Query
+### Basic Prompt Usage
 
 ```typescript
-import { PromptBuilder } from "@/lib/prompts";
-
-// Build a RAG query prompt
-const prompt = PromptBuilder.buildRagQuery(context, question);
+import { PromptBuilder } from "@/shared/prompts";
 
 // Get system prompt
 const systemPrompt = PromptBuilder.getSystemPrompt();
@@ -155,26 +151,21 @@ export * from "./presentation-prompts";
 
 ## Prompt Strategy
 
-### RAG Context Priority
+### Model Knowledge
 
-- Curriculum information from RAG is treated as **primary source**
-- If RAG context is more recent/specific than model knowledge, it takes priority
-- For curriculum-specific questions, RAG context is the authoritative source
-
-### Model Knowledge Enhancement
-
-- Model can use its knowledge for:
+- Model uses its knowledge for:
+  - Curriculum information
   - Pedagogical methodologies
   - Activity suggestions
   - Teaching strategies
   - Educational best practices
   - Cross-curricular connections
 
-### Hybrid Responses
+### Response Types
 
-- **Curriculum Questions**: RAG context + model knowledge for pedagogy
-- **Pedagogical Questions**: Model knowledge + RAG context for curriculum alignment
-- **General Questions**: Model knowledge with RAG context as reference
+- **Curriculum Questions**: Model knowledge with Portuguese curriculum focus
+- **Pedagogical Questions**: Model knowledge for teaching strategies and methodologies
+- **General Questions**: Model knowledge with educational context
 
 ## Best Practices
 
@@ -183,5 +174,5 @@ export * from "./presentation-prompts";
 - Maintain consistent formatting
 - Test prompts with different inputs
 - Document any special instructions or constraints
-- Balance RAG context priority with model knowledge enhancement
 - Leverage base system for common functionality
+- Ensure Portuguese curriculum alignment

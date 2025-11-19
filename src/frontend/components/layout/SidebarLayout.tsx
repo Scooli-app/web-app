@@ -71,12 +71,6 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
       icon: FolderArchiveIcon,
       description: "Partilhar e descobrir recursos",
     },
-    {
-      title: "AI Assistant",
-      href: Routes.AI_ASSISTANT,
-      icon: MessageSquare,
-      description: "Chat com inteligência artificial",
-    },
   ];
 
   const contentCreation = [
