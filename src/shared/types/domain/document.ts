@@ -1,7 +1,7 @@
 export type DocumentType = "lesson_plan" | "quiz" | "presentation" | "assay";
 
 export interface DocumentMetadata {
-  initial_prompt?: string;
+  initialPrompt?: string;
   [key: string]: unknown;
 }
 
@@ -9,16 +9,16 @@ export interface Document {
   id: string;
   title: string;
   content: string;
-  document_type: DocumentType;
+  documentType: DocumentType;
   metadata: DocumentMetadata;
-  user_id: string;
-  created_at: string;
-  updated_at: string;
+  userId: string;
+  createdAt: string;
+  updatedAt: string;
   downloads: number;
   rating?: number;
-  is_public: boolean;
+  isPublic: boolean;
   subject?: string;
-  grade_level?: string;
+  gradeLevel?: string;
 }
 
 export interface LessonActivity {
@@ -37,6 +37,6 @@ export interface LessonPlanMetadata extends DocumentMetadata {
 }
 
 export interface LessonPlan extends Document {
-  document_type: "lesson_plan";
+  documentType: "lesson_plan";
   metadata: LessonPlanMetadata;
 }

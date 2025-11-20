@@ -10,7 +10,7 @@ interface DocumentFiltersProps {
 }
 
 const filterOptions: Array<{
-  value: Document["document_type"] | "all";
+  value: Document["documentType"] | "all";
   label: string;
   icon: string;
 }> = [

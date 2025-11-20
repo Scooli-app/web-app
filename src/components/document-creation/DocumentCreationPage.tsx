@@ -59,10 +59,10 @@ export default function DocumentCreationPage({
               documentType.generateTitlePrefix
             } - ${new Date().toLocaleDateString("pt-PT")}`,
             content: "",
-            document_type: documentType.id,
-            is_public: false,
+            documentType: documentType.id,
+            isPublic: false,
             metadata: {
-              initial_prompt: initialPrompt,
+              initialPrompt: initialPrompt,
             },
           },
           userId: userId,

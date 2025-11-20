@@ -18,7 +18,7 @@ export interface LessonPlanMetadata extends DocumentMetadata {
 }
 
 export interface LessonPlan extends Document {
-  document_type: "lesson_plan";
+  documentType: "lesson_plan";
   metadata: LessonPlanMetadata;
   activities: LessonActivity[]; // Direct access for convenience
 }
