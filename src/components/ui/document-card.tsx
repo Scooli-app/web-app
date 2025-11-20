@@ -18,7 +18,7 @@ interface DocumentCardProps {
 }
 
 const getDocumentTypeLabel = (type: string) => {
-  const labels: Record<Document["document_type"], string> = {
+  const labels: Record<Document["documentType"], string> = {
     lesson_plan: "Plano de Aula",
     assay: "Teste",
     quiz: "Quiz",
@@ -68,13 +68,13 @@ export function DocumentCard({
     if ((e.target as HTMLElement).closest(".action-button")) {
       return;
     }
-    if (document.document_type === "lesson_plan") {
+    if (document.documentType === "lesson_plan") {
       router.push(`${Routes.LESSON_PLAN}/${document.id}`);
-    } else if (document.document_type === "presentation") {
+    } else if (document.documentType === "presentation") {
       router.push(`${Routes.PRESENTATION}/${document.id}`);
-    } else if (document.document_type === "assay") {
+    } else if (document.documentType === "assay") {
       router.push(`${Routes.ASSAYS}/${document.id}`);
-    } else if (document.document_type === "quiz") {
+    } else if (document.documentType === "quiz") {
       router.push(`${Routes.QUIZ}/${document.id}`);
     }
   };
@@ -156,23 +156,23 @@ export function DocumentCard({
         <div className="flex items-start justify-between mb-4 w-full gap-2 min-h-[32px]">
           <div className="flex items-center space-x-2 min-w-0 flex-1">
             <span className="text-xl sm:text-2xl flex-shrink-0">
-              {getDocumentIcon(document.document_type)}
+              {getDocumentIcon(document.documentType)}
             </span>
             <Badge
               className={`${getDocumentTypeColor(
-                document.document_type
+                document.documentType
               )} px-2 py-1 text-xs font-medium whitespace-nowrap`}
             >
-              {getDocumentTypeLabel(document.document_type)}
+              {getDocumentTypeLabel(document.documentType)}
             </Badge>
           </div>
           <div className="flex items-center text-xs text-[#6C6F80] flex-shrink-0">
             <Clock className="w-3 h-3 mr-1" />
             <span className="hidden sm:inline">
-              {formatDate(document.updated_at)}
+              {formatDate(document.updatedAt)}
             </span>
             <span className="sm:hidden">
-              {new Date(document.updated_at).toLocaleDateString("pt-PT", {
+              {new Date(document.updatedAt).toLocaleDateString("pt-PT", {
                 day: "2-digit",
                 month: "2-digit",
               })}
@@ -215,7 +215,7 @@ export function DocumentCard({
         {/* Footer with creation date and delete button - always at bottom */}
         <div className="pt-3 border-t border-[#E4E4E7] flex items-center justify-between mt-auto">
           <p className="text-xs text-[#6C6F80]">
-            Criado em {formatDate(document.created_at)}
+            Criado em {formatDate(document.createdAt)}
           </p>
           {!selectionMode && (
             <Button

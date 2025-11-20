@@ -3,17 +3,17 @@
 import { DocumentCard } from "@/components/ui/document-card";
 import { DocumentFilters } from "@/components/ui/document-filters";
 import type { Document } from "@/shared/types/domain/document";
+import {
+  getDocuments,
+  getDocumentCounts,
+  deleteDocument,
+  deleteDocuments,
+} from "@/services/api/document.service";
 
 import { CheckSquare, Loader2, Search, Square, Trash2, X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "./button";
 import { Input } from "./input";
-
-interface DocumentsResponse {
-  documents: Document[];
-  total: number;
-  hasMore: boolean;
-}
 
 interface DocumentsGalleryProps {
   userId: string;
@@ -44,30 +44,24 @@ export function DocumentsGallery({ userId }: DocumentsGalleryProps) {
       try {
         setLoading(true);
 
-        const params = new URLSearchParams({
-          page: page.toString(),
-          limit: pagination.limit.toString(),
-          user_id: userId,
+        const result = await getDocuments({
+          page,
+          limit: pagination.limit,
+          userId,
+          filters: {
+            type: selectedType !== "all" ? selectedType : undefined,
+          },
         });
 
-        if (selectedType !== "all") {
-          params.set("type", selectedType);
-        }
-
-        const response = await fetch(`/api/documents?${params}`);
-        const data: DocumentsResponse = await response.json();
-
-        if (response.ok) {
-          setDocuments((prev) =>
-            reset ? data.documents : [...prev, ...data.documents]
-          );
-          setPagination((prev) => ({
-            ...prev,
-            page,
-            total: data.total,
-            hasMore: data.hasMore,
-          }));
-        }
+        setDocuments((prev) =>
+          reset ? result.documents : [...prev, ...result.documents]
+        );
+        setPagination((prev) => ({
+          ...prev,
+          page: result.pagination.page,
+          total: result.pagination.total,
+          hasMore: result.pagination.hasMore,
+        }));
       } catch (error) {
         console.error("Error fetching documents:", error);
       } finally {
@@ -79,18 +73,14 @@ export function DocumentsGallery({ userId }: DocumentsGalleryProps) {
 
   const fetchDocumentCounts = useCallback(async () => {
     try {
-      const response = await fetch(
-        `/api/documents?user_id=${userId}&counts_only=true`
-      );
-      const data = await response.json();
-
-      if (response.ok && data.counts) {
-        setDocumentCounts(data.counts);
+      const result = await getDocumentCounts();
+      if (result.counts) {
+        setDocumentCounts(result.counts);
       }
     } catch (error) {
       console.error("Error fetching document counts:", error);
     }
-  }, [userId]);
+  }, []);
 
   // Selection handlers
   const handleSelectDocument = (documentId: string, selected: boolean) => {
@@ -130,31 +120,19 @@ export function DocumentsGallery({ userId }: DocumentsGalleryProps) {
 
     setDeleting(true);
     try {
-      const response = await fetch("/api/documents", {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          document_ids: Array.from(selectedDocuments),
-        }),
-      });
+      await deleteDocuments(Array.from(selectedDocuments));
 
-      if (response.ok) {
-        // Remove deleted documents from the UI
-        setDocuments((prev) =>
-          prev.filter((doc) => !selectedDocuments.has(doc.id))
-        );
-        setSelectedDocuments(new Set());
-        setSelectionMode(false);
-        // Update pagination count
-        setPagination((prev) => ({
-          ...prev,
-          total: prev.total - selectedDocuments.size,
-        }));
-      } else {
-        console.error("Error deleting documents");
-      }
+      // Remove deleted documents from the UI
+      setDocuments((prev) =>
+        prev.filter((doc) => !selectedDocuments.has(doc.id))
+      );
+      setSelectedDocuments(new Set());
+      setSelectionMode(false);
+      // Update pagination count
+      setPagination((prev) => ({
+        ...prev,
+        total: prev.total - selectedDocuments.size,
+      }));
     } catch (error) {
       console.error("Error deleting documents:", error);
     } finally {
@@ -169,27 +147,15 @@ export function DocumentsGallery({ userId }: DocumentsGalleryProps) {
 
     setDeleting(true);
     try {
-      const response = await fetch("/api/documents", {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          document_ids: [documentId],
-        }),
-      });
+      await deleteDocument(documentId);
 
-      if (response.ok) {
-        // Remove deleted document from the UI
-        setDocuments((prev) => prev.filter((doc) => doc.id !== documentId));
-        // Update pagination count
-        setPagination((prev) => ({
-          ...prev,
-          total: prev.total - 1,
-        }));
-      } else {
-        console.error("Error deleting document");
-      }
+      // Remove deleted document from the UI
+      setDocuments((prev) => prev.filter((doc) => doc.id !== documentId));
+      // Update pagination count
+      setPagination((prev) => ({
+        ...prev,
+        total: prev.total - 1,
+      }));
     } catch (error) {
       console.error("Error deleting document:", error);
     } finally {
