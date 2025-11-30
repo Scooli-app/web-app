@@ -45,6 +45,7 @@ function mapBackendToDocument(backend: DocumentResponse): Document {
     updatedAt: backend.updatedAt,
     subject: backend.subject || undefined,
     schoolYear: backend.schoolYear || undefined,
+    duration: backend.duration || undefined,
   };
 }
 

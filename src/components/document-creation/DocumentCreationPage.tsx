@@ -100,10 +100,10 @@ const GRADE_GROUPS = [
 ];
 
 const LESSON_TIMES = [
-  { id: "30", label: "30 min" },
-  { id: "45", label: "45 min" },
-  { id: "60", label: "60 min" },
-  { id: "90", label: "90 min" },
+  { id: "30", label: "30 min", value: 30},
+  { id: "45", label: "45 min", value: 45 },
+  { id: "60", label: "60 min", value: 60 },
+  { id: "90", label: "90 min", value: 90 },
 ];
 
 const TEACHING_METHODS = [
@@ -168,8 +168,8 @@ interface FormState {
   topic: string;
   subject: string;
   grade: string;
-  lessonTime?: string;
-  customTime?: string;
+  lessonTime?: number;
+  customTime?: number;
   teachingMethod?: TeachingMethod;
   additionalDetails?: string;
 }
@@ -187,8 +187,8 @@ export default function DocumentCreationPage({
     topic: "",
     subject: "",
     grade: "",
-    lessonTime: "45",
-    customTime: "",
+    lessonTime: 45,
+    customTime: 0,
     teachingMethod: undefined,
     additionalDetails: "",
   });
@@ -203,53 +203,6 @@ export default function DocumentCreationPage({
     if (error) {
       setError("");
     }
-  };
-
-  const buildPrompt = (): string => {
-    const parts: string[] = [];
-
-    if (formState.topic) {
-      parts.push(`Tema: ${formState.topic}`);
-    }
-
-    if (formState.subject) {
-      const subject = SUBJECTS.find((s) => s.id === formState.subject);
-      if (subject) {
-        parts.push(`Disciplina: ${subject.label}`);
-      }
-    }
-
-    if (formState.grade) {
-      const grade = GRADE_GROUPS.flatMap((g) => g.grades).find(
-        (g) => g.id === formState.grade
-      );
-      if (grade) {
-        parts.push(`Ano: ${grade.label}`);
-      }
-    }
-
-    const duration =
-      formState.lessonTime === "custom"
-        ? formState.customTime
-        : formState.lessonTime;
-    if (duration) {
-      parts.push(`Duração: ${duration} minutos`);
-    }
-
-    if (formState.teachingMethod) {
-      const method = TEACHING_METHODS.find(
-        (m) => m.id === formState.teachingMethod
-      );
-      if (method) {
-        parts.push(`Metodologia: ${method.label}`);
-      }
-    }
-
-    if (formState.additionalDetails?.trim()) {
-      parts.push(`Detalhes adicionais: ${formState.additionalDetails}`);
-    }
-
-    return parts.join("\n");
   };
 
   const isFormValid = () => {
@@ -276,26 +229,21 @@ export default function DocumentCreationPage({
       setIsLoading(true);
       setError("");
 
-      const fullPrompt = buildPrompt();
-
       // Get the subject label
       const subjectValue =
         SUBJECTS.find((s) => s.id === formState.subject)?.label ||
         formState.subject;
 
-      // Get the actual lesson time value
-      const lessonTimeValue =
-        formState.lessonTime === "custom"
-          ? formState.customTime
-          : formState.lessonTime || undefined;
+      // Get the actual duration value
+      const durationValue = formState.lessonTime ? formState.lessonTime : undefined;
 
       const resultAction = await dispatch(
         createDocument({
-            documentType: documentType.id,
-          prompt: fullPrompt,
+          documentType: documentType.id,
+          prompt: formState.topic,
           subject: subjectValue,
           schoolYear: formState.grade,
-          lessonTime: lessonTimeValue,
+          duration: durationValue || undefined,
           teachingMethod: formState.teachingMethod || undefined,
           additionalDetails: formState.additionalDetails?.trim() || "",
         })
@@ -306,7 +254,7 @@ export default function DocumentCreationPage({
         dispatch(
           setPendingInitialPrompt({
             documentId: newDoc.id,
-            prompt: fullPrompt,
+            prompt: formState.topic,
           })
         );
         const redirectUrl = documentType.redirectPath.replace(":id", newDoc.id);
@@ -487,17 +435,17 @@ export default function DocumentCreationPage({
                     onClick={() =>
                       updateForm(
                         "lessonTime",
-                        formState.lessonTime === time.id ? "" : time.id
+                        formState.lessonTime === time.value ? undefined : time.value
                       )
                     }
                     className={cn(
                       "inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium transition-all",
                       "border hover:scale-[1.02] active:scale-[0.98]",
-                      formState.lessonTime === time.id
+                      formState.lessonTime === time.value
                         ? "bg-[#6753FF] text-white border-[#6753FF] shadow-md shadow-[#6753FF]/20"
                         : "bg-white text-[#2E2F38] border-[#C7C9D9] hover:border-[#6753FF] hover:bg-[#EEF0FF]"
                     )}
-                    aria-pressed={formState.lessonTime === time.id}
+                    aria-pressed={formState.lessonTime === time.value}
                     aria-label={`Selecionar ${time.label}`}
                   >
                     <span>⏱️</span>
@@ -506,7 +454,7 @@ export default function DocumentCreationPage({
                 ))}
 
                 {/* Custom Time - "Outro" option */}
-                {formState.lessonTime === "custom" && formState.customTime && !isEditingCustomTime ? (
+                {formState.lessonTime && formState.customTime && !isEditingCustomTime ? (
                   <button
                     type="button"
                     onClick={() => {
@@ -520,28 +468,16 @@ export default function DocumentCreationPage({
                     <span>{formState.customTime} min</span>
                     <Pencil className="w-3 h-3 ml-1 opacity-70 group-hover:opacity-100 shrink-0" />
                   </button>
-                ) : formState.lessonTime === "custom" || isEditingCustomTime ? (
+                ) : formState.lessonTime && formState.customTime || isEditingCustomTime ? (
                   <div className="flex items-center gap-1 animate-in fade-in slide-in-from-left-2 duration-200">
                     <div className="relative flex items-center">
                       <input
                         ref={customTimeInputRef}
                         type="number"
-                        value={formState.customTime}
-                        onChange={(e) => updateForm("customTime", e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" && formState.customTime?.trim()) {
-                            setIsEditingCustomTime(false);
-                          } else if (e.key === "Escape") {
-                            if (!formState.customTime?.trim()) {
-                              updateForm("lessonTime", "");
-                            }
-                            setIsEditingCustomTime(false);
-                          }
-                        }}
+                        value={formState.customTime || 0}
+                        onChange={(e) => updateForm("customTime", parseInt(e.target.value))}
                         onBlur={() => {
-                          if (formState.customTime?.trim()) {
-                            setIsEditingCustomTime(false);
-                          }
+                          setIsEditingCustomTime(false);
                         }}
                         placeholder="75"
                         className="h-9 w-16 sm:w-20 px-2 sm:px-3 py-2 text-sm bg-[#F4F5F8] border border-[#6753FF] rounded-xl placeholder:text-[#6C6F80] focus:outline-none focus:ring-2 focus:ring-[#6753FF]/20"
@@ -553,8 +489,8 @@ export default function DocumentCreationPage({
                     <button
                       type="button"
                       onClick={() => {
-                        updateForm("lessonTime", "");
-                        updateForm("customTime", "");
+                        updateForm("lessonTime", 0);
+                        updateForm("customTime", 0);
                         setIsEditingCustomTime(false);
                       }}
                       className="p-1.5 sm:p-2 rounded-lg text-[#6C6F80] hover:text-red-500 hover:bg-red-50 transition-colors"
@@ -562,7 +498,7 @@ export default function DocumentCreationPage({
                     >
                       <X className="w-4 h-4" />
                     </button>
-                    {formState.customTime?.trim() && (
+                    {formState.customTime && (
                       <button
                         type="button"
                         onClick={() => setIsEditingCustomTime(false)}
@@ -577,7 +513,8 @@ export default function DocumentCreationPage({
                   <button
                     type="button"
                     onClick={() => {
-                      updateForm("lessonTime", "custom");
+                      updateForm("lessonTime", 0);
+                      updateForm("customTime", 0);
                       setIsEditingCustomTime(true);
                       setTimeout(() => customTimeInputRef.current?.focus(), 0);
                     }}
