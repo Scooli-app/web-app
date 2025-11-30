@@ -1,9 +1,9 @@
-import { Routes } from "@/shared/types/routes";
+import { Routes } from "@/shared/types";
 import type { DocumentTypeConfig } from "./DocumentCreationPage";
 
 export const documentTypes: Record<string, DocumentTypeConfig> = {
-  lesson_plan: {
-    id: "lesson_plan",
+  lessonPlan: {
+    id: "lessonPlan",
     title: "Plano de Aula",
     description:
       "Descreva o que pretende ensinar e o Scooli irá gerar um plano de aula completo",

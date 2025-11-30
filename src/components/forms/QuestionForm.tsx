@@ -6,7 +6,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { SUCCESS_MESSAGES } from "@/shared/config/constants";
 import { HelpCircle } from "lucide-react";
 
 interface QuestionFormProps {
@@ -63,8 +62,8 @@ export function QuestionForm({
             className="bg-[#6753FF] hover:bg-[#4E3BC0] text-white px-6 py-3 rounded-xl font-medium"
           >
             {isLoading
-              ? SUCCESS_MESSAGES.PROCESSING
-              : SUCCESS_MESSAGES.ASK_QUESTION}
+              ? "Processando..."
+              : "Perguntar"}
           </Button>
         </form>
       </CardContent>

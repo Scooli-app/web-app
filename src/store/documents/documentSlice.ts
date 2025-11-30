@@ -6,7 +6,7 @@ import {
   type DocumentFilters,
   updateDocument as updateDocumentService,
 } from "@/services/api";
-import type { Document } from "@/shared/types/domain/document";
+import type { Document } from "@/shared/types";
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 
 export type { DocumentFilters };

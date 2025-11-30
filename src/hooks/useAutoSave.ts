@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { Document } from "@/shared/types/domain/document";
+import type { Document } from "@/shared/types";
 
 export function useAutoSave(
   document: Document | null,
