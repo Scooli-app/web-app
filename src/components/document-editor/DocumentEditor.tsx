@@ -6,11 +6,8 @@ import { useDocumentManager } from "@/hooks/useDocumentManager";
 import { Routes } from "@/shared/types";
 import {
   clearPendingInitialPrompt,
-  fetchDocument,
 } from "@/store/documents/documentSlice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { useEditor, type Editor } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -52,28 +49,6 @@ export default function DocumentEditor({
     isLoading: isSaving,
     editorKey,
   } = useDocumentManager(documentId);
-
-  useEffect(() => {
-    if (documentId) {
-      dispatch(fetchDocument(documentId));
-    }
-  }, [dispatch, documentId]);
-
-  const editor = useEditor({
-    extensions: [StarterKit],
-    content: currentDocument?.content || "",
-    editable: true,
-    onUpdate: ({ editor }: { editor: Editor }) => {
-      handleContentChange(editor.getHTML());
-    },
-    immediatelyRender: false,
-  });
-
-  useEffect(() => {
-    if (editor && currentDocument?.content) {
-      editor.commands.setContent(currentDocument.content);
-    }
-  }, [editor, currentDocument?.content]);
 
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);

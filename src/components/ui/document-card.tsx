@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Routes, type Document } from "@/shared/types";
 import { Clock, FileText, Trash2, User } from "lucide-react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useState } from "react";
 import { Button } from "./button";
 
@@ -46,6 +46,16 @@ const getDocumentIcon = (type: string) => {
   return icons[type as keyof typeof icons] || "📄";
 };
 
+const getDocumentRoute = (doc: Document): string => {
+  const routeMap: Record<Document["documentType"], string> = {
+    lessonPlan: Routes.LESSON_PLAN,
+    presentation: Routes.PRESENTATION,
+    assay: Routes.ASSAYS,
+    quiz: Routes.QUIZ,
+  };
+  return `${routeMap[doc.documentType]}/${doc.id}`;
+};
+
 export function DocumentCard({
   document,
   isSelected = false,
@@ -53,29 +63,10 @@ export function DocumentCard({
   onDelete,
   selectionMode = false,
 }: DocumentCardProps) {
-  const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const handleCardClick = (e: React.MouseEvent) => {
-    if (selectionMode) {
-      if ((e.target as HTMLElement).closest(".action-button")) {
-        return;
-      }
-      onSelect?.(document.id, !isSelected);
-      return;
-    }
-    if ((e.target as HTMLElement).closest(".action-button")) {
-      return;
-    }
-    if (document.documentType === "lessonPlan") {
-      router.push(`${Routes.LESSON_PLAN}/${document.id}`);
-    } else if (document.documentType === "presentation") {
-      router.push(`${Routes.PRESENTATION}/${document.id}`);
-    } else if (document.documentType === "assay") {
-      router.push(`${Routes.ASSAYS}/${document.id}`);
-    } else if (document.documentType === "quiz") {
-      router.push(`${Routes.QUIZ}/${document.id}`);
-    }
+  const handleSelectionClick = () => {
+    onSelect?.(document.id, !isSelected);
   };
 
   const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -84,6 +75,7 @@ export function DocumentCard({
   };
 
   const handleDelete = async (e: React.MouseEvent) => {
+    e.preventDefault();
     e.stopPropagation();
 
     if (window.confirm("Tem a certeza de que quer eliminar este documento?")) {
@@ -109,19 +101,17 @@ export function DocumentCard({
       return "Sem conteúdo disponível";
     }
 
-    // Remove HTML tags and markdown formatting
     let plainText = content
-      .replace(/<[^>]*>/g, "") // Remove HTML tags
-      .replace(/#{1,6}\s+/g, "") // Remove markdown headers
-      .replace(/\*\*(.*?)\*\*/g, "$1") // Remove bold
-      .replace(/\*(.*?)\*/g, "$1") // Remove italic
-      .replace(/`(.*?)`/g, "$1") // Remove inline code
-      .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1") // Remove links, keep text
-      .replace(/!\[([^\]]*)\]\([^)]+\)/g, "") // Remove images
-      .replace(/\n{3,}/g, "\n\n") // Normalize line breaks
-      .replace(/^\s+|\s+$/g, ""); // Trim whitespace
+      .replace(/<[^>]*>/g, "")
+      .replace(/#{1,6}\s+/g, "")
+      .replace(/\*\*(.*?)\*\*/g, "$1")
+      .replace(/\*(.*?)\*/g, "$1")
+      .replace(/`(.*?)`/g, "$1")
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+      .replace(/!\[([^\]]*)\]\([^)]+\)/g, "")
+      .replace(/\n{3,}/g, "\n\n")
+      .replace(/^\s+|\s+$/g, "");
 
-    // Limit to 120 characters for better card layout
     if (plainText.length > 120) {
       plainText = `${plainText.substring(0, 120).trim()}...`;
     }
@@ -129,16 +119,8 @@ export function DocumentCard({
     return plainText;
   };
 
-  return (
-    <Card
-      className={`p-6 transition-all duration-200 border border-[#E4E4E7] relative flex flex-col h-full w-full ${
-        selectionMode
-          ? "cursor-default"
-          : "cursor-pointer hover:shadow-lg hover:border-[#6753FF]/20"
-      } ${isSelected ? "border-[#6753FF] bg-[#6753FF]/5" : ""}`}
-      onClick={handleCardClick}
-    >
-      {/* Selection checkbox */}
+  const cardContent = (
+    <>
       {selectionMode && (
         <div className="absolute top-4 left-4 z-10">
           <input
@@ -151,7 +133,6 @@ export function DocumentCard({
       )}
 
       <div className={`flex flex-col h-full ${selectionMode ? "ml-6" : ""}`}>
-        {/* Header with icon and type */}
         <div className="flex items-start justify-between mb-4 w-full gap-2 min-h-[32px]">
           <div className="flex items-center space-x-2 min-w-0 flex-1">
             <span className="text-xl sm:text-2xl flex-shrink-0">
@@ -179,17 +160,14 @@ export function DocumentCard({
           </div>
         </div>
 
-        {/* Title */}
         <h3 className="text-lg font-semibold text-[#0B0D17] line-clamp-2 leading-tight mb-3">
           {document.title}
         </h3>
 
-        {/* Content preview */}
         <p className="text-sm text-[#6C6F80] line-clamp-3 leading-relaxed mb-4 flex-grow">
           {getContentPreview(document.content)}
         </p>
 
-        {/* Metadata */}
         {document.metadata && Object.keys(document.metadata).length > 0 && (
           <div className="space-y-2 mb-4">
             {typeof document.metadata.subject === "string" &&
@@ -211,7 +189,6 @@ export function DocumentCard({
           </div>
         )}
 
-        {/* Footer with creation date and delete button - always at bottom */}
         <div className="pt-3 border-t border-[#E4E4E7] flex items-center justify-between mt-auto">
           <p className="text-xs text-[#6C6F80]">
             Criado em {formatDate(document.createdAt)}
@@ -229,6 +206,26 @@ export function DocumentCard({
           )}
         </div>
       </div>
-    </Card>
+    </>
+  );
+
+  const cardClassName = `p-6 transition-all duration-200 border border-[#E4E4E7] relative flex flex-col h-full w-full ${
+    selectionMode
+      ? "cursor-default"
+      : "cursor-pointer hover:shadow-lg hover:border-[#6753FF]/20"
+  } ${isSelected ? "border-[#6753FF] bg-[#6753FF]/5" : ""}`;
+
+  if (selectionMode) {
+    return (
+      <Card className={cardClassName} onClick={handleSelectionClick}>
+        {cardContent}
+      </Card>
+    );
+  }
+
+  return (
+    <Link href={getDocumentRoute(document)} className="block h-full">
+      <Card className={cardClassName}>{cardContent}</Card>
+    </Link>
   );
 }

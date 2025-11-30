@@ -105,6 +105,16 @@ export const fetchDocument = createAsyncThunk(
         error instanceof Error ? error.message : "Document not found"
       );
     }
+  },
+  {
+    condition: (id, { getState }) => {
+      const state = getState() as { documents: DocumentState };
+      const { currentDocument, isLoading } = state.documents;
+      if (isLoading || currentDocument?.id === id) {
+        return false;
+      }
+      return true;
+    },
   }
 );
 
