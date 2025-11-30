@@ -23,7 +23,7 @@ export interface CreateDocumentParams {
   prompt: string;
   subject: string;
   schoolYear: string;
-  lessonTime?: string;
+  duration?: number;
   teachingMethod?: TeachingMethod;
   additionalDetails?: string;
 }
@@ -37,6 +37,7 @@ export interface DocumentResponse {
   isPublic: boolean;
   subject: string | null;
   schoolYear: string | null;
+  duration: number | null;
   rating: number;
   downloads: number;
   createdAt: string;
@@ -79,7 +80,7 @@ export interface CreateDocumentRequest {
   metadata?: Record<string, unknown>;
   subject?: string;
   schoolYear?: string;
-  lessonTime?: string;
+  duration?: string;
   teachingMethod?: TeachingMethod;
   additionalDetails?: string;
   is_public?: boolean;

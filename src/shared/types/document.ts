@@ -31,4 +31,5 @@ export interface Document {
   isPublic: boolean;
   subject?: string;
   schoolYear?: string;
+  duration?: number;
 }
