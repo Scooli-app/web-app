@@ -172,20 +172,20 @@ export default function RichTextEditor({
     immediatelyRender: false,
   });
 
-  // Only set content from prop on initial mount or when content changes from outside
   const prevContentRef = useRef<string | null>(null);
   useEffect(() => {
     if (editor && content !== prevContentRef.current) {
-      editor.commands.setContent(markdownToHtml(content), {
-        emitUpdate: false,
-      });
+      const currentHtml = editor.getHTML();
+      const newHtml = markdownToHtml(content);
+      if (currentHtml !== newHtml) {
+        editor.commands.setContent(newHtml, {
+          emitUpdate: false,
+        });
+      }
       prevContentRef.current = content;
     }
-    // Only run when the editor is first created or content changes from outside
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editor]);
+  }, [editor, content]);
 
-  // Debounced autosave logic
   const autosaveTimer = useRef<NodeJS.Timeout | null>(null);
   useEffect(() => {
     if (!editor || !onAutosave) {
