@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { DocumentType } from "@/shared/types";
+import { TeachingMethod, type DocumentType } from "@/shared/types";
 import { cn } from "@/shared/utils/utils";
 import {
   createDocument,
@@ -108,7 +108,7 @@ const LESSON_TIMES = [
 
 const TEACHING_METHODS = [
   {
-    id: "active",
+    id: TeachingMethod.ACTIVE,
     label: "Aprendizagem ativa",
     description:
       "Os alunos participam ativamente em atividades práticas e projetos colaborativos.",
@@ -119,7 +119,7 @@ const TEACHING_METHODS = [
     iconBg: "bg-blue-100",
   },
   {
-    id: "lecture",
+    id: TeachingMethod.LECTURE,
     label: "Aula expositiva",
     description:
       "O professor apresenta o conteúdo diretamente enquanto os alunos absorvem e tomam notas.",
@@ -130,7 +130,7 @@ const TEACHING_METHODS = [
     iconBg: "bg-purple-100",
   },
   {
-    id: "practical",
+    id: TeachingMethod.PRACTICAL,
     label: "Aprendizagem prática",
     description:
       "Mostra como o conteúdo se aplica a profissões reais, preparando os alunos para desafios do mercado.",
@@ -141,7 +141,7 @@ const TEACHING_METHODS = [
     iconBg: "bg-amber-100",
   },
   {
-    id: "social_emotional",
+    id: TeachingMethod.SOCIAL_EMOTIONAL,
     label: "Aprendizagem socioemocional",
     description:
       "Combina conteúdo académico com competências socioemocionais como empatia e trabalho em equipa.",
@@ -152,7 +152,7 @@ const TEACHING_METHODS = [
     iconBg: "bg-rose-100",
   },
   {
-    id: "interactive",
+    id: TeachingMethod.INTERACTIVE,
     label: "Aprendizagem interativa",
     description:
       "Integra recursos digitais e interatividade, conectando o conteúdo à realidade dos alunos.",
@@ -168,10 +168,10 @@ interface FormState {
   topic: string;
   subject: string;
   grade: string;
-  lessonTime: string;
-  customTime: string;
-  teachingMethod: string;
-  additionalDetails: string;
+  lessonTime?: string;
+  customTime?: string;
+  teachingMethod?: TeachingMethod;
+  additionalDetails?: string;
 }
 
 export default function DocumentCreationPage({
@@ -189,7 +189,7 @@ export default function DocumentCreationPage({
     grade: "",
     lessonTime: "45",
     customTime: "",
-    teachingMethod: "",
+    teachingMethod: undefined,
     additionalDetails: "",
   });
   const [isEditingCustomTime, setIsEditingCustomTime] = useState(false);
@@ -245,7 +245,7 @@ export default function DocumentCreationPage({
       }
     }
 
-    if (formState.additionalDetails.trim()) {
+    if (formState.additionalDetails?.trim()) {
       parts.push(`Detalhes adicionais: ${formState.additionalDetails}`);
     }
 
@@ -294,10 +294,10 @@ export default function DocumentCreationPage({
             documentType: documentType.id,
           prompt: fullPrompt,
           subject: subjectValue,
-          gradeLevel: formState.grade,
+          schoolYear: formState.grade,
           lessonTime: lessonTimeValue,
           teachingMethod: formState.teachingMethod || undefined,
-          additionalDetails: formState.additionalDetails.trim() || undefined,
+          additionalDetails: formState.additionalDetails?.trim() || "",
         })
       );
 
@@ -529,17 +529,17 @@ export default function DocumentCreationPage({
                         value={formState.customTime}
                         onChange={(e) => updateForm("customTime", e.target.value)}
                         onKeyDown={(e) => {
-                          if (e.key === "Enter" && formState.customTime.trim()) {
+                          if (e.key === "Enter" && formState.customTime?.trim()) {
                             setIsEditingCustomTime(false);
                           } else if (e.key === "Escape") {
-                            if (!formState.customTime.trim()) {
+                            if (!formState.customTime?.trim()) {
                               updateForm("lessonTime", "");
                             }
                             setIsEditingCustomTime(false);
                           }
                         }}
                         onBlur={() => {
-                          if (formState.customTime.trim()) {
+                          if (formState.customTime?.trim()) {
                             setIsEditingCustomTime(false);
                           }
                         }}
@@ -562,7 +562,7 @@ export default function DocumentCreationPage({
                     >
                       <X className="w-4 h-4" />
                     </button>
-                    {formState.customTime.trim() && (
+                    {formState.customTime?.trim() && (
                       <button
                         type="button"
                         onClick={() => setIsEditingCustomTime(false)}
@@ -624,7 +624,7 @@ export default function DocumentCreationPage({
                       onClick={() =>
                         updateForm(
                           "teachingMethod",
-                          formState.teachingMethod === method.id ? "" : method.id
+                          formState.teachingMethod === method.id ? undefined : method.id as TeachingMethod
                         )
                       }
                       className={cn(
@@ -709,7 +709,7 @@ export default function DocumentCreationPage({
                 }
                 placeholder="Ex: Incluir atividade de grupo, usar exemplos do dia-a-dia, focar em alunos com dificuldades..."
                 rows={3}
-                className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base bg-[#F4F5F8] border border-[#C7C9D9] rounded-xl placeholder:text-[#6C6F80] resize-none focus:outline-none focus:border-[#6753FF] focus:ring-2 focus:ring-[#6753FF]/20 transition-all"
+                className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base md:text-sm bg-[#F4F5F8] border border-[#C7C9D9] rounded-xl placeholder:text-[#6C6F80] resize-none focus:outline-none focus:border-[#6753FF] focus:ring-2 focus:ring-[#6753FF]/20 transition-all placeholder:text-sm"
                 aria-label="Detalhes adicionais"
               />
             </div>

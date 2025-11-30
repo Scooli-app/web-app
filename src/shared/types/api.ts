@@ -2,7 +2,7 @@
  * API types - responses, requests, and service interfaces
  */
 
-import type { Document, DocumentType } from "./document";
+import type { Document, DocumentType, TeachingMethod } from "./document";
 
 // Generic API response types
 export interface ApiResponse<T> {
@@ -22,9 +22,9 @@ export interface CreateDocumentParams {
   documentType: DocumentType;
   prompt: string;
   subject: string;
-  gradeLevel: string;
+  schoolYear: string;
   lessonTime?: string;
-  teachingMethod?: string;
+  teachingMethod?: TeachingMethod;
   additionalDetails?: string;
 }
 
@@ -36,7 +36,7 @@ export interface DocumentResponse {
   metadata: Record<string, unknown>;
   isPublic: boolean;
   subject: string | null;
-  gradeLevel: string | null;
+  schoolYear: string | null;
   rating: number;
   downloads: number;
   createdAt: string;
@@ -47,7 +47,7 @@ export interface DocumentFilters {
   type?: string;
   search?: string;
   subject?: string;
-  gradeLevel?: string;
+  schoolYear?: string;
 }
 
 export interface GetDocumentsParams {
@@ -78,7 +78,10 @@ export interface CreateDocumentRequest {
   document_type: DocumentType;
   metadata?: Record<string, unknown>;
   subject?: string;
-  grade_level?: string;
+  schoolYear?: string;
+  lessonTime?: string;
+  teachingMethod?: TeachingMethod;
+  additionalDetails?: string;
   is_public?: boolean;
 }
 

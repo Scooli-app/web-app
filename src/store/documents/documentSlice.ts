@@ -116,8 +116,8 @@ export const createDocument = createAsyncThunk(
         return rejectWithValue("documentType and prompt are required");
       }
 
-      if (!params.subject || !params.gradeLevel) {
-        return rejectWithValue("subject and gradeLevel are required");
+      if (!params.subject || !params.schoolYear) {
+        return rejectWithValue("subject and schoolYear are required");
       }
 
       const document = await createDocumentService(params);
