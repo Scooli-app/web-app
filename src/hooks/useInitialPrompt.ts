@@ -52,7 +52,7 @@ export function useInitialPrompt(
         setIsExecuting(false);
       }
     },
-    [documentId, generateMessage, onContentChange, clearPendingInitialPrompt]
+    [documentId, generateMessage, dispatch, onContentChange]
   );
 
   useEffect(() => {
