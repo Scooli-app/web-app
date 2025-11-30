@@ -180,7 +180,7 @@ export function DocumentsGallery({ userId }: DocumentsGalleryProps) {
   useEffect(() => {
     setPagination((prev) => ({ ...prev, page: 1 }));
     fetchDocuments(1, true);
-  }, [selectedType]);
+  }, [fetchDocuments, selectedType]);
 
   const loadMore = () => {
     if (pagination.hasMore && !loading) {

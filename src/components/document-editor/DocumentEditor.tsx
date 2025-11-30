@@ -237,7 +237,7 @@ export default function DocumentEditor({
         setIsStreaming(false);
       }
     },
-    [document, content, handleContentChange]
+    [currentDocument?.id, content, handleContentChange]
   );
 
   // Loading states

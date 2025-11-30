@@ -43,11 +43,6 @@ export default function DocumentCreationPage({
       return;
     }
 
-    if (!userId) {
-      setError("User ID é necessário");
-      return;
-    }
-
     try {
       setIsLoading(true);
       setError("");

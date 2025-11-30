@@ -11,7 +11,6 @@ import {
 } from "@/components/ui/sheet";
 import {
   SidebarContent,
-  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
@@ -34,7 +33,6 @@ import {
   HelpCircle,
   Home,
   Menu,
-  MessageSquare,
   Settings,
 } from "lucide-react";
 import Link from "next/link";
