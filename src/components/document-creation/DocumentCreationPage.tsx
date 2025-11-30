@@ -7,7 +7,6 @@ import {
   Select,
   SelectContent,
   SelectItem,
-  SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -63,7 +62,6 @@ const SUBJECTS = [
   { id: "musica", label: "Música", icon: "🎵" },
   { id: "tic", label: "TIC", icon: "💻" },
   { id: "filosofia", label: "Filosofia", icon: "🤔" },
-  { id: "outro", label: "Outro", icon: "📝" },
 ];
 
 const GRADE_GROUPS = [
@@ -169,7 +167,6 @@ const TEACHING_METHODS = [
 interface FormState {
   topic: string;
   subject: string;
-  customSubject: string;
   grade: string;
   lessonTime: string;
   customTime: string;
@@ -179,7 +176,7 @@ interface FormState {
 
 export default function DocumentCreationPage({
   documentType,
-  userId = "",
+  userId: _userId = "",
 }: DocumentCreationPageProps) {
   const router = useRouter();
   const dispatch = useAppDispatch();
@@ -189,7 +186,6 @@ export default function DocumentCreationPage({
   const [formState, setFormState] = useState<FormState>({
     topic: "",
     subject: "",
-    customSubject: "",
     grade: "",
     lessonTime: "45",
     customTime: "",
@@ -197,7 +193,6 @@ export default function DocumentCreationPage({
     additionalDetails: "",
   });
   const [isEditingCustomTime, setIsEditingCustomTime] = useState(false);
-  const customSubjectInputRef = useRef<HTMLInputElement>(null);
   const customTimeInputRef = useRef<HTMLInputElement>(null);
 
   const updateForm = <K extends keyof FormState>(
@@ -218,15 +213,9 @@ export default function DocumentCreationPage({
     }
 
     if (formState.subject) {
-      if (formState.subject.startsWith("custom:")) {
-        parts.push(`Disciplina: ${formState.subject.replace("custom:", "")}`);
-      } else if (formState.subject === "outro" && formState.customSubject) {
-        parts.push(`Disciplina: ${formState.customSubject}`);
-      } else {
-        const subject = SUBJECTS.find((s) => s.id === formState.subject);
-        if (subject && subject.id !== "outro") {
-          parts.push(`Disciplina: ${subject.label}`);
-        }
+      const subject = SUBJECTS.find((s) => s.id === formState.subject);
+      if (subject) {
+        parts.push(`Disciplina: ${subject.label}`);
       }
     }
 
@@ -263,9 +252,23 @@ export default function DocumentCreationPage({
     return parts.join("\n");
   };
 
+  const isFormValid = () => {
+    return formState.topic.trim() && formState.subject && formState.grade;
+  };
+
   const handleCreateDocument = async () => {
     if (!formState.topic.trim()) {
       setError("Por favor, introduza o tema da aula");
+      return;
+    }
+
+    if (!formState.subject) {
+      setError("Por favor, selecione uma disciplina");
+      return;
+    }
+
+    if (!formState.grade) {
+      setError("Por favor, selecione o ano de escolaridade");
       return;
     }
 
@@ -275,27 +278,26 @@ export default function DocumentCreationPage({
 
       const fullPrompt = buildPrompt();
 
+      // Get the subject label
+      const subjectValue =
+        SUBJECTS.find((s) => s.id === formState.subject)?.label ||
+        formState.subject;
+
+      // Get the actual lesson time value
+      const lessonTimeValue =
+        formState.lessonTime === "custom"
+          ? formState.customTime
+          : formState.lessonTime || undefined;
+
       const resultAction = await dispatch(
         createDocument({
-          data: {
-            title: `${documentType.generateTitlePrefix} - ${new Date().toLocaleDateString("pt-PT")}`,
-            content: "",
             documentType: documentType.id,
-            isPublic: false,
-            metadata: {
-              initialPrompt: fullPrompt,
-              topic: formState.topic,
-              subject: formState.subject,
-              grade: formState.grade,
-              lessonTime:
-                formState.lessonTime === "custom"
-                  ? formState.customTime
-                  : formState.lessonTime,
-              teachingMethod: formState.teachingMethod,
-              additionalDetails: formState.additionalDetails,
-            },
-          },
-          userId: userId,
+          prompt: fullPrompt,
+          subject: subjectValue,
+          gradeLevel: formState.grade,
+          lessonTime: lessonTimeValue,
+          teachingMethod: formState.teachingMethod || undefined,
+          additionalDetails: formState.additionalDetails.trim() || undefined,
         })
       );
 
@@ -353,7 +355,7 @@ export default function DocumentCreationPage({
                 </div>
                 <div className="min-w-0">
                   <h2 className="text-base sm:text-lg font-semibold text-[#0B0D17]">
-                    Tema da Aula
+                    Tema da Aula <span className="text-red-500">*</span>
                   </h2>
                   <p className="text-xs sm:text-sm text-[#6C6F80]">
                     Descreva o tema que pretende abordar
@@ -378,116 +380,41 @@ export default function DocumentCreationPage({
                   <BookOpen className="w-4 h-4 sm:w-5 sm:h-5 text-[#6753FF]" />
                 </div>
                 <h2 className="text-base sm:text-lg font-semibold text-[#0B0D17]">
-                  Disciplina
+                  Disciplina <span className="text-red-500">*</span>
                 </h2>
               </div>
-              <div className="space-y-3">
-                <Select
-                  value={formState.subject}
-                  onValueChange={(value) => {
-                    updateForm("subject", value);
-                    if (value === "outro") {
-                      updateForm("customSubject", "");
-                      setTimeout(() => customSubjectInputRef.current?.focus(), 100);
-                    }
-                  }}
+              <Select
+                value={formState.subject}
+                onValueChange={(value) => updateForm("subject", value)}
+              >
+                <SelectTrigger
+                  className="h-11 sm:h-12 px-4 text-sm sm:text-base bg-white border-[#C7C9D9] rounded-xl focus:border-[#6753FF] focus:ring-[#6753FF]/20"
+                  aria-label="Selecionar disciplina"
                 >
-                  <SelectTrigger
-                    className="h-11 sm:h-12 px-4 text-sm sm:text-base bg-white border-[#C7C9D9] rounded-xl focus:border-[#6753FF] focus:ring-[#6753FF]/20"
-                    aria-label="Selecionar disciplina"
-                  >
-                    <SelectValue placeholder="Selecione uma disciplina...">
-                      {formState.subject?.startsWith("custom:") ? (
-                        <span className="flex items-center gap-2">
-                          <span>📝</span>
-                          <span>{formState.subject.replace("custom:", "")}</span>
-                        </span>
-                      ) : formState.subject && formState.subject !== "outro" ? (
-                        <span className="flex items-center gap-2">
-                          <span>{SUBJECTS.find(s => s.id === formState.subject)?.icon}</span>
-                          <span>{SUBJECTS.find(s => s.id === formState.subject)?.label}</span>
-                        </span>
-                      ) : formState.subject === "outro" ? (
-                        <span className="flex items-center gap-2">
-                          <span>📝</span>
-                          <span>Outra disciplina...</span>
-                        </span>
-                      ) : null}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent className="rounded-xl border-[#C7C9D9] max-h-[280px]">
-                    {SUBJECTS.filter((s) => s.id !== "outro").map((subject) => (
-                      <SelectItem
-                        key={subject.id}
-                        value={subject.id}
-                        className="py-2.5 px-3 text-sm cursor-pointer rounded-lg focus:bg-[#EEF0FF] focus:text-[#6753FF]"
-                      >
-                        <span className="flex items-center gap-2">
-                          <span>{subject.icon}</span>
-                          <span>{subject.label}</span>
-                        </span>
-                      </SelectItem>
-                    ))}
-                    <SelectSeparator className="bg-[#E4E4E7]" />
+                  <SelectValue placeholder="Selecione uma disciplina...">
+                    {formState.subject && (
+                      <span className="flex items-center gap-2">
+                        <span>{SUBJECTS.find(s => s.id === formState.subject)?.icon}</span>
+                        <span>{SUBJECTS.find(s => s.id === formState.subject)?.label}</span>
+                      </span>
+                    )}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent className="rounded-xl border-[#C7C9D9] max-h-[280px]">
+                  {SUBJECTS.map((subject) => (
                     <SelectItem
-                      value="outro"
+                      key={subject.id}
+                      value={subject.id}
                       className="py-2.5 px-3 text-sm cursor-pointer rounded-lg focus:bg-[#EEF0FF] focus:text-[#6753FF]"
                     >
                       <span className="flex items-center gap-2">
-                        <span>📝</span>
-                        <span>Outra disciplina...</span>
+                        <span>{subject.icon}</span>
+                        <span>{subject.label}</span>
                       </span>
                     </SelectItem>
-                  </SelectContent>
-                </Select>
-
-                {/* Custom Subject Input */}
-                {formState.subject === "outro" && (
-                  <div className="flex items-center gap-2 animate-in fade-in slide-in-from-top-2 duration-200">
-                    <Input
-                      ref={customSubjectInputRef}
-                      type="text"
-                      value={formState.customSubject}
-                      onChange={(e) => updateForm("customSubject", e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" && formState.customSubject.trim()) {
-                          e.preventDefault();
-                          updateForm("subject", `custom:${formState.customSubject.trim()}`);
-                        } else if (e.key === "Escape") {
-                          updateForm("subject", "");
-                          updateForm("customSubject", "");
-                        }
-                      }}
-                      placeholder="Digite o nome da disciplina..."
-                      className="flex-1 h-11 sm:h-12 px-4 text-sm sm:text-base bg-[#F4F5F8] border-[#C7C9D9] rounded-xl placeholder:text-[#6C6F80] focus:border-[#6753FF] focus:ring-[#6753FF]/20"
-                      aria-label="Nome da disciplina personalizada"
-                    />
-                    {formState.customSubject.trim() && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          updateForm("subject", `custom:${formState.customSubject.trim()}`);
-                        }}
-                        className="h-11 sm:h-12 px-3 rounded-xl text-white bg-[#6753FF] hover:bg-[#4E3BC0] transition-colors"
-                        aria-label="Confirmar"
-                      >
-                        <Check className="w-5 h-5" />
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        updateForm("subject", "");
-                        updateForm("customSubject", "");
-                      }}
-                      className="h-11 sm:h-12 px-3 rounded-xl text-[#6C6F80] hover:text-red-500 hover:bg-red-50 border border-[#C7C9D9] transition-colors"
-                      aria-label="Cancelar"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
-                  </div>
-                )}
-              </div>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </Card>
 
@@ -501,7 +428,7 @@ export default function DocumentCreationPage({
                     <GraduationCap className="w-4 h-4 sm:w-5 sm:h-5 text-[#6753FF]" />
                   </div>
                   <h2 className="text-base sm:text-lg font-semibold text-[#0B0D17]">
-                    Ano de Escolaridade
+                    Ano de Escolaridade <span className="text-red-500">*</span>
                   </h2>
                 </div>
                 <div className="space-y-2.5 sm:space-y-3">
@@ -549,7 +476,7 @@ export default function DocumentCreationPage({
                   <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-[#6753FF]" />
                 </div>
                 <h2 className="text-base sm:text-lg font-semibold text-[#0B0D17]">
-                  Duração da Aula
+                  Duração da Aula <span className="text-xs sm:text-sm font-normal text-[#6C6F80]">(Opcional)</span>
                 </h2>
               </div>
               <div className="flex flex-wrap gap-1.5 sm:gap-2">
@@ -679,7 +606,7 @@ export default function DocumentCreationPage({
                 </div>
                 <div className="min-w-0">
                   <h2 className="text-base sm:text-lg font-semibold text-[#0B0D17]">
-                    Metodologia de Ensino
+                    Metodologia de Ensino <span className="text-xs sm:text-sm font-normal text-[#6C6F80]">(Opcional)</span>
                   </h2>
                   <p className="text-xs sm:text-sm text-[#6C6F80]">
                     Escolha a abordagem pedagógica preferida
@@ -768,10 +695,10 @@ export default function DocumentCreationPage({
                 </div>
                 <div className="min-w-0">
                   <h2 className="text-base sm:text-lg font-semibold text-[#0B0D17]">
-                    Detalhes Adicionais
+                    Detalhes Adicionais <span className="text-xs sm:text-sm font-normal text-[#6C6F80]">(Opcional)</span>
                   </h2>
                   <p className="text-xs sm:text-sm text-[#6C6F80]">
-                    Opcional - Adicione informações extras
+                    Adicione informações extras para personalizar o conteúdo
                   </p>
                 </div>
               </div>
@@ -796,10 +723,10 @@ export default function DocumentCreationPage({
             )}
 
           {/* Submit Button */}
-          <div className="pt-2 sm:pt-4 pb-4 sm:pb-4">
+          <div className="pt-2 sm:pt-4 pb-4 sm:pb-4 space-y-3">
             <Button
               onClick={handleCreateDocument}
-              disabled={isLoading || !formState.topic.trim()}
+              disabled={isLoading || !isFormValid()}
               className="w-full h-12 sm:h-14 text-base sm:text-lg font-semibold bg-[#6753FF] hover:bg-[#4E3BC0] text-white rounded-xl shadow-lg shadow-[#6753FF]/20 transition-all hover:shadow-xl hover:shadow-[#6753FF]/30 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
               aria-label={`Criar ${documentType.title}`}
             >
@@ -816,6 +743,9 @@ export default function DocumentCreationPage({
                 </>
               )}
             </Button>
+            <p className="text-center text-xs sm:text-sm text-[#6C6F80]">
+              <span className="text-red-500">*</span> Campos obrigatórios
+            </p>
           </div>
         </div>
       </div>
