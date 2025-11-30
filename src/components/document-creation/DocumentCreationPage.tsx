@@ -167,7 +167,7 @@ const TEACHING_METHODS = [
 interface FormState {
   topic: string;
   subject: string;
-  grade: string;
+  schoolYear: number;
   lessonTime?: number;
   customTime?: number;
   teachingMethod?: TeachingMethod;
@@ -186,8 +186,8 @@ export default function DocumentCreationPage({
   const [formState, setFormState] = useState<FormState>({
     topic: "",
     subject: "",
-    grade: "",
-    lessonTime: 45,
+    schoolYear: 0,
+    lessonTime: undefined,
     customTime: 0,
     teachingMethod: undefined,
     additionalDetails: "",
@@ -206,7 +206,7 @@ export default function DocumentCreationPage({
   };
 
   const isFormValid = () => {
-    return formState.topic.trim() && formState.subject && formState.grade;
+    return formState.topic.trim() && formState.subject && formState.schoolYear;
   };
 
   const handleCreateDocument = async () => {
@@ -220,7 +220,7 @@ export default function DocumentCreationPage({
       return;
     }
 
-    if (!formState.grade) {
+    if (!formState.schoolYear) {
       setError("Por favor, selecione o ano de escolaridade");
       return;
     }
@@ -242,7 +242,7 @@ export default function DocumentCreationPage({
           documentType: documentType.id,
           prompt: formState.topic,
           subject: subjectValue,
-          schoolYear: formState.grade,
+          schoolYear: formState.schoolYear,
           duration: durationValue || undefined,
           teachingMethod: formState.teachingMethod || undefined,
           additionalDetails: formState.additionalDetails?.trim() || "",
@@ -392,18 +392,18 @@ export default function DocumentCreationPage({
                             type="button"
                             onClick={() =>
                               updateForm(
-                                "grade",
-                                formState.grade === grade.id ? "" : grade.id
+                                "schoolYear",
+                                formState.schoolYear === parseInt(grade.id) ? 0 : parseInt(grade.id)
                               )
                             }
                             className={cn(
                               "px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-md sm:rounded-lg text-xs sm:text-sm font-medium transition-all",
                               "border hover:scale-[1.02] active:scale-[0.98]",
-                              formState.grade === grade.id
+                              formState.schoolYear === parseInt(grade.id)
                                 ? "bg-[#6753FF] text-white border-[#6753FF] shadow-md shadow-[#6753FF]/20"
                                 : "bg-white text-[#2E2F38] border-[#C7C9D9] hover:border-[#6753FF] hover:bg-[#EEF0FF]"
                             )}
-                            aria-pressed={formState.grade === grade.id}
+                            aria-pressed={formState.schoolYear === parseInt(grade.id)}
                             aria-label={`Selecionar ${grade.label}`}
                           >
                             {grade.label}

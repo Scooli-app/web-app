@@ -22,7 +22,7 @@ export interface CreateDocumentParams {
   documentType: DocumentType;
   prompt: string;
   subject: string;
-  schoolYear: string;
+  schoolYear: number;
   duration?: number;
   teachingMethod?: TeachingMethod;
   additionalDetails?: string;
@@ -36,7 +36,7 @@ export interface DocumentResponse {
   metadata: Record<string, unknown>;
   isPublic: boolean;
   subject: string | null;
-  schoolYear: string | null;
+  schoolYear: number | null;
   duration: number | null;
   rating: number;
   downloads: number;
@@ -48,7 +48,7 @@ export interface DocumentFilters {
   type?: string;
   search?: string;
   subject?: string;
-  schoolYear?: string;
+  schoolYear?: number;
 }
 
 export interface GetDocumentsParams {
@@ -79,7 +79,7 @@ export interface CreateDocumentRequest {
   document_type: DocumentType;
   metadata?: Record<string, unknown>;
   subject?: string;
-  schoolYear?: string;
+  schoolYear?: number;
   duration?: string;
   teachingMethod?: TeachingMethod;
   additionalDetails?: string;

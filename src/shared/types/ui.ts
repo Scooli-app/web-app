@@ -12,14 +12,14 @@ export interface UIState {
 export interface SearchFilters {
   query: string;
   subject?: string;
-  schoolYear?: string;
+  schoolYear?: number;
   type?: string;
 }
 
 export interface LessonPlanForm {
   title: string;
   subject: string;
-  schoolYear: string;
+  schoolYear: number;
   duration: number;
   objectives: string[];
   materials: string[];
