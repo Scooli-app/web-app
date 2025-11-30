@@ -153,7 +153,7 @@ export default function DocumentEditor({
   // Handle initial prompt execution
   useEffect(() => {
     if (
-      document &&
+      currentDocument?.id &&
       !hasExecutedInitialPrompt &&
       !isStreaming &&
       pendingInitialPrompt &&
@@ -187,7 +187,7 @@ export default function DocumentEditor({
 
   const handleChatSubmit = useCallback(
     async (userMessage: string) => {
-      if (!document) {
+      if (!currentDocument?.id) {
         return;
       }
 
@@ -252,7 +252,7 @@ export default function DocumentEditor({
     );
   }
 
-  if (!document) {
+  if (!currentDocument?.id) {
     return (
       <div className="flex items-center justify-center min-h-[400px] w-full">
         <div className="text-center">
@@ -275,7 +275,7 @@ export default function DocumentEditor({
       {/* Main Editor */}
       <div className="flex-1 flex flex-col">
         <DocumentTitle
-          title={document.title}
+          title={currentDocument.title}
           defaultTitle={defaultTitle}
           onSave={handleTitleSave}
           isSaving={isSaving}
