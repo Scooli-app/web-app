@@ -30,6 +30,6 @@ export interface Document {
   rating?: number;
   isPublic: boolean;
   subject?: string;
-  schoolYear?: string;
+  schoolYear?: number;
   duration?: number;
 }
