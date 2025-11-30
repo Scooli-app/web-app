@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Home, Search, ArrowLeft } from "lucide-react";
 import Link from "next/link"; 
 import { useRouter } from "next/navigation";
-import { Routes } from "@/shared/types/routes";
+import { Routes } from "@/shared/types";
 
 export default function NotFound() {
   const router = useRouter();

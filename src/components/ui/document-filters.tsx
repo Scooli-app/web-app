@@ -1,7 +1,7 @@
 "use client";
 
 import { Badge } from "@/components/ui/badge";
-import type { Document } from "@/shared/types/domain/document";
+import type { Document } from "@/shared/types";
 
 interface DocumentFiltersProps {
   selectedType: string;
@@ -15,7 +15,7 @@ const filterOptions: Array<{
   icon: string;
 }> = [
   { value: "all", label: "Todos", icon: "📁" },
-  { value: "lesson_plan", label: "Planos de Aula", icon: "📄" },
+  { value: "lessonPlan", label: "Planos de Aula", icon: "📄" },
   { value: "assay", label: "Testes", icon: "📝" },
   { value: "quiz", label: "Quizzes", icon: "❓" },
   { value: "presentation", label: "Apresentações", icon: "🎯" },

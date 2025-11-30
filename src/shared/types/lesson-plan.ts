@@ -1,3 +1,7 @@
+/**
+ * Lesson Plan specific types
+ */
+
 import type { Document, DocumentMetadata } from "./document";
 
 export interface LessonActivity {
@@ -18,7 +22,7 @@ export interface LessonPlanMetadata extends DocumentMetadata {
 }
 
 export interface LessonPlan extends Document {
-  documentType: "lesson_plan";
+  documentType: "lessonPlan";
   metadata: LessonPlanMetadata;
-  activities: LessonActivity[]; // Direct access for convenience
+  activities: LessonActivity[];
 }

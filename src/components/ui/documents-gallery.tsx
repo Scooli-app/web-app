@@ -2,7 +2,7 @@
 
 import { DocumentCard } from "@/components/ui/document-card";
 import { DocumentFilters } from "@/components/ui/document-filters";
-import type { Document } from "@/shared/types/domain/document";
+import type { Document } from "@/shared/types";
 import {
   getDocuments,
   deleteDocument,

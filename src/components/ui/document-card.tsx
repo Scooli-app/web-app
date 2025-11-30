@@ -2,8 +2,7 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import type { Document } from "@/shared/types/domain/document";
-import { Routes } from "@/shared/types/routes";
+import { Routes, type Document } from "@/shared/types";
 import { Clock, FileText, Trash2, User } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -19,7 +18,7 @@ interface DocumentCardProps {
 
 const getDocumentTypeLabel = (type: string) => {
   const labels: Record<Document["documentType"], string> = {
-    lesson_plan: "Plano de Aula",
+    lessonPlan: "Plano de Aula",
     assay: "Teste",
     quiz: "Quiz",
     presentation: "Apresentação",
@@ -29,7 +28,7 @@ const getDocumentTypeLabel = (type: string) => {
 
 const getDocumentTypeColor = (type: string) => {
   const colors = {
-    lesson_plan: "bg-[#6753FF] text-white",
+    lessonPlan: "bg-[#6753FF] text-white",
     assay: "bg-[#FF6B35] text-white",
     quiz: "bg-[#FF8C42] text-white",
     presentation: "bg-[#FF4F4F] text-white",
@@ -39,7 +38,7 @@ const getDocumentTypeColor = (type: string) => {
 
 const getDocumentIcon = (type: string) => {
   const icons = {
-    lesson_plan: "📄",
+    lessonPlan: "📄",
     assay: "📝",
     quiz: "❓",
     presentation: "📊",
@@ -68,7 +67,7 @@ export function DocumentCard({
     if ((e.target as HTMLElement).closest(".action-button")) {
       return;
     }
-    if (document.documentType === "lesson_plan") {
+    if (document.documentType === "lessonPlan") {
       router.push(`${Routes.LESSON_PLAN}/${document.id}`);
     } else if (document.documentType === "presentation") {
       router.push(`${Routes.PRESENTATION}/${document.id}`);

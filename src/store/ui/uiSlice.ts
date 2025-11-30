@@ -1,4 +1,4 @@
-import type { UIState } from "@/shared/types/ui";
+import type { UIState } from "@/shared/types";
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
 interface UIStoreState extends UIState {

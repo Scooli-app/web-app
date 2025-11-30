@@ -12,7 +12,7 @@ Update `src/shared/types/domain/document.ts`:
 
 ```typescript
 export type DocumentType =
-  | "lesson_plan"
+  | "lessonPlan"
   | "quiz"
   | "presentation"
   | "assay"

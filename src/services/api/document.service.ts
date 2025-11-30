@@ -4,63 +4,30 @@
  * Based on Chalkboard backend API (Quarkus)
  */
 
-import type { Document } from "@/shared/types/domain/document";
+import type {
+  Document,
+  CreateDocumentParams,
+  DocumentResponse,
+  DocumentFilters,
+  GetDocumentsParams,
+  GetDocumentsResponse,
+  DocumentCountsResponse,
+} from "@/shared/types";
 import apiClient from "./client";
 
-// Backend API types (camelCase as per Swagger spec)
-export interface BackendDocumentRequest {
-  documentType: string;
-  prompt: string;
-}
-
-export interface BackendDocumentResponse {
-  id: string;
-  title: string;
-  documentType: string;
-  content: string;
-  metadata: Record<string, unknown>;
-  isPublic: boolean;
-  subject: string | null;
-  gradeLevel: string | null;
-  rating: number;
-  downloads: number;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface DocumentFilters {
-  type?: string;
-  search?: string;
-  subject?: string;
-  grade_level?: string;
-}
-
-export interface GetDocumentsParams {
-  page?: number;
-  limit?: number;
-  userId: string;
-  filters?: DocumentFilters;
-}
-
-export interface GetDocumentsResponse {
-  documents: Document[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    hasMore: boolean;
-  };
-  counts: Record<string, number>;
-}
-
-export interface DocumentCountsResponse {
-  counts: Record<string, number>;
-}
+export type {
+  CreateDocumentParams,
+  DocumentResponse,
+  DocumentFilters,
+  GetDocumentsParams,
+  GetDocumentsResponse,
+  DocumentCountsResponse,
+};
 
 /**
  * Convert backend response to frontend Document (both use camelCase)
  */
-function mapBackendToDocument(backend: BackendDocumentResponse): Document {
+function mapBackendToDocument(backend: DocumentResponse): Document {
   return {
     id: backend.id,
     userId: "", // Not in backend response, will need to be handled separately
@@ -88,7 +55,7 @@ export async function getDocuments(
 ): Promise<GetDocumentsResponse> {
   const { page = 1, limit = 10, filters } = params;
 
-  const response = await apiClient.get<BackendDocumentResponse[]>("/documents");
+  const response = await apiClient.get<DocumentResponse[]>("/documents");
 
   // Map backend responses to frontend format
   const allDocuments = response.data.map(mapBackendToDocument);
@@ -130,7 +97,7 @@ export async function getDocuments(
 export async function getDocumentCounts(): Promise<DocumentCountsResponse> {
   // For now, fetch all documents and count client-side
   // TODO: Backend should implement a counts endpoint
-  const response = await apiClient.get<BackendDocumentResponse[]>("/documents");
+  const response = await apiClient.get<DocumentResponse[]>("/documents");
   const documents = response.data.map(mapBackendToDocument);
 
   const counts: Record<string, number> = {};
@@ -145,9 +112,7 @@ export async function getDocumentCounts(): Promise<DocumentCountsResponse> {
  * Get a single document by ID
  */
 export async function getDocument(id: string): Promise<Document> {
-  const response = await apiClient.get<BackendDocumentResponse>(
-    `/documents/${id}`
-  );
+  const response = await apiClient.get<DocumentResponse>(`/documents/${id}`);
   return mapBackendToDocument(response.data);
 }
 
@@ -159,12 +124,12 @@ export async function createDocument(
   documentType: string,
   prompt: string
 ): Promise<Document> {
-  const request: BackendDocumentRequest = {
+  const request: CreateDocumentParams = {
     documentType,
     prompt,
   };
 
-  const response = await apiClient.post<BackendDocumentResponse>(
+  const response = await apiClient.post<DocumentResponse>(
     "/documents",
     request
   );
@@ -181,12 +146,12 @@ export async function updateDocument(
   documentType: string,
   prompt: string
 ): Promise<Document> {
-  const request: BackendDocumentRequest = {
+  const request: CreateDocumentParams = {
     documentType,
     prompt,
   };
 
-  const response = await apiClient.put<BackendDocumentResponse>(
+  const response = await apiClient.put<DocumentResponse>(
     `/documents/${id}`,
     request
   );

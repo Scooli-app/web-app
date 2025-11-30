@@ -37,7 +37,8 @@ export function useDocumentManager(documentId: string) {
         await dispatch(
           updateDocument({
             id: currentDocument.id,
-            title: newTitle,
+            documentType: currentDocument.documentType,
+            prompt: newTitle,
           })
         );
       } catch (error) {

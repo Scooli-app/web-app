@@ -6,7 +6,7 @@ export interface CommunityResource {
   id: string;
   title: string;
   description: string;
-  type: "lesson_plan" | "presentation" | "test" | "quiz" | "activity";
+  type: "lessonPlan" | "presentation" | "test" | "quiz" | "activity";
   subject: string;
   gradeLevel: string;
   downloads: number;

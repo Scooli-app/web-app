@@ -1,8 +1,9 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 "use client";
 
 import { Card } from "@/components/ui/card";
 import { useDocumentManager } from "@/hooks/useDocumentManager";
-import { Routes } from "@/shared/types/routes";
+import { Routes } from "@/shared/types";
 import {
   clearPendingInitialPrompt,
   fetchDocument,

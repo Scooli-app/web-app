@@ -23,7 +23,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Routes } from "@/shared/types/routes";
+import { Routes } from "@/shared/types";
 import { cn } from "@/shared/utils/utils";
 import {
   BookOpen,

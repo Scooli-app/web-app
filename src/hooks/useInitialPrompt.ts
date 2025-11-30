@@ -1,4 +1,4 @@
-import type { Document } from "@/shared/types/domain/document";
+import type { Document } from "@/shared/types";
 import { clearPendingInitialPrompt } from "@/store/documents/documentSlice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { useCallback, useEffect, useState } from "react";

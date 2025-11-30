@@ -4,5 +4,5 @@ import DocumentCreationPage from "@/components/document-creation/DocumentCreatio
 import { documentTypes } from "@/components/document-creation/documentTypes";
 
 export default function LessonPlanPage() {
-  return <DocumentCreationPage documentType={documentTypes.lesson_plan} />;
+  return <DocumentCreationPage documentType={documentTypes.lessonPlan} />;
 }
