@@ -15,7 +15,7 @@ export type DocumentType =
   | "lessonPlan"
   | "quiz"
   | "presentation"
-  | "assay"
+  | "test"
   | "worksheet";
 ```
 

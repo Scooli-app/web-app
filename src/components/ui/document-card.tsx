@@ -19,7 +19,7 @@ interface DocumentCardProps {
 const getDocumentTypeLabel = (type: string) => {
   const labels: Record<Document["documentType"], string> = {
     lessonPlan: "Plano de Aula",
-    assay: "Teste",
+    test: "Teste",
     quiz: "Quiz",
     presentation: "Apresentação",
   };
@@ -29,7 +29,7 @@ const getDocumentTypeLabel = (type: string) => {
 const getDocumentTypeColor = (type: string) => {
   const colors = {
     lessonPlan: "bg-[#6753FF] text-white",
-    assay: "bg-[#FF6B35] text-white",
+    test: "bg-[#FF6B35] text-white",
     quiz: "bg-[#FF8C42] text-white",
     presentation: "bg-[#FF4F4F] text-white",
   };
@@ -39,7 +39,7 @@ const getDocumentTypeColor = (type: string) => {
 const getDocumentIcon = (type: string) => {
   const icons = {
     lessonPlan: "📄",
-    assay: "📝",
+    test: "📝",
     quiz: "❓",
     presentation: "📊",
   };
@@ -50,7 +50,7 @@ const getDocumentRoute = (doc: Document): string => {
   const routeMap: Record<Document["documentType"], string> = {
     lessonPlan: Routes.LESSON_PLAN,
     presentation: Routes.PRESENTATION,
-    assay: Routes.ASSAYS,
+    test: Routes.TEST,
     quiz: Routes.QUIZ,
   };
   return `${routeMap[doc.documentType]}/${doc.id}`;

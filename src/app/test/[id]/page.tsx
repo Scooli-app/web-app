@@ -3,11 +3,11 @@
 import DocumentEditor from "@/components/document-editor/DocumentEditor";
 import { use } from "react";
 
-interface AssaysEditorPageProps {
+interface TestEditorPageProps {
   params: Promise<{ id: string }>;
 }
 
-export default function AssaysEditorPage({ params }: AssaysEditorPageProps) {
+export default function TestEditorPage({ params }: TestEditorPageProps) {
   const { id } = use(params);
 
   return (

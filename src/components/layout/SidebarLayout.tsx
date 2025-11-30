@@ -79,7 +79,7 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
     },
     {
       title: "Testes",
-      href: Routes.ASSAYS,
+      href: Routes.TEST,
       icon: FileCheck,
       description: "Criar e editar testes",
     },

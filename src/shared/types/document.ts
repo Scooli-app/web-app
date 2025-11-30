@@ -2,7 +2,7 @@
  * Document types and interfaces
  */
 
-export type DocumentType = "lessonPlan" | "quiz" | "presentation" | "assay";
+export type DocumentType = "lessonPlan" | "quiz" | "presentation" | "test";
 
 export enum TeachingMethod {
   ACTIVE = "active",
