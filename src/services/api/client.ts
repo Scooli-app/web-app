@@ -5,16 +5,7 @@
 
 import axios, { type AxiosError, type AxiosInstance } from "axios";
 
-function getBaseUrl(): string {
-  if (typeof window === "undefined") {
-    // Server-side
-    return process.env.BASE_API_URL || "";
-  }
-  // Client-side: use NEXT_PUBLIC_ prefix
-  return process.env.NEXT_PUBLIC_BASE_API_URL || "";
-}
-
-const baseUrl = getBaseUrl();
+const baseUrl = process.env.NEXT_PUBLIC_BASE_API_URL || "";
 
 if (!baseUrl && typeof window !== "undefined") {
   console.warn("⚠️ NEXT_PUBLIC_BASE_API_URL is not set. API calls will fail.");
@@ -26,10 +17,9 @@ export const apiClient: AxiosInstance = axios.create({
     "Content-Type": "application/json",
     Accept: "application/json",
   },
-  validateStatus: (status) => status < 500, // Don't throw on 4xx errors
+  validateStatus: (status) => status < 500,
 });
 
-// Request interceptor
 apiClient.interceptors.request.use(
   (config) => {
     // Add auth token or other headers here if needed
@@ -52,7 +42,7 @@ apiClient.interceptors.response.use(
     if (contentType && !contentType.includes("application/json")) {
       console.error("API returned non-JSON response:", contentType);
       throw new Error(
-        "Server returned an invalid response. Please check BASE_API_URL configuration."
+        "Server returned an invalid response. Please check NEXT_PUBLIC_BASE_API_URL configuration."
       );
     }
     return response;
@@ -66,7 +56,7 @@ apiClient.interceptors.response.use(
         const status = error.response.status;
         return Promise.reject(
           new Error(
-            `API endpoint returned HTML instead of JSON (Status: ${status}). Please verify BASE_API_URL is correct and the endpoint exists.`
+            `API endpoint returned HTML instead of JSON (Status: ${status}). Please verify NEXT_PUBLIC_BASE_API_URL is correct and the endpoint exists.`
           )
         );
       }
@@ -93,18 +83,16 @@ apiClient.interceptors.response.use(
       return Promise.reject(new Error(message));
     }
     if (error.request) {
-      // Check if base URL is missing
-      const baseUrl = getBaseUrl();
       if (!baseUrl) {
         return Promise.reject(
           new Error(
-            "BASE_API_URL is not configured. Please set NEXT_PUBLIC_BASE_API_URL in your environment variables."
+            "NEXT_PUBLIC_BASE_API_URL is not configured. Please set it in your environment variables."
           )
         );
       }
       return Promise.reject(
         new Error(
-          "Network error. Please check your connection and BASE_API_URL."
+          "Network error. Please check your connection and NEXT_PUBLIC_BASE_API_URL."
         )
       );
     }

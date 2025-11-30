@@ -50,6 +50,7 @@ export interface GetDocumentsResponse {
     total: number;
     hasMore: boolean;
   };
+  counts: Record<string, number>;
 }
 
 export interface DocumentCountsResponse {
@@ -85,44 +86,39 @@ function mapBackendToDocument(backend: BackendDocumentResponse): Document {
 export async function getDocuments(
   params: GetDocumentsParams
 ): Promise<GetDocumentsResponse> {
-  const { page = 1, limit = 10 } = params;
+  const { page = 1, limit = 10, filters } = params;
 
-  // Backend might support query params even if not in Swagger
-  const queryParams: Record<string, string | number> = {};
-
-  // Only add params if backend supports them
-  // For now, we'll fetch all and handle pagination client-side if needed
-  // Uncomment if backend supports these:
-  // queryParams.page = page;
-  // queryParams.limit = limit;
-  // queryParams.user_id = userId;
-  // if (filters?.type && filters.type !== "all") {
-  //   queryParams.type = filters.type;
-  // }
-
-  const response = await apiClient.get<BackendDocumentResponse[]>(
-    "/documents",
-    {
-      params: queryParams,
-    }
-  );
+  const response = await apiClient.get<BackendDocumentResponse[]>("/documents");
 
   // Map backend responses to frontend format
-  const documents = response.data.map(mapBackendToDocument);
+  const allDocuments = response.data.map(mapBackendToDocument);
 
-  // Client-side pagination (if backend doesn't support it)
+  // Calculate counts from all documents (before filtering)
+  const counts: Record<string, number> = {};
+  allDocuments.forEach((doc) => {
+    counts[doc.documentType] = (counts[doc.documentType] || 0) + 1;
+  });
+
+  // Apply client-side filtering
+  const filteredDocuments =
+    filters?.type && filters.type !== "all"
+      ? allDocuments.filter((doc) => doc.documentType === filters.type)
+      : allDocuments;
+
+  // Client-side pagination
   const startIndex = (page - 1) * limit;
   const endIndex = startIndex + limit;
-  const paginatedDocuments = documents.slice(startIndex, endIndex);
+  const paginatedDocuments = filteredDocuments.slice(startIndex, endIndex);
 
   return {
     documents: paginatedDocuments,
     pagination: {
       page,
       limit,
-      total: documents.length,
-      hasMore: endIndex < documents.length,
+      total: filteredDocuments.length,
+      hasMore: endIndex < filteredDocuments.length,
     },
+    counts,
   };
 }
 
