@@ -6,7 +6,7 @@ import {
   type DocumentFilters,
   updateDocument as updateDocumentService,
 } from "@/services/api";
-import type { Document } from "@/shared/types";
+import type { CreateDocumentParams, Document } from "@/shared/types";
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 
 export type { DocumentFilters };
@@ -110,28 +110,17 @@ export const fetchDocument = createAsyncThunk(
 
 export const createDocument = createAsyncThunk(
   "documents/createDocument",
-  async (
-    {
-      data,
-    }: {
-      data: Partial<Document>;
-      userId: string;
-    },
-    { rejectWithValue }
-  ) => {
+  async (params: CreateDocumentParams, { rejectWithValue }) => {
     try {
-      // Backend API expects documentType and prompt
-      const documentType = data.documentType as string;
-      const prompt =
-        (data.metadata as { initialPrompt?: string })?.initialPrompt || "";
-
-      if (!documentType || !prompt) {
-        return rejectWithValue(
-          "documentType and prompt (in metadata.initialPrompt) are required"
-        );
+      if (!params.documentType || !params.prompt) {
+        return rejectWithValue("documentType and prompt are required");
       }
 
-      const document = await createDocumentService(documentType, prompt);
+      if (!params.subject || !params.gradeLevel) {
+        return rejectWithValue("subject and gradeLevel are required");
+      }
+
+      const document = await createDocumentService(params);
       return document;
     } catch (error) {
       return rejectWithValue(

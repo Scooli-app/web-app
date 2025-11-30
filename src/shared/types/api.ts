@@ -18,16 +18,20 @@ export interface PaginatedResponse<T> {
   hasMore: boolean;
 }
 
-// Document API types (from document.service.ts)
 export interface CreateDocumentParams {
-  documentType: string;
+  documentType: DocumentType;
   prompt: string;
+  subject: string;
+  gradeLevel: string;
+  lessonTime?: string;
+  teachingMethod?: string;
+  additionalDetails?: string;
 }
 
 export interface DocumentResponse {
   id: string;
   title: string;
-  documentType: string;
+  documentType: DocumentType;
   content: string;
   metadata: Record<string, unknown>;
   isPublic: boolean;
@@ -68,7 +72,6 @@ export interface DocumentCountsResponse {
   counts: Record<string, number>;
 }
 
-// Document request types
 export interface CreateDocumentRequest {
   title: string;
   content?: string;
@@ -81,12 +84,9 @@ export interface CreateDocumentRequest {
 
 export interface UpdateDocumentRequest {
   id: string;
+  prompt: string;
   title?: string;
   content?: string;
-  metadata?: Record<string, unknown>;
-  subject?: string;
-  grade_level?: string;
-  is_public?: boolean;
 }
 
 export interface DeleteDocumentRequest {

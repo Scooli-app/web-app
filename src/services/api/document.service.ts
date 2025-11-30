@@ -12,6 +12,8 @@ import type {
   GetDocumentsParams,
   GetDocumentsResponse,
   DocumentCountsResponse,
+  DocumentType,
+  UpdateDocumentRequest,
 } from "@/shared/types";
 import apiClient from "./client";
 
@@ -22,6 +24,7 @@ export type {
   GetDocumentsParams,
   GetDocumentsResponse,
   DocumentCountsResponse,
+  DocumentType,
 };
 
 /**
@@ -89,14 +92,7 @@ export async function getDocuments(
   };
 }
 
-/**
- * Get document counts by type
- * Note: Backend doesn't show this endpoint in Swagger
- * This might need to be implemented on backend or calculated client-side
- */
 export async function getDocumentCounts(): Promise<DocumentCountsResponse> {
-  // For now, fetch all documents and count client-side
-  // TODO: Backend should implement a counts endpoint
   const response = await apiClient.get<DocumentResponse[]>("/documents");
   const documents = response.data.map(mapBackendToDocument);
 
@@ -118,37 +114,25 @@ export async function getDocument(id: string): Promise<Document> {
 
 /**
  * Create a new document
- * Backend expects: { documentType: string, prompt: string }
  */
 export async function createDocument(
-  documentType: string,
-  prompt: string
+  params: CreateDocumentParams
 ): Promise<Document> {
-  const request: CreateDocumentParams = {
-    documentType,
-    prompt,
-  };
-
-  const response = await apiClient.post<DocumentResponse>(
-    "/documents",
-    request
-  );
+  const response = await apiClient.post<DocumentResponse>("/documents", params);
   return mapBackendToDocument(response.data);
 }
 
-/**
- * Update an existing document
- * Note: Backend PUT returns 400 saying update is not supported
- * This endpoint may not work until backend implements proper update
- */
 export async function updateDocument(
   id: string,
-  documentType: string,
-  prompt: string
+  prompt: string,
+  title?: string,
+  content?: string
 ): Promise<Document> {
-  const request: CreateDocumentParams = {
-    documentType,
+  const request: UpdateDocumentRequest = {
+    id,
     prompt,
+    title,
+    content,
   };
 
   const response = await apiClient.put<DocumentResponse>(
