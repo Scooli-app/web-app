@@ -38,7 +38,6 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import Header from "./Header";
 
 interface SidebarLayoutProps {
   children: React.ReactNode;
@@ -256,7 +255,6 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
           <header className="flex h-16 shrink-0 items-center gap-2 bg-[#FFFFFF] w-full border-b border-[#E4E4E7]">
             <div className="flex items-center gap-2 px-4 justify-between w-full">
               <SidebarTrigger className="hidden md:flex" />
-              <Header />
             </div>
           </header>
           <main
