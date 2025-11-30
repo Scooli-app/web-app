@@ -4,6 +4,14 @@
 
 export type DocumentType = "lessonPlan" | "quiz" | "presentation" | "assay";
 
+export enum TeachingMethod {
+  ACTIVE = "active",
+  LECTURE = "lecture",
+  PRACTICAL = "practical",
+  SOCIAL_EMOTIONAL = "social_emotional",
+  INTERACTIVE = "interactive",
+}
+
 export interface DocumentMetadata {
   initialPrompt?: string;
   [key: string]: unknown;
@@ -22,5 +30,5 @@ export interface Document {
   rating?: number;
   isPublic: boolean;
   subject?: string;
-  gradeLevel?: string;
+  schoolYear?: string;
 }

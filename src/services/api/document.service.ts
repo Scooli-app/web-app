@@ -44,7 +44,7 @@ function mapBackendToDocument(backend: DocumentResponse): Document {
     createdAt: backend.createdAt,
     updatedAt: backend.updatedAt,
     subject: backend.subject || undefined,
-    gradeLevel: backend.gradeLevel || undefined,
+    schoolYear: backend.schoolYear || undefined,
   };
 }
 

@@ -8,7 +8,7 @@ export interface CommunityResource {
   description: string;
   type: "lessonPlan" | "presentation" | "test" | "quiz" | "activity";
   subject: string;
-  gradeLevel: string;
+  schoolYear: string;
   downloads: number;
   rating: number;
   user: {

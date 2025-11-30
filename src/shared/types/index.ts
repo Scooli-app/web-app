@@ -4,6 +4,7 @@
 
 // Document types
 export type { Document, DocumentType, DocumentMetadata } from "./document";
+export { TeachingMethod } from "./document";
 
 // Lesson Plan types
 export type {
