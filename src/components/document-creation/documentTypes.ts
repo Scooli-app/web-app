@@ -22,14 +22,14 @@ export const documentTypes: Record<string, DocumentTypeConfig> = {
     redirectPath: Routes.QUIZ_EDITOR,
     generateTitlePrefix: "Quiz",
   },
-  assay: {
-    id: "assay",
+  test: {
+    id: "test",
     title: "Teste",
     description:
       "Descreva o que pretende avaliar e o Scooli irá gerar um teste completo",
     placeholder:
       "Ex: Teste sobre frações para o 3º ano, com 10 questões de escolha múltipla e 2 problemas",
-    redirectPath: Routes.ASSAYS_EDITOR,
+    redirectPath: Routes.TEST_EDITOR,
     generateTitlePrefix: "Teste",
   },
   presentation: {

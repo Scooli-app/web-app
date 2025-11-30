@@ -29,7 +29,7 @@ export default function DashboardPage() {
               Criar Plano de Aula
             </button>
             <button
-              onClick={() => router.push("/assays")}
+              onClick={() => router.push("/test")}
               className="w-full border border-[#C7C9D9] text-[#0B0D17] bg-white hover:bg-[#EEF0FF] px-5 py-3 rounded-xl font-medium transition-colors"
             >
               Gerar Teste

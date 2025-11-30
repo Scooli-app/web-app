@@ -16,7 +16,7 @@ const filterOptions: Array<{
 }> = [
   { value: "all", label: "Todos", icon: "📁" },
   { value: "lessonPlan", label: "Planos de Aula", icon: "📄" },
-  { value: "assay", label: "Testes", icon: "📝" },
+  { value: "test", label: "Testes", icon: "📝" },
   { value: "quiz", label: "Quizzes", icon: "❓" },
   { value: "presentation", label: "Apresentações", icon: "🎯" },
 ];
