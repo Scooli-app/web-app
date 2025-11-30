@@ -5,7 +5,6 @@ import { DocumentFilters } from "@/components/ui/document-filters";
 import type { Document } from "@/shared/types/domain/document";
 import {
   getDocuments,
-  getDocumentCounts,
   deleteDocument,
   deleteDocuments,
 } from "@/services/api/document.service";
@@ -62,6 +61,7 @@ export function DocumentsGallery({ userId }: DocumentsGalleryProps) {
           total: result.pagination.total,
           hasMore: result.pagination.hasMore,
         }));
+        setDocumentCounts(result.counts);
       } catch (error) {
         console.error("Error fetching documents:", error);
       } finally {
@@ -70,17 +70,6 @@ export function DocumentsGallery({ userId }: DocumentsGalleryProps) {
     },
     [userId, selectedType, pagination.limit]
   );
-
-  const fetchDocumentCounts = useCallback(async () => {
-    try {
-      const result = await getDocumentCounts();
-      if (result.counts) {
-        setDocumentCounts(result.counts);
-      }
-    } catch (error) {
-      console.error("Error fetching document counts:", error);
-    }
-  }, []);
 
   // Selection handlers
   const handleSelectDocument = (documentId: string, selected: boolean) => {
@@ -163,24 +152,18 @@ export function DocumentsGallery({ userId }: DocumentsGalleryProps) {
     }
   };
 
-  // Filter documents by search query
   const filteredDocuments = documents.filter(
     (doc) =>
       doc.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       doc.content.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Initial load
-  useEffect(() => {
-    fetchDocuments(1, true);
-    fetchDocumentCounts();
-  }, [fetchDocuments, fetchDocumentCounts]);
-
-  // Reset when filter changes
+  // Fetch documents on mount and when filter changes
   useEffect(() => {
     setPagination((prev) => ({ ...prev, page: 1 }));
     fetchDocuments(1, true);
-  }, [fetchDocuments, selectedType]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedType]);
 
   const loadMore = () => {
     if (pagination.hasMore && !loading) {
