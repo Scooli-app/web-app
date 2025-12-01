@@ -6,7 +6,7 @@ import type { DocumentTemplate, DocumentType } from "@/shared/types";
 import { cn } from "@/shared/utils/utils";
 import { ChevronRight, FileText, Layers, Search, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
-import { getTemplates } from "@/services/api/template.service";
+import { getTemplates, setDefaultTemplate } from "@/services/api/template.service";
 import { TemplateBrowserModal } from "./TemplateBrowserModal";
 
 interface TemplateSectionProps {
@@ -68,6 +68,31 @@ export function TemplateSection({
       setTemplates((prev) => [...prev, template]);
     }
     handleTemplateSelect(template);
+  };
+
+  const handleSetDefault = async (template: DocumentTemplate) => {
+    try {
+      const updatedTemplate = await setDefaultTemplate(template.id, documentType);
+      
+      // Update all templates - remove default from others, set on the new one
+      setTemplates((prev) =>
+        prev.map((t) => ({
+          ...t,
+          isDefault: t.id === updatedTemplate.id,
+        }))
+      );
+      
+      // Update selected template if it's the one being set as default
+      if (selectedTemplate?.id === updatedTemplate.id) {
+        setSelectedTemplate(updatedTemplate);
+      } else if (selectedTemplate?.isDefault) {
+        // If the currently selected template was the default, update it
+        setSelectedTemplate((prev) => prev ? { ...prev, isDefault: false } : null);
+      }
+    } catch (error) {
+      console.error("Failed to set default template:", error);
+      throw error;
+    }
   };
 
   if (isLoading) {
@@ -191,6 +216,7 @@ export function TemplateSection({
         selectedTemplateId={selectedTemplate?.id || null}
         onTemplateSelect={handleTemplateSelect}
         onTemplateSaved={handleTemplateSaved}
+        onSetDefault={handleSetDefault}
       />
     </>
   );

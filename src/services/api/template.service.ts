@@ -374,6 +374,35 @@ export async function updateTemplate(
 }
 
 /**
+ * Set a template as the default for its document type
+ */
+export async function setDefaultTemplate(
+  id: string,
+  documentType: DocumentType
+): Promise<DocumentTemplate> {
+  await new Promise((resolve) => setTimeout(resolve, 300));
+
+  const templateIndex = mockTemplatesStore.findIndex((t) => t.id === id);
+  if (templateIndex === -1) {
+    throw new Error("Template not found");
+  }
+
+  // Remove default from all templates of this document type
+  mockTemplatesStore = mockTemplatesStore.map((t) =>
+    t.documentType === documentType ? { ...t, isDefault: false } : t
+  );
+
+  // Set the new default
+  mockTemplatesStore[templateIndex] = {
+    ...mockTemplatesStore[templateIndex],
+    isDefault: true,
+    updatedAt: new Date().toISOString(),
+  };
+
+  return mockTemplatesStore[templateIndex];
+}
+
+/**
  * Delete a template
  */
 export async function deleteTemplate(id: string): Promise<void> {

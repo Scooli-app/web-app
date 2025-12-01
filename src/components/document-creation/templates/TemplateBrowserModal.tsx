@@ -13,12 +13,15 @@ import { UnsavedChangesDialog } from "@/components/ui/confirmation-dialog";
 import type { DocumentTemplate, DocumentType } from "@/shared/types";
 import { cn } from "@/shared/utils/utils";
 import {
+  Check,
   ChevronRight,
   FileText,
   Layers,
+  Loader2,
   Pencil,
   Plus,
   Sparkles,
+  Star,
 } from "lucide-react";
 import { useCallback, useState } from "react";
 import { TemplateCard } from "./TemplateCard";
@@ -34,6 +37,7 @@ interface TemplateBrowserModalProps {
   selectedTemplateId: string | null;
   onTemplateSelect: (template: DocumentTemplate) => void;
   onTemplateSaved: (template: DocumentTemplate, isUpdate: boolean) => void;
+  onSetDefault: (template: DocumentTemplate) => Promise<void>;
 }
 
 export function TemplateBrowserModal({
@@ -44,6 +48,7 @@ export function TemplateBrowserModal({
   selectedTemplateId,
   onTemplateSelect,
   onTemplateSaved,
+  onSetDefault,
 }: TemplateBrowserModalProps) {
   const [view, setView] = useState<ModalView>("browse");
   const [previewTemplate, setPreviewTemplate] =
@@ -56,6 +61,7 @@ export function TemplateBrowserModal({
   const [isCreatorDirty, setIsCreatorDirty] = useState(false);
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
   const [pendingCloseAction, setPendingCloseAction] = useState<(() => void) | null>(null);
+  const [isSettingDefault, setIsSettingDefault] = useState(false);
 
   const resetModalState = useCallback(() => {
     setView("browse");
@@ -140,6 +146,23 @@ export function TemplateBrowserModal({
     return labels[type];
   };
 
+  const handleSetDefault = async (template: DocumentTemplate) => {
+    if (template.isDefault || isSettingDefault) {
+      return;
+    }
+    
+    setIsSettingDefault(true);
+    try {
+      await onSetDefault(template);
+      // Update preview template if it's the one being set as default
+      if (previewTemplate?.id === template.id) {
+        setPreviewTemplate({ ...template, isDefault: true });
+      }
+    } finally {
+      setIsSettingDefault(false);
+    }
+  };
+
   return (
     <>
       <UnsavedChangesDialog
@@ -206,19 +229,47 @@ export function TemplateBrowserModal({
                     {previewTemplate.description}
                   </DialogDescription>
                 </div>
-                {!previewTemplate.isSystem && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleEditTemplate(previewTemplate)}
-                    className="flex items-center gap-1.5 border-[#C7C9D9] text-[#2E2F38] hover:bg-[#EEF0FF] hover:border-[#6753FF] rounded-lg shrink-0"
-                    aria-label="Editar modelo"
-                  >
-                    <Pencil className="w-4 h-4" />
-                    <span className="hidden sm:inline">Editar</span>
-                  </Button>
-                )}
+                <div className="flex items-center gap-2 shrink-0">
+                  {!previewTemplate.isDefault && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleSetDefault(previewTemplate)}
+                      disabled={isSettingDefault}
+                      className="flex items-center gap-1.5 border-[#C7C9D9] text-[#2E2F38] hover:bg-emerald-50 hover:border-emerald-500 hover:text-emerald-700 rounded-lg"
+                      aria-label="Definir como padrão"
+                    >
+                      {isSettingDefault ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Star className="w-4 h-4" />
+                      )}
+                      <span className="hidden sm:inline">
+                        {isSettingDefault ? "A definir..." : "Definir Padrão"}
+                      </span>
+                    </Button>
+                  )}
+                  {previewTemplate.isDefault && (
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-lg text-sm font-medium">
+                      <Check className="w-4 h-4" />
+                      <span className="hidden sm:inline">Padrão</span>
+                    </div>
+                  )}
+                  {!previewTemplate.isSystem && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleEditTemplate(previewTemplate)}
+                      className="flex items-center gap-1.5 border-[#C7C9D9] text-[#2E2F38] hover:bg-[#EEF0FF] hover:border-[#6753FF] rounded-lg"
+                      aria-label="Editar modelo"
+                    >
+                      <Pencil className="w-4 h-4" />
+                      <span className="hidden sm:inline">Editar</span>
+                    </Button>
+                  )}
+                </div>
               </div>
             </DialogHeader>
 
