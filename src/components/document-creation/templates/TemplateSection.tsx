@@ -4,10 +4,17 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import type { DocumentTemplate, DocumentType } from "@/shared/types";
 import { cn } from "@/shared/utils/utils";
-import { ChevronRight, FileText, Layers, Search, Sparkles } from "lucide-react";
+import {
+  ChevronRight,
+  FileText,
+  Layers,
+  Search,
+  Sparkles,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { getTemplates, setDefaultTemplate } from "@/services/api/template.service";
 import { TemplateBrowserModal } from "./TemplateBrowserModal";
+import { TemplateEmptyState } from "./TemplateEmptyState";
 
 interface TemplateSectionProps {
   documentType: DocumentType;
@@ -72,7 +79,7 @@ export function TemplateSection({
 
   const handleSetDefault = async (template: DocumentTemplate) => {
     try {
-      const updatedTemplate = await setDefaultTemplate(template.id, documentType);
+      const updatedTemplate = await setDefaultTemplate(template.id);
       
       // Update all templates - remove default from others, set on the new one
       setTemplates((prev) =>
@@ -110,6 +117,25 @@ export function TemplateSection({
           <div className="h-24 bg-[#F4F5F8] rounded-xl animate-pulse" />
         </div>
       </Card>
+    );
+  }
+
+  if (templates.length === 0) {
+    return (
+      <>
+        <TemplateEmptyState onCreateTemplate={() => setIsModalOpen(true)} />
+
+        <TemplateBrowserModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          documentType={documentType}
+          templates={templates}
+          selectedTemplateId={null}
+          onTemplateSelect={handleTemplateSelect}
+          onTemplateSaved={handleTemplateSaved}
+          onSetDefault={handleSetDefault}
+        />
+      </>
     );
   }
 
