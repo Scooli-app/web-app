@@ -1,5 +1,5 @@
 import { Routes } from "@/shared/types";
-import type { DocumentTypeConfig } from "./DocumentCreationPage";
+import type { DocumentTypeConfig } from "./types";
 
 export const documentTypes: Record<string, DocumentTypeConfig> = {
   lessonPlan: {
