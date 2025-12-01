@@ -171,11 +171,6 @@ export default function DocumentCreationPage({
         <FormHeader documentType={documentType} />
 
         <div className="space-y-4 sm:space-y-6">
-          <TemplateSection
-            documentType={documentType.id}
-            selectedTemplateId={formState.templateId || null}
-            onTemplateSelect={handleTemplateSelect}
-          />
 
           <TopicSection
             topic={formState.topic}
@@ -184,6 +179,12 @@ export default function DocumentCreationPage({
           />
 
           <SubjectSection subject={formState.subject} onUpdate={updateForm} />
+
+          <TemplateSection
+            documentType={documentType.id}
+            selectedTemplateId={formState.templateId || null}
+            onTemplateSelect={handleTemplateSelect}
+          />
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
             <GradeSection
