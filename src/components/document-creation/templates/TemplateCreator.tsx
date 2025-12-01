@@ -17,6 +17,7 @@ import {
 } from "@dnd-kit/sortable";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { UnsavedChangesDialog } from "@/components/ui/confirmation-dialog";
 import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
 import type { DocumentTemplate, DocumentType } from "@/shared/types";
@@ -244,7 +245,7 @@ export function TemplateCreator({
             className={cn(
             "flex items-center justify-center w-9 h-9 rounded-lg",
             "text-[#6C6F80] hover:text-[#0B0D17] hover:bg-[#F4F5F8] transition-colors",
-            "focus:outline-none focus:ring-2 focus:ring-[#6753FF]"
+            "focus-visible:ring-ring/50 focus-visible:ring-[3px]"
           )}
           aria-label="Voltar"
         >
@@ -277,7 +278,7 @@ export function TemplateCreator({
                 value={name}
                 onChange={(e) => handleNameChange(e.target.value)}
                 placeholder={TEMPLATE_PLACEHOLDERS[documentType].name}
-                className="h-11 px-4 text-sm bg-[#F4F5F8] border-[#C7C9D9] rounded-xl placeholder:text-[#6C6F80] focus:border-[#6753FF] focus:ring-[#6753FF]/20"
+                className="h-11 px-4 text-sm bg-[#F4F5F8] border-[#C7C9D9] rounded-xl placeholder:text-[#6C6F80]"
               />
             </div>
 
@@ -291,13 +292,13 @@ export function TemplateCreator({
                   (Opcional)
                 </span>
               </label>
-              <textarea
+              <Textarea
                 id="template-description"
                 value={description}
                 onChange={(e) => handleDescriptionChange(e.target.value)}
                 placeholder={TEMPLATE_PLACEHOLDERS[documentType].description}
                 rows={2}
-                className="w-full px-4 py-3 text-sm bg-[#F4F5F8] border border-[#C7C9D9] rounded-xl placeholder:text-[#6C6F80] resize-none focus:outline-none focus:border-[#6753FF] focus:ring-2 focus:ring-[#6753FF]/20 transition-all"
+                className="px-4 py-3 text-sm bg-[#F4F5F8] border-[#C7C9D9] rounded-xl placeholder:text-[#6C6F80] min-h-0"
               />
             </div>
           </div>

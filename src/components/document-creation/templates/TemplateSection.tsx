@@ -177,7 +177,7 @@ export function TemplateSection({
               className={cn(
                 "w-full p-4 rounded-xl border-2 text-left transition-all",
                 "bg-[#EEF0FF] border-[#6753FF] hover:shadow-md",
-                "focus:outline-none focus:ring-2 focus:ring-[#6753FF] focus:ring-offset-2"
+                "focus-visible:ring-ring/50 focus-visible:ring-[3px]"
               )}
               aria-label={`Modelo selecionado: ${selectedTemplate.name}. Clique para alterar.`}
             >

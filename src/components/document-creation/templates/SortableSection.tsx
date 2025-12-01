@@ -5,6 +5,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { cn } from "@/shared/utils/utils";
 import { GripVertical, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 
 export interface SectionItem {
   id: string;
@@ -53,7 +54,7 @@ export function SortableSection({
         className={cn(
           "flex items-center justify-center w-8 h-8 rounded-lg shrink-0 cursor-grab active:cursor-grabbing",
           "text-[#6C6F80] hover:text-[#6753FF] hover:bg-[#EEF0FF] transition-colors",
-          "focus:outline-none focus:ring-2 focus:ring-[#6753FF]"
+          "focus-visible:ring-ring/50 focus-visible:ring-[3px]"
         )}
         {...attributes}
         {...listeners}
@@ -67,15 +68,15 @@ export function SortableSection({
           value={section.title}
           onChange={(e) => onUpdate(section.id, "title", e.target.value)}
           placeholder="Título da secção"
-          className="h-10 px-3 text-sm font-medium bg-[#F4F5F8] border-[#C7C9D9] rounded-lg placeholder:text-[#6C6F80] focus:border-[#6753FF] focus:ring-[#6753FF]/20"
+          className="h-10 px-3 text-sm font-medium bg-[#F4F5F8] border-[#C7C9D9] rounded-lg placeholder:text-[#6C6F80]"
           aria-label="Título da secção"
         />
-        <textarea
+        <Textarea
           value={section.description}
           onChange={(e) => onUpdate(section.id, "description", e.target.value)}
           placeholder="Instruções para a IA: o que incluir nesta secção..."
           rows={2}
-          className="w-full px-3 py-2 text-sm bg-[#F4F5F8] border border-[#C7C9D9] rounded-lg placeholder:text-[#6C6F80] resize-none focus:outline-none focus:border-[#6753FF] focus:ring-2 focus:ring-[#6753FF]/20 transition-all"
+          className="px-3 py-2 text-sm bg-[#F4F5F8] border-[#C7C9D9] rounded-lg placeholder:text-[#6C6F80] min-h-0"
           aria-label="Instruções para a secção"
         />
       </div>
@@ -86,7 +87,7 @@ export function SortableSection({
         disabled={!canDelete}
         className={cn(
           "flex items-center justify-center w-8 h-8 rounded-lg shrink-0 transition-colors",
-          "focus:outline-none focus:ring-2 focus:ring-red-500",
+          "focus-visible:ring-red-500/50 focus-visible:ring-[3px]",
           canDelete
             ? "text-[#6C6F80] hover:text-red-500 hover:bg-red-50"
             : "text-[#C7C9D9] cursor-not-allowed"

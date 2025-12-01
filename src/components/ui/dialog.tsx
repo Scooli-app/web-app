@@ -67,7 +67,7 @@ function DialogContent({
       >
         {children}
         {!hideCloseButton && (
-          <DialogPrimitive.Close className="ring-offset-background focus:ring-[#6753FF] absolute top-4 right-4 rounded-lg p-1.5 opacity-70 transition-all hover:opacity-100 hover:bg-[#F4F5F8] focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:pointer-events-none">
+          <DialogPrimitive.Close className="ring-offset-background absolute top-4 right-4 rounded-lg p-1.5 opacity-70 transition-all hover:opacity-100 hover:bg-[#F4F5F8] focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none disabled:pointer-events-none">
             <XIcon className="size-5 text-[#6C6F80]" />
             <span className="sr-only">Fechar</span>
           </DialogPrimitive.Close>

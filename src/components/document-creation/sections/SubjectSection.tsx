@@ -31,7 +31,7 @@ export function SubjectSection({ subject, onUpdate }: SubjectSectionProps) {
         </div>
         <Select value={subject} onValueChange={(value) => onUpdate("subject", value)}>
           <SelectTrigger
-            className="h-11 sm:h-12 px-4 text-sm sm:text-base bg-white border-[#C7C9D9] rounded-xl focus:border-[#6753FF] focus:ring-[#6753FF]/20"
+            className="h-11 sm:h-12 px-4 text-sm sm:text-base bg-white border-[#C7C9D9] rounded-xl"
             aria-label="Selecionar disciplina"
           >
             <SelectValue placeholder="Selecione uma disciplina...">

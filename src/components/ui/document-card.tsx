@@ -2,6 +2,7 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Routes, type Document } from "@/shared/types";
 import { Clock, FileText, Trash2, User } from "lucide-react";
 import Link from "next/link";
@@ -69,9 +70,8 @@ export function DocumentCard({
     onSelect?.(document.id, !isSelected);
   };
 
-  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    e.stopPropagation();
-    onSelect?.(document.id, e.target.checked);
+  const handleCheckboxChange = (checked: boolean) => {
+    onSelect?.(document.id, checked);
   };
 
   const handleDelete = async (e: React.MouseEvent) => {
@@ -122,12 +122,10 @@ export function DocumentCard({
   const cardContent = (
     <>
       {selectionMode && (
-        <div className="absolute top-4 left-4 z-10">
-          <input
-            type="checkbox"
+        <div className="absolute top-4 left-4 z-10" onClick={(e) => e.stopPropagation()}>
+          <Checkbox
             checked={isSelected}
-            onChange={handleCheckboxChange}
-            className="w-4 h-4 text-[#6753FF] bg-white border-gray-300 rounded focus:ring-[#6753FF] focus:ring-2"
+            onCheckedChange={handleCheckboxChange}
           />
         </div>
       )}

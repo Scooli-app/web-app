@@ -30,7 +30,7 @@ export function TopicSection({ topic, placeholder, onUpdate }: TopicSectionProps
           value={topic}
           onChange={(e) => onUpdate("topic", e.target.value)}
           placeholder={placeholder}
-          className="w-full h-11 sm:h-12 px-3 sm:px-4 text-sm sm:text-base bg-[#F4F5F8] border-[#C7C9D9] rounded-xl placeholder:text-[#6C6F80] focus:border-[#6753FF] focus:ring-[#6753FF]/20"
+          className="w-full h-11 sm:h-12 px-3 sm:px-4 text-sm sm:text-base bg-[#F4F5F8] border-[#C7C9D9] rounded-xl placeholder:text-[#6C6F80]"
           aria-label="Tema da aula"
         />
       </div>

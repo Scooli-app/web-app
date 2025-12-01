@@ -1,4 +1,5 @@
 import { Card } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
 import { MessageSquare } from "lucide-react";
 import type { FormUpdateFn } from "../types";
 
@@ -30,12 +31,12 @@ export function AdditionalDetailsSection({
             </p>
           </div>
         </div>
-        <textarea
+        <Textarea
           value={additionalDetails}
           onChange={(e) => onUpdate("additionalDetails", e.target.value)}
           placeholder="Ex: Incluir atividade de grupo, usar exemplos do dia-a-dia, focar em alunos com dificuldades..."
           rows={3}
-          className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base md:text-sm bg-[#F4F5F8] border border-[#C7C9D9] rounded-xl placeholder:text-[#6C6F80] resize-none focus:outline-none focus:border-[#6753FF] focus:ring-2 focus:ring-[#6753FF]/20 transition-all placeholder:text-sm"
+          className="px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base md:text-sm bg-[#F4F5F8] border-[#C7C9D9] rounded-xl placeholder:text-[#6C6F80] placeholder:text-sm min-h-0"
           aria-label="Detalhes adicionais"
         />
       </div>

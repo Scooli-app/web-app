@@ -28,7 +28,7 @@ export function TemplateCard({
       onClick={() => onSelect(template)}
       className={cn(
         "relative w-full p-4 rounded-xl border-2 text-left transition-all group",
-        "hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#6753FF] focus:ring-offset-2",
+        "hover:shadow-md focus-visible:ring-ring/50 focus-visible:ring-[3px]",
         isSelected
           ? "bg-[#EEF0FF] border-[#6753FF]"
           : "bg-white border-[#E4E4E7] hover:border-[#C7C9D9]"
@@ -47,7 +47,7 @@ export function TemplateCard({
               "flex items-center justify-center w-7 h-7 rounded-lg transition-all",
               "opacity-0 group-hover:opacity-100",
               "text-[#6C6F80] hover:text-[#6753FF] hover:bg-white",
-              "focus:outline-none focus:ring-2 focus:ring-[#6753FF]"
+              "focus-visible:ring-ring/50 focus-visible:ring-[3px]"
             )}
             aria-label="Editar modelo"
           >

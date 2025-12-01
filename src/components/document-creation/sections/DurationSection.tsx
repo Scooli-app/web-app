@@ -1,4 +1,5 @@
 import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/shared/utils/utils";
 import { Check, Clock, Pencil, X } from "lucide-react";
 import { useRef, useState } from "react";
@@ -91,7 +92,7 @@ export function DurationSection({
           ) : isCustomTimeEditing ? (
             <div className="flex items-center gap-1 animate-in fade-in slide-in-from-left-2 duration-200">
               <div className="relative flex items-center">
-                <input
+                <Input
                   ref={customTimeInputRef}
                   type="number"
                   value={customTime || 0}
@@ -100,7 +101,7 @@ export function DurationSection({
                   }
                   onBlur={() => setIsEditingCustomTime(false)}
                   placeholder="75"
-                  className="h-9 w-16 sm:w-20 px-2 sm:px-3 py-2 text-sm bg-[#F4F5F8] border border-[#6753FF] rounded-xl placeholder:text-[#6C6F80] focus:outline-none focus:ring-2 focus:ring-[#6753FF]/20"
+                  className="h-9 w-16 sm:w-20 px-2 sm:px-3 py-2 text-sm bg-[#F4F5F8] border-[#6753FF] rounded-xl placeholder:text-[#6C6F80]"
                   aria-label="Duração personalizada"
                   autoFocus
                 />
