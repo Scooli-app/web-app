@@ -40,3 +40,11 @@ export type {
 
 // Route types
 export { Routes, APIRoutes } from "./routes";
+
+// Template types
+export type {
+  TemplateSection,
+  DocumentTemplate,
+  CreateTemplateParams,
+  UpdateTemplateParams,
+} from "./template";

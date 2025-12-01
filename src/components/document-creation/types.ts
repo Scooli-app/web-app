@@ -1,4 +1,8 @@
-import type { TeachingMethod, DocumentType } from "@/shared/types";
+import type {
+  TeachingMethod,
+  DocumentType,
+  DocumentTemplate,
+} from "@/shared/types";
 
 export interface DocumentTypeConfig {
   id: DocumentType;
@@ -17,6 +21,8 @@ export interface FormState {
   customTime?: number;
   teachingMethod?: TeachingMethod;
   additionalDetails?: string;
+  templateId?: string;
+  template?: DocumentTemplate;
 }
 
 export type FormUpdateFn = <K extends keyof FormState>(

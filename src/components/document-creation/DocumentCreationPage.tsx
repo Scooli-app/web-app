@@ -5,8 +5,9 @@ import {
   setPendingInitialPrompt,
 } from "@/store/documents/documentSlice";
 import { useAppDispatch } from "@/store/hooks";
+import type { DocumentTemplate } from "@/shared/types";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { SUBJECTS } from "./constants";
 import {
   AdditionalDetailsSection,
@@ -18,6 +19,7 @@ import {
   TeachingMethodSection,
   TopicSection,
 } from "./sections";
+import { TemplateSection } from "./templates";
 import type { DocumentTypeConfig, FormState, FormUpdateFn } from "./types";
 
 export type { DocumentTypeConfig };
@@ -36,6 +38,8 @@ function useDocumentForm() {
     customTime: 0,
     teachingMethod: undefined,
     additionalDetails: "",
+    templateId: undefined,
+    template: undefined,
   });
   const [error, setError] = useState("");
 
@@ -46,9 +50,20 @@ function useDocumentForm() {
     }
   };
 
+  const handleTemplateSelect = useCallback((template: DocumentTemplate) => {
+    setFormState((prev) => ({
+      ...prev,
+      templateId: template.id,
+      template,
+    }));
+  }, []);
+
   const isFormValid = () => {
     return Boolean(
-      formState.topic.trim() && formState.subject && formState.schoolYear
+      formState.topic.trim() &&
+        formState.subject &&
+        formState.schoolYear &&
+        formState.templateId
     );
   };
 
@@ -61,6 +76,7 @@ function useDocumentForm() {
     updateForm,
     isFormValid,
     clearError,
+    handleTemplateSelect,
   };
 }
 
@@ -72,10 +88,15 @@ export default function DocumentCreationPage({
   const dispatch = useAppDispatch();
   const [isLoading, setIsLoading] = useState(false);
 
-  const { formState, error, setError, updateForm, isFormValid } =
+  const { formState, error, setError, updateForm, isFormValid, handleTemplateSelect } =
     useDocumentForm();
 
   const handleCreateDocument = async () => {
+    if (!formState.templateId) {
+      setError("Por favor, selecione um modelo de documento");
+      return;
+    }
+
     if (!formState.topic.trim()) {
       setError("Por favor, introduza o tema da aula");
       return;
@@ -112,6 +133,7 @@ export default function DocumentCreationPage({
           duration: durationValue || undefined,
           teachingMethod: formState.teachingMethod || undefined,
           additionalDetails: formState.additionalDetails?.trim() || "",
+          templateId: formState.templateId,
         })
       );
 
@@ -149,6 +171,12 @@ export default function DocumentCreationPage({
         <FormHeader documentType={documentType} />
 
         <div className="space-y-4 sm:space-y-6">
+          <TemplateSection
+            documentType={documentType.id}
+            selectedTemplateId={formState.templateId || null}
+            onTemplateSelect={handleTemplateSelect}
+          />
+
           <TopicSection
             topic={formState.topic}
             placeholder={documentType.placeholder}

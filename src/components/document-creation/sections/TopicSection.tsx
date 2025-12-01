@@ -1,7 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { MessageSquare } from "lucide-react";
-import type { DocumentTypeConfig, FormUpdateFn } from "../types";
+import type { FormUpdateFn } from "../types";
 
 interface TopicSectionProps {
   topic: string;

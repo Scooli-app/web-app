@@ -26,6 +26,7 @@ export interface CreateDocumentParams {
   duration?: number;
   teachingMethod?: TeachingMethod;
   additionalDetails?: string;
+  templateId?: string;
 }
 
 export interface DocumentResponse {
