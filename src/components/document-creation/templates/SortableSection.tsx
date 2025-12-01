@@ -73,10 +73,10 @@ export function SortableSection({
         <textarea
           value={section.description}
           onChange={(e) => onUpdate(section.id, "description", e.target.value)}
-          placeholder="Descrição do que esta secção deve conter..."
+          placeholder="Instruções para a IA: o que incluir nesta secção..."
           rows={2}
           className="w-full px-3 py-2 text-sm bg-[#F4F5F8] border border-[#C7C9D9] rounded-lg placeholder:text-[#6C6F80] resize-none focus:outline-none focus:border-[#6753FF] focus:ring-2 focus:ring-[#6753FF]/20 transition-all"
-          aria-label="Descrição da secção"
+          aria-label="Instruções para a secção"
         />
       </div>
 

@@ -26,6 +26,28 @@ import { useCallback, useEffect, useState } from "react";
 import { createTemplate, updateTemplate } from "@/services/api/template.service";
 import { SortableSection, type SectionItem } from "./SortableSection";
 
+const TEMPLATE_PLACEHOLDERS: Record<
+  DocumentType,
+  { name: string; description: string }
+> = {
+  lessonPlan: {
+    name: "Ex: Aula Expositiva com Debate",
+    description: "Descreva quando usar este modelo de plano de aula...",
+  },
+  quiz: {
+    name: "Ex: Quiz Rápido de Revisão",
+    description: "Descreva quando usar este modelo de quiz...",
+  },
+  test: {
+    name: "Ex: Teste com Grupos de Dificuldade",
+    description: "Descreva quando usar este modelo de teste...",
+  },
+  presentation: {
+    name: "Ex: Apresentação Interativa com Atividades",
+    description: "Descreva quando usar este modelo de apresentação...",
+  },
+};
+
 interface TemplateCreatorProps {
   documentType: DocumentType;
   onBack: () => void;
@@ -254,7 +276,7 @@ export function TemplateCreator({
                 id="template-name"
                 value={name}
                 onChange={(e) => handleNameChange(e.target.value)}
-                placeholder="Ex: Aula Expositiva com Debate"
+                placeholder={TEMPLATE_PLACEHOLDERS[documentType].name}
                 className="h-11 px-4 text-sm bg-[#F4F5F8] border-[#C7C9D9] rounded-xl placeholder:text-[#6C6F80] focus:border-[#6753FF] focus:ring-[#6753FF]/20"
               />
             </div>
@@ -273,7 +295,7 @@ export function TemplateCreator({
                 id="template-description"
                 value={description}
                 onChange={(e) => handleDescriptionChange(e.target.value)}
-                placeholder="Descreva brevemente quando usar este modelo..."
+                placeholder={TEMPLATE_PLACEHOLDERS[documentType].description}
                 rows={2}
                 className="w-full px-4 py-3 text-sm bg-[#F4F5F8] border border-[#C7C9D9] rounded-xl placeholder:text-[#6C6F80] resize-none focus:outline-none focus:border-[#6753FF] focus:ring-2 focus:ring-[#6753FF]/20 transition-all"
               />
