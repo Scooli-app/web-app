@@ -1,38 +1,32 @@
 /**
- * Main types index - exports all types from lib/types
+ * Main types index - exports all shared types
  */
 
-// Domain types
+// Document types
+export type { Document, DocumentType, DocumentMetadata } from "./document";
+export { TeachingMethod } from "./document";
+
+// Lesson Plan types
 export type {
-  Document,
-  DocumentType,
-  DocumentMetadata,
   LessonPlan,
   LessonPlanMetadata,
   LessonActivity,
-} from "./domain/document";
+} from "./lesson-plan";
 
 // API types
 export type {
   ApiResponse,
   PaginatedResponse,
+  CreateDocumentParams,
+  DocumentResponse,
+  DocumentFilters,
+  GetDocumentsParams,
+  GetDocumentsResponse,
+  DocumentCountsResponse,
   CreateDocumentRequest,
   UpdateDocumentRequest,
   DeleteDocumentRequest,
-} from "./api/document";
-
-// Auth types
-export type {
-  APIProtectionConfig,
-  AuthContext,
-  Permission,
-  PermissionCategory,
-  Role,
-  RouteConfig,
-  User,
-  UserProfile,
-  UserRole,
-} from "./auth";
+} from "./api";
 
 // UI types
 export type { LessonPlanForm, SearchFilters, UIState } from "./ui";
@@ -43,3 +37,14 @@ export type {
   CreatorProfile,
   CreatorTier,
 } from "./community";
+
+// Route types
+export { Routes, APIRoutes } from "./routes";
+
+// Template types
+export type {
+  TemplateSection,
+  DocumentTemplate,
+  CreateTemplateParams,
+  UpdateTemplateParams,
+} from "./template";

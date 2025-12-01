@@ -1,11 +1,13 @@
 /**
- * API response types
+ * API types - responses, requests, and service interfaces
  */
 
+import type { Document, DocumentType, TeachingMethod } from "./document";
+
+// Generic API response types
 export interface ApiResponse<T> {
-  data: T;
+  data?: T;
   error?: string;
-  message?: string;
 }
 
 export interface PaginatedResponse<T> {
@@ -14,4 +16,84 @@ export interface PaginatedResponse<T> {
   page: number;
   limit: number;
   hasMore: boolean;
+}
+
+export interface CreateDocumentParams {
+  documentType: DocumentType;
+  prompt: string;
+  subject: string;
+  schoolYear: number;
+  duration?: number;
+  teachingMethod?: TeachingMethod;
+  additionalDetails?: string;
+  templateId?: string;
+}
+
+export interface DocumentResponse {
+  id: string;
+  title: string;
+  documentType: DocumentType;
+  content: string;
+  metadata: Record<string, unknown>;
+  isPublic: boolean;
+  subject: string | null;
+  schoolYear: number | null;
+  duration: number | null;
+  rating: number;
+  downloads: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DocumentFilters {
+  type?: string;
+  search?: string;
+  subject?: string;
+  schoolYear?: number;
+}
+
+export interface GetDocumentsParams {
+  page?: number;
+  limit?: number;
+  userId: string;
+  filters?: DocumentFilters;
+}
+
+export interface GetDocumentsResponse {
+  documents: Document[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    hasMore: boolean;
+  };
+  counts: Record<string, number>;
+}
+
+export interface DocumentCountsResponse {
+  counts: Record<string, number>;
+}
+
+export interface CreateDocumentRequest {
+  title: string;
+  content?: string;
+  document_type: DocumentType;
+  metadata?: Record<string, unknown>;
+  subject?: string;
+  schoolYear?: number;
+  duration?: string;
+  teachingMethod?: TeachingMethod;
+  additionalDetails?: string;
+  is_public?: boolean;
+}
+
+export interface UpdateDocumentRequest {
+  id: string;
+  prompt: string;
+  title?: string;
+  content?: string;
+}
+
+export interface DeleteDocumentRequest {
+  ids: string[];
 }

@@ -1,10 +1,21 @@
 import {
-  DocumentService,
+  createDocument as createDocumentService,
+  // deleteDocument as deleteDocumentService,
+  getDocument as getDocumentService,
+  getDocuments as getDocumentsService,
   type DocumentFilters,
-  type UpdateDocumentData,
-} from "@/backend/services/documents/document.service";
-import type { Document } from "@/shared/types/domain/document";
+  updateDocument as updateDocumentService,
+} from "@/services/api";
+import type { CreateDocumentParams, Document } from "@/shared/types";
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+
+export type { DocumentFilters };
+
+export interface UpdateDocumentData {
+  id: string;
+  documentType: string;
+  prompt: string;
+}
 
 interface DocumentState {
   documents: Document[];
@@ -46,19 +57,35 @@ export const fetchDocuments = createAsyncThunk(
       page = 1,
       limit = 10,
       filters,
-    }: { page?: number; limit?: number; filters?: DocumentFilters },
+      userId,
+    }: {
+      page?: number;
+      limit?: number;
+      filters?: DocumentFilters;
+      userId: string;
+    },
     { getState, rejectWithValue }
   ) => {
     try {
       const currentFilters =
         filters ||
         (getState() as { documents: DocumentState }).documents.filters;
-      const result = await DocumentService.getDocuments(
+
+      const result = await getDocumentsService({
         page,
         limit,
-        currentFilters
-      );
-      return { ...result, filters: currentFilters };
+        userId,
+        filters: currentFilters,
+      });
+
+      return {
+        data: result.documents || [],
+        page: result.pagination?.page || page,
+        limit: result.pagination?.limit || limit,
+        total: result.pagination?.total || 0,
+        hasMore: result.pagination?.hasMore || false,
+        filters: currentFilters,
+      };
     } catch (error) {
       return rejectWithValue(
         error instanceof Error ? error.message : "Failed to fetch documents"
@@ -71,31 +98,40 @@ export const fetchDocument = createAsyncThunk(
   "documents/fetchDocument",
   async (id: string, { rejectWithValue }) => {
     try {
-      const document = await DocumentService.getDocument(id);
-      if (!document) {
-        return rejectWithValue("Document not found");
-      }
+      const document = await getDocumentService(id);
       return document;
     } catch (error) {
       return rejectWithValue(
-        error instanceof Error ? error.message : "Failed to fetch document"
+        error instanceof Error ? error.message : "Document not found"
       );
     }
+  },
+  {
+    condition: (id, { getState }) => {
+      const state = getState() as { documents: DocumentState };
+      const { currentDocument, isLoading } = state.documents;
+      if (isLoading || currentDocument?.id === id) {
+        return false;
+      }
+      return true;
+    },
   }
 );
 
 export const createDocument = createAsyncThunk(
   "documents/createDocument",
-  async (
-    { data, userId }: { data: Partial<Document>; userId: string },
-    { rejectWithValue }
-  ) => {
+  async (params: CreateDocumentParams, { rejectWithValue }) => {
     try {
-      const result = await DocumentService.createDocument(data, userId);
-      if (result.error || !result.document) {
-        return rejectWithValue(result.error || "Failed to create document");
+      if (!params.documentType || !params.prompt) {
+        return rejectWithValue("documentType and prompt are required");
       }
-      return result.document;
+
+      if (!params.subject || !params.schoolYear) {
+        return rejectWithValue("subject and schoolYear are required");
+      }
+
+      const document = await createDocumentService(params);
+      return document;
     } catch (error) {
       return rejectWithValue(
         error instanceof Error ? error.message : "Failed to create document"
@@ -106,13 +142,13 @@ export const createDocument = createAsyncThunk(
 
 export const updateDocument = createAsyncThunk(
   "documents/updateDocument",
-  async (data: UpdateDocumentData, { rejectWithValue }) => {
+  async (
+    { id, documentType, prompt }: UpdateDocumentData,
+    { rejectWithValue }
+  ) => {
     try {
-      const result = await DocumentService.updateDocument(data);
-      if (result.error || !result.document) {
-        return rejectWithValue(result.error || "Failed to update document");
-      }
-      return result.document;
+      const document = await updateDocumentService(id, documentType, prompt);
+      return document;
     } catch (error) {
       return rejectWithValue(
         error instanceof Error ? error.message : "Failed to update document"
@@ -121,22 +157,19 @@ export const updateDocument = createAsyncThunk(
   }
 );
 
-export const deleteDocument = createAsyncThunk(
-  "documents/deleteDocument",
-  async (id: string, { rejectWithValue }) => {
-    try {
-      const result = await DocumentService.deleteDocument(id);
-      if (result.error) {
-        return rejectWithValue(result.error || "Failed to delete document");
-      }
-      return id; // Return the id on success
-    } catch (error) {
-      return rejectWithValue(
-        error instanceof Error ? error.message : "Failed to delete document"
-      );
-    }
-  }
-);
+// export const deleteDocument = createAsyncThunk(
+//   "documents/deleteDocument",
+//   async (id: string, { rejectWithValue }) => {
+//     try {
+//       await deleteDocumentService(id);
+//       return id; // Return the id on success
+//     } catch (error) {
+//       return rejectWithValue(
+//         error instanceof Error ? error.message : "Failed to delete document"
+//       );
+//     }
+//   }
+// );
 
 const documentSlice = createSlice({
   name: "documents",
@@ -235,24 +268,24 @@ const documentSlice = createSlice({
       .addCase(updateDocument.rejected, (state, action) => {
         state.error = action.payload as string;
         state.isLoading = false;
-      })
-      // Delete Document
-      .addCase(deleteDocument.pending, (state) => {
-        state.isLoading = true;
-        state.error = null;
-      })
-      .addCase(deleteDocument.fulfilled, (state, action) => {
-        const deletedId = action.payload;
-        state.documents = state.documents.filter((doc) => doc.id !== deletedId);
-        if (state.currentDocument?.id === deletedId) {
-          state.currentDocument = null;
-        }
-        state.isLoading = false;
-      })
-      .addCase(deleteDocument.rejected, (state, action) => {
-        state.error = action.payload as string;
-        state.isLoading = false;
       });
+    // // Delete Document
+    // .addCase(deleteDocument.pending, (state) => {
+    //   state.isLoading = true;
+    //   state.error = null;
+    // })
+    // .addCase(deleteDocument.fulfilled, (state, action) => {
+    //   const deletedId = action.payload;
+    //   state.documents = state.documents.filter((doc) => doc.id !== deletedId);
+    //   if (state.currentDocument?.id === deletedId) {
+    //     state.currentDocument = null;
+    //   }
+    //   state.isLoading = false;
+    // })
+    // .addCase(deleteDocument.rejected, (state, action) => {
+    //   state.error = action.payload as string;
+    //   state.isLoading = false;
+    // });
   },
 });
 
