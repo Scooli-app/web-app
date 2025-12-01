@@ -13,6 +13,18 @@ export const metadata: Metadata = {
   title: "Scooli - Plataforma AI para Professores",
   description:
     "Crie conteúdo educacional de qualidade em segundos com inteligência artificial.",
+  icons: {
+    icon: [
+      { url: "/favicon.ico", type: "image/x-icon" },
+      { url: "/favicon-96x96.png", sizes: "96x96", type: "image/png" },
+      { url: "/favicon.svg", type: "image/svg+xml" },
+    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
+  },
+  manifest: "/site.webmanifest",
+  appleWebApp: {
+    title: "Scooli",
+  },
 };
 
 export default function RootLayout({
