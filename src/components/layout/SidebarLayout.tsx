@@ -35,6 +35,7 @@ import {
   Menu,
   Settings,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
@@ -102,17 +103,14 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
 
   const sidebarContent = (
     <SidebarPrimitive collapsible="icon">
-      <SidebarHeader className="border-b border-[#E4E4E7] px-6 py-4 group-data-[collapsible=icon]:px-3 group-data-[collapsible=icon]:py-2">
-        <div className="flex items-center space-x-2">
-          <div className="w-8 h-8 bg-[#6753FF] rounded-lg flex items-center justify-center flex-shrink-0 group-data-[collapsible=icon]:w-6 group-data-[collapsible=icon]:h-6">
-            <span className="text-white font-bold text-sm group-data-[collapsible=icon]:text-xs">
-              S
-            </span>
-          </div>
-          <h2 className="text-lg font-semibold text-[#0B0D17] truncate group-data-[collapsible=icon]:hidden">
-            Scooli
-          </h2>
-        </div>
+      <SidebarHeader className="flex items-center justify-center border-b border-[#E4E4E7] px-6 py-4 group-data-[collapsible=icon]:px-3 group-data-[collapsible=icon]:py-2">
+        <Image
+          src="/scooli.svg"
+          alt="Scooli"
+          width={150}
+          height={120}
+          className="flex-shrink-0 rounded-lg group-data-[collapsible=icon]:w-6 group-data-[collapsible=icon]:h-6"
+        />
       </SidebarHeader>
       <SidebarContent className="py-4">
         <SidebarGroup>
