@@ -3,6 +3,8 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import StoreProvider from "@/components/providers/StoreProvider";
 import { SidebarLayout } from "@/components/layout/SidebarLayout";
+import { SpeedInsights } from "@vercel/speed-insights/next";
+import { Analytics } from "@vercel/analytics/next";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -38,6 +40,8 @@ export default function RootLayout({
         <StoreProvider>
           <SidebarLayout>{children}</SidebarLayout>
         </StoreProvider>
+        <SpeedInsights />
+        <Analytics />
       </body>
     </html>
   );
