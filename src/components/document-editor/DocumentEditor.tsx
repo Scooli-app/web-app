@@ -1,16 +1,19 @@
-/* eslint-disable react-hooks/exhaustive-deps */
 "use client";
 
 import { Card } from "@/components/ui/card";
 import { useDocumentManager } from "@/hooks/useDocumentManager";
+import { streamDocumentContent } from "@/services/api/document.service";
 import { Routes } from "@/shared/types";
 import {
-  clearPendingInitialPrompt,
+  clearStreamInfo,
+  fetchDocument,
+  chatWithDocument,
+  clearLastChatAnswer,
 } from "@/store/documents/documentSlice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import RichTextEditor from "../ui/rich-text-editor";
 import AIChatPanel from "./AIChatPanel";
 import DocumentTitle from "./DocumentTitle";
@@ -33,17 +36,16 @@ export default function DocumentEditor({
   documentId,
   defaultTitle = "Novo Documento",
   loadingMessage = "A carregar documento...",
-  generateMessage = "Gerar conteúdo",
   chatTitle = "AI Assistant",
   chatPlaceholder = "Faça uma pergunta ou peça ajuda...",
 }: DocumentEditorProps) {
   const router = useRouter();
   const dispatch = useAppDispatch();
-  const { currentDocument, isLoading } = useAppSelector(
-    (state) => state.documents
-  );
+  const { currentDocument, isLoading, streamInfo, isChatting, lastChatAnswer } =
+    useAppSelector((state) => state.documents);
   const {
     content,
+    setContent,
     handleContentChange,
     handleTitleSave,
     isLoading: isSaving,
@@ -53,106 +55,100 @@ export default function DocumentEditor({
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState("");
-  const [hasExecutedInitialPrompt, setHasExecutedInitialPrompt] =
-    useState(false);
+  const [displayContent, setDisplayContent] = useState("");
+  const [documentTitle, setDocumentTitle] = useState("");
+  const eventSourceRef = useRef<(() => void) | null>(null);
+  const rawStreamRef = useRef("");
 
-  const { pendingInitialPrompt, pendingDocumentId } = useAppSelector(
-    (state) => state.documents
-  );
-  const executePrompt = useCallback(
-    async (userMessage: string) => {
-      if (!currentDocument) {
-        return;
-      }
-
-      try {
-        setIsStreaming(true);
-
-        const response = await fetch(
-          `/api/documents/${currentDocument?.id}/chat`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              message: `${generateMessage}: ${userMessage}`,
-              currentContent: currentDocument?.content || "",
-            }),
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error(`Failed to get response: ${response.status}`);
-        }
-
-        const data = await response.json();
-
-        if (data.generatedContent) {
-          handleContentChange(data.generatedContent);
-        }
-
-        if (data.chatAnswer) {
-          setChatHistory((prev) => [
-            ...prev,
-            { role: "assistant", content: data.chatAnswer },
-          ]);
-        }
-
-        // Clear pending prompt after successful execution
-        if (pendingInitialPrompt && pendingDocumentId === documentId) {
-          dispatch(clearPendingInitialPrompt());
-        }
-      } catch (error) {
-        console.error("Failed to execute prompt:", error);
-        setError("Erro ao gerar conteúdo. Tente novamente.");
-
-        // If it was an initial prompt, clear it to allow retry
-        if (pendingInitialPrompt && pendingDocumentId === documentId) {
-          dispatch(clearPendingInitialPrompt());
-          setHasExecutedInitialPrompt(false);
-        }
-      } finally {
-        setIsStreaming(false);
-      }
-    },
-    [
-      currentDocument,
-      generateMessage,
-      pendingInitialPrompt,
-      pendingDocumentId,
-      documentId,
-      handleContentChange,
-      dispatch,
-    ]
-  );
-  // Handle initial prompt execution
-  useEffect(() => {
-    if (
-      currentDocument?.id &&
-      !hasExecutedInitialPrompt &&
-      !isStreaming &&
-      pendingInitialPrompt &&
-      pendingDocumentId === documentId &&
-      (!currentDocument?.content || currentDocument?.content.trim() === "")
-    ) {
-      setHasExecutedInitialPrompt(true);
-
-      // Add the initial prompt to chat history
-      setChatHistory([{ role: "user", content: pendingInitialPrompt }]);
-
-      // Execute the initial prompt through the chat system
-      executePrompt(pendingInitialPrompt);
+  // Extract generatedContent from partial JSON stream
+  const extractGeneratedContent = (jsonStr: string): string => {
+    // Look for "generatedContent": " pattern and extract content after it
+    const match = jsonStr.match(/"generatedContent":\s*"([\s\S]*?)(?:"|$)/);
+    if (match && match[1]) {
+      // Unescape JSON string
+      return match[1]
+        .replace(/\\n/g, "\n")
+        .replace(/\\t/g, "\t")
+        .replace(/\\"/g, '"')
+        .replace(/\\\\/g, "\\");
     }
-  }, [
-    documentId,
-    pendingInitialPrompt,
-    pendingDocumentId,
-    hasExecutedInitialPrompt,
-    isStreaming,
-    executePrompt,
-    currentDocument?.content,
-  ]);
+    return "";
+  };
+
+  // Connect to SSE stream when we have stream info for this document
+  useEffect(() => {
+    // Only connect if we have stream info for this document and aren't already streaming
+    if (
+      streamInfo &&
+      streamInfo.id === documentId &&
+      streamInfo.status === "generating" &&
+      !eventSourceRef.current
+    ) {
+      setIsStreaming(true);
+      rawStreamRef.current = "";
+      setDisplayContent("");
+
+      const cleanup = streamDocumentContent(streamInfo.streamUrl, {
+        onContent: (chunk) => {
+          // Accumulate raw content (it's JSON being streamed)
+          rawStreamRef.current += chunk;
+          // Extract and display generatedContent as it streams
+          const extracted = extractGeneratedContent(rawStreamRef.current);
+          if (extracted) {
+            setDisplayContent(extracted);
+          }
+        },
+        onTitle: (title) => {
+          setDocumentTitle(title);
+        },
+        onComplete: (docId, response) => {
+          eventSourceRef.current = null;
+          setIsStreaming(false);
+
+          // Add chatAnswer to chat history
+          const chatAnswer = response.chatAnswer;
+          if (chatAnswer) {
+            setChatHistory((prev) => [
+              ...prev,
+              { role: "assistant" as const, content: chatAnswer },
+            ]);
+          }
+
+          // Set generatedContent to editor
+          const generatedContent = response.generatedContent;
+          if (generatedContent) {
+            setContent(generatedContent);
+          }
+
+          dispatch(clearStreamInfo());
+          dispatch(fetchDocument(docId));
+        },
+        onError: (errorMsg) => {
+          eventSourceRef.current = null;
+          setIsStreaming(false);
+          setError(errorMsg);
+          dispatch(clearStreamInfo());
+        },
+      });
+
+      eventSourceRef.current = cleanup;
+    }
+
+    // Cleanup only when component fully unmounts or documentId changes
+    return () => {
+      // Don't cleanup on every re-render, only when we're actually leaving
+    };
+  }, [streamInfo, documentId, dispatch, setContent]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (eventSourceRef.current) {
+        eventSourceRef.current();
+        eventSourceRef.current = null;
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (error) {
@@ -160,6 +156,31 @@ export default function DocumentEditor({
       setError("");
     }
   }, [error]);
+
+  // Handle chat answer from Redux
+  useEffect(() => {
+    if (lastChatAnswer) {
+      setChatHistory((prev) => [
+        ...prev,
+        { role: "assistant" as const, content: lastChatAnswer },
+      ]);
+      dispatch(clearLastChatAnswer());
+    }
+  }, [lastChatAnswer, dispatch]);
+
+  // Sync content when currentDocument changes (after chat updates)
+  useEffect(() => {
+    if (currentDocument?.content && !isStreaming) {
+      setContent(currentDocument.content);
+    }
+  }, [currentDocument?.content, currentDocument?.updatedAt, isStreaming, setContent]);
+
+  // Sync title with Redux state (for optimistic updates)
+  useEffect(() => {
+    if (currentDocument?.title && !isStreaming) {
+      setDocumentTitle(currentDocument.title);
+    }
+  }, [currentDocument?.title, isStreaming]);
 
   const handleChatSubmit = useCallback(
     async (userMessage: string) => {
@@ -174,50 +195,25 @@ export default function DocumentEditor({
       setError("");
 
       try {
-        setIsStreaming(true);
-
-        const response = await fetch(
-          `/api/documents/${currentDocument?.id}/chat`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              message: userMessage,
-              currentContent: content,
-            }),
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error(`Failed to get response: ${response.status}`);
-        }
-
-        const data = await response.json();
-
-        if (data.generatedContent) {
-          handleContentChange(data.generatedContent);
-        }
-
-        if (data.chatAnswer) {
-          setChatHistory((prev) => [
-            ...prev,
-            { role: "assistant", content: data.chatAnswer },
-          ]);
-        }
-      } catch (error) {
-        console.error("Chat error:", error);
+        await dispatch(
+          chatWithDocument({ id: currentDocument.id, message: userMessage })
+        ).unwrap();
+      } catch (err) {
+        console.error("Chat error:", err);
         setError("Erro ao enviar mensagem. Tente novamente.");
-      } finally {
-        setIsStreaming(false);
       }
     },
-    [currentDocument?.id, content, handleContentChange]
+    [currentDocument?.id, dispatch]
   );
 
-  // Loading states
-  if (isLoading) {
+  // Show streaming state when generating content
+  // Check both local isStreaming state AND streamInfo to avoid race conditions
+  const hasActiveStream =
+    streamInfo?.id === documentId && streamInfo?.status === "generating";
+  const isGenerating = isStreaming || hasActiveStream;
+
+  // Loading states - but allow streaming even if document not fully loaded
+  if (isLoading && !isGenerating) {
     return (
       <div className="flex items-center justify-center min-h-[400px] w-full">
         <div className="flex items-center space-x-2">
@@ -228,7 +224,7 @@ export default function DocumentEditor({
     );
   }
 
-  if (!currentDocument?.id) {
+  if (!currentDocument?.id && !isGenerating) {
     return (
       <div className="flex items-center justify-center min-h-[400px] w-full">
         <div className="text-center">
@@ -251,23 +247,46 @@ export default function DocumentEditor({
       {/* Main Editor */}
       <div className="flex-1 flex flex-col">
         <DocumentTitle
-          title={currentDocument.title}
+          title={documentTitle || currentDocument?.title || ""}
           defaultTitle={defaultTitle}
           onSave={handleTitleSave}
-          isSaving={isSaving}
+          isSaving={isSaving || isGenerating}
         />
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6 relative">
           <Card className="p-4 md:p-6 w-full min-w-0">
-            <h2 className="text-xl font-semibold text-[#0B0D17] mb-4">
-              Editor
-            </h2>
-            <RichTextEditor
-              key={editorKey}
-              content={content}
-              onChange={handleContentChange}
-              className="min-h-[600px] max-w-full"
-            />
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-[#0B0D17]">Editor</h2>
+              {isGenerating && (
+                <div className="flex items-center space-x-2 text-[#6753FF]">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span className="text-sm font-medium">A gerar conteúdo...</span>
+                </div>
+              )}
+            </div>
+            {isGenerating ? (
+              <div className="border border-[#C7C9D9] rounded-xl bg-white min-h-[600px] p-4 overflow-auto">
+                {displayContent ? (
+                  <div className="prose prose-sm max-w-none whitespace-pre-wrap text-[#2E2F38] leading-relaxed">
+                    {displayContent}
+                    <span className="inline-block w-2 h-5 bg-[#6753FF] ml-0.5 animate-pulse align-middle" />
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-full min-h-[550px]">
+                    <Loader2 className="w-12 h-12 animate-spin text-[#6753FF] mb-4" />
+                    <p className="text-lg font-medium text-[#0B0D17]">A gerar o documento...</p>
+                    <p className="text-sm text-[#6C6F80] mt-2">Isto pode demorar alguns segundos</p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <RichTextEditor
+                key={editorKey}
+                content={content}
+                onChange={handleContentChange}
+                className="min-h-[600px] max-w-full"
+              />
+            )}
           </Card>
         </div>
       </div>
@@ -276,7 +295,7 @@ export default function DocumentEditor({
       <AIChatPanel
         onChatSubmit={handleChatSubmit}
         chatHistory={chatHistory}
-        isStreaming={isStreaming}
+        isStreaming={isStreaming || isChatting}
         error={error}
         placeholder={chatPlaceholder}
         title={chatTitle}

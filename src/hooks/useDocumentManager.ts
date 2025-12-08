@@ -1,4 +1,8 @@
-import { fetchDocument, updateDocument } from "@/store/documents/documentSlice";
+import {
+  fetchDocument,
+  updateDocument,
+  updateDocumentOptimistic,
+} from "@/store/documents/documentSlice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { useCallback, useEffect, useState } from "react";
 
@@ -33,15 +37,31 @@ export function useDocumentManager(documentId: string) {
         return;
       }
 
+      const previousTitle = currentDocument.title;
+
+      // Optimistic update - immediately update the UI
+      dispatch(
+        updateDocumentOptimistic({
+          id: currentDocument.id,
+          title: newTitle,
+        })
+      );
+
       try {
         await dispatch(
           updateDocument({
             id: currentDocument.id,
-            documentType: currentDocument.documentType,
-            prompt: newTitle,
+            title: newTitle,
+          })
+        ).unwrap();
+      } catch (error) {
+        // Revert on failure
+        dispatch(
+          updateDocumentOptimistic({
+            id: currentDocument.id,
+            title: previousTitle,
           })
         );
-      } catch (error) {
         console.error("Failed to save title:", error);
         throw error;
       }
@@ -52,6 +72,7 @@ export function useDocumentManager(documentId: string) {
   return {
     document: currentDocument,
     content,
+    setContent,
     editorKey,
     isLoading: storeLoading,
     handleContentChange,

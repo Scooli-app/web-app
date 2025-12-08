@@ -29,21 +29,8 @@ export interface CreateDocumentParams {
   templateId?: string;
 }
 
-export interface DocumentResponse {
-  id: string;
-  title: string;
-  documentType: DocumentType;
-  content: string;
-  metadata: Record<string, unknown>;
-  isPublic: boolean;
-  subject: string | null;
-  schoolYear: number | null;
-  duration: number | null;
-  rating: number;
-  downloads: number;
-  createdAt: string;
-  updatedAt: string;
-}
+// DocumentResponse matches Document type exactly (backend response)
+export type DocumentResponse = Document;
 
 export interface DocumentFilters {
   type?: string;
@@ -55,8 +42,18 @@ export interface DocumentFilters {
 export interface GetDocumentsParams {
   page?: number;
   limit?: number;
-  userId: string;
   filters?: DocumentFilters;
+}
+
+// Backend paginated response structure
+export interface BackendPaginatedResponse {
+  items: Document[];
+  page: number;
+  size: number;
+  totalItems: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrevious: boolean;
 }
 
 export interface GetDocumentsResponse {
@@ -88,12 +85,47 @@ export interface CreateDocumentRequest {
 }
 
 export interface UpdateDocumentRequest {
-  id: string;
-  prompt: string;
   title?: string;
   content?: string;
 }
 
+export interface ChatRequest {
+  chatMessage: string;
+}
+
+export interface ChatResponse {
+  id: string;
+  title: string;
+  content: string;
+  chatAnswer: string;
+  updatedAt: string;
+}
+
 export interface DeleteDocumentRequest {
   ids: string[];
+}
+
+// SSE Streaming types for document creation
+export interface CreateDocumentStreamResponse {
+  streamUrl: string;
+  id: string;
+  status: "generating" | "completed" | "error";
+  message: string;
+}
+
+export interface StreamEvent {
+  type: "content" | "title" | "done" | "error";
+  data: string;
+}
+
+export interface StreamedResponse {
+  chatAnswer?: string;
+  generatedContent?: string;
+}
+
+export interface DocumentStreamCallbacks {
+  onContent?: (chunk: string) => void;
+  onTitle?: (title: string) => void;
+  onComplete?: (documentId: string, response: StreamedResponse) => void;
+  onError?: (error: string) => void;
 }

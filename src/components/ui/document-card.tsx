@@ -6,7 +6,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Routes, type Document } from "@/shared/types";
 import { Clock, FileText, Trash2, User } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
 import { Button } from "./button";
 
 interface DocumentCardProps {
@@ -64,8 +63,6 @@ export function DocumentCard({
   onDelete,
   selectionMode = false,
 }: DocumentCardProps) {
-  const [isDeleting, setIsDeleting] = useState(false);
-
   const handleSelectionClick = () => {
     onSelect?.(document.id, !isSelected);
   };
@@ -74,18 +71,10 @@ export function DocumentCard({
     onSelect?.(document.id, checked);
   };
 
-  const handleDelete = async (e: React.MouseEvent) => {
+  const handleDeleteClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-
-    if (window.confirm("Tem a certeza de que quer eliminar este documento?")) {
-      setIsDeleting(true);
-      try {
-        await onDelete?.(document.id);
-      } finally {
-        setIsDeleting(false);
-      }
-    }
+    onDelete?.(document.id);
   };
 
   const formatDate = (dateString: string) => {
@@ -195,8 +184,7 @@ export function DocumentCard({
             <Button
               variant="ghost"
               size="sm"
-              onClick={handleDelete}
-              disabled={isDeleting}
+              onClick={handleDeleteClick}
               className="action-button p-1 h-auto w-auto text-gray-400 hover:text-red-500 hover:bg-red-50"
             >
               <Trash2 className="w-4 h-4" />

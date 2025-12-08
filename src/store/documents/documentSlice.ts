@@ -5,21 +5,27 @@ import {
   getDocuments as getDocumentsService,
   type DocumentFilters,
   updateDocument as updateDocumentService,
+  chatWithDocument as chatWithDocumentService,
 } from "@/services/api";
-import type { CreateDocumentParams, Document } from "@/shared/types";
+import type {
+  CreateDocumentParams,
+  CreateDocumentStreamResponse,
+  Document,
+} from "@/shared/types";
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 
 export type { DocumentFilters };
 
 export interface UpdateDocumentData {
   id: string;
-  documentType: string;
-  prompt: string;
+  title?: string;
+  content?: string;
 }
 
 interface DocumentState {
   documents: Document[];
   currentDocument: Document | null;
+  streamInfo: CreateDocumentStreamResponse | null;
   pagination: {
     page: number;
     limit: number;
@@ -28,6 +34,8 @@ interface DocumentState {
   };
   filters: DocumentFilters;
   isLoading: boolean;
+  isChatting: boolean;
+  lastChatAnswer: string | null;
   error: string | null;
   pendingInitialPrompt: string | null;
   pendingDocumentId: string | null;
@@ -36,6 +44,7 @@ interface DocumentState {
 const initialState: DocumentState = {
   documents: [],
   currentDocument: null,
+  streamInfo: null,
   pagination: {
     page: 1,
     limit: 10,
@@ -44,6 +53,8 @@ const initialState: DocumentState = {
   },
   filters: {},
   isLoading: false,
+  isChatting: false,
+  lastChatAnswer: null,
   error: null,
   pendingInitialPrompt: null,
   pendingDocumentId: null,
@@ -57,12 +68,10 @@ export const fetchDocuments = createAsyncThunk(
       page = 1,
       limit = 10,
       filters,
-      userId,
     }: {
       page?: number;
       limit?: number;
       filters?: DocumentFilters;
-      userId: string;
     },
     { getState, rejectWithValue }
   ) => {
@@ -74,7 +83,6 @@ export const fetchDocuments = createAsyncThunk(
       const result = await getDocumentsService({
         page,
         limit,
-        userId,
         filters: currentFilters,
       });
 
@@ -142,16 +150,30 @@ export const createDocument = createAsyncThunk(
 
 export const updateDocument = createAsyncThunk(
   "documents/updateDocument",
-  async (
-    { id, documentType, prompt }: UpdateDocumentData,
-    { rejectWithValue }
-  ) => {
+  async ({ id, title, content }: UpdateDocumentData, { rejectWithValue }) => {
     try {
-      const document = await updateDocumentService(id, documentType, prompt);
+      const document = await updateDocumentService(id, { title, content });
       return document;
     } catch (error) {
       return rejectWithValue(
         error instanceof Error ? error.message : "Failed to update document"
+      );
+    }
+  }
+);
+
+export const chatWithDocument = createAsyncThunk(
+  "documents/chatWithDocument",
+  async (
+    { id, message }: { id: string; message: string },
+    { rejectWithValue }
+  ) => {
+    try {
+      const response = await chatWithDocumentService(id, message);
+      return response;
+    } catch (error) {
+      return rejectWithValue(
+        error instanceof Error ? error.message : "Failed to send chat message"
       );
     }
   }
@@ -201,6 +223,38 @@ const documentSlice = createSlice({
       state.pendingDocumentId = null;
       state.pendingInitialPrompt = null;
     },
+    addDocument(state, action) {
+      state.documents.unshift(action.payload);
+    },
+    clearStreamInfo(state) {
+      state.streamInfo = null;
+    },
+    clearLastChatAnswer(state) {
+      state.lastChatAnswer = null;
+    },
+    updateDocumentOptimistic(
+      state,
+      action: { payload: { id: string; title?: string; content?: string } }
+    ) {
+      const { id, title, content } = action.payload;
+      if (state.currentDocument?.id === id) {
+        if (title !== undefined) {
+          state.currentDocument.title = title;
+        }
+        if (content !== undefined) {
+          state.currentDocument.content = content;
+        }
+      }
+      state.documents = state.documents.map((doc) =>
+        doc.id === id
+          ? {
+              ...doc,
+              ...(title !== undefined && { title }),
+              ...(content !== undefined && { content }),
+            }
+          : doc
+      );
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -237,17 +291,19 @@ const documentSlice = createSlice({
         state.error = action.payload as string;
         state.isLoading = false;
       })
-      // Create Document
+      // Create Document (returns stream info, not full document)
       .addCase(createDocument.pending, (state) => {
         state.isLoading = true;
         state.error = null;
+        state.streamInfo = null;
       })
       .addCase(createDocument.fulfilled, (state, action) => {
-        state.documents.unshift(action.payload);
+        state.streamInfo = action.payload;
         state.isLoading = false;
       })
       .addCase(createDocument.rejected, (state, action) => {
         state.error = action.payload as string;
+        state.streamInfo = null;
         state.isLoading = false;
       })
       // Update Document
@@ -256,18 +312,54 @@ const documentSlice = createSlice({
         state.error = null;
       })
       .addCase(updateDocument.fulfilled, (state, action) => {
-        const updatedDocument = action.payload;
-        state.documents = state.documents.map((doc) =>
-          doc.id === updatedDocument.id ? updatedDocument : doc
-        );
-        if (state.currentDocument?.id === updatedDocument.id) {
-          state.currentDocument = updatedDocument;
+        const updatedData = action.payload;
+        // Merge updated data with existing document
+        if (state.currentDocument?.id === updatedData.id) {
+          state.currentDocument = { ...state.currentDocument, ...updatedData };
         }
+        state.documents = state.documents.map((doc) =>
+          doc.id === updatedData.id ? { ...doc, ...updatedData } : doc
+        );
         state.isLoading = false;
       })
       .addCase(updateDocument.rejected, (state, action) => {
         state.error = action.payload as string;
         state.isLoading = false;
+      })
+      // Chat with Document
+      .addCase(chatWithDocument.pending, (state) => {
+        state.isChatting = true;
+        state.error = null;
+        state.lastChatAnswer = null;
+      })
+      .addCase(chatWithDocument.fulfilled, (state, action) => {
+        const response = action.payload;
+        // Update current document with new content
+        if (state.currentDocument?.id === response.id) {
+          state.currentDocument = {
+            ...state.currentDocument,
+            title: response.title,
+            content: response.content,
+            updatedAt: response.updatedAt,
+          };
+        }
+        // Update in documents list too
+        state.documents = state.documents.map((doc) =>
+          doc.id === response.id
+            ? {
+                ...doc,
+                title: response.title,
+                content: response.content,
+                updatedAt: response.updatedAt,
+              }
+            : doc
+        );
+        state.lastChatAnswer = response.chatAnswer;
+        state.isChatting = false;
+      })
+      .addCase(chatWithDocument.rejected, (state, action) => {
+        state.error = action.payload as string;
+        state.isChatting = false;
       });
     // // Delete Document
     // .addCase(deleteDocument.pending, (state) => {
@@ -296,6 +388,10 @@ export const {
   resetPagination,
   setPendingInitialPrompt,
   clearPendingInitialPrompt,
+  addDocument,
+  clearStreamInfo,
+  clearLastChatAnswer,
+  updateDocumentOptimistic,
 } = documentSlice.actions;
 
 export default documentSlice.reducer;
