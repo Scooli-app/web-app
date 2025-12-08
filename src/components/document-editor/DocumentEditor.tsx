@@ -182,6 +182,14 @@ export default function DocumentEditor({
     }
   }, [currentDocument?.title, isStreaming]);
 
+  // Load initial prompt from document metadata
+  useEffect(() => {
+    const prompt = currentDocument?.metadata?.prompt as string | undefined;
+    if (chatHistory.length === 0 && prompt) {
+      setChatHistory([{ role: "user", content: prompt }]);
+    }
+  }, [currentDocument?.metadata?.prompt, chatHistory.length]);
+
   const handleChatSubmit = useCallback(
     async (userMessage: string) => {
       if (!currentDocument?.id) {
