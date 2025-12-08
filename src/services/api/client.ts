@@ -21,12 +21,27 @@ export const apiClient: AxiosInstance = axios.create({
 });
 
 apiClient.interceptors.request.use(
-  (config) => {
-    // Add auth token or other headers here if needed
-    // const token = getAuthToken();
-    // if (token) {
-    //   config.headers.Authorization = `Bearer ${token}`;
-    // }
+  async (config) => {
+    // Get Clerk token and add to Authorization header
+    try {
+      if (typeof window !== "undefined") {
+        const clerk = (
+          window as unknown as {
+            Clerk?: { session?: { getToken: () => Promise<string | null> } };
+          }
+        ).Clerk;
+        if (clerk?.session) {
+          const token = await clerk.session.getToken();
+          if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+          }
+        }
+      }
+    } catch (error) {
+      // If token retrieval fails, continue without auth header
+      // This allows public endpoints to still work
+      console.warn("Failed to get token:", error);
+    }
     return config;
   },
   (error) => {
