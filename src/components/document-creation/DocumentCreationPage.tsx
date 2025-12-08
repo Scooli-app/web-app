@@ -1,6 +1,9 @@
 "use client";
 
-import { createDocument } from "@/store/documents/documentSlice";
+import {
+  createDocument,
+  setPendingInitialPrompt,
+} from "@/store/documents/documentSlice";
 import { useAppDispatch } from "@/store/hooks";
 import type { DocumentTemplate } from "@/shared/types";
 import { useRouter } from "next/navigation";
@@ -136,6 +139,15 @@ export default function DocumentCreationPage({
 
       if (createDocument.fulfilled.match(resultAction)) {
         const streamResponse = resultAction.payload;
+
+        // Store the initial prompt for display in chat
+        dispatch(
+          setPendingInitialPrompt({
+            documentId: streamResponse.id,
+            prompt: formState.topic,
+          })
+        );
+
         const redirectUrl = documentType.redirectPath.replace(
           ":id",
           streamResponse.id

@@ -13,7 +13,11 @@ export enum TeachingMethod {
 }
 
 export interface DocumentMetadata {
-  initialPrompt?: string;
+  prompt?: string;
+  duration?: number;
+  schoolYear?: number;
+  templateId?: string;
+  documentType?: DocumentType;
   [key: string]: unknown;
 }
 

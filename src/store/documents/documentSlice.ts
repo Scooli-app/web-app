@@ -107,6 +107,10 @@ export const fetchDocument = createAsyncThunk(
   async (id: string, { rejectWithValue }) => {
     try {
       const document = await getDocumentService(id);
+      setPendingInitialPrompt({
+        documentId: id,
+        prompt: document.metadata?.initialPrompt as string,
+      });
       return document;
     } catch (error) {
       return rejectWithValue(
