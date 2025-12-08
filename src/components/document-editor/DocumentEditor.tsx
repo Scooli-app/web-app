@@ -15,6 +15,7 @@ import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import RichTextEditor from "../ui/rich-text-editor";
+import { StreamingText } from "../ui/streaming-text";
 import AIChatPanel from "./AIChatPanel";
 import DocumentTitle from "./DocumentTitle";
 
@@ -59,6 +60,7 @@ export default function DocumentEditor({
   const [documentTitle, setDocumentTitle] = useState("");
   const eventSourceRef = useRef<(() => void) | null>(null);
   const rawStreamRef = useRef("");
+  const accumulatedTitleRef = useRef("");
 
   // Extract generatedContent from partial JSON stream
   const extractGeneratedContent = (jsonStr: string): string => {
@@ -86,7 +88,9 @@ export default function DocumentEditor({
     ) {
       setIsStreaming(true);
       rawStreamRef.current = "";
+      accumulatedTitleRef.current = "";
       setDisplayContent("");
+      setDocumentTitle("");
 
       const cleanup = streamDocumentContent(streamInfo.streamUrl, {
         onContent: (chunk) => {
@@ -98,11 +102,20 @@ export default function DocumentEditor({
             setDisplayContent(extracted);
           }
         },
-        onTitle: (title) => {
-          setDocumentTitle(title);
+        onTitle: (titleChunk) => {
+          // Accumulate title chunks character by character
+          accumulatedTitleRef.current += titleChunk;
+          setDocumentTitle(accumulatedTitleRef.current);
         },
         onComplete: (docId, response) => {
           eventSourceRef.current = null;
+          
+          // Preserve the streamed title before clearing streaming state
+          const finalStreamedTitle = accumulatedTitleRef.current;
+          if (finalStreamedTitle) {
+            setDocumentTitle(finalStreamedTitle);
+          }
+          
           setIsStreaming(false);
 
           // Add chatAnswer to chat history
@@ -175,12 +188,13 @@ export default function DocumentEditor({
     }
   }, [currentDocument?.content, currentDocument?.updatedAt, isStreaming, setContent]);
 
-  // Sync title with Redux state (for optimistic updates)
   useEffect(() => {
     if (currentDocument?.title && !isStreaming) {
-      setDocumentTitle(currentDocument.title);
+      if (!documentTitle || currentDocument.title === documentTitle || currentDocument.title.length >= documentTitle.length) {
+        setDocumentTitle(currentDocument.title);
+      }
     }
-  }, [currentDocument?.title, isStreaming]);
+  }, [currentDocument?.title, isStreaming, documentTitle]);
 
   // Load initial prompt from document metadata
   useEffect(() => {
@@ -258,7 +272,8 @@ export default function DocumentEditor({
           title={documentTitle || currentDocument?.title || ""}
           defaultTitle={defaultTitle}
           onSave={handleTitleSave}
-          isSaving={isSaving || isGenerating}
+          isSaving={isSaving}
+          isStreaming={isGenerating && !!documentTitle}
         />
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6 relative">
@@ -275,10 +290,12 @@ export default function DocumentEditor({
             {isGenerating ? (
               <div className="border border-[#C7C9D9] rounded-xl bg-white min-h-[600px] p-4 overflow-auto">
                 {displayContent ? (
-                  <div className="prose prose-sm max-w-none whitespace-pre-wrap text-[#2E2F38] leading-relaxed">
-                    {displayContent}
-                    <span className="inline-block w-2 h-5 bg-[#6753FF] ml-0.5 animate-pulse align-middle" />
-                  </div>
+                  <StreamingText
+                    text={displayContent}
+                    isStreaming={isGenerating}
+                    as="div"
+                    className="prose prose-sm max-w-none whitespace-pre-wrap text-[#2E2F38] leading-relaxed"
+                  />
                 ) : (
                   <div className="flex flex-col items-center justify-center h-full min-h-[550px]">
                     <Loader2 className="w-12 h-12 animate-spin text-[#6753FF] mb-4" />

@@ -1,6 +1,7 @@
 "use client";
 
 import { Input } from "@/components/ui/input";
+import { StreamingText } from "@/components/ui/streaming-text";
 import { MAX_LENGTHS } from "@/shared/config/constants";
 import { Edit3, Save } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -10,6 +11,7 @@ interface DocumentTitleProps {
   onSave: (newTitle: string) => Promise<void>;
   isSaving: boolean;
   defaultTitle?: string;
+  isStreaming?: boolean;
 }
 
 export default function DocumentTitle({
@@ -17,6 +19,7 @@ export default function DocumentTitle({
   onSave,
   isSaving,
   defaultTitle = "Documento",
+  isStreaming = false,
 }: DocumentTitleProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editingTitle, setEditingTitle] = useState(title);
@@ -91,12 +94,13 @@ export default function DocumentTitle({
           <Edit3 className="h-6 w-6 text-[#6753FF]" />
         </div>
       ) : (
-        <h1
+        <StreamingText
+          text={title || defaultTitle}
+          isStreaming={isStreaming}
+          as="h1"
           className="text-3xl font-bold text-[#0B0D17] cursor-pointer hover:text-[#6753FF] transition-colors"
           onClick={handleTitleClick}
-        >
-          {title || defaultTitle}
-        </h1>
+        />
       )}
       {isSaving && (
         <div className="flex items-center text-[#6C6F80]">

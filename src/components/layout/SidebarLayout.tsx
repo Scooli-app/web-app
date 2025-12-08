@@ -39,6 +39,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { UserButton, SignInButton, SignedIn, SignedOut } from "@clerk/nextjs";
 
 interface SidebarLayoutProps {
   children: React.ReactNode;
@@ -253,6 +254,24 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
           <header className="flex h-16 shrink-0 items-center gap-2 bg-[#FFFFFF] w-full border-b border-[#E4E4E7]">
             <div className="flex items-center gap-2 px-4 justify-between w-full">
               <SidebarTrigger className="hidden md:flex" />
+              <div className="ml-auto flex items-center gap-4">
+                <SignedOut>
+                  <SignInButton mode="modal">
+                    <Button variant="default" className="bg-[#6753FF] hover:bg-[#4E3BC0]">
+                      Entrar
+                    </Button>
+                  </SignInButton>
+                </SignedOut>
+                <SignedIn>
+                  <UserButton 
+                    appearance={{
+                      elements: {
+                        avatarBox: "w-10 h-10"
+                      }
+                    }}
+                  />
+                </SignedIn>
+              </div>
             </div>
           </header>
           <main
