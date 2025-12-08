@@ -1,39 +1,65 @@
-import { MessageSquare } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "./card";
+import { cn } from "@/shared/utils/utils";
+import type { ComponentPropsWithoutRef, ElementType } from "react";
 
-interface StreamingTextProps {
+export interface StreamingTextProps<T extends ElementType = "span"> {
   text: string;
-  isLoading?: boolean;
-  title?: string;
+  isStreaming?: boolean;
+  className?: string;
+  cursorClassName?: string;
+  as?: T;
+  emptyText?: string;
 }
 
-export function StreamingText({
+type StreamingTextComponentProps<T extends ElementType> = StreamingTextProps<T> &
+  Omit<ComponentPropsWithoutRef<T>, keyof StreamingTextProps<T>>;
+
+/**
+ * Generic streaming text component that displays text with an animated cursor
+ * when streaming is active. Can be used inline or as a block element.
+ * 
+ * @example
+ * // Inline usage for titles
+ * <StreamingText 
+ *   text={title} 
+ *   isStreaming={isStreaming}
+ *   as="h1"
+ *   className="text-3xl font-bold"
+ *   onClick={handleClick}
+ * />
+ * 
+ * @example
+ * // Block usage for content
+ * <StreamingText 
+ *   text={content} 
+ *   isStreaming={isStreaming}
+ *   className="prose max-w-none whitespace-pre-wrap"
+ * />
+ */
+export function StreamingText<T extends ElementType = "span">({
   text,
-  isLoading = false,
-  title = "Resposta",
-}: StreamingTextProps) {
-  if (!text && !isLoading) {
-    return null;
-  }
+  isStreaming = false,
+  className = "",
+  cursorClassName = "",
+  as,
+  emptyText,
+  ...props
+}: StreamingTextComponentProps<T>) {
+  const Component = (as || "span") as ElementType;
+  const displayText = text || emptyText || "";
+  const showCursor = isStreaming && displayText.length > 0;
+
+  // Default cursor styles based on component type
+  const componentType = typeof Component === "string" ? Component : "span";
+  const defaultCursorClass = componentType.startsWith("h")
+    ? "inline-block w-2 h-8 bg-[#6753FF] ml-1 align-middle animate-pulse"
+    : "inline-block w-2 h-5 bg-[#6753FF] ml-0.5 animate-pulse align-middle";
+
+  const finalCursorClass = cursorClassName || defaultCursorClass;
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-xl font-semibold text-[#0B0D17] flex items-center gap-2">
-          <MessageSquare className="w-5 h-5" />
-          {title}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="prose max-w-none">
-          <p className="text-[#2E2F38] leading-relaxed whitespace-pre-wrap">
-            {text}
-            {isLoading && (
-              <span className="inline-block w-2 h-4 bg-[#6753FF] ml-1 animate-pulse" />
-            )}
-          </p>
-        </div>
-      </CardContent>
-    </Card>
+    <Component className={cn(className)} {...props}>
+      {displayText}
+      {showCursor && <span className={cn(finalCursorClass)} />}
+    </Component>
   );
 }

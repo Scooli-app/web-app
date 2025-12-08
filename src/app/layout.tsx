@@ -5,6 +5,7 @@ import StoreProvider from "@/components/providers/StoreProvider";
 import { SidebarLayout } from "@/components/layout/SidebarLayout";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@vercel/analytics/next";
+import { ClerkProvider } from "@clerk/nextjs";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -35,14 +36,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="pt" className={inter.variable} suppressHydrationWarning>
-      <body className={`${inter.className} antialiased`}>
-        <StoreProvider>
-          <SidebarLayout>{children}</SidebarLayout>
-        </StoreProvider>
-        <SpeedInsights />
-        <Analytics />
-      </body>
-    </html>
+    <ClerkProvider>
+      <html lang="pt" className={inter.variable} suppressHydrationWarning>
+        <body className={`${inter.className} antialiased`}>
+          <StoreProvider>
+            <SidebarLayout>{children}</SidebarLayout>
+          </StoreProvider>
+          <SpeedInsights />
+          <Analytics />
+        </body>
+      </html>
+    </ClerkProvider>
   );
 }
