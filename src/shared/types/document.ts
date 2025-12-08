@@ -20,16 +20,14 @@ export interface DocumentMetadata {
 export interface Document {
   id: string;
   title: string;
-  content: string;
   documentType: DocumentType;
+  content: string;
   metadata: DocumentMetadata;
-  userId: string;
+  isPublic: boolean;
+  subject: string | null;
+  gradeLevel: string | null;
+  rating: number;
+  downloads: number;
   createdAt: string;
   updatedAt: string;
-  downloads: number;
-  rating?: number;
-  isPublic: boolean;
-  subject?: string;
-  schoolYear?: number;
-  duration?: number;
 }

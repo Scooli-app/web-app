@@ -13,7 +13,11 @@ import type {
   GetDocumentsResponse,
   DocumentCountsResponse,
   DocumentType,
-  UpdateDocumentRequest,
+  CreateDocumentStreamResponse,
+  StreamEvent,
+  DocumentStreamCallbacks,
+  BackendPaginatedResponse,
+  ChatResponse,
 } from "@/shared/types";
 import apiClient from "./client";
 
@@ -25,77 +29,56 @@ export type {
   GetDocumentsResponse,
   DocumentCountsResponse,
   DocumentType,
+  CreateDocumentStreamResponse,
+  StreamEvent,
+  DocumentStreamCallbacks,
+  ChatResponse,
 };
 
 /**
- * Convert backend response to frontend Document (both use camelCase)
- */
-function mapBackendToDocument(backend: DocumentResponse): Document {
-  return {
-    id: backend.id,
-    userId: "", // Not in backend response, will need to be handled separately
-    title: backend.title,
-    content: backend.content,
-    documentType: backend.documentType as Document["documentType"],
-    metadata: backend.metadata || {},
-    isPublic: backend.isPublic,
-    downloads: backend.downloads,
-    rating: backend.rating,
-    createdAt: backend.createdAt,
-    updatedAt: backend.updatedAt,
-    subject: backend.subject || undefined,
-    schoolYear: backend.schoolYear || undefined,
-    duration: backend.duration || undefined,
-  };
-}
-
-/**
  * Get list of documents
- * Note: Backend API returns array directly, pagination may not be supported
- * If backend supports query params, they can be added here
+ * Backend returns paginated response with items, page, size, totalItems, etc.
  */
 export async function getDocuments(
   params: GetDocumentsParams
 ): Promise<GetDocumentsResponse> {
   const { page = 1, limit = 10, filters } = params;
 
-  const response = await apiClient.get<DocumentResponse[]>("/documents");
+  const queryParams = new URLSearchParams();
+  queryParams.set("page", String(page - 1)); // Backend uses 0-based pages
+  queryParams.set("size", String(limit));
+  if (filters?.type && filters.type !== "all") {
+    queryParams.set("type", filters.type);
+  }
 
-  // Map backend responses to frontend format
-  const allDocuments = response.data.map(mapBackendToDocument);
+  const response = await apiClient.get<BackendPaginatedResponse>(
+    `/documents?${queryParams.toString()}`
+  );
 
-  // Calculate counts from all documents (before filtering)
+  const data = response.data;
+  const documents = data?.items ?? [];
+
+  // Calculate counts from documents
   const counts: Record<string, number> = {};
-  allDocuments.forEach((doc) => {
+  documents.forEach((doc) => {
     counts[doc.documentType] = (counts[doc.documentType] || 0) + 1;
   });
 
-  // Apply client-side filtering
-  const filteredDocuments =
-    filters?.type && filters.type !== "all"
-      ? allDocuments.filter((doc) => doc.documentType === filters.type)
-      : allDocuments;
-
-  // Client-side pagination
-  const startIndex = (page - 1) * limit;
-  const endIndex = startIndex + limit;
-  const paginatedDocuments = filteredDocuments.slice(startIndex, endIndex);
-
   return {
-    documents: paginatedDocuments,
+    documents,
     pagination: {
-      page,
-      limit,
-      total: filteredDocuments.length,
-      hasMore: endIndex < filteredDocuments.length,
+      page: (data?.page ?? 0) + 1, // Convert back to 1-based
+      limit: data?.size ?? limit,
+      total: data?.totalItems ?? 0,
+      hasMore: data?.hasNext ?? false,
     },
     counts,
   };
 }
 
 export async function getDocumentCounts(): Promise<DocumentCountsResponse> {
-  const response = await apiClient.get<DocumentResponse[]>("/documents");
-  const documents = response.data.map(mapBackendToDocument);
+  const response = await apiClient.get<BackendPaginatedResponse>("/documents");
+  const documents = response.data?.items ?? [];
 
   const counts: Record<string, number> = {};
   documents.forEach((doc) => {
@@ -109,38 +92,104 @@ export async function getDocumentCounts(): Promise<DocumentCountsResponse> {
  * Get a single document by ID
  */
 export async function getDocument(id: string): Promise<Document> {
-  const response = await apiClient.get<DocumentResponse>(`/documents/${id}`);
-  return mapBackendToDocument(response.data);
+  const response = await apiClient.get<Document>(`/documents/${id}`);
+  return response.data;
 }
 
 /**
- * Create a new document
+ * Create a new document with SSE streaming
+ * Returns initial response with streamUrl for content streaming
  */
 export async function createDocument(
   params: CreateDocumentParams
-): Promise<Document> {
-  const response = await apiClient.post<DocumentResponse>("/documents", params);
-  return mapBackendToDocument(response.data);
+): Promise<CreateDocumentStreamResponse> {
+  const response = await apiClient.post<CreateDocumentStreamResponse>(
+    "/documents",
+    params
+  );
+  return response.data;
+}
+
+/**
+ * Connect to SSE stream and receive document content chunks
+ * Backend streams a JSON object: {"chatAnswer": "...", "generatedContent": "..."}
+ */
+export function streamDocumentContent(
+  streamUrl: string,
+  callbacks: DocumentStreamCallbacks
+): () => void {
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_API_URL || "";
+  const fullUrl = `${baseUrl}${streamUrl}`;
+
+  const eventSource = new EventSource(fullUrl);
+  let accumulatedContent = "";
+  eventSource.onmessage = (event) => {
+    try {
+      const parsed: StreamEvent = JSON.parse(event.data);
+
+      switch (parsed.type) {
+        case "content":
+          accumulatedContent += parsed.data;
+          callbacks.onContent?.(parsed.data);
+          break;
+        case "title":
+          callbacks.onTitle?.(parsed.data);
+          break;
+        case "done": {
+          // Parse the accumulated JSON response
+          let streamedResponse = { chatAnswer: "", generatedContent: "" };
+          try {
+            streamedResponse = JSON.parse(accumulatedContent);
+          } catch {
+            console.warn("[SSE] Could not parse accumulated content as JSON");
+          }
+          // done data contains the document ID
+          const documentId = parsed.data;
+          callbacks.onComplete?.(documentId, streamedResponse);
+          eventSource.close();
+          break;
+        }
+        case "error":
+          callbacks.onError?.(parsed.data);
+          eventSource.close();
+          break;
+      }
+    } catch (e) {
+      console.error("[SSE] Parse error:", e, "Raw data:", event.data);
+    }
+  };
+
+  eventSource.onerror = (e) => {
+    console.error("[SSE] Error:", e, "ReadyState:", eventSource.readyState);
+    callbacks.onError?.("Stream connection error");
+    eventSource.close();
+  };
+
+  return () => {
+    eventSource.close();
+  };
 }
 
 export async function updateDocument(
   id: string,
-  prompt: string,
-  title?: string,
-  content?: string
+  data: { title?: string; content?: string }
 ): Promise<Document> {
-  const request: UpdateDocumentRequest = {
-    id,
-    prompt,
-    title,
-    content,
-  };
+  const response = await apiClient.put<Document>(`/documents/${id}`, data);
+  return response.data;
+}
 
-  const response = await apiClient.put<DocumentResponse>(
-    `/documents/${id}`,
-    request
-  );
-  return mapBackendToDocument(response.data);
+/**
+ * Send a chat message to update a document via AI
+ * Returns updated document with chatAnswer
+ */
+export async function chatWithDocument(
+  id: string,
+  message: string
+): Promise<ChatResponse> {
+  const response = await apiClient.post<ChatResponse>(`/documents/${id}/chat`, {
+    chatMessage: message,
+  });
+  return response.data;
 }
 
 /**

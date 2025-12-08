@@ -26,6 +26,13 @@ export type {
   CreateDocumentRequest,
   UpdateDocumentRequest,
   DeleteDocumentRequest,
+  CreateDocumentStreamResponse,
+  StreamEvent,
+  StreamedResponse,
+  DocumentStreamCallbacks,
+  BackendPaginatedResponse,
+  ChatRequest,
+  ChatResponse,
 } from "./api";
 
 // UI types

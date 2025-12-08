@@ -1,9 +1,6 @@
 "use client";
 
-import {
-  createDocument,
-  setPendingInitialPrompt,
-} from "@/store/documents/documentSlice";
+import { createDocument } from "@/store/documents/documentSlice";
 import { useAppDispatch } from "@/store/hooks";
 import type { DocumentTemplate } from "@/shared/types";
 import { useRouter } from "next/navigation";
@@ -138,14 +135,11 @@ export default function DocumentCreationPage({
       );
 
       if (createDocument.fulfilled.match(resultAction)) {
-        const newDoc = resultAction.payload;
-        dispatch(
-          setPendingInitialPrompt({
-            documentId: newDoc.id,
-            prompt: formState.topic,
-          })
+        const streamResponse = resultAction.payload;
+        const redirectUrl = documentType.redirectPath.replace(
+          ":id",
+          streamResponse.id
         );
-        const redirectUrl = documentType.redirectPath.replace(":id", newDoc.id);
         router.push(redirectUrl);
       } else {
         setError(

@@ -1,5 +1,6 @@
 "use client";
 
+import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { DocumentCard } from "@/components/ui/document-card";
 import { DocumentFilters } from "@/components/ui/document-filters";
 import type { Document } from "@/shared/types";
@@ -14,11 +15,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Button } from "./button";
 import { Input } from "./input";
 
-interface DocumentsGalleryProps {
-  userId: string;
-}
-
-export function DocumentsGallery({ userId }: DocumentsGalleryProps) {
+export function DocumentsGallery() {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedType, setSelectedType] = useState<string>("all");
@@ -28,6 +25,8 @@ export function DocumentsGallery({ userId }: DocumentsGalleryProps) {
     new Set()
   );
   const [deleting, setDeleting] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 12,
@@ -46,7 +45,6 @@ export function DocumentsGallery({ userId }: DocumentsGalleryProps) {
         const result = await getDocuments({
           page,
           limit: pagination.limit,
-          userId,
           filters: {
             type: selectedType !== "all" ? selectedType : undefined,
           },
@@ -68,7 +66,7 @@ export function DocumentsGallery({ userId }: DocumentsGalleryProps) {
         setLoading(false);
       }
     },
-    [userId, selectedType, pagination.limit]
+    [selectedType, pagination.limit]
   );
 
   // Selection handlers
@@ -92,64 +90,59 @@ export function DocumentsGallery({ userId }: DocumentsGalleryProps) {
     }
   };
 
-  // Delete handlers
-  const handleDeleteSelected = async () => {
+  const handleDeleteSelected = () => {
     if (selectedDocuments.size === 0) {
       return;
     }
+    setPendingDeleteId(null);
+    setShowDeleteDialog(true);
+  };
 
-    const confirmMessage =
-      selectedDocuments.size === 1
-        ? "Tem a certeza de que quer eliminar este documento?"
-        : `Tem a certeza de que quer eliminar ${selectedDocuments.size} documentos?`;
+  const handleRequestDelete = (documentId: string) => {
+    setPendingDeleteId(documentId);
+    setShowDeleteDialog(true);
+  };
 
-    if (!confirm(confirmMessage)) {
-      return;
-    }
+  const handleCloseDeleteDialog = () => {
+    setShowDeleteDialog(false);
+    setPendingDeleteId(null);
+  };
 
+  const confirmDelete = async () => {
+    setShowDeleteDialog(false);
     setDeleting(true);
-    try {
-      await deleteDocuments(Array.from(selectedDocuments));
 
-      // Remove deleted documents from the UI
-      setDocuments((prev) =>
-        prev.filter((doc) => !selectedDocuments.has(doc.id))
-      );
-      setSelectedDocuments(new Set());
-      setSelectionMode(false);
-      // Update pagination count
-      setPagination((prev) => ({
-        ...prev,
-        total: prev.total - selectedDocuments.size,
-      }));
+    try {
+      if (pendingDeleteId) {
+        await deleteDocument(pendingDeleteId);
+      } else {
+        await deleteDocuments(Array.from(selectedDocuments));
+        setSelectedDocuments(new Set());
+        setSelectionMode(false);
+      }
+      await fetchDocuments(1, true);
     } catch (error) {
       console.error("Error deleting documents:", error);
     } finally {
       setDeleting(false);
+      setPendingDeleteId(null);
     }
   };
 
-  const handleDeleteDocument = async (documentId: string) => {
-    if (!confirm("Tem a certeza de que quer eliminar este documento?")) {
-      return;
+  const getDeleteDialogContent = () => {
+    if (pendingDeleteId) {
+      return {
+        title: "Eliminar documento",
+        description: "Tem a certeza de que quer eliminar este documento? Esta ação não pode ser desfeita.",
+      };
     }
-
-    setDeleting(true);
-    try {
-      await deleteDocument(documentId);
-
-      // Remove deleted document from the UI
-      setDocuments((prev) => prev.filter((doc) => doc.id !== documentId));
-      // Update pagination count
-      setPagination((prev) => ({
-        ...prev,
-        total: prev.total - 1,
-      }));
-    } catch (error) {
-      console.error("Error deleting document:", error);
-    } finally {
-      setDeleting(false);
-    }
+    return {
+      title: "Eliminar documentos",
+      description:
+        selectedDocuments.size === 1
+          ? "Tem a certeza de que quer eliminar este documento? Esta ação não pode ser desfeita."
+          : `Tem a certeza de que quer eliminar ${selectedDocuments.size} documentos? Esta ação não pode ser desfeita.`,
+    };
   };
 
   const filteredDocuments = documents.filter(
@@ -158,7 +151,6 @@ export function DocumentsGallery({ userId }: DocumentsGalleryProps) {
       doc.content.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Fetch documents on mount and when filter changes
   useEffect(() => {
     setPagination((prev) => ({ ...prev, page: 1 }));
     fetchDocuments(1, true);
@@ -293,7 +285,7 @@ export function DocumentsGallery({ userId }: DocumentsGalleryProps) {
                 <DocumentCard
                   key={document.id}
                   document={document}
-                  onDelete={handleDeleteDocument}
+                  onDelete={handleRequestDelete}
                   selectionMode={selectionMode}
                   isSelected={selectedDocuments.has(document.id)}
                   onSelect={handleSelectDocument}
@@ -336,6 +328,17 @@ export function DocumentsGallery({ userId }: DocumentsGalleryProps) {
           </div>
         )}
       </div>
+
+      <ConfirmationDialog
+        isOpen={showDeleteDialog}
+        onClose={handleCloseDeleteDialog}
+        onConfirm={confirmDelete}
+        title={getDeleteDialogContent().title}
+        description={getDeleteDialogContent().description}
+        confirmLabel="Eliminar"
+        cancelLabel="Cancelar"
+        variant="danger"
+      />
     </div>
   );
 }
