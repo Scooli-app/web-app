@@ -46,7 +46,7 @@ export type {
 } from "./community";
 
 // Route types
-export { Routes, APIRoutes } from "./routes";
+export { Routes } from "./routes";
 
 // Template types
 export type {
