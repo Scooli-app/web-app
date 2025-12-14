@@ -92,7 +92,8 @@ export default function DocumentEditor({
       setDisplayContent("");
       setDocumentTitle("");
 
-      const cleanup = streamDocumentContent(streamInfo.streamUrl, {
+      // Start streaming (async)
+      streamDocumentContent(streamInfo.streamUrl, {
         onContent: (chunk) => {
           // Accumulate raw content (it's JSON being streamed)
           rawStreamRef.current += chunk;
@@ -142,9 +143,14 @@ export default function DocumentEditor({
           setError(errorMsg);
           dispatch(clearStreamInfo());
         },
+      }).then((cleanup) => {
+        eventSourceRef.current = cleanup;
+      }).catch((err) => {
+        console.error("Failed to start streaming:", err);
+        setIsStreaming(false);
+        setError("Erro ao iniciar streaming");
+        dispatch(clearStreamInfo());
       });
-
-      eventSourceRef.current = cleanup;
     }
 
     // Cleanup only when component fully unmounts or documentId changes
