@@ -120,29 +120,23 @@ export function DocumentCard({
       )}
 
       <div className={`flex flex-col h-full ${selectionMode ? "ml-6" : ""}`}>
-        <div className="flex items-start justify-between mb-4 w-full gap-2 min-h-[32px]">
-          <div className="flex items-center space-x-2 min-w-0 flex-1">
+        <div className="flex flex-col md:flex-row md:items-start md:justify-between mb-4 w-full gap-2">
+          <div className="flex items-center gap-2 min-w-0 flex-1 md:flex-initial">
             <span className="text-xl sm:text-2xl flex-shrink-0">
               {getDocumentIcon(document.documentType)}
             </span>
             <Badge
               className={`${getDocumentTypeColor(
                 document.documentType
-              )} px-2 py-1 text-xs font-medium whitespace-nowrap`}
+              )} px-2 py-1 text-xs font-medium whitespace-nowrap flex-shrink-0`}
             >
               {getDocumentTypeLabel(document.documentType)}
             </Badge>
           </div>
-          <div className="flex items-center text-xs text-[#6C6F80] flex-shrink-0">
-            <Clock className="w-3 h-3 mr-1" />
-            <span className="hidden sm:inline">
+          <div className="flex items-center text-xs text-[#6C6F80] flex-shrink-0 md:ml-2">
+            <Clock className="w-3 h-3 mr-1 flex-shrink-0" />
+            <span className="whitespace-nowrap">
               {formatDate(document.updatedAt)}
-            </span>
-            <span className="sm:hidden">
-              {new Date(document.updatedAt).toLocaleDateString("pt-PT", {
-                day: "2-digit",
-                month: "2-digit",
-              })}
             </span>
           </div>
         </div>
@@ -160,24 +154,24 @@ export function DocumentCard({
             {typeof document.metadata.subject === "string" &&
               document.metadata.subject && (
                 <div className="flex items-center text-xs text-[#6C6F80]">
-                  <FileText className="w-3 h-3 mr-2" />
-                  <span className="font-medium">Disciplina:</span>
-                  <span className="ml-1">{document.metadata.subject}</span>
+                  <FileText className="w-3 h-3 mr-2 flex-shrink-0" />
+                  <span className="font-medium flex-shrink-0">Disciplina:</span>
+                  <span className="ml-1 truncate">{document.metadata.subject}</span>
                 </div>
               )}
             {typeof document.metadata.grade === "string" &&
               document.metadata.grade && (
                 <div className="flex items-center text-xs text-[#6C6F80]">
-                  <User className="w-3 h-3 mr-2" />
-                  <span className="font-medium">Ano:</span>
-                  <span className="ml-1">{document.metadata.grade}</span>
+                  <User className="w-3 h-3 mr-2 flex-shrink-0" />
+                  <span className="font-medium flex-shrink-0">Ano:</span>
+                  <span className="ml-1 truncate">{document.metadata.grade}</span>
                 </div>
               )}
           </div>
         )}
 
-        <div className="pt-3 border-t border-[#E4E4E7] flex items-center justify-between mt-auto">
-          <p className="text-xs text-[#6C6F80]">
+        <div className="pt-3 border-t border-[#E4E4E7] flex items-center justify-between gap-2 mt-auto">
+          <p className="text-xs text-[#6C6F80] truncate">
             Criado em {formatDate(document.createdAt)}
           </p>
           {!selectionMode && (
@@ -185,7 +179,7 @@ export function DocumentCard({
               variant="ghost"
               size="sm"
               onClick={handleDeleteClick}
-              className="action-button p-1 h-auto w-auto text-gray-400 hover:text-red-500 hover:bg-red-50"
+              className="action-button p-1 h-auto w-auto text-gray-400 hover:text-red-500 hover:bg-red-50 flex-shrink-0"
             >
               <Trash2 className="w-4 h-4" />
             </Button>
@@ -195,7 +189,7 @@ export function DocumentCard({
     </>
   );
 
-  const cardClassName = `p-6 transition-all duration-200 border border-[#E4E4E7] relative flex flex-col h-full w-full ${
+  const cardClassName = `p-4 sm:p-6 transition-all duration-200 border border-[#E4E4E7] relative flex flex-col h-full w-full ${
     selectionMode
       ? "cursor-default"
       : "cursor-pointer hover:shadow-lg hover:border-[#6753FF]/20"

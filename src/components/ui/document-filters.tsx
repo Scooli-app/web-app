@@ -27,7 +27,7 @@ export function DocumentFilters({
   documentCounts,
 }: DocumentFiltersProps) {
   return (
-    <div className="flex flex-wrap gap-3">
+    <div className="flex flex-wrap gap-2 sm:gap-3">
       {filterOptions.map((option) => {
         const isSelected = selectedType === option.value;
         const count = documentCounts?.[option.value] || 0;
@@ -37,8 +37,8 @@ export function DocumentFilters({
             key={option.value}
             onClick={() => onTypeChange(option.value)}
             className={`
-              inline-flex items-center space-x-2 px-4 py-2 rounded-xl text-sm font-medium
-              transition-all duration-200 border
+              inline-flex items-center space-x-1.5 sm:space-x-2 px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-medium
+              transition-all duration-200 border whitespace-nowrap
               ${
                 isSelected
                   ? "bg-[#6753FF] text-white border-[#6753FF] shadow-sm"
@@ -46,7 +46,7 @@ export function DocumentFilters({
               }
             `}
           >
-            <span className="text-base">{option.icon}</span>
+            <span className="text-sm sm:text-base">{option.icon}</span>
             <span>{option.label}</span>
             {documentCounts && option.value !== "all" && (
               <Badge
