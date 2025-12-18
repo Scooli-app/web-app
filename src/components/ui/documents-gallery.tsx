@@ -12,6 +12,7 @@ import {
 
 import { CheckSquare, Loader2, Search, Square, Trash2, X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { useInView } from "react-intersection-observer";
 import { Button } from "./button";
 import { Input } from "./input";
 
@@ -157,11 +158,22 @@ export function DocumentsGallery() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedType]);
 
-  const loadMore = () => {
+  const loadMore = useCallback(() => {
     if (pagination.hasMore && !loading) {
       fetchDocuments(pagination.page + 1, false);
     }
-  };
+  }, [pagination.hasMore, pagination.page, loading, fetchDocuments]);
+
+  const { ref: loadMoreRef, inView } = useInView({
+    threshold: 0,
+    triggerOnce: false,
+  });
+
+  useEffect(() => {
+    if (inView && pagination.hasMore && !loading) {
+      loadMore();
+    }
+  }, [inView, pagination.hasMore, loading, loadMore]);
 
   return (
     <div className="w-full">
@@ -177,12 +189,12 @@ export function DocumentsGallery() {
           {/* Search and Selection */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
             {selectionMode && (
-              <div className="flex items-center space-x-2">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={handleSelectAll}
-                  className="flex items-center space-x-1"
+                  className="flex items-center justify-center space-x-1"
                 >
                   {selectedDocuments.size === filteredDocuments.length ? (
                     <CheckSquare className="w-4 h-4" />
@@ -196,15 +208,17 @@ export function DocumentsGallery() {
                   </span>
                 </Button>
                 {selectedDocuments.size > 0 && (
-                  <div className="flex items-center space-x-2">
-                    <span className="text-sm font-medium text-[#6753FF]">
-                      {selectedDocuments.size} selecionado
-                      {selectedDocuments.size !== 1 ? "s" : ""}
-                    </span>
-                    <span className="text-xs text-[#6C6F80]">
-                      ({filteredDocuments.length} visível
-                      {filteredDocuments.length !== 1 ? "is" : ""})
-                    </span>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <div className="flex items-center gap-1">
+                      <span className="text-sm font-medium text-[#6753FF]">
+                        {selectedDocuments.size} selecionado
+                        {selectedDocuments.size !== 1 ? "s" : ""}
+                      </span>
+                      <span className="text-xs text-[#6C6F80]">
+                        ({filteredDocuments.length} visível
+                        {filteredDocuments.length !== 1 ? "is" : ""})
+                      </span>
+                    </div>
                     <Button
                       variant="outline"
                       size="sm"
@@ -224,6 +238,7 @@ export function DocumentsGallery() {
                     setSelectionMode(false);
                     setSelectedDocuments(new Set());
                   }}
+                  className="sm:ml-auto"
                 >
                   <X className="w-4 h-4" />
                 </Button>
@@ -231,20 +246,21 @@ export function DocumentsGallery() {
             )}
 
             {!selectionMode && (
-              <div className="flex items-center space-x-2">
-                <div className="relative">
+              <div className="flex items-center space-x-2 w-full sm:w-auto">
+                <div className="relative flex-1 sm:flex-initial">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#6C6F80] w-4 h-4" />
                   <Input
                     placeholder="Pesquisar documentos..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10 w-64"
+                    className="pl-10 w-full sm:w-64"
                   />
                 </div>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setSelectionMode(true)}
+                  className="flex-shrink-0"
                 >
                   Selecionar
                 </Button>
@@ -280,7 +296,7 @@ export function DocumentsGallery() {
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
               {filteredDocuments.map((document) => (
                 <DocumentCard
                   key={document.id}
@@ -293,39 +309,20 @@ export function DocumentsGallery() {
               ))}
             </div>
 
-            {/* Load More Button */}
+            {/* Infinite Scroll Trigger */}
             {pagination.hasMore && (
-              <div className="flex justify-center pt-6">
-                <Button
-                  onClick={loadMore}
-                  disabled={loading}
-                  variant="outline"
-                  className="px-6"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />A
-                      carregar...
-                    </>
-                  ) : (
-                    "Carregar mais"
-                  )}
-                </Button>
+              <div ref={loadMoreRef} className="flex justify-center pt-6 pb-4">
+                {loading && (
+                  <div className="flex items-center space-x-2">
+                    <Loader2 className="w-5 h-5 animate-spin text-[#6753FF]" />
+                    <span className="text-[#6C6F80]">
+                      A carregar mais documentos...
+                    </span>
+                  </div>
+                )}
               </div>
             )}
           </>
-        )}
-
-        {/* Loading More Indicator */}
-        {loading && documents.length > 0 && (
-          <div className="flex justify-center py-4">
-            <div className="flex items-center space-x-2">
-              <Loader2 className="w-5 h-5 animate-spin text-[#6753FF]" />
-              <span className="text-[#6C6F80]">
-                A carregar mais documentos...
-              </span>
-            </div>
-          </div>
         )}
       </div>
 

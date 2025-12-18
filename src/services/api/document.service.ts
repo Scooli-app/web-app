@@ -114,59 +114,81 @@ export async function createDocument(
  * Connect to SSE stream and receive document content chunks
  * Backend streams a JSON object: {"chatAnswer": "...", "generatedContent": "..."}
  */
-export function streamDocumentContent(
+export async function streamDocumentContent(
   streamUrl: string,
   callbacks: DocumentStreamCallbacks
-): () => void {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_API_URL || "";
-  const fullUrl = `${baseUrl}${streamUrl}`;
+): Promise<() => void> {
+  const { fetchEventSource } = await import("@microsoft/fetch-event-source");
+  const fullUrl = `/api/proxy${
+    streamUrl.startsWith("/") ? "" : "/"
+  }${streamUrl}`;
 
-  const eventSource = new EventSource(fullUrl);
   let accumulatedContent = "";
-  eventSource.onmessage = (event) => {
-    try {
-      const parsed: StreamEvent = JSON.parse(event.data);
+  const abortController = new AbortController();
 
-      switch (parsed.type) {
-        case "content":
-          accumulatedContent += parsed.data;
-          callbacks.onContent?.(parsed.data);
-          break;
-        case "title":
-          callbacks.onTitle?.(parsed.data);
-          break;
-        case "done": {
-          // Parse the accumulated JSON response
-          let streamedResponse = { chatAnswer: "", generatedContent: "" };
-          try {
-            streamedResponse = JSON.parse(accumulatedContent);
-          } catch {
-            console.warn("[SSE] Could not parse accumulated content as JSON");
-          }
-          // done data contains the document ID
-          const documentId = parsed.data;
-          callbacks.onComplete?.(documentId, streamedResponse);
-          eventSource.close();
-          break;
-        }
-        case "error":
-          callbacks.onError?.(parsed.data);
-          eventSource.close();
-          break;
+  fetchEventSource(fullUrl, {
+    signal: abortController.signal,
+    credentials: "include",
+    async onopen(response) {
+      if (response.ok) {
+        return;
       }
-    } catch (e) {
-      console.error("[SSE] Parse error:", e, "Raw data:", event.data);
-    }
-  };
+      if (
+        response.status >= 400 &&
+        response.status < 500 &&
+        response.status !== 429
+      ) {
+        callbacks.onError?.(`Client error: ${response.status}`);
+        throw new Error(`Client error: ${response.status}`);
+      } else {
+        callbacks.onError?.(`Server error: ${response.status}`);
+        throw new Error(`Server error: ${response.status}`);
+      }
+    },
+    onmessage(event) {
+      try {
+        const parsed: StreamEvent = JSON.parse(event.data);
 
-  eventSource.onerror = (e) => {
-    console.error("[SSE] Error:", e, "ReadyState:", eventSource.readyState);
-    callbacks.onError?.("Stream connection error");
-    eventSource.close();
-  };
+        switch (parsed.type) {
+          case "content":
+            accumulatedContent += parsed.data;
+            callbacks.onContent?.(parsed.data);
+            break;
+          case "title":
+            callbacks.onTitle?.(parsed.data);
+            break;
+          case "done": {
+            // Parse the accumulated JSON response
+            let streamedResponse = { chatAnswer: "", generatedContent: "" };
+            try {
+              streamedResponse = JSON.parse(accumulatedContent);
+            } catch {
+              console.warn("[SSE] Could not parse accumulated content as JSON");
+            }
+            // done data contains the document ID
+            const documentId = parsed.data;
+            callbacks.onComplete?.(documentId, streamedResponse);
+            abortController.abort();
+            break;
+          }
+          case "error":
+            callbacks.onError?.(parsed.data);
+            abortController.abort();
+            break;
+        }
+      } catch (e) {
+        console.error("[SSE] Parse error:", e, "Raw data:", event.data);
+      }
+    },
+    onerror(error) {
+      console.error("[SSE] Error:", error);
+      callbacks.onError?.("Stream connection error");
+      throw error;
+    },
+  });
 
   return () => {
-    eventSource.close();
+    abortController.abort();
   };
 }
 

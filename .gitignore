@@ -42,3 +42,5 @@ next-env.d.ts
 
 # RAG DOCS
 curriculum-docs
+# clerk configuration (can include secrets)
+/.clerk/

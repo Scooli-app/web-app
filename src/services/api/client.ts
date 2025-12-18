@@ -1,38 +1,23 @@
 /**
  * API Client Configuration
  * Base axios instance for Chalkboard backend
+ *
+ * Auth:
+ * - Uses HttpOnly cookies (set server-side) instead of keeping tokens in JS.
  */
 
 import axios, { type AxiosError, type AxiosInstance } from "axios";
 
-const baseUrl = process.env.NEXT_PUBLIC_BASE_API_URL || "";
-
-if (!baseUrl && typeof window !== "undefined") {
-  console.warn("⚠️ NEXT_PUBLIC_BASE_API_URL is not set. API calls will fail.");
-}
-
 export const apiClient: AxiosInstance = axios.create({
-  baseURL: baseUrl,
+  // Call Next.js BFF proxy so the server can inject Authorization from HttpOnly cookie
+  baseURL: "/api/proxy",
+  withCredentials: true,
   headers: {
     "Content-Type": "application/json",
     Accept: "application/json",
   },
   validateStatus: (status) => status < 500,
 });
-
-apiClient.interceptors.request.use(
-  (config) => {
-    // Add auth token or other headers here if needed
-    // const token = getAuthToken();
-    // if (token) {
-    //   config.headers.Authorization = `Bearer ${token}`;
-    // }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
 
 // Response interceptor
 apiClient.interceptors.response.use(
@@ -83,17 +68,8 @@ apiClient.interceptors.response.use(
       return Promise.reject(new Error(message));
     }
     if (error.request) {
-      if (!baseUrl) {
-        return Promise.reject(
-          new Error(
-            "NEXT_PUBLIC_BASE_API_URL is not configured. Please set it in your environment variables."
-          )
-        );
-      }
       return Promise.reject(
-        new Error(
-          "Network error. Please check your connection and NEXT_PUBLIC_BASE_API_URL."
-        )
+        new Error("Network error. Please check your connection.")
       );
     }
     return Promise.reject(error);
