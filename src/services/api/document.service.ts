@@ -116,10 +116,12 @@ export async function createDocument(
  */
 export async function streamDocumentContent(
   streamUrl: string,
-  callbacks: DocumentStreamCallbacks
+  callbacks: DocumentStreamCallbacks,
+  authToken: string
 ): Promise<() => void> {
   const { fetchEventSource } = await import("@microsoft/fetch-event-source");
-  const fullUrl = `/api/proxy${
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_API_URL || "";
+  const fullUrl = `${baseUrl}${
     streamUrl.startsWith("/") ? "" : "/"
   }${streamUrl}`;
 
@@ -128,7 +130,9 @@ export async function streamDocumentContent(
 
   fetchEventSource(fullUrl, {
     signal: abortController.signal,
-    credentials: "include",
+    headers: {
+      Authorization: `Bearer ${authToken}`,
+    },
     async onopen(response) {
       if (response.ok) {
         return;

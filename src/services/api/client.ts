@@ -1,22 +1,38 @@
 /**
  * API Client Configuration
  * Base axios instance for Chalkboard backend
- *
- * Auth:
- * - Uses HttpOnly cookies (set server-side) instead of keeping tokens in JS.
  */
 
 import axios, { type AxiosError, type AxiosInstance } from "axios";
 
+declare global {
+  interface Window {
+    Clerk?: {
+      session?: {
+        getToken: () => Promise<string | null>;
+      };
+    };
+  }
+}
+
 export const apiClient: AxiosInstance = axios.create({
-  // Call Next.js BFF proxy so the server can inject Authorization from HttpOnly cookie
-  baseURL: "/api/proxy",
-  withCredentials: true,
+  baseURL: process.env.NEXT_PUBLIC_BASE_API_URL,
   headers: {
     "Content-Type": "application/json",
     Accept: "application/json",
   },
   validateStatus: (status) => status < 500,
+});
+
+// Request interceptor - add Authorization header from Clerk
+apiClient.interceptors.request.use(async (config) => {
+  if (typeof window !== "undefined" && window.Clerk?.session) {
+    const token = await window.Clerk.session.getToken();
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+  }
+  return config;
 });
 
 // Response interceptor

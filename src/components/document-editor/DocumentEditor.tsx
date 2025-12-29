@@ -11,6 +11,7 @@ import {
   clearLastChatAnswer,
 } from "@/store/documents/documentSlice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { useAuth } from "@clerk/nextjs";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -42,6 +43,7 @@ export default function DocumentEditor({
 }: DocumentEditorProps) {
   const router = useRouter();
   const dispatch = useAppDispatch();
+  const { getToken } = useAuth();
   const { currentDocument, isLoading, streamInfo, isChatting, lastChatAnswer } =
     useAppSelector((state) => state.documents);
   const {
@@ -86,78 +88,96 @@ export default function DocumentEditor({
       streamInfo.status === "generating" &&
       !eventSourceRef.current
     ) {
+      // Set a placeholder immediately to prevent double execution
+      const abortController = new AbortController();
+      eventSourceRef.current = () => abortController.abort();
+
       setIsStreaming(true);
       rawStreamRef.current = "";
       accumulatedTitleRef.current = "";
       setDisplayContent("");
       setDocumentTitle("");
 
-      // Start streaming (async)
-      streamDocumentContent(streamInfo.streamUrl, {
-        onContent: (chunk) => {
-          // Accumulate raw content (it's JSON being streamed)
-          rawStreamRef.current += chunk;
-          // Extract and display generatedContent as it streams
-          const extracted = extractGeneratedContent(rawStreamRef.current);
-          if (extracted) {
-            setDisplayContent(extracted);
-          }
-        },
-        onTitle: (titleChunk) => {
-          // Accumulate title chunks character by character
-          accumulatedTitleRef.current += titleChunk;
-          setDocumentTitle(accumulatedTitleRef.current);
-        },
-        onComplete: (docId, response) => {
-          eventSourceRef.current = null;
-          
-          // Preserve the streamed title before clearing streaming state
-          const finalStreamedTitle = accumulatedTitleRef.current;
-          if (finalStreamedTitle) {
-            setDocumentTitle(finalStreamedTitle);
-          }
-          
-          setIsStreaming(false);
-
-          // Add chatAnswer to chat history
-          const chatAnswer = response.chatAnswer;
-          if (chatAnswer) {
-            setChatHistory((prev) => [
-              ...prev,
-              { role: "assistant" as const, content: chatAnswer },
-            ]);
-          }
-
-          // Set generatedContent to editor
-          const generatedContent = response.generatedContent;
-          if (generatedContent) {
-            setContent(generatedContent);
-          }
-
-          dispatch(clearStreamInfo());
-          dispatch(fetchDocument(docId));
-        },
-        onError: (errorMsg) => {
+      // Get auth token and start streaming
+      const startStream = async () => {
+        const token = await getToken();
+        if (!token) {
           eventSourceRef.current = null;
           setIsStreaming(false);
-          setError(errorMsg);
+          setError("Erro de autenticação");
           dispatch(clearStreamInfo());
-        },
-      }).then((cleanup) => {
-        eventSourceRef.current = cleanup;
-      }).catch((err) => {
-        console.error("Failed to start streaming:", err);
-        setIsStreaming(false);
-        setError("Erro ao iniciar streaming");
-        dispatch(clearStreamInfo());
-      });
+          return;
+        }
+
+        // Check if aborted before starting
+        if (abortController.signal.aborted) {
+          return;
+        }
+
+        streamDocumentContent(
+          streamInfo.streamUrl,
+          {
+            onContent: (chunk) => {
+              rawStreamRef.current += chunk;
+              const extracted = extractGeneratedContent(rawStreamRef.current);
+              if (extracted) {
+                setDisplayContent(extracted);
+              }
+            },
+            onTitle: (titleChunk) => {
+              accumulatedTitleRef.current += titleChunk;
+              setDocumentTitle(accumulatedTitleRef.current);
+            },
+            onComplete: (docId, response) => {
+              eventSourceRef.current = null;
+
+              const finalStreamedTitle = accumulatedTitleRef.current;
+              if (finalStreamedTitle) {
+                setDocumentTitle(finalStreamedTitle);
+              }
+
+              setIsStreaming(false);
+
+              const chatAnswer = response.chatAnswer;
+              if (chatAnswer) {
+                setChatHistory((prev) => [
+                  ...prev,
+                  { role: "assistant" as const, content: chatAnswer },
+                ]);
+              }
+
+              const generatedContent = response.generatedContent;
+              if (generatedContent) {
+                setContent(generatedContent);
+              }
+
+              dispatch(clearStreamInfo());
+              dispatch(fetchDocument(docId));
+            },
+            onError: (errorMsg) => {
+              eventSourceRef.current = null;
+              setIsStreaming(false);
+              setError(errorMsg);
+              dispatch(clearStreamInfo());
+            },
+          },
+          token
+        )
+          .then((cleanup) => {
+            eventSourceRef.current = cleanup;
+          })
+          .catch((err) => {
+            console.error("Failed to start streaming:", err);
+            eventSourceRef.current = null;
+            setIsStreaming(false);
+            setError("Erro ao iniciar streaming");
+            dispatch(clearStreamInfo());
+          });
+      };
+
+      startStream();
     }
-
-    // Cleanup only when component fully unmounts or documentId changes
-    return () => {
-      // Don't cleanup on every re-render, only when we're actually leaving
-    };
-  }, [streamInfo, documentId, dispatch, setContent]);
+  }, [streamInfo, documentId, dispatch, setContent, getToken]);
 
   // Cleanup on unmount
   useEffect(() => {
