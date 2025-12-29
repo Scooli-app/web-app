@@ -103,6 +103,13 @@ export default function DocumentEditor({
         const token = await getToken();
         if (!token) {
           eventSourceRef.current = null;
+          
+          // Preserve the streamed title before clearing streaming state
+          const finalStreamedTitle = accumulatedTitleRef.current;
+          if (finalStreamedTitle) {
+            setDocumentTitle(finalStreamedTitle);
+          }
+          
           setIsStreaming(false);
           setError("Erro de autenticação");
           dispatch(clearStreamInfo());
