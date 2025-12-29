@@ -1,9 +1,6 @@
 /**
  * API Client Configuration
  * Base axios instance for Chalkboard backend
- *
- * Auth:
- * - Uses HttpOnly cookies (set server-side) instead of keeping tokens in JS.
  */
 
 import axios, { type AxiosError, type AxiosInstance } from "axios";
