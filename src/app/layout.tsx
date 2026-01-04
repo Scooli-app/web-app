@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import StoreProvider from "@/components/providers/StoreProvider";
-import { SidebarLayout } from "@/components/layout/SidebarLayout";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@vercel/analytics/next";
 import { ClerkProvider } from "@clerk/nextjs";
@@ -40,7 +39,7 @@ export default function RootLayout({
       <html lang="pt" className={inter.variable} suppressHydrationWarning>
         <body className={`${inter.className} antialiased`}>
           <StoreProvider>
-            <SidebarLayout>{children}</SidebarLayout>
+            {children}
           </StoreProvider>
           <SpeedInsights />
           <Analytics />

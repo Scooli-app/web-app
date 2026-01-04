@@ -10,7 +10,11 @@ import {
   chatWithDocument,
   clearLastChatAnswer,
 } from "@/store/documents/documentSlice";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import {
+  useAppDispatch,
+  selectEditorState,
+  useAppSelector,
+} from "@/store/hooks";
 import { useAuth } from "@clerk/nextjs";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -45,7 +49,7 @@ export default function DocumentEditor({
   const dispatch = useAppDispatch();
   const { getToken } = useAuth();
   const { currentDocument, isLoading, streamInfo, isChatting, lastChatAnswer } =
-    useAppSelector((state) => state.documents);
+    useAppSelector(selectEditorState);
   const {
     content,
     setContent,

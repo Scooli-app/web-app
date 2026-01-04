@@ -1,5 +1,6 @@
 "use client";
 
+import { memo, useCallback, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -16,97 +17,120 @@ interface DocumentCardProps {
   selectionMode?: boolean;
 }
 
-const getDocumentTypeLabel = (type: string) => {
-  const labels: Record<Document["documentType"], string> = {
-    lessonPlan: "Plano de Aula",
-    test: "Teste",
-    quiz: "Quiz",
-    presentation: "Apresentação",
-  };
-  return labels[type as keyof typeof labels] || type;
+// Static lookup objects - defined outside component to avoid recreating
+const DOCUMENT_TYPE_LABELS: Record<Document["documentType"], string> = {
+  lessonPlan: "Plano de Aula",
+  test: "Teste",
+  quiz: "Quiz",
+  presentation: "Apresentação",
 };
 
-const getDocumentTypeColor = (type: string) => {
-  const colors = {
-    lessonPlan: "bg-[#6753FF] text-white",
-    test: "bg-[#FF6B35] text-white",
-    quiz: "bg-[#FF8C42] text-white",
-    presentation: "bg-[#FF4F4F] text-white",
-  };
-  return colors[type as keyof typeof colors] || "bg-[#C7C9D9] text-[#0B0D17]";
+const DOCUMENT_TYPE_COLORS: Record<Document["documentType"], string> = {
+  lessonPlan: "bg-[#6753FF] text-white",
+  test: "bg-[#FF6B35] text-white",
+  quiz: "bg-[#FF8C42] text-white",
+  presentation: "bg-[#FF4F4F] text-white",
 };
 
-const getDocumentIcon = (type: string) => {
-  const icons = {
-    lessonPlan: "📄",
-    test: "📝",
-    quiz: "❓",
-    presentation: "📊",
-  };
-  return icons[type as keyof typeof icons] || "📄";
+const DOCUMENT_TYPE_ICONS: Record<Document["documentType"], string> = {
+  lessonPlan: "📄",
+  test: "📝",
+  quiz: "❓",
+  presentation: "📊",
 };
 
-const getDocumentRoute = (doc: Document): string => {
-  const routeMap: Record<Document["documentType"], string> = {
-    lessonPlan: Routes.LESSON_PLAN,
-    presentation: Routes.PRESENTATION,
-    test: Routes.TEST,
-    quiz: Routes.QUIZ,
-  };
-  return `${routeMap[doc.documentType]}/${doc.id}`;
+const ROUTE_MAP: Record<Document["documentType"], string> = {
+  lessonPlan: Routes.LESSON_PLAN,
+  presentation: Routes.PRESENTATION,
+  test: Routes.TEST,
+  quiz: Routes.QUIZ,
 };
 
-export function DocumentCard({
+// Date formatter - reuse instance
+const dateFormatter = new Intl.DateTimeFormat("pt-PT", {
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
+});
+
+function getDocumentTypeLabel(type: Document["documentType"]) {
+  return DOCUMENT_TYPE_LABELS[type] || type;
+}
+
+function getDocumentTypeColor(type: Document["documentType"]) {
+  return DOCUMENT_TYPE_COLORS[type] || "bg-[#C7C9D9] text-[#0B0D17]";
+}
+
+function getDocumentIcon(type: Document["documentType"]) {
+  return DOCUMENT_TYPE_ICONS[type] || "📄";
+}
+
+function getDocumentRoute(doc: Document): string {
+  return `${ROUTE_MAP[doc.documentType]}/${doc.id}`;
+}
+
+function formatDate(dateString: string) {
+  return dateFormatter.format(new Date(dateString));
+}
+
+function getContentPreview(content: string) {
+  if (!content) {
+    return "Sem conteúdo disponível";
+  }
+
+  let plainText = content
+    .replace(/<[^>]*>/g, "")
+    .replace(/#{1,6}\s+/g, "")
+    .replace(/\*\*(.*?)\*\*/g, "$1")
+    .replace(/\*(.*?)\*/g, "$1")
+    .replace(/`(.*?)`/g, "$1")
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/!\[([^\]]*)\]\([^)]+\)/g, "")
+    .replace(/\n{3,}/g, "\n\n")
+    .replace(/^\s+|\s+$/g, "");
+
+  if (plainText.length > 120) {
+    plainText = `${plainText.substring(0, 120).trim()}...`;
+  }
+
+  return plainText;
+}
+
+function DocumentCardComponent({
   document,
   isSelected = false,
   onSelect,
   onDelete,
   selectionMode = false,
 }: DocumentCardProps) {
-  const handleSelectionClick = () => {
+  const handleSelectionClick = useCallback(() => {
     onSelect?.(document.id, !isSelected);
-  };
+  }, [document.id, isSelected, onSelect]);
 
-  const handleCheckboxChange = (checked: boolean) => {
-    onSelect?.(document.id, checked);
-  };
+  const handleCheckboxChange = useCallback(
+    (checked: boolean) => {
+      onSelect?.(document.id, checked);
+    },
+    [document.id, onSelect]
+  );
 
-  const handleDeleteClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    onDelete?.(document.id);
-  };
+  const handleDeleteClick = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      onDelete?.(document.id);
+    },
+    [document.id, onDelete]
+  );
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("pt-PT", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    });
-  };
-
-  const getContentPreview = (content: string) => {
-    if (!content) {
-      return "Sem conteúdo disponível";
-    }
-
-    let plainText = content
-      .replace(/<[^>]*>/g, "")
-      .replace(/#{1,6}\s+/g, "")
-      .replace(/\*\*(.*?)\*\*/g, "$1")
-      .replace(/\*(.*?)\*/g, "$1")
-      .replace(/`(.*?)`/g, "$1")
-      .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
-      .replace(/!\[([^\]]*)\]\([^)]+\)/g, "")
-      .replace(/\n{3,}/g, "\n\n")
-      .replace(/^\s+|\s+$/g, "");
-
-    if (plainText.length > 120) {
-      plainText = `${plainText.substring(0, 120).trim()}...`;
-    }
-
-    return plainText;
-  };
+  // Memoize computed values
+  const typeLabel = useMemo(() => getDocumentTypeLabel(document.documentType), [document.documentType]);
+  const typeColor = useMemo(() => getDocumentTypeColor(document.documentType), [document.documentType]);
+  const typeIcon = useMemo(() => getDocumentIcon(document.documentType), [document.documentType]);
+  const documentRoute = useMemo(() => getDocumentRoute(document), [document]);
+  const updatedDate = useMemo(() => formatDate(document.updatedAt), [document.updatedAt]);
+  const createdDate = useMemo(() => formatDate(document.createdAt), [document.createdAt]);
+  const contentPreview = useMemo(() => getContentPreview(document.content), [document.content]);
 
   const cardContent = (
     <>
@@ -123,21 +147,17 @@ export function DocumentCard({
         <div className="flex flex-col md:flex-row md:items-start md:justify-between mb-4 w-full gap-2">
           <div className="flex items-center gap-2 min-w-0 flex-1 md:flex-initial">
             <span className="text-xl sm:text-2xl flex-shrink-0">
-              {getDocumentIcon(document.documentType)}
+              {typeIcon}
             </span>
             <Badge
-              className={`${getDocumentTypeColor(
-                document.documentType
-              )} px-2 py-1 text-xs font-medium whitespace-nowrap flex-shrink-0`}
+              className={`${typeColor} px-2 py-1 text-xs font-medium whitespace-nowrap flex-shrink-0`}
             >
-              {getDocumentTypeLabel(document.documentType)}
+              {typeLabel}
             </Badge>
           </div>
           <div className="flex items-center text-xs text-[#6C6F80] flex-shrink-0 md:ml-2">
             <Clock className="w-3 h-3 mr-1 flex-shrink-0" />
-            <span className="whitespace-nowrap">
-              {formatDate(document.updatedAt)}
-            </span>
+            <span className="whitespace-nowrap">{updatedDate}</span>
           </div>
         </div>
 
@@ -146,7 +166,7 @@ export function DocumentCard({
         </h3>
 
         <p className="text-sm text-[#6C6F80] line-clamp-3 leading-relaxed mb-4 flex-grow">
-          {getContentPreview(document.content)}
+          {contentPreview}
         </p>
 
         {document.metadata && Object.keys(document.metadata).length > 0 && (
@@ -172,7 +192,7 @@ export function DocumentCard({
 
         <div className="pt-3 border-t border-[#E4E4E7] flex items-center justify-between gap-2 mt-auto">
           <p className="text-xs text-[#6C6F80] truncate">
-            Criado em {formatDate(document.createdAt)}
+            Criado em {createdDate}
           </p>
           {!selectionMode && (
             <Button
@@ -204,8 +224,22 @@ export function DocumentCard({
   }
 
   return (
-    <Link href={getDocumentRoute(document)} className="block h-full">
+    <Link href={documentRoute} className="block h-full" prefetch={false}>
       <Card className={cardClassName}>{cardContent}</Card>
     </Link>
   );
 }
+
+// Memoize the component with custom comparison
+export const DocumentCard = memo(DocumentCardComponent, (prevProps, nextProps) => {
+  return (
+    prevProps.document.id === nextProps.document.id &&
+    prevProps.document.title === nextProps.document.title &&
+    prevProps.document.content === nextProps.document.content &&
+    prevProps.document.updatedAt === nextProps.document.updatedAt &&
+    prevProps.isSelected === nextProps.isSelected &&
+    prevProps.selectionMode === nextProps.selectionMode
+  );
+});
+
+DocumentCard.displayName = "DocumentCard";

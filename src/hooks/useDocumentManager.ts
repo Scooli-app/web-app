@@ -3,27 +3,40 @@ import {
   updateDocument,
   updateDocumentOptimistic,
 } from "@/store/documents/documentSlice";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { useCallback, useEffect, useState } from "react";
+import {
+  useAppDispatch,
+  useAppSelector,
+  selectCurrentDocument,
+  selectIsLoading,
+} from "@/store/hooks";
+import { useCallback, useEffect, useState, useRef } from "react";
 
 export function useDocumentManager(documentId: string) {
   const [content, setContent] = useState("");
   const [editorKey, setEditorKey] = useState(0);
-  const { currentDocument, isLoading: storeLoading } = useAppSelector(
-    (state) => state.documents
-  );
+  const currentDocument = useAppSelector(selectCurrentDocument);
+  const storeLoading = useAppSelector(selectIsLoading);
   const dispatch = useAppDispatch();
 
+  // Track previous document ID to avoid unnecessary fetches
+  const prevDocumentIdRef = useRef<string | null>(null);
+
   useEffect(() => {
-    if (documentId) {
-      dispatch(fetchDocument(documentId as string));
+    if (documentId && documentId !== prevDocumentIdRef.current) {
+      prevDocumentIdRef.current = documentId;
+      dispatch(fetchDocument(documentId));
     }
   }, [documentId, dispatch]);
 
   // Only sync content when the document's content actually changes
   // This prevents resetting content when only title or other fields change
+  const prevContentRef = useRef<string | null>(null);
   useEffect(() => {
-    if (currentDocument?.content !== undefined) {
+    if (
+      currentDocument?.content !== undefined &&
+      currentDocument.content !== prevContentRef.current
+    ) {
+      prevContentRef.current = currentDocument.content;
       setContent(currentDocument.content || "");
       setEditorKey((prev) => prev + 1);
     }
