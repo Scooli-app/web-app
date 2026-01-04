@@ -212,6 +212,10 @@ export function DocumentsGallery() {
   }, [fetchDocumentCounts]);
 
   useEffect(() => {
+    fetchDocumentCounts();
+  }, [fetchDocumentCounts]);
+
+  useEffect(() => {
     setPagination((prev) => ({ ...prev, page: 1 }));
     fetchDocuments(1, true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
