@@ -6,6 +6,7 @@ import { DocumentFilters } from "@/components/ui/document-filters";
 import type { Document } from "@/shared/types";
 import {
   getDocuments,
+  getDocumentStats,
   deleteDocument,
   deleteDocuments,
 } from "@/services/api/document.service";
@@ -38,6 +39,15 @@ export function DocumentsGallery() {
     {}
   );
 
+  const fetchDocumentCounts = useCallback(async () => {
+    try {
+      const stats = await getDocumentStats();
+      setDocumentCounts(stats.byType);
+    } catch (error) {
+      console.error("Error fetching document stats:", error);
+    }
+  }, []);
+
   const fetchDocuments = useCallback(
     async (page = 1, reset = false) => {
       try {
@@ -47,7 +57,7 @@ export function DocumentsGallery() {
           page,
           limit: pagination.limit,
           filters: {
-            type: selectedType !== "all" ? selectedType : undefined,
+            documentType: selectedType !== "all" ? selectedType : undefined,
           },
         });
 
@@ -60,7 +70,6 @@ export function DocumentsGallery() {
           total: result.pagination.total,
           hasMore: result.pagination.hasMore,
         }));
-        setDocumentCounts(result.counts);
       } catch (error) {
         console.error("Error fetching documents:", error);
       } finally {
@@ -121,7 +130,7 @@ export function DocumentsGallery() {
         setSelectedDocuments(new Set());
         setSelectionMode(false);
       }
-      await fetchDocuments(1, true);
+      await Promise.all([fetchDocuments(1, true), fetchDocumentCounts()]);
     } catch (error) {
       console.error("Error deleting documents:", error);
     } finally {
@@ -151,6 +160,10 @@ export function DocumentsGallery() {
       doc.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       doc.content.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  useEffect(() => {
+    fetchDocumentCounts();
+  }, [fetchDocumentCounts]);
 
   useEffect(() => {
     setPagination((prev) => ({ ...prev, page: 1 }));

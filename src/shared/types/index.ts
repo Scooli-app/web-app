@@ -23,6 +23,7 @@ export type {
   GetDocumentsParams,
   GetDocumentsResponse,
   DocumentCountsResponse,
+  DocumentStatsResponse,
   CreateDocumentRequest,
   UpdateDocumentRequest,
   DeleteDocumentRequest,
