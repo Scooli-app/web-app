@@ -33,32 +33,55 @@ export function TemplateSection({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Fetch templates when documentType changes
   useEffect(() => {
+    let cancelled = false;
+
     async function loadTemplates() {
       setIsLoading(true);
       try {
         const data = await getTemplates(documentType);
-        setTemplates(data);
-        
-        if (data.length > 0 && !selectedTemplateId) {
-          const defaultTemplate = data.find((t) => t.isDefault) || data[0];
-          setSelectedTemplate(defaultTemplate);
-          onTemplateSelect(defaultTemplate);
-        } else if (selectedTemplateId) {
-          const found = data.find((t) => t.id === selectedTemplateId);
-          if (found) {
-            setSelectedTemplate(found);
-          }
+        if (cancelled) {
+          return;
         }
+        setTemplates(data);
       } catch (error) {
         console.error("Failed to load templates:", error);
       } finally {
-        setIsLoading(false);
+        if (!cancelled) {
+          setIsLoading(false);
+        }
       }
     }
 
     loadTemplates();
-  }, [documentType, selectedTemplateId, onTemplateSelect]);
+    return () => {
+      cancelled = true;
+    };
+  }, [documentType]);
+
+  // Auto-select default template when templates load and nothing is selected
+  useEffect(() => {
+    if (templates.length === 0 || selectedTemplateId) {
+      return;
+    }
+
+    const defaultTemplate = templates.find((t) => t.isDefault) || templates[0];
+    setSelectedTemplate(defaultTemplate);
+    onTemplateSelect(defaultTemplate);
+  }, [templates, selectedTemplateId, onTemplateSelect]);
+
+  // Sync local state when selectedTemplateId prop changes
+  useEffect(() => {
+    if (!selectedTemplateId || templates.length === 0) {
+      return;
+    }
+
+    const found = templates.find((t) => t.id === selectedTemplateId);
+    if (found && found.id !== selectedTemplate?.id) {
+      setSelectedTemplate(found);
+    }
+  }, [selectedTemplateId, templates, selectedTemplate?.id]);
 
   const handleTemplateSelect = (template: DocumentTemplate) => {
     setSelectedTemplate(template);
