@@ -30,8 +30,13 @@ export function useDocumentManager(documentId: string) {
 
   // Only sync content when the document's content actually changes
   // This prevents resetting content when only title or other fields change
+  const prevContentRef = useRef<string | null>(null);
   useEffect(() => {
-    if (currentDocument?.content !== undefined) {
+    if (
+      currentDocument?.content !== undefined &&
+      currentDocument.content !== prevContentRef.current
+    ) {
+      prevContentRef.current = currentDocument.content;
       setContent(currentDocument.content || "");
       setEditorKey((prev) => prev + 1);
     }
