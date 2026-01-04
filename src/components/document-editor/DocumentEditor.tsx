@@ -23,6 +23,7 @@ import RichTextEditor from "../ui/rich-text-editor";
 import { StreamingText } from "../ui/streaming-text";
 import AIChatPanel from "./AIChatPanel";
 import DocumentTitle from "./DocumentTitle";
+import DownloadButton from "./DownloadButton";
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -317,12 +318,19 @@ export default function DocumentEditor({
           <Card className="p-4 md:p-6 w-full min-w-0">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-semibold text-[#0B0D17]">Editor</h2>
-              {isGenerating && (
-                <div className="flex items-center space-x-2 text-[#6753FF]">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span className="text-sm font-medium">A gerar conteúdo...</span>
-                </div>
-              )}
+              <div className="flex items-center gap-3">
+                {isGenerating && (
+                  <div className="flex items-center space-x-2 text-[#6753FF]">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span className="text-sm font-medium">A gerar conteúdo...</span>
+                  </div>
+                )}
+                <DownloadButton
+                  title={documentTitle || currentDocument?.title || defaultTitle}
+                  content={content}
+                  disabled={isGenerating || !content}
+                />
+              </div>
             </div>
             {isGenerating ? (
               <div className="border border-[#C7C9D9] rounded-xl bg-white min-h-[600px] w-full p-4 overflow-auto">
