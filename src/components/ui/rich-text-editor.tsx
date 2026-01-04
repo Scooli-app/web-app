@@ -212,7 +212,7 @@ export default function RichTextEditor({
 
   if (!editor) {
     return (
-      <div className="border border-[#C7C9D9] rounded-xl bg-white">
+      <div className="border border-[#C7C9D9] rounded-xl bg-white w-full">
         <div className="p-4 min-h-[600px] flex items-center justify-center">
           <div className="text-[#6C6F80]">A carregar editor...</div>
         </div>
@@ -221,7 +221,7 @@ export default function RichTextEditor({
   }
 
   return (
-    <div className="border border-[#C7C9D9] rounded-xl bg-white m-0.5">
+    <div className="border border-[#C7C9D9] rounded-xl bg-white w-full m-0.5">
       <MenuBar editor={editor} />
       <div className="p-4">
         <EditorContent editor={editor} />

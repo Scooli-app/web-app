@@ -311,24 +311,47 @@ const documentSlice = createSlice({
         state.isLoading = false;
       })
       // Update Document
+      // Note: We use optimistic updates for title changes, so we don't need to
+      // update from the response. The optimistic value is kept on success,
+      // and reverted on failure in the thunk itself.
       .addCase(updateDocument.pending, (state) => {
-        state.isLoading = true;
         state.error = null;
       })
       .addCase(updateDocument.fulfilled, (state, action) => {
         const updatedData = action.payload;
-        // Merge updated data with existing document
-        if (state.currentDocument?.id === updatedData.id) {
-          state.currentDocument = { ...state.currentDocument, ...updatedData };
+        // Only update from response if we have valid data with actual content
+        // Skip empty responses - the optimistic update already has the correct values
+        if (!updatedData?.id) {
+          return;
         }
+        if (state.currentDocument?.id === updatedData.id) {
+          // Only update content if it's a non-empty string (actual content update)
+          if (updatedData.content && updatedData.content.trim().length > 0) {
+            state.currentDocument.content = updatedData.content;
+          }
+          // Update timestamp if provided
+          if (updatedData.updatedAt) {
+            state.currentDocument.updatedAt = updatedData.updatedAt;
+          }
+        }
+        // Update in documents list
         state.documents = state.documents.map((doc) =>
-          doc.id === updatedData.id ? { ...doc, ...updatedData } : doc
+          doc.id === updatedData.id
+            ? {
+                ...doc,
+                ...(updatedData.content &&
+                  updatedData.content.trim().length > 0 && {
+                    content: updatedData.content,
+                  }),
+                ...(updatedData.updatedAt && {
+                  updatedAt: updatedData.updatedAt,
+                }),
+              }
+            : doc
         );
-        state.isLoading = false;
       })
       .addCase(updateDocument.rejected, (state, action) => {
         state.error = action.payload as string;
-        state.isLoading = false;
       })
       // Chat with Document
       .addCase(chatWithDocument.pending, (state) => {
