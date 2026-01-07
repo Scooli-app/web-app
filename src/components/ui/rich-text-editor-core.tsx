@@ -172,18 +172,21 @@ export function TipTapEditorCore({
   className = "",
   onAutosave,
 }: TipTapEditorCoreProps) {
-  const prevContentRef = useRef<string | null>(null);
   const autosaveTimer = useRef<NodeJS.Timeout | null>(null);
+  // Track if the last change came from the editor (internal) vs props (external)
+  const isInternalChangeRef = useRef(false);
+  // Track the last content we set from props to avoid circular updates
+  const lastExternalContentRef = useRef<string>(content);
 
   const handleUpdate = useCallback(
     ({ editor }: { editor: Editor }) => {
       const html = editor.getHTML();
       const markdown = htmlToMarkdown(html);
-      if (markdown !== content) {
-        onChange(markdown);
-      }
+      // Mark this as an internal change before calling onChange
+      isInternalChangeRef.current = true;
+      onChange(markdown);
     },
-    [content, onChange]
+    [onChange]
   );
 
   const editor = useEditor({
@@ -198,9 +201,21 @@ export function TipTapEditorCore({
     immediatelyRender: false,
   });
 
-  // Sync content from props to editor
+  // Sync content from props to editor - only for external changes
   useEffect(() => {
-    if (editor && content !== prevContentRef.current) {
+    if (!editor) {
+      return;
+    }
+
+    // If this change came from the editor itself, skip syncing
+    if (isInternalChangeRef.current) {
+      isInternalChangeRef.current = false;
+      lastExternalContentRef.current = content;
+      return;
+    }
+
+    // Only sync if content actually changed from an external source
+    if (content !== lastExternalContentRef.current) {
       const currentHtml = editor.getHTML();
       const newHtml = markdownToHtml(content);
       if (currentHtml !== newHtml) {
@@ -208,7 +223,7 @@ export function TipTapEditorCore({
           emitUpdate: false,
         });
       }
-      prevContentRef.current = content;
+      lastExternalContentRef.current = content;
     }
   }, [editor, content]);
 
