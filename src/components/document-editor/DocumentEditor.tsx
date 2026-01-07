@@ -10,7 +10,11 @@ import {
   chatWithDocument,
   clearLastChatAnswer,
 } from "@/store/documents/documentSlice";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import {
+  useAppDispatch,
+  selectEditorState,
+  useAppSelector,
+} from "@/store/hooks";
 import { useAuth } from "@clerk/nextjs";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -19,6 +23,7 @@ import RichTextEditor from "../ui/rich-text-editor";
 import { StreamingText } from "../ui/streaming-text";
 import AIChatPanel from "./AIChatPanel";
 import DocumentTitle from "./DocumentTitle";
+import DownloadButton from "./DownloadButton";
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -45,7 +50,7 @@ export default function DocumentEditor({
   const dispatch = useAppDispatch();
   const { getToken } = useAuth();
   const { currentDocument, isLoading, streamInfo, isChatting, lastChatAnswer } =
-    useAppSelector((state) => state.documents);
+    useAppSelector(selectEditorState);
   const {
     content,
     setContent,
@@ -300,7 +305,7 @@ export default function DocumentEditor({
   return (
     <>
       {/* Main Editor */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col w-full">
         <DocumentTitle
           title={documentTitle || currentDocument?.title || ""}
           defaultTitle={defaultTitle}
@@ -309,19 +314,26 @@ export default function DocumentEditor({
           isStreaming={isGenerating && !!documentTitle}
         />
 
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6 relative">
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_400px] gap-6 relative">
           <Card className="p-4 md:p-6 w-full min-w-0">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-semibold text-[#0B0D17]">Editor</h2>
-              {isGenerating && (
-                <div className="flex items-center space-x-2 text-[#6753FF]">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span className="text-sm font-medium">A gerar conteúdo...</span>
-                </div>
-              )}
+              <div className="flex items-center gap-3">
+                {isGenerating && (
+                  <div className="flex items-center space-x-2 text-[#6753FF]">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span className="text-sm font-medium">A gerar conteúdo...</span>
+                  </div>
+                )}
+                <DownloadButton
+                  title={documentTitle || currentDocument?.title || defaultTitle}
+                  content={content}
+                  disabled={isGenerating || !content}
+                />
+              </div>
             </div>
             {isGenerating ? (
-              <div className="border border-[#C7C9D9] rounded-xl bg-white min-h-[600px] p-4 overflow-auto">
+              <div className="border border-[#C7C9D9] rounded-xl bg-white min-h-[600px] w-full p-4 overflow-auto">
                 {displayContent ? (
                   <StreamingText
                     text={displayContent}
@@ -330,7 +342,7 @@ export default function DocumentEditor({
                     className="prose prose-sm max-w-none whitespace-pre-wrap text-[#2E2F38] leading-relaxed"
                   />
                 ) : (
-                  <div className="flex flex-col items-center justify-center h-full min-h-[550px]">
+                  <div className="flex flex-col items-center justify-center h-full w-full min-h-[550px]">
                     <Loader2 className="w-12 h-12 animate-spin text-[#6753FF] mb-4" />
                     <p className="text-lg font-medium text-[#0B0D17]">A gerar o documento...</p>
                     <p className="text-sm text-[#6C6F80] mt-2">Isto pode demorar alguns segundos</p>

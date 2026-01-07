@@ -91,10 +91,12 @@ export default function DocumentCreationPage({
   const { formState, error, setError, updateForm, isFormValid, handleTemplateSelect } =
     useDocumentForm();
 
+  const showTeachingMethodSection = documentType.id === "lessonPlan";
+
   const handleCreateDocument = async () => {
     if (!formState.templateId) {
       setError("Por favor, selecione um modelo de documento");
-      return;
+      return; 
     }
 
     if (!formState.topic.trim()) {
@@ -204,10 +206,12 @@ export default function DocumentCreationPage({
             />
           </div>
 
-          <TeachingMethodSection
-            teachingMethod={formState.teachingMethod}
-            onUpdate={updateForm}
-          />
+          {showTeachingMethodSection && (
+            <TeachingMethodSection
+              teachingMethod={formState.teachingMethod}
+              onUpdate={updateForm}
+            />
+          )}
 
           <AdditionalDetailsSection
             additionalDetails={formState.additionalDetails}

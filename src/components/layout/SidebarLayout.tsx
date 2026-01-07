@@ -1,5 +1,6 @@
 "use client";
 
+import { memo, useState, useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
@@ -34,11 +35,11 @@ import {
   Home,
   Menu,
   Settings,
+  type LucideIcon,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
 import { UserButton, SignInButton, SignedIn, SignedOut } from "@clerk/nextjs";
 
 interface SidebarLayoutProps {
@@ -46,63 +47,138 @@ interface SidebarLayoutProps {
   className?: string;
 }
 
-export function SidebarLayout({ children, className }: SidebarLayoutProps) {
-  const isMobile = useIsMobile();
-  const [open, setOpen] = useState(false);
-  const pathname = usePathname();
+interface NavItem {
+  title: string;
+  href: string;
+  icon: LucideIcon;
+  description: string;
+}
 
-  const navigation = [
-    {
-      title: "Dashboard",
-      href: Routes.DASHBOARD,
-      icon: Home,
-      description: "Visão geral da sua atividade",
-    },
-    {
-      title: "Os meus documentos",
-      href: Routes.DOCUMENTS,
-      icon: FileText,
-      description: "Gerir os seus documentos",
-    },
-    {
-      title: "Biblioteca comunitária",
-      href: Routes.COMMUNITY,
-      icon: FolderArchiveIcon,
-      description: "Partilhar e descobrir recursos",
-    },
-  ];
+// Static navigation arrays - defined outside component to avoid recreating
+const NAVIGATION: NavItem[] = [
+  {
+    title: "Dashboard",
+    href: Routes.DASHBOARD,
+    icon: Home,
+    description: "Visão geral da sua atividade",
+  },
+  {
+    title: "Os meus documentos",
+    href: Routes.DOCUMENTS,
+    icon: FileText,
+    description: "Gerir os seus documentos",
+  },
+  {
+    title: "Biblioteca comunitária",
+    href: Routes.COMMUNITY,
+    icon: FolderArchiveIcon,
+    description: "Partilhar e descobrir recursos",
+  },
+];
 
-  const contentCreation = [
-    {
-      title: "Planos de Aula",
-      href: Routes.LESSON_PLAN,
-      icon: BookOpen,
-      description: "Criar e editar planos de aula",
-    },
-    {
-      title: "Testes",
-      href: Routes.TEST,
-      icon: FileCheck,
-      description: "Criar e editar testes",
-    },
-    {
-      title: "Quizzes",
-      href: Routes.QUIZ,
-      icon: HelpCircle,
-      description: "Criar e editar quizzes",
-    },
-  ];
+const CONTENT_CREATION: NavItem[] = [
+  {
+    title: "Planos de Aula",
+    href: Routes.LESSON_PLAN,
+    icon: BookOpen,
+    description: "Criar e editar planos de aula",
+  },
+  {
+    title: "Testes",
+    href: Routes.TEST,
+    icon: FileCheck,
+    description: "Criar e editar testes",
+  },
+  {
+    title: "Quizzes",
+    href: Routes.QUIZ,
+    icon: HelpCircle,
+    description: "Criar e editar quizzes",
+  },
+];
 
-  const secondaryNavigation = [
-    {
-      title: "Definições",
-      href: Routes.SETTINGS,
-      icon: Settings,
-      description: "Configurar a sua conta",
-    },
-  ];
+const SECONDARY_NAVIGATION: NavItem[] = [
+  {
+    title: "Definições",
+    href: Routes.SETTINGS,
+    icon: Settings,
+    description: "Configurar a sua conta",
+  },
+];
 
-  const sidebarContent = (
+// Memoized navigation item component
+const NavMenuItem = memo(function NavMenuItem({
+  item,
+  isActive,
+  onClick,
+}: {
+  item: NavItem;
+  isActive: boolean;
+  onClick?: () => void;
+}) {
+  const Icon = item.icon;
+
+  return (
+    <SidebarMenuItem>
+      <Link href={item.href} onClick={onClick} className="w-full" prefetch={false}>
+        <SidebarMenuButton
+          isActive={isActive}
+          className={cn(
+            isActive
+              ? "bg-[#6753FF] text-white hover:bg-[#4E3BC0]"
+              : "hover:bg-[#EEF0FF] text-[#2E2F38]"
+          )}
+        >
+          <Icon className="h-4 w-4" />
+          {item.title}
+        </SidebarMenuButton>
+      </Link>
+    </SidebarMenuItem>
+  );
+});
+
+// Memoized navigation group component
+const NavGroup = memo(function NavGroup({
+  label,
+  items,
+  pathname,
+  onItemClick,
+}: {
+  label: string;
+  items: readonly NavItem[];
+  pathname: string;
+  onItemClick?: () => void;
+}) {
+  return (
+    <SidebarGroup>
+      <SidebarGroupLabel className="px-4 text-xs font-semibold tracking-tight text-[#6C6F80] uppercase">
+        {label}
+      </SidebarGroupLabel>
+      <SidebarGroupContent>
+        <SidebarMenu>
+          {items.map((item) => (
+            <NavMenuItem
+              key={item.href}
+              item={item}
+              isActive={pathname === item.href}
+              onClick={onItemClick}
+            />
+          ))}
+        </SidebarMenu>
+      </SidebarGroupContent>
+    </SidebarGroup>
+  );
+});
+
+// Memoized sidebar content component
+const SidebarInnerContent = memo(function SidebarInnerContent({
+  pathname,
+  onItemClick,
+}: {
+  pathname: string;
+  onItemClick?: () => void;
+}) {
+  return (
     <SidebarPrimitive collapsible="icon">
       <SidebarHeader className="flex items-center justify-center border-b border-[#E4E4E7] px-6 py-4 group-data-[collapsible=icon]:px-3 group-data-[collapsible=icon]:py-2">
         <Image
@@ -110,118 +186,59 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
           alt="Scooli"
           width={150}
           height={120}
+          priority
           className="flex-shrink-0 rounded-lg group-data-[collapsible=icon]:w-6 group-data-[collapsible=icon]:h-6"
         />
       </SidebarHeader>
       <SidebarContent className="py-4">
-        <SidebarGroup>
-          <SidebarGroupLabel className="px-4 text-xs font-semibold tracking-tight text-[#6C6F80] uppercase">
-            Navegação
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {navigation.map((item) => {
-                const isActive = pathname === item.href;
-                return (
-                  <SidebarMenuItem key={item.href}>
-                    <Link
-                      href={item.href}
-                      onClick={() => isMobile && setOpen(false)}
-                      className="w-full"
-                    >
-                      <SidebarMenuButton
-                        isActive={isActive}
-                        className={cn(
-                          isActive
-                            ? "bg-[#6753FF] text-white hover:bg-[#4E3BC0]"
-                            : "hover:bg-[#EEF0FF] text-[#2E2F38]"
-                        )}
-                      >
-                        <item.icon className="h-4 w-4" />
-                        {item.title}
-                      </SidebarMenuButton>
-                    </Link>
-                  </SidebarMenuItem>
-                );
-              })}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        <NavGroup
+          label="Navegação"
+          items={NAVIGATION}
+          pathname={pathname}
+          onItemClick={onItemClick}
+        />
 
         <Separator className="my-4" />
 
-        <SidebarGroup>
-          <SidebarGroupLabel className="px-4 text-xs font-semibold tracking-tight text-[#6C6F80] uppercase">
-            Criação de Conteúdo
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {contentCreation.map((item) => {
-                const isActive = pathname === item.href;
-                return (
-                  <SidebarMenuItem key={item.href}>
-                    <Link
-                      href={item.href}
-                      onClick={() => isMobile && setOpen(false)}
-                      className="w-full"
-                    >
-                      <SidebarMenuButton
-                        isActive={isActive}
-                        className={cn(
-                          isActive
-                            ? "bg-[#6753FF] text-white hover:bg-[#4E3BC0]"
-                            : "hover:bg-[#EEF0FF] text-[#2E2F38]"
-                        )}
-                      >
-                        <item.icon className="h-4 w-4" />
-                        {item.title}
-                      </SidebarMenuButton>
-                    </Link>
-                  </SidebarMenuItem>
-                );
-              })}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        <NavGroup
+          label="Criação de Conteúdo"
+          items={CONTENT_CREATION}
+          pathname={pathname}
+          onItemClick={onItemClick}
+        />
 
         <Separator className="my-4" />
 
-        <SidebarGroup>
-          <SidebarGroupLabel className="px-4 text-xs font-semibold tracking-tight text-[#6C6F80] uppercase">
-            Sistema
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {secondaryNavigation.map((item) => {
-                const isActive = pathname === item.href;
-                return (
-                  <SidebarMenuItem key={item.href}>
-                    <Link
-                      href={item.href}
-                      onClick={() => isMobile && setOpen(false)}
-                      className="w-full"
-                    >
-                      <SidebarMenuButton
-                        isActive={isActive}
-                        className={cn(
-                          isActive
-                            ? "bg-[#6753FF] text-white hover:bg-[#4E3BC0]"
-                            : "hover:bg-[#EEF0FF] text-[#2E2F38]"
-                        )}
-                      >
-                        <item.icon className="h-4 w-4" />
-                        {item.title}
-                      </SidebarMenuButton>
-                    </Link>
-                  </SidebarMenuItem>
-                );
-              })}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        <NavGroup
+          label="Sistema"
+          items={SECONDARY_NAVIGATION}
+          pathname={pathname}
+          onItemClick={onItemClick}
+        />
       </SidebarContent>
-
     </SidebarPrimitive>
+  );
+});
+
+export function SidebarLayout({ children, className }: SidebarLayoutProps) {
+  const isMobile = useIsMobile();
+  const [open, setOpen] = useState(false);
+  const pathname = usePathname();
+
+  const handleMobileItemClick = useCallback(() => {
+    if (isMobile) {
+      setOpen(false);
+    }
+  }, [isMobile]);
+
+  const handleSheetOpenChange = useCallback((isOpen: boolean) => {
+    setOpen(isOpen);
+  }, []);
+
+  // Memoize sidebar content to prevent recreation
+  const sidebarContent = useMemo(
+    () => <SidebarInnerContent pathname={pathname} onItemClick={handleMobileItemClick} />,
+    [pathname, handleMobileItemClick]
   );
 
   return (
@@ -231,7 +248,7 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
         <div className="hidden md:block h-screen">{sidebarContent}</div>
 
         {/* Mobile Sidebar */}
-        <Sheet open={open} onOpenChange={setOpen}>
+        <Sheet open={open} onOpenChange={handleSheetOpenChange}>
           <SheetTrigger asChild>
             <Button
               variant="ghost"

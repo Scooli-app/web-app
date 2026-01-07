@@ -33,10 +33,14 @@ export interface CreateDocumentParams {
 export type DocumentResponse = Document;
 
 export interface DocumentFilters {
-  type?: string;
+  documentType?: string;
   search?: string;
-  subject?: string;
-  schoolYear?: number;
+}
+
+export interface DocumentStatsResponse {
+  totalCount: number;
+  byType: Record<string, number>;
+  byStatus: Record<string, number>;
 }
 
 export interface GetDocumentsParams {
@@ -64,12 +68,9 @@ export interface GetDocumentsResponse {
     total: number;
     hasMore: boolean;
   };
-  counts: Record<string, number>;
 }
 
-export interface DocumentCountsResponse {
-  counts: Record<string, number>;
-}
+export type DocumentCountsResponse = DocumentStatsResponse;
 
 export interface CreateDocumentRequest {
   title: string;

@@ -12,6 +12,7 @@ import type {
   GetDocumentsParams,
   GetDocumentsResponse,
   DocumentCountsResponse,
+  DocumentStatsResponse,
   DocumentType,
   CreateDocumentStreamResponse,
   StreamEvent,
@@ -47,8 +48,11 @@ export async function getDocuments(
   const queryParams = new URLSearchParams();
   queryParams.set("page", String(page - 1)); // Backend uses 0-based pages
   queryParams.set("size", String(limit));
-  if (filters?.type && filters.type !== "all") {
-    queryParams.set("type", filters.type);
+  if (filters?.documentType && filters.documentType !== "all") {
+    queryParams.set("documentType", filters.documentType);
+  }
+  if (filters?.search) {
+    queryParams.set("search", filters.search);
   }
 
   const response = await apiClient.get<BackendPaginatedResponse>(
@@ -58,12 +62,6 @@ export async function getDocuments(
   const data = response.data;
   const documents = data?.items ?? [];
 
-  // Calculate counts from documents
-  const counts: Record<string, number> = {};
-  documents.forEach((doc) => {
-    counts[doc.documentType] = (counts[doc.documentType] || 0) + 1;
-  });
-
   return {
     documents,
     pagination: {
@@ -72,20 +70,24 @@ export async function getDocuments(
       total: data?.totalItems ?? 0,
       hasMore: data?.hasNext ?? false,
     },
-    counts,
   };
 }
 
+/**
+ * Get document statistics (counts by type and status)
+ */
+export async function getDocumentStats(): Promise<DocumentStatsResponse> {
+  const response = await apiClient.get<DocumentStatsResponse>(
+    "/documents/stats"
+  );
+  return response.data;
+}
+
+/**
+ * @deprecated Use getDocumentStats() instead
+ */
 export async function getDocumentCounts(): Promise<DocumentCountsResponse> {
-  const response = await apiClient.get<BackendPaginatedResponse>("/documents");
-  const documents = response.data?.items ?? [];
-
-  const counts: Record<string, number> = {};
-  documents.forEach((doc) => {
-    counts[doc.documentType] = (counts[doc.documentType] || 0) + 1;
-  });
-
-  return { counts };
+  return getDocumentStats();
 }
 
 /**

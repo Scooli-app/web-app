@@ -6,15 +6,33 @@ import { DocumentFilters } from "@/components/ui/document-filters";
 import type { Document } from "@/shared/types";
 import {
   getDocuments,
+  getDocumentStats,
   deleteDocument,
   deleteDocuments,
 } from "@/services/api/document.service";
 
 import { CheckSquare, Loader2, Search, Square, Trash2, X } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { useInView } from "react-intersection-observer";
 import { Button } from "./button";
 import { Input } from "./input";
+
+// Debounce hook for search
+function useDebouncedValue<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+}
 
 export function DocumentsGallery() {
   const [documents, setDocuments] = useState<Document[]>([]);
@@ -38,6 +56,21 @@ export function DocumentsGallery() {
     {}
   );
 
+  // Debounce search query for performance
+  const debouncedSearchQuery = useDebouncedValue(searchQuery, 300);
+
+  // Track if initial load is complete
+  const initialLoadRef = useRef(false);
+
+  const fetchDocumentCounts = useCallback(async () => {
+    try {
+      const stats = await getDocumentStats();
+      setDocumentCounts(stats.byType);
+    } catch (error) {
+      console.error("Error fetching document stats:", error);
+    }
+  }, []);
+
   const fetchDocuments = useCallback(
     async (page = 1, reset = false) => {
       try {
@@ -47,7 +80,7 @@ export function DocumentsGallery() {
           page,
           limit: pagination.limit,
           filters: {
-            type: selectedType !== "all" ? selectedType : undefined,
+            documentType: selectedType !== "all" ? selectedType : undefined,
           },
         });
 
@@ -60,18 +93,18 @@ export function DocumentsGallery() {
           total: result.pagination.total,
           hasMore: result.pagination.hasMore,
         }));
-        setDocumentCounts(result.counts);
       } catch (error) {
         console.error("Error fetching documents:", error);
       } finally {
         setLoading(false);
+        initialLoadRef.current = true;
       }
     },
     [selectedType, pagination.limit]
   );
 
-  // Selection handlers
-  const handleSelectDocument = (documentId: string, selected: boolean) => {
+  // Selection handlers - memoized
+  const handleSelectDocument = useCallback((documentId: string, selected: boolean) => {
     setSelectedDocuments((prev) => {
       const newSet = new Set(prev);
       if (selected) {
@@ -81,35 +114,49 @@ export function DocumentsGallery() {
       }
       return newSet;
     });
-  };
+  }, []);
 
-  const handleSelectAll = () => {
+  // Memoize filtered documents
+  const filteredDocuments = useMemo(() => {
+    if (!debouncedSearchQuery) {
+      return documents;
+    }
+    
+    const query = debouncedSearchQuery.toLowerCase();
+    return documents.filter(
+      (doc) =>
+        doc.title.toLowerCase().includes(query) ||
+        doc.content.toLowerCase().includes(query)
+    );
+  }, [documents, debouncedSearchQuery]);
+
+  const handleSelectAll = useCallback(() => {
     if (selectedDocuments.size === filteredDocuments.length) {
       setSelectedDocuments(new Set());
     } else {
       setSelectedDocuments(new Set(filteredDocuments.map((doc) => doc.id)));
     }
-  };
+  }, [selectedDocuments.size, filteredDocuments]);
 
-  const handleDeleteSelected = () => {
+  const handleDeleteSelected = useCallback(() => {
     if (selectedDocuments.size === 0) {
       return;
     }
     setPendingDeleteId(null);
     setShowDeleteDialog(true);
-  };
+  }, [selectedDocuments.size]);
 
-  const handleRequestDelete = (documentId: string) => {
+  const handleRequestDelete = useCallback((documentId: string) => {
     setPendingDeleteId(documentId);
     setShowDeleteDialog(true);
-  };
+  }, []);
 
-  const handleCloseDeleteDialog = () => {
+  const handleCloseDeleteDialog = useCallback(() => {
     setShowDeleteDialog(false);
     setPendingDeleteId(null);
-  };
+  }, []);
 
-  const confirmDelete = async () => {
+  const confirmDelete = useCallback(async () => {
     setShowDeleteDialog(false);
     setDeleting(true);
 
@@ -121,16 +168,16 @@ export function DocumentsGallery() {
         setSelectedDocuments(new Set());
         setSelectionMode(false);
       }
-      await fetchDocuments(1, true);
+      await Promise.all([fetchDocuments(1, true), fetchDocumentCounts()]);
     } catch (error) {
       console.error("Error deleting documents:", error);
     } finally {
       setDeleting(false);
       setPendingDeleteId(null);
     }
-  };
+  }, [pendingDeleteId, selectedDocuments, fetchDocuments, fetchDocumentCounts]);
 
-  const getDeleteDialogContent = () => {
+  const getDeleteDialogContent = useMemo(() => {
     if (pendingDeleteId) {
       return {
         title: "Eliminar documento",
@@ -144,13 +191,25 @@ export function DocumentsGallery() {
           ? "Tem a certeza de que quer eliminar este documento? Esta ação não pode ser desfeita."
           : `Tem a certeza de que quer eliminar ${selectedDocuments.size} documentos? Esta ação não pode ser desfeita.`,
     };
-  };
+  }, [pendingDeleteId, selectedDocuments.size]);
 
-  const filteredDocuments = documents.filter(
-    (doc) =>
-      doc.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      doc.content.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const handleExitSelectionMode = useCallback(() => {
+    setSelectionMode(false);
+    setSelectedDocuments(new Set());
+  }, []);
+
+  const handleEnterSelectionMode = useCallback(() => {
+    setSelectionMode(true);
+  }, []);
+
+  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+  }, []);
+
+  // Initial load
+  useEffect(() => {
+    fetchDocumentCounts();
+  }, [fetchDocumentCounts]);
 
   useEffect(() => {
     setPagination((prev) => ({ ...prev, page: 1 }));
@@ -167,6 +226,7 @@ export function DocumentsGallery() {
   const { ref: loadMoreRef, inView } = useInView({
     threshold: 0,
     triggerOnce: false,
+    rootMargin: "100px", // Start loading earlier
   });
 
   useEffect(() => {
@@ -174,6 +234,13 @@ export function DocumentsGallery() {
       loadMore();
     }
   }, [inView, pagination.hasMore, loading, loadMore]);
+
+  // Memoize selection info
+  const selectionInfo = useMemo(() => ({
+    count: selectedDocuments.size,
+    isAllSelected: selectedDocuments.size === filteredDocuments.length && filteredDocuments.length > 0,
+    visibleCount: filteredDocuments.length,
+  }), [selectedDocuments.size, filteredDocuments.length]);
 
   return (
     <div className="w-full">
@@ -196,27 +263,27 @@ export function DocumentsGallery() {
                   onClick={handleSelectAll}
                   className="flex items-center justify-center space-x-1"
                 >
-                  {selectedDocuments.size === filteredDocuments.length ? (
+                  {selectionInfo.isAllSelected ? (
                     <CheckSquare className="w-4 h-4" />
                   ) : (
                     <Square className="w-4 h-4" />
                   )}
                   <span className="font-medium">
-                    {selectedDocuments.size === filteredDocuments.length
+                    {selectionInfo.isAllSelected
                       ? "Desselecionar tudo"
                       : "Selecionar tudo"}
                   </span>
                 </Button>
-                {selectedDocuments.size > 0 && (
+                {selectionInfo.count > 0 && (
                   <div className="flex items-center gap-2 flex-wrap">
                     <div className="flex items-center gap-1">
                       <span className="text-sm font-medium text-[#6753FF]">
-                        {selectedDocuments.size} selecionado
-                        {selectedDocuments.size !== 1 ? "s" : ""}
+                        {selectionInfo.count} selecionado
+                        {selectionInfo.count !== 1 ? "s" : ""}
                       </span>
                       <span className="text-xs text-[#6C6F80]">
-                        ({filteredDocuments.length} visível
-                        {filteredDocuments.length !== 1 ? "is" : ""})
+                        ({selectionInfo.visibleCount} visível
+                        {selectionInfo.visibleCount !== 1 ? "is" : ""})
                       </span>
                     </div>
                     <Button
@@ -234,10 +301,7 @@ export function DocumentsGallery() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => {
-                    setSelectionMode(false);
-                    setSelectedDocuments(new Set());
-                  }}
+                  onClick={handleExitSelectionMode}
                   className="sm:ml-auto"
                 >
                   <X className="w-4 h-4" />
@@ -252,14 +316,14 @@ export function DocumentsGallery() {
                   <Input
                     placeholder="Pesquisar documentos..."
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onChange={handleSearchChange}
                     className="pl-10 w-full sm:w-64"
                   />
                 </div>
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setSelectionMode(true)}
+                  onClick={handleEnterSelectionMode}
                   className="flex-shrink-0"
                 >
                   Selecionar
@@ -330,8 +394,8 @@ export function DocumentsGallery() {
         isOpen={showDeleteDialog}
         onClose={handleCloseDeleteDialog}
         onConfirm={confirmDelete}
-        title={getDeleteDialogContent().title}
-        description={getDeleteDialogContent().description}
+        title={getDeleteDialogContent.title}
+        description={getDeleteDialogContent.description}
         confirmLabel="Eliminar"
         cancelLabel="Cancelar"
         variant="danger"
