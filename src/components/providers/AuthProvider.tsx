@@ -30,6 +30,6 @@ export default function AuthProvider({
     return () => clearInterval(interval);
   }, [getToken, isSignedIn]);
 
-  return <>{children}</>;
+  return children;
 }
 
