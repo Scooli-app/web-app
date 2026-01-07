@@ -5,15 +5,41 @@
 
 import axios, { type AxiosError, type AxiosInstance } from "axios";
 
+let authToken: string | null = null;
+
 export const apiClient: AxiosInstance = axios.create({
-  baseURL: "/api/proxy",
+  baseURL: process.env.NEXT_PUBLIC_BASE_API_URL || "",
   headers: {
     "Content-Type": "application/json",
     Accept: "application/json",
   },
-  withCredentials: true,
   validateStatus: (status) => status < 500,
 });
+
+/**
+ * Set the auth token for all API requests
+ */
+export function setApiAuthToken(token: string | null): void {
+  authToken = token;
+}
+
+/**
+ * Get the current auth token
+ */
+export function getApiAuthToken(): string | null {
+  return authToken;
+}
+
+// Request interceptor to add auth token
+apiClient.interceptors.request.use(
+  (config) => {
+    if (authToken) {
+      config.headers.Authorization = `Bearer ${authToken}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
 // Response interceptor
 apiClient.interceptors.response.use(

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import StoreProvider from "@/components/providers/StoreProvider";
+import AuthProvider from "@/components/providers/AuthProvider";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@vercel/analytics/next";
 import { ClerkProvider } from "@clerk/nextjs";
@@ -38,9 +39,11 @@ export default function RootLayout({
     <ClerkProvider>
       <html lang="pt" className={inter.variable} suppressHydrationWarning>
         <body className={`${inter.className} antialiased`}>
-          <StoreProvider>
-            {children}
-          </StoreProvider>
+          <AuthProvider>
+            <StoreProvider>
+              {children}
+            </StoreProvider>
+          </AuthProvider>
           <SpeedInsights />
           <Analytics />
         </body>
