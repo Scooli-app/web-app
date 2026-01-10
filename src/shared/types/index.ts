@@ -56,3 +56,16 @@ export type {
   CreateTemplateParams,
   UpdateTemplateParams,
 } from "./template";
+
+// Subscription types
+export type {
+  SubscriptionPlan,
+  CurrentSubscription,
+  SubscriptionStatus,
+  UsageStats,
+  CheckoutRequest,
+  CheckoutResponse,
+  PortalResponse,
+  PlanCode,
+} from "./subscription";
+export { PLAN_CODES, PLAN_DISPLAY_INFO } from "./subscription";

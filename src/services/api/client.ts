@@ -5,7 +5,9 @@
 
 import axios, { type AxiosError, type AxiosInstance } from "axios";
 
-let authToken: string | null = null;
+type GetTokenFn = () => Promise<string | null>;
+
+let getTokenFn: GetTokenFn | null = null;
 
 export const apiClient: AxiosInstance = axios.create({
   baseURL: process.env.NEXT_PUBLIC_BASE_API_URL || "",
@@ -18,24 +20,21 @@ export const apiClient: AxiosInstance = axios.create({
 });
 
 /**
- * Set the auth token for all API requests
+ * Set the token getter function for all API requests
+ * This allows fetching a fresh token for each request
  */
-export function setApiAuthToken(token: string | null): void {
-  authToken = token;
+export function setApiTokenGetter(getter: GetTokenFn | null): void {
+  getTokenFn = getter;
 }
 
-/**
- * Get the current auth token
- */
-export function getApiAuthToken(): string | null {
-  return authToken;
-}
-
-// Request interceptor to add auth token
+// Request interceptor to add auth token (fetches fresh token for each request)
 apiClient.interceptors.request.use(
-  (config) => {
-    if (authToken) {
-      config.headers.Authorization = `Bearer ${authToken}`;
+  async (config) => {
+    if (getTokenFn) {
+      const token = await getTokenFn();
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
     }
     return config;
   },

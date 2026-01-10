@@ -1,7 +1,13 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
-const isPublicRoute = createRouteMatcher(["/sign-in(.*)", "/sign-up(.*)", "/"]);
+const isPublicRoute = createRouteMatcher([
+  "/sign-in(.*)",
+  "/sign-up(.*)",
+  "/signup",
+  "/",
+  "/checkout/cancel",
+]);
 const TOKEN_COOKIE_NAME = "scooli_token";
 
 export default clerkMiddleware(async (auth, req) => {

@@ -1,12 +1,30 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useEffect, useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { PaymentSuccessModal } from "@/components/ui/payment-success-modal";
 
-export default function DashboardPage() {
+function DashboardContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const [showPaymentSuccess, setShowPaymentSuccess] = useState(false);
+
+  useEffect(() => {
+    const paymentParam = searchParams.get("payment");
+    if (paymentParam === "success") {
+      setShowPaymentSuccess(true);
+      // Clean URL without reload
+      window.history.replaceState({}, "", "/dashboard");
+    }
+  }, [searchParams]);
 
   return (
     <div className="w-full max-w-7xl mx-auto">
+      <PaymentSuccessModal
+        open={showPaymentSuccess}
+        onOpenChange={setShowPaymentSuccess}
+      />
+
       <div className="mb-8">
         <h1 className="text-4xl font-bold text-[#0B0D17] mb-2">
           Bem-vindo à Scooli!
@@ -57,6 +75,29 @@ export default function DashboardPage() {
             </p>
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={<DashboardSkeleton />}>
+      <DashboardContent />
+    </Suspense>
+  );
+}
+
+function DashboardSkeleton() {
+  return (
+    <div className="w-full max-w-7xl mx-auto animate-pulse">
+      <div className="mb-8">
+        <div className="h-10 bg-gray-200 rounded-lg w-64 mb-2" />
+        <div className="h-6 bg-gray-200 rounded-lg w-96" />
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-white p-8 rounded-2xl shadow-md border border-[#E4E4E7] h-64" />
+        <div className="bg-white p-8 rounded-2xl shadow-md border border-[#E4E4E7] h-64" />
       </div>
     </div>
   );

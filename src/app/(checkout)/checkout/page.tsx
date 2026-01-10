@@ -1,0 +1,669 @@
+"use client";
+
+import { useEffect, useState, Suspense, useCallback, useRef } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import { useAuth } from "@clerk/nextjs";
+import {
+  Check,
+  Loader2,
+  Sparkles,
+  ArrowLeft,
+  Shield,
+  Zap,
+  AlertCircle,
+  WifiOff,
+  RefreshCw,
+  MessageCircle,
+  XCircle,
+} from "lucide-react";
+import {
+  createCheckoutSession,
+  getSubscriptionPlans,
+} from "@/services/api/subscription.service";
+import type { SubscriptionPlan } from "@/shared/types/subscription";
+
+type ErrorType = "network" | "server" | "validation" | "checkout" | "unknown";
+
+interface CheckoutError {
+  type: ErrorType;
+  message: string;
+  details?: string;
+}
+
+function parseError(err: unknown, context: "plans" | "checkout"): CheckoutError {
+  const message = err instanceof Error ? err.message : String(err);
+  const lowerMessage = message.toLowerCase();
+
+  // Network errors
+  if (
+    lowerMessage.includes("network") ||
+    lowerMessage.includes("failed to fetch") ||
+    lowerMessage.includes("net::") ||
+    lowerMessage.includes("econnrefused") ||
+    lowerMessage.includes("connection")
+  ) {
+    return {
+      type: "network",
+      message: "Sem ligação à internet",
+      details: "Verifique a sua ligação e tente novamente.",
+    };
+  }
+
+  // Server/API errors
+  if (
+    lowerMessage.includes("500") ||
+    lowerMessage.includes("502") ||
+    lowerMessage.includes("503") ||
+    lowerMessage.includes("server")
+  ) {
+    return {
+      type: "server",
+      message: "Serviço temporariamente indisponível",
+      details: "Os nossos servidores estão a ter dificuldades. Tente novamente em alguns minutos.",
+    };
+  }
+
+  // Auth errors
+  if (
+    lowerMessage.includes("401") ||
+    lowerMessage.includes("403") ||
+    lowerMessage.includes("unauthorized") ||
+    lowerMessage.includes("forbidden")
+  ) {
+    return {
+      type: "validation",
+      message: "Sessão expirada",
+      details: "Por favor, faça login novamente para continuar.",
+    };
+  }
+
+  // Validation/Bad request errors
+  if (
+    lowerMessage.includes("400") ||
+    lowerMessage.includes("invalid") ||
+    lowerMessage.includes("validation")
+  ) {
+    return {
+      type: "validation",
+      message: context === "checkout" ? "Plano inválido" : "Erro de validação",
+      details: message,
+    };
+  }
+
+  // Stripe-specific errors
+  if (
+    lowerMessage.includes("stripe") ||
+    lowerMessage.includes("payment") ||
+    lowerMessage.includes("card")
+  ) {
+    return {
+      type: "checkout",
+      message: "Erro no processamento de pagamento",
+      details: message,
+    };
+  }
+
+  // Default error
+  return {
+    type: "unknown",
+    message: context === "checkout" 
+      ? "Não foi possível iniciar o pagamento" 
+      : "Ocorreu um erro inesperado",
+    details: message,
+  };
+}
+
+function ErrorIcon({ type }: { type: ErrorType }) {
+  switch (type) {
+    case "network":
+      return <WifiOff className="w-12 h-12 text-[#FF4F4F]" />;
+    case "server":
+      return <AlertCircle className="w-12 h-12 text-[#FFC857]" />;
+    case "checkout":
+      return <XCircle className="w-12 h-12 text-[#FF4F4F]" />;
+    default:
+      return <AlertCircle className="w-12 h-12 text-[#FF4F4F]" />;
+  }
+}
+
+function ErrorCard({
+  error,
+  onRetry,
+  onGoBack,
+  showSupport = false,
+}: {
+  error: CheckoutError;
+  onRetry: () => void;
+  onGoBack?: () => void;
+  showSupport?: boolean;
+}) {
+  return (
+    <div className="bg-white p-8 rounded-2xl shadow-md border border-[#E4E4E7] text-center max-w-md mx-auto">
+      <div className="mb-4 flex justify-center">
+        <ErrorIcon type={error.type} />
+      </div>
+      
+      <h2 className="text-xl font-semibold text-[#0B0D17] mb-2">
+        {error.message}
+      </h2>
+      
+      {error.details && (
+        <p className="text-[#6C6F80] mb-6 text-sm">{error.details}</p>
+      )}
+
+      <div className="space-y-3">
+        <button
+          onClick={onRetry}
+          className="w-full bg-[#6753FF] hover:bg-[#4E3BC0] text-white px-6 py-3 rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
+        >
+          <RefreshCw className="w-4 h-4" />
+          Tentar novamente
+        </button>
+
+        {onGoBack && (
+          <button
+            onClick={onGoBack}
+            className="w-full border border-[#C7C9D9] text-[#0B0D17] bg-white hover:bg-[#EEF0FF] px-6 py-3 rounded-xl font-medium transition-colors"
+          >
+            Voltar
+          </button>
+        )}
+      </div>
+
+      {showSupport && (
+        <div className="mt-6 pt-6 border-t border-[#E4E4E7]">
+          <p className="text-sm text-[#6C6F80] mb-2">
+            O problema persiste?
+          </p>
+          <a
+            href="mailto:suporte@scooli.app"
+            className="inline-flex items-center gap-2 text-[#6753FF] hover:text-[#4E3BC0] font-medium text-sm transition-colors"
+          >
+            <MessageCircle className="w-4 h-4" />
+            Contactar suporte
+          </a>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function InlineError({
+  error,
+  onDismiss,
+}: {
+  error: CheckoutError;
+  onDismiss: () => void;
+}) {
+  return (
+    <div className="mb-6 p-4 bg-[#FFECEC] border border-[#FF4F4F]/20 rounded-xl">
+      <div className="flex items-start gap-3">
+        <AlertCircle className="w-5 h-5 text-[#FF4F4F] flex-shrink-0 mt-0.5" />
+        <div className="flex-1">
+          <p className="text-[#FF4F4F] font-medium text-sm">{error.message}</p>
+          {error.details && (
+            <p className="text-[#FF4F4F]/80 text-sm mt-1">{error.details}</p>
+          )}
+        </div>
+        <button
+          onClick={onDismiss}
+          className="text-[#FF4F4F] hover:text-[#FF4F4F]/70 transition-colors"
+          aria-label="Fechar erro"
+        >
+          <XCircle className="w-5 h-5" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function formatPrice(priceCents: number, currency?: string): string {
+  const price = priceCents / 100;
+  const formatter = new Intl.NumberFormat("pt-PT", {
+    style: "currency",
+    currency: (currency || "EUR").toUpperCase(),
+    minimumFractionDigits: 2,
+  });
+  return formatter.format(price);
+}
+
+function getPlanBadge(plan: SubscriptionPlan): string | null {
+  if (plan.popular) {
+    return "Mais Popular";
+  }
+  if (plan.interval === "year") {
+    return "Melhor Valor";
+  }
+  return null;
+}
+
+function calculateSavings(
+  monthlyPlan: SubscriptionPlan | undefined,
+  annualPlan: SubscriptionPlan
+): string | null {
+  if (!monthlyPlan) {
+    return null;
+  }
+  const yearlyFromMonthly = monthlyPlan.priceCents * 12;
+  const savings = yearlyFromMonthly - annualPlan.priceCents;
+  if (savings <= 0) {
+    return null;
+  }
+  const savingsFormatted = formatPrice(savings, annualPlan.currency);
+  return `Poupe ${savingsFormatted}/ano`;
+}
+
+function calculateMonthlyEquivalent(plan: SubscriptionPlan): string | null {
+  if (plan.interval !== "year") {
+    return null;
+  }
+  const monthlyPrice = plan.priceCents / 12;
+  return formatPrice(monthlyPrice, plan.currency);
+}
+
+function CheckoutContent() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const { isSignedIn, isLoaded } = useAuth();
+
+  const planParam = searchParams.get("plan");
+  const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
+  const [selectedPlanCode, setSelectedPlanCode] = useState<string | null>(
+    planParam
+  );
+  const [isLoadingPlans, setIsLoadingPlans] = useState(true);
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const [error, setError] = useState<CheckoutError | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
+  const autoCheckoutTriggered = useRef(false);
+
+  const clearError = useCallback(() => {
+    setError(null);
+  }, []);
+
+  const initiateCheckout = useCallback(async (planCode: string) => {
+    setIsCheckingOut(true);
+    setError(null);
+
+    try {
+      const response = await createCheckoutSession({ planCode });
+      
+      if (!response?.url) {
+        throw new Error("Não foi possível obter o link de pagamento");
+      }
+      
+      window.location.href = response.url;
+    } catch (err) {
+      const parsedError = parseError(err, "checkout");
+      setError(parsedError);
+      setIsCheckingOut(false);
+    }
+  }, []);
+
+  const fetchPlans = useCallback(async () => {
+    try {
+      setIsLoadingPlans(true);
+      setError(null);
+      
+      const fetchedPlans = await getSubscriptionPlans();
+      
+      if (!fetchedPlans || !Array.isArray(fetchedPlans)) {
+        throw new Error("Resposta inválida do servidor");
+      }
+
+      // Filter out free plan and sort: monthly first, then annual
+      const paidPlans = fetchedPlans
+        .filter((p) => p && typeof p.priceCents === "number" && p.priceCents > 0)
+        .sort((a, b) => {
+          if (a.interval === "month" && b.interval === "year") {
+            return -1;
+          }
+          if (a.interval === "year" && b.interval === "month") {
+            return 1;
+          }
+          return 0;
+        });
+      
+      if (paidPlans.length === 0) {
+        throw new Error("Nenhum plano disponível no momento");
+      }
+
+      setPlans(paidPlans);
+
+      // If plan param is valid, auto-checkout
+      if (
+        planParam &&
+        paidPlans.some((p) => p.planCode === planParam) &&
+        !autoCheckoutTriggered.current
+      ) {
+        autoCheckoutTriggered.current = true;
+        setSelectedPlanCode(planParam);
+        await initiateCheckout(planParam);
+      } else if (planParam && !paidPlans.some((p) => p.planCode === planParam)) {
+        // Invalid plan param - show warning but continue
+        setError({
+          type: "validation",
+          message: "Plano não encontrado",
+          details: `O plano "${planParam}" não está disponível. Por favor, escolha um dos planos abaixo.`,
+        });
+        setSelectedPlanCode(paidPlans[0].planCode);
+      } else if (paidPlans.length > 0 && !selectedPlanCode) {
+        // Set default selection if no planParam
+        setSelectedPlanCode(paidPlans[0].planCode);
+      }
+    } catch (err) {
+      const parsedError = parseError(err, "plans");
+      setError(parsedError);
+    } finally {
+      setIsLoadingPlans(false);
+    }
+  }, [planParam, selectedPlanCode, initiateCheckout]);
+
+  const handleRetry = useCallback(() => {
+    autoCheckoutTriggered.current = false;
+    setRetryCount((prev) => prev + 1);
+    setError(null);
+    fetchPlans();
+  }, [fetchPlans]);
+
+  useEffect(() => {
+    if (isLoaded && isSignedIn) {
+      fetchPlans();
+    }
+  }, [isLoaded, isSignedIn, fetchPlans]);
+
+  useEffect(() => {
+    if (isLoaded && !isSignedIn) {
+      const returnUrl = `/checkout${planParam ? `?plan=${planParam}` : ""}`;
+      router.push(`/sign-up?redirect_url=${encodeURIComponent(returnUrl)}`);
+    }
+  }, [isLoaded, isSignedIn, planParam, router]);
+
+  const handleCheckout = async () => {
+    if (!selectedPlanCode) {
+      return;
+    }
+    await initiateCheckout(selectedPlanCode);
+  };
+
+  // Loading state - auth loading or redirecting to sign-up
+  if (!isLoaded || (!isSignedIn && isLoaded)) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#EEF0FF] via-white to-[#F4F5F8]">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-8 h-8 animate-spin text-[#6753FF]" />
+          <p className="text-[#6C6F80]">A carregar...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Auto-checkout in progress (no error)
+  if (planParam && isCheckingOut && !error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#EEF0FF] via-white to-[#F4F5F8]">
+        <div className="flex flex-col items-center gap-4 text-center px-6">
+          <Loader2 className="w-10 h-10 animate-spin text-[#6753FF]" />
+          <h2 className="text-xl font-semibold text-[#0B0D17]">
+            A preparar o seu pagamento...
+          </h2>
+          <p className="text-[#6C6F80]">
+            Será redirecionado para o Stripe em segundos.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Full-page error state (failed to load plans)
+  if (error && !isLoadingPlans && plans.length === 0) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#EEF0FF] via-white to-[#F4F5F8]">
+        <div className="max-w-5xl mx-auto px-6 py-12">
+          <button
+            onClick={() => router.back()}
+            className="flex items-center gap-2 text-[#6C6F80] hover:text-[#0B0D17] transition-colors mb-10"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Voltar</span>
+          </button>
+
+          <ErrorCard
+            error={error}
+            onRetry={handleRetry}
+            onGoBack={() => router.back()}
+            showSupport={retryCount >= 2}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  const selectedPlan = plans.find((p) => p.planCode === selectedPlanCode);
+  const monthlyPlan = plans.find((p) => p.interval === "month");
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-[#EEF0FF] via-white to-[#F4F5F8]">
+      <div className="max-w-5xl mx-auto px-6 py-12">
+        {/* Header */}
+        <div className="mb-10">
+          <button
+            onClick={() => router.back()}
+            className="flex items-center gap-2 text-[#6C6F80] hover:text-[#0B0D17] transition-colors mb-6"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Voltar</span>
+          </button>
+
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 bg-[#6753FF] rounded-xl flex items-center justify-center">
+              <Sparkles className="w-5 h-5 text-white" />
+            </div>
+            <h1 className="text-4xl font-bold text-[#0B0D17]">
+              Escolha o seu plano
+            </h1>
+          </div>
+          <p className="text-lg text-[#6C6F80]">
+            Desbloqueie todo o potencial do Scooli e crie conteúdo educacional
+            sem limites.
+          </p>
+        </div>
+
+        {/* Loading State */}
+        {isLoadingPlans && (
+          <div className="flex flex-col items-center justify-center py-20">
+            <Loader2 className="w-10 h-10 animate-spin text-[#6753FF] mb-4" />
+            <p className="text-[#6C6F80]">A carregar planos...</p>
+          </div>
+        )}
+
+        {/* Plans Grid */}
+        {!isLoadingPlans && plans.length > 0 && (
+          <>
+            {/* Inline error for validation issues (invalid plan param) */}
+            {error && error.type === "validation" && (
+              <InlineError error={error} onDismiss={clearError} />
+            )}
+
+            <div className="grid md:grid-cols-2 gap-6 mb-10">
+              {plans.map((plan) => {
+                const badge = getPlanBadge(plan);
+                const savings =
+                  plan.interval === "year"
+                    ? calculateSavings(monthlyPlan, plan)
+                    : null;
+                const monthlyEquivalent = calculateMonthlyEquivalent(plan);
+                const isSelected = selectedPlanCode === plan.planCode;
+
+                return (
+                  <div
+                    key={plan.planCode}
+                    onClick={() => {
+                      setSelectedPlanCode(plan.planCode);
+                      if (error?.type === "checkout") {
+                        clearError();
+                      }
+                    }}
+                    className={`relative bg-white p-8 rounded-2xl shadow-md border-2 cursor-pointer transition-all hover:shadow-lg ${
+                      isSelected
+                        ? "border-[#6753FF] ring-4 ring-[#6753FF]/10"
+                        : "border-[#E4E4E7] hover:border-[#6753FF]/30"
+                    }`}
+                  >
+                    {badge && (
+                      <div
+                        className={`absolute -top-3 left-6 px-4 py-1 rounded-full text-xs font-semibold ${
+                          plan.interval === "year"
+                            ? "bg-gradient-to-r from-[#6753FF] to-[#8B7AFF] text-white"
+                            : "bg-[#6753FF] text-white"
+                        }`}
+                      >
+                        {badge}
+                      </div>
+                    )}
+
+                    <div className="flex items-start justify-between mb-6">
+                      <div>
+                        <h3 className="text-xl font-semibold text-[#0B0D17] mb-1">
+                          {plan.name}
+                        </h3>
+                        {savings && (
+                          <span className="inline-block bg-[#E6FAF2] text-[#1DB67D] text-xs font-medium px-2 py-1 rounded-full">
+                            {savings}
+                          </span>
+                        )}
+                      </div>
+
+                      <div
+                        className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
+                          isSelected
+                            ? "bg-[#6753FF] border-[#6753FF]"
+                            : "border-[#C7C9D9]"
+                        }`}
+                      >
+                        {isSelected && (
+                          <Check className="w-4 h-4 text-white" />
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="mb-6">
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-4xl font-bold text-[#0B0D17]">
+                          {formatPrice(plan.priceCents, plan.currency)}
+                        </span>
+                        <span className="text-[#6C6F80]">
+                          /{plan.interval === "month" ? "mês" : "ano"}
+                        </span>
+                      </div>
+                      {monthlyEquivalent && (
+                        <p className="text-sm text-[#6C6F80] mt-1">
+                          Equivalente a {monthlyEquivalent}/mês
+                        </p>
+                      )}
+                    </div>
+
+                    {plan.description && (
+                      <p className="text-[#6C6F80] text-sm mb-4">
+                        {plan.description}
+                      </p>
+                    )}
+
+                    {Array.isArray(plan.features) && plan.features.length > 0 && (
+                      <ul className="space-y-3">
+                        {plan.features.map((feature, idx) => (
+                          <li key={idx} className="flex items-start gap-3">
+                            <div className="w-5 h-5 rounded-full bg-[#E6FAF2] flex items-center justify-center flex-shrink-0 mt-0.5">
+                              <Check className="w-3 h-3 text-[#1DB67D]" />
+                            </div>
+                            <span className="text-[#2E2F38]">{feature}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Checkout Button */}
+            <div className="bg-white p-8 rounded-2xl shadow-md border border-[#E4E4E7]">
+              {/* Checkout error */}
+              {error && error.type !== "validation" && (
+                <InlineError error={error} onDismiss={clearError} />
+              )}
+
+              <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                <div>
+                  {selectedPlan && (
+                    <>
+                      <p className="text-[#6C6F80] text-sm mb-1">
+                        Plano selecionado
+                      </p>
+                      <p className="text-xl font-semibold text-[#0B0D17]">
+                        {selectedPlan.name} —{" "}
+                        {formatPrice(
+                          selectedPlan.priceCents,
+                          selectedPlan.currency
+                        )}
+                        /{selectedPlan.interval === "month" ? "mês" : "ano"}
+                      </p>
+                    </>
+                  )}
+                </div>
+
+                <button
+                  onClick={handleCheckout}
+                  disabled={!selectedPlanCode || isCheckingOut}
+                  className="w-full md:w-auto bg-[#6753FF] hover:bg-[#4E3BC0] disabled:bg-gray-300 disabled:cursor-not-allowed text-white px-8 py-4 rounded-xl font-semibold text-lg transition-colors flex items-center justify-center gap-3 min-w-[250px]"
+                >
+                  {isCheckingOut ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      A processar...
+                    </>
+                  ) : (
+                    <>
+                      <Zap className="w-5 h-5" />
+                      Continuar para Pagamento
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* Trust badges */}
+              <div className="mt-8 pt-6 border-t border-[#E4E4E7] flex flex-wrap items-center justify-center gap-6 text-sm text-[#6C6F80]">
+                <div className="flex items-center gap-2">
+                  <Shield className="w-4 h-4" />
+                  <span>Pagamento seguro via Stripe</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Check className="w-4 h-4" />
+                  <span>Cancele a qualquer momento</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4" />
+                  <span>Acesso instantâneo</span>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default function CheckoutPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#EEF0FF] via-white to-[#F4F5F8]">
+          <Loader2 className="w-8 h-8 animate-spin text-[#6753FF]" />
+        </div>
+      }
+    >
+      <CheckoutContent />
+    </Suspense>
+  );
+}
