@@ -35,10 +35,9 @@ export type SubscriptionStatus =
   | "free";
 
 export interface UsageStats {
-  used: number;
-  limit: number;
-  remaining: number;
-  percentageUsed: number;
+  creditsUsed: number;
+  creditsLimit: number;
+  documentsGenerated: number;
   periodStart: string;
   periodEnd: string;
 }
@@ -53,7 +52,7 @@ export interface CheckoutResponse {
 }
 
 export interface PortalResponse {
-  url: string;
+  portalUrl: string;
 }
 
 export const PLAN_CODES = {

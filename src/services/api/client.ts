@@ -7,12 +7,6 @@ import { setUpgradeModalOpen } from "@/store/ui/uiSlice";
 import type { UnknownAction } from "@reduxjs/toolkit";
 import axios, { type AxiosError, type AxiosInstance } from "axios";
 
-let storeDispatch: ((action: UnknownAction) => void) | null = null;
-
-export const injectStore = (dispatch: (action: UnknownAction) => void) => {
-  storeDispatch = dispatch;
-};
-
 type GetTokenFn = () => Promise<string | null>;
 
 let getTokenFn: GetTokenFn | null = null;

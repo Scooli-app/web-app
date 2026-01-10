@@ -1,31 +1,22 @@
 "use client";
 
-import { PaymentSuccessModal } from "@/components/ui/payment-success-modal";
-import { fetchSubscription, fetchUsage } from "@/store/subscription/subscriptionSlice";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
-import { useDispatch } from "react-redux";
-
-import type { AppDispatch } from "@/store/store";
+import { PaymentSuccessModal } from "@/components/ui/payment-success-modal";
 
 function DashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [showPaymentSuccess, setShowPaymentSuccess] = useState(false);
 
-  const dispatch = useDispatch<AppDispatch>();
-
   useEffect(() => {
     const paymentParam = searchParams.get("payment");
     if (paymentParam === "success") {
       setShowPaymentSuccess(true);
-      // Update global store state
-      dispatch(fetchSubscription());
-      dispatch(fetchUsage());
-      
+      // Clean URL without reload
       window.history.replaceState({}, "", "/dashboard");
     }
-  }, [searchParams, dispatch]);
+  }, [searchParams]);
 
   return (
     <div className="w-full max-w-7xl mx-auto">
@@ -101,12 +92,12 @@ function DashboardSkeleton() {
   return (
     <div className="w-full max-w-7xl mx-auto animate-pulse">
       <div className="mb-8">
-        <div className="h-10 bg-muted rounded-lg w-64 mb-2" />
-        <div className="h-6 bg-muted rounded-lg w-96" />
+        <div className="h-10 bg-gray-200 rounded-lg w-64 mb-2" />
+        <div className="h-6 bg-gray-200 rounded-lg w-96" />
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-card p-8 rounded-2xl shadow-md border border-border h-64" />
-        <div className="bg-card p-8 rounded-2xl shadow-md border border-border h-64" />
+        <div className="bg-white p-8 rounded-2xl shadow-md border border-[#E4E4E7] h-64" />
+        <div className="bg-white p-8 rounded-2xl shadow-md border border-[#E4E4E7] h-64" />
       </div>
     </div>
   );
