@@ -10,3 +10,6 @@ export * from "./document.service";
 
 // Template service
 export * from "./template.service";
+
+// Subscription service
+export * from "./subscription.service";
