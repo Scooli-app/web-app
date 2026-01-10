@@ -72,53 +72,53 @@ export function PaymentSuccessModal({
         `}</style>
 
         {/* Header */}
-        <div className="pt-8 pb-6 px-8 text-center border-b border-border">
-          <div className="w-14 h-14 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-            <CheckCircle2 className="w-7 h-7 text-emerald-600 dark:text-emerald-400" />
+        <div className="pt-8 pb-6 px-8 text-center border-b border-[#E4E4E7]">
+          <div className="w-14 h-14 bg-[#E6FAF2] rounded-full flex items-center justify-center mx-auto mb-4">
+            <CheckCircle2 className="w-7 h-7 text-[#1DB67D]" />
           </div>
 
-          <DialogTitle className="text-2xl font-bold text-foreground mb-1">
+          <DialogTitle className="text-2xl font-bold text-[#0B0D17] mb-1">
             Bem-vindo ao Scooli Pro! 🎉
           </DialogTitle>
           
-          <p className="text-muted-foreground">
+          <p className="text-[#6C6F80]">
             A sua subscrição foi ativada com sucesso
           </p>
         </div>
 
         {/* Features */}
         <div className="p-6 space-y-3">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-4">
+          <p className="text-xs font-semibold text-[#6C6F80] uppercase tracking-wide mb-4">
             O que desbloqueou
           </p>
           
-          <div className="flex items-center gap-4 p-4 bg-muted rounded-xl">
-            <div className="w-11 h-11 bg-emerald-500 dark:bg-emerald-600 rounded-xl flex items-center justify-center flex-shrink-0">
+          <div className="flex items-center gap-4 p-4 bg-[#F4F5F8] rounded-xl">
+            <div className="w-11 h-11 bg-[#1DB67D] rounded-xl flex items-center justify-center flex-shrink-0">
               <Infinity className="w-5 h-5 text-white" />
             </div>
             <div>
-              <p className="font-semibold text-foreground">Gerações ilimitadas</p>
-              <p className="text-sm text-muted-foreground">Crie sem limites</p>
+              <p className="font-semibold text-[#0B0D17]">Gerações ilimitadas</p>
+              <p className="text-sm text-[#6C6F80]">Crie sem limites</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-4 p-4 bg-muted rounded-xl">
-            <div className="w-11 h-11 bg-primary rounded-xl flex items-center justify-center flex-shrink-0">
-              <Sparkles className="w-5 h-5 text-primary-foreground" />
+          <div className="flex items-center gap-4 p-4 bg-[#F4F5F8] rounded-xl">
+            <div className="w-11 h-11 bg-[#6753FF] rounded-xl flex items-center justify-center flex-shrink-0">
+              <Sparkles className="w-5 h-5 text-white" />
             </div>
             <div>
-              <p className="font-semibold text-foreground">Templates personalizados</p>
-              <p className="text-sm text-muted-foreground">Crie os seus próprios templates</p>
+              <p className="font-semibold text-[#0B0D17]">Templates personalizados</p>
+              <p className="text-sm text-[#6C6F80]">Crie os seus próprios templates</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-4 p-4 bg-muted rounded-xl">
-            <div className="w-11 h-11 bg-amber-500 dark:bg-amber-600 rounded-xl flex items-center justify-center flex-shrink-0">
+          <div className="flex items-center gap-4 p-4 bg-[#F4F5F8] rounded-xl">
+            <div className="w-11 h-11 bg-[#FFC857] rounded-xl flex items-center justify-center flex-shrink-0">
               <Zap className="w-5 h-5 text-white" />
             </div>
             <div>
-              <p className="font-semibold text-foreground">Suporte prioritário</p>
-              <p className="text-sm text-muted-foreground">Resposta em menos de 24h</p>
+              <p className="font-semibold text-[#0B0D17]">Suporte prioritário</p>
+              <p className="text-sm text-[#6C6F80]">Resposta em menos de 24h</p>
             </div>
           </div>
         </div>
@@ -127,7 +127,7 @@ export function PaymentSuccessModal({
         <div className="px-6 pb-6">
           <button
             onClick={() => onOpenChange(false)}
-            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-3.5 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
+            className="w-full bg-[#6753FF] hover:bg-[#4E3BC0] text-white px-6 py-3.5 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
           >
             Começar a Criar
             <ArrowRight className="w-4 h-4" />

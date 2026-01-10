@@ -4,12 +4,9 @@ import { NextResponse } from "next/server";
 const isPublicRoute = createRouteMatcher([
   "/sign-in(.*)",
   "/sign-up(.*)",
-  "/forgot-password(.*)",
   "/signup",
   "/",
   "/checkout/cancel",
-  "/webhooks/stripe",
-  "/.well-known/(.*)"
 ]);
 const TOKEN_COOKIE_NAME = "scooli_token";
 
