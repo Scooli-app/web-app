@@ -55,7 +55,7 @@ function DownloadButtonComponent({ title, content, disabled }: DownloadButtonPro
           variant="outline"
           size="sm"
           disabled={isDisabled}
-          className="flex items-center gap-2 border-[#C7C9D9] text-[#2E2F38] hover:bg-[#EEF0FF] hover:border-[#6753FF]"
+          className="flex items-center gap-2 border-border text-foreground hover:bg-accent hover:border-primary"
         >
           {isDownloading ? (
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -72,9 +72,9 @@ function DownloadButtonComponent({ title, content, disabled }: DownloadButtonPro
           className="flex items-center gap-2 cursor-pointer"
         >
           {downloadFormat === "pdf" ? (
-            <Loader2 className="h-4 w-4 animate-spin text-[#6753FF]" />
+            <Loader2 className="h-4 w-4 animate-spin text-primary" />
           ) : (
-            <FileText className="h-4 w-4 text-red-500" />
+            <FileText className="h-4 w-4 text-red-500 dark:text-red-400" />
           )}
           <span>Exportar como PDF</span>
         </DropdownMenuItem>
@@ -84,9 +84,9 @@ function DownloadButtonComponent({ title, content, disabled }: DownloadButtonPro
           className="flex items-center gap-2 cursor-pointer"
         >
           {downloadFormat === "docx" ? (
-            <Loader2 className="h-4 w-4 animate-spin text-[#6753FF]" />
+            <Loader2 className="h-4 w-4 animate-spin text-primary" />
           ) : (
-            <FileText className="h-4 w-4 text-blue-500" />
+            <FileText className="h-4 w-4 text-blue-500 dark:text-blue-400" />
           )}
           <span>Exportar como Word</span>
         </DropdownMenuItem>
@@ -99,4 +99,3 @@ export const DownloadButton = memo(DownloadButtonComponent);
 DownloadButton.displayName = "DownloadButton";
 
 export default DownloadButton;
-

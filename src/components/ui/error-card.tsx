@@ -8,13 +8,13 @@ interface ErrorCardProps {
 
 export function ErrorCard({ error, title = "Erro" }: ErrorCardProps) {
   return (
-    <Card className="border-[#FF4F4F] bg-[#FFECEC]">
+    <Card className="border-destructive bg-destructive/10">
       <CardContent className="pt-6">
         <div className="flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-[#FF4F4F] mt-0.5 flex-shrink-0" />
+          <AlertCircle className="w-5 h-5 text-destructive mt-0.5 flex-shrink-0" />
           <div>
-            <h3 className="font-medium text-[#FF4F4F] mb-1">{title}</h3>
-            <p className="text-[#FF4F4F] text-sm">{error}</p>
+            <h3 className="font-medium text-destructive mb-1">{title}</h3>
+            <p className="text-destructive text-sm">{error}</p>
           </div>
         </div>
       </CardContent>

@@ -1,8 +1,10 @@
 import type { UIState } from "@/shared/types";
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
+export type ThemeMode = "light" | "dark" | "system";
+
 interface UIStoreState extends UIState {
-  theme: "light" | "dark";
+  theme: ThemeMode;
   sidebarCollapsed: boolean;
   sidebarOpen: boolean;
   loading: boolean;
@@ -10,7 +12,7 @@ interface UIStoreState extends UIState {
 }
 
 const initialState: UIStoreState = {
-  theme: "light",
+  theme: "system",
   sidebarCollapsed: false,
   sidebarOpen: false,
   loading: false,
@@ -40,9 +42,15 @@ const uiSlice = createSlice({
       state.error = null;
     },
     toggleTheme(state) {
-      state.theme = state.theme === "light" ? "dark" : "light";
+      if (state.theme === "light") {
+        state.theme = "dark";
+      } else if (state.theme === "dark") {
+        state.theme = "system";
+      } else {
+        state.theme = "light";
+      }
     },
-    setTheme(state, action: PayloadAction<"light" | "dark">) {
+    setTheme(state, action: PayloadAction<ThemeMode>) {
       state.theme = action.payload;
     },
   },

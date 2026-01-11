@@ -57,7 +57,7 @@ function ChatContent({
       className={`p-4 md:p-6 flex flex-col ${isDesktop ? "h-full min-h-[500px] max-h-[500px]" : "h-full border-0 shadow-none"}`}
     >
       {isDesktop && (
-        <h2 className="text-xl font-semibold text-[#0B0D17] mb-4">{title}</h2>
+        <h2 className="text-xl font-semibold text-foreground mb-4">{title}</h2>
       )}
 
       {/* Chat History */}
@@ -70,8 +70,8 @@ function ChatContent({
             key={index}
             className={`p-3 rounded-xl ${
               message.role === "user"
-                ? "bg-[#6753FF] text-white ml-8"
-                : "bg-[#F4F5F8] text-[#2E2F38] mr-8"
+                ? "bg-primary text-primary-foreground ml-8"
+                : "bg-muted text-foreground mr-8"
             }`}
           >
             {message.content}
@@ -80,19 +80,19 @@ function ChatContent({
 
         {/* Typing Indicator */}
         {isStreaming && (
-          <div className="bg-[#F4F5F8] text-[#2E2F38] mr-8 p-3 rounded-xl">
+          <div className="bg-muted text-foreground mr-8 p-3 rounded-xl">
             <div className="flex items-center space-x-1">
               <div className="flex space-x-1">
                 <div
-                  className="w-2 h-2 bg-[#6C6F80] rounded-full animate-bounce"
+                  className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce"
                   style={{ animationDelay: "0ms" }}
                 />
                 <div
-                  className="w-2 h-2 bg-[#6C6F80] rounded-full animate-bounce"
+                  className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce"
                   style={{ animationDelay: "150ms" }}
                 />
                 <div
-                  className="w-2 h-2 bg-[#6C6F80] rounded-full animate-bounce"
+                  className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce"
                   style={{ animationDelay: "300ms" }}
                 />
               </div>
@@ -113,14 +113,14 @@ function ChatContent({
         <Button
           type="submit"
           disabled={!chatMessage.trim() || isStreaming}
-          className="bg-[#6753FF] hover:bg-[#4E3BC0] text-white px-4 py-2 rounded-xl disabled:bg-gray-300 disabled:text-gray-500"
+          className="bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-xl disabled:bg-muted disabled:text-muted-foreground"
         >
           <Send className="h-4 w-4" />
         </Button>
       </form>
 
       {error && (
-        <div className="mt-4 p-3 bg-[#FFECEC] border border-[#FF4F4F] rounded-xl text-[#FF4F4F] text-sm">
+        <div className="mt-4 p-3 bg-destructive/10 border border-destructive rounded-xl text-destructive text-sm">
           {error}
         </div>
       )}
@@ -167,7 +167,7 @@ export default function AIChatPanel({
   return (
     <>
       {/* Desktop: Fixed sidebar panel */}
-      <div className="hidden lg:block lg:fixed lg:right-10 lg:top-30 lg:max-h-fit lg:w-[400px] z-30 flex-col border-l border-[#E4E4E7] bg-transparent">
+      <div className="hidden lg:block lg:fixed lg:right-10 lg:top-30 lg:max-h-fit lg:w-[400px] z-30 flex-col border-l border-border bg-transparent">
         <ChatContent
           chatHistory={chatHistory}
           isStreaming={isStreaming}
@@ -187,12 +187,12 @@ export default function AIChatPanel({
         <Sheet open={isOpen} onOpenChange={setIsOpen}>
           <SheetTrigger asChild>
             <Button
-              className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full bg-[#6753FF] hover:bg-[#4E3BC0] shadow-lg hover:shadow-xl transition-all duration-200"
+              className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full bg-primary hover:bg-primary/90 shadow-lg hover:shadow-xl transition-all duration-200"
               size="icon"
             >
-              <MessageCircle className="h-6 w-6 text-white" />
+              <MessageCircle className="h-6 w-6 text-primary-foreground" />
               {chatHistory.length > 0 && (
-                <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-[#FF4F4F] text-white text-xs flex items-center justify-center font-medium">
+                <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-destructive text-white text-xs flex items-center justify-center font-medium">
                   {chatHistory.length > 9 ? "9+" : chatHistory.length}
                 </span>
               )}
@@ -202,8 +202,8 @@ export default function AIChatPanel({
             side="right"
             className="w-full sm:max-w-md p-0 flex flex-col"
           >
-            <SheetHeader className="p-4 border-b border-[#E4E4E7]">
-              <SheetTitle className="text-xl font-semibold text-[#0B0D17]">
+            <SheetHeader className="p-4 border-b border-border">
+              <SheetTitle className="text-xl font-semibold text-foreground">
                 {title}
               </SheetTitle>
             </SheetHeader>

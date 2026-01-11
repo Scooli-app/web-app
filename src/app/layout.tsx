@@ -3,9 +3,23 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import StoreProvider from "@/components/providers/StoreProvider";
 import AuthProvider from "@/components/providers/AuthProvider";
+import ThemeProvider from "@/components/providers/ThemeProvider";
+import ClerkThemeProvider from "@/components/providers/ClerkThemeProvider";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@vercel/analytics/next";
-import { ClerkProvider } from "@clerk/nextjs";
+
+const themeInitScript = `
+(function() {
+  try {
+    var theme = localStorage.getItem('scooli-theme');
+    var isDark = theme === 'dark' || 
+      ((theme === 'system' || !theme) && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    if (isDark) {
+      document.documentElement.classList.add('dark');
+    }
+  } catch (e) {}
+})();
+`;
 
 const inter = Inter({
   variable: "--font-inter",
@@ -36,18 +50,23 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <ClerkProvider>
-      <html lang="pt" className={inter.variable} suppressHydrationWarning>
-        <body className={`${inter.className} antialiased`}>
-          <AuthProvider>
-            <StoreProvider>
-              {children}
-            </StoreProvider>
-          </AuthProvider>
-          <SpeedInsights />
-          <Analytics />
-        </body>
-      </html>
-    </ClerkProvider>
+    <html lang="pt" className={inter.variable} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+      </head>
+      <body className={`${inter.className} antialiased`}>
+        <StoreProvider>
+          <ThemeProvider>
+            <ClerkThemeProvider>
+              <AuthProvider>
+                {children}
+              </AuthProvider>
+            </ClerkThemeProvider>
+          </ThemeProvider>
+        </StoreProvider>
+        <SpeedInsights />
+        <Analytics />
+      </body>
+    </html>
   );
 }

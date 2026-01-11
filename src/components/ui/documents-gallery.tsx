@@ -248,7 +248,7 @@ export function DocumentsGallery() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
           <div>
-            <h2 className="text-2xl font-semibold text-[#0B0D17]">
+            <h2 className="text-2xl font-semibold text-foreground">
               Os Meus Documentos
             </h2>
           </div>
@@ -277,11 +277,11 @@ export function DocumentsGallery() {
                 {selectionInfo.count > 0 && (
                   <div className="flex items-center gap-2 flex-wrap">
                     <div className="flex items-center gap-1">
-                      <span className="text-sm font-medium text-[#6753FF]">
+                      <span className="text-sm font-medium text-primary">
                         {selectionInfo.count} selecionado
                         {selectionInfo.count !== 1 ? "s" : ""}
                       </span>
-                      <span className="text-xs text-[#6C6F80]">
+                      <span className="text-xs text-muted-foreground">
                         ({selectionInfo.visibleCount} visível
                         {selectionInfo.visibleCount !== 1 ? "is" : ""})
                       </span>
@@ -291,7 +291,7 @@ export function DocumentsGallery() {
                       size="sm"
                       onClick={handleDeleteSelected}
                       disabled={deleting}
-                      className="bg-red-50 border-red-200 text-red-700 hover:bg-red-100"
+                      className="bg-destructive/10 border-destructive/20 text-destructive hover:bg-destructive/20"
                     >
                       <Trash2 className="w-4 h-4 mr-1" />
                       {deleting ? "A eliminar..." : "Eliminar"}
@@ -312,7 +312,7 @@ export function DocumentsGallery() {
             {!selectionMode && (
               <div className="flex items-center space-x-2 w-full sm:w-auto">
                 <div className="relative flex-1 sm:flex-initial">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#6C6F80] w-4 h-4" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                   <Input
                     placeholder="Pesquisar documentos..."
                     value={searchQuery}
@@ -344,13 +344,13 @@ export function DocumentsGallery() {
         {loading && documents.length === 0 ? (
           <div className="flex items-center justify-center py-12">
             <div className="flex items-center space-x-2">
-              <Loader2 className="w-5 h-5 animate-spin text-[#6753FF]" />
-              <span className="text-[#6C6F80]">A carregar documentos...</span>
+              <Loader2 className="w-5 h-5 animate-spin text-primary" />
+              <span className="text-muted-foreground">A carregar documentos...</span>
             </div>
           </div>
         ) : filteredDocuments.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-[#6C6F80]">
+            <p className="text-muted-foreground">
               {searchQuery
                 ? "Nenhum documento encontrado para a pesquisa."
                 : selectedType === "all"
@@ -378,8 +378,8 @@ export function DocumentsGallery() {
               <div ref={loadMoreRef} className="flex justify-center pt-6 pb-4">
                 {loading && (
                   <div className="flex items-center space-x-2">
-                    <Loader2 className="w-5 h-5 animate-spin text-[#6753FF]" />
-                    <span className="text-[#6C6F80]">
+                    <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                    <span className="text-muted-foreground">
                       A carregar mais documentos...
                     </span>
                   </div>

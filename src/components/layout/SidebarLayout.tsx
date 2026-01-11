@@ -41,6 +41,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { UserButton, SignInButton, SignedIn, SignedOut } from "@clerk/nextjs";
+import { ThemeToggle } from "./ThemeToggle";
 
 interface SidebarLayoutProps {
   children: React.ReactNode;
@@ -125,8 +126,8 @@ const NavMenuItem = memo(function NavMenuItem({
           isActive={isActive}
           className={cn(
             isActive
-              ? "bg-[#6753FF] text-white hover:bg-[#4E3BC0]"
-              : "hover:bg-[#EEF0FF] text-[#2E2F38]"
+              ? "bg-primary text-primary-foreground hover:bg-primary/90"
+              : "hover:bg-accent text-foreground"
           )}
         >
           <Icon className="h-4 w-4" />
@@ -151,7 +152,7 @@ const NavGroup = memo(function NavGroup({
 }) {
   return (
     <SidebarGroup>
-      <SidebarGroupLabel className="px-4 text-xs font-semibold tracking-tight text-[#6C6F80] uppercase">
+      <SidebarGroupLabel className="px-4 text-xs font-semibold tracking-tight text-muted-foreground uppercase">
         {label}
       </SidebarGroupLabel>
       <SidebarGroupContent>
@@ -180,7 +181,7 @@ const SidebarInnerContent = memo(function SidebarInnerContent({
 }) {
   return (
     <SidebarPrimitive collapsible="icon">
-      <SidebarHeader className="flex items-center justify-center border-b border-[#E4E4E7] px-6 py-4 group-data-[collapsible=icon]:px-3 group-data-[collapsible=icon]:py-2">
+      <SidebarHeader className="flex items-center justify-center border-b border-border px-6 py-4 group-data-[collapsible=icon]:px-3 group-data-[collapsible=icon]:py-2">
         <Image
           src="/scooli.svg"
           alt="Scooli"
@@ -252,7 +253,7 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
           <SheetTrigger asChild>
             <Button
               variant="ghost"
-              className="md:hidden mr-2 px-0 text-base hover:bg-[#EEF0FF] hover:text-[#6753FF]"
+              className="md:hidden mr-2 px-0 text-base hover:bg-accent hover:text-primary"
             >
               <Menu className="h-6 w-6" />
               <span className="sr-only">Toggle sidebar</span>
@@ -268,13 +269,14 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
 
         {/* Main Content Area */}
         <div className="flex-1 flex flex-col">
-          <header className="flex h-16 shrink-0 items-center gap-2 bg-[#FFFFFF] w-full border-b border-[#E4E4E7]">
+          <header className="flex h-16 shrink-0 items-center gap-2 bg-background w-full border-b border-border">
             <div className="flex items-center gap-2 px-4 justify-between w-full">
               <SidebarTrigger className="hidden md:flex" />
-              <div className="ml-auto flex items-center gap-4">
+              <div className="ml-auto flex items-center gap-2">
+                <ThemeToggle />
                 <SignedOut>
                   <SignInButton mode="modal">
-                    <Button variant="default" className="bg-[#6753FF] hover:bg-[#4E3BC0]">
+                    <Button variant="default" className="bg-primary hover:bg-primary/90">
                       Entrar
                     </Button>
                   </SignInButton>
@@ -293,7 +295,7 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
           </header>
           <main
             className={cn(
-              "flex-1 overflow-auto w-full bg-[#EEF0FF]",
+              "flex-1 overflow-auto w-full bg-accent",
               className
             )}
           >

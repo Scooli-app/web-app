@@ -50,12 +50,12 @@ const MenuBar = memo(function MenuBar({ editor }: { editor: Editor }) {
   const handleCodeBlock = useCallback(() => editor.chain().focus().toggleCodeBlock().run(), [editor]);
 
   return (
-    <div className="border-b border-[#C7C9D9] p-2 flex flex-wrap gap-1 sticky top-0 z-10 bg-white rounded-xl">
+    <div className="border-b border-border p-2 flex flex-wrap gap-1 sticky top-0 z-10 bg-card rounded-t-xl">
       <button
         onClick={handleBold}
         disabled={!editorState.canBold}
-        className={`p-2 rounded hover:bg-[#EEF0FF] transition-colors ${
-          editorState.isBold ? "bg-[#6753FF] text-white" : ""
+        className={`p-2 rounded hover:bg-accent transition-colors ${
+          editorState.isBold ? "bg-primary text-primary-foreground" : "text-foreground"
         }`}
         title="Negrito"
         type="button"
@@ -66,8 +66,8 @@ const MenuBar = memo(function MenuBar({ editor }: { editor: Editor }) {
       <button
         onClick={handleItalic}
         disabled={!editorState.canItalic}
-        className={`p-2 rounded hover:bg-[#EEF0FF] transition-colors ${
-          editorState.isItalic ? "bg-[#6753FF] text-white" : ""
+        className={`p-2 rounded hover:bg-accent transition-colors ${
+          editorState.isItalic ? "bg-primary text-primary-foreground" : "text-foreground"
         }`}
         title="Itálico"
         type="button"
@@ -77,8 +77,8 @@ const MenuBar = memo(function MenuBar({ editor }: { editor: Editor }) {
 
       <button
         onClick={handleH1}
-        className={`p-2 rounded hover:bg-[#EEF0FF] transition-colors ${
-          editorState.isHeading1 ? "bg-[#6753FF] text-white" : ""
+        className={`p-2 rounded hover:bg-accent transition-colors ${
+          editorState.isHeading1 ? "bg-primary text-primary-foreground" : "text-foreground"
         }`}
         title="Título 1"
         type="button"
@@ -88,8 +88,8 @@ const MenuBar = memo(function MenuBar({ editor }: { editor: Editor }) {
 
       <button
         onClick={handleH2}
-        className={`p-2 rounded hover:bg-[#EEF0FF] transition-colors ${
-          editorState.isHeading2 ? "bg-[#6753FF] text-white" : ""
+        className={`p-2 rounded hover:bg-accent transition-colors ${
+          editorState.isHeading2 ? "bg-primary text-primary-foreground" : "text-foreground"
         }`}
         title="Título 2"
         type="button"
@@ -99,8 +99,8 @@ const MenuBar = memo(function MenuBar({ editor }: { editor: Editor }) {
 
       <button
         onClick={handleH3}
-        className={`p-2 rounded hover:bg-[#EEF0FF] transition-colors ${
-          editorState.isHeading3 ? "bg-[#6753FF] text-white" : ""
+        className={`p-2 rounded hover:bg-accent transition-colors ${
+          editorState.isHeading3 ? "bg-primary text-primary-foreground" : "text-foreground"
         }`}
         title="Título 3"
         type="button"
@@ -110,8 +110,8 @@ const MenuBar = memo(function MenuBar({ editor }: { editor: Editor }) {
 
       <button
         onClick={handleBullet}
-        className={`p-2 rounded hover:bg-[#EEF0FF] transition-colors ${
-          editorState.isBulletList ? "bg-[#6753FF] text-white" : ""
+        className={`p-2 rounded hover:bg-accent transition-colors ${
+          editorState.isBulletList ? "bg-primary text-primary-foreground" : "text-foreground"
         }`}
         title="Lista"
         type="button"
@@ -121,8 +121,8 @@ const MenuBar = memo(function MenuBar({ editor }: { editor: Editor }) {
 
       <button
         onClick={handleOrdered}
-        className={`p-2 rounded hover:bg-[#EEF0FF] transition-colors ${
-          editorState.isOrderedList ? "bg-[#6753FF] text-white" : ""
+        className={`p-2 rounded hover:bg-accent transition-colors ${
+          editorState.isOrderedList ? "bg-primary text-primary-foreground" : "text-foreground"
         }`}
         title="Lista Numerada"
         type="button"
@@ -132,19 +132,19 @@ const MenuBar = memo(function MenuBar({ editor }: { editor: Editor }) {
 
       <button
         onClick={handleHighlight}
-        className={`p-2 rounded hover:bg-[#EEF0FF] transition-colors ${
-          editorState.isHighlight ? "bg-[#6753FF] text-white" : ""
+        className={`p-2 rounded hover:bg-accent transition-colors ${
+          editorState.isHighlight ? "bg-primary text-primary-foreground" : "text-foreground"
         }`}
         title="Destacar"
         type="button"
       >
-        <span className="bg-yellow-200 px-1">D</span>
+        <span className="bg-yellow-200 dark:bg-yellow-600 px-1 text-foreground">D</span>
       </button>
 
       <button
         onClick={handleBlockquote}
-        className={`p-2 rounded hover:bg-[#EEF0FF] transition-colors ${
-          editorState.isBlockquote ? "bg-[#6753FF] text-white" : ""
+        className={`p-2 rounded hover:bg-accent transition-colors ${
+          editorState.isBlockquote ? "bg-primary text-primary-foreground" : "text-foreground"
         }`}
         title="Citação"
         type="button"
@@ -154,8 +154,8 @@ const MenuBar = memo(function MenuBar({ editor }: { editor: Editor }) {
 
       <button
         onClick={handleCodeBlock}
-        className={`p-2 rounded hover:bg-[#EEF0FF] transition-colors ${
-          editorState.isCodeBlock ? "bg-[#6753FF] text-white" : ""
+        className={`p-2 rounded hover:bg-accent transition-colors ${
+          editorState.isCodeBlock ? "bg-primary text-primary-foreground" : "text-foreground"
         }`}
         title="Bloco de Código"
         type="button"
@@ -256,16 +256,16 @@ export function TipTapEditorCore({
 
   if (!editor) {
     return (
-      <div className="border border-[#C7C9D9] rounded-xl bg-white w-full">
+      <div className="border border-border rounded-xl bg-card w-full">
         <div className="p-4 min-h-[600px] flex items-center justify-center">
-          <div className="text-[#6C6F80]">A carregar editor...</div>
+          <div className="text-muted-foreground">A carregar editor...</div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="border border-[#C7C9D9] rounded-xl bg-white w-full m-0.5">
+    <div className="border border-border rounded-xl bg-card w-full m-0.5">
       <MenuBar editor={editor} />
       <div className="p-4">
         <EditorContent editor={editor} />
@@ -273,4 +273,3 @@ export function TipTapEditorCore({
     </div>
   );
 }
-

@@ -20,7 +20,7 @@ export function FormActions({
   return (
     <>
       {error && (
-        <div className="p-3 sm:p-4 bg-red-50 border border-red-200 rounded-xl text-sm sm:text-base text-red-700 animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="p-3 sm:p-4 bg-destructive/10 border border-destructive/20 rounded-xl text-sm sm:text-base text-destructive animate-in fade-in slide-in-from-top-2 duration-200">
           {error}
         </div>
       )}
@@ -29,7 +29,7 @@ export function FormActions({
         <Button
           onClick={onSubmit}
           disabled={isLoading || !isFormValid}
-          className="w-full h-12 sm:h-14 text-base sm:text-lg font-semibold bg-[#6753FF] hover:bg-[#4E3BC0] text-white rounded-xl shadow-lg shadow-[#6753FF]/20 transition-all hover:shadow-xl hover:shadow-[#6753FF]/30 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+          className="w-full h-12 sm:h-14 text-base sm:text-lg font-semibold bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl shadow-lg shadow-primary/20 transition-all hover:shadow-xl hover:shadow-primary/30 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
           aria-label={`Criar ${documentType.title}`}
         >
           {isLoading ? (
@@ -45,11 +45,10 @@ export function FormActions({
             </>
           )}
         </Button>
-        <p className="text-center text-xs sm:text-sm text-[#6C6F80]">
-          <span className="text-red-500">*</span> Campos obrigatórios
+        <p className="text-center text-xs sm:text-sm text-muted-foreground">
+          <span className="text-destructive">*</span> Campos obrigatórios
         </p>
       </div>
     </>
   );
 }
-

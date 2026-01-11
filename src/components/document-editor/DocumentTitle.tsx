@@ -84,26 +84,26 @@ export default function DocumentTitle({
               onKeyDown={handleTitleKeyDown}
               onBlur={handleTitleBlur}
               maxLength={MAX_LENGTHS.DOCUMENT_TITLE}
-              className="text-3xl font-bold text-[#0B0D17] bg-white border-2 border-[#6753FF] rounded-lg px-4 py-2 min-w-[300px]"
+              className="text-3xl font-bold text-foreground bg-background border-2 border-primary rounded-lg px-4 py-2 min-w-[300px]"
               placeholder="Título do documento..."
             />
-            <div className="absolute -bottom-6 right-0 text-xs text-[#6C6F80]">
+            <div className="absolute -bottom-6 right-0 text-xs text-muted-foreground">
               {editingTitle.length}/{MAX_LENGTHS.DOCUMENT_TITLE}
             </div>
           </div>
-          <Edit3 className="h-6 w-6 text-[#6753FF]" />
+          <Edit3 className="h-6 w-6 text-primary" />
         </div>
       ) : (
         <StreamingText
           text={title || defaultTitle}
           isStreaming={isStreaming}
           as="h1"
-          className="text-3xl font-bold text-[#0B0D17] cursor-pointer hover:text-[#6753FF] transition-colors"
+          className="text-3xl font-bold text-foreground cursor-pointer hover:text-primary transition-colors"
           onClick={handleTitleClick}
         />
       )}
       {isSaving && (
-        <div className="flex items-center text-[#6C6F80]">
+        <div className="flex items-center text-muted-foreground">
           <Save className="h-4 w-4 mr-2" />
           <span className="text-sm">A guardar...</span>
         </div>

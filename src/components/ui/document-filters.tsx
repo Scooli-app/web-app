@@ -41,8 +41,8 @@ export function DocumentFilters({
               transition-all duration-200 border whitespace-nowrap
               ${
                 isSelected
-                  ? "bg-[#6753FF] text-white border-[#6753FF] shadow-sm"
-                  : "bg-white text-[#6C6F80] border-[#C7C9D9] hover:border-[#6753FF]/50 hover:text-[#6753FF]"
+                  ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                  : "bg-card text-muted-foreground border-border hover:border-primary/50 hover:text-primary"
               }
             `}
           >
@@ -52,8 +52,8 @@ export function DocumentFilters({
               <Badge
                 className={`ml-1 px-2 py-0 text-xs ${
                   isSelected
-                    ? "bg-white/20 text-white"
-                    : "bg-[#F4F5F8] text-[#6C6F80]"
+                    ? "bg-white/20 text-primary-foreground"
+                    : "bg-muted text-muted-foreground"
                 }`}
               >
                 {count}
@@ -63,8 +63,8 @@ export function DocumentFilters({
               <Badge
                 className={`ml-1 px-2 py-0 text-xs ${
                   isSelected
-                    ? "bg-white/20 text-white"
-                    : "bg-[#F4F5F8] text-[#6C6F80]"
+                    ? "bg-white/20 text-primary-foreground"
+                    : "bg-muted text-muted-foreground"
                 }`}
               >
                 {Object.values(documentCounts).reduce(

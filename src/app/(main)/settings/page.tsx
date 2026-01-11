@@ -13,7 +13,9 @@ import {
   Loader2,
   Sun,
   Moon,
+  Monitor,
   Sparkles,
+  Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -28,14 +30,14 @@ import  {
     type UsageStats,
     type SubscriptionStatus,
 } from "@/shared/types/subscription";
-import { setTheme } from "@/store/ui/uiSlice";
+import { setTheme, type ThemeMode } from "@/store/ui/uiSlice";
 import type { RootState, AppDispatch } from "@/store/store";
 
 function getStatusBadge(status: SubscriptionStatus, cancelAtPeriodEnd: boolean) {
   if (cancelAtPeriodEnd) {
     return {
       label: "Cancela no fim do período",
-      className: "bg-amber-100 text-amber-700",
+      className: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
     };
   }
 
@@ -44,27 +46,27 @@ function getStatusBadge(status: SubscriptionStatus, cancelAtPeriodEnd: boolean) 
     case "trialing":
       return {
         label: "Ativo",
-        className: "bg-[#E6FAF2] text-[#1DB67D]",
+        className: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
       };
     case "past_due":
       return {
         label: "Pagamento Pendente",
-        className: "bg-[#FFF7E5] text-[#FFC857]",
+        className: "bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400",
       };
     case "canceled":
       return {
         label: "Cancelado",
-        className: "bg-[#F4F5F8] text-[#6C6F80]",
+        className: "bg-secondary text-muted-foreground",
       };
     case "free":
       return {
         label: "Gratuito",
-        className: "bg-[#EEF0FF] text-[#6753FF]",
+        className: "bg-primary/10 text-primary",
       };
     default:
       return {
         label: status,
-        className: "bg-[#F4F5F8] text-[#6C6F80]",
+        className: "bg-secondary text-muted-foreground",
       };
   }
 }
@@ -134,8 +136,8 @@ function SettingsContent() {
     openUserProfile();
   };
 
-  const handleThemeToggle = () => {
-    dispatch(setTheme(theme === "light" ? "dark" : "light"));
+  const handleThemeChange = (newTheme: ThemeMode) => {
+    dispatch(setTheme(newTheme));
   };
 
   const isFreeUser = !subscription || subscription.status === "free";
@@ -162,25 +164,25 @@ function SettingsContent() {
     <div className="w-full max-w-3xl mx-auto">
       {/* Page Header */}
       <div className="mb-8">
-        <h1 className="text-4xl font-bold text-[#0B0D17] mb-2">Definições</h1>
-        <p className="text-lg text-[#6C6F80]">
+        <h1 className="text-4xl font-bold text-foreground mb-2">Definições</h1>
+        <p className="text-lg text-muted-foreground">
           Gerir a sua conta, subscrição e preferências.
         </p>
       </div>
 
       <div className="space-y-6">
         {/* Profile & Account Card */}
-        <div className="bg-white p-8 rounded-2xl shadow-md border border-[#E4E4E7]">
+        <div className="bg-card p-8 rounded-2xl shadow-md border border-border">
           <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-xl bg-[#EEF0FF] flex items-center justify-center">
-              <User className="w-5 h-5 text-[#6753FF]" />
+            <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center">
+              <User className="w-5 h-5 text-primary" />
             </div>
-            <h2 className="text-xl font-semibold text-[#0B0D17]">
+            <h2 className="text-xl font-semibold text-foreground">
               Perfil e Conta
             </h2>
           </div>
 
-          <div className="flex items-center gap-4 p-4 bg-[#F4F5F8] rounded-xl mb-6">
+          <div className="flex items-center gap-4 p-4 bg-muted rounded-xl mb-6">
             {user?.imageUrl ? (
               <Image
                 src={user.imageUrl}
@@ -191,17 +193,17 @@ function SettingsContent() {
                 priority
               />
             ) : (
-              <div className="w-14 h-14 rounded-full bg-[#6753FF] flex items-center justify-center">
-                <span className="text-white text-xl font-semibold">
+              <div className="w-14 h-14 rounded-full bg-primary flex items-center justify-center">
+                <span className="text-primary-foreground text-xl font-semibold">
                   {user?.firstName?.charAt(0) || "U"}
                 </span>
               </div>
             )}
             <div className="flex-1 min-w-0">
-              <p className="font-semibold text-[#0B0D17] truncate">
+              <p className="font-semibold text-foreground truncate">
                 {user?.fullName || "Utilizador"}
               </p>
-              <p className="text-sm text-[#6C6F80] truncate">
+              <p className="text-sm text-muted-foreground truncate">
                 {user?.primaryEmailAddress?.emailAddress || ""}
               </p>
             </div>
@@ -209,35 +211,35 @@ function SettingsContent() {
 
           <Button
             onClick={handleManageAccount}
-            className="w-full sm:w-auto bg-[#6753FF] hover:bg-[#4E3BC0] text-white px-5 py-3 rounded-xl font-medium"
+            className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground px-5 py-3 rounded-xl font-medium"
           >
             Gerir Conta
           </Button>
         </div>
 
         {/* Subscription & Credits Card */}
-        <div className="bg-white p-8 rounded-2xl shadow-md border border-[#E4E4E7]">
+        <div className="bg-card p-8 rounded-2xl shadow-md border border-border">
           <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-xl bg-[#EEF0FF] flex items-center justify-center">
-              <CreditCard className="w-5 h-5 text-[#6753FF]" />
+            <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center">
+              <CreditCard className="w-5 h-5 text-primary" />
             </div>
-            <h2 className="text-xl font-semibold text-[#0B0D17]">
+            <h2 className="text-xl font-semibold text-foreground">
               Subscrição e Créditos
             </h2>
           </div>
 
           {isLoadingData ? (
             <div className="space-y-4">
-              <div className="h-6 bg-gray-200 rounded-lg w-48 animate-pulse" />
-              <div className="h-4 bg-gray-200 rounded-lg w-64 animate-pulse" />
-              <div className="h-3 bg-gray-200 rounded-full w-full animate-pulse" />
+              <div className="h-6 bg-muted rounded-lg w-48 animate-pulse" />
+              <div className="h-4 bg-muted rounded-lg w-64 animate-pulse" />
+              <div className="h-3 bg-muted rounded-full w-full animate-pulse" />
             </div>
           ) : error ? (
-            <div className="p-4 bg-[#FFECEC] rounded-xl">
-              <p className="text-[#FF4F4F] text-sm mb-3">{error}</p>
+            <div className="p-4 bg-destructive/10 rounded-xl">
+              <p className="text-destructive text-sm mb-3">{error}</p>
               <Button
                 onClick={fetchData}
-                className="bg-[#FF4F4F] hover:bg-[#E04545] text-white px-4 py-2 rounded-xl font-medium"
+                className="bg-destructive hover:bg-destructive/90 text-white px-4 py-2 rounded-xl font-medium"
               >
                 Tentar novamente
               </Button>
@@ -246,7 +248,7 @@ function SettingsContent() {
             <>
               {/* Plan Info */}
               <div className="flex flex-wrap items-center gap-3 mb-4">
-                <span className="font-semibold text-[#0B0D17] text-lg">
+                <span className="font-semibold text-foreground text-lg">
                   {planInfo.name}
                 </span>
                 <span
@@ -258,7 +260,7 @@ function SettingsContent() {
 
               {/* Renewal/Period Info */}
               {subscription && subscription.status !== "free" && (
-                <p className="text-sm text-[#6C6F80] mb-6">
+                <p className="text-sm text-muted-foreground mb-6">
                   {subscription.cancelAtPeriodEnd
                     ? `Acesso até ${formatDate(subscription.currentPeriodEnd)}`
                     : `Renova a ${formatDate(subscription.currentPeriodEnd)}`}
@@ -269,21 +271,21 @@ function SettingsContent() {
               {usage && (
                 <div className="mb-6">
                   <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm font-medium text-[#2E2F38]">
+                    <span className="text-sm font-medium text-foreground">
                       Créditos utilizados
                     </span>
-                    <span className="text-sm text-[#6C6F80]">
+                    <span className="text-sm text-muted-foreground">
                       {usage.creditsUsed} / {usage.creditsLimit}
                     </span>
                   </div>
-                  <div className="h-3 bg-[#F4F5F8] rounded-full overflow-hidden">
+                  <div className="h-3 bg-muted rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-[#6753FF] rounded-full transition-all duration-300"
+                      className="h-full bg-primary rounded-full transition-all duration-300"
                       style={{ width: `${creditsUsedPercent}%` }}
                     />
                   </div>
                   {creditsUsedPercent >= 80 && (
-                    <p className="text-xs text-[#FFC857] mt-2">
+                    <p className="text-xs text-warning mt-2">
                       Está a aproximar-se do limite de créditos deste período.
                     </p>
                   )}
@@ -295,7 +297,7 @@ function SettingsContent() {
                 {isFreeUser ? (
                   <Button
                     onClick={() => router.push("/checkout")}
-                    className="bg-[#6753FF] hover:bg-[#4E3BC0] text-white px-5 py-3 rounded-xl font-medium"
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground px-5 py-3 rounded-xl font-medium"
                   >
                     <Sparkles className="w-4 h-4 mr-2" />
                     Fazer Upgrade
@@ -304,7 +306,7 @@ function SettingsContent() {
                   <Button
                     onClick={handleManageSubscription}
                     disabled={isLoadingPortal}
-                    className="bg-[#6753FF] hover:bg-[#4E3BC0] text-white px-5 py-3 rounded-xl font-medium disabled:opacity-50"
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground px-5 py-3 rounded-xl font-medium disabled:opacity-50"
                   >
                     {isLoadingPortal ? (
                       <>
@@ -325,53 +327,93 @@ function SettingsContent() {
         </div>
 
         {/* App Preferences Card */}
-        <div className="bg-white p-8 rounded-2xl shadow-md border border-[#E4E4E7]">
+        <div className="bg-card p-8 rounded-2xl shadow-md border border-border">
           <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-xl bg-[#EEF0FF] flex items-center justify-center">
-              <Settings className="w-5 h-5 text-[#6753FF]" />
+            <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center">
+              <Settings className="w-5 h-5 text-primary" />
             </div>
-            <h2 className="text-xl font-semibold text-[#0B0D17]">
+            <h2 className="text-xl font-semibold text-foreground">
               Preferências
             </h2>
           </div>
 
-          {/* Theme Toggle */}
+          {/* Theme Selection */}
           <div className="space-y-6">
-            <div className="flex items-center justify-between p-4 bg-[#F4F5F8] rounded-xl">
-              <div className="flex items-center gap-3">
+            <div className="p-4 bg-muted rounded-xl">
+              <div className="flex items-center gap-3 mb-4">
                 {theme === "light" ? (
-                  <Sun className="w-5 h-5 text-[#6753FF]" />
+                  <Sun className="w-5 h-5 text-primary" />
+                ) : theme === "dark" ? (
+                  <Moon className="w-5 h-5 text-primary" />
                 ) : (
-                  <Moon className="w-5 h-5 text-[#6753FF]" />
+                  <Monitor className="w-5 h-5 text-primary" />
                 )}
                 <div>
-                  <p className="font-medium text-[#0B0D17]">Tema</p>
-                  <p className="text-sm text-[#6C6F80]">
-                    {theme === "light" ? "Modo claro" : "Modo escuro"}
+                  <p className="font-medium text-foreground">Tema</p>
+                  <p className="text-sm text-muted-foreground">
+                    {theme === "light"
+                      ? "Modo claro"
+                      : theme === "dark"
+                        ? "Modo escuro"
+                        : "Detetar automaticamente"}
                   </p>
                 </div>
               </div>
-              <Button
-                onClick={handleThemeToggle}
-                variant="outline"
-                className="border-[#C7C9D9] text-[#0B0D17] bg-white hover:bg-[#EEF0FF] px-4 py-2 rounded-xl"
-              >
-                {theme === "light" ? "Escuro" : "Claro"}
-              </Button>
+              <div className="grid grid-cols-3 gap-2">
+                <Button
+                  onClick={() => handleThemeChange("light")}
+                  variant="outline"
+                  className={`flex items-center justify-center gap-2 px-3 py-2 rounded-xl ${
+                    theme === "light"
+                      ? "bg-primary text-primary-foreground border-primary hover:bg-primary/90"
+                      : "border-border text-foreground bg-background hover:bg-accent"
+                  }`}
+                >
+                  <Sun className="w-4 h-4" />
+                  <span className="hidden sm:inline">Claro</span>
+                  {theme === "light" && <Check className="w-4 h-4 hidden sm:block" />}
+                </Button>
+                <Button
+                  onClick={() => handleThemeChange("dark")}
+                  variant="outline"
+                  className={`flex items-center justify-center gap-2 px-3 py-2 rounded-xl ${
+                    theme === "dark"
+                      ? "bg-primary text-primary-foreground border-primary hover:bg-primary/90"
+                      : "border-border text-foreground bg-background hover:bg-accent"
+                  }`}
+                >
+                  <Moon className="w-4 h-4" />
+                  <span className="hidden sm:inline">Escuro</span>
+                  {theme === "dark" && <Check className="w-4 h-4 hidden sm:block" />}
+                </Button>
+                <Button
+                  onClick={() => handleThemeChange("system")}
+                  variant="outline"
+                  className={`flex items-center justify-center gap-2 px-3 py-2 rounded-xl ${
+                    theme === "system"
+                      ? "bg-primary text-primary-foreground border-primary hover:bg-primary/90"
+                      : "border-border text-foreground bg-background hover:bg-accent"
+                  }`}
+                >
+                  <Monitor className="w-4 h-4" />
+                  <span className="hidden sm:inline">Sistema</span>
+                  {theme === "system" && <Check className="w-4 h-4 hidden sm:block" />}
+                </Button>
+              </div>
             </div>
 
             {/* Notifications (placeholder - disabled) */}
             <div className="space-y-4">
-              <p className="text-sm font-medium text-[#6C6F80] uppercase tracking-wide">
+              <p className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
                 Notificações
               </p>
               <div className="flex items-start gap-3 opacity-50">
                 <Checkbox disabled checked={false} className="mt-0.5" />
                 <div>
-                  <p className="text-sm font-medium text-[#2E2F38]">
+                  <p className="text-sm font-medium text-foreground">
                     Novidades e atualizações
                   </p>
-                  <p className="text-xs text-[#6C6F80]">
+                  <p className="text-xs text-muted-foreground">
                     Receber emails sobre novas funcionalidades
                   </p>
                 </div>
@@ -379,15 +421,15 @@ function SettingsContent() {
               <div className="flex items-start gap-3 opacity-50">
                 <Checkbox disabled checked={false} className="mt-0.5" />
                 <div>
-                  <p className="text-sm font-medium text-[#2E2F38]">
+                  <p className="text-sm font-medium text-foreground">
                     Atividade na comunidade
                   </p>
-                  <p className="text-xs text-[#6C6F80]">
+                  <p className="text-xs text-muted-foreground">
                     Notificações sobre interações com os seus recursos
                   </p>
                 </div>
               </div>
-              <p className="text-xs text-[#6C6F80] italic">
+              <p className="text-xs text-muted-foreground italic">
                 Em breve disponível
               </p>
             </div>
@@ -403,13 +445,13 @@ function SettingsSkeleton() {
   return (
     <div className="w-full max-w-3xl mx-auto animate-pulse">
       <div className="mb-8">
-        <div className="h-10 bg-gray-200 rounded-lg w-48 mb-2" />
-        <div className="h-6 bg-gray-200 rounded-lg w-80" />
+        <div className="h-10 bg-muted rounded-lg w-48 mb-2" />
+        <div className="h-6 bg-muted rounded-lg w-80" />
       </div>
       <div className="space-y-6">
-        <div className="bg-white p-8 rounded-2xl shadow-md border border-[#E4E4E7] h-48" />
-        <div className="bg-white p-8 rounded-2xl shadow-md border border-[#E4E4E7] h-64" />
-        <div className="bg-white p-8 rounded-2xl shadow-md border border-[#E4E4E7] h-56" />
+        <div className="bg-card p-8 rounded-2xl shadow-md border border-border h-48" />
+        <div className="bg-card p-8 rounded-2xl shadow-md border border-border h-64" />
+        <div className="bg-card p-8 rounded-2xl shadow-md border border-border h-56" />
       </div>
     </div>
   );
