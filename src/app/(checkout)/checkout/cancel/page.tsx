@@ -20,60 +20,60 @@ export default function CheckoutCancelPage() {
       <div className="max-w-lg w-full">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="w-20 h-20 bg-[#F4F5F8] rounded-full flex items-center justify-center mx-auto mb-6">
-            <Heart className="w-10 h-10 text-[#6C6F80]" />
+          <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mx-auto mb-6">
+            <Heart className="w-10 h-10 text-muted-foreground" />
           </div>
 
-          <h1 className="text-3xl font-bold text-[#0B0D17] mb-3">
+          <h1 className="text-3xl font-bold text-foreground mb-3">
             Lamentamos vê-lo partir...
           </h1>
-          <p className="text-lg text-[#6C6F80]">
+          <p className="text-lg text-muted-foreground">
             O processo de pagamento foi cancelado e não foi efetuada nenhuma
             cobrança.
           </p>
         </div>
 
         {/* Value proposition reminder */}
-        <div className="bg-white p-6 rounded-2xl shadow-md border border-[#E4E4E7] mb-6">
-          <h2 className="text-lg font-semibold text-[#0B0D17] mb-4">
+        <div className="bg-card p-6 rounded-2xl shadow-md border border-border mb-6">
+          <h2 className="text-lg font-semibold text-foreground mb-4">
             O que está a perder:
           </h2>
           <ul className="space-y-3">
             <li className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-lg bg-[#EEF0FF] flex items-center justify-center flex-shrink-0">
-                <Gift className="w-4 h-4 text-[#6753FF]" />
+              <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center flex-shrink-0">
+                <Gift className="w-4 h-4 text-primary" />
               </div>
               <div>
-                <span className="text-[#0B0D17] font-medium">
+                <span className="text-foreground font-medium">
                   Gerações ilimitadas
                 </span>
-                <p className="text-sm text-[#6C6F80]">
+                <p className="text-sm text-muted-foreground">
                   Crie quantos documentos precisar, sem limites
                 </p>
               </div>
             </li>
             <li className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-lg bg-[#EEF0FF] flex items-center justify-center flex-shrink-0">
-                <Clock className="w-4 h-4 text-[#6753FF]" />
+              <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center flex-shrink-0">
+                <Clock className="w-4 h-4 text-primary" />
               </div>
               <div>
-                <span className="text-[#0B0D17] font-medium">
+                <span className="text-foreground font-medium">
                   Poupe horas de trabalho
                 </span>
-                <p className="text-sm text-[#6C6F80]">
+                <p className="text-sm text-muted-foreground">
                   Professores Pro poupam em média 5h por semana
                 </p>
               </div>
             </li>
             <li className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-lg bg-[#EEF0FF] flex items-center justify-center flex-shrink-0">
-                <Shield className="w-4 h-4 text-[#6753FF]" />
+              <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center flex-shrink-0">
+                <Shield className="w-4 h-4 text-primary" />
               </div>
               <div>
-                <span className="text-[#0B0D17] font-medium">
+                <span className="text-foreground font-medium">
                   Cancele a qualquer momento
                 </span>
-                <p className="text-sm text-[#6C6F80]">
+                <p className="text-sm text-muted-foreground">
                   Sem compromisso, pode cancelar quando quiser
                 </p>
               </div>
@@ -85,14 +85,14 @@ export default function CheckoutCancelPage() {
         <div className="space-y-3 mb-8">
           <button
             onClick={() => router.push("/checkout")}
-            className="w-full bg-[#6753FF] hover:bg-[#4E3BC0] text-white px-6 py-4 rounded-xl font-semibold text-lg transition-colors flex items-center justify-center gap-2"
+            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-4 rounded-xl font-semibold text-lg transition-colors flex items-center justify-center gap-2"
           >
             Quero experimentar o Pro
           </button>
 
           <Link
             href="/dashboard"
-            className="w-full border border-[#C7C9D9] text-[#0B0D17] bg-white hover:bg-[#EEF0FF] px-6 py-4 rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
+            className="w-full border border-border text-foreground bg-background hover:bg-accent px-6 py-4 rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
           >
             <ArrowLeft className="w-4 h-4" />
             Continuar com o plano gratuito
@@ -100,20 +100,20 @@ export default function CheckoutCancelPage() {
         </div>
 
         {/* Help section */}
-        <div className="bg-[#F4F5F8] p-5 rounded-xl">
+        <div className="bg-muted p-5 rounded-xl">
           <div className="flex items-start gap-3">
-            <HelpCircle className="w-5 h-5 text-[#6753FF] flex-shrink-0 mt-0.5" />
+            <HelpCircle className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
             <div>
-              <h3 className="text-[#0B0D17] font-medium mb-1">
+              <h3 className="text-foreground font-medium mb-1">
                 Teve algum problema?
               </h3>
-              <p className="text-sm text-[#6C6F80] mb-2">
+              <p className="text-sm text-muted-foreground mb-2">
                 Se encontrou alguma dificuldade durante o pagamento ou tem
                 dúvidas sobre os planos, estamos aqui para ajudar.
               </p>
               <a
                 href="mailto:suporte@scooli.app"
-                className="inline-flex items-center gap-2 text-[#6753FF] hover:text-[#4E3BC0] font-medium text-sm transition-colors"
+                className="inline-flex items-center gap-2 text-primary hover:text-primary/80 font-medium text-sm transition-colors"
               >
                 <MessageCircle className="w-4 h-4" />
                 suporte@scooli.app
