@@ -238,13 +238,13 @@ export function TemplateCreator({
       />
 
       <div className="flex flex-col h-full min-h-0">
-        <div className="flex items-center gap-3 p-4 sm:p-6 border-b border-[#E4E4E7] shrink-0">
+        <div className="flex items-center gap-3 p-4 sm:p-6 border-b border-border shrink-0">
           <button
             type="button"
             onClick={handleBack}
             className={cn(
             "flex items-center justify-center w-9 h-9 rounded-lg",
-            "text-[#6C6F80] hover:text-[#0B0D17] hover:bg-[#F4F5F8] transition-colors",
+            "text-muted-foreground hover:text-foreground hover:bg-muted transition-colors",
             "focus-visible:ring-ring/50 focus-visible:ring-[3px]"
           )}
           aria-label="Voltar"
@@ -252,10 +252,10 @@ export function TemplateCreator({
           <ArrowLeft className="w-5 h-5" />
         </button>
         <div>
-          <h2 className="text-lg sm:text-xl font-semibold text-[#0B0D17]">
+          <h2 className="text-lg sm:text-xl font-semibold text-foreground">
             {isEditing ? "Editar Modelo" : "Criar Novo Modelo"}
           </h2>
-          <p className="text-xs sm:text-sm text-[#6C6F80]">
+          <p className="text-xs sm:text-sm text-muted-foreground">
             {isEditing
               ? "Atualize a estrutura do seu modelo"
               : "Defina a estrutura do seu modelo personalizado"}
@@ -269,26 +269,26 @@ export function TemplateCreator({
             <div>
               <label
                 htmlFor="template-name"
-                className="block text-sm font-medium text-[#0B0D17] mb-1.5"
+                className="block text-sm font-medium text-foreground mb-1.5"
               >
-                Nome do Modelo <span className="text-red-500">*</span>
+                Nome do Modelo <span className="text-destructive">*</span>
               </label>
               <Input
                 id="template-name"
                 value={name}
                 onChange={(e) => handleNameChange(e.target.value)}
                 placeholder={TEMPLATE_PLACEHOLDERS[documentType].name}
-                className="h-11 px-4 text-sm bg-[#F4F5F8] border-[#C7C9D9] rounded-xl placeholder:text-[#6C6F80]"
+                className="h-11 px-4 text-sm bg-input border-input rounded-xl placeholder:text-muted-foreground"
               />
             </div>
 
             <div>
               <label
                 htmlFor="template-description"
-                className="block text-sm font-medium text-[#0B0D17] mb-1.5"
+                className="block text-sm font-medium text-foreground mb-1.5"
               >
                 Descrição{" "}
-                <span className="text-xs font-normal text-[#6C6F80]">
+                <span className="text-xs font-normal text-muted-foreground">
                   (Opcional)
                 </span>
               </label>
@@ -298,7 +298,7 @@ export function TemplateCreator({
                 onChange={(e) => handleDescriptionChange(e.target.value)}
                 placeholder={TEMPLATE_PLACEHOLDERS[documentType].description}
                 rows={2}
-                className="px-4 py-3 text-sm bg-[#F4F5F8] border-[#C7C9D9] rounded-xl placeholder:text-[#6C6F80] min-h-0"
+                className="px-4 py-3 text-sm bg-input border-input rounded-xl placeholder:text-muted-foreground min-h-0"
               />
             </div>
           </div>
@@ -306,10 +306,10 @@ export function TemplateCreator({
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-sm font-medium text-[#0B0D17]">
-                  Secções do Modelo <span className="text-red-500">*</span>
+                <h3 className="text-sm font-medium text-foreground">
+                  Secções do Modelo <span className="text-destructive">*</span>
                 </h3>
-                <p className="text-xs text-[#6C6F80]">
+                <p className="text-xs text-muted-foreground">
                   Arraste para reordenar as secções
                 </p>
               </div>
@@ -318,7 +318,7 @@ export function TemplateCreator({
                 variant="outline"
                 size="sm"
                 onClick={handleAddSection}
-                className="flex items-center gap-1.5 border-[#C7C9D9] text-[#2E2F38] hover:bg-[#EEF0FF] hover:border-[#6753FF] rounded-lg"
+                className="flex items-center gap-1.5 border-border text-secondary-foreground hover:bg-accent hover:border-primary rounded-lg"
                 aria-label="Adicionar secção"
               >
                 <Plus className="w-4 h-4" />
@@ -351,20 +351,20 @@ export function TemplateCreator({
           </div>
 
           {error && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 animate-in fade-in slide-in-from-top-2 duration-200">
+            <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-xl text-sm text-destructive animate-in fade-in slide-in-from-top-2 duration-200">
               {error}
             </div>
           )}
         </div>
       </div>
 
-        <div className="p-4 sm:p-6 border-t border-[#E4E4E7] bg-[#FAFAFA] shrink-0">
+        <div className="p-4 sm:p-6 border-t border-border bg-muted/50 shrink-0">
           <div className="flex flex-col sm:flex-row gap-3">
             <Button
               type="button"
               variant="outline"
               onClick={handleBack}
-              className="sm:flex-1 h-11 border-[#C7C9D9] text-[#2E2F38] hover:bg-[#EEF0FF] hover:border-[#6753FF] rounded-xl"
+              className="sm:flex-1 h-11 border-border text-secondary-foreground hover:bg-accent hover:border-primary rounded-xl"
             >
               Cancelar
             </Button>
@@ -372,7 +372,7 @@ export function TemplateCreator({
               type="button"
               onClick={handleSubmit}
               disabled={isLoading || !isFormValid()}
-              className="sm:flex-1 h-11 bg-[#6753FF] hover:bg-[#4E3BC0] text-white rounded-xl shadow-md shadow-[#6753FF]/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+              className="sm:flex-1 h-11 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl shadow-md shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
             >
               {isLoading ? (
                 <>
@@ -392,4 +392,3 @@ export function TemplateCreator({
     </>
   );
 }
-

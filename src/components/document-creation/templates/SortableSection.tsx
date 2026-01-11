@@ -45,15 +45,15 @@ export function SortableSection({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "flex gap-2 sm:gap-3 p-3 sm:p-4 bg-white rounded-xl border border-[#E4E4E7] transition-all",
-        isDragging && "shadow-lg border-[#6753FF] opacity-90 z-50"
+        "flex gap-2 sm:gap-3 p-3 sm:p-4 bg-card rounded-xl border border-border transition-all",
+        isDragging && "shadow-lg border-primary opacity-90 z-50"
       )}
     >
       <button
         type="button"
         className={cn(
           "flex items-center justify-center w-8 h-8 rounded-lg shrink-0 cursor-grab active:cursor-grabbing",
-          "text-[#6C6F80] hover:text-[#6753FF] hover:bg-[#EEF0FF] transition-colors",
+          "text-muted-foreground hover:text-primary hover:bg-accent transition-colors",
           "focus-visible:ring-ring/50 focus-visible:ring-[3px]"
         )}
         {...attributes}
@@ -68,7 +68,7 @@ export function SortableSection({
           value={section.title}
           onChange={(e) => onUpdate(section.id, "title", e.target.value)}
           placeholder="Título da secção"
-          className="h-10 px-3 text-sm font-medium bg-[#F4F5F8] border-[#C7C9D9] rounded-lg placeholder:text-[#6C6F80]"
+          className="h-10 px-3 text-sm font-medium bg-input border-input rounded-lg placeholder:text-muted-foreground"
           aria-label="Título da secção"
         />
         <Textarea
@@ -76,7 +76,7 @@ export function SortableSection({
           onChange={(e) => onUpdate(section.id, "description", e.target.value)}
           placeholder="Instruções para a IA: o que incluir nesta secção..."
           rows={2}
-          className="px-3 py-2 text-sm bg-[#F4F5F8] border-[#C7C9D9] rounded-lg placeholder:text-[#6C6F80] min-h-0"
+          className="px-3 py-2 text-sm bg-input border-input rounded-lg placeholder:text-muted-foreground min-h-0"
           aria-label="Instruções para a secção"
         />
       </div>
@@ -87,10 +87,10 @@ export function SortableSection({
         disabled={!canDelete}
         className={cn(
           "flex items-center justify-center w-8 h-8 rounded-lg shrink-0 transition-colors",
-          "focus-visible:ring-red-500/50 focus-visible:ring-[3px]",
+          "focus-visible:ring-destructive/50 focus-visible:ring-[3px]",
           canDelete
-            ? "text-[#6C6F80] hover:text-red-500 hover:bg-red-50"
-            : "text-[#C7C9D9] cursor-not-allowed"
+            ? "text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+            : "text-muted-foreground/30 cursor-not-allowed"
         )}
         aria-label="Eliminar secção"
       >
@@ -99,4 +99,3 @@ export function SortableSection({
     </div>
   );
 }
-
