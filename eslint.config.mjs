@@ -59,7 +59,6 @@ const eslintConfig = [
       "@next/next/no-img-element": "error",
 
       // Code style and formatting
-      curly: ["error", "all"],
       eqeqeq: ["error", "always"],
       quotes: ["error", "double", { avoidEscape: true }],
       semi: ["error", "always"],

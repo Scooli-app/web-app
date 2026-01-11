@@ -13,10 +13,10 @@ interface RichTextEditorProps {
 // Loading fallback
 function EditorSkeleton() {
   return (
-    <div className="border border-[#C7C9D9] rounded-xl bg-white w-full">
-      <div className="border-b border-[#C7C9D9] p-2 h-12 bg-gray-50 animate-pulse rounded-t-xl" />
+    <div className="border border-border rounded-xl bg-card w-full">
+      <div className="border-b border-border p-2 h-12 bg-muted animate-pulse rounded-t-xl" />
       <div className="p-4 min-h-[600px] flex items-center justify-center">
-        <div className="text-[#6C6F80]">A carregar editor...</div>
+        <div className="text-muted-foreground">A carregar editor...</div>
       </div>
     </div>
   );

@@ -39,15 +39,15 @@ export function DurationSection({
   const isCustomTimeEditing = (lessonTime && customTime) || isEditingCustomTime;
 
   return (
-    <Card className="p-4 sm:p-6 border-[#E4E4E7] shadow-sm hover:shadow-md transition-shadow">
+    <Card className="p-4 sm:p-6 border-border shadow-sm hover:shadow-md transition-shadow">
       <div className="space-y-3 sm:space-y-4">
         <div className="flex items-center gap-2 sm:gap-3">
-          <div className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-[#EEF0FF] shrink-0">
-            <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-[#6753FF]" />
+          <div className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-accent shrink-0">
+            <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
           </div>
-          <h2 className="text-base sm:text-lg font-semibold text-[#0B0D17]">
+          <h2 className="text-base sm:text-lg font-semibold text-foreground">
             Duração da Aula{" "}
-            <span className="text-xs sm:text-sm font-normal text-[#6C6F80]">
+            <span className="text-xs sm:text-sm font-normal text-muted-foreground">
               (Opcional)
             </span>
           </h2>
@@ -67,8 +67,8 @@ export function DurationSection({
                 "inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium transition-all",
                 "border hover:scale-[1.02] active:scale-[0.98]",
                 lessonTime === time.value
-                  ? "bg-[#6753FF] text-white border-[#6753FF] shadow-md shadow-[#6753FF]/20"
-                  : "bg-white text-[#2E2F38] border-[#C7C9D9] hover:border-[#6753FF] hover:bg-[#EEF0FF]"
+                  ? "bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20"
+                  : "bg-card text-foreground border-border hover:border-primary hover:bg-accent"
               )}
               aria-pressed={lessonTime === time.value}
               aria-label={`Selecionar ${time.label}`}
@@ -82,7 +82,7 @@ export function DurationSection({
             <button
               type="button"
               onClick={handleCustomTimeClick}
-              className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium transition-all border bg-[#6753FF] text-white border-[#6753FF] shadow-md shadow-[#6753FF]/20 hover:scale-[1.02] active:scale-[0.98] group"
+              className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium transition-all border bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] group"
               aria-label={`Duração: ${customTime} min`}
             >
               <span>⏱️</span>
@@ -101,18 +101,18 @@ export function DurationSection({
                   }
                   onBlur={() => setIsEditingCustomTime(false)}
                   placeholder="75"
-                  className="h-9 w-16 sm:w-20 px-2 sm:px-3 py-2 text-sm bg-[#F4F5F8] border-[#6753FF] rounded-xl placeholder:text-[#6C6F80]"
+                  className="h-9 w-16 sm:w-20 px-2 sm:px-3 py-2 text-sm bg-muted border-primary rounded-xl placeholder:text-muted-foreground"
                   aria-label="Duração personalizada"
                   autoFocus
                 />
-                <span className="ml-1.5 sm:ml-2 text-xs sm:text-sm text-[#6C6F80]">
+                <span className="ml-1.5 sm:ml-2 text-xs sm:text-sm text-muted-foreground">
                   min
                 </span>
               </div>
               <button
                 type="button"
                 onClick={handleCancelCustomTime}
-                className="p-1.5 sm:p-2 rounded-lg text-[#6C6F80] hover:text-red-500 hover:bg-red-50 transition-colors"
+                className="p-1.5 sm:p-2 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
                 aria-label="Cancelar"
               >
                 <X className="w-4 h-4" />
@@ -121,7 +121,7 @@ export function DurationSection({
                 <button
                   type="button"
                   onClick={handleConfirmCustomTime}
-                  className="p-1.5 sm:p-2 rounded-lg text-[#6C6F80] hover:text-[#6753FF] hover:bg-[#EEF0FF] transition-colors"
+                  className="p-1.5 sm:p-2 rounded-lg text-muted-foreground hover:text-primary hover:bg-accent transition-colors"
                   aria-label="Confirmar"
                 >
                   <Check className="w-4 h-4" />
@@ -139,7 +139,7 @@ export function DurationSection({
               className={cn(
                 "inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium transition-all",
                 "border hover:scale-[1.02] active:scale-[0.98]",
-                "bg-white text-[#2E2F38] border-[#C7C9D9] hover:border-[#6753FF] hover:bg-[#EEF0FF]"
+                "bg-card text-foreground border-border hover:border-primary hover:bg-accent"
               )}
               aria-label="Selecionar outra duração"
             >
@@ -152,4 +152,3 @@ export function DurationSection({
     </Card>
   );
 }
-
