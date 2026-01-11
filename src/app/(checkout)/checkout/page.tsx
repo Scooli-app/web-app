@@ -116,13 +116,13 @@ function parseError(err: unknown, context: "plans" | "checkout"): CheckoutError 
 function ErrorIcon({ type }: { type: ErrorType }) {
   switch (type) {
     case "network":
-      return <WifiOff className="w-12 h-12 text-[#FF4F4F]" />;
+      return <WifiOff className="w-12 h-12 text-destructive" />;
     case "server":
-      return <AlertCircle className="w-12 h-12 text-[#FFC857]" />;
+      return <AlertCircle className="w-12 h-12 text-warning" />;
     case "checkout":
-      return <XCircle className="w-12 h-12 text-[#FF4F4F]" />;
+      return <XCircle className="w-12 h-12 text-destructive" />;
     default:
-      return <AlertCircle className="w-12 h-12 text-[#FF4F4F]" />;
+      return <AlertCircle className="w-12 h-12 text-destructive" />;
   }
 }
 
@@ -138,23 +138,23 @@ function ErrorCard({
   showSupport?: boolean;
 }) {
   return (
-    <div className="bg-white p-8 rounded-2xl shadow-md border border-[#E4E4E7] text-center max-w-md mx-auto">
+    <div className="bg-card p-8 rounded-2xl shadow-md border border-border text-center max-w-md mx-auto">
       <div className="mb-4 flex justify-center">
         <ErrorIcon type={error.type} />
       </div>
       
-      <h2 className="text-xl font-semibold text-[#0B0D17] mb-2">
+      <h2 className="text-xl font-semibold text-foreground mb-2">
         {error.message}
       </h2>
       
       {error.details && (
-        <p className="text-[#6C6F80] mb-6 text-sm">{error.details}</p>
+        <p className="text-muted-foreground mb-6 text-sm">{error.details}</p>
       )}
 
       <div className="space-y-3">
         <button
           onClick={onRetry}
-          className="w-full bg-[#6753FF] hover:bg-[#4E3BC0] text-white px-6 py-3 rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
+          className="w-full bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-3 rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
         >
           <RefreshCw className="w-4 h-4" />
           Tentar novamente
@@ -163,7 +163,7 @@ function ErrorCard({
         {onGoBack && (
           <button
             onClick={onGoBack}
-            className="w-full border border-[#C7C9D9] text-[#0B0D17] bg-white hover:bg-[#EEF0FF] px-6 py-3 rounded-xl font-medium transition-colors"
+            className="w-full border border-border text-foreground bg-background hover:bg-accent px-6 py-3 rounded-xl font-medium transition-colors"
           >
             Voltar
           </button>
@@ -171,13 +171,13 @@ function ErrorCard({
       </div>
 
       {showSupport && (
-        <div className="mt-6 pt-6 border-t border-[#E4E4E7]">
-          <p className="text-sm text-[#6C6F80] mb-2">
+        <div className="mt-6 pt-6 border-t border-border">
+          <p className="text-sm text-muted-foreground mb-2">
             O problema persiste?
           </p>
           <a
             href="mailto:suporte@scooli.app"
-            className="inline-flex items-center gap-2 text-[#6753FF] hover:text-[#4E3BC0] font-medium text-sm transition-colors"
+            className="inline-flex items-center gap-2 text-primary hover:text-primary/80 font-medium text-sm transition-colors"
           >
             <MessageCircle className="w-4 h-4" />
             Contactar suporte
@@ -196,18 +196,18 @@ function InlineError({
   onDismiss: () => void;
 }) {
   return (
-    <div className="mb-6 p-4 bg-[#FFECEC] border border-[#FF4F4F]/20 rounded-xl">
+    <div className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-xl">
       <div className="flex items-start gap-3">
-        <AlertCircle className="w-5 h-5 text-[#FF4F4F] flex-shrink-0 mt-0.5" />
+        <AlertCircle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
         <div className="flex-1">
-          <p className="text-[#FF4F4F] font-medium text-sm">{error.message}</p>
+          <p className="text-destructive font-medium text-sm">{error.message}</p>
           {error.details && (
-            <p className="text-[#FF4F4F]/80 text-sm mt-1">{error.details}</p>
+            <p className="text-destructive/80 text-sm mt-1">{error.details}</p>
           )}
         </div>
         <button
           onClick={onDismiss}
-          className="text-[#FF4F4F] hover:text-[#FF4F4F]/70 transition-colors"
+          className="text-destructive hover:text-destructive/70 transition-colors"
           aria-label="Fechar erro"
         >
           <XCircle className="w-5 h-5" />
@@ -389,10 +389,10 @@ function CheckoutContent() {
   // Loading state - auth loading or redirecting to sign-up
   if (!isLoaded || (!isSignedIn && isLoaded)) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#EEF0FF] via-white to-[#F4F5F8]">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <Loader2 className="w-8 h-8 animate-spin text-[#6753FF]" />
-          <p className="text-[#6C6F80]">A carregar...</p>
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <p className="text-muted-foreground">A carregar...</p>
         </div>
       </div>
     );
@@ -401,13 +401,13 @@ function CheckoutContent() {
   // Auto-checkout in progress (no error)
   if (planParam && isCheckingOut && !error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#EEF0FF] via-white to-[#F4F5F8]">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="flex flex-col items-center gap-4 text-center px-6">
-          <Loader2 className="w-10 h-10 animate-spin text-[#6753FF]" />
-          <h2 className="text-xl font-semibold text-[#0B0D17]">
+          <Loader2 className="w-10 h-10 animate-spin text-primary" />
+          <h2 className="text-xl font-semibold text-foreground">
             A preparar o seu pagamento...
           </h2>
-          <p className="text-[#6C6F80]">
+          <p className="text-muted-foreground">
             Será redirecionado para o Stripe em segundos.
           </p>
         </div>
@@ -418,11 +418,11 @@ function CheckoutContent() {
   // Full-page error state (failed to load plans)
   if (error && !isLoadingPlans && plans.length === 0) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#EEF0FF] via-white to-[#F4F5F8]">
+      <div className="min-h-screen">
         <div className="max-w-5xl mx-auto px-6 py-12">
           <button
             onClick={() => router.back()}
-            className="flex items-center gap-2 text-[#6C6F80] hover:text-[#0B0D17] transition-colors mb-10"
+            className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-10"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Voltar</span>
@@ -443,27 +443,27 @@ function CheckoutContent() {
   const monthlyPlan = plans.find((p) => p.interval === "month");
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#EEF0FF] via-white to-[#F4F5F8]">
+    <div className="min-h-screen">
       <div className="max-w-5xl mx-auto px-6 py-12">
         {/* Header */}
         <div className="mb-10">
           <button
             onClick={() => router.back()}
-            className="flex items-center gap-2 text-[#6C6F80] hover:text-[#0B0D17] transition-colors mb-6"
+            className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-6"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Voltar</span>
           </button>
 
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 bg-[#6753FF] rounded-xl flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-white" />
+            <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center">
+              <Sparkles className="w-5 h-5 text-primary-foreground" />
             </div>
-            <h1 className="text-4xl font-bold text-[#0B0D17]">
+            <h1 className="text-4xl font-bold text-foreground">
               Escolha o seu plano
             </h1>
           </div>
-          <p className="text-lg text-[#6C6F80]">
+          <p className="text-lg text-muted-foreground">
             Desbloqueie todo o potencial do Scooli e crie conteúdo educacional
             sem limites.
           </p>
@@ -472,8 +472,8 @@ function CheckoutContent() {
         {/* Loading State */}
         {isLoadingPlans && (
           <div className="flex flex-col items-center justify-center py-20">
-            <Loader2 className="w-10 h-10 animate-spin text-[#6753FF] mb-4" />
-            <p className="text-[#6C6F80]">A carregar planos...</p>
+            <Loader2 className="w-10 h-10 animate-spin text-primary mb-4" />
+            <p className="text-muted-foreground">A carregar planos...</p>
           </div>
         )}
 
@@ -504,18 +504,18 @@ function CheckoutContent() {
                         clearError();
                       }
                     }}
-                    className={`relative bg-white p-8 rounded-2xl shadow-md border-2 cursor-pointer transition-all hover:shadow-lg ${
+                    className={`relative bg-card p-8 rounded-2xl shadow-md border-2 cursor-pointer transition-all hover:shadow-lg ${
                       isSelected
-                        ? "border-[#6753FF] ring-4 ring-[#6753FF]/10"
-                        : "border-[#E4E4E7] hover:border-[#6753FF]/30"
+                        ? "border-primary ring-4 ring-primary/10"
+                        : "border-border hover:border-primary/30"
                     }`}
                   >
                     {badge && (
                       <div
                         className={`absolute -top-3 left-6 px-4 py-1 rounded-full text-xs font-semibold ${
                           plan.interval === "year"
-                            ? "bg-gradient-to-r from-[#6753FF] to-[#8B7AFF] text-white"
-                            : "bg-[#6753FF] text-white"
+                            ? "bg-gradient-to-r from-primary to-primary/70 text-primary-foreground"
+                            : "bg-primary text-primary-foreground"
                         }`}
                       >
                         {badge}
@@ -524,11 +524,11 @@ function CheckoutContent() {
 
                     <div className="flex items-start justify-between mb-6">
                       <div>
-                        <h3 className="text-xl font-semibold text-[#0B0D17] mb-1">
+                        <h3 className="text-xl font-semibold text-foreground mb-1">
                           {plan.name}
                         </h3>
                         {savings && (
-                          <span className="inline-block bg-[#E6FAF2] text-[#1DB67D] text-xs font-medium px-2 py-1 rounded-full">
+                          <span className="inline-block bg-success/20 text-success text-xs font-medium px-2 py-1 rounded-full">
                             {savings}
                           </span>
                         )}
@@ -537,34 +537,34 @@ function CheckoutContent() {
                       <div
                         className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
                           isSelected
-                            ? "bg-[#6753FF] border-[#6753FF]"
-                            : "border-[#C7C9D9]"
+                            ? "bg-primary border-primary"
+                            : "border-muted-foreground/30"
                         }`}
                       >
                         {isSelected && (
-                          <Check className="w-4 h-4 text-white" />
+                          <Check className="w-4 h-4 text-primary-foreground" />
                         )}
                       </div>
                     </div>
 
                     <div className="mb-6">
                       <div className="flex items-baseline gap-1">
-                        <span className="text-4xl font-bold text-[#0B0D17]">
+                        <span className="text-4xl font-bold text-foreground">
                           {formatPrice(plan.priceCents, plan.currency)}
                         </span>
-                        <span className="text-[#6C6F80]">
+                        <span className="text-muted-foreground">
                           /{plan.interval === "month" ? "mês" : "ano"}
                         </span>
                       </div>
                       {monthlyEquivalent && (
-                        <p className="text-sm text-[#6C6F80] mt-1">
+                        <p className="text-sm text-muted-foreground mt-1">
                           Equivalente a {monthlyEquivalent}/mês
                         </p>
                       )}
                     </div>
 
                     {plan.description && (
-                      <p className="text-[#6C6F80] text-sm mb-4">
+                      <p className="text-muted-foreground text-sm mb-4">
                         {plan.description}
                       </p>
                     )}
@@ -573,10 +573,10 @@ function CheckoutContent() {
                       <ul className="space-y-3">
                         {plan.features.map((feature, idx) => (
                           <li key={idx} className="flex items-start gap-3">
-                            <div className="w-5 h-5 rounded-full bg-[#E6FAF2] flex items-center justify-center flex-shrink-0 mt-0.5">
-                              <Check className="w-3 h-3 text-[#1DB67D]" />
+                            <div className="w-5 h-5 rounded-full bg-success/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                              <Check className="w-3 h-3 text-success" />
                             </div>
-                            <span className="text-[#2E2F38]">{feature}</span>
+                            <span className="text-secondary-foreground">{feature}</span>
                           </li>
                         ))}
                       </ul>
@@ -587,7 +587,7 @@ function CheckoutContent() {
             </div>
 
             {/* Checkout Button */}
-            <div className="bg-white p-8 rounded-2xl shadow-md border border-[#E4E4E7]">
+            <div className="bg-card p-8 rounded-2xl shadow-md border border-border">
               {/* Checkout error */}
               {error && error.type !== "validation" && (
                 <InlineError error={error} onDismiss={clearError} />
@@ -597,10 +597,10 @@ function CheckoutContent() {
                 <div>
                   {selectedPlan && (
                     <>
-                      <p className="text-[#6C6F80] text-sm mb-1">
+                      <p className="text-muted-foreground text-sm mb-1">
                         Plano selecionado
                       </p>
-                      <p className="text-xl font-semibold text-[#0B0D17]">
+                      <p className="text-xl font-semibold text-foreground">
                         {selectedPlan.name} —{" "}
                         {formatPrice(
                           selectedPlan.priceCents,
@@ -615,7 +615,7 @@ function CheckoutContent() {
                 <button
                   onClick={handleCheckout}
                   disabled={!selectedPlanCode || isCheckingOut}
-                  className="w-full md:w-auto bg-[#6753FF] hover:bg-[#4E3BC0] disabled:bg-gray-300 disabled:cursor-not-allowed text-white px-8 py-4 rounded-xl font-semibold text-lg transition-colors flex items-center justify-center gap-3 min-w-[250px]"
+                  className="w-full md:w-auto bg-primary hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed text-primary-foreground px-8 py-4 rounded-xl font-semibold text-lg transition-colors flex items-center justify-center gap-3 min-w-[250px]"
                 >
                   {isCheckingOut ? (
                     <>
@@ -632,7 +632,7 @@ function CheckoutContent() {
               </div>
 
               {/* Trust badges */}
-              <div className="mt-8 pt-6 border-t border-[#E4E4E7] flex flex-wrap items-center justify-center gap-6 text-sm text-[#6C6F80]">
+              <div className="mt-8 pt-6 border-t border-border flex flex-wrap items-center justify-center gap-6 text-sm text-muted-foreground">
                 <div className="flex items-center gap-2">
                   <Shield className="w-4 h-4" />
                   <span>Pagamento seguro via Stripe</span>
@@ -658,8 +658,8 @@ export default function CheckoutPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#EEF0FF] via-white to-[#F4F5F8]">
-          <Loader2 className="w-8 h-8 animate-spin text-[#6753FF]" />
+        <div className="min-h-screen flex items-center justify-center">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
         </div>
       }
     >
