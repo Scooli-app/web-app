@@ -3,6 +3,7 @@
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { DocumentCard } from "@/components/ui/document-card";
 import { DocumentFilters } from "@/components/ui/document-filters";
+import { DocumentsEmptyState } from "@/components/ui/documents-empty-state";
 import type { Document } from "@/shared/types";
 import {
   getDocuments,
@@ -349,15 +350,17 @@ export function DocumentsGallery() {
             </div>
           </div>
         ) : filteredDocuments.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground">
-              {searchQuery
-                ? "Nenhum documento encontrado para a pesquisa."
+          <DocumentsEmptyState
+            variant={
+              debouncedSearchQuery
+                ? "no-search-results"
                 : selectedType === "all"
-                ? "Ainda não tem documentos. Crie o seu primeiro documento!"
-                : "Nenhum documento encontrado para este tipo."}
-            </p>
-          </div>
+                ? "no-documents"
+                : "no-filter-results"
+            }
+            searchQuery={debouncedSearchQuery}
+            filterType={selectedType !== "all" ? selectedType : undefined}
+          />
         ) : (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
