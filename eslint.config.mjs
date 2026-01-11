@@ -42,7 +42,6 @@ const eslintConfig = [
       "prefer-const": "error",
       "prefer-template": "error",
       "no-duplicate-imports": "error",
-      "no-useless-return": "error",
       "no-empty": "warn",
       "no-unreachable": "error",
 
