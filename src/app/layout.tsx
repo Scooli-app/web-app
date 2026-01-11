@@ -30,6 +30,19 @@ const themeInitScript = `
 })();
 `;
 
+const themeInitScript = `
+(function() {
+  try {
+    var theme = localStorage.getItem('scooli-theme');
+    var isDark = theme === 'dark' || 
+      ((theme === 'system' || !theme) && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    if (isDark) {
+      document.documentElement.classList.add('dark');
+    }
+  } catch (e) {}
+})();
+`;
+
 const lexend = Lexend({
   variable: "--font-lexend-variable",
   subsets: ["latin"],
