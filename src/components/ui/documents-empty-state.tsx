@@ -112,30 +112,30 @@ export function DocumentsEmptyState({
         {variant === "no-documents" ? (
           <div className="relative">
             {/* Decorative background circles */}
-            <div className="absolute -inset-8 rounded-full bg-gradient-to-br from-[#6753FF]/5 to-[#6753FF]/10 blur-2xl" />
-            <div className="absolute -inset-4 rounded-full bg-gradient-to-tr from-[#EEF0FF] to-white dark:from-[#6753FF]/10 dark:to-transparent" />
+            <div className="absolute -inset-8 rounded-full bg-gradient-to-br from-primary/5 to-primary/10 blur-2xl" />
+            <div className="absolute -inset-4 rounded-full bg-gradient-to-tr from-accent to-background" />
             
             {/* Main icon container */}
-            <div className="relative flex items-center justify-center w-32 h-32 rounded-3xl bg-gradient-to-br from-[#6753FF] to-[#4E3BC0] shadow-xl shadow-[#6753FF]/25">
-              <Sparkles className="w-14 h-14 text-white" strokeWidth={1.5} />
+            <div className="relative flex items-center justify-center w-32 h-32 rounded-3xl bg-gradient-to-br from-primary to-primary/80 shadow-xl shadow-primary/25">
+              <Sparkles className="w-14 h-14 text-primary-foreground" strokeWidth={1.5} />
               
               {/* Floating mini icons */}
-              <div className="absolute -top-3 -right-3 w-10 h-10 rounded-xl bg-white dark:bg-slate-800 shadow-lg flex items-center justify-center">
-                <FileText className="w-5 h-5 text-emerald-500" />
+              <div className="absolute -top-3 -right-3 w-10 h-10 rounded-xl bg-card shadow-lg flex items-center justify-center border border-border">
+                <FileText className="w-5 h-5 text-emerald-500 dark:text-emerald-400" />
               </div>
-              <div className="absolute -bottom-2 -left-4 w-10 h-10 rounded-xl bg-white dark:bg-slate-800 shadow-lg flex items-center justify-center">
-                <Presentation className="w-5 h-5 text-blue-500" />
+              <div className="absolute -bottom-2 -left-4 w-10 h-10 rounded-xl bg-card shadow-lg flex items-center justify-center border border-border">
+                <Presentation className="w-5 h-5 text-blue-500 dark:text-blue-400" />
               </div>
-              <div className="absolute top-1/2 -right-6 w-8 h-8 rounded-lg bg-white dark:bg-slate-800 shadow-lg flex items-center justify-center">
-                <GraduationCap className="w-4 h-4 text-amber-500" />
+              <div className="absolute top-1/2 -right-6 w-8 h-8 rounded-lg bg-card shadow-lg flex items-center justify-center border border-border">
+                <GraduationCap className="w-4 h-4 text-amber-500 dark:text-amber-400" />
               </div>
             </div>
           </div>
         ) : (
           <div className="relative">
-            <div className="absolute -inset-4 rounded-full bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900 blur-xl opacity-50" />
-            <div className="relative flex items-center justify-center w-24 h-24 rounded-2xl bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700">
-              {Icon && <Icon className="w-10 h-10 text-slate-400 dark:text-slate-500" strokeWidth={1.5} />}
+            <div className="absolute -inset-4 rounded-full bg-gradient-to-br from-muted to-muted/50 blur-xl opacity-50" />
+            <div className="relative flex items-center justify-center w-24 h-24 rounded-2xl bg-gradient-to-br from-muted to-muted/80">
+              {Icon && <Icon className="w-10 h-10 text-muted-foreground" strokeWidth={1.5} />}
             </div>
           </div>
         )}
@@ -159,7 +159,7 @@ export function DocumentsEmptyState({
               <Link href={singleActionData.href}>
                 <Button 
                   size="lg" 
-                  className="bg-[#6753FF] hover:bg-[#4E3BC0] text-white px-8 py-6 rounded-xl font-medium shadow-lg shadow-[#6753FF]/20 transition-all hover:shadow-xl hover:shadow-[#6753FF]/30 hover:-translate-y-0.5"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-6 rounded-xl font-medium shadow-lg shadow-primary/20 transition-all hover:shadow-xl hover:shadow-primary/30 hover:-translate-y-0.5"
                 >
                   <Plus className="w-5 h-5 mr-2" />
                   Criar {singleActionData.label}
@@ -184,7 +184,7 @@ export function DocumentsEmptyState({
                         relative flex flex-col items-center p-4 sm:p-5 rounded-2xl border border-border
                         ${action.bgLight}
                         transition-all duration-200
-                        hover:border-[#6753FF]/30 hover:shadow-lg hover:shadow-[#6753FF]/5
+                        hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5
                         hover:-translate-y-1
                       `}>
                         {/* Icon with gradient background */}
@@ -232,4 +232,3 @@ export function DocumentsEmptyState({
     </div>
   );
 }
-
