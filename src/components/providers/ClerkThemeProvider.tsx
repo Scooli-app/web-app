@@ -75,7 +75,11 @@ export default function ClerkThemeProvider({
   }, [theme]);
 
   return (
-    <ClerkProvider appearance={appearance}>
+    <ClerkProvider
+      appearance={appearance}
+      signInUrl="/sign-in"
+      signUpUrl="/sign-up"
+    >
       {children}
     </ClerkProvider>
   );
