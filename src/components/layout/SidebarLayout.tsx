@@ -39,7 +39,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { UserButton, SignInButton, SignedIn, SignedOut } from "@clerk/nextjs";
 import { ThemeToggle } from "./ThemeToggle";
 
@@ -179,6 +179,7 @@ const SidebarInnerContent = memo(function SidebarInnerContent({
   pathname: string;
   onItemClick?: () => void;
 }) {
+  const router = useRouter();
   return (
     <SidebarPrimitive collapsible="icon">
       <SidebarHeader className="flex items-center justify-center border-b border-border px-6 py-4 group-data-[collapsible=icon]:px-3 group-data-[collapsible=icon]:py-2">
@@ -188,7 +189,8 @@ const SidebarInnerContent = memo(function SidebarInnerContent({
           width={150}
           height={120}
           priority
-          className="flex-shrink-0 rounded-lg group-data-[collapsible=icon]:w-6 group-data-[collapsible=icon]:h-6"
+          className="flex-shrink-0 rounded-lg group-data-[collapsible=icon]:w-6 group-data-[collapsible=icon]:h-6 cursor-pointer"
+          onClick={() => router.push(Routes.DASHBOARD)}
         />
       </SidebarHeader>
       <SidebarContent className="py-4">
