@@ -1,11 +1,10 @@
 "use client";
 
-import type { RootState } from "@/store/store";
-import { ptPT } from "@clerk/localizations";
 import { ClerkProvider } from "@clerk/nextjs";
 import { dark } from "@clerk/themes";
-import { useMemo } from "react";
 import { useSelector } from "react-redux";
+import type { RootState } from "@/store/store";
+import { useMemo } from "react";
 
 function getSystemTheme(): "light" | "dark" {
   if (typeof window === "undefined") return "light";
@@ -76,12 +75,7 @@ export default function ClerkThemeProvider({
   }, [theme]);
 
   return (
-    <ClerkProvider
-      appearance={appearance}
-      localization={ptPT}
-      signInUrl="/sign-in"
-      signUpUrl="/sign-up"
-    >
+    <ClerkProvider appearance={appearance}>
       {children}
     </ClerkProvider>
   );

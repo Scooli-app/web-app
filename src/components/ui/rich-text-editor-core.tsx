@@ -58,8 +58,7 @@ const MenuBar = memo(function MenuBar({
   const handleCodeBlock = useCallback(() => editor.chain().focus().toggleCodeBlock().run(), [editor]);
 
   return (
-    <div className="border-b border-border p-2 flex items-center justify-between sticky top-0 z-10 bg-card rounded-t-xl min-h-[56px] w-full">
-      <div className="flex flex-wrap gap-1 flex-1">
+    <div className="border-b border-border p-2 flex flex-wrap gap-1 sticky top-0 z-10 bg-card rounded-t-xl">
       <button
         onClick={handleBold}
         disabled={!editorState.canBold}
@@ -282,7 +281,7 @@ export function TipTapEditorCore({
 
   return (
     <div className="border border-border rounded-xl bg-card w-full m-0.5">
-      <MenuBar editor={editor} rightHeaderContent={rightHeaderContent} />
+      <MenuBar editor={editor} />
       <div className="p-4">
         <EditorContent editor={editor} />
       </div>

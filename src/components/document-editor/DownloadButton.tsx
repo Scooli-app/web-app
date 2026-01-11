@@ -54,7 +54,7 @@ function DownloadButtonComponent({ title, content, disabled }: DownloadButtonPro
           variant="default"
           size="sm"
           disabled={isDisabled}
-          className="flex items-center gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
+          className="flex items-center gap-2 border-border text-foreground hover:bg-accent hover:border-primary"
         >
           {isDownloading ? (
             <Loader2 className="h-4 w-4 animate-spin" />

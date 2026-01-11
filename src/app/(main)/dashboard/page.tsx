@@ -92,12 +92,12 @@ function DashboardSkeleton() {
   return (
     <div className="w-full max-w-7xl mx-auto animate-pulse">
       <div className="mb-8">
-        <div className="h-10 bg-gray-200 rounded-lg w-64 mb-2" />
-        <div className="h-6 bg-gray-200 rounded-lg w-96" />
+        <div className="h-10 bg-muted rounded-lg w-64 mb-2" />
+        <div className="h-6 bg-muted rounded-lg w-96" />
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white p-8 rounded-2xl shadow-md border border-[#E4E4E7] h-64" />
-        <div className="bg-white p-8 rounded-2xl shadow-md border border-[#E4E4E7] h-64" />
+        <div className="bg-card p-8 rounded-2xl shadow-md border border-border h-64" />
+        <div className="bg-card p-8 rounded-2xl shadow-md border border-border h-64" />
       </div>
     </div>
   );

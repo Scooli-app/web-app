@@ -51,9 +51,8 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { memo, useCallback, useEffect, useMemo, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { usePathname } from "next/navigation";
+import { UserButton, SignInButton, SignedIn, SignedOut } from "@clerk/nextjs";
 import { ThemeToggle } from "./ThemeToggle";
 
 interface SidebarLayoutProps {
@@ -140,8 +139,8 @@ const NavMenuItem = memo(function NavMenuItem({
           className={cn(
             "h-10 px-4",
             isActive
-              ? "bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary"
-              : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+              ? "bg-primary text-primary-foreground hover:bg-primary/90"
+              : "hover:bg-accent text-foreground"
           )}
         >
           <Icon className="h-4 w-4" />
@@ -196,7 +195,7 @@ const SidebarInnerContent = memo(function SidebarInnerContent({
   const router = useRouter();
   return (
     <SidebarPrimitive collapsible="icon">
-      <SidebarHeader className="flex items-center justify-center px-6 py-4 group-data-[collapsible=icon]:px-3 group-data-[collapsible=icon]:py-2">
+      <SidebarHeader className="flex items-center justify-center border-b border-border px-6 py-4 group-data-[collapsible=icon]:px-3 group-data-[collapsible=icon]:py-2">
         <Image
           src="/scooli.svg"
           alt="Scooli"
@@ -364,11 +363,10 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
 
         {/* Main Content Area */}
         <div className="flex-1 flex flex-col">
-          <header className="flex h-16 shrink-0 items-center gap-2 bg-background/50 backdrop-blur-md w-full border-b border-border">
+          <header className="flex h-16 shrink-0 items-center gap-2 bg-background w-full border-b border-border">
             <div className="flex items-center gap-2 px-4 justify-between w-full">
               <SidebarTrigger className="hidden md:flex" />
               <div className="ml-auto flex items-center gap-2">
-                <GenerationsIndicator />
                 <ThemeToggle />
                 <SignedOut>
                   <SignInButton mode="modal">
@@ -391,7 +389,7 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
           </header>
           <main
             className={cn(
-              "flex-1 overflow-auto w-full bg-slate-50 dark:bg-background",
+              "flex-1 overflow-auto w-full bg-accent",
               className
             )}
           >

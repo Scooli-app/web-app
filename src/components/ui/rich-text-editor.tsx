@@ -15,14 +15,7 @@ interface RichTextEditorProps {
 function EditorSkeleton() {
   return (
     <div className="border border-border rounded-xl bg-card w-full">
-      <div className="border-b border-border p-2 h-12 bg-muted animate-pulse rounded-t-xl flex justify-between items-center">
-        <div className="flex gap-2">
-           {[...Array(5)].map((_, i) => (
-             <div key={i} className="w-8 h-8 bg-muted-foreground/10 rounded" />
-           ))}
-        </div>
-        <div className="w-24 h-8 bg-muted-foreground/10 rounded mr-2" />
-      </div>
+      <div className="border-b border-border p-2 h-12 bg-muted animate-pulse rounded-t-xl" />
       <div className="p-4 min-h-[600px] flex items-center justify-center">
         <div className="text-muted-foreground">A carregar editor...</div>
       </div>

@@ -12,7 +12,7 @@ interface GradeSectionProps {
 
 export function GradeSection({ schoolYear, onUpdate, className }: GradeSectionProps) {
   return (
-    <Card className={cn("p-4 sm:p-6 border-border shadow-sm hover:shadow-md transition-shadow", className)}>
+    <Card className="p-4 sm:p-6 border-border shadow-sm hover:shadow-md transition-shadow">
       <div className="space-y-3 sm:space-y-4">
         <div className="flex items-center gap-2 sm:gap-3">
           <div className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-accent shrink-0">

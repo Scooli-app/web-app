@@ -62,7 +62,7 @@ export function DurationSection({
   const hasCustomTimeSelected = lessonTime && !isPreset && !isEditingCustomTime;
 
   return (
-    <Card className={cn("p-4 sm:p-6 border-border shadow-sm hover:shadow-md transition-shadow h-full", className)}>
+    <Card className="p-4 sm:p-6 border-border shadow-sm hover:shadow-md transition-shadow">
       <div className="space-y-3 sm:space-y-4">
         <div className="flex items-center gap-2 sm:gap-3">
           <div className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-accent shrink-0">
@@ -101,7 +101,7 @@ export function DurationSection({
               type="button"
               onClick={handleCustomTimeClick}
               className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium transition-all border bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] group"
-              aria-label={`Duração: ${lessonTime} min`}
+              aria-label={`Duração: ${customTime} min`}
             >
               <span>⏱️</span>
               <span>{lessonTime} min</span>
@@ -142,16 +142,16 @@ export function DurationSection({
               >
                 <X className="w-4 h-4" />
               </button>
-              {/* Confirm button is always available when editing, even if customTime is 0 */}
-              <button
-                type="button"
-                onMouseDown={(e) => e.preventDefault()} // Prevent blur
-                onClick={handleConfirmCustomTime}
-                className="p-1.5 sm:p-2 rounded-lg text-muted-foreground hover:text-primary hover:bg-accent transition-colors"
-                aria-label="Confirmar"
-              >
-                <Check className="w-4 h-4" />
-              </button>
+              {customTime && (
+                <button
+                  type="button"
+                  onClick={handleConfirmCustomTime}
+                  className="p-1.5 sm:p-2 rounded-lg text-muted-foreground hover:text-primary hover:bg-accent transition-colors"
+                  aria-label="Confirmar"
+                >
+                  <Check className="w-4 h-4" />
+                </button>
+              )}
             </div>
           ) : (
             <button
