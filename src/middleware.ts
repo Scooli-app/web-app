@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 const isPublicRoute = createRouteMatcher([
   "/sign-in(.*)",
   "/sign-up(.*)",
+  "/forgot-password(.*)",
   "/signup",
   "/",
   "/checkout/cancel",
@@ -11,11 +12,6 @@ const isPublicRoute = createRouteMatcher([
 const TOKEN_COOKIE_NAME = "scooli_token";
 
 export default clerkMiddleware(async (auth, req) => {
-  // Early return for webhook routes - skip all authentication
-  if (req.nextUrl.pathname === "/webhooks/stripe") {
-    return NextResponse.next();
-  }
-
   const authObj = await auth();
 
   const setTokenCookie = async (res: NextResponse) => {
@@ -53,6 +49,12 @@ export default clerkMiddleware(async (auth, req) => {
       req.nextUrl.pathname.startsWith("/sign-up") ||
       req.nextUrl.pathname.startsWith("/forgot-password"))
   ) {
+    const res = NextResponse.redirect(new URL("/dashboard", req.url));
+    await setTokenCookie(res);
+    return res;
+  }
+
+  if (req.nextUrl.pathname === "/") {
     const res = NextResponse.redirect(new URL("/dashboard", req.url));
     await setTokenCookie(res);
     return res;
