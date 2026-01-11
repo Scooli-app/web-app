@@ -350,10 +350,10 @@ export function DocumentsGallery() {
             </div>
           </div>
         ) : filteredDocuments.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground">
-              {searchQuery
-                ? "Nenhum documento encontrado para a pesquisa."
+          <DocumentsEmptyState
+            variant={
+              debouncedSearchQuery
+                ? "no-search-results"
                 : selectedType === "all"
                 ? "no-documents"
                 : "no-filter-results"
