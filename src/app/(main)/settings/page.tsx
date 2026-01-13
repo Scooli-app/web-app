@@ -14,26 +14,41 @@ import {
   Sun,
   Moon,
   Monitor,
-  Sparkles,
   Check,
+  Infinity,
+  Crown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
-  getCurrentSubscription,
   getUsageStats,
+  getCurrentSubscription,
   createPortalSession,
+  getSubscriptionPlans,
 } from "@/services/api";
-import  {
-    PLAN_DISPLAY_INFO,
-    type CurrentSubscription,
-    type UsageStats,
-    type SubscriptionStatus,
+import {
+  PLAN_DISPLAY_INFO,
+  type CurrentSubscription,
+  type UsageStats,
+  type SubscriptionStatus,
+  type SubscriptionPlan,
 } from "@/shared/types/subscription";
 import { setTheme, type ThemeMode } from "@/store/ui/uiSlice";
 import type { RootState, AppDispatch } from "@/store/store";
 
-function getStatusBadge(status: SubscriptionStatus, cancelAtPeriodEnd: boolean) {
+function getStatusBadge(
+  status: SubscriptionStatus,
+  cancelAtPeriodEnd: boolean,
+  planCode?: string
+) {
+  // Free plan always shows "Período de Teste" badge
+  if (planCode === "free") {
+    return {
+      label: "Período de Teste",
+      className: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+    };
+  }
+
   if (cancelAtPeriodEnd) {
     return {
       label: "Cancela no fim do período",
@@ -58,17 +73,25 @@ function getStatusBadge(status: SubscriptionStatus, cancelAtPeriodEnd: boolean) 
         label: "Cancelado",
         className: "bg-secondary text-muted-foreground",
       };
-    case "free":
-      return {
-        label: "Gratuito",
-        className: "bg-primary/10 text-primary",
-      };
     default:
       return {
         label: status,
         className: "bg-secondary text-muted-foreground",
       };
   }
+}
+
+function formatPrice(priceCents: number, currency = "EUR"): string {
+  return new Intl.NumberFormat("pt-PT", {
+    style: "currency",
+    currency,
+  }).format(priceCents / 100);
+}
+
+function calculateMonthlyEquivalent(plan: SubscriptionPlan): string | null {
+  if (plan.interval !== "year") return null;
+  const monthlyPrice = plan.priceCents / 12;
+  return formatPrice(monthlyPrice, plan.currency);
 }
 
 function formatDate(dateString: string): string {
@@ -89,6 +112,7 @@ function SettingsContent() {
 
   const [subscription, setSubscription] = useState<CurrentSubscription | null>(null);
   const [usage, setUsage] = useState<UsageStats | null>(null);
+  const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [isLoadingPortal, setIsLoadingPortal] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -97,13 +121,24 @@ function SettingsContent() {
     try {
       setIsLoadingData(true);
       setError(null);
-      const [subData, usageData] = await Promise.all([
+      const [subscriptionData, usageData, plansData] = await Promise.all([
         getCurrentSubscription(),
         getUsageStats(),
+        getSubscriptionPlans(),
       ]);
-      setSubscription(subData);
+      setSubscription(subscriptionData);
       setUsage(usageData);
-    } catch {
+      // Filter to only paid plans and sort: monthly first, then annual
+      const paidPlans = plansData
+        .filter((p) => p.priceCents > 0)
+        .sort((a, b) => {
+          if (a.interval === "month" && b.interval === "year") return -1;
+          if (a.interval === "year" && b.interval === "month") return 1;
+          return 0;
+        });
+      setPlans(paidPlans);
+    } catch (err) {
+      console.error("[Settings] Fetch error:", err);
       setError("Não foi possível carregar os dados da subscrição.");
     } finally {
       setIsLoadingData(false);
@@ -140,9 +175,9 @@ function SettingsContent() {
     dispatch(setTheme(newTheme));
   };
 
-  const isFreeUser = !subscription || subscription.status === "free";
+  const isFreeUser = !subscription || subscription.planCode === "free";
   const creditsUsedPercent = usage
-    ? Math.min((usage.creditsUsed / usage.creditsLimit) * 100, 100)
+    ? Math.min((usage.used / usage.limit) * 100, 100)
     : 0;
 
   const planInfo = subscription
@@ -153,8 +188,8 @@ function SettingsContent() {
     : PLAN_DISPLAY_INFO.free;
 
   const statusBadge = subscription
-    ? getStatusBadge(subscription.status, subscription.cancelAtPeriodEnd)
-    : getStatusBadge("free", false);
+    ? getStatusBadge(subscription.status, subscription.cancelAtPeriodEnd, subscription.planCode)
+    : getStatusBadge("free", false, "free");
 
   if (!isUserLoaded) {
     return <SettingsSkeleton />;
@@ -244,9 +279,103 @@ function SettingsContent() {
                 Tentar novamente
               </Button>
             </div>
+          ) : isFreeUser ? (
+            <>
+              {/* Free Trial Plan Info */}
+              <div className="flex flex-wrap items-center gap-3 mb-4">
+                <span className="font-semibold text-foreground text-lg">
+                  {planInfo.name}
+                </span>
+                <span
+                  className={`inline-flex px-3 py-1 rounded-full text-sm font-medium ${statusBadge.className}`}
+                >
+                  {statusBadge.label}
+                </span>
+              </div>
+
+              {/* Free Trial Usage */}
+              {usage && (
+                <div className="mb-6">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-sm font-medium text-foreground">
+                      Gerações restantes
+                    </span>
+                    <span className="text-sm text-muted-foreground">
+                      {usage.remaining} de {usage.limit}
+                    </span>
+                  </div>
+                  <div className="h-3 bg-muted rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-primary rounded-full transition-all duration-300"
+                      style={{ width: `${100 - creditsUsedPercent}%` }}
+                    />
+                  </div>
+                  {usage.remaining <= 20 && (
+                    <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
+                      Restam poucas gerações. Considere fazer upgrade.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Upgrade Plan Options */}
+              {plans.length > 0 && (
+                <div className="space-y-3">
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Upgrade para Pro
+                  </p>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {plans.map((plan) => {
+                      const isAnnual = plan.interval === "year";
+                      const monthlyEquivalent = calculateMonthlyEquivalent(plan);
+                      return (
+                        <button
+                          key={plan.planCode}
+                          onClick={() => router.push(`/checkout?plan=${plan.planCode}`)}
+                          className={`relative p-4 rounded-xl border-2 text-left transition-all hover:border-primary hover:shadow-md ${
+                            isAnnual
+                              ? "border-primary bg-primary/5"
+                              : "border-border bg-muted/30"
+                          }`}
+                        >
+                          {(plan.popular || isAnnual) && (
+                            <span className={`absolute -top-2.5 left-3 px-2 py-0.5 text-xs font-medium rounded-full ${
+                              isAnnual
+                                ? "bg-primary text-primary-foreground"
+                                : "bg-secondary text-secondary-foreground"
+                            }`}>
+                              {isAnnual ? "Poupa 20%" : "Mais Popular"}
+                            </span>
+                          )}
+                          <div className="flex items-center gap-2 mb-1">
+                            <Crown className="w-4 h-4 text-primary" />
+                            <span className="font-semibold text-foreground">
+                              {plan.name}
+                            </span>
+                          </div>
+                          <div className="flex items-baseline gap-1">
+                            <span className="text-lg font-bold text-foreground">
+                              {formatPrice(plan.priceCents, plan.currency)}
+                            </span>
+                            <span className="text-sm text-muted-foreground">
+                              /{plan.interval === "month" ? "mês" : "ano"}
+                            </span>
+                          </div>
+                          {monthlyEquivalent && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              ≈ {monthlyEquivalent}/mês
+                            </p>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </>
           ) : (
             <>
-              {/* Plan Info */}
+              {/* Pro Plan Info */}
               <div className="flex flex-wrap items-center gap-3 mb-4">
                 <span className="font-semibold text-foreground text-lg">
                   {planInfo.name}
@@ -259,7 +388,7 @@ function SettingsContent() {
               </div>
 
               {/* Renewal/Period Info */}
-              {subscription && subscription.status !== "free" && (
+              {subscription && (
                 <p className="text-sm text-muted-foreground mb-6">
                   {subscription.cancelAtPeriodEnd
                     ? `Acesso até ${formatDate(subscription.currentPeriodEnd)}`
@@ -267,61 +396,47 @@ function SettingsContent() {
                 </p>
               )}
 
-              {/* Credits Progress */}
-              {usage && (
-                <div className="mb-6">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm font-medium text-foreground">
-                      Créditos utilizados
-                    </span>
-                    <span className="text-sm text-muted-foreground">
-                      {usage.creditsUsed} / {usage.creditsLimit}
-                    </span>
-                  </div>
-                  <div className="h-3 bg-muted rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-primary rounded-full transition-all duration-300"
-                      style={{ width: `${creditsUsedPercent}%` }}
-                    />
-                  </div>
-                  {creditsUsedPercent >= 80 && (
-                    <p className="text-xs text-warning mt-2">
-                      Está a aproximar-se do limite de créditos deste período.
-                    </p>
-                  )}
+              {/* Pro Usage - Unlimited */}
+              <div className="mb-6">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm font-medium text-foreground">
+                    Gerações utilizadas
+                  </span>
+                  <span className="text-sm text-muted-foreground flex items-center gap-1">
+                    {usage?.used ?? 0}
+                    <span className="mx-0.5">/</span>
+                    <Infinity className="w-4 h-4" />
+                  </span>
                 </div>
-              )}
+                <div className="h-3 bg-muted rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-primary to-primary/60 rounded-full"
+                    style={{ width: "100%" }}
+                  />
+                </div>
+                <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-2">
+                  Gerações ilimitadas com o plano Pro
+                </p>
+              </div>
 
               {/* Actions */}
-              <div className="flex flex-wrap gap-3">
-                {isFreeUser ? (
-                  <Button
-                    onClick={() => router.push("/checkout")}
-                    className="bg-primary hover:bg-primary/90 text-primary-foreground px-5 py-3 rounded-xl font-medium"
-                  >
-                    <Sparkles className="w-4 h-4 mr-2" />
-                    Fazer Upgrade
-                  </Button>
+              <Button
+                onClick={handleManageSubscription}
+                disabled={isLoadingPortal}
+                className="bg-primary hover:bg-primary/90 text-primary-foreground px-5 py-3 rounded-xl font-medium disabled:opacity-50"
+              >
+                {isLoadingPortal ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    A abrir...
+                  </>
                 ) : (
-                  <Button
-                    onClick={handleManageSubscription}
-                    disabled={isLoadingPortal}
-                    className="bg-primary hover:bg-primary/90 text-primary-foreground px-5 py-3 rounded-xl font-medium disabled:opacity-50"
-                  >
-                    {isLoadingPortal ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        A abrir...
-                      </>
-                    ) : (
-                      <>
-                        Gerir Subscrição
-                        <ExternalLink className="w-4 h-4 ml-2" />
-                      </>
-                    )}
-                  </Button>
+                  <>
+                    Gerir Subscrição
+                    <ExternalLink className="w-4 h-4 ml-2" />
+                  </>
                 )}
-              </div>
+              </Button>
             </>
           )}
         </div>

@@ -53,8 +53,10 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { UserButton, SignInButton, SignedIn, SignedOut } from "@clerk/nextjs";
+import { UserButton, SignInButton, SignedIn, SignedOut, useAuth } from "@clerk/nextjs";
 import { ThemeToggle } from "./ThemeToggle";
+import { getUsageStats, getCurrentSubscription } from "@/services/api";
+import type { UsageStats, CurrentSubscription } from "@/shared/types/subscription";
 
 interface SidebarLayoutProps {
   children: React.ReactNode;
@@ -347,6 +349,7 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
             <div className="flex items-center gap-2 px-4 justify-between w-full">
               <SidebarTrigger className="hidden md:flex" />
               <div className="ml-auto flex items-center gap-2">
+                <GenerationsIndicator />
                 <ThemeToggle />
                 <SignedOut>
                   <SignInButton mode="modal">
