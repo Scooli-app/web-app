@@ -35,9 +35,10 @@ export type SubscriptionStatus =
   | "free";
 
 export interface UsageStats {
-  creditsUsed: number;
-  creditsLimit: number;
-  documentsGenerated: number;
+  used: number;
+  limit: number;
+  remaining: number;
+  percentageUsed: number;
   periodStart: string;
   periodEnd: string;
 }
