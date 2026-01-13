@@ -1,5 +1,6 @@
 "use client";
 
+import { memo, useState, useMemo, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
@@ -52,8 +53,10 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { UserButton, SignInButton, SignedIn, SignedOut } from "@clerk/nextjs";
+import { UserButton, SignInButton, SignedIn, SignedOut, useAuth } from "@clerk/nextjs";
 import { ThemeToggle } from "./ThemeToggle";
+import { getUsageStats, getCurrentSubscription } from "@/services/api";
+import type { UsageStats, CurrentSubscription } from "@/shared/types/subscription";
 
 interface SidebarLayoutProps {
   children: React.ReactNode;
@@ -238,67 +241,46 @@ const SidebarInnerContent = memo(function SidebarInnerContent({
 
 function GenerationsIndicator() {
   const { isSignedIn } = useAuth();
-  const dispatch = useDispatch<AppDispatch>();
-  
-  const subscription = useSelector(selectSubscription);
-  const usage = useSelector(selectUsageStats);
+  const [usage, setUsage] = useState<UsageStats | null>(null);
+  const [subscription, setSubscription] = useState<CurrentSubscription | null>(null);
 
   useEffect(() => {
-    if (isSignedIn) {
-      dispatch(fetchSubscription());
-      dispatch(fetchUsage());
+    if (!isSignedIn) return;
+
+    async function fetchData() {
+      try {
+        const [usageData, subData] = await Promise.all([
+          getUsageStats(),
+          getCurrentSubscription(),
+        ]);
+        setUsage(usageData);
+        setSubscription(subData);
+      } catch {
+        // Silently fail - this is not critical UI
+      }
     }
-  }, [isSignedIn, dispatch]);
+
+    fetchData();
+  }, [isSignedIn]);
 
   const isFreeUser = !subscription || subscription.planCode === "free";
 
-  if (!isSignedIn || !usage) return null;
-
-  if (!isFreeUser) {
-    return (
-      <div
-        className={cn(
-          "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors border",
-          "bg-primary/5 text-primary border-success/10"
-        )}
-      >
-        <Sparkles className="w-4 h-4" />
-        <span className="text-lg leading-none">∞</span>
-      </div>
-    );
-  }
+  if (!isSignedIn || !usage || !isFreeUser) return null;
 
   const isLow = usage.remaining <= 20;
-  const isOut = usage.remaining === 0;
-
-  if (isOut) {
-    return (
-      <Link href={Routes.CHECKOUT}>
-        <Button
-          size="sm"
-          className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white shadow-sm transition-all hover:scale-105 active:scale-95"
-        >
-          <Sparkles className="w-4 h-4 mr-1.5" />
-          Fazer Upgrade
-        </Button>
-      </Link>
-    );
-  }
 
   return (
     <Link
       href={Routes.SETTINGS}
       className={cn(
-        "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors border",
+        "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors",
         isLow
-          ? "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-900/30"
-          : "bg-primary/5 text-primary border-primary/10 hover:bg-primary/10"
+          ? "bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:hover:bg-amber-900/50"
+          : "bg-primary/10 text-primary hover:bg-primary/20"
       )}
     >
       <Sparkles className="w-4 h-4" />
-      <span>
-        {usage.remaining} {usage.remaining === 1 ? "geração" : "gerações"}
-      </span>
+      <span>{usage.remaining}</span>
     </Link>
   );
 }
@@ -367,6 +349,7 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
             <div className="flex items-center gap-2 px-4 justify-between w-full">
               <SidebarTrigger className="hidden md:flex" />
               <div className="ml-auto flex items-center gap-2">
+                <GenerationsIndicator />
                 <ThemeToggle />
                 <SignedOut>
                   <SignInButton mode="modal">
