@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useState, useMemo, useCallback } from "react";
+import { memo, useState, useMemo, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
@@ -35,13 +35,16 @@ import {
   Home,
   Menu,
   Settings,
+  Sparkles,
   type LucideIcon,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { UserButton, SignInButton, SignedIn, SignedOut } from "@clerk/nextjs";
+import { UserButton, SignInButton, SignedIn, SignedOut, useAuth } from "@clerk/nextjs";
 import { ThemeToggle } from "./ThemeToggle";
+import { getUsageStats, getCurrentSubscription } from "@/services/api";
+import type { UsageStats, CurrentSubscription } from "@/shared/types/subscription";
 
 interface SidebarLayoutProps {
   children: React.ReactNode;
@@ -223,6 +226,52 @@ const SidebarInnerContent = memo(function SidebarInnerContent({
   );
 });
 
+function GenerationsIndicator() {
+  const { isSignedIn } = useAuth();
+  const [usage, setUsage] = useState<UsageStats | null>(null);
+  const [subscription, setSubscription] = useState<CurrentSubscription | null>(null);
+
+  useEffect(() => {
+    if (!isSignedIn) return;
+
+    async function fetchData() {
+      try {
+        const [usageData, subData] = await Promise.all([
+          getUsageStats(),
+          getCurrentSubscription(),
+        ]);
+        setUsage(usageData);
+        setSubscription(subData);
+      } catch {
+        // Silently fail - this is not critical UI
+      }
+    }
+
+    fetchData();
+  }, [isSignedIn]);
+
+  const isFreeUser = !subscription || subscription.planCode === "free";
+
+  if (!isSignedIn || !usage || !isFreeUser) return null;
+
+  const isLow = usage.remaining <= 20;
+
+  return (
+    <Link
+      href={Routes.SETTINGS}
+      className={cn(
+        "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors",
+        isLow
+          ? "bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:hover:bg-amber-900/50"
+          : "bg-primary/10 text-primary hover:bg-primary/20"
+      )}
+    >
+      <Sparkles className="w-4 h-4" />
+      <span>{usage.remaining}</span>
+    </Link>
+  );
+}
+
 export function SidebarLayout({ children, className }: SidebarLayoutProps) {
   const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
@@ -275,6 +324,7 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
             <div className="flex items-center gap-2 px-4 justify-between w-full">
               <SidebarTrigger className="hidden md:flex" />
               <div className="ml-auto flex items-center gap-2">
+                <GenerationsIndicator />
                 <ThemeToggle />
                 <SignedOut>
                   <SignInButton mode="modal">
@@ -284,7 +334,7 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
                   </SignInButton>
                 </SignedOut>
                 <SignedIn>
-                  <UserButton 
+                  <UserButton
                     appearance={{
                       elements: {
                         avatarBox: "w-10 h-10"
