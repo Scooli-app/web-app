@@ -156,8 +156,8 @@ function SettingsContent() {
     setError(null);
     try {
       const response = await createPortalSession();
-      if (response?.portalUrl) {
-        window.location.href = response.portalUrl;
+      if (response?.url) {
+        window.location.href = response.url;
       } else {
         throw new Error("Portal URL not received");
       }
