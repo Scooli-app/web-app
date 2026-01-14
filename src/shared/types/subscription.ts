@@ -53,7 +53,7 @@ export interface CheckoutResponse {
 }
 
 export interface PortalResponse {
-  portalUrl: string;
+  url: string;
 }
 
 export const PLAN_CODES = {
