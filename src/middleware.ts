@@ -8,10 +8,16 @@ const isPublicRoute = createRouteMatcher([
   "/signup",
   "/",
   "/checkout/cancel",
+  "/webhooks/stripe",
 ]);
 const TOKEN_COOKIE_NAME = "scooli_token";
 
 export default clerkMiddleware(async (auth, req) => {
+  // Early return for webhook routes - skip all authentication
+  if (req.nextUrl.pathname === "/webhooks/stripe") {
+    return NextResponse.next();
+  }
+
   const authObj = await auth();
 
   const setTokenCookie = async (res: NextResponse) => {
@@ -75,7 +81,7 @@ export const config = {
   matcher: [
     // Skip Next.js internals and all static files, unless found in search params
     "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
-    // Always run for API routes
-    "/(api|trpc)(.*)",
+    // Always run for API routes and webhooks
+    "/(api|trpc|webhooks)(.*)",
   ],
 };
