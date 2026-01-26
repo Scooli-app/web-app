@@ -81,6 +81,7 @@ export interface CreateDocumentRequest {
   subject?: string;
   schoolYear?: number;
   duration?: string;
+  isSpecificComponent?: boolean;
   teachingMethod?: TeachingMethod;
   additionalDetails?: string;
   is_public?: boolean;
