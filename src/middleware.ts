@@ -9,6 +9,7 @@ const isPublicRoute = createRouteMatcher([
   "/",
   "/checkout/cancel",
   "/webhooks/stripe",
+  "/.well-known/(.*)"
 ]);
 const TOKEN_COOKIE_NAME = "scooli_token";
 
