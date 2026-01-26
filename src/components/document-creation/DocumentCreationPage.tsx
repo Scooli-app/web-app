@@ -8,7 +8,7 @@ import {
 import { useAppDispatch } from "@/store/hooks";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { AMBIGUOUS_COMPONENTS_SUBJECTS, SUBJECTS, SUBJECTS_BY_GRADE } from "./constants";
+import { SUBJECTS, SUBJECTS_BY_GRADE } from "./constants";
 import {
   AdditionalDetailsSection,
   DurationSection,
@@ -100,15 +100,6 @@ export default function DocumentCreationPage({
       }
     }
   }, [formState.schoolYear, formState.subject, updateForm]);
-
-  // Reset component type when subject changes
-  useEffect(() => {
-    if (formState.subject && formState.isSpecificComponent) {
-      if (!AMBIGUOUS_COMPONENTS_SUBJECTS.includes(formState.subject)) {
-        updateForm("isSpecificComponent", false);
-      }
-    }
-  }, [formState.subject, formState.isSpecificComponent, updateForm]);
 
   const showTeachingMethodSection = documentType.id === "lessonPlan";
 
@@ -220,7 +211,6 @@ export default function DocumentCreationPage({
 
           <SubjectSection 
             subject={formState.subject} 
-            isSpecificComponent={formState.isSpecificComponent}
             onUpdate={updateForm} 
             availableSubjects={formState.schoolYear ? SUBJECTS_BY_GRADE[String(formState.schoolYear)] : undefined}
             className="shadow-none border-0 p-0 hover:shadow-none transition-none"

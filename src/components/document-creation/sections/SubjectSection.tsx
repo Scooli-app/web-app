@@ -9,8 +9,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/shared/utils/utils";
-import { BookOpen, Check } from "lucide-react";
-import { AMBIGUOUS_COMPONENTS_SUBJECTS, SUBJECTS } from "../constants";
+import { BookOpen } from "lucide-react";
+import { SUBJECTS } from "../constants";
 import type { FormUpdateFn } from "../types";
 
 interface SubjectSectionProps {
@@ -22,17 +22,10 @@ interface SubjectSectionProps {
   disabled?: boolean;
 }
 
-export function SubjectSection({
-  subject,
-  isSpecificComponent,
-  onUpdate,
-  availableSubjects,
-  className,
-  disabled,
-}: SubjectSectionProps) {
+export function SubjectSection({ subject, onUpdate, availableSubjects, className, disabled }: SubjectSectionProps) {
   // Filter subjects based on availableSubjects prop if provided
-  const visibleSubjects = availableSubjects
-    ? SUBJECTS.filter((s) => availableSubjects.includes(s.id))
+  const visibleSubjects = availableSubjects 
+    ? SUBJECTS.filter(s => availableSubjects.includes(s.id))
     : SUBJECTS;
 
   // Group subjects by category
@@ -60,10 +53,8 @@ export function SubjectSection({
     "Outros",
   ];
 
-  const isAmbiguous = subject && AMBIGUOUS_COMPONENTS_SUBJECTS.includes(subject);
-
   return (
-    <Card className="p-4 sm:p-6 border-border shadow-sm hover:shadow-md transition-shadow">
+    <Card className={cn("p-4 sm:p-6 border-border shadow-sm hover:shadow-md transition-shadow", className)}>
       <div className="space-y-3 sm:space-y-4">
         <div className="flex items-center gap-2 sm:gap-3">
           <div className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-accent shrink-0">
@@ -73,37 +64,54 @@ export function SubjectSection({
             Disciplina <span className="text-destructive">*</span>
           </h2>
         </div>
-
-        <Select
-          value={subject}
-          onValueChange={(value) => onUpdate("subject", value)}
-          disabled={disabled}
-        >
+        <Select value={subject} onValueChange={(value) => onUpdate("subject", value)} disabled={disabled}>
           <SelectTrigger
             className="h-11 sm:h-12 px-4 text-sm sm:text-base bg-background border-border rounded-xl"
             aria-label="Selecionar disciplina"
           >
-            <SelectValue
-              placeholder={
-                disabled
-                  ? "Selecione primeiro o ano de escolaridade..."
-                  : "Selecione uma disciplina..."
-              }
-            />
+            <SelectValue placeholder={disabled ? "Selecione primeiro o ano de escolaridade..." : "Selecione uma disciplina..."} />
           </SelectTrigger>
-          <SelectContent className="rounded-xl border-border max-h-[280px]">
-            {SUBJECTS.map((subjectOption) => (
-              <SelectItem
-                key={subjectOption.id}
-                value={subjectOption.id}
-                className="py-2.5 px-3 text-sm cursor-pointer rounded-lg focus:bg-accent focus:text-primary"
-              >
-                <span className="flex items-center gap-2">
-                  <span>{subjectOption.icon}</span>
-                  <span>{subjectOption.label}</span>
-                </span>
-              </SelectItem>
-            ))}
+          <SelectContent className="rounded-xl border-border max-h-[400px]">
+            {categoryOrder.map((category) => {
+              const categorySubjects = groupedSubjects[category];
+              if (!categorySubjects?.length) return null;
+
+              return (
+                <SelectGroup key={category}>
+                  <SelectLabel className="bg-background px-2 py-2 text-sm font-bold text-primary border-b border-border/50 rounded-lg mb-1">
+                    {category}
+                  </SelectLabel>
+                  {categorySubjects.map((subjectOption) => (
+                    <SelectItem
+                      key={subjectOption.id}
+                      value={subjectOption.id}
+                      className="py-2.5 px-3 text-sm cursor-pointer rounded-lg focus:bg-accent focus:text-primary pl-4"
+                    >
+                      {subjectOption.label}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              );
+            })}
+            {/* Handle any categories not in the explicit order list */}
+            {Object.keys(groupedSubjects)
+              .filter((c) => !categoryOrder.includes(c))
+              .map((category) => (
+                <SelectGroup key={category}>
+                  <SelectLabel className="bg-background px-2 py-2 text-sm font-bold text-primary border-b border-border/50 mb-1">
+                    {category}
+                  </SelectLabel>
+                  {groupedSubjects[category].map((subjectOption) => (
+                    <SelectItem
+                      key={subjectOption.id}
+                      value={subjectOption.id}
+                      className="py-2.5 px-3 text-sm cursor-pointer rounded-lg focus:bg-accent focus:text-primary pl-4"
+                    >
+                      {subjectOption.label}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              ))}
           </SelectContent>
         </Select>
       </div>

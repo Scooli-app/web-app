@@ -53,28 +53,28 @@ export function TeachingMethodSection({
                   "relative flex items-center p-3 rounded-lg text-left transition-all h-full",
                   "border-2 hover:scale-[1.01] active:scale-[0.99]",
                   isSelected
-                    ? "bg-accent border-primary shadow-md"
+                    ? "bg-accent border-primary shadow-sm"
                     : "bg-card border-border hover:border-muted-foreground/30 hover:bg-muted/50"
                 )}
                 aria-pressed={isSelected}
                 aria-label={`Selecionar ${method.label}`}
               >
                 {isSelected && (
-                  <div className="absolute top-2 right-2 sm:top-3 sm:right-3">
-                    <div className="flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-primary">
-                      <Check className="w-3 h-3 sm:w-4 sm:h-4 text-primary-foreground" />
+                  <div className="absolute top-2 right-2">
+                    <div className="flex items-center justify-center w-4 h-4 rounded-full bg-primary/20">
+                      <Check className="w-2.5 h-2.5 text-primary" />
                     </div>
                   </div>
                 )}
                 <div
                   className={cn(
-                    "flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl mr-3 sm:mr-0 sm:mb-3 shrink-0",
+                    "flex items-center justify-center w-10 h-10 rounded-lg mr-3 shrink-0",
                     isSelected ? "bg-primary/10" : "bg-muted"
                   )}
                 >
                   <Icon
                     className={cn(
-                      "w-5 h-5 sm:w-6 sm:h-6",
+                      "w-5 h-5",
                       isSelected ? "text-primary" : "text-muted-foreground"
                     )}
                   />
@@ -82,7 +82,7 @@ export function TeachingMethodSection({
                 <div className="flex-1 min-w-0 pr-4">
                   <h3
                     className={cn(
-                      "font-semibold text-sm sm:text-base mb-0.5 sm:mb-1",
+                      "font-semibold text-sm leading-tight mb-0.5",
                       isSelected ? "text-foreground" : "text-foreground"
                     )}
                   >
@@ -90,7 +90,7 @@ export function TeachingMethodSection({
                   </h3>
                   <p
                     className={cn(
-                      "text-[11px] sm:text-xs leading-relaxed line-clamp-2 sm:line-clamp-none",
+                      "text-[11px] leading-tight line-clamp-2",
                       isSelected ? "text-foreground/80" : "text-muted-foreground"
                     )}
                   >

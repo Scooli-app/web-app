@@ -79,7 +79,6 @@ export const SUBJECTS: SubjectConfig[] = [
   // Literature
   { id: "literatura_portuguesa", label: "Literatura Portuguesa", value: "Portuguese Literature", category: "Literatura" },
   { id: "classicos_literatura", label: "Clássicos da Literatura", value: "Literary Classics", category: "Literatura" },
-  { id: "literaturas_lp", label: "Literaturas de Língua Portuguesa", value: "Literatures of the Portuguese Language", category: "Literatura" },
 
   // Physical Education
   { id: "educacao_fisica", label: "Educação Física", value: "Physical Education", category: "Educação Física" },
@@ -214,29 +213,7 @@ export const SUBJECTS_BY_GRADE: Record<string, string[]> = {
   "7": ["portugues", "ingles", "frances_inic", "espanhol_inic", "alemao_inic", "historia", "geografia", "matematica", "ciencias_naturais", "fq", "educacao_visual", "tic", "educacao_fisica", "cidadania"],
   "8": ["portugues", "ingles", "frances_inic", "espanhol_inic", "alemao_inic", "historia", "geografia", "matematica", "ciencias_naturais", "fq", "educacao_visual", "tic", "educacao_fisica", "cidadania"],
   "9": ["portugues", "ingles", "frances_inic", "espanhol_inic", "alemao_inic", "historia", "geografia", "matematica", "ciencias_naturais", "fq", "educacao_visual", "tic", "educacao_fisica", "cidadania"],
-  "10": [
-    "portugues", "filosofia", "ingles_cont", "alemao_cont", "alemao_inic", "espanhol_cont", "espanhol_inic", "frances_cont", "frances_inic", "educacao_fisica", "plnm",
-    "desenho_a", "historia_a", "matematica_a", "bg", "economia_a", "fq_a", "geografia_a", "gd_a", "historia_b", "hca", "latim_a", "literatura_portuguesa", "macs", "matematica_b",
-    "emrc", "emre", "cidadania"
-  ],
-  "11": [
-    "portugues", "filosofia", "ingles_cont", "alemao_cont", "alemao_inic", "espanhol_cont", "espanhol_inic", "frances_cont", "frances_inic", "educacao_fisica", "plnm",
-    "desenho_a", "historia_a", "matematica_a", "bg", "economia_a", "fq_a", "geografia_a", "gd_a", "historia_b", "hca", "latim_a", "literatura_portuguesa", "macs", "matematica_b",
-    "emrc", "emre", "cidadania"
-  ],
-  "12": [
-    "portugues", "educacao_fisica", "plnm",
-    "desenho_a", "historia_a", "matematica_a", "antropologia", "biologia", "ciencia_politica", "classicos_literatura", "direito", "economia_c", "filosofia_a", "fisica", "geografia_c", "geologia", "grego", "ingles_cont", "alemao_cont", "alemao_inic", "espanhol_cont", "espanhol_inic", "frances_cont", "frances_inic", "latim_b", "literaturas_lp", "materiais_tecnologias", "oficina_artes", "oficina_multimedia_b", "psicologia_b", "quimica", "sociologia", "aplicacoes_informatica_b", "oficina_design", "teatro", "hcd",
-    "emrc", "emre", "cidadania"
-  ]
+  "10": ["portugues", "ingles_cont", "filosofia", "educacao_fisica", "matematica_a", "matematica_b", "macs", "fq_a", "bg", "gd_a", "historia_a", "geografia_a", "economia_a", "desenho_a", "hca", "latim_a"],
+  "11": ["portugues", "ingles_cont", "filosofia", "educacao_fisica", "matematica_a", "matematica_b", "macs", "fq_a", "bg", "gd_a", "historia_a", "geografia_a", "economia_a", "desenho_a", "hca", "latim_a"],
+  "12": ["portugues", "educacao_fisica", "matematica_a", "historia_a", "desenho_a", "biologia", "geologia", "fisica", "quimica", "economia_c", "geografia_c", "sociologia", "psicologia_b", "filosofia_a", "direito", "ciencia_politica", "antropologia", "ingles", "espanhol", "frances", "alemao", "aplicacoes_informatica_b", "oficina_multimedia_b"]
 };
-
-export const AMBIGUOUS_COMPONENTS_SUBJECTS = [
-  "ingles_cont",
-  "frances_cont",
-  "frances_inic",
-  "alemao_cont",
-  "alemao_inic",
-  "espanhol_cont",
-  "espanhol_inic",
-];
