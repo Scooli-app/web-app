@@ -8,7 +8,7 @@ import {
 import { useAppDispatch } from "@/store/hooks";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { SUBJECTS, SUBJECTS_BY_GRADE } from "./constants";
+import { AMBIGUOUS_COMPONENTS_SUBJECTS, SUBJECTS, SUBJECTS_BY_GRADE } from "./constants";
 import {
   AdditionalDetailsSection,
   DurationSection,
@@ -33,6 +33,7 @@ function useDocumentForm() {
   const [formState, setFormState] = useState<FormState>({
     topic: "",
     subject: "",
+    isSpecificComponent: false,
     schoolYear: 0,
     lessonTime: undefined,
     customTime: 0,
@@ -43,12 +44,10 @@ function useDocumentForm() {
   });
   const [error, setError] = useState("");
 
-  const updateForm: FormUpdateFn = (field, value) => {
+  const updateForm: FormUpdateFn = useCallback((field, value) => {
     setFormState((prev) => ({ ...prev, [field]: value }));
-    if (error) {
-      setError("");
-    }
-  };
+    setError("");
+  }, []);
 
   const handleTemplateSelect = useCallback((template: DocumentTemplate) => {
     setFormState((prev) => ({
@@ -102,6 +101,15 @@ export default function DocumentCreationPage({
     }
   }, [formState.schoolYear, formState.subject, updateForm]);
 
+  // Reset component type when subject changes
+  useEffect(() => {
+    if (formState.subject && formState.isSpecificComponent) {
+      if (!AMBIGUOUS_COMPONENTS_SUBJECTS.includes(formState.subject)) {
+        updateForm("isSpecificComponent", false);
+      }
+    }
+  }, [formState.subject, formState.isSpecificComponent, updateForm]);
+
   const showTeachingMethodSection = documentType.id === "lessonPlan";
 
   const handleCreateDocument = async () => {
@@ -147,6 +155,7 @@ export default function DocumentCreationPage({
           teachingMethod: formState.teachingMethod || undefined,
           additionalDetails: formState.additionalDetails?.trim() || "",
           templateId: formState.templateId,
+          isSpecificComponent: formState.isSpecificComponent,
         })
       );
 
@@ -211,6 +220,7 @@ export default function DocumentCreationPage({
 
           <SubjectSection 
             subject={formState.subject} 
+            isSpecificComponent={formState.isSpecificComponent}
             onUpdate={updateForm} 
             availableSubjects={formState.schoolYear ? SUBJECTS_BY_GRADE[String(formState.schoolYear)] : undefined}
             className="shadow-none border-0 p-0 hover:shadow-none transition-none"

@@ -27,6 +27,7 @@ export interface CreateDocumentParams {
   teachingMethod?: TeachingMethod;
   additionalDetails?: string;
   templateId?: string;
+  isSpecificComponent?: boolean;
 }
 
 // DocumentResponse matches Document type exactly (backend response)
