@@ -10,12 +10,14 @@ interface DurationSectionProps {
   lessonTime?: number;
   customTime?: number;
   onUpdate: FormUpdateFn;
+  className?: string;
 }
 
 export function DurationSection({
   lessonTime,
   customTime,
   onUpdate,
+  className,
 }: DurationSectionProps) {
   const [isEditingCustomTime, setIsEditingCustomTime] = useState(false);
   const customTimeInputRef = useRef<HTMLInputElement>(null);
@@ -25,21 +27,42 @@ export function DurationSection({
     setTimeout(() => customTimeInputRef.current?.focus(), 0);
   };
 
-  const handleCancelCustomTime = () => {
+  const handlePresets = (value: number) => {
+    if (lessonTime === value) {
+      // Toggle off
+      onUpdate("lessonTime", undefined);
+    } else {
+      // Select preset and clear custom
+      onUpdate("lessonTime", value);
+      onUpdate("customTime", undefined);
+    }
+  };
+
+  const handleCustomTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value) || 0;
+    onUpdate("customTime", value);
+    onUpdate("lessonTime", value);
+  };
+
+  const handleCancelCustomTime = (e?: React.MouseEvent) => {
+    e?.stopPropagation(); // Prevent blur from firing if clicking cancel
     onUpdate("lessonTime", undefined);
     onUpdate("customTime", undefined);
     setIsEditingCustomTime(false);
   };
 
-  const handleConfirmCustomTime = () => {
+  const handleConfirmCustomTime = (e?: React.MouseEvent | React.FocusEvent) => {
+    e?.stopPropagation();
     setIsEditingCustomTime(false);
+    // lessonTime is already updated via onChange
   };
 
-  const hasCustomTimeSelected = lessonTime && customTime && !isEditingCustomTime;
-  const isCustomTimeEditing = (lessonTime && customTime) || isEditingCustomTime;
+  const isPreset = LESSON_TIMES.some((t) => t.value === lessonTime);
+  // Custom is selected if we have a lessonTime that is NOT a preset, and we are not currently editing
+  const hasCustomTimeSelected = lessonTime && !isPreset && !isEditingCustomTime;
 
   return (
-    <Card className="p-4 sm:p-6 border-border shadow-sm hover:shadow-md transition-shadow">
+    <Card className={cn("p-4 sm:p-6 border-border shadow-sm hover:shadow-md transition-shadow h-full", className)}>
       <div className="space-y-3 sm:space-y-4">
         <div className="flex items-center gap-2 sm:gap-3">
           <div className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-accent shrink-0">
@@ -57,12 +80,7 @@ export function DurationSection({
             <button
               key={time.id}
               type="button"
-              onClick={() =>
-                onUpdate(
-                  "lessonTime",
-                  lessonTime === time.value ? undefined : time.value
-                )
-              }
+              onClick={() => handlePresets(time.value)}
               className={cn(
                 "inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium transition-all",
                 "border hover:scale-[1.02] active:scale-[0.98]",
@@ -83,23 +101,29 @@ export function DurationSection({
               type="button"
               onClick={handleCustomTimeClick}
               className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium transition-all border bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] group"
-              aria-label={`Duração: ${customTime} min`}
+              aria-label={`Duração: ${lessonTime} min`}
             >
               <span>⏱️</span>
-              <span>{customTime} min</span>
+              <span>{lessonTime} min</span>
               <Pencil className="w-3 h-3 ml-1 opacity-70 group-hover:opacity-100 shrink-0" />
             </button>
-          ) : isCustomTimeEditing ? (
+          ) : isEditingCustomTime ? (
             <div className="flex items-center gap-1 animate-in fade-in slide-in-from-left-2 duration-200">
               <div className="relative flex items-center">
                 <Input
                   ref={customTimeInputRef}
                   type="number"
-                  value={customTime || 0}
-                  onChange={(e) =>
-                    onUpdate("customTime", parseInt(e.target.value))
-                  }
-                  onBlur={() => setIsEditingCustomTime(false)}
+                  value={customTime || ""}
+                  onChange={handleCustomTimeChange}
+                  onBlur={handleConfirmCustomTime}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleConfirmCustomTime();
+                    } else if (e.key === "Escape") {
+                      handleCancelCustomTime();
+                    }
+                  }}
                   placeholder="75"
                   className="h-9 w-16 sm:w-20 px-2 sm:px-3 py-2 text-sm bg-muted border-primary rounded-xl placeholder:text-muted-foreground"
                   aria-label="Duração personalizada"
@@ -111,29 +135,30 @@ export function DurationSection({
               </div>
               <button
                 type="button"
+                onMouseDown={(e) => e.preventDefault()} // Prevent blur from firing before click
                 onClick={handleCancelCustomTime}
                 className="p-1.5 sm:p-2 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
                 aria-label="Cancelar"
               >
                 <X className="w-4 h-4" />
               </button>
-              {customTime && (
-                <button
-                  type="button"
-                  onClick={handleConfirmCustomTime}
-                  className="p-1.5 sm:p-2 rounded-lg text-muted-foreground hover:text-primary hover:bg-accent transition-colors"
-                  aria-label="Confirmar"
-                >
-                  <Check className="w-4 h-4" />
-                </button>
-              )}
+              {/* Confirm button is always available when editing, even if customTime is 0 */}
+              <button
+                type="button"
+                onMouseDown={(e) => e.preventDefault()} // Prevent blur
+                onClick={handleConfirmCustomTime}
+                className="p-1.5 sm:p-2 rounded-lg text-muted-foreground hover:text-primary hover:bg-accent transition-colors"
+                aria-label="Confirmar"
+              >
+                <Check className="w-4 h-4" />
+              </button>
             </div>
           ) : (
             <button
               type="button"
               onClick={() => {
-                onUpdate("lessonTime", 0);
-                onUpdate("customTime", 0);
+                onUpdate("lessonTime", 0); // Temporary clear to show input
+                onUpdate("customTime", undefined);
                 handleCustomTimeClick();
               }}
               className={cn(

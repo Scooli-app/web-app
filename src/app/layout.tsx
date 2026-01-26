@@ -1,12 +1,12 @@
+import AuthProvider from "@/components/providers/AuthProvider";
+import ClerkThemeProvider from "@/components/providers/ClerkThemeProvider";
+import StoreProvider from "@/components/providers/StoreProvider";
+import ThemeProvider from "@/components/providers/ThemeProvider";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import StoreProvider from "@/components/providers/StoreProvider";
-import AuthProvider from "@/components/providers/AuthProvider";
-import ThemeProvider from "@/components/providers/ThemeProvider";
-import ClerkThemeProvider from "@/components/providers/ClerkThemeProvider";
-import { SpeedInsights } from "@vercel/speed-insights/next";
-import { Analytics } from "@vercel/analytics/next";
 
 const themeInitScript = `
 (function() {
@@ -54,7 +54,7 @@ export default function RootLayout({
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
-      <body className={`${inter.className} antialiased`}>
+      <body className={`${inter.className} antialiased`} suppressHydrationWarning>
         <StoreProvider>
           <ThemeProvider>
             <ClerkThemeProvider>

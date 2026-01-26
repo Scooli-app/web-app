@@ -1,14 +1,14 @@
 "use client";
 
+import type { DocumentTemplate } from "@/shared/types";
 import {
   createDocument,
   setPendingInitialPrompt,
 } from "@/store/documents/documentSlice";
 import { useAppDispatch } from "@/store/hooks";
-import type { DocumentTemplate } from "@/shared/types";
 import { useRouter } from "next/navigation";
-import { useCallback, useState } from "react";
-import { SUBJECTS } from "./constants";
+import { useCallback, useEffect, useState } from "react";
+import { SUBJECTS, SUBJECTS_BY_GRADE } from "./constants";
 import {
   AdditionalDetailsSection,
   DurationSection,
@@ -91,6 +91,17 @@ export default function DocumentCreationPage({
   const { formState, error, setError, updateForm, isFormValid, handleTemplateSelect } =
     useDocumentForm();
 
+  // Reset subject if it's not available for the selected school year
+  useEffect(() => {
+    if (formState.schoolYear && formState.subject) {
+      const validSubjects = SUBJECTS_BY_GRADE[String(formState.schoolYear)];
+      // If we have a list for this grade, and the current subject isn't in it
+      if (validSubjects && !validSubjects.includes(formState.subject)) {
+        updateForm("subject", "");
+      }
+    }
+  }, [formState.schoolYear, formState.subject, updateForm]);
+
   const showTeachingMethodSection = documentType.id === "lessonPlan";
 
   const handleCreateDocument = async () => {
@@ -119,7 +130,7 @@ export default function DocumentCreationPage({
       setError("");
 
       const subjectValue =
-        SUBJECTS.find((s) => s.id === formState.subject)?.label ||
+        SUBJECTS.find((s) => s.id === formState.subject)?.value ||
         formState.subject;
 
       const durationValue = formState.lessonTime
@@ -186,14 +197,6 @@ export default function DocumentCreationPage({
             onUpdate={updateForm}
           />
 
-          <SubjectSection subject={formState.subject} onUpdate={updateForm} />
-
-          <TemplateSection
-            documentType={documentType.id}
-            selectedTemplateId={formState.templateId || null}
-            onTemplateSelect={handleTemplateSelect}
-          />
-
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
             <GradeSection
               schoolYear={formState.schoolYear}
@@ -205,6 +208,20 @@ export default function DocumentCreationPage({
               onUpdate={updateForm}
             />
           </div>
+
+          <SubjectSection 
+            subject={formState.subject} 
+            onUpdate={updateForm} 
+            availableSubjects={formState.schoolYear ? SUBJECTS_BY_GRADE[String(formState.schoolYear)] : undefined}
+            className="shadow-none border-0 p-0 hover:shadow-none transition-none"
+            disabled={!formState.schoolYear}
+          />
+
+          <TemplateSection
+            documentType={documentType.id}
+            selectedTemplateId={formState.templateId || null}
+            onTemplateSelect={handleTemplateSelect}
+          />
 
           {showTeachingMethodSection && (
             <TeachingMethodSection
