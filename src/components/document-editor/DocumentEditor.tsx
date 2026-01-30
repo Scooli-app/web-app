@@ -314,6 +314,7 @@ export default function DocumentEditor({
         />
 
         <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_400px] gap-6 relative">
+          <div className="flex flex-col min-w-0">
             {isGenerating ? (
               <>
                 <div className="flex items-center justify-between mb-4">
@@ -370,18 +371,35 @@ export default function DocumentEditor({
                 }
               />
             )}
+          </div>
+
+          {/* AI Chat Sidebar */}
+          <div className="hidden lg:block sticky top-[5px] self-start">
+            <AIChatPanel
+              onChatSubmit={handleChatSubmit}
+              chatHistory={chatHistory}
+              isStreaming={isStreaming || isChatting}
+              error={error}
+              placeholder={chatPlaceholder}
+              title={chatTitle}
+              sources={(currentDocument?.metadata?.sources as string[]) || []}
+            />
+          </div>
         </div>
       </div>
 
-      {/* AI Chat Panel */}
-      <AIChatPanel
-        onChatSubmit={handleChatSubmit}
-        chatHistory={chatHistory}
-        isStreaming={isStreaming || isChatting}
-        error={error}
-        placeholder={chatPlaceholder}
-        title={chatTitle}
-      />
+      {/* Mobile AI Chat */}
+      <div className="lg:hidden">
+        <AIChatPanel
+          onChatSubmit={handleChatSubmit}
+          chatHistory={chatHistory}
+          isStreaming={isStreaming || isChatting}
+          error={error}
+          placeholder={chatPlaceholder}
+          title={chatTitle}
+          sources={(currentDocument?.metadata?.sources as string[]) || []}
+        />
+      </div>
     </>
   );
 }
