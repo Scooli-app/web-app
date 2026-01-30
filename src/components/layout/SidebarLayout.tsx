@@ -1,6 +1,5 @@
 "use client";
 
-import { memo, useState, useMemo, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
@@ -24,8 +23,11 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { getCurrentSubscription, getUsageStats } from "@/services/api";
 import { Routes } from "@/shared/types";
+import type { CurrentSubscription, UsageStats } from "@/shared/types/subscription";
 import { cn } from "@/shared/utils/utils";
+import { SignInButton, SignedIn, SignedOut, UserButton, useAuth } from "@clerk/nextjs";
 import {
   BookOpen,
   FileCheck,
@@ -41,10 +43,8 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { UserButton, SignInButton, SignedIn, SignedOut, useAuth } from "@clerk/nextjs";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { ThemeToggle } from "./ThemeToggle";
-import { getUsageStats, getCurrentSubscription } from "@/services/api";
-import type { UsageStats, CurrentSubscription } from "@/shared/types/subscription";
 
 interface SidebarLayoutProps {
   children: React.ReactNode;
@@ -185,7 +185,7 @@ const SidebarInnerContent = memo(function SidebarInnerContent({
   const router = useRouter();
   return (
     <SidebarPrimitive collapsible="icon">
-      <SidebarHeader className="flex items-center justify-center border-b border-border px-6 py-4 group-data-[collapsible=icon]:px-3 group-data-[collapsible=icon]:py-2">
+      <SidebarHeader className="flex items-center justify-center px-6 py-4 group-data-[collapsible=icon]:px-3 group-data-[collapsible=icon]:py-2">
         <Image
           src="/scooli.svg"
           alt="Scooli"
@@ -320,7 +320,7 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
 
         {/* Main Content Area */}
         <div className="flex-1 flex flex-col">
-          <header className="flex h-16 shrink-0 items-center gap-2 bg-background w-full border-b border-border">
+          <header className="flex h-16 shrink-0 items-center gap-2 bg-background/50 backdrop-blur-md w-full border-b border-border">
             <div className="flex items-center gap-2 px-4 justify-between w-full">
               <SidebarTrigger className="hidden md:flex" />
               <div className="ml-auto flex items-center gap-2">
@@ -347,7 +347,7 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
           </header>
           <main
             className={cn(
-              "flex-1 overflow-auto w-full bg-accent",
+              "flex-1 overflow-auto w-full bg-slate-50 dark:bg-background",
               className
             )}
           >

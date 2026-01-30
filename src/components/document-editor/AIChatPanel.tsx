@@ -167,7 +167,7 @@ export default function AIChatPanel({
   return (
     <>
       {/* Desktop: Fixed sidebar panel */}
-      <div className="hidden lg:block lg:fixed lg:right-10 lg:top-30 lg:max-h-fit lg:w-[400px] z-30 flex-col border-l border-border bg-transparent">
+      <div className="hidden lg:block lg:fixed lg:right-10 lg:top-30 lg:max-h-fit lg:w-[400px] z-30 flex-col border-border bg-transparent">
         <ChatContent
           chatHistory={chatHistory}
           isStreaming={isStreaming}

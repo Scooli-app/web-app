@@ -1,15 +1,15 @@
 "use client";
 
-import { memo, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Download, FileText, Loader2 } from "lucide-react";
 import { downloadDocument, type DownloadFormat } from "@/services/download/documentDownload";
+import { Download, FileText, Loader2 } from "lucide-react";
+import { memo, useCallback, useState } from "react";
 
 interface DownloadButtonProps {
   title: string;
@@ -52,10 +52,10 @@ function DownloadButtonComponent({ title, content, disabled }: DownloadButtonPro
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
-          variant="outline"
+          variant="default"
           size="sm"
           disabled={isDisabled}
-          className="flex items-center gap-2 border-border text-foreground hover:bg-accent hover:border-primary"
+          className="flex items-center gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
         >
           {isDownloading ? (
             <Loader2 className="h-4 w-4 animate-spin" />
