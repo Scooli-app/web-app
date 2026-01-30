@@ -128,9 +128,10 @@ const NavMenuItem = memo(function NavMenuItem({
         <SidebarMenuButton
           isActive={isActive}
           className={cn(
+            "h-10 px-4",
             isActive
-              ? "bg-primary text-primary-foreground hover:bg-primary/90"
-              : "hover:bg-accent text-foreground"
+              ? "bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary"
+              : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
           )}
         >
           <Icon className="h-4 w-4" />

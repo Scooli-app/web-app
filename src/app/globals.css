@@ -97,12 +97,13 @@
 
   /* Sidebar - White */
   --sidebar: #FFFFFF;
-  --sidebar-foreground: #0B0D17;
+  --sidebar: #EEF0FF;
+  --sidebar-foreground: #475569;
   --sidebar-primary: #6753FF;
   --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #F8F9FA;
-  --sidebar-accent-foreground: #0B0D17;
-  --sidebar-border: #E2E8F0;
+  --sidebar-accent: #E2E4FF;
+  --sidebar-accent-foreground: #6753FF;
+  --sidebar-border: #C7C9D9;
   --sidebar-ring: #6753FF;
 }
 
@@ -153,10 +154,10 @@
 
   /* Sidebar - Sidebar Dark #121421 */
   --sidebar: #121421;
-  --sidebar-foreground: #F4F5F8;
+  --sidebar-foreground: #94A3B8;
   --sidebar-primary: #6753FF;
   --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #0B0D17;
+  --sidebar-accent: #1E1F2E;
   --sidebar-accent-foreground: #F4F5F8;
   --sidebar-border: #1E293B;
   --sidebar-ring: #6753FF;
