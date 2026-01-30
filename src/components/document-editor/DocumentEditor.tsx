@@ -55,7 +55,8 @@ export default function DocumentEditor({
     setContent,
     handleContentChange,
     handleTitleSave,
-    isLoading: isSaving,
+    handleAutosave,
+    isSaving,
     editorKey,
   } = useDocumentManager(documentId);
 
@@ -353,6 +354,7 @@ export default function DocumentEditor({
                 key={editorKey}
                 content={content}
                 onChange={handleContentChange}
+                onAutosave={handleAutosave}
                 className="min-h-[600px] max-w-full"
                 rightHeaderContent={
                   <div className="flex items-center gap-3 pr-1">

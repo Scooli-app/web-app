@@ -104,7 +104,7 @@ function ChatContent({
       className={cn(
         "flex flex-col transition-all duration-300",
         isDesktop 
-          ? "h-[calc(100vh-120px)] border-border bg-card/50 backdrop-blur-sm" 
+          ? "h-[calc(100vh-150px)] border-border bg-card/50 backdrop-blur-sm" 
           : "h-full border-0 shadow-none bg-transparent"
       )}
     >
