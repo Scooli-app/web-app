@@ -9,17 +9,24 @@ import {
   type Editor,
 } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { memo, useEffect, useRef, useCallback } from "react";
+import { memo, useCallback, useEffect, useRef } from "react";
 
 interface TipTapEditorCoreProps {
   content: string;
   onChange: (content: string) => void;
   className?: string;
   onAutosave?: (markdown: string) => void;
+  rightHeaderContent?: React.ReactNode;
 }
 
 // Memoized MenuBar component
-const MenuBar = memo(function MenuBar({ editor }: { editor: Editor }) {
+const MenuBar = memo(function MenuBar({ 
+  editor, 
+  rightHeaderContent 
+}: { 
+  editor: Editor;
+  rightHeaderContent?: React.ReactNode;
+}) {
   const editorState = useEditorState({
     editor,
     selector: (ctx) => ({
@@ -50,7 +57,8 @@ const MenuBar = memo(function MenuBar({ editor }: { editor: Editor }) {
   const handleCodeBlock = useCallback(() => editor.chain().focus().toggleCodeBlock().run(), [editor]);
 
   return (
-    <div className="border-b border-border p-2 flex flex-wrap gap-1 sticky top-0 z-10 bg-card rounded-t-xl">
+    <div className="border-b border-border p-2 flex items-center justify-between sticky top-0 z-10 bg-card rounded-t-xl min-h-[56px] w-full">
+      <div className="flex flex-wrap gap-1 flex-1">
       <button
         onClick={handleBold}
         disabled={!editorState.canBold}
@@ -162,6 +170,12 @@ const MenuBar = memo(function MenuBar({ editor }: { editor: Editor }) {
       >
         {"<>"}
       </button>
+      </div>
+      {rightHeaderContent && (
+        <div className="flex-shrink-0 flex items-center gap-2 pl-2">
+          {rightHeaderContent}
+        </div>
+      )}
     </div>
   );
 });
@@ -171,6 +185,7 @@ export function TipTapEditorCore({
   onChange,
   className = "",
   onAutosave,
+  rightHeaderContent,
 }: TipTapEditorCoreProps) {
   const autosaveTimer = useRef<NodeJS.Timeout | null>(null);
   // Track if the last change came from the editor (internal) vs props (external)
@@ -266,7 +281,7 @@ export function TipTapEditorCore({
 
   return (
     <div className="border border-border rounded-xl bg-card w-full m-0.5">
-      <MenuBar editor={editor} />
+      <MenuBar editor={editor} rightHeaderContent={rightHeaderContent} />
       <div className="p-4">
         <EditorContent editor={editor} />
       </div>

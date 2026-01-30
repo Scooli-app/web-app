@@ -1,18 +1,17 @@
 "use client";
 
-import { Card } from "@/components/ui/card";
 import { useDocumentManager } from "@/hooks/useDocumentManager";
 import { streamDocumentContent } from "@/services/api/document.service";
 import { Routes } from "@/shared/types";
 import {
-  clearStreamInfo,
-  fetchDocument,
   chatWithDocument,
   clearLastChatAnswer,
+  clearStreamInfo,
+  fetchDocument,
 } from "@/store/documents/documentSlice";
 import {
-  useAppDispatch,
   selectEditorState,
+  useAppDispatch,
   useAppSelector,
 } from "@/store/hooks";
 import { useAuth } from "@clerk/nextjs";
@@ -315,49 +314,62 @@ export default function DocumentEditor({
         />
 
         <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_400px] gap-6 relative">
-          <Card className="p-4 md:p-6 w-full min-w-0">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-foreground">Editor</h2>
-              <div className="flex items-center gap-3">
-                {isGenerating && (
-                  <div className="flex items-center space-x-2 text-primary">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span className="text-sm font-medium">A gerar conteúdo...</span>
-                  </div>
-                )}
-                <DownloadButton
-                  title={documentTitle || currentDocument?.title || defaultTitle}
-                  content={content}
-                  disabled={isGenerating || !content}
-                />
-              </div>
-            </div>
             {isGenerating ? (
-              <div className="border border-border rounded-xl bg-card min-h-[600px] w-full p-4 overflow-auto">
-                {displayContent ? (
-                  <StreamingText
-                    text={displayContent}
-                    isStreaming={isGenerating}
-                    as="div"
-                    className="prose prose-sm max-w-none whitespace-pre-wrap text-foreground leading-relaxed"
-                  />
-                ) : (
-                  <div className="flex flex-col items-center justify-center h-full w-full min-h-[550px]">
-                    <Loader2 className="w-12 h-12 animate-spin text-primary mb-4" />
-                    <p className="text-lg font-medium text-foreground">A gerar o documento...</p>
-                    <p className="text-sm text-muted-foreground mt-2">Isto pode demorar alguns segundos</p>
+              <>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-semibold text-foreground">Editor</h2>
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center space-x-2 text-primary">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span className="text-sm font-medium">A gerar conteúdo...</span>
+                    </div>
+                    <DownloadButton
+                      title={documentTitle || currentDocument?.title || defaultTitle}
+                      content={content}
+                      disabled={isGenerating || !content}
+                    />
                   </div>
-                )}
-              </div>
+                </div>
+                <div className="border border-border rounded-xl bg-card min-h-[600px] w-full p-4 overflow-auto">
+                  {displayContent ? (
+                    <StreamingText
+                      text={displayContent}
+                      isStreaming={isGenerating}
+                      as="div"
+                      className="prose prose-sm max-w-none whitespace-pre-wrap text-foreground leading-relaxed"
+                    />
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-full w-full min-h-[550px]">
+                      <Loader2 className="w-12 h-12 animate-spin text-primary mb-4" />
+                      <p className="text-lg font-medium text-foreground">A gerar o documento...</p>
+                      <p className="text-sm text-muted-foreground mt-2">Isto pode demorar alguns segundos</p>
+                    </div>
+                  )}
+                </div>
+              </>
             ) : (
               <RichTextEditor
                 key={editorKey}
                 content={content}
                 onChange={handleContentChange}
                 className="min-h-[600px] max-w-full"
+                rightHeaderContent={
+                  <div className="flex items-center gap-3 pr-1">
+                    {isGenerating && (
+                      <div className="flex items-center space-x-2 text-primary">
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span className="text-sm font-medium hidden sm:inline">A gerar...</span>
+                      </div>
+                    )}
+                    <DownloadButton
+                      title={documentTitle || currentDocument?.title || defaultTitle}
+                      content={content}
+                      disabled={isGenerating || !content}
+                    />
+                  </div>
+                }
               />
             )}
-          </Card>
         </div>
       </div>
 
