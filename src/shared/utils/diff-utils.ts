@@ -14,11 +14,11 @@ export interface DiffChange {
 function normalizeMarkdown(text: string): string {
   return text
     // Normalize line endings
-    .replace(/\r\n/g, '\n')
+    .replace(/\r\n/g, "\n")
     // Normalize multiple spaces to single space
-    .replace(/ +/g, ' ')
+    .replace(/ +/g, " ")
     // Normalize multiple newlines (but preserve paragraph breaks)
-    .replace(/\n{3,}/g, '\n\n')
+    .replace(/\n{3,}/g, "\n\n")
     .trim();
 }
 

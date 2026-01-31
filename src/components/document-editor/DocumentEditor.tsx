@@ -213,7 +213,7 @@ export default function DocumentEditor({
 
       startStream();
     }
-  }, [streamInfo, documentId, dispatch, setContent, getToken]);
+  }, [streamInfo, documentId, dispatch, setContent, getToken, content]);
 
   // Cleanup on unmount
   useEffect(() => {

@@ -1,6 +1,7 @@
 import type { DiffChange } from "@/shared/types/api";
 import { computeDiff } from "@/shared/utils/diff-utils";
 import { Extension } from "@tiptap/core";
+import type { Node } from "@tiptap/pm/model";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
 
@@ -26,7 +27,7 @@ export const DiffExtension = Extension.create<DiffOptions>({
   },
 
   addProseMirrorPlugins() {
-    const { oldText, newText, diffChanges, onAccept, onReject } = this.options;
+    const { oldText, diffChanges, onAccept, onReject } = this.options;
 
     return [
       new Plugin({
@@ -76,7 +77,7 @@ export const DiffExtension = Extension.create<DiffOptions>({
             const apiChanges: DiffChange[] = changes.map((c, i) => {
               const change: DiffChange = {
                 id: `local-${i}`,
-                type: c.type as any,
+                type: c.type as "insert" | "delete" | "replace",
                 text: c.text,
                 startOffset: localOffset,
                 endOffset: localOffset + c.text.length,
@@ -109,7 +110,7 @@ export const DiffExtension = Extension.create<DiffOptions>({
 
 function createDiffDecorations(
   changes: DiffChange[],
-  doc: any,
+  doc: Node,
   posMap: number[],
   onAccept?: (id: string | number) => void,
   onReject?: (id: string | number) => void
@@ -183,7 +184,6 @@ function createDiffDecorations(
     }
   });
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return DecorationSet.create(doc, decorations);
 }
 
@@ -191,22 +191,22 @@ function createDiffDecorations(
  * Creates a map where map[charOffset] = prosemirrorPosition
  * This accounts for block boundaries that take up positions but aren't visible in plain text.
  */
-function createPosMap(doc: any): number[] {
+function createPosMap(doc: Node): number[] {
   const map: number[] = [];
   let lastPos = 0;
 
-  doc.descendants((node: any, pos: number) => {
-    if (node.isText) {
-      // If we jumped over a block boundary, represent it as a newline
-      if (lastPos !== 0 && pos > lastPos) {
-        map.push(pos); // Virtual \n maps to the start of the next block
-      }
-      
-      for (let i = 0; i < node.text.length; i++) {
-        map.push(pos + i);
-      }
-      lastPos = pos + node.text.length;
-    } else if (node.isBlock && node.content.size === 0 && lastPos !== 0) {
+  doc.descendants((node: Node, pos: number) => {
+      if (node.isText && node.text) {
+        // If we jumped over a block boundary, represent it as a newline
+        if (lastPos !== 0 && pos > lastPos) {
+          map.push(pos); // Virtual \n maps to the start of the next block
+        }
+        
+        for (let i = 0; i < node.text.length; i++) {
+          map.push(pos + i);
+        }
+        lastPos = pos + node.text.length;
+      } else if (node.isBlock && node.content.size === 0 && lastPos !== 0) {
       // Empty blocks (like empty paragraphs) should also count as a newline
       if (pos > lastPos) {
         map.push(pos);
@@ -244,7 +244,7 @@ function createActionWidget(
       e.preventDefault();
       e.stopPropagation();
       // eslint-disable-next-line no-console
-      console.log('[DIFF] Accept clicked for id:', id);
+      console.log("[DIFF] Accept clicked for id:", id);
       onAccept(id);
     };
     container.appendChild(acceptBtn);
@@ -264,7 +264,7 @@ function createActionWidget(
       e.preventDefault();
       e.stopPropagation();
       // eslint-disable-next-line no-console
-      console.log('[DIFF] Reject clicked for id:', id);
+      console.log("[DIFF] Reject clicked for id:", id);
       onReject(id);
     };
     container.appendChild(rejectBtn);
