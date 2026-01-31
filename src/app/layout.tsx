@@ -5,34 +5,8 @@ import ThemeProvider from "@/components/providers/ThemeProvider";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Lexend } from "next/font/google";
 import "./globals.css";
-
-const themeInitScript = `
-(function() {
-  try {
-    var theme = localStorage.getItem('scooli-theme');
-    var isDark = theme === 'dark' || 
-      ((theme === 'system' || !theme) && window.matchMedia('(prefers-color-scheme: dark)').matches);
-    if (isDark) {
-      document.documentElement.classList.add('dark');
-    }
-  } catch (e) {}
-})();
-`;
-
-const themeInitScript = `
-(function() {
-  try {
-    var theme = localStorage.getItem('scooli-theme');
-    var isDark = theme === 'dark' || 
-      ((theme === 'system' || !theme) && window.matchMedia('(prefers-color-scheme: dark)').matches);
-    if (isDark) {
-      document.documentElement.classList.add('dark');
-    }
-  } catch (e) {}
-})();
-`;
 
 const themeInitScript = `
 (function() {
@@ -77,11 +51,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="pt" className={inter.variable} suppressHydrationWarning>
+    <html lang="pt" className={lexend.variable} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
-      <body className={`${inter.className} antialiased`} suppressHydrationWarning>
+      <body className={`${lexend.className} antialiased`} suppressHydrationWarning>
         <StoreProvider>
           <ThemeProvider>
             <ClerkThemeProvider>

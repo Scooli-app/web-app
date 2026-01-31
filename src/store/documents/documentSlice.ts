@@ -1,16 +1,16 @@
 import {
-  chatWithDocument as chatWithDocumentService,
-  createDocument as createDocumentService,
-  // deleteDocument as deleteDocumentService,
-  getDocument as getDocumentService,
-  getDocuments as getDocumentsService,
-  updateDocument as updateDocumentService,
-  type DocumentFilters,
+    chatWithDocument as chatWithDocumentService,
+    createDocument as createDocumentService,
+    // deleteDocument as deleteDocumentService,
+    getDocument as getDocumentService,
+    getDocuments as getDocumentsService,
+    updateDocument as updateDocumentService,
+    type DocumentFilters,
 } from "@/services/api";
 import type {
-  CreateDocumentParams,
-  CreateDocumentStreamResponse,
-  Document,
+    CreateDocumentParams,
+    CreateDocumentStreamResponse,
+    Document,
 } from "@/shared/types";
 import { fetchUsage } from "@/store/subscription/subscriptionSlice";
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";

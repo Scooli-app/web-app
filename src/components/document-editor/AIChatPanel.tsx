@@ -102,73 +102,89 @@ function ChatContent({
 
   return (
     <Card
-      className={`p-4 md:p-6 flex flex-col ${isDesktop ? "h-full min-h-[500px] max-h-[500px]" : "h-full border-0 shadow-none"}`}
-    >
-      {isDesktop && (
-        <h2 className="text-xl font-semibold text-foreground mb-4">{title}</h2>
+      className={cn(
+        "flex flex-col transition-all duration-300",
+        isDesktop 
+          ? "h-[calc(100vh-150px)] border-border bg-card/50 backdrop-blur-sm" 
+          : "h-full border-0 shadow-none bg-transparent"
       )}
+    >
+      <div className="px-4 py-4 md:px-6">
+        <Tabs 
+          activeTab={activeTab} 
+          onTabChange={setActiveTab} 
+          hasSources={sources.length > 0} 
+        />
+      </div>
 
-      {/* Chat History */}
-      <div
-        ref={chatContainerRef}
-        className={`flex-1 overflow-y-auto mb-4 space-y-4 ${isDesktop ? "h-[300px] md:h-[500px]" : "h-full"}`}
-      >
-        {chatHistory.map((message, index) => (
-          <div
-            key={index}
-            className={`p-3 rounded-xl ${
-              message.role === "user"
-                ? "bg-primary text-primary-foreground ml-8"
-                : "bg-muted text-foreground mr-8"
-            }`}
-          >
-            {message.content}
-          </div>
-        ))}
+      <div className="flex-1 overflow-hidden relative flex flex-col px-4 md:px-6">
+        {activeTab === "assistant" ? (
+          <>
+            {/* Chat History */}
+            <div
+              ref={chatContainerRef}
+              className="flex-1 overflow-y-auto mb-4 space-y-4 pr-2 scrollbar-thin scrollbar-thumb-muted-foreground/20"
+            >
+              {chatHistory.length === 0 && (
+                <div className="h-full flex flex-col items-center justify-center opacity-50 space-y-2">
+                  <Sparkles className="w-8 h-8 text-primary/40" />
+                  <p className="text-sm font-medium">Como posso ajudar hoje?</p>
+                </div>
+              )}
+              {chatHistory.map((message, index) => (
+                <div
+                  key={index}
+                  className={cn(
+                    "p-3 rounded-2xl text-sm leading-relaxed max-w-[85%] animate-in fade-in slide-in-from-bottom-2 duration-300",
+                    message.role === "user"
+                      ? "bg-primary text-primary-foreground ml-auto rounded-tr-none"
+                      : "bg-muted text-foreground mr-auto rounded-tl-none border border-border/50"
+                  )}
+                >
+                  {message.content}
+                </div>
+              ))}
 
-        {/* Typing Indicator */}
-        {isStreaming && (
-          <div className="bg-muted text-foreground mr-8 p-3 rounded-xl">
-            <div className="flex items-center space-x-1">
-              <div className="flex space-x-1">
-                <div
-                  className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce"
-                  style={{ animationDelay: "0ms" }}
-                />
-                <div
-                  className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce"
-                  style={{ animationDelay: "150ms" }}
-                />
-                <div
-                  className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce"
-                  style={{ animationDelay: "300ms" }}
-                />
-              </div>
+              {/* Typing Indicator */}
+              {isStreaming && (
+                <div className="bg-muted text-foreground mr-auto p-3 rounded-2xl rounded-tl-none border border-border/50 animate-in fade-in duration-300">
+                  <div className="flex space-x-1">
+                    <div className="w-1.5 h-1.5 bg-primary/40 rounded-full animate-bounce [animation-delay:-0.3s]" />
+                    <div className="w-1.5 h-1.5 bg-primary/40 rounded-full animate-bounce [animation-delay:-0.15s]" />
+                    <div className="w-1.5 h-1.5 bg-primary/40 rounded-full animate-bounce" />
+                  </div>
+                </div>
+              )}
             </div>
+
+            {/* Chat Input */}
+            <form onSubmit={handleSubmit} className="flex gap-2 mb-6 mt-auto bg-background/50 p-1.5 rounded-2xl border border-border/50 focus-within:border-primary/50 transition-colors">
+              <Input
+                value={chatMessage}
+                onChange={(e) => setChatMessage(e.target.value)}
+                placeholder={placeholder}
+                className="flex-1 border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 px-3 h-10 text-sm"
+                disabled={isStreaming}
+              />
+              <Button
+                type="submit"
+                disabled={!chatMessage.trim() || isStreaming}
+                size="icon"
+                className="h-10 w-10 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground shrink-0 shadow-sm"
+              >
+                <Send className="h-4 w-4" />
+              </Button>
+            </form>
+          </>
+        ) : (
+          <div className="flex-1 overflow-y-auto pb-6 animate-in fade-in slide-in-from-right-4 duration-300">
+            <SourcesList sources={sources} />
           </div>
         )}
       </div>
 
-      {/* Chat Input */}
-      <form onSubmit={handleSubmit} className="flex gap-2 mt-auto">
-        <Input
-          value={chatMessage}
-          onChange={(e) => setChatMessage(e.target.value)}
-          placeholder={placeholder}
-          className="flex-1"
-          disabled={isStreaming}
-        />
-        <Button
-          type="submit"
-          disabled={!chatMessage.trim() || isStreaming}
-          className="bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-xl disabled:bg-muted disabled:text-muted-foreground"
-        >
-          <Send className="h-4 w-4" />
-        </Button>
-      </form>
-
       {error && (
-        <div className="mt-4 p-3 bg-destructive/10 border border-destructive rounded-xl text-destructive text-sm">
+        <div className="mx-4 mb-4 p-3 bg-destructive/5 border border-destructive/20 rounded-xl text-destructive text-xs font-medium animate-in shake-1">
           {error}
         </div>
       )}
@@ -218,8 +234,8 @@ export default function AIChatPanel({
 
   return (
     <>
-      {/* Desktop: Fixed sidebar panel */}
-      <div className="hidden lg:block lg:fixed lg:right-10 lg:top-30 lg:max-h-fit lg:w-[400px] z-30 flex-col border-l border-border bg-transparent">
+      {/* Desktop: Grid-integrated sidebar panel */}
+      <div className="hidden lg:block w-full h-full">
         <ChatContent
           chatHistory={chatHistory}
           isStreaming={isStreaming}
@@ -240,12 +256,12 @@ export default function AIChatPanel({
         <Sheet open={isOpen} onOpenChange={setIsOpen}>
           <SheetTrigger asChild>
             <Button
-              className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full bg-primary hover:bg-primary/90 shadow-lg hover:shadow-xl transition-all duration-200"
+              className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full bg-primary hover:bg-primary/90 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95"
               size="icon"
             >
               <MessageCircle className="h-6 w-6 text-primary-foreground" />
               {chatHistory.length > 0 && (
-                <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-destructive text-white text-xs flex items-center justify-center font-medium">
+                <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-destructive text-white text-[10px] flex items-center justify-center font-bold ring-2 ring-background">
                   {chatHistory.length > 9 ? "9+" : chatHistory.length}
                 </span>
               )}
@@ -255,8 +271,8 @@ export default function AIChatPanel({
             side="right"
             className="w-full sm:max-w-md p-0 flex flex-col border-l border-border/50"
           >
-            <SheetHeader className="p-4 border-b border-border">
-              <SheetTitle className="text-xl font-semibold text-foreground">
+            <SheetHeader className="px-6 py-6 border-b border-border/50 bg-muted/20">
+              <SheetTitle className="text-xl font-bold text-foreground tracking-tight">
                 {title}
               </SheetTitle>
             </SheetHeader>
