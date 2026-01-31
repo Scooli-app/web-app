@@ -21,76 +21,98 @@
 
 /* Actions Logic */
 .diff-actions {
-  position: absolute;
   display: inline-flex;
-  gap: 4px;
-  opacity: 0;
-  visibility: hidden;
+  gap: 6px;
+  vertical-align: middle;
+  margin-left: 8px;
   transition: opacity 0.2s ease, transform 0.2s ease;
   z-index: 1000;
   background: white;
-  padding: 3px;
+  padding: 2px 6px;
   border-radius: 16px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
   border: 1px solid #e2e8f0;
-  /* Shift slightly to the right and center vertically relative to the character line */
-  transform: translate(4px, -50%);
-  pointer-events: none;
   white-space: nowrap;
+  align-items: center;
+  position: relative; /* Guaranteed visibility in flow */
 }
 
-/* Trigger buttons when the highlighted area is hovered */
-.diff-insert:hover + .diff-actions,
-.diff-replace:hover + .diff-actions,
-.diff-delete:hover + .diff-actions,
-.diff-actions:hover {
-  opacity: 1;
-  visibility: visible;
-  pointer-events: auto;
+/* Parent container context */
+.ProseMirror {
+  position: relative;
+  padding-bottom: 80px !important; /* Ensure toolbars at the end are visible */
 }
 
-/* Specific styling for deletion markers (which are actually the widgets themselves) */
+/* Specific styling for deletion markers (widgets) */
 .diff-actions.is-deletion {
   visibility: visible;
   opacity: 1;
   position: relative;
-  display: inline-flex;
-  margin-left: 2px;
-  vertical-align: middle;
-  transform: none; /* Deletions markers stay in flow */
+  display: inline; /* Allow it to flow with text */
+  margin: 0;
+  vertical-align: baseline;
+  transform: none;
   background: transparent;
   padding: 0;
   border: none;
   box-shadow: none;
+  pointer-events: auto;
+  white-space: normal; /* Enable wrapping! */
 }
 
-/* For deletions, the hover area is the marker itself */
+/* Red vertical line for deletions */
 .diff-actions.is-deletion::before {
   content: "";
   display: inline-block;
-  width: 4px;
-  height: 1.25em;
-  background-color: rgba(248, 81, 73, 0.6);
-  border-radius: 2px;
+  width: 2px;
+  height: 1.1em;
+  background-color: #f85149;
   margin-right: 4px;
-  cursor: pointer;
   vertical-align: middle;
 }
 
-/* Standard button styles - Smaller and more premium */
+/* The red text that represents deleted content */
+.diff-deleted-text {
+  background-color: rgba(248, 81, 73, 0.15);
+  color: #cf222e;
+  text-decoration: line-through;
+  text-decoration-color: rgba(248, 81, 73, 0.6);
+  text-decoration-thickness: 1px;
+  padding: 0 4px;
+  border-radius: 2px;
+  margin-right: 4px;
+  font-size: 1em;
+  opacity: 1;
+  transition: opacity 0.2s ease;
+  display: inline;
+  word-break: break-word; /* Ensure wrapping on small screens */
+}
+
+/* Highlighting context for deletions */
+.diff-hover-active .diff-deleted-text,
+.diff-actions:hover .diff-deleted-text {
+  background-color: rgba(248, 81, 73, 0.25);
+}
+
+/* Standard button styles - Always visible */
 .diff-action-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   border: none;
   cursor: pointer;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: bold;
-  transition: all 0.1s ease;
   color: white;
+  opacity: 0.9;
+  visibility: visible;
+  transform: scale(1);
+  transition: all 0.2s ease;
+  vertical-align: middle;
+  margin: 0 2px;
 }
 
 .diff-accept {
@@ -99,7 +121,7 @@
 
 .diff-accept:hover {
   background: #2c974b !important;
-  transform: scale(1.1);
+  transform: scale(1.15);
 }
 
 .diff-reject {
@@ -108,12 +130,18 @@
 
 .diff-reject:hover {
   background: #da3633 !important;
-  transform: scale(1.1);
+  transform: scale(1.15);
 }
 
 /* Parent container context */
 .ProseMirror {
   position: relative;
+  padding-bottom: 120px !important; /* Significant room for toolbars at the end */
+  outline: none;
+}
+
+.tiptap-container {
+  overflow: visible !important;
 }
 
 /* Dark mode support */
@@ -121,5 +149,10 @@
   .diff-actions:not(.is-deletion) {
     background: #1e293b;
     border-color: #334155;
+  }
+  
+  .diff-deleted-text {
+    background-color: rgba(248, 81, 73, 0.25);
+    color: #ff7b72;
   }
 }

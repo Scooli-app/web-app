@@ -297,19 +297,15 @@ export default function DocumentEditor({
         const remainingChanges = diffMode.diffChanges.filter(c => c.id !== String(changeId));
         
         if (remainingChanges.length === 0) {
-          // Final decision: ACCEPT ALL
-          // Mark this document update as reviewed
+          // Final decision reached. 
+          // Since TipTap already applied the changes/rejections live, 
+          // we just need to exit diff mode and mark the document as reviewed.
           lastReviewedUpdateRef.current = currentDocument?.updatedAt || null;
-          
-          // Ensure both local state and server are updated
-          const finalContent = diffMode.newMarkdown;
-          setContent(finalContent);
-          handleAutosave(finalContent);
           
           // Close diff mode
           setDiffMode(null);
         } else {
-          // Mark current change as reviewed and hide it
+          // Mark current change as reviewed and hide it from state
           setDiffMode({
             ...diffMode,
             diffChanges: remainingChanges
@@ -337,19 +333,13 @@ export default function DocumentEditor({
         const remainingChanges = diffMode.diffChanges.filter(c => c.id !== String(changeId));
         
         if (remainingChanges.length === 0) {
-          // Final decision: REJECT ALL
-          // Mark this update as reviewed
+          // Final decision reached.
           lastReviewedUpdateRef.current = currentDocument?.updatedAt || null;
-          
-          // RESTORE the old content locally and on the server
-          const restoredContent = diffMode.oldMarkdown;
-          setContent(restoredContent);
-          handleAutosave(restoredContent);
           
           // Close diff mode
           setDiffMode(null);
         } else {
-          // Mark as reviewed (hides the buttons for this segment)
+          // Update the list of pending changes
           setDiffMode({
             ...diffMode,
             diffChanges: remainingChanges

@@ -1,274 +1,338 @@
 import type { DiffChange } from "@/shared/types/api";
-import { computeDiff } from "@/shared/utils/diff-utils";
 import { Extension } from "@tiptap/core";
 import type { Node } from "@tiptap/pm/model";
-import { Plugin, PluginKey } from "@tiptap/pm/state";
-import { Decoration, DecorationSet } from "@tiptap/pm/view";
+import { Plugin, PluginKey, type EditorState, type Transaction } from "@tiptap/pm/state";
+import { Decoration, DecorationSet, type EditorView } from "@tiptap/pm/view";
 
 export interface DiffOptions {
-  oldText: string;
-  newText: string;
-  diffChanges?: DiffChange[];
-  onAccept?: (changeId: string | number) => void;
-  onReject?: (changeId: string | number) => void;
+  onAccept?: (id: string | number) => void;
+  onReject?: (id: string | number) => void;
+  onAllReviewed?: () => void;
 }
 
+const diffPluginKey = new PluginKey("diff-plugin");
+
+interface DiffPluginState {
+  changes: DiffChange[];
+  decorations: DecorationSet;
+}
+
+declare module "@tiptap/core" {
+  interface Commands<ReturnType> {
+    diff: {
+      setDiffs: (changes: DiffChange[]) => ReturnType;
+      acceptDiff: (id: string | number) => ReturnType;
+      rejectDiff: (id: string | number) => ReturnType;
+      clearDiffs: () => ReturnType;
+    };
+  }
+}
+
+/**
+ * DiffExtension for TipTap
+ * Manages insertions, deletions, and replacements with Accept/Reject actions.
+ * 
+ * Logic:
+ * - Diffs are stored in the plugin state.
+ * - Each diff is tracked via a ProseMirror decoration.
+ * - Rejection: Reverts the document text to the 'oldText' for that segment.
+ * - Accept: Simply removes the decoration.
+ */
 export const DiffExtension = Extension.create<DiffOptions>({
   name: "diff",
 
   addOptions() {
     return {
-      oldText: "",
-      newText: "",
-      diffChanges: undefined,
       onAccept: undefined,
       onReject: undefined,
+      onAllReviewed: undefined,
     };
   },
 
   addProseMirrorPlugins() {
-    const { oldText, diffChanges, onAccept, onReject } = this.options;
+    const { onAccept, onReject, onAllReviewed } = this.options;
 
     return [
       new Plugin({
-        key: new PluginKey("diff"),
+        key: diffPluginKey,
         state: {
-          init(_config, instance) {
-            // If we have pre-computed diff changes from backend, use them!
-            if (diffChanges && diffChanges.length > 0) {
-              // eslint-disable-next-line no-console
-              console.log("[DIFF EXT] Using pre-computed diff changes:", diffChanges.length);
-              const posMap = createPosMap(instance.doc);
-              return createDiffDecorations(
-                diffChanges,
-                instance.doc,
+          init() {
+            return {
+              changes: [] as DiffChange[],
+              decorations: DecorationSet.empty,
+            };
+          },
+          apply(tr: Transaction, value: DiffPluginState, _oldState: EditorState, newState: EditorState): DiffPluginState {
+            // 1. Handle command to set new diffs
+            const setMeta = tr.getMeta(diffPluginKey);
+            if (setMeta?.type === "SET_DIFFS") {
+              const changes = setMeta.changes as DiffChange[];
+              const posMap = createPosMap(newState.doc);
+              
+              const decorations = createDiffDecorations(
+                changes,
+                newState.doc,
                 posMap,
-                onAccept,
-                onReject
+                // These wrappers ensure we use the editor commands to resolve
+                (id) => tr.setMeta(diffPluginKey, { type: "RESOLVE", id, accepted: true }),
+                (id) => tr.setMeta(diffPluginKey, { type: "RESOLVE", id, accepted: false })
               );
+              
+              return { changes, decorations };
             }
 
-            // Normalize line endings and whitespace for reliable diffing
-            // Normalize text: remove markdown symbols and standardize whitespace
-            const normalize = (text: string) => {
-              if (!text) return "";
-              return text
-                .replace(/\r\n/g, "\n")
-                .replace(/[#*_`[\]()]/g, "")
-                .replace(/\n+/g, "\n")
-                .replace(/[ \t]+/g, " ")
-                .trim();
-            };
-            
-            const docText = normalize(instance.doc.textContent);
-            const oldPlainText = normalize(oldText);
+            // 2. Handle Resolution (Accept/Reject)
+            if (setMeta?.type === "RESOLVE") {
+              const { id, accepted } = setMeta;
+              const remainingChanges = value.changes.filter((c: DiffChange) => c.id !== id);
+              
+              // Map decorations to new document state
+              const mappedDecorations = value.decorations.map(tr.mapping, tr.doc);
+              
+              // Remove decorations associated with this ID
+              const filteredDecorations = DecorationSet.create(
+                tr.doc,
+                mappedDecorations.find().filter((d: Decoration) => !d.spec.diffId || d.spec.diffId !== id)
+              );
 
-            // eslint-disable-next-line no-console
-            console.log("[DIFF EXT] Computing diff locally:", {
-              oldLength: oldPlainText.length,
-              docLength: docText.length,
-            });
+              // Check if finished
+              if (remainingChanges.length === 0 && onAllReviewed) {
+                // Use a timeout or deferred call to ensure it happens after state update
+                setTimeout(() => onAllReviewed(), 0);
+              }
 
-            // Compare old plain text with current document text
-            const changes = computeDiff(oldPlainText, docText);
-
-            // Map local DiffChange to API DiffChange structure for createDiffDecorations
-            let localOffset = 0;
-            const apiChanges: DiffChange[] = changes.map((c, i) => {
-              const change: DiffChange = {
-                id: `local-${i}`,
-                type: c.type as "insert" | "delete" | "replace",
-                text: c.text,
-                startOffset: localOffset,
-                endOffset: localOffset + c.text.length,
+              return {
+                changes: remainingChanges,
+                decorations: filteredDecorations
               };
-              localOffset += c.text.length;
-              return change;
-            });
+            }
 
-            const posMap = createPosMap(instance.doc);
-            return createDiffDecorations(apiChanges, instance.doc, posMap, onAccept, onReject);
-          },
-          apply(tr, oldState) {
-            // Keep decorations stable unless explicitly updated
-            return oldState.map(tr.mapping, tr.doc);
+            // 3. Normal mapping
+            return {
+              changes: value.changes,
+              decorations: value.decorations.map(tr.mapping, tr.doc),
+            };
           },
         },
         props: {
-          decorations(state) {
-            return this.getState(state);
+          decorations(state: EditorState) {
+            return (diffPluginKey.getState(state) as DiffPluginState).decorations;
           },
           handleDOMEvents: {
-            // Mouse tracking removed in favor of CSS-based hover on widgets
+            mouseover: (view: EditorView, event: Event) => {
+              const target = event.target as HTMLElement;
+              const diffElem = target.closest("[data-diff-id]");
+              const diffId = diffElem?.getAttribute("data-diff-id");
+              if (diffId) {
+                view.dom.querySelectorAll(`[data-diff-id="${diffId}"]`).forEach((el) => {
+                  (el as HTMLElement).classList.add("diff-hover-active");
+                });
+              }
+              return false;
+            },
+            mouseout: (view: EditorView, event: Event) => {
+              const target = event.target as HTMLElement;
+              const diffElem = target.closest("[data-diff-id]");
+              const diffId = diffElem?.getAttribute("data-diff-id");
+              if (diffId) {
+                view.dom.querySelectorAll(`[data-diff-id="${diffId}"]`).forEach((el) => {
+                  (el as HTMLElement).classList.remove("diff-hover-active");
+                });
+              }
+              return false;
+            },
           },
         },
       }),
     ];
   },
-});
 
+  addCommands() {
+    return {
+      setDiffs: (changes: DiffChange[]) => ({ tr, dispatch }: { tr: Transaction; dispatch?: (tr: Transaction) => void }) => {
+        if (dispatch) {
+          tr.setMeta(diffPluginKey, { type: "SET_DIFFS", changes });
+          dispatch(tr);
+        }
+        return true;
+      },
+      acceptDiff: (id: string | number) => ({ tr, dispatch }: { tr: Transaction; dispatch?: (tr: Transaction) => void }) => {
+        if (dispatch) {
+          tr.setMeta(diffPluginKey, { type: "RESOLVE", id, accepted: true });
+          dispatch(tr);
+          if (this.options.onAccept) this.options.onAccept(id);
+        }
+        return true;
+      },
+      rejectDiff: (id: string | number) => ({ state, tr, dispatch }: { state: EditorState; tr: Transaction; dispatch?: (tr: Transaction) => void }) => {
+        if (dispatch) {
+          const pluginState = diffPluginKey.getState(state) as DiffPluginState;
+          const change = pluginState.changes.find((c: DiffChange) => String(c.id) === String(id));
+          
+          if (change) {
+            // Find current document range of this change via decorations
+            const decorations = pluginState.decorations.find();
+            const changeDeco = decorations.find((d) => d.spec.diffId === id && d.spec.type !== "widget");
+            // If it's a deletion, it only has a widget
+            const widgetDeco = decorations.find((d) => d.spec.diffId === id && d.spec.type === "widget");
+
+            let from = 0, to = 0;
+            if (changeDeco) {
+              from = changeDeco.from;
+              to = changeDeco.to;
+            } else if (widgetDeco) {
+              from = widgetDeco.from;
+              to = widgetDeco.from;
+            }
+
+            // REVERT THE TEXT
+            const oldText = change.oldText || "";
+            if (change.type === "insert") {
+              tr.delete(from, to);
+            } else {
+              tr.insertText(oldText, from, to);
+            }
+          }
+
+          tr.setMeta(diffPluginKey, { type: "RESOLVE", id, accepted: false });
+          dispatch(tr);
+          if (this.options.onReject) this.options.onReject(id);
+        }
+        return true;
+      },
+      clearDiffs: () => ({ tr, dispatch }: { tr: Transaction; dispatch?: (tr: Transaction) => void }) => {
+        if (dispatch) {
+          tr.setMeta(diffPluginKey, { type: "SET_DIFFS", changes: [] });
+          dispatch(tr);
+        }
+        return true;
+      }
+    };
+  },
+});
 
 function createDiffDecorations(
   changes: DiffChange[],
   doc: Node,
   posMap: number[],
-  onAccept?: (id: string | number) => void,
-  onReject?: (id: string | number) => void
+  onAccept: (id: string | number) => void,
+  onReject: (id: string | number) => void
 ): DecorationSet {
   const decorations: Decoration[] = [];
 
   changes.forEach((change) => {
     const changeId = change.id;
-    // Map character offset to ProseMirror position using our posMap
-    const pos = posMap[change.startOffset] || change.startOffset + 1;
-    const endPos = posMap[change.startOffset + change.text.length] || (pos + change.text.length);
-    
+    const pos = posMap[change.startOffset] || change.startOffset;
+    let endPos = posMap[change.startOffset + change.text.length] || (pos + change.text.length);
+    if (endPos < pos) endPos = pos;
+
     if (change.type === "insert") {
-      // Green background for insertions
       decorations.push(
-        Decoration.inline(
-          pos,
-          endPos,
-          {
-            class: "diff-insert",
-            "data-diff-id": changeId,
-          }
-        )
+        Decoration.inline(pos, endPos, {
+          class: "diff-insert",
+          "data-diff-id": changeId,
+        }, { diffId: changeId, type: "insert" })
       );
 
-      // Add accept/reject widget at the END of the insertion
-      if (onAccept || onReject) {
-        decorations.push(
-          Decoration.widget(
-            endPos,
-            createActionWidget(changeId, onAccept, onReject),
-            { side: 1, key: `widget-${changeId}` }
-          )
-        );
-      }
+      decorations.push(
+        Decoration.widget(
+          endPos,
+          (view: EditorView) => createActionWidget(changeId, view),
+          { side: 1, key: `widget-${changeId}`, diffId: changeId, type: "widget" }
+        )
+      );
     } else if (change.type === "delete") {
-      // For deletions in the NEW content view, we show a small widget at the position
-      // where the text was removed.
-      if (onAccept || onReject) {
-        decorations.push(
-          Decoration.widget(
-            pos,
-            createActionWidget(changeId, onAccept, onReject, true), // true means deletion widget
-            { side: -1, key: `widget-${changeId}` }
-          )
-        );
-      }
-    } else if (change.type === "replace") {
-       // Yellow/Orange background for replacements
-       decorations.push(
-        Decoration.inline(
+      decorations.push(
+        Decoration.widget(
           pos,
-          endPos,
-          {
-            class: "diff-replace",
-            "data-diff-id": changeId,
-          }
+          (view: EditorView) => createActionWidget(changeId, view, true, change.oldText),
+          { side: -1, key: `widget-${changeId}`, diffId: changeId, type: "widget" }
         )
       );
+    } else if (change.type === "replace") {
+      decorations.push(
+        Decoration.inline(pos, endPos, {
+          class: "diff-replace",
+          "data-diff-id": changeId,
+        }, { diffId: changeId, type: "replace" })
+      );
 
-      // Add accept/reject widget at the END of the replacement
-      if (onAccept || onReject) {
-        decorations.push(
-          Decoration.widget(
-            endPos,
-            createActionWidget(changeId, onAccept, onReject),
-            { side: 1, key: `widget-${changeId}` }
-          )
-        );
-      }
+      decorations.push(
+        Decoration.widget(
+          endPos,
+          (view: EditorView) => createActionWidget(changeId, view),
+          { side: 1, key: `widget-${changeId}`, diffId: changeId, type: "widget" }
+        )
+      );
     }
   });
 
   return DecorationSet.create(doc, decorations);
 }
 
-/**
- * Creates a map where map[charOffset] = prosemirrorPosition
- * This accounts for block boundaries that take up positions but aren't visible in plain text.
- */
 function createPosMap(doc: Node): number[] {
   const map: number[] = [];
-  let lastPos = 0;
-
-  doc.descendants((node: Node, pos: number) => {
-      if (node.isText && node.text) {
-        // If we jumped over a block boundary, represent it as a newline
-        if (lastPos !== 0 && pos > lastPos) {
-          map.push(pos); // Virtual \n maps to the start of the next block
-        }
-        
-        for (let i = 0; i < node.text.length; i++) {
-          map.push(pos + i);
-        }
-        lastPos = pos + node.text.length;
-      } else if (node.isBlock && node.content.size === 0 && lastPos !== 0) {
-      // Empty blocks (like empty paragraphs) should also count as a newline
-      if (pos > lastPos) {
-        map.push(pos);
-        lastPos = pos + node.nodeSize;
+  
+  doc.descendants((node, pos) => {
+    if (node.isText && node.text) {
+      for (let i = 0; i < node.text.length; i++) {
+        map.push(pos + i);
       }
+    } else if (node.isLeaf) {
+      map.push(pos);
+    } else if (node.isBlock && pos > 0) {
+      map.push(pos);
     }
-    return true;
   });
+
+  const maxDocPos = doc.content.size;
+  while (map.length <= maxDocPos + 100) {
+    map.push(maxDocPos);
+  }
   
   return map;
 }
 
 function createActionWidget(
   id: string | number,
-  onAccept?: (id: string | number) => void,
-  onReject?: (id: string | number) => void,
-  isDeletion: boolean = false
+  view: EditorView,
+  isDeletion: boolean = false,
+  deletedText?: string
 ): HTMLElement {
   const container = document.createElement("span");
   container.className = `diff-actions ${isDeletion ? "is-deletion" : ""}`;
   container.contentEditable = "false";
   container.setAttribute("data-diff-id", String(id));
 
-  if (onAccept) {
-    const acceptBtn = document.createElement("button");
-    acceptBtn.className = "diff-action-btn diff-accept";
-    acceptBtn.innerHTML = "✓";
-    acceptBtn.title = "Aceitar alteração";
-    acceptBtn.type = "button";
-    acceptBtn.onmousedown = (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-    };
-    acceptBtn.onclick = (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      // eslint-disable-next-line no-console
-      console.log("[DIFF] Accept clicked for id:", id);
-      onAccept(id);
-    };
-    container.appendChild(acceptBtn);
+  if (isDeletion && deletedText) {
+    const textSpan = document.createElement("span");
+    textSpan.className = "diff-deleted-text";
+    textSpan.textContent = deletedText;
+    container.appendChild(textSpan);
   }
 
-  if (onReject) {
-    const rejectBtn = document.createElement("button");
-    rejectBtn.className = "diff-action-btn diff-reject";
-    rejectBtn.innerHTML = "✕";
-    rejectBtn.title = "Rejeitar alteração";
-    rejectBtn.type = "button";
-    rejectBtn.onmousedown = (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-    };
-    rejectBtn.onclick = (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      // eslint-disable-next-line no-console
-      console.log("[DIFF] Reject clicked for id:", id);
-      onReject(id);
-    };
-    container.appendChild(rejectBtn);
-  }
+  const acceptBtn = document.createElement("button");
+  acceptBtn.className = "diff-action-btn diff-accept";
+  acceptBtn.innerHTML = "✓";
+  acceptBtn.type = "button";
+  acceptBtn.onclick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    view.dispatch(view.state.tr.setMeta(diffPluginKey, { type: "RESOLVE", id, accepted: true }));
+    window.dispatchEvent(new CustomEvent("tiptap-diff-resolve", { detail: { id, accepted: true } }));
+  };
+  container.appendChild(acceptBtn);
+
+  const rejectBtn = document.createElement("button");
+  rejectBtn.className = "diff-action-btn diff-reject";
+  rejectBtn.innerHTML = "✕";
+  rejectBtn.type = "button";
+  rejectBtn.onclick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    window.dispatchEvent(new CustomEvent("tiptap-diff-resolve", { detail: { id, accepted: false } }));
+  };
+  container.appendChild(rejectBtn);
 
   return container;
 }

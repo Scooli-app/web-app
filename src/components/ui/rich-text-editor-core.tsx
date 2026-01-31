@@ -10,7 +10,7 @@ import {
   type Editor,
 } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { memo, useCallback, useEffect, useRef } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef } from "react";
 import "./diff-styles.css";
 
 interface DiffMode {
@@ -236,20 +236,23 @@ export function TipTapEditorCore({
     [onChange]
   );
 
-  // Build extensions array conditionally to support DiffExtension when in diff mode
-  const extensions = diffMode
-    ? [
-        StarterKit,
-        Highlight,
-        DiffExtension.configure({
-          oldText: diffMode.oldText,
-          newText: diffMode.newText,
-          diffChanges: diffMode.diffChanges,
-          onAccept: diffMode.onAccept,
-          onReject: diffMode.onReject,
-        }),
-      ]
-    : [StarterKit, Highlight];
+  // Use refs for callbacks to keep extensions array stable
+  const onAcceptRef = useRef(diffMode?.onAccept);
+  const onRejectRef = useRef(diffMode?.onReject);
+  useEffect(() => {
+    onAcceptRef.current = diffMode?.onAccept;
+    onRejectRef.current = diffMode?.onReject;
+  }, [diffMode?.onAccept, diffMode?.onReject]);
+
+  // Stable extensions array - never change extensions array to keep editor stable
+  const extensions = useMemo(() => [
+    StarterKit,
+    Highlight,
+    DiffExtension.configure({
+      onAccept: (id) => onAcceptRef.current?.(id),
+      onReject: (id) => onRejectRef.current?.(id),
+    }),
+  ], []);
 
   const editor = useEditor({
     extensions,
@@ -264,9 +267,38 @@ export function TipTapEditorCore({
     immediatelyRender: false,
   });
 
+  // Handle Diff Action events from widgets
+  useEffect(() => {
+    if (!editor) return;
+    
+    const handleResolve = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const { id, accepted } = customEvent.detail;
+      if (accepted) {
+        editor.commands.acceptDiff(id);
+      } else {
+        editor.commands.rejectDiff(id);
+      }
+    };
+
+    window.addEventListener("tiptap-diff-resolve", handleResolve);
+    return () => window.removeEventListener("tiptap-diff-resolve", handleResolve);
+  }, [editor]);
+
+  // Sync diff changes - when diffChanges prop updates, send them to the plugin
+  const hasDiffMode = !!diffMode;
+  useEffect(() => {
+    if (editor && diffMode?.diffChanges) {
+      editor.commands.setDiffs(diffMode.diffChanges);
+    } else if (editor && !hasDiffMode) {
+      editor.commands.clearDiffs();
+    }
+  }, [editor, diffMode, hasDiffMode]);
+
   // Sync content from props to editor - only for external changes
   useEffect(() => {
-    if (!editor) {
+    if (!editor || diffMode) {
+      // Skip sync when in diff mode to avoid interfering with rejections
       return;
     }
 
@@ -288,7 +320,7 @@ export function TipTapEditorCore({
       }
       lastExternalContentRef.current = content;
     }
-  }, [editor, content]);
+  }, [editor, content, diffMode]);
 
   // Autosave functionality
   useEffect(() => {
@@ -330,7 +362,7 @@ export function TipTapEditorCore({
   return (
     <div className="border border-border rounded-xl bg-card w-full m-0.5">
       <MenuBar editor={editor} rightHeaderContent={rightHeaderContent} />
-      <div className="p-4">
+      <div className="p-4 tiptap-container">
         <EditorContent editor={editor} />
       </div>
     </div>
