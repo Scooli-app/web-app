@@ -72,6 +72,21 @@ export default function DocumentTitle({
     handleTitleSave();
   };
 
+  const [showSaved, setShowSaved] = useState(false);
+  const savedTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    if (isSaving) {
+      setShowSaved(false);
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+    } else if (title) { // Only show saved if we have a title (not initial load)
+      setShowSaved(true);
+      savedTimerRef.current = setTimeout(() => {
+        setShowSaved(false);
+      }, 3000);
+    }
+  }, [isSaving, title]);
+
   return (
     <div className="flex items-center space-x-3 m-1.5">
       {isEditing ? (
@@ -94,18 +109,28 @@ export default function DocumentTitle({
           <Edit3 className="h-6 w-6 text-primary" />
         </div>
       ) : (
-        <StreamingText
-          text={title || defaultTitle}
-          isStreaming={isStreaming}
-          as="h1"
-          className="text-3xl font-bold text-foreground cursor-pointer hover:text-primary transition-colors"
-          onClick={handleTitleClick}
-        />
-      )}
-      {isSaving && (
-        <div className="flex items-center text-muted-foreground">
-          <Save className="h-4 w-4 mr-2" />
-          <span className="text-sm">A guardar...</span>
+        <div className="flex items-center gap-10">
+          <StreamingText
+            text={title || defaultTitle}
+            isStreaming={isStreaming}
+            as="h1"
+            className="text-3xl font-bold text-foreground cursor-pointer hover:text-primary transition-colors"
+            onClick={handleTitleClick}
+          />
+          
+          <div className="flex items-center min-w-[100px] h-6">
+            {isSaving ? (
+              <div className="flex items-center text-muted-foreground/60 animate-pulse">
+                <Save className="h-3.5 w-3.5 mr-1.5" />
+                <span className="text-xs font-medium">A guardar...</span>
+              </div>
+            ) : showSaved ? (
+              <div className="flex items-center text-primary/60 animate-in fade-in duration-500">
+                <Save className="h-3.5 w-3.5 mr-1.5" />
+                <span className="text-xs font-medium">Guardado</span>
+              </div>
+            ) : null}
+          </div>
         </div>
       )}
     </div>
