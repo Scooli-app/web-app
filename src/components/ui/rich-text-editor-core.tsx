@@ -1,5 +1,6 @@
 "use client";
 
+import { DiffExtension } from "@/lib/tiptap/DiffExtension";
 import { htmlToMarkdown, markdownToHtml } from "@/shared/utils/markdown";
 import Highlight from "@tiptap/extension-highlight";
 import {
@@ -10,6 +11,15 @@ import {
 } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { memo, useCallback, useEffect, useRef } from "react";
+import "./diff-styles.css";
+
+interface DiffMode {
+  oldText: string;
+  newText: string;
+  diffChanges?: import("@/shared/types/api").DiffChange[];
+  onAccept?: (changeId: string | number) => void;
+  onReject?: (changeId: string | number) => void;
+}
 
 interface TipTapEditorCoreProps {
   content: string;
@@ -17,6 +27,7 @@ interface TipTapEditorCoreProps {
   className?: string;
   onAutosave?: (markdown: string) => void;
   rightHeaderContent?: React.ReactNode;
+  diffMode?: DiffMode;
 }
 
 // Memoized MenuBar component
@@ -29,20 +40,40 @@ const MenuBar = memo(function MenuBar({
 }) {
   const editorState = useEditorState({
     editor,
-    selector: (ctx) => ({
-      isBold: ctx.editor.isActive("bold"),
-      canBold: ctx.editor.can().chain().focus().toggleBold().run(),
-      isItalic: ctx.editor.isActive("italic"),
-      canItalic: ctx.editor.can().chain().focus().toggleItalic().run(),
-      isHeading1: ctx.editor.isActive("heading", { level: 1 }),
-      isHeading2: ctx.editor.isActive("heading", { level: 2 }),
-      isHeading3: ctx.editor.isActive("heading", { level: 3 }),
-      isBulletList: ctx.editor.isActive("bulletList"),
-      isOrderedList: ctx.editor.isActive("orderedList"),
-      isHighlight: ctx.editor.isActive("highlight"),
-      isBlockquote: ctx.editor.isActive("blockquote"),
-      isCodeBlock: ctx.editor.isActive("codeBlock"),
-    }),
+    selector: (ctx) => {
+      if (!ctx.editor || !ctx.editor.view) {
+        // Return default state when editor is not available
+        return {
+          isBold: false,
+          canBold: false,
+          isItalic: false,
+          canItalic: false,
+          isHeading1: false,
+          isHeading2: false,
+          isHeading3: false,
+          isBulletList: false,
+          isOrderedList: false,
+          isHighlight: false,
+          isBlockquote: false,
+          isCodeBlock: false,
+        };
+      }
+      
+      return {
+        isBold: ctx.editor.isActive("bold"),
+        canBold: ctx.editor.can().chain().focus().toggleBold().run(),
+        isItalic: ctx.editor.isActive("italic"),
+        canItalic: ctx.editor.can().chain().focus().toggleItalic().run(),
+        isHeading1: ctx.editor.isActive("heading", { level: 1 }),
+        isHeading2: ctx.editor.isActive("heading", { level: 2 }),
+        isHeading3: ctx.editor.isActive("heading", { level: 3 }),
+        isBulletList: ctx.editor.isActive("bulletList"),
+        isOrderedList: ctx.editor.isActive("orderedList"),
+        isHighlight: ctx.editor.isActive("highlight"),
+        isBlockquote: ctx.editor.isActive("blockquote"),
+        isCodeBlock: ctx.editor.isActive("codeBlock"),
+      };
+    },
   });
 
   const handleBold = useCallback(() => editor.chain().focus().toggleBold().run(), [editor]);
@@ -186,6 +217,7 @@ export function TipTapEditorCore({
   className = "",
   onAutosave,
   rightHeaderContent,
+  diffMode,
 }: TipTapEditorCoreProps) {
   const autosaveTimer = useRef<NodeJS.Timeout | null>(null);
   // Track if the last change came from the editor (internal) vs props (external)
@@ -204,13 +236,29 @@ export function TipTapEditorCore({
     [onChange]
   );
 
+  // Build extensions array conditionally to support DiffExtension when in diff mode
+  const extensions = diffMode
+    ? [
+        StarterKit,
+        Highlight,
+        DiffExtension.configure({
+          oldText: diffMode.oldText,
+          newText: diffMode.newText,
+          diffChanges: diffMode.diffChanges,
+          onAccept: diffMode.onAccept,
+          onReject: diffMode.onReject,
+        }),
+      ]
+    : [StarterKit, Highlight];
+
   const editor = useEditor({
-    extensions: [StarterKit, Highlight],
+    extensions,
     content: markdownToHtml(content),
     editorProps: {
       attributes: {
         class: `tiptap ${className}`,
       },
+      editable: () => !diffMode, // Make read-only in diff mode
     },
     onUpdate: handleUpdate,
     immediatelyRender: false,

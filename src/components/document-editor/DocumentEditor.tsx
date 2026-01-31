@@ -48,7 +48,7 @@ export default function DocumentEditor({
   const router = useRouter();
   const dispatch = useAppDispatch();
   const { getToken } = useAuth();
-  const { currentDocument, isLoading, streamInfo, isChatting, lastChatAnswer } =
+  const { currentDocument, isLoading, streamInfo, isChatting, lastChatAnswer, lastDiffChanges } =
     useAppSelector(selectEditorState);
   const {
     content,
@@ -60,11 +60,21 @@ export default function DocumentEditor({
     editorKey,
   } = useDocumentManager(documentId);
 
+  // Track the last updatedAt we've already shown a diff for to avoid loops
+  const lastReviewedUpdateRef = useRef<string | null>(null);
+
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState("");
   const [displayContent, setDisplayContent] = useState("");
   const [documentTitle, setDocumentTitle] = useState("");
+  const [diffMode, setDiffMode] = useState<{
+    oldText: string;
+    newText: string;
+    oldMarkdown: string;
+    newMarkdown: string;
+    diffChanges?: import("@/shared/types/api").DiffChange[];
+  } | null>(null);
   const eventSourceRef = useRef<(() => void) | null>(null);
   const rawStreamRef = useRef("");
   const accumulatedTitleRef = useRef("");
@@ -160,7 +170,21 @@ export default function DocumentEditor({
 
               const generatedContent = response.generatedContent;
               if (generatedContent) {
-                setContent(generatedContent);
+                // Enable diff mode to show changes
+                // eslint-disable-next-line no-console
+                console.log("[DIFF DEBUG] Setting diff mode:", {
+                  oldText: content.substring(0, 100),
+                  newText: generatedContent.substring(0, 100),
+                  oldLength: content.length,
+                  newLength: generatedContent.length
+                });
+                setDiffMode({
+                  oldText: content,
+                  newText: generatedContent,
+                  oldMarkdown: content,
+                  newMarkdown: generatedContent,
+                  diffChanges: response.diffChanges,
+                });
               }
 
               dispatch(clearStreamInfo());
@@ -222,9 +246,125 @@ export default function DocumentEditor({
   // Sync content when currentDocument changes (after chat updates)
   useEffect(() => {
     if (currentDocument?.content && !isStreaming) {
-      setContent(currentDocument.content);
+      // Normalize both strings to avoid minor whitespace/line-ending mismatch loops
+      const normalize = (s: string) => s.trim().replace(/\r\n/g, "\n");
+      const normalizedStore = normalize(currentDocument.content);
+      const normalizedLocal = normalize(content);
+
+      // If we are already in diff mode for THIS exact content, don't re-trigger
+      if (diffMode && diffMode.newMarkdown === currentDocument.content) {
+        return;
+      }
+
+      // Check if content actually changed and if we haven't already reviewed this update
+      const isNewUpdate = currentDocument.updatedAt !== lastReviewedUpdateRef.current;
+      
+      if (content && normalizedStore !== normalizedLocal && isNewUpdate) {
+        // Content changed from AI chat - trigger diff mode
+        // eslint-disable-next-line no-console
+        console.log("[DIFF DEBUG] Content changed from chat:", {
+          oldLength: content.length,
+          newLength: currentDocument.content.length,
+          updatedAt: currentDocument.updatedAt
+        });
+
+        setDiffMode({
+          oldText: content,
+          newText: currentDocument.content,
+          oldMarkdown: content,
+          newMarkdown: currentDocument.content,
+          diffChanges: lastDiffChanges || undefined,
+        });
+      } else if (!content || (normalizedStore === normalizedLocal && isNewUpdate)) {
+        // Initial load OR content already matches but it's a new timestamp
+        if (isNewUpdate) {
+          lastReviewedUpdateRef.current = currentDocument.updatedAt;
+        }
+        setContent(currentDocument.content);
+      }
     }
-  }, [currentDocument?.content, currentDocument?.updatedAt, isStreaming, setContent]);
+  }, [currentDocument?.content, currentDocument?.id, currentDocument?.updatedAt, isStreaming, diffMode, setContent, content, lastDiffChanges]);
+
+  // Handle accepting a diff change
+  const handleAcceptChange = useCallback(
+    (changeId: string | number) => {
+      // eslint-disable-next-line no-console
+      console.log("[DOC EDITOR] Accept callback called for id:", changeId);
+      if (!diffMode) return;
+      
+      if (diffMode.diffChanges) {
+        // Filter out the accepted change
+        const remainingChanges = diffMode.diffChanges.filter(c => c.id !== String(changeId));
+        
+        if (remainingChanges.length === 0) {
+          // Final decision: ACCEPT ALL
+          // Mark this document update as reviewed
+          lastReviewedUpdateRef.current = currentDocument?.updatedAt || null;
+          
+          // Ensure both local state and server are updated
+          const finalContent = diffMode.newMarkdown;
+          setContent(finalContent);
+          handleAutosave(finalContent);
+          
+          // Close diff mode
+          setDiffMode(null);
+        } else {
+          // Mark current change as reviewed and hide it
+          setDiffMode({
+            ...diffMode,
+            diffChanges: remainingChanges
+          });
+        }
+      } else {
+        // Fallback for when no diffChanges are provided
+        lastReviewedUpdateRef.current = currentDocument?.updatedAt || null;
+        setContent(diffMode.newMarkdown);
+        handleAutosave(diffMode.newMarkdown);
+        setDiffMode(null);
+      }
+    },
+    [diffMode, setContent, handleAutosave, currentDocument?.updatedAt]
+  );
+
+  // Handle rejecting a diff change
+  const handleRejectChange = useCallback(
+    (changeId: string | number) => {
+      // eslint-disable-next-line no-console
+      console.log("[DOC EDITOR] Reject callback called for id:", changeId);
+      if (!diffMode) return;
+      
+      if (diffMode.diffChanges) {
+        const remainingChanges = diffMode.diffChanges.filter(c => c.id !== String(changeId));
+        
+        if (remainingChanges.length === 0) {
+          // Final decision: REJECT ALL
+          // Mark this update as reviewed
+          lastReviewedUpdateRef.current = currentDocument?.updatedAt || null;
+          
+          // RESTORE the old content locally and on the server
+          const restoredContent = diffMode.oldMarkdown;
+          setContent(restoredContent);
+          handleAutosave(restoredContent);
+          
+          // Close diff mode
+          setDiffMode(null);
+        } else {
+          // Mark as reviewed (hides the buttons for this segment)
+          setDiffMode({
+            ...diffMode,
+            diffChanges: remainingChanges
+          });
+        }
+      } else {
+        // Full rejection fallback
+        lastReviewedUpdateRef.current = currentDocument?.updatedAt || null;
+        setContent(diffMode.oldMarkdown);
+        handleAutosave(diffMode.oldMarkdown);
+        setDiffMode(null);
+      }
+    },
+    [diffMode, setContent, handleAutosave, currentDocument?.updatedAt]
+  );
 
   useEffect(() => {
     if (currentDocument?.title && !isStreaming) {
@@ -351,13 +491,29 @@ export default function DocumentEditor({
               </>
             ) : (
               <RichTextEditor
-                key={editorKey}
-                content={content}
+                key={`${editorKey}-${diffMode ? "diff" : "normal"}`}
+                content={diffMode ? diffMode.newMarkdown : content}
                 onChange={handleContentChange}
                 onAutosave={handleAutosave}
                 className="min-h-[600px] max-w-full"
+                diffMode={
+                  diffMode
+                    ? {
+                        oldText: diffMode.oldText,
+                        newText: diffMode.newText,
+                        diffChanges: diffMode.diffChanges,
+                        onAccept: handleAcceptChange,
+                        onReject: handleRejectChange,
+                      }
+                    : undefined
+                }
                 rightHeaderContent={
                   <div className="flex items-center gap-3 pr-1">
+                    {diffMode && (
+                      <span className="text-sm font-medium text-muted-foreground">
+                        Revendo alterações AI
+                      </span>
+                    )}
                     {isGenerating && (
                       <div className="flex items-center space-x-2 text-primary">
                         <Loader2 className="w-4 h-4 animate-spin" />

@@ -40,6 +40,7 @@ interface DocumentState {
   error: string | null;
   pendingInitialPrompt: string | null;
   pendingDocumentId: string | null;
+  lastDiffChanges: import("@/shared/types/api").DiffChange[] | null;
 }
 
 const initialState: DocumentState = {
@@ -60,6 +61,7 @@ const initialState: DocumentState = {
   error: null,
   pendingInitialPrompt: null,
   pendingDocumentId: null,
+  lastDiffChanges: null,
 };
 
 // Async Thunks
@@ -387,6 +389,7 @@ const documentSlice = createSlice({
             : doc
         );
         state.lastChatAnswer = response.chatAnswer;
+        state.lastDiffChanges = response.diffChanges || null;
         state.isChatting = false;
       })
       .addCase(chatWithDocument.rejected, (state, action) => {

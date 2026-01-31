@@ -3,12 +3,23 @@
 import dynamic from "next/dynamic";
 import { memo } from "react";
 
+import type { DiffChange } from "@/shared/types/api";
+
+interface DiffMode {
+  oldText: string;
+  newText: string;
+  diffChanges?: DiffChange[];
+  onAccept?: (changeId: string | number) => void;
+  onReject?: (changeId: string | number) => void;
+}
+
 interface RichTextEditorProps {
   content: string;
   onChange: (content: string) => void;
   className?: string;
   onAutosave?: (markdown: string) => void;
   rightHeaderContent?: React.ReactNode;
+  diffMode?: DiffMode;
 }
 
 // Loading fallback
@@ -45,6 +56,7 @@ function RichTextEditorComponent({
   className = "",
   onAutosave,
   rightHeaderContent,
+  diffMode,
 }: RichTextEditorProps) {
   return (
     <TipTapEditor
@@ -53,6 +65,7 @@ function RichTextEditorComponent({
       className={className}
       onAutosave={onAutosave}
       rightHeaderContent={rightHeaderContent}
+      diffMode={diffMode}
     />
   );
 }
@@ -63,7 +76,8 @@ const RichTextEditor = memo(RichTextEditorComponent, (prevProps, nextProps) => {
   return (
     prevProps.content === nextProps.content &&
     prevProps.className === nextProps.className &&
-    prevProps.rightHeaderContent === nextProps.rightHeaderContent
+    prevProps.rightHeaderContent === nextProps.rightHeaderContent &&
+    prevProps.diffMode === nextProps.diffMode
   );
 });
 

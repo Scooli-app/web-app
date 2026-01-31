@@ -1,0 +1,125 @@
+/* Diff visualization styles */
+.diff-insert {
+  background-color: rgba(46, 160, 67, 0.2);
+  border-bottom: 2px solid rgba(46, 160, 67, 0.6);
+  padding: 2px 0;
+}
+
+.diff-delete {
+  background-color: rgba(248, 81, 73, 0.2);
+  text-decoration: line-through;
+  text-decoration-color: rgba(248, 81, 73, 0.8);
+  text-decoration-thickness: 2px;
+  padding: 2px 0;
+}
+
+.diff-replace {
+  background-color: rgba(255, 166, 0, 0.2);
+  border-bottom: 2px solid rgba(255, 166, 0, 0.6);
+  padding: 2px 0;
+}
+
+/* Actions Logic */
+.diff-actions {
+  position: absolute;
+  display: inline-flex;
+  gap: 4px;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  z-index: 1000;
+  background: white;
+  padding: 3px;
+  border-radius: 16px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  border: 1px solid #e2e8f0;
+  /* Shift slightly to the right and center vertically relative to the character line */
+  transform: translate(4px, -50%);
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+/* Trigger buttons when the highlighted area is hovered */
+.diff-insert:hover + .diff-actions,
+.diff-replace:hover + .diff-actions,
+.diff-delete:hover + .diff-actions,
+.diff-actions:hover {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+/* Specific styling for deletion markers (which are actually the widgets themselves) */
+.diff-actions.is-deletion {
+  visibility: visible;
+  opacity: 1;
+  position: relative;
+  display: inline-flex;
+  margin-left: 2px;
+  vertical-align: middle;
+  transform: none; /* Deletions markers stay in flow */
+  background: transparent;
+  padding: 0;
+  border: none;
+  box-shadow: none;
+}
+
+/* For deletions, the hover area is the marker itself */
+.diff-actions.is-deletion::before {
+  content: "";
+  display: inline-block;
+  width: 4px;
+  height: 1.25em;
+  background-color: rgba(248, 81, 73, 0.6);
+  border-radius: 2px;
+  margin-right: 4px;
+  cursor: pointer;
+  vertical-align: middle;
+}
+
+/* Standard button styles - Smaller and more premium */
+.diff-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: bold;
+  transition: all 0.1s ease;
+  color: white;
+}
+
+.diff-accept {
+  background: #2ea043 !important;
+}
+
+.diff-accept:hover {
+  background: #2c974b !important;
+  transform: scale(1.1);
+}
+
+.diff-reject {
+  background: #f85149 !important;
+}
+
+.diff-reject:hover {
+  background: #da3633 !important;
+  transform: scale(1.1);
+}
+
+/* Parent container context */
+.ProseMirror {
+  position: relative;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .diff-actions:not(.is-deletion) {
+    background: #1e293b;
+    border-color: #334155;
+  }
+}

@@ -96,12 +96,23 @@ export interface ChatRequest {
   chatMessage: string;
 }
 
+export interface DiffChange {
+  id: string;
+  type: "insert" | "delete" | "replace";
+  startOffset: number;
+  endOffset: number;
+  text: string;
+  oldText?: string;
+  preview?: string;
+}
+
 export interface ChatResponse {
   id: string;
   title: string;
   content: string;
   chatAnswer: string;
   updatedAt: string;
+  diffChanges?: DiffChange[];
 }
 
 export interface DeleteDocumentRequest {
@@ -124,6 +135,7 @@ export interface StreamEvent {
 export interface StreamedResponse {
   chatAnswer?: string;
   generatedContent?: string;
+  diffChanges?: DiffChange[];
 }
 
 export interface DocumentStreamCallbacks {

@@ -35,6 +35,11 @@ export const selectLastChatAnswer = createSelector(
   (documentState) => documentState.lastChatAnswer
 );
 
+export const selectLastDiffChanges = createSelector(
+  [selectDocumentState],
+  (documentState) => documentState.lastDiffChanges
+);
+
 export const selectPagination = createSelector(
   [selectDocumentState],
   (documentState) => documentState.pagination
@@ -74,13 +79,22 @@ export const selectEditorState = createSelector(
     selectStreamInfo,
     selectIsChatting,
     selectLastChatAnswer,
+    selectLastDiffChanges,
   ],
-  (currentDocument, isLoading, streamInfo, isChatting, lastChatAnswer) => ({
+  (
     currentDocument,
     isLoading,
     streamInfo,
     isChatting,
     lastChatAnswer,
+    lastDiffChanges
+  ) => ({
+    currentDocument,
+    isLoading,
+    streamInfo,
+    isChatting,
+    lastChatAnswer,
+    lastDiffChanges,
   })
 );
 
