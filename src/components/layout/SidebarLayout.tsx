@@ -257,7 +257,21 @@ function GenerationsIndicator() {
 
   const isFreeUser = !subscription || subscription.planCode === "free";
 
-  if (!isSignedIn || !usage || !isFreeUser) return null;
+  if (!isSignedIn || !usage) return null;
+
+  if (!isFreeUser) {
+    return (
+      <div
+        className={cn(
+          "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors border",
+          "bg-primary/5 text-primary border-success/10"
+        )}
+      >
+        <Sparkles className="w-4 h-4" />
+        <span className="text-lg leading-none">∞</span>
+      </div>
+    );
+  }
 
   const isLow = usage.remaining <= 20;
   const isOut = usage.remaining === 0;
