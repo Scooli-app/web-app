@@ -34,7 +34,6 @@ function DownloadButtonComponent({ title, content, disabled }: DownloadButtonPro
         await downloadDocument({ title, content, format });
       } catch (error) {
         console.error(`Failed to download as ${format}:`, error);
-        alert(`Erro ao exportar como ${format.toUpperCase()}. Tente novamente.`);
       } finally {
         setIsDownloading(false);
         setDownloadFormat(null);

@@ -1,5 +1,6 @@
 "use client";
 
+import { AUTO_SAVE_DELAY } from "@/shared/config/constants";
 import { htmlToMarkdown, markdownToHtml } from "@/shared/utils/markdown";
 import Highlight from "@tiptap/extension-highlight";
 import {
@@ -256,7 +257,7 @@ export function TipTapEditorCore({
       }
       autosaveTimer.current = setTimeout(() => {
         onAutosave(markdown);
-      }, 5000);
+      }, AUTO_SAVE_DELAY);
     };
 
     editor.on("update", handleAutosave);
