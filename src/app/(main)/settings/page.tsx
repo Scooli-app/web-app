@@ -1,40 +1,40 @@
 "use client";
 
-import { useCallback, useEffect, useState, Suspense } from "react";
-import { useUser, useClerk } from "@clerk/nextjs";
-import { useRouter } from "next/navigation";
-import Image from "next/image";
-import { useDispatch, useSelector } from "react-redux";
-import {
-  User,
-  CreditCard,
-  Settings,
-  ExternalLink,
-  Loader2,
-  Sun,
-  Moon,
-  Monitor,
-  Check,
-  Infinity,
-  Crown,
-} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
-  getUsageStats,
-  getCurrentSubscription,
-  createPortalSession,
-  getSubscriptionPlans,
+    createPortalSession,
+    getCurrentSubscription,
+    getSubscriptionPlans,
+    getUsageStats,
 } from "@/services/api";
 import {
-  PLAN_DISPLAY_INFO,
-  type CurrentSubscription,
-  type UsageStats,
-  type SubscriptionStatus,
-  type SubscriptionPlan,
+    PLAN_DISPLAY_INFO,
+    type CurrentSubscription,
+    type SubscriptionPlan,
+    type SubscriptionStatus,
+    type UsageStats,
 } from "@/shared/types/subscription";
+import type { AppDispatch, RootState } from "@/store/store";
 import { setTheme, type ThemeMode } from "@/store/ui/uiSlice";
-import type { RootState, AppDispatch } from "@/store/store";
+import { useClerk, useUser } from "@clerk/nextjs";
+import {
+    Check,
+    CreditCard,
+    Crown,
+    ExternalLink,
+    Infinity,
+    Loader2,
+    Monitor,
+    Moon,
+    Settings,
+    Sun,
+    User,
+} from "lucide-react";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { Suspense, useCallback, useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 
 function getStatusBadge(
   status: SubscriptionStatus,
@@ -310,11 +310,15 @@ function SettingsContent() {
                       style={{ width: `${100 - creditsUsedPercent}%` }}
                     />
                   </div>
-                  {usage.remaining <= 20 && (
+                  {usage.remaining === 0 ? (
+                    <p className="text-xs text-destructive font-semibold mt-2 animate-pulse">
+                      Esgotou as suas gerações gratuitas. Faça upgrade agora para continuar a criar.
+                    </p>
+                  ) : usage.remaining <= 20 ? (
                     <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
                       Restam poucas gerações. Considere fazer upgrade.
                     </p>
-                  )}
+                  ) : null}
                 </div>
               )}
 

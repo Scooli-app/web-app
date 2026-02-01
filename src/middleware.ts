@@ -56,13 +56,17 @@ export default clerkMiddleware(async (auth, req) => {
       req.nextUrl.pathname.startsWith("/sign-up") ||
       req.nextUrl.pathname.startsWith("/forgot-password"))
   ) {
-    const res = NextResponse.redirect(new URL("/dashboard", req.url));
+    const dashboardUrl = new URL("/dashboard", req.url);
+    dashboardUrl.search = req.nextUrl.search;
+    const res = NextResponse.redirect(dashboardUrl);
     await setTokenCookie(res);
     return res;
   }
 
   if (req.nextUrl.pathname === "/") {
-    const res = NextResponse.redirect(new URL("/dashboard", req.url));
+    const dashboardUrl = new URL("/dashboard", req.url);
+    dashboardUrl.search = req.nextUrl.search;
+    const res = NextResponse.redirect(dashboardUrl);
     await setTokenCookie(res);
     return res;
   }

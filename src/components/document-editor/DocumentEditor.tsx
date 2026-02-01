@@ -2,6 +2,7 @@
 
 import { useDocumentManager } from "@/hooks/useDocumentManager";
 import { streamDocumentContent } from "@/services/api/document.service";
+import { AUTO_SAVE_DELAY } from "@/shared/config/constants";
 import { Routes } from "@/shared/types";
 import {
   chatWithDocument,
@@ -27,6 +28,7 @@ import DownloadButton from "./DownloadButton";
 interface ChatMessage {
   role: "user" | "assistant";
   content: string;
+  hasUpdate?: boolean;
 }
 
 interface DocumentEditorProps {
@@ -65,6 +67,8 @@ export default function DocumentEditor({
   const [error, setError] = useState("");
   const [displayContent, setDisplayContent] = useState("");
   const [documentTitle, setDocumentTitle] = useState("");
+  const [showUpdateIndicator, setShowUpdateIndicator] = useState(false);
+  
   const eventSourceRef = useRef<(() => void) | null>(null);
   const rawStreamRef = useRef("");
   const accumulatedTitleRef = useRef("");
@@ -109,7 +113,6 @@ export default function DocumentEditor({
         if (!token) {
           eventSourceRef.current = null;
           
-          // Preserve the streamed title before clearing streaming state
           const finalStreamedTitle = accumulatedTitleRef.current;
           if (finalStreamedTitle) {
             setDocumentTitle(finalStreamedTitle);
@@ -121,7 +124,6 @@ export default function DocumentEditor({
           return;
         }
 
-        // Check if aborted before starting
         if (abortController.signal.aborted) {
           return;
         }
@@ -151,16 +153,25 @@ export default function DocumentEditor({
               setIsStreaming(false);
 
               const chatAnswer = response.chatAnswer;
+              const generatedContent = response.generatedContent;
+              
               if (chatAnswer) {
                 setChatHistory((prev) => [
                   ...prev,
-                  { role: "assistant" as const, content: chatAnswer },
+                  { 
+                    role: "assistant" as const, 
+                    content: chatAnswer,
+                    hasUpdate: !!generatedContent 
+                  },
                 ]);
               }
 
-              const generatedContent = response.generatedContent;
               if (generatedContent) {
+                // Direct update
                 setContent(generatedContent);
+                handleAutosave(generatedContent);
+                setShowUpdateIndicator(true);
+                setTimeout(() => setShowUpdateIndicator(false), AUTO_SAVE_DELAY);
               }
 
               dispatch(clearStreamInfo());
@@ -189,7 +200,7 @@ export default function DocumentEditor({
 
       startStream();
     }
-  }, [streamInfo, documentId, dispatch, setContent, getToken]);
+  }, [streamInfo, documentId, dispatch, setContent, getToken, handleAutosave]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -201,19 +212,13 @@ export default function DocumentEditor({
     };
   }, []);
 
-  useEffect(() => {
-    if (error) {
-      alert(error);
-      setError("");
-    }
-  }, [error]);
 
   // Handle chat answer from Redux
   useEffect(() => {
     if (lastChatAnswer) {
       setChatHistory((prev) => [
         ...prev,
-        { role: "assistant" as const, content: lastChatAnswer },
+        { role: "assistant" as const, content: lastChatAnswer, hasUpdate: false },
       ]);
       dispatch(clearLastChatAnswer());
     }
@@ -258,21 +263,15 @@ export default function DocumentEditor({
         await dispatch(
           chatWithDocument({ id: currentDocument.id, message: userMessage })
         ).unwrap();
-      } catch (err) {
-        console.error("Chat error:", err);
-        setError("Erro ao enviar mensagem. Tente novamente.");
+      } catch {
+        setError("Erro ao processar sua mensagem. Tente novamente mais tarde.");
       }
     },
     [currentDocument?.id, dispatch]
   );
 
-  // Show streaming state when generating content
-  // Check both local isStreaming state AND streamInfo to avoid race conditions
-  const hasActiveStream =
-    streamInfo?.id === documentId && streamInfo?.status === "generating";
-  const isGenerating = isStreaming || hasActiveStream;
+  const isGenerating = isStreaming || (streamInfo?.id === documentId && streamInfo?.status === "generating");
 
-  // Loading states - but allow streaming even if document not fully loaded
   if (isLoading && !isGenerating) {
     return (
       <div className="flex items-center justify-center min-h-[400px] w-full">
@@ -288,13 +287,8 @@ export default function DocumentEditor({
     return (
       <div className="flex items-center justify-center min-h-[400px] w-full">
         <div className="text-center">
-          <p className="text-lg text-muted-foreground mb-4">
-            Documento não encontrado
-          </p>
-          <button
-            onClick={() => router.push(Routes.DOCUMENTS)}
-            className="text-primary hover:underline"
-          >
+          <p className="text-lg text-muted-foreground mb-4">Documento não encontrado</p>
+          <button onClick={() => router.push(Routes.DOCUMENTS)} className="text-primary hover:underline">
             Voltar aos documentos
           </button>
         </div>
@@ -304,7 +298,6 @@ export default function DocumentEditor({
 
   return (
     <>
-      {/* Main Editor */}
       <div className="flex-1 flex flex-col w-full">
         <DocumentTitle
           title={documentTitle || currentDocument?.title || ""}
@@ -344,7 +337,6 @@ export default function DocumentEditor({
                     <div className="flex flex-col items-center justify-center h-full w-full min-h-[550px]">
                       <Loader2 className="w-12 h-12 animate-spin text-primary mb-4" />
                       <p className="text-lg font-medium text-foreground">A gerar o documento...</p>
-                      <p className="text-sm text-muted-foreground mt-2">Isto pode demorar alguns segundos</p>
                     </div>
                   )}
                 </div>
@@ -358,6 +350,11 @@ export default function DocumentEditor({
                 className="min-h-[600px] max-w-full"
                 rightHeaderContent={
                   <div className="flex items-center gap-3 pr-1">
+                    {showUpdateIndicator && (
+                      <span className="text-sm font-medium text-primary animate-pulse flex items-center gap-1">
+                        ✨ Documento Refinado
+                      </span>
+                    )}
                     {isGenerating && (
                       <div className="flex items-center space-x-2 text-primary">
                         <Loader2 className="w-4 h-4 animate-spin" />
@@ -375,7 +372,6 @@ export default function DocumentEditor({
             )}
           </div>
 
-          {/* AI Chat Sidebar */}
           <div className="hidden lg:block sticky top-[5px] self-start">
             <AIChatPanel
               onChatSubmit={handleChatSubmit}
@@ -390,7 +386,6 @@ export default function DocumentEditor({
         </div>
       </div>
 
-      {/* Mobile AI Chat */}
       <div className="lg:hidden">
         <AIChatPanel
           onChatSubmit={handleChatSubmit}

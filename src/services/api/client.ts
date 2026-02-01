@@ -3,6 +3,8 @@
  * Base axios instance for Chalkboard backend
  */
 
+import { store } from "@/store/store";
+import { setUpgradeModalOpen } from "@/store/ui/uiSlice";
 import axios, { type AxiosError, type AxiosInstance } from "axios";
 
 type GetTokenFn = () => Promise<string | null>;
@@ -16,7 +18,7 @@ export const apiClient: AxiosInstance = axios.create({
     Accept: "application/json",
   },
   withCredentials: true,
-  validateStatus: (status) => status < 500,
+  validateStatus: (status) => status < 400,
 });
 
 /**
@@ -55,6 +57,11 @@ apiClient.interceptors.response.use(
     return response;
   },
   (error: AxiosError<{ message?: string; error?: string } | string>) => {
+    // Handle 402 Payment Required specifically for generations limit
+    if (error.response?.status === 402) {
+      store.dispatch(setUpgradeModalOpen(true));
+    }
+
     // Handle common errors
     if (error.response) {
       // Check if response is HTML (error page)
