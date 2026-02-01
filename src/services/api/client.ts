@@ -3,8 +3,8 @@
  * Base axios instance for Chalkboard backend
  */
 
+import { store } from "@/store/store";
 import { setUpgradeModalOpen } from "@/store/ui/uiSlice";
-import type { UnknownAction } from "@reduxjs/toolkit";
 import axios, { type AxiosError, type AxiosInstance } from "axios";
 
 type GetTokenFn = () => Promise<string | null>;
@@ -59,9 +59,7 @@ apiClient.interceptors.response.use(
   (error: AxiosError<{ message?: string; error?: string } | string>) => {
     // Handle 402 Payment Required specifically for generations limit
     if (error.response?.status === 402) {
-      if (storeDispatch) {
-        storeDispatch(setUpgradeModalOpen(true));
-      }
+      store.dispatch(setUpgradeModalOpen(true));
     }
 
     // Handle common errors

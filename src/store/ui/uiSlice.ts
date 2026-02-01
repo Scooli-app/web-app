@@ -43,6 +43,9 @@ const uiSlice = createSlice({
     clearError(state) {
       state.error = null;
     },
+    setUpgradeModalOpen(state, action: PayloadAction<boolean>) {
+      state.isUpgradeModalOpen = action.payload;
+    },
     toggleTheme(state) {
       if (state.theme === "light") {
         state.theme = "dark";

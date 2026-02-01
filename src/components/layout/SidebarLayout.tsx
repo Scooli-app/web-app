@@ -28,6 +28,8 @@ import { getCurrentSubscription, getUsageStats } from "@/services/api";
 import { Routes } from "@/shared/types";
 import type { CurrentSubscription, UsageStats } from "@/shared/types/subscription";
 import { cn } from "@/shared/utils/utils";
+import type { AppDispatch, RootState } from "@/store/store";
+import { setUpgradeModalOpen } from "@/store/ui/uiSlice";
 import { SignInButton, SignedIn, SignedOut, UserButton, useAuth } from "@clerk/nextjs";
 import {
   BookOpen,
@@ -45,6 +47,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { ThemeToggle } from "./ThemeToggle";
 
 interface SidebarLayoutProps {
@@ -254,22 +257,51 @@ function GenerationsIndicator() {
 
   const isFreeUser = !subscription || subscription.planCode === "free";
 
-  if (!isSignedIn || !usage || !isFreeUser) return null;
+  if (!isSignedIn || !usage) return null;
+
+  if (!isFreeUser) {
+    return (
+      <div
+        className={cn(
+          "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors border",
+          "bg-primary/5 text-primary border-success/10"
+        )}
+      >
+        <Sparkles className="w-4 h-4" />
+        <span className="text-lg leading-none">∞</span>
+      </div>
+    );
+  }
 
   const isLow = usage.remaining <= 20;
+  const isOut = usage.remaining === 0;
+
+  if (isOut) {
+    return (
+      <Link href={Routes.CHECKOUT}>
+        <Button
+          size="sm"
+          className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white shadow-sm transition-all hover:scale-105 active:scale-95"
+        >
+          <Sparkles className="w-4 h-4 mr-1.5" />
+          Fazer Upgrade
+        </Button>
+      </Link>
+    );
+  }
 
   return (
     <Link
       href={Routes.SETTINGS}
       className={cn(
-        "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors",
+        "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors border",
         isLow
-          ? "bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:hover:bg-amber-900/50"
-          : "bg-primary/10 text-primary hover:bg-primary/20"
+          ? "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-900/30"
+          : "bg-primary/5 text-primary border-primary/10 hover:bg-primary/10"
       )}
     >
       <Sparkles className="w-4 h-4" />
-      <span>{usage.remaining}</span>
+      <span>{usage.remaining} {usage.remaining === 1 ? "geração" : "gerações"}</span>
     </Link>
   );
 }

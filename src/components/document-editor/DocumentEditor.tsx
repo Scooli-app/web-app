@@ -289,13 +289,8 @@ export default function DocumentEditor({
     return (
       <div className="flex items-center justify-center min-h-[400px] w-full">
         <div className="text-center">
-          <p className="text-lg text-muted-foreground mb-4">
-            Documento não encontrado
-          </p>
-          <button
-            onClick={() => router.push(Routes.DOCUMENTS)}
-            className="text-primary hover:underline"
-          >
+          <p className="text-lg text-muted-foreground mb-4">Documento não encontrado</p>
+          <button onClick={() => router.push(Routes.DOCUMENTS)} className="text-primary hover:underline">
             Voltar aos documentos
           </button>
         </div>
@@ -344,7 +339,6 @@ export default function DocumentEditor({
                     <div className="flex flex-col items-center justify-center h-full w-full min-h-[550px]">
                       <Loader2 className="w-12 h-12 animate-spin text-primary mb-4" />
                       <p className="text-lg font-medium text-foreground">A gerar o documento...</p>
-                      <p className="text-sm text-muted-foreground mt-2">Isto pode demorar alguns segundos</p>
                     </div>
                   )}
                 </div>
@@ -358,6 +352,11 @@ export default function DocumentEditor({
                 className="min-h-[600px] max-w-full"
                 rightHeaderContent={
                   <div className="flex items-center gap-3 pr-1">
+                    {showUpdateIndicator && (
+                      <span className="text-sm font-medium text-primary animate-pulse flex items-center gap-1">
+                        ✨ Documento Refinado
+                      </span>
+                    )}
                     {isGenerating && (
                       <div className="flex items-center space-x-2 text-primary">
                         <Loader2 className="w-4 h-4 animate-spin" />
@@ -375,7 +374,6 @@ export default function DocumentEditor({
             )}
           </div>
 
-          {/* AI Chat Sidebar */}
           <div className="hidden lg:block sticky top-[5px] self-start">
             <AIChatPanel
               onChatSubmit={handleChatSubmit}
@@ -390,7 +388,6 @@ export default function DocumentEditor({
         </div>
       </div>
 
-      {/* Mobile AI Chat */}
       <div className="lg:hidden">
         <AIChatPanel
           onChatSubmit={handleChatSubmit}

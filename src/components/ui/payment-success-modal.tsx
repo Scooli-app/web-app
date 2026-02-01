@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { CheckCircle2, Sparkles, Zap, Infinity, ArrowRight } from "lucide-react";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { ArrowRight, CheckCircle2, Infinity, Sparkles, Zap } from "lucide-react";
+import { useEffect, useState } from "react";
 
 interface PaymentSuccessModalProps {
   open: boolean;
@@ -81,9 +82,9 @@ export function PaymentSuccessModal({
             Bem-vindo ao Scooli Pro! 🎉
           </DialogTitle>
           
-          <p className="text-muted-foreground">
+          <DialogDescription className="text-muted-foreground">
             A sua subscrição foi ativada com sucesso
-          </p>
+          </DialogDescription>
         </div>
 
         {/* Features */}

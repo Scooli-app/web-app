@@ -135,13 +135,19 @@ function ChatContent({
                 <div
                   key={index}
                   className={cn(
-                    "p-3 rounded-2xl text-sm leading-relaxed max-w-[85%] animate-in fade-in slide-in-from-bottom-2 duration-300",
+                    "p-3 rounded-2xl text-sm leading-relaxed max-w-[85%] animate-in fade-in slide-in-from-bottom-2 duration-300 relative",
                     message.role === "user"
                       ? "bg-primary text-primary-foreground ml-auto rounded-tr-none"
                       : "bg-muted text-foreground mr-auto rounded-tl-none border border-border/50"
                   )}
                 >
                   {message.content}
+                  {message.hasUpdate && (
+                    <div className="mt-2 pt-2 border-t border-border/30 flex items-center gap-1.5 text-[10px] font-semibold text-primary uppercase tracking-wider">
+                      <Sparkles className="w-3 h-3" />
+                      Documento Refinado
+                    </div>
+                  )}
                 </div>
               ))}
 
@@ -181,10 +187,8 @@ function ChatContent({
             <SourcesList sources={sources} />
           </div>
         )}
-      </div>
-
-      {error && (
-        <div className="mx-4 mb-4 p-3 bg-destructive/5 border border-destructive/20 rounded-xl text-destructive text-xs font-medium animate-in shake-1">
+         {error && (
+        <div className="p-3 bg-destructive/5 border border-destructive/20 rounded-xl text-destructive text-xs font-medium animate-in shake-1">
           {error}
         </div>
       )}
