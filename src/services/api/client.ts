@@ -4,12 +4,12 @@
  */
 
 import { setUpgradeModalOpen } from "@/store/ui/uiSlice";
+import type { UnknownAction } from "@reduxjs/toolkit";
 import axios, { type AxiosError, type AxiosInstance } from "axios";
 
-// Avoid circular dependency by injecting store dispatch later
-let storeDispatch: ((action: any) => void) | null = null;
+let storeDispatch: ((action: UnknownAction) => void) | null = null;
 
-export const injectStore = (dispatch: (action: any) => void) => {
+export const injectStore = (dispatch: (action: UnknownAction) => void) => {
   storeDispatch = dispatch;
 };
 
