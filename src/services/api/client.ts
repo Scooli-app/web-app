@@ -3,9 +3,15 @@
  * Base axios instance for Chalkboard backend
  */
 
-import { store } from "@/store/store";
 import { setUpgradeModalOpen } from "@/store/ui/uiSlice";
 import axios, { type AxiosError, type AxiosInstance } from "axios";
+
+// Avoid circular dependency by injecting store dispatch later
+let storeDispatch: ((action: any) => void) | null = null;
+
+export const injectStore = (dispatch: (action: any) => void) => {
+  storeDispatch = dispatch;
+};
 
 type GetTokenFn = () => Promise<string | null>;
 
@@ -59,7 +65,9 @@ apiClient.interceptors.response.use(
   (error: AxiosError<{ message?: string; error?: string } | string>) => {
     // Handle 402 Payment Required specifically for generations limit
     if (error.response?.status === 402) {
-      store.dispatch(setUpgradeModalOpen(true));
+      if (storeDispatch) {
+        storeDispatch(setUpgradeModalOpen(true));
+      }
     }
 
     // Handle common errors
