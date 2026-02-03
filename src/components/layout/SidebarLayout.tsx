@@ -24,11 +24,17 @@ import {
 } from "@/components/ui/sidebar";
 import { UpgradePlanModal } from "@/components/ui/upgrade-plan-modal";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { getCurrentSubscription, getUsageStats } from "@/services/api";
 import { Routes } from "@/shared/types";
-import type { CurrentSubscription, UsageStats } from "@/shared/types/subscription";
 import { cn } from "@/shared/utils/utils";
 import type { AppDispatch, RootState } from "@/store/store";
+import {
+  selectSubscription,
+  selectUsageStats,
+} from "@/store/subscription/selectors";
+import {
+  fetchSubscription,
+  fetchUsage,
+} from "@/store/subscription/subscriptionSlice";
 import { setUpgradeModalOpen } from "@/store/ui/uiSlice";
 import { SignInButton, SignedIn, SignedOut, UserButton, useAuth } from "@clerk/nextjs";
 import {
@@ -233,27 +239,17 @@ const SidebarInnerContent = memo(function SidebarInnerContent({
 
 function GenerationsIndicator() {
   const { isSignedIn } = useAuth();
-  const [usage, setUsage] = useState<UsageStats | null>(null);
-  const [subscription, setSubscription] = useState<CurrentSubscription | null>(null);
+  const dispatch = useDispatch<AppDispatch>();
+  
+  const subscription = useSelector(selectSubscription);
+  const usage = useSelector(selectUsageStats);
 
   useEffect(() => {
-    if (!isSignedIn) return;
-
-    async function fetchData() {
-      try {
-        const [usageData, subData] = await Promise.all([
-          getUsageStats(),
-          getCurrentSubscription(),
-        ]);
-        setUsage(usageData);
-        setSubscription(subData);
-      } catch {
-        // Silently fail - this is not critical UI
-      }
+    if (isSignedIn) {
+      dispatch(fetchSubscription());
+      dispatch(fetchUsage());
     }
-
-    fetchData();
-  }, [isSignedIn]);
+  }, [isSignedIn, dispatch]);
 
   const isFreeUser = !subscription || subscription.planCode === "free";
 
@@ -301,7 +297,9 @@ function GenerationsIndicator() {
       )}
     >
       <Sparkles className="w-4 h-4" />
-      <span>{usage.remaining} {usage.remaining === 1 ? "geração" : "gerações"}</span>
+      <span>
+        {usage.remaining} {usage.remaining === 1 ? "geração" : "gerações"}
+      </span>
     </Link>
   );
 }

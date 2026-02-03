@@ -1,17 +1,18 @@
 import {
-    chatWithDocument as chatWithDocumentService,
-    createDocument as createDocumentService,
-    // deleteDocument as deleteDocumentService,
-    getDocument as getDocumentService,
-    getDocuments as getDocumentsService,
-    updateDocument as updateDocumentService,
-    type DocumentFilters,
+  chatWithDocument as chatWithDocumentService,
+  createDocument as createDocumentService,
+  // deleteDocument as deleteDocumentService,
+  getDocument as getDocumentService,
+  getDocuments as getDocumentsService,
+  updateDocument as updateDocumentService,
+  type DocumentFilters,
 } from "@/services/api";
 import type {
-    CreateDocumentParams,
-    CreateDocumentStreamResponse,
-    Document,
+  CreateDocumentParams,
+  CreateDocumentStreamResponse,
+  Document,
 } from "@/shared/types";
+import { fetchUsage } from "@/store/subscription/subscriptionSlice";
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 
 export type { DocumentFilters };
@@ -145,6 +146,7 @@ export const createDocument = createAsyncThunk(
       }
 
       const document = await createDocumentService(params);
+            
       return document;
     } catch (error) {
       return rejectWithValue(
@@ -172,10 +174,13 @@ export const chatWithDocument = createAsyncThunk(
   "documents/chatWithDocument",
   async (
     { id, message }: { id: string; message: string },
-    { rejectWithValue }
+    { rejectWithValue, dispatch }
   ) => {
     try {
       const response = await chatWithDocumentService(id, message);
+      
+      dispatch(fetchUsage());
+      
       return response;
     } catch (error) {
       return rejectWithValue(

@@ -15,6 +15,7 @@ import {
   useAppDispatch,
   useAppSelector,
 } from "@/store/hooks";
+import { fetchUsage } from "@/store/subscription/subscriptionSlice";
 import { useAuth } from "@clerk/nextjs";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -176,6 +177,7 @@ export default function DocumentEditor({
 
               dispatch(clearStreamInfo());
               dispatch(fetchDocument(docId));
+              dispatch(fetchUsage());
             },
             onError: (errorMsg) => {
               eventSourceRef.current = null;

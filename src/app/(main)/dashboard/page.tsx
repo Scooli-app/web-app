@@ -1,22 +1,31 @@
 "use client";
 
-import { useEffect, useState, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
 import { PaymentSuccessModal } from "@/components/ui/payment-success-modal";
+import { fetchSubscription, fetchUsage } from "@/store/subscription/subscriptionSlice";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { useDispatch } from "react-redux";
+
+import type { AppDispatch } from "@/store/store";
 
 function DashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [showPaymentSuccess, setShowPaymentSuccess] = useState(false);
 
+  const dispatch = useDispatch<AppDispatch>();
+
   useEffect(() => {
     const paymentParam = searchParams.get("payment");
     if (paymentParam === "success") {
       setShowPaymentSuccess(true);
-      // Clean URL without reload
+      // Update global store state
+      dispatch(fetchSubscription());
+      dispatch(fetchUsage());
+      
       window.history.replaceState({}, "", "/dashboard");
     }
-  }, [searchParams]);
+  }, [searchParams, dispatch]);
 
   return (
     <div className="w-full max-w-7xl mx-auto">
