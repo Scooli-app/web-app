@@ -3,33 +3,33 @@
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
-    createPortalSession,
-    getCurrentSubscription,
-    getSubscriptionPlans,
-    getUsageStats,
+  createPortalSession,
+  getCurrentSubscription,
+  getSubscriptionPlans,
+  getUsageStats,
 } from "@/services/api";
 import {
-    PLAN_DISPLAY_INFO,
-    type CurrentSubscription,
-    type SubscriptionPlan,
-    type SubscriptionStatus,
-    type UsageStats,
+  PLAN_DISPLAY_INFO,
+  type CurrentSubscription,
+  type SubscriptionPlan,
+  type SubscriptionStatus,
+  type UsageStats,
 } from "@/shared/types/subscription";
 import type { AppDispatch, RootState } from "@/store/store";
 import { setTheme, type ThemeMode } from "@/store/ui/uiSlice";
 import { useClerk, useUser } from "@clerk/nextjs";
 import {
-    Check,
-    CreditCard,
-    Crown,
-    ExternalLink,
-    Infinity,
-    Loader2,
-    Monitor,
-    Moon,
-    Settings,
-    Sun,
-    User,
+  Check,
+  CreditCard,
+  Crown,
+  ExternalLink,
+  Infinity,
+  Loader2,
+  Monitor,
+  Moon,
+  Settings,
+  Sun,
+  User,
 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
