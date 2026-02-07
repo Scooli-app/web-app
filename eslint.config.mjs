@@ -42,7 +42,6 @@ const eslintConfig = [
       "prefer-const": "error",
       "prefer-template": "error",
       "no-duplicate-imports": "error",
-      "no-useless-return": "error",
       "no-empty": "warn",
       "no-unreachable": "error",
 
@@ -59,7 +58,6 @@ const eslintConfig = [
       "@next/next/no-img-element": "error",
 
       // Code style and formatting
-      curly: ["error", "all"],
       eqeqeq: ["error", "always"],
       quotes: ["error", "double", { avoidEscape: true }],
       semi: ["error", "always"],

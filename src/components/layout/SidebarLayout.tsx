@@ -1,6 +1,5 @@
 "use client";
 
-import { memo, useState, useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
@@ -23,9 +22,21 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
+import { UpgradePlanModal } from "@/components/ui/upgrade-plan-modal";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Routes } from "@/shared/types";
 import { cn } from "@/shared/utils/utils";
+import type { AppDispatch, RootState } from "@/store/store";
+import {
+  selectSubscription,
+  selectUsageStats,
+} from "@/store/subscription/selectors";
+import {
+  fetchSubscription,
+  fetchUsage,
+} from "@/store/subscription/subscriptionSlice";
+import { setUpgradeModalOpen } from "@/store/ui/uiSlice";
+import { SignInButton, SignedIn, SignedOut, UserButton, useAuth } from "@clerk/nextjs";
 import {
   BookOpen,
   FileCheck,
@@ -35,12 +46,15 @@ import {
   Home,
   Menu,
   Settings,
+  Sparkles,
   type LucideIcon,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { UserButton, SignInButton, SignedIn, SignedOut } from "@clerk/nextjs";
+import { usePathname, useRouter } from "next/navigation";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { ThemeToggle } from "./ThemeToggle";
 
 interface SidebarLayoutProps {
   children: React.ReactNode;
@@ -124,9 +138,10 @@ const NavMenuItem = memo(function NavMenuItem({
         <SidebarMenuButton
           isActive={isActive}
           className={cn(
+            "h-10 px-4",
             isActive
-              ? "bg-[#6753FF] text-white hover:bg-[#4E3BC0]"
-              : "hover:bg-[#EEF0FF] text-[#2E2F38]"
+              ? "bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary"
+              : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
           )}
         >
           <Icon className="h-4 w-4" />
@@ -151,7 +166,7 @@ const NavGroup = memo(function NavGroup({
 }) {
   return (
     <SidebarGroup>
-      <SidebarGroupLabel className="px-4 text-xs font-semibold tracking-tight text-[#6C6F80] uppercase">
+      <SidebarGroupLabel className="px-4 text-xs font-semibold tracking-tight text-muted-foreground uppercase">
         {label}
       </SidebarGroupLabel>
       <SidebarGroupContent>
@@ -178,16 +193,18 @@ const SidebarInnerContent = memo(function SidebarInnerContent({
   pathname: string;
   onItemClick?: () => void;
 }) {
+  const router = useRouter();
   return (
     <SidebarPrimitive collapsible="icon">
-      <SidebarHeader className="flex items-center justify-center border-b border-[#E4E4E7] px-6 py-4 group-data-[collapsible=icon]:px-3 group-data-[collapsible=icon]:py-2">
+      <SidebarHeader className="flex items-center justify-center px-6 py-4 group-data-[collapsible=icon]:px-3 group-data-[collapsible=icon]:py-2">
         <Image
           src="/scooli.svg"
           alt="Scooli"
           width={150}
           height={120}
           priority
-          className="flex-shrink-0 rounded-lg group-data-[collapsible=icon]:w-6 group-data-[collapsible=icon]:h-6"
+          className="flex-shrink-0 rounded-lg group-data-[collapsible=icon]:w-6 group-data-[collapsible=icon]:h-6 cursor-pointer"
+          onClick={() => router.push(Routes.DASHBOARD)}
         />
       </SidebarHeader>
       <SidebarContent className="py-4">
@@ -220,10 +237,79 @@ const SidebarInnerContent = memo(function SidebarInnerContent({
   );
 });
 
+function GenerationsIndicator() {
+  const { isSignedIn } = useAuth();
+  const dispatch = useDispatch<AppDispatch>();
+  
+  const subscription = useSelector(selectSubscription);
+  const usage = useSelector(selectUsageStats);
+
+  useEffect(() => {
+    if (isSignedIn) {
+      dispatch(fetchSubscription());
+      dispatch(fetchUsage());
+    }
+  }, [isSignedIn, dispatch]);
+
+  const isFreeUser = !subscription || subscription.planCode === "free";
+
+  if (!isSignedIn || !usage) return null;
+
+  if (!isFreeUser) {
+    return (
+      <div
+        className={cn(
+          "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors border",
+          "bg-primary/5 text-primary border-success/10"
+        )}
+      >
+        <Sparkles className="w-4 h-4" />
+        <span className="text-lg leading-none">∞</span>
+      </div>
+    );
+  }
+
+  const isLow = usage.remaining <= 20;
+  const isOut = usage.remaining === 0;
+
+  if (isOut) {
+    return (
+      <Link href={Routes.CHECKOUT}>
+        <Button
+          size="sm"
+          className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white shadow-sm transition-all hover:scale-105 active:scale-95"
+        >
+          <Sparkles className="w-4 h-4 mr-1.5" />
+          Fazer Upgrade
+        </Button>
+      </Link>
+    );
+  }
+
+  return (
+    <Link
+      href={Routes.SETTINGS}
+      className={cn(
+        "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors border",
+        isLow
+          ? "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-900/30"
+          : "bg-primary/5 text-primary border-primary/10 hover:bg-primary/10"
+      )}
+    >
+      <Sparkles className="w-4 h-4" />
+      <span>
+        {usage.remaining} {usage.remaining === 1 ? "geração" : "gerações"}
+      </span>
+    </Link>
+  );
+}
+
 export function SidebarLayout({ children, className }: SidebarLayoutProps) {
   const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
+  const dispatch = useDispatch<AppDispatch>();
+  const isUpgradeModalOpen = useSelector((state: RootState) => state.ui.isUpgradeModalOpen);
 
   const handleMobileItemClick = useCallback(() => {
     if (isMobile) {
@@ -235,6 +321,10 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
     setOpen(isOpen);
   }, []);
 
+  const handleUpgradeModalChange = useCallback((isOpen: boolean) => {
+    dispatch(setUpgradeModalOpen(isOpen));
+  }, [dispatch]);
+
   // Memoize sidebar content to prevent recreation
   const sidebarContent = useMemo(
     () => <SidebarInnerContent pathname={pathname} onItemClick={handleMobileItemClick} />,
@@ -244,6 +334,12 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
   return (
     <SidebarProvider>
       <div className="flex h-screen w-full">
+        {/* Upgrade Modal */}
+        <UpgradePlanModal 
+          open={isUpgradeModalOpen} 
+          onOpenChange={handleUpgradeModalChange} 
+        />
+
         {/* Desktop Sidebar */}
         <div className="hidden md:block h-screen">{sidebarContent}</div>
 
@@ -252,7 +348,7 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
           <SheetTrigger asChild>
             <Button
               variant="ghost"
-              className="md:hidden mr-2 px-0 text-base hover:bg-[#EEF0FF] hover:text-[#6753FF]"
+              className="md:hidden mr-2 px-0 text-base hover:bg-accent hover:text-primary"
             >
               <Menu className="h-6 w-6" />
               <span className="sr-only">Toggle sidebar</span>
@@ -268,19 +364,21 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
 
         {/* Main Content Area */}
         <div className="flex-1 flex flex-col">
-          <header className="flex h-16 shrink-0 items-center gap-2 bg-[#FFFFFF] w-full border-b border-[#E4E4E7]">
+          <header className="flex h-16 shrink-0 items-center gap-2 bg-background/50 backdrop-blur-md w-full border-b border-border">
             <div className="flex items-center gap-2 px-4 justify-between w-full">
               <SidebarTrigger className="hidden md:flex" />
-              <div className="ml-auto flex items-center gap-4">
+              <div className="ml-auto flex items-center gap-2">
+                <GenerationsIndicator />
+                <ThemeToggle />
                 <SignedOut>
                   <SignInButton mode="modal">
-                    <Button variant="default" className="bg-[#6753FF] hover:bg-[#4E3BC0]">
+                    <Button variant="default" className="bg-primary hover:bg-primary/90">
                       Entrar
                     </Button>
                   </SignInButton>
                 </SignedOut>
                 <SignedIn>
-                  <UserButton 
+                  <UserButton
                     appearance={{
                       elements: {
                         avatarBox: "w-10 h-10"
@@ -293,7 +391,7 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
           </header>
           <main
             className={cn(
-              "flex-1 overflow-auto w-full bg-[#EEF0FF]",
+              "flex-1 overflow-auto w-full bg-slate-50 dark:bg-background",
               className
             )}
           >

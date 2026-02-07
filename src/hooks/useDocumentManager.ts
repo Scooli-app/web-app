@@ -4,12 +4,12 @@ import {
   updateDocumentOptimistic,
 } from "@/store/documents/documentSlice";
 import {
-  useAppDispatch,
-  useAppSelector,
   selectCurrentDocument,
   selectIsLoading,
+  useAppDispatch,
+  useAppSelector,
 } from "@/store/hooks";
-import { useCallback, useEffect, useState, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 export function useDocumentManager(documentId: string) {
   const [content, setContent] = useState("");
@@ -84,13 +84,41 @@ export function useDocumentManager(documentId: string) {
     [currentDocument, dispatch]
   );
 
+  const handleAutosave = useCallback(
+    async (newContent: string) => {
+      if (!currentDocument || newContent === prevContentRef.current) {
+        return;
+      }
+
+      // Update refs to prevent circular updates
+      prevContentRef.current = newContent;
+      setContent(newContent);
+
+      try {
+        await dispatch(
+          updateDocument({
+            id: currentDocument.id,
+            content: newContent,
+          })
+        ).unwrap();
+      } catch (error) {
+        console.error("Failed to autosave content:", error);
+      }
+    },
+    [currentDocument, dispatch]
+  );
+
+  const isSaving = useAppSelector((state) => state.documents.isSaving);
+
   return {
     document: currentDocument,
     content,
     setContent,
     editorKey,
     isLoading: storeLoading,
+    isSaving,
     handleContentChange,
     handleTitleSave,
+    handleAutosave,
   };
 }

@@ -6,10 +6,13 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "updateEmails": "npx mjml chalkboard/services/src/main/resources/emails/mjml/*.mjml -o chalkboard/services/src/main/resources/emails/html/"
   },
   "dependencies": {
+    "@clerk/localizations": "^3.35.3",
     "@clerk/nextjs": "^6.36.0",
+    "@clerk/themes": "^2.4.47",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",

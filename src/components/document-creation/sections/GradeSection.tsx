@@ -7,24 +7,25 @@ import type { FormUpdateFn } from "../types";
 interface GradeSectionProps {
   schoolYear: number;
   onUpdate: FormUpdateFn;
+  className?: string;
 }
 
-export function GradeSection({ schoolYear, onUpdate }: GradeSectionProps) {
+export function GradeSection({ schoolYear, onUpdate, className }: GradeSectionProps) {
   return (
-    <Card className="p-4 sm:p-6 border-[#E4E4E7] shadow-sm hover:shadow-md transition-shadow">
+    <Card className={cn("p-4 sm:p-6 border-border shadow-sm hover:shadow-md transition-shadow", className)}>
       <div className="space-y-3 sm:space-y-4">
         <div className="flex items-center gap-2 sm:gap-3">
-          <div className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-[#EEF0FF] shrink-0">
-            <GraduationCap className="w-4 h-4 sm:w-5 sm:h-5 text-[#6753FF]" />
+          <div className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-accent shrink-0">
+            <GraduationCap className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
           </div>
-          <h2 className="text-base sm:text-lg font-semibold text-[#0B0D17]">
-            Ano de Escolaridade <span className="text-red-500">*</span>
+          <h2 className="text-base sm:text-lg font-semibold text-foreground">
+            Ano de Escolaridade <span className="text-destructive">*</span>
           </h2>
         </div>
         <div className="space-y-2.5 sm:space-y-3">
           {GRADE_GROUPS.map((group) => (
             <div key={group.label}>
-              <p className="text-[10px] sm:text-xs font-medium text-[#6C6F80] uppercase tracking-wide mb-1.5 sm:mb-2">
+              <p className="text-[10px] sm:text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1.5 sm:mb-2">
                 {group.label}
               </p>
               <div className="flex flex-wrap gap-1.5 sm:gap-2">
@@ -42,8 +43,8 @@ export function GradeSection({ schoolYear, onUpdate }: GradeSectionProps) {
                         "px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-md sm:rounded-lg text-xs sm:text-sm font-medium transition-all",
                         "border hover:scale-[1.02] active:scale-[0.98]",
                         isSelected
-                          ? "bg-[#6753FF] text-white border-[#6753FF] shadow-md shadow-[#6753FF]/20"
-                          : "bg-white text-[#2E2F38] border-[#C7C9D9] hover:border-[#6753FF] hover:bg-[#EEF0FF]"
+                          ? "bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20"
+                          : "bg-card text-foreground border-border hover:border-primary hover:bg-accent"
                       )}
                       aria-pressed={isSelected}
                       aria-label={`Selecionar ${grade.label}`}
@@ -60,4 +61,3 @@ export function GradeSection({ schoolYear, onUpdate }: GradeSectionProps) {
     </Card>
   );
 }
-

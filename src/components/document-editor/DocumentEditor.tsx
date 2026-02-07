@@ -1,20 +1,21 @@
 "use client";
 
-import { Card } from "@/components/ui/card";
 import { useDocumentManager } from "@/hooks/useDocumentManager";
 import { streamDocumentContent } from "@/services/api/document.service";
+import { AUTO_SAVE_DELAY } from "@/shared/config/constants";
 import { Routes } from "@/shared/types";
 import {
-  clearStreamInfo,
-  fetchDocument,
   chatWithDocument,
   clearLastChatAnswer,
+  clearStreamInfo,
+  fetchDocument,
 } from "@/store/documents/documentSlice";
 import {
-  useAppDispatch,
   selectEditorState,
+  useAppDispatch,
   useAppSelector,
 } from "@/store/hooks";
+import { fetchUsage } from "@/store/subscription/subscriptionSlice";
 import { useAuth } from "@clerk/nextjs";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -28,6 +29,7 @@ import DownloadButton from "./DownloadButton";
 interface ChatMessage {
   role: "user" | "assistant";
   content: string;
+  hasUpdate?: boolean;
 }
 
 interface DocumentEditorProps {
@@ -56,7 +58,8 @@ export default function DocumentEditor({
     setContent,
     handleContentChange,
     handleTitleSave,
-    isLoading: isSaving,
+    handleAutosave,
+    isSaving,
     editorKey,
   } = useDocumentManager(documentId);
 
@@ -65,6 +68,8 @@ export default function DocumentEditor({
   const [error, setError] = useState("");
   const [displayContent, setDisplayContent] = useState("");
   const [documentTitle, setDocumentTitle] = useState("");
+  const [showUpdateIndicator, setShowUpdateIndicator] = useState(false);
+  
   const eventSourceRef = useRef<(() => void) | null>(null);
   const rawStreamRef = useRef("");
   const accumulatedTitleRef = useRef("");
@@ -109,7 +114,6 @@ export default function DocumentEditor({
         if (!token) {
           eventSourceRef.current = null;
           
-          // Preserve the streamed title before clearing streaming state
           const finalStreamedTitle = accumulatedTitleRef.current;
           if (finalStreamedTitle) {
             setDocumentTitle(finalStreamedTitle);
@@ -121,7 +125,6 @@ export default function DocumentEditor({
           return;
         }
 
-        // Check if aborted before starting
         if (abortController.signal.aborted) {
           return;
         }
@@ -151,20 +154,30 @@ export default function DocumentEditor({
               setIsStreaming(false);
 
               const chatAnswer = response.chatAnswer;
+              const generatedContent = response.generatedContent;
+              
               if (chatAnswer) {
                 setChatHistory((prev) => [
                   ...prev,
-                  { role: "assistant" as const, content: chatAnswer },
+                  { 
+                    role: "assistant" as const, 
+                    content: chatAnswer,
+                    hasUpdate: !!generatedContent 
+                  },
                 ]);
               }
 
-              const generatedContent = response.generatedContent;
               if (generatedContent) {
+                // Direct update
                 setContent(generatedContent);
+                handleAutosave(generatedContent);
+                setShowUpdateIndicator(true);
+                setTimeout(() => setShowUpdateIndicator(false), AUTO_SAVE_DELAY);
               }
 
               dispatch(clearStreamInfo());
               dispatch(fetchDocument(docId));
+              dispatch(fetchUsage());
             },
             onError: (errorMsg) => {
               eventSourceRef.current = null;
@@ -189,7 +202,7 @@ export default function DocumentEditor({
 
       startStream();
     }
-  }, [streamInfo, documentId, dispatch, setContent, getToken]);
+  }, [streamInfo, documentId, dispatch, setContent, getToken, handleAutosave]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -201,19 +214,13 @@ export default function DocumentEditor({
     };
   }, []);
 
-  useEffect(() => {
-    if (error) {
-      alert(error);
-      setError("");
-    }
-  }, [error]);
 
   // Handle chat answer from Redux
   useEffect(() => {
     if (lastChatAnswer) {
       setChatHistory((prev) => [
         ...prev,
-        { role: "assistant" as const, content: lastChatAnswer },
+        { role: "assistant" as const, content: lastChatAnswer, hasUpdate: false },
       ]);
       dispatch(clearLastChatAnswer());
     }
@@ -258,27 +265,21 @@ export default function DocumentEditor({
         await dispatch(
           chatWithDocument({ id: currentDocument.id, message: userMessage })
         ).unwrap();
-      } catch (err) {
-        console.error("Chat error:", err);
-        setError("Erro ao enviar mensagem. Tente novamente.");
+      } catch {
+        setError("Erro ao processar sua mensagem. Tente novamente mais tarde.");
       }
     },
     [currentDocument?.id, dispatch]
   );
 
-  // Show streaming state when generating content
-  // Check both local isStreaming state AND streamInfo to avoid race conditions
-  const hasActiveStream =
-    streamInfo?.id === documentId && streamInfo?.status === "generating";
-  const isGenerating = isStreaming || hasActiveStream;
+  const isGenerating = isStreaming || (streamInfo?.id === documentId && streamInfo?.status === "generating");
 
-  // Loading states - but allow streaming even if document not fully loaded
   if (isLoading && !isGenerating) {
     return (
       <div className="flex items-center justify-center min-h-[400px] w-full">
         <div className="flex items-center space-x-2">
-          <Loader2 className="w-6 h-6 animate-spin text-[#6753FF]" />
-          <span className="text-lg text-[#6C6F80]">{loadingMessage}</span>
+          <Loader2 className="w-6 h-6 animate-spin text-primary" />
+          <span className="text-lg text-muted-foreground">{loadingMessage}</span>
         </div>
       </div>
     );
@@ -288,13 +289,8 @@ export default function DocumentEditor({
     return (
       <div className="flex items-center justify-center min-h-[400px] w-full">
         <div className="text-center">
-          <p className="text-lg text-[#6C6F80] mb-4">
-            Documento não encontrado
-          </p>
-          <button
-            onClick={() => router.push(Routes.DOCUMENTS)}
-            className="text-[#6753FF] hover:underline"
-          >
+          <p className="text-lg text-muted-foreground mb-4">Documento não encontrado</p>
+          <button onClick={() => router.push(Routes.DOCUMENTS)} className="text-primary hover:underline">
             Voltar aos documentos
           </button>
         </div>
@@ -304,7 +300,6 @@ export default function DocumentEditor({
 
   return (
     <>
-      {/* Main Editor */}
       <div className="flex-1 flex flex-col w-full">
         <DocumentTitle
           title={documentTitle || currentDocument?.title || ""}
@@ -315,61 +310,95 @@ export default function DocumentEditor({
         />
 
         <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_400px] gap-6 relative">
-          <Card className="p-4 md:p-6 w-full min-w-0">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-[#0B0D17]">Editor</h2>
-              <div className="flex items-center gap-3">
-                {isGenerating && (
-                  <div className="flex items-center space-x-2 text-[#6753FF]">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span className="text-sm font-medium">A gerar conteúdo...</span>
-                  </div>
-                )}
-                <DownloadButton
-                  title={documentTitle || currentDocument?.title || defaultTitle}
-                  content={content}
-                  disabled={isGenerating || !content}
-                />
-              </div>
-            </div>
+          <div className="flex flex-col min-w-0">
             {isGenerating ? (
-              <div className="border border-[#C7C9D9] rounded-xl bg-white min-h-[600px] w-full p-4 overflow-auto">
-                {displayContent ? (
-                  <StreamingText
-                    text={displayContent}
-                    isStreaming={isGenerating}
-                    as="div"
-                    className="prose prose-sm max-w-none whitespace-pre-wrap text-[#2E2F38] leading-relaxed"
-                  />
-                ) : (
-                  <div className="flex flex-col items-center justify-center h-full w-full min-h-[550px]">
-                    <Loader2 className="w-12 h-12 animate-spin text-[#6753FF] mb-4" />
-                    <p className="text-lg font-medium text-[#0B0D17]">A gerar o documento...</p>
-                    <p className="text-sm text-[#6C6F80] mt-2">Isto pode demorar alguns segundos</p>
+              <>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-semibold text-foreground">Editor</h2>
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center space-x-2 text-primary">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span className="text-sm font-medium">A gerar conteúdo...</span>
+                    </div>
+                    <DownloadButton
+                      title={documentTitle || currentDocument?.title || defaultTitle}
+                      content={content}
+                      disabled={isGenerating || !content}
+                    />
                   </div>
-                )}
-              </div>
+                </div>
+                <div className="border border-border rounded-xl bg-card min-h-[600px] w-full p-4 overflow-auto">
+                  {displayContent ? (
+                    <StreamingText
+                      text={displayContent}
+                      isStreaming={isGenerating}
+                      as="div"
+                      className="prose prose-sm max-w-none whitespace-pre-wrap text-foreground leading-relaxed"
+                    />
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-full w-full min-h-[550px]">
+                      <Loader2 className="w-12 h-12 animate-spin text-primary mb-4" />
+                      <p className="text-lg font-medium text-foreground">A gerar o documento...</p>
+                    </div>
+                  )}
+                </div>
+              </>
             ) : (
               <RichTextEditor
                 key={editorKey}
                 content={content}
                 onChange={handleContentChange}
+                onAutosave={handleAutosave}
                 className="min-h-[600px] max-w-full"
+                rightHeaderContent={
+                  <div className="flex items-center gap-3 pr-1">
+                    {showUpdateIndicator && (
+                      <span className="text-sm font-medium text-primary animate-pulse flex items-center gap-1">
+                        ✨ Documento Refinado
+                      </span>
+                    )}
+                    {isGenerating && (
+                      <div className="flex items-center space-x-2 text-primary">
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span className="text-sm font-medium hidden sm:inline">A gerar...</span>
+                      </div>
+                    )}
+                    <DownloadButton
+                      title={documentTitle || currentDocument?.title || defaultTitle}
+                      content={content}
+                      disabled={isGenerating || !content}
+                    />
+                  </div>
+                }
               />
             )}
-          </Card>
+          </div>
+
+          <div className="hidden lg:block sticky top-[5px] self-start">
+            <AIChatPanel
+              onChatSubmit={handleChatSubmit}
+              chatHistory={chatHistory}
+              isStreaming={isStreaming || isChatting}
+              error={error}
+              placeholder={chatPlaceholder}
+              title={chatTitle}
+              sources={(currentDocument?.metadata?.sources as string[]) || []}
+            />
+          </div>
         </div>
       </div>
 
-      {/* AI Chat Panel */}
-      <AIChatPanel
-        onChatSubmit={handleChatSubmit}
-        chatHistory={chatHistory}
-        isStreaming={isStreaming || isChatting}
-        error={error}
-        placeholder={chatPlaceholder}
-        title={chatTitle}
-      />
+      <div className="lg:hidden">
+        <AIChatPanel
+          onChatSubmit={handleChatSubmit}
+          chatHistory={chatHistory}
+          isStreaming={isStreaming || isChatting}
+          error={error}
+          placeholder={chatPlaceholder}
+          title={chatTitle}
+          sources={(currentDocument?.metadata?.sources as string[]) || []}
+        />
+      </div>
     </>
   );
 }

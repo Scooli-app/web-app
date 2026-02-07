@@ -1,15 +1,30 @@
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
-import "./globals.css";
-import StoreProvider from "@/components/providers/StoreProvider";
 import AuthProvider from "@/components/providers/AuthProvider";
-import { SpeedInsights } from "@vercel/speed-insights/next";
+import ClerkThemeProvider from "@/components/providers/ClerkThemeProvider";
+import StoreProvider from "@/components/providers/StoreProvider";
+import ThemeProvider from "@/components/providers/ThemeProvider";
 import { Analytics } from "@vercel/analytics/next";
-import { ClerkProvider } from "@clerk/nextjs";
+import { SpeedInsights } from "@vercel/speed-insights/next";
+import type { Metadata } from "next";
+import { Lexend } from "next/font/google";
+import "./globals.css";
 
-const inter = Inter({
-  variable: "--font-inter",
+const themeInitScript = `
+(function() {
+  try {
+    var theme = localStorage.getItem('scooli-theme');
+    var isDark = theme === 'dark' || 
+      ((theme === 'system' || !theme) && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    if (isDark) {
+      document.documentElement.classList.add('dark');
+    }
+  } catch (e) {}
+})();
+`;
+
+const lexend = Lexend({
+  variable: "--font-lexend-variable",
   subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
@@ -36,18 +51,23 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <ClerkProvider>
-      <html lang="pt" className={inter.variable} suppressHydrationWarning>
-        <body className={`${inter.className} antialiased`}>
-          <AuthProvider>
-            <StoreProvider>
-              {children}
-            </StoreProvider>
-          </AuthProvider>
-          <SpeedInsights />
-          <Analytics />
-        </body>
-      </html>
-    </ClerkProvider>
+    <html lang="pt" className={lexend.variable} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+      </head>
+      <body className={`${lexend.className} antialiased`} suppressHydrationWarning>
+        <StoreProvider>
+          <ThemeProvider>
+            <ClerkThemeProvider>
+              <AuthProvider>
+                {children}
+              </AuthProvider>
+            </ClerkThemeProvider>
+          </ThemeProvider>
+        </StoreProvider>
+        <SpeedInsights />
+        <Analytics />
+      </body>
+    </html>
   );
 }

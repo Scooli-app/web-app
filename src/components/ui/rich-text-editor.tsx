@@ -1,22 +1,30 @@
 "use client";
 
-import { memo } from "react";
 import dynamic from "next/dynamic";
+import { memo } from "react";
 
 interface RichTextEditorProps {
   content: string;
   onChange: (content: string) => void;
   className?: string;
   onAutosave?: (markdown: string) => void;
+  rightHeaderContent?: React.ReactNode;
 }
 
 // Loading fallback
 function EditorSkeleton() {
   return (
-    <div className="border border-[#C7C9D9] rounded-xl bg-white w-full">
-      <div className="border-b border-[#C7C9D9] p-2 h-12 bg-gray-50 animate-pulse rounded-t-xl" />
+    <div className="border border-border rounded-xl bg-card w-full">
+      <div className="border-b border-border p-2 h-12 bg-muted animate-pulse rounded-t-xl flex justify-between items-center">
+        <div className="flex gap-2">
+           {[...Array(5)].map((_, i) => (
+             <div key={i} className="w-8 h-8 bg-muted-foreground/10 rounded" />
+           ))}
+        </div>
+        <div className="w-24 h-8 bg-muted-foreground/10 rounded mr-2" />
+      </div>
       <div className="p-4 min-h-[600px] flex items-center justify-center">
-        <div className="text-[#6C6F80]">A carregar editor...</div>
+        <div className="text-muted-foreground">A carregar editor...</div>
       </div>
     </div>
   );
@@ -36,6 +44,7 @@ function RichTextEditorComponent({
   onChange,
   className = "",
   onAutosave,
+  rightHeaderContent,
 }: RichTextEditorProps) {
   return (
     <TipTapEditor
@@ -43,17 +52,18 @@ function RichTextEditorComponent({
       onChange={onChange}
       className={className}
       onAutosave={onAutosave}
+      rightHeaderContent={rightHeaderContent}
     />
   );
 }
 
 // Memoize the component to prevent unnecessary re-renders
 const RichTextEditor = memo(RichTextEditorComponent, (prevProps, nextProps) => {
-  // Only re-render if content or className changes
-  // onChange and onAutosave are typically stable callbacks
+  // Only re-render if content, className, or rightHeaderContent changes
   return (
     prevProps.content === nextProps.content &&
-    prevProps.className === nextProps.className
+    prevProps.className === nextProps.className &&
+    prevProps.rightHeaderContent === nextProps.rightHeaderContent
   );
 });
 

@@ -1,20 +1,24 @@
 import type { UIState } from "@/shared/types";
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
+export type ThemeMode = "light" | "dark" | "system";
+
 interface UIStoreState extends UIState {
-  theme: "light" | "dark";
+  theme: ThemeMode;
   sidebarCollapsed: boolean;
   sidebarOpen: boolean;
   loading: boolean;
   error: string | null;
+  isUpgradeModalOpen: boolean;
 }
 
 const initialState: UIStoreState = {
-  theme: "light",
+  theme: "system",
   sidebarCollapsed: false,
   sidebarOpen: false,
   loading: false,
   error: null,
+  isUpgradeModalOpen: false,
 };
 
 const uiSlice = createSlice({
@@ -39,10 +43,19 @@ const uiSlice = createSlice({
     clearError(state) {
       state.error = null;
     },
-    toggleTheme(state) {
-      state.theme = state.theme === "light" ? "dark" : "light";
+    setUpgradeModalOpen(state, action: PayloadAction<boolean>) {
+      state.isUpgradeModalOpen = action.payload;
     },
-    setTheme(state, action: PayloadAction<"light" | "dark">) {
+    toggleTheme(state) {
+      if (state.theme === "light") {
+        state.theme = "dark";
+      } else if (state.theme === "dark") {
+        state.theme = "system";
+      } else {
+        state.theme = "light";
+      }
+    },
+    setTheme(state, action: PayloadAction<ThemeMode>) {
       state.theme = action.payload;
     },
   },
@@ -57,6 +70,7 @@ export const {
   clearError,
   toggleTheme,
   setTheme,
+  setUpgradeModalOpen,
 } = uiSlice.actions;
 
 export default uiSlice.reducer;

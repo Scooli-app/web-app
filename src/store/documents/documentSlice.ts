@@ -1,17 +1,18 @@
 import {
+  chatWithDocument as chatWithDocumentService,
   createDocument as createDocumentService,
   // deleteDocument as deleteDocumentService,
   getDocument as getDocumentService,
   getDocuments as getDocumentsService,
-  type DocumentFilters,
   updateDocument as updateDocumentService,
-  chatWithDocument as chatWithDocumentService,
+  type DocumentFilters,
 } from "@/services/api";
 import type {
   CreateDocumentParams,
   CreateDocumentStreamResponse,
   Document,
 } from "@/shared/types";
+import { fetchUsage } from "@/store/subscription/subscriptionSlice";
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 
 export type { DocumentFilters };
@@ -34,6 +35,7 @@ interface DocumentState {
   };
   filters: DocumentFilters;
   isLoading: boolean;
+  isSaving: boolean;
   isChatting: boolean;
   lastChatAnswer: string | null;
   error: string | null;
@@ -53,6 +55,7 @@ const initialState: DocumentState = {
   },
   filters: {},
   isLoading: false,
+  isSaving: false,
   isChatting: false,
   lastChatAnswer: null,
   error: null,
@@ -143,6 +146,7 @@ export const createDocument = createAsyncThunk(
       }
 
       const document = await createDocumentService(params);
+            
       return document;
     } catch (error) {
       return rejectWithValue(
@@ -170,10 +174,13 @@ export const chatWithDocument = createAsyncThunk(
   "documents/chatWithDocument",
   async (
     { id, message }: { id: string; message: string },
-    { rejectWithValue }
+    { rejectWithValue, dispatch }
   ) => {
     try {
       const response = await chatWithDocumentService(id, message);
+      
+      dispatch(fetchUsage());
+      
       return response;
     } catch (error) {
       return rejectWithValue(
@@ -315,9 +322,11 @@ const documentSlice = createSlice({
       // update from the response. The optimistic value is kept on success,
       // and reverted on failure in the thunk itself.
       .addCase(updateDocument.pending, (state) => {
+        state.isSaving = true;
         state.error = null;
       })
       .addCase(updateDocument.fulfilled, (state, action) => {
+        state.isSaving = false;
         const updatedData = action.payload;
         // Only update from response if we have valid data with actual content
         // Skip empty responses - the optimistic update already has the correct values
@@ -351,6 +360,7 @@ const documentSlice = createSlice({
         );
       })
       .addCase(updateDocument.rejected, (state, action) => {
+        state.isSaving = false;
         state.error = action.payload as string;
       })
       // Chat with Document

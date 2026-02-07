@@ -1,4 +1,5 @@
 export enum Routes {
+  CHECKOUT = "/checkout",
   DASHBOARD = "/dashboard",
   DOCUMENTS = "/documents",
   LESSON_PLAN_EDITOR = "/lesson-plan/:id",

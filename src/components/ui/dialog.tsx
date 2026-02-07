@@ -60,15 +60,15 @@ function DialogContent({
       <DialogPrimitive.Content
         data-slot="dialog-content"
         className={cn(
-          "bg-white data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 w-full max-w-2xl translate-x-[-50%] translate-y-[-50%] rounded-2xl border border-[#E4E4E7] shadow-lg duration-200",
+          "bg-card data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 w-full max-w-2xl translate-x-[-50%] translate-y-[-50%] rounded-2xl border border-border shadow-lg duration-200",
           className
         )}
         {...props}
       >
         {children}
         {!hideCloseButton && (
-          <DialogPrimitive.Close className="ring-offset-background absolute top-4 right-4 rounded-lg p-1.5 opacity-70 transition-all hover:opacity-100 hover:bg-[#F4F5F8] focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none disabled:pointer-events-none">
-            <XIcon className="size-5 text-[#6C6F80]" />
+          <DialogPrimitive.Close className="ring-offset-background absolute top-4 right-4 rounded-lg p-1.5 opacity-70 transition-all hover:opacity-100 hover:bg-muted focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none disabled:pointer-events-none">
+            <XIcon className="size-5 text-muted-foreground" />
             <span className="sr-only">Fechar</span>
           </DialogPrimitive.Close>
         )}
@@ -107,7 +107,7 @@ function DialogTitle({
   return (
     <DialogPrimitive.Title
       data-slot="dialog-title"
-      className={cn("text-xl font-semibold text-[#0B0D17]", className)}
+      className={cn("text-xl font-semibold text-foreground", className)}
       {...props}
     />
   );
@@ -120,7 +120,7 @@ function DialogDescription({
   return (
     <DialogPrimitive.Description
       data-slot="dialog-description"
-      className={cn("text-sm text-[#6C6F80]", className)}
+      className={cn("text-sm text-muted-foreground", className)}
       {...props}
     />
   );
@@ -138,4 +138,3 @@ export {
   DialogTitle,
   DialogTrigger,
 };
-

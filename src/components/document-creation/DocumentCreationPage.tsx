@@ -1,14 +1,14 @@
 "use client";
 
+import type { DocumentTemplate } from "@/shared/types";
 import {
   createDocument,
   setPendingInitialPrompt,
 } from "@/store/documents/documentSlice";
 import { useAppDispatch } from "@/store/hooks";
-import type { DocumentTemplate } from "@/shared/types";
 import { useRouter } from "next/navigation";
-import { useCallback, useState } from "react";
-import { SUBJECTS } from "./constants";
+import { useCallback, useEffect, useState } from "react";
+import { AMBIGUOUS_COMPONENTS_SUBJECTS, SUBJECTS, SUBJECTS_BY_GRADE } from "./constants";
 import {
   AdditionalDetailsSection,
   DurationSection,
@@ -33,6 +33,7 @@ function useDocumentForm() {
   const [formState, setFormState] = useState<FormState>({
     topic: "",
     subject: "",
+    isSpecificComponent: false,
     schoolYear: 0,
     lessonTime: undefined,
     customTime: 0,
@@ -43,12 +44,10 @@ function useDocumentForm() {
   });
   const [error, setError] = useState("");
 
-  const updateForm: FormUpdateFn = (field, value) => {
+  const updateForm: FormUpdateFn = useCallback((field, value) => {
     setFormState((prev) => ({ ...prev, [field]: value }));
-    if (error) {
-      setError("");
-    }
-  };
+    setError("");
+  }, []);
 
   const handleTemplateSelect = useCallback((template: DocumentTemplate) => {
     setFormState((prev) => ({
@@ -91,6 +90,26 @@ export default function DocumentCreationPage({
   const { formState, error, setError, updateForm, isFormValid, handleTemplateSelect } =
     useDocumentForm();
 
+  // Reset subject if it's not available for the selected school year
+  useEffect(() => {
+    if (formState.schoolYear && formState.subject) {
+      const validSubjects = SUBJECTS_BY_GRADE[String(formState.schoolYear)];
+      // If we have a list for this grade, and the current subject isn't in it
+      if (validSubjects && !validSubjects.includes(formState.subject)) {
+        updateForm("subject", "");
+      }
+    }
+  }, [formState.schoolYear, formState.subject, updateForm]);
+
+  // Reset component type when subject changes
+  useEffect(() => {
+    if (formState.subject && formState.isSpecificComponent) {
+      if (!AMBIGUOUS_COMPONENTS_SUBJECTS.includes(formState.subject)) {
+        updateForm("isSpecificComponent", false);
+      }
+    }
+  }, [formState.subject, formState.isSpecificComponent, updateForm]);
+
   const showTeachingMethodSection = documentType.id === "lessonPlan";
 
   const handleCreateDocument = async () => {
@@ -119,7 +138,7 @@ export default function DocumentCreationPage({
       setError("");
 
       const subjectValue =
-        SUBJECTS.find((s) => s.id === formState.subject)?.label ||
+        SUBJECTS.find((s) => s.id === formState.subject)?.value ||
         formState.subject;
 
       const durationValue = formState.lessonTime
@@ -136,6 +155,7 @@ export default function DocumentCreationPage({
           teachingMethod: formState.teachingMethod || undefined,
           additionalDetails: formState.additionalDetails?.trim() || "",
           templateId: formState.templateId,
+          isSpecificComponent: formState.isSpecificComponent,
         })
       );
 
@@ -186,14 +206,6 @@ export default function DocumentCreationPage({
             onUpdate={updateForm}
           />
 
-          <SubjectSection subject={formState.subject} onUpdate={updateForm} />
-
-          <TemplateSection
-            documentType={documentType.id}
-            selectedTemplateId={formState.templateId || null}
-            onTemplateSelect={handleTemplateSelect}
-          />
-
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
             <GradeSection
               schoolYear={formState.schoolYear}
@@ -205,6 +217,21 @@ export default function DocumentCreationPage({
               onUpdate={updateForm}
             />
           </div>
+
+          <SubjectSection 
+            subject={formState.subject} 
+            isSpecificComponent={formState.isSpecificComponent}
+            onUpdate={updateForm} 
+            availableSubjects={formState.schoolYear ? SUBJECTS_BY_GRADE[String(formState.schoolYear)] : undefined}
+            className="shadow-none border-0 p-0 hover:shadow-none transition-none"
+            disabled={!formState.schoolYear}
+          />
+
+          <TemplateSection
+            documentType={documentType.id}
+            selectedTemplateId={formState.templateId || null}
+            onTemplateSelect={handleTemplateSelect}
+          />
 
           {showTeachingMethodSection && (
             <TeachingMethodSection

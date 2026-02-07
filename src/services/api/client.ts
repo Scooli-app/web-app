@@ -3,9 +3,19 @@
  * Base axios instance for Chalkboard backend
  */
 
+import { setUpgradeModalOpen } from "@/store/ui/uiSlice";
+import type { UnknownAction } from "@reduxjs/toolkit";
 import axios, { type AxiosError, type AxiosInstance } from "axios";
 
-let authToken: string | null = null;
+let storeDispatch: ((action: UnknownAction) => void) | null = null;
+
+export const injectStore = (dispatch: (action: UnknownAction) => void) => {
+  storeDispatch = dispatch;
+};
+
+type GetTokenFn = () => Promise<string | null>;
+
+let getTokenFn: GetTokenFn | null = null;
 
 export const apiClient: AxiosInstance = axios.create({
   baseURL: process.env.NEXT_PUBLIC_BASE_API_URL || "",
@@ -14,28 +24,25 @@ export const apiClient: AxiosInstance = axios.create({
     Accept: "application/json",
   },
   withCredentials: true,
-  validateStatus: (status) => status < 500,
+  validateStatus: (status) => status < 400,
 });
 
 /**
- * Set the auth token for all API requests
+ * Set the token getter function for all API requests
+ * This allows fetching a fresh token for each request
  */
-export function setApiAuthToken(token: string | null): void {
-  authToken = token;
+export function setApiTokenGetter(getter: GetTokenFn | null): void {
+  getTokenFn = getter;
 }
 
-/**
- * Get the current auth token
- */
-export function getApiAuthToken(): string | null {
-  return authToken;
-}
-
-// Request interceptor to add auth token
+// Request interceptor to add auth token (fetches fresh token for each request)
 apiClient.interceptors.request.use(
-  (config) => {
-    if (authToken) {
-      config.headers.Authorization = `Bearer ${authToken}`;
+  async (config) => {
+    if (getTokenFn) {
+      const token = await getTokenFn();
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
     }
     return config;
   },
@@ -56,6 +63,13 @@ apiClient.interceptors.response.use(
     return response;
   },
   (error: AxiosError<{ message?: string; error?: string } | string>) => {
+    // Handle 402 Payment Required specifically for generations limit
+    if (error.response?.status === 402) {
+      if (storeDispatch) {
+        storeDispatch(setUpgradeModalOpen(true));
+      }
+    }
+
     // Handle common errors
     if (error.response) {
       // Check if response is HTML (error page)

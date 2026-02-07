@@ -1,7 +1,7 @@
 import type {
-  TeachingMethod,
-  DocumentType,
-  DocumentTemplate,
+    DocumentTemplate,
+    DocumentType,
+    TeachingMethod,
 } from "@/shared/types";
 
 export interface DocumentTypeConfig {
@@ -16,6 +16,7 @@ export interface DocumentTypeConfig {
 export interface FormState {
   topic: string;
   subject: string;
+  isSpecificComponent?: boolean;
   schoolYear: number;
   lessonTime?: number;
   customTime?: number;

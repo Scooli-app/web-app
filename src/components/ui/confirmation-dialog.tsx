@@ -33,8 +33,8 @@ export function ConfirmationDialog({
   variant = "warning",
 }: ConfirmationDialogProps) {
   const iconColors = {
-    warning: "bg-amber-100 text-amber-600",
-    danger: "bg-red-100 text-red-600",
+    warning: "bg-amber-100 text-amber-600 dark:bg-amber-950/50 dark:text-amber-400",
+    danger: "bg-red-100 text-red-600 dark:bg-red-950/50 dark:text-red-400",
   };
 
   const confirmColors = {
@@ -67,7 +67,7 @@ export function ConfirmationDialog({
             type="button"
             variant="outline"
             onClick={onClose}
-            className="flex-1 sm:flex-none h-10 border-[#C7C9D9] text-[#2E2F38] hover:bg-[#F4F5F8] rounded-xl"
+            className="flex-1 sm:flex-none h-10 border-border text-secondary-foreground hover:bg-muted rounded-xl"
           >
             {cancelLabel}
           </Button>
@@ -108,4 +108,3 @@ export function UnsavedChangesDialog({
     />
   );
 }
-

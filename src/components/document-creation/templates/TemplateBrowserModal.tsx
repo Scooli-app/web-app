@@ -189,38 +189,38 @@ export function TemplateBrowserModal({
         ) : view === "preview" && previewTemplate ? (
           <>
             <DialogHeader className="p-6 pb-4">
-              <div className="flex items-center gap-2 text-sm text-[#6C6F80] mb-2">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
                 <button
                   type="button"
                   onClick={handleBackToBrowse}
-                  className="hover:text-[#6753FF] transition-colors"
+                  className="hover:text-primary transition-colors"
                 >
                   Modelos
                 </button>
                 <ChevronRight className="w-4 h-4" />
-                <span className="text-[#0B0D17] font-medium">
+                <span className="text-foreground font-medium">
                   {previewTemplate.name}
                 </span>
               </div>
               <div className="flex items-start gap-3">
-                <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-[#EEF0FF] shrink-0">
-                  <FileText className="w-6 h-6 text-[#6753FF]" />
+                <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-accent shrink-0">
+                  <FileText className="w-6 h-6 text-primary" />
                 </div>
                 <div className="flex-1">
                   <DialogTitle className="flex items-center gap-2 flex-wrap">
                     {previewTemplate.name}
                     {previewTemplate.isSystem ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gradient-to-r from-[#6753FF] to-[#8B7AFF] text-white">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gradient-to-r from-primary to-primary/70 text-primary-foreground">
                         <Sparkles className="w-2.5 h-2.5" />
                         Scooli
                       </span>
                     ) : (
-                      <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-[#F4F5F8] text-[#6C6F80]">
+                      <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-muted text-muted-foreground">
                         Personalizado
                       </span>
                     )}
                     {previewTemplate.isDefault && (
-                      <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-[#1DB67D] text-white">
+                      <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-success text-white">
                         Padrão
                       </span>
                     )}
@@ -237,7 +237,7 @@ export function TemplateBrowserModal({
                       size="sm"
                       onClick={() => handleSetDefault(previewTemplate)}
                       disabled={isSettingDefault}
-                      className="flex items-center gap-1.5 border-[#C7C9D9] text-[#2E2F38] hover:bg-emerald-50 hover:border-emerald-500 hover:text-emerald-700 rounded-lg"
+                      className="flex items-center gap-1.5 border-border text-secondary-foreground hover:bg-emerald-50 hover:border-emerald-500 hover:text-emerald-700 dark:hover:bg-emerald-950/30 dark:hover:text-emerald-400 rounded-lg"
                       aria-label="Definir como padrão"
                     >
                       {isSettingDefault ? (
@@ -251,7 +251,7 @@ export function TemplateBrowserModal({
                     </Button>
                   )}
                   {previewTemplate.isDefault && (
-                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-lg text-sm font-medium">
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 rounded-lg text-sm font-medium">
                       <Check className="w-4 h-4" />
                       <span className="hidden sm:inline">Padrão</span>
                     </div>
@@ -262,7 +262,7 @@ export function TemplateBrowserModal({
                       variant="outline"
                       size="sm"
                       onClick={() => handleEditTemplate(previewTemplate)}
-                      className="flex items-center gap-1.5 border-[#C7C9D9] text-[#2E2F38] hover:bg-[#EEF0FF] hover:border-[#6753FF] rounded-lg"
+                      className="flex items-center gap-1.5 border-border text-secondary-foreground hover:bg-accent hover:border-primary rounded-lg"
                       aria-label="Editar modelo"
                     >
                       <Pencil className="w-4 h-4" />
@@ -275,7 +275,7 @@ export function TemplateBrowserModal({
 
             <ScrollArea className="flex-1 px-6">
               <div className="space-y-3 pb-4">
-                <h3 className="text-sm font-medium text-[#0B0D17]">
+                <h3 className="text-sm font-medium text-foreground">
                   Secções ({previewTemplate.sections.length})
                 </h3>
                 <div className="space-y-2">
@@ -284,16 +284,16 @@ export function TemplateBrowserModal({
                     .map((section, index) => (
                       <div
                         key={section.id}
-                        className="flex gap-3 p-3 bg-[#F4F5F8] rounded-xl"
+                        className="flex gap-3 p-3 bg-muted rounded-xl"
                       >
-                        <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-white text-[#6753FF] font-semibold text-sm shrink-0">
+                        <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-background text-primary font-semibold text-sm shrink-0">
                           {index + 1}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-medium text-sm text-[#0B0D17]">
+                          <h4 className="font-medium text-sm text-foreground">
                             {section.title}
                           </h4>
-                          <p className="text-xs text-[#6C6F80] mt-0.5 line-clamp-2">
+                          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
                             {section.description}
                           </p>
                         </div>
@@ -303,20 +303,20 @@ export function TemplateBrowserModal({
               </div>
             </ScrollArea>
 
-            <div className="p-6 pt-4 border-t border-[#E4E4E7] bg-[#FAFAFA]">
+            <div className="p-6 pt-4 border-t border-border bg-muted/50">
               <div className="flex flex-col sm:flex-row gap-3">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={handleBackToBrowse}
-                  className="sm:flex-1 h-11 border-[#C7C9D9] text-[#2E2F38] hover:bg-[#EEF0FF] hover:border-[#6753FF] rounded-xl"
+                  className="sm:flex-1 h-11 border-border text-secondary-foreground hover:bg-accent hover:border-primary rounded-xl"
                 >
                   Ver outros modelos
                 </Button>
                 <Button
                   type="button"
                   onClick={handleConfirmSelection}
-                  className="sm:flex-1 h-11 bg-[#6753FF] hover:bg-[#4E3BC0] text-white rounded-xl shadow-md shadow-[#6753FF]/20"
+                  className="sm:flex-1 h-11 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl shadow-md shadow-primary/20"
                 >
                   Usar este modelo
                 </Button>
@@ -328,8 +328,8 @@ export function TemplateBrowserModal({
             <DialogHeader className="p-6 pb-4 mt-6">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-[#EEF0FF] shrink-0">
-                    <Layers className="w-5 h-5 text-[#6753FF]" />
+                  <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-accent shrink-0">
+                    <Layers className="w-5 h-5 text-primary" />
                   </div>
                   <div>
                     <DialogTitle>Escolher Modelo</DialogTitle>
@@ -344,7 +344,7 @@ export function TemplateBrowserModal({
                   variant="outline"
                   size="sm"
                   onClick={() => setView("create")}
-                  className="flex items-center gap-1.5 border-[#C7C9D9] text-[#2E2F38] hover:bg-[#EEF0FF] hover:border-[#6753FF] rounded-lg"
+                  className="flex items-center gap-1.5 border-border text-secondary-foreground hover:bg-accent hover:border-primary rounded-lg"
                   aria-label="Criar novo modelo"
                 >
                   <Plus className="w-4 h-4" />
@@ -367,19 +367,19 @@ export function TemplateBrowserModal({
 
                 {templates.length === 0 && (
                   <div className="flex flex-col items-center justify-center py-12 text-center">
-                    <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-[#F4F5F8] mb-4">
-                      <FileText className="w-8 h-8 text-[#6C6F80]" />
+                    <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-muted mb-4">
+                      <FileText className="w-8 h-8 text-muted-foreground" />
                     </div>
-                    <h3 className="text-lg font-semibold text-[#0B0D17] mb-1">
+                    <h3 className="text-lg font-semibold text-foreground mb-1">
                       Sem modelos disponíveis
                     </h3>
-                    <p className="text-sm text-[#6C6F80] max-w-xs mb-4">
+                    <p className="text-sm text-muted-foreground max-w-xs mb-4">
                       Crie o seu primeiro modelo personalizado para começar
                     </p>
                     <Button
                       type="button"
                       onClick={() => setView("create")}
-                      className="bg-[#6753FF] hover:bg-[#4E3BC0] text-white rounded-xl"
+                      className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl"
                     >
                       <Plus className="w-4 h-4 mr-2" />
                       Criar Modelo
@@ -395,4 +395,3 @@ export function TemplateBrowserModal({
     </>
   );
 }
-

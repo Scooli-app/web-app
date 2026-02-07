@@ -1,15 +1,15 @@
 "use client";
 
-import { memo, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Download, FileText, Loader2 } from "lucide-react";
 import { downloadDocument, type DownloadFormat } from "@/services/download/documentDownload";
+import { Download, FileText, Loader2 } from "lucide-react";
+import { memo, useCallback, useState } from "react";
 
 interface DownloadButtonProps {
   title: string;
@@ -34,7 +34,6 @@ function DownloadButtonComponent({ title, content, disabled }: DownloadButtonPro
         await downloadDocument({ title, content, format });
       } catch (error) {
         console.error(`Failed to download as ${format}:`, error);
-        alert(`Erro ao exportar como ${format.toUpperCase()}. Tente novamente.`);
       } finally {
         setIsDownloading(false);
         setDownloadFormat(null);
@@ -52,10 +51,10 @@ function DownloadButtonComponent({ title, content, disabled }: DownloadButtonPro
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
-          variant="outline"
+          variant="default"
           size="sm"
           disabled={isDisabled}
-          className="flex items-center gap-2 border-[#C7C9D9] text-[#2E2F38] hover:bg-[#EEF0FF] hover:border-[#6753FF]"
+          className="flex items-center gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
         >
           {isDownloading ? (
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -72,9 +71,9 @@ function DownloadButtonComponent({ title, content, disabled }: DownloadButtonPro
           className="flex items-center gap-2 cursor-pointer"
         >
           {downloadFormat === "pdf" ? (
-            <Loader2 className="h-4 w-4 animate-spin text-[#6753FF]" />
+            <Loader2 className="h-4 w-4 animate-spin text-primary" />
           ) : (
-            <FileText className="h-4 w-4 text-red-500" />
+            <FileText className="h-4 w-4 text-red-500 dark:text-red-400" />
           )}
           <span>Exportar como PDF</span>
         </DropdownMenuItem>
@@ -84,9 +83,9 @@ function DownloadButtonComponent({ title, content, disabled }: DownloadButtonPro
           className="flex items-center gap-2 cursor-pointer"
         >
           {downloadFormat === "docx" ? (
-            <Loader2 className="h-4 w-4 animate-spin text-[#6753FF]" />
+            <Loader2 className="h-4 w-4 animate-spin text-primary" />
           ) : (
-            <FileText className="h-4 w-4 text-blue-500" />
+            <FileText className="h-4 w-4 text-blue-500 dark:text-blue-400" />
           )}
           <span>Exportar como Word</span>
         </DropdownMenuItem>
@@ -99,4 +98,3 @@ export const DownloadButton = memo(DownloadButtonComponent);
 DownloadButton.displayName = "DownloadButton";
 
 export default DownloadButton;
-

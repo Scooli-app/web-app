@@ -1,13 +1,28 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
-const isPublicRoute = createRouteMatcher(["/sign-in(.*)", "/sign-up(.*)", "/", "/.well-known/(.*)"]);
+const isPublicRoute = createRouteMatcher([
+  "/sign-in(.*)",
+  "/sign-up(.*)",
+  "/forgot-password(.*)",
+  "/signup",
+  "/",
+  "/checkout/cancel",
+  "/webhooks/stripe",
+  "/.well-known/(.*)"
+]);
 const TOKEN_COOKIE_NAME = "scooli_token";
 
 export default clerkMiddleware(async (auth, req) => {
+  // Early return for webhook routes - skip all authentication
+  if (req.nextUrl.pathname === "/webhooks/stripe") {
+    return NextResponse.next();
+  }
+
+  const authObj = await auth();
+
   const setTokenCookie = async (res: NextResponse) => {
     try {
-      const authObj = await auth();
       if (!authObj.userId) {
         res.cookies.delete(TOKEN_COOKIE_NAME);
         return;
@@ -34,14 +49,32 @@ export default clerkMiddleware(async (auth, req) => {
     }
   };
 
+  // Redirect authenticated users away from auth pages
+  if (
+    authObj.userId &&
+    (req.nextUrl.pathname.startsWith("/sign-in") ||
+      req.nextUrl.pathname.startsWith("/sign-up") ||
+      req.nextUrl.pathname.startsWith("/forgot-password"))
+  ) {
+    const dashboardUrl = new URL("/dashboard", req.url);
+    dashboardUrl.search = req.nextUrl.search;
+    const res = NextResponse.redirect(dashboardUrl);
+    await setTokenCookie(res);
+    return res;
+  }
+
   if (req.nextUrl.pathname === "/") {
-    const res = NextResponse.redirect(new URL("/dashboard", req.url));
+    const dashboardUrl = new URL("/dashboard", req.url);
+    dashboardUrl.search = req.nextUrl.search;
+    const res = NextResponse.redirect(dashboardUrl);
     await setTokenCookie(res);
     return res;
   }
 
   if (!isPublicRoute(req)) {
-    await auth.protect();
+    await auth.protect({
+      unauthenticatedUrl: new URL("/sign-in", req.url).toString(),
+    });
   }
 
   const res = NextResponse.next();

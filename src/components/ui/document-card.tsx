@@ -26,10 +26,10 @@ const DOCUMENT_TYPE_LABELS: Record<Document["documentType"], string> = {
 };
 
 const DOCUMENT_TYPE_COLORS: Record<Document["documentType"], string> = {
-  lessonPlan: "bg-[#6753FF] text-white",
-  test: "bg-[#FF6B35] text-white",
-  quiz: "bg-[#FF8C42] text-white",
-  presentation: "bg-[#FF4F4F] text-white",
+  lessonPlan: "bg-primary text-primary-foreground",
+  test: "bg-orange-500 text-white dark:bg-orange-600",
+  quiz: "bg-amber-500 text-white dark:bg-amber-600",
+  presentation: "bg-rose-500 text-white dark:bg-rose-600",
 };
 
 const DOCUMENT_TYPE_ICONS: Record<Document["documentType"], string> = {
@@ -58,7 +58,7 @@ function getDocumentTypeLabel(type: Document["documentType"]) {
 }
 
 function getDocumentTypeColor(type: Document["documentType"]) {
-  return DOCUMENT_TYPE_COLORS[type] || "bg-[#C7C9D9] text-[#0B0D17]";
+  return DOCUMENT_TYPE_COLORS[type] || "bg-secondary text-secondary-foreground";
 }
 
 function getDocumentIcon(type: Document["documentType"]) {
@@ -155,17 +155,17 @@ function DocumentCardComponent({
               {typeLabel}
             </Badge>
           </div>
-          <div className="flex items-center text-xs text-[#6C6F80] flex-shrink-0 md:ml-2">
+          <div className="flex items-center text-xs text-muted-foreground flex-shrink-0 md:ml-2">
             <Clock className="w-3 h-3 mr-1 flex-shrink-0" />
             <span className="whitespace-nowrap">{updatedDate}</span>
           </div>
         </div>
 
-        <h3 className="text-lg font-semibold text-[#0B0D17] line-clamp-2 leading-tight mb-3">
+        <h3 className="text-lg font-semibold text-foreground line-clamp-2 leading-tight mb-3">
           {document.title}
         </h3>
 
-        <p className="text-sm text-[#6C6F80] line-clamp-3 leading-relaxed mb-4 flex-grow">
+        <p className="text-sm text-muted-foreground line-clamp-3 leading-relaxed mb-4 flex-grow">
           {contentPreview}
         </p>
 
@@ -173,7 +173,7 @@ function DocumentCardComponent({
           <div className="space-y-2 mb-4">
             {typeof document.metadata.subject === "string" &&
               document.metadata.subject && (
-                <div className="flex items-center text-xs text-[#6C6F80]">
+                <div className="flex items-center text-xs text-muted-foreground">
                   <FileText className="w-3 h-3 mr-2 flex-shrink-0" />
                   <span className="font-medium flex-shrink-0">Disciplina:</span>
                   <span className="ml-1 truncate">{document.metadata.subject}</span>
@@ -181,7 +181,7 @@ function DocumentCardComponent({
               )}
             {typeof document.metadata.grade === "string" &&
               document.metadata.grade && (
-                <div className="flex items-center text-xs text-[#6C6F80]">
+                <div className="flex items-center text-xs text-muted-foreground">
                   <User className="w-3 h-3 mr-2 flex-shrink-0" />
                   <span className="font-medium flex-shrink-0">Ano:</span>
                   <span className="ml-1 truncate">{document.metadata.grade}</span>
@@ -190,8 +190,8 @@ function DocumentCardComponent({
           </div>
         )}
 
-        <div className="pt-3 border-t border-[#E4E4E7] flex items-center justify-between gap-2 mt-auto">
-          <p className="text-xs text-[#6C6F80] truncate">
+        <div className="pt-3 border-t border-border flex items-center justify-between gap-2 mt-auto">
+          <p className="text-xs text-muted-foreground truncate">
             Criado em {createdDate}
           </p>
           {!selectionMode && (
@@ -199,7 +199,7 @@ function DocumentCardComponent({
               variant="ghost"
               size="sm"
               onClick={handleDeleteClick}
-              className="action-button p-1 h-auto w-auto text-gray-400 hover:text-red-500 hover:bg-red-50 flex-shrink-0"
+              className="action-button p-1 h-auto w-auto text-muted-foreground hover:text-destructive hover:bg-destructive/10 flex-shrink-0"
             >
               <Trash2 className="w-4 h-4" />
             </Button>
@@ -209,11 +209,11 @@ function DocumentCardComponent({
     </>
   );
 
-  const cardClassName = `p-4 sm:p-6 transition-all duration-200 border border-[#E4E4E7] relative flex flex-col h-full w-full ${
+  const cardClassName = `p-4 sm:p-6 transition-all duration-200 border border-border relative flex flex-col h-full w-full ${
     selectionMode
       ? "cursor-default"
-      : "cursor-pointer hover:shadow-lg hover:border-[#6753FF]/20"
-  } ${isSelected ? "border-[#6753FF] bg-[#6753FF]/5" : ""}`;
+      : "cursor-pointer hover:shadow-lg hover:border-primary/20"
+  } ${isSelected ? "border-primary bg-primary/5" : ""}`;
 
   if (selectionMode) {
     return (

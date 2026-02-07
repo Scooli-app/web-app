@@ -41,6 +41,9 @@ export function markdownToHtml(markdown: string): string {
       // Normalize line endings
       .replace(/\r\n/g, "\n")
       .replace(/\r/g, "\n")
+      // Convert non-standard checkbox format ( ) to standard [ ]
+      .replace(/- \( \)/g, "- [ ]")
+      .replace(/- \(x\)/gi, "- [x]")
       // Remove excessive newlines while preserving intentional breaks
       .replace(/\n{3,}/g, "\n\n")
       .trim();
