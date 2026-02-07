@@ -53,6 +53,15 @@ export default function RootLayout({
   return (
     <html lang="pt" className={lexend.variable} suppressHydrationWarning>
       <head>
+        <link
+          rel="preconnect"
+          href={process.env.NEXT_PUBLIC_BASE_API_URL}
+          crossOrigin="anonymous"
+        />
+        <link
+          rel="dns-prefetch"
+          href={process.env.NEXT_PUBLIC_BASE_API_URL}
+        />
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
       <body className={`${lexend.className} antialiased`} suppressHydrationWarning>
