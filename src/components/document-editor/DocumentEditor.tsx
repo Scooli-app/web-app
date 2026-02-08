@@ -4,6 +4,7 @@ import { useDocumentManager } from "@/hooks/useDocumentManager";
 import { streamDocumentContent } from "@/services/api/document.service";
 import { AUTO_SAVE_DELAY } from "@/shared/config/constants";
 import { Routes } from "@/shared/types";
+import type { RagSource } from "@/shared/types/document";
 import {
   chatWithDocument,
   clearLastChatAnswer,
@@ -69,6 +70,7 @@ export default function DocumentEditor({
   const [displayContent, setDisplayContent] = useState("");
   const [documentTitle, setDocumentTitle] = useState("");
   const [showUpdateIndicator, setShowUpdateIndicator] = useState(false);
+  const [sources, setSources] = useState<RagSource[]>([]);
   
   const eventSourceRef = useRef<(() => void) | null>(null);
   const rawStreamRef = useRef("");
@@ -143,6 +145,9 @@ export default function DocumentEditor({
               accumulatedTitleRef.current += titleChunk;
               setDocumentTitle(accumulatedTitleRef.current);
             },
+            onSources: (newSources) => {
+              setSources(newSources);
+            },
             onComplete: (docId, response) => {
               eventSourceRef.current = null;
 
@@ -155,6 +160,11 @@ export default function DocumentEditor({
 
               const chatAnswer = response.chatAnswer;
               const generatedContent = response.generatedContent;
+              
+              // Update sources if returned in response
+              if (response.sources && response.sources.length > 0) {
+                setSources(response.sources);
+              }
               
               if (chatAnswer) {
                 setChatHistory((prev) => [
@@ -382,7 +392,7 @@ export default function DocumentEditor({
               error={error}
               placeholder={chatPlaceholder}
               title={chatTitle}
-              sources={(currentDocument?.metadata?.sources as string[]) || []}
+              sources={sources}
             />
           </div>
         </div>
@@ -396,7 +406,7 @@ export default function DocumentEditor({
           error={error}
           placeholder={chatPlaceholder}
           title={chatTitle}
-          sources={(currentDocument?.metadata?.sources as string[]) || []}
+          sources={sources}
         />
       </div>
     </>
