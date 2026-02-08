@@ -5,6 +5,7 @@ import { cn } from "@/shared/utils/utils";
 import { BookOpen, ChevronDown, ChevronUp, FileText } from "lucide-react";
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "./card";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./tooltip";
 
 interface SourcesListProps {
   sources: RagSource[];
@@ -38,25 +39,28 @@ function SourceCard({
             <span className="text-xs font-medium text-muted-foreground truncate">
               {source.documentName}
             </span>
-            <span className={cn(
-              "text-[10px] px-1.5 py-0.5 rounded-full font-medium",
-              relevancePercent >= 80 ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" :
-              relevancePercent >= 60 ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400" :
-              "bg-muted text-muted-foreground"
-            )}>
-              {relevancePercent}% relevante
-            </span>
+            <TooltipProvider delayDuration={500}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className={cn(
+                    "text-xs px-2 py-0.5 rounded-full font-semibold whitespace-nowrap cursor-help",
+                    relevancePercent >= 80 ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" :
+                    relevancePercent >= 60 ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400" :
+                    "bg-muted text-muted-foreground"
+                  )}>
+                    {relevancePercent}%
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent side="top" sideOffset={4}>
+                  <p>Relevância com o pedido</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
           
           <p className="text-sm font-medium text-foreground leading-tight">
             {source.topicLeaf}
           </p>
-          
-          {source.topicKey !== source.topicLeaf && (
-            <p className="text-xs text-muted-foreground mt-0.5 truncate">
-              {source.topicKey}
-            </p>
-          )}
         </div>
         
         <div className="flex-shrink-0">
@@ -69,7 +73,7 @@ function SourceCard({
       </button>
       
       {isExpanded && source.chunkContent && (
-        <div className="px-4 pb-3 pt-0 border-t border-border/30 animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="px-4 pb-3 pt-3 border-t border-border/30 animate-in fade-in slide-in-from-top-2 duration-200">
           <p className="text-xs text-muted-foreground leading-relaxed">
             {source.chunkContent}
           </p>
