@@ -32,6 +32,7 @@ export interface Document {
   gradeLevel: string | null;
   rating: number;
   downloads: number;
+  sources?: RagSource[];
   createdAt: string;
   updatedAt: string;
 }

@@ -6,15 +6,15 @@ import { AUTO_SAVE_DELAY } from "@/shared/config/constants";
 import { Routes } from "@/shared/types";
 import type { RagSource } from "@/shared/types/document";
 import {
-  chatWithDocument,
-  clearLastChatAnswer,
-  clearStreamInfo,
-  fetchDocument,
+    chatWithDocument,
+    clearLastChatAnswer,
+    clearStreamInfo,
+    fetchDocument,
 } from "@/store/documents/documentSlice";
 import {
-  selectEditorState,
-  useAppDispatch,
-  useAppSelector,
+    selectEditorState,
+    useAppDispatch,
+    useAppSelector,
 } from "@/store/hooks";
 import { fetchUsage } from "@/store/subscription/subscriptionSlice";
 import { useAuth } from "@clerk/nextjs";
@@ -258,6 +258,13 @@ export default function DocumentEditor({
       setChatHistory([{ role: "user", content: prompt }]);
     }
   }, [currentDocument?.metadata?.prompt, chatHistory.length]);
+
+  // Sync sources from currentDocument when document loads
+  useEffect(() => {
+    if (currentDocument?.sources && currentDocument.sources.length > 0 && !isStreaming) {
+      setSources(currentDocument.sources);
+    }
+  }, [currentDocument?.sources, isStreaming]);
 
   const handleChatSubmit = useCallback(
     async (userMessage: string) => {
