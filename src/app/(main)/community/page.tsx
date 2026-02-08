@@ -1,6 +1,9 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Download, Star, Upload, Users } from "lucide-react";
+import { Star, Users } from "lucide-react";
+import { toast } from "sonner";
 
 export default function CommunityPage() {
   return (
@@ -14,33 +17,6 @@ export default function CommunityPage() {
           <p className="text-lg text-muted-foreground">
             Partilhe e descubra recursos educacionais criados pela comunidade
           </p>
-        </div>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card className="p-6 text-center">
-            <div className="flex items-center justify-center mb-4">
-              <Users className="h-8 w-8 text-primary" />
-            </div>
-            <h3 className="text-2xl font-bold text-foreground mb-2">1,247</h3>
-            <p className="text-sm text-muted-foreground">Membros Ativos</p>
-          </Card>
-
-          <Card className="p-6 text-center">
-            <div className="flex items-center justify-center mb-4">
-              <Upload className="h-8 w-8 text-emerald-500" />
-            </div>
-            <h3 className="text-2xl font-bold text-foreground mb-2">3,891</h3>
-            <p className="text-sm text-muted-foreground">Recursos Partilhados</p>
-          </Card>
-
-          <Card className="p-6 text-center">
-            <div className="flex items-center justify-center mb-4">
-              <Download className="h-8 w-8 text-amber-500" />
-            </div>
-            <h3 className="text-2xl font-bold text-foreground mb-2">12,456</h3>
-            <p className="text-sm text-muted-foreground">Downloads Totais</p>
-          </Card>
         </div>
 
         {/* Coming Soon Section */}
@@ -83,7 +59,14 @@ export default function CommunityPage() {
           </div>
 
           <div className="mt-8">
-            <Button className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-3">
+            <Button
+              className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-3"
+              onClick={() =>
+                toast.success(
+                  "Será notificado quando esta funcionalidade estiver disponível"
+                )
+              }
+            >
               <Users className="h-5 w-5 mr-2" />
               Ser Notificado
             </Button>
