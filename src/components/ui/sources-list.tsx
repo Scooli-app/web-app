@@ -2,7 +2,7 @@
 
 import type { RagSource } from "@/shared/types/document";
 import { cn } from "@/shared/utils/utils";
-import { BookOpen, ChevronDown, ChevronUp, FileText } from "lucide-react";
+import { BookOpen, ChevronDown, ChevronUp, ExternalLink, FileText } from "lucide-react";
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "./card";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./tooltip";
@@ -36,9 +36,22 @@ function SourceCard({
         
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-xs font-medium text-muted-foreground truncate">
-              {source.documentName}
-            </span>
+            {source.url ? (
+              <a
+                href={source.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="text-xs font-medium text-primary hover:underline truncate inline-flex items-center gap-1"
+              >
+                {source.documentName}
+                <ExternalLink className="w-3 h-3 flex-shrink-0" />
+              </a>
+            ) : (
+              <span className="text-xs font-medium text-muted-foreground truncate">
+                {source.documentName}
+              </span>
+            )}
             <TooltipProvider delayDuration={500}>
               <Tooltip>
                 <TooltipTrigger asChild>
