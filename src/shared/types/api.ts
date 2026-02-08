@@ -2,7 +2,7 @@
  * API types - responses, requests, and service interfaces
  */
 
-import type { Document, DocumentType, TeachingMethod } from "./document";
+import type { Document, DocumentType, RagSource, TeachingMethod } from "./document";
 
 // Generic API response types
 export interface ApiResponse<T> {
@@ -101,6 +101,7 @@ export interface ChatResponse {
   title: string;
   content: string;
   chatAnswer: string;
+  sources?: RagSource[];
   updatedAt: string;
 }
 
@@ -117,18 +118,21 @@ export interface CreateDocumentStreamResponse {
 }
 
 export interface StreamEvent {
-  type: "content" | "title" | "done" | "error";
+  type: "content" | "title" | "sources" | "done" | "error";
   data: string;
 }
 
 export interface StreamedResponse {
   chatAnswer?: string;
   generatedContent?: string;
+  sources?: RagSource[];
 }
 
 export interface DocumentStreamCallbacks {
   onContent?: (chunk: string) => void;
   onTitle?: (title: string) => void;
+  onSources?: (sources: RagSource[]) => void;
   onComplete?: (documentId: string, response: StreamedResponse) => void;
   onError?: (error: string) => void;
 }
+

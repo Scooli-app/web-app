@@ -11,6 +11,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { SourcesList } from "@/components/ui/sources-list";
+import type { RagSource } from "@/shared/types/document";
 import { cn } from "@/shared/utils/utils";
 import { FileText, MessageCircle, Send, Sparkles } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -28,7 +29,7 @@ interface AIChatPanelProps {
   error?: string;
   placeholder?: string;
   title?: string;
-  sources?: string[];
+  sources?: RagSource[];
   variant?: "desktop" | "mobile";
 }
 
@@ -95,7 +96,7 @@ function ChatContent({
   handleSubmit: (e: React.FormEvent) => void;
   chatContainerRef: React.RefObject<HTMLDivElement | null>;
   variant?: "desktop" | "mobile";
-  sources?: string[];
+  sources?: RagSource[];
 }) {
   const isDesktop = variant === "desktop";
   const [activeTab, setActiveTab] = useState<"assistant" | "sources">("assistant");
