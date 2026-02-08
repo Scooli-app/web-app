@@ -44,7 +44,7 @@
     "langchain": "^0.3.30",
     "lucide-react": "^0.525.0",
     "mammoth": "^1.9.1",
-    "next": "15.5.9",
+    "next": "^15.5.12",
     "openai": "^5.8.3",
     "pdf-lib": "^1.17.1",
     "pdf-parse": "^1.1.1",
