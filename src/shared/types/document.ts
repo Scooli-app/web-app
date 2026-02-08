@@ -47,4 +47,6 @@ export interface RagSource {
   topicLeaf: string;
   chunkContent: string;
   similarity: number;
+  url?: string;
 }
+
