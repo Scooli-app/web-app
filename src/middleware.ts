@@ -81,7 +81,7 @@ export default clerkMiddleware(async (auth, req) => {
   if (req.nextUrl.pathname.startsWith("/admin")) {
     const { sessionClaims } = authObj;
     // Check for role in public_metadata (mapped to sessionClaims)
-    const publicMetadata = sessionClaims?.public_metadata as Record<string, any> | undefined;
+    const publicMetadata = sessionClaims?.public_metadata as Record<string, unknown> | undefined;
     const isAdmin = publicMetadata?.role === "admin";
 
     if (!isAdmin) {
