@@ -1,26 +1,27 @@
 "use client";
 
+import { AssistantProvider } from "@/components/assistant";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import {
-  Sheet,
-  SheetContent,
-  SheetTitle,
-  SheetTrigger,
+    Sheet,
+    SheetContent,
+    SheetTitle,
+    SheetTrigger,
 } from "@/components/ui/sheet";
 import {
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  Sidebar as SidebarPrimitive,
-  SidebarProvider,
-  SidebarTrigger,
+    SidebarContent,
+    SidebarGroup,
+    SidebarGroupContent,
+    SidebarGroupLabel,
+    SidebarHeader,
+    SidebarMenu,
+    SidebarMenuButton,
+    SidebarMenuItem,
+    Sidebar as SidebarPrimitive,
+    SidebarProvider,
+    SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { UpgradePlanModal } from "@/components/ui/upgrade-plan-modal";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -28,26 +29,26 @@ import { Routes } from "@/shared/types";
 import { cn } from "@/shared/utils/utils";
 import type { AppDispatch, RootState } from "@/store/store";
 import {
-  selectSubscription,
-  selectUsageStats,
+    selectSubscription,
+    selectUsageStats,
 } from "@/store/subscription/selectors";
 import {
-  fetchSubscription,
-  fetchUsage,
+    fetchSubscription,
+    fetchUsage,
 } from "@/store/subscription/subscriptionSlice";
 import { setUpgradeModalOpen } from "@/store/ui/uiSlice";
 import { SignInButton, SignedIn, SignedOut, UserButton, useAuth } from "@clerk/nextjs";
 import {
-  BookOpen,
-  FileCheck,
-  FileText,
-  FolderArchiveIcon,
-  HelpCircle,
-  Home,
-  Menu,
-  Settings,
-  Sparkles,
-  type LucideIcon,
+    BookOpen,
+    FileCheck,
+    FileText,
+    FolderArchiveIcon,
+    HelpCircle,
+    Home,
+    Menu,
+    Settings,
+    Sparkles,
+    type LucideIcon,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -400,6 +401,7 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
             </div>
           </main>
         </div>
+        <AssistantProvider />
       </div>
     </SidebarProvider>
   );
