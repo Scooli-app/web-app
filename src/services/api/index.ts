@@ -13,3 +13,6 @@ export * from "./template.service";
 
 // Subscription service
 export * from "./subscription.service";
+
+// Assistant service
+export * from "./assistant.service";
