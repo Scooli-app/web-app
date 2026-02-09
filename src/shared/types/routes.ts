@@ -12,4 +12,5 @@ export enum Routes {
   PRESENTATION_EDITOR = "/presentation/:id",
   COMMUNITY = "/community",
   SETTINGS = "/settings",
+  ADMIN = "/admin",
 }
