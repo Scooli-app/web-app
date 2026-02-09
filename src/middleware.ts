@@ -77,6 +77,19 @@ export default clerkMiddleware(async (auth, req) => {
     });
   }
 
+  // Admin route protection
+  if (req.nextUrl.pathname.startsWith("/admin")) {
+    const { sessionClaims } = authObj;
+    // Check for role in public_metadata (mapped to sessionClaims)
+    const publicMetadata = sessionClaims?.public_metadata as Record<string, any> | undefined;
+    const isAdmin = publicMetadata?.role === "admin";
+
+    if (!isAdmin) {
+      const dashboardUrl = new URL("/dashboard", req.url);
+      return NextResponse.redirect(dashboardUrl);
+    }
+  }
+
   const res = NextResponse.next();
   await setTokenCookie(res);
   return res;

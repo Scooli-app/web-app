@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/sidebar";
 import { UpgradePlanModal } from "@/components/ui/upgrade-plan-modal";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useAdmin } from "@/hooks/useAdmin";
 import { Routes } from "@/shared/types";
 import { cn } from "@/shared/utils/utils";
 import type { AppDispatch, RootState } from "@/store/store";
@@ -47,6 +48,7 @@ import {
     Home,
     Menu,
     Settings,
+    Shield,
     Sparkles,
     type LucideIcon,
 } from "lucide-react";
@@ -118,6 +120,15 @@ const SECONDARY_NAVIGATION: NavItem[] = [
     href: Routes.SETTINGS,
     icon: Settings,
     description: "Configurar a sua conta",
+  },
+];
+
+const ADMIN_NAVIGATION: NavItem[] = [
+  {
+    title: "Consola Admin",
+    href: Routes.ADMIN,
+    icon: Shield,
+    description: "Gerir plataforma",
   },
 ];
 
@@ -195,6 +206,7 @@ const SidebarInnerContent = memo(function SidebarInnerContent({
   onItemClick?: () => void;
 }) {
   const router = useRouter();
+  const { isAdmin } = useAdmin();
   return (
     <SidebarPrimitive collapsible="icon">
       <SidebarHeader className="flex items-center justify-center px-6 py-4 group-data-[collapsible=icon]:px-3 group-data-[collapsible=icon]:py-2">
@@ -233,6 +245,18 @@ const SidebarInnerContent = memo(function SidebarInnerContent({
           pathname={pathname}
           onItemClick={onItemClick}
         />
+
+        {isAdmin && (
+          <>
+            <Separator className="my-4" />
+            <NavGroup
+              label="Administração"
+              items={ADMIN_NAVIGATION}
+              pathname={pathname}
+              onItemClick={onItemClick}
+            />
+          </>
+        )}
       </SidebarContent>
     </SidebarPrimitive>
   );
