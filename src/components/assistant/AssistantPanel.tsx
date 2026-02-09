@@ -6,7 +6,7 @@ import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
-  TooltipTrigger,
+  TooltipTrigger
 } from "@/components/ui/tooltip";
 import { cn } from "@/shared/utils/utils";
 import { Minus, RefreshCw } from "lucide-react";
@@ -97,9 +97,14 @@ export function AssistantPanel({
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={onClear}
-                  className="h-8 w-8 rounded-full hover:bg-muted"
-                  disabled={messages.length === 0}
+                  onClick={() => messages.length > 0 && onClear()}
+                  className={cn(
+                    "h-8 w-8 rounded-full transition-colors",
+                    messages.length > 0 
+                      ? "hover:bg-muted cursor-pointer" 
+                      : "opacity-50 cursor-not-allowed hover:bg-transparent"
+                  )}
+                  aria-disabled={messages.length === 0}
                 >
                   <RefreshCw className="h-4 w-4" />
                 </Button>

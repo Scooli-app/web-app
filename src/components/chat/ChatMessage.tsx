@@ -40,8 +40,34 @@ export function ChatMessage({
       )}
     >
       {role === "assistant" ? (
-        <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-ul:my-1 prose-li:my-0.5 prose-headings:my-2">
-          <ReactMarkdown remarkPlugins={[remarkBreaks]}>{content}</ReactMarkdown>
+        <div className="prose prose-sm dark:prose-invert max-w-none">
+          <ReactMarkdown
+            remarkPlugins={[remarkBreaks]}
+            components={{
+              p: ({ children }) => <p className="mb-4 last:mb-0 leading-relaxed">{children}</p>,
+              ul: ({ children }) => <ul className="my-2 list-disc pl-4 space-y-1">{children}</ul>,
+              ol: ({ children }) => <ol className="my-2 list-decimal pl-4 space-y-1">{children}</ol>,
+              li: ({ children }) => <li className="my-0.5">{children}</li>,
+              h1: ({ children }) => <h1 className="text-lg font-bold mt-4 mb-2">{children}</h1>,
+              h2: ({ children }) => <h2 className="text-base font-bold mt-3 mb-2">{children}</h2>,
+              h3: ({ children }) => <h3 className="text-sm font-bold mt-2 mb-1">{children}</h3>,
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              code: ({ className, children, ...props }: any) => {
+                const match = /language-(\w+)/.exec(className || "");
+                return match ? (
+                  <code className={className} {...props}>
+                    {children}
+                  </code>
+                ) : (
+                  <code className="bg-muted px-1.5 py-0.5 rounded font-mono text-xs" {...props}>
+                    {children}
+                  </code>
+                );
+              },
+            }}
+          >
+            {content}
+          </ReactMarkdown>
           {isStreaming && (
             <span className="inline-block w-1.5 h-4 bg-primary/60 animate-pulse ml-0.5" />
           )}
