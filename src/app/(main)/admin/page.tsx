@@ -1,8 +1,8 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAdmin } from "@/hooks/useAdmin";
-import { LayoutDashboard, Lock, Settings, Shield, Users } from "lucide-react";
+import { LayoutDashboard, Lock, MessageSquare, Shield, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
@@ -70,15 +70,29 @@ export default function AdminPage() {
         </div>
       </div>
 
-      <div className="mt-10 p-12 border-2 border-dashed border-border rounded-3xl flex flex-col items-center justify-center text-center">
-        <Settings className="w-12 h-12 text-muted-foreground/30 mb-4" />
-        <h3 className="text-xl font-semibold mb-2">Admin Tools Coming Soon</h3>
-        <p className="text-muted-foreground max-w-md mb-6">
-          This is a placeholder for the administration console. Soon you will be able to manage subscriptions, audit logs, and system settings here.
-        </p>
-        <Button variant="outline" onClick={() => router.push("/dashboard")}>
-          Back to Dashboard
-        </Button>
+      <div className="mt-10">
+        <h2 className="text-2xl font-bold mb-6">Management</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <Card 
+            className="hover:bg-muted/50 transition-colors cursor-pointer border-border group"
+            onClick={() => router.push("/admin/feedback")}
+          >
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 group-hover:text-primary transition-colors">
+                <MessageSquare className="h-5 w-5" />
+                Feedback
+              </CardTitle>
+              <CardDescription>
+                Manage user feedback, bug reports, and suggestions.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-sm text-muted-foreground">
+                View submitted tickets, update status, and respond to users.
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );

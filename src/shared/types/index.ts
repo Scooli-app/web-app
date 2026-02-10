@@ -3,37 +3,22 @@
  */
 
 // Document types
-export type { Document, DocumentType, DocumentMetadata } from "./document";
 export { TeachingMethod } from "./document";
+export type { Document, DocumentMetadata, DocumentType } from "./document";
 
 // Lesson Plan types
 export type {
-  LessonPlan,
-  LessonPlanMetadata,
-  LessonActivity,
+    LessonActivity, LessonPlan,
+    LessonPlanMetadata
 } from "./lesson-plan";
 
 // API types
 export type {
-  ApiResponse,
-  PaginatedResponse,
-  CreateDocumentParams,
-  DocumentResponse,
-  DocumentFilters,
-  GetDocumentsParams,
-  GetDocumentsResponse,
-  DocumentCountsResponse,
-  DocumentStatsResponse,
-  CreateDocumentRequest,
-  UpdateDocumentRequest,
-  DeleteDocumentRequest,
-  CreateDocumentStreamResponse,
-  StreamEvent,
-  StreamedResponse,
-  DocumentStreamCallbacks,
-  BackendPaginatedResponse,
-  ChatRequest,
-  ChatResponse,
+    ApiResponse, BackendPaginatedResponse,
+    ChatRequest,
+    ChatResponse, CreateDocumentParams, CreateDocumentRequest, CreateDocumentStreamResponse, DeleteDocumentRequest, DocumentCountsResponse, DocumentFilters, DocumentResponse, DocumentStatsResponse, DocumentStreamCallbacks, GetDocumentsParams,
+    GetDocumentsResponse, PaginatedResponse, StreamEvent,
+    StreamedResponse, UpdateDocumentRequest
 } from "./api";
 
 // UI types
@@ -41,9 +26,9 @@ export type { LessonPlanForm, SearchFilters, UIState } from "./ui";
 
 // Community types
 export type {
-  CommunityResource,
-  CreatorProfile,
-  CreatorTier,
+    CommunityResource,
+    CreatorProfile,
+    CreatorTier
 } from "./community";
 
 // Route types
@@ -51,21 +36,20 @@ export { Routes } from "./routes";
 
 // Template types
 export type {
-  TemplateSection,
-  DocumentTemplate,
-  CreateTemplateParams,
-  UpdateTemplateParams,
+    CreateTemplateParams, DocumentTemplate, TemplateSection, UpdateTemplateParams
 } from "./template";
 
 // Subscription types
-export type {
-  SubscriptionPlan,
-  CurrentSubscription,
-  SubscriptionStatus,
-  UsageStats,
-  CheckoutRequest,
-  CheckoutResponse,
-  PortalResponse,
-  PlanCode,
-} from "./subscription";
 export { PLAN_CODES, PLAN_DISPLAY_INFO } from "./subscription";
+export type {
+    CheckoutRequest,
+    CheckoutResponse, CurrentSubscription, PlanCode, PortalResponse, SubscriptionPlan, SubscriptionStatus,
+    UsageStats
+} from "./subscription";
+// Feedback types
+export { BugSeverity, FeedbackStatus, FeedbackType } from "./feedback";
+export type {
+    CreateFeedbackParams, Feedback,
+    FeedbackAttachment, UploadResponse
+} from "./feedback";
+
