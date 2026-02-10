@@ -13,4 +13,5 @@ export enum Routes {
   COMMUNITY = "/community",
   SETTINGS = "/settings",
   ADMIN = "/admin",
+  SUPPORT = "/support",
 }
