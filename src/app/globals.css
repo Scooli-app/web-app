@@ -370,3 +370,7 @@
 .tiptap p {
   margin: 0.25rem 0;
 }
+
+button {
+  cursor: pointer;
+}

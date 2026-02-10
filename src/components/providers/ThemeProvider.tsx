@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useCallback } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import type { AppDispatch, RootState } from "@/store/store";
 import { setTheme, type ThemeMode } from "@/store/ui/uiSlice";
-import type { RootState, AppDispatch } from "@/store/store";
+import { useCallback, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 
 const THEME_STORAGE_KEY = "scooli-theme";
 
@@ -48,9 +48,9 @@ export default function ThemeProvider({
       dispatch(setTheme(storedTheme));
       resolveAndApplyTheme(storedTheme);
     } else {
-      // Default to system theme
-      dispatch(setTheme("system"));
-      resolveAndApplyTheme("system");
+      // Default to dark theme
+      dispatch(setTheme("dark"));
+      resolveAndApplyTheme("dark");
     }
   }, [dispatch, resolveAndApplyTheme]);
 

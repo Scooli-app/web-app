@@ -100,6 +100,7 @@ export async function streamChatMessage(
     // Non-fatal errors (like abort) are expected
     if (error instanceof Error && error.name === "AbortError") {
       // Stream was aborted intentionally
+      // eslint-disable-next-line @typescript-eslint/no-empty-function
       return () => {};
     }
     // Re-throw other errors
