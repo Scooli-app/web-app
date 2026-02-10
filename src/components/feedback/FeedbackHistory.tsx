@@ -1,8 +1,9 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { feedbackService } from "@/services/api/feedback.service";
 import { type Feedback, FeedbackStatus, FeedbackType } from "@/shared/types/feedback";
-import { AlertCircle, Bug, CheckCircle2, Clock, Lightbulb, Loader2, XCircle } from "lucide-react";
+import { AlertCircle, Bug, CheckCircle2, Clock, Lightbulb, Loader2, Shield, XCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 
 interface FeedbackHistoryProps {
@@ -35,85 +36,134 @@ export function FeedbackHistory({ refreshTrigger }: FeedbackHistoryProps) {
   const getStatusBadge = (status: FeedbackStatus) => {
     switch (status) {
       case FeedbackStatus.SUBMITTED:
-        return <Badge variant="secondary" className="bg-blue-100 text-blue-700 hover:bg-blue-200"><Clock className="w-3 h-3 mr-1" /> Enviado</Badge>;
+        return <Badge variant="secondary" className="bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 border-0"><Clock className="w-3 h-3 mr-1" /> Enviado</Badge>;
       case FeedbackStatus.IN_REVIEW:
-        return <Badge variant="secondary" className="bg-amber-100 text-amber-700 hover:bg-amber-200"><Loader2 className="w-3 h-3 mr-1 animate-spin" /> Em Análise</Badge>;
+        return <Badge variant="secondary" className="bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 border-0"><Loader2 className="w-3 h-3 mr-1 animate-spin" /> Em Análise</Badge>;
       case FeedbackStatus.RESOLVED:
-        return <Badge variant="secondary" className="bg-green-100 text-green-700 hover:bg-green-200"><CheckCircle2 className="w-3 h-3 mr-1" /> Resolvido</Badge>;
+        return <Badge variant="secondary" className="bg-green-500/10 text-green-500 hover:bg-green-500/20 border-0"><CheckCircle2 className="w-3 h-3 mr-1" /> Resolvido</Badge>;
       case FeedbackStatus.REJECTED:
-        return <Badge variant="secondary" className="bg-red-100 text-red-700 hover:bg-red-200"><XCircle className="w-3 h-3 mr-1" /> Rejeitado</Badge>;
+        return <Badge variant="secondary" className="bg-red-500/10 text-red-500 hover:bg-red-500/20 border-0"><XCircle className="w-3 h-3 mr-1" /> Rejeitado</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
   };
 
-  const getTypeIcon = (type: FeedbackType) => {
-    return type === FeedbackType.SUGGESTION ? (
-      <Lightbulb className="w-5 h-5 text-yellow-600" />
-    ) : (
-      <Bug className="w-5 h-5 text-red-600" />
+  const renderIcon = (type: FeedbackType) => {
+    if (type === FeedbackType.SUGGESTION) {
+      return (
+        <div className="h-10 w-10 rounded-full bg-yellow-500/10 flex items-center justify-center shrink-0">
+          <Lightbulb className="w-5 h-5 text-yellow-500" />
+        </div>
+      );
+    }
+    return (
+      <div className="h-10 w-10 rounded-full bg-red-500/10 flex items-center justify-center shrink-0">
+        <Bug className="w-5 h-5 text-red-500" />
+      </div>
     );
   };
 
-  if (isLoading && feedbackList.length === 0) {
-    return (
-      <div className="flex justify-center p-8">
-        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center p-8 text-destructive gap-2">
-        <AlertCircle className="w-5 h-5" />
-        <span>{error}</span>
-      </div>
-    );
-  }
-
   return (
-    <Card className="mt-8">
-      <CardHeader>
-        <CardTitle>O meu histórico</CardTitle>
+    <Card className="mt-8 border-none shadow-none bg-transparent p-0">
+      <CardHeader className="px-0 pt-0">
+        <CardTitle className="text-lg">O meu histórico</CardTitle>
       </CardHeader>
-      <CardContent>
-        {feedbackList.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
+      <CardContent className="px-0">
+        {isLoading ? (
+          <div className="space-y-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex items-start justify-between p-4 rounded-xl border border-white/5 bg-card/50">
+                <div className="flex gap-4 w-full">
+                  <Skeleton className="h-10 w-10 rounded-full" />
+                  <div className="space-y-2 w-full">
+                    <Skeleton className="h-5 w-1/3" />
+                    <Skeleton className="h-4 w-2/3" />
+                    <Skeleton className="h-3 w-1/4 mt-2" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : error ? (
+          <div className="flex items-center justify-center p-8 text-destructive gap-2 rounded-xl border border-destructive/20 bg-destructive/5">
+            <AlertCircle className="w-5 h-5" />
+            <span>{error}</span>
+          </div>
+        ) : feedbackList.length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground border border-dashed border-white/10 rounded-xl">
             Ainda não enviou nenhum feedback.
           </div>
         ) : (
           <div className="space-y-4">
             {feedbackList.map((item) => (
-              <div
-                key={item.id}
-                className="flex items-start justify-between p-4 rounded-lg border bg-card hover:bg-accent/5 transition-colors"
-              >
-                <div className="flex gap-4">
-                  <div className="mt-1 p-2 bg-muted rounded-full">
-                    {getTypeIcon(item.type)}
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-base">{item.title}</h4>
-                    <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
-                      {item.description}
-                    </p>
-                    <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
-                      <span>
-                        {new Intl.DateTimeFormat("pt-PT", {
-                          day: "numeric",
-                          month: "long",
-                          year: "numeric",
-                        }).format(new Date(item.createdAt))}
-                      </span>
-                      <span>•</span>
-                      <span>{item.type === FeedbackType.SUGGESTION ? item.category : item.bugType}</span>
+              <div key={item.id}>
+                <div
+                  className="group flex flex-col sm:flex-row sm:items-start justify-between p-4 rounded-xl border border-white/5 bg-card/50 hover:bg-card hover:border-white/10 transition-all gap-4"
+                >
+                  <div className="flex gap-4">
+                    {renderIcon(item.type)}
+                    <div>
+                      <h4 className="font-semibold text-base text-foreground/90">{item.title}</h4>
+                      <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
+                        {item.description}
+                      </p>
+                      <div className="flex items-center gap-2 mt-3 text-xs text-muted-foreground/60">
+                        <span>
+                          {new Intl.DateTimeFormat("pt-PT", {
+                            day: "numeric",
+                            month: "long",
+                            year: "numeric",
+                          }).format(new Date(item.createdAt))}
+                        </span>
+                        {item.type === FeedbackType.SUGGESTION && <span>•</span>}
+                        <span className="capitalize">{item.type === FeedbackType.SUGGESTION ? item.category : item.bugType}</span>
+                      </div>
                     </div>
                   </div>
+                  <div className="flex sm:flex-col items-end gap-2 pl-14 sm:pl-0">
+                    {getStatusBadge(item.status)}
+                  </div>
                 </div>
-                <div className="flex flex-col items-end gap-2">
-                  {getStatusBadge(item.status)}
-                </div>
+                {/* Responses Section */}
+                {item.responses && item.responses.length > 0 && (
+                  <div className="ml-6 mt-4">
+                    {item.responses.map((response, index) => {
+                      const isLast = index === (item.responses?.length || 0) - 1;
+                      return (
+                        <div key={response.id} className="relative pl-6 pb-4">
+                          {/* Timeline Line */}
+                          <div 
+                            className={`absolute left-0 top-0 w-[2px] bg-border/50 ${
+                              isLast ? "h-6" : "h-full"
+                            }`} 
+                          />
+                          
+                          {/* Connector Dot */}
+                          <div className="absolute -left-[5px] top-4 h-3 w-3 rounded-full border-2 border-background bg-primary/20" />
+                          
+                          <div className="bg-muted/30 border border-border/50 rounded-xl p-4 text-sm">
+                            <div className="flex items-center gap-2 mb-2">
+                              <div className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10">
+                                <Shield className="h-3 w-3 text-primary" />
+                              </div>
+                              <span className="font-semibold text-primary text-xs uppercase tracking-wider">Resposta da equipa</span>
+                              <span className="text-[10px] text-muted-foreground/60">•</span>
+                              <span className="text-[10px] text-muted-foreground/60">
+                                {new Intl.DateTimeFormat("pt-PT", {
+                                  day: "numeric",
+                                  month: "short",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                }).format(new Date(response.createdAt))}
+                              </span>
+                            </div>
+                            <p className="text-foreground/90 leading-relaxed whitespace-pre-wrap">{response.content}</p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             ))}
           </div>

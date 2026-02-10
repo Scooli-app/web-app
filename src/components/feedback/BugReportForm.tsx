@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { feedbackService } from "@/services/api/feedback.service";
 import { BugSeverity, FeedbackType } from "@/shared/types/feedback";
 import { FileText, Loader2, Upload, X } from "lucide-react";
+import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -91,17 +92,16 @@ export function BugReportForm({ onSuccess, onCancel }: BugReportFormProps) {
     }
   };
 
+  const isValid = title.trim().length > 0 && bugType.length > 0 && severity.length > 0 && description.trim().length > 0;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !bugType || !severity || !description.trim()) {
-      toast.error("Por favor preencha todos os campos obrigatórios.");
-      return;
-    }
+    if (!isValid) return;
 
     setIsSubmitting(true);
     try {
       const feedbackId = crypto.randomUUID();
-      const uploadedAttachments = [];
+      const uploadedAttachments: { fileUrl: string; filePath: string; fileType: string }[] = [];
 
       // Upload files
       for (const file of files) {
@@ -140,12 +140,14 @@ export function BugReportForm({ onSuccess, onCancel }: BugReportFormProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-5 p-6 pt-0">
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="bugType">Tipo de erro *</Label>
+          <Label htmlFor="bugType">
+            Tipo de erro <span className="text-red-500">*</span>
+          </Label>
           <Select value={bugType} onValueChange={setBugType}>
-            <SelectTrigger>
+            <SelectTrigger className="border-white/10 bg-muted/50">
               <SelectValue placeholder="Selecione..." />
             </SelectTrigger>
             <SelectContent>
@@ -159,9 +161,11 @@ export function BugReportForm({ onSuccess, onCancel }: BugReportFormProps) {
         </div>
         
         <div className="space-y-2">
-          <Label htmlFor="severity">Gravidade *</Label>
+          <Label htmlFor="severity">
+            Gravidade <span className="text-red-500">*</span>
+          </Label>
           <Select value={severity} onValueChange={(val) => setSeverity(val as BugSeverity)}>
-            <SelectTrigger>
+            <SelectTrigger className="border-white/10 bg-muted/50">
               <SelectValue placeholder="Selecione..." />
             </SelectTrigger>
             <SelectContent>
@@ -175,21 +179,26 @@ export function BugReportForm({ onSuccess, onCancel }: BugReportFormProps) {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="title">Título do erro *</Label>
+        <Label htmlFor="title">
+          Título do erro <span className="text-red-500">*</span>
+        </Label>
         <Input
           id="title"
           placeholder="Ex: Botão de login não funciona"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
+          className="border-white/10 bg-muted/50"
         />
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="description">O que aconteceu? *</Label>
+        <Label htmlFor="description">
+          O que aconteceu? <span className="text-red-500">*</span>
+        </Label>
         <Textarea
           id="description"
           placeholder="Descreva o erro em detalhe..."
-          className="min-h-[100px]"
+          className="min-h-[100px] border-white/10 bg-muted/50"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
         />
@@ -200,7 +209,7 @@ export function BugReportForm({ onSuccess, onCancel }: BugReportFormProps) {
         <Textarea
           id="reproductionSteps"
           placeholder="1. Aceder à página X&#10;2. Clicar no botão Y..."
-          className="min-h-[80px]"
+          className="min-h-[80px] border-white/10 bg-muted/50"
           value={reproductionSteps}
           onChange={(e) => setReproductionSteps(e.target.value)}
         />
@@ -236,9 +245,11 @@ export function BugReportForm({ onSuccess, onCancel }: BugReportFormProps) {
             {files.map((file, index) => (
               <div key={index} className="relative group border rounded-md overflow-hidden bg-muted">
                 {previews[index] ? (
-                  <img
+                  <Image
                     src={previews[index]}
                     alt="Preview"
+                    width={200}
+                    height={80}
                     className="w-full h-20 object-cover"
                   />
                 ) : (
@@ -265,14 +276,17 @@ export function BugReportForm({ onSuccess, onCancel }: BugReportFormProps) {
         )}
       </div>
 
-      <div className="flex justify-end gap-2 pt-2">
-        <Button type="button" variant="outline" onClick={onCancel}>
-          Cancelar
-        </Button>
-        <Button type="submit" disabled={isSubmitting} variant="destructive">
-          {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Reportar Bug
-        </Button>
+      <div className="flex flex-col gap-4 pt-2">
+        <p className="text-xs text-muted-foreground">* Campos obrigatórios</p>
+        <div className="flex justify-end gap-2">
+          <Button type="button" variant="outline" onClick={onCancel}>
+            Cancelar
+          </Button>
+          <Button type="submit" disabled={isSubmitting || !isValid} variant="destructive">
+            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Reportar Bug
+          </Button>
+        </div>
       </div>
     </form>
   );

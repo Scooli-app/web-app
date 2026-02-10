@@ -38,6 +38,12 @@ export interface Feedback {
   createdAt: string;
   updatedAt: string;
   attachments?: FeedbackAttachment[];
+  responses?: {
+    id: string;
+    adminId: string;
+    content: string;
+    createdAt: string;
+  }[];
 }
 
 export interface CreateFeedbackParams {

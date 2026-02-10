@@ -1,4 +1,4 @@
-import { CreateFeedbackParams, Feedback, UploadResponse } from "@/shared/types/feedback";
+import type { CreateFeedbackParams, Feedback, UploadResponse } from "@/shared/types/feedback";
 import apiClient from "./client";
 
 export const feedbackService = {

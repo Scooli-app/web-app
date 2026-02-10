@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { feedbackService } from "@/services/api/feedback.service";
 import { FeedbackType } from "@/shared/types/feedback";
 import { FileText, Loader2, Upload, X } from "lucide-react";
+import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -89,17 +90,16 @@ export function SuggestionForm({ onSuccess, onCancel }: SuggestionFormProps) {
     }
   };
 
+  const isValid = title.trim().length > 0 && category.length > 0 && description.trim().length > 0;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !category || !description.trim()) {
-      toast.error("Por favor preencha todos os campos obrigatórios.");
-      return;
-    }
+    if (!isValid) return;
 
     setIsSubmitting(true);
     try {
       const feedbackId = crypto.randomUUID();
-      const uploadedAttachments = [];
+      const uploadedAttachments: { fileUrl: string; filePath: string; fileType: string }[] = [];
 
       // Upload files
       for (const file of files) {
@@ -136,11 +136,13 @@ export function SuggestionForm({ onSuccess, onCancel }: SuggestionFormProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-5 p-6 pt-0">
       <div className="space-y-2">
-        <Label htmlFor="category">Categoria *</Label>
+        <Label htmlFor="category">
+          Categoria <span className="text-red-500">*</span>
+        </Label>
         <Select value={category} onValueChange={setCategory}>
-          <SelectTrigger>
+          <SelectTrigger className="border-white/10 bg-muted/50">
             <SelectValue placeholder="Selecione uma categoria" />
           </SelectTrigger>
           <SelectContent>
@@ -152,21 +154,26 @@ export function SuggestionForm({ onSuccess, onCancel }: SuggestionFormProps) {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="title">Título da ideia *</Label>
+        <Label htmlFor="title">
+          Título da ideia <span className="text-red-500">*</span>
+        </Label>
         <Input
           id="title"
           placeholder="Ex: Adicionar modo escuro"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
+          className="border-white/10 bg-muted/50"
         />
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="description">Descrição *</Label>
+        <Label htmlFor="description">
+          Descrição <span className="text-red-500">*</span>
+        </Label>
         <Textarea
           id="description"
           placeholder="Descreva a sua sugestão..."
-          className="min-h-[100px]"
+          className="min-h-[100px] border-white/10 bg-muted/50"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
         />
@@ -175,7 +182,7 @@ export function SuggestionForm({ onSuccess, onCancel }: SuggestionFormProps) {
       <div className="space-y-2">
         <Label>Anexos (Imagens, Screenshots)</Label>
         <div
-          className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-muted/50 transition-colors"
+          className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 mt-1 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-muted/50 transition-colors"
           onDragOver={handleDragOver}
           onDrop={handleDrop}
           onClick={() => fileInputRef.current?.click()}
@@ -202,9 +209,11 @@ export function SuggestionForm({ onSuccess, onCancel }: SuggestionFormProps) {
             {files.map((file, index) => (
               <div key={index} className="relative group border rounded-md overflow-hidden bg-muted">
                 {previews[index] ? (
-                  <img
+                  <Image
                     src={previews[index]}
                     alt="Preview"
+                    width={200}
+                    height={80}
                     className="w-full h-20 object-cover"
                   />
                 ) : (
@@ -231,14 +240,17 @@ export function SuggestionForm({ onSuccess, onCancel }: SuggestionFormProps) {
         )}
       </div>
 
-      <div className="flex justify-end gap-2 pt-2">
-        <Button type="button" variant="outline" onClick={onCancel}>
-          Cancelar
-        </Button>
-        <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Enviar Sugestão
-        </Button>
+      <div className="flex flex-col gap-4 pt-2">
+        <p className="text-xs text-muted-foreground"><span className="text-red-500">*</span> Campos obrigatórios</p>
+        <div className="flex justify-end gap-2">
+          <Button type="button" variant="outline" onClick={onCancel}>
+            Cancelar
+          </Button>
+          <Button type="submit" disabled={isSubmitting || !isValid}>
+            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Enviar Sugestão
+          </Button>
+        </div>
       </div>
     </form>
   );

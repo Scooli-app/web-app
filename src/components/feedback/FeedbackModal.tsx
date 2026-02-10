@@ -5,7 +5,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
-import { ReactNode } from "react";
+import type { ReactNode } from "react";
 
 interface FeedbackModalProps {
   open: boolean;
