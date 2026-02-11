@@ -32,6 +32,21 @@ export interface Document {
   gradeLevel: string | null;
   rating: number;
   downloads: number;
+  sources?: RagSource[];
   createdAt: string;
   updatedAt: string;
 }
+
+/**
+ * RAG source representing a curriculum chunk used during AI generation.
+ */
+export interface RagSource {
+  chunkId: string;
+  documentName: string;
+  topicKey: string;
+  topicLeaf: string;
+  chunkContent: string;
+  similarity: number;
+  url?: string;
+}
+

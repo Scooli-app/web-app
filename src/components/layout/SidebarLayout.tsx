@@ -1,5 +1,6 @@
 "use client";
 
+import { AssistantProvider } from "@/components/assistant";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
@@ -24,6 +25,7 @@ import {
 } from "@/components/ui/sidebar";
 import { UpgradePlanModal } from "@/components/ui/upgrade-plan-modal";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useAdmin } from "@/hooks/useAdmin";
 import { Routes } from "@/shared/types";
 import { cn } from "@/shared/utils/utils";
 import type { AppDispatch, RootState } from "@/store/store";
@@ -45,9 +47,11 @@ import {
   HelpCircle,
   Home,
   Menu,
+  MessageSquare,
   Settings,
+  Shield,
   Sparkles,
-  type LucideIcon,
+  type LucideIcon
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -113,10 +117,25 @@ const CONTENT_CREATION: NavItem[] = [
 
 const SECONDARY_NAVIGATION: NavItem[] = [
   {
+    title: "Apoio e sugestões",
+    href: Routes.SUPPORT,
+    icon: MessageSquare,
+    description: "Enviar feedback e reportar bugs",
+  },
+  {
     title: "Definições",
     href: Routes.SETTINGS,
     icon: Settings,
     description: "Configurar a sua conta",
+  },
+];
+
+const ADMIN_NAVIGATION: NavItem[] = [
+  {
+    title: "Consola Admin",
+    href: Routes.ADMIN,
+    icon: Shield,
+    description: "Gerir plataforma",
   },
 ];
 
@@ -194,6 +213,7 @@ const SidebarInnerContent = memo(function SidebarInnerContent({
   onItemClick?: () => void;
 }) {
   const router = useRouter();
+  const { isAdmin } = useAdmin();
   return (
     <SidebarPrimitive collapsible="icon">
       <SidebarHeader className="flex items-center justify-center px-6 py-4 group-data-[collapsible=icon]:px-3 group-data-[collapsible=icon]:py-2">
@@ -232,6 +252,18 @@ const SidebarInnerContent = memo(function SidebarInnerContent({
           pathname={pathname}
           onItemClick={onItemClick}
         />
+
+        {isAdmin && (
+          <>
+            <Separator className="my-4" />
+            <NavGroup
+              label="Administração"
+              items={ADMIN_NAVIGATION}
+              pathname={pathname}
+              onItemClick={onItemClick}
+            />
+          </>
+        )}
       </SidebarContent>
     </SidebarPrimitive>
   );
@@ -400,6 +432,7 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
             </div>
           </main>
         </div>
+        <AssistantProvider />
       </div>
     </SidebarProvider>
   );

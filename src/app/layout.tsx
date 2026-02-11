@@ -2,6 +2,7 @@ import AuthProvider from "@/components/providers/AuthProvider";
 import ClerkThemeProvider from "@/components/providers/ClerkThemeProvider";
 import StoreProvider from "@/components/providers/StoreProvider";
 import ThemeProvider from "@/components/providers/ThemeProvider";
+import { Toaster } from "@/components/ui/sonner";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import type { Metadata } from "next";
@@ -53,6 +54,15 @@ export default function RootLayout({
   return (
     <html lang="pt" className={lexend.variable} suppressHydrationWarning>
       <head>
+        <link
+          rel="preconnect"
+          href={process.env.NEXT_PUBLIC_BASE_API_URL}
+          crossOrigin="anonymous"
+        />
+        <link
+          rel="dns-prefetch"
+          href={process.env.NEXT_PUBLIC_BASE_API_URL}
+        />
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
       <body className={`${lexend.className} antialiased`} suppressHydrationWarning>
@@ -61,6 +71,7 @@ export default function RootLayout({
             <ClerkThemeProvider>
               <AuthProvider>
                 {children}
+                <Toaster position="bottom-right" />
               </AuthProvider>
             </ClerkThemeProvider>
           </ThemeProvider>

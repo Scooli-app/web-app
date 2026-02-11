@@ -5,35 +5,26 @@
  */
 
 import type {
-  Document,
-  CreateDocumentParams,
-  DocumentResponse,
-  DocumentFilters,
-  GetDocumentsParams,
-  GetDocumentsResponse,
-  DocumentCountsResponse,
-  DocumentStatsResponse,
-  DocumentType,
-  CreateDocumentStreamResponse,
-  StreamEvent,
-  DocumentStreamCallbacks,
-  BackendPaginatedResponse,
-  ChatResponse,
+    BackendPaginatedResponse,
+    ChatResponse,
+    CreateDocumentParams,
+    CreateDocumentStreamResponse,
+    Document,
+    DocumentCountsResponse,
+    DocumentFilters,
+    DocumentResponse,
+    DocumentStatsResponse,
+    DocumentStreamCallbacks,
+    DocumentType,
+    GetDocumentsParams,
+    GetDocumentsResponse,
+    StreamEvent,
 } from "@/shared/types";
 import apiClient from "./client";
 
 export type {
-  CreateDocumentParams,
-  DocumentResponse,
-  DocumentFilters,
-  GetDocumentsParams,
-  GetDocumentsResponse,
-  DocumentCountsResponse,
-  DocumentType,
-  CreateDocumentStreamResponse,
-  StreamEvent,
-  DocumentStreamCallbacks,
-  ChatResponse,
+    ChatResponse, CreateDocumentParams, CreateDocumentStreamResponse, DocumentCountsResponse, DocumentFilters, DocumentResponse, DocumentStreamCallbacks, DocumentType, GetDocumentsParams,
+    GetDocumentsResponse, StreamEvent
 };
 
 /**
@@ -128,6 +119,7 @@ export async function streamDocumentContent(
   }${streamUrl}`;
 
   let accumulatedContent = "";
+  let sources: import("@/shared/types/document").RagSource[] = [];
   const abortController = new AbortController();
 
   fetchEventSource(fullUrl, {
@@ -163,11 +155,21 @@ export async function streamDocumentContent(
           case "title":
             callbacks.onTitle?.(parsed.data);
             break;
+          case "sources": {
+            try {
+              sources = JSON.parse(parsed.data);
+              callbacks.onSources?.(sources);
+            } catch (e) {
+              console.warn("[SSE] Could not parse sources:", e);
+            }
+            break;
+          }
           case "done": {
             // Parse the accumulated JSON response
-            let streamedResponse = { chatAnswer: "", generatedContent: "" };
+            let streamedResponse = { chatAnswer: "", generatedContent: "", sources };
             try {
-              streamedResponse = JSON.parse(accumulatedContent);
+              const parsed = JSON.parse(accumulatedContent);
+              streamedResponse = { ...parsed, sources };
             } catch {
               console.warn("[SSE] Could not parse accumulated content as JSON");
             }
