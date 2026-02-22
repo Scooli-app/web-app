@@ -49,6 +49,35 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+// Retry interceptor: on 401, wait briefly for Clerk to finish loading,
+// then retry once with a fresh token. This handles the race condition
+// during page refresh / hot-reload where the first request fires before
+// the auth session is fully restored.
+apiClient.interceptors.response.use(undefined, async (error: AxiosError) => {
+  const originalRequest = error.config as typeof error.config & {
+    _retried?: boolean;
+  };
+
+  if (
+    error.response?.status === 401 &&
+    originalRequest &&
+    !originalRequest._retried &&
+    getTokenFn
+  ) {
+    originalRequest._retried = true;
+
+    // Wait a short moment for Clerk to finish restoring the session
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    const token = await getTokenFn();
+    if (token) {
+      originalRequest.headers.Authorization = `Bearer ${token}`;
+      return apiClient(originalRequest);
+    }
+  }
+  return Promise.reject(error);
+});
+
 // Response interceptor
 apiClient.interceptors.response.use(
   (response) => {

@@ -1,18 +1,18 @@
 "use client";
 
 import {
-  clearConversation,
-  closePanel,
-  markAsRead,
-  selectHasUnreadMessages,
-  selectInputValue,
-  selectIsOpen,
-  selectIsProcessing,
-  selectMessages,
-  selectStreamingContent,
-  sendMessage,
-  setInputValue,
-  toggleOpen,
+    clearConversation,
+    closePanel,
+    markAsRead,
+    selectHasUnreadMessages,
+    selectInputValue,
+    selectIsOpen,
+    selectIsProcessing,
+    selectMessages,
+    selectStreamingContent,
+    sendMessage,
+    setInputValue,
+    toggleOpen,
 } from "@/store/assistant";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { useAuth } from "@clerk/nextjs";
@@ -67,7 +67,8 @@ export function AssistantProvider() {
     if (!message || isProcessing) return;
 
     try {
-      const token = await getToken();
+      const template = process.env.NEXT_PUBLIC_CLERK_JWT_TEMPLATE;
+      const token = await getToken(template ? { template } : undefined);
       if (!token) {
         console.error("No auth token available");
         return;
