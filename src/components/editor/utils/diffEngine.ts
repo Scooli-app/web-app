@@ -10,8 +10,7 @@
 
 import { markdownToHtml } from "@/shared/utils/markdown";
 import { recreateTransform } from "@manuscripts/prosemirror-recreate-steps";
-import type { Node, Schema } from "@tiptap/pm/model";
-import { DOMParser as ProseMirrorDOMParser, Slice } from "@tiptap/pm/model";
+import { DOMParser as ProseMirrorDOMParser, type Node, type Schema, type Slice } from "@tiptap/pm/model";
 import { ChangeSet, simplifyChanges } from "prosemirror-changeset";
 
 // ---------------------------------------------------------------------------
