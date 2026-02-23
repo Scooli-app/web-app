@@ -381,7 +381,8 @@ export default function DocumentEditor({
         // Handle content update with diff mode
         if (response.content && editor) {
           try {
-            const aiNode = markdownToNode(response.content, editor.schema);
+            const aiContent = response.content.trim();
+            const aiNode = markdownToNode(aiContent, editor.schema);
             // Use baseDocBefore to ensure we compare with the document BEFORE the API updated Redux
             const diffChanges = computeDiff(baseDocBefore || editor.state.doc, aiNode);
 
@@ -393,7 +394,7 @@ export default function DocumentEditor({
               }
 
               // Replace editor content with AI content
-              const aiHtml = markdownToHtml(response.content);
+              const aiHtml = markdownToHtml(aiContent);
               editor.commands.setContent(aiHtml, { emitUpdate: false });
 
               // Apply diff decorations
@@ -401,7 +402,7 @@ export default function DocumentEditor({
               setIsSuggestionsMode(true);
             } else {
               // No differences — just sync normally
-              setContent(response.content);
+              setContent(aiContent);
             }
           } catch (err) {
             console.error("Error computing diff:", err);

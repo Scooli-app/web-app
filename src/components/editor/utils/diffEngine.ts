@@ -80,7 +80,10 @@ export function computeDiff(baseDoc: Node, aiDoc: Node): DiffChange[] {
   const simplified = simplifyChanges(changeSet.changes, aiDoc);
 
   // 4. Normalize into our DiffChange format
-  return normalizeDiff(simplified, baseDoc, aiDoc);
+  const changes = normalizeDiff(simplified, baseDoc, aiDoc);
+
+  // 5. Group changes by block (paragraph/list item) to avoid multiple small widgets on one line
+  return groupByBlock(changes, baseDoc, aiDoc);
 }
 
 /**
@@ -121,17 +124,28 @@ function normalizeDiff(
     if (hasInserted) {
       try {
         diffChange.insertedSlice = aiDoc.slice(fromB, toB);
-      } catch {
-        // If slice extraction fails (e.g. invalid positions), skip
-      }
+      } catch { /* skip */ }
     }
 
     if (hasDeleted) {
       try {
         diffChange.deletedSlice = baseDoc.slice(fromA, toA);
-      } catch {
-        // If slice extraction fails, skip
-      }
+      } catch { /* skip */ }
+    }
+
+    // --- Optimization: Ignore trailing empty paragraph changes ---
+    // If this is a deletion at the very end of the document, and it's just an empty block, ignore it.
+    // ProseMirror positions: doc structure is [0, size]. A paragraph is [pos, pos + nodeSize].
+    // An empty paragraph is essentially 2 positions (start/end tokens).
+    if (type === "delete" && toA >= baseDoc.content.size - 2) {
+      const text = diffChange.deletedSlice ? sliceToText(diffChange.deletedSlice).trim() : "";
+      if (!text) continue; // Skip trailing empty line removal
+    }
+    
+    // Similarly for insertions of empty lines at the end
+    if (type === "insert" && toB >= aiDoc.content.size - 2) {
+      const text = diffChange.insertedSlice ? sliceToText(diffChange.insertedSlice).trim() : "";
+      if (!text) continue; // Skip trailing empty line insertion
     }
 
     result.push(diffChange);
@@ -144,7 +158,7 @@ function normalizeDiff(
  * Group changes that belong to the same parent block node.
  * Changes within the same block are merged into a single "replace" change.
  */
-export function groupByBlock(changes: DiffChange[], doc: Node): DiffChange[] {
+export function groupByBlock(changes: DiffChange[], baseDoc: Node, aiDoc: Node): DiffChange[] {
   if (changes.length <= 1) return changes;
 
   const grouped: DiffChange[] = [];
@@ -157,21 +171,34 @@ export function groupByBlock(changes: DiffChange[], doc: Node): DiffChange[] {
     }
 
     // Check if both changes share the same parent block
-    const currentParent = resolveBlockParent(doc, current.fromB);
-    const changeParent = resolveBlockParent(doc, change.fromB);
+    const currentParent = resolveBlockParent(aiDoc, current.fromB);
+    const changeParent = resolveBlockParent(aiDoc, change.fromB);
 
     if (currentParent === changeParent && currentParent !== null) {
       // Merge into current
+      const fromA = Math.min(current.fromA, change.fromA);
+      const toA = Math.max(current.toA, change.toA);
+      const fromB = Math.min(current.fromB, change.fromB);
+      const toB = Math.max(current.toB, change.toB);
+
       current = {
         id: current.id,
         type: "replace",
-        fromA: Math.min(current.fromA, change.fromA),
-        toA: Math.max(current.toA, change.toA),
-        fromB: Math.min(current.fromB, change.fromB),
-        toB: Math.max(current.toB, change.toB),
-        insertedSlice: change.insertedSlice || current.insertedSlice,
-        deletedSlice: change.deletedSlice || current.deletedSlice,
+        fromA,
+        toA,
+        fromB,
+        toB,
       };
+
+      // Re-extract slices for the merged range
+      try {
+        current.insertedSlice = aiDoc.slice(fromB, toB);
+      } catch (e) { /* ignore */ }
+      
+      try {
+        current.deletedSlice = baseDoc.slice(fromA, toA);
+      } catch (e) { /* ignore */ }
+
     } else {
       grouped.push(current);
       current = { ...change };
@@ -198,4 +225,24 @@ function resolveBlockParent(doc: Node, pos: number): number | null {
   } catch {
     return null;
   }
+}
+/**
+ * Extract plain text from a Slice.
+ */
+function sliceToText(slice: Slice): string {
+  let text = "";
+  slice.content.forEach((node) => {
+    if (node.isText) {
+      text += node.text || "";
+    } else if (node.isBlock) {
+      if (text.length > 0) text += " ";
+      node.descendants((child) => {
+        if (child.isText) {
+          text += child.text || "";
+        }
+        return true;
+      });
+    }
+  });
+  return text;
 }

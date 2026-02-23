@@ -354,36 +354,28 @@ export const DiffExtension = Extension.create({
 
       acceptAllChanges:
         () =>
-        ({ tr, dispatch }) => {
-          if (dispatch) {
-            // Accept all = keep current content, just clear decorations
-            tr.setMeta(CLEAR_META, true);
-            dispatch(tr);
-          }
-          return true;
+        ({ chain }) => {
+          return chain()
+            .setMeta(CLEAR_META, true)
+            .run();
         },
 
       rejectAllChanges:
         () =>
-        ({ state, dispatch, editor }) => {
-          if (dispatch) {
-            // Restore original content
-            const storage = (editor.storage as unknown as Record<string, { originalContent?: string | null }>).diff;
-            const originalContent = storage?.originalContent;
-            if (originalContent) {
-              // Clear diff state first, then set content
-              const tr = state.tr;
-              tr.setMeta(CLEAR_META, true);
-              dispatch(tr);
-              // Restore content after clearing diff state
-              editor.commands.setContent(originalContent, { emitUpdate: false });
-            } else {
-              const tr = state.tr;
-              tr.setMeta(CLEAR_META, true);
-              dispatch(tr);
-            }
+        ({ editor, chain }) => {
+          const storage = (editor.storage as unknown as Record<string, { originalContent?: string | null }>).diff;
+          const originalContent = storage?.originalContent;
+
+          if (originalContent) {
+            return chain()
+              .setMeta(CLEAR_META, true)
+              .setContent(originalContent, { emitUpdate: false })
+              .run();
           }
-          return true;
+
+          return chain()
+            .setMeta(CLEAR_META, true)
+            .run();
         },
     };
   },
