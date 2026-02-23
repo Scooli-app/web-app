@@ -193,11 +193,11 @@ export function groupByBlock(changes: DiffChange[], baseDoc: Node, aiDoc: Node):
       // Re-extract slices for the merged range
       try {
         current.insertedSlice = aiDoc.slice(fromB, toB);
-      } catch (e) { /* ignore */ }
+      } catch { /* ignore */ }
       
       try {
         current.deletedSlice = baseDoc.slice(fromA, toA);
-      } catch (e) { /* ignore */ }
+      } catch { /* ignore */ }
 
     } else {
       grouped.push(current);

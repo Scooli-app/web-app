@@ -13,8 +13,7 @@
 
 import { Extension } from "@tiptap/core";
 import { DOMSerializer } from "@tiptap/pm/model";
-import type { EditorState, Transaction } from "@tiptap/pm/state";
-import { Plugin, PluginKey } from "@tiptap/pm/state";
+import { Plugin, PluginKey, type EditorState, type Transaction } from "@tiptap/pm/state";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
 import type { DiffChange } from "../utils/diffEngine";
 
@@ -112,7 +111,7 @@ function buildDecorations(
  * Create a DOM element showing deleted content with strikethrough styling.
  * For large deletions (e.g. entire chapters), shows a prominent block.
  */
-function createDeleteWidget(change: DiffChange): (view: any) => HTMLElement {
+function createDeleteWidget(change: DiffChange): (view: import("@tiptap/pm/view").EditorView) => HTMLElement {
   return (view) => {
     const text = change.deletedSlice ? sliceToText(change.deletedSlice) : "";
     const isLargeDeletion = text.length > 100 || (change.deletedSlice && change.deletedSlice.content.childCount > 1);
@@ -158,7 +157,10 @@ function createDeleteWidget(change: DiffChange): (view: any) => HTMLElement {
 /**
  * Render a ProseMirror Slice to a DOM Fragment using the provided schema.
  */
-function renderSlice(slice: any, schema: any): DocumentFragment | HTMLElement {
+function renderSlice(
+  slice: import("@tiptap/pm/model").Slice,
+  schema: import("@tiptap/pm/model").Schema
+): DocumentFragment | HTMLElement {
   const serializer = DOMSerializer.fromSchema(schema);
   return serializer.serializeFragment(slice.content);
 }
@@ -166,7 +168,7 @@ function renderSlice(slice: any, schema: any): DocumentFragment | HTMLElement {
 /**
  * Create accept/reject action buttons for a change.
  */
-function createActionWidget(changeId: string): (view: unknown) => HTMLElement {
+function createActionWidget(changeId: string): (view: import("@tiptap/pm/view").EditorView) => HTMLElement {
   return () => {
     const wrapper = document.createElement("span");
     wrapper.className = "diff-actions";
@@ -381,7 +383,7 @@ export const DiffExtension = Extension.create({
   },
 
   addProseMirrorPlugins() {
-    const extension = this;
+    const { storage } = this;
 
     return [
       new Plugin({
@@ -400,7 +402,7 @@ export const DiffExtension = Extension.create({
             // Handle clear
             if (tr.getMeta(CLEAR_META)) {
               // Notify about state change
-              extension.storage.onDiffStateChange?.(false, 0);
+              storage.onDiffStateChange?.(false, 0);
               return {
                 changes: [],
                 active: false,
@@ -412,7 +414,7 @@ export const DiffExtension = Extension.create({
             const newChanges = tr.getMeta(SET_CHANGES_META) as DiffChange[] | undefined;
             if (newChanges) {
               const decorations = buildDecorations(newState, newChanges);
-              extension.storage.onDiffStateChange?.(true, newChanges.length);
+              storage.onDiffStateChange?.(true, newChanges.length);
               return {
                 changes: newChanges,
                 active: true,
@@ -432,7 +434,7 @@ export const DiffExtension = Extension.create({
                 : remaining;
 
               const decorations = buildDecorations(newState, remapped);
-              extension.storage.onDiffStateChange?.(isActive, remapped.length);
+              storage.onDiffStateChange?.(isActive, remapped.length);
               return {
                 changes: remapped,
                 active: isActive,
