@@ -54,7 +54,7 @@ function Tabs({
         )}
       >
         <Sparkles className={cn("w-4 h-4", activeTab === "assistant" ? "text-primary" : "")} />
-        Assistant
+        Chat
       </button>
       <button
         onClick={() => onTabChange("sources")}

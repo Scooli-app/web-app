@@ -81,6 +81,8 @@ export default function DocumentEditor({
   const rawStreamRef = useRef("");
   const accumulatedTitleRef = useRef("");
   const editorRef = useRef<Editor | null>(null);
+  const isChatInProgressRef = useRef(false);
+
 
   // Diff / Suggestions mode state
   const [isSuggestionsMode, setIsSuggestionsMode] = useState(false);
@@ -313,9 +315,9 @@ export default function DocumentEditor({
   }, [lastChatAnswer, dispatch]);
 
   // Sync content when currentDocument changes
-  // Skip sync during suggestions mode (editor content is managed by diff system)
+  // Skip sync during suggestions mode OR if a chat submission is in progress
   useEffect(() => {
-    if (!currentDocument?.content || isStreaming || isSuggestionsMode) return;
+    if (!currentDocument?.content || isStreaming || isSuggestionsMode || isChatInProgressRef.current) return;
     setContent(currentDocument.content);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentDocument?.content, currentDocument?.updatedAt, isStreaming, setContent]);
@@ -355,8 +357,12 @@ export default function DocumentEditor({
       ]);
       setError("");
 
-      // Prevent useDocumentManager from bumping editorKey when
-      // the Redux state is updated by chatWithDocument.fulfilled
+      const editor = editorRef.current;
+      const baseDocBefore = editor ? editor.state.doc : null;
+      const originalHtmlBefore = editor ? editor.getHTML() : null;
+
+      // Prevent content sync during the request
+      isChatInProgressRef.current = true;
       skipNextEditorKeyBumpRef.current = true;
 
       try {
@@ -373,23 +379,17 @@ export default function DocumentEditor({
         }
 
         // Handle content update with diff mode
-        if (response.content && editorRef.current) {
+        if (response.content && editor) {
           try {
-            const editor = editorRef.current;
-            const baseDoc = editor.state.doc;
             const aiNode = markdownToNode(response.content, editor.schema);
-            const diffChanges = computeDiff(baseDoc, aiNode);
-
-            console.warn("[DIFF] Changes:", diffChanges.map(c => ({
-              id: c.id, type: c.type, fromA: c.fromA, toA: c.toA, fromB: c.fromB, toB: c.toB
-            })));
-            console.warn("[DIFF] Doc size baseDoc:", baseDoc.content.size, "aiDoc:", aiNode.content.size);
+            // Use baseDocBefore to ensure we compare with the document BEFORE the API updated Redux
+            const diffChanges = computeDiff(baseDocBefore || editor.state.doc, aiNode);
 
             if (diffChanges.length > 0) {
               // Store original content for "Reject All"
               const storage = (editor.storage as unknown as Record<string, { originalContent?: string | null }>).diff;
               if (storage) {
-                storage.originalContent = editor.getHTML();
+                storage.originalContent = originalHtmlBefore || editor.getHTML();
               }
 
               // Replace editor content with AI content
@@ -417,8 +417,10 @@ export default function DocumentEditor({
           setSources(response.sources);
         }
       } catch {
-        skipNextEditorKeyBumpRef.current = false;
         setError("Erro ao processar sua mensagem. Tente novamente mais tarde.");
+      } finally {
+        isChatInProgressRef.current = false;
+        skipNextEditorKeyBumpRef.current = false;
       }
     },
     [currentDocument?.id, dispatch, skipNextEditorKeyBumpRef, setContent]

@@ -12,6 +12,7 @@
  */
 
 import { Extension } from "@tiptap/core";
+import { DOMSerializer } from "@tiptap/pm/model";
 import type { EditorState, Transaction } from "@tiptap/pm/state";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
@@ -109,23 +110,57 @@ function buildDecorations(
 
 /**
  * Create a DOM element showing deleted content with strikethrough styling.
+ * For large deletions (e.g. entire chapters), shows a prominent block.
  */
-function createDeleteWidget(change: DiffChange): (view: unknown) => HTMLElement {
-  return () => {
-    const wrapper = document.createElement("span");
-    wrapper.className = "diff-delete";
-    wrapper.setAttribute("data-diff-id", change.id);
+function createDeleteWidget(change: DiffChange): (view: any) => HTMLElement {
+  return (view) => {
+    const text = change.deletedSlice ? sliceToText(change.deletedSlice) : "";
+    const isLargeDeletion = text.length > 100 || (change.deletedSlice && change.deletedSlice.content.childCount > 1);
 
-    if (change.deletedSlice) {
-      // Extract text content from the deleted slice
-      const text = sliceToText(change.deletedSlice);
-      wrapper.textContent = text;
+    if (isLargeDeletion && change.deletedSlice) {
+      // Block-level deletion indicator for large chunks (chapters, sections)
+      const wrapper = document.createElement("div");
+      wrapper.className = "diff-delete-block";
+      wrapper.setAttribute("data-diff-id", change.id);
+      wrapper.contentEditable = "false";
+
+      const label = document.createElement("div");
+      label.className = "diff-delete-label";
+      label.textContent = "🗑 Conteúdo removido";
+
+      const preview = document.createElement("div");
+      preview.className = "diff-delete-content";
+      
+      // Render the deleted slice with full editor formatting
+      const fragment = renderSlice(change.deletedSlice, view.state.schema);
+      preview.appendChild(fragment);
+
+      wrapper.appendChild(label);
+      wrapper.appendChild(preview);
+      return wrapper;
     } else {
-      wrapper.textContent = "⌫";
+      // Inline deletion for small changes
+      const wrapper = document.createElement("span");
+      wrapper.className = "diff-delete";
+      wrapper.setAttribute("data-diff-id", change.id);
+      
+      if (change.deletedSlice) {
+        const fragment = renderSlice(change.deletedSlice, view.state.schema);
+        wrapper.appendChild(fragment);
+      } else {
+        wrapper.textContent = "⌫";
+      }
+      return wrapper;
     }
-
-    return wrapper;
   };
+}
+
+/**
+ * Render a ProseMirror Slice to a DOM Fragment using the provided schema.
+ */
+function renderSlice(slice: any, schema: any): DocumentFragment | HTMLElement {
+  const serializer = DOMSerializer.fromSchema(schema);
+  return serializer.serializeFragment(slice.content);
 }
 
 /**
@@ -165,21 +200,24 @@ function createActionWidget(changeId: string): (view: unknown) => HTMLElement {
  * Extract plain text from a Slice for display in delete widgets.
  */
 function sliceToText(slice: import("@tiptap/pm/model").Slice): string {
-  let text = "";
+  const parts: string[] = [];
   slice.content.forEach((node) => {
     if (node.isText) {
-      text += node.text || "";
+      parts.push(node.text || "");
     } else if (node.isBlock) {
-      if (text.length > 0) text += " ";
+      const blockText: string[] = [];
       node.descendants((child) => {
         if (child.isText) {
-          text += child.text || "";
+          blockText.push(child.text || "");
         }
         return true;
       });
+      if (blockText.length > 0) {
+        parts.push(blockText.join(""));
+      }
     }
   });
-  return text || "⌫";
+  return parts.join(" ") || "⌫";
 }
 
 // ---------------------------------------------------------------------------
