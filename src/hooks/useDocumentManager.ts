@@ -20,6 +20,9 @@ export function useDocumentManager(documentId: string) {
 
   // Track previous document ID to avoid unnecessary fetches
   const prevDocumentIdRef = useRef<string | null>(null);
+  // When set to true, the next content change will not bump editorKey
+  // (used during diff/suggestions mode to prevent editor remount)
+  const skipNextEditorKeyBumpRef = useRef(false);
 
   useEffect(() => {
     if (documentId && documentId !== prevDocumentIdRef.current) {
@@ -37,8 +40,16 @@ export function useDocumentManager(documentId: string) {
       currentDocument.content !== prevContentRef.current
     ) {
       prevContentRef.current = currentDocument.content;
-      setContent(currentDocument.content || "");
-      setEditorKey((prev) => prev + 1);
+      
+      if (skipNextEditorKeyBumpRef.current) {
+        // Skip editor remount — the caller is handling the content change
+        console.warn("[DIFF] useDocumentManager: skipping editorKey bump");
+        skipNextEditorKeyBumpRef.current = false;
+      } else {
+        console.warn("[DIFF] useDocumentManager: bumping editorKey");
+        setContent(currentDocument.content || "");
+        setEditorKey((prev) => prev + 1);
+      }
     }
   }, [currentDocument?.id, currentDocument?.content]);
 
@@ -120,5 +131,7 @@ export function useDocumentManager(documentId: string) {
     handleContentChange,
     handleTitleSave,
     handleAutosave,
+    /** Set to true before a content change to prevent editor remount (for diff mode) */
+    skipNextEditorKeyBumpRef,
   };
 }
