@@ -112,7 +112,8 @@ export default function DocumentEditor({
 
       // Get auth token and start streaming
       const startStream = async () => {
-        const token = await getToken();
+        const template = process.env.NEXT_PUBLIC_CLERK_JWT_TEMPLATE;
+        const token = await getToken(template ? { template } : undefined);
         if (!token) {
           eventSourceRef.current = null;
           

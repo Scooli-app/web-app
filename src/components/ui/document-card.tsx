@@ -1,12 +1,12 @@
 "use client";
 
-import { memo, useCallback, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Routes, type Document } from "@/shared/types";
-import { Clock, FileText, Trash2, User } from "lucide-react";
+import { FileText, Trash2, User } from "lucide-react";
 import Link from "next/link";
+import { memo, useCallback, useMemo } from "react";
 import { Button } from "./button";
 
 interface DocumentCardProps {
@@ -128,7 +128,6 @@ function DocumentCardComponent({
   const typeColor = useMemo(() => getDocumentTypeColor(document.documentType), [document.documentType]);
   const typeIcon = useMemo(() => getDocumentIcon(document.documentType), [document.documentType]);
   const documentRoute = useMemo(() => getDocumentRoute(document), [document]);
-  const updatedDate = useMemo(() => formatDate(document.updatedAt), [document.updatedAt]);
   const createdDate = useMemo(() => formatDate(document.createdAt), [document.createdAt]);
   const contentPreview = useMemo(() => getContentPreview(document.content), [document.content]);
 
@@ -154,10 +153,6 @@ function DocumentCardComponent({
             >
               {typeLabel}
             </Badge>
-          </div>
-          <div className="flex items-center text-xs text-muted-foreground flex-shrink-0 md:ml-2">
-            <Clock className="w-3 h-3 mr-1 flex-shrink-0" />
-            <span className="whitespace-nowrap">{updatedDate}</span>
           </div>
         </div>
 
