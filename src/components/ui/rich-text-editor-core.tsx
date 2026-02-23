@@ -1,5 +1,6 @@
 "use client";
 
+import { DiffExtension, diffPluginKey } from "@/components/editor/extensions/DiffExtension";
 import { AUTO_SAVE_DELAY } from "@/shared/config/constants";
 import { htmlToMarkdown, markdownToHtml } from "@/shared/utils/markdown";
 import Highlight from "@tiptap/extension-highlight";
@@ -18,6 +19,7 @@ interface TipTapEditorCoreProps {
   className?: string;
   onAutosave?: (markdown: string) => void;
   rightHeaderContent?: React.ReactNode;
+  onEditorReady?: (editor: Editor) => void;
 }
 
 // Memoized MenuBar component
@@ -187,6 +189,7 @@ export function TipTapEditorCore({
   className = "",
   onAutosave,
   rightHeaderContent,
+  onEditorReady,
 }: TipTapEditorCoreProps) {
   const autosaveTimer = useRef<NodeJS.Timeout | null>(null);
   // Track if the last change came from the editor (internal) vs props (external)
@@ -196,6 +199,12 @@ export function TipTapEditorCore({
 
   const handleUpdate = useCallback(
     ({ editor }: { editor: Editor }) => {
+      // Skip onChange during diff/suggestions mode to prevent cascading updates
+      const pluginState = diffPluginKey.getState(editor.state);
+      if (pluginState?.active) {
+        return;
+      }
+
       const html = editor.getHTML();
       const markdown = htmlToMarkdown(html);
       // Mark this as an internal change before calling onChange
@@ -206,7 +215,7 @@ export function TipTapEditorCore({
   );
 
   const editor = useEditor({
-    extensions: [StarterKit, Highlight],
+    extensions: [StarterKit, Highlight, DiffExtension],
     content: markdownToHtml(content),
     editorProps: {
       attributes: {
@@ -216,6 +225,13 @@ export function TipTapEditorCore({
     onUpdate: handleUpdate,
     immediatelyRender: false,
   });
+
+  // Expose editor instance to parent component
+  useEffect(() => {
+    if (editor && onEditorReady) {
+      onEditorReady(editor);
+    }
+  }, [editor, onEditorReady]);
 
   // Sync content from props to editor - only for external changes
   useEffect(() => {
@@ -250,6 +266,13 @@ export function TipTapEditorCore({
     }
 
     const handleAutosave = () => {
+      // Skip autosave when diff/suggestions mode is active
+      // Autosaving during diff mode would sync AI content back and destroy decorations
+      const pluginState = diffPluginKey.getState(editor.state);
+      if (pluginState?.active) {
+        return;
+      }
+
       const html = editor.getHTML();
       const markdown = htmlToMarkdown(html);
       if (autosaveTimer.current) {

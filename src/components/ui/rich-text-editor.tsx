@@ -9,6 +9,7 @@ interface RichTextEditorProps {
   className?: string;
   onAutosave?: (markdown: string) => void;
   rightHeaderContent?: React.ReactNode;
+  onEditorReady?: (editor: import("@tiptap/react").Editor) => void;
 }
 
 // Loading fallback
@@ -45,6 +46,7 @@ function RichTextEditorComponent({
   className = "",
   onAutosave,
   rightHeaderContent,
+  onEditorReady,
 }: RichTextEditorProps) {
   return (
     <TipTapEditor
@@ -53,6 +55,7 @@ function RichTextEditorComponent({
       className={className}
       onAutosave={onAutosave}
       rightHeaderContent={rightHeaderContent}
+      onEditorReady={onEditorReady}
     />
   );
 }
