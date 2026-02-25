@@ -113,6 +113,8 @@ export default function DocumentCreationPage({
   const showTeachingMethodSection = documentType.id === "lessonPlan";
 
   const handleCreateDocument = async () => {
+    if (isLoading) return;
+    
     if (!formState.templateId) {
       setError("Por favor, selecione um modelo de documento");
       return; 
@@ -180,6 +182,7 @@ export default function DocumentCreationPage({
           (resultAction.payload as string) ||
             "Ocorreu um erro ao criar o documento."
         );
+        setIsLoading(false);
       }
     } catch (error) {
       console.error("Failed to create document:", error);
@@ -188,7 +191,6 @@ export default function DocumentCreationPage({
       } else {
         setError("Erro ao criar o documento.");
       }
-    } finally {
       setIsLoading(false);
     }
   };
