@@ -11,6 +11,12 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { SourcesList } from "@/components/ui/sources-list";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import type { RagSource } from "@/shared/types/document";
 import { cn } from "@/shared/utils/utils";
 import { FileText, MessageCircle, Send, Sparkles } from "lucide-react";
@@ -56,20 +62,40 @@ function Tabs({
         <Sparkles className={cn("w-4 h-4", activeTab === "assistant" ? "text-primary" : "")} />
         Chat
       </button>
-      <button
-        onClick={() => onTabChange("sources")}
-        className={cn(
-          "flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium transition-all rounded-lg",
-          activeTab === "sources"
-            ? "bg-background text-foreground shadow-sm"
-            : "text-muted-foreground hover:text-foreground",
-          !hasSources && "opacity-50 cursor-not-allowed"
-        )}
-        disabled={!hasSources}
-      >
-        <FileText className={cn("w-4 h-4", activeTab === "sources" ? "text-primary" : "")} />
-        Fontes
-      </button>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className={cn("flex-1 flex", !hasSources && "cursor-not-allowed")}>
+              <button
+                onClick={(e) => {
+                  if (!hasSources) {
+                    e.preventDefault();
+                    return;
+                  }
+                  onTabChange("sources");
+                }}
+                className={cn(
+                  "flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium transition-all rounded-lg w-full",
+                  activeTab === "sources"
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground",
+                  !hasSources && "opacity-50 pointer-events-none"
+                )}
+                aria-disabled={!hasSources}
+                type="button"
+              >
+                <FileText className={cn("w-4 h-4", activeTab === "sources" ? "text-primary" : "")} />
+                Fontes
+              </button>
+            </div>
+          </TooltipTrigger>
+          {!hasSources && (
+            <TooltipContent>
+              <p>Este documento foi gerado sem recurso a fontes externas.</p>
+            </TooltipContent>
+          )}
+        </Tooltip>
+      </TooltipProvider>
     </div>
   );
 }

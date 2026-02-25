@@ -82,7 +82,6 @@ export default function DocumentEditor({
   const accumulatedTitleRef = useRef("");
   const editorRef = useRef<Editor | null>(null);
   const isChatInProgressRef = useRef(false);
-  const hasAttemptedStreamRef = useRef(false);
 
 
   // Diff / Suggestions mode state
@@ -114,10 +113,8 @@ export default function DocumentEditor({
       streamInfo &&
       streamInfo.id === documentId &&
       streamInfo.status === "generating" &&
-      !eventSourceRef.current &&
-      !hasAttemptedStreamRef.current
+      !eventSourceRef.current
     ) {
-      hasAttemptedStreamRef.current = true;
       // Set a placeholder immediately to prevent double execution
       const abortController = new AbortController();
       eventSourceRef.current = () => abortController.abort();
