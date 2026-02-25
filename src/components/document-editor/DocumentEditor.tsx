@@ -5,22 +5,26 @@ import { streamDocumentContent } from "@/services/api/document.service";
 import { AUTO_SAVE_DELAY } from "@/shared/config/constants";
 import { Routes } from "@/shared/types";
 import type { RagSource } from "@/shared/types/document";
+import { htmlToMarkdown, markdownToHtml } from "@/shared/utils/markdown";
 import {
-    chatWithDocument,
-    clearLastChatAnswer,
-    clearStreamInfo,
-    fetchDocument,
+  chatWithDocument,
+  clearLastChatAnswer,
+  clearStreamInfo,
+  fetchDocument,
 } from "@/store/documents/documentSlice";
 import {
-    selectEditorState,
-    useAppDispatch,
-    useAppSelector,
+  selectEditorState,
+  useAppDispatch,
+  useAppSelector,
 } from "@/store/hooks";
 import { fetchUsage } from "@/store/subscription/subscriptionSlice";
 import { useAuth } from "@clerk/nextjs";
+import type { Editor } from "@tiptap/react";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { DiffToolbar } from "../editor/DiffToolbar";
+import { computeDiff, markdownToNode } from "../editor/utils/diffEngine";
 import RichTextEditor from "../ui/rich-text-editor";
 import { StreamingText } from "../ui/streaming-text";
 import AIChatPanel from "./AIChatPanel";
@@ -62,6 +66,7 @@ export default function DocumentEditor({
     handleAutosave,
     isSaving,
     editorKey,
+    skipNextEditorKeyBumpRef,
   } = useDocumentManager(documentId);
 
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
@@ -75,6 +80,16 @@ export default function DocumentEditor({
   const eventSourceRef = useRef<(() => void) | null>(null);
   const rawStreamRef = useRef("");
   const accumulatedTitleRef = useRef("");
+  const editorRef = useRef<Editor | null>(null);
+  const isChatInProgressRef = useRef(false);
+
+
+  // Diff / Suggestions mode state
+  const [isSuggestionsMode, setIsSuggestionsMode] = useState(false);
+
+  const handleEditorReady = useCallback((editor: Editor) => {
+    editorRef.current = editor;
+  }, []);
 
   // Extract generatedContent from partial JSON stream
   const extractGeneratedContent = (jsonStr: string): string => {
@@ -178,8 +193,47 @@ export default function DocumentEditor({
                 ]);
               }
 
-              if (generatedContent) {
-                // Direct update
+              if (generatedContent && editorRef.current) {
+                // Enter suggestions mode with diff
+                try {
+                  const editor = editorRef.current;
+                  const baseDoc = editor.state.doc;
+                  const aiNode = markdownToNode(generatedContent, editor.schema);
+
+                  // Compute diff between current and AI-generated content
+                  const diffChanges = computeDiff(baseDoc, aiNode);
+
+                  if (diffChanges.length > 0) {
+                    // Store original content for "Reject All"
+                    const storage = (editor.storage as unknown as Record<string, { originalContent?: string | null }>).diff;
+                    if (storage) {
+                      storage.originalContent = editor.getHTML();
+                    }
+
+                    // Replace editor content with AI content
+                    const aiHtml = markdownToHtml(generatedContent);
+                    editor.commands.setContent(aiHtml, { emitUpdate: false });
+
+                    // Apply diff decorations
+                    editor.commands.setDiffChanges(diffChanges);
+                    setIsSuggestionsMode(true);
+                  } else {
+                    // No differences — just update content directly
+                    setContent(generatedContent);
+                    handleAutosave(generatedContent);
+                    setShowUpdateIndicator(true);
+                    setTimeout(() => setShowUpdateIndicator(false), AUTO_SAVE_DELAY);
+                  }
+                } catch (err) {
+                  console.error("Error computing diff:", err);
+                  // Fallback: direct update without diff
+                  setContent(generatedContent);
+                  handleAutosave(generatedContent);
+                  setShowUpdateIndicator(true);
+                  setTimeout(() => setShowUpdateIndicator(false), AUTO_SAVE_DELAY);
+                }
+              } else if (generatedContent) {
+                // No editor ref available, direct update
                 setContent(generatedContent);
                 handleAutosave(generatedContent);
                 setShowUpdateIndicator(true);
@@ -225,23 +279,47 @@ export default function DocumentEditor({
     };
   }, []);
 
+  // Register callback to auto-exit suggestions mode when all changes are resolved
+  useEffect(() => {
+    const editor = editorRef.current;
+    if (!editor) return;
 
-  // Handle chat answer from Redux
+    const storage = (editor.storage as unknown as Record<string, { onDiffStateChange?: ((active: boolean, count: number) => void) | null }>).diff;
+    if (!storage) return;
+
+    storage.onDiffStateChange = (active: boolean, count: number) => {
+      if (!active && count === 0 && isSuggestionsMode) {
+        // All changes have been individually accepted/rejected
+        setIsSuggestionsMode(false);
+        // Sync the final editor content back to state
+        const html = editor.getHTML();
+        const markdown = htmlToMarkdown(html);
+        setContent(markdown);
+        handleAutosave(markdown);
+      }
+    };
+
+    return () => {
+      storage.onDiffStateChange = null;
+    };
+  }, [isSuggestionsMode, setContent, handleAutosave]);
+
+
+  // Handle chat answer from Redux (for non-chat paths or fallback)
   useEffect(() => {
     if (lastChatAnswer) {
-      setChatHistory((prev) => [
-        ...prev,
-        { role: "assistant" as const, content: lastChatAnswer, hasUpdate: false },
-      ]);
+      // Chat answer is now handled in handleChatSubmit directly,
+      // but clear it from Redux to prevent stale state
       dispatch(clearLastChatAnswer());
     }
   }, [lastChatAnswer, dispatch]);
 
-  // Sync content when currentDocument changes (after chat updates)
+  // Sync content when currentDocument changes
+  // Skip sync during suggestions mode OR if a chat submission is in progress
   useEffect(() => {
-    if (currentDocument?.content && !isStreaming) {
-      setContent(currentDocument.content);
-    }
+    if (!currentDocument?.content || isStreaming || isSuggestionsMode || isChatInProgressRef.current) return;
+    setContent(currentDocument.content);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentDocument?.content, currentDocument?.updatedAt, isStreaming, setContent]);
 
   useEffect(() => {
@@ -279,18 +357,89 @@ export default function DocumentEditor({
       ]);
       setError("");
 
+      const editor = editorRef.current;
+      const baseDocBefore = editor ? editor.state.doc : null;
+      const originalHtmlBefore = editor ? editor.getHTML() : null;
+
+      // Prevent content sync during the request
+      isChatInProgressRef.current = true;
+      skipNextEditorKeyBumpRef.current = true;
+
       try {
-        await dispatch(
+        const response = await dispatch(
           chatWithDocument({ id: currentDocument.id, message: userMessage })
         ).unwrap();
+
+        // Add chat answer to history
+        if (response.chatAnswer) {
+          setChatHistory((prev) => [
+            ...prev,
+            { role: "assistant" as const, content: response.chatAnswer, hasUpdate: !!response.content },
+          ]);
+        }
+
+        // Handle content update with diff mode
+        if (response.content && editor) {
+          try {
+            const aiContent = response.content.trim();
+            const aiNode = markdownToNode(aiContent, editor.schema);
+            // Use baseDocBefore to ensure we compare with the document BEFORE the API updated Redux
+            const diffChanges = computeDiff(baseDocBefore || editor.state.doc, aiNode);
+
+            if (diffChanges.length > 0) {
+              // Store original content for "Reject All"
+              const storage = (editor.storage as unknown as Record<string, { originalContent?: string | null }>).diff;
+              if (storage) {
+                storage.originalContent = originalHtmlBefore || editor.getHTML();
+              }
+
+              // Replace editor content with AI content
+              const aiHtml = markdownToHtml(aiContent);
+              editor.commands.setContent(aiHtml, { emitUpdate: false });
+
+              // Apply diff decorations
+              editor.commands.setDiffChanges(diffChanges);
+              setIsSuggestionsMode(true);
+            } else {
+              // No differences — just sync normally
+              setContent(aiContent);
+            }
+          } catch (err) {
+            console.error("Error computing diff:", err);
+            setContent(response.content);
+          }
+        } else if (response.content) {
+          // No editor ref — direct update
+          setContent(response.content);
+        }
+
+        // Update sources if available
+        if (response.sources && response.sources.length > 0) {
+          setSources(response.sources);
+        }
       } catch {
         setError("Erro ao processar sua mensagem. Tente novamente mais tarde.");
+      } finally {
+        isChatInProgressRef.current = false;
+        skipNextEditorKeyBumpRef.current = false;
       }
     },
-    [currentDocument?.id, dispatch]
+    [currentDocument?.id, dispatch, skipNextEditorKeyBumpRef, setContent]
   );
 
   const isGenerating = isStreaming || (streamInfo?.id === documentId && streamInfo?.status === "generating");
+
+  // Handle exiting diff / suggestions mode
+  const handleExitDiffMode = useCallback(() => {
+    setIsSuggestionsMode(false);
+    if (editorRef.current) {
+      // Sync current editor content back to state
+      const html = editorRef.current.getHTML();
+      const markdown = htmlToMarkdown(html);
+      setContent(markdown);
+      handleAutosave(markdown);
+    }
+  }, [setContent, handleAutosave]);
 
   if (isLoading && !isGenerating) {
     return (
@@ -334,10 +483,6 @@ export default function DocumentEditor({
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-xl font-semibold text-foreground">Editor</h2>
                   <div className="flex items-center gap-3">
-                    <div className="flex items-center space-x-2 text-primary">
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span className="text-sm font-medium">A gerar conteúdo...</span>
-                    </div>
                     <DownloadButton
                       title={documentTitle || currentDocument?.title || defaultTitle}
                       content={content}
@@ -362,33 +507,42 @@ export default function DocumentEditor({
                 </div>
               </>
             ) : (
-              <RichTextEditor
-                key={editorKey}
-                content={content}
-                onChange={handleContentChange}
-                onAutosave={handleAutosave}
-                className="min-h-[600px] max-w-full"
-                rightHeaderContent={
-                  <div className="flex items-center gap-3 pr-1">
-                    {showUpdateIndicator && (
-                      <span className="text-sm font-medium text-primary animate-pulse flex items-center gap-1">
-                        ✨ Documento Refinado
-                      </span>
-                    )}
-                    {isGenerating && (
-                      <div className="flex items-center space-x-2 text-primary">
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        <span className="text-sm font-medium hidden sm:inline">A gerar...</span>
-                      </div>
-                    )}
-                    <DownloadButton
-                      title={documentTitle || currentDocument?.title || defaultTitle}
-                      content={content}
-                      disabled={isGenerating || !content}
-                    />
-                  </div>
-                }
-              />
+              <>
+                {isSuggestionsMode && editorRef.current && (
+                  <DiffToolbar
+                    editor={editorRef.current}
+                    onExitDiffMode={handleExitDiffMode}
+                  />
+                )}
+                <RichTextEditor
+                  key={editorKey}
+                  content={content}
+                  onChange={handleContentChange}
+                  onAutosave={handleAutosave}
+                  className="min-h-[600px] max-w-full"
+                  onEditorReady={handleEditorReady}
+                  rightHeaderContent={
+                    <div className="flex items-center gap-3 pr-1">
+                      {showUpdateIndicator && (
+                        <span className="text-sm font-medium text-primary animate-pulse flex items-center gap-1">
+                          ✨ Documento Refinado
+                        </span>
+                      )}
+                      {isGenerating && (
+                        <div className="flex items-center space-x-2 text-primary">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span className="text-sm font-medium hidden sm:inline">A gerar...</span>
+                        </div>
+                      )}
+                      <DownloadButton
+                        title={documentTitle || currentDocument?.title || defaultTitle}
+                        content={content}
+                        disabled={isGenerating || !content}
+                      />
+                    </div>
+                  }
+                />
+              </>
             )}
           </div>
 
