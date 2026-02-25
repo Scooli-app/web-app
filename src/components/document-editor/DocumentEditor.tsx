@@ -82,6 +82,7 @@ export default function DocumentEditor({
   const accumulatedTitleRef = useRef("");
   const editorRef = useRef<Editor | null>(null);
   const isChatInProgressRef = useRef(false);
+  const hasAttemptedStreamRef = useRef(false);
 
 
   // Diff / Suggestions mode state
@@ -113,8 +114,10 @@ export default function DocumentEditor({
       streamInfo &&
       streamInfo.id === documentId &&
       streamInfo.status === "generating" &&
-      !eventSourceRef.current
+      !eventSourceRef.current &&
+      !hasAttemptedStreamRef.current
     ) {
+      hasAttemptedStreamRef.current = true;
       // Set a placeholder immediately to prevent double execution
       const abortController = new AbortController();
       eventSourceRef.current = () => abortController.abort();
@@ -483,10 +486,6 @@ export default function DocumentEditor({
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-xl font-semibold text-foreground">Editor</h2>
                   <div className="flex items-center gap-3">
-                    <div className="flex items-center space-x-2 text-primary">
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span className="text-sm font-medium">A gerar conteúdo...</span>
-                    </div>
                     <DownloadButton
                       title={documentTitle || currentDocument?.title || defaultTitle}
                       content={content}
