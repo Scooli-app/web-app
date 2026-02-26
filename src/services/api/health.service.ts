@@ -63,20 +63,20 @@ export const getHealth = async (): Promise<HealthResponse> => {
 };
 
 /**
- * Maps service status to Tailwind color classes
+ * Maps service status to Scooli design system color classes (light/dark compatible)
  */
 export const getStatusColorClass = (status: string): string => {
   switch (status) {
     case "healthy":
-      return "bg-green-500";
+      return "bg-green-500"; // Green stays consistent in both modes
     case "unhealthy":
-      return "bg-red-500";
+      return "bg-destructive"; // Uses Scooli destructive color
     case "degraded":
-      return "bg-yellow-500";
+      return "bg-yellow-500"; // Yellow warning color
     case "unknown":
     case "error":
     default:
-      return "bg-gray-400";
+      return "bg-muted-foreground"; // Uses Scooli muted system color
   }
 };
 
