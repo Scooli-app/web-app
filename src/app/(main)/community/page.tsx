@@ -25,7 +25,9 @@ import {
   type CommunityFilters as CommunityFiltersType
 } from "@/store/community";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { Plus, Users } from "lucide-react";
+import { selectIsPro } from "@/store/subscription/selectors";
+import { setUpgradeModalOpen } from "@/store/ui/uiSlice";
+import { BarChart3, Plus, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -119,6 +121,10 @@ function CommunityLibraryPage() {
             </div>
 
             <div className="flex gap-3">
+              <Button onClick={() => router.push("/community/dashboard")} variant="outline">
+                <BarChart3 className="w-4 h-4 mr-2" />
+                Meu Painel
+              </Button>
               <Button onClick={handleCreateNew} variant="outline">
                 <Plus className="w-4 h-4 mr-2" />
                 Criar Novo Recurso
@@ -138,7 +144,6 @@ function CommunityLibraryPage() {
           </div>
         </div>
 
-        {/* Filters */}
         <div className="mb-6">
           <CommunityFiltersComponent
             filters={filters}
@@ -175,11 +180,11 @@ function CommunityLibraryPage() {
  * Main Community Page Wrapper - handles Pro vs Free user experience
  */
 export default function CommunityPage() {
-  // TODO: Check if user has Pro subscription
-  const isPro = true; // Temporary - should check actual subscription
+  const isPro = useAppSelector(selectIsPro);
+  const dispatch = useAppDispatch();
 
   const handleUpgrade = () => {
-    // TODO: Integrate with existing upgrade modal/flow
+    dispatch(setUpgradeModalOpen(true));
   };
 
   if (!isPro) {
