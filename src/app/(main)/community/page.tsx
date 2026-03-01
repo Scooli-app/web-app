@@ -142,7 +142,6 @@ function CommunityLibraryPage() {
           </div>
         </div>
 
-        {/* Filters */}
         <div className="mb-6">
           <CommunityFiltersComponent
             filters={filters}
