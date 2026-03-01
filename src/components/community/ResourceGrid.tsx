@@ -43,7 +43,7 @@ export function ResourceGrid({
         {/* Loading skeleton */}
         {Array.from({ length: 6 }, (_, i) => (
           <div key={i} className="animate-pulse">
-            <div className="bg-muted rounded-lg h-48 w-full"></div>
+            <div className="bg-muted rounded-lg h-48 w-full" />
           </div>
         ))}
       </div>

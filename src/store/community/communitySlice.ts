@@ -7,17 +7,16 @@
  */
 
 import {
-  discoverResources,
-  getContributorStats,
-  getMyResources,
-  getResource,
-  reuseResource,
-  shareResource,
-  type ContributorStats,
-  type DiscoverResourcesParams,
-  type PaginatedResponse,
-  type ShareResourceRequest,
-  type SharedResource,
+    discoverResources,
+    getContributorStats,
+    getMyResources,
+    getResource,
+    reuseResource,
+    shareResource,
+    type ContributorStats,
+    type DiscoverResourcesParams,
+    type ShareResourceRequest,
+    type SharedResource,
 } from "@/services/api/community.service";
 import { createAsyncThunk, createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
