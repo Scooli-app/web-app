@@ -16,3 +16,6 @@ export * from "./subscription.service";
 
 // Assistant service
 export * from "./assistant.service";
+
+// Health service
+export * from "./health.service";
