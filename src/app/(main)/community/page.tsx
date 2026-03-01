@@ -25,7 +25,7 @@ import {
   type CommunityFilters as CommunityFiltersType
 } from "@/store/community";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { Plus, Users } from "lucide-react";
+import { BarChart3, Plus, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -119,6 +119,10 @@ function CommunityLibraryPage() {
             </div>
 
             <div className="flex gap-3">
+              <Button onClick={() => router.push("/community/dashboard")} variant="outline">
+                <BarChart3 className="w-4 h-4 mr-2" />
+                Meu Painel
+              </Button>
               <Button onClick={handleCreateNew} variant="outline">
                 <Plus className="w-4 h-4 mr-2" />
                 Criar Novo Recurso

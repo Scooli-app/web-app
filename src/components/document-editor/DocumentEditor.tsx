@@ -30,6 +30,7 @@ import { StreamingText } from "../ui/streaming-text";
 import AIChatPanel from "./AIChatPanel";
 import DocumentTitle from "./DocumentTitle";
 import DownloadButton from "./DownloadButton";
+import ShareButton from "./ShareButton";
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -483,6 +484,12 @@ export default function DocumentEditor({
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-xl font-semibold text-foreground">Editor</h2>
                   <div className="flex items-center gap-3">
+                    <ShareButton
+                      title={documentTitle || currentDocument?.title || defaultTitle}
+                      content={content}
+                      disabled={isGenerating || !content}
+                      documentId={documentId}
+                    />
                     <DownloadButton
                       title={documentTitle || currentDocument?.title || defaultTitle}
                       content={content}
@@ -534,6 +541,12 @@ export default function DocumentEditor({
                           <span className="text-sm font-medium hidden sm:inline">A gerar...</span>
                         </div>
                       )}
+                      <ShareButton
+                        title={documentTitle || currentDocument?.title || defaultTitle}
+                        content={content}
+                        disabled={isGenerating || !content}
+                        documentId={documentId}
+                      />
                       <DownloadButton
                         title={documentTitle || currentDocument?.title || defaultTitle}
                         content={content}
