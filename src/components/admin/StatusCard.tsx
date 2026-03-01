@@ -45,7 +45,7 @@ export default function StatusCard() {
           setHealthData(result.data);
         }
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError("Failed to fetch health status");
       console.error("Health fetch error:", err);
     } finally {
@@ -71,12 +71,15 @@ export default function StatusCard() {
 
   if (loading && !healthData) {
     return (
-      <div className="bg-card border border-border rounded-lg p-6 shadow-card max-w-lg">
-        <div className="flex items-center justify-between mb-4 pb-3 border-b border-border">
-          <h3 className="text-lg font-semibold text-card-foreground">System Status</h3>
-          <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent"></div>
+      <div className="bg-card p-6 rounded-2xl border border-border shadow-sm">
+        <div className="flex items-center gap-2 mb-4 text-muted-foreground">
+          <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent" />
+          <span className="text-sm font-medium uppercase tracking-wider">System Health</span>
         </div>
-        <p className="text-muted-foreground">Loading health status...</p>
+        <div className="animate-pulse">
+          <div className="h-8 bg-muted rounded w-24 mb-2"></div>
+          <div className="h-4 bg-muted rounded w-32"></div>
+        </div>
       </div>
     );
   }
@@ -95,14 +98,17 @@ export default function StatusCard() {
   };
 
   return (
-    <div className="bg-card border border-border rounded-lg p-6 shadow-card max-w-lg">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4 pb-3 border-b border-border">
-        <h3 className="text-lg font-semibold text-card-foreground">System Status</h3>
-        <div className="flex items-center space-x-3">
+    <div className="bg-card p-6 rounded-2xl border border-border shadow-sm">
+      {/* Header - matching other admin cards */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <div className={`w-4 h-4 rounded-full ${healthData ? getStatusColorClass(healthData.status) : 'bg-muted-foreground'}`} />
+          <span className="text-sm font-medium uppercase tracking-wider">System Health</span>
+        </div>
+        <div className="flex items-center space-x-2">
           {lastUpdated && (
             <span className="text-xs text-muted-foreground">
-              Updated: {lastUpdated.toLocaleTimeString()}
+              {lastUpdated.toLocaleTimeString()}
             </span>
           )}
           <button 
@@ -118,62 +124,49 @@ export default function StatusCard() {
 
       {/* Error Alert */}
       {error && (
-        <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-md">
-          <div className="flex items-center">
-            <span className="text-destructive text-sm">⚠️ {error}</span>
-          </div>
+        <div className="mb-4 p-2 bg-destructive/10 border border-destructive/20 rounded text-xs text-destructive">
+          ⚠️ {error}
         </div>
       )}
 
-      {healthData && (
+      {healthData ? (
         <>
-          {/* Overall Status */}
-          <div className="mb-6 p-3 bg-muted rounded-md">
-            <div className="flex items-center space-x-3">
-              <div className={`w-4 h-4 rounded-full ${getStatusColorClass(healthData.status)}`}></div>
-              <span className="font-medium text-card-foreground">
-                System: {getStatusText(healthData.status)}
-              </span>
-            </div>
-          </div>
+          {/* Main Status Display */}
+          <p className="text-3xl font-bold mb-1">{getStatusText(healthData.status)}</p>
+          <p className="text-xs text-muted-foreground mb-4">
+            {Object.keys(healthData.services || {}).length} services monitored
+          </p>
 
-          {/* Service Details */}
-          <div className="space-y-3 mb-4">
-            {Object.entries(healthData.services || {}).map(([key, service]) => (
-              <div key={key} className="flex items-center justify-between py-2 border-b border-border last:border-b-0">
-                <div className="flex items-center space-x-3">
-                  <div className={`w-2 h-2 rounded-full ${getStatusColorClass(service.status)}`}></div>
-                  <span className="font-medium text-card-foreground capitalize">
+          {/* Service Details - Compact for card format */}
+          <div className="space-y-2">
+            {Object.entries(healthData.services || {}).slice(0, 3).map(([key, service]) => (
+              <div key={key} className="flex items-center justify-between text-xs">
+                <div className="flex items-center space-x-2">
+                  <div className={`w-2 h-2 rounded-full ${getStatusColorClass(service.status)}`} />
+                  <span className="font-medium capitalize">
                     {serviceName(key)}
                   </span>
                 </div>
-                <div className="text-right">
-                  <div className="text-sm font-medium text-card-foreground">
-                    {getStatusText(service.status)}
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    {formatServiceDetails(service)}
-                  </div>
-                </div>
+                <span className="text-muted-foreground">
+                  {service.responseTime ? `${service.responseTime}ms` : service.memoryUsage || 'OK'}
+                </span>
               </div>
             ))}
           </div>
-
-          {/* Timestamp */}
-          {healthData.timestamp && (
-            <div className="text-center py-2 px-3 bg-muted rounded text-xs text-muted-foreground">
-              Health check: {new Date(healthData.timestamp).toLocaleString()}
-            </div>
-          )}
+        </>
+      ) : loading ? (
+        <>
+          <div className="animate-pulse">
+            <div className="h-8 bg-muted rounded w-20 mb-2"></div>
+            <div className="h-4 bg-muted rounded w-32"></div>
+          </div>
+        </>
+      ) : (
+        <>
+          <p className="text-3xl font-bold text-destructive">Error</p>
+          <p className="text-xs text-muted-foreground">Health check failed</p>
         </>
       )}
-
-      {/* BMAD Validation Footer */}
-      <div className="mt-4 pt-3 border-t border-border text-center">
-        <span className="text-xs font-medium text-green-600">
-          ✅ Real-time monitoring (BMAD validated)
-        </span>
-      </div>
     </div>
   );
 }

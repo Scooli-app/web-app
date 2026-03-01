@@ -42,13 +42,13 @@ export const getHealth = async (): Promise<HealthResponse> => {
       success: true,
       data: response.data,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Health API Error:", error);
     
     // Return fallback data for graceful degradation
     return {
       success: false,
-      error: error.message || "Health check failed",
+      error: error instanceof Error ? error.message : "Health check failed",
       data: {
         status: "error",
         timestamp: new Date().toISOString(),

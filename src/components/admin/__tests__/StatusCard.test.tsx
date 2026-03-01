@@ -40,7 +40,7 @@ describe("StatusCard", () => {
   });
 
   test("renders loading state initially", () => {
-    mockHealthService.getHealth.mockImplementation(() => new Promise(() => {})); // Never resolves
+    mockHealthService.getHealth.mockImplementation(() => new Promise(() => { /* never resolves */ })); // Never resolves
     
     render(<StatusCard />);
     
