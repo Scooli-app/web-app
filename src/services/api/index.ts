@@ -19,3 +19,6 @@ export * from "./assistant.service";
 
 // Health service
 export * from "./health.service";
+
+// Community Library service
+export * from "./community.service";
