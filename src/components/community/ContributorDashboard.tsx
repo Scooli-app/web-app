@@ -26,8 +26,8 @@ export function ContributorDashboard() {
       <div className="space-y-6">
         {Array.from({ length: 4 }, (_, i) => (
           <Card key={i} className="p-6 animate-pulse">
-            <div className="h-6 bg-muted rounded w-1/3 mb-4"></div>
-            <div className="h-12 bg-muted rounded"></div>
+            <div className="h-6 bg-muted rounded w-1/3 mb-4" />
+            <div className="h-12 bg-muted rounded" />
           </Card>
         ))}
       </div>

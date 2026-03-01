@@ -3,12 +3,12 @@
  * Manages admin moderation queue state
  */
 
+import type { SharedResource } from "@/services/api/community.service";
 import {
-  getModerationQueue,
-  processModerationAction,
-  type ModerationActionRequest,
+    getModerationQueue,
+    processModerationAction,
+    type ModerationActionRequest,
 } from "@/services/api/moderation.service";
-import type { PaginatedResponse, SharedResource } from "@/services/api/community.service";
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 
 // ============================================================================

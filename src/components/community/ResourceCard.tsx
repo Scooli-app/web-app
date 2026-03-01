@@ -10,7 +10,6 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import type { SharedResource } from "@/services/api/community.service";
 import { Eye, RotateCcw, Star } from "lucide-react";
-import { useState } from "react";
 
 interface ResourceCardProps {
   resource: SharedResource;
@@ -27,14 +26,11 @@ export function ResourceCard({
   isReusing = false,
   className = "" 
 }: ResourceCardProps) {
-  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-
   const handleReuse = () => {
     onReuse?.(resource.id);
   };
 
   const handlePreview = () => {
-    setIsPreviewOpen(true);
     onPreview?.(resource.id);
   };
 
