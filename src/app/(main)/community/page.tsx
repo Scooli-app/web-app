@@ -179,7 +179,7 @@ function CommunityLibraryPage() {
  */
 export default function CommunityPage() {
   // TODO: Check if user has Pro subscription
-  const isPro = true; // Temporary - should check actual subscription
+  const isPro = false; // Temporary - should check actual subscription
 
   const handleUpgrade = () => {
     // TODO: Integrate with existing upgrade modal/flow
