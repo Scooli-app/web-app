@@ -9,25 +9,25 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
 } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  fetchModerationQueue,
-  processModeration,
-  selectIsLoadingQueue,
-  selectIsProcessingAction,
-  selectModerationPagination,
-  selectPendingResources,
-} from "@/store/moderation";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import type { SharedResource } from "@/services/api/community.service";
 import type { ModerationActionRequest } from "@/services/api/moderation.service";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import {
+    fetchModerationQueue,
+    processModeration,
+    selectIsLoadingQueue,
+    selectIsProcessingAction,
+    selectModerationPagination,
+    selectPendingResources,
+} from "@/store/moderation";
 import { Check, Clock, Eye, MessageSquare, Star, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -87,11 +87,11 @@ export function ModerationQueue() {
       <div className="space-y-4">
         {Array.from({ length: 5 }, (_, i) => (
           <Card key={i} className="p-4 animate-pulse">
-            <div className="h-6 bg-muted rounded w-3/4 mb-2"></div>
-            <div className="h-4 bg-muted rounded w-1/2 mb-4"></div>
+            <div className="h-6 bg-muted rounded w-3/4 mb-2" />
+            <div className="h-4 bg-muted rounded w-1/2 mb-4" />
             <div className="flex gap-2">
-              <div className="h-8 bg-muted rounded w-20"></div>
-              <div className="h-8 bg-muted rounded w-20"></div>
+              <div className="h-8 bg-muted rounded w-20" />
+              <div className="h-8 bg-muted rounded w-20" />
             </div>
           </Card>
         ))}
