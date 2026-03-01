@@ -25,6 +25,8 @@ import {
   type CommunityFilters as CommunityFiltersType
 } from "@/store/community";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { selectIsPro } from "@/store/subscription/selectors";
+import { setUpgradeModalOpen } from "@/store/ui/uiSlice";
 import { BarChart3, Plus, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -178,11 +180,11 @@ function CommunityLibraryPage() {
  * Main Community Page Wrapper - handles Pro vs Free user experience
  */
 export default function CommunityPage() {
-  // TODO: Check if user has Pro subscription
-  const isPro = false; // Temporary - should check actual subscription
+  const isPro = useAppSelector(selectIsPro);
+  const dispatch = useAppDispatch();
 
   const handleUpgrade = () => {
-    // TODO: Integrate with existing upgrade modal/flow
+    dispatch(setUpgradeModalOpen(true));
   };
 
   if (!isPro) {
