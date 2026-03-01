@@ -15,7 +15,6 @@ import {
   shareResource,
   type ContributorStats,
   type DiscoverResourcesParams,
-  type PaginatedResponse,
   type ShareResourceRequest,
   type SharedResource,
 } from "@/services/api/community.service";

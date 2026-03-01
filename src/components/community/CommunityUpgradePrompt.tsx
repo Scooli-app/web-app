@@ -5,9 +5,9 @@
 
 "use client";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Lock, Star, Users, Zap } from "lucide-react";
 
 interface CommunityUpgradePromptProps {
@@ -52,16 +52,16 @@ export function CommunityUpgradePrompt({ onUpgrade }: CommunityUpgradePromptProp
             <Card className="p-4 mb-6">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <div className="h-4 bg-muted rounded w-16"></div>
-                  <div className="h-10 bg-muted rounded"></div>
+                  <div className="h-4 bg-muted rounded w-16" />
+                  <div className="h-10 bg-muted rounded" />
                 </div>
                 <div className="space-y-2">
-                  <div className="h-4 bg-muted rounded w-20"></div>
-                  <div className="h-10 bg-muted rounded"></div>
+                  <div className="h-4 bg-muted rounded w-20" />
+                  <div className="h-10 bg-muted rounded" />
                 </div>
                 <div className="space-y-2">
-                  <div className="h-4 bg-muted rounded w-24"></div>
-                  <div className="h-10 bg-muted rounded"></div>
+                  <div className="h-4 bg-muted rounded w-24" />
+                  <div className="h-10 bg-muted rounded" />
                 </div>
               </div>
             </Card>
@@ -72,30 +72,30 @@ export function CommunityUpgradePrompt({ onUpgrade }: CommunityUpgradePromptProp
                 <Card key={i} className="p-4">
                   <div className="space-y-3">
                     {/* Title */}
-                    <div className="h-6 bg-muted rounded w-3/4"></div>
+                    <div className="h-6 bg-muted rounded w-3/4" />
                     
                     {/* Description */}
                     <div className="space-y-2">
-                      <div className="h-4 bg-muted rounded w-full"></div>
-                      <div className="h-4 bg-muted rounded w-2/3"></div>
+                      <div className="h-4 bg-muted rounded w-full" />
+                      <div className="h-4 bg-muted rounded w-2/3" />
                     </div>
                     
                     {/* Tags */}
                     <div className="flex gap-2">
-                      <Badge variant="secondary" className="h-6 w-16 bg-muted"></Badge>
-                      <Badge variant="secondary" className="h-6 w-20 bg-muted"></Badge>
+                      <Badge variant="secondary" className="h-6 w-16 bg-muted" />
+                      <Badge variant="secondary" className="h-6 w-20 bg-muted" />
                     </div>
                     
                     {/* Stats */}
                     <div className="flex justify-between">
-                      <div className="h-4 bg-muted rounded w-24"></div>
-                      <div className="h-4 bg-muted rounded w-32"></div>
+                      <div className="h-4 bg-muted rounded w-24" />
+                      <div className="h-4 bg-muted rounded w-32" />
                     </div>
                     
                     {/* Buttons */}
                     <div className="flex gap-2">
-                      <div className="h-8 bg-muted rounded flex-1"></div>
-                      <div className="h-8 bg-muted rounded flex-1"></div>
+                      <div className="h-8 bg-muted rounded flex-1" />
+                      <div className="h-8 bg-muted rounded flex-1" />
                     </div>
                   </div>
                 </Card>
@@ -128,7 +128,7 @@ export function CommunityUpgradePrompt({ onUpgrade }: CommunityUpgradePromptProp
             <ul className="space-y-3 text-sm text-muted-foreground">
               <li>✅ Reconhecimento profissional visível</li>
               <li>✅ Métricas de impacto: quantos reutilizaram</li>
-              <li>✅ Badge "Membro Fundador" para primeiros contribuidores</li>
+              <li>✅ Badge &quot;Membro Fundador&quot; para primeiros contribuidores</li>
               <li>✅ Dashboard pessoal com estatísticas</li>
               <li>✅ Ajudar outros professores e construir rede</li>
             </ul>
@@ -145,16 +145,16 @@ export function CommunityUpgradePrompt({ onUpgrade }: CommunityUpgradePromptProp
               <div className="text-4xl mb-3">👩‍🏫</div>
               <h4 className="font-medium mb-2">Mariana, 2º ciclo</h4>
               <p className="text-sm text-muted-foreground italic">
-                "Finalmente encontro recursos alinhados com o currículo português. 
-                Poupo 2 horas todos os domingos!"
+                &quot;Finalmente encontro recursos alinhados com o currículo português. 
+                Poupo 2 horas todos os domingos!&quot;
               </p>
             </div>
             <div className="text-center">
               <div className="text-4xl mb-3">👨‍🏫</div>
               <h4 className="font-medium mb-2">Ricardo, 3º ciclo</h4>
               <p className="text-sm text-muted-foreground italic">
-                "Ver que 47 professores reutilizaram os meus materiais dá-me 
-                reconhecimento profissional real."
+                &quot;Ver que 47 professores reutilizaram os meus materiais dá-me 
+                reconhecimento profissional real.&quot;
               </p>
             </div>
           </div>
@@ -175,21 +175,3 @@ export function CommunityUpgradePrompt({ onUpgrade }: CommunityUpgradePromptProp
   );
 }
 
-/**
- * Main Community Page - handles Pro vs Free user experience
- */
-export default function CommunityPageWrapper() {
-  // TODO: Check if user has Pro subscription
-  const [isPro, setIsPro] = useState(true); // Temporary - should check actual subscription
-
-  const handleUpgrade = () => {
-    // TODO: Integrate with existing upgrade modal/flow
-    console.log("Triggering upgrade flow...");
-  };
-
-  if (!isPro) {
-    return <CommunityUpgradePrompt onUpgrade={handleUpgrade} />;
-  }
-
-  return <CommunityPage />;
-}

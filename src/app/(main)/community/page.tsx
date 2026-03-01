@@ -6,11 +6,12 @@
 
 "use client";
 
-import { CommunityFilters } from "@/components/community/CommunityFilters";
+import { CommunityFilters as CommunityFiltersComponent } from "@/components/community/CommunityFilters";
 import { CommunityUpgradePrompt } from "@/components/community/CommunityUpgradePrompt";
 import { ResourceGrid } from "@/components/community/ResourceGrid";
 import { ShareResourceModal } from "@/components/community/ShareResourceModal";
 import { Button } from "@/components/ui/button";
+import type { DiscoverResourcesParams, ShareResourceRequest } from "@/services/api/community.service";
 import {
   fetchResources,
   reuseSharedResource,
@@ -21,10 +22,9 @@ import {
   selectResources,
   setFilters,
   submitResource,
-  type CommunityFilters,
+  type CommunityFilters as CommunityFiltersType,
 } from "@/store/community";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import type { DiscoverResourcesParams, ShareResourceRequest } from "@/services/api/community.service";
 import { BarChart3, Plus, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -54,7 +54,7 @@ function CommunityLibraryPage() {
   // ========================================================================
 
   const handleFiltersChange = (newFilters: DiscoverResourcesParams) => {
-    dispatch(setFilters(newFilters as CommunityFilters));
+    dispatch(setFilters(newFilters as CommunityFiltersType));
   };
 
   const handleSearch = () => {
@@ -76,8 +76,6 @@ function CommunityLibraryPage() {
       // TODO: Integrate with existing editor routing
       toast.success(`Recurso reutilizado! Reuso #${result.reuseCount}`);
       
-      // For now, show success - later integrate with editor
-      console.log("Reused resource content:", result.content);
       
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Erro ao reutilizar recurso");
@@ -85,8 +83,7 @@ function CommunityLibraryPage() {
   };
 
   const handlePreview = (resourceId: string) => {
-    // TODO: Implement preview modal
-    toast.info("Pré-visualização em breve disponível");
+    router.push(`/community/resource/${resourceId}/preview`);
   };
 
   const handleShareResource = async (request: ShareResourceRequest) => {
@@ -144,9 +141,8 @@ function CommunityLibraryPage() {
           </div>
         </div>
 
-        {/* Filters */}
         <div className="mb-6">
-          <CommunityFilters
+          <CommunityFiltersComponent
             filters={filters}
             onFiltersChange={handleFiltersChange}
             onSearch={handleSearch}
@@ -182,11 +178,10 @@ function CommunityLibraryPage() {
  */
 export default function CommunityPage() {
   // TODO: Check if user has Pro subscription
-  const [isPro, setIsPro] = useState(true); // Temporary - should check actual subscription
+  const isPro = false; // Temporary - should check actual subscription
 
   const handleUpgrade = () => {
     // TODO: Integrate with existing upgrade modal/flow
-    console.log("Triggering upgrade flow...");
   };
 
   if (!isPro) {
