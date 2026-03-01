@@ -9,11 +9,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { 
-  GRADE_OPTIONS, 
-  RESOURCE_TYPE_OPTIONS, 
-  SUBJECT_OPTIONS,
-  type DiscoverResourcesParams 
+import {
+    GRADE_OPTIONS,
+    RESOURCE_TYPE_OPTIONS,
+    SUBJECT_OPTIONS,
+    type DiscoverResourcesParams
 } from "@/services/api/community.service";
 import { Search, X } from "lucide-react";
 
@@ -34,7 +34,7 @@ export function CommunityFilters({
   const handleFilterChange = (key: keyof DiscoverResourcesParams, value: string | undefined) => {
     onFiltersChange({
       ...filters,
-      [key]: value === "" ? undefined : value
+      [key]: value === "all" ? undefined : value
     });
   };
 
@@ -78,14 +78,14 @@ export function CommunityFilters({
         <div className="space-y-2">
           <Label>Ano</Label>
           <Select
-            value={filters.grade || ""}
+            value={filters.grade || "all"}
             onValueChange={(value) => handleFilterChange("grade", value)}
           >
             <SelectTrigger>
               <SelectValue placeholder="Selecionar ano" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todos os anos</SelectItem>
+              <SelectItem value="all">Todos os anos</SelectItem>
               {GRADE_OPTIONS.map((option) => (
                 <SelectItem key={option.value} value={option.value}>
                   {option.label}
@@ -99,14 +99,14 @@ export function CommunityFilters({
         <div className="space-y-2">
           <Label>Disciplina</Label>
           <Select
-            value={filters.subject || ""}
+            value={filters.subject || "all"}
             onValueChange={(value) => handleFilterChange("subject", value)}
           >
             <SelectTrigger>
               <SelectValue placeholder="Selecionar disciplina" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todas as disciplinas</SelectItem>
+              <SelectItem value="all">Todas as disciplinas</SelectItem>
               {SUBJECT_OPTIONS.map((option) => (
                 <SelectItem key={option.value} value={option.value}>
                   {option.label}
@@ -120,14 +120,14 @@ export function CommunityFilters({
         <div className="space-y-2">
           <Label>Tipo de Recurso</Label>
           <Select
-            value={filters.resourceType || ""}
+            value={filters.resourceType || "all"}
             onValueChange={(value) => handleFilterChange("resourceType", value)}
           >
             <SelectTrigger>
               <SelectValue placeholder="Selecionar tipo" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todos os tipos</SelectItem>
+              <SelectItem value="all">Todos os tipos</SelectItem>
               {RESOURCE_TYPE_OPTIONS.map((option) => (
                 <SelectItem key={option.value} value={option.value}>
                   {option.label}
