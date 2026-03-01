@@ -26,8 +26,6 @@ export function ResourceCard({
   isReusing = false,
   className = "" 
 }: ResourceCardProps) {
-
-
   const handleReuse = () => {
     onReuse?.(resource.id);
   };
