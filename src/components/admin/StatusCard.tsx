@@ -1,14 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { RefreshCw } from "lucide-react";
-import { 
-  getHealth, 
-  getStatusColorClass, 
-  getStatusText, 
-  formatServiceDetails,
-  type HealthStatus 
+import {
+  getHealth,
+  getStatusColorClass,
+  getStatusText,
+  type HealthStatus
 } from "@/services/api/health.service";
+import { RefreshCw } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 
 /**
  * Real-time System Health Status Card
@@ -77,32 +76,19 @@ export default function StatusCard() {
           <span className="text-sm font-medium uppercase tracking-wider">System Health</span>
         </div>
         <div className="animate-pulse">
-          <div className="h-8 bg-muted rounded w-24 mb-2"></div>
-          <div className="h-4 bg-muted rounded w-32"></div>
+          <div className="h-8 bg-muted rounded w-24 mb-2" />
+          <div className="h-4 bg-muted rounded w-32" />
         </div>
       </div>
     );
   }
-
-  const serviceName = (key: string): string => {
-    switch (key) {
-      case "aiServices":
-        return "AI Services";
-      case "database":
-        return "Database";
-      case "jvm":
-        return "JVM";
-      default:
-        return key;
-    }
-  };
 
   return (
     <div className="bg-card p-6 rounded-2xl border border-border shadow-sm">
       {/* Header - matching other admin cards */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2 text-muted-foreground">
-          <div className={`w-4 h-4 rounded-full ${healthData ? getStatusColorClass(healthData.status) : 'bg-muted-foreground'}`} />
+          <div className={`w-4 h-4 rounded-full ${healthData ? getStatusColorClass(healthData.status) : "bg-muted-foreground"}`} />
           <span className="text-sm font-medium uppercase tracking-wider">System Health</span>
         </div>
         <div className="flex items-center space-x-2">
@@ -139,28 +125,35 @@ export default function StatusCard() {
 
           {/* Service Details - Compact for card format */}
           <div className="space-y-2">
-            {Object.entries(healthData.services || {}).slice(0, 3).map(([key, service]) => (
-              <div key={key} className="flex items-center justify-between text-xs">
+            {healthData.services?.database && (
+              <div className="flex items-center justify-between text-xs">
                 <div className="flex items-center space-x-2">
-                  <div className={`w-2 h-2 rounded-full ${getStatusColorClass(service.status)}`} />
-                  <span className="font-medium capitalize">
-                    {serviceName(key)}
-                  </span>
+                  <div className={`w-2 h-2 rounded-full ${getStatusColorClass(healthData.services.database.status)}`} />
+                  <span className="font-medium capitalize">Database</span>
                 </div>
                 <span className="text-muted-foreground">
-                  {service.responseTime ? `${service.responseTime}ms` : service.memoryUsage || 'OK'}
+                  {healthData.services.database.responseTime ? `${healthData.services.database.responseTime}ms` : healthData.services.database.memoryUsage || "OK"}
                 </span>
               </div>
-            ))}
+            )}
+            {healthData.services?.jvm && (
+              <div className="flex items-center justify-between text-xs">
+                <div className="flex items-center space-x-2">
+                  <div className={`w-2 h-2 rounded-full ${getStatusColorClass(healthData.services.jvm.status)}`} />
+                  <span className="font-medium capitalize">JVM</span>
+                </div>
+                <span className="text-muted-foreground">
+                  {healthData.services.jvm.responseTime ? `${healthData.services.jvm.responseTime}ms` : healthData.services.jvm.memoryUsage || "OK"}
+                </span>
+              </div>
+            )}
           </div>
         </>
       ) : loading ? (
-        <>
-          <div className="animate-pulse">
-            <div className="h-8 bg-muted rounded w-20 mb-2"></div>
-            <div className="h-4 bg-muted rounded w-32"></div>
+        <div className="animate-pulse">
+            <div className="h-8 bg-muted rounded w-20 mb-2" />
+            <div className="h-4 bg-muted rounded w-32" />
           </div>
-        </>
       ) : (
         <>
           <p className="text-3xl font-bold text-destructive">Error</p>

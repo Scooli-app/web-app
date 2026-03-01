@@ -13,7 +13,6 @@ export interface HealthStatus {
   timestamp: string;
   services: {
     database: ServiceStatus;
-    aiServices: ServiceStatus;
     jvm: ServiceStatus;
   };
 }
@@ -36,7 +35,7 @@ export interface HealthResponse {
  */
 export const getHealth = async (): Promise<HealthResponse> => {
   try {
-    const response = await apiClient.get<HealthStatus>("/api/health");
+    const response = await apiClient.get<HealthStatus>("/health");
     
     return {
       success: true,
@@ -54,7 +53,6 @@ export const getHealth = async (): Promise<HealthResponse> => {
         timestamp: new Date().toISOString(),
         services: {
           database: { status: "unknown", details: "Health check failed" },
-          aiServices: { status: "unknown", details: "Health check failed" },
           jvm: { status: "unknown", details: "Health check failed" }
         }
       }
