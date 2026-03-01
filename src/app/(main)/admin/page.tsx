@@ -3,7 +3,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAdmin } from "@/hooks/useAdmin";
 import StatusCard from "@/components/admin/StatusCard";
-import { LayoutDashboard, MessageSquare, Shield, Users } from "lucide-react";
+import { LayoutDashboard, MessageSquare, Shield, Users, Library } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
@@ -84,6 +84,26 @@ export default function AdminPage() {
             <CardContent>
               <div className="text-sm text-muted-foreground">
                 View submitted tickets, update status, and respond to users.
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card 
+            className="hover:bg-muted/50 transition-colors cursor-pointer border-border group"
+            onClick={() => router.push("/admin/moderation")}
+          >
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 group-hover:text-primary transition-colors">
+                <Library className="h-5 w-5" />
+                Community Moderation
+              </CardTitle>
+              <CardDescription>
+                Review and approve community-shared resources.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-sm text-muted-foreground">
+                Manage curriculum-aligned teaching resources before publication.
               </div>
             </CardContent>
           </Card>
