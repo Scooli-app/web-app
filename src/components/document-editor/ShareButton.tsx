@@ -1,17 +1,12 @@
-/**
- * Share Button Component
- * Button for sharing AI-generated content with Community Library
- * Appears in editor toolbar next to export button
- */
-
 "use client";
 
 import { ShareResourceModal } from "@/components/community/ShareResourceModal";
 import { Button } from "@/components/ui/button";
+import type { ShareResourceRequest } from "@/services/api/community.service";
+import type { SharedResourceStatus } from "@/shared/types/document";
 import { submitResource } from "@/store/community";
 import { useAppDispatch } from "@/store/hooks";
-import type { ShareResourceRequest } from "@/services/api/community.service";
-import { Share2 } from "lucide-react";
+import { CheckCircle2, Clock, Share2 } from "lucide-react";
 import { memo, useCallback, useState } from "react";
 import { toast } from "sonner";
 
@@ -20,19 +15,33 @@ interface ShareButtonProps {
   content: string;
   disabled?: boolean;
   documentId?: string;
+  grade?: string;
+  subject?: string;
+  resourceType?: string;
+  /** Status as fetched from the document (may be null if not yet shared) */
+  sharedStatus?: SharedResourceStatus | undefined | null;
   className?: string;
 }
 
-function ShareButtonComponent({ 
-  title, 
-  content, 
+function ShareButtonComponent({
+  title,
+  content,
   disabled = false,
   documentId,
-  className = ""
+  grade = "",
+  subject = "",
+  resourceType = "",
+  sharedStatus,
+  className = "",
 }: ShareButtonProps) {
   const dispatch = useAppDispatch();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
+  // Local status set immediately from the submitResource response, overrides the prop
+  const [localStatus, setLocalStatus] = useState<SharedResourceStatus | null>(null);
+
+  // Effective status: prefer local (just submitted) over prop (from last fetch)
+  const effectiveStatus = localStatus ?? sharedStatus;
 
   const handleShareClick = useCallback(() => {
     if (!title || !content) {
@@ -42,24 +51,54 @@ function ShareButtonComponent({
     setIsModalOpen(true);
   }, [title, content]);
 
-  const handleShareSubmit = useCallback(async (request: ShareResourceRequest) => {
-    setIsSharing(true);
-    
-    try {
-      await dispatch(submitResource(request)).unwrap();
-      setIsModalOpen(false);
-      toast.success(
-        "Recurso submetido para revisão! Receberá notificação em 24-48h."
-      );
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Erro ao partilhar recurso"
-      );
-    } finally {
-      setIsSharing(false);
-    }
-  }, [dispatch]);
+  const handleShareSubmit = useCallback(
+    async (request: ShareResourceRequest) => {
+      setIsSharing(true);
+      try {
+        const result = await dispatch(submitResource(request)).unwrap();
+        setIsModalOpen(false);
+        setLocalStatus(result.status as SharedResourceStatus);
+        toast.success("Recurso submetido para revisão! Receberá notificação em 24-48h.");
+      } catch (error) {
+        toast.error(
+          error instanceof Error ? error.message : "Erro ao partilhar recurso"
+        );
+      } finally {
+        setIsSharing(false);
+      }
+    },
+    [dispatch]
+  );
 
+  if (effectiveStatus === "PENDING") {
+    return (
+      <Button
+        variant="outline"
+        size="sm"
+        disabled
+        className={`flex items-center gap-2 text-amber-600 border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800 dark:text-amber-400 ${className}`}
+      >
+        <Clock className="h-4 w-4" />
+        <span className="hidden sm:inline">Em revisão</span>
+      </Button>
+    );
+  }
+
+  if (effectiveStatus === "APPROVED") {
+    return (
+      <Button
+        variant="outline"
+        size="sm"
+        disabled
+        className={`flex items-center gap-2 text-green-600 border-green-300 bg-green-50 dark:bg-green-950/30 dark:border-green-800 dark:text-green-400 ${className}`}
+      >
+        <CheckCircle2 className="h-4 w-4" />
+        <span className="hidden sm:inline">Publicado</span>
+      </Button>
+    );
+  }
+
+  // REJECTED or no status — show normal share button
   const isDisabled = disabled || isSharing || !title || !content;
 
   return (
@@ -73,7 +112,7 @@ function ShareButtonComponent({
       >
         <Share2 className="h-4 w-4" />
         <span className="hidden sm:inline">
-          {isSharing ? "Partilhando..." : "Partilhar"}
+          {isSharing ? "A partilhar..." : "Partilhar"}
         </span>
       </Button>
 
@@ -83,6 +122,10 @@ function ShareButtonComponent({
         onSubmit={handleShareSubmit}
         isLoading={isSharing}
         initialContent={content}
+        initialTitle={title}
+        initialGrade={grade}
+        initialSubject={subject}
+        initialResourceType={resourceType}
         documentId={documentId}
       />
     </>

@@ -22,6 +22,7 @@ export interface SharedResource {
   resourceType: string;
   reuseCount: number;
   status: "PENDING" | "APPROVED" | "REJECTED" | "CHANGES_REQUESTED";
+  moderationNotes: string | null;
   isFoundingContributor: boolean;
   createdAt: string;
   approvedAt: string | null;
@@ -172,6 +173,17 @@ export async function reuseResource(
   return response.data;
 }
 
+/**
+ * Get a list of IDs for all resources the user has already reused.
+ * Used to disable the reuse button.
+ */
+export async function getReusedResourceIds(): Promise<string[]> {
+  const response = await apiClient.get<string[]>(
+    "/community/resources/reused-ids"
+  );
+  return response.data;
+}
+
 // ============================================================================
 // CONTRIBUTOR ANALYTICS
 // ============================================================================
@@ -184,6 +196,19 @@ export async function getContributorStats(): Promise<ContributorStats> {
   const response = await apiClient.get<ContributorStats>(
     "/community/analytics/dashboard"
   );
+  return response.data;
+}
+
+/**
+ * Get total library stats (total approved resources count).
+ * Independent of any filters, used for stats display.
+ */
+export interface LibraryStats {
+  totalApprovedResources: number;
+}
+
+export async function getLibraryStats(): Promise<LibraryStats> {
+  const response = await apiClient.get<LibraryStats>("/community/stats");
   return response.data;
 }
 
@@ -223,52 +248,33 @@ export async function processModerationAction(
 // CURRICULUM METADATA (for filters)
 // ============================================================================
 
+import { GRADE_GROUPS, SUBJECTS } from "@/components/document-creation/constants";
+
 /**
  * Available grade levels for filtering.
+ * Mapped from the single source of truth in document-creation constants.
  */
-export const GRADE_OPTIONS = [
-  { value: "1º ano", label: "1º Ano" },
-  { value: "2º ano", label: "2º Ano" },
-  { value: "3º ano", label: "3º Ano" },
-  { value: "4º ano", label: "4º Ano" },
-  { value: "5º ano", label: "5º Ano" },
-  { value: "6º ano", label: "6º Ano" },
-  { value: "7º ano", label: "7º Ano" },
-  { value: "8º ano", label: "8º Ano" },
-  { value: "9º ano", label: "9º Ano" },
-  { value: "10º ano", label: "10º Ano" },
-  { value: "11º ano", label: "11º Ano" },
-  { value: "12º ano", label: "12º Ano" },
-];
+export const GRADE_OPTIONS = GRADE_GROUPS.flatMap(group => 
+  group.grades.map(grade => ({ value: grade.id, label: grade.label }))
+);
 
 /**
  * Available subjects for filtering.
+ * Mapped from the single source of truth in document-creation constants.
+ * We remove duplicate values to avoid React key errors in Select.
  */
-export const SUBJECT_OPTIONS = [
-  { value: "Português", label: "Português" },
-  { value: "Matemática", label: "Matemática" },
-  { value: "Ciências Naturais", label: "Ciências Naturais" },
-  { value: "Físico-Química", label: "Físico-Química" },
-  { value: "História", label: "História" },
-  { value: "Geografia", label: "Geografia" },
-  { value: "Inglês", label: "Inglês" },
-  { value: "Educação Visual", label: "Educação Visual" },
-  { value: "Educação Física", label: "Educação Física" },
-  { value: "TIC", label: "TIC" },
-  { value: "Cidadania", label: "Cidadania" },
-  { value: "Filosofia", label: "Filosofia" },
-  { value: "Biologia", label: "Biologia" },
-  { value: "Geologia", label: "Geologia" },
-];
+export const SUBJECT_OPTIONS = Array.from(
+  new Map(SUBJECTS.map(s => [s.value, { value: s.value, label: s.label }])).values()
+);
 
 /**
  * Available resource types for filtering.
  */
 export const RESOURCE_TYPE_OPTIONS = [
   { value: "lessonPlan", label: "Plano de Aula" },
-  { value: "worksheet", label: "Ficha de Trabalho" },
+  // { value: "worksheet", label: "Ficha de Trabalho" },
   { value: "test", label: "Teste" },
   { value: "quiz", label: "Quiz" },
-  { value: "presentation", label: "Apresentação" },
-  { value: "activity", label: "Atividade" },
+  // { value: "presentation", label: "Apresentação" },
+  // { value: "activity", label: "Atividade" },
 ];

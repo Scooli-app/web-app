@@ -489,6 +489,10 @@ export default function DocumentEditor({
                       content={content}
                       disabled={isGenerating || !content}
                       documentId={documentId}
+                      grade={currentDocument?.gradeLevel || ""}
+                      subject={currentDocument?.subject || ""}
+                      resourceType={currentDocument?.documentType || ""}
+                      sharedStatus={currentDocument?.sharedResourceStatus}
                     />
                     <DownloadButton
                       title={documentTitle || currentDocument?.title || defaultTitle}
@@ -546,6 +550,10 @@ export default function DocumentEditor({
                         content={content}
                         disabled={isGenerating || !content}
                         documentId={documentId}
+                        grade={currentDocument?.gradeLevel || ""}
+                        subject={currentDocument?.subject || ""}
+                        resourceType={currentDocument?.documentType || ""}
+                        sharedStatus={currentDocument?.sharedResourceStatus}
                       />
                       <DownloadButton
                         title={documentTitle || currentDocument?.title || defaultTitle}

@@ -11,15 +11,17 @@ import { CommunityUpgradePrompt } from "@/components/community/CommunityUpgradeP
 import { ResourceGrid } from "@/components/community/ResourceGrid";
 import { ShareResourceModal } from "@/components/community/ShareResourceModal";
 import { Button } from "@/components/ui/button";
-import type { DiscoverResourcesParams, ShareResourceRequest } from "@/services/api/community.service";
+import { getLibraryStats, type DiscoverResourcesParams, type ShareResourceRequest } from "@/services/api/community.service";
 import {
   fetchResources,
+  fetchReusedResourceIds,
   reuseSharedResource,
   selectFilters,
   selectIsLoadingResources,
   selectIsReusing,
   selectPagination,
   selectResources,
+  selectReusedResourceIds,
   setFilters,
   submitResource,
   type CommunityFilters as CommunityFiltersType
@@ -42,13 +44,19 @@ function CommunityLibraryPage() {
   const filters = useAppSelector(selectFilters);
   const isLoading = useAppSelector(selectIsLoadingResources);
   const isReusing = useAppSelector(selectIsReusing);
+  const reusedResourceIds = useAppSelector(selectReusedResourceIds) as string[];
 
   // Local state
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [totalLibraryCount, setTotalLibraryCount] = useState<number | null>(null);
 
-  // Load initial resources
+  // Load initial resources and library stats
   useEffect(() => {
     dispatch(fetchResources({}));
+    dispatch(fetchReusedResourceIds());
+    getLibraryStats()
+      .then(stats => setTotalLibraryCount(stats.totalApprovedResources))
+      .catch(() => { /* stats are non-critical, ignore */ });
   }, [dispatch]);
 
   // ========================================================================
@@ -57,6 +65,11 @@ function CommunityLibraryPage() {
 
   const handleFiltersChange = (newFilters: DiscoverResourcesParams) => {
     dispatch(setFilters(newFilters as CommunityFiltersType));
+    // Auto-search when filters change
+    dispatch(fetchResources({ 
+      ...newFilters,
+      page: 0 // Reset to first page on filter change
+    }));
   };
 
   const handleSearch = () => {
@@ -72,13 +85,9 @@ function CommunityLibraryPage() {
 
   const handleReuse = async (resourceId: string) => {
     try {
-      const result = await dispatch(reuseSharedResource({ resourceId })).unwrap();
+      await dispatch(reuseSharedResource({ resourceId })).unwrap();
       
-      // Navigate to editor with the reused content
-      // TODO: Integrate with existing editor routing
-      toast.success(`Recurso reutilizado! Reuso #${result.reuseCount}`);
-      
-      // For now, show success - later integrate with editor
+      toast.success("Adicionado aos seus documentos com sucesso");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Erro ao reutilizar recurso");
     }
@@ -105,53 +114,47 @@ function CommunityLibraryPage() {
   };
 
   return (
-    <div className="w-full min-h-screen bg-background">
-      <div className="max-w-7xl mx-auto p-6">
+    <div className="w-full">
+      <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
+        <div>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
             <div>
-              <h1 className="text-4xl font-bold text-primary flex items-center gap-3">
-                <Users className="w-8 h-8" />
+              <h1 className="text-2xl font-semibold text-foreground flex items-center gap-2">
+                <Users className="w-6 h-6 text-primary" />
                 Biblioteca Comunitária
               </h1>
-              <p className="text-lg text-muted-foreground mt-2">
+              <p className="text-sm text-muted-foreground mt-1">
                 Descubra e partilhe recursos educacionais criados por professores portugueses
               </p>
             </div>
 
-            <div className="flex gap-3">
-              <Button onClick={() => router.push("/community/dashboard")} variant="outline">
+            <div className="flex gap-2 flex-shrink-0">
+              <Button onClick={() => router.push("/community/dashboard")} variant="outline" size="sm">
                 <BarChart3 className="w-4 h-4 mr-2" />
                 Meu Painel
               </Button>
-              <Button onClick={handleCreateNew} variant="outline">
+              <Button onClick={handleCreateNew} size="sm">
                 <Plus className="w-4 h-4 mr-2" />
-                Criar Novo Recurso
-              </Button>
-              <Button onClick={() => setIsShareModalOpen(true)}>
-                <Plus className="w-4 h-4 mr-2" />
-                Partilhar Recurso
+                Criar Novo
               </Button>
             </div>
           </div>
 
           {/* Stats Bar */}
-          <div className="flex items-center gap-6 text-sm text-muted-foreground">
-            <span>🎯 {pagination.totalCount} recursos aprovados</span>
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-xs text-muted-foreground">
+            <span>🎯 <span className="font-medium text-foreground">{totalLibraryCount !== null ? totalLibraryCount : "—"}</span> recursos aprovados</span>
             <span>👥 Comunidade de professores portugueses</span>
-            <span>✅ Todos os recursos são revistos e alinhados com o currículo</span>
+            <span>✅ Recursos alinhados com as AEs</span>
           </div>
         </div>
 
-        <div className="mb-6">
-          <CommunityFiltersComponent
-            filters={filters}
-            onFiltersChange={handleFiltersChange}
-            onSearch={handleSearch}
-            isLoading={isLoading}
-          />
-        </div>
+        <CommunityFiltersComponent
+          filters={filters}
+          onFiltersChange={handleFiltersChange}
+          onSearch={handleSearch}
+          isLoading={isLoading}
+        />
 
         {/* Resources Grid */}
         <ResourceGrid
@@ -162,6 +165,7 @@ function CommunityLibraryPage() {
           onPageChange={handlePageChange}
           isLoading={isLoading}
           isReusing={isReusing}
+          reusedResourceIds={reusedResourceIds}
         />
 
         {/* Share Resource Modal */}

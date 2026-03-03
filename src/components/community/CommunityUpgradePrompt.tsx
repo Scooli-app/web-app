@@ -128,7 +128,6 @@ export function CommunityUpgradePrompt({ onUpgrade }: CommunityUpgradePromptProp
             <ul className="space-y-3 text-sm text-muted-foreground">
               <li>✅ Reconhecimento profissional visível</li>
               <li>✅ Métricas de impacto: quantos reutilizaram</li>
-              <li>✅ Badge &quot;Membro Fundador&quot; para primeiros contribuidores</li>
               <li>✅ Dashboard pessoal com estatísticas</li>
               <li>✅ Ajudar outros professores e construir rede</li>
             </ul>

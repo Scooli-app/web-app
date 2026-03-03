@@ -32,6 +32,10 @@ interface ShareResourceModalProps {
   onSubmit: (request: ShareResourceRequest) => void;
   isLoading?: boolean;
   initialContent?: string;
+  initialTitle?: string;
+  initialGrade?: string;
+  initialSubject?: string;
+  initialResourceType?: string;
   documentId?: string;
 }
 
@@ -41,16 +45,20 @@ export function ShareResourceModal({
   onSubmit,
   isLoading = false,
   initialContent = "",
+  initialTitle = "",
+  initialGrade = "",
+  initialSubject = "",
+  initialResourceType = "",
   documentId
 }: ShareResourceModalProps) {
   
   const [formData, setFormData] = useState<ShareResourceRequest>({
-    title: "",
+    title: initialTitle,
     description: "",
     content: initialContent,
-    grade: "",
-    subject: "",
-    resourceType: "",
+    grade: initialGrade,
+    subject: initialSubject,
+    resourceType: initialResourceType,
     documentId
   });
 
@@ -61,10 +69,14 @@ export function ShareResourceModal({
       setFormData(prev => ({
         ...prev,
         content: initialContent,
+        title: initialTitle || prev.title,
+        grade: initialGrade || prev.grade,
+        subject: initialSubject || prev.subject,
+        resourceType: initialResourceType || prev.resourceType,
         documentId
       }));
     }
-  }, [isOpen, initialContent, documentId]);
+  }, [isOpen, initialContent, initialTitle, initialGrade, initialSubject, initialResourceType, documentId]);
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -117,7 +129,7 @@ export function ShareResourceModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Share2 className="w-5 h-5" />
@@ -129,30 +141,32 @@ export function ShareResourceModal({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="px-6 pb-6 space-y-5 mt-4">
           {/* Title */}
-          <div className="space-y-2">
-            <Label htmlFor="title">
-              Título <span className="text-red-500">*</span>
+          <div className="space-y-1.5">
+            <Label htmlFor="share-title">
+              Título <span className="text-destructive">*</span>
             </Label>
             <Input
-              id="title"
+              id="share-title"
               type="text"
               placeholder="Ex: Revisão - Funções - 9º ano"
               value={formData.title}
               onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-              className={errors.title ? "border-red-500" : ""}
+              className={errors.title ? "border-destructive" : ""}
             />
             {errors.title && (
-              <p className="text-sm text-red-500">{errors.title}</p>
+              <p className="text-xs text-destructive">{errors.title}</p>
             )}
           </div>
 
           {/* Description */}
-          <div className="space-y-2">
-            <Label htmlFor="description">Descrição</Label>
+          <div className="space-y-1.5">
+            <Label htmlFor="share-description">
+              Descrição <span className="text-xs text-muted-foreground font-normal">(opcional)</span>
+            </Label>
             <Textarea
-              id="description"
+              id="share-description"
               placeholder="Breve descrição do recurso e como pode ser usado..."
               value={formData.description || ""}
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
@@ -161,17 +175,17 @@ export function ShareResourceModal({
           </div>
 
           {/* Grade, Subject, Type Row */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {/* Grade */}
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label>
-                Ano <span className="text-red-500">*</span>
+                Ano escolar <span className="text-destructive">*</span>
               </Label>
               <Select
-                value={formData.grade}
+                value={formData.grade || ""}
                 onValueChange={(value) => setFormData(prev => ({ ...prev, grade: value }))}
               >
-                <SelectTrigger className={errors.grade ? "border-red-500" : ""}>
+                <SelectTrigger className={errors.grade ? "border-destructive" : ""}>
                   <SelectValue placeholder="Selecionar ano" />
                 </SelectTrigger>
                 <SelectContent>
@@ -183,20 +197,20 @@ export function ShareResourceModal({
                 </SelectContent>
               </Select>
               {errors.grade && (
-                <p className="text-sm text-red-500">{errors.grade}</p>
+                <p className="text-xs text-destructive">{errors.grade}</p>
               )}
             </div>
 
             {/* Subject */}
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label>
-                Disciplina <span className="text-red-500">*</span>
+                Disciplina <span className="text-destructive">*</span>
               </Label>
               <Select
-                value={formData.subject}
+                value={formData.subject || ""}
                 onValueChange={(value) => setFormData(prev => ({ ...prev, subject: value }))}
               >
-                <SelectTrigger className={errors.subject ? "border-red-500" : ""}>
+                <SelectTrigger className={errors.subject ? "border-destructive" : ""}>
                   <SelectValue placeholder="Selecionar disciplina" />
                 </SelectTrigger>
                 <SelectContent>
@@ -208,20 +222,20 @@ export function ShareResourceModal({
                 </SelectContent>
               </Select>
               {errors.subject && (
-                <p className="text-sm text-red-500">{errors.subject}</p>
+                <p className="text-xs text-destructive">{errors.subject}</p>
               )}
             </div>
 
             {/* Resource Type */}
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label>
-                Tipo <span className="text-red-500">*</span>
+                Tipo <span className="text-destructive">*</span>
               </Label>
               <Select
-                value={formData.resourceType}
+                value={formData.resourceType || ""}
                 onValueChange={(value) => setFormData(prev => ({ ...prev, resourceType: value }))}
               >
-                <SelectTrigger className={errors.resourceType ? "border-red-500" : ""}>
+                <SelectTrigger className={errors.resourceType ? "border-destructive" : ""}>
                   <SelectValue placeholder="Selecionar tipo" />
                 </SelectTrigger>
                 <SelectContent>
@@ -233,15 +247,15 @@ export function ShareResourceModal({
                 </SelectContent>
               </Select>
               {errors.resourceType && (
-                <p className="text-sm text-red-500">{errors.resourceType}</p>
+                <p className="text-xs text-destructive">{errors.resourceType}</p>
               )}
             </div>
           </div>
 
           {/* Info Box */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm">
-            <p className="text-blue-800 font-medium mb-2">ℹ️ Processo de Revisão</p>
-            <ul className="text-blue-700 space-y-1 text-xs">
+          <div className="bg-muted/50 border border-border rounded-lg p-4 text-sm">
+            <p className="text-foreground font-medium mb-2">ℹ️ Processo de Revisão</p>
+            <ul className="text-muted-foreground space-y-1 text-xs">
               <li>• O recurso será revisado pela nossa equipa em 24-48 horas</li>
               <li>• Verificamos alinhamento curricular e qualidade pedagógica</li>
               <li>• Receberá notificação quando for aprovado</li>
@@ -250,7 +264,7 @@ export function ShareResourceModal({
           </div>
 
           {/* Action Buttons */}
-          <div className="flex justify-end gap-3 pt-4">
+          <div className="flex justify-end gap-3 pt-2">
             <Button
               type="button"
               variant="outline"
@@ -264,7 +278,7 @@ export function ShareResourceModal({
               disabled={isLoading}
               className="min-w-32"
             >
-              {isLoading ? "Partilhando..." : "Partilhar Recurso"}
+              {isLoading ? "A partilhar..." : "Partilhar Recurso"}
             </Button>
           </div>
         </form>

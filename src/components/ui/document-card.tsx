@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Routes, type Document } from "@/shared/types";
-import { FileText, Trash2, User } from "lucide-react";
+import { FileText, Trash2, User, Users } from "lucide-react";
 import Link from "next/link";
 import { memo, useCallback, useMemo } from "react";
 import { Button } from "./button";
@@ -144,7 +144,7 @@ function DocumentCardComponent({
 
       <div className={`flex flex-col h-full ${selectionMode ? "ml-6" : ""}`}>
         <div className="flex flex-col md:flex-row md:items-start md:justify-between mb-4 w-full gap-2">
-          <div className="flex items-center gap-2 min-w-0 flex-1 md:flex-initial">
+          <div className="flex items-center gap-2 min-w-0 flex-1 md:flex-initial flex-wrap">
             <span className="text-xl sm:text-2xl flex-shrink-0">
               {typeIcon}
             </span>
@@ -153,6 +153,14 @@ function DocumentCardComponent({
             >
               {typeLabel}
             </Badge>
+            {document.sharedResourceId && (
+              <Badge
+                className="bg-teal-500/15 text-teal-700 dark:text-teal-400 border border-teal-500/30 px-2 py-1 text-xs font-medium whitespace-nowrap flex-shrink-0"
+              >
+                <Users className="w-3 h-3 mr-1" />
+                Comunidade
+              </Badge>
+            )}
           </div>
         </div>
 
@@ -232,6 +240,7 @@ export const DocumentCard = memo(DocumentCardComponent, (prevProps, nextProps) =
     prevProps.document.title === nextProps.document.title &&
     prevProps.document.content === nextProps.document.content &&
     prevProps.document.updatedAt === nextProps.document.updatedAt &&
+    prevProps.document.sharedResourceId === nextProps.document.sharedResourceId &&
     prevProps.isSelected === nextProps.isSelected &&
     prevProps.selectionMode === nextProps.selectionMode
   );

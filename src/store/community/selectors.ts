@@ -40,6 +40,8 @@ export const selectShareSuccess = (state: RootState) => state.community.shareSuc
 export const selectIsReusing = (state: RootState) => state.community.isReusing;
 export const selectReusedResource = (state: RootState) =>
   state.community.reusedResource;
+export const selectReusedResourceIds = (state: RootState) =>
+  state.community.reusedResourceIds;
 
 // Error
 export const selectCommunityError = (state: RootState) => state.community.error;

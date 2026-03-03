@@ -28,7 +28,7 @@ import {
     selectModerationPagination,
     selectPendingResources,
 } from "@/store/moderation";
-import { Check, Clock, Eye, MessageSquare, Star, X } from "lucide-react";
+import { Check, Clock, Eye, MessageSquare, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -161,12 +161,6 @@ export function ModerationQueue() {
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <span className="font-medium">{resource.contributorName}</span>
-                      {resource.isFoundingContributor && (
-                        <Badge variant="outline" className="text-amber-600 border-amber-600">
-                          <Star className="w-3 h-3 mr-1" />
-                          Fundador
-                        </Badge>
-                      )}
                     </div>
                   </TableCell>
                   <TableCell>

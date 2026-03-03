@@ -11,6 +11,7 @@ import {
   getContributorStats,
   getMyResources,
   getResource,
+  getReusedResourceIds,
   reuseResource,
   shareResource,
   type ContributorStats,
@@ -63,6 +64,7 @@ interface CommunityState {
   // Reuse state
   isReusing: boolean;
   reusedResource: SharedResource | null;
+  reusedResourceIds: string[];
 
   // Error handling
   error: string | null;
@@ -95,6 +97,7 @@ const initialState: CommunityState = {
 
   isReusing: false,
   reusedResource: null,
+  reusedResourceIds: [],
 
   error: null,
 };
@@ -104,8 +107,21 @@ const initialState: CommunityState = {
 // ============================================================================
 
 /**
- * Discover resources with filtering (Mariana's Sunday search)
+ * Discover resources with filtering
  */
+export const fetchReusedResourceIds = createAsyncThunk(
+  "community/fetchReusedResourceIds",
+  async (_, { rejectWithValue }) => {
+    try {
+      return await getReusedResourceIds();
+    } catch (error) {
+      return rejectWithValue(
+        error instanceof Error ? error.message : "Failed to load reused resource IDs"
+      );
+    }
+  }
+);
+
 export const fetchResources = createAsyncThunk(
   "community/fetchResources",
   async (
@@ -275,6 +291,12 @@ const communitySlice = createSlice({
         state.error = action.payload as string;
       });
 
+    // Fetch reused resource IDs
+    builder
+      .addCase(fetchReusedResourceIds.fulfilled, (state, action) => {
+        state.reusedResourceIds = action.payload;
+      });
+
     // Fetch single resource
     builder
       .addCase(fetchResource.pending, (state) => {
@@ -347,6 +369,9 @@ const communitySlice = createSlice({
       .addCase(reuseSharedResource.fulfilled, (state, action) => {
         state.isReusing = false;
         state.reusedResource = action.payload;
+        if (!state.reusedResourceIds.includes(action.payload.id)) {
+          state.reusedResourceIds.push(action.payload.id);
+        }
         // Update reuse count in resources list if present
         const idx = state.resources.findIndex((r) => r.id === action.payload.id);
         if (idx !== -1) {
