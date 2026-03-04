@@ -28,6 +28,7 @@ export interface Document {
   title: string;
   documentType: DocumentType;
   content: string;
+  status: string;
   metadata: DocumentMetadata;
   isPublic: boolean;
   subject: string | null;

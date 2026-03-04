@@ -4,16 +4,17 @@ import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { DocumentCard } from "@/components/ui/document-card";
 import { DocumentFilters } from "@/components/ui/document-filters";
 import { DocumentsEmptyState } from "@/components/ui/documents-empty-state";
-import type { Document } from "@/shared/types";
 import {
-  getDocuments,
-  getDocumentStats,
   deleteDocument,
   deleteDocuments,
+  getDocuments,
+  getDocumentStats,
 } from "@/services/api/document.service";
+import type { Document } from "@/shared/types";
 
-import { CheckSquare, Loader2, Search, Square, Trash2, X } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState, useRef } from "react";
+import { UploadDocumentModal } from "@/components/modals/upload-document-modal";
+import { CheckSquare, Loader2, Search, Square, Trash2, UploadCloud, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useInView } from "react-intersection-observer";
 import { Button } from "./button";
 import { Input } from "./input";
@@ -46,6 +47,7 @@ export function DocumentsGallery() {
   );
   const [deleting, setDeleting] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showUploadModal, setShowUploadModal] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [pagination, setPagination] = useState({
     page: 1,
@@ -254,8 +256,23 @@ export function DocumentsGallery() {
             </h2>
           </div>
 
-          {/* Search and Selection */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
+          {/* Right side: actions */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-2 w-full sm:w-auto">
+            {/* Upload button – always visible on desktop */}
+            {!selectionMode && (
+              <Button
+                onClick={() => setShowUploadModal(true)}
+                variant="outline"
+                size="sm"
+                className="hidden sm:flex flex-shrink-0"
+              >
+                <UploadCloud className="w-4 h-4 mr-2" />
+                Importar
+              </Button>
+            )}
+
+            {/* Search and Selection */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-2 w-full sm:w-auto">
             {selectionMode && (
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
                 <Button
@@ -331,7 +348,8 @@ export function DocumentsGallery() {
                 </Button>
               </div>
             )}
-          </div>
+          </div>{/* /inner search+selection div */}
+          </div>{/* /right-side actions */}
         </div>
 
         {/* Filters */}
@@ -402,6 +420,14 @@ export function DocumentsGallery() {
         confirmLabel="Eliminar"
         cancelLabel="Cancelar"
         variant="danger"
+      />
+
+      <UploadDocumentModal 
+        isOpen={showUploadModal}
+        onClose={() => {
+          setShowUploadModal(false);
+          fetchDocuments(1, true); // Refresh list
+        }}
       />
     </div>
   );
