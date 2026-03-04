@@ -1,5 +1,5 @@
 import { getFeatureFlags } from "@/services/api/features.service";
-import { FeatureFlag } from "@/shared/types/featureFlags";
+import { type FeatureFlag } from "@/shared/types/featureFlags";
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 
 /**

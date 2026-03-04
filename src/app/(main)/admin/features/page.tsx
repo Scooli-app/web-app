@@ -117,7 +117,7 @@ function FlagCard({ flag, onToggle }: { flag: FeatureFlag; onToggle: (key: strin
             </button>
             {expanded && (
               <div className="mt-2 space-y-1.5">
-                {flag.overrides!.map((o) => (
+                {flag.overrides?.map((o) => (
                   <OverrideRow key={o.id} override={o} />
                 ))}
               </div>
