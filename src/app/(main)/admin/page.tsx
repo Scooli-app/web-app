@@ -1,9 +1,9 @@
 "use client";
 
+import StatusCard from "@/components/admin/StatusCard";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAdmin } from "@/hooks/useAdmin";
-import StatusCard from "@/components/admin/StatusCard";
-import { LayoutDashboard, MessageSquare, Shield, Users, Library } from "lucide-react";
+import { LayoutDashboard, Library, MessageSquare, Shield, ToggleLeft, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
@@ -104,6 +104,26 @@ export default function AdminPage() {
             <CardContent>
               <div className="text-sm text-muted-foreground">
                 Manage curriculum-aligned teaching resources before publication.
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card 
+            className="hover:bg-muted/50 transition-colors cursor-pointer border-border group"
+            onClick={() => router.push("/admin/features")}
+          >
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 group-hover:text-primary transition-colors">
+                <ToggleLeft className="h-5 w-5" />
+                Feature Flags
+              </CardTitle>
+              <CardDescription>
+                Control feature availability across users and plans.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-sm text-muted-foreground">
+                Toggle features globally, by rollout %, or with per-user/role overrides.
               </div>
             </CardContent>
           </Card>
