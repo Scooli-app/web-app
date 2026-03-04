@@ -7,15 +7,15 @@ import { Routes } from "@/shared/types";
 import type { RagSource } from "@/shared/types/document";
 import { htmlToMarkdown, markdownToHtml } from "@/shared/utils/markdown";
 import {
-  chatWithDocument,
-  clearLastChatAnswer,
-  clearStreamInfo,
-  fetchDocument,
+    chatWithDocument,
+    clearLastChatAnswer,
+    clearStreamInfo,
+    fetchDocument,
 } from "@/store/documents/documentSlice";
 import {
-  selectEditorState,
-  useAppDispatch,
-  useAppSelector,
+    selectEditorState,
+    useAppDispatch,
+    useAppSelector,
 } from "@/store/hooks";
 import { fetchUsage } from "@/store/subscription/subscriptionSlice";
 import { useAuth } from "@clerk/nextjs";
@@ -87,6 +87,22 @@ export default function DocumentEditor({
 
   // Diff / Suggestions mode state
   const [isSuggestionsMode, setIsSuggestionsMode] = useState(false);
+
+  // Check for imported query parameter
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("imported") === "true") {
+        import("sonner").then(({ toast }) => {
+          toast.success("Documento importado com sucesso. Pode agora editar ou melhorar com IA.", {
+            duration: 8000,
+          });
+        });
+        // Remove the query param to avoid repeating on refresh
+        router.replace(window.location.pathname, { scroll: false });
+      }
+    }
+  }, [router]);
 
   const handleEditorReady = useCallback((editor: Editor) => {
     editorRef.current = editor;
