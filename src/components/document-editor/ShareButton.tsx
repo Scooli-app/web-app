@@ -4,10 +4,13 @@ import { ShareResourceModal } from "@/components/community/ShareResourceModal";
 import { Button } from "@/components/ui/button";
 import type { ShareResourceRequest } from "@/services/api/community.service";
 import type { SharedResourceStatus } from "@/shared/types/document";
+import { FeatureFlag } from "@/shared/types/featureFlags";
 import { submitResource } from "@/store/community";
 import { useAppDispatch } from "@/store/hooks";
+import type { RootState } from "@/store/store";
 import { CheckCircle2, Clock, Share2 } from "lucide-react";
 import { memo, useCallback, useState } from "react";
+import { useSelector } from "react-redux";
 import { toast } from "sonner";
 
 interface ShareButtonProps {
@@ -40,6 +43,10 @@ function ShareButtonComponent({
   // Local status set immediately from the submitResource response, overrides the prop
   const [localStatus, setLocalStatus] = useState<SharedResourceStatus | null>(null);
 
+  // Check feature flag — if community library is OFF, hide the button entirely
+  const features = useSelector((state: RootState) => state.features.flags);
+  const isCommunityEnabled = features[FeatureFlag.COMMUNITY_LIBRARY] === true;
+
   // Effective status: prefer local (just submitted) over prop (from last fetch)
   const effectiveStatus = localStatus ?? sharedStatus;
 
@@ -58,7 +65,11 @@ function ShareButtonComponent({
         const result = await dispatch(submitResource(request)).unwrap();
         setIsModalOpen(false);
         setLocalStatus(result.status as SharedResourceStatus);
-        toast.success("Recurso submetido para revisão! Receberá notificação em 24-48h.");
+        if (result.status === "APPROVED") {
+          toast.success("Recurso publicado na biblioteca comunitária!");
+        } else {
+          toast.success("Recurso submetido para revisão! Receberá notificação em 24-48h.");
+        }
       } catch (error) {
         toast.error(
           error instanceof Error ? error.message : "Erro ao partilhar recurso"
@@ -69,6 +80,11 @@ function ShareButtonComponent({
     },
     [dispatch]
   );
+
+  // If community library feature is disabled, hide the button entirely
+  if (!isCommunityEnabled) {
+    return null;
+  }
 
   if (effectiveStatus === "PENDING") {
     return (
