@@ -5,53 +5,56 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import {
-  Sheet,
-  SheetContent,
-  SheetTitle,
-  SheetTrigger,
+    Sheet,
+    SheetContent,
+    SheetTitle,
+    SheetTrigger,
 } from "@/components/ui/sheet";
 import {
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  Sidebar as SidebarPrimitive,
-  SidebarProvider,
-  SidebarTrigger,
+    SidebarContent,
+    SidebarGroup,
+    SidebarGroupContent,
+    SidebarGroupLabel,
+    SidebarHeader,
+    SidebarMenu,
+    SidebarMenuButton,
+    SidebarMenuItem,
+    Sidebar as SidebarPrimitive,
+    SidebarProvider,
+    SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { UpgradePlanModal } from "@/components/ui/upgrade-plan-modal";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAdmin } from "@/hooks/useAdmin";
 import { Routes } from "@/shared/types";
+import { FeatureFlag } from "@/shared/types/featureFlags";
 import { cn } from "@/shared/utils/utils";
+import { fetchFeatureFlags } from "@/store/features/featuresSlice";
 import type { AppDispatch, RootState } from "@/store/store";
 import {
-  selectSubscription,
-  selectUsageStats,
+    selectSubscription,
+    selectUsageStats,
 } from "@/store/subscription/selectors";
 import {
-  fetchSubscription,
-  fetchUsage,
+    fetchSubscription,
+    fetchUsage,
 } from "@/store/subscription/subscriptionSlice";
 import { setUpgradeModalOpen } from "@/store/ui/uiSlice";
 import { SignInButton, SignedIn, SignedOut, UserButton, useAuth } from "@clerk/nextjs";
 import {
-  BookOpen,
-  FileCheck,
-  FileText,
-  FolderArchiveIcon,
-  HelpCircle,
-  Home,
-  Menu,
-  MessageSquare,
-  Settings,
-  Shield,
-  Sparkles,
-  type LucideIcon
+    BookOpen,
+    Clock,
+    FileCheck,
+    FileText,
+    FolderArchiveIcon,
+    HelpCircle,
+    Home,
+    Menu,
+    MessageSquare,
+    Settings,
+    Shield,
+    Sparkles,
+    type LucideIcon
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -171,17 +174,46 @@ const NavMenuItem = memo(function NavMenuItem({
   );
 });
 
+/**
+ * A disabled nav item that shows a "Em breve" badge — used when a feature flag is OFF.
+ */
+const DisabledNavMenuItem = memo(function DisabledNavMenuItem({
+  item,
+}: {
+  item: NavItem;
+}) {
+  const Icon = item.icon;
+
+  return (
+    <SidebarMenuItem>
+      <SidebarMenuButton
+        disabled
+        className="h-10 px-4 opacity-50 cursor-not-allowed text-sidebar-foreground"
+      >
+        <Icon className="h-4 w-4" />
+        <span className="flex-1">{item.title}</span>
+        <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide bg-muted text-muted-foreground rounded-full px-2 py-0.5 border border-border">
+          <Clock className="h-2.5 w-2.5" />
+          Em breve
+        </span>
+      </SidebarMenuButton>
+    </SidebarMenuItem>
+  );
+});
+
 // Memoized navigation group component
 const NavGroup = memo(function NavGroup({
   label,
   items,
   pathname,
   onItemClick,
+  disabledKeys = [],
 }: {
   label: string;
   items: readonly NavItem[];
   pathname: string;
   onItemClick?: () => void;
+  disabledKeys?: string[];
 }) {
   return (
     <SidebarGroup>
@@ -190,14 +222,18 @@ const NavGroup = memo(function NavGroup({
       </SidebarGroupLabel>
       <SidebarGroupContent>
         <SidebarMenu>
-          {items.map((item) => (
-            <NavMenuItem
-              key={item.href}
-              item={item}
-              isActive={pathname === item.href}
-              onClick={onItemClick}
-            />
-          ))}
+          {items.map((item) =>
+            disabledKeys.includes(item.href) ? (
+              <DisabledNavMenuItem key={item.href} item={item} />
+            ) : (
+              <NavMenuItem
+                key={item.href}
+                item={item}
+                isActive={pathname === item.href}
+                onClick={onItemClick}
+              />
+            )
+          )}
         </SidebarMenu>
       </SidebarGroupContent>
     </SidebarGroup>
@@ -214,6 +250,9 @@ const SidebarInnerContent = memo(function SidebarInnerContent({
 }) {
   const router = useRouter();
   const { isAdmin } = useAdmin();
+  const features = useSelector((state: RootState) => state.features.flags);
+  const isCommunityEnabled = features[FeatureFlag.COMMUNITY_LIBRARY] === true;
+
   return (
     <SidebarPrimitive collapsible="icon">
       <SidebarHeader className="flex items-center justify-center px-6 py-4 group-data-[collapsible=icon]:px-3 group-data-[collapsible=icon]:py-2">
@@ -233,6 +272,7 @@ const SidebarInnerContent = memo(function SidebarInnerContent({
           items={NAVIGATION}
           pathname={pathname}
           onItemClick={onItemClick}
+          disabledKeys={isCommunityEnabled ? [] : [Routes.COMMUNITY]}
         />
 
         <Separator className="my-4" />
@@ -280,6 +320,7 @@ function GenerationsIndicator() {
     if (isSignedIn) {
       dispatch(fetchSubscription());
       dispatch(fetchUsage());
+      dispatch(fetchFeatureFlags());
     }
   }, [isSignedIn, dispatch]);
 

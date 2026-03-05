@@ -5,26 +5,27 @@
  */
 
 import type {
-    BackendPaginatedResponse,
-    ChatResponse,
-    CreateDocumentParams,
-    CreateDocumentStreamResponse,
-    Document,
-    DocumentCountsResponse,
-    DocumentFilters,
-    DocumentResponse,
-    DocumentStatsResponse,
-    DocumentStreamCallbacks,
-    DocumentType,
-    GetDocumentsParams,
-    GetDocumentsResponse,
-    StreamEvent,
+  BackendPaginatedResponse,
+  ChatResponse,
+  CreateDocumentParams,
+  CreateDocumentStreamResponse,
+  Document,
+  DocumentCountsResponse,
+  DocumentFilters,
+  DocumentResponse,
+  DocumentStatsResponse,
+  DocumentStreamCallbacks,
+  DocumentType,
+  GetDocumentsParams,
+  GetDocumentsResponse,
+  StreamEvent,
 } from "@/shared/types";
+import axios, { type AxiosError } from "axios";
 import apiClient from "./client";
 
 export type {
-    ChatResponse, CreateDocumentParams, CreateDocumentStreamResponse, DocumentCountsResponse, DocumentFilters, DocumentResponse, DocumentStreamCallbacks, DocumentType, GetDocumentsParams,
-    GetDocumentsResponse, StreamEvent
+  ChatResponse, CreateDocumentParams, CreateDocumentStreamResponse, DocumentCountsResponse, DocumentFilters, DocumentResponse, DocumentStreamCallbacks, DocumentType, GetDocumentsParams,
+  GetDocumentsResponse, StreamEvent
 };
 
 /**
@@ -249,4 +250,82 @@ export async function deleteDocuments(
     }
   }
   return { deletedCount };
+}
+
+/**
+ * Get a Presigned PUT URL for uploading a document to R2
+ */
+export interface DocumentImportRequest {
+  title: string;
+  documentType: string;
+  subject: string;
+  schoolYear: number;
+  fileKey: string;
+}
+
+export async function getUploadUrl(
+  filename: string,
+  contentType: string,
+  documentType: string
+): Promise<{ uploadUrl: string; fileKey: string }> {
+  const params = new URLSearchParams();
+  params.append("filename", filename);
+  params.append("contentType", contentType);
+  params.append("documentType", documentType);
+
+  const response = await apiClient.get<{ uploadUrl: string; fileKey: string }>(
+    `/documents/upload-url?${params.toString()}`
+  );
+  return response.data;
+}
+
+/**
+ * Import a document from R2 and normalize it via AI
+ */
+export async function importDocument(
+  data: DocumentImportRequest
+): Promise<{ id: string; message: string }> {
+  const response = await apiClient.post<{ id: string; message: string }>(
+    "/documents/import",
+    data
+  );
+  return response.data;
+}
+
+/**
+ * Poll the backend until the document is available (status 200 OK)
+ * Used to wait for background jobs (like import) to finish.
+ */
+export async function waitForDocument(id: string, maxAttempts = 60): Promise<void> {
+  const delayMs = 3000;
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    try {
+      const doc = await getDocument(id);
+      if (doc.status === "completed") {
+        return; // Success!
+      }
+      if (doc.status === "error") {
+        // The backend saves the specific error message into the 'content' field
+        throw new Error(doc.content || "Erro ao processar o formato do ficheiro.");
+      }
+      // If status is still "processing", we just catch the timeout below
+    } catch (e: unknown) {
+      // If it's a custom error we threw above (like doc.status === "error"), throw it immediately to break the promise
+      if (!axios.isAxiosError(e)) {
+        throw e;
+      }
+      
+      const axiosError = e as AxiosError;
+      
+      // If it's an Axios error that is NOT a 404, we might want to rethrow if it's a fatal 500
+      if (axiosError.response?.status && axiosError.response.status >= 500) {
+        throw new Error(`Erro de servidor ao importar o documento. (${axiosError.response.status})`);
+      }
+      
+      // Otherwise (e.g., 404 or network hiccup), just wait and try again
+    }
+    // Wait before next attempt
+    await new Promise((resolve) => setTimeout(resolve, delayMs));
+  }
+  throw new Error("Tempo limite excedido a aguardar pela formatação do documento.");
 }

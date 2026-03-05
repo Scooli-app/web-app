@@ -21,21 +21,27 @@ export interface DocumentMetadata {
   [key: string]: unknown;
 }
 
+export type SharedResourceStatus = "PENDING" | "APPROVED" | "REJECTED"
+
 export interface Document {
   id: string;
   title: string;
   documentType: DocumentType;
   content: string;
+  status: string;
   metadata: DocumentMetadata;
   isPublic: boolean;
   subject: string | null;
   gradeLevel: string | null;
   rating: number;
   downloads: number;
+  sharedResourceId?: string | null;
+  sharedResourceStatus?: SharedResourceStatus | null;
   sources?: RagSource[];
   createdAt: string;
   updatedAt: string;
 }
+
 
 /**
  * RAG source representing a curriculum chunk used during AI generation.

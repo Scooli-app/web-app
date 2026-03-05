@@ -96,7 +96,7 @@ export function TemplateCard({
               </span>
             )}
             {template.isDefault && (
-              <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-medium bg-success text-white">
+              <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-500 text-white">
                 Padrão
               </span>
             )}

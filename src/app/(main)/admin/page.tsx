@@ -1,8 +1,9 @@
 "use client";
 
+import StatusCard from "@/components/admin/StatusCard";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAdmin } from "@/hooks/useAdmin";
-import { LayoutDashboard, Lock, MessageSquare, Shield, Users } from "lucide-react";
+import { LayoutDashboard, Library, MessageSquare, Shield, ToggleLeft, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
@@ -60,14 +61,8 @@ export default function AdminPage() {
           <p className="text-xs text-muted-foreground mt-1">Live tracking enabled</p>
         </div>
 
-        <div className="bg-card p-6 rounded-2xl border border-border shadow-sm">
-          <div className="flex items-center gap-2 mb-4 text-muted-foreground">
-            <Lock className="w-4 h-4" />
-            <span className="text-sm font-medium uppercase tracking-wider">System Health</span>
-          </div>
-          <p className="text-3xl font-bold text-emerald-500">Optimal</p>
-          <p className="text-xs text-muted-foreground mt-1">All services operational</p>
-        </div>
+        {/* Real-time System Health Card */}
+        <StatusCard />
       </div>
 
       <div className="mt-10">
@@ -89,6 +84,46 @@ export default function AdminPage() {
             <CardContent>
               <div className="text-sm text-muted-foreground">
                 View submitted tickets, update status, and respond to users.
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card 
+            className="hover:bg-muted/50 transition-colors cursor-pointer border-border group"
+            onClick={() => router.push("/admin/moderation")}
+          >
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 group-hover:text-primary transition-colors">
+                <Library className="h-5 w-5" />
+                Community Moderation
+              </CardTitle>
+              <CardDescription>
+                Review and approve community-shared resources.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-sm text-muted-foreground">
+                Manage curriculum-aligned teaching resources before publication.
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card 
+            className="hover:bg-muted/50 transition-colors cursor-pointer border-border group"
+            onClick={() => router.push("/admin/features")}
+          >
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 group-hover:text-primary transition-colors">
+                <ToggleLeft className="h-5 w-5" />
+                Feature Flags
+              </CardTitle>
+              <CardDescription>
+                Control feature availability across users and plans.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-sm text-muted-foreground">
+                Toggle features globally, by rollout %, or with per-user/role overrides.
               </div>
             </CardContent>
           </Card>
