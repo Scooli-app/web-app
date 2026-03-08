@@ -8,7 +8,7 @@ export enum TeachingMethod {
   ACTIVE = "active",
   LECTURE = "lecture",
   PRACTICAL = "practical",
-  SOCIAL_EMOTIONAL = "social_emotional",
+  SOCIAL_EMOTIONAL = "socialEmotional",
   INTERACTIVE = "interactive",
 }
 
