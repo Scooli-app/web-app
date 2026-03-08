@@ -262,6 +262,7 @@ const SidebarInnerContent = memo(function SidebarInnerContent({
   const isPresentationCreationEnabled =
     features[FeatureFlag.PRESENTATION_CREATION] === true;
 
+
   return (
     <SidebarPrimitive collapsible="icon">
       <SidebarHeader className="flex items-center justify-center px-6 py-4 group-data-[collapsible=icon]:px-3 group-data-[collapsible=icon]:py-2">
