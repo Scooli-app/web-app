@@ -252,14 +252,14 @@ function SettingsContent() {
           </Button>
         </div>
 
-        {/* Subscription & Credits Card */}
+        {/* Subscription & Generations Card */}
         <div className="bg-card p-8 rounded-2xl shadow-md border border-border">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center">
               <CreditCard className="w-5 h-5 text-primary" />
             </div>
             <h2 className="text-xl font-semibold text-foreground">
-              Subscrição e Créditos
+              Subscrição e Gerações
             </h2>
           </div>
 
