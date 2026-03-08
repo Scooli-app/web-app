@@ -80,6 +80,6 @@ export const PLAN_DISPLAY_INFO: Record<
   },
   free: {
     name: "Plano Gratuito",
-    description: "100 créditos de boas-vindas",
+    description: "20 gerações por mês",
   },
 };
