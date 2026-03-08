@@ -1,27 +1,28 @@
 "use client";
 
 import { AssistantProvider } from "@/components/assistant";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import {
-    Sheet,
-    SheetContent,
-    SheetTitle,
-    SheetTrigger,
+  Sheet,
+  SheetContent,
+  SheetTitle,
+  SheetTrigger,
 } from "@/components/ui/sheet";
 import {
-    SidebarContent,
-    SidebarGroup,
-    SidebarGroupContent,
-    SidebarGroupLabel,
-    SidebarHeader,
-    SidebarMenu,
-    SidebarMenuButton,
-    SidebarMenuItem,
-    Sidebar as SidebarPrimitive,
-    SidebarProvider,
-    SidebarTrigger,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  Sidebar as SidebarPrimitive,
+  SidebarProvider,
+  SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { UpgradePlanModal } from "@/components/ui/upgrade-plan-modal";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -32,30 +33,37 @@ import { cn } from "@/shared/utils/utils";
 import { fetchFeatureFlags } from "@/store/features/featuresSlice";
 import type { AppDispatch, RootState } from "@/store/store";
 import {
-    selectSubscription,
-    selectUsageStats,
+  selectSubscription,
+  selectUsageStats,
 } from "@/store/subscription/selectors";
 import {
-    fetchSubscription,
-    fetchUsage,
+  fetchSubscription,
+  fetchUsage,
 } from "@/store/subscription/subscriptionSlice";
 import { setUpgradeModalOpen } from "@/store/ui/uiSlice";
-import { SignInButton, SignedIn, SignedOut, UserButton, useAuth } from "@clerk/nextjs";
 import {
-    BookOpen,
-    Clock,
-    FileCheck,
-    FileText,
-    FolderArchiveIcon,
-    HelpCircle,
-    Home,
-    Menu,
-    MessageSquare,
-    Presentation,
-    Settings,
-    Shield,
-    Sparkles,
-    type LucideIcon
+  SignInButton,
+  SignedIn,
+  SignedOut,
+  useAuth,
+  useClerk,
+  useUser,
+} from "@clerk/nextjs";
+import {
+  BookOpen,
+  Clock,
+  FileCheck,
+  FileText,
+  FolderArchiveIcon,
+  HelpCircle,
+  Home,
+  Menu,
+  MessageSquare,
+  Presentation,
+  Settings,
+  Shield,
+  Sparkles,
+  type LucideIcon,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -163,14 +171,19 @@ const NavMenuItem = memo(function NavMenuItem({
 
   return (
     <SidebarMenuItem>
-      <Link href={item.href} onClick={onClick} className="w-full" prefetch={false}>
+      <Link
+        href={item.href}
+        onClick={onClick}
+        className="w-full"
+        prefetch={false}
+      >
         <SidebarMenuButton
           isActive={isActive}
           className={cn(
             "h-10 px-4",
             isActive
               ? "bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary"
-              : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+              : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
           )}
         >
           <Icon className="h-4 w-4" />
@@ -239,11 +252,63 @@ const NavGroup = memo(function NavGroup({
                 isActive={pathname === item.href}
                 onClick={onItemClick}
               />
-            )
+            ),
           )}
         </SidebarMenu>
       </SidebarGroupContent>
     </SidebarGroup>
+  );
+});
+
+const SidebarProfileCard = memo(function SidebarProfileCard({
+  onClick,
+}: {
+  onClick?: () => void;
+}) {
+  const { user } = useUser();
+  const { openUserProfile } = useClerk();
+
+  if (!user) return null;
+
+  const displayName = user.fullName || user.firstName || "Utilizador";
+  const email = user.primaryEmailAddress?.emailAddress || "";
+  const fallbackInitial = displayName.charAt(0).toUpperCase();
+
+  const handleClick = () => {
+    openUserProfile();
+    onClick?.();
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      className="mx-4 mt-3 block w-[calc(100%-2rem)] rounded-2xl border border-border bg-card/90 p-4 text-left shadow-sm transition hover:border-primary/30 hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary group-data-[collapsible=icon]:hidden"
+      aria-label="Abrir perfil"
+    >
+      <div className="flex items-center gap-3">
+        {user.imageUrl ? (
+          <Image
+            src={user.imageUrl}
+            alt={displayName}
+            width={52}
+            height={52}
+            className="h-12 w-12 rounded-xl object-cover"
+          />
+        ) : (
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-base font-semibold text-primary-foreground">
+            {fallbackInitial}
+          </div>
+        )}
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold text-foreground">
+            {displayName}
+          </p>
+          <p className="truncate text-xs text-muted-foreground">{email}</p>
+          <p className="mt-1 text-xs font-medium text-primary">Gerir perfil</p>
+        </div>
+      </div>
+    </button>
   );
 });
 
@@ -261,7 +326,6 @@ const SidebarInnerContent = memo(function SidebarInnerContent({
   const isCommunityEnabled = features[FeatureFlag.COMMUNITY_LIBRARY] === true;
   const isPresentationCreationEnabled =
     features[FeatureFlag.PRESENTATION_CREATION] === true;
-
 
   return (
     <SidebarPrimitive collapsible="icon">
@@ -292,7 +356,9 @@ const SidebarInnerContent = memo(function SidebarInnerContent({
           items={CONTENT_CREATION}
           pathname={pathname}
           onItemClick={onItemClick}
-          disabledKeys={isPresentationCreationEnabled ? [] : [Routes.PRESENTATION]}
+          disabledKeys={
+            isPresentationCreationEnabled ? [] : [Routes.PRESENTATION]
+          }
         />
 
         <Separator className="my-4" />
@@ -303,6 +369,9 @@ const SidebarInnerContent = memo(function SidebarInnerContent({
           pathname={pathname}
           onItemClick={onItemClick}
         />
+        <SignedIn>
+          <SidebarProfileCard onClick={onItemClick} />
+        </SignedIn>
 
         {isAdmin && (
           <>
@@ -323,7 +392,7 @@ const SidebarInnerContent = memo(function SidebarInnerContent({
 function GenerationsIndicator() {
   const { isSignedIn } = useAuth();
   const dispatch = useDispatch<AppDispatch>();
-  
+
   const subscription = useSelector(selectSubscription);
   const usage = useSelector(selectUsageStats);
 
@@ -344,7 +413,7 @@ function GenerationsIndicator() {
       <div
         className={cn(
           "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors border",
-          "bg-primary/5 text-primary border-success/10"
+          "bg-primary/5 text-primary border-success/10",
         )}
       >
         <Sparkles className="w-4 h-4" />
@@ -377,7 +446,7 @@ function GenerationsIndicator() {
         "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors border",
         isLow
           ? "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-900/30"
-          : "bg-primary/5 text-primary border-primary/10 hover:bg-primary/10"
+          : "bg-primary/5 text-primary border-primary/10 hover:bg-primary/10",
       )}
     >
       <Sparkles className="w-4 h-4" />
@@ -393,7 +462,9 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const dispatch = useDispatch<AppDispatch>();
-  const isUpgradeModalOpen = useSelector((state: RootState) => state.ui.isUpgradeModalOpen);
+  const isUpgradeModalOpen = useSelector(
+    (state: RootState) => state.ui.isUpgradeModalOpen,
+  );
 
   const handleMobileItemClick = useCallback(() => {
     if (isMobile) {
@@ -405,23 +476,31 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
     setOpen(isOpen);
   }, []);
 
-  const handleUpgradeModalChange = useCallback((isOpen: boolean) => {
-    dispatch(setUpgradeModalOpen(isOpen));
-  }, [dispatch]);
+  const handleUpgradeModalChange = useCallback(
+    (isOpen: boolean) => {
+      dispatch(setUpgradeModalOpen(isOpen));
+    },
+    [dispatch],
+  );
 
   // Memoize sidebar content to prevent recreation
   const sidebarContent = useMemo(
-    () => <SidebarInnerContent pathname={pathname} onItemClick={handleMobileItemClick} />,
-    [pathname, handleMobileItemClick]
+    () => (
+      <SidebarInnerContent
+        pathname={pathname}
+        onItemClick={handleMobileItemClick}
+      />
+    ),
+    [pathname, handleMobileItemClick],
   );
 
   return (
     <SidebarProvider>
       <div className="flex h-screen w-full">
         {/* Upgrade Modal */}
-        <UpgradePlanModal 
-          open={isUpgradeModalOpen} 
-          onOpenChange={handleUpgradeModalChange} 
+        <UpgradePlanModal
+          open={isUpgradeModalOpen}
+          onOpenChange={handleUpgradeModalChange}
         />
 
         {/* Desktop Sidebar */}
@@ -452,31 +531,35 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
             <div className="flex items-center gap-2 px-4 justify-between w-full">
               <SidebarTrigger className="hidden md:flex" />
               <div className="ml-auto flex items-center gap-2">
-                <GenerationsIndicator />
+                <SignedIn>
+                  <div className="flex items-center gap-2">
+                    <Badge
+                      variant="secondary"
+                      className="h-8 rounded border-dashed border border-primary/20 bg-primary/10 px-4 text-[12px] font-semibold uppercase tracking-wide text-primary"
+                    >
+                      Beta
+                    </Badge>
+                    <GenerationsIndicator />
+                  </div>
+                </SignedIn>
                 <ThemeToggle />
                 <SignedOut>
                   <SignInButton mode="modal">
-                    <Button variant="default" className="bg-primary hover:bg-primary/90">
+                    <Button
+                      variant="default"
+                      className="bg-primary hover:bg-primary/90"
+                    >
                       Entrar
                     </Button>
                   </SignInButton>
                 </SignedOut>
-                <SignedIn>
-                  <UserButton
-                    appearance={{
-                      elements: {
-                        avatarBox: "w-10 h-10"
-                      }
-                    }}
-                  />
-                </SignedIn>
               </div>
             </div>
           </header>
           <main
             className={cn(
               "flex-1 overflow-auto w-full bg-slate-50 dark:bg-background",
-              className
+              className,
             )}
           >
             <div className="w-full flex flex-col items-center h-full p-6">
