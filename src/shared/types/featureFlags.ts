@@ -9,6 +9,9 @@ export enum FeatureFlag {
   /** Controls access to the Community Library and the Share button in the editor. */
   COMMUNITY_LIBRARY = "community_library",
 
+  /** Controls whether users can create presentation documents. */
+  PRESENTATION_CREATION = "presentation_creation",
+
   /** When ON: shared documents await admin review. When OFF: auto-approved on submit. */
   DOCUMENT_REVIEW = "document_review",
 }

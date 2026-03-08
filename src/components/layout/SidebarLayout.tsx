@@ -51,6 +51,7 @@ import {
     Home,
     Menu,
     MessageSquare,
+    Presentation,
     Settings,
     Shield,
     Sparkles,
@@ -115,6 +116,12 @@ const CONTENT_CREATION: NavItem[] = [
     href: Routes.QUIZ,
     icon: HelpCircle,
     description: "Criar e editar quizzes",
+  },
+  {
+    title: "Apresentações",
+    href: Routes.PRESENTATION,
+    icon: Presentation,
+    description: "Criar e editar apresentações",
   },
 ];
 
@@ -252,6 +259,8 @@ const SidebarInnerContent = memo(function SidebarInnerContent({
   const { isAdmin } = useAdmin();
   const features = useSelector((state: RootState) => state.features.flags);
   const isCommunityEnabled = features[FeatureFlag.COMMUNITY_LIBRARY] === true;
+  const isPresentationCreationEnabled =
+    features[FeatureFlag.PRESENTATION_CREATION] === true;
 
   return (
     <SidebarPrimitive collapsible="icon">
@@ -282,6 +291,7 @@ const SidebarInnerContent = memo(function SidebarInnerContent({
           items={CONTENT_CREATION}
           pathname={pathname}
           onItemClick={onItemClick}
+          disabledKeys={isPresentationCreationEnabled ? [] : [Routes.PRESENTATION]}
         />
 
         <Separator className="my-4" />
