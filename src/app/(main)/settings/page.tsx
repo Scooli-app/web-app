@@ -196,10 +196,10 @@ function SettingsContent() {
   }
 
   return (
-    <div className="w-full max-w-3xl mx-auto">
+    <div className="w-full max-w-4xl mx-auto">
       {/* Page Header */}
       <div className="mb-8">
-        <h1 className="text-4xl font-bold text-foreground mb-2">Definições</h1>
+        <h1 className="text-3xl font-bold text-foreground mb-2 sm:text-4xl">Definições</h1>
         <p className="text-lg text-muted-foreground">
           Gerir a sua conta, subscrição e preferências.
         </p>
@@ -207,7 +207,7 @@ function SettingsContent() {
 
       <div className="space-y-6">
         {/* Profile & Account Card */}
-        <div className="bg-card p-8 rounded-2xl shadow-md border border-border">
+        <div className="bg-card p-4 sm:p-6 md:p-8 rounded-2xl shadow-md border border-border">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center">
               <User className="w-5 h-5 text-primary" />
@@ -253,7 +253,7 @@ function SettingsContent() {
         </div>
 
         {/* Subscription & Generations Card */}
-        <div className="bg-card p-8 rounded-2xl shadow-md border border-border">
+        <div className="bg-card p-4 sm:p-6 md:p-8 rounded-2xl shadow-md border border-border">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center">
               <CreditCard className="w-5 h-5 text-primary" />
@@ -446,7 +446,7 @@ function SettingsContent() {
         </div>
 
         {/* App Preferences Card */}
-        <div className="bg-card p-8 rounded-2xl shadow-md border border-border">
+        <div className="bg-card p-4 sm:p-6 md:p-8 rounded-2xl shadow-md border border-border">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center">
               <Settings className="w-5 h-5 text-primary" />
@@ -562,7 +562,7 @@ function SettingsContent() {
 
 function SettingsSkeleton() {
   return (
-    <div className="w-full max-w-3xl mx-auto animate-pulse">
+    <div className="w-full max-w-4xl mx-auto animate-pulse">
       <div className="mb-8">
         <div className="h-10 bg-muted rounded-lg w-48 mb-2" />
         <div className="h-6 bg-muted rounded-lg w-80" />

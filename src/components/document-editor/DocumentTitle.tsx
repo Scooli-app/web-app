@@ -23,7 +23,10 @@ export default function DocumentTitle({
 }: DocumentTitleProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editingTitle, setEditingTitle] = useState(title);
+  const [showSaved, setShowSaved] = useState(false);
+
   const titleInputRef = useRef<HTMLInputElement>(null);
+  const savedTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     setEditingTitle(title);
@@ -32,7 +35,6 @@ export default function DocumentTitle({
   const handleTitleClick = () => {
     setIsEditing(true);
     setEditingTitle(title);
-    // Focus the input after a brief delay to ensure it's rendered
     setTimeout(() => {
       titleInputRef.current?.focus();
       titleInputRef.current?.select();
@@ -45,7 +47,6 @@ export default function DocumentTitle({
       return;
     }
 
-    // Check character limit
     if (editingTitle.length > MAX_LENGTHS.DOCUMENT_TITLE) {
       return;
     }
@@ -72,26 +73,31 @@ export default function DocumentTitle({
     handleTitleSave();
   };
 
-  const [showSaved, setShowSaved] = useState(false);
-  const savedTimerRef = useRef<NodeJS.Timeout | null>(null);
-
   useEffect(() => {
     if (isSaving) {
       setShowSaved(false);
-      if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
-    } else if (title) { // Only show saved if we have a title (not initial load)
+      if (savedTimerRef.current) {
+        clearTimeout(savedTimerRef.current);
+      }
+    } else if (title) {
       setShowSaved(true);
       savedTimerRef.current = setTimeout(() => {
         setShowSaved(false);
       }, 3000);
     }
+
+    return () => {
+      if (savedTimerRef.current) {
+        clearTimeout(savedTimerRef.current);
+      }
+    };
   }, [isSaving, title]);
 
   return (
-    <div className="flex items-center space-x-3 m-1.5">
+    <div className="mb-2 w-full">
       {isEditing ? (
-        <div className="flex items-center space-x-2">
-          <div className="relative">
+        <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-start">
+          <div className="relative w-full max-w-3xl">
             <Input
               ref={titleInputRef}
               value={editingTitle}
@@ -99,34 +105,34 @@ export default function DocumentTitle({
               onKeyDown={handleTitleKeyDown}
               onBlur={handleTitleBlur}
               maxLength={MAX_LENGTHS.DOCUMENT_TITLE}
-              className="text-3xl font-bold text-foreground bg-background border-2 border-primary rounded-lg px-4 py-2 min-w-[300px]"
+              className="h-12 w-full rounded-lg border-2 border-primary bg-background px-3 py-2 text-xl font-bold text-foreground sm:h-14 sm:px-4 sm:text-3xl"
               placeholder="Título do documento..."
             />
-            <div className="absolute -bottom-6 right-0 text-xs text-muted-foreground">
+            <div className="mt-1 text-right text-xs text-muted-foreground">
               {editingTitle.length}/{MAX_LENGTHS.DOCUMENT_TITLE}
             </div>
           </div>
-          <Edit3 className="h-6 w-6 text-primary" />
+          <Edit3 className="hidden h-5 w-5 text-primary sm:block" />
         </div>
       ) : (
-        <div className="flex items-center gap-10">
+        <div className="flex w-full flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
           <StreamingText
             text={title || defaultTitle}
             isStreaming={isStreaming}
             as="h1"
-            className="text-3xl font-bold text-foreground cursor-pointer hover:text-primary transition-colors"
+            className="cursor-pointer break-words text-2xl font-bold text-foreground transition-colors hover:text-primary sm:text-3xl"
             onClick={handleTitleClick}
           />
-          
-          <div className="flex items-center min-w-[100px] h-6">
+
+          <div className="flex min-h-5 items-center">
             {isSaving ? (
-              <div className="flex items-center text-muted-foreground/60 animate-pulse">
-                <Save className="h-3.5 w-3.5 mr-1.5" />
+              <div className="flex items-center text-muted-foreground/70 animate-pulse">
+                <Save className="mr-1.5 h-3.5 w-3.5" />
                 <span className="text-xs font-medium">A guardar...</span>
               </div>
             ) : showSaved ? (
-              <div className="flex items-center text-primary/60 animate-in fade-in duration-500">
-                <Save className="h-3.5 w-3.5 mr-1.5" />
+              <div className="flex items-center text-primary/70 animate-in fade-in duration-500">
+                <Save className="mr-1.5 h-3.5 w-3.5" />
                 <span className="text-xs font-medium">Guardado</span>
               </div>
             ) : null}

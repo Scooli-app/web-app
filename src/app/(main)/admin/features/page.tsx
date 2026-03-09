@@ -1,5 +1,7 @@
 "use client";
 
+import { PageContainer } from "@/components/layout/PageContainer";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -36,14 +38,14 @@ function OverrideRow({ override }: { override: FeatureOverride }) {
   const label = override.userId
     ? `User: ${override.userId}`
     : override.role
-    ? `Role: ${override.role}`
-    : override.plan
-    ? `Plan: ${override.plan}`
-    : "Unknown";
+      ? `Role: ${override.role}`
+      : override.plan
+        ? `Plan: ${override.plan}`
+        : "Unknown";
 
   return (
-    <div className="flex items-center justify-between text-sm bg-muted/40 rounded-lg px-3 py-2">
-      <span className="text-muted-foreground font-mono text-xs">{label}</span>
+    <div className="flex items-center justify-between rounded-lg bg-muted/40 px-3 py-2 text-sm">
+      <span className="font-mono text-xs text-muted-foreground">{label}</span>
       <Badge variant={override.enabled ? "default" : "secondary"}>
         {override.enabled ? "ON" : "OFF"}
       </Badge>
@@ -51,7 +53,13 @@ function OverrideRow({ override }: { override: FeatureOverride }) {
   );
 }
 
-function FlagCard({ flag, onToggle }: { flag: FeatureFlag; onToggle: (key: string, newValue: boolean) => void }) {
+function FlagCard({
+  flag,
+  onToggle,
+}: {
+  flag: FeatureFlag;
+  onToggle: (key: string, newValue: boolean) => void;
+}) {
   const [expanded, setExpanded] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
 
@@ -74,14 +82,14 @@ function FlagCard({ flag, onToggle }: { flag: FeatureFlag; onToggle: (key: strin
     <Card className="border border-border shadow-sm">
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-4">
-          <div className="flex-1 min-w-0">
+          <div className="min-w-0 flex-1">
             <CardTitle className="text-base">{flag.name}</CardTitle>
-            <p className="text-xs font-mono text-muted-foreground mt-0.5">{flag.key}</p>
+            <p className="mt-0.5 text-xs font-mono text-muted-foreground">{flag.key}</p>
             {flag.description && (
-              <p className="text-sm text-muted-foreground mt-1">{flag.description}</p>
+              <p className="mt-1 text-sm text-muted-foreground">{flag.description}</p>
             )}
           </div>
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex shrink-0 items-center gap-2">
             {isUpdating ? (
               <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
             ) : (
@@ -98,7 +106,7 @@ function FlagCard({ flag, onToggle }: { flag: FeatureFlag; onToggle: (key: strin
         </div>
       </CardHeader>
 
-      <CardContent className="pt-0 space-y-2">
+      <CardContent className="space-y-2 pt-0">
         {flag.rolloutPercentage > 0 && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <span>Rollout:</span>
@@ -112,7 +120,11 @@ function FlagCard({ flag, onToggle }: { flag: FeatureFlag; onToggle: (key: strin
               className="flex items-center gap-1.5 text-sm text-primary hover:underline"
               onClick={() => setExpanded((v) => !v)}
             >
-              {expanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+              {expanded ? (
+                <ChevronUp className="h-3.5 w-3.5" />
+              ) : (
+                <ChevronDown className="h-3.5 w-3.5" />
+              )}
               {overrideCount} override{overrideCount !== 1 ? "s" : ""}
             </button>
             {expanded && (
@@ -146,20 +158,17 @@ export default function AdminFeaturesPage() {
     setLoading(true);
     setError(null);
     try {
-      const [listRes,..._] = await Promise.all([
-        apiClient.get<FeatureFlag[]>("/admin/features"),
-      ]);
+      const [listRes] = await Promise.all([apiClient.get<FeatureFlag[]>("/admin/features")]);
       const flagsData = listRes.data;
-      // Fetch overrides for each flag
       const withOverrides = await Promise.all(
         flagsData.map(async (flag) => {
           try {
             const res = await apiClient.get<FeatureFlag>(`/admin/features/${flag.key}`);
             return res.data;
           } catch {
-            return flag; // no overrides or error — use base flag data
+            return flag;
           }
-        })
+        }),
       );
       setFlags(withOverrides);
     } catch {
@@ -176,60 +185,55 @@ export default function AdminFeaturesPage() {
   }, [isAdmin, loadFlags]);
 
   const handleToggle = useCallback((key: string, newValue: boolean) => {
-    setFlags((prev) =>
-      prev.map((f) => (f.key === key ? { ...f, enabled: newValue } : f))
-    );
+    setFlags((prev) => prev.map((f) => (f.key === key ? { ...f, enabled: newValue } : f)));
   }, []);
 
   if (!isLoaded || !isAdmin) {
     return (
-      <div className="flex h-full items-center justify-center">
-        <Loader2 className="animate-spin h-6 w-6 text-muted-foreground" />
+      <div className="flex min-h-[50dvh] items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
     );
   }
 
   return (
-    <div className="w-full max-w-3xl mx-auto p-8">
-      <div className="flex items-center gap-3 mb-8">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="gap-1.5"
-          onClick={() => router.push("/admin")}
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Admin
-        </Button>
-      </div>
-
-      <div className="flex items-center gap-3 mb-8">
-        <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
-          <ToggleLeft className="w-6 h-6 text-primary" />
-        </div>
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Feature Flags</h1>
-          <p className="text-muted-foreground text-sm">
-            Controla a disponibilidade de features por utilizador, role ou plano.
-          </p>
-        </div>
-      </div>
+    <PageContainer size="lg" contentClassName="py-4 sm:py-8">
+      <PageHeader
+        title="Feature Flags"
+        description="Controla a disponibilidade de features por utilizador, role ou plano."
+        icon={
+          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 sm:h-12 sm:w-12">
+            <ToggleLeft className="h-5 w-5 text-primary sm:h-6 sm:w-6" />
+          </div>
+        }
+        actions={
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-1.5"
+            onClick={() => router.push("/admin")}
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Admin
+          </Button>
+        }
+      />
 
       {loading && (
         <div className="flex justify-center py-16">
-          <Loader2 className="animate-spin h-6 w-6 text-muted-foreground" />
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
       )}
 
       {error && (
-        <div className="flex items-center gap-2 text-destructive bg-destructive/10 rounded-lg p-4 mb-6">
+        <div className="mb-6 flex items-center gap-2 rounded-lg bg-destructive/10 p-4 text-destructive">
           <AlertCircle className="h-5 w-5" />
           <span>{error}</span>
         </div>
       )}
 
       {!loading && !error && flags.length === 0 && (
-        <div className="text-center py-16 text-muted-foreground">
+        <div className="py-16 text-center text-muted-foreground">
           Nenhuma feature flag configurada.
         </div>
       )}
@@ -241,6 +245,6 @@ export default function AdminFeaturesPage() {
           ))}
         </div>
       )}
-    </div>
+    </PageContainer>
   );
 }

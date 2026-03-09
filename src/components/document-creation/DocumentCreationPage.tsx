@@ -208,7 +208,7 @@ export default function DocumentCreationPage({
             onUpdate={updateForm}
           />
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6">
             <GradeSection
               schoolYear={formState.schoolYear}
               onUpdate={updateForm}

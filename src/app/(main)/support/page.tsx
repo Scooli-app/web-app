@@ -1,5 +1,7 @@
 "use client";
 
+import { PageContainer } from "@/components/layout/PageContainer";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { FeedbackActionCards } from "@/components/feedback/FeedbackActionCards";
 import { FeedbackHistory } from "@/components/feedback/FeedbackHistory";
 import { useState } from "react";
@@ -12,17 +14,18 @@ export default function SupportPage() {
   };
 
   return (
-    <div className="w-full max-w-5xl mx-auto space-y-8 py-8 px-4">
-      <div className="text-center space-y-2 mb-8">
-        <h1 className="text-3xl font-bold tracking-tight">Apoio e Sugestões</h1>
-        <p className="text-muted-foreground max-w-2xl mx-auto">
-          A sua opinião é fundamental para nós. Envie sugestões de melhoria ou reporte erros que encontrou na plataforma.
-        </p>
-      </div>
+    <PageContainer size="xl" contentClassName="py-4 sm:py-6 md:py-8">
+      <div className="space-y-6 sm:space-y-8">
+        <PageHeader
+          className="text-center sm:text-left"
+          title="Apoio e Sugestões"
+          description="A sua opinião é fundamental para nós. Envie sugestões de melhoria ou reporte erros que encontrou na plataforma."
+        />
 
-      <FeedbackActionCards onFeedbackSubmitted={handleFeedbackSubmitted} />
-      
-      <FeedbackHistory refreshTrigger={refreshTrigger} />
-    </div>
+        <FeedbackActionCards onFeedbackSubmitted={handleFeedbackSubmitted} />
+
+        <FeedbackHistory refreshTrigger={refreshTrigger} />
+      </div>
+    </PageContainer>
   );
 }

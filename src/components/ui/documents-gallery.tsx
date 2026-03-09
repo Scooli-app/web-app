@@ -251,7 +251,7 @@ export function DocumentsGallery() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
           <div>
-            <h2 className="text-2xl font-semibold text-foreground">
+            <h2 className="text-xl font-semibold text-foreground sm:text-2xl">
               Os Meus Documentos
             </h2>
           </div>
@@ -293,7 +293,7 @@ export function DocumentsGallery() {
                   </span>
                 </Button>
                 {selectionInfo.count > 0 && (
-                  <div className="flex items-center gap-2 flex-wrap">
+                  <div className="flex flex-wrap items-center gap-2">
                     <div className="flex items-center gap-1">
                       <span className="text-sm font-medium text-primary">
                         {selectionInfo.count} selecionado

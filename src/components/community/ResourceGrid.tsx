@@ -67,7 +67,7 @@ export function ResourceGrid({
       <div className="text-center py-16">
         <div className="text-5xl mb-4">📚</div>
         <h3 className="text-lg font-semibold text-foreground mb-1">Nenhum recurso encontrado</h3>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-center text-sm text-muted-foreground sm:text-left">
           Tente ajustar os filtros ou seja o primeiro a partilhar recursos desta categoria!
         </p>
       </div>
@@ -92,8 +92,8 @@ export function ResourceGrid({
 
       {/* Pagination */}
       {pagination.totalPages > 1 && (
-        <div className="flex items-center justify-between pt-2">
-          <p className="text-sm text-muted-foreground">
+        <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-center text-sm text-muted-foreground sm:text-left">
             Mostrando <span className="font-medium text-foreground">{resources.length}</span> de <span className="font-medium text-foreground">{pagination.totalCount}</span> recursos
           </p>
           

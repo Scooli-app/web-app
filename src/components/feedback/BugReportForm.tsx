@@ -141,7 +141,7 @@ export function BugReportForm({ onSuccess, onCancel }: BugReportFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5 p-6 pt-0">
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="bugType">
             Tipo de erro <span className="text-red-500">*</span>

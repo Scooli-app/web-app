@@ -493,13 +493,13 @@ export default function DocumentEditor({
           isStreaming={isGenerating && !!documentTitle}
         />
 
-        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_400px] gap-6 relative">
+        <div className="relative grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-[minmax(0,1fr)_400px]">
           <div className="flex flex-col min-w-0">
             {isGenerating ? (
               <>
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl font-semibold text-foreground">Editor</h2>
-                  <div className="flex items-center gap-3">
+                <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <h2 className="text-lg font-semibold text-foreground sm:text-xl">Editor</h2>
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                     <ShareButton
                       title={documentTitle || currentDocument?.title || defaultTitle}
                       content={content}
@@ -517,7 +517,7 @@ export default function DocumentEditor({
                     />
                   </div>
                 </div>
-                <div className="border border-border rounded-xl bg-card min-h-[600px] w-full p-4 overflow-auto">
+                <div className="min-h-[50dvh] w-full overflow-auto rounded-xl border border-border bg-card p-3 sm:min-h-[600px] sm:p-4">
                   {displayContent ? (
                     <StreamingText
                       text={displayContent}
@@ -526,7 +526,7 @@ export default function DocumentEditor({
                       className="prose prose-sm max-w-none whitespace-pre-wrap text-foreground leading-relaxed"
                     />
                   ) : (
-                    <div className="flex flex-col items-center justify-center h-full w-full min-h-[550px]">
+                    <div className="flex h-full min-h-[45dvh] w-full flex-col items-center justify-center sm:min-h-[550px]">
                       <Loader2 className="w-12 h-12 animate-spin text-primary mb-4" />
                       <p className="text-lg font-medium text-foreground">A gerar o documento...</p>
                     </div>
@@ -546,10 +546,10 @@ export default function DocumentEditor({
                   content={content}
                   onChange={handleContentChange}
                   onAutosave={handleAutosave}
-                  className="min-h-[600px] max-w-full"
+                  className="min-h-[55dvh] max-w-full sm:min-h-[600px]"
                   onEditorReady={handleEditorReady}
                   rightHeaderContent={
-                    <div className="flex items-center gap-3 pr-1">
+                    <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
                       {showUpdateIndicator && (
                         <span className="text-sm font-medium text-primary animate-pulse flex items-center gap-1">
                           ✨ Documento Refinado
@@ -583,7 +583,7 @@ export default function DocumentEditor({
             )}
           </div>
 
-          <div className="hidden lg:block sticky top-[5px] self-start">
+          <div className="sticky top-2 hidden self-start lg:block">
             <AIChatPanel
               onChatSubmit={handleChatSubmit}
               chatHistory={chatHistory}
@@ -597,7 +597,7 @@ export default function DocumentEditor({
         </div>
       </div>
 
-      <div className="lg:hidden">
+      <div className="lg:hidden pb-[max(env(safe-area-inset-bottom),0px)]">
         <AIChatPanel
           onChatSubmit={handleChatSubmit}
           chatHistory={chatHistory}
