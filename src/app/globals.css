@@ -202,12 +202,19 @@
 /* TipTap Editor Styles - Following Official Documentation */
 .tiptap {
   outline: none;
-  min-height: 600px;
-  padding: 1rem;
+  min-height: 360px;
+  padding: 0.75rem;
   line-height: 1.6;
   font-family: Inter, ui-sans-serif, system-ui;
   font-size: 1rem;
   color: var(--foreground);
+}
+
+@media (min-width: 640px) {
+  .tiptap {
+    min-height: 600px;
+    padding: 1rem;
+  }
 }
 
 .tiptap:focus {

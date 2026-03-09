@@ -1,5 +1,7 @@
 "use client";
 
+import { PageContainer } from "@/components/layout/PageContainer";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { PaymentSuccessModal } from "@/components/ui/payment-success-modal";
 import { fetchSubscription, fetchUsage } from "@/store/subscription/subscriptionSlice";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -19,73 +21,68 @@ function DashboardContent() {
     const paymentParam = searchParams.get("payment");
     if (paymentParam === "success") {
       setShowPaymentSuccess(true);
-      // Update global store state
       dispatch(fetchSubscription());
       dispatch(fetchUsage());
-      
+
       window.history.replaceState({}, "", "/dashboard");
     }
   }, [searchParams, dispatch]);
 
   return (
-    <div className="w-full max-w-7xl mx-auto">
+    <PageContainer size="7xl" contentClassName="py-1 sm:py-2">
       <PaymentSuccessModal
         open={showPaymentSuccess}
         onOpenChange={setShowPaymentSuccess}
       />
 
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold text-foreground mb-2">
-          Bem-vindo à Scooli!
-        </h1>
-        <p className="text-lg text-muted-foreground">
-          Aqui está o que pode fazer hoje na Scooli.
-        </p>
-      </div>
+      <PageHeader
+        title="Bem-vindo à Scooli!"
+        description="Aqui está o que pode fazer hoje na Scooli."
+      />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-card p-8 rounded-2xl shadow-md border border-border">
-          <h2 className="text-2xl font-semibold text-foreground mb-4">
+      <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2">
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-md sm:p-8">
+          <h2 className="mb-4 text-xl font-semibold text-foreground sm:text-2xl">
             Ações Rápidas
           </h2>
           <div className="space-y-3">
             <button
               onClick={() => router.push("/lesson-plan")}
-              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground px-5 py-3 rounded-xl font-medium transition-colors"
+              className="w-full rounded-xl bg-primary px-5 py-3 font-medium text-primary-foreground transition-colors hover:bg-primary/90"
             >
               Criar Plano de Aula
             </button>
             <button
               onClick={() => router.push("/test")}
-              className="w-full border border-border text-foreground bg-background hover:bg-accent px-5 py-3 rounded-xl font-medium transition-colors"
+              className="w-full rounded-xl border border-border bg-background px-5 py-3 font-medium text-foreground transition-colors hover:bg-accent"
             >
               Gerar Teste
             </button>
             <button
               onClick={() => router.push("/quiz")}
-              className="w-full border border-border text-foreground bg-background hover:bg-accent px-5 py-3 rounded-xl font-medium transition-colors"
+              className="w-full rounded-xl border border-border bg-background px-5 py-3 font-medium text-foreground transition-colors hover:bg-accent"
             >
               Criar Quiz
             </button>
           </div>
         </div>
 
-        <div className="bg-card p-8 rounded-2xl shadow-md border border-border">
-          <h2 className="text-2xl font-semibold text-foreground mb-4">
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-md sm:p-8">
+          <h2 className="mb-4 text-xl font-semibold text-foreground sm:text-2xl">
             Atividade Recente
           </h2>
           <div className="space-y-4">
             <div className="flex items-center space-x-3">
-              <div className="w-2 h-2 bg-primary rounded-full" />
+              <div className="h-2 w-2 rounded-full bg-primary" />
               <span className="text-foreground">Bem-vindo à Scooli!</span>
             </div>
-            <p className="text-sm text-muted-foreground pl-5">
+            <p className="pl-5 text-sm text-muted-foreground">
               Comece por explorar as funcionalidades.
             </p>
           </div>
         </div>
       </div>
-    </div>
+    </PageContainer>
   );
 }
 
@@ -99,15 +96,15 @@ export default function DashboardPage() {
 
 function DashboardSkeleton() {
   return (
-    <div className="w-full max-w-7xl mx-auto animate-pulse">
-      <div className="mb-8">
-        <div className="h-10 bg-muted rounded-lg w-64 mb-2" />
-        <div className="h-6 bg-muted rounded-lg w-96" />
+    <PageContainer size="7xl" contentClassName="animate-pulse py-1 sm:py-2">
+      <div className="mb-6 sm:mb-8">
+        <div className="mb-2 h-9 w-56 rounded-lg bg-muted sm:h-10 sm:w-64" />
+        <div className="h-5 w-full max-w-md rounded-lg bg-muted sm:h-6" />
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-card p-8 rounded-2xl shadow-md border border-border h-64" />
-        <div className="bg-card p-8 rounded-2xl shadow-md border border-border h-64" />
+      <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2">
+        <div className="h-56 rounded-2xl border border-border bg-card p-5 shadow-md sm:h-64 sm:p-8" />
+        <div className="h-56 rounded-2xl border border-border bg-card p-5 shadow-md sm:h-64 sm:p-8" />
       </div>
-    </div>
+    </PageContainer>
   );
 }

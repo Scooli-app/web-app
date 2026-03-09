@@ -29,7 +29,7 @@ export function AssistantButton({
     <Button
       onClick={onClick}
       className={cn(
-        "fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full shadow-lg transition-all duration-300",
+        "fixed right-4 z-50 h-14 w-14 rounded-full shadow-lg transition-all duration-300 sm:right-6 bottom-[max(env(safe-area-inset-bottom),1rem)]",
         "bg-primary hover:bg-primary/90 text-primary-foreground",
         "hover:shadow-xl hover:shadow-primary/25 hover:scale-105 active:scale-95",
         isProcessing && "animate-pulse",

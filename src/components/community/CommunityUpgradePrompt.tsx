@@ -16,15 +16,15 @@ interface CommunityUpgradePromptProps {
 
 export function CommunityUpgradePrompt({ onUpgrade }: CommunityUpgradePromptProps) {
   return (
-    <div className="w-full min-h-screen bg-background">
-      <div className="max-w-7xl mx-auto p-6">
+    <div className="w-full min-h-dvh bg-background">
+      <div className="max-w-7xl mx-auto p-4 sm:p-6">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-primary mb-4 flex items-center justify-center gap-3">
-            <Users className="w-8 h-8" />
+          <h1 className="mb-3 flex items-center justify-center gap-2 text-2xl font-bold text-primary sm:mb-4 sm:gap-3 sm:text-4xl">
+            <Users className="h-6 w-6 sm:h-8 sm:w-8" />
             Biblioteca Comunitária
           </h1>
-          <p className="text-lg text-muted-foreground">
+          <p className="text-sm text-muted-foreground sm:text-lg">
             Partilhe e descubra recursos educacionais criados pela comunidade
           </p>
         </div>
@@ -33,13 +33,13 @@ export function CommunityUpgradePrompt({ onUpgrade }: CommunityUpgradePromptProp
         <div className="relative mb-8">
           {/* Overlay */}
           <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-10 flex items-center justify-center">
-            <Card className="p-8 text-center max-w-md">
-              <Lock className="w-16 h-16 text-primary mx-auto mb-4" />
-              <h2 className="text-2xl font-semibold mb-3">Funcionalidade Pro</h2>
+            <Card className="max-w-md p-6 text-center sm:p-8">
+              <Lock className="mx-auto mb-4 h-12 w-12 text-primary sm:h-16 sm:w-16" />
+              <h2 className="mb-3 text-xl font-semibold sm:text-2xl">Funcionalidade Pro</h2>
               <p className="text-muted-foreground mb-6">
                 Aceda à Biblioteca Comunitária com uma subscrição Pro
               </p>
-              <Button onClick={onUpgrade} size="lg" className="w-full">
+              <Button onClick={onUpgrade} size="lg" className="w-full text-sm sm:text-base">
                 <Zap className="w-4 h-4 mr-2" />
                 Upgrade para Pro
               </Button>
@@ -105,9 +105,9 @@ export function CommunityUpgradePrompt({ onUpgrade }: CommunityUpgradePromptProp
         </div>
 
         {/* Benefits Section */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-          <Card className="p-6">
-            <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
+        <div className="mb-8 grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2 md:gap-8">
+          <Card className="p-4 sm:p-6">
+            <h3 className="mb-3 flex items-center gap-2 text-lg font-semibold sm:mb-4 sm:text-xl">
               <Star className="w-6 h-6 text-amber-500" />
               Para Professores que Reutilizam
             </h3>
@@ -120,8 +120,8 @@ export function CommunityUpgradePrompt({ onUpgrade }: CommunityUpgradePromptProp
             </ul>
           </Card>
 
-          <Card className="p-6">
-            <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
+          <Card className="p-4 sm:p-6">
+            <h3 className="mb-3 flex items-center gap-2 text-lg font-semibold sm:mb-4 sm:text-xl">
               <Users className="w-6 h-6 text-blue-500" />
               Para Professores que Partilham
             </h3>
@@ -135,8 +135,8 @@ export function CommunityUpgradePrompt({ onUpgrade }: CommunityUpgradePromptProp
         </div>
 
         {/* Testimonials Preview */}
-        <Card className="p-6 mb-8">
-          <h3 className="text-xl font-semibold mb-4 text-center">
+        <Card className="mb-8 p-4 sm:p-6">
+          <h3 className="mb-4 text-center text-lg font-semibold sm:text-xl">
             Experiências dos Professores
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -161,7 +161,7 @@ export function CommunityUpgradePrompt({ onUpgrade }: CommunityUpgradePromptProp
 
         {/* CTA Section */}
         <div className="text-center">
-          <Button onClick={onUpgrade} size="lg" className="px-8 py-4 text-lg">
+          <Button onClick={onUpgrade} size="lg" className="px-6 py-3 text-base sm:px-8 sm:py-4 sm:text-lg">
             <Zap className="w-5 h-5 mr-3" />
             Começar com Plano Pro
           </Button>

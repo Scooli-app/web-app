@@ -132,7 +132,7 @@ function ChatContent({
       className={cn(
         "flex flex-col transition-all duration-300",
         isDesktop 
-          ? "h-[calc(100vh-150px)] border-border bg-card/50 backdrop-blur-sm" 
+          ? "h-[min(70dvh,760px)] border-border bg-card/50 backdrop-blur-sm lg:h-[calc(100dvh-12rem)]" 
           : "h-full border-0 shadow-none bg-transparent"
       )}
     >
@@ -191,7 +191,15 @@ function ChatContent({
             </div>
 
             {/* Chat Input */}
-            <form onSubmit={handleSubmit} className="flex gap-2 mb-6 mt-auto bg-background/50 p-1.5 rounded-2xl border border-border/50 focus-within:border-primary/50 transition-colors">
+            <form
+              onSubmit={handleSubmit}
+              className={cn(
+                "mt-auto flex gap-2 rounded-2xl border border-border/50 bg-background/50 p-1.5 transition-colors focus-within:border-primary/50",
+                isDesktop
+                  ? "mb-6"
+                  : "mb-3 pb-[max(env(safe-area-inset-bottom),0.5rem)]",
+              )}
+            >
               <Input
                 value={chatMessage}
                 onChange={(e) => setChatMessage(e.target.value)}
@@ -266,7 +274,7 @@ export default function AIChatPanel({
   return (
     <>
       {/* Desktop: Grid-integrated sidebar panel */}
-      <div className="hidden lg:block w-full h-full">
+      <div className="hidden h-full min-h-0 w-full lg:block">
         <ChatContent
           chatHistory={chatHistory}
           isStreaming={isStreaming}
@@ -287,7 +295,7 @@ export default function AIChatPanel({
         <Sheet open={isOpen} onOpenChange={setIsOpen}>
           <SheetTrigger asChild>
             <Button
-              className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full bg-primary hover:bg-primary/90 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95"
+              className="fixed right-4 z-50 h-14 w-14 rounded-full bg-primary shadow-lg transition-all duration-300 hover:scale-105 hover:bg-primary/90 hover:shadow-xl active:scale-95 sm:right-6 bottom-[max(env(safe-area-inset-bottom),1rem)]"
               size="icon"
             >
               <MessageCircle className="h-6 w-6 text-primary-foreground" />
@@ -300,7 +308,7 @@ export default function AIChatPanel({
           </SheetTrigger>
           <SheetContent
             side="right"
-            className="w-full sm:max-w-md p-0 flex flex-col border-l border-border/50"
+            className="flex w-full max-w-none flex-col border-l border-border/50 p-0 sm:max-w-md"
           >
             <SheetHeader className="px-6 py-6 border-b border-border/50 bg-muted/20">
               <SheetTitle className="text-xl font-bold text-foreground tracking-tight">

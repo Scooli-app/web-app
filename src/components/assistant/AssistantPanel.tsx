@@ -73,7 +73,7 @@ export function AssistantPanel({
   return (
     <div
       className={cn(
-        "fixed bottom-24 right-6 z-50 w-96 max-w-[calc(100vw-3rem)] h-[500px] max-h-[calc(100vh-8rem)]",
+        "fixed right-4 z-50 h-[min(500px,calc(100dvh-8rem))] w-[min(24rem,calc(100vw-1.5rem))] sm:right-6 bottom-[calc(max(env(safe-area-inset-bottom),1rem)+4rem)]",
         "bg-card border border-border rounded-2xl shadow-2xl",
         "flex flex-col overflow-hidden",
         "animate-in slide-in-from-bottom-4 fade-in duration-300",
