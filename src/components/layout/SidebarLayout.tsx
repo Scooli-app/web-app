@@ -568,7 +568,7 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
                       variant="secondary"
                       className="hidden h-8 rounded border border-dashed border-primary/20 bg-primary/10 px-3 text-[11px] font-semibold uppercase tracking-wide text-primary sm:inline-flex"
                     >
-                      Beta
+                      Acesso antecipado
                     </Badge>
                     <div className="hidden sm:block">
                       <GenerationsIndicator />
