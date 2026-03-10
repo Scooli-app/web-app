@@ -3,8 +3,9 @@ import posthog from "posthog-js";
 const posthogKey = process.env.NEXT_PUBLIC_POSTHOG_KEY;
 const posthogProxyPath = process.env.NEXT_PUBLIC_POSTHOG_PROXY_PATH ?? "/_ph";
 const isDevelopment = process.env.NODE_ENV === "development";
+const isPostHogEnabled = process.env.NEXT_PUBLIC_POSTHOG_ENABLED === "true";
 
-if (posthogKey) {
+if (isPostHogEnabled && posthogKey) {
   posthog.init(posthogKey, {
     // Use a first-party proxy path to reduce browser tracking-blocker interference.
     api_host: posthogProxyPath,
@@ -15,7 +16,7 @@ if (posthogKey) {
     disable_session_recording: isDevelopment,
     debug: isDevelopment,
   });
-} else if (isDevelopment) {
+} else if (isDevelopment && isPostHogEnabled && !posthogKey) {
   console.warn(
     "[PostHog] NEXT_PUBLIC_POSTHOG_KEY is missing; analytics is disabled."
   );
