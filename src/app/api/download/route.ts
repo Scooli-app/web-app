@@ -1,15 +1,15 @@
-import { type NextRequest, NextResponse } from "next/server";
+import { getPostHogClient } from "@/lib/posthog-server";
 import {
+  AlignmentType,
+  BorderStyle,
   Document,
+  HeadingLevel,
   Packer,
   Paragraph,
   TextRun,
-  HeadingLevel,
-  AlignmentType,
-  BorderStyle,
 } from "docx";
+import { type NextRequest, NextResponse } from "next/server";
 import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
-import { getPostHogClient } from "@/lib/posthog-server";
 
 type DownloadFormat = "pdf" | "docx";
 
@@ -19,12 +19,40 @@ interface DownloadRequestBody {
   format: DownloadFormat;
 }
 
+function toArrayBuffer(bytes: Uint8Array): ArrayBuffer {
+  const copy = new Uint8Array(bytes.byteLength);
+  copy.set(bytes);
+  return copy.buffer;
+}
+
+async function captureDownloadEvent(
+  distinctId: string,
+  format: DownloadFormat,
+  title: string,
+): Promise<void> {
+  const posthog = getPostHogClient();
+  if (!posthog) {
+    return;
+  }
+
+  try {
+    posthog.capture({
+      distinctId,
+      event: "document_downloaded",
+      properties: { format, document_title: title },
+    });
+    await posthog.shutdown();
+  } catch (error) {
+    console.error("PostHog capture failed in download route:", error);
+  }
+}
+
 /**
  * Parse inline markdown formatting (bold, italic, code)
  */
 function parseInlineFormatting(
   text: string,
-  baseSize: number = 22
+  baseSize: number = 22,
 ): InstanceType<typeof TextRun>[] {
   const runs: InstanceType<typeof TextRun>[] = [];
   let remaining = text;
@@ -49,7 +77,7 @@ function parseInlineFormatting(
           text: match[1],
           font: "Courier New",
           size: baseSize - 2,
-        })
+        }),
       );
       remaining = remaining.substring(match[0].length);
       continue;
@@ -64,7 +92,7 @@ function parseInlineFormatting(
         new TextRun({
           text: remaining.substring(0, nextSpecial),
           size: baseSize,
-        })
+        }),
       );
       remaining = remaining.substring(nextSpecial);
     } else {
@@ -101,7 +129,7 @@ async function generateDocx(content: string): Promise<Buffer> {
             ],
             shading: { fill: "F4F5F8" },
             spacing: { before: 200, after: 200 },
-          })
+          }),
         );
         codeBlockContent = [];
       }
@@ -128,7 +156,7 @@ async function generateDocx(content: string): Promise<Buffer> {
             ],
             heading: HeadingLevel.TITLE,
             spacing: { after: 120 },
-          })
+          }),
         );
         children.push(
           new Paragraph({
@@ -141,7 +169,7 @@ async function generateDocx(content: string): Promise<Buffer> {
               },
             },
             spacing: { after: 400 },
-          })
+          }),
         );
         isFirstH1 = false;
       } else {
@@ -157,7 +185,7 @@ async function generateDocx(content: string): Promise<Buffer> {
             ],
             heading: HeadingLevel.HEADING_1,
             spacing: { before: 400, after: 200 },
-          })
+          }),
         );
       }
       continue;
@@ -176,7 +204,7 @@ async function generateDocx(content: string): Promise<Buffer> {
           ],
           heading: HeadingLevel.HEADING_2,
           spacing: { before: 300, after: 150 },
-        })
+        }),
       );
       continue;
     }
@@ -194,7 +222,7 @@ async function generateDocx(content: string): Promise<Buffer> {
           ],
           heading: HeadingLevel.HEADING_3,
           spacing: { before: 200, after: 100 },
-        })
+        }),
       );
       continue;
     }
@@ -206,7 +234,7 @@ async function generateDocx(content: string): Promise<Buffer> {
           children: parseInlineFormatting(text, 22),
           bullet: { level: 0 },
           spacing: { after: 80 },
-        })
+        }),
       );
       continue;
     }
@@ -218,7 +246,7 @@ async function generateDocx(content: string): Promise<Buffer> {
           children: parseInlineFormatting(text, 22),
           numbering: { reference: "default-numbering", level: 0 },
           spacing: { after: 80 },
-        })
+        }),
       );
       continue;
     }
@@ -244,7 +272,7 @@ async function generateDocx(content: string): Promise<Buffer> {
             },
           },
           spacing: { before: 200, after: 200 },
-        })
+        }),
       );
       continue;
     }
@@ -258,7 +286,7 @@ async function generateDocx(content: string): Promise<Buffer> {
       new Paragraph({
         children: parseInlineFormatting(line, 22),
         spacing: { after: 160, line: 276 },
-      })
+      }),
     );
   }
 
@@ -281,7 +309,7 @@ async function generateDocx(content: string): Promise<Buffer> {
           space: 10,
         },
       },
-    })
+    }),
   );
 
   const doc = new Document({
@@ -419,7 +447,7 @@ async function generatePdf(content: string): Promise<Uint8Array> {
   const helvetica = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
   const helveticaOblique = await pdfDoc.embedFont(
-    StandardFonts.HelveticaOblique
+    StandardFonts.HelveticaOblique,
   );
 
   const pageWidth = 595.28;
@@ -471,7 +499,7 @@ async function generatePdf(content: string): Promise<Uint8Array> {
     text: string,
     maxWidth: number,
     font: typeof helvetica,
-    fontSize: number
+    fontSize: number,
   ): string[] {
     const words = text.split(" ");
     const lines: string[] = [];
@@ -511,8 +539,8 @@ async function generatePdf(content: string): Promise<Uint8Array> {
       line.type === "bullet" || line.type === "numbered"
         ? 20
         : line.type === "quote"
-        ? 30
-        : (line.indent || 0) * 20;
+          ? 30
+          : (line.indent || 0) * 20;
 
     if (line.type === "empty" || !line.text.trim()) {
       yPosition -= lineHeight;
@@ -527,7 +555,7 @@ async function generatePdf(content: string): Promise<Uint8Array> {
       line.text,
       contentWidth - indent,
       font,
-      fontSize
+      fontSize,
     );
 
     if (["h1", "h2", "h3"].includes(line.type)) {
@@ -564,7 +592,7 @@ async function generatePdf(content: string): Promise<Uint8Array> {
 
   const pages = pdfDoc.getPages();
   const footerText = `Gerado por Scooli - ${new Date().toLocaleDateString(
-    "pt-PT"
+    "pt-PT",
   )}`;
 
   for (const page of pages) {
@@ -588,7 +616,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     if (!title || !content || !format) {
       return NextResponse.json(
         { error: "Missing required fields" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -597,18 +625,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       .replace(/\s+/g, "_")
       .substring(0, 100);
 
-    const distinctId = request.headers.get("x-posthog-distinct-id") ?? "anonymous";
+    const distinctId =
+      request.headers.get("x-posthog-distinct-id") ?? "anonymous";
 
     if (format === "pdf") {
       const pdfBytes = (await generatePdf(content)) as Uint8Array;
-      const posthog = getPostHogClient();
-      posthog.capture({
-        distinctId,
-        event: "document_downloaded",
-        properties: { format: "pdf", document_title: title },
-      });
-      await posthog.shutdown();
-      return new NextResponse(pdfBytes.buffer as BodyInit, {
+      await captureDownloadEvent(distinctId, "pdf", title);
+      return new NextResponse(toArrayBuffer(pdfBytes), {
         headers: {
           "Content-Type": "application/pdf",
           "Content-Disposition": `attachment; filename="${sanitizedTitle}.pdf"`,
@@ -616,14 +639,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       });
     } else if (format === "docx") {
       const docxBuffer = (await generateDocx(content)) as Buffer;
-      const posthog = getPostHogClient();
-      posthog.capture({
-        distinctId,
-        event: "document_downloaded",
-        properties: { format: "docx", document_title: title },
-      });
-      await posthog.shutdown();
-      return new NextResponse(docxBuffer.buffer as BodyInit, {
+      await captureDownloadEvent(distinctId, "docx", title);
+      return new NextResponse(toArrayBuffer(docxBuffer), {
         headers: {
           "Content-Type":
             "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -633,14 +650,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     } else {
       return NextResponse.json(
         { error: "Unsupported format" },
-        { status: 400 }
+        { status: 400 },
       );
     }
   } catch (error) {
     console.error("Download error:", error);
     return NextResponse.json(
       { error: "Failed to generate document" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
