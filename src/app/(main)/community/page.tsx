@@ -39,6 +39,7 @@ import { BarChart3, Plus, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import posthog from "posthog-js";
 
 function CommunityLibraryPage() {
   const dispatch = useAppDispatch();
@@ -90,8 +91,10 @@ function CommunityLibraryPage() {
   const handleReuse = async (resourceId: string) => {
     try {
       await dispatch(reuseSharedResource({ resourceId })).unwrap();
+      posthog.capture("community_resource_reused", { resource_id: resourceId });
       toast.success("Adicionado aos seus documentos com sucesso");
     } catch (error) {
+      posthog.captureException(error);
       toast.error(
         error instanceof Error ? error.message : "Erro ao reutilizar recurso",
       );

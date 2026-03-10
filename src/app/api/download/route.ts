@@ -9,6 +9,7 @@ import {
   BorderStyle,
 } from "docx";
 import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
+import { getPostHogClient } from "@/lib/posthog-server";
 
 type DownloadFormat = "pdf" | "docx";
 
@@ -596,8 +597,17 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       .replace(/\s+/g, "_")
       .substring(0, 100);
 
+    const distinctId = request.headers.get("x-posthog-distinct-id") ?? "anonymous";
+
     if (format === "pdf") {
       const pdfBytes = (await generatePdf(content)) as Uint8Array;
+      const posthog = getPostHogClient();
+      posthog.capture({
+        distinctId,
+        event: "document_downloaded",
+        properties: { format: "pdf", document_title: title },
+      });
+      await posthog.shutdown();
       return new NextResponse(pdfBytes.buffer as BodyInit, {
         headers: {
           "Content-Type": "application/pdf",
@@ -606,6 +616,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       });
     } else if (format === "docx") {
       const docxBuffer = (await generateDocx(content)) as Buffer;
+      const posthog = getPostHogClient();
+      posthog.capture({
+        distinctId,
+        event: "document_downloaded",
+        properties: { format: "docx", document_title: title },
+      });
+      await posthog.shutdown();
       return new NextResponse(docxBuffer.buffer as BodyInit, {
         headers: {
           "Content-Type":

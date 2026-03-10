@@ -7,6 +7,7 @@ import { fetchSubscription, fetchUsage } from "@/store/subscription/subscription
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
+import posthog from "posthog-js";
 
 import type { AppDispatch } from "@/store/store";
 
@@ -21,6 +22,7 @@ function DashboardContent() {
     const paymentParam = searchParams.get("payment");
     if (paymentParam === "success") {
       setShowPaymentSuccess(true);
+      posthog.capture("payment_success");
       dispatch(fetchSubscription());
       dispatch(fetchUsage());
 
@@ -47,19 +49,28 @@ function DashboardContent() {
           </h2>
           <div className="space-y-3">
             <button
-              onClick={() => router.push("/lesson-plan")}
+              onClick={() => {
+                posthog.capture("dashboard_quick_action_clicked", { action: "lesson_plan" });
+                router.push("/lesson-plan");
+              }}
               className="w-full rounded-xl bg-primary px-5 py-3 font-medium text-primary-foreground transition-colors hover:bg-primary/90"
             >
               Criar Plano de Aula
             </button>
             <button
-              onClick={() => router.push("/test")}
+              onClick={() => {
+                posthog.capture("dashboard_quick_action_clicked", { action: "test" });
+                router.push("/test");
+              }}
               className="w-full rounded-xl border border-border bg-background px-5 py-3 font-medium text-foreground transition-colors hover:bg-accent"
             >
               Gerar Teste
             </button>
             <button
-              onClick={() => router.push("/quiz")}
+              onClick={() => {
+                posthog.capture("dashboard_quick_action_clicked", { action: "quiz" });
+                router.push("/quiz");
+              }}
               className="w-full rounded-xl border border-border bg-background px-5 py-3 font-medium text-foreground transition-colors hover:bg-accent"
             >
               Criar Quiz

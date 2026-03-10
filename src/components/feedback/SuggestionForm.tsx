@@ -9,6 +9,7 @@ import { FileText, Loader2, Upload, X } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import posthog from "posthog-js";
 
 interface SuggestionFormProps {
   onSuccess: () => void;
@@ -125,9 +126,11 @@ export function SuggestionForm({ onSuccess, onCancel }: SuggestionFormProps) {
         attachments: uploadedAttachments,
       });
 
+      posthog.capture("feedback_suggestion_submitted", { category });
       toast.success("Sugestão enviada com sucesso!");
       onSuccess();
     } catch (error) {
+      posthog.captureException(error);
       console.error("Failed to submit suggestion:", error);
       toast.error("Ocorreu um erro ao enviar a sugestão.");
     } finally {

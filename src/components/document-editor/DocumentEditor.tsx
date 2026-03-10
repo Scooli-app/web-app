@@ -31,6 +31,7 @@ import AIChatPanel from "./AIChatPanel";
 import DocumentTitle from "./DocumentTitle";
 import DownloadButton from "./DownloadButton";
 import ShareButton from "./ShareButton";
+import posthog from "posthog-js";
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -373,6 +374,9 @@ export default function DocumentEditor({
         { role: "user", content: userMessage },
       ]);
       setError("");
+      posthog.capture("ai_chat_message_sent", {
+        document_id: currentDocument.id,
+      });
 
       const editor = editorRef.current;
       const baseDocBefore = editor ? editor.state.doc : null;

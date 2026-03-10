@@ -21,6 +21,7 @@ import {
   getSubscriptionPlans,
 } from "@/services/api/subscription.service";
 import type { SubscriptionPlan } from "@/shared/types/subscription";
+import posthog from "posthog-js";
 
 type ErrorType = "network" | "server" | "validation" | "checkout" | "unknown";
 
@@ -285,16 +286,26 @@ function CheckoutContent() {
     setIsCheckingOut(true);
     setError(null);
 
+    posthog.capture("checkout_initiated", {
+      plan_code: planCode,
+    });
+
     try {
       const response = await createCheckoutSession({ planCode });
-      
+
       if (!response?.url) {
         throw new Error("Não foi possível obter o link de pagamento");
       }
-      
+
       window.location.href = response.url;
     } catch (err) {
       const parsedError = parseError(err, "checkout");
+      posthog.capture("checkout_error", {
+        plan_code: planCode,
+        error_type: parsedError.type,
+        error_message: parsedError.message,
+      });
+      posthog.captureException(err);
       setError(parsedError);
       setIsCheckingOut(false);
     }

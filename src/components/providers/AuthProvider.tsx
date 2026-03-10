@@ -1,8 +1,9 @@
 "use client";
 
 import { setApiTokenGetter } from "@/services/api/client";
-import { useAuth } from "@clerk/nextjs";
+import { useAuth, useUser } from "@clerk/nextjs";
 import { useEffect, useRef } from "react";
+import posthog from "posthog-js";
 
 export default function AuthProvider({
   children,
@@ -10,6 +11,7 @@ export default function AuthProvider({
   children: React.ReactNode;
 }) {
   const { getToken, isLoaded } = useAuth();
+  const { user } = useUser();
 
   // Use a ref so the API client always calls the latest getToken
   // without waiting for React effect cycles on re-renders.
@@ -41,6 +43,18 @@ export default function AuthProvider({
     setApiTokenGetter(tokenGetter);
     return () => setApiTokenGetter(null);
   }, [isLoaded]);
+
+  useEffect(() => {
+    if (!isLoaded) return;
+    if (user) {
+      posthog.identify(user.id, {
+        email: user.primaryEmailAddress?.emailAddress,
+        name: user.fullName,
+      });
+    } else {
+      posthog.reset();
+    }
+  }, [isLoaded, user]);
 
   return children;
 }

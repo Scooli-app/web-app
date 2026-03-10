@@ -12,6 +12,7 @@ import { CheckCircle2, Clock, Share2 } from "lucide-react";
 import { memo, useCallback, useState } from "react";
 import { useSelector } from "react-redux";
 import { toast } from "sonner";
+import posthog from "posthog-js";
 
 interface ShareButtonProps {
   title: string;
@@ -65,12 +66,20 @@ function ShareButtonComponent({
         const result = await dispatch(submitResource(request)).unwrap();
         setIsModalOpen(false);
         setLocalStatus(result.status as SharedResourceStatus);
+        posthog.capture("document_shared_to_community", {
+          resource_type: resourceType,
+          grade,
+          subject,
+          submission_status: result.status,
+          document_id: documentId,
+        });
         if (result.status === "APPROVED") {
           toast.success("Recurso publicado na biblioteca comunitária!");
         } else {
           toast.success("Recurso submetido para revisão! Receberá notificação em 24-48h.");
         }
       } catch (error) {
+        posthog.captureException(error);
         toast.error(
           error instanceof Error ? error.message : "Erro ao partilhar recurso"
         );
@@ -78,7 +87,7 @@ function ShareButtonComponent({
         setIsSharing(false);
       }
     },
-    [dispatch]
+    [dispatch, resourceType, grade, subject, documentId]
   );
 
   // If community library feature is disabled, hide the button entirely
