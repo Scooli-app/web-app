@@ -1,5 +1,6 @@
 "use client";
 
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   clearConversation,
   closePanel,
@@ -16,9 +17,12 @@ import {
 } from "@/store/assistant";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { useAuth } from "@clerk/nextjs";
+import { usePathname } from "next/navigation";
 import { useCallback, useEffect } from "react";
 import { AssistantButton } from "./AssistantButton";
 import { AssistantPanel } from "./AssistantPanel";
+
+const MOBILE_EDITOR_ROUTE_PATTERN = /^\/(lesson-plan|test|quiz|presentation)\/[^/]+$/;
 
 /**
  * Provider component that renders the floating assistant button and panel.
@@ -27,6 +31,8 @@ import { AssistantPanel } from "./AssistantPanel";
 export function AssistantProvider() {
   const dispatch = useAppDispatch();
   const { getToken } = useAuth();
+  const pathname = usePathname();
+  const isMobile = useIsMobile();
 
   // Selectors
   const isOpen = useAppSelector(selectIsOpen);
@@ -36,12 +42,21 @@ export function AssistantProvider() {
   const hasUnread = useAppSelector(selectHasUnreadMessages);
   const inputValue = useAppSelector(selectInputValue);
 
+  const shouldHideAssistant =
+    isMobile && MOBILE_EDITOR_ROUTE_PATTERN.test(pathname ?? "");
+
   // Mark messages as read when panel opens
   useEffect(() => {
     if (isOpen && hasUnread) {
       dispatch(markAsRead());
     }
   }, [isOpen, hasUnread, dispatch]);
+
+  useEffect(() => {
+    if (shouldHideAssistant && isOpen) {
+      dispatch(closePanel());
+    }
+  }, [shouldHideAssistant, isOpen, dispatch]);
 
   const handleToggle = useCallback(() => {
     dispatch(toggleOpen());
@@ -78,6 +93,10 @@ export function AssistantProvider() {
       console.error("Failed to send message:", error);
     }
   }, [inputValue, isProcessing, getToken, dispatch]);
+
+  if (shouldHideAssistant) {
+    return null;
+  }
 
   return (
     <>

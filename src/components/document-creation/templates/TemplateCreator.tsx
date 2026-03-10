@@ -36,7 +36,7 @@ const TEMPLATE_PLACEHOLDERS: Record<
     description: "Descreva quando usar este modelo de plano de aula...",
   },
   quiz: {
-    name: "Ex: Quiz Rápido de Revisão",
+    name: "Ex: Quiz Rapido de Revisao",
     description: "Descreva quando usar este modelo de quiz...",
   },
   test: {
@@ -44,8 +44,8 @@ const TEMPLATE_PLACEHOLDERS: Record<
     description: "Descreva quando usar este modelo de teste...",
   },
   presentation: {
-    name: "Ex: Apresentação Interativa com Atividades",
-    description: "Descreva quando usar este modelo de apresentação...",
+    name: "Ex: Apresentacao Interativa com Atividades",
+    description: "Descreva quando usar este modelo de apresentacao...",
   },
 };
 
@@ -104,7 +104,7 @@ export function TemplateCreator({
             id: s.id,
             title: s.title,
             description: s.description,
-          }))
+          })),
       );
       markAsClean();
     }
@@ -118,7 +118,7 @@ export function TemplateCreator({
     }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
-    })
+    }),
   );
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -147,12 +147,12 @@ export function TemplateCreator({
   const handleUpdateSection = (
     id: string,
     field: "title" | "description",
-    value: string
+    value: string,
   ) => {
     setSections((prev) =>
       prev.map((section) =>
-        section.id === id ? { ...section, [field]: value } : section
-      )
+        section.id === id ? { ...section, [field]: value } : section,
+      ),
     );
     markAsDirty();
   };
@@ -179,16 +179,14 @@ export function TemplateCreator({
   };
 
   const isFormValid = () => {
-    return (
-      name.trim() &&
-      sections.length > 0 &&
-      sections.every((s) => s.title.trim())
+    return Boolean(
+      name.trim() && sections.length > 0 && sections.every((s) => s.title.trim()),
     );
   };
 
   const handleSubmit = async () => {
     if (!isFormValid()) {
-      setError("Preencha o nome do modelo e o título de todas as secções");
+      setError("Preencha o nome do modelo e o titulo de todas as seccoes");
       return;
     }
 
@@ -222,7 +220,7 @@ export function TemplateCreator({
       setError(
         isEditing
           ? "Ocorreu um erro ao guardar o modelo. Tente novamente."
-          : "Ocorreu um erro ao criar o modelo. Tente novamente."
+          : "Ocorreu um erro ao criar o modelo. Tente novamente.",
       );
     } finally {
       setIsLoading(false);
@@ -237,134 +235,136 @@ export function TemplateCreator({
         onConfirm={handleConfirmLeave}
       />
 
-      <div className="flex flex-col h-full min-h-0">
-        <div className="flex items-center gap-3 p-4 sm:p-6 border-b border-border shrink-0">
-          <button
-            type="button"
-            onClick={handleBack}
-            className={cn(
-            "flex items-center justify-center w-9 h-9 rounded-lg",
-            "text-muted-foreground hover:text-foreground hover:bg-muted transition-colors",
-            "focus-visible:ring-ring/50 focus-visible:ring-[3px]"
-          )}
-          aria-label="Voltar"
-        >
-          <ArrowLeft className="w-5 h-5" />
-        </button>
-        <div>
-          <h2 className="text-lg sm:text-xl font-semibold text-foreground">
-            {isEditing ? "Editar Modelo" : "Criar Novo Modelo"}
-          </h2>
-          <p className="text-xs sm:text-sm text-muted-foreground">
-            {isEditing
-              ? "Atualize a estrutura do seu modelo"
-              : "Defina a estrutura do seu modelo personalizado"}
-          </p>
-        </div>
-      </div>
-
-      <div className="flex-1 min-h-0 overflow-y-auto">
-        <div className="p-4 sm:p-6 space-y-5 sm:space-y-6">
-          <div className="space-y-3 sm:space-y-4">
-            <div>
-              <label
-                htmlFor="template-name"
-                className="block text-sm font-medium text-foreground mb-1.5"
-              >
-                Nome do Modelo <span className="text-destructive">*</span>
-              </label>
-              <Input
-                id="template-name"
-                value={name}
-                onChange={(e) => handleNameChange(e.target.value)}
-                placeholder={TEMPLATE_PLACEHOLDERS[documentType].name}
-                className="h-11 px-4 text-sm bg-input border-input rounded-xl placeholder:text-muted-foreground"
-              />
-            </div>
-
-            <div>
-              <label
-                htmlFor="template-description"
-                className="block text-sm font-medium text-foreground mb-1.5"
-              >
-                Descrição{" "}
-                <span className="text-xs font-normal text-muted-foreground">
-                  (Opcional)
-                </span>
-              </label>
-              <Textarea
-                id="template-description"
-                value={description}
-                onChange={(e) => handleDescriptionChange(e.target.value)}
-                placeholder={TEMPLATE_PLACEHOLDERS[documentType].description}
-                rows={2}
-                className="px-4 py-3 text-sm bg-input border-input rounded-xl placeholder:text-muted-foreground min-h-0"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-medium text-foreground">
-                  Secções do Modelo <span className="text-destructive">*</span>
-                </h3>
-                <p className="text-xs text-muted-foreground">
-                  Arraste para reordenar as secções
-                </p>
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleAddSection}
-                className="flex items-center gap-1.5 border-border text-secondary-foreground hover:bg-accent hover:border-primary rounded-lg"
-                aria-label="Adicionar secção"
-              >
-                <Plus className="w-4 h-4" />
-                <span className="hidden sm:inline">Adicionar</span>
-              </Button>
-            </div>
-
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={handleDragEnd}
+      <div className="flex h-full min-h-0 flex-col">
+        <div className="shrink-0 border-b border-border p-4 sm:p-6">
+          <div className="flex items-start gap-3">
+            <button
+              type="button"
+              onClick={handleBack}
+              className={cn(
+                "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg",
+                "text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
+                "focus-visible:ring-ring/50 focus-visible:ring-[3px]",
+              )}
+              aria-label="Voltar"
             >
-              <SortableContext
-                items={sections.map((s) => s.id)}
-                strategy={verticalListSortingStrategy}
-              >
-                <div className="space-y-3">
-                  {sections.map((section) => (
-                    <SortableSection
-                      key={section.id}
-                      section={section}
-                      onUpdate={handleUpdateSection}
-                      onDelete={handleDeleteSection}
-                      canDelete={sections.length > 1}
-                    />
-                  ))}
-                </div>
-              </SortableContext>
-            </DndContext>
-          </div>
-
-          {error && (
-            <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-xl text-sm text-destructive animate-in fade-in slide-in-from-top-2 duration-200">
-              {error}
+              <ArrowLeft className="h-5 w-5" />
+            </button>
+            <div className="min-w-0">
+              <h2 className="text-lg font-semibold text-foreground sm:text-xl">
+                {isEditing ? "Editar Modelo" : "Criar Novo Modelo"}
+              </h2>
+              <p className="text-xs text-muted-foreground sm:text-sm">
+                {isEditing
+                  ? "Atualize a estrutura do seu modelo"
+                  : "Defina a estrutura do seu modelo personalizado"}
+              </p>
             </div>
-          )}
+          </div>
         </div>
-      </div>
 
-        <div className="p-4 sm:p-6 border-t border-border bg-muted/50 shrink-0">
-          <div className="flex flex-col sm:flex-row gap-3">
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          <div className="space-y-5 p-4 sm:space-y-6 sm:p-6">
+            <div className="space-y-3 sm:space-y-4">
+              <div>
+                <label
+                  htmlFor="template-name"
+                  className="mb-1.5 block text-sm font-medium text-foreground"
+                >
+                  Nome do Modelo <span className="text-destructive">*</span>
+                </label>
+                <Input
+                  id="template-name"
+                  value={name}
+                  onChange={(e) => handleNameChange(e.target.value)}
+                  placeholder={TEMPLATE_PLACEHOLDERS[documentType].name}
+                  className="h-11 rounded-xl border-input bg-input px-4 text-sm placeholder:text-muted-foreground"
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="template-description"
+                  className="mb-1.5 block text-sm font-medium text-foreground"
+                >
+                  Descricao{" "}
+                  <span className="text-xs font-normal text-muted-foreground">
+                    (Opcional)
+                  </span>
+                </label>
+                <Textarea
+                  id="template-description"
+                  value={description}
+                  onChange={(e) => handleDescriptionChange(e.target.value)}
+                  placeholder={TEMPLATE_PLACEHOLDERS[documentType].description}
+                  rows={2}
+                  className="min-h-0 rounded-xl border-input bg-input px-4 py-3 text-sm placeholder:text-muted-foreground"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h3 className="text-sm font-medium text-foreground">
+                    Seccoes do Modelo <span className="text-destructive">*</span>
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    Arraste para reordenar as seccoes
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAddSection}
+                  className="h-9 w-full items-center gap-1.5 rounded-lg border-border text-secondary-foreground hover:border-primary hover:bg-accent sm:h-8 sm:w-auto"
+                  aria-label="Adicionar seccao"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>Adicionar</span>
+                </Button>
+              </div>
+
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <SortableContext
+                  items={sections.map((s) => s.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <div className="space-y-3">
+                    {sections.map((section) => (
+                      <SortableSection
+                        key={section.id}
+                        section={section}
+                        onUpdate={handleUpdateSection}
+                        onDelete={handleDeleteSection}
+                        canDelete={sections.length > 1}
+                      />
+                    ))}
+                  </div>
+                </SortableContext>
+              </DndContext>
+            </div>
+
+            {error && (
+              <div className="animate-in fade-in slide-in-from-top-2 rounded-xl border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive duration-200">
+                {error}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="shrink-0 border-t border-border bg-muted/50 p-4 sm:p-6">
+          <div className="flex flex-col gap-3 sm:flex-row">
             <Button
               type="button"
               variant="outline"
               onClick={handleBack}
-              className="sm:flex-1 h-11 border-border text-secondary-foreground hover:bg-accent hover:border-primary rounded-xl"
+              className="h-11 rounded-xl border-border text-secondary-foreground hover:border-primary hover:bg-accent sm:flex-1"
             >
               Cancelar
             </Button>
@@ -372,7 +372,7 @@ export function TemplateCreator({
               type="button"
               onClick={handleSubmit}
               disabled={isLoading || !isFormValid()}
-              className="sm:flex-1 h-11 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl shadow-md shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+              className="h-11 rounded-xl bg-primary text-primary-foreground shadow-md shadow-primary/20 disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none hover:bg-primary/90 sm:flex-1"
             >
               {isLoading ? (
                 <>
@@ -382,7 +382,7 @@ export function TemplateCreator({
               ) : (
                 <>
                   <Sparkles className="mr-2 h-4 w-4" />
-                  {isEditing ? "Guardar Alterações" : "Criar Modelo"}
+                  {isEditing ? "Guardar Alteracoes" : "Criar Modelo"}
                 </>
               )}
             </Button>
@@ -392,3 +392,5 @@ export function TemplateCreator({
     </>
   );
 }
+
+

@@ -1,5 +1,6 @@
 "use client";
 
+import posthog from "posthog-js";
 import type { DocumentTemplate } from "@/shared/types";
 import {
   createDocument,
@@ -164,6 +165,16 @@ export default function DocumentCreationPage({
       if (createDocument.fulfilled.match(resultAction)) {
         const streamResponse = resultAction.payload;
 
+        posthog.capture("document_created", {
+          document_type: documentType.id,
+          subject: formState.subject,
+          school_year: formState.schoolYear,
+          template_id: formState.templateId,
+          has_teaching_method: !!formState.teachingMethod,
+          has_duration: !!formState.lessonTime,
+          has_additional_details: !!formState.additionalDetails?.trim(),
+        });
+
         // Store the initial prompt for display in chat
         dispatch(
           setPendingInitialPrompt({
@@ -178,19 +189,28 @@ export default function DocumentCreationPage({
         );
         router.push(redirectUrl);
       } else {
-        setError(
+        const errorMessage =
           (resultAction.payload as string) ||
-            "Ocorreu um erro ao criar o documento."
-        );
+          "Ocorreu um erro ao criar o documento.";
+        posthog.capture("document_creation_failed", {
+          document_type: documentType.id,
+          error_message: errorMessage,
+        });
+        setError(errorMessage);
         setIsLoading(false);
       }
     } catch (error) {
       console.error("Failed to create document:", error);
-      if (error instanceof Error) {
-        setError(`Erro ao criar o documento: ${error.message}`);
-      } else {
-        setError("Erro ao criar o documento.");
-      }
+      const errorMessage =
+        error instanceof Error
+          ? `Erro ao criar o documento: ${error.message}`
+          : "Erro ao criar o documento.";
+      posthog.capture("document_creation_failed", {
+        document_type: documentType.id,
+        error_message: errorMessage,
+      });
+      posthog.captureException(error);
+      setError(errorMessage);
       setIsLoading(false);
     }
   };
@@ -208,7 +228,7 @@ export default function DocumentCreationPage({
             onUpdate={updateForm}
           />
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6">
             <GradeSection
               schoolYear={formState.schoolYear}
               onUpdate={updateForm}

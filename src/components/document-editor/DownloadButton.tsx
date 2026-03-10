@@ -10,6 +10,7 @@ import {
 import { downloadDocument, type DownloadFormat } from "@/services/download/documentDownload";
 import { Download, FileText, Loader2 } from "lucide-react";
 import { memo, useCallback, useState } from "react";
+import posthog from "posthog-js";
 
 interface DownloadButtonProps {
   title: string;
@@ -32,8 +33,13 @@ function DownloadButtonComponent({ title, content, disabled }: DownloadButtonPro
 
       try {
         await downloadDocument({ title, content, format });
+        posthog.capture("document_downloaded", {
+          format,
+          document_title: title,
+        });
       } catch (error) {
         console.error(`Failed to download as ${format}:`, error);
+        posthog.captureException(error);
       } finally {
         setIsDownloading(false);
         setDownloadFormat(null);

@@ -1,6 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Bug, Lightbulb } from "lucide-react";
 import { useState } from "react";
+import posthog from "posthog-js";
 import { BugReportForm } from "./BugReportForm";
 import { FeedbackModal } from "./FeedbackModal";
 import { SuggestionForm } from "./SuggestionForm";
@@ -23,9 +24,9 @@ export function FeedbackActionCards({ onFeedbackSubmitted }: FeedbackActionCards
     <>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-4xl mx-auto">
         {/* Suggestion Card */}
-        <Card 
+        <Card
           className="cursor-pointer hover:bg-muted/50 transition-colors border-2 hover:border-primary/50"
-          onClick={() => setSuggestionOpen(true)}
+          onClick={() => { posthog.capture("feedback_suggestion_opened"); setSuggestionOpen(true); }}
         >
           <CardHeader className="flex flex-row items-center gap-4 space-y-0 pb-2">
             <div className="p-2 bg-yellow-100 dark:bg-yellow-900/20 rounded-full">
@@ -42,9 +43,9 @@ export function FeedbackActionCards({ onFeedbackSubmitted }: FeedbackActionCards
         </Card>
 
         {/* Bug Report Card */}
-        <Card 
+        <Card
           className="cursor-pointer hover:bg-muted/50 transition-colors border-2 hover:border-destructive/50"
-          onClick={() => setBugOpen(true)}
+          onClick={() => { posthog.capture("feedback_bug_report_opened"); setBugOpen(true); }}
         >
           <CardHeader className="flex flex-row items-center gap-4 space-y-0 pb-2">
             <div className="p-2 bg-red-100 dark:bg-red-900/20 rounded-full">

@@ -3,6 +3,7 @@
 import type { Editor } from "@tiptap/react";
 import { memo } from "react";
 import { getDiffState } from "./extensions/DiffExtension";
+import posthog from "posthog-js";
 
 interface DiffToolbarProps {
   editor: Editor;
@@ -23,11 +24,13 @@ export const DiffToolbar = memo(function DiffToolbar({
   if (!diffState?.active) return null;
 
   const handleAcceptAll = () => {
+    posthog.capture("ai_suggestion_accepted_all", { changes_count: changesCount });
     editor.commands.acceptAllChanges();
     onExitDiffMode();
   };
 
   const handleRejectAll = () => {
+    posthog.capture("ai_suggestion_rejected_all", { changes_count: changesCount });
     editor.commands.rejectAllChanges();
     onExitDiffMode();
   };

@@ -1,13 +1,13 @@
 export default function SettingsLoading() {
   return (
-    <div className="w-full max-w-3xl mx-auto animate-pulse">
+    <div className="w-full max-w-4xl mx-auto animate-pulse">
       <div className="mb-8">
         <div className="h-10 bg-muted rounded-lg w-48 mb-2" />
         <div className="h-6 bg-muted rounded-lg w-80" />
       </div>
       <div className="space-y-6">
         {/* Profile Card Skeleton */}
-        <div className="bg-card p-8 rounded-2xl shadow-md border border-border">
+        <div className="bg-card p-4 sm:p-6 md:p-8 rounded-2xl shadow-md border border-border">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 rounded-xl bg-muted" />
             <div className="h-6 bg-muted rounded-lg w-40" />
@@ -23,7 +23,7 @@ export default function SettingsLoading() {
         </div>
 
         {/* Subscription Card Skeleton */}
-        <div className="bg-card p-8 rounded-2xl shadow-md border border-border">
+        <div className="bg-card p-4 sm:p-6 md:p-8 rounded-2xl shadow-md border border-border">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 rounded-xl bg-muted" />
             <div className="h-6 bg-muted rounded-lg w-52" />
@@ -44,7 +44,7 @@ export default function SettingsLoading() {
         </div>
 
         {/* Preferences Card Skeleton */}
-        <div className="bg-card p-8 rounded-2xl shadow-md border border-border">
+        <div className="bg-card p-4 sm:p-6 md:p-8 rounded-2xl shadow-md border border-border">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 rounded-xl bg-muted" />
             <div className="h-6 bg-muted rounded-lg w-32" />

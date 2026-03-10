@@ -16,7 +16,7 @@ export default function CheckoutCancelPage() {
   const router = useRouter();
 
   return (
-    <div className="min-h-[80vh] flex items-center justify-center px-6 py-12">
+    <div className="min-h-[80vh] flex items-center justify-center px-4 py-8 sm:px-6 sm:py-12">
       <div className="max-w-lg w-full">
         {/* Header */}
         <div className="text-center mb-8">
@@ -24,17 +24,17 @@ export default function CheckoutCancelPage() {
             <Heart className="w-10 h-10 text-muted-foreground" />
           </div>
 
-          <h1 className="text-3xl font-bold text-foreground mb-3">
+          <h1 className="mb-3 text-2xl font-bold text-foreground sm:text-3xl">
             Lamentamos vê-lo partir...
           </h1>
-          <p className="text-lg text-muted-foreground">
+          <p className="text-base text-muted-foreground sm:text-lg">
             O processo de pagamento foi cancelado e não foi efetuada nenhuma
             cobrança.
           </p>
         </div>
 
         {/* Value proposition reminder */}
-        <div className="bg-card p-6 rounded-2xl shadow-md border border-border mb-6">
+        <div className="mb-6 rounded-2xl border border-border bg-card p-4 shadow-md sm:p-6">
           <h2 className="text-lg font-semibold text-foreground mb-4">
             O que está a perder:
           </h2>

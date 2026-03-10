@@ -9,6 +9,7 @@ import { FileText, Loader2, Upload, X } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import posthog from "posthog-js";
 
 interface BugReportFormProps {
   onSuccess: () => void;
@@ -129,9 +130,11 @@ export function BugReportForm({ onSuccess, onCancel }: BugReportFormProps) {
         attachments: uploadedAttachments,
       });
 
+      posthog.capture("feedback_bug_report_submitted", { bug_type: bugType, severity });
       toast.success("Bug reportado com sucesso!");
       onSuccess();
     } catch (error) {
+      posthog.captureException(error);
       console.error("Failed to report bug:", error);
       toast.error("Ocorreu um erro ao reportar o bug.");
     } finally {
@@ -141,7 +144,7 @@ export function BugReportForm({ onSuccess, onCancel }: BugReportFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5 p-6 pt-0">
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="bugType">
             Tipo de erro <span className="text-red-500">*</span>

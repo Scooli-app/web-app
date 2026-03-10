@@ -45,3 +45,4 @@ next-env.d.ts
 curriculum-docs
 # clerk configuration (can include secrets)
 /.clerk/
+.env.local

@@ -52,6 +52,8 @@
     "openai": "^5.8.3",
     "pdf-lib": "^1.17.1",
     "pdf-parse": "^1.1.1",
+    "posthog-js": "^1.360.0",
+    "posthog-node": "^5.28.0",
     "prosemirror-changeset": "^2.4.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

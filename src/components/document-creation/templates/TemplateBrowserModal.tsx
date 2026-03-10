@@ -9,7 +9,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import type { DocumentTemplate, DocumentType } from "@/shared/types";
 import { cn } from "@/shared/utils/utils";
 import {
@@ -56,11 +55,13 @@ export function TemplateBrowserModal({
   const [editingTemplate, setEditingTemplate] =
     useState<DocumentTemplate | null>(null);
   const [localSelectedId, setLocalSelectedId] = useState<string | null>(
-    selectedTemplateId
+    selectedTemplateId,
   );
   const [isCreatorDirty, setIsCreatorDirty] = useState(false);
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
-  const [pendingCloseAction, setPendingCloseAction] = useState<(() => void) | null>(null);
+  const [pendingCloseAction, setPendingCloseAction] = useState<
+    (() => void) | null
+  >(null);
   const [isSettingDefault, setIsSettingDefault] = useState(false);
 
   const resetModalState = useCallback(() => {
@@ -74,7 +75,7 @@ export function TemplateBrowserModal({
   const handleOpenChange = (open: boolean) => {
     if (!open) {
       const isInCreatorView = view === "create" || view === "edit";
-      
+
       if (isInCreatorView && isCreatorDirty) {
         setPendingCloseAction(() => () => {
           onClose();
@@ -129,7 +130,10 @@ export function TemplateBrowserModal({
     setPreviewTemplate(null);
   };
 
-  const handleTemplateSaved = (template: DocumentTemplate, isUpdate: boolean) => {
+  const handleTemplateSaved = (
+    template: DocumentTemplate,
+    isUpdate: boolean,
+  ) => {
     onTemplateSaved(template, isUpdate);
     setEditingTemplate(null);
     setIsCreatorDirty(false);
@@ -150,11 +154,10 @@ export function TemplateBrowserModal({
     if (template.isDefault || isSettingDefault) {
       return;
     }
-    
+
     setIsSettingDefault(true);
     try {
       await onSetDefault(template);
-      // Update preview template if it's the one being set as default
       if (previewTemplate?.id === template.id) {
         setPreviewTemplate({ ...template, isDefault: true });
       }
@@ -173,223 +176,229 @@ export function TemplateBrowserModal({
 
       <Dialog open={isOpen} onOpenChange={handleOpenChange}>
         <DialogContent
-        className={cn(
-          "h-[85vh] max-h-[800px] flex flex-col p-0 gap-0 overflow-hidden max-w-2xl"
-        )}
-        hideCloseButton={view === "create" || view === "edit"}
-      >
-        {view === "create" || view === "edit" ? (
-          <TemplateCreator
-            documentType={documentType}
-            onBack={handleBackToBrowse}
-            onTemplateSaved={handleTemplateSaved}
-            editingTemplate={view === "edit" ? editingTemplate : null}
-            onDirtyStateChange={handleCreatorDirtyStateChange}
-          />
-        ) : view === "preview" && previewTemplate ? (
-          <>
-            <DialogHeader className="p-6 pb-4">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                <button
-                  type="button"
-                  onClick={handleBackToBrowse}
-                  className="hover:text-primary transition-colors"
-                >
-                  Modelos
-                </button>
-                <ChevronRight className="w-4 h-4" />
-                <span className="text-foreground font-medium">
-                  {previewTemplate.name}
-                </span>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-accent shrink-0">
-                  <FileText className="w-6 h-6 text-primary" />
-                </div>
-                <div className="flex-1">
-                  <DialogTitle className="flex items-center gap-2 flex-wrap">
+          className={cn(
+            "flex h-[min(90dvh,820px)] max-h-[90dvh] w-[min(100%,44rem)] flex-col gap-0 overflow-scroll p-0",
+          )}
+          hideCloseButton={view === "create" || view === "edit"}
+        >
+          {view === "create" || view === "edit" ? (
+            <TemplateCreator
+              documentType={documentType}
+              onBack={handleBackToBrowse}
+              onTemplateSaved={handleTemplateSaved}
+              editingTemplate={view === "edit" ? editingTemplate : null}
+              onDirtyStateChange={handleCreatorDirtyStateChange}
+            />
+          ) : view === "preview" && previewTemplate ? (
+            <>
+              <DialogHeader className="p-4 pb-3 sm:p-6 sm:pb-4">
+                <div className="mb-2 flex flex-wrap items-center gap-1.5 text-sm text-muted-foreground">
+                  <button
+                    type="button"
+                    onClick={handleBackToBrowse}
+                    className="transition-colors hover:text-primary"
+                  >
+                    Modelos
+                  </button>
+                  <ChevronRight className="h-4 w-4" />
+                  <span className="font-medium text-foreground">
                     {previewTemplate.name}
-                    {previewTemplate.isSystem ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gradient-to-r from-primary to-primary/70 text-primary-foreground">
-                        <Sparkles className="w-2.5 h-2.5" />
-                        Scooli
-                      </span>
-                    ) : (
-                      <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-muted text-muted-foreground">
-                        Personalizado
-                      </span>
-                    )}
-                    {previewTemplate.isDefault && (
-                      <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-500 text-white">
-                        Padrão
-                      </span>
-                    )}
-                  </DialogTitle>
-                  <DialogDescription className="mt-1">
-                    {previewTemplate.description}
-                  </DialogDescription>
+                  </span>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  {!previewTemplate.isDefault && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleSetDefault(previewTemplate)}
-                      disabled={isSettingDefault}
-                      className="flex items-center gap-1.5 border-border text-secondary-foreground hover:bg-emerald-50 hover:border-emerald-500 hover:text-emerald-700 dark:hover:bg-emerald-950/30 dark:hover:text-emerald-400 rounded-lg"
-                      aria-label="Definir como padrão"
-                    >
-                      {isSettingDefault ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <Star className="w-4 h-4" />
-                      )}
-                      <span className="hidden sm:inline">
-                        {isSettingDefault ? "A definir..." : "Definir Padrão"}
-                      </span>
-                    </Button>
-                  )}
-                  {previewTemplate.isDefault && (
-                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 rounded-lg text-sm font-medium">
-                      <Check className="w-4 h-4" />
-                      <span className="hidden sm:inline">Padrão</span>
-                    </div>
-                  )}
-                  {!previewTemplate.isSystem && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleEditTemplate(previewTemplate)}
-                      className="flex items-center gap-1.5 border-border text-secondary-foreground hover:bg-accent hover:border-primary rounded-lg"
-                      aria-label="Editar modelo"
-                    >
-                      <Pencil className="w-4 h-4" />
-                      <span className="hidden sm:inline">Editar</span>
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </DialogHeader>
 
-            <ScrollArea className="flex-1 px-6">
-              <div className="space-y-3 pb-4">
-                <h3 className="text-sm font-medium text-foreground">
-                  Secções ({previewTemplate.sections.length})
-                </h3>
-                <div className="space-y-2">
-                  {previewTemplate.sections
-                    .sort((a, b) => a.order - b.order)
-                    .map((section, index) => (
-                      <div
-                        key={section.id}
-                        className="flex gap-3 p-3 bg-muted rounded-xl"
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
+                  <div className="flex min-w-0 flex-1 items-start gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent sm:h-12 sm:w-12">
+                      <FileText className="h-5 w-5 text-primary sm:h-6 sm:w-6" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <DialogTitle className="flex flex-wrap items-center gap-2">
+                        {previewTemplate.name}
+                        {previewTemplate.isSystem ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-primary to-primary/70 px-2 py-0.5 text-xs font-medium text-primary-foreground">
+                            <Sparkles className="h-2.5 w-2.5" />
+                            Scooli
+                          </span>
+                        ) : (
+                          <span className="inline-flex rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+                            Personalizado
+                          </span>
+                        )}
+                        {previewTemplate.isDefault && (
+                          <span className="inline-flex rounded-full bg-emerald-500 px-2 py-0.5 text-xs font-medium text-white">
+                            Padrao
+                          </span>
+                        )}
+                      </DialogTitle>
+                      <DialogDescription className="mt-1 line-clamp-2 sm:line-clamp-none">
+                        {previewTemplate.description}
+                      </DialogDescription>
+                    </div>
+                  </div>
+
+                  <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
+                    {!previewTemplate.isDefault && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleSetDefault(previewTemplate)}
+                        disabled={isSettingDefault}
+                        className="h-9 flex-1 items-center gap-1.5 rounded-lg border-border text-secondary-foreground hover:border-emerald-500 hover:bg-emerald-50 hover:text-emerald-700 dark:hover:bg-emerald-950/30 dark:hover:text-emerald-400 sm:h-8 sm:flex-none"
+                        aria-label="Definir como padrao"
                       >
-                        <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-background text-primary font-semibold text-sm shrink-0">
-                          {index + 1}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-medium text-sm text-foreground">
-                            {section.title}
-                          </h4>
-                          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
-                            {section.description}
-                          </p>
-                        </div>
+                        {isSettingDefault ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Star className="h-4 w-4" />
+                        )}
+                        <span>
+                          {isSettingDefault ? "A definir..." : "Definir Padrao"}
+                        </span>
+                      </Button>
+                    )}
+
+                    {previewTemplate.isDefault && (
+                      <div className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg bg-emerald-50 px-3 text-sm font-medium text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 sm:h-8 sm:flex-none">
+                        <Check className="h-4 w-4" />
+                        <span>Padrao</span>
                       </div>
-                    ))}
-                </div>
-              </div>
-            </ScrollArea>
+                    )}
 
-            <div className="p-6 pt-4 border-t border-border bg-muted/50">
-              <div className="flex flex-col sm:flex-row gap-3">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleBackToBrowse}
-                  className="sm:flex-1 h-11 border-border text-secondary-foreground hover:bg-accent hover:border-primary rounded-xl"
-                >
-                  Ver outros modelos
-                </Button>
-                <Button
-                  type="button"
-                  onClick={handleConfirmSelection}
-                  className="sm:flex-1 h-11 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl shadow-md shadow-primary/20"
-                >
-                  Usar este modelo
-                </Button>
-              </div>
-            </div>
-          </>
-        ) : (
-          <>
-            <DialogHeader className="p-6 pb-4 mt-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-accent shrink-0">
-                    <Layers className="w-5 h-5 text-primary" />
-                  </div>
-                  <div>
-                    <DialogTitle>Escolher Modelo</DialogTitle>
-                    <DialogDescription>
-                      {getDocumentTypeLabel(documentType)} • {templates.length}{" "}
-                      modelos disponíveis
-                    </DialogDescription>
+                    {!previewTemplate.isSystem && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEditTemplate(previewTemplate)}
+                        className="h-9 flex-1 items-center gap-1.5 rounded-lg border-border text-secondary-foreground hover:border-primary hover:bg-accent sm:h-8 sm:flex-none"
+                        aria-label="Editar modelo"
+                      >
+                        <Pencil className="h-4 w-4" />
+                        <span>Editar</span>
+                      </Button>
+                    )}
                   </div>
                 </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setView("create")}
-                  className="flex items-center gap-1.5 border-border text-secondary-foreground hover:bg-accent hover:border-primary rounded-lg"
-                  aria-label="Criar novo modelo"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span className="hidden sm:inline">Criar Modelo</span>
-                </Button>
+              </DialogHeader>
+
+              <div className="min-h-0 flex-1 overflow-y-auto px-4 sm:px-6">
+                <div className="space-y-3 pb-4 pt-0.5">
+                  <h3 className="text-sm font-medium text-foreground">
+                    Seccoes ({previewTemplate.sections.length})
+                  </h3>
+                  <div className="space-y-2">
+                    {previewTemplate.sections
+                      .sort((a, b) => a.order - b.order)
+                      .map((section, index) => (
+                        <div
+                          key={section.id}
+                          className="flex gap-2.5 rounded-xl bg-muted p-2.5 sm:gap-3 sm:p-3"
+                        >
+                          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-background text-sm font-semibold text-primary">
+                            {index + 1}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <h4 className="text-sm font-medium text-foreground">
+                              {section.title}
+                            </h4>
+                            <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
+                              {section.description}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
               </div>
-            </DialogHeader>
 
-            <ScrollArea className="flex-1 px-6">
-              <div className="grid grid-cols-1 gap-3 pb-6">
-                {templates.map((template) => (
-                  <TemplateCard
-                    key={template.id}
-                    template={template}
-                    isSelected={localSelectedId === template.id}
-                    onSelect={handleTemplateClick}
-                    onEdit={handleEditTemplate}
-                  />
-                ))}
-
-                {templates.length === 0 && (
-                  <div className="flex flex-col items-center justify-center py-12 text-center">
-                    <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-muted mb-4">
-                      <FileText className="w-8 h-8 text-muted-foreground" />
+              <div className="border-t border-border bg-muted/50 p-4 pt-3 sm:p-6 sm:pt-4">
+                <div className="flex flex-col gap-3 sm:flex-row">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleBackToBrowse}
+                    className="h-11 rounded-xl border-border text-secondary-foreground hover:border-primary hover:bg-accent sm:flex-1"
+                  >
+                    Ver outros modelos
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={handleConfirmSelection}
+                    className="h-11 rounded-xl bg-primary text-primary-foreground shadow-md shadow-primary/20 hover:bg-primary/90 sm:flex-1"
+                  >
+                    Usar este modelo
+                  </Button>
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              <DialogHeader className="p-4 pb-4 sm:p-6 sm:pb-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent">
+                      <Layers className="h-5 w-5 text-primary" />
                     </div>
-                    <h3 className="text-lg font-semibold text-foreground mb-1">
-                      Sem modelos disponíveis
-                    </h3>
-                    <p className="text-sm text-muted-foreground max-w-xs mb-4">
-                      Crie o seu primeiro modelo personalizado para começar
-                    </p>
-                    <Button
-                      type="button"
-                      onClick={() => setView("create")}
-                      className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl"
-                    >
-                      <Plus className="w-4 h-4 mr-2" />
-                      Criar Modelo
-                    </Button>
+                    <div className="min-w-0">
+                      <DialogTitle>Escolher Modelo</DialogTitle>
+                      <DialogDescription className="line-clamp-2 sm:line-clamp-none">
+                        {getDocumentTypeLabel(documentType)} -{" "}
+                        {templates.length} modelos disponiveis
+                      </DialogDescription>
+                    </div>
                   </div>
-                )}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setView("create")}
+                    className="h-9 w-full items-center gap-1.5 rounded-lg border-border text-secondary-foreground hover:border-primary hover:bg-accent sm:h-8 sm:w-auto"
+                    aria-label="Criar novo modelo"
+                  >
+                    <Plus className="h-4 w-4" />
+                    <span>Criar Modelo</span>
+                  </Button>
+                </div>
+              </DialogHeader>
+
+              <div className="min-h-0 flex-1 overflow-y-auto px-4 sm:px-6">
+                <div className="grid grid-cols-1 gap-3 pb-6 pt-0.5">
+                  {templates.map((template) => (
+                    <TemplateCard
+                      key={template.id}
+                      template={template}
+                      isSelected={localSelectedId === template.id}
+                      onSelect={handleTemplateClick}
+                      onEdit={handleEditTemplate}
+                    />
+                  ))}
+
+                  {templates.length === 0 && (
+                    <div className="flex flex-col items-center justify-center px-2 py-12 text-center">
+                      <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-muted">
+                        <FileText className="h-8 w-8 text-muted-foreground" />
+                      </div>
+                      <h3 className="mb-1 text-lg font-semibold text-foreground">
+                        Sem modelos disponiveis
+                      </h3>
+                      <p className="mb-4 max-w-xs text-sm text-muted-foreground">
+                        Crie o seu primeiro modelo personalizado para comecar
+                      </p>
+                      <Button
+                        type="button"
+                        onClick={() => setView("create")}
+                        className="rounded-xl bg-primary text-primary-foreground hover:bg-primary/90"
+                      >
+                        <Plus className="mr-2 h-4 w-4" />
+                        Criar Modelo
+                      </Button>
+                    </div>
+                  )}
+                </div>
               </div>
-            </ScrollArea>
-          </>
-        )}
+            </>
+          )}
         </DialogContent>
       </Dialog>
     </>

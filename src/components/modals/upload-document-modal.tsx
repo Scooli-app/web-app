@@ -277,7 +277,7 @@ export function UploadDocumentModal({ isOpen, onClose }: UploadDocumentModalProp
             </div>
 
             {/* Document Type + School Year */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label htmlFor="docType" className="text-sm">Converter para</Label>
                 <Select value={documentType} onValueChange={setDocumentType} disabled={isUploading}>
@@ -355,7 +355,7 @@ export function UploadDocumentModal({ isOpen, onClose }: UploadDocumentModalProp
           </div>
 
           {/* Footer */}
-          <div className="px-6 pb-6 pt-2 flex items-center justify-end gap-3">
+          <div className="flex flex-col-reverse gap-3 px-6 pb-6 pt-2 sm:flex-row sm:items-center sm:justify-end">
             <Button type="button" variant="outline" onClick={onClose} disabled={isUploading}>
               Cancelar
             </Button>

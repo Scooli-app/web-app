@@ -9,6 +9,8 @@ import {
 import { Routes } from "@/shared/types";
 import { AlertCircle, ArrowRight, Crown, Infinity, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+import posthog from "posthog-js";
 import { Button } from "./button";
 
 interface UpgradePlanModalProps {
@@ -22,7 +24,14 @@ export function UpgradePlanModal({
 }: UpgradePlanModalProps) {
   const router = useRouter();
 
+  useEffect(() => {
+    if (open) {
+      posthog.capture("upgrade_modal_viewed");
+    }
+  }, [open]);
+
   const handleUpgrade = () => {
+    posthog.capture("upgrade_modal_cta_clicked");
     onOpenChange(false);
     router.push(Routes.CHECKOUT);
   };

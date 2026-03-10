@@ -25,7 +25,6 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { UpgradePlanModal } from "@/components/ui/upgrade-plan-modal";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { useAdmin } from "@/hooks/useAdmin";
 import { Routes } from "@/shared/types";
 import { FeatureFlag } from "@/shared/types/featureFlags";
@@ -84,7 +83,6 @@ interface NavItem {
   description: string;
 }
 
-// Static navigation arrays - defined outside component to avoid recreating
 const NAVIGATION: NavItem[] = [
   {
     title: "Dashboard",
@@ -157,7 +155,6 @@ const ADMIN_NAVIGATION: NavItem[] = [
   },
 ];
 
-// Memoized navigation item component
 const NavMenuItem = memo(function NavMenuItem({
   item,
   isActive,
@@ -194,9 +191,6 @@ const NavMenuItem = memo(function NavMenuItem({
   );
 });
 
-/**
- * A disabled nav item that shows a "Em breve" badge — used when a feature flag is OFF.
- */
 const DisabledNavMenuItem = memo(function DisabledNavMenuItem({
   item,
 }: {
@@ -208,11 +202,11 @@ const DisabledNavMenuItem = memo(function DisabledNavMenuItem({
     <SidebarMenuItem>
       <SidebarMenuButton
         disabled
-        className="h-10 px-4 opacity-50 cursor-not-allowed text-sidebar-foreground"
+        className="h-10 cursor-not-allowed px-4 text-sidebar-foreground opacity-50"
       >
         <Icon className="h-4 w-4" />
         <span className="flex-1">{item.title}</span>
-        <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide bg-muted text-muted-foreground rounded-full px-2 py-0.5 border border-border">
+        <span className="inline-flex items-center gap-1 rounded-full border border-border bg-muted px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
           <Clock className="h-2.5 w-2.5" />
           Em breve
         </span>
@@ -221,7 +215,6 @@ const DisabledNavMenuItem = memo(function DisabledNavMenuItem({
   );
 });
 
-// Memoized navigation group component
 const NavGroup = memo(function NavGroup({
   label,
   items,
@@ -237,7 +230,7 @@ const NavGroup = memo(function NavGroup({
 }) {
   return (
     <SidebarGroup>
-      <SidebarGroupLabel className="px-4 text-xs font-semibold tracking-tight text-muted-foreground uppercase">
+      <SidebarGroupLabel className="px-4 text-xs font-semibold uppercase tracking-tight text-muted-foreground">
         {label}
       </SidebarGroupLabel>
       <SidebarGroupContent>
@@ -312,8 +305,7 @@ const SidebarProfileCard = memo(function SidebarProfileCard({
   );
 });
 
-// Memoized sidebar content component
-const SidebarInnerContent = memo(function SidebarInnerContent({
+const SidebarNavigationContent = memo(function SidebarNavigationContent({
   pathname,
   onItemClick,
 }: {
@@ -328,15 +320,15 @@ const SidebarInnerContent = memo(function SidebarInnerContent({
     features[FeatureFlag.PRESENTATION_CREATION] === true;
 
   return (
-    <SidebarPrimitive collapsible="icon">
-      <SidebarHeader className="flex items-center justify-center px-6 py-4 group-data-[collapsible=icon]:px-3 group-data-[collapsible=icon]:py-2">
+    <>
+      <SidebarHeader className="flex items-center justify-center px-4 py-3 sm:px-6 sm:py-4 group-data-[collapsible=icon]:px-3 group-data-[collapsible=icon]:py-2">
         <Image
           src="/scooli.svg"
           alt="Scooli"
           width={150}
           height={120}
           priority
-          className="flex-shrink-0 rounded-lg group-data-[collapsible=icon]:w-6 group-data-[collapsible=icon]:h-6 cursor-pointer"
+          className="h-auto flex-shrink-0 cursor-pointer rounded-lg group-data-[collapsible=icon]:h-6 group-data-[collapsible=icon]:w-6"
           onClick={() => router.push(Routes.DASHBOARD)}
         />
       </SidebarHeader>
@@ -385,7 +377,35 @@ const SidebarInnerContent = memo(function SidebarInnerContent({
           </>
         )}
       </SidebarContent>
+    </>
+  );
+});
+
+const SidebarDesktopContent = memo(function SidebarDesktopContent({
+  pathname,
+  onItemClick,
+}: {
+  pathname: string;
+  onItemClick?: () => void;
+}) {
+  return (
+    <SidebarPrimitive collapsible="icon">
+      <SidebarNavigationContent pathname={pathname} onItemClick={onItemClick} />
     </SidebarPrimitive>
+  );
+});
+
+const SidebarMobileContent = memo(function SidebarMobileContent({
+  pathname,
+  onItemClick,
+}: {
+  pathname: string;
+  onItemClick?: () => void;
+}) {
+  return (
+    <div className="flex h-full flex-col bg-sidebar text-sidebar-foreground">
+      <SidebarNavigationContent pathname={pathname} onItemClick={onItemClick} />
+    </div>
   );
 });
 
@@ -412,8 +432,8 @@ function GenerationsIndicator() {
     return (
       <div
         className={cn(
-          "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors border",
-          "bg-primary/5 text-primary border-success/10",
+          "flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors",
+          "border-success/10 bg-primary/5 text-primary",
         )}
       >
         <Sparkles className="w-4 h-4" />
@@ -430,9 +450,9 @@ function GenerationsIndicator() {
       <Link href={Routes.CHECKOUT}>
         <Button
           size="sm"
-          className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white shadow-sm transition-all hover:scale-105 active:scale-95"
+          className="bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-sm transition-all hover:scale-105 hover:from-amber-600 hover:to-orange-700 active:scale-95"
         >
-          <Sparkles className="w-4 h-4 mr-1.5" />
+          <Sparkles className="mr-1.5 h-4 w-4" />
           Fazer Upgrade
         </Button>
       </Link>
@@ -443,13 +463,13 @@ function GenerationsIndicator() {
     <Link
       href={Routes.SETTINGS}
       className={cn(
-        "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors border",
+        "flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors",
         isLow
-          ? "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-900/30"
-          : "bg-primary/5 text-primary border-primary/10 hover:bg-primary/10",
+          ? "border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 dark:border-amber-900/30 dark:bg-amber-900/20 dark:text-amber-400"
+          : "border-primary/10 bg-primary/5 text-primary hover:bg-primary/10",
       )}
     >
-      <Sparkles className="w-4 h-4" />
+      <Sparkles className="h-4 w-4" />
       <span>
         {usage.remaining} {usage.remaining === 1 ? "geração" : "gerações"}
       </span>
@@ -458,7 +478,6 @@ function GenerationsIndicator() {
 }
 
 export function SidebarLayout({ children, className }: SidebarLayoutProps) {
-  const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const dispatch = useDispatch<AppDispatch>();
@@ -467,10 +486,8 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
   );
 
   const handleMobileItemClick = useCallback(() => {
-    if (isMobile) {
-      setOpen(false);
-    }
-  }, [isMobile]);
+    setOpen(false);
+  }, []);
 
   const handleSheetOpenChange = useCallback((isOpen: boolean) => {
     setOpen(isOpen);
@@ -483,10 +500,19 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
     [dispatch],
   );
 
-  // Memoize sidebar content to prevent recreation
-  const sidebarContent = useMemo(
+  const desktopSidebarContent = useMemo(
     () => (
-      <SidebarInnerContent
+      <SidebarDesktopContent
+        pathname={pathname}
+        onItemClick={handleMobileItemClick}
+      />
+    ),
+    [pathname, handleMobileItemClick],
+  );
+
+  const mobileSidebarContent = useMemo(
+    () => (
+      <SidebarMobileContent
         pathname={pathname}
         onItemClick={handleMobileItemClick}
       />
@@ -496,50 +522,57 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
 
   return (
     <SidebarProvider>
-      <div className="flex h-screen w-full">
-        {/* Upgrade Modal */}
+      <div className="flex min-h-dvh w-full">
         <UpgradePlanModal
           open={isUpgradeModalOpen}
           onOpenChange={handleUpgradeModalChange}
         />
 
-        {/* Desktop Sidebar */}
-        <div className="hidden md:block h-screen">{sidebarContent}</div>
+        <div className="hidden md:block md:min-h-dvh">
+          {desktopSidebarContent}
+        </div>
 
-        {/* Mobile Sidebar */}
-        <Sheet open={open} onOpenChange={handleSheetOpenChange}>
-          <SheetTrigger asChild>
-            <Button
-              variant="ghost"
-              className="md:hidden mr-2 px-0 text-base hover:bg-accent hover:text-primary"
-            >
-              <Menu className="h-6 w-6" />
-              <span className="sr-only">Toggle sidebar</span>
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="left" className="pl-1 pr-0 pt-10">
-            <SheetTitle className="sr-only">Navegação Scooli</SheetTitle>
-            <ScrollArea className="my-4 h-[calc(100vh-8rem)] pb-10">
-              {sidebarContent}
-            </ScrollArea>
-          </SheetContent>
-        </Sheet>
+        <div className="flex flex-1 flex-col">
+          <header className="flex h-14 w-full shrink-0 items-center gap-2 border-b border-border bg-background/70 backdrop-blur-md sm:h-16">
+            <div className="flex w-full items-center justify-between gap-2 px-3 sm:px-4">
+              <div className="flex items-center gap-1">
+                <Sheet open={open} onOpenChange={handleSheetOpenChange}>
+                  <SheetTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      className="h-9 w-9 px-0 text-base hover:bg-accent hover:text-primary md:hidden"
+                    >
+                      <Menu className="h-6 w-6" />
+                      <span className="sr-only">Toggle sidebar</span>
+                    </Button>
+                  </SheetTrigger>
+                  <SheetContent
+                    side="left"
+                    className="w-[min(92vw,22rem)] border-r p-0"
+                  >
+                    <SheetTitle className="sr-only">
+                      Navegação Scooli
+                    </SheetTitle>
+                    <ScrollArea className="h-full py-3">
+                      {mobileSidebarContent}
+                    </ScrollArea>
+                  </SheetContent>
+                </Sheet>
+                <SidebarTrigger className="hidden md:flex" />
+              </div>
 
-        {/* Main Content Area */}
-        <div className="flex-1 flex flex-col">
-          <header className="flex h-16 shrink-0 items-center gap-2 bg-background/50 backdrop-blur-md w-full border-b border-border">
-            <div className="flex items-center gap-2 px-4 justify-between w-full">
-              <SidebarTrigger className="hidden md:flex" />
-              <div className="ml-auto flex items-center gap-2">
+              <div className="flex items-center gap-2">
                 <SignedIn>
                   <div className="flex items-center gap-2">
                     <Badge
                       variant="secondary"
-                      className="h-8 rounded border-dashed border border-primary/20 bg-primary/10 px-4 text-[12px] font-semibold uppercase tracking-wide text-primary"
+                      className="hidden h-8 rounded border border-dashed border-primary/20 bg-primary/10 px-3 text-[11px] font-semibold uppercase tracking-wide text-primary sm:inline-flex"
                     >
-                      Beta
+                      Acesso antecipado
                     </Badge>
-                    <GenerationsIndicator />
+                    <div className="hidden sm:block">
+                      <GenerationsIndicator />
+                    </div>
                   </div>
                 </SignedIn>
                 <ThemeToggle />
@@ -556,17 +589,19 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
               </div>
             </div>
           </header>
+
           <main
             className={cn(
-              "flex-1 overflow-auto w-full bg-slate-50 dark:bg-background",
+              "w-full flex-1 overflow-auto bg-slate-50 dark:bg-background",
               className,
             )}
           >
-            <div className="w-full flex flex-col items-center h-full p-6">
+            <div className="flex h-full w-full flex-col items-center p-3 sm:p-4 md:p-6">
               {children}
             </div>
           </main>
         </div>
+
         <AssistantProvider />
       </div>
     </SidebarProvider>

@@ -21,6 +21,7 @@ import {
   getSubscriptionPlans,
 } from "@/services/api/subscription.service";
 import type { SubscriptionPlan } from "@/shared/types/subscription";
+import posthog from "posthog-js";
 
 type ErrorType = "network" | "server" | "validation" | "checkout" | "unknown";
 
@@ -138,7 +139,7 @@ function ErrorCard({
   showSupport?: boolean;
 }) {
   return (
-    <div className="bg-card p-8 rounded-2xl shadow-md border border-border text-center max-w-md mx-auto">
+    <div className="bg-card p-5 sm:p-8 rounded-2xl shadow-md border border-border text-center max-w-md mx-auto">
       <div className="mb-4 flex justify-center">
         <ErrorIcon type={error.type} />
       </div>
@@ -285,16 +286,26 @@ function CheckoutContent() {
     setIsCheckingOut(true);
     setError(null);
 
+    posthog.capture("checkout_initiated", {
+      plan_code: planCode,
+    });
+
     try {
       const response = await createCheckoutSession({ planCode });
-      
+
       if (!response?.url) {
         throw new Error("Não foi possível obter o link de pagamento");
       }
-      
+
       window.location.href = response.url;
     } catch (err) {
       const parsedError = parseError(err, "checkout");
+      posthog.capture("checkout_error", {
+        plan_code: planCode,
+        error_type: parsedError.type,
+        error_message: parsedError.message,
+      });
+      posthog.captureException(err);
       setError(parsedError);
       setIsCheckingOut(false);
     }
@@ -389,7 +400,7 @@ function CheckoutContent() {
   // Loading state - auth loading or redirecting to sign-up
   if (!isLoaded || (!isSignedIn && isLoaded)) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-dvh flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
           <p className="text-muted-foreground">A carregar...</p>
@@ -401,7 +412,7 @@ function CheckoutContent() {
   // Auto-checkout in progress (no error)
   if (planParam && isCheckingOut && !error) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-dvh flex items-center justify-center">
         <div className="flex flex-col items-center gap-4 text-center px-6">
           <Loader2 className="w-10 h-10 animate-spin text-primary" />
           <h2 className="text-xl font-semibold text-foreground">
@@ -418,8 +429,8 @@ function CheckoutContent() {
   // Full-page error state (failed to load plans)
   if (error && !isLoadingPlans && plans.length === 0) {
     return (
-      <div className="min-h-screen">
-        <div className="max-w-5xl mx-auto px-6 py-12">
+      <div className="min-h-dvh">
+        <div className="max-w-5xl mx-auto px-4 py-8 sm:px-6 sm:py-12">
           <button
             onClick={() => router.back()}
             className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-10"
@@ -443,8 +454,8 @@ function CheckoutContent() {
   const monthlyPlan = plans.find((p) => p.interval === "month");
 
   return (
-    <div className="min-h-screen">
-      <div className="max-w-5xl mx-auto px-6 py-12">
+    <div className="min-h-dvh">
+      <div className="max-w-5xl mx-auto px-4 py-8 sm:px-6 sm:py-12">
         {/* Header */}
         <div className="mb-10">
           <button
@@ -459,7 +470,7 @@ function CheckoutContent() {
             <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center">
               <Sparkles className="w-5 h-5 text-primary-foreground" />
             </div>
-            <h1 className="text-4xl font-bold text-foreground">
+            <h1 className="text-3xl font-bold text-foreground sm:text-4xl">
               Escolha o seu plano
             </h1>
           </div>
@@ -504,7 +515,7 @@ function CheckoutContent() {
                         clearError();
                       }
                     }}
-                    className={`relative bg-card p-8 rounded-2xl shadow-md border-2 cursor-pointer transition-all hover:shadow-lg ${
+                    className={`relative bg-card p-5 sm:p-8 rounded-2xl shadow-md border-2 cursor-pointer transition-all hover:shadow-lg ${
                       isSelected
                         ? "border-primary ring-4 ring-primary/10"
                         : "border-border hover:border-primary/30"
@@ -549,7 +560,7 @@ function CheckoutContent() {
 
                     <div className="mb-6">
                       <div className="flex items-baseline gap-1">
-                        <span className="text-4xl font-bold text-foreground">
+                        <span className="text-3xl font-bold text-foreground sm:text-4xl">
                           {formatPrice(plan.priceCents, plan.currency)}
                         </span>
                         <span className="text-muted-foreground">
@@ -587,13 +598,13 @@ function CheckoutContent() {
             </div>
 
             {/* Checkout Button */}
-            <div className="bg-card p-8 rounded-2xl shadow-md border border-border">
+            <div className="bg-card p-5 sm:p-8 rounded-2xl shadow-md border border-border">
               {/* Checkout error */}
               {error && error.type !== "validation" && (
                 <InlineError error={error} onDismiss={clearError} />
               )}
 
-              <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+              <div className="flex flex-col gap-4 sm:gap-6 md:flex-row md:items-center md:justify-between">
                 <div>
                   {selectedPlan && (
                     <>
@@ -615,7 +626,7 @@ function CheckoutContent() {
                 <button
                   onClick={handleCheckout}
                   disabled={!selectedPlanCode || isCheckingOut}
-                  className="w-full md:w-auto bg-primary hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed text-primary-foreground px-8 py-4 rounded-xl font-semibold text-lg transition-colors flex items-center justify-center gap-3 min-w-[250px]"
+                  className="flex w-full items-center justify-center gap-3 rounded-xl bg-primary px-6 py-4 text-base font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground sm:w-auto sm:min-w-[220px] sm:px-8 sm:text-lg"
                 >
                   {isCheckingOut ? (
                     <>
@@ -658,7 +669,7 @@ export default function CheckoutPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center">
+        <div className="min-h-dvh flex items-center justify-center">
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
         </div>
       }

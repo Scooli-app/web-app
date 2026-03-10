@@ -24,7 +24,7 @@ function EditorSkeleton() {
         </div>
         <div className="w-24 h-8 bg-muted-foreground/10 rounded mr-2" />
       </div>
-      <div className="p-4 min-h-[600px] flex items-center justify-center">
+      <div className="flex min-h-[55dvh] items-center justify-center p-3 sm:min-h-[600px] sm:p-4">
         <div className="text-muted-foreground">A carregar editor...</div>
       </div>
     </div>

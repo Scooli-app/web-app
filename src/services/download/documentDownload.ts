@@ -3,6 +3,8 @@
  * Handles exporting documents to PDF and DOCX formats via API
  */
 
+import posthog from "posthog-js";
+
 export type DownloadFormat = "pdf" | "docx";
 
 interface DownloadOptions {
@@ -19,10 +21,15 @@ export async function downloadDocument(
 ): Promise<void> {
   const { title, content, format } = options;
 
+  const distinctId = posthog.get_distinct_id();
+  const sessionId = posthog.get_session_id();
+
   const response = await fetch("/api/download", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      ...(distinctId && { "x-posthog-distinct-id": distinctId }),
+      ...(sessionId && { "x-posthog-session-id": sessionId }),
     },
     body: JSON.stringify({ title, content, format }),
   });
