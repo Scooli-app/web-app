@@ -56,6 +56,7 @@ import {
   FolderArchiveIcon,
   HelpCircle,
   Home,
+  LogOut,
   Menu,
   MessageSquare,
   Presentation,
@@ -259,7 +260,8 @@ const SidebarProfileCard = memo(function SidebarProfileCard({
   onClick?: () => void;
 }) {
   const { user } = useUser();
-  const { openUserProfile } = useClerk();
+  const { openUserProfile, signOut } = useClerk();
+  const [isSigningOut, setIsSigningOut] = useState(false);
 
   if (!user) return null;
 
@@ -272,36 +274,68 @@ const SidebarProfileCard = memo(function SidebarProfileCard({
     onClick?.();
   };
 
+  const handleSignOut = async () => {
+    if (isSigningOut) return;
+
+    setIsSigningOut(true);
+    onClick?.();
+
+    try {
+      await signOut({ redirectUrl: "/sign-in" });
+    } catch (error) {
+      console.error("Failed to sign out from sidebar:", error);
+      setIsSigningOut(false);
+    }
+  };
+
   return (
-    <button
-      type="button"
-      onClick={handleClick}
-      className="mx-4 mt-3 block w-[calc(100%-2rem)] rounded-2xl border border-border bg-card/90 p-4 text-left shadow-sm transition hover:border-primary/30 hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary group-data-[collapsible=icon]:hidden"
-      aria-label="Abrir perfil"
-    >
-      <div className="flex items-center gap-3">
-        {user.imageUrl ? (
-          <Image
-            src={user.imageUrl}
-            alt={displayName}
-            width={52}
-            height={52}
-            className="h-12 w-12 rounded-xl object-cover"
-          />
-        ) : (
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-base font-semibold text-primary-foreground">
-            {fallbackInitial}
+    <div className="mx-4 mt-3 w-[calc(100%-2rem)] rounded-2xl border border-border bg-card/90 p-4 text-left shadow-sm group-data-[collapsible=icon]:hidden">
+      <button
+        type="button"
+        onClick={handleClick}
+        className="block w-full rounded-xl transition hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        aria-label="Abrir perfil"
+      >
+        <div className="flex items-center gap-3">
+          {user.imageUrl ? (
+            <Image
+              src={user.imageUrl}
+              alt={displayName}
+              width={52}
+              height={52}
+              className="h-12 w-12 rounded-xl object-cover"
+            />
+          ) : (
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-base font-semibold text-primary-foreground">
+              {fallbackInitial}
+            </div>
+          )}
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-semibold text-foreground">
+              {displayName}
+            </p>
+            <p className="truncate text-xs text-muted-foreground">{email}</p>
+            <p className="mt-1 text-xs font-medium text-primary">
+              Gerir perfil
+            </p>
           </div>
-        )}
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold text-foreground">
-            {displayName}
-          </p>
-          <p className="truncate text-xs text-muted-foreground">{email}</p>
-          <p className="mt-1 text-xs font-medium text-primary">Gerir perfil</p>
         </div>
-      </div>
-    </button>
+      </button>
+
+      <Separator className="my-3" />
+
+      <Button
+        type="button"
+        onClick={() => void handleSignOut()}
+        variant="ghost"
+        size="sm"
+        disabled={isSigningOut}
+        className="h-9 w-full justify-start px-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+      >
+        <LogOut className="mr-2 h-4 w-4" />
+        {isSigningOut ? "A terminar sessão..." : "Terminar sessão"}
+      </Button>
+    </div>
   );
 });
 
