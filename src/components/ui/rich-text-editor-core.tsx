@@ -3,6 +3,7 @@
 import { DiffExtension, diffPluginKey } from "@/components/editor/extensions/DiffExtension";
 import { AUTO_SAVE_DELAY } from "@/shared/config/constants";
 import { htmlToMarkdown, markdownToHtml } from "@/shared/utils/markdown";
+import { ImageBlockExtension } from "@/components/editor/extensions/ImageBlockExtension";
 import Highlight from "@tiptap/extension-highlight";
 import {
   EditorContent,
@@ -215,7 +216,7 @@ export function TipTapEditorCore({
   );
 
   const editor = useEditor({
-    extensions: [StarterKit, Highlight, DiffExtension],
+    extensions: [StarterKit, Highlight, DiffExtension, ImageBlockExtension],
     content: markdownToHtml(content),
     editorProps: {
       attributes: {

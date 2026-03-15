@@ -56,3 +56,29 @@ export interface RagSource {
   url?: string;
 }
 
+export type DocumentImageKind = "illustration" | "exercise";
+export type DocumentImageStatus =
+  | "pending"
+  | "generating"
+  | "completed"
+  | "failed";
+
+// Matches backend image list/SSE payload shape.
+export interface DocumentImage {
+  id: string;
+  url: string;
+  alt: string;
+  kind: DocumentImageKind;
+  exerciseType?: string | null;
+  // Frontend-only helper status used by UI states (backend list defaults to completed).
+  status?: DocumentImageStatus;
+}
+
+// Matches backend regenerate endpoint payload.
+export interface RegenerateDocumentImageResponse {
+  id: string;
+  newUrl: string;
+  alt: string;
+}
+
+

@@ -165,6 +165,21 @@ export async function streamDocumentContent(
             }
             break;
           }
+          case "visuals_generating":
+            callbacks.onVisualsGenerating?.(parsed.data);
+            break;
+          case "image_ready": {
+            try {
+              const images = JSON.parse(parsed.data);
+              callbacks.onImagesReady?.(images);
+            } catch (e) {
+              console.warn("[SSE] Could not parse images:", e);
+            }
+            break;
+          }
+          case "image_failed":
+            callbacks.onImageFailed?.(parsed.data);
+            break;
           case "done": {
             // Parse the accumulated JSON response
             let streamedResponse = { chatAnswer: "", generatedContent: "", sources };
