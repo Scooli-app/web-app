@@ -11,6 +11,10 @@ import {
     clearLastChatAnswer,
     clearStreamInfo,
     fetchDocument,
+    fetchDocumentImages,
+    setGeneratingImages,
+    setImageError,
+    setImages,
 } from "@/store/documents/documentSlice";
 import {
     selectEditorState,
@@ -20,7 +24,8 @@ import {
 import { fetchUsage } from "@/store/subscription/subscriptionSlice";
 import { useAuth } from "@clerk/nextjs";
 import type { Editor } from "@tiptap/react";
-import { Loader2 } from "lucide-react";
+import { Loader2, Sparkles, Image as ImageIcon } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { DiffToolbar } from "../editor/DiffToolbar";
@@ -58,8 +63,10 @@ export default function DocumentEditor({
   const router = useRouter();
   const dispatch = useAppDispatch();
   const { getToken } = useAuth();
-  const { currentDocument, isLoading, streamInfo, isChatting, lastChatAnswer } =
+  const { currentDocument, isLoading, streamInfo, isChatting, lastChatAnswer, images } =
     useAppSelector(selectEditorState);
+  const { subscription } = useAppSelector((state) => state.subscription);
+  const isPremium = subscription && subscription.planCode !== "free";
   const {
     content,
     setContent,
@@ -182,6 +189,18 @@ export default function DocumentEditor({
             onSources: (newSources) => {
               setSources(newSources);
             },
+            onVisualsGenerating: () => {
+              dispatch(setGeneratingImages(true));
+              dispatch(setImageError(null));
+            },
+            onImagesReady: (newImages) => {
+              dispatch(setImages(newImages));
+              dispatch(setGeneratingImages(false));
+            },
+            onImageFailed: (imageErrorMessage) => {
+              dispatch(setGeneratingImages(false));
+              dispatch(setImageError(imageErrorMessage || "Falha a gerar imagens"));
+            },
             onComplete: (docId, response) => {
               eventSourceRef.current = null;
 
@@ -260,6 +279,8 @@ export default function DocumentEditor({
 
               dispatch(clearStreamInfo());
               dispatch(fetchDocument(docId));
+              dispatch(fetchDocumentImages(docId));
+              dispatch(setGeneratingImages(false));
               dispatch(fetchUsage());
             },
             onError: (errorMsg) => {
@@ -267,6 +288,7 @@ export default function DocumentEditor({
               setIsStreaming(false);
               setError(errorMsg);
               dispatch(clearStreamInfo());
+              dispatch(setGeneratingImages(false));
             },
           },
           token
@@ -280,6 +302,7 @@ export default function DocumentEditor({
             setIsStreaming(false);
             setError("Erro ao iniciar streaming");
             dispatch(clearStreamInfo());
+            dispatch(setGeneratingImages(false));
           });
       };
 
@@ -362,6 +385,16 @@ export default function DocumentEditor({
       setSources(currentDocument.sources);
     }
   }, [currentDocument?.sources, isStreaming]);
+
+  // Keep image state in sync with the current document.
+  useEffect(() => {
+    dispatch(setImages([]));
+    dispatch(setImageError(null));
+
+    if (currentDocument?.id && currentDocument.id === documentId) {
+      dispatch(fetchDocumentImages(currentDocument.id));
+    }
+  }, [dispatch, currentDocument?.id, documentId]);
 
   const handleChatSubmit = useCallback(
     async (userMessage: string) => {
@@ -558,6 +591,18 @@ export default function DocumentEditor({
                         <span className="text-sm font-medium text-primary animate-pulse flex items-center gap-1">
                           ✨ Documento Refinado
                         </span>
+                      )}
+                      {!isPremium && (
+                        <Link href={Routes.CHECKOUT} className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-violet-100 to-fuchsia-100 dark:from-violet-900/30 dark:to-fuchsia-900/30 border border-violet-200 dark:border-violet-800 text-xs font-medium text-violet-700 dark:text-violet-300 hover:scale-105 transition-transform" title="✨ Com o Scooli Pro, os teus documentos incluem imagens geradas automaticamente">
+                          <Sparkles className="w-3.5 h-3.5" />
+                          <span>Obter imagens automáticas</span>
+                        </Link>
+                      )}
+                      {isPremium && (images?.length || 0) > 0 && (
+                        <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-muted border border-border text-xs font-medium text-muted-foreground" title="Imagens neste documento">
+                          <ImageIcon className="w-3.5 h-3.5" />
+                          <span>{images?.length || 0}/5 imagens</span>
+                        </div>
                       )}
                       {isGenerating && (
                         <div className="flex items-center space-x-2 text-primary">

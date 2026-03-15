@@ -50,6 +50,21 @@ export const selectError = createSelector(
   (documentState) => documentState.error
 );
 
+export const selectImages = createSelector(
+  [selectDocumentState],
+  (documentState) => documentState.images
+);
+
+export const selectIsGeneratingImages = createSelector(
+  [selectDocumentState],
+  (documentState) => documentState.isGeneratingImages
+);
+
+export const selectImageError = createSelector(
+  [selectDocumentState],
+  (documentState) => documentState.imageError
+);
+
 // Derived selectors
 export const selectDocumentById = createSelector(
   [selectDocuments, (_state: RootState, documentId: string) => documentId],
@@ -74,13 +89,28 @@ export const selectEditorState = createSelector(
     selectStreamInfo,
     selectIsChatting,
     selectLastChatAnswer,
+    selectImages,
+    selectIsGeneratingImages,
+    selectImageError,
   ],
-  (currentDocument, isLoading, streamInfo, isChatting, lastChatAnswer) => ({
+  (
     currentDocument,
     isLoading,
     streamInfo,
     isChatting,
     lastChatAnswer,
+    images,
+    isGeneratingImages,
+    imageError
+  ) => ({
+    currentDocument,
+    isLoading,
+    streamInfo,
+    isChatting,
+    lastChatAnswer,
+    images,
+    isGeneratingImages,
+    imageError,
   })
 );
 
