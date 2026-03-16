@@ -40,7 +40,7 @@ function normalizeMultipleChoiceOptions(markdown: string): string {
     // Reformat inline options: "Pergunta ... (A) ... (B) ..." -> one option per line.
     if (matches.length >= 2) {
       const first = matches[0];
-      if (first.index == null) {
+      if (first.index === null) {
         return line;
       }
 
@@ -53,7 +53,7 @@ function normalizeMultipleChoiceOptions(markdown: string): string {
       for (let i = 0; i < matches.length; i++) {
         const current = matches[i];
         const start = current.index;
-        if (start == null) continue;
+        if (start === null) continue;
         const end = start + current[0].length;
         const nextStart = matches[i + 1]?.index ?? line.length;
         const optionText = line.slice(end, nextStart).trim();
@@ -72,9 +72,7 @@ function normalizeMultipleChoiceOptions(markdown: string): string {
   });
 
   // Force markdown hard line-breaks before option lines so renderers never collapse them.
-  return rewrittenLines
-    .join("\n")
-    .replace(/\n(\s*\([A-Ea-e]\)\s+)/g, "  \n$1");
+  return rewrittenLines.join("\n").replace(/\n(\s*\([A-Ea-e]\)\s+)/g, "  \n$1");
 }
 
 /**
@@ -166,7 +164,7 @@ export function htmlToMarkdown(html: string): string {
       .replace(/\n(\s*[\*\-\+]|\s*\d+\.)/g, "\n\n$1")
       .replace(
         /((\s*[\*\-\+]|\s*\d+\.).*)\n(?!\n|\s*[\*\-\+]|\s*\d+\.)/g,
-        "$1\n\n"
+        "$1\n\n",
       )
       .trim();
 
