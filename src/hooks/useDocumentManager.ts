@@ -20,38 +20,66 @@ export function useDocumentManager(documentId: string) {
 
   // Track previous document ID to avoid unnecessary fetches
   const prevDocumentIdRef = useRef<string | null>(null);
+  // Track previous content to avoid unnecessary remounts and update loops
+  const prevContentRef = useRef<string | null>(null);
   // When set to true, the next content change will not bump editorKey
   // (used during diff/suggestions mode to prevent editor remount)
   const skipNextEditorKeyBumpRef = useRef(false);
 
   useEffect(() => {
-    if (documentId && documentId !== prevDocumentIdRef.current) {
-      prevDocumentIdRef.current = documentId;
-      dispatch(fetchDocument(documentId));
+    if (!documentId) {
+      return;
     }
-  }, [documentId, dispatch]);
 
-  // Only sync content when the document's content actually changes
-  // This prevents resetting content when only title or other fields change
-  const prevContentRef = useRef<string | null>(null);
+    // Clear editor content immediately when changing route document
+    // so stale content is not shown while the new document fetch is pending.
+    if (documentId !== prevDocumentIdRef.current) {
+      setContent("");
+      prevContentRef.current = null;
+    }
+
+    // If the current document already matches, mark as synced and stop.
+    if (currentDocument?.id === documentId) {
+      prevDocumentIdRef.current = documentId;
+      return;
+    }
+
+    // Wait for any in-flight load to finish, then retry via dependency change.
+    if (storeLoading) {
+      return;
+    }
+
+    // Dispatch only once per target document ID.
+    if (documentId !== prevDocumentIdRef.current) {
+      dispatch(fetchDocument(documentId));
+      prevDocumentIdRef.current = documentId;
+    }
+  }, [documentId, dispatch, currentDocument?.id, storeLoading]);
+
+  // Only sync content when the current route document content changes.
+  // This prevents syncing stale data from other documents during transitions.
   useEffect(() => {
     if (
-      currentDocument?.content !== undefined &&
-      currentDocument.content !== prevContentRef.current
+      currentDocument?.id !== documentId ||
+      currentDocument?.content === undefined ||
+      currentDocument.content === prevContentRef.current
     ) {
-      prevContentRef.current = currentDocument.content;
-      
-      if (skipNextEditorKeyBumpRef.current) {
-        // Skip editor remount — the caller is handling the content change
-        console.warn("[DIFF] useDocumentManager: skipping editorKey bump");
-        skipNextEditorKeyBumpRef.current = false;
-      } else {
-        console.warn("[DIFF] useDocumentManager: bumping editorKey");
-        setContent(currentDocument.content || "");
-        setEditorKey((prev) => prev + 1);
-      }
+      return;
     }
-  }, [currentDocument?.id, currentDocument?.content]);
+
+    prevContentRef.current = currentDocument.content;
+
+    if (skipNextEditorKeyBumpRef.current) {
+      // Skip editor remount - the caller is handling the content change
+      console.warn("[DIFF] useDocumentManager: skipping editorKey bump");
+      skipNextEditorKeyBumpRef.current = false;
+      return;
+    }
+
+    console.warn("[DIFF] useDocumentManager: bumping editorKey");
+    setContent(currentDocument.content || "");
+    setEditorKey((prev) => prev + 1);
+  }, [currentDocument?.id, currentDocument?.content, documentId]);
 
   const handleContentChange = useCallback((newContent: string) => {
     setContent(newContent);
@@ -59,7 +87,7 @@ export function useDocumentManager(documentId: string) {
 
   const handleTitleSave = useCallback(
     async (newTitle: string) => {
-      if (!currentDocument) {
+      if (!currentDocument || currentDocument.id !== documentId) {
         return;
       }
 
@@ -92,12 +120,16 @@ export function useDocumentManager(documentId: string) {
         throw error;
       }
     },
-    [currentDocument, dispatch]
+    [currentDocument, dispatch, documentId]
   );
 
   const handleAutosave = useCallback(
     async (newContent: string) => {
-      if (!currentDocument || newContent === prevContentRef.current) {
+      if (
+        !currentDocument ||
+        currentDocument.id !== documentId ||
+        newContent === prevContentRef.current
+      ) {
         return;
       }
 
@@ -116,7 +148,7 @@ export function useDocumentManager(documentId: string) {
         console.error("Failed to autosave content:", error);
       }
     },
-    [currentDocument, dispatch]
+    [currentDocument, dispatch, documentId]
   );
 
   const isSaving = useAppSelector((state) => state.documents.isSaving);
@@ -131,7 +163,7 @@ export function useDocumentManager(documentId: string) {
     handleContentChange,
     handleTitleSave,
     handleAutosave,
-    /** Set to true before a content change to prevent editor remount (for diff mode) */
+    // Set to true before a content change to prevent editor remount (for diff mode)
     skipNextEditorKeyBumpRef,
   };
 }

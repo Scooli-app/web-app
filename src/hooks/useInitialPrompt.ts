@@ -77,25 +77,6 @@ export function useInitialPrompt(
   useEffect(() => {
     if (
       !isExecuting &&
-      (!pendingInitialPrompt || pendingDocumentId !== documentId) &&
-      document?.metadata?.initial_prompt &&
-      (!document.content || document.content.trim() === "")
-    ) {
-      executePrompt(document?.metadata.initial_prompt as string);
-    }
-  }, [
-    document,
-    hasExecuted,
-    isExecuting,
-    pendingInitialPrompt,
-    pendingDocumentId,
-    documentId,
-    executePrompt,
-  ]);
-
-  useEffect(() => {
-    if (
-      !isExecuting &&
       !hasExecuted &&
       document &&
       pendingInitialPrompt &&
