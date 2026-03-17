@@ -60,7 +60,8 @@ const STATUS_CONFIG: Record<
     icon: <XCircle className="h-4 w-4 text-red-500" />,
     badgeClass:
       "border-red-200 bg-red-100 text-red-700 dark:border-red-800 dark:bg-red-900/40 dark:text-red-300",
-    cardClass: "border-red-200 bg-red-50/30 dark:border-red-800 dark:bg-red-950/10",
+    cardClass:
+      "border-red-200 bg-red-50/30 dark:border-red-800 dark:bg-red-950/10",
   },
   CHANGES_REQUESTED: {
     label: "Revisao pedida",
@@ -123,10 +124,12 @@ export function ContributorDashboard() {
         <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-muted">
           <Share2 className="h-7 w-7 text-muted-foreground" />
         </div>
-        <h3 className="mb-1 text-lg font-semibold">Ainda nao partilhou recursos</h3>
+        <h3 className="mb-1 text-lg font-semibold">
+          Ainda nao partilhou recursos
+        </h3>
         <p className="text-sm text-muted-foreground">
-          Comece a partilhar os seus recursos educacionais para ver as estatisticas
-          aqui.
+          Comece a partilhar os seus recursos educacionais para ver as
+          estatisticas aqui.
         </p>
       </Card>
     );
@@ -147,8 +150,12 @@ export function ContributorDashboard() {
                 <Share2 className="h-5 w-5 text-blue-500" />
               </div>
               <div className="min-w-0">
-                <p className="text-2xl font-bold text-foreground">{stats.totalResourcesShared}</p>
-                <p className="break-words text-xs text-muted-foreground">Recursos Partilhados</p>
+                <p className="text-2xl font-bold text-foreground">
+                  {stats.totalResourcesShared}
+                </p>
+                <p className="break-words text-xs text-muted-foreground">
+                  Recursos Partilhados
+                </p>
               </div>
             </div>
           </Card>
@@ -159,8 +166,12 @@ export function ContributorDashboard() {
                 <TrendingUp className="h-5 w-5 text-emerald-500" />
               </div>
               <div className="min-w-0">
-                <p className="text-2xl font-bold text-foreground">{stats.totalReuses}</p>
-                <p className="break-words text-xs text-muted-foreground">Total de Reutilizacoes</p>
+                <p className="text-2xl font-bold text-foreground">
+                  {stats.totalReuses}
+                </p>
+                <p className="break-words text-xs text-muted-foreground">
+                  Total de Reutilizacoes
+                </p>
               </div>
             </div>
           </Card>
@@ -171,8 +182,12 @@ export function ContributorDashboard() {
                 <Star className="h-5 w-5 text-amber-500" />
               </div>
               <div className="min-w-0">
-                <p className="text-2xl font-bold text-foreground">{stats.approvedResources}</p>
-                <p className="break-words text-xs text-muted-foreground">Aprovados</p>
+                <p className="text-2xl font-bold text-foreground">
+                  {stats.approvedResources}
+                </p>
+                <p className="break-words text-xs text-muted-foreground">
+                  Aprovados
+                </p>
               </div>
             </div>
           </Card>
@@ -183,8 +198,12 @@ export function ContributorDashboard() {
                 <BarChart3 className="h-5 w-5 text-purple-500" />
               </div>
               <div className="min-w-0">
-                <p className="text-2xl font-bold text-foreground">{avgReuses}</p>
-                <p className="break-words text-xs text-muted-foreground">Media Reutilizacoes</p>
+                <p className="text-2xl font-bold text-foreground">
+                  {avgReuses}
+                </p>
+                <p className="break-words text-xs text-muted-foreground">
+                  Media Reutilizacoes
+                </p>
               </div>
             </div>
           </Card>
@@ -244,8 +263,12 @@ export function ContributorDashboard() {
                     </h4>
                   </div>
                   <div className="self-start text-left sm:ml-3 sm:self-auto sm:text-right">
-                    <p className="text-base font-bold text-primary">{resource.reuseCount}</p>
-                    <p className="text-xs text-muted-foreground">reutilizacoes</p>
+                    <p className="text-base font-bold text-primary">
+                      {resource.reuseCount}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      reutilizacoes
+                    </p>
                   </div>
                 </div>
               </div>
@@ -254,37 +277,43 @@ export function ContributorDashboard() {
         </Card>
       )}
 
-      {approvedResources.length > 0 && stats && stats.topResources.length === 0 && (
-        <Card className="w-full min-w-0 overflow-hidden border border-border p-4 sm:p-6">
-          <h3 className="mb-4 flex min-w-0 items-center gap-2 text-base font-semibold">
-            <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-emerald-500" />
-            <span className="break-words">Publicados</span>
-          </h3>
-          <div className="space-y-2">
-            {approvedResources.map((resource) => (
-              <div
-                key={resource.id}
-                className="w-full min-w-0 rounded-lg border border-border p-3 transition-colors hover:bg-muted/40"
-              >
-                <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="min-w-0 flex-1">
-                    <h4 className="line-clamp-2 break-words text-sm font-medium text-foreground">
-                      {resource.title}
-                    </h4>
-                    <p className="mt-0.5 break-words text-xs text-muted-foreground">
-                      {resource.grade} · {resource.subject}
-                    </p>
-                  </div>
-                  <div className="self-start text-left sm:ml-3 sm:self-auto sm:text-right">
-                    <p className="text-base font-bold text-primary">{resource.reuseCount}</p>
-                    <p className="text-xs text-muted-foreground">reutilizacoes</p>
+      {approvedResources.length > 0 &&
+        stats &&
+        stats.topResources.length === 0 && (
+          <Card className="w-full min-w-0 overflow-hidden border border-border p-4 sm:p-6">
+            <h3 className="mb-4 flex min-w-0 items-center gap-2 text-base font-semibold">
+              <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-emerald-500" />
+              <span className="break-words">Publicados</span>
+            </h3>
+            <div className="space-y-2">
+              {approvedResources.map((resource) => (
+                <div
+                  key={resource.id}
+                  className="w-full min-w-0 rounded-lg border border-border p-3 transition-colors hover:bg-muted/40"
+                >
+                  <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0 flex-1">
+                      <h4 className="line-clamp-2 break-words text-sm font-medium text-foreground">
+                        {resource.title}
+                      </h4>
+                      <p className="mt-0.5 break-words text-xs text-muted-foreground">
+                        {resource.grade} · {resource.subject}
+                      </p>
+                    </div>
+                    <div className="self-start text-left sm:ml-3 sm:self-auto sm:text-right">
+                      <p className="text-base font-bold text-primary">
+                        {resource.reuseCount}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        reutilizacoes
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        </Card>
-      )}
+              ))}
+            </div>
+          </Card>
+        )}
 
       {attentionResources.length > 0 && (
         <Card className="w-full min-w-0 overflow-hidden border border-border p-4 sm:p-6">
@@ -298,7 +327,10 @@ export function ContributorDashboard() {
               return (
                 <div
                   key={resource.id}
-                  className={cn("w-full min-w-0 rounded-lg border p-4", cfg.cardClass)}
+                  className={cn(
+                    "w-full min-w-0 rounded-lg border p-4",
+                    cfg.cardClass,
+                  )}
                 >
                   <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
                     <div className="flex min-w-0 flex-1 items-start gap-2">
@@ -346,10 +378,12 @@ export function ContributorDashboard() {
               Impacto na Comunidade
             </h3>
             <p className="mb-1 break-words text-sm text-amber-800 dark:text-amber-300">
-              Os seus recursos ja ajudaram <strong>{stats.totalReuses}</strong> professores!
+              Os seus recursos ja ajudaram <strong>{stats.totalReuses}</strong>{" "}
+              professores!
             </p>
             <p className="break-words text-xs text-amber-700 dark:text-amber-400">
-              Continue a partilhar para ampliar o seu impacto na educacao portuguesa.
+              Continue a partilhar para ampliar o seu impacto na educacao
+              portuguesa.
             </p>
           </div>
         </Card>

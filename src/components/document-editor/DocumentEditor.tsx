@@ -52,7 +52,7 @@ export default function DocumentEditor({
   documentId,
   defaultTitle = "Novo Documento",
   loadingMessage = "A carregar documento...",
-  chatTitle = "AI Assistant",
+  chatTitle = "Assistente de IA",
   chatPlaceholder = "Faça uma pergunta ou peça ajuda...",
 }: DocumentEditorProps) {
   const router = useRouter();

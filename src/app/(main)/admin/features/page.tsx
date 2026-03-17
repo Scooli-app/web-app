@@ -36,18 +36,18 @@ type FeatureFlag = {
 
 function OverrideRow({ override }: { override: FeatureOverride }) {
   const label = override.userId
-    ? `User: ${override.userId}`
+    ? `Utilizador: ${override.userId}`
     : override.role
-      ? `Role: ${override.role}`
+      ? `Perfil: ${override.role}`
       : override.plan
-        ? `Plan: ${override.plan}`
-        : "Unknown";
+        ? `Plano: ${override.plan}`
+        : "Desconhecido";
 
   return (
     <div className="flex items-center justify-between rounded-lg bg-muted/40 px-3 py-2 text-sm">
       <span className="font-mono text-xs text-muted-foreground">{label}</span>
       <Badge variant={override.enabled ? "default" : "secondary"}>
-        {override.enabled ? "ON" : "OFF"}
+        {override.enabled ? "Ativo" : "Inativo"}
       </Badge>
     </div>
   );
@@ -68,9 +68,9 @@ function FlagCard({
     try {
       await apiClient.patch(`/admin/features/${flag.key}`, { enabled: checked });
       onToggle(flag.key, checked);
-      toast.success(`Feature '${flag.name}' ${checked ? "ativada" : "desativada"}`);
+      toast.success(`Funcionalidade '${flag.name}' ${checked ? "ativada" : "desativada"}`);
     } catch {
-      toast.error(`Erro ao atualizar feature '${flag.name}'`);
+      toast.error(`Erro ao atualizar a funcionalidade '${flag.name}'`);
     } finally {
       setIsUpdating(false);
     }
@@ -100,7 +100,7 @@ function FlagCard({
               />
             )}
             <Badge variant={flag.enabled ? "default" : "secondary"}>
-              {flag.enabled ? "ON" : "OFF"}
+              {flag.enabled ? "Ativo" : "Inativo"}
             </Badge>
           </div>
         </div>
@@ -109,7 +109,7 @@ function FlagCard({
       <CardContent className="space-y-2 pt-0">
         {flag.rolloutPercentage > 0 && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <span>Rollout:</span>
+            <span>Distribuição:</span>
             <Badge variant="outline">{flag.rolloutPercentage}%</Badge>
           </div>
         )}
@@ -125,7 +125,7 @@ function FlagCard({
               ) : (
                 <ChevronDown className="h-3.5 w-3.5" />
               )}
-              {overrideCount} override{overrideCount !== 1 ? "s" : ""}
+              {overrideCount} {overrideCount === 1 ? "exceção" : "exceções"}
             </button>
             {expanded && (
               <div className="mt-2 space-y-1.5">
@@ -172,7 +172,7 @@ export default function AdminFeaturesPage() {
       );
       setFlags(withOverrides);
     } catch {
-      setError("Não foi possível carregar as feature flags.");
+      setError("Não foi possível carregar as configurações de funcionalidades.");
     } finally {
       setLoading(false);
     }
@@ -199,8 +199,8 @@ export default function AdminFeaturesPage() {
   return (
     <PageContainer size="lg" contentClassName="py-4 sm:py-8">
       <PageHeader
-        title="Feature Flags"
-        description="Controla a disponibilidade de features por utilizador, role ou plano."
+        title="Controlo de Funcionalidades"
+        description="Controla a disponibilidade de funcionalidades por utilizador, perfil ou plano."
         icon={
           <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 sm:h-12 sm:w-12">
             <ToggleLeft className="h-5 w-5 text-primary sm:h-6 sm:w-6" />
@@ -214,7 +214,7 @@ export default function AdminFeaturesPage() {
             onClick={() => router.push("/admin")}
           >
             <ArrowLeft className="h-4 w-4" />
-            Admin
+            Administração
           </Button>
         }
       />
@@ -234,7 +234,7 @@ export default function AdminFeaturesPage() {
 
       {!loading && !error && flags.length === 0 && (
         <div className="py-16 text-center text-muted-foreground">
-          Nenhuma feature flag configurada.
+          Nenhuma funcionalidade configurada.
         </div>
       )}
 

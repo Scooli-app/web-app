@@ -109,7 +109,7 @@ export function AssistantPanel({
                   <RefreshCw className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Novo chat</TooltipContent>
+              <TooltipContent>Nova conversa</TooltipContent>
             </Tooltip>
 
             <Tooltip>
@@ -123,7 +123,7 @@ export function AssistantPanel({
                   <Minus className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Minimizar chat</TooltipContent>
+              <TooltipContent>Minimizar conversa</TooltipContent>
             </Tooltip>
           </TooltipProvider>
         </div>
@@ -185,7 +185,7 @@ export function AssistantPanel({
           onChange={onInputChange}
           onSubmit={onSubmit}
           disabled={isProcessing}
-          placeholder="Escreve uma mensagem..."
+          placeholder="Escreva uma mensagem..."
         />
       </div>
     </div>

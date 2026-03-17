@@ -131,12 +131,12 @@ export function BugReportForm({ onSuccess, onCancel }: BugReportFormProps) {
       });
 
       posthog.capture("feedback_bug_report_submitted", { bug_type: bugType, severity });
-      toast.success("Bug reportado com sucesso!");
+      toast.success("Erro reportado com sucesso!");
       onSuccess();
     } catch (error) {
       posthog.captureException(error);
       console.error("Failed to report bug:", error);
-      toast.error("Ocorreu um erro ao reportar o bug.");
+      toast.error("Ocorreu um erro ao reportar o erro.");
     } finally {
       setIsSubmitting(false);
     }
@@ -155,7 +155,7 @@ export function BugReportForm({ onSuccess, onCancel }: BugReportFormProps) {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="UI/Visual">UI / Visual</SelectItem>
-              <SelectItem value="Performance">Performance</SelectItem>
+              <SelectItem value="Desempenho">Desempenho</SelectItem>
               <SelectItem value="Funcionalidade">Funcionalidade</SelectItem>
               <SelectItem value="Autenticação">Autenticação</SelectItem>
               <SelectItem value="Outro">Outro</SelectItem>
@@ -219,7 +219,7 @@ export function BugReportForm({ onSuccess, onCancel }: BugReportFormProps) {
       </div>
 
       <div className="space-y-2">
-        <Label>Anexos (Screenshots)</Label>
+        <Label>Anexos (capturas de ecrã)</Label>
         <div
           className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-muted/50 transition-colors"
           onDragOver={handleDragOver}
@@ -228,7 +228,7 @@ export function BugReportForm({ onSuccess, onCancel }: BugReportFormProps) {
         >
           <Upload className="h-8 w-8 text-muted-foreground mb-2" />
           <p className="text-sm text-muted-foreground">
-            Arraste screenshots ou clique para selecionar.
+            Arraste capturas de ecrã ou clique para selecionar.
           </p>
           <p className="text-xs text-muted-foreground mt-1">
             Também pode colar imagens (Ctrl+V).
@@ -287,7 +287,7 @@ export function BugReportForm({ onSuccess, onCancel }: BugReportFormProps) {
           </Button>
           <Button type="submit" disabled={isSubmitting || !isValid} variant="destructive">
             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Reportar Bug
+            Reportar Erro
           </Button>
         </div>
       </div>

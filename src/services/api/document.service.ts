@@ -137,11 +137,11 @@ export async function streamDocumentContent(
         response.status < 500 &&
         response.status !== 429
       ) {
-        callbacks.onError?.(`Client error: ${response.status}`);
-        throw new Error(`Client error: ${response.status}`);
+        callbacks.onError?.(`Erro do cliente: ${response.status}`);
+        throw new Error(`Erro do cliente: ${response.status}`);
       } else {
-        callbacks.onError?.(`Server error: ${response.status}`);
-        throw new Error(`Server error: ${response.status}`);
+        callbacks.onError?.(`Erro do servidor: ${response.status}`);
+        throw new Error(`Erro do servidor: ${response.status}`);
       }
     },
     onmessage(event) {
@@ -191,7 +191,7 @@ export async function streamDocumentContent(
     },
     onerror(error) {
       console.error("[SSE] Error:", error);
-      callbacks.onError?.("Stream connection error");
+      callbacks.onError?.("Erro de ligação ao stream");
       throw error;
     },
   });

@@ -14,7 +14,9 @@ interface CommunityUpgradePromptProps {
   onUpgrade: () => void;
 }
 
-export function CommunityUpgradePrompt({ onUpgrade }: CommunityUpgradePromptProps) {
+export function CommunityUpgradePrompt({
+  onUpgrade,
+}: CommunityUpgradePromptProps) {
   return (
     <div className="w-full min-h-dvh bg-background">
       <div className="max-w-7xl mx-auto p-4 sm:p-6">
@@ -35,13 +37,19 @@ export function CommunityUpgradePrompt({ onUpgrade }: CommunityUpgradePromptProp
           <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-10 flex items-center justify-center">
             <Card className="max-w-md p-6 text-center sm:p-8">
               <Lock className="mx-auto mb-4 h-12 w-12 text-primary sm:h-16 sm:w-16" />
-              <h2 className="mb-3 text-xl font-semibold sm:text-2xl">Funcionalidade Pro</h2>
+              <h2 className="mb-3 text-xl font-semibold sm:text-2xl">
+                Funcionalidade Pro
+              </h2>
               <p className="text-muted-foreground mb-6">
                 Aceda à Biblioteca Comunitária com uma subscrição Pro
               </p>
-              <Button onClick={onUpgrade} size="lg" className="w-full text-sm sm:text-base">
+              <Button
+                onClick={onUpgrade}
+                size="lg"
+                className="w-full text-sm sm:text-base"
+              >
                 <Zap className="w-4 h-4 mr-2" />
-                Upgrade para Pro
+                Atualizar para Pro
               </Button>
             </Card>
           </div>
@@ -73,25 +81,31 @@ export function CommunityUpgradePrompt({ onUpgrade }: CommunityUpgradePromptProp
                   <div className="space-y-3">
                     {/* Title */}
                     <div className="h-6 bg-muted rounded w-3/4" />
-                    
+
                     {/* Description */}
                     <div className="space-y-2">
                       <div className="h-4 bg-muted rounded w-full" />
                       <div className="h-4 bg-muted rounded w-2/3" />
                     </div>
-                    
+
                     {/* Tags */}
                     <div className="flex gap-2">
-                      <Badge variant="secondary" className="h-6 w-16 bg-muted" />
-                      <Badge variant="secondary" className="h-6 w-20 bg-muted" />
+                      <Badge
+                        variant="secondary"
+                        className="h-6 w-16 bg-muted"
+                      />
+                      <Badge
+                        variant="secondary"
+                        className="h-6 w-20 bg-muted"
+                      />
                     </div>
-                    
+
                     {/* Stats */}
                     <div className="flex justify-between">
                       <div className="h-4 bg-muted rounded w-24" />
                       <div className="h-4 bg-muted rounded w-32" />
                     </div>
-                    
+
                     {/* Buttons */}
                     <div className="flex gap-2">
                       <div className="h-8 bg-muted rounded flex-1" />
@@ -128,7 +142,7 @@ export function CommunityUpgradePrompt({ onUpgrade }: CommunityUpgradePromptProp
             <ul className="space-y-3 text-sm text-muted-foreground">
               <li>✅ Reconhecimento profissional visível</li>
               <li>✅ Métricas de impacto: quantos reutilizaram</li>
-              <li>✅ Dashboard pessoal com estatísticas</li>
+              <li>✅ Painel pessoal com estatísticas</li>
               <li>✅ Ajudar outros professores e construir rede</li>
             </ul>
           </Card>
@@ -144,16 +158,16 @@ export function CommunityUpgradePrompt({ onUpgrade }: CommunityUpgradePromptProp
               <div className="text-4xl mb-3">👩‍🏫</div>
               <h4 className="font-medium mb-2">Mariana, 2º ciclo</h4>
               <p className="text-sm text-muted-foreground italic">
-                &quot;Finalmente encontro recursos alinhados com o currículo português. 
-                Poupo 2 horas todos os domingos!&quot;
+                &quot;Finalmente encontro recursos alinhados com as
+                Aprendizagens Essenciais. Poupo 2 horas todos os domingos!&quot;
               </p>
             </div>
             <div className="text-center">
               <div className="text-4xl mb-3">👨‍🏫</div>
               <h4 className="font-medium mb-2">Ricardo, 3º ciclo</h4>
               <p className="text-sm text-muted-foreground italic">
-                &quot;Ver que 47 professores reutilizaram os meus materiais dá-me 
-                reconhecimento profissional real.&quot;
+                &quot;Ver que 47 professores reutilizaram os meus materiais
+                dá-me reconhecimento profissional real.&quot;
               </p>
             </div>
           </div>
@@ -161,16 +175,20 @@ export function CommunityUpgradePrompt({ onUpgrade }: CommunityUpgradePromptProp
 
         {/* CTA Section */}
         <div className="text-center">
-          <Button onClick={onUpgrade} size="lg" className="px-6 py-3 text-base sm:px-8 sm:py-4 sm:text-lg">
+          <Button
+            onClick={onUpgrade}
+            size="lg"
+            className="px-6 py-3 text-base sm:px-8 sm:py-4 sm:text-lg"
+          >
             <Zap className="w-5 h-5 mr-3" />
-            Começar com Plano Pro
+            Começar com o Plano Pro
           </Button>
           <p className="text-sm text-muted-foreground mt-4">
-            Aceda à Biblioteca Comunitária e transforme a sua preparação de aulas
+            Aceda à Biblioteca Comunitária e transforme a sua preparação de
+            aulas
           </p>
         </div>
       </div>
     </div>
   );
 }
-

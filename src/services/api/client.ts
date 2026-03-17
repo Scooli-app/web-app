@@ -84,15 +84,15 @@ apiClient.interceptors.response.use(
     // Validate response is JSON
     const contentType = response.headers["content-type"];
     if (contentType && !contentType.includes("application/json")) {
-      console.error("API returned non-JSON response:", contentType);
+      console.error("A API devolveu resposta não JSON:", contentType);
       throw new Error(
-        "Server returned an invalid response. Please check NEXT_PUBLIC_BASE_API_URL configuration."
+        "O servidor devolveu uma resposta inválida. Verifique a configuração de NEXT_PUBLIC_BASE_API_URL."
       );
     }
     return response;
   },
   (error: AxiosError<{ message?: string; error?: string } | string>) => {
-    // Handle 402 Payment Required specifically for generations limit
+    // Trata 402 para abrir o modal de upgrade quando o limite de gerações é atingido
     if (error.response?.status === 402) {
       if (storeDispatch) {
         storeDispatch(setUpgradeModalOpen(true));
@@ -107,13 +107,13 @@ apiClient.interceptors.response.use(
         const status = error.response.status;
         return Promise.reject(
           new Error(
-            `API endpoint returned HTML instead of JSON (Status: ${status}). Please verify NEXT_PUBLIC_BASE_API_URL is correct and the endpoint exists.`
+            `O endpoint da API devolveu HTML em vez de JSON (Estado: ${status}). Verifique se NEXT_PUBLIC_BASE_API_URL está correto e se o endpoint existe.`
           )
         );
       }
 
       // Try to extract error message from response
-      let message = "An error occurred";
+      let message = "Ocorreu um erro";
       if (typeof error.response.data === "string") {
         message = error.response.data;
       } else if (
@@ -126,16 +126,16 @@ apiClient.interceptors.response.use(
           (error.response.data as { message?: string; error?: string })
             ?.error ||
           error.message ||
-          `HTTP ${error.response.status}: ${error.response.statusText}`;
+          `Erro HTTP ${error.response.status}`;
       } else {
-        message = `HTTP ${error.response.status}: ${error.response.statusText}`;
+        message = `Erro HTTP ${error.response.status}`;
       }
 
       return Promise.reject(new Error(message));
     }
     if (error.request) {
       return Promise.reject(
-        new Error("Network error. Please check your connection.")
+        new Error("Erro de rede. Verifique a sua ligação.")
       );
     }
     return Promise.reject(error);

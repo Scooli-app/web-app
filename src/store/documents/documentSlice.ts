@@ -99,7 +99,7 @@ export const fetchDocuments = createAsyncThunk(
       };
     } catch (error) {
       return rejectWithValue(
-        error instanceof Error ? error.message : "Failed to fetch documents"
+        error instanceof Error ? error.message : "Não foi possível carregar os documentos"
       );
     }
   }
@@ -117,7 +117,7 @@ export const fetchDocument = createAsyncThunk(
       return document;
     } catch (error) {
       return rejectWithValue(
-        error instanceof Error ? error.message : "Document not found"
+        error instanceof Error ? error.message : "Documento não encontrado"
       );
     }
   },
@@ -138,11 +138,11 @@ export const createDocument = createAsyncThunk(
   async (params: CreateDocumentParams, { rejectWithValue }) => {
     try {
       if (!params.documentType || !params.prompt) {
-        return rejectWithValue("documentType and prompt are required");
+        return rejectWithValue("O tipo de documento e o prompt são obrigatórios");
       }
 
       if (!params.subject || !params.schoolYear) {
-        return rejectWithValue("subject and schoolYear are required");
+        return rejectWithValue("A disciplina e o ano escolar são obrigatórios");
       }
 
       const document = await createDocumentService(params);
@@ -150,7 +150,7 @@ export const createDocument = createAsyncThunk(
       return document;
     } catch (error) {
       return rejectWithValue(
-        error instanceof Error ? error.message : "Failed to create document"
+        error instanceof Error ? error.message : "Não foi possível criar o documento"
       );
     }
   }
@@ -164,7 +164,7 @@ export const updateDocument = createAsyncThunk(
       return document;
     } catch (error) {
       return rejectWithValue(
-        error instanceof Error ? error.message : "Failed to update document"
+        error instanceof Error ? error.message : "Não foi possível atualizar o documento"
       );
     }
   }
@@ -184,7 +184,7 @@ export const chatWithDocument = createAsyncThunk(
       return response;
     } catch (error) {
       return rejectWithValue(
-        error instanceof Error ? error.message : "Failed to send chat message"
+        error instanceof Error ? error.message : "Não foi possível enviar a mensagem ao chat"
       );
     }
   }

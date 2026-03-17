@@ -47,13 +47,13 @@ export const getHealth = async (): Promise<HealthResponse> => {
     // Return fallback data for graceful degradation
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Health check failed",
+      error: "Falha na verificação de saúde",
       data: {
         status: "error",
         timestamp: new Date().toISOString(),
         services: {
-          database: { status: "unknown", details: "Health check failed" },
-          jvm: { status: "unknown", details: "Health check failed" }
+          database: { status: "unknown", details: "Falha na verificação de saúde" },
+          jvm: { status: "unknown", details: "Falha na verificação de saúde" }
         }
       }
     };
@@ -84,17 +84,17 @@ export const getStatusColorClass = (status: string): string => {
 export const getStatusText = (status: string): string => {
   switch (status) {
     case "healthy":
-      return "Healthy";
+      return "Saudável";
     case "unhealthy":
-      return "Unhealthy";
+      return "Instável";
     case "degraded":
-      return "Degraded";
+      return "Degradado";
     case "unknown":
-      return "Unknown";
+      return "Desconhecido";
     case "error":
-      return "Error";
+      return "Erro";
     default:
-      return "Unknown";
+      return "Desconhecido";
   }
 };
 
@@ -113,8 +113,8 @@ export const formatServiceDetails = (service: ServiceStatus): string => {
   }
   
   if (service.memoryUsage) {
-    parts.push(`Memory: ${service.memoryUsage}`);
+    parts.push(`Memória: ${service.memoryUsage}`);
   }
   
-  return parts.length > 0 ? parts.join(" • ") : "No details available";
+  return parts.length > 0 ? parts.join(" • ") : "Sem detalhes disponíveis";
 };

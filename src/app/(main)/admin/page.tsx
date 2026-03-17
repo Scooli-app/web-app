@@ -34,8 +34,8 @@ export default function AdminPage() {
   return (
     <PageContainer size="xl" contentClassName="py-4 sm:py-8">
       <PageHeader
-        title="Admin Console"
-        description="Manage the Scooli platform and users."
+        title="Consola de Administração"
+        description="Gerir a plataforma Scooli e os utilizadores."
         icon={
           <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 sm:h-12 sm:w-12">
             <Shield className="h-5 w-5 text-primary sm:h-6 sm:w-6" />
@@ -47,26 +47,26 @@ export default function AdminPage() {
         <div className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
           <div className="mb-4 flex items-center gap-2 text-muted-foreground">
             <Users className="h-4 w-4" />
-            <span className="text-sm font-medium uppercase tracking-wider">Total Users</span>
+            <span className="text-sm font-medium uppercase tracking-wider">Total de Utilizadores</span>
           </div>
           <p className="text-3xl font-bold">1,284</p>
-          <p className="mt-1 text-xs font-medium text-emerald-500">+12% this week</p>
+          <p className="mt-1 text-xs font-medium text-emerald-500">+12% esta semana</p>
         </div>
 
         <div className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
           <div className="mb-4 flex items-center gap-2 text-muted-foreground">
             <LayoutDashboard className="h-4 w-4" />
-            <span className="text-sm font-medium uppercase tracking-wider">Active Sessions</span>
+            <span className="text-sm font-medium uppercase tracking-wider">Sessões Ativas</span>
           </div>
           <p className="text-3xl font-bold">86</p>
-          <p className="mt-1 text-xs text-muted-foreground">Live tracking enabled</p>
+          <p className="mt-1 text-xs text-muted-foreground">Monitorização em tempo real ativa</p>
         </div>
 
         <StatusCard />
       </div>
 
       <div className="mt-8 sm:mt-10">
-        <h2 className="mb-4 text-xl font-bold sm:mb-6 sm:text-2xl">Management</h2>
+        <h2 className="mb-4 text-xl font-bold sm:mb-6 sm:text-2xl">Gestão</h2>
         <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
           <Card
             className="group cursor-pointer border-border transition-colors hover:bg-muted/50"
@@ -75,15 +75,15 @@ export default function AdminPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2 transition-colors group-hover:text-primary">
                 <MessageSquare className="h-5 w-5" />
-                Feedback
+                Opiniões
               </CardTitle>
               <CardDescription>
-                Manage user feedback, bug reports, and suggestions.
+                Gerir opiniões dos utilizadores, erros reportados e sugestões.
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="text-sm text-muted-foreground">
-                View submitted tickets, update status, and respond to users.
+                Ver tickets submetidos, atualizar estados e responder aos utilizadores.
               </div>
             </CardContent>
           </Card>
@@ -95,15 +95,15 @@ export default function AdminPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2 transition-colors group-hover:text-primary">
                 <Library className="h-5 w-5" />
-                Community Moderation
+                Moderação da Comunidade
               </CardTitle>
               <CardDescription>
-                Review and approve community-shared resources.
+                Rever e aprovar recursos partilhados pela comunidade.
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="text-sm text-muted-foreground">
-                Manage curriculum-aligned teaching resources before publication.
+                Gerir recursos pedagógicos alinhados com o currículo antes da publicação.
               </div>
             </CardContent>
           </Card>
@@ -115,15 +115,15 @@ export default function AdminPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2 transition-colors group-hover:text-primary">
                 <ToggleLeft className="h-5 w-5" />
-                Feature Flags
+                Controlo de Funcionalidades
               </CardTitle>
               <CardDescription>
-                Control feature availability across users and plans.
+                Controlar a disponibilidade de funcionalidades por utilizador e plano.
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="text-sm text-muted-foreground">
-                Toggle features globally, by rollout %, or with per-user/role overrides.
+                Ativar funcionalidades globalmente, por percentagem, ou por exceções de utilizador/perfil.
               </div>
             </CardContent>
           </Card>

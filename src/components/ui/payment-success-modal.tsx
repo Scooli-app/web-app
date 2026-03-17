@@ -108,8 +108,8 @@ export function PaymentSuccessModal({
               <Sparkles className="w-5 h-5 text-primary-foreground" />
             </div>
             <div>
-              <p className="font-semibold text-foreground">Templates personalizados</p>
-              <p className="text-sm text-muted-foreground">Crie os seus próprios templates</p>
+              <p className="font-semibold text-foreground">Modelos personalizados</p>
+              <p className="text-sm text-muted-foreground">Crie os seus próprios modelos</p>
             </div>
           </div>
 

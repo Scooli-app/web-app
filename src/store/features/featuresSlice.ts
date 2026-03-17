@@ -11,7 +11,7 @@ export const fetchFeatureFlags = createAsyncThunk(
     try {
       return await getFeatureFlags();
     } catch {
-      return rejectWithValue("Failed to fetch feature flags");
+      return rejectWithValue("Não foi possível carregar as flags de funcionalidades");
     }
   }
 );

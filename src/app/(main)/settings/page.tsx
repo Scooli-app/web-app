@@ -159,7 +159,7 @@ function SettingsContent() {
       if (response?.url) {
         window.location.href = response.url;
       } else {
-        throw new Error("Portal URL not received");
+        throw new Error("Não foi possível obter a ligação do portal");
       }
     } catch {
       setError("Não foi possível abrir o portal de pagamentos. Tente novamente.");
@@ -312,11 +312,11 @@ function SettingsContent() {
                   </div>
                   {usage.remaining === 0 ? (
                     <p className="text-xs text-destructive font-semibold mt-2 animate-pulse">
-                      Esgotou as suas gerações gratuitas. Faça upgrade agora para continuar a criar.
+                      Esgotou as suas gerações gratuitas. Atualize para o plano Pro para continuar a criar.
                     </p>
                   ) : usage.remaining <= 20 ? (
                     <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
-                      Restam poucas gerações. Considere fazer upgrade.
+                      Restam poucas gerações. Considere atualizar para o plano Pro.
                     </p>
                   ) : null}
                 </div>
@@ -326,7 +326,7 @@ function SettingsContent() {
               {plans.length > 0 && (
                 <div className="space-y-3">
                   <p className="text-sm font-medium text-muted-foreground">
-                    Upgrade para Pro
+                    Atualizar para Pro
                   </p>
                   <div className="grid gap-3 sm:grid-cols-2">
                     {plans.map((plan) => {
