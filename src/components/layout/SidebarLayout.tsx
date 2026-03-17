@@ -86,7 +86,7 @@ interface NavItem {
 
 const NAVIGATION: NavItem[] = [
   {
-    title: "Dashboard",
+    title: "Painel",
     href: Routes.DASHBOARD,
     icon: Home,
     description: "Visão geral da sua atividade",
@@ -137,7 +137,7 @@ const SECONDARY_NAVIGATION: NavItem[] = [
     title: "Apoio e sugestões",
     href: Routes.SUPPORT,
     icon: MessageSquare,
-    description: "Enviar feedback e reportar bugs",
+    description: "Enviar feedback e reportar erros",
   },
   {
     title: "Definições",
@@ -476,7 +476,7 @@ function GenerationsIndicator() {
     );
   }
 
-  const isLow = usage.remaining <= 20;
+  const isLow = usage.limit > 0 && usage.remaining / usage.limit <= 0.2;
   const isOut = usage.remaining === 0;
 
   if (isOut) {
@@ -487,7 +487,7 @@ function GenerationsIndicator() {
           className="bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-sm transition-all hover:scale-105 hover:from-amber-600 hover:to-orange-700 active:scale-95"
         >
           <Sparkles className="mr-1.5 h-4 w-4" />
-          Fazer Upgrade
+          Atualizar para Pro
         </Button>
       </Link>
     );
@@ -577,7 +577,7 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
                       className="h-9 w-9 px-0 text-base hover:bg-accent hover:text-primary md:hidden"
                     >
                       <Menu className="h-6 w-6" />
-                      <span className="sr-only">Toggle sidebar</span>
+                      <span className="sr-only">Alternar barra lateral</span>
                     </Button>
                   </SheetTrigger>
                   <SheetContent

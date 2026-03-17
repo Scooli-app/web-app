@@ -117,7 +117,7 @@ export default function AdminFeedbackDetailArgsPage() {
   if (!detail) {
     return (
       <div className="container py-8 text-center">
-        <h2 className="text-xl font-semibold">Feedback não encontrado</h2>
+        <h2 className="text-xl font-semibold">Opinião não encontrada</h2>
         <Button variant="link" onClick={() => router.back()} className="mt-4">
           <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
         </Button>
@@ -140,7 +140,7 @@ export default function AdminFeedbackDetailArgsPage() {
                 ) : (
                   <Lightbulb className="h-3 w-3 text-yellow-500" />
                 )}
-                <span>{detail.type === FeedbackType.BUG ? "Bug Report" : "Sugestão"}</span>
+                <span>{detail.type === FeedbackType.BUG ? "Erro reportado" : "Sugestão"}</span>
                 <span>•</span>
                 <span>ID: {detail.id.split("-")[0]}</span>
               </div>
@@ -217,7 +217,7 @@ export default function AdminFeedbackDetailArgsPage() {
               <CardContent className="space-y-6">
                 <div className="rounded-lg border border-yellow-500/10 bg-yellow-500/5 p-4">
                   <h4 className="mb-2 flex items-center gap-2 font-semibold text-yellow-600">
-                    <FileText className="h-4 w-4" /> Nota Interna (Admin Only)
+                    <FileText className="h-4 w-4" /> Nota interna (apenas administração)
                   </h4>
                   <Textarea
                     placeholder="Adicionar nota técnica ou observação..."

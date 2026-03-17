@@ -26,6 +26,55 @@ const converterOptions: showdown.ConverterOptions = {
 // Create showdown converter instance
 const converter = new showdown.Converter(converterOptions);
 
+function normalizeMultipleChoiceOptions(markdown: string): string {
+  const optionRegex = /\(([A-Ea-e])\)\s+/g;
+  const questionPrefixRegex = /^\s*(?:\d+[\).:-]|[-*])\s+/;
+
+  const lines = markdown.split("\n");
+  const rewrittenLines = lines.map((line) => {
+    const matches = [...line.matchAll(optionRegex)];
+    if (matches.length === 0) {
+      return line;
+    }
+
+    // Reformat inline options: "Pergunta ... (A) ... (B) ..." -> one option per line.
+    if (matches.length >= 2) {
+      const first = matches[0];
+      if (first.index === null) {
+        return line;
+      }
+
+      const questionPart = line.slice(0, first.index).trimEnd();
+      if (!questionPart || !questionPrefixRegex.test(questionPart)) {
+        return line;
+      }
+
+      const options: string[] = [];
+      for (let i = 0; i < matches.length; i++) {
+        const current = matches[i];
+        const start = current.index;
+        if (start === null) continue;
+        const end = start + current[0].length;
+        const nextStart = matches[i + 1]?.index ?? line.length;
+        const optionText = line.slice(end, nextStart).trim();
+        if (!optionText) continue;
+        options.push(`(${current[1].toUpperCase()}) ${optionText}`);
+      }
+
+      if (options.length === 0) {
+        return line;
+      }
+
+      return `${questionPart}\n${options.join("\n")}`;
+    }
+
+    return line;
+  });
+
+  // Force markdown hard line-breaks before option lines so renderers never collapse them.
+  return rewrittenLines.join("\n").replace(/\n(\s*\([A-Ea-e]\)\s+)/g, "  \n$1");
+}
+
 /**
  * Convert markdown to HTML using showdown.js
  * Optimized for TipTap rich text editor
@@ -37,7 +86,7 @@ export function markdownToHtml(markdown: string): string {
 
   try {
     // Clean input markdown
-    const cleanMarkdown = markdown
+    const cleanMarkdown = normalizeMultipleChoiceOptions(markdown)
       // Normalize line endings
       .replace(/\r\n/g, "\n")
       .replace(/\r/g, "\n")
@@ -59,8 +108,8 @@ export function markdownToHtml(markdown: string): string {
       .replace(/<p>\s*<\/p>/g, "")
       // Ensure lists are properly formatted
       .replace(/<\/li>\s*<li>/g, "</li><li>")
-      // Clean up excessive whitespace
-      .replace(/\s+/g, " ")
+      // Remove whitespace between adjacent tags without touching text content
+      .replace(/>\s+</g, "><")
       .trim();
 
     return html;
@@ -83,8 +132,11 @@ export function htmlToMarkdown(html: string): string {
   try {
     // Pre-process HTML for better conversion
     const cleanHtml = html
-      // Normalize whitespace
-      .replace(/\s+/g, " ")
+      // Normalize line endings
+      .replace(/\r\n/g, "\n")
+      .replace(/\r/g, "\n")
+      // Normalize repeated spaces/tabs without collapsing newlines
+      .replace(/[ \t]{2,}/g, " ")
       // Remove TipTap-specific attributes and classes
       .replace(/\s*class="[^"]*"/g, "")
       .replace(/\s*data-[^=]*="[^"]*"/g, "")
@@ -112,7 +164,7 @@ export function htmlToMarkdown(html: string): string {
       .replace(/\n(\s*[\*\-\+]|\s*\d+\.)/g, "\n\n$1")
       .replace(
         /((\s*[\*\-\+]|\s*\d+\.).*)\n(?!\n|\s*[\*\-\+]|\s*\d+\.)/g,
-        "$1\n\n"
+        "$1\n\n",
       )
       .trim();
 

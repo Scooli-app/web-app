@@ -16,7 +16,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ResponsiveDataView } from "@/components/ui/responsive-data-view";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import type { SharedResource } from "@/services/api/community.service";
 import type { ModerationActionRequest } from "@/services/api/moderation.service";
@@ -40,7 +47,8 @@ export function ModerationQueue() {
   const isLoading = useAppSelector(selectIsLoadingQueue);
   const isProcessing = useAppSelector(selectIsProcessingAction);
 
-  const [selectedResource, setSelectedResource] = useState<SharedResource | null>(null);
+  const [selectedResource, setSelectedResource] =
+    useState<SharedResource | null>(null);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [feedback, setFeedback] = useState("");
 
@@ -54,7 +62,9 @@ export function ModerationQueue() {
     setFeedback("");
   };
 
-  const handleAction = async (action: "APPROVE" | "REJECT" | "REQUEST_CHANGES") => {
+  const handleAction = async (
+    action: "APPROVE" | "REJECT" | "REQUEST_CHANGES",
+  ) => {
     if (!selectedResource) return;
 
     const request: ModerationActionRequest = {
@@ -115,7 +125,10 @@ export function ModerationQueue() {
   const mobileCards = (
     <div className="space-y-3">
       {pendingResources.map((resource) => (
-        <div key={resource.id} className="rounded-xl border border-border bg-card p-4">
+        <div
+          key={resource.id}
+          className="rounded-xl border border-border bg-card p-4"
+        >
           <div className="mb-2 flex items-start justify-between gap-3">
             <div className="min-w-0">
               <h4 className="truncate font-medium">{resource.title}</h4>
@@ -125,7 +138,11 @@ export function ModerationQueue() {
                 </p>
               )}
             </div>
-            <Button variant="outline" size="sm" onClick={() => handleReview(resource)}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleReview(resource)}
+            >
               <Eye className="mr-1.5 h-4 w-4" />
               Revisar
             </Button>
@@ -192,7 +209,11 @@ export function ModerationQueue() {
               </TableCell>
               <TableCell>
                 <div className="flex justify-center">
-                  <Button variant="outline" size="sm" onClick={() => handleReview(resource)}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleReview(resource)}
+                  >
                     <Eye className="mr-2 h-4 w-4" />
                     Revisar
                   </Button>
@@ -218,7 +239,9 @@ export function ModerationQueue() {
             </div>
             <Button
               variant="outline"
-              onClick={() => dispatch(fetchModerationQueue({ page: 0, size: 20 }))}
+              onClick={() =>
+                dispatch(fetchModerationQueue({ page: 0, size: 20 }))
+              }
               disabled={isLoading}
             >
               Atualizar
@@ -237,7 +260,8 @@ export function ModerationQueue() {
           <DialogHeader>
             <DialogTitle>Revisar Recurso</DialogTitle>
             <DialogDescription>
-              Analise o recurso para conformidade curricular e qualidade pedagógica
+              Analise o recurso para conformidade curricular e qualidade
+              pedagógica
             </DialogDescription>
           </DialogHeader>
 
@@ -247,9 +271,19 @@ export function ModerationQueue() {
                 <div>
                   <h4 className="mb-2 font-semibold">Informações</h4>
                   <div className="space-y-2 text-sm">
-                    <div><strong>Título:</strong> {selectedResource.title}</div>
-                    <div><strong>Contribuidor:</strong> {selectedResource.contributorName}</div>
-                    <div><strong>Submetido:</strong> {new Date(selectedResource.createdAt).toLocaleDateString("pt-PT")}</div>
+                    <div>
+                      <strong>Título:</strong> {selectedResource.title}
+                    </div>
+                    <div>
+                      <strong>Contribuidor:</strong>{" "}
+                      {selectedResource.contributorName}
+                    </div>
+                    <div>
+                      <strong>Submetido:</strong>{" "}
+                      {new Date(selectedResource.createdAt).toLocaleDateString(
+                        "pt-PT",
+                      )}
+                    </div>
                   </div>
                 </div>
                 <div>
@@ -257,7 +291,9 @@ export function ModerationQueue() {
                   <div className="flex flex-wrap gap-2">
                     <Badge>{selectedResource.grade}</Badge>
                     <Badge>{selectedResource.subject}</Badge>
-                    <Badge variant="outline">{selectedResource.resourceType}</Badge>
+                    <Badge variant="outline">
+                      {selectedResource.resourceType}
+                    </Badge>
                   </div>
                 </div>
               </div>
@@ -276,7 +312,9 @@ export function ModerationQueue() {
                 <div className="max-h-80 overflow-y-auto rounded-lg border bg-muted/30 p-4">
                   <div
                     className="prose prose-sm max-w-none"
-                    dangerouslySetInnerHTML={{ __html: selectedResource.content }}
+                    dangerouslySetInnerHTML={{
+                      __html: selectedResource.content,
+                    }}
                   />
                 </div>
               </div>

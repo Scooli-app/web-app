@@ -116,7 +116,7 @@ export const fetchReusedResourceIds = createAsyncThunk(
       return await getReusedResourceIds();
     } catch (error) {
       return rejectWithValue(
-        error instanceof Error ? error.message : "Failed to load reused resource IDs"
+        error instanceof Error ? error.message : "Não foi possível carregar os IDs de recursos reutilizados"
       );
     }
   }
@@ -142,7 +142,7 @@ export const fetchResources = createAsyncThunk(
       return response;
     } catch (error) {
       return rejectWithValue(
-        error instanceof Error ? error.message : "Failed to load resources"
+        error instanceof Error ? error.message : "Não foi possível carregar os recursos"
       );
     }
   }
@@ -158,7 +158,7 @@ export const fetchResource = createAsyncThunk(
       return await getResource(resourceId);
     } catch (error) {
       return rejectWithValue(
-        error instanceof Error ? error.message : "Failed to load resource"
+        error instanceof Error ? error.message : "Não foi possível carregar o recurso"
       );
     }
   }
@@ -174,7 +174,7 @@ export const fetchMyResources = createAsyncThunk(
       return await getMyResources();
     } catch (error) {
       return rejectWithValue(
-        error instanceof Error ? error.message : "Failed to load your resources"
+        error instanceof Error ? error.message : "Não foi possível carregar os seus recursos"
       );
     }
   }
@@ -190,7 +190,7 @@ export const fetchContributorStats = createAsyncThunk(
       return await getContributorStats();
     } catch (error) {
       return rejectWithValue(
-        error instanceof Error ? error.message : "Failed to load statistics"
+        error instanceof Error ? error.message : "Não foi possível carregar as estatísticas"
       );
     }
   }
@@ -206,7 +206,7 @@ export const submitResource = createAsyncThunk(
       return await shareResource(request);
     } catch (error) {
       return rejectWithValue(
-        error instanceof Error ? error.message : "Failed to share resource"
+        error instanceof Error ? error.message : "Não foi possível partilhar o recurso"
       );
     }
   }
@@ -225,7 +225,7 @@ export const reuseSharedResource = createAsyncThunk(
       return await reuseResource(resourceId, adaptationNotes);
     } catch (error) {
       return rejectWithValue(
-        error instanceof Error ? error.message : "Failed to reuse resource"
+        error instanceof Error ? error.message : "Não foi possível reutilizar o recurso"
       );
     }
   }

@@ -53,15 +53,15 @@ export async function streamChatMessage(
       async onopen(response) {
         if (!response.ok) {
           if (response.status === 401) {
-            callbacks.onError("Sessão expirada. Por favor, faz login novamente.");
-            throw new Error("Unauthorized");
+            callbacks.onError("Sessão expirada. Por favor, faça login novamente.");
+            throw new Error("Não autorizado");
           }
           if (response.status === 402) {
-            callbacks.onError("Limite de gerações atingido. Faz upgrade do plano para continuar.");
-            throw new Error("Payment Required");
+            callbacks.onError("Limite de gerações atingido. Atualize para o plano Pro para continuar.");
+            throw new Error("Pagamento necessário");
           }
           callbacks.onError(`Erro no servidor: ${response.status}`);
-          throw new Error(`Server error: ${response.status}`);
+          throw new Error(`Erro no servidor: ${response.status}`);
         }
       },
 
@@ -92,7 +92,7 @@ export async function streamChatMessage(
 
       onerror(error) {
         console.error("[Assistant SSE] Error:", error);
-        callbacks.onError("Erro de conexão. Tenta novamente.");
+        callbacks.onError("Erro de ligação. Tente novamente.");
         throw error;
       },
     });

@@ -28,7 +28,7 @@ export function ChatInput({
   value,
   onChange,
   onSubmit,
-  placeholder = "Escreve uma mensagem...",
+  placeholder = "Escreva uma mensagem...",
   disabled = false,
   className,
 }: ChatInputProps) {

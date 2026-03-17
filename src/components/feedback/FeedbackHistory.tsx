@@ -2,8 +2,21 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { feedbackService } from "@/services/api/feedback.service";
-import { type Feedback, FeedbackStatus, FeedbackType } from "@/shared/types/feedback";
-import { AlertCircle, Bug, CheckCircle2, Clock, Lightbulb, Loader2, Shield, XCircle } from "lucide-react";
+import {
+  type Feedback,
+  FeedbackStatus,
+  FeedbackType,
+} from "@/shared/types/feedback";
+import {
+  AlertCircle,
+  Bug,
+  CheckCircle2,
+  Clock,
+  Lightbulb,
+  Loader2,
+  Shield,
+  XCircle,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 
 interface FeedbackHistoryProps {
@@ -36,13 +49,41 @@ export function FeedbackHistory({ refreshTrigger }: FeedbackHistoryProps) {
   const getStatusBadge = (status: FeedbackStatus) => {
     switch (status) {
       case FeedbackStatus.SUBMITTED:
-        return <Badge variant="secondary" className="bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 border-0"><Clock className="w-3 h-3 mr-1" /> Enviado</Badge>;
+        return (
+          <Badge
+            variant="secondary"
+            className="bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 border-0"
+          >
+            <Clock className="w-3 h-3 mr-1" /> Enviado
+          </Badge>
+        );
       case FeedbackStatus.IN_REVIEW:
-        return <Badge variant="secondary" className="bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 border-0"><Loader2 className="w-3 h-3 mr-1 animate-spin" /> Em Análise</Badge>;
+        return (
+          <Badge
+            variant="secondary"
+            className="bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 border-0"
+          >
+            <Loader2 className="w-3 h-3 mr-1 animate-spin" /> Em Análise
+          </Badge>
+        );
       case FeedbackStatus.RESOLVED:
-        return <Badge variant="secondary" className="bg-green-500/10 text-green-500 hover:bg-green-500/20 border-0"><CheckCircle2 className="w-3 h-3 mr-1" /> Resolvido</Badge>;
+        return (
+          <Badge
+            variant="secondary"
+            className="bg-green-500/10 text-green-500 hover:bg-green-500/20 border-0"
+          >
+            <CheckCircle2 className="w-3 h-3 mr-1" /> Resolvido
+          </Badge>
+        );
       case FeedbackStatus.REJECTED:
-        return <Badge variant="secondary" className="bg-red-500/10 text-red-500 hover:bg-red-500/20 border-0"><XCircle className="w-3 h-3 mr-1" /> Rejeitado</Badge>;
+        return (
+          <Badge
+            variant="secondary"
+            className="bg-red-500/10 text-red-500 hover:bg-red-500/20 border-0"
+          >
+            <XCircle className="w-3 h-3 mr-1" /> Rejeitado
+          </Badge>
+        );
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -72,7 +113,10 @@ export function FeedbackHistory({ refreshTrigger }: FeedbackHistoryProps) {
         {isLoading ? (
           <div className="space-y-4">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="flex items-start justify-between p-4 rounded-xl border border-white/5 bg-card/50">
+              <div
+                key={i}
+                className="flex items-start justify-between p-4 rounded-xl border border-white/5 bg-card/50"
+              >
                 <div className="flex gap-4 w-full">
                   <Skeleton className="h-10 w-10 rounded-full" />
                   <div className="space-y-2 w-full">
@@ -97,13 +141,13 @@ export function FeedbackHistory({ refreshTrigger }: FeedbackHistoryProps) {
           <div className="space-y-4">
             {feedbackList.map((item) => (
               <div key={item.id}>
-                <div
-                  className="group flex flex-col sm:flex-row sm:items-start justify-between p-4 rounded-xl border border-white/5 bg-card/50 hover:bg-card hover:border-white/10 transition-all gap-4"
-                >
+                <div className="group flex flex-col sm:flex-row sm:items-start justify-between p-4 rounded-xl border border-white/5 bg-card/50 hover:bg-card hover:border-white/10 transition-all gap-4">
                   <div className="flex gap-4">
                     {renderIcon(item.type)}
                     <div>
-                      <h4 className="font-semibold text-base text-foreground/90">{item.title}</h4>
+                      <h4 className="font-semibold text-base text-foreground/90">
+                        {item.title}
+                      </h4>
                       <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
                         {item.description}
                       </p>
@@ -115,8 +159,14 @@ export function FeedbackHistory({ refreshTrigger }: FeedbackHistoryProps) {
                             year: "numeric",
                           }).format(new Date(item.createdAt))}
                         </span>
-                        {item.type === FeedbackType.SUGGESTION && <span>•</span>}
-                        <span className="capitalize">{item.type === FeedbackType.SUGGESTION ? item.category : item.bugType}</span>
+                        {item.type === FeedbackType.SUGGESTION && (
+                          <span>•</span>
+                        )}
+                        <span className="capitalize">
+                          {item.type === FeedbackType.SUGGESTION
+                            ? item.category
+                            : item.bugType}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -128,26 +178,31 @@ export function FeedbackHistory({ refreshTrigger }: FeedbackHistoryProps) {
                 {item.responses && item.responses.length > 0 && (
                   <div className="ml-6 mt-4">
                     {item.responses.map((response, index) => {
-                      const isLast = index === (item.responses?.length || 0) - 1;
+                      const isLast =
+                        index === (item.responses?.length || 0) - 1;
                       return (
                         <div key={response.id} className="relative pl-6 pb-4">
                           {/* Timeline Line */}
-                          <div 
+                          <div
                             className={`absolute left-0 top-0 w-[2px] bg-border/50 ${
                               isLast ? "h-6" : "h-full"
-                            }`} 
+                            }`}
                           />
-                          
+
                           {/* Connector Dot */}
                           <div className="absolute -left-[5px] top-4 h-3 w-3 rounded-full border-2 border-background bg-primary/20" />
-                          
+
                           <div className="bg-muted/30 border border-border/50 rounded-xl p-4 text-sm">
                             <div className="flex items-center gap-2 mb-2">
                               <div className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10">
                                 <Shield className="h-3 w-3 text-primary" />
                               </div>
-                              <span className="font-semibold text-primary text-xs uppercase tracking-wider">Resposta da equipa</span>
-                              <span className="text-[10px] text-muted-foreground/60">•</span>
+                              <span className="font-semibold text-primary text-xs uppercase tracking-wider">
+                                Resposta da equipa
+                              </span>
+                              <span className="text-[10px] text-muted-foreground/60">
+                                •
+                              </span>
                               <span className="text-[10px] text-muted-foreground/60">
                                 {new Intl.DateTimeFormat("pt-PT", {
                                   day: "numeric",
@@ -157,7 +212,9 @@ export function FeedbackHistory({ refreshTrigger }: FeedbackHistoryProps) {
                                 }).format(new Date(response.createdAt))}
                               </span>
                             </div>
-                            <p className="text-foreground/90 leading-relaxed whitespace-pre-wrap">{response.content}</p>
+                            <p className="text-foreground/90 leading-relaxed whitespace-pre-wrap">
+                              {response.content}
+                            </p>
                           </div>
                         </div>
                       );

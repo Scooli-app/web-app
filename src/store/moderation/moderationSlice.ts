@@ -67,7 +67,7 @@ export const fetchModerationQueue = createAsyncThunk(
       return await getModerationQueue(page, size);
     } catch (error) {
       return rejectWithValue(
-        error instanceof Error ? error.message : "Failed to load moderation queue"
+        error instanceof Error ? error.message : "Não foi possível carregar a fila de moderação"
       );
     }
   }
@@ -84,7 +84,7 @@ export const processModeration = createAsyncThunk(
       return { result, resourceId: request.resourceId };
     } catch (error) {
       return rejectWithValue(
-        error instanceof Error ? error.message : "Failed to process moderation action"
+        error instanceof Error ? error.message : "Não foi possível processar a ação de moderação"
       );
     }
   }

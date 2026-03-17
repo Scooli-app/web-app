@@ -615,7 +615,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     if (!title || !content || !format) {
       return NextResponse.json(
-        { error: "Missing required fields" },
+        { error: "Faltam campos obrigatórios" },
         { status: 400 },
       );
     }
@@ -649,14 +649,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       });
     } else {
       return NextResponse.json(
-        { error: "Unsupported format" },
+        { error: "Formato não suportado" },
         { status: 400 },
       );
     }
   } catch (error) {
     console.error("Download error:", error);
     return NextResponse.json(
-      { error: "Failed to generate document" },
+      { error: "Não foi possível gerar o documento" },
       { status: 500 },
     );
   }

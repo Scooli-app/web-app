@@ -12,7 +12,7 @@ export const fetchSubscription = createAsyncThunk(
     try {
       return await getCurrentSubscription();
     } catch {
-      return rejectWithValue("Failed to fetch subscription");
+      return rejectWithValue("Não foi possível carregar a subscrição");
     }
   }
 );
@@ -23,7 +23,7 @@ export const fetchUsage = createAsyncThunk(
     try {
       return await getUsageStats();
     } catch {
-      return rejectWithValue("Failed to fetch usage stats");
+      return rejectWithValue("Não foi possível carregar as estatísticas de utilização");
     }
   }
 );

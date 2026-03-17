@@ -183,8 +183,8 @@ export default function AdminFeedbackPage() {
     <PageContainer size="7xl" contentClassName="py-4 sm:py-8">
       <div className="space-y-6 sm:space-y-8">
         <PageHeader
-          title="Gestão de Feedback"
-          description="Gerir bugs reportados e sugestões dos utilizadores."
+          title="Gestão de Opiniões"
+          description="Gerir erros reportados e sugestões dos utilizadores."
           actions={
             <Button onClick={fetchData} variant="outline" size="sm">
               <RefreshCw className="mr-2 h-4 w-4" /> Atualizar
@@ -205,7 +205,7 @@ export default function AdminFeedbackPage() {
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Bugs Críticos</CardTitle>
+                <CardTitle className="text-sm font-medium">Erros Críticos</CardTitle>
                 <Bug className="h-4 w-4 text-red-500" />
               </CardHeader>
               <CardContent>
@@ -223,7 +223,7 @@ export default function AdminFeedbackPage() {
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Bugs Totais</CardTitle>
+                <CardTitle className="text-sm font-medium">Erros Totais</CardTitle>
                 <Bug className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
@@ -244,7 +244,7 @@ export default function AdminFeedbackPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="ALL">Todos os Tipos</SelectItem>
-                <SelectItem value={FeedbackType.BUG}>Bugs</SelectItem>
+                <SelectItem value={FeedbackType.BUG}>Erros</SelectItem>
                 <SelectItem value={FeedbackType.SUGGESTION}>Sugestões</SelectItem>
               </SelectContent>
             </Select>

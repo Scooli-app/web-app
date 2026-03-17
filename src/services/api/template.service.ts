@@ -85,7 +85,7 @@ export async function getTemplates(
   });
 
   if (response.status !== 200) {
-    throw new Error(`Failed to fetch templates: ${response.statusText}`);
+    throw new Error(`Não foi possível carregar os modelos (HTTP ${response.status})`);
   }
 
   return response.data.map(mapResponseToTemplate);
@@ -104,7 +104,7 @@ export async function getTemplate(
   }
 
   if (response.status !== 200) {
-    throw new Error(`Failed to fetch template: ${response.statusText}`);
+    throw new Error(`Não foi possível carregar o modelo (HTTP ${response.status})`);
   }
 
   return mapResponseToTemplate(response.data);
@@ -133,7 +133,7 @@ export async function createTemplate(
   );
 
   if (response.status !== 200 && response.status !== 201) {
-    throw new Error(`Failed to create template: ${response.statusText}`);
+    throw new Error(`Não foi possível criar o modelo (HTTP ${response.status})`);
   }
 
   return mapResponseToTemplate(response.data);
@@ -170,7 +170,7 @@ export async function updateTemplate(
   );
 
   if (response.status !== 200) {
-    throw new Error(`Failed to update template: ${response.statusText}`);
+    throw new Error(`Não foi possível atualizar o modelo (HTTP ${response.status})`);
   }
 
   return mapResponseToTemplate(response.data);
@@ -187,7 +187,7 @@ export async function setDefaultTemplate(
   );
 
   if (response.status !== 200) {
-    throw new Error(`Failed to set default template: ${response.statusText}`);
+    throw new Error(`Não foi possível definir o modelo padrão (HTTP ${response.status})`);
   }
 
   return mapResponseToTemplate(response.data);
@@ -200,6 +200,6 @@ export async function deleteTemplate(id: string): Promise<void> {
   const response = await apiClient.delete(`/templates/${id}`);
 
   if (response.status !== 200 && response.status !== 204) {
-    throw new Error(`Failed to delete template: ${response.statusText}`);
+    throw new Error(`Não foi possível eliminar o modelo (HTTP ${response.status})`);
   }
 }

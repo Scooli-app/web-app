@@ -183,7 +183,7 @@ export function SuggestionForm({ onSuccess, onCancel }: SuggestionFormProps) {
       </div>
 
       <div className="space-y-2">
-        <Label>Anexos (Imagens, Screenshots)</Label>
+        <Label>Anexos (Imagens, capturas de ecrã)</Label>
         <div
           className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 mt-1 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-muted/50 transition-colors"
           onDragOver={handleDragOver}

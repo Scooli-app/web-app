@@ -85,7 +85,7 @@ export function AssistantProvider() {
       const template = process.env.NEXT_PUBLIC_CLERK_JWT_TEMPLATE;
       const token = await getToken(template ? { template } : undefined);
       if (!token) {
-        console.error("No auth token available");
+        console.error("Token de autenticação indisponível");
         return;
       }
       dispatch(sendMessage({ message, token }));

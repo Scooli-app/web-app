@@ -2,11 +2,11 @@
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Home, Search, ArrowLeft } from "lucide-react";
+import { Routes } from "@/shared/types";
+import { ArrowLeft, Home, Search } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Routes } from "@/shared/types";
 
 export default function NotFound() {
   const router = useRouter();
@@ -53,7 +53,7 @@ export default function NotFound() {
           >
             <Link href={Routes.DASHBOARD}>
               <Home className="h-4 w-4 mr-2" />
-              Ir para o Dashboard
+              Ir para o Painel
             </Link>
           </Button>
 

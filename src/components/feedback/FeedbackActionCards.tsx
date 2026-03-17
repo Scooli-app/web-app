@@ -57,7 +57,7 @@ export function FeedbackActionCards({ onFeedbackSubmitted }: FeedbackActionCards
             <CardDescription className="text-base">
               Reporte problemas técnicos ou erros que encontrou na plataforma.
             </CardDescription>
-            <p className="text-sm font-medium text-destructive mt-2">Reportar bug &rarr;</p>
+            <p className="text-sm font-medium text-destructive mt-2">Reportar erro &rarr;</p>
           </CardContent>
         </Card>
       </div>
@@ -79,7 +79,7 @@ export function FeedbackActionCards({ onFeedbackSubmitted }: FeedbackActionCards
       <FeedbackModal
         open={bugOpen}
         onOpenChange={setBugOpen}
-        title="Reportar Bug"
+        title="Reportar Erro"
         description="Ajude-nos a corrigir erros fornecendo detalhes sobre o problema."
       >
         <BugReportForm 

@@ -41,7 +41,7 @@ export const fetchFeedbackList = createAsyncThunk(
     try {
       return await adminFeedbackService.getFeedbackList(filters);
     } catch (error) {
-      return rejectWithValue((error as Error).message || "Failed to fetch feedback list");
+      return rejectWithValue((error as Error).message || "Não foi possível carregar a lista de feedback");
     }
   }
 );
@@ -52,7 +52,7 @@ export const fetchFeedbackDetail = createAsyncThunk(
     try {
       return await adminFeedbackService.getFeedbackDetail(id);
     } catch (error) {
-      return rejectWithValue((error as Error).message || "Failed to fetch feedback detail");
+      return rejectWithValue((error as Error).message || "Não foi possível carregar o detalhe do feedback");
     }
   }
 );
@@ -63,7 +63,7 @@ export const fetchMetrics = createAsyncThunk(
     try {
       return await adminFeedbackService.getMetrics();
     } catch (error) {
-      return rejectWithValue((error as Error).message || "Failed to fetch metrics");
+      return rejectWithValue((error as Error).message || "Não foi possível carregar as métricas");
     }
   }
 );
@@ -75,7 +75,7 @@ export const updateFeedbackStatus = createAsyncThunk(
       await adminFeedbackService.updateStatus(id, status, severity);
       return { id, status, severity };
     } catch (error) {
-      return rejectWithValue((error as Error).message || "Failed to update status");
+      return rejectWithValue((error as Error).message || "Não foi possível atualizar o estado");
     }
   }
 );
@@ -87,7 +87,7 @@ export const addInternalNote = createAsyncThunk(
       await adminFeedbackService.addNote(id, content);
       return { id, content };
     } catch (error) {
-      return rejectWithValue((error as Error).message || "Failed to add note");
+      return rejectWithValue((error as Error).message || "Não foi possível adicionar a nota");
     }
   }
 );
@@ -99,7 +99,7 @@ export const sendResponse = createAsyncThunk(
       await adminFeedbackService.sendResponse(id, content);
       return { id, content };
     } catch (error) {
-      return rejectWithValue((error as Error).message || "Failed to send response");
+      return rejectWithValue((error as Error).message || "Não foi possível enviar a resposta");
     }
   }
 );

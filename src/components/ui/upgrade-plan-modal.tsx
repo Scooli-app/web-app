@@ -76,7 +76,7 @@ export function UpgradePlanModal({
             </div>
             <div>
               <p className="font-semibold text-sm text-foreground">Personalização Avançada</p>
-              <p className="text-xs text-muted-foreground">Aceda a todos os modelos e templates</p>
+              <p className="text-xs text-muted-foreground">Aceda a todos os modelos disponíveis</p>
             </div>
           </div>
 
@@ -97,7 +97,7 @@ export function UpgradePlanModal({
             onClick={handleUpgrade}
             className="w-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white h-12 rounded-xl font-bold shadow-md transition-all flex items-center justify-center gap-2 group"
           >
-            Ver Planos de Upgrade
+            Ver planos Pro
             <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
           </Button>
           <button 

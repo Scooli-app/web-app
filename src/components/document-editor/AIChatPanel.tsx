@@ -60,7 +60,7 @@ function Tabs({
         )}
       >
         <Sparkles className={cn("w-4 h-4", activeTab === "assistant" ? "text-primary" : "")} />
-        Chat
+        Conversa
       </button>
       <TooltipProvider>
         <Tooltip>
@@ -240,7 +240,7 @@ export default function AIChatPanel({
   isStreaming = false,
   error,
   placeholder = "Faça uma pergunta ou peça ajuda...",
-  title = "AI Assistant",
+  title = "Assistente de IA",
   sources = [],
 }: AIChatPanelProps) {
   const [chatMessage, setChatMessage] = useState("");

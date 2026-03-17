@@ -7,21 +7,22 @@ import { Routes } from "@/shared/types";
 import type { RagSource } from "@/shared/types/document";
 import { htmlToMarkdown, markdownToHtml } from "@/shared/utils/markdown";
 import {
-    chatWithDocument,
-    clearLastChatAnswer,
-    clearStreamInfo,
-    fetchDocument,
+  chatWithDocument,
+  clearLastChatAnswer,
+  clearStreamInfo,
+  fetchDocument,
 } from "@/store/documents/documentSlice";
 import {
-    selectEditorState,
-    useAppDispatch,
-    useAppSelector,
+  selectEditorState,
+  useAppDispatch,
+  useAppSelector,
 } from "@/store/hooks";
 import { fetchUsage } from "@/store/subscription/subscriptionSlice";
 import { useAuth } from "@clerk/nextjs";
 import type { Editor } from "@tiptap/react";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import posthog from "posthog-js";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { DiffToolbar } from "../editor/DiffToolbar";
 import { computeDiff, markdownToNode } from "../editor/utils/diffEngine";
@@ -31,7 +32,6 @@ import AIChatPanel from "./AIChatPanel";
 import DocumentTitle from "./DocumentTitle";
 import DownloadButton from "./DownloadButton";
 import ShareButton from "./ShareButton";
-import posthog from "posthog-js";
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -52,7 +52,7 @@ export default function DocumentEditor({
   documentId,
   defaultTitle = "Novo Documento",
   loadingMessage = "A carregar documento...",
-  chatTitle = "AI Assistant",
+  chatTitle = "Assistente de IA",
   chatPlaceholder = "Faça uma pergunta ou peça ajuda...",
 }: DocumentEditorProps) {
   const router = useRouter();
@@ -78,16 +78,34 @@ export default function DocumentEditor({
   const [documentTitle, setDocumentTitle] = useState("");
   const [showUpdateIndicator, setShowUpdateIndicator] = useState(false);
   const [sources, setSources] = useState<RagSource[]>([]);
-  
+
   const eventSourceRef = useRef<(() => void) | null>(null);
   const rawStreamRef = useRef("");
   const accumulatedTitleRef = useRef("");
   const editorRef = useRef<Editor | null>(null);
   const isChatInProgressRef = useRef(false);
 
-
   // Diff / Suggestions mode state
   const [isSuggestionsMode, setIsSuggestionsMode] = useState(false);
+
+  // Reset document-scoped UI state when switching document IDs.
+  // This prevents chat/source leakage between documents during route transitions.
+  useEffect(() => {
+    if (eventSourceRef.current) {
+      eventSourceRef.current();
+      eventSourceRef.current = null;
+    }
+    setIsStreaming(false);
+    setChatHistory([]);
+    setSources([]);
+    setError("");
+    setDisplayContent("");
+    setDocumentTitle("");
+    setShowUpdateIndicator(false);
+    setIsSuggestionsMode(false);
+    rawStreamRef.current = "";
+    accumulatedTitleRef.current = "";
+  }, [documentId]);
 
   // Check for imported query parameter
   useEffect(() => {
@@ -95,9 +113,12 @@ export default function DocumentEditor({
       const params = new URLSearchParams(window.location.search);
       if (params.get("imported") === "true") {
         import("sonner").then(({ toast }) => {
-          toast.success("Documento importado com sucesso. Pode agora editar ou melhorar com IA.", {
-            duration: 8000,
-          });
+          toast.success(
+            "Documento importado com sucesso. Pode agora editar ou melhorar com IA.",
+            {
+              duration: 8000,
+            },
+          );
         });
         // Remove the query param to avoid repeating on refresh
         router.replace(window.location.pathname, { scroll: false });
@@ -149,12 +170,12 @@ export default function DocumentEditor({
         const token = await getToken(template ? { template } : undefined);
         if (!token) {
           eventSourceRef.current = null;
-          
+
           const finalStreamedTitle = accumulatedTitleRef.current;
           if (finalStreamedTitle) {
             setDocumentTitle(finalStreamedTitle);
           }
-          
+
           setIsStreaming(false);
           setError("Erro de autenticação");
           dispatch(clearStreamInfo());
@@ -194,19 +215,19 @@ export default function DocumentEditor({
 
               const chatAnswer = response.chatAnswer;
               const generatedContent = response.generatedContent;
-              
+
               // Update sources if returned in response
               if (response.sources && response.sources.length > 0) {
                 setSources(response.sources);
               }
-              
+
               if (chatAnswer) {
                 setChatHistory((prev) => [
                   ...prev,
-                  { 
-                    role: "assistant" as const, 
+                  {
+                    role: "assistant" as const,
                     content: chatAnswer,
-                    hasUpdate: !!generatedContent 
+                    hasUpdate: !!generatedContent,
                   },
                 ]);
               }
@@ -216,14 +237,22 @@ export default function DocumentEditor({
                 try {
                   const editor = editorRef.current;
                   const baseDoc = editor.state.doc;
-                  const aiNode = markdownToNode(generatedContent, editor.schema);
+                  const aiNode = markdownToNode(
+                    generatedContent,
+                    editor.schema,
+                  );
 
                   // Compute diff between current and AI-generated content
                   const diffChanges = computeDiff(baseDoc, aiNode);
 
                   if (diffChanges.length > 0) {
                     // Store original content for "Reject All"
-                    const storage = (editor.storage as unknown as Record<string, { originalContent?: string | null }>).diff;
+                    const storage = (
+                      editor.storage as unknown as Record<
+                        string,
+                        { originalContent?: string | null }
+                      >
+                    ).diff;
                     if (storage) {
                       storage.originalContent = editor.getHTML();
                     }
@@ -240,7 +269,10 @@ export default function DocumentEditor({
                     setContent(generatedContent);
                     handleAutosave(generatedContent);
                     setShowUpdateIndicator(true);
-                    setTimeout(() => setShowUpdateIndicator(false), AUTO_SAVE_DELAY);
+                    setTimeout(
+                      () => setShowUpdateIndicator(false),
+                      AUTO_SAVE_DELAY,
+                    );
                   }
                 } catch (err) {
                   console.error("Error computing diff:", err);
@@ -248,18 +280,26 @@ export default function DocumentEditor({
                   setContent(generatedContent);
                   handleAutosave(generatedContent);
                   setShowUpdateIndicator(true);
-                  setTimeout(() => setShowUpdateIndicator(false), AUTO_SAVE_DELAY);
+                  setTimeout(
+                    () => setShowUpdateIndicator(false),
+                    AUTO_SAVE_DELAY,
+                  );
                 }
               } else if (generatedContent) {
                 // No editor ref available, direct update
                 setContent(generatedContent);
                 handleAutosave(generatedContent);
                 setShowUpdateIndicator(true);
-                setTimeout(() => setShowUpdateIndicator(false), AUTO_SAVE_DELAY);
+                setTimeout(
+                  () => setShowUpdateIndicator(false),
+                  AUTO_SAVE_DELAY,
+                );
               }
 
               dispatch(clearStreamInfo());
-              dispatch(fetchDocument(docId));
+              if (docId === documentId) {
+                dispatch(fetchDocument(docId));
+              }
               dispatch(fetchUsage());
             },
             onError: (errorMsg) => {
@@ -269,7 +309,7 @@ export default function DocumentEditor({
               dispatch(clearStreamInfo());
             },
           },
-          token
+          token,
         )
           .then((cleanup) => {
             eventSourceRef.current = cleanup;
@@ -302,7 +342,14 @@ export default function DocumentEditor({
     const editor = editorRef.current;
     if (!editor) return;
 
-    const storage = (editor.storage as unknown as Record<string, { onDiffStateChange?: ((active: boolean, count: number) => void) | null }>).diff;
+    const storage = (
+      editor.storage as unknown as Record<
+        string,
+        {
+          onDiffStateChange?: ((active: boolean, count: number) => void) | null;
+        }
+      >
+    ).diff;
     if (!storage) return;
 
     storage.onDiffStateChange = (active: boolean, count: number) => {
@@ -322,7 +369,6 @@ export default function DocumentEditor({
     };
   }, [isSuggestionsMode, setContent, handleAutosave]);
 
-
   // Handle chat answer from Redux (for non-chat paths or fallback)
   useEffect(() => {
     if (lastChatAnswer) {
@@ -335,37 +381,75 @@ export default function DocumentEditor({
   // Sync content when currentDocument changes
   // Skip sync during suggestions mode OR if a chat submission is in progress
   useEffect(() => {
-    if (!currentDocument?.content || isStreaming || isSuggestionsMode || isChatInProgressRef.current) return;
+    if (
+      currentDocument?.id !== documentId ||
+      !currentDocument?.content ||
+      isStreaming ||
+      isSuggestionsMode ||
+      isChatInProgressRef.current
+    )
+      return;
     setContent(currentDocument.content);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentDocument?.content, currentDocument?.updatedAt, isStreaming, setContent]);
+  }, [
+    currentDocument?.id,
+    documentId,
+    currentDocument?.content,
+    currentDocument?.updatedAt,
+    isStreaming,
+    setContent,
+  ]);
 
   useEffect(() => {
+    if (currentDocument?.id !== documentId) {
+      return;
+    }
     if (currentDocument?.title && !isStreaming) {
-      if (!documentTitle || currentDocument.title === documentTitle || currentDocument.title.length >= documentTitle.length) {
+      if (
+        !documentTitle ||
+        currentDocument.title === documentTitle ||
+        currentDocument.title.length >= documentTitle.length
+      ) {
         setDocumentTitle(currentDocument.title);
       }
     }
-  }, [currentDocument?.title, isStreaming, documentTitle]);
+  }, [currentDocument?.id, currentDocument?.title, documentId, isStreaming, documentTitle]);
 
   // Load initial prompt from document metadata
   useEffect(() => {
-    const prompt = currentDocument?.metadata?.prompt as string | undefined;
+    if (currentDocument?.id !== documentId) {
+      return;
+    }
+
+    const rawPrompt =
+      currentDocument?.metadata?.prompt ??
+      currentDocument?.metadata?.initialPrompt ??
+      currentDocument?.metadata?.initial_prompt;
+    const prompt = typeof rawPrompt === "string" ? rawPrompt.trim() : "";
+
     if (chatHistory.length === 0 && prompt) {
       setChatHistory([{ role: "user", content: prompt }]);
     }
-  }, [currentDocument?.metadata?.prompt, chatHistory.length]);
+  }, [
+    currentDocument?.id,
+    currentDocument?.metadata.prompt,
+    currentDocument?.metadata.initialPrompt,
+    currentDocument?.metadata.initial_prompt,
+    documentId,
+    chatHistory.length,
+  ]);
 
   // Sync sources from currentDocument when document loads
   useEffect(() => {
-    if (currentDocument?.sources && currentDocument.sources.length > 0 && !isStreaming) {
-      setSources(currentDocument.sources);
+    if (currentDocument?.id !== documentId || isStreaming) {
+      return;
     }
-  }, [currentDocument?.sources, isStreaming]);
+    setSources(currentDocument?.sources ?? []);
+  }, [currentDocument?.id, currentDocument?.sources, documentId, isStreaming]);
 
   const handleChatSubmit = useCallback(
     async (userMessage: string) => {
-      if (!currentDocument?.id) {
+      if (!currentDocument?.id || currentDocument.id !== documentId) {
         return;
       }
 
@@ -388,14 +472,18 @@ export default function DocumentEditor({
 
       try {
         const response = await dispatch(
-          chatWithDocument({ id: currentDocument.id, message: userMessage })
+          chatWithDocument({ id: currentDocument.id, message: userMessage }),
         ).unwrap();
 
         // Add chat answer to history
         if (response.chatAnswer) {
           setChatHistory((prev) => [
             ...prev,
-            { role: "assistant" as const, content: response.chatAnswer, hasUpdate: !!response.content },
+            {
+              role: "assistant" as const,
+              content: response.chatAnswer,
+              hasUpdate: !!response.content,
+            },
           ]);
         }
 
@@ -405,13 +493,22 @@ export default function DocumentEditor({
             const aiContent = response.content.trim();
             const aiNode = markdownToNode(aiContent, editor.schema);
             // Use baseDocBefore to ensure we compare with the document BEFORE the API updated Redux
-            const diffChanges = computeDiff(baseDocBefore || editor.state.doc, aiNode);
+            const diffChanges = computeDiff(
+              baseDocBefore || editor.state.doc,
+              aiNode,
+            );
 
             if (diffChanges.length > 0) {
               // Store original content for "Reject All"
-              const storage = (editor.storage as unknown as Record<string, { originalContent?: string | null }>).diff;
+              const storage = (
+                editor.storage as unknown as Record<
+                  string,
+                  { originalContent?: string | null }
+                >
+              ).diff;
               if (storage) {
-                storage.originalContent = originalHtmlBefore || editor.getHTML();
+                storage.originalContent =
+                  originalHtmlBefore || editor.getHTML();
               }
 
               // Replace editor content with AI content
@@ -445,10 +542,14 @@ export default function DocumentEditor({
         skipNextEditorKeyBumpRef.current = false;
       }
     },
-    [currentDocument?.id, dispatch, skipNextEditorKeyBumpRef, setContent]
+    [currentDocument?.id, dispatch, documentId, skipNextEditorKeyBumpRef, setContent],
   );
 
-  const isGenerating = isStreaming || (streamInfo?.id === documentId && streamInfo?.status === "generating");
+  const isGenerating =
+    isStreaming ||
+    (streamInfo?.id === documentId && streamInfo?.status === "generating");
+  const activeDocument =
+    currentDocument?.id === documentId ? currentDocument : null;
 
   // Handle exiting diff / suggestions mode
   const handleExitDiffMode = useCallback(() => {
@@ -467,18 +568,25 @@ export default function DocumentEditor({
       <div className="flex items-center justify-center min-h-[400px] w-full">
         <div className="flex items-center space-x-2">
           <Loader2 className="w-6 h-6 animate-spin text-primary" />
-          <span className="text-lg text-muted-foreground">{loadingMessage}</span>
+          <span className="text-lg text-muted-foreground">
+            {loadingMessage}
+          </span>
         </div>
       </div>
     );
   }
 
-  if (!currentDocument?.id && !isGenerating) {
+  if (!activeDocument?.id && !isGenerating) {
     return (
       <div className="flex items-center justify-center min-h-[400px] w-full">
         <div className="text-center">
-          <p className="text-lg text-muted-foreground mb-4">Documento não encontrado</p>
-          <button onClick={() => router.push(Routes.DOCUMENTS)} className="text-primary hover:underline">
+          <p className="text-lg text-muted-foreground mb-4">
+            Documento não encontrado
+          </p>
+          <button
+            onClick={() => router.push(Routes.DOCUMENTS)}
+            className="text-primary hover:underline"
+          >
             Voltar aos documentos
           </button>
         </div>
@@ -490,7 +598,7 @@ export default function DocumentEditor({
     <>
       <div className="flex-1 flex flex-col w-full">
         <DocumentTitle
-          title={documentTitle || currentDocument?.title || ""}
+          title={documentTitle || activeDocument?.title || ""}
           defaultTitle={defaultTitle}
           onSave={handleTitleSave}
           isSaving={isSaving}
@@ -502,20 +610,26 @@ export default function DocumentEditor({
             {isGenerating ? (
               <>
                 <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <h2 className="text-lg font-semibold text-foreground sm:text-xl">Editor</h2>
+                  <h2 className="text-lg font-semibold text-foreground sm:text-xl">
+                    Editor
+                  </h2>
                   <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                     <ShareButton
-                      title={documentTitle || currentDocument?.title || defaultTitle}
+                      title={
+                        documentTitle || activeDocument?.title || defaultTitle
+                      }
                       content={content}
                       disabled={isGenerating || !content}
                       documentId={documentId}
-                      grade={currentDocument?.gradeLevel || ""}
-                      subject={currentDocument?.subject || ""}
-                      resourceType={currentDocument?.documentType || ""}
-                      sharedStatus={currentDocument?.sharedResourceStatus}
+                      grade={activeDocument?.gradeLevel || ""}
+                      subject={activeDocument?.subject || ""}
+                      resourceType={activeDocument?.documentType || ""}
+                      sharedStatus={activeDocument?.sharedResourceStatus}
                     />
                     <DownloadButton
-                      title={documentTitle || currentDocument?.title || defaultTitle}
+                      title={
+                        documentTitle || activeDocument?.title || defaultTitle
+                      }
                       content={content}
                       disabled={isGenerating || !content}
                     />
@@ -532,7 +646,9 @@ export default function DocumentEditor({
                   ) : (
                     <div className="flex h-full min-h-[45dvh] w-full flex-col items-center justify-center sm:min-h-[550px]">
                       <Loader2 className="w-12 h-12 animate-spin text-primary mb-4" />
-                      <p className="text-lg font-medium text-foreground">A gerar o documento...</p>
+                      <p className="text-lg font-medium text-foreground">
+                        A gerar o documento...
+                      </p>
                     </div>
                   )}
                 </div>
@@ -562,21 +678,31 @@ export default function DocumentEditor({
                       {isGenerating && (
                         <div className="flex items-center space-x-2 text-primary">
                           <Loader2 className="w-4 h-4 animate-spin" />
-                          <span className="text-sm font-medium hidden sm:inline">A gerar...</span>
+                          <span className="text-sm font-medium hidden sm:inline">
+                            A gerar...
+                          </span>
                         </div>
                       )}
                       <ShareButton
-                        title={documentTitle || currentDocument?.title || defaultTitle}
+                        title={
+                          documentTitle ||
+                          activeDocument?.title ||
+                          defaultTitle
+                        }
                         content={content}
                         disabled={isGenerating || !content}
                         documentId={documentId}
-                        grade={currentDocument?.gradeLevel || ""}
-                        subject={currentDocument?.subject || ""}
-                        resourceType={currentDocument?.documentType || ""}
-                        sharedStatus={currentDocument?.sharedResourceStatus}
+                        grade={activeDocument?.gradeLevel || ""}
+                        subject={activeDocument?.subject || ""}
+                        resourceType={activeDocument?.documentType || ""}
+                        sharedStatus={activeDocument?.sharedResourceStatus}
                       />
                       <DownloadButton
-                        title={documentTitle || currentDocument?.title || defaultTitle}
+                        title={
+                          documentTitle ||
+                          activeDocument?.title ||
+                          defaultTitle
+                        }
                         content={content}
                         disabled={isGenerating || !content}
                       />
