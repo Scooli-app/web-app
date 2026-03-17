@@ -476,7 +476,7 @@ function GenerationsIndicator() {
     );
   }
 
-  const isLow = usage.remaining <= 20;
+  const isLow = usage.limit > 0 && usage.remaining / usage.limit <= 0.2;
   const isOut = usage.remaining === 0;
 
   if (isOut) {

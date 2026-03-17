@@ -314,7 +314,7 @@ function SettingsContent() {
                     <p className="text-xs text-destructive font-semibold mt-2 animate-pulse">
                       Esgotou as suas gerações gratuitas. Atualize para o plano Pro para continuar a criar.
                     </p>
-                  ) : usage.remaining <= 20 ? (
+                  ) : usage.limit > 0 && usage.remaining / usage.limit <= 0.2 ? (
                     <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
                       Restam poucas gerações. Considere atualizar para o plano Pro.
                     </p>
