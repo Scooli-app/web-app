@@ -3,8 +3,10 @@
  * Fetches evaluated feature flags for the current user from the backend.
  */
 
-import type { FeatureFlag } from "@/shared/types/featureFlags";
-import { FeatureFlag as FeatureFlagEnum } from "@/shared/types/featureFlags";
+import {
+  FeatureFlag as FeatureFlagEnum,
+  type FeatureFlag,
+} from "@/shared/types/featureFlags";
 import apiClient from "./client";
 
 /**
@@ -28,7 +30,7 @@ export async function getFeatureFlags(): Promise<FeatureFlagsResponse> {
 
   const enabledFlags = data.filter(
     (item): item is FeatureFlag =>
-      typeof item === "string" && knownFlags.has(item as FeatureFlagEnum)
+      typeof item === "string" && knownFlags.has(item as FeatureFlagEnum),
   );
 
   return [...new Set(enabledFlags)];

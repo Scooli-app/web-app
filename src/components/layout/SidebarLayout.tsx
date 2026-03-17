@@ -86,7 +86,7 @@ interface NavItem {
 
 const NAVIGATION: NavItem[] = [
   {
-    title: "Painel",
+    title: "Dashboard",
     href: Routes.DASHBOARD,
     icon: Home,
     description: "Visão geral da sua atividade",
@@ -641,3 +641,4 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
     </SidebarProvider>
   );
 }
+
