@@ -2,15 +2,21 @@
 
 import { Button } from "@/components/ui/button";
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { downloadDocument, type DownloadFormat } from "@/services/download/documentDownload";
+import ProFeatureCrown from "@/components/ui/pro-feature-crown";
+import {
+  downloadDocument,
+  type DownloadFormat,
+} from "@/services/download/documentDownload";
+import { useAppSelector } from "@/store/hooks";
+import { selectIsPro } from "@/store/subscription/selectors";
 import { Download, FileText, Loader2 } from "lucide-react";
-import { memo, useCallback, useState } from "react";
 import posthog from "posthog-js";
+import { memo, useCallback, useState } from "react";
 
 interface DownloadButtonProps {
   title: string;
@@ -18,9 +24,16 @@ interface DownloadButtonProps {
   disabled?: boolean;
 }
 
-function DownloadButtonComponent({ title, content, disabled }: DownloadButtonProps) {
+function DownloadButtonComponent({
+  title,
+  content,
+  disabled,
+}: DownloadButtonProps) {
   const [isDownloading, setIsDownloading] = useState(false);
-  const [downloadFormat, setDownloadFormat] = useState<DownloadFormat | null>(null);
+  const [downloadFormat, setDownloadFormat] = useState<DownloadFormat | null>(
+    null,
+  );
+  const isProUser = useAppSelector(selectIsPro);
 
   const handleDownload = useCallback(
     async (format: DownloadFormat) => {
@@ -45,13 +58,20 @@ function DownloadButtonComponent({ title, content, disabled }: DownloadButtonPro
         setDownloadFormat(null);
       }
     },
-    [title, content]
+    [title, content],
   );
 
-  const handlePdfDownload = useCallback(() => handleDownload("pdf"), [handleDownload]);
-  const handleDocxDownload = useCallback(() => handleDownload("docx"), [handleDownload]);
+  const handlePdfDownload = useCallback(
+    () => handleDownload("pdf"),
+    [handleDownload],
+  );
+  const handleDocxDownload = useCallback(
+    () => handleDownload("docx"),
+    [handleDownload],
+  );
 
   const isDisabled = disabled || isDownloading || !title || !content;
+  const isDocxDisabled = isDownloading || !isProUser;
 
   return (
     <DropdownMenu>
@@ -84,16 +104,27 @@ function DownloadButtonComponent({ title, content, disabled }: DownloadButtonPro
           <span>Exportar como PDF</span>
         </DropdownMenuItem>
         <DropdownMenuItem
-          onClick={handleDocxDownload}
+          onClick={isProUser ? handleDocxDownload : undefined}
+          onSelect={(event) => {
+            if (!isProUser) {
+              event.preventDefault();
+            }
+          }}
           disabled={isDownloading}
-          className="flex items-center gap-2 cursor-pointer"
+          aria-disabled={isDocxDisabled}
+          className={`flex items-center gap-2 ${
+            isProUser
+              ? "cursor-pointer"
+              : "cursor-not-allowed opacity-50"
+          }`}
         >
           {downloadFormat === "docx" ? (
             <Loader2 className="h-4 w-4 animate-spin text-primary" />
           ) : (
             <FileText className="h-4 w-4 text-blue-500 dark:text-blue-400" />
           )}
-          <span>Exportar como Word</span>
+          <span className="flex-1">Exportar como Word</span>
+          {!isProUser && <ProFeatureCrown className="ml-auto" />}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

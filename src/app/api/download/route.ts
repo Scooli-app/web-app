@@ -1,4 +1,5 @@
 import { getPostHogClient } from "@/lib/posthog-server";
+import { auth } from "@clerk/nextjs/server";
 import {
   AlignmentType,
   BorderStyle,
@@ -8,8 +9,10 @@ import {
   Paragraph,
   TextRun,
 } from "docx";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
 import { type NextRequest, NextResponse } from "next/server";
-import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
+import { degrees, PDFDocument, rgb, StandardFonts } from "pdf-lib";
 
 type DownloadFormat = "pdf" | "docx";
 
@@ -39,6 +42,76 @@ function normalizeExportContent(content: string): string {
     .replace(/[ \t]+\n/g, "\n")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
+}
+
+interface ExportOptions {
+  includeScooliFooter: boolean;
+  includeWatermark: boolean;
+}
+
+interface SubscriptionSummary {
+  planCode?: string;
+}
+
+let cachedScooliLogoBytes: Uint8Array | null | undefined;
+
+async function getScooliLogoBytes(): Promise<Uint8Array | null> {
+  if (cachedScooliLogoBytes !== undefined) {
+    return cachedScooliLogoBytes;
+  }
+
+  try {
+    const logoPath = path.join(process.cwd(), "public", "logo-transparent.png");
+    const bytes = await readFile(logoPath);
+    cachedScooliLogoBytes = new Uint8Array(bytes);
+  } catch (error) {
+    console.warn("[download] Failed to load watermark logo:", error);
+    cachedScooliLogoBytes = null;
+  }
+
+  return cachedScooliLogoBytes;
+}
+
+async function resolveExportOptions(requestedFormat: DownloadFormat): Promise<{
+  options: ExportOptions;
+  docxAllowed: boolean;
+}> {
+  let isPaid = false;
+
+  try {
+    const { userId, getToken } = await auth();
+    if (userId && getToken) {
+      const template = process.env.NEXT_PUBLIC_CLERK_JWT_TEMPLATE;
+      const token = await getToken(template ? { template } : undefined);
+      const baseApiUrl = process.env.NEXT_PUBLIC_BASE_API_URL;
+
+      if (token && baseApiUrl) {
+        const response = await fetch(`${baseApiUrl}/subscriptions/current`, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: "application/json",
+          },
+          cache: "no-store",
+        });
+
+        if (response.ok) {
+          const subscription = (await response.json()) as SubscriptionSummary | null;
+          isPaid = !!subscription && subscription.planCode !== "free";
+        }
+      }
+    }
+  } catch (error) {
+    console.error("[download] Failed to resolve subscription for export:", error);
+  }
+
+  return {
+    options: {
+      includeScooliFooter: !isPaid,
+      includeWatermark: !isPaid && requestedFormat === "pdf",
+    },
+    docxAllowed: isPaid,
+  };
 }
 
 function toArrayBuffer(bytes: Uint8Array): ArrayBuffer {
@@ -129,7 +202,10 @@ function parseInlineFormatting(
 /**
  * Generate DOCX buffer from markdown content
  */
-async function generateDocx(content: string): Promise<Buffer> {
+async function generateDocx(
+  content: string,
+  options: ExportOptions,
+): Promise<Buffer> {
   const lines = normalizeExportContent(content).split("\n");
   const children: InstanceType<typeof Paragraph>[] = [];
 
@@ -312,27 +388,28 @@ async function generateDocx(content: string): Promise<Buffer> {
     );
   }
 
-  // Footer
-  children.push(new Paragraph({ children: [], spacing: { before: 600 } }));
-  children.push(
-    new Paragraph({
-      children: [
-        new TextRun({
-          text: `Gerado por Scooli - ${new Date().toLocaleDateString("pt-PT")}`,
-          size: 18,
-          color: "6C6F80",
-        }),
-      ],
-      border: {
-        top: {
-          color: "E4E4E7",
-          size: 6,
-          style: BorderStyle.SINGLE,
-          space: 10,
+  if (options.includeScooliFooter) {
+    children.push(new Paragraph({ children: [], spacing: { before: 600 } }));
+    children.push(
+      new Paragraph({
+        children: [
+          new TextRun({
+            text: `Gerado por Scooli - ${new Date().toLocaleDateString("pt-PT")}`,
+            size: 18,
+            color: "6C6F80",
+          }),
+        ],
+        border: {
+          top: {
+            color: "E4E4E7",
+            size: 6,
+            style: BorderStyle.SINGLE,
+            space: 10,
+          },
         },
-      },
-    }),
-  );
+      }),
+    );
+  }
 
   const doc = new Document({
     styles: {
@@ -470,13 +547,22 @@ function parseMarkdownToLines(content: string): TextLine[] {
 /**
  * Generate PDF buffer from markdown content
  */
-async function generatePdf(content: string): Promise<Uint8Array> {
+async function generatePdf(
+  content: string,
+  options: ExportOptions,
+): Promise<Uint8Array> {
   const pdfDoc = await PDFDocument.create();
   const helvetica = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
   const helveticaOblique = await pdfDoc.embedFont(
     StandardFonts.HelveticaOblique,
   );
+  const watermarkLogoBytes = options.includeWatermark
+    ? await getScooliLogoBytes()
+    : null;
+  const watermarkImage = watermarkLogoBytes
+    ? await pdfDoc.embedPng(watermarkLogoBytes)
+    : null;
 
   const pageWidth = 595.28;
   const pageHeight = 841.89;
@@ -631,13 +717,29 @@ async function generatePdf(content: string): Promise<Uint8Array> {
   )}`;
 
   for (const page of pages) {
-    page.drawText(footerText, {
-      x: margin,
-      y: 25,
-      size: 9,
-      font: helvetica,
-      color: rgb(0.42, 0.43, 0.5),
-    });
+    if (watermarkImage) {
+      const watermarkWidth = 260;
+      const watermarkHeight =
+        (watermarkImage.height / watermarkImage.width) * watermarkWidth;
+      page.drawImage(watermarkImage, {
+        x: (pageWidth - watermarkWidth) / 2,
+        y: (pageHeight - watermarkHeight) / 2,
+        width: watermarkWidth,
+        height: watermarkHeight,
+        opacity: 0.1,
+        rotate: degrees(25),
+      });
+    }
+
+    if (options.includeScooliFooter) {
+      page.drawText(footerText, {
+        x: margin,
+        y: 25,
+        size: 9,
+        font: helvetica,
+        color: rgb(0.42, 0.43, 0.5),
+      });
+    }
   }
 
   return (await pdfDoc.save()) as Uint8Array;
@@ -662,9 +764,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     const distinctId =
       request.headers.get("x-posthog-distinct-id") ?? "anonymous";
+    const { options, docxAllowed } = await resolveExportOptions(format);
 
     if (format === "pdf") {
-      const pdfBytes = (await generatePdf(content)) as Uint8Array;
+      const pdfBytes = (await generatePdf(content, options)) as Uint8Array;
       await captureDownloadEvent(distinctId, "pdf", title);
       return new NextResponse(toArrayBuffer(pdfBytes), {
         headers: {
@@ -673,7 +776,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         },
       });
     } else if (format === "docx") {
-      const docxBuffer = (await generateDocx(content)) as Buffer;
+      if (!docxAllowed) {
+        return NextResponse.json(
+          { error: "Exportação Word disponível apenas para utilizadores Pro." },
+          { status: 403 },
+        );
+      }
+
+      const docxBuffer = (await generateDocx(content, options)) as Buffer;
       await captureDownloadEvent(distinctId, "docx", title);
       return new NextResponse(toArrayBuffer(docxBuffer), {
         headers: {
