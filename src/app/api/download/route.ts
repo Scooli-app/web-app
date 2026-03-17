@@ -19,6 +19,28 @@ interface DownloadRequestBody {
   format: DownloadFormat;
 }
 
+/**
+ * Normalize markdown/html artifacts before export rendering.
+ * This avoids leaking raw markdown control syntax into PDF/DOCX output.
+ */
+function normalizeExportContent(content: string): string {
+  return content
+    .replace(/\r\n/g, "\n")
+    .replace(/\r/g, "\n")
+    // Convert explicit HTML breaks to real line breaks
+    .replace(/<br\s*\/?>/gi, "\n")
+    // Remove HTML comments often emitted as markdown separators
+    .replace(/<!--[\s\S]*?-->/g, "")
+    // Remove markdown horizontal rules as standalone lines
+    .replace(/^[ \t]*(-{3,}|\*{3,}|_{3,})[ \t]*$/gm, "")
+    // Unescape common markdown-escaped punctuation (e.g., 5\.º, \_)
+    .replace(/\\([\\`*_{}\[\]()#+\-.!|>~])/g, "$1")
+    // Keep spacing tidy after cleanup
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
 function toArrayBuffer(bytes: Uint8Array): ArrayBuffer {
   const copy = new Uint8Array(bytes.byteLength);
   copy.set(bytes);
@@ -108,7 +130,7 @@ function parseInlineFormatting(
  * Generate DOCX buffer from markdown content
  */
 async function generateDocx(content: string): Promise<Buffer> {
-  const lines = content.split("\n");
+  const lines = normalizeExportContent(content).split("\n");
   const children: InstanceType<typeof Paragraph>[] = [];
 
   let inCodeBlock = false;
@@ -363,6 +385,7 @@ interface TextLine {
     | "paragraph"
     | "bullet"
     | "numbered"
+    | "choice"
     | "quote"
     | "empty";
   indent?: number;
@@ -370,7 +393,7 @@ interface TextLine {
 
 function parseMarkdownToLines(content: string): TextLine[] {
   const lines: TextLine[] = [];
-  const contentLines = content.split("\n");
+  const contentLines = normalizeExportContent(content).split("\n");
   let inCodeBlock = false;
   let isFirstH1 = true;
 
@@ -423,6 +446,11 @@ function parseMarkdownToLines(content: string): TextLine[] {
       continue;
     }
 
+    if (line.match(/^\([A-Za-z]\)\s/)) {
+      lines.push({ text: cleanText, type: "choice" });
+      continue;
+    }
+
     if (line.startsWith("> ")) {
       lines.push({ text: cleanText.substring(2), type: "quote" });
       continue;
@@ -463,6 +491,7 @@ async function generatePdf(content: string): Promise<Uint8Array> {
     paragraph: 11,
     bullet: 11,
     numbered: 11,
+    choice: 11,
     quote: 11,
     empty: 11,
   };
@@ -475,6 +504,7 @@ async function generatePdf(content: string): Promise<Uint8Array> {
     paragraph: 16,
     bullet: 16,
     numbered: 16,
+    choice: 16,
     quote: 16,
     empty: 12,
   };
@@ -487,6 +517,7 @@ async function generatePdf(content: string): Promise<Uint8Array> {
     paragraph: rgb(0.18, 0.18, 0.22),
     bullet: rgb(0.18, 0.18, 0.22),
     numbered: rgb(0.18, 0.18, 0.22),
+    choice: rgb(0.18, 0.18, 0.22),
     quote: rgb(0.42, 0.43, 0.5),
     empty: rgb(0, 0, 0),
   };
@@ -536,8 +567,12 @@ async function generatePdf(content: string): Promise<Uint8Array> {
     }
 
     const indent =
-      line.type === "bullet" || line.type === "numbered"
+      line.type === "bullet"
         ? 20
+        : line.type === "numbered"
+          ? 0
+          : line.type === "choice"
+            ? 20
         : line.type === "quote"
           ? 30
           : (line.indent || 0) * 20;
