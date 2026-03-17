@@ -203,14 +203,18 @@ const DisabledNavMenuItem = memo(function DisabledNavMenuItem({
     <SidebarMenuItem>
       <SidebarMenuButton
         disabled
-        className="h-10 cursor-not-allowed px-4 text-sidebar-foreground opacity-50"
+        className="h-auto min-h-10 cursor-not-allowed items-start px-4 py-2 text-sidebar-foreground opacity-50"
       >
-        <Icon className="h-4 w-4" />
-        <span className="flex-1">{item.title}</span>
-        <span className="inline-flex items-center gap-1 rounded-full border border-border bg-muted px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-          <Clock className="h-2.5 w-2.5" />
-          Em breve
-        </span>
+        <Icon className="mt-0.5 h-4 w-4 shrink-0" />
+        <div className="min-w-0 flex-1 space-y-1">
+          <p className="whitespace-normal break-words text-left leading-tight">
+            {item.title}
+          </p>
+          <div className="inline-flex items-center gap-1 rounded-full border border-border bg-muted px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide whitespace-nowrap text-muted-foreground">
+            <Clock className="h-2.5 w-2.5 shrink-0" />
+            Em breve
+          </div>
+        </div>
       </SidebarMenuButton>
     </SidebarMenuItem>
   );
