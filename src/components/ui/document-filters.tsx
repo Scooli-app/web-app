@@ -2,6 +2,8 @@
 
 import { Badge } from "@/components/ui/badge";
 import type { Document } from "@/shared/types";
+import { useAppSelector } from "@/store/hooks";
+import { selectIsPresentationCreationEnabled } from "@/store/features/selectors";
 
 interface DocumentFiltersProps {
   selectedType: string;
@@ -26,9 +28,16 @@ export function DocumentFilters({
   onTypeChange,
   documentCounts,
 }: DocumentFiltersProps) {
+  const isPresentationCreationEnabled = useAppSelector(
+    selectIsPresentationCreationEnabled
+  );
+  const visibleFilterOptions = isPresentationCreationEnabled
+    ? filterOptions
+    : filterOptions.filter((option) => option.value !== "presentation");
+
   return (
     <div className="flex flex-wrap gap-2 sm:gap-3">
-      {filterOptions.map((option) => {
+      {visibleFilterOptions.map((option) => {
         const isSelected = selectedType === option.value;
         const count = documentCounts?.[option.value] || 0;
 
