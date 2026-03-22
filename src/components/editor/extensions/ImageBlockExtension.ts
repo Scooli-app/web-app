@@ -36,8 +36,8 @@ export const ImageBlockExtension = Node.create<ImageBlockOptions>({
         default: null,
         parseHTML: (element) => {
           const src = element.getAttribute("src");
-          if (src && src.startsWith("{{IMAGE_PLACEHOLDER:")) {
-            const match = src.match(/{{IMAGE_PLACEHOLDER:(.+?)}}/);
+          if (src && src.startsWith("{{DOCUMENT_IMAGE:")) {
+            const match = src.match(/{{DOCUMENT_IMAGE:(.+?)}}/);
             return match ? match[1] : null;
           }
           return null;

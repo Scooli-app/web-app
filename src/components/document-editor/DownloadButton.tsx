@@ -8,6 +8,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { downloadDocument, type DownloadFormat } from "@/services/download/documentDownload";
+import type { DocumentImage } from "@/shared/types/document";
 import { Download, FileText, Loader2 } from "lucide-react";
 import { memo, useCallback, useState } from "react";
 import posthog from "posthog-js";
@@ -15,10 +16,11 @@ import posthog from "posthog-js";
 interface DownloadButtonProps {
   title: string;
   content: string;
+  images: DocumentImage[];
   disabled?: boolean;
 }
 
-function DownloadButtonComponent({ title, content, disabled }: DownloadButtonProps) {
+function DownloadButtonComponent({ title, content, images, disabled }: DownloadButtonProps) {
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadFormat, setDownloadFormat] = useState<DownloadFormat | null>(null);
 
@@ -32,7 +34,7 @@ function DownloadButtonComponent({ title, content, disabled }: DownloadButtonPro
       setDownloadFormat(format);
 
       try {
-        await downloadDocument({ title, content, format });
+        await downloadDocument({ title, content, format, images });
         posthog.capture("document_downloaded", {
           format,
           document_title: title,
@@ -45,7 +47,7 @@ function DownloadButtonComponent({ title, content, disabled }: DownloadButtonPro
         setDownloadFormat(null);
       }
     },
-    [title, content]
+    [title, content, images]
   );
 
   const handlePdfDownload = useCallback(() => handleDownload("pdf"), [handleDownload]);

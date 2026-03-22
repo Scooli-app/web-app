@@ -7,26 +7,35 @@ import { Routes } from "@/shared/types";
 import type { RagSource } from "@/shared/types/document";
 import { htmlToMarkdown, markdownToHtml } from "@/shared/utils/markdown";
 import {
-    chatWithDocument,
-    clearLastChatAnswer,
-    clearStreamInfo,
-    fetchDocument,
-    fetchDocumentImages,
-    setGeneratingImages,
-    setImageError,
-    setImages,
+  chatWithDocument,
+  clearLastChatAnswer,
+  clearStreamInfo,
+  fetchDocument,
+  fetchDocumentImages,
+  setGeneratingImages,
+  setImageError,
+  setImages,
+  upsertImage,
 } from "@/store/documents/documentSlice";
 import {
-    selectEditorState,
-    useAppDispatch,
-    useAppSelector,
+  selectEditorState,
+  useAppDispatch,
+  useAppSelector,
 } from "@/store/hooks";
-import { fetchUsage } from "@/store/subscription/subscriptionSlice";
+import {
+  selectIsPro,
+  selectSubscriptionLoading,
+} from "@/store/subscription/selectors";
+import {
+  fetchSubscription,
+  fetchUsage,
+} from "@/store/subscription/subscriptionSlice";
 import { useAuth } from "@clerk/nextjs";
 import type { Editor } from "@tiptap/react";
-import { Loader2, Sparkles, Image as ImageIcon } from "lucide-react";
+import { Image as ImageIcon, Loader2, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import posthog from "posthog-js";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { DiffToolbar } from "../editor/DiffToolbar";
 import { computeDiff, markdownToNode } from "../editor/utils/diffEngine";
@@ -36,7 +45,6 @@ import AIChatPanel from "./AIChatPanel";
 import DocumentTitle from "./DocumentTitle";
 import DownloadButton from "./DownloadButton";
 import ShareButton from "./ShareButton";
-import posthog from "posthog-js";
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -63,10 +71,17 @@ export default function DocumentEditor({
   const router = useRouter();
   const dispatch = useAppDispatch();
   const { getToken } = useAuth();
-  const { currentDocument, isLoading, streamInfo, isChatting, lastChatAnswer, images } =
-    useAppSelector(selectEditorState);
-  const { subscription } = useAppSelector((state) => state.subscription);
-  const isPremium = subscription && subscription.planCode !== "free";
+  const {
+    currentDocument,
+    isLoading,
+    streamInfo,
+    isChatting,
+    lastChatAnswer,
+    images,
+    imageError,
+  } = useAppSelector(selectEditorState);
+  const isPremium = useAppSelector(selectIsPro);
+  const isSubscriptionLoading = useAppSelector(selectSubscriptionLoading);
   const {
     content,
     setContent,
@@ -85,13 +100,17 @@ export default function DocumentEditor({
   const [documentTitle, setDocumentTitle] = useState("");
   const [showUpdateIndicator, setShowUpdateIndicator] = useState(false);
   const [sources, setSources] = useState<RagSource[]>([]);
-  
+
   const eventSourceRef = useRef<(() => void) | null>(null);
   const rawStreamRef = useRef("");
   const accumulatedTitleRef = useRef("");
   const editorRef = useRef<Editor | null>(null);
   const isChatInProgressRef = useRef(false);
-
+  const pendingVisualCountRef = useRef(0);
+  const completedVisualCountRef = useRef(0);
+  const completionFallbackTimeoutRef = useRef<ReturnType<
+    typeof setTimeout
+  > | null>(null);
 
   // Diff / Suggestions mode state
   const [isSuggestionsMode, setIsSuggestionsMode] = useState(false);
@@ -102,15 +121,22 @@ export default function DocumentEditor({
       const params = new URLSearchParams(window.location.search);
       if (params.get("imported") === "true") {
         import("sonner").then(({ toast }) => {
-          toast.success("Documento importado com sucesso. Pode agora editar ou melhorar com IA.", {
-            duration: 8000,
-          });
+          toast.success(
+            "Documento importado com sucesso. Pode agora editar ou melhorar com IA.",
+            {
+              duration: 8000,
+            },
+          );
         });
         // Remove the query param to avoid repeating on refresh
         router.replace(window.location.pathname, { scroll: false });
       }
     }
   }, [router]);
+
+  useEffect(() => {
+    dispatch(fetchSubscription());
+  }, [dispatch]);
 
   const handleEditorReady = useCallback((editor: Editor) => {
     editorRef.current = editor;
@@ -129,6 +155,13 @@ export default function DocumentEditor({
         .replace(/\\\\/g, "\\");
     }
     return "";
+  };
+
+  const clearCompletionFallback = () => {
+    if (completionFallbackTimeoutRef.current) {
+      clearTimeout(completionFallbackTimeoutRef.current);
+      completionFallbackTimeoutRef.current = null;
+    }
   };
 
   // Connect to SSE stream when we have stream info for this document
@@ -156,12 +189,12 @@ export default function DocumentEditor({
         const token = await getToken(template ? { template } : undefined);
         if (!token) {
           eventSourceRef.current = null;
-          
+
           const finalStreamedTitle = accumulatedTitleRef.current;
           if (finalStreamedTitle) {
             setDocumentTitle(finalStreamedTitle);
           }
-          
+
           setIsStreaming(false);
           setError("Erro de autenticação");
           dispatch(clearStreamInfo());
@@ -189,66 +222,129 @@ export default function DocumentEditor({
             onSources: (newSources) => {
               setSources(newSources);
             },
-            onVisualsGenerating: () => {
-              dispatch(setGeneratingImages(true));
+            onVisualsGenerating: (count) => {
+              clearCompletionFallback();
+              pendingVisualCountRef.current = count ?? 0;
+              completedVisualCountRef.current = 0;
+              dispatch(setGeneratingImages((count ?? 0) > 0));
               dispatch(setImageError(null));
             },
-            onImagesReady: (newImages) => {
-              dispatch(setImages(newImages));
-              dispatch(setGeneratingImages(false));
+            onImageReady: (image) => {
+              completedVisualCountRef.current += 1;
+              dispatch(upsertImage(image));
+              if (
+                pendingVisualCountRef.current > 0 &&
+                completedVisualCountRef.current >= pendingVisualCountRef.current
+              ) {
+                dispatch(setGeneratingImages(false));
+                clearCompletionFallback();
+                completionFallbackTimeoutRef.current = setTimeout(() => {
+                  if (!eventSourceRef.current) return;
+                  eventSourceRef.current();
+                  eventSourceRef.current = null;
+                  setIsStreaming(false);
+                  dispatch(clearStreamInfo());
+                  dispatch(fetchDocument(documentId));
+                  dispatch(fetchDocumentImages(documentId));
+                  dispatch(setGeneratingImages(false));
+                  dispatch(
+                    setImageError(
+                      "A geração de imagens terminou com falhas ou atrasos no stream.",
+                    ),
+                  );
+                }, 12000);
+              }
             },
-            onImageFailed: (imageErrorMessage) => {
-              dispatch(setGeneratingImages(false));
-              dispatch(setImageError(imageErrorMessage || "Falha a gerar imagens"));
+            onImageFailed: (image, imageErrorMessage) => {
+              completedVisualCountRef.current += 1;
+              if (image) {
+                dispatch(upsertImage(image));
+              }
+              if (imageErrorMessage) {
+                dispatch(setImageError(imageErrorMessage));
+              }
+              if (
+                pendingVisualCountRef.current > 0 &&
+                completedVisualCountRef.current >= pendingVisualCountRef.current
+              ) {
+                dispatch(setGeneratingImages(false));
+                clearCompletionFallback();
+                completionFallbackTimeoutRef.current = setTimeout(() => {
+                  if (!eventSourceRef.current) return;
+                  eventSourceRef.current();
+                  eventSourceRef.current = null;
+                  setIsStreaming(false);
+                  dispatch(clearStreamInfo());
+                  dispatch(fetchDocument(documentId));
+                  dispatch(fetchDocumentImages(documentId));
+                  dispatch(setGeneratingImages(false));
+                  dispatch(
+                    setImageError(
+                      "A geração de imagens terminou com falhas ou atrasos no stream.",
+                    ),
+                  );
+                }, 6000);
+              }
             },
             onComplete: (docId, response) => {
+              clearCompletionFallback();
               eventSourceRef.current = null;
+              const expectedVisualCount = pendingVisualCountRef.current;
 
               const finalStreamedTitle = accumulatedTitleRef.current;
               if (finalStreamedTitle) {
                 setDocumentTitle(finalStreamedTitle);
+              } else if (response.title) {
+                setDocumentTitle(response.title);
               }
 
               setIsStreaming(false);
+              pendingVisualCountRef.current = 0;
+              completedVisualCountRef.current = 0;
 
               const chatAnswer = response.chatAnswer;
-              const generatedContent = response.generatedContent;
-              
+              const finalContent = response.content;
+
               // Update sources if returned in response
               if (response.sources && response.sources.length > 0) {
                 setSources(response.sources);
               }
-              
+
               if (chatAnswer) {
                 setChatHistory((prev) => [
                   ...prev,
-                  { 
-                    role: "assistant" as const, 
+                  {
+                    role: "assistant" as const,
                     content: chatAnswer,
-                    hasUpdate: !!generatedContent 
+                    hasUpdate: !!finalContent,
                   },
                 ]);
               }
 
-              if (generatedContent && editorRef.current) {
+              if (finalContent && editorRef.current) {
                 // Enter suggestions mode with diff
                 try {
                   const editor = editorRef.current;
                   const baseDoc = editor.state.doc;
-                  const aiNode = markdownToNode(generatedContent, editor.schema);
+                  const aiNode = markdownToNode(finalContent, editor.schema);
 
                   // Compute diff between current and AI-generated content
                   const diffChanges = computeDiff(baseDoc, aiNode);
 
                   if (diffChanges.length > 0) {
                     // Store original content for "Reject All"
-                    const storage = (editor.storage as unknown as Record<string, { originalContent?: string | null }>).diff;
+                    const storage = (
+                      editor.storage as unknown as Record<
+                        string,
+                        { originalContent?: string | null }
+                      >
+                    ).diff;
                     if (storage) {
                       storage.originalContent = editor.getHTML();
                     }
 
                     // Replace editor content with AI content
-                    const aiHtml = markdownToHtml(generatedContent);
+                    const aiHtml = markdownToHtml(finalContent);
                     editor.commands.setContent(aiHtml, { emitUpdate: false });
 
                     // Apply diff decorations
@@ -256,25 +352,31 @@ export default function DocumentEditor({
                     setIsSuggestionsMode(true);
                   } else {
                     // No differences — just update content directly
-                    setContent(generatedContent);
-                    handleAutosave(generatedContent);
+                    setContent(finalContent);
                     setShowUpdateIndicator(true);
-                    setTimeout(() => setShowUpdateIndicator(false), AUTO_SAVE_DELAY);
+                    setTimeout(
+                      () => setShowUpdateIndicator(false),
+                      AUTO_SAVE_DELAY,
+                    );
                   }
                 } catch (err) {
                   console.error("Error computing diff:", err);
                   // Fallback: direct update without diff
-                  setContent(generatedContent);
-                  handleAutosave(generatedContent);
+                  setContent(finalContent);
                   setShowUpdateIndicator(true);
-                  setTimeout(() => setShowUpdateIndicator(false), AUTO_SAVE_DELAY);
+                  setTimeout(
+                    () => setShowUpdateIndicator(false),
+                    AUTO_SAVE_DELAY,
+                  );
                 }
-              } else if (generatedContent) {
+              } else if (finalContent) {
                 // No editor ref available, direct update
-                setContent(generatedContent);
-                handleAutosave(generatedContent);
+                setContent(finalContent);
                 setShowUpdateIndicator(true);
-                setTimeout(() => setShowUpdateIndicator(false), AUTO_SAVE_DELAY);
+                setTimeout(
+                  () => setShowUpdateIndicator(false),
+                  AUTO_SAVE_DELAY,
+                );
               }
 
               dispatch(clearStreamInfo());
@@ -282,16 +384,50 @@ export default function DocumentEditor({
               dispatch(fetchDocumentImages(docId));
               dispatch(setGeneratingImages(false));
               dispatch(fetchUsage());
+
+              if (expectedVisualCount > 0) {
+                const pollImages = async (attempt: number) => {
+                  try {
+                    const latestImages = await dispatch(
+                      fetchDocumentImages(docId),
+                    ).unwrap();
+                    const settledCount = latestImages.filter(
+                      (image) =>
+                        image.status === "completed" ||
+                        image.status === "failed",
+                    ).length;
+
+                    if (settledCount >= expectedVisualCount || attempt >= 8) {
+                      return;
+                    }
+                  } catch {
+                    if (attempt >= 8) {
+                      return;
+                    }
+                  }
+
+                  setTimeout(() => {
+                    void pollImages(attempt + 1);
+                  }, 1500);
+                };
+
+                setTimeout(() => {
+                  void pollImages(1);
+                }, 1200);
+              }
             },
             onError: (errorMsg) => {
+              clearCompletionFallback();
               eventSourceRef.current = null;
               setIsStreaming(false);
+              pendingVisualCountRef.current = 0;
+              completedVisualCountRef.current = 0;
               setError(errorMsg);
               dispatch(clearStreamInfo());
               dispatch(setGeneratingImages(false));
             },
           },
-          token
+          token,
         )
           .then((cleanup) => {
             eventSourceRef.current = cleanup;
@@ -313,6 +449,7 @@ export default function DocumentEditor({
   // Cleanup on unmount
   useEffect(() => {
     return () => {
+      clearCompletionFallback();
       if (eventSourceRef.current) {
         eventSourceRef.current();
         eventSourceRef.current = null;
@@ -325,7 +462,14 @@ export default function DocumentEditor({
     const editor = editorRef.current;
     if (!editor) return;
 
-    const storage = (editor.storage as unknown as Record<string, { onDiffStateChange?: ((active: boolean, count: number) => void) | null }>).diff;
+    const storage = (
+      editor.storage as unknown as Record<
+        string,
+        {
+          onDiffStateChange?: ((active: boolean, count: number) => void) | null;
+        }
+      >
+    ).diff;
     if (!storage) return;
 
     storage.onDiffStateChange = (active: boolean, count: number) => {
@@ -345,7 +489,6 @@ export default function DocumentEditor({
     };
   }, [isSuggestionsMode, setContent, handleAutosave]);
 
-
   // Handle chat answer from Redux (for non-chat paths or fallback)
   useEffect(() => {
     if (lastChatAnswer) {
@@ -358,14 +501,29 @@ export default function DocumentEditor({
   // Sync content when currentDocument changes
   // Skip sync during suggestions mode OR if a chat submission is in progress
   useEffect(() => {
-    if (!currentDocument?.content || isStreaming || isSuggestionsMode || isChatInProgressRef.current) return;
+    if (
+      !currentDocument?.content ||
+      isStreaming ||
+      isSuggestionsMode ||
+      isChatInProgressRef.current
+    )
+      return;
     setContent(currentDocument.content);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentDocument?.content, currentDocument?.updatedAt, isStreaming, setContent]);
+  }, [
+    currentDocument?.content,
+    currentDocument?.updatedAt,
+    isStreaming,
+    setContent,
+  ]);
 
   useEffect(() => {
     if (currentDocument?.title && !isStreaming) {
-      if (!documentTitle || currentDocument.title === documentTitle || currentDocument.title.length >= documentTitle.length) {
+      if (
+        !documentTitle ||
+        currentDocument.title === documentTitle ||
+        currentDocument.title.length >= documentTitle.length
+      ) {
         setDocumentTitle(currentDocument.title);
       }
     }
@@ -381,7 +539,11 @@ export default function DocumentEditor({
 
   // Sync sources from currentDocument when document loads
   useEffect(() => {
-    if (currentDocument?.sources && currentDocument.sources.length > 0 && !isStreaming) {
+    if (
+      currentDocument?.sources &&
+      currentDocument.sources.length > 0 &&
+      !isStreaming
+    ) {
       setSources(currentDocument.sources);
     }
   }, [currentDocument?.sources, isStreaming]);
@@ -421,14 +583,19 @@ export default function DocumentEditor({
 
       try {
         const response = await dispatch(
-          chatWithDocument({ id: currentDocument.id, message: userMessage })
+          chatWithDocument({ id: currentDocument.id, message: userMessage }),
         ).unwrap();
+        dispatch(fetchDocumentImages(currentDocument.id));
 
         // Add chat answer to history
         if (response.chatAnswer) {
           setChatHistory((prev) => [
             ...prev,
-            { role: "assistant" as const, content: response.chatAnswer, hasUpdate: !!response.content },
+            {
+              role: "assistant" as const,
+              content: response.chatAnswer,
+              hasUpdate: !!response.content,
+            },
           ]);
         }
 
@@ -438,13 +605,22 @@ export default function DocumentEditor({
             const aiContent = response.content.trim();
             const aiNode = markdownToNode(aiContent, editor.schema);
             // Use baseDocBefore to ensure we compare with the document BEFORE the API updated Redux
-            const diffChanges = computeDiff(baseDocBefore || editor.state.doc, aiNode);
+            const diffChanges = computeDiff(
+              baseDocBefore || editor.state.doc,
+              aiNode,
+            );
 
             if (diffChanges.length > 0) {
               // Store original content for "Reject All"
-              const storage = (editor.storage as unknown as Record<string, { originalContent?: string | null }>).diff;
+              const storage = (
+                editor.storage as unknown as Record<
+                  string,
+                  { originalContent?: string | null }
+                >
+              ).diff;
               if (storage) {
-                storage.originalContent = originalHtmlBefore || editor.getHTML();
+                storage.originalContent =
+                  originalHtmlBefore || editor.getHTML();
               }
 
               // Replace editor content with AI content
@@ -478,10 +654,12 @@ export default function DocumentEditor({
         skipNextEditorKeyBumpRef.current = false;
       }
     },
-    [currentDocument?.id, dispatch, skipNextEditorKeyBumpRef, setContent]
+    [currentDocument?.id, dispatch, skipNextEditorKeyBumpRef, setContent],
   );
 
-  const isGenerating = isStreaming || (streamInfo?.id === documentId && streamInfo?.status === "generating");
+  const isGenerating =
+    isStreaming ||
+    (streamInfo?.id === documentId && streamInfo?.status === "generating");
 
   // Handle exiting diff / suggestions mode
   const handleExitDiffMode = useCallback(() => {
@@ -500,7 +678,9 @@ export default function DocumentEditor({
       <div className="flex items-center justify-center min-h-[400px] w-full">
         <div className="flex items-center space-x-2">
           <Loader2 className="w-6 h-6 animate-spin text-primary" />
-          <span className="text-lg text-muted-foreground">{loadingMessage}</span>
+          <span className="text-lg text-muted-foreground">
+            {loadingMessage}
+          </span>
         </div>
       </div>
     );
@@ -510,8 +690,13 @@ export default function DocumentEditor({
     return (
       <div className="flex items-center justify-center min-h-[400px] w-full">
         <div className="text-center">
-          <p className="text-lg text-muted-foreground mb-4">Documento não encontrado</p>
-          <button onClick={() => router.push(Routes.DOCUMENTS)} className="text-primary hover:underline">
+          <p className="text-lg text-muted-foreground mb-4">
+            Documento não encontrado
+          </p>
+          <button
+            onClick={() => router.push(Routes.DOCUMENTS)}
+            className="text-primary hover:underline"
+          >
             Voltar aos documentos
           </button>
         </div>
@@ -530,15 +715,25 @@ export default function DocumentEditor({
           isStreaming={isGenerating && !!documentTitle}
         />
 
+        {imageError && (
+          <div className="mb-4 rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            {imageError}
+          </div>
+        )}
+
         <div className="relative grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-[minmax(0,1fr)_400px]">
           <div className="flex flex-col min-w-0">
             {isGenerating ? (
               <>
                 <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <h2 className="text-lg font-semibold text-foreground sm:text-xl">Editor</h2>
+                  <h2 className="text-lg font-semibold text-foreground sm:text-xl">
+                    Editor
+                  </h2>
                   <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                     <ShareButton
-                      title={documentTitle || currentDocument?.title || defaultTitle}
+                      title={
+                        documentTitle || currentDocument?.title || defaultTitle
+                      }
                       content={content}
                       disabled={isGenerating || !content}
                       documentId={documentId}
@@ -548,8 +743,11 @@ export default function DocumentEditor({
                       sharedStatus={currentDocument?.sharedResourceStatus}
                     />
                     <DownloadButton
-                      title={documentTitle || currentDocument?.title || defaultTitle}
+                      title={
+                        documentTitle || currentDocument?.title || defaultTitle
+                      }
                       content={content}
+                      images={images}
                       disabled={isGenerating || !content}
                     />
                   </div>
@@ -565,7 +763,9 @@ export default function DocumentEditor({
                   ) : (
                     <div className="flex h-full min-h-[45dvh] w-full flex-col items-center justify-center sm:min-h-[550px]">
                       <Loader2 className="w-12 h-12 animate-spin text-primary mb-4" />
-                      <p className="text-lg font-medium text-foreground">A gerar o documento...</p>
+                      <p className="text-lg font-medium text-foreground">
+                        A gerar o documento...
+                      </p>
                     </div>
                   )}
                 </div>
@@ -592,14 +792,21 @@ export default function DocumentEditor({
                           ✨ Documento Refinado
                         </span>
                       )}
-                      {!isPremium && (
-                        <Link href={Routes.CHECKOUT} className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-violet-100 to-fuchsia-100 dark:from-violet-900/30 dark:to-fuchsia-900/30 border border-violet-200 dark:border-violet-800 text-xs font-medium text-violet-700 dark:text-violet-300 hover:scale-105 transition-transform" title="✨ Com o Scooli Pro, os teus documentos incluem imagens geradas automaticamente">
+                      {!isSubscriptionLoading && !isPremium && (
+                        <Link
+                          href={Routes.CHECKOUT}
+                          className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-violet-100 to-fuchsia-100 dark:from-violet-900/30 dark:to-fuchsia-900/30 border border-violet-200 dark:border-violet-800 text-xs font-medium text-violet-700 dark:text-violet-300 hover:scale-105 transition-transform"
+                          title="✨ Requer Scooli Pro: faz upgrade para gerar imagens automáticas"
+                        >
                           <Sparkles className="w-3.5 h-3.5" />
-                          <span>Obter imagens automáticas</span>
+                          <span>Upgrade para imagens</span>
                         </Link>
                       )}
                       {isPremium && (images?.length || 0) > 0 && (
-                        <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-muted border border-border text-xs font-medium text-muted-foreground" title="Imagens neste documento">
+                        <div
+                          className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-muted border border-border text-xs font-medium text-muted-foreground"
+                          title="Imagens neste documento"
+                        >
                           <ImageIcon className="w-3.5 h-3.5" />
                           <span>{images?.length || 0}/5 imagens</span>
                         </div>
@@ -607,11 +814,17 @@ export default function DocumentEditor({
                       {isGenerating && (
                         <div className="flex items-center space-x-2 text-primary">
                           <Loader2 className="w-4 h-4 animate-spin" />
-                          <span className="text-sm font-medium hidden sm:inline">A gerar...</span>
+                          <span className="text-sm font-medium hidden sm:inline">
+                            A gerar...
+                          </span>
                         </div>
                       )}
                       <ShareButton
-                        title={documentTitle || currentDocument?.title || defaultTitle}
+                        title={
+                          documentTitle ||
+                          currentDocument?.title ||
+                          defaultTitle
+                        }
                         content={content}
                         disabled={isGenerating || !content}
                         documentId={documentId}
@@ -621,8 +834,13 @@ export default function DocumentEditor({
                         sharedStatus={currentDocument?.sharedResourceStatus}
                       />
                       <DownloadButton
-                        title={documentTitle || currentDocument?.title || defaultTitle}
+                        title={
+                          documentTitle ||
+                          currentDocument?.title ||
+                          defaultTitle
+                        }
                         content={content}
+                        images={images}
                         disabled={isGenerating || !content}
                       />
                     </div>

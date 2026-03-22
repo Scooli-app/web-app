@@ -18,8 +18,10 @@ import type {
   DocumentType,
   GetDocumentsParams,
   GetDocumentsResponse,
+  StreamedResponse,
   StreamEvent,
 } from "@/shared/types";
+import type { DocumentImage } from "@/shared/types/document";
 import axios, { type AxiosError } from "axios";
 import apiClient from "./client";
 
@@ -105,8 +107,7 @@ export async function createDocument(
 }
 
 /**
- * Connect to SSE stream and receive document content chunks
- * Backend streams a JSON object: {"chatAnswer": "...", "generatedContent": "..."}
+ * Connect to SSE stream and receive document content chunks.
  */
 export async function streamDocumentContent(
   streamUrl: string,
@@ -166,31 +167,74 @@ export async function streamDocumentContent(
             break;
           }
           case "visuals_generating":
-            callbacks.onVisualsGenerating?.(parsed.data);
+            try {
+              const payload = JSON.parse(parsed.data) as { count?: number };
+              callbacks.onVisualsGenerating?.(payload.count);
+            } catch {
+              callbacks.onVisualsGenerating?.();
+            }
             break;
           case "image_ready": {
             try {
-              const images = JSON.parse(parsed.data);
-              callbacks.onImagesReady?.(images);
+              const image = JSON.parse(parsed.data) as DocumentImage;
+              callbacks.onImageReady?.(image);
             } catch (e) {
-              console.warn("[SSE] Could not parse images:", e);
+              console.warn("[SSE] Could not parse image payload:", e);
             }
             break;
           }
-          case "image_failed":
-            callbacks.onImageFailed?.(parsed.data);
-            break;
-          case "done": {
-            // Parse the accumulated JSON response
-            let streamedResponse = { chatAnswer: "", generatedContent: "", sources };
+          case "image_failed": {
             try {
-              const parsed = JSON.parse(accumulatedContent);
-              streamedResponse = { ...parsed, sources };
+              const payload = JSON.parse(parsed.data) as Partial<DocumentImage> & {
+                error?: string;
+                errorMessage?: string;
+                message?: string;
+              };
+              const resolvedError =
+                payload.error ||
+                payload.errorMessage ||
+                payload.message ||
+                "Falha ao gerar imagem";
+              if (payload && typeof payload.id === "string") {
+                const imagePayload = {
+                  ...payload,
+                  errorMessage:
+                    payload.errorMessage ?? payload.error ?? payload.message ?? null,
+                } as DocumentImage;
+                callbacks.onImageFailed?.(
+                  imagePayload,
+                  resolvedError
+                );
+              } else {
+                callbacks.onImageFailed?.(null, resolvedError);
+              }
             } catch {
-              console.warn("[SSE] Could not parse accumulated content as JSON");
+              callbacks.onImageFailed?.(null, parsed.data);
             }
-            // done data contains the document ID
-            const documentId = parsed.data;
+            break;
+          }
+          case "done": {
+            let streamedResponse: StreamedResponse = { chatAnswer: "", content: "", sources };
+            try {
+              const donePayload = JSON.parse(parsed.data) as StreamedResponse & { generatedContent?: string };
+              streamedResponse = {
+                ...donePayload,
+                content: donePayload.content ?? donePayload.generatedContent ?? "",
+                sources: donePayload.sources ?? sources,
+              };
+            } catch {
+              try {
+                const fallbackPayload = JSON.parse(accumulatedContent) as StreamedResponse & { generatedContent?: string };
+                streamedResponse = {
+                  ...fallbackPayload,
+                  content: fallbackPayload.content ?? fallbackPayload.generatedContent ?? "",
+                  sources,
+                };
+              } catch {
+                console.warn("[SSE] Could not parse final document payload");
+              }
+            }
+            const documentId = streamedResponse.id ?? parsed.data;
             callbacks.onComplete?.(documentId, streamedResponse);
             abortController.abort();
             break;
