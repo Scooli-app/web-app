@@ -17,16 +17,26 @@ interface DownloadButtonProps {
   title: string;
   content: string;
   images: DocumentImage[];
+  isProUser?: boolean;
   disabled?: boolean;
 }
 
-function DownloadButtonComponent({ title, content, images, disabled }: DownloadButtonProps) {
+function DownloadButtonComponent({
+  title,
+  content,
+  images,
+  isProUser = false,
+  disabled,
+}: DownloadButtonProps) {
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadFormat, setDownloadFormat] = useState<DownloadFormat | null>(null);
 
   const handleDownload = useCallback(
     async (format: DownloadFormat) => {
       if (!title || !content) {
+        return;
+      }
+      if (format === "docx" && !isProUser) {
         return;
       }
 
@@ -47,13 +57,14 @@ function DownloadButtonComponent({ title, content, images, disabled }: DownloadB
         setDownloadFormat(null);
       }
     },
-    [title, content, images]
+    [title, content, images, isProUser]
   );
 
   const handlePdfDownload = useCallback(() => handleDownload("pdf"), [handleDownload]);
   const handleDocxDownload = useCallback(() => handleDownload("docx"), [handleDownload]);
 
   const isDisabled = disabled || isDownloading || !title || !content;
+  const isDocxDisabled = isDownloading || !isProUser;
 
   return (
     <DropdownMenu>
@@ -87,7 +98,7 @@ function DownloadButtonComponent({ title, content, images, disabled }: DownloadB
         </DropdownMenuItem>
         <DropdownMenuItem
           onClick={handleDocxDownload}
-          disabled={isDownloading}
+          disabled={isDocxDisabled}
           className="flex items-center gap-2 cursor-pointer"
         >
           {downloadFormat === "docx" ? (
@@ -95,7 +106,7 @@ function DownloadButtonComponent({ title, content, images, disabled }: DownloadB
           ) : (
             <FileText className="h-4 w-4 text-blue-500 dark:text-blue-400" />
           )}
-          <span>Exportar como Word</span>
+          <span>{isProUser ? "Exportar como Word" : "Word (Scooli Pro)"}</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

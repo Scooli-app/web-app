@@ -173,8 +173,8 @@ export const fetchDocument = createAsyncThunk(
   {
     condition: (id, { getState }) => {
       const state = getState() as { documents: DocumentState };
-      const { currentDocument, isLoading } = state.documents;
-      if (isLoading || currentDocument?.id === id) {
+      const { isLoading } = state.documents;
+      if (isLoading) {
         return false;
       }
       return true;

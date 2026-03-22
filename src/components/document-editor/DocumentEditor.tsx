@@ -103,6 +103,7 @@ export default function DocumentEditor({
 
   const eventSourceRef = useRef<(() => void) | null>(null);
   const rawStreamRef = useRef("");
+  const latestDisplayContentRef = useRef("");
   const accumulatedTitleRef = useRef("");
   const editorRef = useRef<Editor | null>(null);
   const isChatInProgressRef = useRef(false);
@@ -131,6 +132,7 @@ export default function DocumentEditor({
     setShowUpdateIndicator(false);
     setIsSuggestionsMode(false);
     rawStreamRef.current = "";
+    latestDisplayContentRef.current = "";
     accumulatedTitleRef.current = "";
   }, [documentId]);
 
@@ -176,6 +178,17 @@ export default function DocumentEditor({
     return "";
   };
 
+  const normalizePendingTitle = useCallback((rawTitle: string): string => {
+    const trimmed = rawTitle?.trim() ?? "";
+    if (!trimmed) {
+      return "";
+    }
+    if (/^generating\.{0,3}$/i.test(trimmed)) {
+      return "A gerar...";
+    }
+    return trimmed;
+  }, []);
+
   const clearCompletionFallback = () => {
     if (completionFallbackTimeoutRef.current) {
       clearTimeout(completionFallbackTimeoutRef.current);
@@ -198,6 +211,7 @@ export default function DocumentEditor({
 
       setIsStreaming(true);
       rawStreamRef.current = "";
+      latestDisplayContentRef.current = "";
       accumulatedTitleRef.current = "";
       setDisplayContent("");
       setDocumentTitle("");
@@ -211,7 +225,7 @@ export default function DocumentEditor({
 
           const finalStreamedTitle = accumulatedTitleRef.current;
           if (finalStreamedTitle) {
-            setDocumentTitle(finalStreamedTitle);
+            setDocumentTitle(normalizePendingTitle(finalStreamedTitle));
           }
 
           setIsStreaming(false);
@@ -224,6 +238,29 @@ export default function DocumentEditor({
           return;
         }
 
+        const finalizeStreamWithoutDone = () => {
+          clearCompletionFallback();
+          if (eventSourceRef.current) {
+            eventSourceRef.current();
+            eventSourceRef.current = null;
+          }
+          setIsStreaming(false);
+          pendingVisualCountRef.current = 0;
+          completedVisualCountRef.current = 0;
+          dispatch(clearStreamInfo());
+          dispatch(setGeneratingImages(false));
+
+          const fallbackContent =
+            latestDisplayContentRef.current ||
+            extractGeneratedContent(rawStreamRef.current);
+          if (fallbackContent) {
+            setContent(fallbackContent);
+          }
+
+          void dispatch(fetchDocument(documentId));
+          void dispatch(fetchDocumentImages(documentId));
+        };
+
         streamDocumentContent(
           streamInfo.streamUrl,
           {
@@ -231,6 +268,7 @@ export default function DocumentEditor({
               rawStreamRef.current += chunk;
               const extracted = extractGeneratedContent(rawStreamRef.current);
               if (extracted) {
+                latestDisplayContentRef.current = extracted;
                 setDisplayContent(extracted);
               }
             },
@@ -258,14 +296,7 @@ export default function DocumentEditor({
                 dispatch(setGeneratingImages(false));
                 clearCompletionFallback();
                 completionFallbackTimeoutRef.current = setTimeout(() => {
-                  if (!eventSourceRef.current) return;
-                  eventSourceRef.current();
-                  eventSourceRef.current = null;
-                  setIsStreaming(false);
-                  dispatch(clearStreamInfo());
-                  dispatch(fetchDocument(documentId));
-                  dispatch(fetchDocumentImages(documentId));
-                  dispatch(setGeneratingImages(false));
+                  finalizeStreamWithoutDone();
                   dispatch(
                     setImageError(
                       "A geração de imagens terminou com falhas ou atrasos no stream.",
@@ -289,14 +320,7 @@ export default function DocumentEditor({
                 dispatch(setGeneratingImages(false));
                 clearCompletionFallback();
                 completionFallbackTimeoutRef.current = setTimeout(() => {
-                  if (!eventSourceRef.current) return;
-                  eventSourceRef.current();
-                  eventSourceRef.current = null;
-                  setIsStreaming(false);
-                  dispatch(clearStreamInfo());
-                  dispatch(fetchDocument(documentId));
-                  dispatch(fetchDocumentImages(documentId));
-                  dispatch(setGeneratingImages(false));
+                  finalizeStreamWithoutDone();
                   dispatch(
                     setImageError(
                       "A geração de imagens terminou com falhas ou atrasos no stream.",
@@ -312,9 +336,9 @@ export default function DocumentEditor({
 
               const finalStreamedTitle = accumulatedTitleRef.current;
               if (finalStreamedTitle) {
-                setDocumentTitle(finalStreamedTitle);
+                setDocumentTitle(normalizePendingTitle(finalStreamedTitle));
               } else if (response.title) {
-                setDocumentTitle(response.title);
+                setDocumentTitle(normalizePendingTitle(response.title));
               }
 
               setIsStreaming(false);
@@ -323,6 +347,10 @@ export default function DocumentEditor({
 
               const chatAnswer = response.chatAnswer;
               const finalContent = response.content;
+
+              if (finalContent) {
+                setContent(finalContent);
+              }
 
               // Update sources if returned in response
               if (response.sources && response.sources.length > 0) {
@@ -465,7 +493,15 @@ export default function DocumentEditor({
 
       startStream();
     }
-  }, [streamInfo, documentId, dispatch, setContent, getToken, handleAutosave]);
+  }, [
+    streamInfo,
+    documentId,
+    dispatch,
+    setContent,
+    getToken,
+    handleAutosave,
+    normalizePendingTitle,
+  ]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -546,15 +582,23 @@ export default function DocumentEditor({
       return;
     }
     if (currentDocument?.title && !isStreaming) {
+      const normalizedCurrentTitle = normalizePendingTitle(currentDocument.title);
       if (
         !documentTitle ||
-        currentDocument.title === documentTitle ||
-        currentDocument.title.length >= documentTitle.length
+        normalizedCurrentTitle === documentTitle ||
+        normalizedCurrentTitle.length >= documentTitle.length
       ) {
-        setDocumentTitle(currentDocument.title);
+        setDocumentTitle(normalizedCurrentTitle);
       }
     }
-  }, [currentDocument?.id, currentDocument?.title, documentId, isStreaming, documentTitle]);
+  }, [
+    currentDocument?.id,
+    currentDocument?.title,
+    documentId,
+    isStreaming,
+    documentTitle,
+    normalizePendingTitle,
+  ]);
 
   // Load initial prompt from document metadata
   useEffect(() => {
@@ -702,6 +746,8 @@ export default function DocumentEditor({
     (streamInfo?.id === documentId && streamInfo?.status === "generating");
   const activeDocument =
     currentDocument?.id === documentId ? currentDocument : null;
+  const resolvedTitle =
+    documentTitle || normalizePendingTitle(activeDocument?.title || "");
 
   // Handle exiting diff / suggestions mode
   const handleExitDiffMode = useCallback(() => {
@@ -750,7 +796,7 @@ export default function DocumentEditor({
     <>
       <div className="flex-1 flex flex-col w-full">
         <DocumentTitle
-          title={documentTitle || activeDocument?.title || ""}
+          title={resolvedTitle}
           defaultTitle={defaultTitle}
           onSave={handleTitleSave}
           isSaving={isSaving}
@@ -773,9 +819,7 @@ export default function DocumentEditor({
                   </h2>
                   <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                     <ShareButton
-                      title={
-                        documentTitle || activeDocument?.title || defaultTitle
-                      }
+                      title={resolvedTitle || defaultTitle}
                       content={content}
                       disabled={isGenerating || !content}
                       documentId={documentId}
@@ -785,11 +829,10 @@ export default function DocumentEditor({
                       sharedStatus={activeDocument?.sharedResourceStatus}
                     />
                     <DownloadButton
-                      title={
-                        documentTitle || activeDocument?.title || defaultTitle
-                      }
+                      title={resolvedTitle || defaultTitle}
                       content={content}
                       images={images}
+                      isProUser={isPremium}
                       disabled={isGenerating || !content}
                     />
                   </div>
@@ -853,11 +896,7 @@ export default function DocumentEditor({
                         </div>
                       )}
                       <ShareButton
-                        title={
-                          documentTitle ||
-                          activeDocument?.title ||
-                          defaultTitle
-                        }
+                        title={resolvedTitle || defaultTitle}
                         content={content}
                         disabled={isGenerating || !content}
                         documentId={documentId}
@@ -867,13 +906,10 @@ export default function DocumentEditor({
                         sharedStatus={activeDocument?.sharedResourceStatus}
                       />
                       <DownloadButton
-                        title={
-                          documentTitle ||
-                          activeDocument?.title ||
-                          defaultTitle
-                        }
+                        title={resolvedTitle || defaultTitle}
                         content={content}
                         images={images}
+                        isProUser={isPremium}
                         disabled={isGenerating || !content}
                       />
                     </div>

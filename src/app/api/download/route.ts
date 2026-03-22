@@ -9,6 +9,9 @@ import {
   Paragraph,
   TextRun,
 } from "docx";
+import { auth } from "@clerk/nextjs/server";
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import { type NextRequest, NextResponse } from "next/server";
 import { PDFDocument, type PDFFont, rgb, StandardFonts } from "pdf-lib";
 
@@ -29,6 +32,11 @@ interface DownloadRequestBody {
   content: string;
   format: DownloadFormat;
   images?: DownloadImagePayload[];
+}
+
+interface CurrentSubscriptionResponse {
+  planCode?: string;
+  status?: string;
 }
 
 type TextBlockType =
@@ -86,6 +94,45 @@ async function captureDownloadEvent(
     await posthog.shutdown();
   } catch (error) {
     console.error("PostHog capture failed in download route:", error);
+  }
+}
+
+async function resolveIsProUser(): Promise<boolean> {
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_API_URL;
+  if (!baseUrl) {
+    return false;
+  }
+
+  try {
+    const authContext = await auth();
+    const template = process.env.NEXT_PUBLIC_CLERK_JWT_TEMPLATE;
+    const token = await authContext.getToken(
+      template ? { template } : undefined,
+    );
+    if (!token) {
+      return false;
+    }
+
+    const response = await fetch(`${baseUrl}/subscriptions/current`, {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    });
+    if (!response.ok) {
+      return false;
+    }
+
+    const subscription =
+      (await response.json()) as CurrentSubscriptionResponse | null;
+    const planCode = String(subscription?.planCode ?? "").toLowerCase();
+    const status = String(subscription?.status ?? "").toLowerCase();
+
+    return (
+      planCode !== "free" &&
+      (status === "active" || status === "trialing")
+    );
+  } catch (error) {
+    console.warn("Failed to resolve subscription for download:", error);
+    return false;
   }
 }
 
@@ -306,6 +353,10 @@ function parseMarkdownToBlocks(content: string): ExportBlock[] {
     }
 
     const trimmed = line.trim();
+    if (/^([-*_])(?:\s*\1){2,}\s*$/.test(trimmed)) {
+      continue;
+    }
+
     const markdownImage = parseMarkdownImageLine(trimmed);
     if (markdownImage) {
       blocks.push({
@@ -770,27 +821,6 @@ async function generateDocx(
     }
   }
 
-  children.push(new Paragraph({ children: [], spacing: { before: 600 } }));
-  children.push(
-    new Paragraph({
-      children: [
-        new TextRun({
-          text: `Gerado por Scooli - ${new Date().toLocaleDateString("pt-PT")}`,
-          size: 18,
-          color: "6C6F80",
-        }),
-      ],
-      border: {
-        top: {
-          color: "E4E4E7",
-          size: 6,
-          style: BorderStyle.SINGLE,
-          space: 10,
-        },
-      },
-    }),
-  );
-
   const doc = new Document({
     styles: {
       default: {
@@ -832,6 +862,7 @@ async function generateDocx(
 async function generatePdf(
   content: string,
   images?: DownloadImagePayload[],
+  isProUser: boolean = false,
 ): Promise<Uint8Array> {
   const pdfDoc = await PDFDocument.create();
   const helvetica = await pdfDoc.embedFont(StandardFonts.Helvetica);
@@ -1074,15 +1105,44 @@ async function generatePdf(
     });
   }
 
-  const footerText = `Gerado por Scooli - ${new Date().toLocaleDateString("pt-PT")}`;
-  for (const page of pdfDoc.getPages()) {
-    page.drawText(footerText, {
-      x: margin,
-      y: 25,
-      size: 9,
-      font: helvetica,
-      color: rgb(0.42, 0.43, 0.5),
-    });
+  if (!isProUser) {
+    let watermarkLogo: Awaited<ReturnType<PDFDocument["embedPng"]>> | null =
+      null;
+    try {
+      const logoPath = join(process.cwd(), "public", "logo-transparent.png");
+      const logoBytes = await readFile(logoPath);
+      watermarkLogo = await pdfDoc.embedPng(logoBytes);
+    } catch (error) {
+      console.warn("Failed to load logo watermark for PDF export:", error);
+    }
+
+    const footerText = "Gerado em scooli.app";
+    for (const page of pdfDoc.getPages()) {
+      page.drawText(footerText, {
+        x: margin,
+        y: 25,
+        size: 9,
+        font: helvetica,
+        color: rgb(0.42, 0.43, 0.5),
+      });
+
+      if (watermarkLogo) {
+        const watermarkSize = scaleDimensions(
+          watermarkLogo.width,
+          watermarkLogo.height,
+          pageWidth * 0.5,
+          pageHeight * 0.22,
+        );
+
+        page.drawImage(watermarkLogo, {
+          x: (pageWidth - watermarkSize.width) / 2,
+          y: (pageHeight - watermarkSize.height) / 2,
+          width: watermarkSize.width,
+          height: watermarkSize.height,
+          opacity: 0.14,
+        });
+      }
+    }
   }
 
   return (await pdfDoc.save()) as Uint8Array;
@@ -1107,9 +1167,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     const distinctId =
       request.headers.get("x-posthog-distinct-id") ?? "anonymous";
+    const isProUser = await resolveIsProUser();
 
     if (format === "pdf") {
-      const pdfBytes = (await generatePdf(content, images)) as Uint8Array;
+      const pdfBytes = (await generatePdf(content, images, isProUser)) as Uint8Array;
       await captureDownloadEvent(distinctId, "pdf", title);
       return new NextResponse(toArrayBuffer(pdfBytes), {
         headers: {
@@ -1120,6 +1181,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     if (format === "docx") {
+      if (!isProUser) {
+        return NextResponse.json(
+          { error: "Exportacao DOCX disponivel apenas para utilizadores Scooli Pro" },
+          { status: 403 },
+        );
+      }
       const docxBuffer = (await generateDocx(content, images)) as Buffer;
       await captureDownloadEvent(distinctId, "docx", title);
       return new NextResponse(toArrayBuffer(docxBuffer), {

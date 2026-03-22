@@ -7,9 +7,51 @@ import { useCallback } from "react";
 import { toast } from "sonner";
 import { cn } from "@/shared/utils/utils";
 
-export default function ImageBlockNodeView({ node, deleteNode }: NodeViewProps) {
+const DELETE_UNDO_WINDOW_MS = 6000;
+
+type PendingImageDeletion = {
+  timeoutId: ReturnType<typeof setTimeout>;
+  restore: () => void;
+  dismissToast: () => void;
+};
+
+const pendingImageDeletions = new Map<string, PendingImageDeletion>();
+
+function hasImageReferenceInDocument(
+  editor: NodeViewProps["editor"],
+  imageId: string,
+  placeholderToken: string | null,
+): boolean {
+  const stableToken = `{{DOCUMENT_IMAGE:${imageId}}}`;
+  const placeholderRef = placeholderToken
+    ? `{{IMAGE_PLACEHOLDER:${placeholderToken}}}`
+    : null;
+
+  let found = false;
+  editor.state.doc.descendants((docNode) => {
+    if (docNode.type.name !== "imageBlock") {
+      return true;
+    }
+
+    const nodeSrc = docNode.attrs?.src;
+    if (typeof nodeSrc !== "string") {
+      return true;
+    }
+
+    if (nodeSrc.includes(stableToken) || (!!placeholderRef && nodeSrc.includes(placeholderRef))) {
+      found = true;
+      return false;
+    }
+
+    return true;
+  });
+
+  return found;
+}
+
+export default function ImageBlockNodeView({ node, deleteNode, editor, getPos }: NodeViewProps) {
   const dispatch = useAppDispatch();
-  const { currentDocument, images } = useAppSelector(selectEditorState);
+  const { currentDocument, images, isGeneratingImages } = useAppSelector(selectEditorState);
   const isPremium = useAppSelector(selectIsPro);
 
   const src = node.attrs.src;
@@ -29,23 +71,87 @@ export default function ImageBlockNodeView({ node, deleteNode }: NodeViewProps) 
   );
   const imageId = generatedImage?.id ?? stableImageId;
   const finalSrc = generatedImage?.url ?? (isPlaceholder || isStableRef ? null : src);
-  const status =
-    generatedImage?.status ??
-    (isPlaceholder || isStableRef ? "generating" : "completed");
+  const shouldWaitForHydration =
+    isStableRef && !generatedImage && Boolean(isGeneratingImages);
+  const status = generatedImage?.status
+    ?? (isPlaceholder ? "pending" : isStableRef ? (shouldWaitForHydration ? "pending" : "missing") : "completed");
   const showActions = Boolean(imageId);
   const isCurrentImageGenerating = status === "generating" || status === "pending";
 
   const handleDelete = useCallback(async () => {
-    if (!currentDocument || !imageId) return deleteNode();
-
-    try {
-      await dispatch(deleteDocumentImage({ documentId: currentDocument.id, imageId })).unwrap();
+    if (!currentDocument || !imageId) {
       deleteNode();
-      toast.success("Imagem removida com sucesso");
-    } catch {
-      toast.error("Erro ao remover a imagem");
+      return;
     }
-  }, [currentDocument, imageId, deleteNode, dispatch]);
+
+    const key = `${currentDocument.id}:${imageId}`;
+    const existingDeletion = pendingImageDeletions.get(key);
+    if (existingDeletion) {
+      clearTimeout(existingDeletion.timeoutId);
+      existingDeletion.dismissToast();
+      pendingImageDeletions.delete(key);
+    }
+
+    const nodeSnapshot = node.toJSON();
+    const safePosition = typeof getPos === "function" ? getPos() : null;
+
+    const restoreNode = () => {
+      if (hasImageReferenceInDocument(editor, imageId, placeholderToken)) {
+        return;
+      }
+
+      const insertionPosition =
+        typeof safePosition === "number"
+          ? Math.max(0, Math.min(safePosition, editor.state.doc.content.size))
+          : editor.state.doc.content.size;
+
+      editor
+        .chain()
+        .focus()
+        .insertContentAt(insertionPosition, nodeSnapshot)
+        .run();
+    };
+
+    deleteNode();
+
+    const timeoutId = setTimeout(async () => {
+      pendingImageDeletions.delete(key);
+      try {
+        await dispatch(
+          deleteDocumentImage({ documentId: currentDocument.id, imageId }),
+        ).unwrap();
+        toast.success("Imagem removida com sucesso");
+      } catch {
+        restoreNode();
+        toast.error("Erro ao remover a imagem. A imagem foi restaurada.");
+      }
+    }, DELETE_UNDO_WINDOW_MS);
+
+    const toastId = toast("Imagem removida.", {
+      description: "Pode refazer esta ação durante alguns segundos.",
+      duration: DELETE_UNDO_WINDOW_MS + 1200,
+      action: {
+        label: "Refazer",
+        onClick: () => {
+          const pendingDeletion = pendingImageDeletions.get(key);
+          if (!pendingDeletion) {
+            return;
+          }
+          clearTimeout(pendingDeletion.timeoutId);
+          pendingDeletion.dismissToast();
+          pendingImageDeletions.delete(key);
+          pendingDeletion.restore();
+          toast.success("Imagem restaurada.");
+        },
+      },
+    });
+
+    pendingImageDeletions.set(key, {
+      timeoutId,
+      restore: restoreNode,
+      dismissToast: () => toast.dismiss(toastId),
+    });
+  }, [currentDocument, imageId, node, getPos, editor, placeholderToken, deleteNode, dispatch]);
 
   const handleRegenerate = useCallback(async () => {
     if (!isPremium) {
@@ -83,6 +189,37 @@ export default function ImageBlockNodeView({ node, deleteNode }: NodeViewProps) 
                 type="button"
               >
                 <RefreshCcw className="h-4 w-4" /> Tentar novamente
+              </button>
+            )}
+            <button
+              onClick={handleDelete}
+              className="flex items-center gap-2 rounded-md bg-destructive px-4 py-2 text-sm text-destructive-foreground shadow-sm transition-colors hover:bg-destructive/90"
+              type="button"
+            >
+              <Trash2 className="h-4 w-4" /> Remover
+            </button>
+          </div>
+        </div>
+      </NodeViewWrapper>
+    );
+  }
+
+  if (status === "missing" && isStableRef) {
+    return (
+      <NodeViewWrapper className="my-6">
+        <div className="relative flex min-h-[220px] w-full flex-col items-center justify-center rounded-xl border border-border bg-muted/20 p-8">
+          <p className="mb-2 font-medium text-foreground">Imagem indisponível.</p>
+          <p className="mb-4 max-w-xl text-center text-sm text-muted-foreground">
+            Esta imagem foi removida ou ainda não está sincronizada.
+          </p>
+          <div className="flex gap-3">
+            {isPremium && (
+              <button
+                onClick={handleRegenerate}
+                className="flex items-center gap-2 rounded-md border border-border bg-background px-4 py-2 text-sm shadow-sm transition-colors hover:bg-muted"
+                type="button"
+              >
+                <RefreshCcw className="h-4 w-4" /> Regenerar
               </button>
             )}
             <button

@@ -29,7 +29,7 @@ const MARKDOWN_CODE_FENCE_PATTERN = /```[\s\S]*?```/g;
 const HTML_PRE_BLOCK_PATTERN = /<pre[\s\S]*?<\/pre>/gi;
 
 function normalizeMultipleChoiceOptions(markdown: string): string {
-  const optionRegex = /\(([A-Ea-e])\)\s+/g;
+  const optionRegex = /(?:\(([A-Ea-e])\)|\b([A-Ea-e])\))\s+/g;
   const questionPrefixRegex = /^\s*(?:\d+[\).:-]|[-*])\s+/;
 
   const lines = markdown.split("\n");
@@ -59,8 +59,9 @@ function normalizeMultipleChoiceOptions(markdown: string): string {
         const end = start + current[0].length;
         const nextStart = matches[i + 1]?.index ?? line.length;
         const optionText = line.slice(end, nextStart).trim();
+        const optionLabel = (current[1] ?? current[2] ?? "").toUpperCase();
         if (!optionText) continue;
-        options.push(`(${current[1].toUpperCase()}) ${optionText}`);
+        options.push(`(${optionLabel}) ${optionText}`);
       }
 
       if (options.length === 0) {
@@ -74,7 +75,9 @@ function normalizeMultipleChoiceOptions(markdown: string): string {
   });
 
   // Force markdown hard line-breaks before option lines so renderers never collapse them.
-  return rewrittenLines.join("\n").replace(/\n(\s*\([A-Ea-e]\)\s+)/g, "  \n$1");
+  return rewrittenLines
+    .join("\n")
+    .replace(/\n(\s*(?:\([A-Ea-e]\)|[A-Ea-e]\))\s+)/g, "  \n$1");
 }
 
 /**
@@ -96,9 +99,13 @@ export function markdownToHtml(markdown: string): string {
     const cleanMarkdown = normalizeMultipleChoiceOptions(codeProtected.content)
       // Remove invisible characters that can break markdown parsing (e.g., headings)
       .replace(/[\u200B-\u200D\u2060\uFEFF]/g, "")
+      // Ensure markdown headings have a space after #'s so all parsers render them consistently.
+      .replace(/(^|\n)(\s{0,3}#{1,6})([^\s#])/g, "$1$2 $3")
       // Convert non-standard checkbox format ( ) to standard [ ]
       .replace(/- \( \)/g, "- [ ]")
       .replace(/- \(x\)/gi, "- [x]")
+      // Remove plain markdown separators that should not render as literal syntax in the editor.
+      .replace(/^\s*([-*_])(?:\s*\1){2,}\s*$/gm, "")
       // Normalize trailing spaces
       .replace(/[ \t]+\n/g, "\n")
       // Remove excessive newlines while preserving intentional breaks
