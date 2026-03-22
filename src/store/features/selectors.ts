@@ -45,3 +45,8 @@ export const selectIsDocumentReviewEnabled = createSelector(
   [selectEnabledFeatureFlags],
   (enabledFeatures) => enabledFeatures.includes(FeatureFlag.DOCUMENT_REVIEW)
 );
+
+export const selectIsDocumentImagesEnabled = createSelector(
+  [selectEnabledFeatureFlags],
+  (enabledFeatures) => enabledFeatures.includes(FeatureFlag.DOCUMENT_IMAGES)
+);
