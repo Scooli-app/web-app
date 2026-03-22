@@ -57,7 +57,8 @@ interface ResolvedImage {
 }
 
 const DOCUMENT_IMAGE_TOKEN_PATTERN = /^\{\{DOCUMENT_IMAGE:([^}]+)\}\}$/;
-const MARKDOWN_IMAGE_LINE_PATTERN = /^!\[(.*?)\]\((.+?)\)$/;
+const MARKDOWN_IMAGE_LINE_PATTERN = /^!\[(.*?)\]\((.+?)\)\s*$/;
+const HTML_IMAGE_LINE_PATTERN = /^<img\b[^>]*>$/i;
 const DATA_URI_PATTERN = /^data:([^;]+);base64,(.+)$/;
 
 function toArrayBuffer(bytes: Uint8Array): ArrayBuffer {
@@ -201,6 +202,87 @@ function stripInlineMarkdown(text: string): string {
     .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1");
 }
 
+function normalizePdfLine(text: string): string {
+  return text
+    .replace(/\r\n/g, "\n")
+    .replace(/\r/g, "\n")
+    .replace(/\n+/g, " ")
+    .replace(/\u00A0/g, " ")
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/[\u201C\u201D]/g, '"')
+    .replace(/[\u2013\u2014]/g, "-")
+    .replace(/\u2026/g, "...")
+    .replace(/\u2022/g, "-")
+    .replace(/\u00E2\u20AC\u00A2/g, "-")
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "")
+    .replace(/[^\x20-\x7E\xA0-\xFF]/g, "?");
+}
+
+function normalizePdfText(text: string): string {
+  return text
+    .replace(/\r\n/g, "\n")
+    .replace(/\r/g, "\n")
+    .replace(/\t/g, "    ")
+    .split("\n")
+    .map((line) => normalizePdfLine(line))
+    .join("\n");
+}
+
+function normalizeImageSource(source: string): string {
+  let normalized = source.trim();
+
+  if (normalized.startsWith("<") && normalized.endsWith(">")) {
+    normalized = normalized.slice(1, -1).trim();
+  }
+
+  const titleMatch = normalized.match(/^(\S+)\s+(?:"[^"]*"|'[^']*')$/);
+  if (titleMatch) {
+    normalized = titleMatch[1];
+  }
+
+  if (/%7B%7B(?:DOCUMENT_IMAGE|IMAGE_PLACEHOLDER):/i.test(normalized)) {
+    try {
+      normalized = decodeURIComponent(normalized);
+    } catch {
+      // Keep original source if decoding fails.
+    }
+  }
+
+  return normalized.replace(/&amp;/g, "&").replace(/\\([{}])/g, "$1");
+}
+
+function parseMarkdownImageLine(line: string): { alt: string; source: string } | null {
+  const imageMatch = line.match(MARKDOWN_IMAGE_LINE_PATTERN);
+  if (!imageMatch) {
+    return null;
+  }
+
+  return {
+    alt: imageMatch[1] ?? "",
+    source: normalizeImageSource(imageMatch[2] ?? ""),
+  };
+}
+
+function parseHtmlImageLine(line: string): { alt: string; source: string } | null {
+  if (!HTML_IMAGE_LINE_PATTERN.test(line)) {
+    return null;
+  }
+
+  const srcMatch = line.match(/\ssrc=(?:"([^"]*)"|'([^']*)'|([^\s>]+))/i);
+  const source = srcMatch?.[1] ?? srcMatch?.[2] ?? srcMatch?.[3] ?? "";
+  if (!source) {
+    return null;
+  }
+
+  const altMatch = line.match(/\salt=(?:"([^"]*)"|'([^']*)'|([^\s>]+))/i);
+  const alt = altMatch?.[1] ?? altMatch?.[2] ?? altMatch?.[3] ?? "";
+
+  return {
+    alt,
+    source: normalizeImageSource(source),
+  };
+}
+
 function parseMarkdownToBlocks(content: string): ExportBlock[] {
   const blocks: ExportBlock[] = [];
   const lines = content.split("\n");
@@ -224,12 +306,32 @@ function parseMarkdownToBlocks(content: string): ExportBlock[] {
     }
 
     const trimmed = line.trim();
-    const imageMatch = trimmed.match(MARKDOWN_IMAGE_LINE_PATTERN);
-    if (imageMatch) {
+    const markdownImage = parseMarkdownImageLine(trimmed);
+    if (markdownImage) {
       blocks.push({
         type: "image",
-        alt: imageMatch[1],
-        source: imageMatch[2].trim(),
+        alt: markdownImage.alt,
+        source: markdownImage.source,
+      });
+      continue;
+    }
+
+    const htmlImage = parseHtmlImageLine(trimmed);
+    if (htmlImage) {
+      blocks.push({
+        type: "image",
+        alt: htmlImage.alt,
+        source: htmlImage.source,
+      });
+      continue;
+    }
+
+    const normalizedTokenCandidate = normalizeImageSource(trimmed);
+    if (DOCUMENT_IMAGE_TOKEN_PATTERN.test(normalizedTokenCandidate)) {
+      blocks.push({
+        type: "image",
+        alt: "",
+        source: normalizedTokenCandidate,
       });
       continue;
     }
@@ -295,7 +397,7 @@ async function resolveImageBlock(
   block: Extract<ExportBlock, { type: "image" }>,
   imageLookup: Map<string, DownloadImagePayload>,
 ): Promise<ResolvedImage> {
-  let source = block.source;
+  let source = normalizeImageSource(block.source);
   let contentType: string | null = null;
 
   const stableImageMatch = source.match(DOCUMENT_IMAGE_TOKEN_PATTERN);
@@ -477,22 +579,6 @@ async function generateDocx(
             spacing: { before: 220, after: 120 },
           }),
         );
-        if (block.alt) {
-          children.push(
-            new Paragraph({
-              children: [
-                new TextRun({
-                  text: block.alt,
-                  italics: true,
-                  size: 18,
-                  color: "6C6F80",
-                }),
-              ],
-              alignment: AlignmentType.CENTER,
-              spacing: { after: 220 },
-            }),
-          );
-        }
       } else {
         children.push(
           new Paragraph({
@@ -816,24 +902,66 @@ async function generatePdf(
     font: PDFFont,
     fontSize: number,
   ): string[] {
-    const words = text.split(" ");
     const lines: string[] = [];
-    let currentLine = "";
+    const paragraphs = normalizePdfText(text).split("\n");
 
-    for (const word of words) {
-      const testLine = currentLine ? `${currentLine} ${word}` : word;
-      const testWidth = font.widthOfTextAtSize(testLine, fontSize);
+    for (const paragraph of paragraphs) {
+      const words = paragraph.trim().split(/\s+/).filter(Boolean);
+      if (words.length === 0) {
+        lines.push("");
+        continue;
+      }
 
-      if (testWidth > maxWidth && currentLine) {
+      let currentLine = "";
+      for (const word of words) {
+        const testLine = currentLine ? `${currentLine} ${word}` : word;
+        const testWidth = font.widthOfTextAtSize(testLine, fontSize);
+
+        if (testWidth > maxWidth && currentLine) {
+          lines.push(currentLine);
+          currentLine = word;
+        } else {
+          currentLine = testLine;
+        }
+      }
+
+      if (currentLine) {
         lines.push(currentLine);
-        currentLine = word;
-      } else {
-        currentLine = testLine;
       }
     }
+    return lines.length > 0 ? lines : [""];
+  }
 
-    if (currentLine) {
-      lines.push(currentLine);
+  function wrapCodeText(
+    text: string,
+    maxWidth: number,
+    font: PDFFont,
+    fontSize: number,
+  ): string[] {
+    const lines: string[] = [];
+    const rawLines = normalizePdfText(text).split("\n");
+
+    for (const rawLine of rawLines) {
+      if (rawLine.length === 0) {
+        lines.push("");
+        continue;
+      }
+
+      let currentLine = "";
+      for (const character of rawLine) {
+        const testLine = `${currentLine}${character}`;
+        const testWidth = font.widthOfTextAtSize(testLine, fontSize);
+        if (testWidth > maxWidth && currentLine.length > 0) {
+          lines.push(currentLine);
+          currentLine = character === " " ? "" : character;
+        } else {
+          currentLine = testLine;
+        }
+      }
+
+      if (currentLine.length > 0) {
+        lines.push(currentLine);
+      }
     }
     return lines.length > 0 ? lines : [""];
   }
@@ -864,6 +992,7 @@ async function generatePdf(
     } else if (block.type === "numbered") {
       displayText = stripInlineMarkdown(block.text);
     }
+    displayText = normalizePdfText(displayText);
 
     const indent =
       block.type === "bullet" || block.type === "numbered"
@@ -874,12 +1003,10 @@ async function generatePdf(
             ? 20
             : 0;
 
-    const wrappedLines = wrapText(
-      displayText,
-      contentWidth - indent,
-      font,
-      fontSize,
-    );
+    const wrappedLines =
+      block.type === "code"
+        ? wrapCodeText(displayText, contentWidth - indent, font, fontSize)
+        : wrapText(displayText, contentWidth - indent, font, fontSize);
 
     if (["h1", "h2", "h3"].includes(block.type)) {
       yPosition -= 10;
@@ -889,7 +1016,8 @@ async function generatePdf(
 
     for (const wrappedLine of wrappedLines) {
       ensureSpace(lineHeight + 10);
-      currentPage.drawText(wrappedLine, {
+      const safeLine = normalizePdfLine(wrappedLine);
+      currentPage.drawText(safeLine, {
         x: margin + indent,
         y: yPosition,
         size: fontSize,
@@ -936,20 +1064,7 @@ async function generatePdf(
         width: size.width,
         height: size.height,
       });
-      yPosition -= size.height + 12;
-
-      if (block.alt) {
-        const caption = stripInlineMarkdown(block.alt);
-        const captionWidth = helveticaOblique.widthOfTextAtSize(caption, 10);
-        currentPage.drawText(caption, {
-          x: margin + Math.max(0, (contentWidth - captionWidth) / 2),
-          y: yPosition,
-          size: 10,
-          font: helveticaOblique,
-          color: rgb(0.42, 0.43, 0.5),
-        });
-        yPosition -= 18;
-      }
+      yPosition -= size.height + 20;
       continue;
     }
 

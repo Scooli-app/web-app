@@ -32,7 +32,7 @@ import {
 } from "@/store/subscription/subscriptionSlice";
 import { useAuth } from "@clerk/nextjs";
 import type { Editor } from "@tiptap/react";
-import { Image as ImageIcon, Loader2, Sparkles } from "lucide-react";
+import { Loader2, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import posthog from "posthog-js";
@@ -271,7 +271,7 @@ export default function DocumentEditor({
                       "A geração de imagens terminou com falhas ou atrasos no stream.",
                     ),
                   );
-                }, 12000);
+                }, 3000);
               }
             },
             onImageFailed: (image, imageErrorMessage) => {
@@ -302,7 +302,7 @@ export default function DocumentEditor({
                       "A geração de imagens terminou com falhas ou atrasos no stream.",
                     ),
                   );
-                }, 6000);
+                }, 3000);
               }
             },
             onComplete: (docId, response) => {
@@ -841,17 +841,8 @@ export default function DocumentEditor({
                           title="✨ Requer Scooli Pro: faz upgrade para gerar imagens automáticas"
                         >
                           <Sparkles className="w-3.5 h-3.5" />
-                          <span>Upgrade para imagens</span>
+                          <span>Imagens estão disponiveis no plano PRO</span>
                         </Link>
-                      )}
-                      {isPremium && (images?.length || 0) > 0 && (
-                        <div
-                          className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-muted border border-border text-xs font-medium text-muted-foreground"
-                          title="Imagens neste documento"
-                        >
-                          <ImageIcon className="w-3.5 h-3.5" />
-                          <span>{images?.length || 0}/5 imagens</span>
-                        </div>
                       )}
                       {isGenerating && (
                         <div className="flex items-center space-x-2 text-primary">
