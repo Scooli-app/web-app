@@ -27,6 +27,130 @@ const converterOptions: showdown.ConverterOptions = {
 const converter = new showdown.Converter(converterOptions);
 const MARKDOWN_CODE_FENCE_PATTERN = /```[\s\S]*?```/g;
 const HTML_PRE_BLOCK_PATTERN = /<pre[\s\S]*?<\/pre>/gi;
+const HTML_IMAGE_TAG_PATTERN = /<img\b[^>]*>/gi;
+const IMAGE_SEGMENT_TOKEN_PREFIX = "CODEXIMAGESEGMENT";
+const IMAGE_SEGMENT_TOKEN_SUFFIX = "TOKEN";
+const IMAGE_SEGMENT_TOKEN_PATTERN = /CODEXIMAGESEGMENT(\d+)TOKEN/g;
+const LEGACY_IMAGE_SEGMENT_TOKEN_PATTERN = /@@CODEX\\?_IMAGE\\?_SEGMENT\\?_\d+@@/gi;
+const FALLBACK_IMAGE_SEGMENT_TOKEN_PATTERN = /CODEXIMAGESEGMENT\d+TOKEN/g;
+const HTML_ENTITY_PATTERN = /&(#x?[0-9a-fA-F]+|[a-zA-Z]+);/g;
+const HTML_ENTITY_MAP: Record<string, string> = {
+  amp: "&",
+  lt: "<",
+  gt: ">",
+  quot: "\"",
+  apos: "'",
+  nbsp: " ",
+};
+
+function decodeHtmlEntities(value: string): string {
+  if (!value || !value.includes("&")) {
+    return value;
+  }
+
+  return value.replace(HTML_ENTITY_PATTERN, (_match, entity: string) => {
+    const normalized = entity.toLowerCase();
+    if (normalized in HTML_ENTITY_MAP) {
+      return HTML_ENTITY_MAP[normalized];
+    }
+
+    if (normalized.startsWith("#x")) {
+      const code = Number.parseInt(normalized.slice(2), 16);
+      return Number.isFinite(code) ? String.fromCodePoint(code) : "";
+    }
+
+    if (normalized.startsWith("#")) {
+      const code = Number.parseInt(normalized.slice(1), 10);
+      return Number.isFinite(code) ? String.fromCodePoint(code) : "";
+    }
+
+    return "";
+  });
+}
+
+function getHtmlAttribute(tag: string, attrName: string): string | null {
+  const escapedName = attrName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const doubleQuoteRegex = new RegExp(`${escapedName}\\s*=\\s*\"([^\"]*)\"`, "i");
+  const singleQuoteRegex = new RegExp(`${escapedName}\\s*=\\s*'([^']*)'`, "i");
+
+  const doubleQuoteMatch = tag.match(doubleQuoteRegex);
+  if (doubleQuoteMatch?.[1] != null) {
+    return doubleQuoteMatch[1];
+  }
+
+  const singleQuoteMatch = tag.match(singleQuoteRegex);
+  if (singleQuoteMatch?.[1] != null) {
+    return singleQuoteMatch[1];
+  }
+
+  return null;
+}
+
+function escapeMarkdownImageAlt(value: string): string {
+  return value
+    .replace(/\\/g, "\\\\")
+    .replace(/\]/g, "\\]")
+    .replace(/\r?\n/g, " ");
+}
+
+function escapeMarkdownImageSrc(value: string): string {
+  return value
+    .replace(/\\/g, "\\\\")
+    .replace(/\)/g, "\\)");
+}
+
+function escapeMarkdownImageTitle(value: string): string {
+  return value
+    .replace(/\\/g, "\\\\")
+    .replace(/"/g, '\\"')
+    .replace(/\r?\n/g, " ");
+}
+
+function toMarkdownImageTag(imageTag: string): string {
+  const rawSrc = getHtmlAttribute(imageTag, "src");
+  if (!rawSrc) {
+    return "";
+  }
+
+  const rawAlt = getHtmlAttribute(imageTag, "alt") ?? "";
+  const rawTitle = getHtmlAttribute(imageTag, "title") ?? "";
+
+  const src = escapeMarkdownImageSrc(decodeHtmlEntities(rawSrc).trim());
+  const alt = escapeMarkdownImageAlt(decodeHtmlEntities(rawAlt).trim());
+  const title = escapeMarkdownImageTitle(decodeHtmlEntities(rawTitle).trim());
+
+  if (!src) {
+    return "";
+  }
+
+  return title ? `![${alt}](${src} "${title}")` : `![${alt}](${src})`;
+}
+
+function protectImageSegments(input: string): {
+  content: string;
+  restore: (value: string) => string;
+} {
+  const imageSegments: string[] = [];
+
+  const tokenized = input.replace(HTML_IMAGE_TAG_PATTERN, (imageTag) => {
+    const markdownImage = toMarkdownImageTag(imageTag);
+    if (!markdownImage) {
+      return "";
+    }
+
+    const index = imageSegments.push(markdownImage) - 1;
+    return `${IMAGE_SEGMENT_TOKEN_PREFIX}${index}${IMAGE_SEGMENT_TOKEN_SUFFIX}`;
+  });
+
+  return {
+    content: tokenized,
+    restore: (value: string) =>
+      value.replace(IMAGE_SEGMENT_TOKEN_PATTERN, (_match, rawIndex) => {
+        const index = Number(rawIndex);
+        return Number.isNaN(index) ? "" : (imageSegments[index] ?? "");
+      }),
+  };
+}
 
 function normalizeMultipleChoiceOptions(markdown: string): string {
   const optionRegex = /(?:\(([A-Ea-e])\)|\b([A-Ea-e])\))\s+/g;
@@ -97,6 +221,9 @@ export function markdownToHtml(markdown: string): string {
 
     // Clean input markdown
     const cleanMarkdown = normalizeMultipleChoiceOptions(codeProtected.content)
+      // Remove any leaked internal image placeholder tokens from older buggy serializations.
+      .replace(LEGACY_IMAGE_SEGMENT_TOKEN_PATTERN, "")
+      .replace(FALLBACK_IMAGE_SEGMENT_TOKEN_PATTERN, "")
       // Remove invisible characters that can break markdown parsing (e.g., headings)
       .replace(/[\u200B-\u200D\u2060\uFEFF]/g, "")
       // Ensure markdown headings have a space after #'s so all parsers render them consistently.
@@ -152,9 +279,10 @@ export function htmlToMarkdown(html: string): string {
 
   try {
     const htmlProtected = protectSegments(html, HTML_PRE_BLOCK_PATTERN);
+    const imageProtected = protectImageSegments(htmlProtected.content);
 
     // Pre-process HTML for better conversion
-    const cleanHtml = htmlProtected.content
+    const cleanHtml = imageProtected.content
       // Normalize line endings
       .replace(/\r\n/g, "\n")
       .replace(/\r/g, "\n")
@@ -195,6 +323,11 @@ export function htmlToMarkdown(html: string): string {
       )
       .trim();
     markdown = markdownProtected.restore(markdown);
+    markdown = imageProtected.restore(markdown);
+    markdown = markdown
+      // Safety net: never persist leaked internal image tokens.
+      .replace(LEGACY_IMAGE_SEGMENT_TOKEN_PATTERN, "")
+      .replace(FALLBACK_IMAGE_SEGMENT_TOKEN_PATTERN, "");
 
     return markdown;
   } catch (error) {

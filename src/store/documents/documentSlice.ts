@@ -76,6 +76,8 @@ const initialState: DocumentState = {
 const normalizeDocumentImage = (image: DocumentImage): DocumentImage => ({
   ...image,
   url: image.url ?? null,
+  source:
+    image.source ?? (image.kind === "exercise" ? "exercise_renderer" : "ai_generated"),
   status: image.status ?? (image.url ? "completed" : "pending"),
   contentType: image.contentType ?? null,
   placeholderToken: image.placeholderToken ?? null,
@@ -107,6 +109,7 @@ const upsertDocumentImage = (
     ...normalizedIncoming,
     url: normalizedIncoming.url ?? existing.url ?? null,
     exerciseType: normalizedIncoming.exerciseType ?? existing.exerciseType ?? null,
+    source: normalizedIncoming.source ?? existing.source ?? null,
     contentType: normalizedIncoming.contentType ?? existing.contentType ?? null,
     placeholderToken:
       normalizedIncoming.placeholderToken ?? existing.placeholderToken ?? null,
@@ -560,6 +563,7 @@ const documentSlice = createSlice({
                 url: action.payload.newUrl,
                 alt: action.payload.alt ?? img.alt,
                 status: action.payload.status ?? "completed",
+                source: action.payload.source ?? img.source ?? null,
                 contentType: action.payload.contentType ?? img.contentType ?? null,
                 placeholderToken:
                   action.payload.placeholderToken ?? img.placeholderToken ?? null,

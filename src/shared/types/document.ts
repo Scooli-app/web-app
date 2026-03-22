@@ -63,6 +63,11 @@ export type DocumentImageStatus =
   | "completed"
   | "failed";
 
+export type DocumentImageSource =
+  | "ai_generated"
+  | "exercise_renderer"
+  | "user_upload";
+
 // Matches backend image list/SSE payload shape.
 export interface DocumentImage {
   id: string;
@@ -70,6 +75,7 @@ export interface DocumentImage {
   alt: string;
   kind: DocumentImageKind;
   exerciseType?: string | null;
+  source?: DocumentImageSource | null;
   status?: DocumentImageStatus;
   contentType?: string | null;
   placeholderToken?: string | null;
@@ -83,8 +89,14 @@ export interface RegenerateDocumentImageResponse {
   alt: string;
   status?: DocumentImageStatus;
   contentType?: string | null;
+  source?: DocumentImageSource | null;
   placeholderToken?: string | null;
   errorMessage?: string | null;
+}
+
+export interface UploadDocumentImageResponse {
+  image: DocumentImage;
+  markdown: string;
 }
 
 

@@ -1,13 +1,17 @@
 import { NodeViewWrapper, type NodeViewProps } from "@tiptap/react";
-import { Loader2, RefreshCcw, Trash2 } from "lucide-react";
+import { Loader2, Minus, Plus, RefreshCcw, Trash2 } from "lucide-react";
 import { useAppDispatch, useAppSelector, selectEditorState } from "@/store/hooks";
 import { deleteDocumentImage, regenerateDocumentImage } from "@/store/documents/documentSlice";
 import { selectIsPro } from "@/store/subscription/selectors";
-import { useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { cn } from "@/shared/utils/utils";
 
 const DELETE_UNDO_WINDOW_MS = 6000;
+const MIN_IMAGE_WIDTH_PERCENT = 30;
+const MAX_IMAGE_WIDTH_PERCENT = 100;
+const IMAGE_RESIZE_STEP_PERCENT = 10;
+const STABLE_REF_HYDRATION_TIMEOUT_MS = 5000;
 
 type PendingImageDeletion = {
   timeoutId: ReturnType<typeof setTimeout>;
@@ -16,6 +20,15 @@ type PendingImageDeletion = {
 };
 
 const pendingImageDeletions = new Map<string, PendingImageDeletion>();
+
+function normalizeImageWidth(value: unknown): number {
+  const numeric =
+    typeof value === "number" ? value : Number.parseInt(String(value ?? MAX_IMAGE_WIDTH_PERCENT), 10);
+  if (!Number.isFinite(numeric)) {
+    return MAX_IMAGE_WIDTH_PERCENT;
+  }
+  return Math.max(MIN_IMAGE_WIDTH_PERCENT, Math.min(MAX_IMAGE_WIDTH_PERCENT, Math.round(numeric)));
+}
 
 function hasImageReferenceInDocument(
   editor: NodeViewProps["editor"],
@@ -49,7 +62,7 @@ function hasImageReferenceInDocument(
   return found;
 }
 
-export default function ImageBlockNodeView({ node, deleteNode, editor, getPos }: NodeViewProps) {
+export default function ImageBlockNodeView({ node, deleteNode, editor, getPos, updateAttributes }: NodeViewProps) {
   const dispatch = useAppDispatch();
   const { currentDocument, images, isGeneratingImages } = useAppSelector(selectEditorState);
   const isPremium = useAppSelector(selectIsPro);
@@ -69,14 +82,35 @@ export default function ImageBlockNodeView({ node, deleteNode, editor, getPos }:
       img.id === stableImageId ||
       (!!placeholderToken && img.placeholderToken === placeholderToken)
   );
+  const [allowMissingState, setAllowMissingState] = useState(false);
+
+  useEffect(() => {
+    if (!isStableRef || isPlaceholder || generatedImage) {
+      setAllowMissingState(true);
+      return;
+    }
+
+    setAllowMissingState(false);
+    const timeoutId = setTimeout(() => {
+      setAllowMissingState(true);
+    }, STABLE_REF_HYDRATION_TIMEOUT_MS);
+
+    return () => clearTimeout(timeoutId);
+  }, [generatedImage, isPlaceholder, isStableRef, stableImageId]);
+
   const imageId = generatedImage?.id ?? stableImageId;
   const finalSrc = generatedImage?.url ?? (isPlaceholder || isStableRef ? null : src);
   const shouldWaitForHydration =
-    isStableRef && !generatedImage && Boolean(isGeneratingImages);
+    isStableRef && !generatedImage && (!allowMissingState || Boolean(isGeneratingImages));
   const status = generatedImage?.status
     ?? (isPlaceholder ? "pending" : isStableRef ? (shouldWaitForHydration ? "pending" : "missing") : "completed");
   const showActions = Boolean(imageId);
   const isCurrentImageGenerating = status === "generating" || status === "pending";
+  const imageSource = generatedImage?.source
+    ?? (generatedImage?.kind === "exercise" ? "exercise_renderer" : null);
+  const isUserUploadedImage = imageSource === "user_upload";
+  const canRegenerate = Boolean(isPremium && imageId && !isUserUploadedImage);
+  const imageWidth = normalizeImageWidth(node.attrs.width);
 
   const handleDelete = useCallback(async () => {
     if (!currentDocument || !imageId) {
@@ -154,6 +188,10 @@ export default function ImageBlockNodeView({ node, deleteNode, editor, getPos }:
   }, [currentDocument, imageId, node, getPos, editor, placeholderToken, deleteNode, dispatch]);
 
   const handleRegenerate = useCallback(async () => {
+    if (isUserUploadedImage) {
+      toast.error("Imagens carregadas pelo utilizador não suportam regeneração.");
+      return;
+    }
     if (!isPremium) {
       toast.error("A geracao de imagens esta disponivel apenas no plano Pro");
       return;
@@ -166,7 +204,21 @@ export default function ImageBlockNodeView({ node, deleteNode, editor, getPos }:
     } catch {
       toast.error("Erro ao regenerar a imagem");
     }
-  }, [currentDocument, imageId, dispatch, isCurrentImageGenerating, isPremium]);
+  }, [currentDocument, imageId, dispatch, isCurrentImageGenerating, isPremium, isUserUploadedImage]);
+
+  const handleResize = useCallback(
+    (delta: number) => {
+      const nextWidth = Math.max(
+        MIN_IMAGE_WIDTH_PERCENT,
+        Math.min(MAX_IMAGE_WIDTH_PERCENT, imageWidth + delta),
+      );
+      if (nextWidth === imageWidth) {
+        return;
+      }
+      updateAttributes({ width: nextWidth });
+    },
+    [imageWidth, updateAttributes],
+  );
 
   if (!isPremium && isPlaceholder) {
     return <NodeViewWrapper className="hidden" />;
@@ -182,7 +234,7 @@ export default function ImageBlockNodeView({ node, deleteNode, editor, getPos }:
             <p className="mb-4 max-w-xl text-center text-sm text-destructive/90">{failureMessage}</p>
           )}
           <div className="flex gap-3">
-            {isPremium && (
+            {canRegenerate && (
               <button
                 onClick={handleRegenerate}
                 className="flex items-center gap-2 rounded-md border border-border bg-background px-4 py-2 text-sm shadow-sm transition-colors hover:bg-muted"
@@ -213,7 +265,7 @@ export default function ImageBlockNodeView({ node, deleteNode, editor, getPos }:
             Esta imagem foi removida ou ainda não está sincronizada.
           </p>
           <div className="flex gap-3">
-            {isPremium && (
+            {canRegenerate && (
               <button
                 onClick={handleRegenerate}
                 className="flex items-center gap-2 rounded-md border border-border bg-background px-4 py-2 text-sm shadow-sm transition-colors hover:bg-muted"
@@ -241,7 +293,7 @@ export default function ImageBlockNodeView({ node, deleteNode, editor, getPos }:
         <div className="relative flex min-h-[260px] w-full flex-col items-center justify-center rounded-xl border border-border/70 bg-gradient-to-b from-muted/40 to-muted/10 px-6 py-10 shadow-sm sm:min-h-[320px]">
           {showActions && (
             <div className="absolute right-3 top-3 z-10 flex items-center gap-2 rounded-lg border border-border bg-background/95 p-1.5 shadow-sm">
-              {isPremium && (
+              {canRegenerate && (
                 <button
                   onClick={handleRegenerate}
                   disabled
@@ -280,6 +332,12 @@ export default function ImageBlockNodeView({ node, deleteNode, editor, getPos }:
       className={cn(
         "group my-6 relative overflow-hidden rounded-xl border border-border/70 bg-card shadow-sm transition-colors duration-200"
       )}
+      style={{
+        width: `${imageWidth}%`,
+        maxWidth: "100%",
+        marginLeft: "auto",
+        marginRight: "auto",
+      }}
       data-drag-handle
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -291,7 +349,25 @@ export default function ImageBlockNodeView({ node, deleteNode, editor, getPos }:
 
       {showActions && (
         <div className="absolute right-3 top-3 z-10 flex items-center gap-2 rounded-lg border border-border bg-background/95 p-1.5 shadow-md opacity-100 transition-opacity duration-200 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
-          {isPremium && (
+          <button
+            onClick={() => handleResize(-IMAGE_RESIZE_STEP_PERCENT)}
+            disabled={imageWidth <= MIN_IMAGE_WIDTH_PERCENT}
+            className="rounded-md border border-border bg-background p-2 text-foreground transition-colors hover:bg-muted disabled:opacity-50"
+            title="Diminuir imagem"
+            type="button"
+          >
+            <Minus className="h-4 w-4" />
+          </button>
+          <button
+            onClick={() => handleResize(IMAGE_RESIZE_STEP_PERCENT)}
+            disabled={imageWidth >= MAX_IMAGE_WIDTH_PERCENT}
+            className="rounded-md border border-border bg-background p-2 text-foreground transition-colors hover:bg-muted disabled:opacity-50"
+            title="Aumentar imagem"
+            type="button"
+          >
+            <Plus className="h-4 w-4" />
+          </button>
+          {canRegenerate && (
             <button
               onClick={handleRegenerate}
               disabled={isCurrentImageGenerating}

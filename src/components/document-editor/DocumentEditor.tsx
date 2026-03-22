@@ -1,6 +1,7 @@
 "use client";
 
 import { useDocumentManager } from "@/hooks/useDocumentManager";
+import { uploadDocumentImage } from "@/services/api/document-images.service";
 import { streamDocumentContent } from "@/services/api/document.service";
 import { AUTO_SAVE_DELAY } from "@/shared/config/constants";
 import { Routes } from "@/shared/types";
@@ -37,6 +38,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import posthog from "posthog-js";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { DiffToolbar } from "../editor/DiffToolbar";
 import { computeDiff, markdownToNode } from "../editor/utils/diffEngine";
 import RichTextEditor from "../ui/rich-text-editor";
@@ -59,6 +61,48 @@ interface DocumentEditorProps {
   generateMessage?: string;
   chatTitle?: string;
   chatPlaceholder?: string;
+}
+
+const LEAKED_IMAGE_SEGMENT_TOKEN_PATTERN = /@@CODEX\\?_IMAGE\\?_SEGMENT\\?_\d+@@|CODEXIMAGESEGMENT\d+TOKEN/g;
+const STABLE_DOCUMENT_IMAGE_TOKEN_PATTERN = /\{\{DOCUMENT_IMAGE:([0-9a-fA-F-]+)\}\}/g;
+
+function containsLeakedImageSegmentTokens(content: string): boolean {
+  return /@@CODEX\\?_IMAGE\\?_SEGMENT\\?_\d+@@|CODEXIMAGESEGMENT\d+TOKEN/i.test(content);
+}
+
+function repairLeakedImageSegmentTokens(
+  content: string,
+  images: Array<{ id: string; alt: string }>,
+): string {
+  if (!content || !images.length || !containsLeakedImageSegmentTokens(content)) {
+    return content;
+  }
+
+  const alreadyReferencedImageIds = new Set<string>();
+  for (const match of content.matchAll(STABLE_DOCUMENT_IMAGE_TOKEN_PATTERN)) {
+    if (match[1]) {
+      alreadyReferencedImageIds.add(match[1]);
+    }
+  }
+
+  const availableImages = images.filter(
+    (image) => image?.id && !alreadyReferencedImageIds.has(image.id),
+  );
+
+  if (availableImages.length === 0) {
+    return content.replace(LEAKED_IMAGE_SEGMENT_TOKEN_PATTERN, "");
+  }
+
+  let replacementIndex = 0;
+  return content.replace(LEAKED_IMAGE_SEGMENT_TOKEN_PATTERN, () => {
+    const image = availableImages[replacementIndex];
+    replacementIndex += 1;
+    if (!image) {
+      return "";
+    }
+    const safeAlt = (image.alt || "Imagem").replace(/\]/g, "\\]");
+    return `![${safeAlt}]({{DOCUMENT_IMAGE:${image.id}}})`;
+  });
 }
 
 export default function DocumentEditor({
@@ -100,6 +144,7 @@ export default function DocumentEditor({
   const [documentTitle, setDocumentTitle] = useState("");
   const [showUpdateIndicator, setShowUpdateIndicator] = useState(false);
   const [sources, setSources] = useState<RagSource[]>([]);
+  const [isImageUploading, setIsImageUploading] = useState(false);
 
   const eventSourceRef = useRef<(() => void) | null>(null);
   const rawStreamRef = useRef("");
@@ -109,6 +154,7 @@ export default function DocumentEditor({
   const isChatInProgressRef = useRef(false);
   const pendingVisualCountRef = useRef(0);
   const completedVisualCountRef = useRef(0);
+  const hasAttemptedLeakedTokenRepairRef = useRef(false);
   const completionFallbackTimeoutRef = useRef<ReturnType<
     typeof setTimeout
   > | null>(null);
@@ -131,6 +177,7 @@ export default function DocumentEditor({
     setDocumentTitle("");
     setShowUpdateIndicator(false);
     setIsSuggestionsMode(false);
+    hasAttemptedLeakedTokenRepairRef.current = false;
     rawStreamRef.current = "";
     latestDisplayContentRef.current = "";
     accumulatedTitleRef.current = "";
@@ -195,6 +242,92 @@ export default function DocumentEditor({
       completionFallbackTimeoutRef.current = null;
     }
   };
+
+  const escapeHtmlAttribute = (value: string): string =>
+    value
+      .replace(/&/g, "&amp;")
+      .replace(/"/g, "&quot;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+
+  const handleToolbarImageUpload = useCallback(
+    async (file: File) => {
+      if (!currentDocument?.id || currentDocument.id !== documentId) {
+        toast.error("Documento indisponível para upload de imagem.");
+        return;
+      }
+
+      const currentlyGenerating =
+        isStreaming ||
+        (streamInfo?.id === documentId && streamInfo?.status === "generating");
+
+      if (currentlyGenerating || isImageUploading) {
+        return;
+      }
+
+      if (!file.type.startsWith("image/")) {
+        toast.error("Selecione um ficheiro de imagem válido.");
+        return;
+      }
+
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error("A imagem excede o limite de 10MB.");
+        return;
+      }
+
+      setIsImageUploading(true);
+      try {
+        const result = await uploadDocumentImage(currentDocument.id, file);
+        dispatch(upsertImage(result.image));
+
+        const stableToken = result.markdown.match(/\{\{DOCUMENT_IMAGE:[^}]+\}\}/)?.[0]
+          ?? `{{DOCUMENT_IMAGE:${result.image.id}}}`;
+        const altText = escapeHtmlAttribute(result.image.alt || file.name);
+
+        if (editorRef.current) {
+          editorRef.current
+            .chain()
+            .focus()
+            .insertContent(`<img src="${stableToken}" alt="${altText}" />`)
+            .run();
+        } else {
+          const fallbackMarkdown = result.markdown || `![${result.image.alt || "Imagem"}](${stableToken})`;
+          const nextContent = content ? `${content}\n\n${fallbackMarkdown}` : fallbackMarkdown;
+          setContent(nextContent);
+          handleAutosave(nextContent);
+        }
+
+        dispatch(fetchDocumentImages(currentDocument.id));
+        toast.success("Imagem adicionada ao documento.");
+      } catch (error: unknown) {
+        const apiMessage =
+          typeof error === "object" && error !== null
+            ? (
+                (error as { response?: { data?: { error?: string; message?: string } } })
+                  .response?.data?.error ||
+                (error as { response?: { data?: { error?: string; message?: string } } })
+                  .response?.data?.message
+              )
+            : null;
+        const fallbackMessage = error instanceof Error ? error.message : "Não foi possível carregar a imagem.";
+        toast.error(apiMessage || fallbackMessage);
+      } finally {
+        setIsImageUploading(false);
+      }
+    },
+    [
+      content,
+      currentDocument?.id,
+      dispatch,
+      documentId,
+      handleAutosave,
+      isStreaming,
+      isImageUploading,
+      streamInfo?.id,
+      streamInfo?.status,
+      setContent,
+    ]
+  );
 
   // Connect to SSE stream when we have stream info for this document
   useEffect(() => {
@@ -642,6 +775,31 @@ export default function DocumentEditor({
     }
   }, [dispatch, currentDocument?.id, documentId]);
 
+  // Recover from older leaked internal image tokens by remapping them to stable refs.
+  useEffect(() => {
+    if (hasAttemptedLeakedTokenRepairRef.current) {
+      return;
+    }
+    if (!content || !images || images.length === 0) {
+      return;
+    }
+    if (!containsLeakedImageSegmentTokens(content)) {
+      hasAttemptedLeakedTokenRepairRef.current = true;
+      return;
+    }
+
+    const repaired = repairLeakedImageSegmentTokens(content, images);
+    hasAttemptedLeakedTokenRepairRef.current = true;
+
+    if (repaired === content) {
+      return;
+    }
+
+    setContent(repaired);
+    handleAutosave(repaired);
+    toast.warning("Detetámos e corrigimos referências internas de imagem no documento.");
+  }, [content, images, handleAutosave, setContent]);
+
   const handleChatSubmit = useCallback(
     async (userMessage: string) => {
       if (!currentDocument?.id || currentDocument.id !== documentId) {
@@ -870,6 +1028,8 @@ export default function DocumentEditor({
                   onAutosave={handleAutosave}
                   className="min-h-[55dvh] max-w-full sm:min-h-[600px]"
                   onEditorReady={handleEditorReady}
+                  onImageUpload={handleToolbarImageUpload}
+                  isImageUploading={isImageUploading}
                   rightHeaderContent={
                     <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
                       {showUpdateIndicator && (

@@ -12,7 +12,8 @@ import {
   type Editor,
 } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { memo, useCallback, useEffect, useRef } from "react";
+import { ImagePlus, Loader2 } from "lucide-react";
+import { memo, useCallback, useEffect, useRef, type ChangeEvent } from "react";
 
 interface TipTapEditorCoreProps {
   content: string;
@@ -21,15 +22,21 @@ interface TipTapEditorCoreProps {
   onAutosave?: (markdown: string) => void;
   rightHeaderContent?: React.ReactNode;
   onEditorReady?: (editor: Editor) => void;
+  onImageUpload?: (file: File) => Promise<void> | void;
+  isImageUploading?: boolean;
 }
 
 // Memoized MenuBar component
 const MenuBar = memo(function MenuBar({ 
   editor, 
-  rightHeaderContent 
+  rightHeaderContent,
+  onUploadImage,
+  isImageUploading = false,
 }: { 
   editor: Editor;
   rightHeaderContent?: React.ReactNode;
+  onUploadImage?: () => void;
+  isImageUploading?: boolean;
 }) {
   const editorState = useEditorState({
     editor,
@@ -59,6 +66,9 @@ const MenuBar = memo(function MenuBar({
   const handleHighlight = useCallback(() => editor.chain().focus().toggleHighlight().run(), [editor]);
   const handleBlockquote = useCallback(() => editor.chain().focus().toggleBlockquote().run(), [editor]);
   const handleCodeBlock = useCallback(() => editor.chain().focus().toggleCodeBlock().run(), [editor]);
+  const handleUploadImage = useCallback(() => {
+    onUploadImage?.();
+  }, [onUploadImage]);
 
   return (
     <div className="sticky top-0 z-10 flex w-full items-center gap-2 overflow-hidden rounded-t-xl border-b border-border bg-card p-2">
@@ -174,6 +184,26 @@ const MenuBar = memo(function MenuBar({
       >
         {"<>"}
       </button>
+
+      {onUploadImage && (
+        <button
+          onClick={handleUploadImage}
+          disabled={isImageUploading}
+          className={`p-2 rounded hover:bg-accent transition-colors ${
+            isImageUploading
+              ? "text-muted-foreground opacity-70"
+              : "text-foreground"
+          }`}
+          title={isImageUploading ? "A carregar imagem..." : "Carregar imagem"}
+          type="button"
+        >
+          {isImageUploading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <ImagePlus className="h-4 w-4" />
+          )}
+        </button>
+      )}
       </div>
       {rightHeaderContent && (
         <div className="flex shrink-0 items-center gap-2 pl-1 sm:pl-2">
@@ -191,8 +221,11 @@ export function TipTapEditorCore({
   onAutosave,
   rightHeaderContent,
   onEditorReady,
+  onImageUpload,
+  isImageUploading = false,
 }: TipTapEditorCoreProps) {
   const autosaveTimer = useRef<NodeJS.Timeout | null>(null);
+  const imageInputRef = useRef<HTMLInputElement | null>(null);
   // Track if the last change came from the editor (internal) vs props (external)
   const isInternalChangeRef = useRef(false);
   // Track the last content we set from props to avoid circular updates
@@ -226,6 +259,25 @@ export function TipTapEditorCore({
     onUpdate: handleUpdate,
     immediatelyRender: false,
   });
+
+  const handleToolbarUploadClick = useCallback(() => {
+    if (!onImageUpload || isImageUploading) {
+      return;
+    }
+    imageInputRef.current?.click();
+  }, [onImageUpload, isImageUploading]);
+
+  const handleImageFileChange = useCallback(
+    async (event: ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      event.target.value = "";
+      if (!file || !onImageUpload) {
+        return;
+      }
+      await onImageUpload(file);
+    },
+    [onImageUpload]
+  );
 
   // Expose editor instance to parent component
   useEffect(() => {
@@ -306,7 +358,19 @@ export function TipTapEditorCore({
 
   return (
     <div className="w-full rounded-xl border border-border bg-card">
-      <MenuBar editor={editor} rightHeaderContent={rightHeaderContent} />
+      <MenuBar
+        editor={editor}
+        rightHeaderContent={rightHeaderContent}
+        onUploadImage={onImageUpload ? handleToolbarUploadClick : undefined}
+        isImageUploading={isImageUploading}
+      />
+      <input
+        ref={imageInputRef}
+        type="file"
+        accept="image/png,image/jpeg,image/gif,image/webp"
+        className="hidden"
+        onChange={handleImageFileChange}
+      />
       <div className="p-2 sm:p-4">
         <EditorContent editor={editor} />
       </div>
