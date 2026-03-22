@@ -4,42 +4,61 @@ import {
   BorderStyle,
   Document,
   HeadingLevel,
+  ImageRun,
   Packer,
   Paragraph,
   TextRun,
 } from "docx";
 import { type NextRequest, NextResponse } from "next/server";
-import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
+import { PDFDocument, type PDFFont, rgb, StandardFonts } from "pdf-lib";
+
+export const runtime = "nodejs";
 
 type DownloadFormat = "pdf" | "docx";
+
+interface DownloadImagePayload {
+  id: string;
+  url?: string | null;
+  alt?: string;
+  status?: string;
+  contentType?: string | null;
+}
 
 interface DownloadRequestBody {
   title: string;
   content: string;
   format: DownloadFormat;
+  images?: DownloadImagePayload[];
 }
 
-/**
- * Normalize markdown/html artifacts before export rendering.
- * This avoids leaking raw markdown control syntax into PDF/DOCX output.
- */
-function normalizeExportContent(content: string): string {
-  return content
-    .replace(/\r\n/g, "\n")
-    .replace(/\r/g, "\n")
-    // Convert explicit HTML breaks to real line breaks
-    .replace(/<br\s*\/?>/gi, "\n")
-    // Remove HTML comments often emitted as markdown separators
-    .replace(/<!--[\s\S]*?-->/g, "")
-    // Remove markdown horizontal rules as standalone lines
-    .replace(/^[ \t]*(-{3,}|\*{3,}|_{3,})[ \t]*$/gm, "")
-    // Unescape common markdown-escaped punctuation (e.g., 5\.º, \_)
-    .replace(/\\([\\`*_{}\[\]()#+\-.!|>~])/g, "$1")
-    // Keep spacing tidy after cleanup
-    .replace(/[ \t]+\n/g, "\n")
-    .replace(/\n{3,}/g, "\n\n")
-    .trim();
+type TextBlockType =
+  | "title"
+  | "h1"
+  | "h2"
+  | "h3"
+  | "paragraph"
+  | "bullet"
+  | "numbered"
+  | "quote"
+  | "code"
+  | "empty";
+
+type ExportBlock =
+  | { type: TextBlockType; text: string }
+  | { type: "image"; alt: string; source: string };
+
+interface ResolvedImage {
+  alt: string;
+  bytes?: Buffer;
+  contentType?: string | null;
+  width: number;
+  height: number;
+  error?: string;
 }
+
+const DOCUMENT_IMAGE_TOKEN_PATTERN = /^\{\{DOCUMENT_IMAGE:([^}]+)\}\}$/;
+const MARKDOWN_IMAGE_LINE_PATTERN = /^!\[(.*?)\]\((.+?)\)$/;
+const DATA_URI_PATTERN = /^data:([^;]+);base64,(.+)$/;
 
 function toArrayBuffer(bytes: Uint8Array): ArrayBuffer {
   const copy = new Uint8Array(bytes.byteLength);
@@ -69,9 +88,306 @@ async function captureDownloadEvent(
   }
 }
 
-/**
- * Parse inline markdown formatting (bold, italic, code)
- */
+function normalizeContentType(contentType?: string | null): string | null {
+  if (!contentType) {
+    return null;
+  }
+  const normalized = contentType.split(";")[0].trim().toLowerCase();
+  if (normalized === "image/jpg") {
+    return "image/jpeg";
+  }
+  return normalized;
+}
+
+function detectImageContentType(bytes: Buffer): string | null {
+  if (
+    bytes.length >= 8 &&
+    bytes[0] === 0x89 &&
+    bytes[1] === 0x50 &&
+    bytes[2] === 0x4e &&
+    bytes[3] === 0x47
+  ) {
+    return "image/png";
+  }
+  if (bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) {
+    return "image/jpeg";
+  }
+  return null;
+}
+
+function getImageDimensions(
+  bytes: Buffer,
+  contentType?: string | null,
+): { width: number; height: number } | null {
+  const normalizedContentType = normalizeContentType(contentType) ?? detectImageContentType(bytes);
+
+  if (normalizedContentType === "image/png" && bytes.length >= 24) {
+    return {
+      width: bytes.readUInt32BE(16),
+      height: bytes.readUInt32BE(20),
+    };
+  }
+
+  if (normalizedContentType === "image/jpeg") {
+    let offset = 2;
+    while (offset + 9 < bytes.length) {
+      if (bytes[offset] !== 0xff) {
+        offset += 1;
+        continue;
+      }
+
+      const marker = bytes[offset + 1];
+      offset += 2;
+
+      if (marker === 0xd8 || marker === 0x01) {
+        continue;
+      }
+      if (marker === 0xd9 || marker === 0xda) {
+        break;
+      }
+      if (offset + 1 >= bytes.length) {
+        break;
+      }
+
+      const segmentLength = bytes.readUInt16BE(offset);
+      if (segmentLength < 2 || offset + segmentLength > bytes.length) {
+        break;
+      }
+
+      if (
+        [
+          0xc0, 0xc1, 0xc2, 0xc3,
+          0xc5, 0xc6, 0xc7,
+          0xc9, 0xca, 0xcb,
+          0xcd, 0xce, 0xcf,
+        ].includes(marker)
+      ) {
+        return {
+          height: bytes.readUInt16BE(offset + 3),
+          width: bytes.readUInt16BE(offset + 5),
+        };
+      }
+
+      offset += segmentLength;
+    }
+  }
+
+  return null;
+}
+
+function scaleDimensions(
+  width: number,
+  height: number,
+  maxWidth: number,
+  maxHeight: number,
+): { width: number; height: number } {
+  if (width <= 0 || height <= 0) {
+    return { width: maxWidth, height: Math.min(maxHeight, maxWidth) };
+  }
+
+  const ratio = Math.min(maxWidth / width, maxHeight / height, 1);
+  return {
+    width: Math.max(1, Math.round(width * ratio)),
+    height: Math.max(1, Math.round(height * ratio)),
+  };
+}
+
+function stripInlineMarkdown(text: string): string {
+  return text
+    .replace(/\*\*(.+?)\*\*/g, "$1")
+    .replace(/\*(.+?)\*/g, "$1")
+    .replace(/_(.+?)_/g, "$1")
+    .replace(/`(.+?)`/g, "$1")
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1");
+}
+
+function parseMarkdownToBlocks(content: string): ExportBlock[] {
+  const blocks: ExportBlock[] = [];
+  const lines = content.split("\n");
+  let inCodeBlock = false;
+  let codeBlockContent: string[] = [];
+  let isFirstH1 = true;
+
+  for (const line of lines) {
+    if (line.startsWith("```")) {
+      if (inCodeBlock) {
+        blocks.push({ type: "code", text: codeBlockContent.join("\n") });
+        codeBlockContent = [];
+      }
+      inCodeBlock = !inCodeBlock;
+      continue;
+    }
+
+    if (inCodeBlock) {
+      codeBlockContent.push(line);
+      continue;
+    }
+
+    const trimmed = line.trim();
+    const imageMatch = trimmed.match(MARKDOWN_IMAGE_LINE_PATTERN);
+    if (imageMatch) {
+      blocks.push({
+        type: "image",
+        alt: imageMatch[1],
+        source: imageMatch[2].trim(),
+      });
+      continue;
+    }
+
+    if (line.startsWith("# ")) {
+      blocks.push({
+        type: isFirstH1 ? "title" : "h1",
+        text: line.substring(2),
+      });
+      isFirstH1 = false;
+      continue;
+    }
+
+    if (line.startsWith("## ")) {
+      blocks.push({ type: "h2", text: line.substring(3) });
+      continue;
+    }
+
+    if (line.startsWith("### ")) {
+      blocks.push({ type: "h3", text: line.substring(4) });
+      continue;
+    }
+
+    if (line.match(/^[\*\-]\s/)) {
+      blocks.push({ type: "bullet", text: line });
+      continue;
+    }
+
+    if (line.match(/^\d+\.\s/)) {
+      blocks.push({ type: "numbered", text: line });
+      continue;
+    }
+
+    if (line.startsWith("> ")) {
+      blocks.push({ type: "quote", text: line.substring(2) });
+      continue;
+    }
+
+    if (line.trim() === "") {
+      blocks.push({ type: "empty", text: "" });
+      continue;
+    }
+
+    blocks.push({ type: "paragraph", text: line });
+  }
+
+  if (codeBlockContent.length > 0) {
+    blocks.push({ type: "code", text: codeBlockContent.join("\n") });
+  }
+
+  return blocks;
+}
+
+function buildImageLookup(images?: DownloadImagePayload[]): Map<string, DownloadImagePayload> {
+  const imageLookup = new Map<string, DownloadImagePayload>();
+  for (const image of images ?? []) {
+    imageLookup.set(image.id, image);
+  }
+  return imageLookup;
+}
+
+async function resolveImageBlock(
+  block: Extract<ExportBlock, { type: "image" }>,
+  imageLookup: Map<string, DownloadImagePayload>,
+): Promise<ResolvedImage> {
+  let source = block.source;
+  let contentType: string | null = null;
+
+  const stableImageMatch = source.match(DOCUMENT_IMAGE_TOKEN_PATTERN);
+  if (stableImageMatch) {
+    const image = imageLookup.get(stableImageMatch[1]);
+    if (!image?.url) {
+      return {
+        alt: block.alt,
+        width: 1200,
+        height: 900,
+        error: "Image URL unavailable",
+      };
+    }
+    source = image.url;
+    contentType = normalizeContentType(image.contentType);
+  }
+
+  const dataUriMatch = source.match(DATA_URI_PATTERN);
+  if (dataUriMatch) {
+    const bytes = Buffer.from(dataUriMatch[2], "base64");
+    const resolvedContentType = normalizeContentType(dataUriMatch[1]) ?? detectImageContentType(bytes);
+    const dimensions = getImageDimensions(bytes, resolvedContentType) ?? {
+      width: 1200,
+      height: 900,
+    };
+    return {
+      alt: block.alt,
+      bytes,
+      contentType: resolvedContentType,
+      width: dimensions.width,
+      height: dimensions.height,
+    };
+  }
+
+  if (!/^https?:\/\//i.test(source)) {
+    return {
+      alt: block.alt,
+      width: 1200,
+      height: 900,
+      error: "Unsupported image source",
+    };
+  }
+
+  try {
+    const response = await fetch(source, { cache: "no-store" });
+    if (!response.ok) {
+      return {
+        alt: block.alt,
+        width: 1200,
+        height: 900,
+        error: `Image request failed (${response.status})`,
+      };
+    }
+
+    const bytes = Buffer.from(await response.arrayBuffer());
+    const resolvedContentType =
+      normalizeContentType(response.headers.get("content-type")) ??
+      contentType ??
+      detectImageContentType(bytes);
+
+    if (!resolvedContentType || !["image/png", "image/jpeg"].includes(resolvedContentType)) {
+      return {
+        alt: block.alt,
+        width: 1200,
+        height: 900,
+        error: "Unsupported image format",
+      };
+    }
+
+    const dimensions = getImageDimensions(bytes, resolvedContentType) ?? {
+      width: 1200,
+      height: 900,
+    };
+
+    return {
+      alt: block.alt,
+      bytes,
+      contentType: resolvedContentType,
+      width: dimensions.width,
+      height: dimensions.height,
+    };
+  } catch (error) {
+    console.error("Failed to fetch image for export:", error);
+    return {
+      alt: block.alt,
+      width: 1200,
+      height: 900,
+      error: "Image fetch failed",
+    };
+  }
+}
+
 function parseInlineFormatting(
   text: string,
   baseSize: number = 22,
@@ -109,7 +425,8 @@ function parseInlineFormatting(
     if (nextSpecial === -1) {
       runs.push(new TextRun({ text: remaining, size: baseSize }));
       break;
-    } else if (nextSpecial > 0) {
+    }
+    if (nextSpecial > 0) {
       runs.push(
         new TextRun({
           text: remaining.substring(0, nextSpecial),
@@ -117,89 +434,137 @@ function parseInlineFormatting(
         }),
       );
       remaining = remaining.substring(nextSpecial);
-    } else {
-      runs.push(new TextRun({ text: remaining[0], size: baseSize }));
-      remaining = remaining.substring(1);
+      continue;
     }
+
+    runs.push(new TextRun({ text: remaining[0], size: baseSize }));
+    remaining = remaining.substring(1);
   }
 
   return runs.length > 0 ? runs : [new TextRun({ text, size: baseSize })];
 }
 
-/**
- * Generate DOCX buffer from markdown content
- */
-async function generateDocx(content: string): Promise<Buffer> {
-  const lines = normalizeExportContent(content).split("\n");
+async function generateDocx(
+  content: string,
+  images?: DownloadImagePayload[],
+): Promise<Buffer> {
+  const blocks = parseMarkdownToBlocks(content);
+  const imageLookup = buildImageLookup(images);
   const children: InstanceType<typeof Paragraph>[] = [];
 
-  let inCodeBlock = false;
-  let codeBlockContent: string[] = [];
-  let isFirstH1 = true;
+  let isFirstTitle = true;
 
-  for (const line of lines) {
-    if (line.startsWith("```")) {
-      if (inCodeBlock) {
+  for (const block of blocks) {
+    if (block.type === "image") {
+      const resolvedImage = await resolveImageBlock(block, imageLookup);
+      if (resolvedImage.bytes && resolvedImage.contentType) {
+        const size = scaleDimensions(
+          resolvedImage.width,
+          resolvedImage.height,
+          520,
+          360,
+        );
         children.push(
           new Paragraph({
             children: [
-              new TextRun({
-                text: codeBlockContent.join("\n"),
-                font: "Courier New",
-                size: 20,
+              new ImageRun({
+                data: resolvedImage.bytes,
+                type: resolvedImage.contentType === "image/png" ? "png" : "jpg",
+                transformation: size,
               }),
             ],
-            shading: { fill: "F4F5F8" },
-            spacing: { before: 200, after: 200 },
+            alignment: AlignmentType.CENTER,
+            spacing: { before: 220, after: 120 },
           }),
         );
-        codeBlockContent = [];
-      }
-      inCodeBlock = !inCodeBlock;
-      continue;
-    }
-
-    if (inCodeBlock) {
-      codeBlockContent.push(line);
-      continue;
-    }
-
-    if (line.startsWith("# ")) {
-      if (isFirstH1) {
-        children.push(
-          new Paragraph({
-            children: [
-              new TextRun({
-                text: line.substring(2),
-                bold: true,
-                size: 48,
-                color: "0B0D17",
-              }),
-            ],
-            heading: HeadingLevel.TITLE,
-            spacing: { after: 120 },
-          }),
-        );
-        children.push(
-          new Paragraph({
-            border: {
-              bottom: {
-                color: "6753FF",
-                size: 24,
-                style: BorderStyle.SINGLE,
-                space: 1,
-              },
-            },
-            spacing: { after: 400 },
-          }),
-        );
-        isFirstH1 = false;
+        if (block.alt) {
+          children.push(
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: block.alt,
+                  italics: true,
+                  size: 18,
+                  color: "6C6F80",
+                }),
+              ],
+              alignment: AlignmentType.CENTER,
+              spacing: { after: 220 },
+            }),
+          );
+        }
       } else {
         children.push(
           new Paragraph({
             children: [
               new TextRun({
-                text: line.substring(2),
+                text: `[Imagem: ${block.alt || "Ilustracao"}]`,
+                italics: true,
+                size: 20,
+                color: "6C6F80",
+              }),
+            ],
+            spacing: { before: 200, after: 200 },
+          }),
+        );
+      }
+      continue;
+    }
+
+    switch (block.type) {
+      case "title":
+        if (isFirstTitle) {
+          children.push(
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: stripInlineMarkdown(block.text),
+                  bold: true,
+                  size: 48,
+                  color: "0B0D17",
+                }),
+              ],
+              heading: HeadingLevel.TITLE,
+              spacing: { after: 120 },
+            }),
+          );
+          children.push(
+            new Paragraph({
+              border: {
+                bottom: {
+                  color: "6753FF",
+                  size: 24,
+                  style: BorderStyle.SINGLE,
+                  space: 1,
+                },
+              },
+              spacing: { after: 400 },
+            }),
+          );
+          isFirstTitle = false;
+        } else {
+          children.push(
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: stripInlineMarkdown(block.text),
+                  bold: true,
+                  size: 36,
+                  color: "0B0D17",
+                }),
+              ],
+              heading: HeadingLevel.HEADING_1,
+              spacing: { before: 400, after: 200 },
+            }),
+          );
+        }
+        break;
+      case "h1":
+        children.push(
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: stripInlineMarkdown(block.text),
                 bold: true,
                 size: 36,
                 color: "0B0D17",
@@ -209,110 +574,116 @@ async function generateDocx(content: string): Promise<Buffer> {
             spacing: { before: 400, after: 200 },
           }),
         );
-      }
-      continue;
-    }
-
-    if (line.startsWith("## ")) {
-      children.push(
-        new Paragraph({
-          children: [
-            new TextRun({
-              text: line.substring(3),
-              bold: true,
-              size: 28,
-              color: "0B0D17",
-            }),
-          ],
-          heading: HeadingLevel.HEADING_2,
-          spacing: { before: 300, after: 150 },
-        }),
-      );
-      continue;
-    }
-
-    if (line.startsWith("### ")) {
-      children.push(
-        new Paragraph({
-          children: [
-            new TextRun({
-              text: line.substring(4),
-              bold: true,
-              size: 24,
-              color: "2E2F38",
-            }),
-          ],
-          heading: HeadingLevel.HEADING_3,
-          spacing: { before: 200, after: 100 },
-        }),
-      );
-      continue;
-    }
-
-    if (line.match(/^[\*\-]\s/)) {
-      const text = line.replace(/^[\*\-]\s/, "");
-      children.push(
-        new Paragraph({
-          children: parseInlineFormatting(text, 22),
-          bullet: { level: 0 },
-          spacing: { after: 80 },
-        }),
-      );
-      continue;
-    }
-
-    if (line.match(/^\d+\.\s/)) {
-      const text = line.replace(/^\d+\.\s/, "");
-      children.push(
-        new Paragraph({
-          children: parseInlineFormatting(text, 22),
-          numbering: { reference: "default-numbering", level: 0 },
-          spacing: { after: 80 },
-        }),
-      );
-      continue;
-    }
-
-    if (line.startsWith("> ")) {
-      children.push(
-        new Paragraph({
-          children: [
-            new TextRun({
-              text: line.substring(2),
-              italics: true,
-              size: 22,
-              color: "6C6F80",
-            }),
-          ],
-          indent: { left: 720 },
-          border: {
-            left: {
-              color: "6753FF",
-              size: 18,
-              style: BorderStyle.SINGLE,
-              space: 10,
+        break;
+      case "h2":
+        children.push(
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: stripInlineMarkdown(block.text),
+                bold: true,
+                size: 28,
+                color: "0B0D17",
+              }),
+            ],
+            heading: HeadingLevel.HEADING_2,
+            spacing: { before: 300, after: 150 },
+          }),
+        );
+        break;
+      case "h3":
+        children.push(
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: stripInlineMarkdown(block.text),
+                bold: true,
+                size: 24,
+                color: "2E2F38",
+              }),
+            ],
+            heading: HeadingLevel.HEADING_3,
+            spacing: { before: 200, after: 100 },
+          }),
+        );
+        break;
+      case "bullet":
+        children.push(
+          new Paragraph({
+            children: parseInlineFormatting(
+              block.text.replace(/^[\*\-]\s/, ""),
+              22,
+            ),
+            bullet: { level: 0 },
+            spacing: { after: 80 },
+          }),
+        );
+        break;
+      case "numbered":
+        children.push(
+          new Paragraph({
+            children: parseInlineFormatting(
+              block.text.replace(/^\d+\.\s/, ""),
+              22,
+            ),
+            numbering: { reference: "default-numbering", level: 0 },
+            spacing: { after: 80 },
+          }),
+        );
+        break;
+      case "quote":
+        children.push(
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: stripInlineMarkdown(block.text),
+                italics: true,
+                size: 22,
+                color: "6C6F80",
+              }),
+            ],
+            indent: { left: 720 },
+            border: {
+              left: {
+                color: "6753FF",
+                size: 18,
+                style: BorderStyle.SINGLE,
+                space: 10,
+              },
             },
-          },
-          spacing: { before: 200, after: 200 },
-        }),
-      );
-      continue;
+            spacing: { before: 200, after: 200 },
+          }),
+        );
+        break;
+      case "code":
+        children.push(
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: block.text,
+                font: "Courier New",
+                size: 20,
+              }),
+            ],
+            shading: { fill: "F4F5F8" },
+            spacing: { before: 200, after: 200 },
+          }),
+        );
+        break;
+      case "empty":
+        children.push(new Paragraph({ children: [], spacing: { after: 120 } }));
+        break;
+      case "paragraph":
+        children.push(
+          new Paragraph({
+            children: parseInlineFormatting(block.text, 22),
+            spacing: { after: 160, line: 276 },
+          }),
+        );
+        break;
     }
-
-    if (line.trim() === "") {
-      children.push(new Paragraph({ children: [], spacing: { after: 120 } }));
-      continue;
-    }
-
-    children.push(
-      new Paragraph({
-        children: parseInlineFormatting(line, 22),
-        spacing: { after: 160, line: 276 },
-      }),
-    );
   }
 
-  // Footer
   children.push(new Paragraph({ children: [], spacing: { before: 600 } }));
   children.push(
     new Paragraph({
@@ -372,118 +743,25 @@ async function generateDocx(content: string): Promise<Buffer> {
   return await Packer.toBuffer(doc);
 }
 
-/**
- * Parse markdown to text lines for PDF
- */
-interface TextLine {
-  text: string;
-  type:
-    | "title"
-    | "h1"
-    | "h2"
-    | "h3"
-    | "paragraph"
-    | "bullet"
-    | "numbered"
-    | "choice"
-    | "quote"
-    | "empty";
-  indent?: number;
-}
-
-function parseMarkdownToLines(content: string): TextLine[] {
-  const lines: TextLine[] = [];
-  const contentLines = normalizeExportContent(content).split("\n");
-  let inCodeBlock = false;
-  let isFirstH1 = true;
-
-  for (const line of contentLines) {
-    if (line.startsWith("```")) {
-      inCodeBlock = !inCodeBlock;
-      continue;
-    }
-
-    if (inCodeBlock) {
-      lines.push({ text: line, type: "paragraph", indent: 1 });
-      continue;
-    }
-
-    const cleanText = line
-      .replace(/\*\*(.+?)\*\*/g, "$1")
-      .replace(/\*(.+?)\*/g, "$1")
-      .replace(/_(.+?)_/g, "$1")
-      .replace(/`(.+?)`/g, "$1")
-      .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1");
-
-    if (line.startsWith("# ")) {
-      if (isFirstH1) {
-        lines.push({ text: cleanText.substring(2), type: "title" });
-        isFirstH1 = false;
-      } else {
-        lines.push({ text: cleanText.substring(2), type: "h1" });
-      }
-      continue;
-    }
-    if (line.startsWith("## ")) {
-      lines.push({ text: cleanText.substring(3), type: "h2" });
-      continue;
-    }
-    if (line.startsWith("### ")) {
-      lines.push({ text: cleanText.substring(4), type: "h3" });
-      continue;
-    }
-
-    if (line.match(/^[\*\-]\s/)) {
-      lines.push({
-        text: `• ${cleanText.replace(/^[\*\-]\s/, "")}`,
-        type: "bullet",
-      });
-      continue;
-    }
-
-    if (line.match(/^\d+\.\s/)) {
-      lines.push({ text: cleanText, type: "numbered" });
-      continue;
-    }
-
-    if (line.match(/^\([A-Za-z]\)\s/)) {
-      lines.push({ text: cleanText, type: "choice" });
-      continue;
-    }
-
-    if (line.startsWith("> ")) {
-      lines.push({ text: cleanText.substring(2), type: "quote" });
-      continue;
-    }
-
-    if (line.trim() === "") {
-      lines.push({ text: "", type: "empty" });
-      continue;
-    }
-
-    lines.push({ text: cleanText, type: "paragraph" });
-  }
-
-  return lines;
-}
-
-/**
- * Generate PDF buffer from markdown content
- */
-async function generatePdf(content: string): Promise<Uint8Array> {
+async function generatePdf(
+  content: string,
+  images?: DownloadImagePayload[],
+): Promise<Uint8Array> {
   const pdfDoc = await PDFDocument.create();
   const helvetica = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-  const helveticaOblique = await pdfDoc.embedFont(
-    StandardFonts.HelveticaOblique,
-  );
+  const helveticaOblique = await pdfDoc.embedFont(StandardFonts.HelveticaOblique);
+  const courier = await pdfDoc.embedFont(StandardFonts.Courier);
 
   const pageWidth = 595.28;
   const pageHeight = 841.89;
   const margin = 50;
   const contentWidth = pageWidth - 2 * margin;
 
-  const fontSizes = {
+  const blocks = parseMarkdownToBlocks(content);
+  const imageLookup = buildImageLookup(images);
+
+  const fontSizes: Record<TextBlockType, number> = {
     title: 24,
     h1: 18,
     h2: 16,
@@ -491,12 +769,12 @@ async function generatePdf(content: string): Promise<Uint8Array> {
     paragraph: 11,
     bullet: 11,
     numbered: 11,
-    choice: 11,
     quote: 11,
+    code: 10,
     empty: 11,
   };
 
-  const lineHeights = {
+  const lineHeights: Record<TextBlockType, number> = {
     title: 32,
     h1: 28,
     h2: 24,
@@ -504,12 +782,12 @@ async function generatePdf(content: string): Promise<Uint8Array> {
     paragraph: 16,
     bullet: 16,
     numbered: 16,
-    choice: 16,
     quote: 16,
+    code: 14,
     empty: 12,
   };
 
-  const colors = {
+  const colors: Record<TextBlockType, ReturnType<typeof rgb>> = {
     title: rgb(0.04, 0.05, 0.09),
     h1: rgb(0.04, 0.05, 0.09),
     h2: rgb(0.04, 0.05, 0.09),
@@ -517,19 +795,25 @@ async function generatePdf(content: string): Promise<Uint8Array> {
     paragraph: rgb(0.18, 0.18, 0.22),
     bullet: rgb(0.18, 0.18, 0.22),
     numbered: rgb(0.18, 0.18, 0.22),
-    choice: rgb(0.18, 0.18, 0.22),
     quote: rgb(0.42, 0.43, 0.5),
+    code: rgb(0.18, 0.18, 0.22),
     empty: rgb(0, 0, 0),
   };
 
-  const textLines = parseMarkdownToLines(content);
   let currentPage = pdfDoc.addPage([pageWidth, pageHeight]);
   let yPosition = pageHeight - margin;
+
+  function ensureSpace(requiredHeight: number) {
+    if (yPosition < margin + requiredHeight) {
+      currentPage = pdfDoc.addPage([pageWidth, pageHeight]);
+      yPosition = pageHeight - margin;
+    }
+  }
 
   function wrapText(
     text: string,
     maxWidth: number,
-    font: typeof helvetica,
+    font: PDFFont,
     fontSize: number,
   ): string[] {
     const words = text.split(" ");
@@ -554,55 +838,57 @@ async function generatePdf(content: string): Promise<Uint8Array> {
     return lines.length > 0 ? lines : [""];
   }
 
-  for (const line of textLines) {
-    const fontSize = fontSizes[line.type];
-    const lineHeight = lineHeights[line.type];
-    const color = colors[line.type];
+  function drawTextBlock(block: Extract<ExportBlock, { type: TextBlockType }>) {
+    if (block.type === "empty") {
+      yPosition -= lineHeights.empty;
+      ensureSpace(lineHeights.empty);
+      return;
+    }
 
-    let font = helvetica;
-    if (["title", "h1", "h2", "h3"].includes(line.type)) {
+    const fontSize = fontSizes[block.type];
+    const lineHeight = lineHeights[block.type];
+    const color = colors[block.type];
+
+    let font: PDFFont = helvetica;
+    if (["title", "h1", "h2", "h3"].includes(block.type)) {
       font = helveticaBold;
-    } else if (line.type === "quote") {
+    } else if (block.type === "quote") {
       font = helveticaOblique;
+    } else if (block.type === "code") {
+      font = courier;
+    }
+
+    let displayText = stripInlineMarkdown(block.text);
+    if (block.type === "bullet") {
+      displayText = `• ${stripInlineMarkdown(block.text.replace(/^[\*\-]\s/, ""))}`;
+    } else if (block.type === "numbered") {
+      displayText = stripInlineMarkdown(block.text);
     }
 
     const indent =
-      line.type === "bullet"
+      block.type === "bullet" || block.type === "numbered"
         ? 20
-        : line.type === "numbered"
-          ? 0
-          : line.type === "choice"
-            ? 20
-        : line.type === "quote"
+        : block.type === "quote"
           ? 30
-          : (line.indent || 0) * 20;
-
-    if (line.type === "empty" || !line.text.trim()) {
-      yPosition -= lineHeight;
-      if (yPosition < margin) {
-        currentPage = pdfDoc.addPage([pageWidth, pageHeight]);
-        yPosition = pageHeight - margin;
-      }
-      continue;
-    }
+          : block.type === "code"
+            ? 20
+            : 0;
 
     const wrappedLines = wrapText(
-      line.text,
+      displayText,
       contentWidth - indent,
       font,
       fontSize,
     );
 
-    if (["h1", "h2", "h3"].includes(line.type)) {
+    if (["h1", "h2", "h3"].includes(block.type)) {
       yPosition -= 10;
     }
 
-    for (const wrappedLine of wrappedLines) {
-      if (yPosition < margin + lineHeight) {
-        currentPage = pdfDoc.addPage([pageWidth, pageHeight]);
-        yPosition = pageHeight - margin;
-      }
+    ensureSpace(wrappedLines.length * lineHeight + 20);
 
+    for (const wrappedLine of wrappedLines) {
+      ensureSpace(lineHeight + 10);
       currentPage.drawText(wrappedLine, {
         x: margin + indent,
         y: yPosition,
@@ -610,11 +896,10 @@ async function generatePdf(content: string): Promise<Uint8Array> {
         font,
         color,
       });
-
       yPosition -= lineHeight;
     }
 
-    if (line.type === "title") {
+    if (block.type === "title") {
       currentPage.drawLine({
         start: { x: margin, y: yPosition + 8 },
         end: { x: margin + 150, y: yPosition + 8 },
@@ -625,12 +910,57 @@ async function generatePdf(content: string): Promise<Uint8Array> {
     }
   }
 
-  const pages = pdfDoc.getPages();
-  const footerText = `Gerado por Scooli - ${new Date().toLocaleDateString(
-    "pt-PT",
-  )}`;
+  for (const block of blocks) {
+    if (block.type !== "image") {
+      drawTextBlock(block);
+      continue;
+    }
 
-  for (const page of pages) {
+    const resolvedImage = await resolveImageBlock(block, imageLookup);
+    if (resolvedImage.bytes && resolvedImage.contentType) {
+      const embeddedImage =
+        resolvedImage.contentType === "image/png"
+          ? await pdfDoc.embedPng(resolvedImage.bytes)
+          : await pdfDoc.embedJpg(resolvedImage.bytes);
+      const size = scaleDimensions(
+        embeddedImage.width,
+        embeddedImage.height,
+        contentWidth,
+        280,
+      );
+
+      ensureSpace(size.height + 40);
+      currentPage.drawImage(embeddedImage, {
+        x: margin + (contentWidth - size.width) / 2,
+        y: yPosition - size.height,
+        width: size.width,
+        height: size.height,
+      });
+      yPosition -= size.height + 12;
+
+      if (block.alt) {
+        const caption = stripInlineMarkdown(block.alt);
+        const captionWidth = helveticaOblique.widthOfTextAtSize(caption, 10);
+        currentPage.drawText(caption, {
+          x: margin + Math.max(0, (contentWidth - captionWidth) / 2),
+          y: yPosition,
+          size: 10,
+          font: helveticaOblique,
+          color: rgb(0.42, 0.43, 0.5),
+        });
+        yPosition -= 18;
+      }
+      continue;
+    }
+
+    drawTextBlock({
+      type: "quote",
+      text: `[Imagem: ${block.alt || "Ilustracao"}]`,
+    });
+  }
+
+  const footerText = `Gerado por Scooli - ${new Date().toLocaleDateString("pt-PT")}`;
+  for (const page of pdfDoc.getPages()) {
     page.drawText(footerText, {
       x: margin,
       y: 25,
@@ -646,17 +976,17 @@ async function generatePdf(content: string): Promise<Uint8Array> {
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     const body: DownloadRequestBody = await request.json();
-    const { title, content, format } = body;
+    const { title, content, format, images } = body;
 
     if (!title || !content || !format) {
       return NextResponse.json(
-        { error: "Faltam campos obrigatórios" },
+        { error: "Missing required fields" },
         { status: 400 },
       );
     }
 
     const sanitizedTitle = title
-      .replace(/[^a-zA-Z0-9áàâãéèêíïóôõöúçñÁÀÂÃÉÈÊÍÏÓÔÕÖÚÇÑ\s-_]/g, "")
+      .replace(/[^a-zA-Z0-9Ã¡Ã Ã¢Ã£Ã©Ã¨ÃªÃ­Ã¯Ã³Ã´ÃµÃ¶ÃºÃ§Ã±ÃÃ€Ã‚ÃƒÃ‰ÃˆÃŠÃÃÃ“Ã”Ã•Ã–ÃšÃ‡Ã‘\s-_]/g, "")
       .replace(/\s+/g, "_")
       .substring(0, 100);
 
@@ -664,7 +994,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       request.headers.get("x-posthog-distinct-id") ?? "anonymous";
 
     if (format === "pdf") {
-      const pdfBytes = (await generatePdf(content)) as Uint8Array;
+      const pdfBytes = (await generatePdf(content, images)) as Uint8Array;
       await captureDownloadEvent(distinctId, "pdf", title);
       return new NextResponse(toArrayBuffer(pdfBytes), {
         headers: {
@@ -672,8 +1002,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           "Content-Disposition": `attachment; filename="${sanitizedTitle}.pdf"`,
         },
       });
-    } else if (format === "docx") {
-      const docxBuffer = (await generateDocx(content)) as Buffer;
+    }
+
+    if (format === "docx") {
+      const docxBuffer = (await generateDocx(content, images)) as Buffer;
       await captureDownloadEvent(distinctId, "docx", title);
       return new NextResponse(toArrayBuffer(docxBuffer), {
         headers: {
@@ -682,16 +1014,16 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           "Content-Disposition": `attachment; filename="${sanitizedTitle}.docx"`,
         },
       });
-    } else {
-      return NextResponse.json(
-        { error: "Formato não suportado" },
-        { status: 400 },
-      );
     }
+
+    return NextResponse.json(
+      { error: "Unsupported format" },
+      { status: 400 },
+    );
   } catch (error) {
     console.error("Download error:", error);
     return NextResponse.json(
-      { error: "Não foi possível gerar o documento" },
+      { error: "Failed to generate document" },
       { status: 500 },
     );
   }

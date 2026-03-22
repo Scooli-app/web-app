@@ -7,24 +7,32 @@ import { Routes } from "@/shared/types";
 import type { RagSource } from "@/shared/types/document";
 import { htmlToMarkdown, markdownToHtml } from "@/shared/utils/markdown";
 import {
-    chatWithDocument,
-    clearLastChatAnswer,
-    clearStreamInfo,
-    fetchDocument,
-    fetchDocumentImages,
-    setGeneratingImages,
-    setImageError,
-    setImages,
+  chatWithDocument,
+  clearLastChatAnswer,
+  clearStreamInfo,
+  fetchDocument,
+  fetchDocumentImages,
+  setGeneratingImages,
+  setImageError,
+  setImages,
+  upsertImage,
 } from "@/store/documents/documentSlice";
 import {
   selectEditorState,
   useAppDispatch,
   useAppSelector,
 } from "@/store/hooks";
-import { fetchUsage } from "@/store/subscription/subscriptionSlice";
+import {
+  selectIsPro,
+  selectSubscriptionLoading,
+} from "@/store/subscription/selectors";
+import {
+  fetchSubscription,
+  fetchUsage,
+} from "@/store/subscription/subscriptionSlice";
 import { useAuth } from "@clerk/nextjs";
 import type { Editor } from "@tiptap/react";
-import { Loader2, Sparkles, Image as ImageIcon } from "lucide-react";
+import { Image as ImageIcon, Loader2, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import posthog from "posthog-js";
@@ -63,10 +71,17 @@ export default function DocumentEditor({
   const router = useRouter();
   const dispatch = useAppDispatch();
   const { getToken } = useAuth();
-  const { currentDocument, isLoading, streamInfo, isChatting, lastChatAnswer, images } =
-    useAppSelector(selectEditorState);
-  const { subscription } = useAppSelector((state) => state.subscription);
-  const isPremium = subscription && subscription.planCode !== "free";
+  const {
+    currentDocument,
+    isLoading,
+    streamInfo,
+    isChatting,
+    lastChatAnswer,
+    images,
+    imageError,
+  } = useAppSelector(selectEditorState);
+  const isPremium = useAppSelector(selectIsPro);
+  const isSubscriptionLoading = useAppSelector(selectSubscriptionLoading);
   const {
     content,
     setContent,
@@ -91,6 +106,11 @@ export default function DocumentEditor({
   const accumulatedTitleRef = useRef("");
   const editorRef = useRef<Editor | null>(null);
   const isChatInProgressRef = useRef(false);
+  const pendingVisualCountRef = useRef(0);
+  const completedVisualCountRef = useRef(0);
+  const completionFallbackTimeoutRef = useRef<ReturnType<
+    typeof setTimeout
+  > | null>(null);
 
   // Diff / Suggestions mode state
   const [isSuggestionsMode, setIsSuggestionsMode] = useState(false);
@@ -133,6 +153,10 @@ export default function DocumentEditor({
     }
   }, [router]);
 
+  useEffect(() => {
+    dispatch(fetchSubscription());
+  }, [dispatch]);
+
   const handleEditorReady = useCallback((editor: Editor) => {
     editorRef.current = editor;
   }, []);
@@ -150,6 +174,13 @@ export default function DocumentEditor({
         .replace(/\\\\/g, "\\");
     }
     return "";
+  };
+
+  const clearCompletionFallback = () => {
+    if (completionFallbackTimeoutRef.current) {
+      clearTimeout(completionFallbackTimeoutRef.current);
+      completionFallbackTimeoutRef.current = null;
+    }
   };
 
   // Connect to SSE stream when we have stream info for this document
@@ -210,30 +241,88 @@ export default function DocumentEditor({
             onSources: (newSources) => {
               setSources(newSources);
             },
-            onVisualsGenerating: () => {
-              dispatch(setGeneratingImages(true));
+            onVisualsGenerating: (count) => {
+              clearCompletionFallback();
+              pendingVisualCountRef.current = count ?? 0;
+              completedVisualCountRef.current = 0;
+              dispatch(setGeneratingImages((count ?? 0) > 0));
               dispatch(setImageError(null));
             },
-            onImagesReady: (newImages) => {
-              dispatch(setImages(newImages));
-              dispatch(setGeneratingImages(false));
+            onImageReady: (image) => {
+              completedVisualCountRef.current += 1;
+              dispatch(upsertImage(image));
+              if (
+                pendingVisualCountRef.current > 0 &&
+                completedVisualCountRef.current >= pendingVisualCountRef.current
+              ) {
+                dispatch(setGeneratingImages(false));
+                clearCompletionFallback();
+                completionFallbackTimeoutRef.current = setTimeout(() => {
+                  if (!eventSourceRef.current) return;
+                  eventSourceRef.current();
+                  eventSourceRef.current = null;
+                  setIsStreaming(false);
+                  dispatch(clearStreamInfo());
+                  dispatch(fetchDocument(documentId));
+                  dispatch(fetchDocumentImages(documentId));
+                  dispatch(setGeneratingImages(false));
+                  dispatch(
+                    setImageError(
+                      "A geração de imagens terminou com falhas ou atrasos no stream.",
+                    ),
+                  );
+                }, 12000);
+              }
             },
-            onImageFailed: (imageErrorMessage) => {
-              dispatch(setGeneratingImages(false));
-              dispatch(setImageError(imageErrorMessage || "Falha a gerar imagens"));
+            onImageFailed: (image, imageErrorMessage) => {
+              completedVisualCountRef.current += 1;
+              if (image) {
+                dispatch(upsertImage(image));
+              }
+              if (imageErrorMessage) {
+                dispatch(setImageError(imageErrorMessage));
+              }
+              if (
+                pendingVisualCountRef.current > 0 &&
+                completedVisualCountRef.current >= pendingVisualCountRef.current
+              ) {
+                dispatch(setGeneratingImages(false));
+                clearCompletionFallback();
+                completionFallbackTimeoutRef.current = setTimeout(() => {
+                  if (!eventSourceRef.current) return;
+                  eventSourceRef.current();
+                  eventSourceRef.current = null;
+                  setIsStreaming(false);
+                  dispatch(clearStreamInfo());
+                  dispatch(fetchDocument(documentId));
+                  dispatch(fetchDocumentImages(documentId));
+                  dispatch(setGeneratingImages(false));
+                  dispatch(
+                    setImageError(
+                      "A geração de imagens terminou com falhas ou atrasos no stream.",
+                    ),
+                  );
+                }, 6000);
+              }
             },
             onComplete: (docId, response) => {
+              clearCompletionFallback();
               eventSourceRef.current = null;
+              const expectedVisualCount = pendingVisualCountRef.current;
 
               const finalStreamedTitle = accumulatedTitleRef.current;
               if (finalStreamedTitle) {
                 setDocumentTitle(finalStreamedTitle);
+              } else if (response.title) {
+                setDocumentTitle(response.title);
               }
 
               setIsStreaming(false);
+              pendingVisualCountRef.current = 0;
+              completedVisualCountRef.current = 0;
 
               const chatAnswer = response.chatAnswer;
-              const generatedContent = response.generatedContent;
+              const finalContent = response.content;
 
               // Update sources if returned in response
               if (response.sources && response.sources.length > 0) {
@@ -246,20 +335,17 @@ export default function DocumentEditor({
                   {
                     role: "assistant" as const,
                     content: chatAnswer,
-                    hasUpdate: !!generatedContent,
+                    hasUpdate: !!finalContent,
                   },
                 ]);
               }
 
-              if (generatedContent && editorRef.current) {
+              if (finalContent && editorRef.current) {
                 // Enter suggestions mode with diff
                 try {
                   const editor = editorRef.current;
                   const baseDoc = editor.state.doc;
-                  const aiNode = markdownToNode(
-                    generatedContent,
-                    editor.schema,
-                  );
+                  const aiNode = markdownToNode(finalContent, editor.schema);
 
                   // Compute diff between current and AI-generated content
                   const diffChanges = computeDiff(baseDoc, aiNode);
@@ -277,7 +363,7 @@ export default function DocumentEditor({
                     }
 
                     // Replace editor content with AI content
-                    const aiHtml = markdownToHtml(generatedContent);
+                    const aiHtml = markdownToHtml(finalContent);
                     editor.commands.setContent(aiHtml, { emitUpdate: false });
 
                     // Apply diff decorations
@@ -285,8 +371,7 @@ export default function DocumentEditor({
                     setIsSuggestionsMode(true);
                   } else {
                     // No differences — just update content directly
-                    setContent(generatedContent);
-                    handleAutosave(generatedContent);
+                    setContent(finalContent);
                     setShowUpdateIndicator(true);
                     setTimeout(
                       () => setShowUpdateIndicator(false),
@@ -296,18 +381,16 @@ export default function DocumentEditor({
                 } catch (err) {
                   console.error("Error computing diff:", err);
                   // Fallback: direct update without diff
-                  setContent(generatedContent);
-                  handleAutosave(generatedContent);
+                  setContent(finalContent);
                   setShowUpdateIndicator(true);
                   setTimeout(
                     () => setShowUpdateIndicator(false),
                     AUTO_SAVE_DELAY,
                   );
                 }
-              } else if (generatedContent) {
+              } else if (finalContent) {
                 // No editor ref available, direct update
-                setContent(generatedContent);
-                handleAutosave(generatedContent);
+                setContent(finalContent);
                 setShowUpdateIndicator(true);
                 setTimeout(
                   () => setShowUpdateIndicator(false),
@@ -322,10 +405,44 @@ export default function DocumentEditor({
               }
               dispatch(setGeneratingImages(false));
               dispatch(fetchUsage());
+
+              if (expectedVisualCount > 0) {
+                const pollImages = async (attempt: number) => {
+                  try {
+                    const latestImages = await dispatch(
+                      fetchDocumentImages(docId),
+                    ).unwrap();
+                    const settledCount = latestImages.filter(
+                      (image) =>
+                        image.status === "completed" ||
+                        image.status === "failed",
+                    ).length;
+
+                    if (settledCount >= expectedVisualCount || attempt >= 8) {
+                      return;
+                    }
+                  } catch {
+                    if (attempt >= 8) {
+                      return;
+                    }
+                  }
+
+                  setTimeout(() => {
+                    void pollImages(attempt + 1);
+                  }, 1500);
+                };
+
+                setTimeout(() => {
+                  void pollImages(1);
+                }, 1200);
+              }
             },
             onError: (errorMsg) => {
+              clearCompletionFallback();
               eventSourceRef.current = null;
               setIsStreaming(false);
+              pendingVisualCountRef.current = 0;
+              completedVisualCountRef.current = 0;
               setError(errorMsg);
               dispatch(clearStreamInfo());
               dispatch(setGeneratingImages(false));
@@ -353,6 +470,7 @@ export default function DocumentEditor({
   // Cleanup on unmount
   useEffect(() => {
     return () => {
+      clearCompletionFallback();
       if (eventSourceRef.current) {
         eventSourceRef.current();
         eventSourceRef.current = null;
@@ -507,6 +625,7 @@ export default function DocumentEditor({
         const response = await dispatch(
           chatWithDocument({ id: currentDocument.id, message: userMessage }),
         ).unwrap();
+        dispatch(fetchDocumentImages(currentDocument.id));
 
         // Add chat answer to history
         if (response.chatAnswer) {
@@ -638,6 +757,12 @@ export default function DocumentEditor({
           isStreaming={isGenerating && !!documentTitle}
         />
 
+        {imageError && (
+          <div className="mb-4 rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            {imageError}
+          </div>
+        )}
+
         <div className="relative grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-[minmax(0,1fr)_400px]">
           <div className="flex flex-col min-w-0">
             {isGenerating ? (
@@ -664,6 +789,7 @@ export default function DocumentEditor({
                         documentTitle || activeDocument?.title || defaultTitle
                       }
                       content={content}
+                      images={images}
                       disabled={isGenerating || !content}
                     />
                   </div>
@@ -708,14 +834,21 @@ export default function DocumentEditor({
                           ✨ Documento Refinado
                         </span>
                       )}
-                      {!isPremium && (
-                        <Link href={Routes.CHECKOUT} className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-violet-100 to-fuchsia-100 dark:from-violet-900/30 dark:to-fuchsia-900/30 border border-violet-200 dark:border-violet-800 text-xs font-medium text-violet-700 dark:text-violet-300 hover:scale-105 transition-transform" title="✨ Com o Scooli Pro, os teus documentos incluem imagens geradas automaticamente">
+                      {!isSubscriptionLoading && !isPremium && (
+                        <Link
+                          href={Routes.CHECKOUT}
+                          className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-violet-100 to-fuchsia-100 dark:from-violet-900/30 dark:to-fuchsia-900/30 border border-violet-200 dark:border-violet-800 text-xs font-medium text-violet-700 dark:text-violet-300 hover:scale-105 transition-transform"
+                          title="✨ Requer Scooli Pro: faz upgrade para gerar imagens automáticas"
+                        >
                           <Sparkles className="w-3.5 h-3.5" />
-                          <span>Obter imagens automáticas</span>
+                          <span>Upgrade para imagens</span>
                         </Link>
                       )}
                       {isPremium && (images?.length || 0) > 0 && (
-                        <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-muted border border-border text-xs font-medium text-muted-foreground" title="Imagens neste documento">
+                        <div
+                          className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-muted border border-border text-xs font-medium text-muted-foreground"
+                          title="Imagens neste documento"
+                        >
                           <ImageIcon className="w-3.5 h-3.5" />
                           <span>{images?.length || 0}/5 imagens</span>
                         </div>
@@ -749,6 +882,7 @@ export default function DocumentEditor({
                           defaultTitle
                         }
                         content={content}
+                        images={images}
                         disabled={isGenerating || !content}
                       />
                     </div>

@@ -66,19 +66,25 @@ export type DocumentImageStatus =
 // Matches backend image list/SSE payload shape.
 export interface DocumentImage {
   id: string;
-  url: string;
+  url?: string | null;
   alt: string;
   kind: DocumentImageKind;
   exerciseType?: string | null;
-  // Frontend-only helper status used by UI states (backend list defaults to completed).
   status?: DocumentImageStatus;
+  contentType?: string | null;
+  placeholderToken?: string | null;
+  errorMessage?: string | null;
 }
 
 // Matches backend regenerate endpoint payload.
 export interface RegenerateDocumentImageResponse {
   id: string;
-  newUrl: string;
+  newUrl: string | null;
   alt: string;
+  status?: DocumentImageStatus;
+  contentType?: string | null;
+  placeholderToken?: string | null;
+  errorMessage?: string | null;
 }
 
 

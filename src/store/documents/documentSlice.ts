@@ -73,11 +73,48 @@ const initialState: DocumentState = {
   imageError: null,
 };
 
+const normalizeDocumentImage = (image: DocumentImage): DocumentImage => ({
+  ...image,
+  url: image.url ?? null,
+  status: image.status ?? (image.url ? "completed" : "pending"),
+  contentType: image.contentType ?? null,
+  placeholderToken: image.placeholderToken ?? null,
+  errorMessage: image.errorMessage ?? null,
+});
+
 const normalizeDocumentImages = (images: DocumentImage[]): DocumentImage[] =>
-  images.map((image) => ({
-    ...image,
-    status: image.status ?? "completed",
-  }));
+  images.map((image) => normalizeDocumentImage(image));
+
+const upsertDocumentImage = (
+  images: DocumentImage[],
+  incoming: DocumentImage
+): DocumentImage[] => {
+  const normalizedIncoming = normalizeDocumentImage(incoming);
+  const index = images.findIndex(
+    (image) =>
+      image.id === normalizedIncoming.id ||
+      (!!normalizedIncoming.placeholderToken &&
+        image.placeholderToken === normalizedIncoming.placeholderToken)
+  );
+
+  if (index === -1) {
+    return normalizeDocumentImages([...images, normalizedIncoming]);
+  }
+
+  const existing = images[index];
+  const merged = normalizeDocumentImage({
+    ...existing,
+    ...normalizedIncoming,
+    url: normalizedIncoming.url ?? existing.url ?? null,
+    exerciseType: normalizedIncoming.exerciseType ?? existing.exerciseType ?? null,
+    contentType: normalizedIncoming.contentType ?? existing.contentType ?? null,
+    placeholderToken:
+      normalizedIncoming.placeholderToken ?? existing.placeholderToken ?? null,
+    errorMessage: normalizedIncoming.errorMessage,
+  });
+
+  return images.map((image, imageIndex) => (imageIndex === index ? merged : image));
+};
 
 // Async Thunks
 export const fetchDocuments = createAsyncThunk(
@@ -333,6 +370,9 @@ const documentSlice = createSlice({
     setImages(state, action: PayloadAction<DocumentImage[]>) {
       state.images = normalizeDocumentImages(action.payload);
     },
+    upsertImage(state, action: PayloadAction<DocumentImage>) {
+      state.images = upsertDocumentImage(state.images, action.payload);
+    },
     setGeneratingImages(state, action: PayloadAction<boolean>) {
       state.isGeneratingImages = action.payload;
     },
@@ -499,9 +539,17 @@ const documentSlice = createSlice({
       .addCase(fetchDocumentImages.rejected, (state, action) => {
         state.imageError = action.payload as string;
       })
-      .addCase(regenerateDocumentImage.pending, (state) => {
+      .addCase(regenerateDocumentImage.pending, (state, action) => {
         state.isGeneratingImages = true;
         state.imageError = null;
+        state.images = state.images.map((image) =>
+          image.id === action.meta.arg.imageId
+            ? {
+                ...image,
+                status: "generating",
+              }
+            : image
+        );
       })
       .addCase(regenerateDocumentImage.fulfilled, (state, action) => {
         state.isGeneratingImages = false;
@@ -511,7 +559,14 @@ const documentSlice = createSlice({
                 ...img,
                 url: action.payload.newUrl,
                 alt: action.payload.alt ?? img.alt,
-                status: "completed",
+                status: action.payload.status ?? "completed",
+                contentType: action.payload.contentType ?? img.contentType ?? null,
+                placeholderToken:
+                  action.payload.placeholderToken ?? img.placeholderToken ?? null,
+                errorMessage:
+                  action.payload.status === "completed"
+                    ? null
+                    : (action.payload.errorMessage ?? img.errorMessage ?? null),
               }
             : img
         );
@@ -541,6 +596,7 @@ export const {
   clearLastChatAnswer,
   updateDocumentOptimistic,
   setImages,
+  upsertImage,
   setGeneratingImages,
   setImageError,
 } = documentSlice.actions;
