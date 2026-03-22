@@ -71,7 +71,7 @@ export const ImageBlockExtension = Node.create<ImageBlockOptions>({
         default: DEFAULT_IMAGE_WIDTH_PERCENT,
         parseHTML: (element) => {
           const widthFromTitle = parseWidthFromTitle(element.getAttribute("title"));
-          if (widthFromTitle != null) {
+          if (widthFromTitle !== null) {
             return widthFromTitle;
           }
           const widthAttribute = element.getAttribute("width");

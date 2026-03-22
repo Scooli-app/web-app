@@ -74,12 +74,12 @@ function getHtmlAttribute(tag: string, attrName: string): string | null {
   const singleQuoteRegex = new RegExp(`${escapedName}\\s*=\\s*'([^']*)'`, "i");
 
   const doubleQuoteMatch = tag.match(doubleQuoteRegex);
-  if (doubleQuoteMatch?.[1] != null) {
+  if (doubleQuoteMatch?.[1] !== undefined) {
     return doubleQuoteMatch[1];
   }
 
   const singleQuoteMatch = tag.match(singleQuoteRegex);
-  if (singleQuoteMatch?.[1] != null) {
+  if (singleQuoteMatch?.[1] !== undefined) {
     return singleQuoteMatch[1];
   }
 

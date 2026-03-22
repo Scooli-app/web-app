@@ -33,7 +33,7 @@ import {
 } from "@/store/subscription/subscriptionSlice";
 import { useAuth } from "@clerk/nextjs";
 import type { Editor } from "@tiptap/react";
-import { Loader2, Sparkles } from "lucide-react";
+import { Crown, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import posthog from "posthog-js";
@@ -1040,11 +1040,14 @@ export default function DocumentEditor({
                       {!isSubscriptionLoading && !isPremium && (
                         <Link
                           href={Routes.CHECKOUT}
-                          className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-violet-100 to-fuchsia-100 dark:from-violet-900/30 dark:to-fuchsia-900/30 border border-violet-200 dark:border-violet-800 text-xs font-medium text-violet-700 dark:text-violet-300 hover:scale-105 transition-transform"
-                          title="✨ Requer Scooli Pro: faz upgrade para gerar imagens automáticas"
+                          className="hidden md:inline-flex items-center gap-2 rounded-full border border-amber-300/60 bg-gradient-to-r from-amber-50 to-yellow-50 px-2.5 py-1 text-[11px] font-medium text-amber-800 transition-colors hover:bg-amber-100 dark:border-amber-700/60 dark:from-amber-950/40 dark:to-yellow-950/40 dark:text-amber-300 dark:hover:bg-amber-900/30"
+                          title="Requer Scooli Pro: faz upgrade para gerar imagens automáticas"
                         >
-                          <Sparkles className="w-3.5 h-3.5" />
-                          <span>Imagens estão disponiveis no plano PRO</span>
+                          <Crown className="h-3.5 w-3.5 text-amber-500 dark:text-amber-300" />
+                          <span className="whitespace-nowrap">Imagens Pro</span>
+                          <span className="hidden xl:inline-flex rounded-full border border-amber-400/60 bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700 dark:border-amber-500/40 dark:bg-amber-900/40 dark:text-amber-200">
+                            Upgrade
+                          </span>
                         </Link>
                       )}
                       {isGenerating && (
