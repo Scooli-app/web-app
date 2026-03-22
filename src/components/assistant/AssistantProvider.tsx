@@ -16,6 +16,7 @@ import {
   toggleOpen,
 } from "@/store/assistant";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { selectIsPro, selectSubscriptionLoading } from "@/store/subscription/selectors";
 import { useAuth } from "@clerk/nextjs";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect } from "react";
@@ -41,6 +42,10 @@ export function AssistantProvider() {
   const streamingContent = useAppSelector(selectStreamingContent);
   const hasUnread = useAppSelector(selectHasUnreadMessages);
   const inputValue = useAppSelector(selectInputValue);
+  const isProUser = useAppSelector(selectIsPro);
+  const isSubscriptionLoading = useAppSelector(selectSubscriptionLoading);
+
+  const showGenerationHint = !isSubscriptionLoading && !isProUser;
 
   const shouldHideAssistant =
     isMobile && MOBILE_EDITOR_ROUTE_PATTERN.test(pathname ?? "");
@@ -115,6 +120,7 @@ export function AssistantProvider() {
         inputValue={inputValue}
         onInputChange={handleInputChange}
         onSubmit={handleSubmit}
+        showGenerationHint={showGenerationHint}
       />
     </>
   );

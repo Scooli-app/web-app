@@ -10,6 +10,8 @@ interface RichTextEditorProps {
   onAutosave?: (markdown: string) => void;
   rightHeaderContent?: React.ReactNode;
   onEditorReady?: (editor: import("@tiptap/react").Editor) => void;
+  onImageUpload?: (file: File) => Promise<void> | void;
+  isImageUploading?: boolean;
 }
 
 // Loading fallback
@@ -47,6 +49,8 @@ function RichTextEditorComponent({
   onAutosave,
   rightHeaderContent,
   onEditorReady,
+  onImageUpload,
+  isImageUploading = false,
 }: RichTextEditorProps) {
   return (
     <TipTapEditor
@@ -56,17 +60,21 @@ function RichTextEditorComponent({
       onAutosave={onAutosave}
       rightHeaderContent={rightHeaderContent}
       onEditorReady={onEditorReady}
+      onImageUpload={onImageUpload}
+      isImageUploading={isImageUploading}
     />
   );
 }
 
 // Memoize the component to prevent unnecessary re-renders
 const RichTextEditor = memo(RichTextEditorComponent, (prevProps, nextProps) => {
-  // Only re-render if content, className, or rightHeaderContent changes
+  // Only re-render if relevant props change
   return (
     prevProps.content === nextProps.content &&
     prevProps.className === nextProps.className &&
-    prevProps.rightHeaderContent === nextProps.rightHeaderContent
+    prevProps.rightHeaderContent === nextProps.rightHeaderContent &&
+    prevProps.onImageUpload === nextProps.onImageUpload &&
+    prevProps.isImageUploading === nextProps.isImageUploading
   );
 });
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { GenerationCostHint } from "@/components/ui/generation-cost-hint";
 import { cn } from "@/shared/utils/utils";
 import { Send } from "lucide-react";
 import { useEffect, useRef, type ChangeEvent, type KeyboardEvent } from "react";
@@ -16,6 +17,8 @@ export interface ChatInputProps {
   placeholder?: string;
   /** Optional: Disable input and button */
   disabled?: boolean;
+  /** Optional: Show generation cost hint on send button */
+  showGenerationHint?: boolean;
   /** Optional: Additional CSS classes */
   className?: string;
 }
@@ -30,6 +33,7 @@ export function ChatInput({
   onSubmit,
   placeholder = "Escreva uma mensagem...",
   disabled = false,
+  showGenerationHint = false,
   className,
 }: ChatInputProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -84,9 +88,15 @@ export function ChatInput({
         onClick={handleSubmit}
         disabled={!value.trim() || disabled}
         size="icon"
-        className="h-10 w-10 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground shrink-0 shadow-sm disabled:opacity-50"
+        className="relative h-10 w-10 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground shrink-0 shadow-sm disabled:opacity-50 overflow-visible"
       >
         <Send className="h-4 w-4" />
+        {showGenerationHint && (
+          <GenerationCostHint
+            compact
+            className="pointer-events-none absolute -top-1.5 -right-1.5 border-primary/30 bg-background/95 text-primary shadow-sm"
+          />
+        )}
       </Button>
     </div>
   );

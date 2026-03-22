@@ -53,7 +53,7 @@ export default function NotFound() {
           >
             <Link href={Routes.DASHBOARD}>
               <Home className="h-4 w-4 mr-2" />
-              Ir para o Painel
+              Ir para o Dashboard
             </Link>
           </Button>
 
@@ -76,3 +76,4 @@ export default function NotFound() {
     </div>
   );
 }
+

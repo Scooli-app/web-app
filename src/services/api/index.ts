@@ -7,6 +7,7 @@ export { default as apiClient } from "./client";
 
 // Document service
 export * from "./document.service";
+export * from "./document-images.service";
 
 // Template service
 export * from "./template.service";

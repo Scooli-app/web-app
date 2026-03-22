@@ -14,4 +14,7 @@ export enum FeatureFlag {
   
   /** When ON: shared documents await admin review. When OFF: auto-approved on submit. */
   DOCUMENT_REVIEW = "document_review",
+
+  /** Controls AI image generation and inclusion in documents. */
+  DOCUMENT_IMAGES = "document_images",
 }

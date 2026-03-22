@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { useAdmin } from "@/hooks/useAdmin";
 import apiClient from "@/services/api/client";
+import { FeatureFlag as FeatureFlagKey } from "@/shared/types/featureFlags";
 import { AlertCircle, ArrowLeft, ChevronDown, ChevronUp, Loader2, ToggleLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -32,6 +33,55 @@ type FeatureFlag = {
   createdAt: string;
   updatedAt: string;
   overrides?: FeatureOverride[];
+};
+
+const FEATURE_FLAG_METADATA: Record<string, { name: string; description: string; order: number }> = {
+  [FeatureFlagKey.COMMUNITY_LIBRARY]: {
+    name: "Biblioteca Comunitaria",
+    description: "Ativa a partilha e descoberta de recursos na biblioteca da comunidade.",
+    order: 10,
+  },
+  [FeatureFlagKey.DOCUMENT_REVIEW]: {
+    name: "Revisao de Documentos",
+    description:
+      "Quando ativa, recursos partilhados aguardam moderacao de admin antes de publicacao.",
+    order: 20,
+  },
+  [FeatureFlagKey.PRESENTATION_CREATION]: {
+    name: "Criacao de Apresentacoes",
+    description:
+      "Controla se os utilizadores podem criar apresentacoes a partir da plataforma.",
+    order: 30,
+  },
+  [FeatureFlagKey.DOCUMENT_IMAGES]: {
+    name: "Imagens em Documentos",
+    description:
+      "Controla a geracao e inclusao de imagens automaticas em testes, quizzes e planos de aula.",
+    order: 40,
+  },
+};
+
+const applyFlagMetadata = (flag: FeatureFlag): FeatureFlag => {
+  const metadata = FEATURE_FLAG_METADATA[flag.key];
+  if (!metadata) {
+    return flag;
+  }
+
+  return {
+    ...flag,
+    name: metadata.name,
+    description: metadata.description,
+  };
+};
+
+const compareFlagOrder = (a: FeatureFlag, b: FeatureFlag): number => {
+  const orderA = FEATURE_FLAG_METADATA[a.key]?.order ?? Number.MAX_SAFE_INTEGER;
+  const orderB = FEATURE_FLAG_METADATA[b.key]?.order ?? Number.MAX_SAFE_INTEGER;
+  if (orderA !== orderB) {
+    return orderA - orderB;
+  }
+
+  return a.name.localeCompare(b.name, "pt-PT");
 };
 
 function OverrideRow({ override }: { override: FeatureOverride }) {
@@ -170,7 +220,7 @@ export default function AdminFeaturesPage() {
           }
         }),
       );
-      setFlags(withOverrides);
+      setFlags(withOverrides.map(applyFlagMetadata).sort(compareFlagOrder));
     } catch {
       setError("Não foi possível carregar as configurações de funcionalidades.");
     } finally {

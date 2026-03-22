@@ -46,8 +46,13 @@ const featuresSlice = createSlice({
       })
       .addCase(fetchFeatureFlags.fulfilled, (state, action) => {
         state.loading = false;
-        // Map the record (string -> boolean) into our typed Partial record
-        state.flags = action.payload as Partial<Record<FeatureFlag, boolean>>;
+        state.flags = action.payload.reduce(
+          (acc, flag) => {
+            acc[flag] = true;
+            return acc;
+          },
+          {} as Partial<Record<FeatureFlag, boolean>>
+        );
       })
       .addCase(fetchFeatureFlags.rejected, (state, action) => {
         state.loading = false;

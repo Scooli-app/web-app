@@ -6,7 +6,7 @@ import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
-  TooltipTrigger
+  TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/shared/utils/utils";
 import { Minus, RefreshCw } from "lucide-react";
@@ -38,6 +38,8 @@ export interface AssistantPanelProps {
   onInputChange: (value: string) => void;
   /** Callback when message is submitted */
   onSubmit: () => void;
+  /** Whether to display generation cost hints for AI actions */
+  showGenerationHint?: boolean;
   /** Optional: Additional CSS classes */
   className?: string;
 }
@@ -56,6 +58,7 @@ export function AssistantPanel({
   inputValue,
   onInputChange,
   onSubmit,
+  showGenerationHint = false,
   className,
 }: AssistantPanelProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -77,19 +80,21 @@ export function AssistantPanel({
         "bg-card border border-border rounded-2xl shadow-2xl",
         "flex flex-col overflow-hidden",
         "animate-in slide-in-from-bottom-4 fade-in duration-300",
-        className
+        className,
       )}
     >
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/30">
         <div className="flex items-center gap-2">
-          <span className="font-semibold text-foreground">Assistente Scooli</span>
+          <span className="font-semibold text-foreground">
+            Assistente Scooli
+          </span>
           <span className="flex items-center gap-1 text-xs text-muted-foreground">
             <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
             Online
           </span>
         </div>
-        
+
         <div className="flex items-center gap-1">
           <TooltipProvider>
             <Tooltip>
@@ -100,9 +105,9 @@ export function AssistantPanel({
                   onClick={() => messages.length > 0 && onClear()}
                   className={cn(
                     "h-8 w-8 rounded-full transition-colors",
-                    messages.length > 0 
-                      ? "hover:bg-muted cursor-pointer" 
-                      : "opacity-50 cursor-not-allowed hover:bg-transparent"
+                    messages.length > 0
+                      ? "hover:bg-muted cursor-pointer"
+                      : "opacity-50 cursor-not-allowed hover:bg-transparent",
                   )}
                   aria-disabled={messages.length === 0}
                 >
@@ -185,6 +190,7 @@ export function AssistantPanel({
           onChange={onInputChange}
           onSubmit={onSubmit}
           disabled={isProcessing}
+          showGenerationHint={showGenerationHint}
           placeholder="Escreva uma mensagem..."
         />
       </div>

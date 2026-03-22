@@ -10,39 +10,39 @@ export function TemplateEmptyState({
   onCreateTemplate,
 }: TemplateEmptyStateProps) {
   return (
-    <Card className="p-4 sm:p-6 border-[#E4E4E7] shadow-sm">
+    <Card className="border-border p-4 shadow-sm sm:p-6">
       <div className="space-y-3 sm:space-y-4">
         <div className="flex items-center gap-2 sm:gap-3">
-          <div className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-[#EEF0FF] shrink-0">
-            <Layers className="w-4 h-4 sm:w-5 sm:h-5 text-[#6753FF]" />
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent sm:h-10 sm:w-10 sm:rounded-xl">
+            <Layers className="h-4 w-4 text-primary sm:h-5 sm:w-5" />
           </div>
           <div className="min-w-0">
-            <h2 className="text-base sm:text-lg font-semibold text-[#0B0D17]">
-              Modelo de Documento <span className="text-red-500">*</span>
+            <h2 className="text-base font-semibold text-foreground sm:text-lg">
+              Modelo de Documento <span className="text-destructive">*</span>
             </h2>
-            <p className="text-xs sm:text-sm text-[#6C6F80]">
+            <p className="text-xs text-muted-foreground sm:text-sm">
               Escolha a estrutura do seu documento
             </p>
           </div>
         </div>
 
-        <div className="flex flex-col items-center justify-center py-8 px-4 rounded-xl border-2 border-dashed border-[#E4E4E7] bg-[#FAFAFA]">
-          <div className="flex items-center justify-center w-12 h-12 rounded-full bg-[#EEF0FF] mb-3">
-            <FileText className="w-6 h-6 text-[#6753FF]" />
+        <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-border bg-muted/30 px-4 py-8">
+          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-accent">
+            <FileText className="h-6 w-6 text-primary" />
           </div>
-          <h3 className="text-sm font-medium text-[#0B0D17] mb-1">
+          <h3 className="mb-1 text-sm font-medium text-foreground">
             Nenhum modelo disponível
           </h3>
-          <p className="text-xs text-[#6C6F80] text-center mb-4 max-w-[280px]">
+          <p className="mb-4 max-w-[280px] text-center text-xs text-muted-foreground">
             Crie o seu primeiro modelo para definir a estrutura dos seus
             documentos
           </p>
           <Button
             type="button"
             onClick={onCreateTemplate}
-            className="bg-[#6753FF] hover:bg-[#5642E8] text-white rounded-xl h-10 px-4"
+            className="h-10 rounded-xl bg-primary px-4 text-primary-foreground hover:bg-primary/90"
           >
-            <Plus className="w-4 h-4 mr-2" />
+            <Plus className="mr-2 h-4 w-4" />
             Criar Modelo
           </Button>
         </div>
@@ -50,4 +50,3 @@ export function TemplateEmptyState({
     </Card>
   );
 }
-

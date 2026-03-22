@@ -20,7 +20,7 @@ export default function ContributorDashboardPage() {
       contentClassName="min-w-0 py-3 sm:py-6"
     >
       <PageHeader
-        title="Painel do Contribuidor"
+        title="Dashboard do Contribuidor"
         description="Acompanhe o impacto dos seus recursos na comunidade"
         actions={
           <Link href="/community" className="w-full sm:w-auto">

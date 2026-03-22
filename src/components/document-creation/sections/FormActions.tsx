@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { GenerationCostHint } from "@/components/ui/generation-cost-hint";
 import { Loader2, Sparkles } from "lucide-react";
 import type { DocumentTypeConfig } from "../types";
 
@@ -8,6 +9,7 @@ interface FormActionsProps {
   isFormValid: boolean;
   error: string;
   onSubmit: () => void;
+  showGenerationHint?: boolean;
 }
 
 export function FormActions({
@@ -16,6 +18,7 @@ export function FormActions({
   isFormValid,
   error,
   onSubmit,
+  showGenerationHint = false,
 }: FormActionsProps) {
   return (
     <>
@@ -42,6 +45,12 @@ export function FormActions({
             <>
               <Sparkles className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
               Criar {documentType.title}
+              {showGenerationHint && (
+                <GenerationCostHint
+                  compact
+                  className="ml-2 border-primary-foreground/35 bg-primary-foreground/15 text-primary-foreground"
+                />
+              )}
             </>
           )}
         </Button>

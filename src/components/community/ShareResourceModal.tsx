@@ -137,7 +137,7 @@ export function ShareResourceModal({
           </DialogTitle>
           <DialogDescription>
             Partilhe o seu recurso educacional com outros professores portugueses.
-            O recurso será revisado antes da publicação.
+            O recurso será revisto antes da publicação.
           </DialogDescription>
         </DialogHeader>
 
@@ -256,8 +256,8 @@ export function ShareResourceModal({
           <div className="bg-muted/50 border border-border rounded-lg p-4 text-sm">
             <p className="text-foreground font-medium mb-2">ℹ️ Processo de Revisão</p>
             <ul className="text-muted-foreground space-y-1 text-xs">
-              <li>• O recurso será revisado pela nossa equipa em 24-48 horas</li>
-              <li>• Verificamos alinhamento curricular e qualidade pedagógica</li>
+              <li>• O recurso será revisto pela nossa equipa em 24-48 horas</li>
+              <li>• Verificamos alinhamento com as AEs e qualidade pedagógica</li>
               <li>• Receberá notificação quando for aprovado</li>
               <li>• Recursos aprovados podem ser reutilizados e adaptados por outros professores</li>
             </ul>

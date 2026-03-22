@@ -128,7 +128,7 @@ function CommunityLibraryPage() {
         className="w-full sm:w-auto"
       >
         <BarChart3 className="mr-2 h-4 w-4" />
-        Meu Painel
+        Meu Dashboard
       </Button>
       <Button
         onClick={() => router.push("/lesson-plan")}
@@ -205,3 +205,4 @@ export default function CommunityPage() {
 
   return <CommunityLibraryPage />;
 }
+
