@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { GenerationCostHint } from "@/components/ui/generation-cost-hint";
 import { Input } from "@/components/ui/input";
 import {
   Sheet,
@@ -37,6 +38,7 @@ interface AIChatPanelProps {
   title?: string;
   sources?: RagSource[];
   variant?: "desktop" | "mobile";
+  showGenerationHint?: boolean;
 }
 
 function Tabs({
@@ -111,6 +113,7 @@ function ChatContent({
   chatContainerRef,
   variant = "desktop",
   sources = [],
+  showGenerationHint = false,
 }: {
   chatHistory: ChatMessage[];
   isStreaming: boolean;
@@ -123,6 +126,7 @@ function ChatContent({
   chatContainerRef: React.RefObject<HTMLDivElement | null>;
   variant?: "desktop" | "mobile";
   sources?: RagSource[];
+  showGenerationHint?: boolean;
 }) {
   const isDesktop = variant === "desktop";
   const [activeTab, setActiveTab] = useState<"assistant" | "sources">("assistant");
@@ -211,9 +215,15 @@ function ChatContent({
                 type="submit"
                 disabled={!chatMessage.trim() || isStreaming}
                 size="icon"
-                className="h-10 w-10 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground shrink-0 shadow-sm"
+                className="relative h-10 w-10 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground shrink-0 shadow-sm overflow-visible"
               >
                 <Send className="h-4 w-4" />
+                {showGenerationHint && (
+                  <GenerationCostHint
+                    compact
+                    className="pointer-events-none absolute -top-1.5 -right-1.5 border-primary/30 bg-background/95 text-primary shadow-sm"
+                  />
+                )}
               </Button>
             </form>
           </>
@@ -242,6 +252,7 @@ export default function AIChatPanel({
   placeholder = "Faça uma pergunta ou peça ajuda...",
   title = "Assistente de IA",
   sources = [],
+  showGenerationHint = false,
 }: AIChatPanelProps) {
   const [chatMessage, setChatMessage] = useState("");
   const [isOpen, setIsOpen] = useState(false);
@@ -287,6 +298,7 @@ export default function AIChatPanel({
           chatContainerRef={chatContainerRef}
           variant="desktop"
           sources={sources}
+          showGenerationHint={showGenerationHint}
         />
       </div>
 
@@ -328,6 +340,7 @@ export default function AIChatPanel({
                 chatContainerRef={mobileChatContainerRef}
                 variant="mobile"
                 sources={sources}
+                showGenerationHint={showGenerationHint}
               />
             </div>
           </SheetContent>

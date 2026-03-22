@@ -6,7 +6,8 @@ import {
   createDocument,
   setPendingInitialPrompt,
 } from "@/store/documents/documentSlice";
-import { useAppDispatch } from "@/store/hooks";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { selectIsPro, selectSubscriptionLoading } from "@/store/subscription/selectors";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { AMBIGUOUS_COMPONENTS_SUBJECTS, SUBJECTS, SUBJECTS_BY_GRADE } from "./constants";
@@ -86,6 +87,8 @@ export default function DocumentCreationPage({
 }: DocumentCreationPageProps) {
   const router = useRouter();
   const dispatch = useAppDispatch();
+  const isProUser = useAppSelector(selectIsPro);
+  const isSubscriptionLoading = useAppSelector(selectSubscriptionLoading);
   const [isLoading, setIsLoading] = useState(false);
 
   const { formState, error, setError, updateForm, isFormValid, handleTemplateSelect } =
@@ -273,6 +276,7 @@ export default function DocumentCreationPage({
             isFormValid={isFormValid()}
             error={error}
             onSubmit={handleCreateDocument}
+            showGenerationHint={!isSubscriptionLoading && !isProUser}
           />
         </div>
       </div>

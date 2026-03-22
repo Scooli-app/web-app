@@ -928,6 +928,7 @@ export default function DocumentEditor({
               placeholder={chatPlaceholder}
               title={chatTitle}
               sources={sources}
+              showGenerationHint={!isSubscriptionLoading && !isPremium}
             />
           </div>
         </div>
@@ -942,6 +943,7 @@ export default function DocumentEditor({
           placeholder={chatPlaceholder}
           title={chatTitle}
           sources={sources}
+          showGenerationHint={!isSubscriptionLoading && !isPremium}
         />
       </div>
     </>
