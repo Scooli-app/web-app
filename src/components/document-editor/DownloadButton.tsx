@@ -8,6 +8,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { downloadDocument, type DownloadFormat } from "@/services/download/documentDownload";
+import type { DocumentImage } from "@/shared/types/document";
 import { Download, FileText, Loader2 } from "lucide-react";
 import { memo, useCallback, useState } from "react";
 import posthog from "posthog-js";
@@ -15,10 +16,18 @@ import posthog from "posthog-js";
 interface DownloadButtonProps {
   title: string;
   content: string;
+  images: DocumentImage[];
+  isProUser?: boolean;
   disabled?: boolean;
 }
 
-function DownloadButtonComponent({ title, content, disabled }: DownloadButtonProps) {
+function DownloadButtonComponent({
+  title,
+  content,
+  images,
+  isProUser = false,
+  disabled,
+}: DownloadButtonProps) {
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadFormat, setDownloadFormat] = useState<DownloadFormat | null>(null);
 
@@ -27,12 +36,15 @@ function DownloadButtonComponent({ title, content, disabled }: DownloadButtonPro
       if (!title || !content) {
         return;
       }
+      if (format === "docx" && !isProUser) {
+        return;
+      }
 
       setIsDownloading(true);
       setDownloadFormat(format);
 
       try {
-        await downloadDocument({ title, content, format });
+        await downloadDocument({ title, content, format, images });
         posthog.capture("document_downloaded", {
           format,
           document_title: title,
@@ -45,13 +57,14 @@ function DownloadButtonComponent({ title, content, disabled }: DownloadButtonPro
         setDownloadFormat(null);
       }
     },
-    [title, content]
+    [title, content, images, isProUser]
   );
 
   const handlePdfDownload = useCallback(() => handleDownload("pdf"), [handleDownload]);
   const handleDocxDownload = useCallback(() => handleDownload("docx"), [handleDownload]);
 
   const isDisabled = disabled || isDownloading || !title || !content;
+  const isDocxDisabled = isDownloading || !isProUser;
 
   return (
     <DropdownMenu>
@@ -85,7 +98,7 @@ function DownloadButtonComponent({ title, content, disabled }: DownloadButtonPro
         </DropdownMenuItem>
         <DropdownMenuItem
           onClick={handleDocxDownload}
-          disabled={isDownloading}
+          disabled={isDocxDisabled}
           className="flex items-center gap-2 cursor-pointer"
         >
           {downloadFormat === "docx" ? (
@@ -93,7 +106,7 @@ function DownloadButtonComponent({ title, content, disabled }: DownloadButtonPro
           ) : (
             <FileText className="h-4 w-4 text-blue-500 dark:text-blue-400" />
           )}
-          <span>Exportar como Word</span>
+          <span>{isProUser ? "Exportar como Word" : "Word (Scooli Pro)"}</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

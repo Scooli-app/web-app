@@ -4,6 +4,7 @@
  */
 
 import posthog from "posthog-js";
+import type { DocumentImage } from "@/shared/types/document";
 
 export type DownloadFormat = "pdf" | "docx";
 
@@ -11,6 +12,7 @@ interface DownloadOptions {
   title: string;
   content: string; // Markdown content
   format: DownloadFormat;
+  images: DocumentImage[];
 }
 
 /**
@@ -19,7 +21,7 @@ interface DownloadOptions {
 export async function downloadDocument(
   options: DownloadOptions
 ): Promise<void> {
-  const { title, content, format } = options;
+  const { title, content, format, images } = options;
 
   const distinctId = posthog.get_distinct_id();
   const sessionId = posthog.get_session_id();
@@ -31,7 +33,18 @@ export async function downloadDocument(
       ...(distinctId && { "x-posthog-distinct-id": distinctId }),
       ...(sessionId && { "x-posthog-session-id": sessionId }),
     },
-    body: JSON.stringify({ title, content, format }),
+    body: JSON.stringify({
+      title,
+      content,
+      format,
+      images: images.map((image) => ({
+        id: image.id,
+        url: image.url ?? null,
+        alt: image.alt,
+        status: image.status ?? "completed",
+        contentType: image.contentType ?? null,
+      })),
+    }),
   });
 
   if (!response.ok) {

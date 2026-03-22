@@ -11,16 +11,29 @@ import {
   clearLastChatAnswer,
   clearStreamInfo,
   fetchDocument,
+  fetchDocumentImages,
+  setGeneratingImages,
+  setImageError,
+  setImages,
+  upsertImage,
 } from "@/store/documents/documentSlice";
 import {
   selectEditorState,
   useAppDispatch,
   useAppSelector,
 } from "@/store/hooks";
-import { fetchUsage } from "@/store/subscription/subscriptionSlice";
+import {
+  selectIsPro,
+  selectSubscriptionLoading,
+} from "@/store/subscription/selectors";
+import {
+  fetchSubscription,
+  fetchUsage,
+} from "@/store/subscription/subscriptionSlice";
 import { useAuth } from "@clerk/nextjs";
 import type { Editor } from "@tiptap/react";
-import { Loader2 } from "lucide-react";
+import { Loader2, Sparkles } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import posthog from "posthog-js";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -58,8 +71,17 @@ export default function DocumentEditor({
   const router = useRouter();
   const dispatch = useAppDispatch();
   const { getToken } = useAuth();
-  const { currentDocument, isLoading, streamInfo, isChatting, lastChatAnswer } =
-    useAppSelector(selectEditorState);
+  const {
+    currentDocument,
+    isLoading,
+    streamInfo,
+    isChatting,
+    lastChatAnswer,
+    images,
+    imageError,
+  } = useAppSelector(selectEditorState);
+  const isPremium = useAppSelector(selectIsPro);
+  const isSubscriptionLoading = useAppSelector(selectSubscriptionLoading);
   const {
     content,
     setContent,
@@ -81,9 +103,15 @@ export default function DocumentEditor({
 
   const eventSourceRef = useRef<(() => void) | null>(null);
   const rawStreamRef = useRef("");
+  const latestDisplayContentRef = useRef("");
   const accumulatedTitleRef = useRef("");
   const editorRef = useRef<Editor | null>(null);
   const isChatInProgressRef = useRef(false);
+  const pendingVisualCountRef = useRef(0);
+  const completedVisualCountRef = useRef(0);
+  const completionFallbackTimeoutRef = useRef<ReturnType<
+    typeof setTimeout
+  > | null>(null);
 
   // Diff / Suggestions mode state
   const [isSuggestionsMode, setIsSuggestionsMode] = useState(false);
@@ -104,6 +132,7 @@ export default function DocumentEditor({
     setShowUpdateIndicator(false);
     setIsSuggestionsMode(false);
     rawStreamRef.current = "";
+    latestDisplayContentRef.current = "";
     accumulatedTitleRef.current = "";
   }, [documentId]);
 
@@ -126,6 +155,10 @@ export default function DocumentEditor({
     }
   }, [router]);
 
+  useEffect(() => {
+    dispatch(fetchSubscription());
+  }, [dispatch]);
+
   const handleEditorReady = useCallback((editor: Editor) => {
     editorRef.current = editor;
   }, []);
@@ -145,6 +178,24 @@ export default function DocumentEditor({
     return "";
   };
 
+  const normalizePendingTitle = useCallback((rawTitle: string): string => {
+    const trimmed = rawTitle?.trim() ?? "";
+    if (!trimmed) {
+      return "";
+    }
+    if (/^generating\.{0,3}$/i.test(trimmed)) {
+      return "A gerar...";
+    }
+    return trimmed;
+  }, []);
+
+  const clearCompletionFallback = () => {
+    if (completionFallbackTimeoutRef.current) {
+      clearTimeout(completionFallbackTimeoutRef.current);
+      completionFallbackTimeoutRef.current = null;
+    }
+  };
+
   // Connect to SSE stream when we have stream info for this document
   useEffect(() => {
     // Only connect if we have stream info for this document and aren't already streaming
@@ -160,6 +211,7 @@ export default function DocumentEditor({
 
       setIsStreaming(true);
       rawStreamRef.current = "";
+      latestDisplayContentRef.current = "";
       accumulatedTitleRef.current = "";
       setDisplayContent("");
       setDocumentTitle("");
@@ -173,7 +225,7 @@ export default function DocumentEditor({
 
           const finalStreamedTitle = accumulatedTitleRef.current;
           if (finalStreamedTitle) {
-            setDocumentTitle(finalStreamedTitle);
+            setDocumentTitle(normalizePendingTitle(finalStreamedTitle));
           }
 
           setIsStreaming(false);
@@ -186,6 +238,29 @@ export default function DocumentEditor({
           return;
         }
 
+        const finalizeStreamWithoutDone = () => {
+          clearCompletionFallback();
+          if (eventSourceRef.current) {
+            eventSourceRef.current();
+            eventSourceRef.current = null;
+          }
+          setIsStreaming(false);
+          pendingVisualCountRef.current = 0;
+          completedVisualCountRef.current = 0;
+          dispatch(clearStreamInfo());
+          dispatch(setGeneratingImages(false));
+
+          const fallbackContent =
+            latestDisplayContentRef.current ||
+            extractGeneratedContent(rawStreamRef.current);
+          if (fallbackContent) {
+            setContent(fallbackContent);
+          }
+
+          void dispatch(fetchDocument(documentId));
+          void dispatch(fetchDocumentImages(documentId));
+        };
+
         streamDocumentContent(
           streamInfo.streamUrl,
           {
@@ -193,6 +268,7 @@ export default function DocumentEditor({
               rawStreamRef.current += chunk;
               const extracted = extractGeneratedContent(rawStreamRef.current);
               if (extracted) {
+                latestDisplayContentRef.current = extracted;
                 setDisplayContent(extracted);
               }
             },
@@ -203,18 +279,78 @@ export default function DocumentEditor({
             onSources: (newSources) => {
               setSources(newSources);
             },
+            onVisualsGenerating: (count) => {
+              clearCompletionFallback();
+              pendingVisualCountRef.current = count ?? 0;
+              completedVisualCountRef.current = 0;
+              dispatch(setGeneratingImages((count ?? 0) > 0));
+              dispatch(setImageError(null));
+            },
+            onImageReady: (image) => {
+              completedVisualCountRef.current += 1;
+              dispatch(upsertImage(image));
+              if (
+                pendingVisualCountRef.current > 0 &&
+                completedVisualCountRef.current >= pendingVisualCountRef.current
+              ) {
+                dispatch(setGeneratingImages(false));
+                clearCompletionFallback();
+                completionFallbackTimeoutRef.current = setTimeout(() => {
+                  finalizeStreamWithoutDone();
+                  dispatch(
+                    setImageError(
+                      "A geração de imagens terminou com falhas ou atrasos no stream.",
+                    ),
+                  );
+                }, 3000);
+              }
+            },
+            onImageFailed: (image, imageErrorMessage) => {
+              completedVisualCountRef.current += 1;
+              if (image) {
+                dispatch(upsertImage(image));
+              }
+              if (imageErrorMessage) {
+                dispatch(setImageError(imageErrorMessage));
+              }
+              if (
+                pendingVisualCountRef.current > 0 &&
+                completedVisualCountRef.current >= pendingVisualCountRef.current
+              ) {
+                dispatch(setGeneratingImages(false));
+                clearCompletionFallback();
+                completionFallbackTimeoutRef.current = setTimeout(() => {
+                  finalizeStreamWithoutDone();
+                  dispatch(
+                    setImageError(
+                      "A geração de imagens terminou com falhas ou atrasos no stream.",
+                    ),
+                  );
+                }, 3000);
+              }
+            },
             onComplete: (docId, response) => {
+              clearCompletionFallback();
               eventSourceRef.current = null;
+              const expectedVisualCount = pendingVisualCountRef.current;
 
               const finalStreamedTitle = accumulatedTitleRef.current;
               if (finalStreamedTitle) {
-                setDocumentTitle(finalStreamedTitle);
+                setDocumentTitle(normalizePendingTitle(finalStreamedTitle));
+              } else if (response.title) {
+                setDocumentTitle(normalizePendingTitle(response.title));
               }
 
               setIsStreaming(false);
+              pendingVisualCountRef.current = 0;
+              completedVisualCountRef.current = 0;
 
               const chatAnswer = response.chatAnswer;
-              const generatedContent = response.generatedContent;
+              const finalContent = response.content;
+
+              if (finalContent) {
+                setContent(finalContent);
+              }
 
               // Update sources if returned in response
               if (response.sources && response.sources.length > 0) {
@@ -227,20 +363,17 @@ export default function DocumentEditor({
                   {
                     role: "assistant" as const,
                     content: chatAnswer,
-                    hasUpdate: !!generatedContent,
+                    hasUpdate: !!finalContent,
                   },
                 ]);
               }
 
-              if (generatedContent && editorRef.current) {
+              if (finalContent && editorRef.current) {
                 // Enter suggestions mode with diff
                 try {
                   const editor = editorRef.current;
                   const baseDoc = editor.state.doc;
-                  const aiNode = markdownToNode(
-                    generatedContent,
-                    editor.schema,
-                  );
+                  const aiNode = markdownToNode(finalContent, editor.schema);
 
                   // Compute diff between current and AI-generated content
                   const diffChanges = computeDiff(baseDoc, aiNode);
@@ -258,7 +391,7 @@ export default function DocumentEditor({
                     }
 
                     // Replace editor content with AI content
-                    const aiHtml = markdownToHtml(generatedContent);
+                    const aiHtml = markdownToHtml(finalContent);
                     editor.commands.setContent(aiHtml, { emitUpdate: false });
 
                     // Apply diff decorations
@@ -266,8 +399,7 @@ export default function DocumentEditor({
                     setIsSuggestionsMode(true);
                   } else {
                     // No differences — just update content directly
-                    setContent(generatedContent);
-                    handleAutosave(generatedContent);
+                    setContent(finalContent);
                     setShowUpdateIndicator(true);
                     setTimeout(
                       () => setShowUpdateIndicator(false),
@@ -277,18 +409,16 @@ export default function DocumentEditor({
                 } catch (err) {
                   console.error("Error computing diff:", err);
                   // Fallback: direct update without diff
-                  setContent(generatedContent);
-                  handleAutosave(generatedContent);
+                  setContent(finalContent);
                   setShowUpdateIndicator(true);
                   setTimeout(
                     () => setShowUpdateIndicator(false),
                     AUTO_SAVE_DELAY,
                   );
                 }
-              } else if (generatedContent) {
+              } else if (finalContent) {
                 // No editor ref available, direct update
-                setContent(generatedContent);
-                handleAutosave(generatedContent);
+                setContent(finalContent);
                 setShowUpdateIndicator(true);
                 setTimeout(
                   () => setShowUpdateIndicator(false),
@@ -299,14 +429,51 @@ export default function DocumentEditor({
               dispatch(clearStreamInfo());
               if (docId === documentId) {
                 dispatch(fetchDocument(docId));
+                dispatch(fetchDocumentImages(docId));
               }
+              dispatch(setGeneratingImages(false));
               dispatch(fetchUsage());
+
+              if (expectedVisualCount > 0) {
+                const pollImages = async (attempt: number) => {
+                  try {
+                    const latestImages = await dispatch(
+                      fetchDocumentImages(docId),
+                    ).unwrap();
+                    const settledCount = latestImages.filter(
+                      (image) =>
+                        image.status === "completed" ||
+                        image.status === "failed",
+                    ).length;
+
+                    if (settledCount >= expectedVisualCount || attempt >= 8) {
+                      return;
+                    }
+                  } catch {
+                    if (attempt >= 8) {
+                      return;
+                    }
+                  }
+
+                  setTimeout(() => {
+                    void pollImages(attempt + 1);
+                  }, 1500);
+                };
+
+                setTimeout(() => {
+                  void pollImages(1);
+                }, 1200);
+              }
             },
             onError: (errorMsg) => {
+              clearCompletionFallback();
               eventSourceRef.current = null;
               setIsStreaming(false);
+              pendingVisualCountRef.current = 0;
+              completedVisualCountRef.current = 0;
               setError(errorMsg);
               dispatch(clearStreamInfo());
+              dispatch(setGeneratingImages(false));
             },
           },
           token,
@@ -320,16 +487,26 @@ export default function DocumentEditor({
             setIsStreaming(false);
             setError("Erro ao iniciar streaming");
             dispatch(clearStreamInfo());
+            dispatch(setGeneratingImages(false));
           });
       };
 
       startStream();
     }
-  }, [streamInfo, documentId, dispatch, setContent, getToken, handleAutosave]);
+  }, [
+    streamInfo,
+    documentId,
+    dispatch,
+    setContent,
+    getToken,
+    handleAutosave,
+    normalizePendingTitle,
+  ]);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
+      clearCompletionFallback();
       if (eventSourceRef.current) {
         eventSourceRef.current();
         eventSourceRef.current = null;
@@ -405,15 +582,23 @@ export default function DocumentEditor({
       return;
     }
     if (currentDocument?.title && !isStreaming) {
+      const normalizedCurrentTitle = normalizePendingTitle(currentDocument.title);
       if (
         !documentTitle ||
-        currentDocument.title === documentTitle ||
-        currentDocument.title.length >= documentTitle.length
+        normalizedCurrentTitle === documentTitle ||
+        normalizedCurrentTitle.length >= documentTitle.length
       ) {
-        setDocumentTitle(currentDocument.title);
+        setDocumentTitle(normalizedCurrentTitle);
       }
     }
-  }, [currentDocument?.id, currentDocument?.title, documentId, isStreaming, documentTitle]);
+  }, [
+    currentDocument?.id,
+    currentDocument?.title,
+    documentId,
+    isStreaming,
+    documentTitle,
+    normalizePendingTitle,
+  ]);
 
   // Load initial prompt from document metadata
   useEffect(() => {
@@ -447,6 +632,16 @@ export default function DocumentEditor({
     setSources(currentDocument?.sources ?? []);
   }, [currentDocument?.id, currentDocument?.sources, documentId, isStreaming]);
 
+  // Keep image state in sync with the current document.
+  useEffect(() => {
+    dispatch(setImages([]));
+    dispatch(setImageError(null));
+
+    if (currentDocument?.id && currentDocument.id === documentId) {
+      dispatch(fetchDocumentImages(currentDocument.id));
+    }
+  }, [dispatch, currentDocument?.id, documentId]);
+
   const handleChatSubmit = useCallback(
     async (userMessage: string) => {
       if (!currentDocument?.id || currentDocument.id !== documentId) {
@@ -474,6 +669,7 @@ export default function DocumentEditor({
         const response = await dispatch(
           chatWithDocument({ id: currentDocument.id, message: userMessage }),
         ).unwrap();
+        dispatch(fetchDocumentImages(currentDocument.id));
 
         // Add chat answer to history
         if (response.chatAnswer) {
@@ -550,6 +746,8 @@ export default function DocumentEditor({
     (streamInfo?.id === documentId && streamInfo?.status === "generating");
   const activeDocument =
     currentDocument?.id === documentId ? currentDocument : null;
+  const resolvedTitle =
+    documentTitle || normalizePendingTitle(activeDocument?.title || "");
 
   // Handle exiting diff / suggestions mode
   const handleExitDiffMode = useCallback(() => {
@@ -598,12 +796,18 @@ export default function DocumentEditor({
     <>
       <div className="flex-1 flex flex-col w-full">
         <DocumentTitle
-          title={documentTitle || activeDocument?.title || ""}
+          title={resolvedTitle}
           defaultTitle={defaultTitle}
           onSave={handleTitleSave}
           isSaving={isSaving}
           isStreaming={isGenerating && !!documentTitle}
         />
+
+        {imageError && (
+          <div className="mb-4 rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            {imageError}
+          </div>
+        )}
 
         <div className="relative grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-[minmax(0,1fr)_400px]">
           <div className="flex flex-col min-w-0">
@@ -615,9 +819,7 @@ export default function DocumentEditor({
                   </h2>
                   <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                     <ShareButton
-                      title={
-                        documentTitle || activeDocument?.title || defaultTitle
-                      }
+                      title={resolvedTitle || defaultTitle}
                       content={content}
                       disabled={isGenerating || !content}
                       documentId={documentId}
@@ -627,10 +829,10 @@ export default function DocumentEditor({
                       sharedStatus={activeDocument?.sharedResourceStatus}
                     />
                     <DownloadButton
-                      title={
-                        documentTitle || activeDocument?.title || defaultTitle
-                      }
+                      title={resolvedTitle || defaultTitle}
                       content={content}
+                      images={images}
+                      isProUser={isPremium}
                       disabled={isGenerating || !content}
                     />
                   </div>
@@ -675,6 +877,16 @@ export default function DocumentEditor({
                           ✨ Documento Refinado
                         </span>
                       )}
+                      {!isSubscriptionLoading && !isPremium && (
+                        <Link
+                          href={Routes.CHECKOUT}
+                          className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-violet-100 to-fuchsia-100 dark:from-violet-900/30 dark:to-fuchsia-900/30 border border-violet-200 dark:border-violet-800 text-xs font-medium text-violet-700 dark:text-violet-300 hover:scale-105 transition-transform"
+                          title="✨ Requer Scooli Pro: faz upgrade para gerar imagens automáticas"
+                        >
+                          <Sparkles className="w-3.5 h-3.5" />
+                          <span>Imagens estão disponiveis no plano PRO</span>
+                        </Link>
+                      )}
                       {isGenerating && (
                         <div className="flex items-center space-x-2 text-primary">
                           <Loader2 className="w-4 h-4 animate-spin" />
@@ -684,11 +896,7 @@ export default function DocumentEditor({
                         </div>
                       )}
                       <ShareButton
-                        title={
-                          documentTitle ||
-                          activeDocument?.title ||
-                          defaultTitle
-                        }
+                        title={resolvedTitle || defaultTitle}
                         content={content}
                         disabled={isGenerating || !content}
                         documentId={documentId}
@@ -698,12 +906,10 @@ export default function DocumentEditor({
                         sharedStatus={activeDocument?.sharedResourceStatus}
                       />
                       <DownloadButton
-                        title={
-                          documentTitle ||
-                          activeDocument?.title ||
-                          defaultTitle
-                        }
+                        title={resolvedTitle || defaultTitle}
                         content={content}
+                        images={images}
+                        isProUser={isPremium}
                         disabled={isGenerating || !content}
                       />
                     </div>

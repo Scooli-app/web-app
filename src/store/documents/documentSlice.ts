@@ -1,9 +1,12 @@
 import {
   chatWithDocument as chatWithDocumentService,
   createDocument as createDocumentService,
+  deleteDocumentImage as deleteDocumentImageService,
   // deleteDocument as deleteDocumentService,
   getDocument as getDocumentService,
+  getDocumentImages as getDocumentImagesService,
   getDocuments as getDocumentsService,
+  regenerateDocumentImage as regenerateDocumentImageService,
   updateDocument as updateDocumentService,
   type DocumentFilters,
 } from "@/services/api";
@@ -12,8 +15,9 @@ import type {
   CreateDocumentStreamResponse,
   Document,
 } from "@/shared/types";
+import type { DocumentImage } from "@/shared/types/document";
 import { fetchUsage } from "@/store/subscription/subscriptionSlice";
-import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+import { createAsyncThunk, createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
 export type { DocumentFilters };
 
@@ -41,6 +45,9 @@ interface DocumentState {
   error: string | null;
   pendingInitialPrompt: string | null;
   pendingDocumentId: string | null;
+  images: DocumentImage[];
+  isGeneratingImages: boolean;
+  imageError: string | null;
 }
 
 const initialState: DocumentState = {
@@ -61,6 +68,52 @@ const initialState: DocumentState = {
   error: null,
   pendingInitialPrompt: null,
   pendingDocumentId: null,
+  images: [],
+  isGeneratingImages: false,
+  imageError: null,
+};
+
+const normalizeDocumentImage = (image: DocumentImage): DocumentImage => ({
+  ...image,
+  url: image.url ?? null,
+  status: image.status ?? (image.url ? "completed" : "pending"),
+  contentType: image.contentType ?? null,
+  placeholderToken: image.placeholderToken ?? null,
+  errorMessage: image.errorMessage ?? null,
+});
+
+const normalizeDocumentImages = (images: DocumentImage[]): DocumentImage[] =>
+  images.map((image) => normalizeDocumentImage(image));
+
+const upsertDocumentImage = (
+  images: DocumentImage[],
+  incoming: DocumentImage
+): DocumentImage[] => {
+  const normalizedIncoming = normalizeDocumentImage(incoming);
+  const index = images.findIndex(
+    (image) =>
+      image.id === normalizedIncoming.id ||
+      (!!normalizedIncoming.placeholderToken &&
+        image.placeholderToken === normalizedIncoming.placeholderToken)
+  );
+
+  if (index === -1) {
+    return normalizeDocumentImages([...images, normalizedIncoming]);
+  }
+
+  const existing = images[index];
+  const merged = normalizeDocumentImage({
+    ...existing,
+    ...normalizedIncoming,
+    url: normalizedIncoming.url ?? existing.url ?? null,
+    exerciseType: normalizedIncoming.exerciseType ?? existing.exerciseType ?? null,
+    contentType: normalizedIncoming.contentType ?? existing.contentType ?? null,
+    placeholderToken:
+      normalizedIncoming.placeholderToken ?? existing.placeholderToken ?? null,
+    errorMessage: normalizedIncoming.errorMessage,
+  });
+
+  return images.map((image, imageIndex) => (imageIndex === index ? merged : image));
 };
 
 // Async Thunks
@@ -120,8 +173,8 @@ export const fetchDocument = createAsyncThunk(
   {
     condition: (id, { getState }) => {
       const state = getState() as { documents: DocumentState };
-      const { currentDocument, isLoading } = state.documents;
-      if (isLoading || currentDocument?.id === id) {
+      const { isLoading } = state.documents;
+      if (isLoading) {
         return false;
       }
       return true;
@@ -197,8 +250,60 @@ export const chatWithDocument = createAsyncThunk(
 //         error instanceof Error ? error.message : "Failed to delete document"
 //       );
 //     }
+//     }
 //   }
 // );
+
+export const fetchDocumentImages = createAsyncThunk(
+  "documents/fetchDocumentImages",
+  async (documentId: string, { rejectWithValue }) => {
+    try {
+      const images = await getDocumentImagesService(documentId);
+      return images;
+    } catch (error) {
+      return rejectWithValue(
+        error instanceof Error ? error.message : "Failed to fetch document images"
+      );
+    }
+  }
+);
+
+export const regenerateDocumentImage = createAsyncThunk(
+  "documents/regenerateDocumentImage",
+  async (
+    {
+      documentId,
+      imageId,
+      prompt,
+    }: { documentId: string; imageId: string; prompt?: string },
+    { rejectWithValue }
+  ) => {
+    try {
+      return await regenerateDocumentImageService(documentId, imageId, prompt);
+    } catch (error) {
+      return rejectWithValue(
+        error instanceof Error ? error.message : "Failed to regenerate document image"
+      );
+    }
+  }
+);
+
+export const deleteDocumentImage = createAsyncThunk(
+  "documents/deleteDocumentImage",
+  async (
+    { documentId, imageId }: { documentId: string; imageId: string },
+    { rejectWithValue }
+  ) => {
+    try {
+      await deleteDocumentImageService(documentId, imageId);
+      return imageId;
+    } catch (error) {
+      return rejectWithValue(
+        error instanceof Error ? error.message : "Failed to delete document image"
+      );
+    }
+  }
+);
 
 const documentSlice = createSlice({
   name: "documents",
@@ -261,6 +366,18 @@ const documentSlice = createSlice({
             }
           : doc
       );
+    },
+    setImages(state, action: PayloadAction<DocumentImage[]>) {
+      state.images = normalizeDocumentImages(action.payload);
+    },
+    upsertImage(state, action: PayloadAction<DocumentImage>) {
+      state.images = upsertDocumentImage(state.images, action.payload);
+    },
+    setGeneratingImages(state, action: PayloadAction<boolean>) {
+      state.isGeneratingImages = action.payload;
+    },
+    setImageError(state, action: PayloadAction<string | null>) {
+      state.imageError = action.payload;
     },
   },
   extraReducers: (builder) => {
@@ -393,7 +510,7 @@ const documentSlice = createSlice({
       .addCase(chatWithDocument.rejected, (state, action) => {
         state.error = action.payload as string;
         state.isChatting = false;
-      });
+      })
     // // Delete Document
     // .addCase(deleteDocument.pending, (state) => {
     //   state.isLoading = true;
@@ -411,6 +528,59 @@ const documentSlice = createSlice({
     //   state.error = action.payload as string;
     //   state.isLoading = false;
     // });
+      
+      // Images
+      .addCase(fetchDocumentImages.pending, (state) => {
+        state.imageError = null;
+      })
+      .addCase(fetchDocumentImages.fulfilled, (state, action) => {
+        state.images = normalizeDocumentImages(action.payload);
+      })
+      .addCase(fetchDocumentImages.rejected, (state, action) => {
+        state.imageError = action.payload as string;
+      })
+      .addCase(regenerateDocumentImage.pending, (state, action) => {
+        state.isGeneratingImages = true;
+        state.imageError = null;
+        state.images = state.images.map((image) =>
+          image.id === action.meta.arg.imageId
+            ? {
+                ...image,
+                status: "generating",
+              }
+            : image
+        );
+      })
+      .addCase(regenerateDocumentImage.fulfilled, (state, action) => {
+        state.isGeneratingImages = false;
+        state.images = state.images.map((img) =>
+          img.id === action.payload.id
+            ? {
+                ...img,
+                url: action.payload.newUrl,
+                alt: action.payload.alt ?? img.alt,
+                status: action.payload.status ?? "completed",
+                contentType: action.payload.contentType ?? img.contentType ?? null,
+                placeholderToken:
+                  action.payload.placeholderToken ?? img.placeholderToken ?? null,
+                errorMessage:
+                  action.payload.status === "completed"
+                    ? null
+                    : (action.payload.errorMessage ?? img.errorMessage ?? null),
+              }
+            : img
+        );
+      })
+      .addCase(regenerateDocumentImage.rejected, (state, action) => {
+        state.isGeneratingImages = false;
+        state.imageError = action.payload as string;
+      })
+      .addCase(deleteDocumentImage.fulfilled, (state, action) => {
+        state.images = state.images.filter(img => img.id !== action.payload);
+      })
+      .addCase(deleteDocumentImage.rejected, (state, action) => {
+        state.imageError = action.payload as string;
+      });
   },
 });
 
@@ -425,6 +595,10 @@ export const {
   clearStreamInfo,
   clearLastChatAnswer,
   updateDocumentOptimistic,
+  setImages,
+  upsertImage,
+  setGeneratingImages,
+  setImageError,
 } = documentSlice.actions;
 
 export default documentSlice.reducer;

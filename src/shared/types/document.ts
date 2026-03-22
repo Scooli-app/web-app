@@ -56,3 +56,35 @@ export interface RagSource {
   url?: string;
 }
 
+export type DocumentImageKind = "illustration" | "exercise";
+export type DocumentImageStatus =
+  | "pending"
+  | "generating"
+  | "completed"
+  | "failed";
+
+// Matches backend image list/SSE payload shape.
+export interface DocumentImage {
+  id: string;
+  url?: string | null;
+  alt: string;
+  kind: DocumentImageKind;
+  exerciseType?: string | null;
+  status?: DocumentImageStatus;
+  contentType?: string | null;
+  placeholderToken?: string | null;
+  errorMessage?: string | null;
+}
+
+// Matches backend regenerate endpoint payload.
+export interface RegenerateDocumentImageResponse {
+  id: string;
+  newUrl: string | null;
+  alt: string;
+  status?: DocumentImageStatus;
+  contentType?: string | null;
+  placeholderToken?: string | null;
+  errorMessage?: string | null;
+}
+
+
