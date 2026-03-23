@@ -226,6 +226,14 @@ function ChatContent({
                 )}
               </Button>
             </form>
+            <p
+              className={cn(
+                "text-center text-[11px] leading-4 text-muted-foreground/70",
+                isDesktop ? "mb-4" : "mb-2",
+              )}
+            >
+              A IA pode cometer erros. Revê sempre o conteúdo.
+            </p>
           </>
         ) : (
           <div className="flex-1 overflow-y-auto pb-6 animate-in fade-in slide-in-from-right-4 duration-300">
