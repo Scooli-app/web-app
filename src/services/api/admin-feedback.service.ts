@@ -33,21 +33,36 @@ export interface AdminFeedbackMetrics {
 export interface FeedbackFilters {
   page?: number;
   size?: number;
-  type?: FeedbackType | "ALL";
-  status?: FeedbackStatus | "ALL";
-  severity?: BugSeverity | "ALL";
+  type?: FeedbackType[];
+  status?: FeedbackStatus[];
+  severity?: BugSeverity[];
 }
+
+const appendMultiValueParam = (
+  params: URLSearchParams,
+  key: string,
+  values?: string[],
+) => {
+  if (!values?.length) {
+    return;
+  }
+
+  values.forEach((value) => params.append(key, value));
+};
 
 export const adminFeedbackService = {
   getFeedbackList: async (filters: FeedbackFilters = {}) => {
     const params = new URLSearchParams();
-    if (filters.page) params.append("page", filters.page.toString());
-    if (filters.size) params.append("size", filters.size.toString());
-    if (filters.type && filters.type !== "ALL") params.append("type", filters.type);
-    if (filters.status && filters.status !== "ALL") params.append("status", filters.status);
-    if (filters.severity && filters.severity !== "ALL") params.append("severity", filters.severity);
+    if (filters.page !== undefined) params.append("page", filters.page.toString());
+    if (filters.size !== undefined) params.append("size", filters.size.toString());
+    appendMultiValueParam(params, "type", filters.type);
+    appendMultiValueParam(params, "status", filters.status);
+    appendMultiValueParam(params, "severity", filters.severity);
 
-    const response = await apiClient.get<{ items: AdminFeedbackListItem[]; total: number }>(`/admin/feedback?${params.toString()}`);
+    const query = params.toString();
+    const endpoint = query ? `/admin/feedback?${query}` : "/admin/feedback";
+
+    const response = await apiClient.get<{ items: AdminFeedbackListItem[]; total: number }>(endpoint);
     return response.data;
   },
 
