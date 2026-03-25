@@ -2,7 +2,20 @@
  * Document types and interfaces
  */
 
-export type DocumentType = "lessonPlan" | "quiz" | "presentation" | "test";
+export type DocumentType =
+  | "lessonPlan"
+  | "quiz"
+  | "presentation"
+  | "test"
+  | "worksheet";
+
+// `assessment` remains only for compatibility with legacy worksheet documents.
+export type WorksheetVariant =
+  | "practice"
+  | "diagnostic"
+  | "formative"
+  | "exploration"
+  | "assessment";
 
 export enum TeachingMethod {
   ACTIVE = "active",
@@ -18,6 +31,7 @@ export interface DocumentMetadata {
   schoolYear?: number;
   templateId?: string;
   documentType?: DocumentType;
+  worksheetVariant?: WorksheetVariant;
   [key: string]: unknown;
 }
 

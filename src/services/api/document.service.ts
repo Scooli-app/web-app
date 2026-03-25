@@ -20,6 +20,7 @@ import type {
   GetDocumentsResponse,
   StreamedResponse,
   StreamEvent,
+  WorksheetVariant,
 } from "@/shared/types";
 import type { DocumentImage } from "@/shared/types/document";
 import axios, { type AxiosError } from "axios";
@@ -316,10 +317,11 @@ export async function deleteDocuments(
  */
 export interface DocumentImportRequest {
   title: string;
-  documentType: string;
+  documentType: DocumentType;
   subject: string;
   schoolYear: number;
   fileKey: string;
+  worksheetVariant?: WorksheetVariant;
 }
 
 export async function getUploadUrl(

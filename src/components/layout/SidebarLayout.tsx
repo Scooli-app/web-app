@@ -50,6 +50,7 @@ import {
 } from "@clerk/nextjs";
 import {
   BookOpen,
+  ClipboardList,
   Clock,
   FileCheck,
   FileText,
@@ -123,6 +124,12 @@ const CONTENT_CREATION: NavItem[] = [
     href: Routes.QUIZ,
     icon: HelpCircle,
     description: "Criar e editar quizzes",
+  },
+  {
+    title: "Fichas de Trabalho",
+    href: Routes.WORKSHEET,
+    icon: ClipboardList,
+    description: "Criar e editar fichas de trabalho",
   },
   {
     title: "Apresentações",
@@ -356,6 +363,12 @@ const SidebarNavigationContent = memo(function SidebarNavigationContent({
   const isCommunityEnabled = features[FeatureFlag.COMMUNITY_LIBRARY] === true;
   const isPresentationCreationEnabled =
     features[FeatureFlag.PRESENTATION_CREATION] === true;
+  const isWorksheetCreationEnabled =
+    features[FeatureFlag.WORKSHEET_CREATION] === true;
+  const disabledContentCreationKeys = [
+    ...(isWorksheetCreationEnabled ? [] : [Routes.WORKSHEET]),
+    ...(isPresentationCreationEnabled ? [] : [Routes.PRESENTATION]),
+  ];
 
   return (
     <>
@@ -386,9 +399,7 @@ const SidebarNavigationContent = memo(function SidebarNavigationContent({
           items={CONTENT_CREATION}
           pathname={pathname}
           onItemClick={onItemClick}
-          disabledKeys={
-            isPresentationCreationEnabled ? [] : [Routes.PRESENTATION]
-          }
+          disabledKeys={disabledContentCreationKeys}
         />
 
         <Separator className="my-4" />

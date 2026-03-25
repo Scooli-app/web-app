@@ -53,10 +53,16 @@ const FEATURE_FLAG_METADATA: Record<string, { name: string; description: string;
       "Controla se os utilizadores podem criar apresentacoes a partir da plataforma.",
     order: 30,
   },
+  [FeatureFlagKey.WORKSHEET_CREATION]: {
+    name: "Criacao de Fichas de Trabalho",
+    description:
+      "Controla se os utilizadores podem criar fichas de trabalho a partir da plataforma.",
+    order: 35,
+  },
   [FeatureFlagKey.DOCUMENT_IMAGES]: {
     name: "Imagens em Documentos",
     description:
-      "Controla a geracao e inclusao de imagens automaticas em testes, quizzes e planos de aula.",
+      "Controla a geracao e inclusao de imagens automaticas em testes, quizzes, fichas e planos de aula.",
     order: 40,
   },
 };
