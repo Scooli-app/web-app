@@ -53,6 +53,7 @@ const subscriptionSlice = createSlice({
       state.subscription = null;
       state.usage = null;
       state.lastUpdated = null;
+      state.loading = false;
       state.error = null;
     },
   },
