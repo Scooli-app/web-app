@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button";
+﻿import { Button } from "@/components/ui/button";
 import { GenerationCostHint } from "@/components/ui/generation-cost-hint";
 import { Loader2, Sparkles } from "lucide-react";
 import type { DocumentTypeConfig } from "../types";
@@ -54,6 +54,9 @@ export function FormActions({
             </>
           )}
         </Button>
+        <p className="text-center text-[11px] leading-4 text-muted-foreground/70">
+          A IA pode cometer erros. Revê sempre o conteúdo.
+        </p>
         <p className="text-center text-xs sm:text-sm text-muted-foreground">
           <span className="text-destructive">*</span> Campos obrigatórios
         </p>
@@ -61,3 +64,5 @@ export function FormActions({
     </>
   );
 }
+
+

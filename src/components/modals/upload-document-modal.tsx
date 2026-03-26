@@ -1,6 +1,10 @@
 "use client";
 
-import { GRADE_GROUPS, SUBJECTS, SUBJECTS_BY_GRADE } from "@/components/document-creation/constants";
+import {
+  GRADE_GROUPS,
+  SUBJECTS,
+  SUBJECTS_BY_GRADE,
+} from "@/components/document-creation/constants";
 import { documentTypes } from "@/components/document-creation/documentTypes";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,10 +24,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { getUploadUrl, importDocument, waitForDocument } from "@/services/api/document.service";
+import {
+  getUploadUrl,
+  importDocument,
+  waitForDocument,
+} from "@/services/api/document.service";
+import type { DocumentType, WorksheetVariant } from "@/shared/types";
 import { cn } from "@/shared/utils/utils";
+import { selectIsWorksheetCreationEnabled } from "@/store/features/selectors";
+import { useAppSelector } from "@/store/hooks";
 import { AlertCircle, FilePlus, Loader2, UploadCloud, X } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 interface UploadDocumentModalProps {
@@ -31,33 +42,63 @@ interface UploadDocumentModalProps {
   onClose: () => void;
 }
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const ALLOWED_TYPES = [
   "application/pdf",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 ];
 
-export function UploadDocumentModal({ isOpen, onClose }: UploadDocumentModalProps) {
+const WORKSHEET_VARIANT_OPTIONS: Array<{
+  value: Exclude<WorksheetVariant, "assessment">;
+  label: string;
+}> = [
+  { value: "practice", label: "Treinar e consolidar" },
+  { value: "diagnostic", label: "Diagnosticar conhecimentos" },
+  { value: "formative", label: "Acompanhar aprendizagem" },
+  { value: "exploration", label: "Introduzir novo conteúdo" },
+];
+
+export function UploadDocumentModal({
+  isOpen,
+  onClose,
+}: UploadDocumentModalProps) {
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState("");
-  const [documentType, setDocumentType] = useState<string>("");
+  const [documentType, setDocumentType] = useState<DocumentType | "">("");
+  const [worksheetVariant, setWorksheetVariant] = useState<
+    WorksheetVariant | ""
+  >("");
   const [schoolYear, setSchoolYear] = useState<string>("");
   const [subject, setSubject] = useState<string>("");
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const isWorksheetCreationEnabled = useAppSelector(
+    selectIsWorksheetCreationEnabled
+  );
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const availableDocumentTypes = useMemo(
+    () =>
+      Object.values(documentTypes).filter(
+        (type) => type.id !== "worksheet" || isWorksheetCreationEnabled
+      ),
+    [isWorksheetCreationEnabled]
+  );
+
   useEffect(() => {
-    if (isOpen) {
-      setFile(null);
-      setTitle("");
-      setDocumentType("");
-      setSchoolYear("");
-      setSubject("");
-      setError(null);
-      setIsUploading(false);
+    if (!isOpen) {
+      return;
     }
+
+    setFile(null);
+    setTitle("");
+    setDocumentType("");
+    setWorksheetVariant("");
+    setSchoolYear("");
+    setSubject("");
+    setError(null);
+    setIsUploading(false);
   }, [isOpen]);
 
   useEffect(() => {
@@ -69,58 +110,83 @@ export function UploadDocumentModal({ isOpen, onClose }: UploadDocumentModalProp
     }
   }, [schoolYear, subject]);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  useEffect(() => {
+    if (documentType !== "worksheet" && worksheetVariant) {
+      setWorksheetVariant("");
+    }
+  }, [documentType, worksheetVariant]);
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setError(null);
-    if (e.target.files && e.target.files[0]) {
-      const selectedFile = e.target.files[0];
-      if (!ALLOWED_TYPES.includes(selectedFile.type)) {
-        setError("Apenas ficheiros PDF e DOCX são suportados.");
-        setFile(null);
-        return;
-      }
-      if (selectedFile.size > MAX_FILE_SIZE) {
-        setError("O tamanho máximo do ficheiro é 10MB.");
-        setFile(null);
-        return;
-      }
-      setFile(selectedFile);
-      if (!title) {
-        setTitle(selectedFile.name.replace(/\.[^/.]+$/, ""));
-      }
+    const selectedFile = event.target.files?.[0];
+    if (!selectedFile) {
+      return;
+    }
+
+    if (!ALLOWED_TYPES.includes(selectedFile.type)) {
+      setError("Apenas ficheiros PDF e DOCX são suportados.");
+      setFile(null);
+      return;
+    }
+
+    if (selectedFile.size > MAX_FILE_SIZE) {
+      setError("O tamanho máximo do ficheiro é 10MB.");
+      setFile(null);
+      return;
+    }
+
+    setFile(selectedFile);
+    if (!title) {
+      setTitle(selectedFile.name.replace(/\.[^/.]+$/, ""));
     }
   };
 
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
   };
 
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
     setError(null);
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      const droppedFile = e.dataTransfer.files[0];
-      if (!ALLOWED_TYPES.includes(droppedFile.type)) {
-        setError("Apenas ficheiros PDF e DOCX são suportados.");
-        return;
-      }
-      if (droppedFile.size > MAX_FILE_SIZE) {
-        setError("O tamanho máximo do ficheiro é 10MB.");
-        return;
-      }
-      setFile(droppedFile);
-      if (!title) {
-        setTitle(droppedFile.name.replace(/\.[^/.]+$/, ""));
-      }
+
+    const droppedFile = event.dataTransfer.files?.[0];
+    if (!droppedFile) {
+      return;
+    }
+
+    if (!ALLOWED_TYPES.includes(droppedFile.type)) {
+      setError("Apenas ficheiros PDF e DOCX são suportados.");
+      return;
+    }
+
+    if (droppedFile.size > MAX_FILE_SIZE) {
+      setError("O tamanho máximo do ficheiro é 10MB.");
+      return;
+    }
+
+    setFile(droppedFile);
+    if (!title) {
+      setTitle(droppedFile.name.replace(/\.[^/.]+$/, ""));
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!file) { setError("Por favor, selecione um ficheiro."); return; }
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+
+    if (!file) {
+      setError("Por favor, selecione um ficheiro.");
+      return;
+    }
+
     if (!title || !documentType || !schoolYear || !subject) {
       setError("Por favor, preencha todos os campos obrigatórios.");
+      return;
+    }
+
+    if (documentType === "worksheet" && !worksheetVariant) {
+      setError("Por favor, selecione o objetivo principal da ficha.");
       return;
     }
 
@@ -128,14 +194,16 @@ export function UploadDocumentModal({ isOpen, onClose }: UploadDocumentModalProp
       setIsUploading(true);
       setError(null);
 
-      const subjectValue = SUBJECTS.find((s) => s.id === subject)?.value || subject;
+      const subjectValue =
+        SUBJECTS.find((item) => item.id === subject)?.value || subject;
 
-      // Wrap the async flow in a promise for the toast
       const importPromise = (async () => {
-        // 1. Get Presigned URL
-        const { uploadUrl, fileKey } = await getUploadUrl(file.name, file.type, documentType);
+        const { uploadUrl, fileKey } = await getUploadUrl(
+          file.name,
+          file.type,
+          documentType
+        );
 
-        // 2. Upload file directly to R2
         const uploadResponse = await fetch(uploadUrl, {
           method: "PUT",
           headers: { "Content-Type": file.type },
@@ -146,67 +214,71 @@ export function UploadDocumentModal({ isOpen, onClose }: UploadDocumentModalProp
           throw new Error("Falha ao carregar o ficheiro para o armazenamento.");
         }
 
-        // 3. Trigger Import (now returns 202 Accepted with the future document ID)
         const { id } = await importDocument({
           title,
           documentType,
           subject: subjectValue,
-          schoolYear: parseInt(schoolYear),
+          schoolYear: parseInt(schoolYear, 10),
           fileKey,
+          worksheetVariant:
+            documentType === "worksheet" ? worksheetVariant || undefined : undefined,
         });
 
-        // 4. Poll and wait until the document is actually generated & saved
         await waitForDocument(id);
       })();
 
-      toast.promise(importPromise.then(() => {
-        window.location.reload();
-      }), {
-        loading: "A fazer upload, pode demorar um pouco...",
-        success: "Upload concluído! A atualizar galeria...",
-        error: (err: Error) => err.message || "Ocorreu um erro ao importar o documento. Tente novamente.",
-      });
+      toast.promise(
+        importPromise.then(() => {
+          window.location.reload();
+        }),
+        {
+          loading: "A fazer upload, pode demorar um pouco...",
+          success: "Upload concluído! A atualizar galeria...",
+          error: (err: Error) =>
+            err.message ||
+            "Ocorreu um erro ao importar o documento. Tente novamente.",
+        }
+      );
 
-      // Close immediately to unblock the user while it processes in the background!
       onClose();
-
     } catch (err: unknown) {
       console.error("Import failed entirely:", err);
-      // Only reach here if setting up the promise itself fails synchronously which shouldn't happen
     } finally {
       setIsUploading(false);
     }
   };
 
-  const isFormValid = file && title && documentType && schoolYear && subject;
+  const isFormValid =
+    !!file &&
+    !!title &&
+    !!documentType &&
+    !!schoolYear &&
+    !!subject &&
+    (documentType !== "worksheet" || !!worksheetVariant);
 
   return (
     <Dialog open={isOpen} onOpenChange={isUploading ? undefined : onClose}>
-      <DialogContent className="max-w-md p-0 overflow-hidden">
-
-        {/* Header */}
-        <div className="pt-6 pb-4 px-6 border-b border-border">
-          <div className="flex items-center gap-3 mb-1">
-            <div className="w-9 h-9 bg-primary/10 rounded-xl flex items-center justify-center flex-shrink-0">
-              <UploadCloud className="w-5 h-5 text-primary" />
+      <DialogContent className="max-w-md overflow-hidden p-0">
+        <div className="border-b border-border px-6 pb-4 pt-6">
+          <div className="mb-1 flex items-center gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+              <UploadCloud className="h-5 w-5 text-primary" />
             </div>
             <DialogTitle className="text-lg font-semibold text-foreground">
               Importar Documento
             </DialogTitle>
           </div>
-          <DialogDescription className="text-sm text-muted-foreground ml-12">
-            Faça upload de um PDF ou DOCX. A IA irá converter e estruturar o conteúdo.
+          <DialogDescription className="ml-12 text-sm text-muted-foreground">
+            Faça upload de um PDF ou DOCX. A IA irá converter e estruturar o
+            conteúdo.
           </DialogDescription>
         </div>
 
-        {/* Body */}
         <form onSubmit={handleSubmit}>
-          <div className="p-6 space-y-4">
-
-            {/* File Drop Zone */}
+          <div className="space-y-4 p-6">
             <div
               className={cn(
-                "border-2 border-dashed rounded-xl p-5 flex flex-col items-center justify-center cursor-pointer transition-all",
+                "flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-5 transition-all",
                 file
                   ? "border-primary/40 bg-primary/5"
                   : "border-border hover:border-primary/40 hover:bg-muted/50",
@@ -223,69 +295,87 @@ export function UploadDocumentModal({ isOpen, onClose }: UploadDocumentModalProp
                 onChange={handleFileChange}
                 accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
               />
+
               {file ? (
-                <div className="flex items-center gap-3 w-full">
-                  <div className="w-9 h-9 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <FilePlus className="w-5 h-5 text-primary" />
+                <div className="flex w-full items-center gap-3">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                    <FilePlus className="h-5 w-5 text-primary" />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">{file.name}</p>
-                    <p className="text-xs text-muted-foreground">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-foreground">
+                      {file.name}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {(file.size / 1024 / 1024).toFixed(2)} MB
+                    </p>
                   </div>
                   <button
                     type="button"
-                    onClick={(e) => { e.stopPropagation(); setFile(null); }}
-                    className="w-6 h-6 flex items-center justify-center rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors flex-shrink-0"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setFile(null);
+                    }}
+                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
                   >
-                    <X className="w-3.5 h-3.5" />
+                    <X className="h-3.5 w-3.5" />
                   </button>
                 </div>
               ) : (
-                <div className="flex flex-col items-center text-center gap-1.5">
-                  <UploadCloud className="w-7 h-7 text-muted-foreground" />
-                  <p className="text-sm font-medium text-foreground">Clique ou arraste o ficheiro</p>
-                  <p className="text-xs text-muted-foreground">PDF ou DOCX · Máx. 10MB</p>
+                <div className="flex flex-col items-center gap-1.5 text-center">
+                  <UploadCloud className="h-7 w-7 text-muted-foreground" />
+                  <p className="text-sm font-medium text-foreground">
+                    Clique ou arraste o ficheiro
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    PDF ou DOCX · Máx. 10MB
+                  </p>
                 </div>
               )}
             </div>
 
             {error && (
-              <div className="flex items-start gap-2 bg-destructive/10 text-destructive border border-destructive/20 rounded-lg p-3">
-                <AlertCircle className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
+              <div className="flex items-start gap-2 rounded-lg border border-destructive/20 bg-destructive/10 p-3 text-destructive">
+                <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                 <p className="text-xs">{error}</p>
               </div>
             )}
 
-            {/* Warning */}
-            <div className="flex items-start gap-2 bg-muted/60 rounded-lg p-3 border border-border/50">
-              <AlertCircle className="h-3.5 w-3.5 mt-0.5 flex-shrink-0 text-muted-foreground" />
+            <div className="flex items-start gap-2 rounded-lg border border-border/50 bg-muted/60 p-3">
+              <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
               <p className="text-xs text-muted-foreground">
-                Imagens e formatação complexa poderão não ser preservadas. Documentos digitalizados sem texto legível serão rejeitados.
+                Imagens e formatação complexa poderão não ser preservadas.
+                Documentos digitalizados sem texto legível serão rejeitados.
               </p>
             </div>
 
-            {/* Title */}
             <div className="space-y-1.5">
-              <Label htmlFor="title" className="text-sm">Título do Documento</Label>
+              <Label htmlFor="title" className="text-sm">
+                Título do Documento
+              </Label>
               <Input
                 id="title"
                 value={title}
-                onChange={(e) => setTitle(e.target.value)}
+                onChange={(event) => setTitle(event.target.value)}
                 placeholder="Ex: Ficha de Frações"
                 disabled={isUploading}
               />
             </div>
 
-            {/* Document Type + School Year */}
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label htmlFor="docType" className="text-sm">Converter para</Label>
-                <Select value={documentType} onValueChange={setDocumentType} disabled={isUploading}>
+                <Label htmlFor="docType" className="text-sm">
+                  Converter para
+                </Label>
+                <Select
+                  value={documentType}
+                  onValueChange={(value) => setDocumentType(value as DocumentType)}
+                  disabled={isUploading}
+                >
                   <SelectTrigger id="docType">
                     <SelectValue placeholder="Selecione..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {Object.values(documentTypes).map((type) => (
+                    {availableDocumentTypes.map((type) => (
                       <SelectItem key={type.id} value={type.id}>
                         {type.title}
                       </SelectItem>
@@ -295,19 +385,29 @@ export function UploadDocumentModal({ isOpen, onClose }: UploadDocumentModalProp
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="schoolYear" className="text-sm">Ano Escolar</Label>
-                <Select value={schoolYear} onValueChange={setSchoolYear} disabled={isUploading}>
+                <Label htmlFor="schoolYear" className="text-sm">
+                  Ano Escolar
+                </Label>
+                <Select
+                  value={schoolYear}
+                  onValueChange={setSchoolYear}
+                  disabled={isUploading}
+                >
                   <SelectTrigger id="schoolYear" className="h-10">
                     <SelectValue placeholder="Selecione..." />
                   </SelectTrigger>
                   <SelectContent className="max-h-[300px]">
                     {GRADE_GROUPS.map((group) => (
                       <SelectGroup key={group.label}>
-                        <SelectLabel className="bg-background px-2 py-2 text-xs font-bold text-primary border-b border-border/50 mb-1">
+                        <SelectLabel className="mb-1 border-b border-border/50 bg-background px-2 py-2 text-xs font-bold text-primary">
                           {group.label}
                         </SelectLabel>
                         {group.grades.map((grade) => (
-                          <SelectItem key={grade.id} value={grade.id} className="py-2 px-3 text-sm cursor-pointer rounded-md focus:bg-accent focus:text-primary pl-4">
+                          <SelectItem
+                            key={grade.id}
+                            value={grade.id}
+                            className="cursor-pointer rounded-md py-2 pl-4 pr-3 text-sm focus:bg-accent focus:text-primary"
+                          >
                             {grade.label}
                           </SelectItem>
                         ))}
@@ -318,56 +418,103 @@ export function UploadDocumentModal({ isOpen, onClose }: UploadDocumentModalProp
               </div>
             </div>
 
-            {/* Subject */}
+            {documentType === "worksheet" && (
+              <div className="space-y-1.5">
+                <Label htmlFor="worksheetVariant" className="text-sm">
+                  Objetivo da ficha
+                </Label>
+                <Select
+                  value={worksheetVariant}
+                  onValueChange={(value) =>
+                    setWorksheetVariant(value as WorksheetVariant)
+                  }
+                  disabled={isUploading}
+                >
+                  <SelectTrigger id="worksheetVariant" className="h-10">
+                    <SelectValue placeholder="Selecione..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {WORKSHEET_VARIANT_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
             <div className="space-y-1.5">
-              <Label htmlFor="subject" className="text-sm">Disciplina</Label>
+              <Label htmlFor="subject" className="text-sm">
+                Disciplina
+              </Label>
               <Select
                 value={subject}
                 onValueChange={setSubject}
                 disabled={!schoolYear || isUploading}
               >
                 <SelectTrigger id="subject" className="h-10">
-                  <SelectValue placeholder={!schoolYear ? "Selecione primeiro o ano..." : "Selecione..."} />
+                  <SelectValue
+                    placeholder={
+                      !schoolYear
+                        ? "Selecione primeiro o ano..."
+                        : "Selecione..."
+                    }
+                  />
                 </SelectTrigger>
                 <SelectContent className="max-h-[300px]">
-                  {schoolYear && (() => {
-                    const validSubjectsIds = SUBJECTS_BY_GRADE[schoolYear] || [];
-                    const validSubjects = SUBJECTS.filter(s => validSubjectsIds.includes(s.id));
-                    const categories = [...new Set(validSubjects.map((s) => s.category))];
-                    return categories.map((category) => (
-                      <SelectGroup key={category}>
-                        <SelectLabel className="bg-background px-2 py-2 text-xs font-bold text-primary border-b border-border/50 mb-1">
-                          {category}
-                        </SelectLabel>
-                        {validSubjects
-                          .filter((s) => s.category === category)
-                          .map((s) => (
-                            <SelectItem key={s.id} value={s.id} className="py-2 px-3 text-sm cursor-pointer rounded-md focus:bg-accent focus:text-primary pl-4">
-                              {s.label}
-                            </SelectItem>
-                          ))}
-                      </SelectGroup>
-                    ));
-                  })()}
+                  {schoolYear &&
+                    (() => {
+                      const validSubjectsIds = SUBJECTS_BY_GRADE[schoolYear] || [];
+                      const validSubjects = SUBJECTS.filter((item) =>
+                        validSubjectsIds.includes(item.id)
+                      );
+                      const categories = [
+                        ...new Set(validSubjects.map((item) => item.category)),
+                      ];
+
+                      return categories.map((category) => (
+                        <SelectGroup key={category}>
+                          <SelectLabel className="mb-1 border-b border-border/50 bg-background px-2 py-2 text-xs font-bold text-primary">
+                            {category}
+                          </SelectLabel>
+                          {validSubjects
+                            .filter((item) => item.category === category)
+                            .map((item) => (
+                              <SelectItem
+                                key={item.id}
+                                value={item.id}
+                                className="cursor-pointer rounded-md py-2 pl-4 pr-3 text-sm focus:bg-accent focus:text-primary"
+                              >
+                                {item.label}
+                              </SelectItem>
+                            ))}
+                        </SelectGroup>
+                      ));
+                    })()}
                 </SelectContent>
               </Select>
             </div>
           </div>
 
-          {/* Footer */}
           <div className="flex flex-col-reverse gap-3 px-6 pb-6 pt-2 sm:flex-row sm:items-center sm:justify-end">
-            <Button type="button" variant="outline" onClick={onClose} disabled={isUploading}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              disabled={isUploading}
+            >
               Cancelar
             </Button>
             <Button type="submit" disabled={!isFormValid || isUploading}>
               {isUploading ? (
                 <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   A Importar...
                 </>
               ) : (
                 <>
-                  <UploadCloud className="w-4 h-4 mr-2" />
+                  <UploadCloud className="mr-2 h-4 w-4" />
                   Importar e Converter
                 </>
               )}

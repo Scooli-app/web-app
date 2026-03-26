@@ -11,6 +11,9 @@ export enum FeatureFlag {
 
   /** Controls whether users can create presentation documents. */
   PRESENTATION_CREATION = "presentation_creation",
+
+  /** Controls whether users can create worksheet documents. */
+  WORKSHEET_CREATION = "worksheet_creation",
   
   /** When ON: shared documents await admin review. When OFF: auto-approved on submit. */
   DOCUMENT_REVIEW = "document_review",

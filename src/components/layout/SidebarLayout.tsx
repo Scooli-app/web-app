@@ -1,6 +1,7 @@
 "use client";
 
 import { AssistantProvider } from "@/components/assistant";
+import { AppBootstrapGate } from "@/components/layout/AppBootstrapGate";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -29,16 +30,12 @@ import { useAdmin } from "@/hooks/useAdmin";
 import { Routes } from "@/shared/types";
 import { FeatureFlag } from "@/shared/types/featureFlags";
 import { cn } from "@/shared/utils/utils";
-import { fetchFeatureFlags } from "@/store/features/featuresSlice";
-import type { AppDispatch, RootState } from "@/store/store";
+import { useAppDispatch } from "@/store/hooks";
+import type { RootState } from "@/store/store";
 import {
   selectSubscription,
   selectUsageStats,
 } from "@/store/subscription/selectors";
-import {
-  fetchSubscription,
-  fetchUsage,
-} from "@/store/subscription/subscriptionSlice";
 import { setUpgradeModalOpen } from "@/store/ui/uiSlice";
 import {
   SignInButton,
@@ -50,6 +47,7 @@ import {
 } from "@clerk/nextjs";
 import {
   BookOpen,
+  ClipboardList,
   Clock,
   FileCheck,
   FileText,
@@ -68,8 +66,8 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { memo, useCallback, useEffect, useMemo, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { memo, useCallback, useMemo, useState } from "react";
+import { useSelector } from "react-redux";
 import { ThemeToggle } from "./ThemeToggle";
 
 interface SidebarLayoutProps {
@@ -123,6 +121,12 @@ const CONTENT_CREATION: NavItem[] = [
     href: Routes.QUIZ,
     icon: HelpCircle,
     description: "Criar e editar quizzes",
+  },
+  {
+    title: "Fichas de Trabalho",
+    href: Routes.WORKSHEET,
+    icon: ClipboardList,
+    description: "Criar e editar fichas de trabalho",
   },
   {
     title: "Apresentações",
@@ -356,6 +360,12 @@ const SidebarNavigationContent = memo(function SidebarNavigationContent({
   const isCommunityEnabled = features[FeatureFlag.COMMUNITY_LIBRARY] === true;
   const isPresentationCreationEnabled =
     features[FeatureFlag.PRESENTATION_CREATION] === true;
+  const isWorksheetCreationEnabled =
+    features[FeatureFlag.WORKSHEET_CREATION] === true;
+  const disabledContentCreationKeys = [
+    ...(isWorksheetCreationEnabled ? [] : [Routes.WORKSHEET]),
+    ...(isPresentationCreationEnabled ? [] : [Routes.PRESENTATION]),
+  ];
 
   return (
     <>
@@ -386,9 +396,7 @@ const SidebarNavigationContent = memo(function SidebarNavigationContent({
           items={CONTENT_CREATION}
           pathname={pathname}
           onItemClick={onItemClick}
-          disabledKeys={
-            isPresentationCreationEnabled ? [] : [Routes.PRESENTATION]
-          }
+          disabledKeys={disabledContentCreationKeys}
         />
 
         <Separator className="my-4" />
@@ -449,18 +457,9 @@ const SidebarMobileContent = memo(function SidebarMobileContent({
 
 function GenerationsIndicator() {
   const { isSignedIn } = useAuth();
-  const dispatch = useDispatch<AppDispatch>();
 
   const subscription = useSelector(selectSubscription);
   const usage = useSelector(selectUsageStats);
-
-  useEffect(() => {
-    if (isSignedIn) {
-      dispatch(fetchSubscription());
-      dispatch(fetchUsage());
-      dispatch(fetchFeatureFlags());
-    }
-  }, [isSignedIn, dispatch]);
 
   const isFreeUser = !subscription || subscription.planCode === "free";
 
@@ -518,7 +517,7 @@ function GenerationsIndicator() {
 export function SidebarLayout({ children, className }: SidebarLayoutProps) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
-  const dispatch = useDispatch<AppDispatch>();
+  const dispatch = useAppDispatch();
   const isUpgradeModalOpen = useSelector(
     (state: RootState) => state.ui.isUpgradeModalOpen,
   );
@@ -561,6 +560,7 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
   return (
     <SidebarProvider>
       <div className="flex min-h-dvh w-full">
+        <AppBootstrapGate />
         <UpgradePlanModal
           open={isUpgradeModalOpen}
           onOpenChange={handleUpgradeModalChange}

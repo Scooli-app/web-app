@@ -152,6 +152,72 @@ function protectImageSegments(input: string): {
   };
 }
 
+function normalizeEducationalListFormatting(markdown: string): string {
+  const topLevelOrderedPattern = /^\s{0,3}\d+\.\s+/;
+  const indentedAlphaPattern = /^\s{1,4}(?:\([A-Za-z]\)|[A-Za-z]\))\s+/;
+  const indentedBulletPattern = /^\s{1,4}[-*+]\s+/;
+  const indentedContentPattern = /^\s{1,4}\S/;
+  const headingPattern = /^\s{0,3}#{1,6}\s+/;
+
+  const lines = markdown.split("\n");
+  const rewrittenLines: string[] = [];
+  let insideTopLevelOrderedItem = false;
+
+  for (const line of lines) {
+    const trimmedLine = line.trimEnd();
+    const compactLine = trimmedLine.trim();
+
+    if (topLevelOrderedPattern.test(trimmedLine)) {
+      insideTopLevelOrderedItem = true;
+      rewrittenLines.push(trimmedLine);
+      continue;
+    }
+
+    if (!insideTopLevelOrderedItem) {
+      rewrittenLines.push(trimmedLine);
+      continue;
+    }
+
+    if (compactLine === "") {
+      rewrittenLines.push("");
+      continue;
+    }
+
+    if (headingPattern.test(trimmedLine)) {
+      insideTopLevelOrderedItem = false;
+      rewrittenLines.push(trimmedLine);
+      continue;
+    }
+
+    if (indentedAlphaPattern.test(trimmedLine)) {
+      rewrittenLines.push(`    ${compactLine}`);
+      continue;
+    }
+
+    if (indentedBulletPattern.test(trimmedLine)) {
+      if (rewrittenLines[rewrittenLines.length - 1]?.trim()) {
+        rewrittenLines.push("");
+      }
+      rewrittenLines.push(`    ${compactLine}`);
+      continue;
+    }
+
+    if (indentedContentPattern.test(trimmedLine)) {
+      rewrittenLines.push(`    ${compactLine}`);
+      continue;
+    }
+
+    insideTopLevelOrderedItem = false;
+    rewrittenLines.push(trimmedLine);
+  }
+
+  return rewrittenLines.join("\n");
+}
+
+function escapeAnswerBlanks(markdown: string): string {
+  return markdown.replace(/_{5,}/g, (match) => match.split("").map(() => "\\_").join(""));
+}
+
 function normalizeMultipleChoiceOptions(markdown: string): string {
   const optionRegex = /(?:\(([A-Ea-e])\)|\b([A-Ea-e])\))\s+/g;
   const questionPrefixRegex = /^\s*(?:\d+[\).:-]|[-*])\s+/;
@@ -220,7 +286,11 @@ export function markdownToHtml(markdown: string): string {
     );
 
     // Clean input markdown
-    const cleanMarkdown = normalizeMultipleChoiceOptions(codeProtected.content)
+    const cleanMarkdown = escapeAnswerBlanks(
+      normalizeMultipleChoiceOptions(
+        normalizeEducationalListFormatting(codeProtected.content)
+      )
+    )
       // Remove any leaked internal image placeholder tokens from older buggy serializations.
       .replace(LEGACY_IMAGE_SEGMENT_TOKEN_PATTERN, "")
       .replace(FALLBACK_IMAGE_SEGMENT_TOKEN_PATTERN, "")
@@ -234,7 +304,10 @@ export function markdownToHtml(markdown: string): string {
       // Remove plain markdown separators that should not render as literal syntax in the editor.
       .replace(/^\s*([-*_])(?:\s*\1){2,}\s*$/gm, "")
       // Normalize trailing spaces
-      .replace(/[ \t]+\n/g, "\n")
+      .replace(/[ \t]+\n/g, (match) => {
+        const whitespace = match.slice(0, -1);
+        return whitespace === "  " ? match : "\n";
+      })
       // Remove excessive newlines while preserving intentional breaks
       .replace(/\n{3,}/g, "\n\n")
       .trim();

@@ -6,10 +6,16 @@ import { PageContainer } from "@/components/layout/PageContainer";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { ResponsiveDataView } from "@/components/ui/responsive-data-view";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import type { FeedbackFilters } from "@/services/api/admin-feedback.service";
 import { BugSeverity, FeedbackStatus, FeedbackType } from "@/shared/types/feedback";
 import {
   fetchFeedbackList,
@@ -19,10 +25,54 @@ import {
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { format } from "date-fns";
 import { pt } from "date-fns/locale";
-import { AlertCircle, Bug, Lightbulb, Loader2, RefreshCw } from "lucide-react";
+import { AlertCircle, Bug, ChevronDown, Lightbulb, Loader2, RefreshCw } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect } from "react";
 import { toast } from "sonner";
+
+const TYPE_OPTIONS = [
+  { value: FeedbackType.BUG, label: "Erros" },
+  { value: FeedbackType.SUGGESTION, label: "Sugestões" },
+] as const;
+
+const STATUS_OPTIONS = [
+  { value: FeedbackStatus.SUBMITTED, label: "Recebida" },
+  { value: FeedbackStatus.IN_REVIEW, label: "Em Análise" },
+  { value: FeedbackStatus.RESOLVED, label: "Resolvida" },
+  { value: FeedbackStatus.REJECTED, label: "Rejeitada" },
+] as const;
+
+const DEFAULT_STATUS_FILTERS: FeedbackStatus[] = [
+  FeedbackStatus.SUBMITTED,
+  FeedbackStatus.IN_REVIEW,
+];
+
+const SEVERITY_OPTIONS = [
+  { value: BugSeverity.LOW, label: "Baixa" },
+  { value: BugSeverity.MEDIUM, label: "Média" },
+  { value: BugSeverity.HIGH, label: "Alta" },
+  { value: BugSeverity.CRITICAL, label: "Crítica" },
+] as const;
+
+const getFilterButtonLabel = <T extends string>(
+  title: string,
+  selectedValues: T[],
+  options: readonly { value: T; label: string }[],
+) => {
+  if (!selectedValues.length || selectedValues.length === options.length) {
+    return `${title}: Todos`;
+  }
+
+  const selectedLabels = options
+    .filter(({ value }) => selectedValues.includes(value))
+    .map(({ label }) => label);
+
+  if (selectedLabels.length <= 2) {
+    return `${title}: ${selectedLabels.join(", ")}`;
+  }
+
+  return `${title}: ${selectedLabels.length} selecionados`;
+};
 
 export default function AdminFeedbackPage() {
   const router = useRouter();
@@ -47,19 +97,50 @@ export default function AdminFeedbackPage() {
     fetchData();
   }, [fetchData]);
 
-  const handleFilterChange = (
-    key: "type" | "status" | "severity",
-    value: string,
-  ) => {
-    const filterValue = value === "ALL" ? "ALL" : value;
+  const selectedTypes = filters.type ?? [];
+  const selectedStatuses = filters.status ?? [];
+  const selectedSeverities = filters.severity ?? [];
+
+  const handleTypeToggle = (value: FeedbackType) => {
+    const nextValues = selectedTypes.includes(value)
+      ? selectedTypes.filter((currentValue) => currentValue !== value)
+      : [...selectedTypes, value];
+
+    dispatch(setFilters({ type: nextValues, page: 0 }));
+  };
+
+  const handleStatusToggle = (value: FeedbackStatus) => {
+    const nextValues = selectedStatuses.includes(value)
+      ? selectedStatuses.filter((currentValue) => currentValue !== value)
+      : [...selectedStatuses, value];
+
+    dispatch(setFilters({ status: nextValues, page: 0 }));
+  };
+
+  const handleSeverityToggle = (value: BugSeverity) => {
+    const nextValues = selectedSeverities.includes(value)
+      ? selectedSeverities.filter((currentValue) => currentValue !== value)
+      : [...selectedSeverities, value];
+
+    dispatch(setFilters({ severity: nextValues, page: 0 }));
+  };
+
+  const handleClearFilters = () => {
     dispatch(
       setFilters({
-        [key]: filterValue,
+        type: [],
+        status: [...DEFAULT_STATUS_FILTERS],
+        severity: [],
         page: 0,
-      } as FeedbackFilters),
+      }),
     );
   };
 
+  const isDefaultFilters =
+    selectedTypes.length === 0 &&
+    selectedSeverities.length === 0 &&
+    selectedStatuses.length === DEFAULT_STATUS_FILTERS.length &&
+    DEFAULT_STATUS_FILTERS.every((status) => selectedStatuses.includes(status));
   const mobileCards = (
     <div className="space-y-3">
       {loading ? (
@@ -234,57 +315,89 @@ export default function AdminFeedbackPage() {
         )}
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4 xl:gap-4">
-          <div className="w-full">
-            <Select
-              value={filters.type || "ALL"}
-              onValueChange={(val) => handleFilterChange("type", val)}
-            >
-              <SelectTrigger className="border-white/10 bg-muted/50">
-                <SelectValue placeholder="Tipo" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">Todos os Tipos</SelectItem>
-                <SelectItem value={FeedbackType.BUG}>Erros</SelectItem>
-                <SelectItem value={FeedbackType.SUGGESTION}>Sugestões</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="w-full justify-between border-white/10 bg-muted/50 font-normal">
+                <span className="truncate">
+                  {getFilterButtonLabel("Tipo", selectedTypes, TYPE_OPTIONS)}
+                </span>
+                <ChevronDown className="ml-2 h-4 w-4 shrink-0 text-muted-foreground" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-64">
+              <DropdownMenuLabel>Tipo</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {TYPE_OPTIONS.map(({ value, label }) => (
+                <DropdownMenuCheckboxItem
+                  key={value}
+                  checked={selectedTypes.includes(value)}
+                  onSelect={(event) => event.preventDefault()}
+                  onCheckedChange={() => handleTypeToggle(value)}
+                >
+                  {label}
+                </DropdownMenuCheckboxItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
 
-          <div className="w-full">
-            <Select
-              value={filters.status || "ALL"}
-              onValueChange={(val) => handleFilterChange("status", val)}
-            >
-              <SelectTrigger className="border-white/10 bg-muted/50">
-                <SelectValue placeholder="Estado" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">Todos os Estados</SelectItem>
-                <SelectItem value={FeedbackStatus.SUBMITTED}>Recebida</SelectItem>
-                <SelectItem value={FeedbackStatus.IN_REVIEW}>Em Análise</SelectItem>
-                <SelectItem value={FeedbackStatus.RESOLVED}>Resolvida</SelectItem>
-                <SelectItem value={FeedbackStatus.REJECTED}>Rejeitada</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="w-full justify-between border-white/10 bg-muted/50 font-normal">
+                <span className="truncate">
+                  {getFilterButtonLabel("Estado", selectedStatuses, STATUS_OPTIONS)}
+                </span>
+                <ChevronDown className="ml-2 h-4 w-4 shrink-0 text-muted-foreground" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-64">
+              <DropdownMenuLabel>Estado</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {STATUS_OPTIONS.map(({ value, label }) => (
+                <DropdownMenuCheckboxItem
+                  key={value}
+                  checked={selectedStatuses.includes(value)}
+                  onSelect={(event) => event.preventDefault()}
+                  onCheckedChange={() => handleStatusToggle(value)}
+                >
+                  {label}
+                </DropdownMenuCheckboxItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
 
-          <div className="w-full">
-            <Select
-              value={filters.severity || "ALL"}
-              onValueChange={(val) => handleFilterChange("severity", val)}
-            >
-              <SelectTrigger className="border-white/10 bg-muted/50">
-                <SelectValue placeholder="Severidade" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">Todas as Severidades</SelectItem>
-                <SelectItem value={BugSeverity.LOW}>Baixa</SelectItem>
-                <SelectItem value={BugSeverity.MEDIUM}>Média</SelectItem>
-                <SelectItem value={BugSeverity.HIGH}>Alta</SelectItem>
-                <SelectItem value={BugSeverity.CRITICAL}>Crítica</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="w-full justify-between border-white/10 bg-muted/50 font-normal">
+                <span className="truncate">
+                  {getFilterButtonLabel("Severidade", selectedSeverities, SEVERITY_OPTIONS)}
+                </span>
+                <ChevronDown className="ml-2 h-4 w-4 shrink-0 text-muted-foreground" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-64">
+              <DropdownMenuLabel>Severidade</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {SEVERITY_OPTIONS.map(({ value, label }) => (
+                <DropdownMenuCheckboxItem
+                  key={value}
+                  checked={selectedSeverities.includes(value)}
+                  onSelect={(event) => event.preventDefault()}
+                  onCheckedChange={() => handleSeverityToggle(value)}
+                >
+                  {label}
+                </DropdownMenuCheckboxItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <Button
+            variant="outline"
+            className="w-full border-white/10 bg-muted/50"
+            onClick={handleClearFilters}
+            disabled={isDefaultFilters}
+          >
+            Limpar
+          </Button>
         </div>
 
         <ResponsiveDataView
@@ -295,3 +408,4 @@ export default function AdminFeedbackPage() {
     </PageContainer>
   );
 }
+

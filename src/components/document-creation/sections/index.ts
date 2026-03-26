@@ -6,3 +6,4 @@ export { GradeSection } from "./GradeSection";
 export { SubjectSection } from "./SubjectSection";
 export { TeachingMethodSection } from "./TeachingMethodSection";
 export { TopicSection } from "./TopicSection";
+export { WorksheetVariantSection } from "./WorksheetVariantSection";

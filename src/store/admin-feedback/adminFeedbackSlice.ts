@@ -5,7 +5,7 @@ import {
     type AdminFeedbackMetrics,
     type FeedbackFilters
 } from "@/services/api/admin-feedback.service";
-import type { BugSeverity, FeedbackStatus } from "@/shared/types/feedback";
+import { FeedbackStatus, type BugSeverity } from "@/shared/types/feedback";
 import { createAsyncThunk, createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
 interface AdminFeedbackState {
@@ -26,9 +26,9 @@ const initialState: AdminFeedbackState = {
   filters: {
     page: 0,
     size: 20,
-    type: "ALL",
-    status: "ALL",
-    severity: "ALL",
+    type: [],
+    status: [FeedbackStatus.SUBMITTED, FeedbackStatus.IN_REVIEW],
+    severity: [],
   },
   loading: false,
   error: null,

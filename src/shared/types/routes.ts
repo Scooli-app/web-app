@@ -8,6 +8,8 @@ export enum Routes {
   QUIZ_EDITOR = "/quiz/:id",
   TEST = "/test",
   TEST_EDITOR = "/test/:id",
+  WORKSHEET = "/worksheet",
+  WORKSHEET_EDITOR = "/worksheet/:id",
   PRESENTATION = "/presentation",
   PRESENTATION_EDITOR = "/presentation/:id",
   COMMUNITY = "/community",

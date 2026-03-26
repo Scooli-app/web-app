@@ -193,6 +193,9 @@ export function AssistantPanel({
           showGenerationHint={showGenerationHint}
           placeholder="Escreva uma mensagem..."
         />
+        <p className="mt-2 text-center text-[11px] leading-4 text-muted-foreground/70">
+          A IA pode cometer erros. Revê sempre o conteúdo.
+        </p>
       </div>
     </div>
   );

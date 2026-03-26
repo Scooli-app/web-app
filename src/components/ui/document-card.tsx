@@ -1,13 +1,13 @@
 "use client";
 
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Routes, type Document } from "@/shared/types";
 import { FileText, Trash2, User, Users } from "lucide-react";
 import Link from "next/link";
 import { memo, useCallback, useMemo } from "react";
-import { Button } from "./button";
 
 interface DocumentCardProps {
   document: Document;
@@ -17,9 +17,9 @@ interface DocumentCardProps {
   selectionMode?: boolean;
 }
 
-// Static lookup objects - defined outside component to avoid recreating
 const DOCUMENT_TYPE_LABELS: Record<Document["documentType"], string> = {
   lessonPlan: "Plano de Aula",
+  worksheet: "Ficha de Trabalho",
   test: "Teste",
   quiz: "Quiz",
   presentation: "Apresentação",
@@ -27,6 +27,7 @@ const DOCUMENT_TYPE_LABELS: Record<Document["documentType"], string> = {
 
 const DOCUMENT_TYPE_COLORS: Record<Document["documentType"], string> = {
   lessonPlan: "bg-primary text-primary-foreground",
+  worksheet: "bg-teal-500 text-white dark:bg-teal-600",
   test: "bg-orange-500 text-white dark:bg-orange-600",
   quiz: "bg-amber-500 text-white dark:bg-amber-600",
   presentation: "bg-rose-500 text-white dark:bg-rose-600",
@@ -34,6 +35,7 @@ const DOCUMENT_TYPE_COLORS: Record<Document["documentType"], string> = {
 
 const DOCUMENT_TYPE_ICONS: Record<Document["documentType"], string> = {
   lessonPlan: "📄",
+  worksheet: "🧾",
   test: "📝",
   quiz: "❓",
   presentation: "📊",
@@ -41,32 +43,20 @@ const DOCUMENT_TYPE_ICONS: Record<Document["documentType"], string> = {
 
 const ROUTE_MAP: Record<Document["documentType"], string> = {
   lessonPlan: Routes.LESSON_PLAN,
+  worksheet: Routes.WORKSHEET,
   presentation: Routes.PRESENTATION,
   test: Routes.TEST,
   quiz: Routes.QUIZ,
 };
 
-// Date formatter - reuse instance
 const dateFormatter = new Intl.DateTimeFormat("pt-PT", {
   day: "2-digit",
   month: "2-digit",
   year: "numeric",
 });
 
-function getDocumentTypeLabel(type: Document["documentType"]) {
-  return DOCUMENT_TYPE_LABELS[type] || type;
-}
-
-function getDocumentTypeColor(type: Document["documentType"]) {
-  return DOCUMENT_TYPE_COLORS[type] || "bg-secondary text-secondary-foreground";
-}
-
-function getDocumentIcon(type: Document["documentType"]) {
-  return DOCUMENT_TYPE_ICONS[type] || "📄";
-}
-
-function getDocumentRoute(doc: Document): string {
-  return `${ROUTE_MAP[doc.documentType]}/${doc.id}`;
+function getDocumentRoute(document: Document): string {
+  return `${ROUTE_MAP[document.documentType]}/${document.id}`;
 }
 
 function formatDate(dateString: string) {
@@ -103,10 +93,6 @@ function DocumentCardComponent({
   onDelete,
   selectionMode = false,
 }: DocumentCardProps) {
-  const handleSelectionClick = useCallback(() => {
-    onSelect?.(document.id, !isSelected);
-  }, [document.id, isSelected, onSelect]);
-
   const handleCheckboxChange = useCallback(
     (checked: boolean) => {
       onSelect?.(document.id, checked);
@@ -115,18 +101,28 @@ function DocumentCardComponent({
   );
 
   const handleDeleteClick = useCallback(
-    (e: React.MouseEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
+    (event: React.MouseEvent) => {
+      event.preventDefault();
+      event.stopPropagation();
       onDelete?.(document.id);
     },
     [document.id, onDelete]
   );
 
-  // Memoize computed values
-  const typeLabel = useMemo(() => getDocumentTypeLabel(document.documentType), [document.documentType]);
-  const typeColor = useMemo(() => getDocumentTypeColor(document.documentType), [document.documentType]);
-  const typeIcon = useMemo(() => getDocumentIcon(document.documentType), [document.documentType]);
+  const typeLabel = useMemo(
+    () => DOCUMENT_TYPE_LABELS[document.documentType] || document.documentType,
+    [document.documentType]
+  );
+  const typeColor = useMemo(
+    () =>
+      DOCUMENT_TYPE_COLORS[document.documentType] ||
+      "bg-secondary text-secondary-foreground",
+    [document.documentType]
+  );
+  const typeIcon = useMemo(
+    () => DOCUMENT_TYPE_ICONS[document.documentType] || "📄",
+    [document.documentType]
+  );
   const documentRoute = useMemo(() => getDocumentRoute(document), [document]);
   const createdDate = useMemo(() => formatDate(document.createdAt), [document.createdAt]);
   const contentPreview = useMemo(() => getContentPreview(document.content), [document.content]);
@@ -134,7 +130,10 @@ function DocumentCardComponent({
   const cardContent = (
     <>
       {selectionMode && (
-        <div className="absolute top-4 left-4 z-10" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="absolute left-4 top-4 z-10"
+          onClick={(event) => event.stopPropagation()}
+        >
           <Checkbox
             checked={isSelected}
             onCheckedChange={handleCheckboxChange}
@@ -142,59 +141,55 @@ function DocumentCardComponent({
         </div>
       )}
 
-      <div className={`flex flex-col h-full ${selectionMode ? "ml-6" : ""}`}>
-        <div className="flex flex-col md:flex-row md:items-start md:justify-between mb-4 w-full gap-2">
-          <div className="flex items-center gap-2 min-w-0 flex-1 md:flex-initial flex-wrap">
-            <span className="text-xl sm:text-2xl flex-shrink-0">
-              {typeIcon}
-            </span>
+      <div className={`flex h-full flex-col ${selectionMode ? "ml-6" : ""}`}>
+        <div className="mb-4 flex w-full flex-col gap-2 md:flex-row md:items-start md:justify-between">
+          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2 md:flex-initial">
+            <span className="shrink-0 text-xl sm:text-2xl">{typeIcon}</span>
             <Badge
-              className={`${typeColor} px-2 py-1 text-xs font-medium whitespace-nowrap flex-shrink-0`}
+              className={`${typeColor} shrink-0 whitespace-nowrap px-2 py-1 text-xs font-medium`}
             >
               {typeLabel}
             </Badge>
             {document.sharedResourceId && (
-              <Badge
-                className="bg-teal-500/15 text-teal-700 dark:text-teal-400 border border-teal-500/30 px-2 py-1 text-xs font-medium whitespace-nowrap flex-shrink-0"
-              >
-                <Users className="w-3 h-3 mr-1" />
+              <Badge className="shrink-0 whitespace-nowrap border border-teal-500/30 bg-teal-500/15 px-2 py-1 text-xs font-medium text-teal-700 dark:text-teal-400">
+                <Users className="mr-1 h-3 w-3" />
                 Comunidade
               </Badge>
             )}
           </div>
         </div>
 
-        <h3 className="text-lg font-semibold text-foreground line-clamp-2 leading-tight mb-3">
+        <h3 className="mb-3 line-clamp-2 text-lg font-semibold leading-tight text-foreground">
           {document.title}
         </h3>
 
-        <p className="text-sm text-muted-foreground line-clamp-3 leading-relaxed mb-4 flex-grow">
+        <p className="mb-4 flex-grow line-clamp-3 text-sm leading-relaxed text-muted-foreground">
           {contentPreview}
         </p>
 
         {document.metadata && Object.keys(document.metadata).length > 0 && (
-          <div className="space-y-2 mb-4">
+          <div className="mb-4 space-y-2">
             {typeof document.metadata.subject === "string" &&
               document.metadata.subject && (
                 <div className="flex items-center text-xs text-muted-foreground">
-                  <FileText className="w-3 h-3 mr-2 flex-shrink-0" />
-                  <span className="font-medium flex-shrink-0">Disciplina:</span>
+                  <FileText className="mr-2 h-3 w-3 shrink-0" />
+                  <span className="shrink-0 font-medium">Disciplina:</span>
                   <span className="ml-1 truncate">{document.metadata.subject}</span>
                 </div>
               )}
             {typeof document.metadata.grade === "string" &&
               document.metadata.grade && (
                 <div className="flex items-center text-xs text-muted-foreground">
-                  <User className="w-3 h-3 mr-2 flex-shrink-0" />
-                  <span className="font-medium flex-shrink-0">Ano:</span>
+                  <User className="mr-2 h-3 w-3 shrink-0" />
+                  <span className="shrink-0 font-medium">Ano:</span>
                   <span className="ml-1 truncate">{document.metadata.grade}</span>
                 </div>
               )}
           </div>
         )}
 
-        <div className="pt-3 border-t border-border flex items-center justify-between gap-2 mt-auto">
-          <p className="text-xs text-muted-foreground truncate">
+        <div className="mt-auto flex items-center justify-between gap-2 border-t border-border pt-3">
+          <p className="truncate text-xs text-muted-foreground">
             Criado em {createdDate}
           </p>
           {!selectionMode && (
@@ -202,9 +197,9 @@ function DocumentCardComponent({
               variant="ghost"
               size="sm"
               onClick={handleDeleteClick}
-              className="action-button p-1 h-auto w-auto text-muted-foreground hover:text-destructive hover:bg-destructive/10 flex-shrink-0"
+              className="action-button h-auto w-auto shrink-0 p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
             >
-              <Trash2 className="w-4 h-4" />
+              <Trash2 className="h-4 w-4" />
             </Button>
           )}
         </div>
@@ -212,38 +207,21 @@ function DocumentCardComponent({
     </>
   );
 
-  const cardClassName = `p-4 sm:p-6 transition-all duration-200 border border-border relative flex flex-col h-full w-full ${
+  const cardClassName = `relative flex h-full w-full flex-col border border-border p-4 transition-all duration-200 sm:p-6 ${
     selectionMode
       ? "cursor-default"
-      : "cursor-pointer hover:shadow-lg hover:border-primary/20"
+      : "cursor-pointer hover:border-primary/20 hover:shadow-lg"
   } ${isSelected ? "border-primary bg-primary/5" : ""}`;
 
   if (selectionMode) {
-    return (
-      <Card className={cardClassName} onClick={handleSelectionClick}>
-        {cardContent}
-      </Card>
-    );
+    return <Card className={cardClassName}>{cardContent}</Card>;
   }
 
   return (
-    <Link href={documentRoute} className="block h-full" prefetch={false}>
+    <Link href={documentRoute} className="block h-full">
       <Card className={cardClassName}>{cardContent}</Card>
     </Link>
   );
 }
 
-// Memoize the component with custom comparison
-export const DocumentCard = memo(DocumentCardComponent, (prevProps, nextProps) => {
-  return (
-    prevProps.document.id === nextProps.document.id &&
-    prevProps.document.title === nextProps.document.title &&
-    prevProps.document.content === nextProps.document.content &&
-    prevProps.document.updatedAt === nextProps.document.updatedAt &&
-    prevProps.document.sharedResourceId === nextProps.document.sharedResourceId &&
-    prevProps.isSelected === nextProps.isSelected &&
-    prevProps.selectionMode === nextProps.selectionMode
-  );
-});
-
-DocumentCard.displayName = "DocumentCard";
+export const DocumentCard = memo(DocumentCardComponent);

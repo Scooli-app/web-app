@@ -145,6 +145,7 @@ export function TemplateBrowserModal({
       lessonPlan: "Planos de Aula",
       quiz: "Quizzes",
       test: "Testes",
+      worksheet: "Fichas de Trabalho",
       presentation: "Apresentações",
     };
     return labels[type];

@@ -43,6 +43,11 @@ const TEMPLATE_PLACEHOLDERS: Record<
     name: "Ex: Teste com Grupos de Dificuldade",
     description: "Descreva quando usar este modelo de teste...",
   },
+  worksheet: {
+    name: "Ex: Ficha por Etapas",
+    description:
+      "Descreva a estrutura da ficha e quando este modelo faz mais sentido...",
+  },
   presentation: {
     name: "Ex: Apresentacao Interativa com Atividades",
     description: "Descreva quando usar este modelo de apresentacao...",

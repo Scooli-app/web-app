@@ -23,7 +23,7 @@ import { useCallback, useEffect } from "react";
 import { AssistantButton } from "./AssistantButton";
 import { AssistantPanel } from "./AssistantPanel";
 
-const MOBILE_EDITOR_ROUTE_PATTERN = /^\/(lesson-plan|test|quiz|presentation)\/[^/]+$/;
+const MOBILE_EDITOR_ROUTE_PATTERN = /^\/(lesson-plan|test|quiz|presentation|worksheet)\/[^/]+$/;
 
 /**
  * Provider component that renders the floating assistant button and panel.
