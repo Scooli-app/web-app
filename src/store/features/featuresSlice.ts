@@ -35,6 +35,7 @@ const featuresSlice = createSlice({
     /** Reset features on logout */
     resetFeaturesState(state) {
       state.flags = {};
+      state.loading = false;
       state.error = null;
     },
   },

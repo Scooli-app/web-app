@@ -272,7 +272,7 @@ export const SUBJECT_OPTIONS = Array.from(
  */
 export const RESOURCE_TYPE_OPTIONS = [
   { value: "lessonPlan", label: "Plano de Aula" },
-  // { value: "worksheet", label: "Ficha de Trabalho" },
+  { value: "worksheet", label: "Ficha de Trabalho" },
   { value: "test", label: "Teste" },
   { value: "quiz", label: "Quiz" },
   // { value: "presentation", label: "Apresentação" },

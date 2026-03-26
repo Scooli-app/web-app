@@ -2,7 +2,14 @@
  * API types - responses, requests, and service interfaces
  */
 
-import type { Document, DocumentType, RagSource, TeachingMethod, DocumentImage } from "./document";
+import type {
+  Document,
+  DocumentImage,
+  DocumentType,
+  RagSource,
+  TeachingMethod,
+  WorksheetVariant,
+} from "./document";
 
 // Generic API response types
 export interface ApiResponse<T> {
@@ -28,6 +35,7 @@ export interface CreateDocumentParams {
   additionalDetails?: string;
   templateId?: string;
   isSpecificComponent?: boolean;
+  worksheetVariant?: WorksheetVariant;
 }
 
 // DocumentResponse matches Document type exactly (backend response)
@@ -84,6 +92,7 @@ export interface CreateDocumentRequest {
   isSpecificComponent?: boolean;
   teachingMethod?: TeachingMethod;
   additionalDetails?: string;
+  worksheetVariant?: WorksheetVariant;
   is_public?: boolean;
 }
 

@@ -2,6 +2,7 @@ import type {
     DocumentTemplate,
     DocumentType,
     TeachingMethod,
+    WorksheetVariant,
 } from "@/shared/types";
 
 export interface DocumentTypeConfig {
@@ -24,6 +25,7 @@ export interface FormState {
   additionalDetails?: string;
   templateId?: string;
   template?: DocumentTemplate;
+  worksheetVariant?: WorksheetVariant;
 }
 
 export type FormUpdateFn = <K extends keyof FormState>(

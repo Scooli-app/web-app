@@ -36,6 +36,11 @@ export const selectIsPresentationCreationEnabled = createSelector(
   (enabledFeatures) => enabledFeatures.includes(FeatureFlag.PRESENTATION_CREATION)
 );
 
+export const selectIsWorksheetCreationEnabled = createSelector(
+  [selectEnabledFeatureFlags],
+  (enabledFeatures) => enabledFeatures.includes(FeatureFlag.WORKSHEET_CREATION)
+);
+
 export const selectIsCommunityLibraryEnabled = createSelector(
   [selectEnabledFeatureFlags],
   (enabledFeatures) => enabledFeatures.includes(FeatureFlag.COMMUNITY_LIBRARY)

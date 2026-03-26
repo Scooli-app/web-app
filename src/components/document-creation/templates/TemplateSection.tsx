@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { getTemplates, setDefaultTemplate } from "@/services/api/template.service";
 import type { DocumentTemplate, DocumentType } from "@/shared/types";
 import { cn } from "@/shared/utils/utils";
 import {
@@ -12,7 +13,6 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { getTemplates, setDefaultTemplate } from "@/services/api/template.service";
 import { TemplateBrowserModal } from "./TemplateBrowserModal";
 import { TemplateEmptyState } from "./TemplateEmptyState";
 
@@ -20,12 +20,14 @@ interface TemplateSectionProps {
   documentType: DocumentType;
   selectedTemplateId: string | null;
   onTemplateSelect: (template: DocumentTemplate) => void;
+  requireExplicitSelection?: boolean;
 }
 
 export function TemplateSection({
   documentType,
   selectedTemplateId,
   onTemplateSelect,
+  requireExplicitSelection = false,
 }: TemplateSectionProps) {
   const [templates, setTemplates] = useState<DocumentTemplate[]>([]);
   const [selectedTemplate, setSelectedTemplate] =
@@ -33,7 +35,6 @@ export function TemplateSection({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Fetch templates when documentType changes
   useEffect(() => {
     let cancelled = false;
 
@@ -60,24 +61,25 @@ export function TemplateSection({
     };
   }, [documentType]);
 
-  // Auto-select default template when templates load and nothing is selected
   useEffect(() => {
-    if (templates.length === 0 || selectedTemplateId) {
+    if (requireExplicitSelection || templates.length === 0 || selectedTemplateId) {
       return;
     }
 
-    const defaultTemplate = templates.find((t) => t.isDefault) || templates[0];
+    const defaultTemplate = templates.find((template) => template.isDefault) || templates[0];
     setSelectedTemplate(defaultTemplate);
     onTemplateSelect(defaultTemplate);
-  }, [templates, selectedTemplateId, onTemplateSelect]);
+  }, [templates, selectedTemplateId, onTemplateSelect, requireExplicitSelection]);
 
-  // Sync local state when selectedTemplateId prop changes
   useEffect(() => {
     if (!selectedTemplateId || templates.length === 0) {
+      if (!selectedTemplateId) {
+        setSelectedTemplate(null);
+      }
       return;
     }
 
-    const found = templates.find((t) => t.id === selectedTemplateId);
+    const found = templates.find((template) => template.id === selectedTemplateId);
     if (found && found.id !== selectedTemplate?.id) {
       setSelectedTemplate(found);
     }
@@ -92,7 +94,9 @@ export function TemplateSection({
   const handleTemplateSaved = (template: DocumentTemplate, isUpdate: boolean) => {
     if (isUpdate) {
       setTemplates((prev) =>
-        prev.map((t) => (t.id === template.id ? template : t))
+        prev.map((currentTemplate) =>
+          currentTemplate.id === template.id ? template : currentTemplate
+        )
       );
     } else {
       setTemplates((prev) => [...prev, template]);
@@ -103,21 +107,20 @@ export function TemplateSection({
   const handleSetDefault = async (template: DocumentTemplate) => {
     try {
       const updatedTemplate = await setDefaultTemplate(template.id);
-      
-      // Update all templates - remove default from others, set on the new one
+
       setTemplates((prev) =>
-        prev.map((t) => ({
-          ...t,
-          isDefault: t.id === updatedTemplate.id,
+        prev.map((currentTemplate) => ({
+          ...currentTemplate,
+          isDefault: currentTemplate.id === updatedTemplate.id,
         }))
       );
-      
-      // Update selected template if it's the one being set as default
+
       if (selectedTemplate?.id === updatedTemplate.id) {
         setSelectedTemplate(updatedTemplate);
       } else if (selectedTemplate?.isDefault) {
-        // If the currently selected template was the default, update it
-        setSelectedTemplate((prev) => prev ? { ...prev, isDefault: false } : null);
+        setSelectedTemplate((prev) =>
+          prev ? { ...prev, isDefault: false } : null
+        );
       }
     } catch (error) {
       console.error("Failed to set default template:", error);
@@ -127,17 +130,17 @@ export function TemplateSection({
 
   if (isLoading) {
     return (
-      <Card className="p-4 sm:p-6 border-border shadow-sm">
+      <Card className="border-border p-4 shadow-sm sm:p-6">
         <div className="space-y-3 sm:space-y-4">
           <div className="flex items-center gap-2 sm:gap-3">
-            <div className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-accent shrink-0">
-              <Layers className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent sm:h-10 sm:w-10 sm:rounded-xl">
+              <Layers className="h-4 w-4 text-primary sm:h-5 sm:w-5" />
             </div>
-            <h2 className="text-base sm:text-lg font-semibold text-foreground">
+            <h2 className="text-base font-semibold text-foreground sm:text-lg">
               Modelo de Documento <span className="text-destructive">*</span>
             </h2>
           </div>
-          <div className="h-24 bg-muted rounded-xl animate-pulse" />
+          <div className="h-24 rounded-xl bg-muted animate-pulse" />
         </div>
       </Card>
     );
@@ -164,18 +167,18 @@ export function TemplateSection({
 
   return (
     <>
-      <Card className="p-4 sm:p-6 border-border shadow-sm hover:shadow-md transition-shadow">
+      <Card className="border-border p-4 shadow-sm transition-shadow hover:shadow-md sm:p-6">
         <div className="space-y-3 sm:space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 sm:gap-3">
-              <div className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-accent shrink-0">
-                <Layers className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent sm:h-10 sm:w-10 sm:rounded-xl">
+                <Layers className="h-4 w-4 text-primary sm:h-5 sm:w-5" />
               </div>
               <div className="min-w-0">
-                <h2 className="text-base sm:text-lg font-semibold text-foreground">
+                <h2 className="text-base font-semibold text-foreground sm:text-lg">
                   Modelo de Documento <span className="text-destructive">*</span>
                 </h2>
-                <p className="text-xs sm:text-sm text-muted-foreground">
+                <p className="text-xs text-muted-foreground sm:text-sm">
                   Escolha a estrutura do seu documento
                 </p>
               </div>
@@ -185,73 +188,95 @@ export function TemplateSection({
               variant="outline"
               size="sm"
               onClick={() => setIsModalOpen(true)}
-              className="hidden sm:flex items-center gap-2 border-border text-foreground hover:bg-accent hover:border-primary rounded-xl"
+              className="hidden items-center gap-2 rounded-xl border-border text-foreground hover:border-primary hover:bg-accent sm:flex"
               aria-label="Procurar modelos"
             >
-              <Search className="w-4 h-4" />
+              <Search className="h-4 w-4" />
               Procurar
             </Button>
           </div>
 
-          {selectedTemplate && (
-            <button
-              type="button"
-              onClick={() => setIsModalOpen(true)}
-              className={cn(
-                "w-full p-4 rounded-xl border-2 text-left transition-all",
-                "bg-accent border-primary hover:shadow-md",
-                "focus-visible:ring-ring/50 focus-visible:ring-[3px]"
-              )}
-              aria-label={`Modelo selecionado: ${selectedTemplate.name}. Clique para alterar.`}
-            >
+          <button
+            type="button"
+            onClick={() => setIsModalOpen(true)}
+            className={cn(
+              "w-full rounded-xl border-2 p-4 text-left transition-all",
+              selectedTemplate
+                ? "border-primary bg-accent hover:shadow-md"
+                : "border-dashed border-border bg-muted/30 hover:border-primary/50 hover:bg-accent/40",
+              "focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+            )}
+            aria-label={
+              selectedTemplate
+                ? `Modelo selecionado: ${selectedTemplate.name}. Clique para alterar.`
+                : "Selecionar modelo de documento"
+            }
+          >
+            {selectedTemplate ? (
               <div className="flex items-start gap-3">
-                <div className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-card shrink-0">
-                  <FileText className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-card sm:h-12 sm:w-12">
+                  <FileText className="h-5 w-5 text-primary sm:h-6 sm:w-6" />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1 flex-wrap">
-                    <h3 className="font-semibold text-foreground text-sm sm:text-base">
+                <div className="min-w-0 flex-1">
+                  <div className="mb-1 flex flex-wrap items-center gap-2">
+                    <h3 className="text-sm font-semibold text-foreground sm:text-base">
                       {selectedTemplate.name}
                     </h3>
                     {selectedTemplate.isSystem ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium bg-gradient-to-r from-primary to-primary/70 text-primary-foreground">
-                        <Sparkles className="w-2.5 h-2.5" />
+                      <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-primary to-primary/70 px-2 py-0.5 text-[10px] font-medium text-primary-foreground sm:text-xs">
+                        <Sparkles className="h-2.5 w-2.5" />
                         Scooli
                       </span>
                     ) : (
-                      <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium bg-muted text-muted-foreground">
+                      <span className="inline-flex rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground sm:text-xs">
                         Personalizado
                       </span>
                     )}
                     {selectedTemplate.isDefault && (
-                      <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium bg-emerald-500 text-white">
+                      <span className="inline-flex rounded-full bg-emerald-500 px-2 py-0.5 text-[10px] font-medium text-white sm:text-xs">
                         Padrão
                       </span>
                     )}
                   </div>
-                  <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2">
+                  <p className="line-clamp-2 text-xs text-muted-foreground sm:text-sm">
                     {selectedTemplate.description}
                   </p>
-                  <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
+                  <div className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
                     <span>{selectedTemplate.sections.length} secções</span>
-                    <ChevronRight className="w-3 h-3" />
-                    <span className="text-primary font-medium">
-                      Clique para alterar
-                    </span>
+                    <ChevronRight className="h-3 w-3" />
+                    <span className="font-medium text-primary">Clique para alterar</span>
                   </div>
                 </div>
               </div>
-            </button>
-          )}
+            ) : (
+              <div className="flex items-start gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-card text-primary shadow-sm">
+                  <Layers className="h-5 w-5" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-foreground sm:text-base">
+                    Selecionar modelo
+                  </p>
+                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground sm:text-sm">
+                    Escolha explicitamente o modelo que melhor se adapta a esta ficha.
+                  </p>
+                  <div className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-primary">
+                    <span>Ver modelos disponíveis</span>
+                    <ChevronRight className="h-3 w-3" />
+                  </div>
+                </div>
+              </div>
+            )}
+          </button>
 
           <Button
             type="button"
             variant="outline"
             onClick={() => setIsModalOpen(true)}
-            className="sm:hidden w-full flex items-center justify-center gap-2 border-border text-foreground hover:bg-accent hover:border-primary rounded-xl h-11"
+            className="h-11 w-full items-center justify-center gap-2 rounded-xl border-border text-foreground hover:border-primary hover:bg-accent sm:hidden"
             aria-label="Procurar modelos"
           >
-            <Search className="w-4 h-4" />
+            <Search className="h-4 w-4" />
             Procurar outros modelos
           </Button>
         </div>

@@ -4,7 +4,12 @@
 
 // Document types
 export { TeachingMethod } from "./document";
-export type { Document, DocumentMetadata, DocumentType } from "./document";
+export type {
+    Document,
+    DocumentMetadata,
+    DocumentType,
+    WorksheetVariant
+} from "./document";
 
 // Lesson Plan types
 export type {

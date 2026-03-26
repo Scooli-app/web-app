@@ -20,6 +20,7 @@ import {
   SubjectSection,
   TeachingMethodSection,
   TopicSection,
+  WorksheetVariantSection,
 } from "./sections";
 import { TemplateSection } from "./templates";
 import type { DocumentTypeConfig, FormState, FormUpdateFn } from "./types";
@@ -31,7 +32,7 @@ interface DocumentCreationPageProps {
   userId?: string;
 }
 
-function useDocumentForm() {
+function useDocumentForm(documentTypeId: DocumentTypeConfig["id"]) {
   const [formState, setFormState] = useState<FormState>({
     topic: "",
     subject: "",
@@ -43,6 +44,7 @@ function useDocumentForm() {
     additionalDetails: "",
     templateId: undefined,
     template: undefined,
+    worksheetVariant: undefined,
   });
   const [error, setError] = useState("");
 
@@ -60,11 +62,13 @@ function useDocumentForm() {
   }, []);
 
   const isFormValid = () => {
+    const requiresWorksheetVariant = documentTypeId === "worksheet";
     return Boolean(
       formState.topic.trim() &&
         formState.subject &&
         formState.schoolYear &&
-        formState.templateId
+        formState.templateId &&
+        (!requiresWorksheetVariant || formState.worksheetVariant)
     );
   };
 
@@ -92,7 +96,7 @@ export default function DocumentCreationPage({
   const [isLoading, setIsLoading] = useState(false);
 
   const { formState, error, setError, updateForm, isFormValid, handleTemplateSelect } =
-    useDocumentForm();
+    useDocumentForm(documentType.id);
 
   // Reset subject if it's not available for the selected school year
   useEffect(() => {
@@ -115,6 +119,16 @@ export default function DocumentCreationPage({
   }, [formState.subject, formState.isSpecificComponent, updateForm]);
 
   const showTeachingMethodSection = documentType.id === "lessonPlan";
+  const showWorksheetVariantSection = documentType.id === "worksheet";
+
+  const handleWorksheetVariantChange = useCallback(
+    (worksheetVariant: FormState["worksheetVariant"]) => {
+      updateForm("worksheetVariant", worksheetVariant);
+      updateForm("templateId", undefined);
+      updateForm("template", undefined);
+    },
+    [updateForm]
+  );
 
   const handleCreateDocument = async () => {
     if (isLoading) return;
@@ -122,6 +136,11 @@ export default function DocumentCreationPage({
     if (!formState.templateId) {
       setError("Por favor, selecione um modelo de documento");
       return; 
+    }
+
+    if (showWorksheetVariantSection && !formState.worksheetVariant) {
+      setError("Por favor, selecione o objetivo principal da ficha");
+      return;
     }
 
     if (!formState.topic.trim()) {
@@ -162,6 +181,7 @@ export default function DocumentCreationPage({
           additionalDetails: formState.additionalDetails?.trim() || "",
           templateId: formState.templateId,
           isSpecificComponent: formState.isSpecificComponent,
+          worksheetVariant: formState.worksheetVariant,
         })
       );
 
@@ -173,6 +193,7 @@ export default function DocumentCreationPage({
           subject: formState.subject,
           school_year: formState.schoolYear,
           template_id: formState.templateId,
+          worksheet_variant: formState.worksheetVariant || null,
           has_teaching_method: !!formState.teachingMethod,
           has_duration: !!formState.lessonTime,
           has_additional_details: !!formState.additionalDetails?.trim(),
@@ -230,6 +251,13 @@ export default function DocumentCreationPage({
             placeholder={documentType.placeholder}
             onUpdate={updateForm}
           />
+
+          {showWorksheetVariantSection && (
+            <WorksheetVariantSection
+              worksheetVariant={formState.worksheetVariant}
+              onVariantChange={(value) => handleWorksheetVariantChange(value)}
+            />
+          )}
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6">
             <GradeSection

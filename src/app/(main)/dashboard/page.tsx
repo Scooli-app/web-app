@@ -3,6 +3,8 @@
 import { PageContainer } from "@/components/layout/PageContainer";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PaymentSuccessModal } from "@/components/ui/payment-success-modal";
+import { selectIsWorksheetCreationEnabled } from "@/store/features/selectors";
+import { useAppSelector } from "@/store/hooks";
 import { fetchSubscription, fetchUsage } from "@/store/subscription/subscriptionSlice";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
@@ -15,6 +17,9 @@ function DashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [showPaymentSuccess, setShowPaymentSuccess] = useState(false);
+  const isWorksheetCreationEnabled = useAppSelector(
+    selectIsWorksheetCreationEnabled
+  );
 
   const dispatch = useDispatch<AppDispatch>();
 
@@ -57,6 +62,17 @@ function DashboardContent() {
             >
               Criar Plano de Aula
             </button>
+            {isWorksheetCreationEnabled && (
+              <button
+                onClick={() => {
+                  posthog.capture("dashboard_quick_action_clicked", { action: "worksheet" });
+                  router.push("/worksheet");
+                }}
+                className="w-full rounded-xl border border-border bg-background px-5 py-3 font-medium text-foreground transition-colors hover:bg-accent"
+              >
+                Criar Ficha de Trabalho
+              </button>
+            )}
             <button
               onClick={() => {
                 posthog.capture("dashboard_quick_action_clicked", { action: "test" });
