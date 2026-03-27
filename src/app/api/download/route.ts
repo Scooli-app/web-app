@@ -68,6 +68,10 @@ const DOCUMENT_IMAGE_TOKEN_PATTERN = /^\{\{DOCUMENT_IMAGE:([^}]+)\}\}$/;
 const MARKDOWN_IMAGE_LINE_PATTERN = /^!\[(.*?)\]\((.+?)\)\s*$/;
 const HTML_IMAGE_LINE_PATTERN = /^<img\b[^>]*>$/i;
 const DATA_URI_PATTERN = /^data:([^;]+);base64,(.+)$/;
+const HTML_COMMENT_PATTERN = /<!--[\s\S]*?-->/g;
+const HTML_BREAK_PATTERN = /<br\s*\/?>/gi;
+const HTML_PARAGRAPH_OPEN_PATTERN = /<p\b[^>]*>/gi;
+const HTML_PARAGRAPH_CLOSE_PATTERN = /<\/p>/gi;
 
 function toArrayBuffer(bytes: Uint8Array): ArrayBuffer {
   const copy = new Uint8Array(bytes.byteLength);
@@ -242,11 +246,31 @@ function scaleDimensions(
 
 function stripInlineMarkdown(text: string): string {
   return text
+    .replace(HTML_COMMENT_PATTERN, "")
+    .replace(HTML_BREAK_PATTERN, " ")
+    .replace(/<[^>]+>/g, "")
     .replace(/\*\*(.+?)\*\*/g, "$1")
     .replace(/\*(.+?)\*/g, "$1")
     .replace(/_(.+?)_/g, "$1")
     .replace(/`(.+?)`/g, "$1")
-    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1");
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/[ \t]{2,}/g, " ")
+    .trim();
+}
+
+function normalizeExportContent(content: string): string {
+  return content
+    .replace(/\r\n/g, "\n")
+    .replace(/\r/g, "\n")
+    .replace(HTML_COMMENT_PATTERN, "")
+    .replace(HTML_BREAK_PATTERN, "\n")
+    .replace(HTML_PARAGRAPH_OPEN_PATTERN, "")
+    .replace(HTML_PARAGRAPH_CLOSE_PATTERN, "\n")
+    .replace(/\u00A0/g, " ")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
 }
 
 function normalizePdfLine(text: string): string {
@@ -332,7 +356,7 @@ function parseHtmlImageLine(line: string): { alt: string; source: string } | nul
 
 function parseMarkdownToBlocks(content: string): ExportBlock[] {
   const blocks: ExportBlock[] = [];
-  const lines = content.split("\n");
+  const lines = normalizeExportContent(content).split("\n");
   let inCodeBlock = false;
   let codeBlockContent: string[] = [];
   let isFirstH1 = true;
