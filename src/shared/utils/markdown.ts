@@ -152,6 +152,12 @@ function protectImageSegments(input: string): {
   };
 }
 
+function enforceImageTokenBlockBoundaries(value: string): string {
+  return value
+    .replace(FALLBACK_IMAGE_SEGMENT_TOKEN_PATTERN, "\n\n$&\n\n")
+    .replace(/\n{3,}/g, "\n\n");
+}
+
 function normalizeEducationalListFormatting(markdown: string): string {
   const topLevelOrderedPattern = /^\s{0,3}\d+\.\s+/;
   const indentedAlphaPattern = /^\s{1,4}(?:\([A-Za-z]\)|[A-Za-z]\))\s+/;
@@ -355,7 +361,8 @@ export function htmlToMarkdown(html: string): string {
     const imageProtected = protectImageSegments(htmlProtected.content);
 
     // Pre-process HTML for better conversion
-    const cleanHtml = imageProtected.content
+    const cleanHtml = enforceImageTokenBlockBoundaries(
+      imageProtected.content
       // Normalize line endings
       .replace(/\r\n/g, "\n")
       .replace(/\r/g, "\n")
@@ -371,7 +378,8 @@ export function htmlToMarkdown(html: string): string {
       .replace(/\s*<\/p>\s*<p>\s*/g, "</p>\n<p>")
       // Remove layout-only whitespace between tags
       .replace(/>\s+</g, "><")
-      .trim();
+      .trim()
+    );
     const restoredHtml = htmlProtected.restore(cleanHtml);
 
     // Convert HTML to markdown
@@ -379,7 +387,8 @@ export function htmlToMarkdown(html: string): string {
     const markdownProtected = protectSegments(markdown, MARKDOWN_CODE_FENCE_PATTERN);
 
     // Post-process markdown for consistency
-    markdown = markdownProtected.content
+    markdown = enforceImageTokenBlockBoundaries(
+      markdownProtected.content
       // Normalize line endings
       .replace(/\r\n/g, "\n")
       .replace(/\r/g, "\n")
@@ -394,7 +403,8 @@ export function htmlToMarkdown(html: string): string {
         /((\s*[\*\-\+]|\s*\d+\.).*)\n(?!\n|\s*[\*\-\+]|\s*\d+\.)/g,
         "$1\n\n",
       )
-      .trim();
+      .trim()
+    );
     markdown = markdownProtected.restore(markdown);
     markdown = imageProtected.restore(markdown);
     markdown = markdown

@@ -25,6 +25,7 @@ interface DownloadImagePayload {
   alt?: string;
   status?: string;
   contentType?: string | null;
+  placeholderToken?: string | null;
 }
 
 interface DownloadRequestBody {
@@ -64,14 +65,18 @@ interface ResolvedImage {
   error?: string;
 }
 
-const DOCUMENT_IMAGE_TOKEN_PATTERN = /^\{\{DOCUMENT_IMAGE:([^}]+)\}\}$/;
+const IMAGE_REFERENCE_TOKEN_PATTERN = /^\{\{(?:DOCUMENT_IMAGE|IMAGE_PLACEHOLDER):([^}]+)\}\}$/;
 const MARKDOWN_IMAGE_LINE_PATTERN = /^!\[(.*?)\]\((.+?)\)\s*$/;
+const MARKDOWN_IMAGE_PREFIX_PATTERN = /^!\[(.*?)\]\((.+?)\)\s*(.*)$/;
 const HTML_IMAGE_LINE_PATTERN = /^<img\b[^>]*>$/i;
 const DATA_URI_PATTERN = /^data:([^;]+);base64,(.+)$/;
 const HTML_COMMENT_PATTERN = /<!--[\s\S]*?-->/g;
 const HTML_BREAK_PATTERN = /<br\s*\/?>/gi;
 const HTML_PARAGRAPH_OPEN_PATTERN = /<p\b[^>]*>/gi;
 const HTML_PARAGRAPH_CLOSE_PATTERN = /<\/p>/gi;
+const ESCAPED_ANSWER_BLANK_PATTERN = /(?:\\_){3,}/g;
+const ANSWER_BLANK_PATTERN = /_{3,}/g;
+const ANSWER_BLANK_TOKEN_PATTERN = /@@EXPORTBLANK(\d+)@@/g;
 
 function toArrayBuffer(bytes: Uint8Array): ArrayBuffer {
   const copy = new Uint8Array(bytes.byteLength);
@@ -244,8 +249,36 @@ function scaleDimensions(
   };
 }
 
+function normalizeEscapedAnswerBlanks(text: string): string {
+  return text.replace(ESCAPED_ANSWER_BLANK_PATTERN, (match) =>
+    "_".repeat(Math.max(1, Math.floor(match.length / 2))),
+  );
+}
+
+function protectAnswerBlanks(text: string): {
+  content: string;
+  restore: (value: string) => string;
+} {
+  const blanks: string[] = [];
+  const normalized = normalizeEscapedAnswerBlanks(text);
+  const content = normalized.replace(ANSWER_BLANK_PATTERN, (match) => {
+    const index = blanks.push(match) - 1;
+    return `@@EXPORTBLANK${index}@@`;
+  });
+
+  return {
+    content,
+    restore: (value: string) =>
+      value.replace(ANSWER_BLANK_TOKEN_PATTERN, (_match, rawIndex) => {
+        const index = Number(rawIndex);
+        return Number.isNaN(index) ? "" : (blanks[index] ?? "");
+      }),
+  };
+}
+
 function stripInlineMarkdown(text: string): string {
-  return text
+  const blankProtected = protectAnswerBlanks(text);
+  const withoutMarkdown = blankProtected.content
     .replace(HTML_COMMENT_PATTERN, "")
     .replace(HTML_BREAK_PATTERN, " ")
     .replace(/<[^>]+>/g, "")
@@ -257,10 +290,12 @@ function stripInlineMarkdown(text: string): string {
     .replace(/&nbsp;/gi, " ")
     .replace(/[ \t]{2,}/g, " ")
     .trim();
+
+  return blankProtected.restore(withoutMarkdown);
 }
 
 function normalizeExportContent(content: string): string {
-  return content
+  return normalizeEscapedAnswerBlanks(content)
     .replace(/\r\n/g, "\n")
     .replace(/\r/g, "\n")
     .replace(HTML_COMMENT_PATTERN, "")
@@ -334,6 +369,23 @@ function parseMarkdownImageLine(line: string): { alt: string; source: string } |
   };
 }
 
+function parseMarkdownImagePrefix(line: string): {
+  alt: string;
+  source: string;
+  remaining: string;
+} | null {
+  const imageMatch = line.match(MARKDOWN_IMAGE_PREFIX_PATTERN);
+  if (!imageMatch) {
+    return null;
+  }
+
+  return {
+    alt: imageMatch[1] ?? "",
+    source: normalizeImageSource(imageMatch[2] ?? ""),
+    remaining: (imageMatch[3] ?? "").trimStart(),
+  };
+}
+
 function parseHtmlImageLine(line: string): { alt: string; source: string } | null {
   if (!HTML_IMAGE_LINE_PATTERN.test(line)) {
     return null;
@@ -376,17 +428,30 @@ function parseMarkdownToBlocks(content: string): ExportBlock[] {
       continue;
     }
 
-    const trimmed = line.trim();
+    let trimmed = line.trim();
     if (/^([-*_])(?:\s*\1){2,}\s*$/.test(trimmed)) {
       continue;
     }
 
-    const markdownImage = parseMarkdownImageLine(trimmed);
+    const markdownImage = parseMarkdownImagePrefix(trimmed);
     if (markdownImage) {
       blocks.push({
         type: "image",
         alt: markdownImage.alt,
         source: markdownImage.source,
+      });
+      trimmed = markdownImage.remaining;
+      if (!trimmed) {
+        continue;
+      }
+    }
+
+    const markdownImageLine = parseMarkdownImageLine(trimmed);
+    if (markdownImageLine) {
+      blocks.push({
+        type: "image",
+        alt: markdownImageLine.alt,
+        source: markdownImageLine.source,
       });
       continue;
     }
@@ -402,7 +467,7 @@ function parseMarkdownToBlocks(content: string): ExportBlock[] {
     }
 
     const normalizedTokenCandidate = normalizeImageSource(trimmed);
-    if (DOCUMENT_IMAGE_TOKEN_PATTERN.test(normalizedTokenCandidate)) {
+    if (IMAGE_REFERENCE_TOKEN_PATTERN.test(normalizedTokenCandidate)) {
       blocks.push({
         type: "image",
         alt: "",
@@ -411,46 +476,46 @@ function parseMarkdownToBlocks(content: string): ExportBlock[] {
       continue;
     }
 
-    if (line.startsWith("# ")) {
+    if (trimmed.startsWith("# ")) {
       blocks.push({
         type: isFirstH1 ? "title" : "h1",
-        text: line.substring(2),
+        text: trimmed.substring(2),
       });
       isFirstH1 = false;
       continue;
     }
 
-    if (line.startsWith("## ")) {
-      blocks.push({ type: "h2", text: line.substring(3) });
+    if (trimmed.startsWith("## ")) {
+      blocks.push({ type: "h2", text: trimmed.substring(3) });
       continue;
     }
 
-    if (line.startsWith("### ")) {
-      blocks.push({ type: "h3", text: line.substring(4) });
+    if (trimmed.startsWith("### ")) {
+      blocks.push({ type: "h3", text: trimmed.substring(4) });
       continue;
     }
 
-    if (line.match(/^[\*\-]\s/)) {
-      blocks.push({ type: "bullet", text: line });
+    if (trimmed.match(/^[\*\-]\s/)) {
+      blocks.push({ type: "bullet", text: trimmed });
       continue;
     }
 
-    if (line.match(/^\d+\.\s/)) {
-      blocks.push({ type: "numbered", text: line });
+    if (trimmed.match(/^\d+\.\s/)) {
+      blocks.push({ type: "numbered", text: trimmed });
       continue;
     }
 
-    if (line.startsWith("> ")) {
-      blocks.push({ type: "quote", text: line.substring(2) });
+    if (trimmed.startsWith("> ")) {
+      blocks.push({ type: "quote", text: trimmed.substring(2) });
       continue;
     }
 
-    if (line.trim() === "") {
+    if (trimmed === "") {
       blocks.push({ type: "empty", text: "" });
       continue;
     }
 
-    blocks.push({ type: "paragraph", text: line });
+    blocks.push({ type: "paragraph", text: trimmed });
   }
 
   if (codeBlockContent.length > 0) {
@@ -463,7 +528,12 @@ function parseMarkdownToBlocks(content: string): ExportBlock[] {
 function buildImageLookup(images?: DownloadImagePayload[]): Map<string, DownloadImagePayload> {
   const imageLookup = new Map<string, DownloadImagePayload>();
   for (const image of images ?? []) {
-    imageLookup.set(image.id, image);
+    if (image.id) {
+      imageLookup.set(image.id, image);
+    }
+    if (image.placeholderToken) {
+      imageLookup.set(image.placeholderToken, image);
+    }
   }
   return imageLookup;
 }
@@ -475,9 +545,9 @@ async function resolveImageBlock(
   let source = normalizeImageSource(block.source);
   let contentType: string | null = null;
 
-  const stableImageMatch = source.match(DOCUMENT_IMAGE_TOKEN_PATTERN);
-  if (stableImageMatch) {
-    const image = imageLookup.get(stableImageMatch[1]);
+  const imageReferenceMatch = source.match(IMAGE_REFERENCE_TOKEN_PATTERN);
+  if (imageReferenceMatch) {
+    const image = imageLookup.get(imageReferenceMatch[1]);
     if (!image?.url) {
       return {
         alt: block.alt,
@@ -570,18 +640,19 @@ function parseInlineFormatting(
   baseSize: number = 22,
 ): InstanceType<typeof TextRun>[] {
   const runs: InstanceType<typeof TextRun>[] = [];
-  let remaining = text;
+  const blankProtected = protectAnswerBlanks(text);
+  let remaining = blankProtected.content;
   let match;
 
   while (remaining.length > 0) {
     if ((match = remaining.match(/^\*\*(.+?)\*\*/))) {
-      runs.push(new TextRun({ text: match[1], bold: true, size: baseSize }));
+      runs.push(new TextRun({ text: blankProtected.restore(match[1]), bold: true, size: baseSize }));
       remaining = remaining.substring(match[0].length);
       continue;
     }
 
     if ((match = remaining.match(/^[\*_](.+?)[\*_]/))) {
-      runs.push(new TextRun({ text: match[1], italics: true, size: baseSize }));
+      runs.push(new TextRun({ text: blankProtected.restore(match[1]), italics: true, size: baseSize }));
       remaining = remaining.substring(match[0].length);
       continue;
     }
@@ -589,7 +660,7 @@ function parseInlineFormatting(
     if ((match = remaining.match(/^`(.+?)`/))) {
       runs.push(
         new TextRun({
-          text: match[1],
+          text: blankProtected.restore(match[1]),
           font: "Courier New",
           size: baseSize - 2,
         }),
@@ -600,13 +671,13 @@ function parseInlineFormatting(
 
     const nextSpecial = remaining.search(/[\*_`]/);
     if (nextSpecial === -1) {
-      runs.push(new TextRun({ text: remaining, size: baseSize }));
+      runs.push(new TextRun({ text: blankProtected.restore(remaining), size: baseSize }));
       break;
     }
     if (nextSpecial > 0) {
       runs.push(
         new TextRun({
-          text: remaining.substring(0, nextSpecial),
+          text: blankProtected.restore(remaining.substring(0, nextSpecial)),
           size: baseSize,
         }),
       );
@@ -614,11 +685,13 @@ function parseInlineFormatting(
       continue;
     }
 
-    runs.push(new TextRun({ text: remaining[0], size: baseSize }));
+    runs.push(new TextRun({ text: blankProtected.restore(remaining[0]), size: baseSize }));
     remaining = remaining.substring(1);
   }
 
-  return runs.length > 0 ? runs : [new TextRun({ text, size: baseSize })];
+  return runs.length > 0
+    ? runs
+    : [new TextRun({ text: blankProtected.restore(blankProtected.content), size: baseSize })];
 }
 
 async function generateDocx(
