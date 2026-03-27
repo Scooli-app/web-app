@@ -43,6 +43,7 @@ export async function downloadDocument(
         alt: image.alt,
         status: image.status ?? "completed",
         contentType: image.contentType ?? null,
+        placeholderToken: image.placeholderToken ?? null,
       })),
     }),
   });
