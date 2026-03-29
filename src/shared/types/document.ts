@@ -31,7 +31,9 @@ export interface DocumentMetadata {
   schoolYear?: number;
   templateId?: string;
   documentType?: DocumentType;
+  isSpecificComponent?: boolean;
   worksheetVariant?: WorksheetVariant;
+  sources?: RagSource[];
   [key: string]: unknown;
 }
 
@@ -47,6 +49,7 @@ export interface Document {
   isPublic: boolean;
   subject: string | null;
   gradeLevel: string | null;
+  isSpecificComponent: boolean;
   rating: number;
   downloads: number;
   sharedResourceId?: string | null;
