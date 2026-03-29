@@ -22,7 +22,7 @@ import type {
   StreamEvent,
   WorksheetVariant,
 } from "@/shared/types";
-import type { DocumentImage } from "@/shared/types/document";
+import type { DocumentImage, RagSource } from "@/shared/types/document";
 import axios, { type AxiosError } from "axios";
 import apiClient from "./client";
 
@@ -30,6 +30,33 @@ export type {
   ChatResponse, CreateDocumentParams, CreateDocumentStreamResponse, DocumentCountsResponse, DocumentFilters, DocumentResponse, DocumentStreamCallbacks, DocumentType, GetDocumentsParams,
   GetDocumentsResponse, StreamEvent
 };
+
+function isRagSourceArray(value: unknown): value is RagSource[] {
+  return (
+    Array.isArray(value) &&
+    value.every(
+      (item) =>
+        !!item &&
+        typeof item === "object" &&
+        typeof (item as RagSource).chunkId === "string" &&
+        typeof (item as RagSource).documentName === "string"
+    )
+  );
+}
+
+function normalizeDocument(document: Document): Document {
+  const metadataSources = document.metadata?.sources;
+  const sources = isRagSourceArray(document.sources)
+    ? document.sources
+    : isRagSourceArray(metadataSources)
+      ? metadataSources
+      : [];
+
+  return {
+    ...document,
+    sources,
+  };
+}
 
 /**
  * Get list of documents
@@ -55,7 +82,7 @@ export async function getDocuments(
   );
 
   const data = response.data;
-  const documents = data?.items ?? [];
+  const documents = (data?.items ?? []).map(normalizeDocument);
 
   return {
     documents,
@@ -90,7 +117,7 @@ export async function getDocumentCounts(): Promise<DocumentCountsResponse> {
  */
 export async function getDocument(id: string): Promise<Document> {
   const response = await apiClient.get<Document>(`/documents/${id}`);
-  return response.data;
+  return normalizeDocument(response.data);
 }
 
 /**
@@ -100,9 +127,14 @@ export async function getDocument(id: string): Promise<Document> {
 export async function createDocument(
   params: CreateDocumentParams
 ): Promise<CreateDocumentStreamResponse> {
+  const requestBody = {
+    ...params,
+    isSpecificComponent: params.isSpecificComponent ?? false,
+  };
+
   const response = await apiClient.post<CreateDocumentStreamResponse>(
     "/documents",
-    params
+    requestBody
   );
   return response.data;
 }
@@ -321,6 +353,7 @@ export interface DocumentImportRequest {
   subject: string;
   schoolYear: number;
   fileKey: string;
+  isSpecificComponent?: boolean;
   worksheetVariant?: WorksheetVariant;
 }
 

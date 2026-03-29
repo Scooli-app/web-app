@@ -762,8 +762,17 @@ export default function DocumentEditor({
     if (currentDocument?.id !== documentId || isStreaming) {
       return;
     }
-    setSources(currentDocument?.sources ?? []);
-  }, [currentDocument?.id, currentDocument?.sources, documentId, isStreaming]);
+    const metadataSources = Array.isArray(currentDocument?.metadata?.sources)
+      ? (currentDocument.metadata.sources as RagSource[])
+      : [];
+    setSources(currentDocument?.sources ?? metadataSources);
+  }, [
+    currentDocument?.id,
+    currentDocument?.metadata?.sources,
+    currentDocument?.sources,
+    documentId,
+    isStreaming,
+  ]);
 
   // Keep image state in sync with the current document.
   useEffect(() => {

@@ -493,6 +493,7 @@ const documentSlice = createSlice({
             ...state.currentDocument,
             title: response.title,
             content: response.content,
+            ...(response.sources && { sources: response.sources }),
             updatedAt: response.updatedAt,
           };
         }
@@ -503,6 +504,7 @@ const documentSlice = createSlice({
                 ...doc,
                 title: response.title,
                 content: response.content,
+                ...(response.sources && { sources: response.sources }),
                 updatedAt: response.updatedAt,
               }
             : doc

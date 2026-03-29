@@ -261,10 +261,26 @@ export const GRADE_OPTIONS = GRADE_GROUPS.flatMap(group =>
 /**
  * Available subjects for filtering.
  * Mapped from the single source of truth in document-creation constants.
- * We remove duplicate values to avoid React key errors in Select.
+ * When multiple Portuguese labels map to the same backend value, we merge
+ * them so filters and cards stay understandable to the user.
  */
 export const SUBJECT_OPTIONS = Array.from(
-  new Map(SUBJECTS.map(s => [s.value, { value: s.value, label: s.label }])).values()
+  SUBJECTS.reduce((acc, subject) => {
+    const existing = acc.get(subject.value);
+    if (!existing) {
+      acc.set(subject.value, { value: subject.value, label: subject.label });
+      return acc;
+    }
+
+    const labels = new Set(existing.label.split(" / "));
+    labels.add(subject.label);
+    acc.set(subject.value, {
+      value: subject.value,
+      label: Array.from(labels).join(" / "),
+    });
+    return acc;
+  }, new Map<string, { value: string; label: string }>())
+    .values()
 );
 
 /**
