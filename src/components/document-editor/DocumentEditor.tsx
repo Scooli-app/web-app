@@ -1,5 +1,6 @@
 "use client";
 
+import { useEditorAnalytics } from "@/hooks/useEditorAnalytics";
 import { useDocumentManager } from "@/hooks/useDocumentManager";
 import { uploadDocumentImage } from "@/services/api/document-images.service";
 import { streamDocumentContent } from "@/services/api/document.service";
@@ -136,6 +137,19 @@ export default function DocumentEditor({
     editorKey,
     skipNextEditorKeyBumpRef,
   } = useDocumentManager(documentId);
+  const activeDocument =
+    currentDocument?.id === documentId ? currentDocument : null;
+  const {
+    getSessionId,
+    registerActivity,
+    registerAiSuggestionReceived,
+    registerAutosave,
+    registerChatMessage,
+    registerEdit,
+    registerImageUpload,
+    registerImageUploadFailed,
+    syncContent,
+  } = useEditorAnalytics(activeDocument, content);
 
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
@@ -149,6 +163,7 @@ export default function DocumentEditor({
   const eventSourceRef = useRef<(() => void) | null>(null);
   const rawStreamRef = useRef("");
   const latestDisplayContentRef = useRef("");
+  const latestContentRef = useRef(content);
   const accumulatedTitleRef = useRef("");
   const editorRef = useRef<Editor | null>(null);
   const isChatInProgressRef = useRef(false);
@@ -164,6 +179,10 @@ export default function DocumentEditor({
 
   // Reset document-scoped UI state when switching document IDs.
   // This prevents chat/source leakage between documents during route transitions.
+  useEffect(() => {
+    latestContentRef.current = content;
+  }, [content]);
+
   useEffect(() => {
     if (eventSourceRef.current) {
       eventSourceRef.current();
@@ -250,6 +269,23 @@ export default function DocumentEditor({
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;");
 
+  const handleTrackedContentChange = useCallback(
+    (nextContent: string) => {
+      registerEdit(nextContent);
+      handleContentChange(nextContent);
+    },
+    [handleContentChange, registerEdit],
+  );
+
+  const handleTrackedAutosave = useCallback(
+    async (nextContent: string) => {
+      registerAutosave(nextContent);
+      syncContent(nextContent);
+      await handleAutosave(nextContent);
+    },
+    [handleAutosave, registerAutosave, syncContent],
+  );
+
   const handleToolbarImageUpload = useCallback(
     async (file: File) => {
       if (!currentDocument?.id || currentDocument.id !== documentId) {
@@ -279,6 +315,7 @@ export default function DocumentEditor({
       try {
         const result = await uploadDocumentImage(currentDocument.id, file);
         dispatch(upsertImage(result.image));
+        registerImageUpload(file, result.image);
 
         const stableToken = result.markdown.match(/\{\{DOCUMENT_IMAGE:[^}]+\}\}/)?.[0]
           ?? `{{DOCUMENT_IMAGE:${result.image.id}}}`;
@@ -292,14 +329,19 @@ export default function DocumentEditor({
             .run();
         } else {
           const fallbackMarkdown = result.markdown || `![${result.image.alt || "Imagem"}](${stableToken})`;
-          const nextContent = content ? `${content}\n\n${fallbackMarkdown}` : fallbackMarkdown;
+          const previousContent = latestContentRef.current;
+          const nextContent = previousContent
+            ? `${previousContent}\n\n${fallbackMarkdown}`
+            : fallbackMarkdown;
           setContent(nextContent);
-          handleAutosave(nextContent);
+          syncContent(nextContent);
+          await handleTrackedAutosave(nextContent);
         }
 
         dispatch(fetchDocumentImages(currentDocument.id));
         toast.success("Imagem adicionada ao documento.");
       } catch (error: unknown) {
+        registerImageUploadFailed(file, error);
         const apiMessage =
           typeof error === "object" && error !== null
             ? (
@@ -316,13 +358,15 @@ export default function DocumentEditor({
       }
     },
     [
-      content,
       currentDocument?.id,
       dispatch,
       documentId,
-      handleAutosave,
+      handleTrackedAutosave,
       isStreaming,
       isImageUploading,
+      registerImageUpload,
+      registerImageUploadFailed,
+      syncContent,
       streamInfo?.id,
       streamInfo?.status,
       setContent,
@@ -632,7 +676,6 @@ export default function DocumentEditor({
     dispatch,
     setContent,
     getToken,
-    handleAutosave,
     normalizePendingTitle,
   ]);
 
@@ -670,14 +713,14 @@ export default function DocumentEditor({
         const html = editor.getHTML();
         const markdown = htmlToMarkdown(html);
         setContent(markdown);
-        handleAutosave(markdown);
+        void handleTrackedAutosave(markdown);
       }
     };
 
     return () => {
       storage.onDiffStateChange = null;
     };
-  }, [isSuggestionsMode, setContent, handleAutosave]);
+  }, [handleTrackedAutosave, isSuggestionsMode, setContent]);
 
   // Handle chat answer from Redux (for non-chat paths or fallback)
   useEffect(() => {
@@ -805,9 +848,9 @@ export default function DocumentEditor({
     }
 
     setContent(repaired);
-    handleAutosave(repaired);
+    void handleTrackedAutosave(repaired);
     toast.warning("Detetámos e corrigimos referências internas de imagem no documento.");
-  }, [content, images, handleAutosave, setContent]);
+  }, [content, handleTrackedAutosave, images, setContent]);
 
   const handleChatSubmit = useCallback(
     async (userMessage: string) => {
@@ -820,8 +863,13 @@ export default function DocumentEditor({
         { role: "user", content: userMessage },
       ]);
       setError("");
+      registerChatMessage(userMessage);
       posthog.capture("ai_chat_message_sent", {
         document_id: currentDocument.id,
+        document_type: currentDocument.documentType,
+        message_length: userMessage.trim().length,
+        current_image_count: images.length,
+        editor_session_id: getSessionId(),
       });
 
       const editor = editorRef.current;
@@ -862,6 +910,7 @@ export default function DocumentEditor({
             );
 
             if (diffChanges.length > 0) {
+              registerAiSuggestionReceived(diffChanges.length);
               // Store original content for "Reject All"
               const storage = (
                 editor.storage as unknown as Record<
@@ -884,14 +933,17 @@ export default function DocumentEditor({
             } else {
               // No differences — just sync normally
               setContent(aiContent);
+              syncContent(aiContent);
             }
           } catch (err) {
             console.error("Error computing diff:", err);
             setContent(response.content);
+            syncContent(response.content);
           }
         } else if (response.content) {
           // No editor ref — direct update
           setContent(response.content);
+          syncContent(response.content);
         }
 
         // Update sources if available
@@ -905,14 +957,24 @@ export default function DocumentEditor({
         skipNextEditorKeyBumpRef.current = false;
       }
     },
-    [currentDocument?.id, dispatch, documentId, skipNextEditorKeyBumpRef, setContent],
+    [
+      currentDocument?.documentType,
+      currentDocument?.id,
+      dispatch,
+      documentId,
+      getSessionId,
+      images.length,
+      registerAiSuggestionReceived,
+      registerChatMessage,
+      skipNextEditorKeyBumpRef,
+      syncContent,
+      setContent,
+    ],
   );
 
   const isGenerating =
     isStreaming ||
     (streamInfo?.id === documentId && streamInfo?.status === "generating");
-  const activeDocument =
-    currentDocument?.id === documentId ? currentDocument : null;
   const resolvedTitle =
     documentTitle || normalizePendingTitle(activeDocument?.title || "");
 
@@ -924,9 +986,9 @@ export default function DocumentEditor({
       const html = editorRef.current.getHTML();
       const markdown = htmlToMarkdown(html);
       setContent(markdown);
-      handleAutosave(markdown);
+      void handleTrackedAutosave(markdown);
     }
-  }, [setContent, handleAutosave]);
+  }, [handleTrackedAutosave, setContent]);
 
   if (isLoading && !isGenerating) {
     return (
@@ -1033,10 +1095,11 @@ export default function DocumentEditor({
                 <RichTextEditor
                   key={editorKey}
                   content={content}
-                  onChange={handleContentChange}
-                  onAutosave={handleAutosave}
+                  onChange={handleTrackedContentChange}
+                  onAutosave={handleTrackedAutosave}
                   className="min-h-[55dvh] max-w-full sm:min-h-[600px]"
                   onEditorReady={handleEditorReady}
+                  onEditorActivity={registerActivity}
                   onImageUpload={handleToolbarImageUpload}
                   isImageUploading={isImageUploading}
                   rightHeaderContent={

@@ -10,6 +10,7 @@ interface RichTextEditorProps {
   onAutosave?: (markdown: string) => void;
   rightHeaderContent?: React.ReactNode;
   onEditorReady?: (editor: import("@tiptap/react").Editor) => void;
+  onEditorActivity?: () => void;
   onImageUpload?: (file: File) => Promise<void> | void;
   isImageUploading?: boolean;
 }
@@ -49,6 +50,7 @@ function RichTextEditorComponent({
   onAutosave,
   rightHeaderContent,
   onEditorReady,
+  onEditorActivity,
   onImageUpload,
   isImageUploading = false,
 }: RichTextEditorProps) {
@@ -60,6 +62,7 @@ function RichTextEditorComponent({
       onAutosave={onAutosave}
       rightHeaderContent={rightHeaderContent}
       onEditorReady={onEditorReady}
+      onEditorActivity={onEditorActivity}
       onImageUpload={onImageUpload}
       isImageUploading={isImageUploading}
     />

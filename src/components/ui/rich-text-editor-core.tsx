@@ -22,6 +22,7 @@ interface TipTapEditorCoreProps {
   onAutosave?: (markdown: string) => void;
   rightHeaderContent?: React.ReactNode;
   onEditorReady?: (editor: Editor) => void;
+  onEditorActivity?: () => void;
   onImageUpload?: (file: File) => Promise<void> | void;
   isImageUploading?: boolean;
 }
@@ -30,11 +31,13 @@ interface TipTapEditorCoreProps {
 const MenuBar = memo(function MenuBar({ 
   editor, 
   rightHeaderContent,
+  onEditorActivity,
   onUploadImage,
   isImageUploading = false,
 }: { 
   editor: Editor;
   rightHeaderContent?: React.ReactNode;
+  onEditorActivity?: () => void;
   onUploadImage?: () => void;
   isImageUploading?: boolean;
 }) {
@@ -56,19 +59,25 @@ const MenuBar = memo(function MenuBar({
     }),
   });
 
-  const handleBold = useCallback(() => editor.chain().focus().toggleBold().run(), [editor]);
-  const handleItalic = useCallback(() => editor.chain().focus().toggleItalic().run(), [editor]);
-  const handleH1 = useCallback(() => editor.chain().focus().toggleHeading({ level: 1 }).run(), [editor]);
-  const handleH2 = useCallback(() => editor.chain().focus().toggleHeading({ level: 2 }).run(), [editor]);
-  const handleH3 = useCallback(() => editor.chain().focus().toggleHeading({ level: 3 }).run(), [editor]);
-  const handleBullet = useCallback(() => editor.chain().focus().toggleBulletList().run(), [editor]);
-  const handleOrdered = useCallback(() => editor.chain().focus().toggleOrderedList().run(), [editor]);
-  const handleHighlight = useCallback(() => editor.chain().focus().toggleHighlight().run(), [editor]);
-  const handleBlockquote = useCallback(() => editor.chain().focus().toggleBlockquote().run(), [editor]);
-  const handleCodeBlock = useCallback(() => editor.chain().focus().toggleCodeBlock().run(), [editor]);
+  const runEditorCommand = useCallback((command: () => void) => {
+    onEditorActivity?.();
+    command();
+  }, [onEditorActivity]);
+
+  const handleBold = useCallback(() => runEditorCommand(() => editor.chain().focus().toggleBold().run()), [editor, runEditorCommand]);
+  const handleItalic = useCallback(() => runEditorCommand(() => editor.chain().focus().toggleItalic().run()), [editor, runEditorCommand]);
+  const handleH1 = useCallback(() => runEditorCommand(() => editor.chain().focus().toggleHeading({ level: 1 }).run()), [editor, runEditorCommand]);
+  const handleH2 = useCallback(() => runEditorCommand(() => editor.chain().focus().toggleHeading({ level: 2 }).run()), [editor, runEditorCommand]);
+  const handleH3 = useCallback(() => runEditorCommand(() => editor.chain().focus().toggleHeading({ level: 3 }).run()), [editor, runEditorCommand]);
+  const handleBullet = useCallback(() => runEditorCommand(() => editor.chain().focus().toggleBulletList().run()), [editor, runEditorCommand]);
+  const handleOrdered = useCallback(() => runEditorCommand(() => editor.chain().focus().toggleOrderedList().run()), [editor, runEditorCommand]);
+  const handleHighlight = useCallback(() => runEditorCommand(() => editor.chain().focus().toggleHighlight().run()), [editor, runEditorCommand]);
+  const handleBlockquote = useCallback(() => runEditorCommand(() => editor.chain().focus().toggleBlockquote().run()), [editor, runEditorCommand]);
+  const handleCodeBlock = useCallback(() => runEditorCommand(() => editor.chain().focus().toggleCodeBlock().run()), [editor, runEditorCommand]);
   const handleUploadImage = useCallback(() => {
+    onEditorActivity?.();
     onUploadImage?.();
-  }, [onUploadImage]);
+  }, [onEditorActivity, onUploadImage]);
 
   return (
     <div className="sticky top-0 z-10 flex w-full items-center gap-2 overflow-hidden rounded-t-xl border-b border-border bg-card p-2">
@@ -221,6 +230,7 @@ export function TipTapEditorCore({
   onAutosave,
   rightHeaderContent,
   onEditorReady,
+  onEditorActivity,
   onImageUpload,
   isImageUploading = false,
 }: TipTapEditorCoreProps) {
@@ -257,6 +267,9 @@ export function TipTapEditorCore({
       },
     },
     onUpdate: handleUpdate,
+    onFocus: () => {
+      onEditorActivity?.();
+    },
     immediatelyRender: false,
   });
 
@@ -361,6 +374,7 @@ export function TipTapEditorCore({
       <MenuBar
         editor={editor}
         rightHeaderContent={rightHeaderContent}
+        onEditorActivity={onEditorActivity}
         onUploadImage={onImageUpload ? handleToolbarUploadClick : undefined}
         isImageUploading={isImageUploading}
       />

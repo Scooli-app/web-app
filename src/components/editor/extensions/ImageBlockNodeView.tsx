@@ -4,6 +4,7 @@ import { useAppDispatch, useAppSelector, selectEditorState } from "@/store/hooks
 import { deleteDocumentImage, regenerateDocumentImage } from "@/store/documents/documentSlice";
 import { selectIsPro } from "@/store/subscription/selectors";
 import { useCallback, useEffect, useState } from "react";
+import posthog from "posthog-js";
 import { toast } from "sonner";
 import { cn } from "@/shared/utils/utils";
 
@@ -20,6 +21,20 @@ type PendingImageDeletion = {
 };
 
 const pendingImageDeletions = new Map<string, PendingImageDeletion>();
+
+function buildImageEventProps(
+  documentId: string | undefined,
+  imageId: string | null | undefined,
+  imageKind: string | undefined,
+  imageSource: string | null | undefined,
+) {
+  return {
+    document_id: documentId ?? null,
+    image_id: imageId ?? null,
+    image_kind: imageKind ?? null,
+    image_source: imageSource ?? null,
+  };
+}
 
 function normalizeImageWidth(value: unknown): number {
   const numeric =
@@ -111,6 +126,12 @@ export default function ImageBlockNodeView({ node, deleteNode, editor, getPos, u
   const isUserUploadedImage = imageSource === "user_upload";
   const canRegenerate = Boolean(isPremium && imageId && !isUserUploadedImage);
   const imageWidth = normalizeImageWidth(node.attrs.width);
+  const imageEventProps = buildImageEventProps(
+    currentDocument?.id,
+    imageId,
+    generatedImage?.kind,
+    imageSource,
+  );
 
   const handleDelete = useCallback(async () => {
     if (!currentDocument || !imageId) {
@@ -147,6 +168,7 @@ export default function ImageBlockNodeView({ node, deleteNode, editor, getPos, u
     };
 
     deleteNode();
+    posthog.capture("document_image_delete_requested", imageEventProps);
 
     const timeoutId = setTimeout(async () => {
       pendingImageDeletions.delete(key);
@@ -154,8 +176,11 @@ export default function ImageBlockNodeView({ node, deleteNode, editor, getPos, u
         await dispatch(
           deleteDocumentImage({ documentId: currentDocument.id, imageId }),
         ).unwrap();
+        posthog.capture("document_image_deleted", imageEventProps);
         toast.success("Imagem removida com sucesso");
-      } catch {
+      } catch (error) {
+        posthog.capture("document_image_delete_failed", imageEventProps);
+        posthog.captureException(error);
         restoreNode();
         toast.error("Erro ao remover a imagem. A imagem foi restaurada.");
       }
@@ -175,6 +200,7 @@ export default function ImageBlockNodeView({ node, deleteNode, editor, getPos, u
           pendingDeletion.dismissToast();
           pendingImageDeletions.delete(key);
           pendingDeletion.restore();
+          posthog.capture("document_image_delete_undone", imageEventProps);
           toast.success("Imagem restaurada.");
         },
       },
@@ -185,7 +211,7 @@ export default function ImageBlockNodeView({ node, deleteNode, editor, getPos, u
       restore: restoreNode,
       dismissToast: () => toast.dismiss(toastId),
     });
-  }, [currentDocument, imageId, node, getPos, editor, placeholderToken, deleteNode, dispatch]);
+  }, [currentDocument, imageEventProps, imageId, node, getPos, editor, placeholderToken, deleteNode, dispatch]);
 
   const handleRegenerate = useCallback(async () => {
     if (isUserUploadedImage) {
@@ -200,11 +226,14 @@ export default function ImageBlockNodeView({ node, deleteNode, editor, getPos, u
 
     try {
       await dispatch(regenerateDocumentImage({ documentId: currentDocument.id, imageId })).unwrap();
+      posthog.capture("document_image_regenerated", imageEventProps);
       toast.success("A gerar nova versao da imagem...");
-    } catch {
+    } catch (error) {
+      posthog.capture("document_image_regeneration_failed", imageEventProps);
+      posthog.captureException(error);
       toast.error("Erro ao regenerar a imagem");
     }
-  }, [currentDocument, imageId, dispatch, isCurrentImageGenerating, isPremium, isUserUploadedImage]);
+  }, [currentDocument, imageEventProps, imageId, dispatch, isCurrentImageGenerating, isPremium, isUserUploadedImage]);
 
   const handleResize = useCallback(
     (delta: number) => {
