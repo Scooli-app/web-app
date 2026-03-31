@@ -11,6 +11,22 @@ export type {
     WorksheetVariant
 } from "./document";
 
+export type {
+    CreatePresentationParams,
+    PresentationAsset,
+    PresentationBlock,
+    PresentationCalloutBlock,
+    PresentationContent,
+    PresentationExportPayload,
+    PresentationIconName,
+    PresentationLayout,
+    PresentationRecord,
+    PresentationSlide,
+    PresentationSummary,
+    PresentationThemeId,
+    UpdatePresentationParams
+} from "./presentation";
+
 // Lesson Plan types
 export type {
     LessonActivity, LessonPlan,

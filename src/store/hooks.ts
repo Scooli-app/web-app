@@ -26,3 +26,16 @@ export {
   selectEditorState,
   selectIsGenerating,
 } from "./documents/selectors";
+
+export {
+  selectPresentationSummaries,
+  selectCurrentPresentation,
+  selectActiveSlideId,
+  selectSelectedBlockId,
+  selectPresentationLoading,
+  selectPresentationSaving,
+  selectPresentationUploading,
+  selectPresentationDirty,
+  selectPresentationError,
+  selectActivePresentationSlide,
+} from "./presentation/selectors";
