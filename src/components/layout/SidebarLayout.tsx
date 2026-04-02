@@ -1,6 +1,7 @@
 "use client";
 
 import { AssistantProvider } from "@/components/assistant";
+import { AppFeedbackSurveyGate } from "@/components/feedback-survey/AppFeedbackSurveyGate";
 import { AppBootstrapGate } from "@/components/layout/AppBootstrapGate";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -565,6 +566,7 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
           open={isUpgradeModalOpen}
           onOpenChange={handleUpgradeModalChange}
         />
+        <AppFeedbackSurveyGate />
 
         <div className="hidden md:block md:min-h-dvh">
           {desktopSidebarContent}

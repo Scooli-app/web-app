@@ -26,3 +26,9 @@ export * from "./community.service";
 
 // Feature Flags service
 export * from "./features.service";
+
+// Feedback survey service
+export * from "./feedback-survey.service";
+
+// User service
+export * from "./user.service";
