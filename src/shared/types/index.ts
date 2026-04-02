@@ -58,3 +58,19 @@ export type {
     FeedbackAttachment, UploadResponse
 } from "./feedback";
 
+// Feedback survey types
+export {
+    APP_FEEDBACK_SURVEY_PROMPT_KEY,
+    FeedbackSurveySentiment,
+    FeedbackSurveyStatus
+} from "./feedbackSurvey";
+export type {
+    FeedbackSurveyPromptRequest,
+    FeedbackSurveyStatusResponse,
+    FeedbackSurveySubmitRequest,
+    FeedbackSurveyTag
+} from "./feedbackSurvey";
+
+// User types
+export type { CurrentUserProfile } from "./user";
+

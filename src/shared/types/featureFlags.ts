@@ -20,4 +20,7 @@ export enum FeatureFlag {
 
   /** Controls AI image generation and inclusion in documents. */
   DOCUMENT_IMAGES = "document_images",
+
+  /** Controls the timed in-app feedback survey shown after first login. */
+  APP_FEEDBACK_SURVEY = "app_feedback_survey",
 }
