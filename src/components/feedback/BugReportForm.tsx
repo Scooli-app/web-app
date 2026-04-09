@@ -285,7 +285,7 @@ export function BugReportForm({ onSuccess, onCancel }: BugReportFormProps) {
           <Button type="button" variant="outline" onClick={onCancel}>
             Cancelar
           </Button>
-          <Button type="submit" disabled={isSubmitting || !isValid} variant="destructive">
+          <Button type="submit" disabled={isSubmitting || !isValid}>
             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Reportar Erro
           </Button>
