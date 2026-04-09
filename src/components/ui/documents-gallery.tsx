@@ -13,6 +13,7 @@ import {
 import type { Document } from "@/shared/types";
 
 import { UploadDocumentModal } from "@/components/modals/upload-document-modal";
+import { useAuth } from "@clerk/nextjs";
 import { CheckSquare, Loader2, Search, Square, Trash2, UploadCloud, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useInView } from "react-intersection-observer";
@@ -37,6 +38,7 @@ function useDebouncedValue<T>(value: T, delay: number): T {
 }
 
 export function DocumentsGallery() {
+  const { isLoaded: isAuthLoaded, isSignedIn } = useAuth();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedType, setSelectedType] = useState<string>("all");
@@ -64,18 +66,27 @@ export function DocumentsGallery() {
 
   // Track if initial load is complete
   const initialLoadRef = useRef(false);
+  const isAuthReady = isAuthLoaded && Boolean(isSignedIn);
 
   const fetchDocumentCounts = useCallback(async () => {
+    if (!isAuthReady) {
+      return;
+    }
+
     try {
       const stats = await getDocumentStats();
       setDocumentCounts(stats.byType);
     } catch (error) {
       console.error("Error fetching document stats:", error);
     }
-  }, []);
+  }, [isAuthReady]);
 
   const fetchDocuments = useCallback(
     async (page = 1, reset = false) => {
+      if (!isAuthReady) {
+        return;
+      }
+
       try {
         setLoading(true);
 
@@ -103,7 +114,7 @@ export function DocumentsGallery() {
         initialLoadRef.current = true;
       }
     },
-    [selectedType, pagination.limit]
+    [isAuthReady, selectedType, pagination.limit]
   );
 
   // Selection handlers - memoized
@@ -211,14 +222,48 @@ export function DocumentsGallery() {
 
   // Initial load
   useEffect(() => {
-    fetchDocumentCounts();
-  }, [fetchDocumentCounts]);
+    if (!isAuthReady) {
+      return;
+    }
+
+    let isActive = true;
+    const loadCounts = async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      if (!isActive) {
+        return;
+      }
+      await fetchDocumentCounts();
+    };
+
+    void loadCounts();
+
+    return () => {
+      isActive = false;
+    };
+  }, [fetchDocumentCounts, isAuthReady]);
 
   useEffect(() => {
+    if (!isAuthReady) {
+      return;
+    }
+
     setPagination((prev) => ({ ...prev, page: 1 }));
-    fetchDocuments(1, true);
+    let isActive = true;
+    const loadDocuments = async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      if (!isActive) {
+        return;
+      }
+      await fetchDocuments(1, true);
+    };
+
+    void loadDocuments();
+
+    return () => {
+      isActive = false;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedType]);
+  }, [selectedType, isAuthReady]);
 
   const loadMore = useCallback(() => {
     if (pagination.hasMore && !loading) {
