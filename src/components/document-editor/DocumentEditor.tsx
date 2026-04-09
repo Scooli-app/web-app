@@ -159,6 +159,7 @@ export default function DocumentEditor({
   const [showUpdateIndicator, setShowUpdateIndicator] = useState(false);
   const [sources, setSources] = useState<RagSource[]>([]);
   const [isImageUploading, setIsImageUploading] = useState(false);
+  const [streamStatus, setStreamStatus] = useState<string>("");
 
   const eventSourceRef = useRef<(() => void) | null>(null);
   const rawStreamRef = useRef("");
@@ -196,6 +197,7 @@ export default function DocumentEditor({
     setDocumentTitle("");
     setShowUpdateIndicator(false);
     setIsSuggestionsMode(false);
+    setStreamStatus("");
     hasAttemptedLeakedTokenRepairRef.current = false;
     rawStreamRef.current = "";
     latestDisplayContentRef.current = "";
@@ -229,20 +231,6 @@ export default function DocumentEditor({
     editorRef.current = editor;
   }, []);
 
-  // Extract generatedContent from partial JSON stream
-  const extractGeneratedContent = (jsonStr: string): string => {
-    // Look for "generatedContent": " pattern and extract content after it
-    const match = jsonStr.match(/"generatedContent":\s*"([\s\S]*?)(?:"|$)/);
-    if (match && match[1]) {
-      // Unescape JSON string
-      return match[1]
-        .replace(/\\n/g, "\n")
-        .replace(/\\t/g, "\t")
-        .replace(/\\"/g, '"')
-        .replace(/\\\\/g, "\\");
-    }
-    return "";
-  };
 
   const normalizePendingTitle = useCallback((rawTitle: string): string => {
     const trimmed = rawTitle?.trim() ?? "";
@@ -422,14 +410,14 @@ export default function DocumentEditor({
             eventSourceRef.current = null;
           }
           setIsStreaming(false);
+          setStreamStatus("");
           pendingVisualCountRef.current = 0;
           completedVisualCountRef.current = 0;
           dispatch(clearStreamInfo());
           dispatch(setGeneratingImages(false));
 
-          const fallbackContent =
-            latestDisplayContentRef.current ||
-            extractGeneratedContent(rawStreamRef.current);
+          // rawStreamRef now holds decoded Markdown directly
+          const fallbackContent = latestDisplayContentRef.current || rawStreamRef.current;
           if (fallbackContent) {
             setContent(fallbackContent);
           }
@@ -442,19 +430,22 @@ export default function DocumentEditor({
           streamInfo.streamUrl,
           {
             onContent: (chunk) => {
+              // Content events now carry decoded Markdown directly
+              // (no longer raw JSON fragments that need extraction)
               rawStreamRef.current += chunk;
-              const extracted = extractGeneratedContent(rawStreamRef.current);
-              if (extracted) {
-                latestDisplayContentRef.current = extracted;
-                setDisplayContent(extracted);
-              }
+              latestDisplayContentRef.current = rawStreamRef.current;
+              setDisplayContent(rawStreamRef.current);
             },
-            onTitle: (titleChunk) => {
-              accumulatedTitleRef.current += titleChunk;
-              setDocumentTitle(accumulatedTitleRef.current);
+            onTitle: (title) => {
+              // Title now arrives as a complete string in a single event
+              accumulatedTitleRef.current = title;
+              setDocumentTitle(title);
             },
             onSources: (newSources) => {
               setSources(newSources);
+            },
+            onStatus: (status) => {
+              setStreamStatus(status);
             },
             onVisualsGenerating: (count) => {
               clearCompletionFallback();
@@ -519,6 +510,7 @@ export default function DocumentEditor({
               }
 
               setIsStreaming(false);
+              setStreamStatus("");
               pendingVisualCountRef.current = 0;
               completedVisualCountRef.current = 0;
 
@@ -649,6 +641,7 @@ export default function DocumentEditor({
               pendingVisualCountRef.current = 0;
               completedVisualCountRef.current = 0;
               setError(errorMsg);
+              setStreamStatus("");
               dispatch(clearStreamInfo());
               dispatch(setGeneratingImages(false));
             },
@@ -1075,11 +1068,20 @@ export default function DocumentEditor({
                       className="prose prose-sm max-w-none whitespace-pre-wrap text-foreground leading-relaxed"
                     />
                   ) : (
-                    <div className="flex h-full min-h-[45dvh] w-full flex-col items-center justify-center sm:min-h-[550px]">
+                  <div className="flex h-full min-h-[45dvh] w-full flex-col items-center justify-center sm:min-h-[550px]">
                       <Loader2 className="w-12 h-12 animate-spin text-primary mb-4" />
                       <p className="text-lg font-medium text-foreground">
-                        A gerar o documento...
+                        {streamStatus === "preparing"
+                          ? "A preparar a geração..."
+                          : streamStatus === "generating"
+                            ? "A gerar o documento..."
+                            : "A gerar o documento..."}
                       </p>
+                      {streamStatus === "preparing" && (
+                        <p className="text-sm text-muted-foreground mt-2">
+                          A analisar o currículo e preparar o conteúdo
+                        </p>
+                      )}
                     </div>
                   )}
                 </div>

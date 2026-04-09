@@ -190,6 +190,9 @@ export async function streamDocumentContent(
           case "title":
             callbacks.onTitle?.(parsed.data);
             break;
+          case "status":
+            callbacks.onStatus?.(parsed.data);
+            break;
           case "sources": {
             try {
               sources = JSON.parse(parsed.data);

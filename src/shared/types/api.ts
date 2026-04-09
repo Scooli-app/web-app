@@ -127,7 +127,7 @@ export interface CreateDocumentStreamResponse {
 }
 
 export interface StreamEvent {
-  type: "content" | "title" | "sources" | "done" | "error" | "visuals_generating" | "image_ready" | "image_failed" | "image_progress";
+  type: "content" | "title" | "sources" | "done" | "error" | "status" | "visuals_generating" | "image_ready" | "image_failed" | "image_progress";
   data: string;
 }
 
@@ -144,6 +144,7 @@ export interface DocumentStreamCallbacks {
   onContent?: (chunk: string) => void;
   onTitle?: (title: string) => void;
   onSources?: (sources: RagSource[]) => void;
+  onStatus?: (status: string) => void;
   onVisualsGenerating?: (count?: number) => void;
   onImageReady?: (image: DocumentImage) => void;
   onImageFailed?: (image: DocumentImage | null, error?: string) => void;
