@@ -13,6 +13,14 @@ const isPublicRoute = createRouteMatcher([
 ]);
 const TOKEN_COOKIE_NAME = "scooli_token";
 
+function getSafeRedirectPath(redirectUrl: string | null): string | null {
+  if (!redirectUrl || !redirectUrl.startsWith("/") || redirectUrl.startsWith("//")) {
+    return null;
+  }
+
+  return redirectUrl;
+}
+
 export default clerkMiddleware(async (auth, req) => {
   // Early return for webhook routes - skip all authentication
   if (req.nextUrl.pathname === "/webhooks/stripe") {
@@ -56,9 +64,18 @@ export default clerkMiddleware(async (auth, req) => {
       req.nextUrl.pathname.startsWith("/sign-up") ||
       req.nextUrl.pathname.startsWith("/forgot-password"))
   ) {
-    const dashboardUrl = new URL("/dashboard", req.url);
-    dashboardUrl.search = req.nextUrl.search;
-    const res = NextResponse.redirect(dashboardUrl);
+    const redirectPath = getSafeRedirectPath(
+      req.nextUrl.searchParams.get("redirect_url")
+    );
+    const redirectUrl = redirectPath
+      ? new URL(redirectPath, req.url)
+      : new URL("/dashboard", req.url);
+
+    if (!redirectPath) {
+      redirectUrl.search = req.nextUrl.search;
+    }
+
+    const res = NextResponse.redirect(redirectUrl);
     await setTokenCookie(res);
     return res;
   }
@@ -69,6 +86,13 @@ export default clerkMiddleware(async (auth, req) => {
     const res = NextResponse.redirect(dashboardUrl);
     await setTokenCookie(res);
     return res;
+  }
+
+  if (!authObj.userId && req.nextUrl.pathname === "/checkout") {
+    const signUpUrl = new URL("/sign-up", req.url);
+    const returnUrl = `${req.nextUrl.pathname}${req.nextUrl.search}`;
+    signUpUrl.searchParams.set("redirect_url", returnUrl);
+    return NextResponse.redirect(signUpUrl);
   }
 
   if (!isPublicRoute(req)) {
