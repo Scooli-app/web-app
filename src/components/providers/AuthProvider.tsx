@@ -2,7 +2,7 @@
 
 import { setApiTokenGetter } from "@/services/api/client";
 import { useAuth, useUser } from "@clerk/nextjs";
-import { useEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
 import posthog from "posthog-js";
 
 export default function AuthProvider({
@@ -20,8 +20,11 @@ export default function AuthProvider({
     getTokenRef.current = getToken;
   }, [getToken]);
 
-  useEffect(() => {
-    if (!isLoaded) return;
+  useLayoutEffect(() => {
+    if (!isLoaded) {
+      setApiTokenGetter(null);
+      return;
+    }
 
     const template = process.env.NEXT_PUBLIC_CLERK_JWT_TEMPLATE;
 
@@ -58,4 +61,3 @@ export default function AuthProvider({
 
   return children;
 }
-

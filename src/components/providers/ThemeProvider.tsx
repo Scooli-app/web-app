@@ -48,9 +48,8 @@ export default function ThemeProvider({
       dispatch(setTheme(storedTheme));
       resolveAndApplyTheme(storedTheme);
     } else {
-      // Default to dark theme
-      dispatch(setTheme("dark"));
-      resolveAndApplyTheme("dark");
+      dispatch(setTheme("system"));
+      resolveAndApplyTheme("system");
     }
   }, [dispatch, resolveAndApplyTheme]);
 
