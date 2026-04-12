@@ -4,73 +4,37 @@
 
 // Document types
 export { TeachingMethod } from "./document";
-export type {
-    Document,
-    DocumentMetadata,
-    DocumentType,
-    WorksheetVariant
-} from "./document";
+export type { Document, DocumentType, WorksheetVariant } from "./document";
 
 // Lesson Plan types
-export type {
-    LessonActivity, LessonPlan,
-    LessonPlanMetadata
-} from "./lesson-plan";
+
 
 // API types
-export type {
-    ApiResponse, BackendPaginatedResponse,
-    ChatRequest,
-    ChatResponse, CreateDocumentParams, CreateDocumentRequest, CreateDocumentStreamResponse, DeleteDocumentRequest, DocumentCountsResponse, DocumentFilters, DocumentResponse, DocumentStatsResponse, DocumentStreamCallbacks, GetDocumentsParams,
-    GetDocumentsResponse, PaginatedResponse, StreamEvent,
-    StreamedResponse, UpdateDocumentRequest
-} from "./api";
+export type { BackendPaginatedResponse, ChatResponse, CreateDocumentParams, CreateDocumentStreamResponse, DocumentFilters, DocumentStatsResponse, DocumentStreamCallbacks, GetDocumentsParams, GetDocumentsResponse, StreamEvent, StreamedResponse } from "./api";
 
 // UI types
-export type { LessonPlanForm, SearchFilters, UIState } from "./ui";
+export type { UIState } from "./ui";
 
 // Community types
-export type {
-    CommunityResource,
-    CreatorProfile,
-    CreatorTier
-} from "./community";
+
 
 // Route types
 export { Routes } from "./routes";
 
 // Template types
-export type {
-    CreateTemplateParams, DocumentTemplate, TemplateSection, UpdateTemplateParams
-} from "./template";
+export type { CreateTemplateParams, DocumentTemplate, TemplateSection } from "./template";
 
 // Subscription types
-export { PLAN_CODES, PLAN_DISPLAY_INFO } from "./subscription";
-export type {
-    CheckoutRequest,
-    CheckoutResponse, CurrentSubscription, PlanCode, PortalResponse, SubscriptionPlan, SubscriptionStatus,
-    UsageStats
-} from "./subscription";
+
+
 // Feedback types
-export { BugSeverity, FeedbackStatus, FeedbackType } from "./feedback";
-export type {
-    CreateFeedbackParams, Feedback,
-    FeedbackAttachment, UploadResponse
-} from "./feedback";
+
+
 
 // Feedback survey types
-export {
-    APP_FEEDBACK_SURVEY_PROMPT_KEY,
-    FeedbackSurveySentiment,
-    FeedbackSurveyStatus
-} from "./feedbackSurvey";
-export type {
-    FeedbackSurveyPromptRequest,
-    FeedbackSurveyStatusResponse,
-    FeedbackSurveySubmitRequest,
-    FeedbackSurveyTag
-} from "./feedbackSurvey";
+
+
 
 // User types
-export type { CurrentUserProfile } from "./user";
+
 

@@ -427,65 +427,18 @@ export function htmlToMarkdown(html: string): string {
  * Sanitize markdown for safe rendering
  * Removes potentially harmful content while preserving formatting
  */
-export function sanitizeMarkdown(markdown: string): string {
-  if (!markdown) {
-    return "";
-  }
 
-  return (
-    markdown
-      // Remove script tags and their content
-      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
-      // Remove on* event handlers
-      .replace(/\s*on\w+\s*=\s*["'][^"']*["']/gi, "")
-      // Remove javascript: links
-      .replace(/javascript:/gi, "")
-      // Remove data: URLs (except images)
-      .replace(/data:(?!image\/)/gi, "")
-      .trim()
-  );
-}
 
 /**
  * Get plain text from markdown
  * Useful for previews and search
  */
-export function markdownToPlainText(markdown: string): string {
-  if (!markdown) {
-    return "";
-  }
 
-  try {
-    // Convert to HTML first, then strip tags
-    const html = markdownToHtml(markdown);
-    return html
-      .replace(/<[^>]*>/g, "")
-      .replace(/\s+/g, " ")
-      .trim();
-  } catch (error) {
-    console.error("Error converting markdown to plain text:", error);
-    return markdown
-      .replace(/[#*_`~\[\]()]/g, "")
-      .replace(/\s+/g, " ")
-      .trim();
-  }
-}
 
 /**
  * Check if content is valid markdown
  */
-export function isValidMarkdown(content: string): boolean {
-  if (!content) {
-    return true; // Empty content is valid
-  }
 
-  try {
-    markdownToHtml(content);
-    return true;
-  } catch (_error) {
-    return false;
-  }
-}
 
 function protectSegments(input: string, pattern: RegExp): {
   content: string;

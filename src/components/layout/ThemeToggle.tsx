@@ -70,5 +70,5 @@ function ThemeToggleComponent() {
 export const ThemeToggle = memo(ThemeToggleComponent);
 ThemeToggle.displayName = "ThemeToggle";
 
-export default ThemeToggle;
+
 

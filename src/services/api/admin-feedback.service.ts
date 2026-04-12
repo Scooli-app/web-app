@@ -1,5 +1,5 @@
 import type { BugSeverity, FeedbackStatus, FeedbackType } from "@/shared/types/feedback";
-import { apiClient } from "./client";
+import apiClient from "./client";
 
 export interface AdminFeedbackListItem {
   id: string;

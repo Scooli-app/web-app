@@ -83,6 +83,7 @@ const eslintConfig = [
       "node_modules/**",
       "*.config.js",
       "*.config.mjs",
+      "next-env.d.ts",
       "tailwind.config.js",
       "postcss.config.mjs",
       "next.config.ts",

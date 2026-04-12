@@ -3,12 +3,12 @@ import { fetchUsage } from "@/store/subscription/subscriptionSlice";
 import { createAsyncThunk, createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type { AppDispatch } from "../store";
 
-export interface Message {
+interface Message {
   role: "user" | "assistant";
   content: string;
 }
 
-export interface AssistantState {
+interface AssistantState {
   isOpen: boolean;
   isProcessing: boolean;
   messages: Message[];
@@ -133,10 +133,8 @@ const assistantSlice = createSlice({
 
 export const {
   toggleOpen,
-  openPanel,
   closePanel,
   setInputValue,
-  clearInput,
   addUserMessage,
   startStreaming,
   appendStreamChunk,

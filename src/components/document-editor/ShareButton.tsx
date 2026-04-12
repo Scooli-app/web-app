@@ -157,7 +157,7 @@ function ShareButtonComponent({
   );
 }
 
-export const ShareButton = memo(ShareButtonComponent);
+const ShareButton = memo(ShareButtonComponent);
 ShareButton.displayName = "ShareButton";
 
 export default ShareButton;

@@ -62,13 +62,6 @@ const uiSlice = createSlice({
 });
 
 export const {
-  toggleSidebar,
-  setSidebarCollapsed,
-  setSidebarOpen,
-  setLoading,
-  setError,
-  clearError,
-  toggleTheme,
   setTheme,
   setUpgradeModalOpen,
 } = uiSlice.actions;

@@ -41,19 +41,10 @@ export const selectInputValue = createSelector(
 );
 
 /** Get the current error message */
-export const selectError = createSelector(
-  selectAssistantState,
-  (assistant) => assistant.error
-);
+
 
 /** Is the conversation empty? */
-export const selectIsEmpty = createSelector(
-  selectMessages,
-  (messages) => messages.length === 0
-);
+
 
 /** Get the message count */
-export const selectMessageCount = createSelector(
-  selectMessages,
-  (messages) => messages.length
-);
+

@@ -2,7 +2,7 @@
 
 import { Bot, Sparkles } from "lucide-react";
 
-export interface EmptyStateProps {
+interface EmptyStateProps {
   /** Callback when a quick action chip is clicked */
   onQuickAction: (message: string) => void;
   /** Callback when a quick action chip is double-clicked */

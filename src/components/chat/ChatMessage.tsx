@@ -5,7 +5,7 @@ import { Sparkles } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkBreaks from "remark-breaks";
 
-export interface ChatMessageProps {
+interface ChatMessageProps {
   /** Message sender role */
   role: "user" | "assistant";
   /** Message content - supports markdown for assistant messages */

@@ -151,7 +151,7 @@ export const fetchResources = createAsyncThunk(
 /**
  * Get single resource details
  */
-export const fetchResource = createAsyncThunk(
+const fetchResource = createAsyncThunk(
   "community/fetchResource",
   async (resourceId: string, { rejectWithValue }) => {
     try {
@@ -388,11 +388,6 @@ const communitySlice = createSlice({
 // Export actions
 export const {
   setFilters,
-  clearFilters,
-  clearSelectedResource,
-  resetShareSuccess,
-  clearReusedResource,
-  clearError,
 } = communitySlice.actions;
 
 // Export reducer

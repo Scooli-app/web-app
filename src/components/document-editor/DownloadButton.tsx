@@ -137,7 +137,7 @@ function DownloadButtonComponent({
   );
 }
 
-export const DownloadButton = memo(DownloadButtonComponent);
+const DownloadButton = memo(DownloadButtonComponent);
 DownloadButton.displayName = "DownloadButton";
 
 export default DownloadButton;

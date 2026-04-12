@@ -1,7 +1,7 @@
 import { cn } from "@/shared/utils/utils";
 import type { ComponentPropsWithoutRef, ElementType } from "react";
 
-export interface StreamingTextProps<T extends ElementType = "span"> {
+interface StreamingTextProps<T extends ElementType = "span"> {
   text: string;
   isStreaming?: boolean;
   className?: string;

@@ -4,12 +4,12 @@ import type { RootState } from "../store";
 
 const selectFeaturesState = (state: RootState) => state.features;
 
-export const selectFeatureFlags = createSelector(
+const selectFeatureFlags = createSelector(
   [selectFeaturesState],
   (featuresState) => featuresState.flags
 );
 
-export const selectEnabledFeatureFlags = createSelector(
+const selectEnabledFeatureFlags = createSelector(
   [selectFeatureFlags],
   (flags) =>
     (Object.entries(flags)
@@ -17,19 +17,11 @@ export const selectEnabledFeatureFlags = createSelector(
       .map(([feature]) => feature as FeatureFlag))
 );
 
-export const selectFeaturesLoading = createSelector(
-  [selectFeaturesState],
-  (featuresState) => featuresState.loading
-);
 
-export const selectFeaturesError = createSelector(
-  [selectFeaturesState],
-  (featuresState) => featuresState.error
-);
 
-export const selectIsFeatureEnabled =
-  (featureFlag: FeatureFlag) => (state: RootState) =>
-    selectEnabledFeatureFlags(state).includes(featureFlag);
+
+
+
 
 export const selectIsPresentationCreationEnabled = createSelector(
   [selectEnabledFeatureFlags],
@@ -41,17 +33,8 @@ export const selectIsWorksheetCreationEnabled = createSelector(
   (enabledFeatures) => enabledFeatures.includes(FeatureFlag.WORKSHEET_CREATION)
 );
 
-export const selectIsCommunityLibraryEnabled = createSelector(
-  [selectEnabledFeatureFlags],
-  (enabledFeatures) => enabledFeatures.includes(FeatureFlag.COMMUNITY_LIBRARY)
-);
 
-export const selectIsDocumentReviewEnabled = createSelector(
-  [selectEnabledFeatureFlags],
-  (enabledFeatures) => enabledFeatures.includes(FeatureFlag.DOCUMENT_REVIEW)
-);
 
-export const selectIsDocumentImagesEnabled = createSelector(
-  [selectEnabledFeatureFlags],
-  (enabledFeatures) => enabledFeatures.includes(FeatureFlag.DOCUMENT_IMAGES)
-);
+
+
+
