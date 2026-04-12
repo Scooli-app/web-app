@@ -17,7 +17,7 @@ type GetTokenFn = () => Promise<string | null>;
 
 let getTokenFn: GetTokenFn | null = null;
 
-export const apiClient: AxiosInstance = axios.create({
+const apiClient: AxiosInstance = axios.create({
   baseURL: process.env.NEXT_PUBLIC_BASE_API_URL || "",
   headers: {
     "Content-Type": "application/json",

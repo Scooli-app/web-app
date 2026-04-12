@@ -3,20 +3,6 @@
  * Exports all moderation-related Redux functionality
  */
 
-export {
-  clearError,
-  clearLastProcessed,
-  default as moderationReducer,
-  fetchModerationQueue,
-  processModeration,
-} from "./moderationSlice";
+export { default as moderationReducer, fetchModerationQueue, processModeration } from "./moderationSlice";
 
-export {
-  selectIsLoadingQueue,
-  selectIsProcessingAction,
-  selectLastProcessedResourceId,
-  selectModeration,
-  selectModerationError,
-  selectModerationPagination,
-  selectPendingResources,
-} from "./selectors";
+export { selectIsLoadingQueue, selectIsProcessingAction, selectModerationPagination, selectPendingResources } from "./selectors";

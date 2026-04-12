@@ -25,7 +25,7 @@ import {
 import { TemplateSection } from "./templates";
 import type { DocumentTypeConfig, FormState, FormUpdateFn } from "./types";
 
-export type { DocumentTypeConfig };
+
 
 interface DocumentCreationPageProps {
   documentType: DocumentTypeConfig;

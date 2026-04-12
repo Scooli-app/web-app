@@ -56,14 +56,6 @@ export interface PortalResponse {
   url: string;
 }
 
-export const PLAN_CODES = {
-  FREE: "free",
-  PRO_MONTHLY: "pro_monthly",
-  PRO_ANNUAL: "pro_annual",
-} as const;
-
-export type PlanCode = (typeof PLAN_CODES)[keyof typeof PLAN_CODES];
-
 export const PLAN_DISPLAY_INFO: Record<
   string,
   { name: string; description: string; badge?: string }

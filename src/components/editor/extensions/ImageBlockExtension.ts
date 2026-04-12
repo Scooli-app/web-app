@@ -2,7 +2,7 @@ import { mergeAttributes, Node } from "@tiptap/core";
 import { ReactNodeViewRenderer } from "@tiptap/react";
 import ImageBlockNodeView from "./ImageBlockNodeView";
 
-export interface ImageBlockOptions {
+interface ImageBlockOptions {
   HTMLAttributes: Record<string, unknown>;
 }
 

@@ -12,18 +12,9 @@ import type {
 } from "./document";
 
 // Generic API response types
-export interface ApiResponse<T> {
-  data?: T;
-  error?: string;
-}
 
-export interface PaginatedResponse<T> {
-  data: T[];
-  total: number;
-  page: number;
-  limit: number;
-  hasMore: boolean;
-}
+
+
 
 export interface CreateDocumentParams {
   documentType: DocumentType;
@@ -38,8 +29,6 @@ export interface CreateDocumentParams {
   worksheetVariant?: WorksheetVariant;
 }
 
-// DocumentResponse matches Document type exactly (backend response)
-export type DocumentResponse = Document;
 
 export interface DocumentFilters {
   documentType?: string;
@@ -79,31 +68,12 @@ export interface GetDocumentsResponse {
   };
 }
 
-export type DocumentCountsResponse = DocumentStatsResponse;
 
-export interface CreateDocumentRequest {
-  title: string;
-  content?: string;
-  document_type: DocumentType;
-  metadata?: Record<string, unknown>;
-  subject?: string;
-  schoolYear?: number;
-  duration?: string;
-  isSpecificComponent?: boolean;
-  teachingMethod?: TeachingMethod;
-  additionalDetails?: string;
-  worksheetVariant?: WorksheetVariant;
-  is_public?: boolean;
-}
 
-export interface UpdateDocumentRequest {
-  title?: string;
-  content?: string;
-}
 
-export interface ChatRequest {
-  chatMessage: string;
-}
+
+
+
 
 export interface ChatResponse {
   id: string;
@@ -114,9 +84,7 @@ export interface ChatResponse {
   updatedAt: string;
 }
 
-export interface DeleteDocumentRequest {
-  ids: string[];
-}
+
 
 // SSE Streaming types for document creation
 export interface CreateDocumentStreamResponse {

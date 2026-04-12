@@ -153,7 +153,7 @@ const moderationSlice = createSlice({
 });
 
 // Export actions
-export const { clearError, clearLastProcessed } = moderationSlice.actions;
+
 
 // Export reducer
 export default moderationSlice.reducer;

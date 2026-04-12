@@ -11,7 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { AlertTriangle } from "lucide-react";
 
-export interface ConfirmationDialogProps {
+interface ConfirmationDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: () => void;
@@ -84,7 +84,7 @@ export function ConfirmationDialog({
   );
 }
 
-export interface UnsavedChangesDialogProps {
+interface UnsavedChangesDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: () => void;

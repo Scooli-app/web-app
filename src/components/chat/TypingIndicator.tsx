@@ -2,7 +2,7 @@
 
 import { cn } from "@/shared/utils/utils";
 
-export interface TypingIndicatorProps {
+interface TypingIndicatorProps {
   /** Optional: Additional CSS classes */
   className?: string;
 }

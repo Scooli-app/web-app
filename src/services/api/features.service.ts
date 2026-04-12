@@ -13,7 +13,7 @@ import apiClient from "./client";
  * Response shape from GET /features:
  * an array containing only enabled feature keys.
  */
-export type FeatureFlagsResponse = FeatureFlag[];
+type FeatureFlagsResponse = FeatureFlag[];
 
 /**
  * Fetch all enabled feature flags for the currently authenticated user.

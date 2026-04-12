@@ -4,32 +4,12 @@
  * Based on Chalkboard backend API (Quarkus)
  */
 
-import type {
-  BackendPaginatedResponse,
-  ChatResponse,
-  CreateDocumentParams,
-  CreateDocumentStreamResponse,
-  Document,
-  DocumentCountsResponse,
-  DocumentFilters,
-  DocumentResponse,
-  DocumentStatsResponse,
-  DocumentStreamCallbacks,
-  DocumentType,
-  GetDocumentsParams,
-  GetDocumentsResponse,
-  StreamedResponse,
-  StreamEvent,
-  WorksheetVariant,
-} from "@/shared/types";
+import type { BackendPaginatedResponse, ChatResponse, CreateDocumentParams, CreateDocumentStreamResponse, Document, DocumentFilters, DocumentStatsResponse, DocumentStreamCallbacks, DocumentType, GetDocumentsParams, GetDocumentsResponse, StreamedResponse, StreamEvent, WorksheetVariant } from "@/shared/types";
 import type { DocumentImage, RagSource } from "@/shared/types/document";
 import axios, { type AxiosError } from "axios";
 import apiClient from "./client";
 
-export type {
-  ChatResponse, CreateDocumentParams, CreateDocumentStreamResponse, DocumentCountsResponse, DocumentFilters, DocumentResponse, DocumentStreamCallbacks, DocumentType, GetDocumentsParams,
-  GetDocumentsResponse, StreamEvent
-};
+export type { DocumentFilters };
 
 function isRagSourceArray(value: unknown): value is RagSource[] {
   return (
@@ -103,13 +83,6 @@ export async function getDocumentStats(): Promise<DocumentStatsResponse> {
     "/documents/stats"
   );
   return response.data;
-}
-
-/**
- * @deprecated Use getDocumentStats() instead
- */
-export async function getDocumentCounts(): Promise<DocumentCountsResponse> {
-  return getDocumentStats();
 }
 
 /**
@@ -350,7 +323,7 @@ export async function deleteDocuments(
 /**
  * Get a Presigned PUT URL for uploading a document to R2
  */
-export interface DocumentImportRequest {
+interface DocumentImportRequest {
   title: string;
   documentType: DocumentType;
   subject: string;

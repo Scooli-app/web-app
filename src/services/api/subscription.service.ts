@@ -53,6 +53,4 @@ export async function createPortalSession(): Promise<PortalResponse> {
   return response.data;
 }
 
-export async function cancelSubscription(): Promise<void> {
-  await apiClient.post(`${SUBSCRIPTIONS_BASE}/cancel`);
-}
+

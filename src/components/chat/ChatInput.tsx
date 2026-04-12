@@ -6,7 +6,7 @@ import { cn } from "@/shared/utils/utils";
 import { Send } from "lucide-react";
 import { useEffect, useRef, type ChangeEvent, type KeyboardEvent } from "react";
 
-export interface ChatInputProps {
+interface ChatInputProps {
   /** Current input value */
   value: string;
   /** Callback when value changes */

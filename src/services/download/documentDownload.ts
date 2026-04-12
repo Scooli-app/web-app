@@ -72,4 +72,4 @@ export async function downloadDocument(
   URL.revokeObjectURL(url);
 }
 
-export default downloadDocument;
+

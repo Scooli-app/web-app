@@ -19,9 +19,9 @@ import type { DocumentImage } from "@/shared/types/document";
 import { fetchUsage } from "@/store/subscription/subscriptionSlice";
 import { createAsyncThunk, createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
-export type { DocumentFilters };
 
-export interface UpdateDocumentData {
+
+interface UpdateDocumentData {
   id: string;
   title?: string;
   content?: string;
@@ -127,7 +127,7 @@ const upsertDocumentImage = (
 };
 
 // Async Thunks
-export const fetchDocuments = createAsyncThunk(
+const fetchDocuments = createAsyncThunk(
   "documents/fetchDocuments",
   async (
     {
@@ -603,13 +603,7 @@ const documentSlice = createSlice({
 });
 
 export const {
-  setCurrentDocument,
-  setFilters,
-  clearError,
-  resetPagination,
   setPendingInitialPrompt,
-  clearPendingInitialPrompt,
-  addDocument,
   clearStreamInfo,
   clearLastChatAnswer,
   updateDocumentOptimistic,
