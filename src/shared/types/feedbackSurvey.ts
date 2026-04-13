@@ -25,6 +25,37 @@ export type FeedbackSurveyTag =
   | "found_bugs"
   | "missing_features";
 
+export const FEEDBACK_SURVEY_STATUS_LABELS: Record<FeedbackSurveyStatus, string> =
+  {
+    [FeedbackSurveyStatus.PENDING]: "Pendente",
+    [FeedbackSurveyStatus.SNOOZED]: "Adiado",
+    [FeedbackSurveyStatus.COMPLETED]: "Respondido",
+  };
+
+export const FEEDBACK_SURVEY_SENTIMENT_LABELS: Record<
+  FeedbackSurveySentiment,
+  string
+> = {
+  [FeedbackSurveySentiment.VERY_USEFUL]: "Muito útil",
+  [FeedbackSurveySentiment.USEFUL_BUT_CAN_IMPROVE]:
+    "Útil, mas pode melhorar",
+  [FeedbackSurveySentiment.NOT_SURE_YET]: "Ainda não tenho a certeza",
+  [FeedbackSurveySentiment.FRUSTRATING]: "Frustrante",
+};
+
+export const FEEDBACK_SURVEY_TAG_LABELS: Record<FeedbackSurveyTag, string> = {
+  saves_time: "Poupa tempo",
+  good_content_quality: "Boa qualidade",
+  easy_to_use: "Fácil de usar",
+  easy_to_edit: "Fácil de editar",
+  has_needed_document_types: "Tem os tipos certos",
+  quality_not_good_enough: "Qualidade insuficiente",
+  platform_confusing: "Plataforma confusa",
+  too_slow: "Demasiado lenta",
+  found_bugs: "Encontrei bugs",
+  missing_features: "Faltam funcionalidades",
+};
+
 export interface FeedbackSurveyStatusResponse {
   promptKey: string;
   shouldShow: boolean;
