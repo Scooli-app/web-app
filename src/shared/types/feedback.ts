@@ -6,6 +6,7 @@ export enum FeedbackType {
 export enum FeedbackStatus {
   SUBMITTED = "SUBMITTED",
   IN_REVIEW = "IN_REVIEW",
+  IN_DEVELOPMENT = "IN_DEVELOPMENT",
   RESOLVED = "RESOLVED",
   REJECTED = "REJECTED",
 }
@@ -24,6 +25,19 @@ export interface FeedbackAttachment {
   fileType?: string;
 }
 
+export interface CreateFeedbackAttachment {
+  fileUrl: string;
+  filePath: string;
+  fileType?: string;
+}
+
+export interface FeedbackResponseMessage {
+  id: string;
+  adminId: string;
+  content: string;
+  createdAt: string;
+}
+
 export interface Feedback {
   id: string;
   userId: string;
@@ -38,12 +52,7 @@ export interface Feedback {
   createdAt: string;
   updatedAt: string;
   attachments?: FeedbackAttachment[];
-  responses?: {
-    id: string;
-    adminId: string;
-    content: string;
-    createdAt: string;
-  }[];
+  responses?: FeedbackResponseMessage[];
 }
 
 export interface CreateFeedbackParams {
@@ -55,7 +64,7 @@ export interface CreateFeedbackParams {
   bugType?: string;
   severity?: BugSeverity;
   reproductionSteps?: string;
-  attachments?: FeedbackAttachment[];
+  attachments?: CreateFeedbackAttachment[];
 }
 
 export interface UploadResponse {

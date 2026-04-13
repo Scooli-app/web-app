@@ -98,6 +98,7 @@ export function SuggestionForm({ onSuccess, onCancel }: SuggestionFormProps) {
     if (!isValid) return;
 
     setIsSubmitting(true);
+    const uploadedFilePaths: string[] = [];
     try {
       const feedbackId = crypto.randomUUID();
       const uploadedAttachments: { fileUrl: string; filePath: string; fileType: string }[] = [];
@@ -106,6 +107,7 @@ export function SuggestionForm({ onSuccess, onCancel }: SuggestionFormProps) {
       for (const file of files) {
         try {
           const result = await feedbackService.uploadFile(file, feedbackId);
+          uploadedFilePaths.push(result.filePath);
           uploadedAttachments.push({
             fileUrl: result.fileUrl,
             filePath: result.filePath,
@@ -130,6 +132,13 @@ export function SuggestionForm({ onSuccess, onCancel }: SuggestionFormProps) {
       toast.success("Sugestão enviada com sucesso!");
       onSuccess();
     } catch (error) {
+      if (uploadedFilePaths.length > 0) {
+        try {
+          await feedbackService.cleanupUploads(uploadedFilePaths);
+        } catch (cleanupError) {
+          console.error("Failed to cleanup uploaded feedback files:", cleanupError);
+        }
+      }
       posthog.captureException(error);
       console.error("Failed to submit suggestion:", error);
       toast.error("Ocorreu um erro ao enviar a sugestão.");

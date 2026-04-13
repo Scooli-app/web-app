@@ -1,7 +1,9 @@
 export const APP_FEEDBACK_SURVEY_PROMPT_KEY = "app_feedback_v1" as const;
 
 export enum FeedbackSurveyStatus {
-    COMPLETED = "COMPLETED"
+  PENDING = "PENDING",
+  SNOOZED = "SNOOZED",
+  COMPLETED = "COMPLETED",
 }
 
 export enum FeedbackSurveySentiment {

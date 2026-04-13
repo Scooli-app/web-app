@@ -7,8 +7,9 @@ export interface AdminFeedbackListItem {
   title: string;
   userEmail: string;
   status: FeedbackStatus;
-  severity: BugSeverity;
-  category: string;
+  severity?: BugSeverity | null;
+  category?: string | null;
+  bugType?: string | null;
   createdAt: string;
 }
 
@@ -17,6 +18,8 @@ export interface AdminFeedbackDetail extends AdminFeedbackListItem {
   reproductionSteps?: string;
   bugType?: string;
   userId: string;
+  userName?: string | null;
+  userUsername?: string | null;
   updatedAt: string;
   attachments: { id: string; fileName: string; fileType: string; signedUrl: string }[];
   internalNotes: { id: string; adminId: string; content: string; createdAt: string }[];
@@ -76,7 +79,11 @@ export const adminFeedbackService = {
     return response.data;
   },
 
-  updateStatus: async (id: string, status: FeedbackStatus, severity: BugSeverity) => {
+  updateStatus: async (
+    id: string,
+    status: FeedbackStatus,
+    severity?: BugSeverity | null,
+  ) => {
     await apiClient.patch(`/admin/feedback/${id}`, { status, severity });
   },
 
@@ -84,7 +91,18 @@ export const adminFeedbackService = {
     await apiClient.post(`/admin/feedback/${id}/notes`, { content });
   },
 
-  sendResponse: async (id: string, content: string) => {
-    await apiClient.post(`/admin/feedback/${id}/respond`, { content });
+  sendResponse: async (
+    id: string,
+    content: string,
+    status: FeedbackStatus,
+    severity?: BugSeverity | null,
+    notifyUser?: boolean,
+  ) => {
+    await apiClient.post(`/admin/feedback/${id}/respond`, {
+      content,
+      status,
+      severity,
+      notifyUser,
+    });
   },
 };

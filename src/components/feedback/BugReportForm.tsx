@@ -100,6 +100,7 @@ export function BugReportForm({ onSuccess, onCancel }: BugReportFormProps) {
     if (!isValid) return;
 
     setIsSubmitting(true);
+    const uploadedFilePaths: string[] = [];
     try {
       const feedbackId = crypto.randomUUID();
       const uploadedAttachments: { fileUrl: string; filePath: string; fileType: string }[] = [];
@@ -108,6 +109,7 @@ export function BugReportForm({ onSuccess, onCancel }: BugReportFormProps) {
       for (const file of files) {
         try {
           const result = await feedbackService.uploadFile(file, feedbackId);
+          uploadedFilePaths.push(result.filePath);
           uploadedAttachments.push({
             fileUrl: result.fileUrl,
             filePath: result.filePath,
@@ -134,6 +136,13 @@ export function BugReportForm({ onSuccess, onCancel }: BugReportFormProps) {
       toast.success("Erro reportado com sucesso!");
       onSuccess();
     } catch (error) {
+      if (uploadedFilePaths.length > 0) {
+        try {
+          await feedbackService.cleanupUploads(uploadedFilePaths);
+        } catch (cleanupError) {
+          console.error("Failed to cleanup uploaded feedback files:", cleanupError);
+        }
+      }
       posthog.captureException(error);
       console.error("Failed to report bug:", error);
       toast.error("Ocorreu um erro ao reportar o erro.");
