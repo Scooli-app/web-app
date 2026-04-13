@@ -10,6 +10,10 @@ import {
   fetchUsage,
   resetSubscriptionState,
 } from "@/store/subscription/subscriptionSlice";
+import {
+  fetchWorkspace,
+  resetWorkspaceState,
+} from "@/store/workspace/workspaceSlice";
 import { useAuth, useUser } from "@clerk/nextjs";
 import { Loader2 } from "lucide-react";
 import Image from "next/image";
@@ -34,6 +38,7 @@ export function AppBootstrapGate() {
     if (!isSignedIn || !user?.id) {
       dispatch(resetSubscriptionState());
       dispatch(resetFeaturesState());
+      dispatch(resetWorkspaceState());
       setBootstrappedUserId(null);
       setIsBootstrapping(false);
       return;
@@ -52,6 +57,7 @@ export function AppBootstrapGate() {
     setBootstrappedUserId(null);
     dispatch(resetSubscriptionState());
     dispatch(resetFeaturesState());
+    dispatch(resetWorkspaceState());
 
     const bootstrap = async () => {
       // Give the AuthProvider one effect cycle to register the Clerk token getter
@@ -66,6 +72,7 @@ export function AppBootstrapGate() {
         dispatch(fetchSubscription()),
         dispatch(fetchUsage()),
         dispatch(fetchFeatureFlags()),
+        dispatch(fetchWorkspace()),
       ]);
 
       if (!isActive || bootstrapRunIdRef.current !== runId) {

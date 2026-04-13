@@ -74,3 +74,12 @@ export type {
 // User types
 export type { CurrentUserProfile } from "./user";
 
+// Workspace / organization types
+export type {
+    CurrentOrganization,
+    OrganizationDashboard,
+    OrganizationMember,
+    WorkspaceContext,
+    WorkspaceType
+} from "./workspace";
+

@@ -114,6 +114,17 @@ export default clerkMiddleware(async (auth, req) => {
     }
   }
 
+  if (req.nextUrl.pathname.startsWith("/school")) {
+    const { sessionClaims } = authObj;
+    const activeOrgId =
+      typeof sessionClaims?.org_id === "string" ? sessionClaims.org_id : null;
+
+    if (!activeOrgId) {
+      const dashboardUrl = new URL("/dashboard", req.url);
+      return NextResponse.redirect(dashboardUrl);
+    }
+  }
+
   const res = NextResponse.next();
   await setTokenCookie(res);
   return res;

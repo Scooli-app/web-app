@@ -32,3 +32,6 @@ export * from "./feedback-survey.service";
 
 // User service
 export * from "./user.service";
+
+// Workspace / organization service
+export * from "./workspace.service";
