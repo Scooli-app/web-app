@@ -27,7 +27,7 @@ const initialState: AdminFeedbackState = {
     page: 0,
     size: 20,
     type: [],
-    status: [FeedbackStatus.SUBMITTED, FeedbackStatus.IN_REVIEW],
+    status: [FeedbackStatus.SUBMITTED, FeedbackStatus.IN_REVIEW, FeedbackStatus.IN_DEVELOPMENT],
     severity: [],
   },
   loading: false,
@@ -70,7 +70,14 @@ export const fetchMetrics = createAsyncThunk(
 
 export const updateFeedbackStatus = createAsyncThunk(
   "adminFeedback/updateStatus",
-  async ({ id, status, severity }: { id: string; status: FeedbackStatus; severity: BugSeverity }, { rejectWithValue }) => {
+  async (
+    {
+      id,
+      status,
+      severity,
+    }: { id: string; status: FeedbackStatus; severity?: BugSeverity | null },
+    { rejectWithValue },
+  ) => {
     try {
       await adminFeedbackService.updateStatus(id, status, severity);
       return { id, status, severity };
@@ -94,10 +101,25 @@ export const addInternalNote = createAsyncThunk(
 
 export const sendResponse = createAsyncThunk(
   "adminFeedback/sendResponse",
-  async ({ id, content }: { id: string; content: string }, { rejectWithValue }) => {
+  async (
+    {
+      id,
+      content,
+      status,
+      severity,
+      notifyUser,
+    }: {
+      id: string;
+      content: string;
+      status: FeedbackStatus;
+      severity?: BugSeverity | null;
+      notifyUser?: boolean;
+    },
+    { rejectWithValue },
+  ) => {
     try {
-      await adminFeedbackService.sendResponse(id, content);
-      return { id, content };
+      await adminFeedbackService.sendResponse(id, content, status, severity, notifyUser);
+      return { id, content, status, severity, notifyUser };
     } catch (error) {
       return rejectWithValue((error as Error).message || "Não foi possível enviar a resposta");
     }
@@ -152,13 +174,33 @@ const adminFeedbackSlice = createSlice({
       .addCase(updateFeedbackStatus.fulfilled, (state, action) => {
         if (state.detail && state.detail.id === action.payload.id) {
           state.detail.status = action.payload.status;
-          state.detail.severity = action.payload.severity;
+          if (action.payload.severity !== undefined) {
+            state.detail.severity = action.payload.severity;
+          }
         }
         // Also update list item if present
         const item = state.items.find((i) => i.id === action.payload.id);
         if (item) {
           item.status = action.payload.status;
-          item.severity = action.payload.severity;
+          if (action.payload.severity !== undefined) {
+            item.severity = action.payload.severity;
+          }
+        }
+      })
+      .addCase(sendResponse.fulfilled, (state, action) => {
+        if (state.detail && state.detail.id === action.payload.id) {
+          state.detail.status = action.payload.status;
+          if (action.payload.severity !== undefined) {
+            state.detail.severity = action.payload.severity;
+          }
+        }
+
+        const item = state.items.find((i) => i.id === action.payload.id);
+        if (item) {
+          item.status = action.payload.status;
+          if (action.payload.severity !== undefined) {
+            item.severity = action.payload.severity;
+          }
         }
       });
   },

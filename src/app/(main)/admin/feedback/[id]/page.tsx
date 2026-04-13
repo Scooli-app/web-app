@@ -4,29 +4,60 @@ import { FeedbackStatusBadge } from "@/components/admin/feedback/FeedbackStatusB
 import { PageContainer } from "@/components/layout/PageContainer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
-import { BugSeverity, FeedbackStatus, FeedbackType } from "@/shared/types/feedback";
+import {
+  BugSeverity,
+  FeedbackStatus,
+  FeedbackType,
+} from "@/shared/types/feedback";
 import {
   addInternalNote,
   clearDetail,
   fetchFeedbackDetail,
   sendResponse,
-  updateFeedbackStatus,
 } from "@/store/admin-feedback/adminFeedbackSlice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { format } from "date-fns";
 import { pt } from "date-fns/locale";
-import { ArrowLeft, Bug, Download, FileText, Lightbulb, Loader2, MessageSquare, Send } from "lucide-react";
+import {
+  ArrowLeft,
+  Bug,
+  Download,
+  FileText,
+  Lightbulb,
+  Loader2,
+  MessageSquare,
+  Send,
+} from "lucide-react";
 import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 type TimelineItem =
-  | ({ id: string; adminId: string; content: string; createdAt: string; type: "NOTE" })
-  | ({ id: string; adminId: string; content: string; createdAt: string; type: "RESPONSE" });
+  | {
+      id: string;
+      adminId: string;
+      content: string;
+      createdAt: string;
+      type: "NOTE";
+    }
+  | {
+      id: string;
+      adminId: string;
+      content: string;
+      createdAt: string;
+      type: "RESPONSE";
+    };
 
 export default function AdminFeedbackDetailArgsPage() {
   const params = useParams();
@@ -38,6 +69,14 @@ export default function AdminFeedbackDetailArgsPage() {
 
   const [noteContent, setNoteContent] = useState("");
   const [responseContent, setResponseContent] = useState("");
+  const [selectedStatus, setSelectedStatus] = useState<FeedbackStatus>(
+    FeedbackStatus.SUBMITTED,
+  );
+  const [selectedSeverity, setSelectedSeverity] = useState<BugSeverity | "">(
+    "",
+  );
+  const [notifyUserOnStatusChange, setNotifyUserOnStatusChange] =
+    useState(true);
   const [isSubmittingNote, setIsSubmittingNote] = useState(false);
   const [isSubmittingResponse, setIsSubmittingResponse] = useState(false);
 
@@ -56,25 +95,15 @@ export default function AdminFeedbackDetailArgsPage() {
     };
   }, [id, loadDetail, dispatch]);
 
-  const handleStatusUpdate = async (status: FeedbackStatus) => {
-    if (!detail) return;
-    try {
-      await dispatch(updateFeedbackStatus({ id, status, severity: detail.severity })).unwrap();
-      toast.success("Estado atualizado com sucesso.");
-    } catch {
-      toast.error("Erro ao atualizar estado.");
+  useEffect(() => {
+    if (!detail) {
+      return;
     }
-  };
 
-  const handleSeverityUpdate = async (severity: BugSeverity) => {
-    if (!detail) return;
-    try {
-      await dispatch(updateFeedbackStatus({ id, status: detail.status, severity })).unwrap();
-      toast.success("Severidade atualizada com sucesso.");
-    } catch {
-      toast.error("Erro ao atualizar severidade.");
-    }
-  };
+    setSelectedStatus(detail.status);
+    setSelectedSeverity(detail.severity || "");
+    setNotifyUserOnStatusChange(true);
+  }, [detail]);
 
   const handleSubmitNote = async () => {
     if (!noteContent.trim()) return;
@@ -92,15 +121,34 @@ export default function AdminFeedbackDetailArgsPage() {
   };
 
   const handleSubmitResponse = async () => {
-    if (!responseContent.trim()) return;
+    if (!detail) return;
+
+    const trimmedResponse = responseContent.trim();
+    const hasStatusChange = selectedStatus !== detail.status;
+    const hasSeverityChange =
+      (selectedSeverity || null) !== (detail.severity || null);
+
+    if (!trimmedResponse && !hasStatusChange && !hasSeverityChange) return;
+
     setIsSubmittingResponse(true);
     try {
-      await dispatch(sendResponse({ id, content: responseContent })).unwrap();
-      toast.success("Resposta enviada.");
+      await dispatch(
+        sendResponse({
+          id,
+          content: trimmedResponse,
+          status: selectedStatus,
+          severity:
+            detail.type === FeedbackType.BUG ? selectedSeverity || null : null,
+          notifyUser: notifyUserOnStatusChange && hasStatusChange,
+        }),
+      ).unwrap();
+      toast.success(
+        trimmedResponse ? "Atualização enviada." : "Triagem atualizada.",
+      );
       setResponseContent("");
       loadDetail();
     } catch {
-      toast.error("Erro ao enviar resposta.");
+      toast.error("Erro ao guardar atualização.");
     } finally {
       setIsSubmittingResponse(false);
     }
@@ -125,6 +173,26 @@ export default function AdminFeedbackDetailArgsPage() {
     );
   }
 
+  const userDisplayName =
+    detail.userName || detail.userUsername || detail.userEmail || "Utilizador";
+  const userInitials =
+    userDisplayName
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part.charAt(0).toUpperCase())
+      .join("") || "U";
+  const formattedUsername = detail.userUsername
+    ? detail.userUsername.startsWith("@")
+      ? detail.userUsername
+      : `@${detail.userUsername}`
+    : "-";
+  const canSubmitResponseUpdate =
+    responseContent.trim().length > 0 ||
+    selectedStatus !== detail.status ||
+    (selectedSeverity || null) !== (detail.severity || null);
+  const hasStatusChanged = selectedStatus !== detail.status;
+
   return (
     <PageContainer size="7xl" contentClassName="py-4 sm:py-8">
       <div className="space-y-6">
@@ -140,11 +208,17 @@ export default function AdminFeedbackDetailArgsPage() {
                 ) : (
                   <Lightbulb className="h-3 w-3 text-yellow-500" />
                 )}
-                <span>{detail.type === FeedbackType.BUG ? "Erro reportado" : "Sugestão"}</span>
+                <span>
+                  {detail.type === FeedbackType.BUG
+                    ? "Erro reportado"
+                    : "Sugestão"}
+                </span>
                 <span>•</span>
                 <span>ID: {detail.id.split("-")[0]}</span>
               </div>
-              <h1 className="text-2xl font-bold tracking-tight">{detail.title}</h1>
+              <h1 className="text-2xl font-bold tracking-tight">
+                {detail.title}
+              </h1>
             </div>
           </div>
           <div className="flex items-center gap-2 sm:ml-auto">
@@ -160,7 +234,9 @@ export default function AdminFeedbackDetailArgsPage() {
               </CardHeader>
               <CardContent className="space-y-6">
                 <div>
-                  <h3 className="mb-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Descrição</h3>
+                  <h3 className="mb-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                    Descrição
+                  </h3>
                   <div className="whitespace-pre-wrap rounded-md bg-muted/30 p-4 text-sm">
                     {detail.description}
                   </div>
@@ -168,7 +244,9 @@ export default function AdminFeedbackDetailArgsPage() {
 
                 {detail.reproductionSteps && (
                   <div>
-                    <h3 className="mb-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Passos para Reproduzir</h3>
+                    <h3 className="mb-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                      Passos para Reproduzir
+                    </h3>
                     <div className="whitespace-pre-wrap rounded-md bg-muted/30 p-4 text-sm">
                       {detail.reproductionSteps}
                     </div>
@@ -189,7 +267,12 @@ export default function AdminFeedbackDetailArgsPage() {
                         >
                           {att.fileType.startsWith("image/") ? (
                             <div className="relative h-32 w-full border-accent bg-muted">
-                              <Image src={att.signedUrl} alt={att.fileName} fill className="object-cover" />
+                              <Image
+                                src={att.signedUrl}
+                                alt={att.fileName}
+                                fill
+                                className="object-cover"
+                              />
                             </div>
                           ) : (
                             <div className="flex h-32 items-center justify-center bg-muted">
@@ -197,8 +280,18 @@ export default function AdminFeedbackDetailArgsPage() {
                             </div>
                           )}
                           <div className="flex items-center justify-between border-t border-accent bg-muted/50 p-2 text-xs">
-                            <span className="mr-2 flex-1 truncate" title={att.fileName}>{att.fileName}</span>
-                            <a href={att.signedUrl} target="_blank" rel="noopener noreferrer" className="rounded-full p-1 transition-colors hover:bg-background">
+                            <span
+                              className="mr-2 flex-1 truncate"
+                              title={att.fileName}
+                            >
+                              {att.fileName}
+                            </span>
+                            <a
+                              href={att.signedUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="rounded-full p-1 transition-colors hover:bg-background"
+                            >
                               <Download className="h-3 w-3" />
                             </a>
                           </div>
@@ -217,7 +310,8 @@ export default function AdminFeedbackDetailArgsPage() {
               <CardContent className="space-y-6">
                 <div className="rounded-lg border border-yellow-500/10 bg-yellow-500/5 p-4">
                   <h4 className="mb-2 flex items-center gap-2 font-semibold text-yellow-600">
-                    <FileText className="h-4 w-4" /> Nota interna (apenas administração)
+                    <FileText className="h-4 w-4" /> Nota interna (apenas
+                    administração)
                   </h4>
                   <Textarea
                     placeholder="Adicionar nota técnica ou observação..."
@@ -232,7 +326,9 @@ export default function AdminFeedbackDetailArgsPage() {
                       onClick={handleSubmitNote}
                       disabled={isSubmittingNote || !noteContent.trim()}
                     >
-                      {isSubmittingNote ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : null}
+                      {isSubmittingNote ? (
+                        <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                      ) : null}
                       Guardar Nota
                     </Button>
                   </div>
@@ -242,24 +338,54 @@ export default function AdminFeedbackDetailArgsPage() {
                   <h4 className="mb-2 flex items-center gap-2 font-semibold text-blue-600">
                     <MessageSquare className="h-4 w-4" /> Resposta ao Utilizador
                   </h4>
+                  <p className="mb-3 text-xs text-muted-foreground">
+                    O estado e a severidade selecionados em triagem serÃ£o
+                    guardados juntamente com esta atualizaÃ§Ã£o.
+                  </p>
                   <Textarea
                     placeholder="Escrever resposta para o utilizador..."
                     className="mb-2 border-blue-500/10 bg-background focus-visible:ring-blue-500/20"
                     value={responseContent}
                     onChange={(e) => setResponseContent(e.target.value)}
                   />
+                  <div className="mb-3 flex items-start gap-3 rounded-lg border border-blue-500/10 bg-background/70 p-3">
+                    <Checkbox
+                      id="notify-user-on-status-change"
+                      checked={notifyUserOnStatusChange}
+                      onCheckedChange={(checked) =>
+                        setNotifyUserOnStatusChange(checked === true)
+                      }
+                      disabled={!hasStatusChanged}
+                    />
+                    <div className="space-y-1">
+                      <label
+                        htmlFor="notify-user-on-status-change"
+                        className="text-sm font-medium leading-none"
+                      >
+                        Enviar email ao utilizador
+                      </label>
+                      <p className="text-xs text-muted-foreground">
+                        O email so e enviado quando houver mudanca de estado.
+                        {hasStatusChanged
+                          ? " A mensagem acima sera incluida se existir."
+                          : " Altere o estado para ativar esta opcao."}
+                      </p>
+                    </div>
+                  </div>
                   <div className="flex justify-end">
                     <Button
                       size="sm"
                       onClick={handleSubmitResponse}
-                      disabled={isSubmittingResponse || !responseContent.trim()}
+                      disabled={
+                        isSubmittingResponse || !canSubmitResponseUpdate
+                      }
                     >
                       {isSubmittingResponse ? (
                         <Loader2 className="mr-2 h-3 w-3 animate-spin" />
                       ) : (
                         <Send className="mr-2 h-3 w-3" />
                       )}
-                      Enviar Resposta
+                      Guardar Atualização
                     </Button>
                   </div>
                 </div>
@@ -267,33 +393,58 @@ export default function AdminFeedbackDetailArgsPage() {
                 <Separator />
 
                 <div className="space-y-4">
-                  <h4 className="text-sm font-medium uppercase tracking-wider text-muted-foreground">Histórico</h4>
+                  <h4 className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
+                    Histórico
+                  </h4>
 
                   {[
-                    ...detail.internalNotes.map((n) => ({ ...n, type: "NOTE" as const })),
-                    ...detail.responses.map((r) => ({ ...r, type: "RESPONSE" as const })),
+                    ...detail.internalNotes.map((n) => ({
+                      ...n,
+                      type: "NOTE" as const,
+                    })),
+                    ...detail.responses.map((r) => ({
+                      ...r,
+                      type: "RESPONSE" as const,
+                    })),
                   ]
-                    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                    .sort(
+                      (a, b) =>
+                        new Date(b.createdAt).getTime() -
+                        new Date(a.createdAt).getTime(),
+                    )
                     .map((item: TimelineItem) => (
                       <div
                         key={item.id}
                         className={`rounded-lg border p-4 ${item.type === "NOTE" ? "border-yellow-500/10 bg-yellow-500/5" : "border-blue-500/10 bg-blue-500/5"}`}
                       >
                         <div className="mb-2 flex items-start justify-between gap-2">
-                          <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${item.type === "NOTE" ? "bg-yellow-100 text-yellow-700" : "bg-blue-100 text-blue-700"}`}>
-                            {item.type === "NOTE" ? "NOTA INTERNA" : "RESPOSTA PÚBLICA"}
+                          <span
+                            className={`rounded-full px-2 py-0.5 text-xs font-bold ${item.type === "NOTE" ? "bg-yellow-100 text-yellow-700" : "bg-blue-100 text-blue-700"}`}
+                          >
+                            {item.type === "NOTE"
+                              ? "NOTA INTERNA"
+                              : "RESPOSTA PÚBLICA"}
                           </span>
                           <span className="text-xs text-muted-foreground">
-                            {format(new Date(item.createdAt), "dd MMM yyyy HH:mm", { locale: pt })}
+                            {format(
+                              new Date(item.createdAt),
+                              "dd MMM yyyy HH:mm",
+                              { locale: pt },
+                            )}
                           </span>
                         </div>
-                        <p className="whitespace-pre-wrap text-sm dark:text-gray-300">{item.content}</p>
+                        <p className="whitespace-pre-wrap text-sm dark:text-gray-300">
+                          {item.content}
+                        </p>
                       </div>
                     ))}
 
-                  {detail.internalNotes.length === 0 && detail.responses.length === 0 && (
-                    <p className="py-4 text-center text-sm text-muted-foreground">Sem notas ou respostas.</p>
-                  )}
+                  {detail.internalNotes.length === 0 &&
+                    detail.responses.length === 0 && (
+                      <p className="py-4 text-center text-sm text-muted-foreground">
+                        Sem notas ou respostas.
+                      </p>
+                    )}
                 </div>
               </CardContent>
             </Card>
@@ -307,15 +458,31 @@ export default function AdminFeedbackDetailArgsPage() {
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Estado</label>
-                  <Select value={detail.status} onValueChange={(val) => handleStatusUpdate(val as FeedbackStatus)}>
+                  <Select
+                    value={selectedStatus}
+                    onValueChange={(val) =>
+                      setSelectedStatus(val as FeedbackStatus)
+                    }
+                  >
                     <SelectTrigger className="w-full border-white/10 bg-muted/50">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value={FeedbackStatus.SUBMITTED}>Recebida</SelectItem>
-                      <SelectItem value={FeedbackStatus.IN_REVIEW}>Em Análise</SelectItem>
-                      <SelectItem value={FeedbackStatus.RESOLVED}>Resolvida</SelectItem>
-                      <SelectItem value={FeedbackStatus.REJECTED}>Rejeitada</SelectItem>
+                      <SelectItem value={FeedbackStatus.SUBMITTED}>
+                        Recebida
+                      </SelectItem>
+                      <SelectItem value={FeedbackStatus.IN_REVIEW}>
+                        Em Análise
+                      </SelectItem>
+                      <SelectItem value={FeedbackStatus.IN_DEVELOPMENT}>
+                        Em Desenvolvimento
+                      </SelectItem>
+                      <SelectItem value={FeedbackStatus.RESOLVED}>
+                        Resolvida
+                      </SelectItem>
+                      <SelectItem value={FeedbackStatus.REJECTED}>
+                        Rejeitada
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -323,15 +490,24 @@ export default function AdminFeedbackDetailArgsPage() {
                 {detail.type === FeedbackType.BUG && (
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Severidade</label>
-                    <Select value={detail.severity || ""} onValueChange={(val) => handleSeverityUpdate(val as BugSeverity)}>
+                    <Select
+                      value={selectedSeverity}
+                      onValueChange={(val) =>
+                        setSelectedSeverity(val as BugSeverity)
+                      }
+                    >
                       <SelectTrigger className="w-full border-white/10 bg-muted/50">
                         <SelectValue placeholder="Selecionar..." />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value={BugSeverity.LOW}>Baixa</SelectItem>
-                        <SelectItem value={BugSeverity.MEDIUM}>Média</SelectItem>
+                        <SelectItem value={BugSeverity.MEDIUM}>
+                          Média
+                        </SelectItem>
                         <SelectItem value={BugSeverity.HIGH}>Alta</SelectItem>
-                        <SelectItem value={BugSeverity.CRITICAL}>Crítica</SelectItem>
+                        <SelectItem value={BugSeverity.CRITICAL}>
+                          Crítica
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -342,18 +518,68 @@ export default function AdminFeedbackDetailArgsPage() {
                 <div className="space-y-1 rounded-lg border border-white/5 bg-muted/50 p-3 text-sm">
                   <div className="flex justify-between py-1">
                     <span className="text-muted-foreground">Categoria:</span>
-                    <span className="font-medium">{detail.category || detail.bugType || "-"}</span>
+                    <span className="font-medium">
+                      {detail.category || detail.bugType || "-"}
+                    </span>
                   </div>
                   <div className="flex justify-between py-1">
                     <span className="text-muted-foreground">Criado em:</span>
-                    <span className="font-medium">{format(new Date(detail.createdAt), "dd MMM yyyy", { locale: pt })}</span>
+                    <span className="font-medium">
+                      {format(new Date(detail.createdAt), "dd MMM yyyy", {
+                        locale: pt,
+                      })}
+                    </span>
                   </div>
                   {detail.updatedAt && (
                     <div className="flex justify-between py-1">
                       <span className="text-muted-foreground">Atualizado:</span>
-                      <span className="font-medium">{format(new Date(detail.updatedAt), "dd MMM yyyy", { locale: pt })}</span>
+                      <span className="font-medium">
+                        {format(new Date(detail.updatedAt), "dd MMM yyyy", {
+                          locale: pt,
+                        })}
+                      </span>
                     </div>
                   )}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Utilizador</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center gap-4 rounded-xl border border-white/5 bg-muted/40 p-4">
+                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary/12 text-lg font-semibold text-primary">
+                    {userInitials}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate font-semibold">{userDisplayName}</p>
+                    <p className="truncate text-sm text-muted-foreground">
+                      {formattedUsername}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-1 rounded-lg border border-white/5 bg-muted/50 p-3 text-sm">
+                  <div className="flex justify-between gap-4 py-1">
+                    <span className="text-muted-foreground">Nome:</span>
+                    <span className="text-right font-medium">
+                      {detail.userName || "-"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between gap-4 py-1">
+                    <span className="text-muted-foreground">Username:</span>
+                    <span className="text-right font-medium">
+                      {formattedUsername}
+                    </span>
+                  </div>
+                  <div className="flex justify-between gap-4 py-1">
+                    <span className="text-muted-foreground">Email:</span>
+                    <span className="break-all text-right font-medium">
+                      {detail.userEmail}
+                    </span>
+                  </div>
                 </div>
               </CardContent>
             </Card>
