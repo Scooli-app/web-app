@@ -25,7 +25,16 @@ import {
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { format } from "date-fns";
 import { pt } from "date-fns/locale";
-import { AlertCircle, Bug, ChevronDown, Lightbulb, Loader2, RefreshCw } from "lucide-react";
+import {
+  AlertCircle,
+  Bug,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Lightbulb,
+  Loader2,
+  RefreshCw,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect } from "react";
 import { toast } from "sonner";
@@ -38,6 +47,7 @@ const TYPE_OPTIONS = [
 const STATUS_OPTIONS = [
   { value: FeedbackStatus.SUBMITTED, label: "Recebida" },
   { value: FeedbackStatus.IN_REVIEW, label: "Em Análise" },
+  { value: FeedbackStatus.IN_DEVELOPMENT, label: "Em Desenvolvimento" },
   { value: FeedbackStatus.RESOLVED, label: "Resolvida" },
   { value: FeedbackStatus.REJECTED, label: "Rejeitada" },
 ] as const;
@@ -45,6 +55,7 @@ const STATUS_OPTIONS = [
 const DEFAULT_STATUS_FILTERS: FeedbackStatus[] = [
   FeedbackStatus.SUBMITTED,
   FeedbackStatus.IN_REVIEW,
+  FeedbackStatus.IN_DEVELOPMENT,
 ];
 
 const SEVERITY_OPTIONS = [
@@ -78,7 +89,7 @@ export default function AdminFeedbackPage() {
   const router = useRouter();
   const dispatch = useAppDispatch();
 
-  const { items, metrics, loading, filters } = useAppSelector(
+  const { items, metrics, loading, filters, totalItems } = useAppSelector(
     (state) => state.adminFeedback,
   );
 
@@ -100,6 +111,9 @@ export default function AdminFeedbackPage() {
   const selectedTypes = filters.type ?? [];
   const selectedStatuses = filters.status ?? [];
   const selectedSeverities = filters.severity ?? [];
+  const currentPage = filters.page ?? 0;
+  const pageSize = filters.size ?? 20;
+  const totalPages = pageSize > 0 ? Math.ceil(totalItems / pageSize) : 0;
 
   const handleTypeToggle = (value: FeedbackType) => {
     const nextValues = selectedTypes.includes(value)
@@ -141,6 +155,9 @@ export default function AdminFeedbackPage() {
     selectedSeverities.length === 0 &&
     selectedStatuses.length === DEFAULT_STATUS_FILTERS.length &&
     DEFAULT_STATUS_FILTERS.every((status) => selectedStatuses.includes(status));
+
+  const getCategoryLabel = (item: (typeof items)[number]) =>
+    item.type === FeedbackType.BUG ? item.bugType || "-" : item.category || "-";
   const mobileCards = (
     <div className="space-y-3">
       {loading ? (
@@ -174,12 +191,13 @@ export default function AdminFeedbackPage() {
 
             <div className="mb-2 flex flex-wrap items-center gap-2">
               <FeedbackStatusBadge status={item.status} />
-              <FeedbackSeverityBadge severity={item.severity} />
+              {item.type === FeedbackType.BUG && (
+                <FeedbackSeverityBadge severity={item.severity} />
+              )}
             </div>
 
-            <p className="text-xs text-muted-foreground">
-              {item.category || "-"}
-            </p>
+            <p className="text-xs text-muted-foreground">{item.userEmail}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{getCategoryLabel(item)}</p>
           </button>
         ))
       )}
@@ -193,6 +211,7 @@ export default function AdminFeedbackPage() {
           <TableRow className="border-white/10 hover:bg-transparent">
             <TableHead className="w-[90px]">Tipo</TableHead>
             <TableHead>Título</TableHead>
+            <TableHead>Utilizador</TableHead>
             <TableHead>Categoria</TableHead>
             <TableHead>Estado</TableHead>
             <TableHead>Severidade</TableHead>
@@ -203,7 +222,7 @@ export default function AdminFeedbackPage() {
         <TableBody>
           {loading ? (
             <TableRow>
-              <TableCell colSpan={7} className="h-24 text-center">
+              <TableCell colSpan={8} className="h-24 text-center">
                 <div className="flex justify-center">
                   <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                 </div>
@@ -211,7 +230,7 @@ export default function AdminFeedbackPage() {
             </TableRow>
           ) : items.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+              <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
                 Nenhum resultado encontrado.
               </TableCell>
             </TableRow>
@@ -230,12 +249,19 @@ export default function AdminFeedbackPage() {
                   )}
                 </TableCell>
                 <TableCell className="font-medium">{item.title}</TableCell>
-                <TableCell>{item.category || "-"}</TableCell>
+                <TableCell className="max-w-[220px] truncate text-sm text-muted-foreground">
+                  {item.userEmail}
+                </TableCell>
+                <TableCell>{getCategoryLabel(item)}</TableCell>
                 <TableCell>
                   <FeedbackStatusBadge status={item.status} />
                 </TableCell>
                 <TableCell>
-                  <FeedbackSeverityBadge severity={item.severity} />
+                  {item.type === FeedbackType.BUG ? (
+                    <FeedbackSeverityBadge severity={item.severity} />
+                  ) : (
+                    <span className="text-sm text-muted-foreground">-</span>
+                  )}
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground">
                   {format(new Date(item.createdAt), "dd MMM yyyy", { locale: pt })}
@@ -404,6 +430,41 @@ export default function AdminFeedbackPage() {
           mobileCardView={mobileCards}
           desktopTableView={desktopTable}
         />
+
+        {totalPages > 1 && (
+          <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-center text-sm text-muted-foreground sm:text-left">
+              Mostrando <span className="font-medium text-foreground">{items.length}</span> de{" "}
+              <span className="font-medium text-foreground">{totalItems}</span> opiniÃµes
+            </p>
+
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => dispatch(setFilters({ page: currentPage - 1 }))}
+                disabled={currentPage === 0}
+              >
+                <ChevronLeft className="mr-1 h-4 w-4" />
+                Anterior
+              </Button>
+
+              <span className="px-2 text-sm text-muted-foreground">
+                {currentPage + 1} / {totalPages}
+              </span>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => dispatch(setFilters({ page: currentPage + 1 }))}
+                disabled={currentPage >= totalPages - 1}
+              >
+                PrÃ³ximo
+                <ChevronRight className="ml-1 h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
     </PageContainer>
   );
