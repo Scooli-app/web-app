@@ -27,6 +27,7 @@ import { format } from "date-fns";
 import { pt } from "date-fns/locale";
 import {
   AlertCircle,
+  BarChart3,
   Bug,
   ChevronDown,
   ChevronLeft,
@@ -293,9 +294,18 @@ export default function AdminFeedbackPage() {
           title="Gestão de Opiniões"
           description="Gerir erros reportados e sugestões dos utilizadores."
           actions={
-            <Button onClick={fetchData} variant="outline" size="sm">
-              <RefreshCw className="mr-2 h-4 w-4" /> Atualizar
-            </Button>
+            <>
+              <Button
+                onClick={() => router.push("/admin/feedback/surveys")}
+                variant="outline"
+                size="sm"
+              >
+                <BarChart3 className="mr-2 h-4 w-4" /> Ver Survey da App
+              </Button>
+              <Button onClick={fetchData} variant="outline" size="sm">
+                <RefreshCw className="mr-2 h-4 w-4" /> Atualizar
+              </Button>
+            </>
           }
         />
 
@@ -339,6 +349,24 @@ export default function AdminFeedbackPage() {
             </Card>
           </div>
         )}
+
+        <Card className="border-primary/15 bg-gradient-to-r from-primary/5 via-card to-accent/70">
+          <CardContent className="flex flex-col gap-4 py-6 sm:flex-row sm:items-center sm:justify-between">
+            <div className="space-y-1">
+              <p className="text-sm font-semibold text-foreground">
+                Survey da App
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Abrir o dashboard com respostas recentes, sentimentos e tags
+                mais referidas no survey in-app.
+              </p>
+            </div>
+            <Button onClick={() => router.push("/admin/feedback/surveys")}>
+              <BarChart3 className="mr-2 h-4 w-4" />
+              Abrir Dashboard do Survey
+            </Button>
+          </CardContent>
+        </Card>
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4 xl:gap-4">
           <DropdownMenu>
