@@ -1,4 +1,5 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { isClerkOrganizationAdminRole } from "@/shared/utils/clerkOrganizationRole";
 import { NextResponse } from "next/server";
 
 const isPublicRoute = createRouteMatcher([
@@ -9,12 +10,16 @@ const isPublicRoute = createRouteMatcher([
   "/",
   "/checkout/cancel",
   "/webhooks/stripe",
-  "/.well-known/(.*)"
+  "/.well-known/(.*)",
 ]);
 const TOKEN_COOKIE_NAME = "scooli_token";
 
 function getSafeRedirectPath(redirectUrl: string | null): string | null {
-  if (!redirectUrl || !redirectUrl.startsWith("/") || redirectUrl.startsWith("//")) {
+  if (
+    !redirectUrl ||
+    !redirectUrl.startsWith("/") ||
+    redirectUrl.startsWith("//")
+  ) {
     return null;
   }
 
@@ -65,7 +70,7 @@ export default clerkMiddleware(async (auth, req) => {
       req.nextUrl.pathname.startsWith("/forgot-password"))
   ) {
     const redirectPath = getSafeRedirectPath(
-      req.nextUrl.searchParams.get("redirect_url")
+      req.nextUrl.searchParams.get("redirect_url"),
     );
     const redirectUrl = redirectPath
       ? new URL(redirectPath, req.url)
@@ -105,7 +110,9 @@ export default clerkMiddleware(async (auth, req) => {
   if (req.nextUrl.pathname.startsWith("/admin")) {
     const { sessionClaims } = authObj;
     // Check for role in public_metadata (mapped to sessionClaims)
-    const publicMetadata = sessionClaims?.public_metadata as Record<string, unknown> | undefined;
+    const publicMetadata = sessionClaims?.public_metadata as
+      | Record<string, unknown>
+      | undefined;
     const isAdmin = publicMetadata?.role === "admin";
 
     if (!isAdmin) {
@@ -115,11 +122,11 @@ export default clerkMiddleware(async (auth, req) => {
   }
 
   if (req.nextUrl.pathname.startsWith("/school")) {
-    const { sessionClaims } = authObj;
-    const activeOrgId =
-      typeof sessionClaims?.org_id === "string" ? sessionClaims.org_id : null;
+    const activeOrgId = authObj.orgId;
+    const activeOrgRole = authObj.orgRole;
+    const isOrganizationAdmin = isClerkOrganizationAdminRole(activeOrgRole);
 
-    if (!activeOrgId) {
+    if (activeOrgId && !isOrganizationAdmin) {
       const dashboardUrl = new URL("/dashboard", req.url);
       return NextResponse.redirect(dashboardUrl);
     }

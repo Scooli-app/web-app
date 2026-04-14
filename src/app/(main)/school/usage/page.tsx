@@ -2,10 +2,15 @@
 
 import { PageContainer } from "@/components/layout/PageContainer";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
+  selectWorkspaceError,
   selectHasOrganizationWorkspace,
+  selectIsOrganizationAdmin,
   selectWorkspaceDashboard,
+  selectWorkspaceLoading,
+  selectWorkspaceReady,
 } from "@/store/workspace/selectors";
 import { fetchOrganizationDashboard } from "@/store/workspace/workspaceSlice";
 import { ChartColumn } from "lucide-react";
@@ -17,18 +22,26 @@ export default function SchoolUsagePage() {
   const dispatch = useAppDispatch();
   const router = useRouter();
   const dashboard = useAppSelector(selectWorkspaceDashboard);
+  const loading = useAppSelector(selectWorkspaceLoading);
+  const error = useAppSelector(selectWorkspaceError);
+  const workspaceReady = useAppSelector(selectWorkspaceReady);
   const hasOrganizationWorkspace = useAppSelector(selectHasOrganizationWorkspace);
+  const isOrganizationAdmin = useAppSelector(selectIsOrganizationAdmin);
 
   useEffect(() => {
-    if (!hasOrganizationWorkspace) {
+    if (!workspaceReady) {
+      return;
+    }
+
+    if (!hasOrganizationWorkspace || !isOrganizationAdmin) {
       router.replace("/dashboard");
       return;
     }
 
     void dispatch(fetchOrganizationDashboard());
-  }, [dispatch, hasOrganizationWorkspace, router]);
+  }, [dispatch, hasOrganizationWorkspace, isOrganizationAdmin, router, workspaceReady]);
 
-  if (!hasOrganizationWorkspace) {
+  if (!workspaceReady || !hasOrganizationWorkspace || !isOrganizationAdmin) {
     return null;
   }
 
@@ -39,17 +52,36 @@ export default function SchoolUsagePage() {
         description="Vista inicial da utilização agregada da organização."
       />
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <ChartColumn className="h-4 w-4 text-primary" />
-            Gerações deste mês
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-3xl font-semibold">{dashboard?.generationsThisMonth ?? 0}</p>
-        </CardContent>
-      </Card>
+      {error && !loading && !dashboard ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Não foi possível carregar a utilização da escola</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">{error}</p>
+            <Button
+              variant="outline"
+              onClick={() => void dispatch(fetchOrganizationDashboard())}
+            >
+              Tentar novamente
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ChartColumn className="h-4 w-4 text-primary" />
+              Gerações deste mês
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-semibold">
+              {loading && !dashboard ? "..." : dashboard?.generationsThisMonth ?? 0}
+            </p>
+          </CardContent>
+        </Card>
+      )}
     </PageContainer>
   );
 }

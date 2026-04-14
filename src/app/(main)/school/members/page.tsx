@@ -3,13 +3,16 @@
 import { PageContainer } from "@/components/layout/PageContainer";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
+  selectWorkspaceError,
   selectHasOrganizationWorkspace,
   selectIsOrganizationAdmin,
   selectWorkspaceContext,
   selectWorkspaceLoading,
   selectWorkspaceMembers,
+  selectWorkspaceReady,
 } from "@/store/workspace/selectors";
 import { fetchOrganizationMembers } from "@/store/workspace/workspaceSlice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
@@ -23,19 +26,25 @@ export default function SchoolMembersPage() {
   const workspace = useAppSelector(selectWorkspaceContext);
   const members = useAppSelector(selectWorkspaceMembers);
   const loading = useAppSelector(selectWorkspaceLoading);
+  const error = useAppSelector(selectWorkspaceError);
+  const workspaceReady = useAppSelector(selectWorkspaceReady);
   const hasOrganizationWorkspace = useAppSelector(selectHasOrganizationWorkspace);
   const isOrganizationAdmin = useAppSelector(selectIsOrganizationAdmin);
 
   useEffect(() => {
+    if (!workspaceReady) {
+      return;
+    }
+
     if (!hasOrganizationWorkspace || !isOrganizationAdmin) {
       router.replace("/dashboard");
       return;
     }
 
     void dispatch(fetchOrganizationMembers());
-  }, [dispatch, hasOrganizationWorkspace, isOrganizationAdmin, router]);
+  }, [dispatch, hasOrganizationWorkspace, isOrganizationAdmin, router, workspaceReady]);
 
-  if (!hasOrganizationWorkspace || !isOrganizationAdmin) {
+  if (!workspaceReady || !hasOrganizationWorkspace || !isOrganizationAdmin) {
     return null;
   }
 
@@ -56,7 +65,17 @@ export default function SchoolMembersPage() {
           <CardTitle>Membros</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {loading && members.length === 0 ? (
+          {error && !loading && members.length === 0 ? (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">{error}</p>
+              <Button
+                variant="outline"
+                onClick={() => void dispatch(fetchOrganizationMembers())}
+              >
+                Tentar novamente
+              </Button>
+            </div>
+          ) : loading && members.length === 0 ? (
             <p className="text-sm text-muted-foreground">A carregar membros...</p>
           ) : members.length === 0 ? (
             <p className="text-sm text-muted-foreground">Ainda não existem membros sincronizados para esta escola.</p>

@@ -48,6 +48,7 @@ interface WorkspaceState {
   dashboard: OrganizationDashboard | null;
   members: OrganizationMember[];
   loading: boolean;
+  ready: boolean;
   error: string | null;
 }
 
@@ -56,6 +57,7 @@ const initialState: WorkspaceState = {
   dashboard: null,
   members: [],
   loading: false,
+  ready: false,
   error: null,
 };
 
@@ -68,6 +70,7 @@ const workspaceSlice = createSlice({
       state.dashboard = null;
       state.members = [];
       state.loading = false;
+      state.ready = false;
       state.error = null;
     },
   },
@@ -75,14 +78,17 @@ const workspaceSlice = createSlice({
     builder
       .addCase(fetchWorkspace.pending, (state) => {
         state.loading = true;
+        state.ready = false;
         state.error = null;
       })
       .addCase(fetchWorkspace.fulfilled, (state, action) => {
         state.loading = false;
+        state.ready = true;
         state.context = action.payload;
       })
       .addCase(fetchWorkspace.rejected, (state, action) => {
         state.loading = false;
+        state.ready = true;
         state.error = action.payload as string;
       })
       .addCase(fetchOrganizationDashboard.pending, (state) => {

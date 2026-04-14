@@ -2,17 +2,20 @@
 
 import { PageContainer } from "@/components/layout/PageContainer";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Building2, ChartColumn, ShieldCheck, Users } from "lucide-react";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
+  selectWorkspaceError,
   selectHasOrganizationWorkspace,
   selectIsOrganizationAdmin,
   selectWorkspaceContext,
   selectWorkspaceDashboard,
   selectWorkspaceLoading,
+  selectWorkspaceReady,
 } from "@/store/workspace/selectors";
 import { fetchOrganizationDashboard } from "@/store/workspace/workspaceSlice";
 
@@ -45,10 +48,16 @@ export default function SchoolDashboardPage() {
   const workspace = useAppSelector(selectWorkspaceContext);
   const dashboard = useAppSelector(selectWorkspaceDashboard);
   const loading = useAppSelector(selectWorkspaceLoading);
+  const error = useAppSelector(selectWorkspaceError);
+  const workspaceReady = useAppSelector(selectWorkspaceReady);
   const hasOrganizationWorkspace = useAppSelector(selectHasOrganizationWorkspace);
   const isOrganizationAdmin = useAppSelector(selectIsOrganizationAdmin);
 
   useEffect(() => {
+    if (!workspaceReady) {
+      return;
+    }
+
     if (!hasOrganizationWorkspace) {
       router.replace("/dashboard");
       return;
@@ -60,9 +69,9 @@ export default function SchoolDashboardPage() {
     }
 
     void dispatch(fetchOrganizationDashboard());
-  }, [dispatch, hasOrganizationWorkspace, isOrganizationAdmin, router]);
+  }, [dispatch, hasOrganizationWorkspace, isOrganizationAdmin, router, workspaceReady]);
 
-  if (!hasOrganizationWorkspace || !isOrganizationAdmin) {
+  if (!workspaceReady || !hasOrganizationWorkspace || !isOrganizationAdmin) {
     return null;
   }
 
@@ -78,75 +87,94 @@ export default function SchoolDashboardPage() {
         }
       />
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {STATS.map((item) => {
-          const Icon = item.icon;
-          const value = dashboard?.[item.key] ?? 0;
+      {error && !loading && !dashboard ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Não foi possível carregar o dashboard da escola</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">{error}</p>
+            <Button
+              variant="outline"
+              onClick={() => void dispatch(fetchOrganizationDashboard())}
+            >
+              Tentar novamente
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {STATS.map((item) => {
+              const Icon = item.icon;
+              const value = dashboard?.[item.key] ?? 0;
 
-          return (
-            <Card key={item.key}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  {item.title}
-                </CardTitle>
-                <Icon className="h-4 w-4 text-primary" />
+              return (
+                <Card key={item.key}>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">
+                      {item.title}
+                    </CardTitle>
+                    <Icon className="h-4 w-4 text-primary" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-3xl font-semibold tracking-tight">
+                      {loading && !dashboard ? "..." : value}
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+
+          <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>Plano e contrato</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-semibold tracking-tight">
-                  {loading && !dashboard ? "..." : value}
-                </div>
+              <CardContent className="space-y-3 text-sm text-muted-foreground">
+                <p>
+                  Plano: <span className="font-medium text-foreground">{dashboard?.planCode ?? "manual"}</span>
+                </p>
+                <p>
+                  Estado:{" "}
+                  <span className="font-medium text-foreground">
+                    {dashboard?.subscriptionStatus ?? "draft"}
+                  </span>
+                </p>
+                <p>
+                  Limite de lugares:{" "}
+                  <span className="font-medium text-foreground">{dashboard?.seatLimit ?? 0}</span>
+                </p>
               </CardContent>
             </Card>
-          );
-        })}
-      </div>
 
-      <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Plano e contrato</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm text-muted-foreground">
-            <p>
-              Plano: <span className="font-medium text-foreground">{dashboard?.planCode ?? "manual"}</span>
-            </p>
-            <p>
-              Estado:{" "}
-              <span className="font-medium text-foreground">
-                {dashboard?.subscriptionStatus ?? "draft"}
-              </span>
-            </p>
-            <p>
-              Limite de lugares:{" "}
-              <span className="font-medium text-foreground">{dashboard?.seatLimit ?? 0}</span>
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Resumo de utilização</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm text-muted-foreground">
-            <p>
-              Convites pendentes:{" "}
-              <span className="font-medium text-foreground">{dashboard?.invitedSeats ?? 0}</span>
-            </p>
-            <p>
-              Lugares suspensos:{" "}
-              <span className="font-medium text-foreground">{dashboard?.suspendedSeats ?? 0}</span>
-            </p>
-            <p>
-              Renovação:{" "}
-              <span className="font-medium text-foreground">
-                {dashboard?.renewalAt
-                  ? new Date(dashboard.renewalAt).toLocaleDateString("pt-PT")
-                  : "por definir"}
-              </span>
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+            <Card>
+              <CardHeader>
+                <CardTitle>Resumo de utilização</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 text-sm text-muted-foreground">
+                <p>
+                  Convites pendentes:{" "}
+                  <span className="font-medium text-foreground">{dashboard?.invitedSeats ?? 0}</span>
+                </p>
+                <p>
+                  Lugares suspensos:{" "}
+                  <span className="font-medium text-foreground">{dashboard?.suspendedSeats ?? 0}</span>
+                </p>
+                <p>
+                  Renovação:{" "}
+                  <span className="font-medium text-foreground">
+                    {dashboard?.renewalAt
+                      ? new Date(dashboard.renewalAt).toLocaleDateString("pt-PT")
+                      : "por definir"}
+                  </span>
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        </>
+      )}
     </PageContainer>
   );
 }
