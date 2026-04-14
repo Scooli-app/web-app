@@ -7,7 +7,6 @@ import featuresReducer from "./features/featuresSlice";
 import { moderationReducer } from "./moderation";
 import subscriptionReducer from "./subscription/subscriptionSlice";
 import uiReducer from "./ui/uiSlice";
-import workspaceReducer from "./workspace/workspaceSlice";
 
 const rootReducer = combineReducers({
   documents: documentReducer,
@@ -18,7 +17,6 @@ const rootReducer = combineReducers({
   community: communityReducer,
   moderation: moderationReducer,
   features: featuresReducer,
-  workspace: workspaceReducer,
 });
 
 export default rootReducer;
