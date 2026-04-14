@@ -10,190 +10,20 @@ import {
   fetchUsage,
   resetSubscriptionState,
 } from "@/store/subscription/subscriptionSlice";
-import {
-  fetchWorkspace,
-  resetWorkspaceState,
-} from "@/store/workspace/workspaceSlice";
-import { isClerkOrganizationAdminRole } from "@/shared/utils/clerkOrganizationRole";
-import { useAuth, useOrganizationList, useUser } from "@clerk/nextjs";
+import { useAuth, useUser } from "@clerk/nextjs";
 import { Loader2 } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 
-const MAX_ORGANIZATION_ACTIVATION_ATTEMPTS = 3;
-const ORGANIZATION_ACTIVATION_TOKEN_POLL_ATTEMPTS = 8;
-const ORGANIZATION_ACTIVATION_TOKEN_POLL_DELAY_MS = 250;
-
-type ClerkGetToken = ReturnType<typeof useAuth>["getToken"];
-
-function decodeJwtPayload(token: string | null): Record<string, unknown> | null {
-  if (!token) {
-    return null;
-  }
-
-  const parts = token.split(".");
-  if (parts.length < 2) {
-    return null;
-  }
-
-  try {
-    const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
-    const paddedBase64 =
-      base64 + "=".repeat((4 - (base64.length % 4 || 4)) % 4);
-    return JSON.parse(atob(paddedBase64)) as Record<string, unknown>;
-  } catch {
-    return null;
-  }
-}
-
-function getOrganizationIdFromToken(token: string | null): string | null {
-  const payload = decodeJwtPayload(token);
-  return typeof payload?.org_id === "string" ? payload.org_id : null;
-}
-
-async function getFreshClerkToken(getToken: ClerkGetToken): Promise<string | null> {
-  const template = process.env.NEXT_PUBLIC_CLERK_JWT_TEMPLATE;
-  return getToken(template ? { template, skipCache: true } : { skipCache: true });
-}
-
 export function AppBootstrapGate() {
   const dispatch = useAppDispatch();
-  const {
-    getToken,
-    isLoaded: isAuthLoaded,
-    isSignedIn,
-    orgId,
-    orgRole,
-  } = useAuth();
+  const { isLoaded: isAuthLoaded, isSignedIn } = useAuth();
   const { isLoaded: isUserLoaded, user } = useUser();
-  const {
-    isLoaded: isOrganizationListLoaded,
-    setActive,
-    userMemberships,
-  } = useOrganizationList({
-    userMemberships: true,
-  });
-  const [bootstrappedIdentity, setBootstrappedIdentity] = useState<string | null>(
+  const [bootstrappedUserId, setBootstrappedUserId] = useState<string | null>(
     null,
   );
   const [isBootstrapping, setIsBootstrapping] = useState(true);
-  const [activatedOrganizationId, setActivatedOrganizationId] = useState<
-    string | null
-  >(null);
-  const [isActivatingOrganization, setIsActivatingOrganization] = useState(false);
-  const [orgActivationAttempts, setOrgActivationAttempts] = useState<
-    Record<string, number>
-  >({});
   const bootstrapRunIdRef = useRef(0);
-  const effectiveOrgId = orgId ?? activatedOrganizationId;
-  const bootstrapIdentity = user?.id
-    ? `${user.id}:${effectiveOrgId ?? "personal"}:${orgRole ?? "none"}`
-    : null;
-  const availableMemberships = userMemberships.data ?? [];
-  const preferredMembership =
-    availableMemberships.find((membership) =>
-      isClerkOrganizationAdminRole(membership.role),
-    ) ?? availableMemberships[0] ?? null;
-  const activationTargetOrgId =
-    !effectiveOrgId && preferredMembership?.organization?.id
-      ? preferredMembership.organization.id
-      : null;
-  const orgActivationAttemptKey =
-    user?.id && activationTargetOrgId
-      ? `${user.id}:${activationTargetOrgId}`
-      : null;
-  const orgActivationAttemptCount = orgActivationAttemptKey
-    ? (orgActivationAttempts[orgActivationAttemptKey] ?? 0)
-    : 0;
-  const shouldAttemptOrganizationActivation =
-    Boolean(
-      isSignedIn &&
-        user?.id &&
-        !effectiveOrgId &&
-        isOrganizationListLoaded &&
-        activationTargetOrgId &&
-        orgActivationAttemptCount < MAX_ORGANIZATION_ACTIVATION_ATTEMPTS,
-    );
-
-  useEffect(() => {
-    if (!isSignedIn || !user?.id) {
-      setActivatedOrganizationId(null);
-      setOrgActivationAttempts({});
-      setIsActivatingOrganization(false);
-      return;
-    }
-
-    if (orgId) {
-      setActivatedOrganizationId(orgId);
-      setOrgActivationAttempts({});
-      setIsActivatingOrganization(false);
-    }
-  }, [isSignedIn, orgId, user?.id]);
-
-  useEffect(() => {
-    if (
-      !shouldAttemptOrganizationActivation ||
-      !setActive ||
-      !user?.id ||
-      !activationTargetOrgId ||
-      !orgActivationAttemptKey
-    ) {
-      return;
-    }
-
-    let isCancelled = false;
-    setIsActivatingOrganization(true);
-    setOrgActivationAttempts((currentAttempts) => ({
-      ...currentAttempts,
-      [orgActivationAttemptKey]:
-        (currentAttempts[orgActivationAttemptKey] ?? 0) + 1,
-    }));
-
-    void (async () => {
-      try {
-        await setActive({
-          organization: activationTargetOrgId,
-        });
-
-        for (
-          let attemptIndex = 0;
-          attemptIndex < ORGANIZATION_ACTIVATION_TOKEN_POLL_ATTEMPTS;
-          attemptIndex += 1
-        ) {
-          const token = await getFreshClerkToken(getToken);
-          const tokenOrganizationId = getOrganizationIdFromToken(token);
-
-          if (tokenOrganizationId === activationTargetOrgId) {
-            if (!isCancelled) {
-              setActivatedOrganizationId(tokenOrganizationId);
-            }
-            return;
-          }
-
-          await new Promise((resolve) =>
-            setTimeout(resolve, ORGANIZATION_ACTIVATION_TOKEN_POLL_DELAY_MS),
-          );
-        }
-      } catch (error) {
-        console.error("Failed to activate Clerk organization:", error);
-      } finally {
-        if (!isCancelled) {
-          setIsActivatingOrganization(false);
-        }
-      }
-    })();
-
-    return () => {
-      isCancelled = true;
-    };
-  }, [
-    activationTargetOrgId,
-    getToken,
-    orgActivationAttemptKey,
-    setActive,
-    shouldAttemptOrganizationActivation,
-    user?.id,
-  ]);
 
   useEffect(() => {
     if (!isAuthLoaded || (isSignedIn && !isUserLoaded)) {
@@ -201,26 +31,15 @@ export function AppBootstrapGate() {
       return;
     }
 
-    if (isSignedIn && !effectiveOrgId && !isOrganizationListLoaded) {
-      setIsBootstrapping(true);
-      return;
-    }
-
-    if (shouldAttemptOrganizationActivation || isActivatingOrganization) {
-      setIsBootstrapping(true);
-      return;
-    }
-
     if (!isSignedIn || !user?.id) {
       dispatch(resetSubscriptionState());
       dispatch(resetFeaturesState());
-      dispatch(resetWorkspaceState());
-      setBootstrappedIdentity(null);
+      setBootstrappedUserId(null);
       setIsBootstrapping(false);
       return;
     }
 
-    if (bootstrappedIdentity === bootstrapIdentity) {
+    if (bootstrappedUserId === user.id) {
       setIsBootstrapping(false);
       return;
     }
@@ -230,10 +49,9 @@ export function AppBootstrapGate() {
     let isActive = true;
 
     setIsBootstrapping(true);
-    setBootstrappedIdentity(null);
+    setBootstrappedUserId(null);
     dispatch(resetSubscriptionState());
     dispatch(resetFeaturesState());
-    dispatch(resetWorkspaceState());
 
     const bootstrap = async () => {
       // Give the AuthProvider one effect cycle to register the Clerk token getter
@@ -244,24 +62,17 @@ export function AppBootstrapGate() {
         return;
       }
 
-      await getFreshClerkToken(getToken);
-
-      if (!isActive || bootstrapRunIdRef.current !== runId) {
-        return;
-      }
-
       await Promise.all([
         dispatch(fetchSubscription()),
         dispatch(fetchUsage()),
         dispatch(fetchFeatureFlags()),
-        dispatch(fetchWorkspace()),
       ]);
 
       if (!isActive || bootstrapRunIdRef.current !== runId) {
         return;
       }
 
-      setBootstrappedIdentity(bootstrapIdentity);
+      setBootstrappedUserId(user.id);
       setIsBootstrapping(false);
     };
 
@@ -271,18 +82,11 @@ export function AppBootstrapGate() {
       isActive = false;
     };
   }, [
-    bootstrapIdentity,
-    bootstrappedIdentity,
+    bootstrappedUserId,
     dispatch,
     isAuthLoaded,
     isSignedIn,
-    isActivatingOrganization,
-    isOrganizationListLoaded,
     isUserLoaded,
-    effectiveOrgId,
-    getToken,
-    orgRole,
-    shouldAttemptOrganizationActivation,
     user?.id,
   ]);
 
@@ -292,7 +96,7 @@ export function AppBootstrapGate() {
       (!isUserLoaded ||
         !user?.id ||
         isBootstrapping ||
-        bootstrappedIdentity !== bootstrapIdentity));
+        bootstrappedUserId !== user.id));
 
   if (!shouldShowLoader) {
     return null;

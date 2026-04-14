@@ -37,11 +37,6 @@ import {
   selectSubscription,
   selectUsageStats,
 } from "@/store/subscription/selectors";
-import {
-  selectHasOrganizationWorkspace,
-  selectIsOrganizationAdmin,
-  selectWorkspaceContext,
-} from "@/store/workspace/selectors";
 import { setUpgradeModalOpen } from "@/store/ui/uiSlice";
 import {
   SignInButton,
@@ -53,7 +48,6 @@ import {
 } from "@clerk/nextjs";
 import {
   BookOpen,
-  Building2,
   ClipboardList,
   Clock,
   FileCheck,
@@ -68,7 +62,6 @@ import {
   Settings,
   Shield,
   Sparkles,
-  Users,
   type LucideIcon,
 } from "lucide-react";
 import Image from "next/image";
@@ -165,21 +158,6 @@ const ADMIN_NAVIGATION: NavItem[] = [
     href: Routes.ADMIN,
     icon: Shield,
     description: "Gerir plataforma",
-  },
-];
-
-const SCHOOL_NAVIGATION: NavItem[] = [
-  {
-    title: "Dashboard Escola",
-    href: Routes.SCHOOL,
-    icon: Building2,
-    description: "Gerir escola, lugares e utilização",
-  },
-  {
-    title: "Membros",
-    href: Routes.SCHOOL_MEMBERS,
-    icon: Users,
-    description: "Ver membros e lugares da escola",
   },
 ];
 
@@ -380,9 +358,6 @@ const SidebarNavigationContent = memo(function SidebarNavigationContent({
   const router = useRouter();
   const { isAdmin } = useAdmin();
   const features = useSelector((state: RootState) => state.features.flags);
-  const workspace = useSelector(selectWorkspaceContext);
-  const hasOrganizationWorkspace = useSelector(selectHasOrganizationWorkspace);
-  const isOrganizationAdmin = useSelector(selectIsOrganizationAdmin);
   const isCommunityEnabled = features[FeatureFlag.COMMUNITY_LIBRARY] === true;
   const isPresentationCreationEnabled =
     features[FeatureFlag.PRESENTATION_CREATION] === true;
@@ -436,18 +411,6 @@ const SidebarNavigationContent = memo(function SidebarNavigationContent({
         <SignedIn>
           <SidebarProfileCard onClick={onItemClick} />
         </SignedIn>
-
-        {hasOrganizationWorkspace && isOrganizationAdmin && (
-          <>
-            <Separator className="my-4" />
-            <NavGroup
-              label={workspace?.organization?.name ?? "Escola"}
-              items={SCHOOL_NAVIGATION}
-              pathname={pathname}
-              onItemClick={onItemClick}
-            />
-          </>
-        )}
 
         {isAdmin && (
           <>
