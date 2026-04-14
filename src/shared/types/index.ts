@@ -38,3 +38,12 @@ export type { CreateTemplateParams, DocumentTemplate, TemplateSection } from "./
 // User types
 
 
+// Workspace / organization types
+export type {
+    CurrentOrganization,
+    OrganizationDashboard,
+    OrganizationMember,
+    WorkspaceContext,
+    WorkspaceType
+} from "./workspace";
+
