@@ -77,8 +77,11 @@ export type { CurrentUserProfile } from "./user";
 // Workspace / organization types
 export type {
     CurrentOrganization,
+    OrganizationActivityPoint,
     OrganizationDashboard,
+    OrganizationDocumentTypeBreakdown,
     OrganizationMember,
+    OrganizationMemberActivity,
     WorkspaceContext,
     WorkspaceType
 } from "./workspace";

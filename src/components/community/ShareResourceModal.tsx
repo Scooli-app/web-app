@@ -21,6 +21,7 @@ import {
   GRADE_OPTIONS,
   RESOURCE_TYPE_OPTIONS,
   SUBJECT_OPTIONS,
+  type LibraryScope,
   type ShareResourceRequest,
 } from "@/services/api/community.service";
 import { Share2 } from "lucide-react";
@@ -36,6 +37,8 @@ interface ShareResourceModalProps {
   initialGrade?: string;
   initialSubject?: string;
   initialResourceType?: string;
+  libraryScope?: LibraryScope;
+  organizationName?: string | null;
   documentId?: string;
 }
 
@@ -49,6 +52,8 @@ export function ShareResourceModal({
   initialGrade = "",
   initialSubject = "",
   initialResourceType = "",
+  libraryScope = "community",
+  organizationName = null,
   documentId
 }: ShareResourceModalProps) {
   
@@ -59,6 +64,7 @@ export function ShareResourceModal({
     grade: initialGrade,
     subject: initialSubject,
     resourceType: initialResourceType,
+    libraryScope,
     documentId
   });
 
@@ -73,10 +79,11 @@ export function ShareResourceModal({
         grade: initialGrade || prev.grade,
         subject: initialSubject || prev.subject,
         resourceType: initialResourceType || prev.resourceType,
+        libraryScope,
         documentId
       }));
     }
-  }, [isOpen, initialContent, initialTitle, initialGrade, initialSubject, initialResourceType, documentId]);
+  }, [isOpen, initialContent, initialTitle, initialGrade, initialSubject, initialResourceType, libraryScope, documentId]);
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -121,6 +128,7 @@ export function ShareResourceModal({
         grade: "",
         subject: "",
         resourceType: "",
+        libraryScope,
         documentId: undefined
       });
       setErrors({});
@@ -133,7 +141,9 @@ export function ShareResourceModal({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Share2 className="w-5 h-5" />
-            Partilhar com a Comunidade
+            {libraryScope === "organization"
+              ? `Partilhar com ${organizationName ?? "a escola"}`
+              : "Partilhar com a Comunidade"}
           </DialogTitle>
           <DialogDescription>
             Partilhe o seu recurso educacional com outros professores portugueses.

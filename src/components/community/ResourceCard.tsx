@@ -79,10 +79,17 @@ export function ResourceCard({
       <div className="flex flex-col flex-1 p-4 sm:p-5">
         {/* Type pill */}
         <div className="mb-3">
-          <span className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground bg-muted/60 px-2 py-0.5 rounded-full">
-            <BookOpen className="w-3 h-3" />
-            {typeLabel}
-          </span>
+          <div className="flex flex-wrap gap-2">
+            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground bg-muted/60 px-2 py-0.5 rounded-full">
+              <BookOpen className="w-3 h-3" />
+              {typeLabel}
+            </span>
+            <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+              {resource.libraryScope === "organization"
+                ? resource.organizationName ?? "Escola"
+                : "Comunidade"}
+            </span>
+          </div>
         </div>
 
         {/* Title */}

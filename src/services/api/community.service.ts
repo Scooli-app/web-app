@@ -6,6 +6,8 @@
 
 import apiClient from "./client";
 
+export type LibraryScope = "community" | "organization";
+
 // ============================================================================
 // TYPES
 // ============================================================================
@@ -13,6 +15,8 @@ import apiClient from "./client";
 export interface SharedResource {
   id: string;
   userId: string;
+  organizationId?: string | null;
+  organizationName?: string | null;
   contributorName: string;
   title: string;
   description: string | null;
@@ -20,6 +24,7 @@ export interface SharedResource {
   grade: string;
   subject: string;
   resourceType: string;
+  libraryScope: LibraryScope;
   reuseCount: number;
   status: "PENDING" | "APPROVED" | "REJECTED" | "CHANGES_REQUESTED";
   moderationNotes: string | null;
@@ -43,6 +48,7 @@ export interface ShareResourceRequest {
   grade: string;
   subject: string;
   resourceType: string;
+  libraryScope?: LibraryScope;
   documentId?: string;
 }
 
@@ -62,6 +68,7 @@ export interface ResourceStats {
 }
 
 export interface DiscoverResourcesParams {
+  scope?: LibraryScope;
   grade?: string;
   subject?: string;
   resourceType?: string;
@@ -92,6 +99,7 @@ export async function discoverResources(
     grade,
     subject,
     resourceType,
+    scope = "community",
     search,
     sortBy = "popular",
     page = 0,
@@ -99,6 +107,7 @@ export async function discoverResources(
   } = params;
 
   const queryParams = new URLSearchParams();
+  queryParams.set("scope", scope);
   if (grade) queryParams.set("grade", grade);
   if (subject) queryParams.set("subject", subject);
   if (resourceType) queryParams.set("resourceType", resourceType);
@@ -144,9 +153,11 @@ export async function shareResource(
 /**
  * Get user's own shared resources (for personal dashboard).
  */
-export async function getMyResources(): Promise<SharedResource[]> {
+export async function getMyResources(
+  scope: LibraryScope = "community"
+): Promise<SharedResource[]> {
   const response = await apiClient.get<SharedResource[]>(
-    "/community/resources/mine"
+    `/community/resources/mine?scope=${scope}`
   );
   return response.data;
 }
@@ -207,8 +218,12 @@ export interface LibraryStats {
   totalApprovedResources: number;
 }
 
-export async function getLibraryStats(): Promise<LibraryStats> {
-  const response = await apiClient.get<LibraryStats>("/community/stats");
+export async function getLibraryStats(
+  scope: LibraryScope = "community"
+): Promise<LibraryStats> {
+  const response = await apiClient.get<LibraryStats>(
+    `/community/stats?scope=${scope}`
+  );
   return response.data;
 }
 

@@ -2,9 +2,10 @@
 
 import { PageContainer } from "@/components/layout/PageContainer";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Building2, ChartColumn, ShieldCheck, Users } from "lucide-react";
+import { Building2, ChartColumn, FileText, LibraryBig, ShieldCheck, Users } from "lucide-react";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
@@ -39,6 +40,16 @@ const STATS = [
     key: "generationsThisMonth",
     title: "Gerações este mês",
     icon: ChartColumn,
+  },
+  {
+    key: "totalDocuments",
+    title: "Documentos da escola",
+    icon: FileText,
+  },
+  {
+    key: "sharedResources",
+    title: "Biblioteca interna",
+    icon: LibraryBig,
   },
 ] as const;
 
@@ -104,7 +115,7 @@ export default function SchoolDashboardPage() {
         </Card>
       ) : (
         <>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
             {STATS.map((item) => {
               const Icon = item.icon;
               const value = dashboard?.[item.key] ?? 0;
@@ -173,6 +184,87 @@ export default function SchoolDashboardPage() {
               </CardContent>
             </Card>
           </div>
+
+          <div className="mt-6 grid grid-cols-1 gap-4 xl:grid-cols-3">
+            <Card className="xl:col-span-2">
+              <CardHeader>
+                <CardTitle>Atividade dos ultimos 14 dias</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 xl:grid-cols-7">
+                  {dashboard?.activityByDay?.map((point) => (
+                    <div key={point.date} className="rounded-xl border border-border p-3">
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(point.date).toLocaleDateString("pt-PT", {
+                          day: "2-digit",
+                          month: "2-digit",
+                        })}
+                      </p>
+                      <p className="mt-2 text-2xl font-semibold">{point.generations}</p>
+                      <p className="text-xs text-muted-foreground">geracoes</p>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Tipos de documento</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {dashboard?.topDocumentTypes?.length ? (
+                  dashboard.topDocumentTypes.map((item) => (
+                    <div
+                      key={item.documentType}
+                      className="flex items-center justify-between rounded-lg border border-border px-3 py-2"
+                    >
+                      <span className="text-sm text-foreground">{item.documentType}</span>
+                      <Badge variant="secondary">{item.count}</Badge>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    Ainda sem distribuicao suficiente para mostrar.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle>Utilizadores mais ativos</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {dashboard?.topActiveMembers?.length ? (
+                dashboard.topActiveMembers.map((member) => (
+                  <div
+                    key={member.userId}
+                    className="flex flex-col gap-3 rounded-xl border border-border p-4 lg:flex-row lg:items-center lg:justify-between"
+                  >
+                    <div>
+                      <p className="font-medium text-foreground">
+                        {member.name || member.email || "Utilizador"}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {member.email ?? "Sem email"} · {member.role}
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-2 text-sm">
+                      <Badge variant="secondary">{member.generationsThisMonth} geracoes</Badge>
+                      <Badge variant="secondary">{member.documentsCreatedThisMonth} docs no mes</Badge>
+                      <Badge variant="outline">{member.totalDocuments} docs totais</Badge>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Ainda nao ha atividade suficiente para destacar utilizadores.
+                </p>
+              )}
+            </CardContent>
+          </Card>
         </>
       )}
     </PageContainer>

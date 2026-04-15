@@ -30,6 +30,12 @@ export interface OrganizationDashboard {
   availableSeats: number;
   activeTeachersThisMonth: number;
   generationsThisMonth: number;
+  totalDocuments: number;
+  documentsCreatedThisMonth: number;
+  sharedResources: number;
+  topDocumentTypes: OrganizationDocumentTypeBreakdown[];
+  activityByDay: OrganizationActivityPoint[];
+  topActiveMembers: OrganizationMemberActivity[];
   startsAt?: string | null;
   endsAt?: string | null;
   renewalAt?: string | null;
@@ -43,4 +49,31 @@ export interface OrganizationMember {
   role: string;
   status: string;
   joinedAt?: string | null;
+  generationsThisMonth: number;
+  documentsCreatedThisMonth: number;
+  totalDocuments: number;
+  sharedResourcesCount: number;
+  lastActiveAt?: string | null;
+}
+
+export interface OrganizationDocumentTypeBreakdown {
+  documentType: string;
+  count: number;
+}
+
+export interface OrganizationActivityPoint {
+  date: string;
+  generations: number;
+}
+
+export interface OrganizationMemberActivity {
+  userId: string;
+  name?: string | null;
+  email?: string | null;
+  role: string;
+  generationsThisMonth: number;
+  documentsCreatedThisMonth: number;
+  totalDocuments: number;
+  sharedResourcesCount: number;
+  lastActiveAt?: string | null;
 }
