@@ -33,7 +33,7 @@ export default function AuthProvider({
     const tokenGetter = async () => {
       try {
         return await getTokenRef.current(
-          template ? { template } : undefined
+          template ? { template, skipCache: true } : { skipCache: true }
         );
       } catch {
         // Clerk may throw if session is expired or being refreshed;

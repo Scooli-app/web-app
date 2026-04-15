@@ -16,6 +16,7 @@ import {
   shareResource,
   type ContributorStats,
   type DiscoverResourcesParams,
+  type LibraryScope,
   type ShareResourceRequest,
   type SharedResource,
 } from "@/services/api/community.service";
@@ -26,6 +27,7 @@ import { createAsyncThunk, createSlice, type PayloadAction } from "@reduxjs/tool
 // ============================================================================
 
 export interface CommunityFilters {
+  scope?: LibraryScope;
   grade?: string;
   subject?: string;
   resourceType?: string;
@@ -79,6 +81,7 @@ const initialState: CommunityState = {
     totalPages: 0,
   },
   filters: {
+    scope: "community",
     sortBy: "popular",
   },
   isLoadingResources: false,
@@ -246,7 +249,7 @@ const communitySlice = createSlice({
     
     // Clear filters
     clearFilters: (state) => {
-      state.filters = { sortBy: "popular" };
+      state.filters = { scope: "community", sortBy: "popular" };
     },
     
     // Clear selected resource

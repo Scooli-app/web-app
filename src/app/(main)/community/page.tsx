@@ -15,6 +15,7 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import {
   getLibraryStats,
+  type LibraryScope,
   type DiscoverResourcesParams,
   type ShareResourceRequest,
 } from "@/services/api/community.service";
@@ -35,6 +36,7 @@ import {
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { selectIsPro } from "@/store/subscription/selectors";
 import { setUpgradeModalOpen } from "@/store/ui/uiSlice";
+import { selectHasOrganizationWorkspace, selectWorkspaceContext } from "@/store/workspace/selectors";
 import { BarChart3, Plus, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -51,19 +53,30 @@ function CommunityLibraryPage() {
   const isLoading = useAppSelector(selectIsLoadingResources);
   const isReusing = useAppSelector(selectIsReusing);
   const reusedResourceIds = useAppSelector(selectReusedResourceIds) as string[];
+  const workspace = useAppSelector(selectWorkspaceContext);
+  const hasOrganizationWorkspace = useAppSelector(selectHasOrganizationWorkspace);
+  const activeScope = (filters.scope ?? "community") as LibraryScope;
 
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [totalLibraryCount, setTotalLibraryCount] = useState<number | null>(null);
 
   useEffect(() => {
-    dispatch(fetchResources({}));
+    dispatch(fetchResources({ scope: activeScope }));
     dispatch(fetchReusedResourceIds());
-    getLibraryStats()
+    getLibraryStats(activeScope)
       .then((stats) => setTotalLibraryCount(stats.totalApprovedResources))
       .catch(() => {
         // stats are non-critical
       });
-  }, [dispatch]);
+  }, [activeScope, dispatch]);
+
+  const handleScopeChange = (scope: LibraryScope) => {
+    dispatch(setFilters({ scope }));
+    dispatch(fetchResources({ scope, page: 0 }));
+    getLibraryStats(scope)
+      .then((stats) => setTotalLibraryCount(stats.totalApprovedResources))
+      .catch(() => undefined);
+  };
 
   const handleFiltersChange = (newFilters: DiscoverResourcesParams) => {
     dispatch(setFilters(newFilters as CommunityFiltersType));
@@ -107,10 +120,12 @@ function CommunityLibraryPage() {
 
   const handleShareResource = async (request: ShareResourceRequest) => {
     try {
-      await dispatch(submitResource(request)).unwrap();
+      await dispatch(submitResource({ ...request, libraryScope: activeScope })).unwrap();
       setIsShareModalOpen(false);
       toast.success(
-        "Recurso submetido para revisao! Recebera notificacao em 24-48h.",
+        activeScope === "organization"
+          ? "Recurso partilhado com a biblioteca da escola."
+          : "Recurso submetido para revisao! Recebera notificacao em 24-48h.",
       );
     } catch (error) {
       toast.error(
@@ -129,6 +144,15 @@ function CommunityLibraryPage() {
       >
         <BarChart3 className="mr-2 h-4 w-4" />
         Meu Dashboard
+      </Button>
+      <Button
+        onClick={() => setIsShareModalOpen(true)}
+        variant="outline"
+        size="sm"
+        className="w-full sm:w-auto"
+      >
+        <Users className="mr-2 h-4 w-4" />
+        Partilhar
       </Button>
       <Button
         onClick={() => router.push("/lesson-plan")}
@@ -151,14 +175,37 @@ function CommunityLibraryPage() {
           actions={headerActions}
         />
 
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant={activeScope === "community" ? "default" : "outline"}
+            size="sm"
+            onClick={() => handleScopeChange("community")}
+          >
+            Biblioteca geral
+          </Button>
+          {hasOrganizationWorkspace ? (
+            <Button
+              variant={activeScope === "organization" ? "default" : "outline"}
+              size="sm"
+              onClick={() => handleScopeChange("organization")}
+            >
+              {workspace?.organization?.name ?? "Biblioteca da escola"}
+            </Button>
+          ) : null}
+        </div>
+
         <div className="grid grid-cols-1 gap-1 text-xs text-muted-foreground sm:grid-cols-2 lg:flex lg:flex-wrap lg:items-center lg:gap-x-5 lg:gap-y-1">
           <span>
             <span className="font-medium text-foreground">
               {totalLibraryCount !== null ? totalLibraryCount : "--"}
             </span>{" "}
-            recursos aprovados
+            recursos disponiveis
           </span>
-          <span>Comunidade de professores portugueses</span>
+          <span>
+            {activeScope === "organization"
+              ? `Partilhas internas de ${workspace?.organization?.name ?? "escola"}`
+              : "Comunidade de professores portugueses"}
+          </span>
           <span>Recursos alinhados com as AEs</span>
         </div>
 
@@ -185,6 +232,9 @@ function CommunityLibraryPage() {
           onClose={() => setIsShareModalOpen(false)}
           onSubmit={handleShareResource}
           isLoading={false}
+          libraryScope={activeScope}
+          allowOrganizationScope={hasOrganizationWorkspace}
+          organizationName={workspace?.organization?.name ?? null}
         />
       </div>
     </PageContainer>
@@ -194,8 +244,9 @@ function CommunityLibraryPage() {
 export default function CommunityPage() {
   const isPro = useAppSelector(selectIsPro);
   const dispatch = useAppDispatch();
+  const hasOrganizationWorkspace = useAppSelector(selectHasOrganizationWorkspace);
 
-  if (!isPro) {
+  if (!isPro && !hasOrganizationWorkspace) {
     return (
       <CommunityUpgradePrompt
         onUpgrade={() => dispatch(setUpgradeModalOpen(true))}
