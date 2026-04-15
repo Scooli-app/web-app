@@ -6,7 +6,11 @@ import type { ShareResourceRequest } from "@/services/api/community.service";
 import type { SharedResourceStatus } from "@/shared/types/document";
 import { FeatureFlag } from "@/shared/types/featureFlags";
 import { submitResource } from "@/store/community";
-import { useAppDispatch } from "@/store/hooks";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import {
+  selectHasOrganizationWorkspace,
+  selectWorkspaceContext,
+} from "@/store/workspace/selectors";
 import type { RootState } from "@/store/store";
 import { CheckCircle2, Clock, Share2 } from "lucide-react";
 import { memo, useCallback, useState } from "react";
@@ -43,6 +47,8 @@ function ShareButtonComponent({
   const [isSharing, setIsSharing] = useState(false);
   // Local status set immediately from the submitResource response, overrides the prop
   const [localStatus, setLocalStatus] = useState<SharedResourceStatus | null>(null);
+  const workspace = useAppSelector(selectWorkspaceContext);
+  const hasOrganizationWorkspace = useAppSelector(selectHasOrganizationWorkspace);
 
   // Check feature flag — if community library is OFF, hide the button entirely
   const features = useSelector((state: RootState) => state.features.flags);
@@ -141,18 +147,21 @@ function ShareButtonComponent({
         </span>
       </Button>
 
-      <ShareResourceModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSubmit={handleShareSubmit}
-        isLoading={isSharing}
+        <ShareResourceModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onSubmit={handleShareSubmit}
+          isLoading={isSharing}
         initialContent={content}
         initialTitle={title}
-        initialGrade={grade}
-        initialSubject={subject}
-        initialResourceType={resourceType}
-        documentId={documentId}
-      />
+          initialGrade={grade}
+          initialSubject={subject}
+          initialResourceType={resourceType}
+          libraryScope={hasOrganizationWorkspace ? "organization" : "community"}
+          allowOrganizationScope={hasOrganizationWorkspace}
+          organizationName={workspace?.organization?.name ?? null}
+          documentId={documentId}
+        />
     </>
   );
 }

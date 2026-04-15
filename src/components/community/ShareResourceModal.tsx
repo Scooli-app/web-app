@@ -1,6 +1,6 @@
 /**
  * Share Resource Modal Component
- * Modal form for sharing AI-generated content with the community
+ * Modal form for sharing AI-generated content with the community or school library.
  */
 
 "use client";
@@ -15,7 +15,13 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import {
   GRADE_OPTIONS,
@@ -38,6 +44,7 @@ interface ShareResourceModalProps {
   initialSubject?: string;
   initialResourceType?: string;
   libraryScope?: LibraryScope;
+  allowOrganizationScope?: boolean;
   organizationName?: string | null;
   documentId?: string;
 }
@@ -53,10 +60,10 @@ export function ShareResourceModal({
   initialSubject = "",
   initialResourceType = "",
   libraryScope = "community",
+  allowOrganizationScope = false,
   organizationName = null,
-  documentId
+  documentId,
 }: ShareResourceModalProps) {
-  
   const [formData, setFormData] = useState<ShareResourceRequest>({
     title: initialTitle,
     description: "",
@@ -65,43 +72,55 @@ export function ShareResourceModal({
     subject: initialSubject,
     resourceType: initialResourceType,
     libraryScope,
-    documentId
+    documentId,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const currentScope = formData.libraryScope ?? libraryScope;
 
   useEffect(() => {
-    if (isOpen) {
-      setFormData(prev => ({
-        ...prev,
-        content: initialContent,
-        title: initialTitle || prev.title,
-        grade: initialGrade || prev.grade,
-        subject: initialSubject || prev.subject,
-        resourceType: initialResourceType || prev.resourceType,
-        libraryScope,
-        documentId
-      }));
+    if (!isOpen) {
+      return;
     }
-  }, [isOpen, initialContent, initialTitle, initialGrade, initialSubject, initialResourceType, libraryScope, documentId]);
+
+    setFormData((prev) => ({
+      ...prev,
+      content: initialContent,
+      title: initialTitle || prev.title,
+      grade: initialGrade || prev.grade,
+      subject: initialSubject || prev.subject,
+      resourceType: initialResourceType || prev.resourceType,
+      libraryScope: prev.libraryScope ?? libraryScope,
+      documentId,
+    }));
+  }, [
+    documentId,
+    initialContent,
+    initialGrade,
+    initialResourceType,
+    initialSubject,
+    initialTitle,
+    isOpen,
+    libraryScope,
+  ]);
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
     if (!formData.title.trim()) {
-      newErrors.title = "Título é obrigatório";
+      newErrors.title = "Titulo e obrigatorio";
     }
     if (!formData.grade) {
-      newErrors.grade = "Ano é obrigatório";
+      newErrors.grade = "Ano e obrigatorio";
     }
     if (!formData.subject) {
-      newErrors.subject = "Disciplina é obrigatória";
+      newErrors.subject = "Disciplina e obrigatoria";
     }
     if (!formData.resourceType) {
-      newErrors.resourceType = "Tipo de recurso é obrigatório";
+      newErrors.resourceType = "Tipo de recurso e obrigatorio";
     }
     if (!formData.content.trim()) {
-      newErrors.content = "Conteúdo é obrigatório";
+      newErrors.content = "Conteudo e obrigatorio";
     }
 
     setErrors(newErrors);
@@ -110,7 +129,7 @@ export function ShareResourceModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
@@ -119,81 +138,123 @@ export function ShareResourceModal({
   };
 
   const handleClose = () => {
-    if (!isLoading) {
-      onClose();
-      setFormData({
-        title: "",
-        description: "",
-        content: "",
-        grade: "",
-        subject: "",
-        resourceType: "",
-        libraryScope,
-        documentId: undefined
-      });
-      setErrors({});
+    if (isLoading) {
+      return;
     }
+
+    onClose();
+    setFormData({
+      title: "",
+      description: "",
+      content: "",
+      grade: "",
+      subject: "",
+      resourceType: "",
+      libraryScope,
+      documentId: undefined,
+    });
+    setErrors({});
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Share2 className="w-5 h-5" />
-            {libraryScope === "organization"
+            <Share2 className="h-5 w-5" />
+            {currentScope === "organization"
               ? `Partilhar com ${organizationName ?? "a escola"}`
               : "Partilhar com a Comunidade"}
           </DialogTitle>
           <DialogDescription>
-            Partilhe o seu recurso educacional com outros professores portugueses.
-            O recurso será revisto antes da publicação.
+            {allowOrganizationScope
+              ? "Escolha primeiro onde quer partilhar este recurso."
+              : currentScope === "organization"
+                ? `Este recurso ficara disponivel para os membros de ${organizationName ?? "a sua escola"}.`
+                : "Partilhe o seu recurso educacional com outros professores portugueses. O recurso sera revisto antes da publicacao."}
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="px-6 pb-6 space-y-5 mt-4">
-          {/* Title */}
+        <form onSubmit={handleSubmit} className="mt-4 space-y-5 px-6 pb-6">
+          {allowOrganizationScope ? (
+            <div className="space-y-1.5">
+              <Label>
+                Destino <span className="text-destructive">*</span>
+              </Label>
+              <Select
+                value={currentScope}
+                onValueChange={(value) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    libraryScope: value as LibraryScope,
+                  }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecionar destino" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="community">Biblioteca comunitaria</SelectItem>
+                  <SelectItem value="organization">
+                    {organizationName
+                      ? `Biblioteca de ${organizationName}`
+                      : "Biblioteca da escola"}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          ) : null}
+
           <div className="space-y-1.5">
             <Label htmlFor="share-title">
-              Título <span className="text-destructive">*</span>
+              Titulo <span className="text-destructive">*</span>
             </Label>
             <Input
               id="share-title"
               type="text"
-              placeholder="Ex: Revisão - Funções - 9º ano"
+              placeholder="Ex: Revisao - Funcoes - 9 ano"
               value={formData.title}
-              onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, title: e.target.value }))
+              }
               className={errors.title ? "border-destructive" : ""}
             />
-            {errors.title && (
+            {errors.title ? (
               <p className="text-xs text-destructive">{errors.title}</p>
-            )}
+            ) : null}
           </div>
 
-          {/* Description */}
           <div className="space-y-1.5">
             <Label htmlFor="share-description">
-              Descrição <span className="text-xs text-muted-foreground font-normal">(opcional)</span>
+              Descricao{" "}
+              <span className="text-xs font-normal text-muted-foreground">
+                (opcional)
+              </span>
             </Label>
             <Textarea
               id="share-description"
-              placeholder="Breve descrição do recurso e como pode ser usado..."
+              placeholder="Breve descricao do recurso e como pode ser usado..."
               value={formData.description || ""}
-              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  description: e.target.value,
+                }))
+              }
               rows={3}
             />
           </div>
 
-          {/* Grade, Subject, Type Row */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {/* Grade */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div className="space-y-1.5">
               <Label>
                 Ano escolar <span className="text-destructive">*</span>
               </Label>
               <Select
                 value={formData.grade || ""}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, grade: value }))}
+                onValueChange={(value) =>
+                  setFormData((prev) => ({ ...prev, grade: value }))
+                }
               >
                 <SelectTrigger className={errors.grade ? "border-destructive" : ""}>
                   <SelectValue placeholder="Selecionar ano" />
@@ -206,19 +267,20 @@ export function ShareResourceModal({
                   ))}
                 </SelectContent>
               </Select>
-              {errors.grade && (
+              {errors.grade ? (
                 <p className="text-xs text-destructive">{errors.grade}</p>
-              )}
+              ) : null}
             </div>
 
-            {/* Subject */}
             <div className="space-y-1.5">
               <Label>
                 Disciplina <span className="text-destructive">*</span>
               </Label>
               <Select
                 value={formData.subject || ""}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, subject: value }))}
+                onValueChange={(value) =>
+                  setFormData((prev) => ({ ...prev, subject: value }))
+                }
               >
                 <SelectTrigger className={errors.subject ? "border-destructive" : ""}>
                   <SelectValue placeholder="Selecionar disciplina" />
@@ -231,21 +293,24 @@ export function ShareResourceModal({
                   ))}
                 </SelectContent>
               </Select>
-              {errors.subject && (
+              {errors.subject ? (
                 <p className="text-xs text-destructive">{errors.subject}</p>
-              )}
+              ) : null}
             </div>
 
-            {/* Resource Type */}
             <div className="space-y-1.5">
               <Label>
                 Tipo <span className="text-destructive">*</span>
               </Label>
               <Select
                 value={formData.resourceType || ""}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, resourceType: value }))}
+                onValueChange={(value) =>
+                  setFormData((prev) => ({ ...prev, resourceType: value }))
+                }
               >
-                <SelectTrigger className={errors.resourceType ? "border-destructive" : ""}>
+                <SelectTrigger
+                  className={errors.resourceType ? "border-destructive" : ""}
+                >
                   <SelectValue placeholder="Selecionar tipo" />
                 </SelectTrigger>
                 <SelectContent>
@@ -256,39 +321,42 @@ export function ShareResourceModal({
                   ))}
                 </SelectContent>
               </Select>
-              {errors.resourceType && (
+              {errors.resourceType ? (
                 <p className="text-xs text-destructive">{errors.resourceType}</p>
-              )}
+              ) : null}
             </div>
           </div>
 
-          {/* Info Box */}
-          <div className="bg-muted/50 border border-border rounded-lg p-4 text-sm">
-            <p className="text-foreground font-medium mb-2">ℹ️ Processo de Revisão</p>
-            <ul className="text-muted-foreground space-y-1 text-xs">
-              <li>• O recurso será revisto pela nossa equipa em 24-48 horas</li>
-              <li>• Verificamos alinhamento com as AEs e qualidade pedagógica</li>
-              <li>• Receberá notificação quando for aprovado</li>
-              <li>• Recursos aprovados podem ser reutilizados e adaptados por outros professores</li>
-            </ul>
+          <div className="rounded-lg border border-border bg-muted/50 p-4 text-sm">
+            <p className="mb-2 font-medium text-foreground">
+              {currentScope === "organization" ? "Biblioteca da escola" : "Processo de revisao"}
+            </p>
+            {currentScope === "organization" ? (
+              <ul className="space-y-1 text-xs text-muted-foreground">
+                <li>• O recurso fica disponivel imediatamente para a organizacao ativa</li>
+                <li>• So membros da escola vao conseguir ver e reutilizar</li>
+                <li>• Pode continuar a partilhar outro recurso na biblioteca comunitaria depois</li>
+              </ul>
+            ) : (
+              <ul className="space-y-1 text-xs text-muted-foreground">
+                <li>• O recurso sera revisto pela nossa equipa em 24-48 horas</li>
+                <li>• Verificamos alinhamento com as AEs e qualidade pedagogica</li>
+                <li>• Recebera notificacao quando for aprovado</li>
+                <li>• Recursos aprovados podem ser reutilizados e adaptados por outros professores</li>
+              </ul>
+            )}
           </div>
 
-          {/* Action Buttons */}
           <div className="flex justify-end gap-3 pt-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleClose}
-              disabled={isLoading}
-            >
+            <Button type="button" variant="outline" onClick={handleClose} disabled={isLoading}>
               Cancelar
             </Button>
-            <Button
-              type="submit"
-              disabled={isLoading}
-              className="min-w-32"
-            >
-              {isLoading ? "A partilhar..." : "Partilhar Recurso"}
+            <Button type="submit" disabled={isLoading} className="min-w-32">
+              {isLoading
+                ? "A partilhar..."
+                : currentScope === "organization"
+                  ? "Partilhar na escola"
+                  : "Partilhar recurso"}
             </Button>
           </div>
         </form>

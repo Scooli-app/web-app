@@ -233,6 +233,7 @@ function CommunityLibraryPage() {
           onSubmit={handleShareResource}
           isLoading={false}
           libraryScope={activeScope}
+          allowOrganizationScope={hasOrganizationWorkspace}
           organizationName={workspace?.organization?.name ?? null}
         />
       </div>
