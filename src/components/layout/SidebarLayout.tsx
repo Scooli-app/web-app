@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/sidebar";
 import { UpgradePlanModal } from "@/components/ui/upgrade-plan-modal";
 import { useAdmin } from "@/hooks/useAdmin";
+import { MARKETING_SITE_URL } from "@/shared/config/constants";
 import { Routes } from "@/shared/types";
 import { FeatureFlag } from "@/shared/types/featureFlags";
 import { cn } from "@/shared/utils/utils";
@@ -37,12 +38,12 @@ import {
   selectSubscription,
   selectUsageStats,
 } from "@/store/subscription/selectors";
+import { setUpgradeModalOpen } from "@/store/ui/uiSlice";
 import {
   selectHasOrganizationWorkspace,
   selectIsOrganizationAdmin,
   selectWorkspaceContext,
 } from "@/store/workspace/selectors";
-import { setUpgradeModalOpen } from "@/store/ui/uiSlice";
 import {
   SignInButton,
   SignedIn,
@@ -56,6 +57,7 @@ import {
   Building2,
   ClipboardList,
   Clock,
+  ExternalLink,
   FileCheck,
   FileText,
   FolderArchiveIcon,
@@ -88,6 +90,7 @@ interface NavItem {
   href: string;
   icon: LucideIcon;
   description: string;
+  external?: boolean;
 }
 
 const NAVIGATION: NavItem[] = [
@@ -157,6 +160,13 @@ const SECONDARY_NAVIGATION: NavItem[] = [
     icon: Settings,
     description: "Configurar a sua conta",
   },
+  {
+    title: "Recomendar escola",
+    href: `${MARKETING_SITE_URL}/recomendar-instituicao`,
+    icon: Building2,
+    description: "Sugerir a Scooli à direção da sua escola",
+    external: true,
+  },
 ];
 
 const ADMIN_NAVIGATION: NavItem[] = [
@@ -219,6 +229,34 @@ const NavMenuItem = memo(function NavMenuItem({
   );
 });
 
+const ExternalNavMenuItem = memo(function ExternalNavMenuItem({
+  item,
+  onClick,
+}: {
+  item: NavItem;
+  onClick?: () => void;
+}) {
+  const Icon = item.icon;
+
+  return (
+    <SidebarMenuItem>
+      <a
+        href={item.href}
+        target="_blank"
+        rel="noreferrer"
+        onClick={onClick}
+        className="w-full"
+      >
+        <SidebarMenuButton className="h-10 px-4 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground">
+          <Icon className="h-4 w-4 shrink-0" />
+          <span className="flex-1">{item.title}</span>
+          <ExternalLink className="h-3 w-3 shrink-0 text-muted-foreground" />
+        </SidebarMenuButton>
+      </a>
+    </SidebarMenuItem>
+  );
+});
+
 const DisabledNavMenuItem = memo(function DisabledNavMenuItem({
   item,
 }: {
@@ -270,6 +308,12 @@ const NavGroup = memo(function NavGroup({
           {items.map((item) =>
             disabledKeys.includes(item.href) ? (
               <DisabledNavMenuItem key={item.href} item={item} />
+            ) : item.external ? (
+              <ExternalNavMenuItem
+                key={item.href}
+                item={item}
+                onClick={onItemClick}
+              />
             ) : (
               <NavMenuItem
                 key={item.href}
@@ -684,4 +728,3 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
     </SidebarProvider>
   );
 }
-
