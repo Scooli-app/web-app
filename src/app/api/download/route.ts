@@ -77,6 +77,79 @@ const HTML_PARAGRAPH_CLOSE_PATTERN = /<\/p>/gi;
 const ESCAPED_ANSWER_BLANK_PATTERN = /(?:\\_){3,}/g;
 const ANSWER_BLANK_PATTERN = /_{3,}/g;
 const ANSWER_BLANK_TOKEN_PATTERN = /@@EXPORTBLANK(\d+)@@/g;
+const BLOCK_MATH_PATTERN = /\$\$([^$]+)\$\$/g;
+const INLINE_MATH_PATTERN = /\$([^$\n]+)\$/g;
+
+/**
+ * Convert a LaTeX expression to readable plain text for PDF/DOCX export.
+ * Not a full renderer — handles the most common patterns teachers encounter.
+ */
+function latexToText(latex: string): string {
+  let text = latex.trim();
+
+  // Fractions: \frac{a}{b} → a/b (handle nested by iterating)
+  for (let i = 0; i < 6; i++) {
+    const before = text;
+    text = text.replace(/\\frac\s*\{([^{}]+)\}\s*\{([^{}]+)\}/g, "($1)/($2)");
+    if (text === before) break;
+  }
+
+  // Square root: \sqrt{x} → √(x)
+  text = text.replace(/\\sqrt\s*\{([^{}]+)\}/g, "√($1)");
+  text = text.replace(/\\sqrt\s+(\S+)/g, "√$1");
+
+  // Superscripts: ^{2} → ², ^2 → ²
+  const superMap: Record<string, string> = {
+    "0": "⁰", "1": "¹", "2": "²", "3": "³", "4": "⁴",
+    "5": "⁵", "6": "⁶", "7": "⁷", "8": "⁸", "9": "⁹",
+    "n": "ⁿ", "+": "⁺", "-": "⁻",
+  };
+  text = text.replace(/\^\{([^{}]+)\}/g, (_m, exp) => {
+    if ([...exp].every(c => superMap[c])) return [...exp].map(c => superMap[c]).join("");
+    return `^(${exp})`;
+  });
+  text = text.replace(/\^([0-9n])/g, (_m, c) => superMap[c] ?? `^${c}`);
+
+  // Subscripts: _{n} → just the inner text (subscripts don't map to unicode cleanly)
+  text = text.replace(/\_\{([^{}]+)\}/g, "_$1");
+
+  // Greek letters
+  const greek: Record<string, string> = {
+    alpha: "α", beta: "β", gamma: "γ", delta: "δ", epsilon: "ε",
+    zeta: "ζ", eta: "η", theta: "θ", lambda: "λ", mu: "μ",
+    nu: "ν", xi: "ξ", pi: "π", rho: "ρ", sigma: "σ",
+    tau: "τ", phi: "φ", chi: "χ", psi: "ψ", omega: "ω",
+    Alpha: "Α", Beta: "Β", Gamma: "Γ", Delta: "Δ", Theta: "Θ",
+    Lambda: "Λ", Pi: "Π", Sigma: "Σ", Phi: "Φ", Omega: "Ω",
+  };
+  text = text.replace(/\\([a-zA-Z]+)/g, (_m, name) => greek[name] ?? (
+    ({ times: "×", cdot: "·", div: "÷", pm: "±", mp: "∓",
+       neq: "≠", leq: "≤", geq: "≥", approx: "≈", equiv: "≡",
+       infty: "∞", in: "∈", notin: "∉", subset: "⊂", cup: "∪",
+       cap: "∩", forall: "∀", exists: "∃", neg: "¬", land: "∧",
+       lor: "∨", rightarrow: "→", leftarrow: "←", Rightarrow: "⇒",
+       Leftrightarrow: "⇔", ldots: "…", cdots: "…",
+       left: "", right: "", text: "", quad: " ", qquad: "  ",
+     } as Record<string, string>)[name] ?? `\\${name}`
+  ));
+
+  // Strip remaining LaTeX grouping braces
+  text = text.replace(/\{([^{}]*)\}/g, "$1");
+  // Strip leftover backslashes before punctuation
+  text = text.replace(/\\([{}%,;:])/g, "$1");
+
+  // Normalise whitespace
+  return text.replace(/\s{2,}/g, " ").trim();
+}
+
+/**
+ * Replace $...$ and $$...$$ in a line with plain-text equivalents.
+ */
+function convertMathToText(text: string): string {
+  return text
+    .replace(BLOCK_MATH_PATTERN, (_m, latex) => latexToText(latex))
+    .replace(INLINE_MATH_PATTERN, (_m, latex) => latexToText(latex));
+}
 
 function toArrayBuffer(bytes: Uint8Array): ArrayBuffer {
   const copy = new Uint8Array(bytes.byteLength);
@@ -277,7 +350,7 @@ function protectAnswerBlanks(text: string): {
 }
 
 function stripInlineMarkdown(text: string): string {
-  const blankProtected = protectAnswerBlanks(text);
+  const blankProtected = protectAnswerBlanks(convertMathToText(text));
   const withoutMarkdown = blankProtected.content
     .replace(HTML_COMMENT_PATTERN, "")
     .replace(HTML_BREAK_PATTERN, " ")
@@ -1306,4 +1379,4 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       { status: 500 },
     );
   }
-}
+}

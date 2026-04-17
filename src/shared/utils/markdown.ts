@@ -28,6 +28,16 @@ const converter = new showdown.Converter(converterOptions);
 const MARKDOWN_CODE_FENCE_PATTERN = /```[\s\S]*?```/g;
 const HTML_PRE_BLOCK_PATTERN = /<pre[\s\S]*?<\/pre>/gi;
 const HTML_IMAGE_TAG_PATTERN = /<img\b[^>]*>/gi;
+// Math protection patterns
+const MARKDOWN_BLOCK_MATH_PATTERN = /\$\$([^$]+)\$\$/g;
+const MARKDOWN_INLINE_MATH_PATTERN = /(?<!\$)\$([^$\n]+)\$(?!\$)/g;
+const HTML_BLOCK_MATH_PATTERN = /<div\b[^>]*\bdata-type="block-math"[^>]*>[\s\S]*?<\/div>/gi;
+const HTML_INLINE_MATH_PATTERN = /<span\b[^>]*\bdata-type="inline-math"[^>]*>[\s\S]*?<\/span>/gi;
+const MATH_BLOCK_TOKEN_PREFIX = "SCOOLIMATHBLOCK";
+const MATH_INLINE_TOKEN_PREFIX = "SCOOLIMATHINLINE";
+const MATH_TOKEN_SUFFIX = "END";
+const MATH_BLOCK_TOKEN_RESTORE_PATTERN = /SCOOLIMATHBLOCK(\d+)END/g;
+const MATH_INLINE_TOKEN_RESTORE_PATTERN = /SCOOLIMATHINLINE(\d+)END/g;
 const IMAGE_SEGMENT_TOKEN_PREFIX = "CODEXIMAGESEGMENT";
 const IMAGE_SEGMENT_TOKEN_SUFFIX = "TOKEN";
 const IMAGE_SEGMENT_TOKEN_PATTERN = /CODEXIMAGESEGMENT(\d+)TOKEN/g;
@@ -291,10 +301,13 @@ export function markdownToHtml(markdown: string): string {
       MARKDOWN_CODE_FENCE_PATTERN
     );
 
+    // Protect math expressions AFTER code blocks, so math inside code is left alone
+    const mathProtected = protectMathMarkdown(codeProtected.content);
+
     // Clean input markdown
     const cleanMarkdown = escapeAnswerBlanks(
       normalizeMultipleChoiceOptions(
-        normalizeEducationalListFormatting(codeProtected.content)
+        normalizeEducationalListFormatting(mathProtected.content)
       )
     )
       // Remove any leaked internal image placeholder tokens from older buggy serializations.
@@ -321,6 +334,9 @@ export function markdownToHtml(markdown: string): string {
 
     // Convert markdown to HTML
     let html = converter.makeHtml(restoredMarkdown);
+
+    // Restore math as Tiptap-compatible HTML elements (after showdown, which can't handle $...$)
+    html = mathProtected.restoreAsHtml(html);
 
     const htmlProtected = protectSegments(html, HTML_PRE_BLOCK_PATTERN);
 
@@ -358,7 +374,9 @@ export function htmlToMarkdown(html: string): string {
 
   try {
     const htmlProtected = protectSegments(html, HTML_PRE_BLOCK_PATTERN);
-    const imageProtected = protectImageSegments(htmlProtected.content);
+    // Protect math HTML elements before data-* attribute stripping removes data-latex
+    const mathHtmlProtected = protectMathHtml(htmlProtected.content);
+    const imageProtected = protectImageSegments(mathHtmlProtected.content);
 
     // Pre-process HTML for better conversion
     const cleanHtml = enforceImageTokenBlockBoundaries(
@@ -406,6 +424,8 @@ export function htmlToMarkdown(html: string): string {
       .trim()
     );
     markdown = markdownProtected.restore(markdown);
+    // Restore math as $...$ and $$...$$ markdown notation
+    markdown = mathHtmlProtected.restore(markdown);
     markdown = imageProtected.restore(markdown);
     markdown = markdown
       // Safety net: never persist leaked internal image tokens.
@@ -439,6 +459,105 @@ export function htmlToMarkdown(html: string): string {
  * Check if content is valid markdown
  */
 
+
+/**
+ * Protect math expressions in markdown ($...$, $$...$$) before passing to showdown.
+ * Returns tokens that are restored as Tiptap Mathematics HTML elements after makeHtml.
+ */
+function protectMathMarkdown(input: string): {
+  content: string;
+  restoreAsHtml: (html: string) => string;
+} {
+  const blockSegments: string[] = [];
+  const inlineSegments: string[] = [];
+
+  // Block math first ($$...$$) to avoid false matches by inline pattern
+  let content = input.replace(MARKDOWN_BLOCK_MATH_PATTERN, (_match, latex) => {
+    const id = blockSegments.push(latex.trim()) - 1;
+    return `${MATH_BLOCK_TOKEN_PREFIX}${id}${MATH_TOKEN_SUFFIX}`;
+  });
+
+  // Inline math ($...$)
+  content = content.replace(MARKDOWN_INLINE_MATH_PATTERN, (_match, latex) => {
+    const id = inlineSegments.push(latex.trim()) - 1;
+    return `${MATH_INLINE_TOKEN_PREFIX}${id}${MATH_TOKEN_SUFFIX}`;
+  });
+
+  return {
+    content,
+    restoreAsHtml: (html: string) => {
+      // Block math: replace entire <p>TOKEN</p> wrapper if present (block elements can't be in <p>)
+      let result = html.replace(
+        new RegExp(`<p>\\s*${MATH_BLOCK_TOKEN_PREFIX}(\\d+)${MATH_TOKEN_SUFFIX}\\s*<\\/p>`, "g"),
+        (_match, rawId) => {
+          const index = Number(rawId);
+          const latex = blockSegments[index] ?? "";
+          const escaped = latex.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
+          return `<div data-type="block-math" data-latex="${escaped}"></div>`;
+        }
+      );
+      // Remaining block tokens not wrapped in <p>
+      result = result.replace(MATH_BLOCK_TOKEN_RESTORE_PATTERN, (_match, rawId) => {
+        const index = Number(rawId);
+        const latex = blockSegments[index] ?? "";
+        const escaped = latex.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
+        return `<div data-type="block-math" data-latex="${escaped}"></div>`;
+      });
+      // Inline math tokens
+      result = result.replace(MATH_INLINE_TOKEN_RESTORE_PATTERN, (_match, rawId) => {
+        const index = Number(rawId);
+        const latex = inlineSegments[index] ?? "";
+        const escaped = latex.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
+        return `<span data-type="inline-math" data-latex="${escaped}"></span>`;
+      });
+      return result;
+    },
+  };
+}
+
+/**
+ * Protect math HTML elements (<div data-type="block-math">, <span data-type="inline-math">)
+ * before passing to showdown's makeMarkdown, to avoid losing data-latex attributes.
+ * Restored as $...$ and $$...$$ markdown.
+ */
+function protectMathHtml(input: string): {
+  content: string;
+  restore: (value: string) => string;
+} {
+  const blockSegments: string[] = [];
+  const inlineSegments: string[] = [];
+
+  // Block math divs
+  let content = input.replace(HTML_BLOCK_MATH_PATTERN, (match) => {
+    const latex = decodeHtmlEntities(getHtmlAttribute(match, "data-latex") ?? "");
+    const id = blockSegments.push(latex) - 1;
+    return `${MATH_BLOCK_TOKEN_PREFIX}${id}${MATH_TOKEN_SUFFIX}`;
+  });
+
+  // Inline math spans
+  content = content.replace(HTML_INLINE_MATH_PATTERN, (match) => {
+    const latex = decodeHtmlEntities(getHtmlAttribute(match, "data-latex") ?? "");
+    const id = inlineSegments.push(latex) - 1;
+    return `${MATH_INLINE_TOKEN_PREFIX}${id}${MATH_TOKEN_SUFFIX}`;
+  });
+
+  return {
+    content,
+    restore: (value: string) => {
+      let result = value.replace(MATH_BLOCK_TOKEN_RESTORE_PATTERN, (_match, rawId) => {
+        const index = Number(rawId);
+        const latex = blockSegments[index] ?? "";
+        return `\n\n$$${latex}$$\n\n`;
+      });
+      result = result.replace(MATH_INLINE_TOKEN_RESTORE_PATTERN, (_match, rawId) => {
+        const index = Number(rawId);
+        const latex = inlineSegments[index] ?? "";
+        return `$${latex}$`;
+      });
+      return result;
+    },
+  };
+}
 
 function protectSegments(input: string, pattern: RegExp): {
   content: string;
