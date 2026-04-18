@@ -192,7 +192,7 @@ export function TemplateBrowserModal({
             />
           ) : view === "preview" && previewTemplate ? (
             <>
-              <DialogHeader className="p-4 pb-3 sm:p-6 sm:pb-4">
+              <DialogHeader className="p-4 pb-3 pr-12 sm:p-6 sm:pb-4 sm:pr-14">
                 <div className="mb-2 flex flex-wrap items-center gap-1.5 text-sm text-muted-foreground">
                   <button
                     type="button"
@@ -335,7 +335,7 @@ export function TemplateBrowserModal({
             </>
           ) : (
             <>
-              <DialogHeader className="p-4 pb-4 sm:p-6 sm:pb-4">
+              <DialogHeader className="p-4 pb-4 pr-12 sm:p-6 sm:pb-4 sm:pr-14">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div className="flex min-w-0 items-center gap-3">
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent">

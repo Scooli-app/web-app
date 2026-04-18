@@ -8,6 +8,16 @@ import apiClient from "./client";
 
 export type LibraryScope = "community" | "organization";
 
+/**
+ * Destination selected by the user when sharing a resource.
+ * - "community": public community library only
+ * - "organization": private school library only
+ * - "both": publish to both libraries in one action ("Todas")
+ *
+ * The backend accepts all three values on the POST /community/resources endpoint.
+ */
+export type ShareDestination = LibraryScope | "both";
+
 // ============================================================================
 // TYPES
 // ============================================================================
@@ -48,7 +58,7 @@ export interface ShareResourceRequest {
   grade: string;
   subject: string;
   resourceType: string;
-  libraryScope?: LibraryScope;
+  libraryScope?: ShareDestination;
   documentId?: string;
 }
 
@@ -152,6 +162,19 @@ export async function getMyResources(
 ): Promise<SharedResource[]> {
   const response = await apiClient.get<SharedResource[]>(
     `/community/resources/mine?scope=${scope}`
+  );
+  return response.data;
+}
+
+/**
+ * Stop sharing a document entirely. Removes every non-REJECTED shared
+ * resource row for this document owned by the current user.
+ */
+export async function unshareDocument(
+  documentId: string
+): Promise<{ removed: number }> {
+  const response = await apiClient.delete<{ removed: number }>(
+    `/community/resources/document/${documentId}`
   );
   return response.data;
 }

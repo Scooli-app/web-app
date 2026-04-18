@@ -14,6 +14,7 @@ import {
   getReusedResourceIds,
   reuseResource,
   shareResource,
+  unshareDocument,
   type ContributorStats,
   type DiscoverResourcesParams,
   type LibraryScope,
@@ -213,6 +214,26 @@ export const submitResource = createAsyncThunk(
       );
     }
   }
+);
+
+/**
+ * Stop sharing a document. Removes the shared resource row(s) for the
+ * current user + document from the community / organization libraries.
+ */
+export const unshareDocumentResource = createAsyncThunk(
+  "community/unshareDocument",
+  async (documentId: string, { rejectWithValue }) => {
+    try {
+      const result = await unshareDocument(documentId);
+      return { documentId, removed: result.removed };
+    } catch (error) {
+      return rejectWithValue(
+        error instanceof Error
+          ? error.message
+          : "Nao foi possivel deixar de partilhar o recurso",
+      );
+    }
+  },
 );
 
 /**

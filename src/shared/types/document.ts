@@ -39,6 +39,13 @@ export interface DocumentMetadata {
 
 export type SharedResourceStatus = "PENDING" | "APPROVED" | "REJECTED"
 
+/**
+ * Library scope the document has been shared in. Mirrors
+ * `LibraryScope` from the community service but kept local here so
+ * `@/shared/types` does not depend on `@/services`.
+ */
+export type DocumentSharedScope = "community" | "organization";
+
 export interface Document {
   id: string;
   title: string;
@@ -54,6 +61,12 @@ export interface Document {
   downloads: number;
   sharedResourceId?: string | null;
   sharedResourceStatus?: SharedResourceStatus | null;
+  /**
+   * All library scopes the document is currently shared in. Empty array if
+   * the document has not been shared. Populated by the backend when reading
+   * a document; not persisted on the client.
+   */
+  sharedScopes?: DocumentSharedScope[];
   sources?: RagSource[];
   createdAt: string;
   updatedAt: string;

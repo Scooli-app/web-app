@@ -4,8 +4,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useAppSelector } from "@/store/hooks";
+import { selectWorkspaceContext } from "@/store/workspace/selectors";
 import { Routes, type Document } from "@/shared/types";
-import { FileText, Trash2, User, Users } from "lucide-react";
+import { Building2, FileText, Globe2, Trash2, User } from "lucide-react";
 import Link from "next/link";
 import { memo, useCallback, useMemo } from "react";
 
@@ -93,6 +95,9 @@ function DocumentCardComponent({
   onDelete,
   selectionMode = false,
 }: DocumentCardProps) {
+  const workspace = useAppSelector(selectWorkspaceContext);
+  const organizationName = workspace?.organization?.name ?? null;
+
   const handleCheckboxChange = useCallback(
     (checked: boolean) => {
       onSelect?.(document.id, checked);
@@ -127,6 +132,28 @@ function DocumentCardComponent({
   const createdDate = useMemo(() => formatDate(document.createdAt), [document.createdAt]);
   const contentPreview = useMemo(() => getContentPreview(document.content), [document.content]);
 
+  // Derive which scope chips to render. `sharedScopes` is the source of truth
+  // (backend-populated), but we fall back to `sharedResourceId` so documents
+  // created before the `sharedScopes` field existed still render a chip.
+  const sharedScopes = useMemo(() => {
+    const scopes = new Set<"community" | "organization">();
+    for (const scope of document.sharedScopes ?? []) {
+      if (scope === "community" || scope === "organization") {
+        scopes.add(scope);
+      }
+    }
+    // Backwards compatibility: if no scope info but the legacy pointer is set,
+    // assume it was shared with the community library.
+    if (scopes.size === 0 && document.sharedResourceId) {
+      scopes.add("community");
+    }
+    return scopes;
+  }, [document.sharedScopes, document.sharedResourceId]);
+
+  const orgChipLabel = organizationName
+    ? organizationName
+    : "Escola";
+
   const cardContent = (
     <>
       {selectionMode && (
@@ -150,10 +177,22 @@ function DocumentCardComponent({
             >
               {typeLabel}
             </Badge>
-            {document.sharedResourceId && (
-              <Badge className="shrink-0 whitespace-nowrap border border-teal-500/30 bg-teal-500/15 px-2 py-1 text-xs font-medium text-teal-700 dark:text-teal-400">
-                <Users className="mr-1 h-3 w-3" />
+            {sharedScopes.has("community") && (
+              <Badge
+                title="Partilhado na biblioteca comunitaria"
+                className="shrink-0 whitespace-nowrap border border-teal-500/30 bg-teal-500/15 px-2 py-1 text-xs font-medium text-teal-700 dark:text-teal-400"
+              >
+                <Globe2 className="mr-1 h-3 w-3" />
                 Comunidade
+              </Badge>
+            )}
+            {sharedScopes.has("organization") && (
+              <Badge
+                title={`Partilhado na biblioteca de ${orgChipLabel}`}
+                className="shrink-0 max-w-[10rem] whitespace-nowrap border border-amber-400/40 bg-amber-400/15 px-2 py-1 text-xs font-medium text-amber-700 dark:text-amber-300"
+              >
+                <Building2 className="mr-1 h-3 w-3" />
+                <span className="truncate">{orgChipLabel}</span>
               </Badge>
             )}
           </div>
