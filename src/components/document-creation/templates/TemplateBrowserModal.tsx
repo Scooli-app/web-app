@@ -9,8 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Routes } from "@/shared/types";
-import type { DocumentTemplate, DocumentType } from "@/shared/types";
+import { Routes, type DocumentTemplate, type DocumentType } from "@/shared/types";
 import { cn } from "@/shared/utils/utils";
 import { selectIsPro } from "@/store/subscription/selectors";
 import { useAppSelector } from "@/store/hooks";
