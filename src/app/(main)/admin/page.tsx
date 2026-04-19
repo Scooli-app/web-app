@@ -5,7 +5,7 @@ import { PageContainer } from "@/components/layout/PageContainer";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAdmin } from "@/hooks/useAdmin";
-import { LayoutDashboard, Library, MessageSquare, Shield, ToggleLeft, Users } from "lucide-react";
+import { BarChart3, LayoutDashboard, Library, MessageSquare, Shield, ToggleLeft, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
@@ -124,6 +124,26 @@ export default function AdminPage() {
             <CardContent>
               <div className="text-sm text-muted-foreground">
                 Ativar funcionalidades globalmente, por percentagem, ou por exceções de utilizador/perfil.
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card
+            className="group cursor-pointer border-border transition-colors hover:bg-muted/50"
+            onClick={() => router.push("/admin/users")}
+          >
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 transition-colors group-hover:text-primary">
+                <BarChart3 className="h-5 w-5" />
+                Insights de Utilizacao
+              </CardTitle>
+              <CardDescription>
+                Perceber quem voltou, quem tentou uma vez e o que cada utilizador fez.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-sm text-muted-foreground">
+                Ver documentos criados, chats com AI, atividade por utilizador e enriquecimento via Clerk.
               </div>
             </CardContent>
           </Card>
