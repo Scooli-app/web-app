@@ -259,7 +259,7 @@ export function UploadDocumentModal({
   return (
     <Dialog open={isOpen} onOpenChange={isUploading ? undefined : onClose}>
       <DialogContent className="max-w-md overflow-hidden p-0">
-        <div className="border-b border-border px-6 pb-4 pt-6">
+        <div className="border-b border-border px-6 pb-4 pt-6 pr-14">
           <div className="mb-1 flex items-center gap-3">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10">
               <UploadCloud className="h-5 w-5 text-primary" />
@@ -275,7 +275,7 @@ export function UploadDocumentModal({
         </div>
 
         <form onSubmit={handleSubmit}>
-          <div className="space-y-4 p-6">
+          <div className="space-y-4 p-6 pr-14">
             <div
               className={cn(
                 "flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-5 transition-all",
