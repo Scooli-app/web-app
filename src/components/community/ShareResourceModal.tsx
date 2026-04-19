@@ -302,7 +302,7 @@ export function ShareResourceModal({
         </DialogHeader>
 
         {allowOrganizationScope && step === 1 ? (
-          <div className="space-y-3 px-6 pb-6 pt-4">
+          <div className="space-y-3 px-6 pb-6 pt-4 pr-14">
             {destinationOptions.map((option) => {
               const Icon = option.icon;
               const isSelected = currentDestination === option.value;
@@ -343,7 +343,7 @@ export function ShareResourceModal({
             </div>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-5 px-6 pb-6 pt-4">
+          <form onSubmit={handleSubmit} className="space-y-5 px-6 pb-6 pt-4 pr-14">
             <div className="space-y-1.5">
               <Label htmlFor="share-title">
                 Titulo <span className="text-destructive">*</span>

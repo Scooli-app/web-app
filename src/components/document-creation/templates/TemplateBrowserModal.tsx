@@ -283,7 +283,7 @@ export function TemplateBrowserModal({
                 </div>
               </DialogHeader>
 
-              <div className="min-h-0 flex-1 overflow-y-auto px-4 sm:px-6">
+              <div className="min-h-0 flex-1 overflow-y-auto px-4 pr-12 sm:px-6 sm:pr-14">
                 <div className="space-y-3 pb-4 pt-0.5">
                   <h3 className="text-sm font-medium text-foreground">
                     Seccoes ({previewTemplate.sections.length})
@@ -363,7 +363,7 @@ export function TemplateBrowserModal({
                 </div>
               </DialogHeader>
 
-              <div className="min-h-0 flex-1 overflow-y-auto px-4 sm:px-6">
+              <div className="min-h-0 flex-1 overflow-y-auto px-4 pr-12 sm:px-6 sm:pr-14">
                 <div className="grid grid-cols-1 gap-3 pb-6 pt-0.5">
                   {templates.map((template) => (
                     <TemplateCard

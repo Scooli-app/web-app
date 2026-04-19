@@ -11,9 +11,16 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { ShareResourceRequest } from "@/services/api/community.service";
-import type { SharedResourceStatus } from "@/shared/types/document";
+import type {
+  DocumentSharedScope,
+  SharedResourceStatus,
+} from "@/shared/types/document";
 import { FeatureFlag } from "@/shared/types/featureFlags";
 import { submitResource, unshareDocumentResource } from "@/store/community";
+import {
+  fetchDocument,
+  syncDocumentSharingState,
+} from "@/store/documents/documentSlice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
   selectHasOrganizationWorkspace,
@@ -28,7 +35,7 @@ import {
   Share2,
   Trash2,
 } from "lucide-react";
-import { memo, useCallback, useState } from "react";
+import { memo, useCallback, useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { toast } from "sonner";
 import posthog from "posthog-js";
@@ -44,6 +51,21 @@ interface ShareButtonProps {
   /** Status as fetched from the document (may be null if not yet shared) */
   sharedStatus?: SharedResourceStatus | undefined | null;
   className?: string;
+}
+
+function getSharedScopes(
+  scope: ShareResourceRequest["libraryScope"],
+  fallbackScope?: DocumentSharedScope,
+): DocumentSharedScope[] {
+  if (scope === "both") {
+    return ["community", "organization"];
+  }
+
+  if (scope === "community" || scope === "organization") {
+    return [scope];
+  }
+
+  return fallbackScope ? [fallbackScope] : [];
 }
 
 function ShareButtonComponent({
@@ -79,6 +101,10 @@ function ShareButtonComponent({
   const effectiveStatus =
     localStatus === "UNSHARED" ? null : (localStatus ?? sharedStatus);
 
+  useEffect(() => {
+    setLocalStatus(null);
+  }, [documentId]);
+
   const openShareModal = useCallback(() => {
     if (!title || !content) {
       toast.error("Documento deve ter título e conteúdo para ser partilhado");
@@ -94,6 +120,17 @@ function ShareButtonComponent({
         const result = await dispatch(submitResource(request)).unwrap();
         setIsModalOpen(false);
         setLocalStatus(result.status as SharedResourceStatus);
+        if (documentId) {
+          dispatch(
+            syncDocumentSharingState({
+              documentId,
+              sharedResourceStatus: result.status as SharedResourceStatus,
+              sharedResourceId: result.id ?? null,
+              sharedScopes: getSharedScopes(request.libraryScope, result.libraryScope),
+            }),
+          );
+          void dispatch(fetchDocument(documentId));
+        }
         posthog.capture("document_shared_to_community", {
           resource_type: resourceType,
           grade,
@@ -128,6 +165,15 @@ function ShareButtonComponent({
     try {
       await dispatch(unshareDocumentResource(documentId)).unwrap();
       setLocalStatus("UNSHARED");
+      dispatch(
+        syncDocumentSharingState({
+          documentId,
+          sharedResourceStatus: null,
+          sharedResourceId: null,
+          sharedScopes: [],
+        }),
+      );
+      void dispatch(fetchDocument(documentId));
       posthog.capture("document_unshared_from_community", {
         resource_type: resourceType,
         document_id: documentId,

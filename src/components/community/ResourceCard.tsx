@@ -7,7 +7,11 @@
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { GRADE_OPTIONS, SUBJECT_OPTIONS, type SharedResource } from "@/services/api/community.service";
+import {
+  GRADE_OPTIONS,
+  SUBJECT_OPTIONS,
+  type SharedResource,
+} from "@/services/api/community.service";
 import { BookOpen, Eye, RotateCcw, TrendingUp, Users } from "lucide-react";
 
 interface ResourceCardProps {
@@ -26,7 +30,9 @@ function getSubjectLabel(value: string): string {
 }
 
 /** Map grade id → display label (e.g. "2" → "2º ano") */
-const gradeLabelMap = new Map(GRADE_OPTIONS.map((g) => [String(g.value), g.label]));
+const gradeLabelMap = new Map(
+  GRADE_OPTIONS.map((g) => [String(g.value), g.label]),
+);
 function getGradeLabel(value: string): string {
   return gradeLabelMap.get(value) ?? value;
 }
@@ -56,13 +62,13 @@ function getTypeGradient(type: string): string {
   return TYPE_COLORS[type] ?? TYPE_COLORS.default;
 }
 
-export function ResourceCard({ 
-  resource, 
-  onReuse, 
-  onPreview, 
+export function ResourceCard({
+  resource,
+  onReuse,
+  onPreview,
   isReusing = false,
   isAlreadyReused = false,
-  className = "" 
+  className = "",
 }: ResourceCardProps) {
   const subjectLabel = getSubjectLabel(resource.subject);
   const gradeLabel = getGradeLabel(resource.grade);
@@ -83,11 +89,6 @@ export function ResourceCard({
             <span className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground bg-muted/60 px-2 py-0.5 rounded-full">
               <BookOpen className="w-3 h-3" />
               {typeLabel}
-            </span>
-            <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-primary/10 text-primary">
-              {resource.libraryScope === "organization"
-                ? resource.organizationName ?? "Escola"
-                : "Comunidade"}
             </span>
           </div>
         </div>
@@ -118,7 +119,9 @@ export function ResourceCard({
         <div className="border-t border-border pt-3 flex items-center justify-between text-xs text-muted-foreground mb-3">
           <span className="flex items-center gap-1.5 truncate">
             <Users className="w-3 h-3 flex-shrink-0" />
-            <span className="truncate font-medium text-foreground">{resource.contributorName}</span>
+            <span className="truncate font-medium text-foreground">
+              {resource.contributorName}
+            </span>
           </span>
           <span className="flex items-center gap-1 flex-shrink-0 ml-2 font-medium text-foreground">
             <TrendingUp className="w-3 h-3 text-primary" />
@@ -144,7 +147,9 @@ export function ResourceCard({
             variant={isAlreadyReused ? "secondary" : "default"}
             className="flex-1 h-8 text-xs"
           >
-            <RotateCcw className={`w-3.5 h-3.5 mr-1.5 ${isReusing ? "animate-spin" : ""}`} />
+            <RotateCcw
+              className={`w-3.5 h-3.5 mr-1.5 ${isReusing ? "animate-spin" : ""}`}
+            />
             {isAlreadyReused ? "Guardado" : isReusing ? "A guardar..." : "Usar"}
           </Button>
         </div>

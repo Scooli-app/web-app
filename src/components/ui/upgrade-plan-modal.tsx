@@ -40,7 +40,7 @@ export function UpgradePlanModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md p-0 overflow-hidden">
         {/* Header with gradient background */}
-        <div className="pt-8 pb-6 px-8 text-center bg-gradient-to-b from-amber-50 to-transparent dark:from-amber-900/10">
+        <div className="bg-gradient-to-b from-amber-50 to-transparent px-8 pb-6 pt-8 pr-16 text-center dark:from-amber-900/10">
           <div className="w-14 h-14 bg-amber-100 dark:bg-amber-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-amber-200 dark:border-amber-800">
             <AlertCircle className="w-7 h-7 text-amber-600 dark:text-amber-400" />
           </div>
@@ -55,7 +55,7 @@ export function UpgradePlanModal({
         </div>
 
         {/* Benefits List */}
-        <div className="p-6 space-y-3">
+        <div className="space-y-3 p-6 pr-14">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
             Desbloqueie o Pro para continuar
           </p>
@@ -92,7 +92,7 @@ export function UpgradePlanModal({
         </div>
 
         {/* CTA */}
-        <div className="px-6 pb-6 pt-2">
+        <div className="px-6 pb-6 pt-2 pr-14">
           <Button
             onClick={handleUpgrade}
             className="w-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white h-12 rounded-xl font-bold shadow-md transition-all flex items-center justify-center gap-2 group"

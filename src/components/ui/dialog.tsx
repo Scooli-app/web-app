@@ -59,7 +59,7 @@ function DialogContent({
       >
         {children}
         {!hideCloseButton && (
-          <DialogPrimitive.Close className="ring-offset-background absolute top-4 right-4 rounded-lg p-1.5 opacity-70 transition-all hover:opacity-100 hover:bg-muted focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none disabled:pointer-events-none">
+          <DialogPrimitive.Close className="ring-offset-background absolute top-4 right-4 z-20 rounded-xl border border-border/70 bg-card/95 p-1.5 shadow-sm backdrop-blur-sm transition-colors hover:bg-muted/95 focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none disabled:pointer-events-none">
             <XIcon className="size-5 text-muted-foreground" />
             <span className="sr-only">Fechar</span>
           </DialogPrimitive.Close>
@@ -73,7 +73,7 @@ function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="dialog-header"
-      className={cn("flex flex-col gap-1.5 p-6 pb-0", className)}
+      className={cn("flex flex-col gap-1.5 p-6 pb-0 pr-14", className)}
       {...props}
     />
   );

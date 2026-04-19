@@ -29,7 +29,7 @@ export function FeedbackModal({
           <DialogTitle>{title}</DialogTitle>
           {description && <DialogDescription>{description}</DialogDescription>}
         </DialogHeader>
-        <div className="mt-4">{children}</div>
+        <div className="mt-4 pr-14">{children}</div>
       </DialogContent>
     </Dialog>
   );

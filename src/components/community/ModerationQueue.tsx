@@ -257,7 +257,7 @@ export function ModerationQueue() {
 
       <Dialog open={isReviewModalOpen} onOpenChange={setIsReviewModalOpen}>
         <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
-          <DialogHeader>
+          <DialogHeader className="pr-14">
             <DialogTitle>Revisar Recurso</DialogTitle>
             <DialogDescription>
               Analise o recurso para conformidade curricular e qualidade
@@ -266,7 +266,7 @@ export function ModerationQueue() {
           </DialogHeader>
 
           {selectedResource && (
-            <div className="space-y-6">
+            <div className="space-y-6 pr-14">
               <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                 <div>
                   <h4 className="mb-2 font-semibold">Informações</h4>
