@@ -10,7 +10,9 @@ import {
   TextRun,
 } from "docx";
 import { auth } from "@clerk/nextjs/server";
+import { lookup } from "node:dns/promises";
 import { readFile } from "node:fs/promises";
+import { isIP } from "node:net";
 import { join } from "node:path";
 import { type NextRequest, NextResponse } from "next/server";
 import { PDFDocument, type PDFFont, rgb, StandardFonts } from "pdf-lib";
@@ -525,6 +527,63 @@ function parseMarkdownToBlocks(content: string): ExportBlock[] {
   return blocks;
 }
 
+function isPrivateOrLocalIp(ip: string): boolean {
+  if (ip === "::1") return true;
+
+  if (ip.startsWith("fc") || ip.startsWith("fd")) return true; // Unique local IPv6
+  if (ip.startsWith("fe80:")) return true; // Link-local IPv6
+
+  const parts = ip.split(".").map((part) => Number(part));
+  if (parts.length !== 4 || parts.some((part) => Number.isNaN(part))) {
+    return false;
+  }
+
+  const [a, b] = parts;
+  if (a === 10) return true;
+  if (a === 127) return true;
+  if (a === 169 && b === 254) return true;
+  if (a === 172 && b >= 16 && b <= 31) return true;
+  if (a === 192 && b === 168) return true;
+  return false;
+}
+
+async function isSafeRemoteImageUrl(source: string): Promise<boolean> {
+  let parsed: URL;
+  try {
+    parsed = new URL(source);
+  } catch {
+    return false;
+  }
+
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+    return false;
+  }
+
+  if (parsed.username || parsed.password) {
+    return false;
+  }
+
+  const hostname = parsed.hostname.toLowerCase();
+  if (hostname === "localhost" || hostname.endsWith(".localhost")) {
+    return false;
+  }
+
+  if (isIP(hostname) && isPrivateOrLocalIp(hostname)) {
+    return false;
+  }
+
+  try {
+    const resolved = await lookup(hostname, { all: true });
+    if (resolved.some((entry) => isPrivateOrLocalIp(entry.address))) {
+      return false;
+    }
+  } catch {
+    return false;
+  }
+
+  return true;
+}
+
 function buildImageLookup(images?: DownloadImagePayload[]): Map<string, DownloadImagePayload> {
   const imageLookup = new Map<string, DownloadImagePayload>();
   for (const image of images ?? []) {
@@ -577,7 +636,7 @@ async function resolveImageBlock(
     };
   }
 
-  if (!/^https?:\/\//i.test(source)) {
+  if (!(await isSafeRemoteImageUrl(source))) {
     return {
       alt: block.alt,
       width: 1200,
