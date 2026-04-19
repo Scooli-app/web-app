@@ -5,7 +5,7 @@ import { PageContainer } from "@/components/layout/PageContainer";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAdmin } from "@/hooks/useAdmin";
-import { BarChart3, LayoutDashboard, Library, MessageSquare, Shield, ToggleLeft, Users } from "lucide-react";
+import { DollarSign, LayoutDashboard, Library, MessageSquare, Shield, ToggleLeft, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
@@ -130,20 +130,20 @@ export default function AdminPage() {
 
           <Card
             className="group cursor-pointer border-border transition-colors hover:bg-muted/50"
-            onClick={() => router.push("/admin/users")}
+            onClick={() => router.push("/admin/costs")}
           >
             <CardHeader>
               <CardTitle className="flex items-center gap-2 transition-colors group-hover:text-primary">
-                <BarChart3 className="h-5 w-5" />
-                Insights de Utilizacao
+                <DollarSign className="h-5 w-5" />
+                Custos AI
               </CardTitle>
               <CardDescription>
-                Perceber quem voltou, quem tentou uma vez e o que cada utilizador fez.
+                Gastos com OpenAI e OpenRouter por utilizador e ferramenta.
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="text-sm text-muted-foreground">
-                Ver documentos criados, chats com AI, atividade por utilizador e enriquecimento via Clerk.
+                Custo total, média por utilizador e breakdown detalhado por modelo, ferramenta e tipo de evento.
               </div>
             </CardContent>
           </Card>
