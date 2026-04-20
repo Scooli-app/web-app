@@ -180,6 +180,29 @@ export async function setDefaultTemplate(
 }
 
 /**
+ * Create a new template from an uploaded document using AI extraction.
+ * Expects the file to have already been uploaded via getUploadUrl + PUT.
+ */
+export async function createTemplateFromDocument(params: {
+  fileKey: string;
+  documentType: DocumentType;
+  name: string;
+}): Promise<DocumentTemplate> {
+  const response = await apiClient.post<TemplateResponse>(
+    "/templates/from-document",
+    params
+  );
+
+  if (response.status !== 200 && response.status !== 201) {
+    throw new Error(
+      `Não foi possível criar o modelo a partir do documento (HTTP ${response.status})`
+    );
+  }
+
+  return mapResponseToTemplate(response.data);
+}
+
+/**
  * Delete a template
  */
 
