@@ -70,6 +70,26 @@ export default function AdminPage() {
         <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
           <Card
             className="group cursor-pointer border-border transition-colors hover:bg-muted/50"
+            onClick={() => router.push("/admin/users")}
+          >
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 transition-colors group-hover:text-primary">
+                <Users className="h-5 w-5" />
+                Utilizadores
+              </CardTitle>
+              <CardDescription>
+                Ver e gerir os utilizadores da plataforma.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-sm text-muted-foreground">
+                Consultar atividade, subscrições e dados de cada utilizador.
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card
+            className="group cursor-pointer border-border transition-colors hover:bg-muted/50"
             onClick={() => router.push("/admin/feedback")}
           >
             <CardHeader>
