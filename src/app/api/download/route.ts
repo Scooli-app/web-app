@@ -353,8 +353,10 @@ function stripInlineMarkdown(text: string): string {
   const blankProtected = protectAnswerBlanks(convertMathToText(text));
   const withoutMarkdown = blankProtected.content
     .replace(HTML_COMMENT_PATTERN, "")
+    .replace(/<!--[\s\S]*/g, "")
     .replace(HTML_BREAK_PATTERN, " ")
     .replace(/<[^>]+>/g, "")
+    .replace(/<(?=[a-zA-Z!/])/g, "")
     .replace(/\*\*(.+?)\*\*/g, "$1")
     .replace(/\*(.+?)\*/g, "$1")
     .replace(/_(.+?)_/g, "$1")
@@ -372,6 +374,7 @@ function normalizeExportContent(content: string): string {
     .replace(/\r\n/g, "\n")
     .replace(/\r/g, "\n")
     .replace(HTML_COMMENT_PATTERN, "")
+    .replace(/<!--[\s\S]*/g, "")
     .replace(HTML_BREAK_PATTERN, "\n")
     .replace(HTML_PARAGRAPH_OPEN_PATTERN, "")
     .replace(HTML_PARAGRAPH_CLOSE_PATTERN, "\n")
@@ -611,6 +614,25 @@ function buildImageLookup(images?: DownloadImagePayload[]): Map<string, Download
   return imageLookup;
 }
 
+function isInternalHost(hostname: string): boolean {
+  const h = hostname.toLowerCase().replace(/^\[|\]$/g, "");
+  if (h === "localhost" || h === "::1") return true;
+  const ipv4 = h.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+  if (ipv4) {
+    const [a, b] = [Number(ipv4[1]), Number(ipv4[2])];
+    return (
+      a === 127 ||
+      a === 10 ||
+      (a === 172 && b >= 16 && b <= 31) ||
+      (a === 192 && b === 168) ||
+      (a === 169 && b === 254) ||
+      a === 0 ||
+      (a === 100 && b >= 64 && b <= 127)
+    );
+  }
+  return false;
+}
+
 async function resolveImageBlock(
   block: Extract<ExportBlock, { type: "image" }>,
   imageLookup: Map<string, DownloadImagePayload>,
@@ -657,6 +679,16 @@ async function resolveImageBlock(
       height: 900,
       error: "Unsupported image source",
     };
+  }
+
+  let parsedSourceUrl: URL;
+  try {
+    parsedSourceUrl = new URL(source);
+  } catch {
+    return { alt: block.alt, width: 1200, height: 900, error: "Invalid image URL" };
+  }
+  if (isInternalHost(parsedSourceUrl.hostname)) {
+    return { alt: block.alt, width: 1200, height: 900, error: "Private image URLs are not allowed" };
   }
 
   try {
