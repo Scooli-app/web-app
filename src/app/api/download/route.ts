@@ -70,7 +70,7 @@ const MARKDOWN_IMAGE_LINE_PATTERN = /^!\[(.*?)\]\((.+?)\)\s*$/;
 const MARKDOWN_IMAGE_PREFIX_PATTERN = /^!\[(.*?)\]\((.+?)\)\s*(.*)$/;
 const HTML_IMAGE_LINE_PATTERN = /^<img\b[^>]*>$/i;
 const DATA_URI_PATTERN = /^data:([^;]+);base64,(.+)$/;
-const HTML_COMMENT_PATTERN = /<!--[\s\S]*?-->/g;
+const HTML_COMMENT_PATTERN = /<!--(?:[\s\S]*?-->|[\s\S]*)/g;
 const HTML_BREAK_PATTERN = /<br\s*\/?>/gi;
 const HTML_PARAGRAPH_OPEN_PATTERN = /<p\b[^>]*>/gi;
 const HTML_PARAGRAPH_CLOSE_PATTERN = /<\/p>/gi;
@@ -353,10 +353,8 @@ function stripInlineMarkdown(text: string): string {
   const blankProtected = protectAnswerBlanks(convertMathToText(text));
   const withoutMarkdown = blankProtected.content
     .replace(HTML_COMMENT_PATTERN, "")
-    .replace(/<!--[\s\S]*/g, "")
     .replace(HTML_BREAK_PATTERN, " ")
-    .replace(/<[^>]+>/g, "")
-    .replace(/<(?=[a-zA-Z!/])/g, "")
+    .replace(/<[^>]*>?/g, "")
     .replace(/\*\*(.+?)\*\*/g, "$1")
     .replace(/\*(.+?)\*/g, "$1")
     .replace(/_(.+?)_/g, "$1")
@@ -374,7 +372,6 @@ function normalizeExportContent(content: string): string {
     .replace(/\r\n/g, "\n")
     .replace(/\r/g, "\n")
     .replace(HTML_COMMENT_PATTERN, "")
-    .replace(/<!--[\s\S]*/g, "")
     .replace(HTML_BREAK_PATTERN, "\n")
     .replace(HTML_PARAGRAPH_OPEN_PATTERN, "")
     .replace(HTML_PARAGRAPH_CLOSE_PATTERN, "\n")
@@ -692,7 +689,7 @@ async function resolveImageBlock(
   }
 
   try {
-    const response = await fetch(source, { cache: "no-store" });
+    const response = await fetch(parsedSourceUrl.href, { cache: "no-store" });
     if (!response.ok) {
       return {
         alt: block.alt,
