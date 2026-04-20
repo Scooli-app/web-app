@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/sidebar";
 import { UpgradePlanModal } from "@/components/ui/upgrade-plan-modal";
 import { useAdmin } from "@/hooks/useAdmin";
+import { MARKETING_SITE_URL } from "@/shared/config/constants";
 import { Routes } from "@/shared/types";
 import { FeatureFlag } from "@/shared/types/featureFlags";
 import { cn } from "@/shared/utils/utils";
@@ -39,6 +40,11 @@ import {
 } from "@/store/subscription/selectors";
 import { setUpgradeModalOpen } from "@/store/ui/uiSlice";
 import {
+  selectHasOrganizationWorkspace,
+  selectIsOrganizationAdmin,
+  selectWorkspaceContext,
+} from "@/store/workspace/selectors";
+import {
   SignInButton,
   SignedIn,
   SignedOut,
@@ -48,8 +54,10 @@ import {
 } from "@clerk/nextjs";
 import {
   BookOpen,
+  Building2,
   ClipboardList,
   Clock,
+  ExternalLink,
   FileCheck,
   FileText,
   FolderArchiveIcon,
@@ -62,6 +70,7 @@ import {
   Settings,
   Shield,
   Sparkles,
+  Users,
   type LucideIcon,
 } from "lucide-react";
 import Image from "next/image";
@@ -81,6 +90,7 @@ interface NavItem {
   href: string;
   icon: LucideIcon;
   description: string;
+  external?: boolean;
 }
 
 const NAVIGATION: NavItem[] = [
@@ -150,6 +160,13 @@ const SECONDARY_NAVIGATION: NavItem[] = [
     icon: Settings,
     description: "Configurar a sua conta",
   },
+  {
+    title: "Recomendar escola",
+    href: `${MARKETING_SITE_URL}/recomendar-instituicao`,
+    icon: Building2,
+    description: "Sugerir a Scooli à direção da sua escola",
+    external: true,
+  },
 ];
 
 const ADMIN_NAVIGATION: NavItem[] = [
@@ -158,6 +175,21 @@ const ADMIN_NAVIGATION: NavItem[] = [
     href: Routes.ADMIN,
     icon: Shield,
     description: "Gerir plataforma",
+  },
+];
+
+const SCHOOL_NAVIGATION: NavItem[] = [
+  {
+    title: "Dashboard Escola",
+    href: Routes.SCHOOL,
+    icon: Building2,
+    description: "Gerir escola, lugares e utilização",
+  },
+  {
+    title: "Membros",
+    href: Routes.SCHOOL_MEMBERS,
+    icon: Users,
+    description: "Ver membros e lugares da escola",
   },
 ];
 
@@ -193,6 +225,34 @@ const NavMenuItem = memo(function NavMenuItem({
           {item.title}
         </SidebarMenuButton>
       </Link>
+    </SidebarMenuItem>
+  );
+});
+
+const ExternalNavMenuItem = memo(function ExternalNavMenuItem({
+  item,
+  onClick,
+}: {
+  item: NavItem;
+  onClick?: () => void;
+}) {
+  const Icon = item.icon;
+
+  return (
+    <SidebarMenuItem>
+      <a
+        href={item.href}
+        target="_blank"
+        rel="noreferrer"
+        onClick={onClick}
+        className="w-full"
+      >
+        <SidebarMenuButton className="h-10 px-4 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground">
+          <Icon className="h-4 w-4 shrink-0" />
+          <span className="flex-1">{item.title}</span>
+          <ExternalLink className="h-3 w-3 shrink-0 text-muted-foreground" />
+        </SidebarMenuButton>
+      </a>
     </SidebarMenuItem>
   );
 });
@@ -248,6 +308,12 @@ const NavGroup = memo(function NavGroup({
           {items.map((item) =>
             disabledKeys.includes(item.href) ? (
               <DisabledNavMenuItem key={item.href} item={item} />
+            ) : item.external ? (
+              <ExternalNavMenuItem
+                key={item.href}
+                item={item}
+                onClick={onItemClick}
+              />
             ) : (
               <NavMenuItem
                 key={item.href}
@@ -358,6 +424,9 @@ const SidebarNavigationContent = memo(function SidebarNavigationContent({
   const router = useRouter();
   const { isAdmin } = useAdmin();
   const features = useSelector((state: RootState) => state.features.flags);
+  const workspace = useSelector(selectWorkspaceContext);
+  const hasOrganizationWorkspace = useSelector(selectHasOrganizationWorkspace);
+  const isOrganizationAdmin = useSelector(selectIsOrganizationAdmin);
   const isCommunityEnabled = features[FeatureFlag.COMMUNITY_LIBRARY] === true;
   const isPresentationCreationEnabled =
     features[FeatureFlag.PRESENTATION_CREATION] === true;
@@ -411,6 +480,18 @@ const SidebarNavigationContent = memo(function SidebarNavigationContent({
         <SignedIn>
           <SidebarProfileCard onClick={onItemClick} />
         </SignedIn>
+
+        {hasOrganizationWorkspace && isOrganizationAdmin && (
+          <>
+            <Separator className="my-4" />
+            <NavGroup
+              label={workspace?.organization?.name ?? "Escola"}
+              items={SCHOOL_NAVIGATION}
+              pathname={pathname}
+              onItemClick={onItemClick}
+            />
+          </>
+        )}
 
         {isAdmin && (
           <>
@@ -647,4 +728,3 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
     </SidebarProvider>
   );
 }
-

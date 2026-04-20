@@ -14,8 +14,10 @@ import {
   getReusedResourceIds,
   reuseResource,
   shareResource,
+  unshareDocument,
   type ContributorStats,
   type DiscoverResourcesParams,
+  type LibraryScope,
   type ShareResourceRequest,
   type SharedResource,
 } from "@/services/api/community.service";
@@ -26,6 +28,7 @@ import { createAsyncThunk, createSlice, type PayloadAction } from "@reduxjs/tool
 // ============================================================================
 
 export interface CommunityFilters {
+  scope?: LibraryScope;
   grade?: string;
   subject?: string;
   resourceType?: string;
@@ -79,6 +82,7 @@ const initialState: CommunityState = {
     totalPages: 0,
   },
   filters: {
+    scope: "community",
     sortBy: "popular",
   },
   isLoadingResources: false,
@@ -151,7 +155,7 @@ export const fetchResources = createAsyncThunk(
 /**
  * Get single resource details
  */
-export const fetchResource = createAsyncThunk(
+const fetchResource = createAsyncThunk(
   "community/fetchResource",
   async (resourceId: string, { rejectWithValue }) => {
     try {
@@ -213,6 +217,26 @@ export const submitResource = createAsyncThunk(
 );
 
 /**
+ * Stop sharing a document. Removes the shared resource row(s) for the
+ * current user + document from the community / organization libraries.
+ */
+export const unshareDocumentResource = createAsyncThunk(
+  "community/unshareDocument",
+  async (documentId: string, { rejectWithValue }) => {
+    try {
+      const result = await unshareDocument(documentId);
+      return { documentId, removed: result.removed };
+    } catch (error) {
+      return rejectWithValue(
+        error instanceof Error
+          ? error.message
+          : "Nao foi possivel deixar de partilhar o recurso",
+      );
+    }
+  },
+);
+
+/**
  * Reuse a resource (Mariana's time-saving workflow)
  */
 export const reuseSharedResource = createAsyncThunk(
@@ -246,7 +270,7 @@ const communitySlice = createSlice({
     
     // Clear filters
     clearFilters: (state) => {
-      state.filters = { sortBy: "popular" };
+      state.filters = { scope: "community", sortBy: "popular" };
     },
     
     // Clear selected resource
@@ -388,11 +412,6 @@ const communitySlice = createSlice({
 // Export actions
 export const {
   setFilters,
-  clearFilters,
-  clearSelectedResource,
-  resetShareSuccess,
-  clearReusedResource,
-  clearError,
 } = communitySlice.actions;
 
 // Export reducer

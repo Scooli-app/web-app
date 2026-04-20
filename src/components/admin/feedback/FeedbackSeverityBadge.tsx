@@ -2,7 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { BugSeverity } from "@/shared/types/feedback";
 
 interface FeedbackSeverityBadgeProps {
-  severity: BugSeverity;
+  severity?: BugSeverity | null;
 }
 
 export function FeedbackSeverityBadge({ severity }: FeedbackSeverityBadgeProps) {

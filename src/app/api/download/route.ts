@@ -70,13 +70,86 @@ const MARKDOWN_IMAGE_LINE_PATTERN = /^!\[(.*?)\]\((.+?)\)\s*$/;
 const MARKDOWN_IMAGE_PREFIX_PATTERN = /^!\[(.*?)\]\((.+?)\)\s*(.*)$/;
 const HTML_IMAGE_LINE_PATTERN = /^<img\b[^>]*>$/i;
 const DATA_URI_PATTERN = /^data:([^;]+);base64,(.+)$/;
-const HTML_COMMENT_PATTERN = /<!--[\s\S]*?-->/g;
+const HTML_COMMENT_PATTERN = /<!--(?:[\s\S]*?-->|[\s\S]*)/g;
 const HTML_BREAK_PATTERN = /<br\s*\/?>/gi;
 const HTML_PARAGRAPH_OPEN_PATTERN = /<p\b[^>]*>/gi;
 const HTML_PARAGRAPH_CLOSE_PATTERN = /<\/p>/gi;
 const ESCAPED_ANSWER_BLANK_PATTERN = /(?:\\_){3,}/g;
 const ANSWER_BLANK_PATTERN = /_{3,}/g;
 const ANSWER_BLANK_TOKEN_PATTERN = /@@EXPORTBLANK(\d+)@@/g;
+const BLOCK_MATH_PATTERN = /\$\$([^$]+)\$\$/g;
+const INLINE_MATH_PATTERN = /\$([^$\n]+)\$/g;
+
+/**
+ * Convert a LaTeX expression to readable plain text for PDF/DOCX export.
+ * Not a full renderer — handles the most common patterns teachers encounter.
+ */
+function latexToText(latex: string): string {
+  let text = latex.trim();
+
+  // Fractions: \frac{a}{b} → a/b (handle nested by iterating)
+  for (let i = 0; i < 6; i++) {
+    const before = text;
+    text = text.replace(/\\frac\s*\{([^{}]+)\}\s*\{([^{}]+)\}/g, "($1)/($2)");
+    if (text === before) break;
+  }
+
+  // Square root: \sqrt{x} → √(x)
+  text = text.replace(/\\sqrt\s*\{([^{}]+)\}/g, "√($1)");
+  text = text.replace(/\\sqrt\s+(\S+)/g, "√$1");
+
+  // Superscripts: ^{2} → ², ^2 → ²
+  const superMap: Record<string, string> = {
+    "0": "⁰", "1": "¹", "2": "²", "3": "³", "4": "⁴",
+    "5": "⁵", "6": "⁶", "7": "⁷", "8": "⁸", "9": "⁹",
+    "n": "ⁿ", "+": "⁺", "-": "⁻",
+  };
+  text = text.replace(/\^\{([^{}]+)\}/g, (_m, exp) => {
+    if ([...exp].every(c => superMap[c])) return [...exp].map(c => superMap[c]).join("");
+    return `^(${exp})`;
+  });
+  text = text.replace(/\^([0-9n])/g, (_m, c) => superMap[c] ?? `^${c}`);
+
+  // Subscripts: _{n} → just the inner text (subscripts don't map to unicode cleanly)
+  text = text.replace(/\_\{([^{}]+)\}/g, "_$1");
+
+  // Greek letters
+  const greek: Record<string, string> = {
+    alpha: "α", beta: "β", gamma: "γ", delta: "δ", epsilon: "ε",
+    zeta: "ζ", eta: "η", theta: "θ", lambda: "λ", mu: "μ",
+    nu: "ν", xi: "ξ", pi: "π", rho: "ρ", sigma: "σ",
+    tau: "τ", phi: "φ", chi: "χ", psi: "ψ", omega: "ω",
+    Alpha: "Α", Beta: "Β", Gamma: "Γ", Delta: "Δ", Theta: "Θ",
+    Lambda: "Λ", Pi: "Π", Sigma: "Σ", Phi: "Φ", Omega: "Ω",
+  };
+  text = text.replace(/\\([a-zA-Z]+)/g, (_m, name) => greek[name] ?? (
+    ({ times: "×", cdot: "·", div: "÷", pm: "±", mp: "∓",
+       neq: "≠", leq: "≤", geq: "≥", approx: "≈", equiv: "≡",
+       infty: "∞", in: "∈", notin: "∉", subset: "⊂", cup: "∪",
+       cap: "∩", forall: "∀", exists: "∃", neg: "¬", land: "∧",
+       lor: "∨", rightarrow: "→", leftarrow: "←", Rightarrow: "⇒",
+       Leftrightarrow: "⇔", ldots: "…", cdots: "…",
+       left: "", right: "", text: "", quad: " ", qquad: "  ",
+     } as Record<string, string>)[name] ?? `\\${name}`
+  ));
+
+  // Strip remaining LaTeX grouping braces
+  text = text.replace(/\{([^{}]*)\}/g, "$1");
+  // Strip leftover backslashes before punctuation
+  text = text.replace(/\\([{}%,;:])/g, "$1");
+
+  // Normalise whitespace
+  return text.replace(/\s{2,}/g, " ").trim();
+}
+
+/**
+ * Replace $...$ and $$...$$ in a line with plain-text equivalents.
+ */
+function convertMathToText(text: string): string {
+  return text
+    .replace(BLOCK_MATH_PATTERN, (_m, latex) => latexToText(latex))
+    .replace(INLINE_MATH_PATTERN, (_m, latex) => latexToText(latex));
+}
 
 function toArrayBuffer(bytes: Uint8Array): ArrayBuffer {
   const copy = new Uint8Array(bytes.byteLength);
@@ -277,11 +350,12 @@ function protectAnswerBlanks(text: string): {
 }
 
 function stripInlineMarkdown(text: string): string {
-  const blankProtected = protectAnswerBlanks(text);
+  const blankProtected = protectAnswerBlanks(convertMathToText(text));
   const withoutMarkdown = blankProtected.content
     .replace(HTML_COMMENT_PATTERN, "")
     .replace(HTML_BREAK_PATTERN, " ")
-    .replace(/<[^>]+>/g, "")
+    .replace(/<[^>]*>?/g, "")
+    .replace(/</g, "")
     .replace(/\*\*(.+?)\*\*/g, "$1")
     .replace(/\*(.+?)\*/g, "$1")
     .replace(/_(.+?)_/g, "$1")
@@ -538,6 +612,25 @@ function buildImageLookup(images?: DownloadImagePayload[]): Map<string, Download
   return imageLookup;
 }
 
+function isInternalHost(hostname: string): boolean {
+  const h = hostname.toLowerCase().replace(/^\[|\]$/g, "");
+  if (h === "localhost" || h === "::1") return true;
+  const ipv4 = h.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+  if (ipv4) {
+    const [a, b] = [Number(ipv4[1]), Number(ipv4[2])];
+    return (
+      a === 127 ||
+      a === 10 ||
+      (a === 172 && b >= 16 && b <= 31) ||
+      (a === 192 && b === 168) ||
+      (a === 169 && b === 254) ||
+      a === 0 ||
+      (a === 100 && b >= 64 && b <= 127)
+    );
+  }
+  return false;
+}
+
 async function resolveImageBlock(
   block: Extract<ExportBlock, { type: "image" }>,
   imageLookup: Map<string, DownloadImagePayload>,
@@ -586,8 +679,23 @@ async function resolveImageBlock(
     };
   }
 
+  let parsedSourceUrl: URL;
   try {
-    const response = await fetch(source, { cache: "no-store" });
+    parsedSourceUrl = new URL(source);
+  } catch {
+    return { alt: block.alt, width: 1200, height: 900, error: "Invalid image URL" };
+  }
+  if (isInternalHost(parsedSourceUrl.hostname)) {
+    return { alt: block.alt, width: 1200, height: 900, error: "Private image URLs are not allowed" };
+  }
+
+  // Require a valid public FQDN — blocks bare IPs, localhost variants, and malformed hosts
+  if (!/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/i.test(parsedSourceUrl.hostname)) {
+    return { alt: block.alt, width: 1200, height: 900, error: "Invalid image host" };
+  }
+
+  try {
+    const response = await fetch(parsedSourceUrl.href, { cache: "no-store" });
     if (!response.ok) {
       return {
         alt: block.alt,
@@ -1306,4 +1414,4 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       { status: 500 },
     );
   }
-}
+}

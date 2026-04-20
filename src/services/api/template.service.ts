@@ -9,7 +9,7 @@ import type {
   DocumentType,
   TemplateSection,
 } from "@/shared/types";
-import { apiClient } from "./client";
+import apiClient from "./client";
 
 interface TemplateSectionResponse {
   id: string;
@@ -94,21 +94,7 @@ export async function getTemplates(
 /**
  * Get a single template by ID
  */
-export async function getTemplate(
-  id: string
-): Promise<DocumentTemplate | null> {
-  const response = await apiClient.get<TemplateResponse>(`/templates/${id}`);
 
-  if (response.status === 404) {
-    return null;
-  }
-
-  if (response.status !== 200) {
-    throw new Error(`Não foi possível carregar o modelo (HTTP ${response.status})`);
-  }
-
-  return mapResponseToTemplate(response.data);
-}
 
 /**
  * Create a new template
@@ -196,10 +182,4 @@ export async function setDefaultTemplate(
 /**
  * Delete a template
  */
-export async function deleteTemplate(id: string): Promise<void> {
-  const response = await apiClient.delete(`/templates/${id}`);
 
-  if (response.status !== 200 && response.status !== 204) {
-    throw new Error(`Não foi possível eliminar o modelo (HTTP ${response.status})`);
-  }
-}

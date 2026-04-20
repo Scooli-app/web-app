@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/shared/utils/utils";
 import { Bot, Loader2 } from "lucide-react";
 
-export interface AssistantButtonProps {
+interface AssistantButtonProps {
   /** Callback when button is clicked */
   onClick: () => void;
   /** Whether the assistant is currently processing a message */

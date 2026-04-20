@@ -20,6 +20,12 @@ export function FeedbackStatusBadge({ status }: FeedbackStatusBadgeProps) {
           <CircleDashed className="w-3 h-3 mr-1 animate-spin-slow" /> Em Análise
         </Badge>
       );
+    case FeedbackStatus.IN_DEVELOPMENT:
+      return (
+        <Badge variant="secondary" className="bg-indigo-500/10 text-indigo-500 hover:bg-indigo-500/20 border-0">
+          <CircleDashed className="w-3 h-3 mr-1" /> Em Desenvolvimento
+        </Badge>
+      );
     case FeedbackStatus.RESOLVED:
       return (
         <Badge variant="secondary" className="bg-green-500/10 text-green-500 hover:bg-green-500/20 border-0">

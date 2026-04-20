@@ -13,13 +13,13 @@ import { Minus, RefreshCw } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { EmptyState, WELCOME_MESSAGE } from "./EmptyState";
 
-export interface Message {
+interface Message {
   role: "user" | "assistant";
   content: string;
   isStreaming?: boolean;
 }
 
-export interface AssistantPanelProps {
+interface AssistantPanelProps {
   /** Whether the panel is open */
   isOpen: boolean;
   /** Callback to close the panel */

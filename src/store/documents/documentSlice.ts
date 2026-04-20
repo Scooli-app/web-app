@@ -15,13 +15,17 @@ import type {
   CreateDocumentStreamResponse,
   Document,
 } from "@/shared/types";
-import type { DocumentImage } from "@/shared/types/document";
+import type {
+  DocumentImage,
+  DocumentSharedScope,
+  SharedResourceStatus,
+} from "@/shared/types/document";
 import { fetchUsage } from "@/store/subscription/subscriptionSlice";
 import { createAsyncThunk, createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
-export type { DocumentFilters };
 
-export interface UpdateDocumentData {
+
+interface UpdateDocumentData {
   id: string;
   title?: string;
   content?: string;
@@ -55,6 +59,13 @@ interface DocumentState {
   images: DocumentImage[];
   isGeneratingImages: boolean;
   imageError: string | null;
+}
+
+interface SyncDocumentSharingStatePayload {
+  documentId: string;
+  sharedResourceStatus: SharedResourceStatus | null;
+  sharedResourceId?: string | null;
+  sharedScopes?: DocumentSharedScope[];
 }
 
 const initialState: DocumentState = {
@@ -127,7 +138,7 @@ const upsertDocumentImage = (
 };
 
 // Async Thunks
-export const fetchDocuments = createAsyncThunk(
+const fetchDocuments = createAsyncThunk(
   "documents/fetchDocuments",
   async (
     {
@@ -394,6 +405,34 @@ const documentSlice = createSlice({
     setImageError(state, action: PayloadAction<string | null>) {
       state.imageError = action.payload;
     },
+    syncDocumentSharingState(
+      state,
+      action: PayloadAction<SyncDocumentSharingStatePayload>
+    ) {
+      const {
+        documentId,
+        sharedResourceStatus,
+        sharedResourceId = null,
+        sharedScopes = [],
+      } = action.payload;
+
+      if (state.currentDocument?.id === documentId) {
+        state.currentDocument.sharedResourceStatus = sharedResourceStatus;
+        state.currentDocument.sharedResourceId = sharedResourceId;
+        state.currentDocument.sharedScopes = sharedScopes;
+      }
+
+      state.documents = state.documents.map((doc) =>
+        doc.id === documentId
+          ? {
+              ...doc,
+              sharedResourceStatus,
+              sharedResourceId,
+              sharedScopes,
+            }
+          : doc
+      );
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -603,13 +642,7 @@ const documentSlice = createSlice({
 });
 
 export const {
-  setCurrentDocument,
-  setFilters,
-  clearError,
-  resetPagination,
   setPendingInitialPrompt,
-  clearPendingInitialPrompt,
-  addDocument,
   clearStreamInfo,
   clearLastChatAnswer,
   updateDocumentOptimistic,
@@ -617,6 +650,7 @@ export const {
   upsertImage,
   setGeneratingImages,
   setImageError,
+  syncDocumentSharingState,
 } = documentSlice.actions;
 
 export default documentSlice.reducer;

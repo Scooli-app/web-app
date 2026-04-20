@@ -157,7 +157,7 @@ function normalizeDiff(
  * Group changes that belong to the same parent block node.
  * Changes within the same block are merged into a single "replace" change.
  */
-export function groupByBlock(changes: DiffChange[], baseDoc: Node, aiDoc: Node): DiffChange[] {
+function groupByBlock(changes: DiffChange[], baseDoc: Node, aiDoc: Node): DiffChange[] {
   if (changes.length <= 1) return changes;
 
   const grouped: DiffChange[] = [];

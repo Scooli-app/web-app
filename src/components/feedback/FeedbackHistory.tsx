@@ -10,6 +10,7 @@ import {
 import {
   AlertCircle,
   Bug,
+  CircleDashed,
   CheckCircle2,
   Clock,
   Lightbulb,
@@ -64,6 +65,15 @@ export function FeedbackHistory({ refreshTrigger }: FeedbackHistoryProps) {
             className="bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 border-0"
           >
             <Loader2 className="w-3 h-3 mr-1 animate-spin" /> Em Análise
+          </Badge>
+        );
+      case FeedbackStatus.IN_DEVELOPMENT:
+        return (
+          <Badge
+            variant="secondary"
+            className="bg-indigo-500/10 text-indigo-500 hover:bg-indigo-500/20 border-0"
+          >
+            <CircleDashed className="w-3 h-3 mr-1" /> Em Desenvolvimento
           </Badge>
         );
       case FeedbackStatus.RESOLVED:
@@ -164,8 +174,8 @@ export function FeedbackHistory({ refreshTrigger }: FeedbackHistoryProps) {
                         )}
                         <span className="capitalize">
                           {item.type === FeedbackType.SUGGESTION
-                            ? item.category
-                            : item.bugType}
+                            ? item.category ?? "-"
+                            : item.bugType ?? "-"}
                         </span>
                       </div>
                     </div>

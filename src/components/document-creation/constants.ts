@@ -1,7 +1,7 @@
 import { TeachingMethod } from "@/shared/types";
 import { BookOpen, Heart, Monitor, Users, Zap } from "lucide-react";
 
-export interface SubjectConfig {
+interface SubjectConfig {
   id: string;
   label: string; // Portuguese display name
   value: string; // English backend value
@@ -262,7 +262,12 @@ export const SUBJECTS: SubjectConfig[] = [
   },
 
   // Arts
-  { id: "artes_visuais", label: "Artes Visuais", value: "Visual Arts", category: "Artes" },
+  {
+    id: "artes_visuais",
+    label: "Artes Visuais",
+    value: "Visual Arts",
+    category: "Artes",
+  },
   {
     id: "expressao_dramatica_teatro",
     label: "Expressão Dramática/Teatro",

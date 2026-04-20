@@ -35,4 +35,8 @@ export const feedbackService = {
     });
     return response.data;
   },
+
+  cleanupUploads: async (filePaths: string[]): Promise<void> => {
+    await apiClient.post("/uploads/cleanup", { filePaths });
+  },
 };

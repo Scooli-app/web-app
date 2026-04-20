@@ -5,7 +5,7 @@ import { PageContainer } from "@/components/layout/PageContainer";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAdmin } from "@/hooks/useAdmin";
-import { LayoutDashboard, Library, MessageSquare, Shield, ToggleLeft, Users } from "lucide-react";
+import { DollarSign, LayoutDashboard, Library, MessageSquare, Shield, ToggleLeft, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
@@ -124,6 +124,26 @@ export default function AdminPage() {
             <CardContent>
               <div className="text-sm text-muted-foreground">
                 Ativar funcionalidades globalmente, por percentagem, ou por exceções de utilizador/perfil.
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card
+            className="group cursor-pointer border-border transition-colors hover:bg-muted/50"
+            onClick={() => router.push("/admin/costs")}
+          >
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 transition-colors group-hover:text-primary">
+                <DollarSign className="h-5 w-5" />
+                Custos AI
+              </CardTitle>
+              <CardDescription>
+                Gastos com OpenAI e OpenRouter por utilizador e ferramenta.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-sm text-muted-foreground">
+                Custo total, média por utilizador e breakdown detalhado por modelo, ferramenta e tipo de evento.
               </div>
             </CardContent>
           </Card>

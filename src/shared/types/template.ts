@@ -31,9 +31,4 @@ export interface CreateTemplateParams {
   sections: Omit<TemplateSection, "id">[];
 }
 
-export interface UpdateTemplateParams {
-  id: string;
-  name?: string;
-  description?: string;
-  sections?: Omit<TemplateSection, "id">[];
-}
+

@@ -6,7 +6,7 @@
  * with real-time service health monitoring
  */
 
-import { apiClient } from "./client";
+import apiClient from "./client";
 
 export interface HealthStatus {
   status: "healthy" | "degraded" | "unhealthy" | "error";
@@ -24,7 +24,7 @@ export interface ServiceStatus {
   details: string;
 }
 
-export interface HealthResponse {
+interface HealthResponse {
   success: boolean;
   data: HealthStatus;
   error?: string;
@@ -101,20 +101,4 @@ export const getStatusText = (status: string): string => {
 /**
  * Formats service details for display
  */
-export const formatServiceDetails = (service: ServiceStatus): string => {
-  const parts: string[] = [];
-  
-  if (service.details) {
-    parts.push(service.details);
-  }
-  
-  if (service.responseTime) {
-    parts.push(`${service.responseTime}ms`);
-  }
-  
-  if (service.memoryUsage) {
-    parts.push(`Memória: ${service.memoryUsage}`);
-  }
-  
-  return parts.length > 0 ? parts.join(" • ") : "Sem detalhes disponíveis";
-};
+
