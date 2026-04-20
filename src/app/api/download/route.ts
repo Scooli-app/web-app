@@ -355,6 +355,7 @@ function stripInlineMarkdown(text: string): string {
     .replace(HTML_COMMENT_PATTERN, "")
     .replace(HTML_BREAK_PATTERN, " ")
     .replace(/<[^>]*>?/g, "")
+    .replace(/</g, "")
     .replace(/\*\*(.+?)\*\*/g, "$1")
     .replace(/\*(.+?)\*/g, "$1")
     .replace(/_(.+?)_/g, "$1")
@@ -686,6 +687,11 @@ async function resolveImageBlock(
   }
   if (isInternalHost(parsedSourceUrl.hostname)) {
     return { alt: block.alt, width: 1200, height: 900, error: "Private image URLs are not allowed" };
+  }
+
+  // Require a valid public FQDN — blocks bare IPs, localhost variants, and malformed hosts
+  if (!/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/i.test(parsedSourceUrl.hostname)) {
+    return { alt: block.alt, width: 1200, height: 900, error: "Invalid image host" };
   }
 
   try {
