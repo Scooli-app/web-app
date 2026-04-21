@@ -25,6 +25,7 @@ export { Routes } from "./routes";
 export type { CreateTemplateParams, DocumentTemplate, TemplateSection } from "./template";
 
 // Subscription types
+export type { CurrentEntitlement, EntitlementSource } from "./entitlement";
 
 
 // Feedback types

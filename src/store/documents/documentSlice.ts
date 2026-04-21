@@ -20,6 +20,7 @@ import type {
   DocumentSharedScope,
   SharedResourceStatus,
 } from "@/shared/types/document";
+import { fetchEntitlements } from "@/store/entitlements/entitlementsSlice";
 import { fetchUsage } from "@/store/subscription/subscriptionSlice";
 import { createAsyncThunk, createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
@@ -255,6 +256,7 @@ export const chatWithDocument = createAsyncThunk(
       const response = await chatWithDocumentService(id, message);
       
       dispatch(fetchUsage());
+      dispatch(fetchEntitlements());
       
       return response;
     } catch (error) {
@@ -302,10 +304,13 @@ export const regenerateDocumentImage = createAsyncThunk(
       imageId,
       prompt,
     }: { documentId: string; imageId: string; prompt?: string },
-    { rejectWithValue }
+    { dispatch, rejectWithValue }
   ) => {
     try {
-      return await regenerateDocumentImageService(documentId, imageId, prompt);
+      const result = await regenerateDocumentImageService(documentId, imageId, prompt);
+      dispatch(fetchUsage());
+      dispatch(fetchEntitlements());
+      return result;
     } catch (error) {
       return rejectWithValue(
         error instanceof Error ? error.message : "Failed to regenerate document image"

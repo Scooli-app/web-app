@@ -8,5 +8,7 @@ export const selectWorkspaceReady = (state: RootState) => state.workspace.ready;
 export const selectWorkspaceError = (state: RootState) => state.workspace.error;
 export const selectHasOrganizationWorkspace = (state: RootState) =>
   state.workspace.context?.workspaceType === "organization";
+export const selectHasAccessibleOrganization = (state: RootState) =>
+  state.workspace.context?.organization != null;
 export const selectIsOrganizationAdmin = (state: RootState) =>
   state.workspace.context?.organizationAdmin === true;

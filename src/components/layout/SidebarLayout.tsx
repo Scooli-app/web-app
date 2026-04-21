@@ -32,12 +32,13 @@ import { MARKETING_SITE_URL } from "@/shared/config/constants";
 import { Routes } from "@/shared/types";
 import { FeatureFlag } from "@/shared/types/featureFlags";
 import { cn } from "@/shared/utils/utils";
+import {
+  selectEffectiveAccessSource,
+  selectEntitlementUsage,
+} from "@/store/entitlements/selectors";
 import { useAppDispatch } from "@/store/hooks";
 import type { RootState } from "@/store/store";
-import {
-  selectSubscription,
-  selectUsageStats,
-} from "@/store/subscription/selectors";
+import { selectIsPro } from "@/store/subscription/selectors";
 import { setUpgradeModalOpen } from "@/store/ui/uiSlice";
 import {
   selectHasOrganizationWorkspace,
@@ -540,24 +541,29 @@ const SidebarMobileContent = memo(function SidebarMobileContent({
 function GenerationsIndicator() {
   const { isSignedIn } = useAuth();
 
-  const subscription = useSelector(selectSubscription);
-  const usage = useSelector(selectUsageStats);
-
-  const isFreeUser = !subscription || subscription.planCode === "free";
+  const usage = useSelector(selectEntitlementUsage);
+  const isProUser = useSelector(selectIsPro);
+  const accessSource = useSelector(selectEffectiveAccessSource);
 
   if (!isSignedIn || !usage) return null;
 
-  if (!isFreeUser) {
+  if (isProUser) {
     return (
-      <div
+      <Link
+        href={Routes.SETTINGS}
+        title={
+          accessSource === "organization" || accessSource === "both"
+            ? "Acesso Pro através da organização"
+            : "Acesso Pro"
+        }
         className={cn(
           "flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors",
-          "border-success/10 bg-primary/5 text-primary",
+          "border-primary/10 bg-primary/5 text-primary hover:bg-primary/10",
         )}
       >
-        <Sparkles className="w-4 h-4" />
+        <Sparkles className="h-4 w-4" />
         <span className="text-lg leading-none">∞</span>
-      </div>
+      </Link>
     );
   }
 
