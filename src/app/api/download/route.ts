@@ -1,19 +1,34 @@
 import { getPostHogClient } from "@/lib/posthog-server";
+import { auth } from "@clerk/nextjs/server";
 import {
   AlignmentType,
   BorderStyle,
   Document,
+  Math as DocxMath,
   HeadingLevel,
   ImageRun,
+  MathAngledBrackets,
+  type MathComponent,
+  MathCurlyBrackets,
+  MathFraction,
+  MathRadical,
+  MathRoundBrackets,
+  MathRun,
+  MathSquareBrackets,
+  MathSubScript,
+  MathSubSuperScript,
+  MathSuperScript,
   Packer,
   Paragraph,
+  type ParagraphChild,
   TextRun,
 } from "docx";
-import { auth } from "@clerk/nextjs/server";
+import katex from "katex";
+import { cookies } from "next/headers";
+import { type NextRequest, NextResponse } from "next/server";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { type NextRequest, NextResponse } from "next/server";
-import { PDFDocument, type PDFFont, rgb, StandardFonts } from "pdf-lib";
+import { PDFDocument, type PDFPage, type PDFFont, rgb, StandardFonts } from "pdf-lib";
 
 export const runtime = "nodejs";
 
@@ -64,7 +79,8 @@ interface ResolvedImage {
   error?: string;
 }
 
-const IMAGE_REFERENCE_TOKEN_PATTERN = /^\{\{(?:DOCUMENT_IMAGE|IMAGE_PLACEHOLDER):([^}]+)\}\}$/;
+const IMAGE_REFERENCE_TOKEN_PATTERN =
+  /^\{\{(?:DOCUMENT_IMAGE|IMAGE_PLACEHOLDER):([^}]+)\}\}$/;
 const MARKDOWN_IMAGE_LINE_PATTERN = /^!\[(.*?)\]\((.+?)\)\s*$/;
 const MARKDOWN_IMAGE_PREFIX_PATTERN = /^!\[(.*?)\]\((.+?)\)\s*(.*)$/;
 const HTML_IMAGE_LINE_PATTERN = /^<img\b[^>]*>$/i;
@@ -78,12 +94,843 @@ const ANSWER_BLANK_PATTERN = /_{3,}/g;
 const ANSWER_BLANK_TOKEN_PATTERN = /@@EXPORTBLANK(\d+)@@/g;
 const BLOCK_MATH_PATTERN = /\$\$([^$]+)\$\$/g;
 const INLINE_MATH_PATTERN = /\$([^$\n]+)\$/g;
+const MATH_SEGMENT_PATTERN = /\$\$([\s\S]+?)\$\$|\$([^$\n]+?)\$/g;
+const INLINE_MARKDOWN_SPECIAL_PATTERN = /[\*_`$]/;
+
+type InlineMathSegment =
+  | { type: "text"; value: string }
+  | { type: "math"; value: string; displayMode: boolean };
+
+type InlineTextStyle = {
+  size: number;
+  bold?: boolean;
+  italics?: boolean;
+  font?: string;
+  color?: string;
+  noProof?: boolean;
+  subScript?: boolean;
+  superScript?: boolean;
+  parseMath?: boolean;
+};
+
+type KatexParseNode = {
+  type?: string;
+  text?: string;
+  body?: unknown;
+  base?: unknown;
+  sub?: unknown;
+  sup?: unknown;
+  numer?: unknown;
+  denom?: unknown;
+  index?: unknown;
+  left?: unknown;
+  right?: unknown;
+  name?: unknown;
+  family?: string;
+};
+
+type MathTextRenderOptions = {
+  unicodeSuperscripts?: boolean;
+  unicodeSubscripts?: boolean;
+};
+
+const DEFAULT_MATH_TEXT_RENDER_OPTIONS: Required<MathTextRenderOptions> = {
+  unicodeSuperscripts: true,
+  unicodeSubscripts: true,
+};
+
+const LATEX_SYMBOL_MAP: Record<string, string> = {
+  "\\alpha": "\u03B1",
+  "\\beta": "\u03B2",
+  "\\gamma": "\u03B3",
+  "\\delta": "\u03B4",
+  "\\epsilon": "\u03B5",
+  "\\zeta": "\u03B6",
+  "\\eta": "\u03B7",
+  "\\theta": "\u03B8",
+  "\\lambda": "\u03BB",
+  "\\mu": "\u03BC",
+  "\\nu": "\u03BD",
+  "\\xi": "\u03BE",
+  "\\pi": "\u03C0",
+  "\\rho": "\u03C1",
+  "\\sigma": "\u03C3",
+  "\\tau": "\u03C4",
+  "\\phi": "\u03C6",
+  "\\chi": "\u03C7",
+  "\\psi": "\u03C8",
+  "\\omega": "\u03C9",
+  "\\Alpha": "\u0391",
+  "\\Beta": "\u0392",
+  "\\Gamma": "\u0393",
+  "\\Delta": "\u0394",
+  "\\Theta": "\u0398",
+  "\\Lambda": "\u039B",
+  "\\Pi": "\u03A0",
+  "\\Sigma": "\u03A3",
+  "\\Phi": "\u03A6",
+  "\\Omega": "\u03A9",
+  "\\pm": "\u00B1",
+  "\\mp": "\u2213",
+  "\\times": "\u00D7",
+  "\\cdot": "\u00B7",
+  "\\div": "\u00F7",
+  "\\neq": "\u2260",
+  "\\ne": "\u2260",
+  "\\leq": "\u2264",
+  "\\le": "\u2264",
+  "\\geq": "\u2265",
+  "\\ge": "\u2265",
+  "\\approx": "\u2248",
+  "\\equiv": "\u2261",
+  "\\infty": "\u221E",
+  "\\in": "\u2208",
+  "\\notin": "\u2209",
+  "\\subset": "\u2282",
+  "\\subseteq": "\u2286",
+  "\\supset": "\u2283",
+  "\\supseteq": "\u2287",
+  "\\cup": "\u222A",
+  "\\cap": "\u2229",
+  "\\forall": "\u2200",
+  "\\exists": "\u2203",
+  "\\neg": "\u00AC",
+  "\\land": "\u2227",
+  "\\lor": "\u2228",
+  "\\rightarrow": "\u2192",
+  "\\leftarrow": "\u2190",
+  "\\leftrightarrow": "\u2194",
+  "\\Rightarrow": "\u21D2",
+  "\\Leftarrow": "\u21D0",
+  "\\Leftrightarrow": "\u21D4",
+  "\\ldots": "\u2026",
+  "\\cdots": "\u22EF",
+  "\\quad": " ",
+  "\\qquad": "  ",
+  "\\,": " ",
+  "\\!": "",
+  "\\%": "%",
+  "\\{": "{",
+  "\\}": "}",
+};
+
+const SUPERSCRIPT_MAP: Record<string, string> = {
+  "0": "\u2070",
+  "1": "\u00B9",
+  "2": "\u00B2",
+  "3": "\u00B3",
+  "4": "\u2074",
+  "5": "\u2075",
+  "6": "\u2076",
+  "7": "\u2077",
+  "8": "\u2078",
+  "9": "\u2079",
+  "+": "\u207A",
+  "-": "\u207B",
+  "=": "\u207C",
+  "(": "\u207D",
+  ")": "\u207E",
+  n: "\u207F",
+  i: "\u2071",
+};
+
+const SUBSCRIPT_MAP: Record<string, string> = {
+  "0": "\u2080",
+  "1": "\u2081",
+  "2": "\u2082",
+  "3": "\u2083",
+  "4": "\u2084",
+  "5": "\u2085",
+  "6": "\u2086",
+  "7": "\u2087",
+  "8": "\u2088",
+  "9": "\u2089",
+  "+": "\u208A",
+  "-": "\u208B",
+  "=": "\u208C",
+  "(": "\u208D",
+  ")": "\u208E",
+  a: "\u2090",
+  e: "\u2091",
+  o: "\u2092",
+  x: "\u2093",
+  h: "\u2095",
+  k: "\u2096",
+  l: "\u2097",
+  m: "\u2098",
+  n: "\u2099",
+  p: "\u209A",
+  s: "\u209B",
+  t: "\u209C",
+};
+
+const PDF_FONT_FILE_PATHS = {
+  regular: join(
+    process.cwd(),
+    "node_modules",
+    "katex",
+    "dist",
+    "fonts",
+    "KaTeX_Main-Regular.ttf",
+  ),
+  bold: join(
+    process.cwd(),
+    "node_modules",
+    "katex",
+    "dist",
+    "fonts",
+    "KaTeX_Main-Bold.ttf",
+  ),
+  italic: join(
+    process.cwd(),
+    "node_modules",
+    "katex",
+    "dist",
+    "fonts",
+    "KaTeX_Main-Italic.ttf",
+  ),
+  mono: join(
+    process.cwd(),
+    "node_modules",
+    "katex",
+    "dist",
+    "fonts",
+    "KaTeX_Typewriter-Regular.ttf",
+  ),
+};
+
+function isKatexNode(value: unknown): value is KatexParseNode {
+  return typeof value === "object" && value !== null;
+}
+
+function toKatexNodeArray(value: unknown): KatexParseNode[] {
+  if (!value) {
+    return [];
+  }
+  if (Array.isArray(value)) {
+    return value.filter(isKatexNode);
+  }
+  return isKatexNode(value) ? [value] : [];
+}
+
+function splitMathSegments(text: string): InlineMathSegment[] {
+  const segments: InlineMathSegment[] = [];
+  let lastIndex = 0;
+
+  for (const match of text.matchAll(MATH_SEGMENT_PATTERN)) {
+    const index = match.index ?? 0;
+    if (index > lastIndex) {
+      segments.push({ type: "text", value: text.slice(lastIndex, index) });
+    }
+
+    const blockLatex = match[1];
+    const inlineLatex = match[2];
+    segments.push({
+      type: "math",
+      value: (blockLatex ?? inlineLatex ?? "").trim(),
+      displayMode: blockLatex !== undefined,
+    });
+
+    lastIndex = index + match[0].length;
+  }
+
+  if (lastIndex < text.length) {
+    segments.push({ type: "text", value: text.slice(lastIndex) });
+  }
+
+  return segments.length > 0 ? segments : [{ type: "text", value: text }];
+}
+
+const katexParser = katex as typeof katex & {
+  __parse?: (expression: string, options?: Record<string, unknown>) => unknown;
+};
+
+function parseLatexExpression(latex: string): KatexParseNode[] | null {
+  if (typeof katexParser.__parse !== "function") {
+    return null;
+  }
+
+  try {
+    const parsed = katexParser.__parse(latex.trim(), {
+      throwOnError: false,
+      strict: "ignore",
+      trust: false,
+    });
+    return Array.isArray(parsed) ? parsed.filter(isKatexNode) : null;
+  } catch {
+    return null;
+  }
+}
+
+function mathTokenToText(token: string): string {
+  if (!token) {
+    return "";
+  }
+
+  if (LATEX_SYMBOL_MAP[token]) {
+    return LATEX_SYMBOL_MAP[token];
+  }
+
+  if (token.startsWith("\\")) {
+    return token.slice(1);
+  }
+
+  return token;
+}
+
+function toUnicodeScript(
+  text: string,
+  map: Record<string, string>,
+): string | null {
+  let result = "";
+
+  for (const character of text) {
+    const mapped = map[character];
+    if (!mapped) {
+      return null;
+    }
+    result += mapped;
+  }
+
+  return result;
+}
+
+function normalizeMathPlainText(text: string): string {
+  return text
+    .replace(/\s+/g, " ")
+    .replace(/\s+([,.;:!?)\]}])/g, "$1")
+    .replace(/([([{])\s+/g, "$1")
+    .replace(/\s*([=+\-×÷·±∓≈≡≤≥<>])\s*/g, " $1 ")
+    .replace(/\s*\/\s*/g, " / ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function normalizeMathDelimiter(delimiter: unknown): string {
+  if (typeof delimiter !== "string" || delimiter === ".") {
+    return "";
+  }
+
+  return mathTokenToText(delimiter);
+}
+
+function formatLinearScript(prefix: "^" | "_", text: string): string {
+  return text.length === 1 ? `${prefix}${text}` : `${prefix}(${text})`;
+}
+
+function renderKatexNodeToText(
+  node: KatexParseNode,
+  options: Required<MathTextRenderOptions>,
+): string {
+  switch (node.type) {
+    case "mathord":
+    case "textord":
+      return mathTokenToText(node.text ?? "");
+    case "atom": {
+      const symbol = mathTokenToText(node.text ?? "");
+      if (node.family === "bin" || node.family === "rel") {
+        return ` ${symbol} `;
+      }
+      return symbol;
+    }
+    case "ordgroup":
+    case "color":
+    case "font":
+    case "styling":
+    case "mclass":
+      return renderKatexNodesToText(node.body, options);
+    case "text":
+      return renderKatexNodesToText(node.body, {
+        unicodeSuperscripts: false,
+        unicodeSubscripts: false,
+      });
+    case "sqrt": {
+      const body = renderKatexNodesToText(node.body, options);
+      const index = renderKatexNodesToText(node.index, options);
+      return index ? `${index}\u221A(${body})` : `\u221A(${body})`;
+    }
+    case "genfrac": {
+      const numerator = renderKatexNodesToText(node.numer, options);
+      const denominator = renderKatexNodesToText(node.denom, options);
+      return `(${numerator}) / (${denominator})`;
+    }
+    case "supsub": {
+      const base = renderKatexNodesToText(node.base, options);
+      const subText = renderKatexNodesToText(node.sub, options);
+      const supText = renderKatexNodesToText(node.sup, options);
+      const unicodeSub =
+        subText && options.unicodeSubscripts
+          ? toUnicodeScript(subText, SUBSCRIPT_MAP)
+          : null;
+      const unicodeSup =
+        supText && options.unicodeSuperscripts
+          ? toUnicodeScript(supText, SUPERSCRIPT_MAP)
+          : null;
+
+      return `${base}${subText ? (unicodeSub ?? formatLinearScript("_", subText)) : ""}${supText ? (unicodeSup ?? formatLinearScript("^", supText)) : ""}`;
+    }
+    case "leftright": {
+      const left = normalizeMathDelimiter(node.left);
+      const right = normalizeMathDelimiter(node.right);
+      const body = renderKatexNodesToText(node.body, options);
+      return `${left}${body}${right}`;
+    }
+    case "accent":
+    case "accentUnder":
+    case "overline":
+    case "underline":
+      return renderKatexNodesToText(node.body, options);
+    case "op":
+      if (node.body) {
+        return renderKatexNodesToText(node.body, options);
+      }
+      if (typeof node.name === "string") {
+        return mathTokenToText(node.name);
+      }
+      return "";
+    default:
+      if (node.body) {
+        return renderKatexNodesToText(node.body, options);
+      }
+      if (node.base) {
+        return renderKatexNodesToText(node.base, options);
+      }
+      if (typeof node.text === "string") {
+        return mathTokenToText(node.text);
+      }
+      return "";
+  }
+}
+
+function renderKatexNodesToText(
+  value: unknown,
+  options: Required<MathTextRenderOptions> = DEFAULT_MATH_TEXT_RENDER_OPTIONS,
+): string {
+  return normalizeMathPlainText(
+    toKatexNodeArray(value)
+      .map((node) => renderKatexNodeToText(node, options))
+      .join(""),
+  );
+}
+
+function createMathRunsFromText(text: string): MathComponent[] {
+  return text ? [new MathRun(text)] : [];
+}
+
+function ensureMathComponents(components: MathComponent[]): MathComponent[] {
+  return components.length > 0 ? components : [new MathRun(" ")];
+}
+
+function buildBracketedMath(
+  leftDelimiter: unknown,
+  rightDelimiter: unknown,
+  children: MathComponent[],
+): MathComponent | null {
+  const left = normalizeMathDelimiter(leftDelimiter);
+  const right = normalizeMathDelimiter(rightDelimiter);
+
+  if (left === "(" && right === ")") {
+    return new MathRoundBrackets({ children });
+  }
+  if (left === "[" && right === "]") {
+    return new MathSquareBrackets({ children });
+  }
+  if (left === "{" && right === "}") {
+    return new MathCurlyBrackets({ children });
+  }
+  if (left === "\u27E8" && right === "\u27E9") {
+    return new MathAngledBrackets({ children });
+  }
+
+  return null;
+}
+
+function renderKatexNodeToDocxMath(node: KatexParseNode): MathComponent[] {
+  switch (node.type) {
+    case "mathord":
+    case "textord":
+      return createMathRunsFromText(mathTokenToText(node.text ?? ""));
+    case "atom": {
+      const symbol = mathTokenToText(node.text ?? "");
+      if (node.family === "bin" || node.family === "rel") {
+        return createMathRunsFromText(` ${symbol} `);
+      }
+      return createMathRunsFromText(symbol);
+    }
+    case "ordgroup":
+    case "color":
+    case "font":
+    case "styling":
+    case "mclass":
+      return renderKatexNodesToDocxMath(node.body);
+    case "text":
+      return createMathRunsFromText(
+        renderKatexNodesToText(node.body, {
+          unicodeSuperscripts: false,
+          unicodeSubscripts: false,
+        }),
+      );
+    case "sqrt":
+      return [
+        new MathRadical({
+          children: ensureMathComponents(renderKatexNodesToDocxMath(node.body)),
+          ...(node.index
+            ? {
+                degree: ensureMathComponents(
+                  renderKatexNodesToDocxMath(node.index),
+                ),
+              }
+            : {}),
+        }),
+      ];
+    case "genfrac":
+      return [
+        new MathFraction({
+          numerator: ensureMathComponents(
+            renderKatexNodesToDocxMath(node.numer),
+          ),
+          denominator: ensureMathComponents(
+            renderKatexNodesToDocxMath(node.denom),
+          ),
+        }),
+      ];
+    case "supsub": {
+      const children = ensureMathComponents(
+        renderKatexNodesToDocxMath(node.base),
+      );
+      const subScript = renderKatexNodesToDocxMath(node.sub);
+      const superScript = renderKatexNodesToDocxMath(node.sup);
+
+      if (subScript.length > 0 && superScript.length > 0) {
+        return [
+          new MathSubSuperScript({
+            children,
+            subScript: ensureMathComponents(subScript),
+            superScript: ensureMathComponents(superScript),
+          }),
+        ];
+      }
+
+      if (subScript.length > 0) {
+        return [
+          new MathSubScript({
+            children,
+            subScript: ensureMathComponents(subScript),
+          }),
+        ];
+      }
+
+      if (superScript.length > 0) {
+        return [
+          new MathSuperScript({
+            children,
+            superScript: ensureMathComponents(superScript),
+          }),
+        ];
+      }
+
+      return children;
+    }
+    case "leftright": {
+      const children = ensureMathComponents(
+        renderKatexNodesToDocxMath(node.body),
+      );
+      const bracketed = buildBracketedMath(node.left, node.right, children);
+
+      if (bracketed) {
+        return [bracketed];
+      }
+
+      return [
+        ...createMathRunsFromText(normalizeMathDelimiter(node.left)),
+        ...children,
+        ...createMathRunsFromText(normalizeMathDelimiter(node.right)),
+      ];
+    }
+    case "accent":
+    case "accentUnder":
+    case "overline":
+    case "underline":
+      return renderKatexNodesToDocxMath(node.body);
+    case "op":
+      if (node.body) {
+        return renderKatexNodesToDocxMath(node.body);
+      }
+      if (typeof node.name === "string") {
+        return createMathRunsFromText(mathTokenToText(node.name));
+      }
+      return [];
+    default:
+      if (node.body) {
+        return renderKatexNodesToDocxMath(node.body);
+      }
+      if (node.base) {
+        return renderKatexNodesToDocxMath(node.base);
+      }
+      if (typeof node.text === "string") {
+        return createMathRunsFromText(mathTokenToText(node.text));
+      }
+      return [];
+  }
+}
+
+function renderKatexNodesToDocxMath(value: unknown): MathComponent[] {
+  return toKatexNodeArray(value).flatMap((node) =>
+    renderKatexNodeToDocxMath(node),
+  );
+}
+
+function buildDocxMath(latex: string): DocxMath | null {
+  const parsed = parseLatexExpression(latex);
+  if (!parsed || parsed.length === 0) {
+    return null;
+  }
+
+  return new DocxMath({
+    children: ensureMathComponents(renderKatexNodesToDocxMath(parsed)),
+  });
+}
+
+function createTextRun(text: string, style: InlineTextStyle): TextRun {
+  return new TextRun({
+    text,
+    size: style.size,
+    ...(style.bold ? { bold: true } : {}),
+    ...(style.italics ? { italics: true } : {}),
+    ...(style.font ? { font: style.font } : {}),
+    ...(style.color ? { color: style.color } : {}),
+    ...(style.noProof ? { noProof: true } : {}),
+    ...(style.subScript ? { subScript: true } : {}),
+    ...(style.superScript ? { superScript: true } : {}),
+  });
+}
+
+function createDocxMathTextRun(text: string, style: InlineTextStyle): TextRun[] {
+  if (!text) {
+    return [];
+  }
+
+  return [
+    createTextRun(text, {
+      ...style,
+      font: style.font ?? "Cambria Math",
+      noProof: true,
+    }),
+  ];
+}
+
+function renderKatexNodeToDocxTextRuns(
+  node: KatexParseNode,
+  style: InlineTextStyle,
+): TextRun[] {
+  switch (node.type) {
+    case "mathord":
+    case "textord":
+      return createDocxMathTextRun(mathTokenToText(node.text ?? ""), style);
+    case "atom": {
+      const symbol = mathTokenToText(node.text ?? "");
+      if (node.family === "bin" || node.family === "rel") {
+        return createDocxMathTextRun(` ${symbol} `, style);
+      }
+      return createDocxMathTextRun(symbol, style);
+    }
+    case "ordgroup":
+    case "color":
+    case "font":
+    case "styling":
+    case "mclass":
+      return renderKatexNodesToDocxTextRuns(node.body, style);
+    case "text":
+      return createDocxMathTextRun(
+        renderKatexNodesToText(node.body, {
+          unicodeSuperscripts: false,
+          unicodeSubscripts: false,
+        }),
+        style,
+      );
+    case "sqrt":
+      return [
+        ...createDocxMathTextRun("\u221A(", style),
+        ...renderKatexNodesToDocxTextRuns(node.body, style),
+        ...createDocxMathTextRun(")", style),
+      ];
+    case "genfrac":
+      return [
+        ...createDocxMathTextRun("(", style),
+        ...renderKatexNodesToDocxTextRuns(node.numer, style),
+        ...createDocxMathTextRun(")/(", style),
+        ...renderKatexNodesToDocxTextRuns(node.denom, style),
+        ...createDocxMathTextRun(")", style),
+      ];
+    case "supsub": {
+      return [
+        ...renderKatexNodesToDocxTextRuns(node.base, style),
+        ...renderKatexNodesToDocxTextRuns(node.sub, {
+          ...style,
+          subScript: true,
+          superScript: false,
+        }),
+        ...renderKatexNodesToDocxTextRuns(node.sup, {
+          ...style,
+          superScript: true,
+          subScript: false,
+        }),
+      ];
+    }
+    case "leftright":
+      return [
+        ...createDocxMathTextRun(normalizeMathDelimiter(node.left), style),
+        ...renderKatexNodesToDocxTextRuns(node.body, style),
+        ...createDocxMathTextRun(normalizeMathDelimiter(node.right), style),
+      ];
+    case "accent":
+    case "accentUnder":
+    case "overline":
+    case "underline":
+      return renderKatexNodesToDocxTextRuns(node.body, style);
+    case "op":
+      if (node.body) {
+        return renderKatexNodesToDocxTextRuns(node.body, style);
+      }
+      if (typeof node.name === "string") {
+        return createDocxMathTextRun(mathTokenToText(node.name), style);
+      }
+      return [];
+    default:
+      if (node.body) {
+        return renderKatexNodesToDocxTextRuns(node.body, style);
+      }
+      if (node.base) {
+        return renderKatexNodesToDocxTextRuns(node.base, style);
+      }
+      if (typeof node.text === "string") {
+        return createDocxMathTextRun(mathTokenToText(node.text), style);
+      }
+      return [];
+  }
+}
+
+function renderKatexNodesToDocxTextRuns(
+  value: unknown,
+  style: InlineTextStyle,
+): TextRun[] {
+  return toKatexNodeArray(value).flatMap((node) =>
+    renderKatexNodeToDocxTextRuns(node, style),
+  );
+}
+
+function buildDocxMathTextRuns(
+  latex: string,
+  style: InlineTextStyle,
+): TextRun[] {
+  const parsed = parseLatexExpression(latex);
+  if (parsed && parsed.length > 0) {
+    const runs = renderKatexNodesToDocxTextRuns(parsed, style);
+    if (runs.length > 0) {
+      return runs;
+    }
+  }
+
+  const fallbackText = latexToText(latex);
+  return createDocxMathTextRun(fallbackText || latex, style);
+}
+
+function appendInlineContent(
+  children: ParagraphChild[],
+  text: string,
+  style: InlineTextStyle,
+): void {
+  if (!text) {
+    return;
+  }
+
+  const parseMath = style.parseMath !== false;
+  if (!parseMath) {
+    children.push(createTextRun(text, style));
+    return;
+  }
+
+  for (const segment of splitMathSegments(text)) {
+    if (segment.type === "text") {
+      if (segment.value) {
+        children.push(createTextRun(segment.value, style));
+      }
+      continue;
+    }
+
+    const mathRuns = buildDocxMathTextRuns(segment.value, style);
+    if (mathRuns.length > 0) {
+      children.push(...mathRuns);
+    }
+  }
+}
+
+async function loadPdfFonts(pdfDoc: PDFDocument): Promise<{
+  regular: PDFFont;
+  bold: PDFFont;
+  italic: PDFFont;
+  mono: PDFFont;
+  supportsUnicode: boolean;
+}> {
+  try {
+    const fontkitModule =
+      (await import("next/dist/compiled/@next/font/dist/fontkit")) as {
+        default: (data: Uint8Array) => unknown;
+      };
+
+    const fontkit = {
+      create: (data: Uint8Array) => fontkitModule.default(data),
+    } as unknown as Parameters<PDFDocument["registerFontkit"]>[0];
+
+    pdfDoc.registerFontkit(fontkit);
+
+    const [regularBytes, boldBytes, italicBytes, monoBytes] = await Promise.all(
+      [
+        readFile(PDF_FONT_FILE_PATHS.regular),
+        readFile(PDF_FONT_FILE_PATHS.bold),
+        readFile(PDF_FONT_FILE_PATHS.italic),
+        readFile(PDF_FONT_FILE_PATHS.mono),
+      ],
+    );
+
+    const [regular, bold, italic, mono] = await Promise.all([
+      pdfDoc.embedFont(regularBytes),
+      pdfDoc.embedFont(boldBytes),
+      pdfDoc.embedFont(italicBytes),
+      pdfDoc.embedFont(monoBytes),
+    ]);
+
+    return { regular, bold, italic, mono, supportsUnicode: true };
+  } catch (error) {
+    console.warn("Failed to load custom PDF fonts for export:", error);
+
+    const [regular, bold, italic, mono] = await Promise.all([
+      pdfDoc.embedFont(StandardFonts.Helvetica),
+      pdfDoc.embedFont(StandardFonts.HelveticaBold),
+      pdfDoc.embedFont(StandardFonts.HelveticaOblique),
+      pdfDoc.embedFont(StandardFonts.Courier),
+    ]);
+
+    return { regular, bold, italic, mono, supportsUnicode: false };
+  }
+}
 
 /**
  * Convert a LaTeX expression to readable plain text for PDF/DOCX export.
  * Not a full renderer — handles the most common patterns teachers encounter.
  */
-function latexToText(latex: string): string {
+function latexToText(
+  latex: string,
+  options: Required<MathTextRenderOptions> = DEFAULT_MATH_TEXT_RENDER_OPTIONS,
+): string {
+  const parsed = parseLatexExpression(latex);
+  if (parsed && parsed.length > 0) {
+    const rendered = renderKatexNodesToText(parsed, options);
+    if (rendered) {
+      return rendered;
+    }
+  }
+
   let text = latex.trim();
 
   // Fractions: \frac{a}{b} → a/b (handle nested by iterating)
@@ -99,12 +946,23 @@ function latexToText(latex: string): string {
 
   // Superscripts: ^{2} → ², ^2 → ²
   const superMap: Record<string, string> = {
-    "0": "⁰", "1": "¹", "2": "²", "3": "³", "4": "⁴",
-    "5": "⁵", "6": "⁶", "7": "⁷", "8": "⁸", "9": "⁹",
-    "n": "ⁿ", "+": "⁺", "-": "⁻",
+    "0": "⁰",
+    "1": "¹",
+    "2": "²",
+    "3": "³",
+    "4": "⁴",
+    "5": "⁵",
+    "6": "⁶",
+    "7": "⁷",
+    "8": "⁸",
+    "9": "⁹",
+    n: "ⁿ",
+    "+": "⁺",
+    "-": "⁻",
   };
   text = text.replace(/\^\{([^{}]+)\}/g, (_m, exp) => {
-    if ([...exp].every(c => superMap[c])) return [...exp].map(c => superMap[c]).join("");
+    if ([...exp].every((c) => superMap[c]))
+      return [...exp].map((c) => superMap[c]).join("");
     return `^(${exp})`;
   });
   text = text.replace(/\^([0-9n])/g, (_m, c) => superMap[c] ?? `^${c}`);
@@ -114,23 +972,79 @@ function latexToText(latex: string): string {
 
   // Greek letters
   const greek: Record<string, string> = {
-    alpha: "α", beta: "β", gamma: "γ", delta: "δ", epsilon: "ε",
-    zeta: "ζ", eta: "η", theta: "θ", lambda: "λ", mu: "μ",
-    nu: "ν", xi: "ξ", pi: "π", rho: "ρ", sigma: "σ",
-    tau: "τ", phi: "φ", chi: "χ", psi: "ψ", omega: "ω",
-    Alpha: "Α", Beta: "Β", Gamma: "Γ", Delta: "Δ", Theta: "Θ",
-    Lambda: "Λ", Pi: "Π", Sigma: "Σ", Phi: "Φ", Omega: "Ω",
+    alpha: "α",
+    beta: "β",
+    gamma: "γ",
+    delta: "δ",
+    epsilon: "ε",
+    zeta: "ζ",
+    eta: "η",
+    theta: "θ",
+    lambda: "λ",
+    mu: "μ",
+    nu: "ν",
+    xi: "ξ",
+    pi: "π",
+    rho: "ρ",
+    sigma: "σ",
+    tau: "τ",
+    phi: "φ",
+    chi: "χ",
+    psi: "ψ",
+    omega: "ω",
+    Alpha: "Α",
+    Beta: "Β",
+    Gamma: "Γ",
+    Delta: "Δ",
+    Theta: "Θ",
+    Lambda: "Λ",
+    Pi: "Π",
+    Sigma: "Σ",
+    Phi: "Φ",
+    Omega: "Ω",
   };
-  text = text.replace(/\\([a-zA-Z]+)/g, (_m, name) => greek[name] ?? (
-    ({ times: "×", cdot: "·", div: "÷", pm: "±", mp: "∓",
-       neq: "≠", leq: "≤", geq: "≥", approx: "≈", equiv: "≡",
-       infty: "∞", in: "∈", notin: "∉", subset: "⊂", cup: "∪",
-       cap: "∩", forall: "∀", exists: "∃", neg: "¬", land: "∧",
-       lor: "∨", rightarrow: "→", leftarrow: "←", Rightarrow: "⇒",
-       Leftrightarrow: "⇔", ldots: "…", cdots: "…",
-       left: "", right: "", text: "", quad: " ", qquad: "  ",
-     } as Record<string, string>)[name] ?? `\\${name}`
-  ));
+  text = text.replace(
+    /\\([a-zA-Z]+)/g,
+    (_m, name) =>
+      greek[name] ??
+      (
+        {
+          times: "×",
+          cdot: "·",
+          div: "÷",
+          pm: "±",
+          mp: "∓",
+          neq: "≠",
+          leq: "≤",
+          geq: "≥",
+          approx: "≈",
+          equiv: "≡",
+          infty: "∞",
+          in: "∈",
+          notin: "∉",
+          subset: "⊂",
+          cup: "∪",
+          cap: "∩",
+          forall: "∀",
+          exists: "∃",
+          neg: "¬",
+          land: "∧",
+          lor: "∨",
+          rightarrow: "→",
+          leftarrow: "←",
+          Rightarrow: "⇒",
+          Leftrightarrow: "⇔",
+          ldots: "…",
+          cdots: "…",
+          left: "",
+          right: "",
+          text: "",
+          quad: " ",
+          qquad: "  ",
+        } as Record<string, string>
+      )[name] ??
+      `\\${name}`,
+  );
 
   // Strip remaining LaTeX grouping braces
   text = text.replace(/\{([^{}]*)\}/g, "$1");
@@ -138,16 +1052,20 @@ function latexToText(latex: string): string {
   text = text.replace(/\\([{}%,;:])/g, "$1");
 
   // Normalise whitespace
-  return text.replace(/\s{2,}/g, " ").trim();
+  const normalized = text.replace(/\s{2,}/g, " ").trim();
+  return normalized;
 }
 
 /**
  * Replace $...$ and $$...$$ in a line with plain-text equivalents.
  */
-function convertMathToText(text: string): string {
+function convertMathToText(
+  text: string,
+  options: Required<MathTextRenderOptions> = DEFAULT_MATH_TEXT_RENDER_OPTIONS,
+): string {
   return text
-    .replace(BLOCK_MATH_PATTERN, (_m, latex) => latexToText(latex))
-    .replace(INLINE_MATH_PATTERN, (_m, latex) => latexToText(latex));
+    .replace(BLOCK_MATH_PATTERN, (_m, latex) => latexToText(latex, options))
+    .replace(INLINE_MATH_PATTERN, (_m, latex) => latexToText(latex, options));
 }
 
 function toArrayBuffer(bytes: Uint8Array): ArrayBuffer {
@@ -178,37 +1096,100 @@ async function captureDownloadEvent(
   }
 }
 
+function getConfiguredJwtTemplates(): string[] {
+  return [
+    process.env.NEXT_PUBLIC_CLERK_JWT_TEMPLATE,
+    process.env.CLERK_JWT_TEMPLATE,
+  ].filter((value, index, values): value is string => {
+    return Boolean(value) && values.indexOf(value) === index;
+  });
+}
+
+function normalizeBackendBaseUrl(baseUrl: string): string {
+  try {
+    const normalizedUrl = new URL(baseUrl);
+    if (normalizedUrl.hostname === "localhost") {
+      normalizedUrl.hostname = "127.0.0.1";
+    }
+    return normalizedUrl.toString().replace(/\/$/, "");
+  } catch {
+    return baseUrl.replace(/\/$/, "");
+  }
+}
+
+async function resolveBackendAuthToken(
+  authContext: Awaited<ReturnType<typeof auth>>,
+): Promise<string | null> {
+  const cookieStore = await cookies();
+  const tokenFromCookie = cookieStore.get("scooli_token")?.value;
+  if (tokenFromCookie) {
+    return tokenFromCookie;
+  }
+
+  for (const template of getConfiguredJwtTemplates()) {
+    try {
+      const token = await authContext.getToken({ template });
+      if (token) {
+        return token;
+      }
+    } catch (error) {
+      console.warn(
+        `Failed to resolve Clerk token for template "${template}" in download route:`,
+        error,
+      );
+    }
+  }
+
+  try {
+    return await authContext.getToken();
+  } catch (error) {
+    console.warn(
+      "Failed to resolve default Clerk token in download route:",
+      error,
+    );
+    return null;
+  }
+}
+
 async function resolveIsProUser(): Promise<boolean> {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_API_URL;
   if (!baseUrl) {
     return false;
   }
 
+  const normalizedBaseUrl = normalizeBackendBaseUrl(baseUrl);
+
   try {
     const authContext = await auth();
-    const template = process.env.NEXT_PUBLIC_CLERK_JWT_TEMPLATE;
-    const token = await authContext.getToken(
-      template ? { template } : undefined,
-    );
+    const isActiveOrganizationMember = Boolean(authContext.orgId);
+    const token = await resolveBackendAuthToken(authContext);
     if (!token) {
-      return false;
+      return isActiveOrganizationMember;
     }
 
-    const response = await fetch(`${baseUrl}/entitlements/current`, {
+    const response = await fetch(`${normalizedBaseUrl}/entitlements/current`, {
       headers: { Authorization: `Bearer ${token}` },
       cache: "no-store",
     });
     if (!response.ok) {
-      return false;
+      console.warn(
+        `Entitlements lookup failed in download route with status ${response.status}; falling back to Clerk org context.`,
+      );
+      return isActiveOrganizationMember;
     }
 
     const entitlement =
       (await response.json()) as CurrentEntitlementResponse | null;
 
-    return entitlement?.isPro === true;
+    return entitlement?.isPro === true || isActiveOrganizationMember;
   } catch (error) {
     console.warn("Failed to resolve entitlements for download:", error);
-    return false;
+    try {
+      const authContext = await auth();
+      return Boolean(authContext.orgId);
+    } catch {
+      return false;
+    }
   }
 }
 
@@ -233,7 +1214,12 @@ function detectImageContentType(bytes: Buffer): string | null {
   ) {
     return "image/png";
   }
-  if (bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) {
+  if (
+    bytes.length >= 3 &&
+    bytes[0] === 0xff &&
+    bytes[1] === 0xd8 &&
+    bytes[2] === 0xff
+  ) {
     return "image/jpeg";
   }
   return null;
@@ -243,7 +1229,8 @@ function getImageDimensions(
   bytes: Buffer,
   contentType?: string | null,
 ): { width: number; height: number } | null {
-  const normalizedContentType = normalizeContentType(contentType) ?? detectImageContentType(bytes);
+  const normalizedContentType =
+    normalizeContentType(contentType) ?? detectImageContentType(bytes);
 
   if (normalizedContentType === "image/png" && bytes.length >= 24) {
     return {
@@ -280,10 +1267,8 @@ function getImageDimensions(
 
       if (
         [
-          0xc0, 0xc1, 0xc2, 0xc3,
-          0xc5, 0xc6, 0xc7,
-          0xc9, 0xca, 0xcb,
-          0xcd, 0xce, 0xcf,
+          0xc0, 0xc1, 0xc2, 0xc3, 0xc5, 0xc6, 0xc7, 0xc9, 0xca, 0xcb, 0xcd,
+          0xce, 0xcf,
         ].includes(marker)
       ) {
         return {
@@ -343,8 +1328,13 @@ function protectAnswerBlanks(text: string): {
   };
 }
 
-function stripInlineMarkdown(text: string): string {
-  const blankProtected = protectAnswerBlanks(convertMathToText(text));
+function stripInlineMarkdown(
+  text: string,
+  mathOptions: Required<MathTextRenderOptions> = DEFAULT_MATH_TEXT_RENDER_OPTIONS,
+): string {
+  const blankProtected = protectAnswerBlanks(
+    convertMathToText(text, mathOptions),
+  );
   const withoutMarkdown = blankProtected.content
     .replace(HTML_COMMENT_PATTERN, "")
     .replace(HTML_BREAK_PATTERN, " ")
@@ -376,8 +1366,105 @@ function normalizeExportContent(content: string): string {
     .trim();
 }
 
-function normalizePdfLine(text: string): string {
-  return text
+const ASCII_PDF_CHARACTER_MAP: Record<string, string> = {
+  "\u221A": "sqrt",
+  "\u00B1": "+/-",
+  "\u2213": "-/+",
+  "\u00D7": "x",
+  "\u00F7": "/",
+  "\u00B7": "*",
+  "\u2260": "!=",
+  "\u2264": "<=",
+  "\u2265": ">=",
+  "\u2248": "~=",
+  "\u2261": "===",
+  "\u221E": "infinity",
+  "\u2208": "in",
+  "\u2209": "notin",
+  "\u2282": "subset",
+  "\u2286": "subseteq",
+  "\u2283": "supset",
+  "\u2287": "supseteq",
+  "\u222A": "union",
+  "\u2229": "intersect",
+  "\u2200": "forall",
+  "\u2203": "exists",
+  "\u2227": "and",
+  "\u2228": "or",
+  "\u2192": "->",
+  "\u2190": "<-",
+  "\u2194": "<->",
+  "\u21D2": "=>",
+  "\u21D0": "<=",
+  "\u21D4": "<=>",
+  "\u03B1": "alpha",
+  "\u03B2": "beta",
+  "\u03B3": "gamma",
+  "\u03B4": "delta",
+  "\u03B5": "epsilon",
+  "\u03B8": "theta",
+  "\u03BB": "lambda",
+  "\u03BC": "mu",
+  "\u03C0": "pi",
+  "\u03C3": "sigma",
+  "\u03C6": "phi",
+  "\u03C9": "omega",
+  "\u2070": "^0",
+  "\u00B9": "^1",
+  "\u00B2": "^2",
+  "\u00B3": "^3",
+  "\u2074": "^4",
+  "\u2075": "^5",
+  "\u2076": "^6",
+  "\u2077": "^7",
+  "\u2078": "^8",
+  "\u2079": "^9",
+  "\u207A": "^+",
+  "\u207B": "^-",
+  "\u207C": "^=",
+  "\u207D": "^(",
+  "\u207E": "^)",
+  "\u207F": "^n",
+  "\u2080": "_0",
+  "\u2081": "_1",
+  "\u2082": "_2",
+  "\u2083": "_3",
+  "\u2084": "_4",
+  "\u2085": "_5",
+  "\u2086": "_6",
+  "\u2087": "_7",
+  "\u2088": "_8",
+  "\u2089": "_9",
+  "\u208A": "_+",
+  "\u208B": "_-",
+  "\u208C": "_=",
+  "\u208D": "_(",
+  "\u208E": "_)",
+  "\u2090": "_a",
+  "\u2091": "_e",
+  "\u2092": "_o",
+  "\u2093": "_x",
+  "\u2095": "_h",
+  "\u2096": "_k",
+  "\u2097": "_l",
+  "\u2098": "_m",
+  "\u2099": "_n",
+  "\u209A": "_p",
+  "\u209B": "_s",
+  "\u209C": "_t",
+};
+
+function toAsciiPdfText(text: string): string {
+  return Array.from(text)
+    .map((character) => ASCII_PDF_CHARACTER_MAP[character] ?? character)
+    .join("");
+}
+
+function normalizePdfLine(
+  text: string,
+  supportsUnicode: boolean = true,
+): string {
+  const normalized = text
     .replace(/\r\n/g, "\n")
     .replace(/\r/g, "\n")
     .replace(/\n+/g, " ")
@@ -386,20 +1473,149 @@ function normalizePdfLine(text: string): string {
     .replace(/[\u201C\u201D]/g, '"')
     .replace(/[\u2013\u2014]/g, "-")
     .replace(/\u2026/g, "...")
-    .replace(/\u2022/g, "-")
+    .replace(/\u2022/g, "\u2022")
     .replace(/\u00E2\u20AC\u00A2/g, "-")
-    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "")
-    .replace(/[^\x20-\x7E\xA0-\xFF]/g, "?");
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "");
+
+  if (supportsUnicode) {
+    return normalized;
+  }
+
+  return toAsciiPdfText(normalized).replace(/[^\x20-\x7E\xA0-\xFF]/g, "?");
 }
 
-function normalizePdfText(text: string): string {
+function normalizePdfText(
+  text: string,
+  supportsUnicode: boolean = true,
+): string {
   return text
     .replace(/\r\n/g, "\n")
     .replace(/\r/g, "\n")
     .replace(/\t/g, "    ")
     .split("\n")
-    .map((line) => normalizePdfLine(line))
+    .map((line) => normalizePdfLine(line, supportsUnicode))
     .join("\n");
+}
+
+type PdfLineFragment = {
+  text: string;
+  size: number;
+  yOffset: number;
+};
+
+function parsePdfLineFragments(line: string, fontSize: number): PdfLineFragment[] {
+  const fragments: PdfLineFragment[] = [];
+  let buffer = "";
+
+  const flushBuffer = () => {
+    if (!buffer) {
+      return;
+    }
+    fragments.push({
+      text: buffer,
+      size: fontSize,
+      yOffset: 0,
+    });
+    buffer = "";
+  };
+
+  const pushScript = (text: string, isSuperScript: boolean) => {
+    if (!text) {
+      return;
+    }
+    fragments.push({
+      text,
+      size: Math.max(8, Math.round(fontSize * 0.7)),
+      yOffset: isSuperScript ? fontSize * 0.32 : -fontSize * 0.16,
+    });
+  };
+
+  let index = 0;
+  while (index < line.length) {
+    const current = line[index];
+    const next = line[index + 1];
+    const isScriptMarker = current === "^" || current === "_";
+
+    if (!isScriptMarker || !next) {
+      buffer += current;
+      index += 1;
+      continue;
+    }
+
+    const isSuperScript = current === "^";
+
+    if (next === "(") {
+      let depth = 1;
+      let cursor = index + 2;
+      let scriptText = "";
+
+      while (cursor < line.length && depth > 0) {
+        const character = line[cursor];
+        if (character === "(") {
+          depth += 1;
+        } else if (character === ")") {
+          depth -= 1;
+          if (depth === 0) {
+            cursor += 1;
+            break;
+          }
+        }
+
+        if (depth > 0) {
+          scriptText += character;
+        }
+        cursor += 1;
+      }
+
+      if (scriptText) {
+        flushBuffer();
+        pushScript(scriptText, isSuperScript);
+        index = cursor;
+        continue;
+      }
+    }
+
+    if (/[A-Za-z0-9+\-=]/.test(next)) {
+      flushBuffer();
+      pushScript(next, isSuperScript);
+      index += 2;
+      continue;
+    }
+
+    buffer += current;
+    index += 1;
+  }
+
+  flushBuffer();
+  return fragments;
+}
+
+function drawPdfLine(
+  page: PDFPage,
+  line: string,
+  x: number,
+  y: number,
+  font: PDFFont,
+  fontSize: number,
+  color: ReturnType<typeof rgb>,
+) {
+  const fragments = parsePdfLineFragments(line, fontSize);
+  let cursorX = x;
+
+  for (const fragment of fragments) {
+    if (!fragment.text) {
+      continue;
+    }
+
+    page.drawText(fragment.text, {
+      x: cursorX,
+      y: y + fragment.yOffset,
+      size: fragment.size,
+      font,
+      color,
+    });
+    cursorX += font.widthOfTextAtSize(fragment.text, fragment.size);
+  }
 }
 
 function normalizeImageSource(source: string): string {
@@ -425,7 +1641,9 @@ function normalizeImageSource(source: string): string {
   return normalized.replace(/&amp;/g, "&").replace(/\\([{}])/g, "$1");
 }
 
-function parseMarkdownImageLine(line: string): { alt: string; source: string } | null {
+function parseMarkdownImageLine(
+  line: string,
+): { alt: string; source: string } | null {
   const imageMatch = line.match(MARKDOWN_IMAGE_LINE_PATTERN);
   if (!imageMatch) {
     return null;
@@ -454,7 +1672,9 @@ function parseMarkdownImagePrefix(line: string): {
   };
 }
 
-function parseHtmlImageLine(line: string): { alt: string; source: string } | null {
+function parseHtmlImageLine(
+  line: string,
+): { alt: string; source: string } | null {
   if (!HTML_IMAGE_LINE_PATTERN.test(line)) {
     return null;
   }
@@ -593,7 +1813,9 @@ function parseMarkdownToBlocks(content: string): ExportBlock[] {
   return blocks;
 }
 
-function buildImageLookup(images?: DownloadImagePayload[]): Map<string, DownloadImagePayload> {
+function buildImageLookup(
+  images?: DownloadImagePayload[],
+): Map<string, DownloadImagePayload> {
   const imageLookup = new Map<string, DownloadImagePayload>();
   for (const image of images ?? []) {
     if (image.id) {
@@ -650,7 +1872,8 @@ async function resolveImageBlock(
   const dataUriMatch = source.match(DATA_URI_PATTERN);
   if (dataUriMatch) {
     const bytes = Buffer.from(dataUriMatch[2], "base64");
-    const resolvedContentType = normalizeContentType(dataUriMatch[1]) ?? detectImageContentType(bytes);
+    const resolvedContentType =
+      normalizeContentType(dataUriMatch[1]) ?? detectImageContentType(bytes);
     const dimensions = getImageDimensions(bytes, resolvedContentType) ?? {
       width: 1200,
       height: 900,
@@ -677,15 +1900,34 @@ async function resolveImageBlock(
   try {
     parsedSourceUrl = new URL(source);
   } catch {
-    return { alt: block.alt, width: 1200, height: 900, error: "Invalid image URL" };
+    return {
+      alt: block.alt,
+      width: 1200,
+      height: 900,
+      error: "Invalid image URL",
+    };
   }
   if (isInternalHost(parsedSourceUrl.hostname)) {
-    return { alt: block.alt, width: 1200, height: 900, error: "Private image URLs are not allowed" };
+    return {
+      alt: block.alt,
+      width: 1200,
+      height: 900,
+      error: "Private image URLs are not allowed",
+    };
   }
 
   // Require a valid public FQDN — blocks bare IPs, localhost variants, and malformed hosts
-  if (!/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/i.test(parsedSourceUrl.hostname)) {
-    return { alt: block.alt, width: 1200, height: 900, error: "Invalid image host" };
+  if (
+    !/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/i.test(
+      parsedSourceUrl.hostname,
+    )
+  ) {
+    return {
+      alt: block.alt,
+      width: 1200,
+      height: 900,
+      error: "Invalid image host",
+    };
   }
 
   try {
@@ -705,7 +1947,10 @@ async function resolveImageBlock(
       contentType ??
       detectImageContentType(bytes);
 
-    if (!resolvedContentType || !["image/png", "image/jpeg"].includes(resolvedContentType)) {
+    if (
+      !resolvedContentType ||
+      !["image/png", "image/jpeg"].includes(resolvedContentType)
+    ) {
       return {
         alt: block.alt,
         width: 1200,
@@ -740,60 +1985,82 @@ async function resolveImageBlock(
 function parseInlineFormatting(
   text: string,
   baseSize: number = 22,
-): InstanceType<typeof TextRun>[] {
-  const runs: InstanceType<typeof TextRun>[] = [];
+  styleOverrides: Omit<InlineTextStyle, "size"> = {},
+): ParagraphChild[] {
+  const runs: ParagraphChild[] = [];
   const blankProtected = protectAnswerBlanks(text);
   let remaining = blankProtected.content;
-  let match;
+  let match: RegExpMatchArray | null;
+
+  const appendStyled = (
+    value: string,
+    overrides: Partial<InlineTextStyle> = {},
+  ) => {
+    appendInlineContent(runs, value, {
+      size: baseSize,
+      ...styleOverrides,
+      ...overrides,
+    });
+  };
 
   while (remaining.length > 0) {
+    if ((match = remaining.match(/^\$\$([\s\S]+?)\$\$/))) {
+      appendStyled(blankProtected.restore(match[0]));
+      remaining = remaining.substring(match[0].length);
+      continue;
+    }
+
+    if ((match = remaining.match(/^\$([^$\n]+)\$/))) {
+      appendStyled(blankProtected.restore(match[0]));
+      remaining = remaining.substring(match[0].length);
+      continue;
+    }
+
     if ((match = remaining.match(/^\*\*(.+?)\*\*/))) {
-      runs.push(new TextRun({ text: blankProtected.restore(match[1]), bold: true, size: baseSize }));
+      appendStyled(blankProtected.restore(match[1]), { bold: true });
       remaining = remaining.substring(match[0].length);
       continue;
     }
 
     if ((match = remaining.match(/^[\*_](.+?)[\*_]/))) {
-      runs.push(new TextRun({ text: blankProtected.restore(match[1]), italics: true, size: baseSize }));
+      appendStyled(blankProtected.restore(match[1]), { italics: true });
       remaining = remaining.substring(match[0].length);
       continue;
     }
 
     if ((match = remaining.match(/^`(.+?)`/))) {
-      runs.push(
-        new TextRun({
-          text: blankProtected.restore(match[1]),
-          font: "Courier New",
-          size: baseSize - 2,
-        }),
-      );
+      appendStyled(blankProtected.restore(match[1]), {
+        font: "Courier New",
+        size: baseSize - 2,
+        parseMath: false,
+      });
       remaining = remaining.substring(match[0].length);
       continue;
     }
 
-    const nextSpecial = remaining.search(/[\*_`]/);
+    const nextSpecial = remaining.search(INLINE_MARKDOWN_SPECIAL_PATTERN);
     if (nextSpecial === -1) {
-      runs.push(new TextRun({ text: blankProtected.restore(remaining), size: baseSize }));
+      appendStyled(blankProtected.restore(remaining));
       break;
     }
     if (nextSpecial > 0) {
-      runs.push(
-        new TextRun({
-          text: blankProtected.restore(remaining.substring(0, nextSpecial)),
-          size: baseSize,
-        }),
-      );
+      appendStyled(blankProtected.restore(remaining.substring(0, nextSpecial)));
       remaining = remaining.substring(nextSpecial);
       continue;
     }
 
-    runs.push(new TextRun({ text: blankProtected.restore(remaining[0]), size: baseSize }));
+    appendStyled(blankProtected.restore(remaining[0]));
     remaining = remaining.substring(1);
   }
 
   return runs.length > 0
     ? runs
-    : [new TextRun({ text: blankProtected.restore(blankProtected.content), size: baseSize })];
+    : [
+        createTextRun(blankProtected.restore(blankProtected.content), {
+          size: baseSize,
+          ...styleOverrides,
+        }),
+      ];
 }
 
 async function generateDocx(
@@ -852,14 +2119,10 @@ async function generateDocx(
         if (isFirstTitle) {
           children.push(
             new Paragraph({
-              children: [
-                new TextRun({
-                  text: stripInlineMarkdown(block.text),
-                  bold: true,
-                  size: 48,
-                  color: "0B0D17",
-                }),
-              ],
+              children: parseInlineFormatting(block.text, 48, {
+                bold: true,
+                color: "0B0D17",
+              }),
               heading: HeadingLevel.TITLE,
               spacing: { after: 120 },
             }),
@@ -881,14 +2144,10 @@ async function generateDocx(
         } else {
           children.push(
             new Paragraph({
-              children: [
-                new TextRun({
-                  text: stripInlineMarkdown(block.text),
-                  bold: true,
-                  size: 36,
-                  color: "0B0D17",
-                }),
-              ],
+              children: parseInlineFormatting(block.text, 36, {
+                bold: true,
+                color: "0B0D17",
+              }),
               heading: HeadingLevel.HEADING_1,
               spacing: { before: 400, after: 200 },
             }),
@@ -898,14 +2157,10 @@ async function generateDocx(
       case "h1":
         children.push(
           new Paragraph({
-            children: [
-              new TextRun({
-                text: stripInlineMarkdown(block.text),
-                bold: true,
-                size: 36,
-                color: "0B0D17",
-              }),
-            ],
+            children: parseInlineFormatting(block.text, 36, {
+              bold: true,
+              color: "0B0D17",
+            }),
             heading: HeadingLevel.HEADING_1,
             spacing: { before: 400, after: 200 },
           }),
@@ -914,14 +2169,10 @@ async function generateDocx(
       case "h2":
         children.push(
           new Paragraph({
-            children: [
-              new TextRun({
-                text: stripInlineMarkdown(block.text),
-                bold: true,
-                size: 28,
-                color: "0B0D17",
-              }),
-            ],
+            children: parseInlineFormatting(block.text, 28, {
+              bold: true,
+              color: "0B0D17",
+            }),
             heading: HeadingLevel.HEADING_2,
             spacing: { before: 300, after: 150 },
           }),
@@ -930,14 +2181,10 @@ async function generateDocx(
       case "h3":
         children.push(
           new Paragraph({
-            children: [
-              new TextRun({
-                text: stripInlineMarkdown(block.text),
-                bold: true,
-                size: 24,
-                color: "2E2F38",
-              }),
-            ],
+            children: parseInlineFormatting(block.text, 24, {
+              bold: true,
+              color: "2E2F38",
+            }),
             heading: HeadingLevel.HEADING_3,
             spacing: { before: 200, after: 100 },
           }),
@@ -970,14 +2217,10 @@ async function generateDocx(
       case "quote":
         children.push(
           new Paragraph({
-            children: [
-              new TextRun({
-                text: stripInlineMarkdown(block.text),
-                italics: true,
-                size: 22,
-                color: "6C6F80",
-              }),
-            ],
+            children: parseInlineFormatting(block.text, 22, {
+              italics: true,
+              color: "6C6F80",
+            }),
             indent: { left: 720 },
             border: {
               left: {
@@ -1064,10 +2307,13 @@ async function generatePdf(
   isProUser: boolean = false,
 ): Promise<Uint8Array> {
   const pdfDoc = await PDFDocument.create();
-  const helvetica = await pdfDoc.embedFont(StandardFonts.Helvetica);
-  const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-  const helveticaOblique = await pdfDoc.embedFont(StandardFonts.HelveticaOblique);
-  const courier = await pdfDoc.embedFont(StandardFonts.Courier);
+  const {
+    regular: helvetica,
+    bold: helveticaBold,
+    italic: helveticaOblique,
+    mono: courier,
+    supportsUnicode,
+  } = await loadPdfFonts(pdfDoc);
 
   const pageWidth = 595.28;
   const pageHeight = 841.89;
@@ -1116,6 +2362,11 @@ async function generatePdf(
     empty: rgb(0, 0, 0),
   };
 
+  const pdfMathTextOptions: Required<MathTextRenderOptions> = {
+    unicodeSuperscripts: false,
+    unicodeSubscripts: false,
+  };
+
   let currentPage = pdfDoc.addPage([pageWidth, pageHeight]);
   let yPosition = pageHeight - margin;
 
@@ -1133,7 +2384,7 @@ async function generatePdf(
     fontSize: number,
   ): string[] {
     const lines: string[] = [];
-    const paragraphs = normalizePdfText(text).split("\n");
+    const paragraphs = normalizePdfText(text, supportsUnicode).split("\n");
 
     for (const paragraph of paragraphs) {
       const words = paragraph.trim().split(/\s+/).filter(Boolean);
@@ -1169,7 +2420,7 @@ async function generatePdf(
     fontSize: number,
   ): string[] {
     const lines: string[] = [];
-    const rawLines = normalizePdfText(text).split("\n");
+    const rawLines = normalizePdfText(text, supportsUnicode).split("\n");
 
     for (const rawLine of rawLines) {
       if (rawLine.length === 0) {
@@ -1216,13 +2467,16 @@ async function generatePdf(
       font = courier;
     }
 
-    let displayText = stripInlineMarkdown(block.text);
+    let displayText = stripInlineMarkdown(block.text, pdfMathTextOptions);
     if (block.type === "bullet") {
-      displayText = `• ${stripInlineMarkdown(block.text.replace(/^[\*\-]\s/, ""))}`;
+      displayText = `• ${stripInlineMarkdown(
+        block.text.replace(/^[\*\-]\s/, ""),
+        pdfMathTextOptions,
+      )}`;
     } else if (block.type === "numbered") {
-      displayText = stripInlineMarkdown(block.text);
+      displayText = stripInlineMarkdown(block.text, pdfMathTextOptions);
     }
-    displayText = normalizePdfText(displayText);
+    displayText = normalizePdfText(displayText, supportsUnicode);
 
     const indent =
       block.type === "bullet" || block.type === "numbered"
@@ -1246,14 +2500,16 @@ async function generatePdf(
 
     for (const wrappedLine of wrappedLines) {
       ensureSpace(lineHeight + 10);
-      const safeLine = normalizePdfLine(wrappedLine);
-      currentPage.drawText(safeLine, {
-        x: margin + indent,
-        y: yPosition,
-        size: fontSize,
+      const safeLine = normalizePdfLine(wrappedLine, supportsUnicode);
+      drawPdfLine(
+        currentPage,
+        safeLine,
+        margin + indent,
+        yPosition,
         font,
+        fontSize,
         color,
-      });
+      );
       yPosition -= lineHeight;
     }
 
@@ -1360,7 +2616,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     const sanitizedTitle = title
-      .replace(/[^a-zA-Z0-9Ã¡Ã Ã¢Ã£Ã©Ã¨ÃªÃ­Ã¯Ã³Ã´ÃµÃ¶ÃºÃ§Ã±ÃÃ€Ã‚ÃƒÃ‰ÃˆÃŠÃÃÃ“Ã”Ã•Ã–ÃšÃ‡Ã‘\s-_]/g, "")
+      .replace(
+        /[^a-zA-Z0-9Ã¡Ã Ã¢Ã£Ã©Ã¨ÃªÃ­Ã¯Ã³Ã´ÃµÃ¶ÃºÃ§Ã±ÃÃ€Ã‚ÃƒÃ‰ÃˆÃŠÃÃÃ“Ã”Ã•Ã–ÃšÃ‡Ã‘\s-_]/g,
+        "",
+      )
       .replace(/\s+/g, "_")
       .substring(0, 100);
 
@@ -1369,7 +2628,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const isProUser = await resolveIsProUser();
 
     if (format === "pdf") {
-      const pdfBytes = (await generatePdf(content, images, isProUser)) as Uint8Array;
+      const pdfBytes = (await generatePdf(
+        content,
+        images,
+        isProUser,
+      )) as Uint8Array;
       await captureDownloadEvent(distinctId, "pdf", title);
       return new NextResponse(toArrayBuffer(pdfBytes), {
         headers: {
@@ -1382,7 +2645,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     if (format === "docx") {
       if (!isProUser) {
         return NextResponse.json(
-          { error: "Exportacao DOCX disponivel apenas para utilizadores Scooli Pro" },
+          {
+            error:
+              "Exportacao DOCX disponivel apenas para utilizadores Scooli Pro",
+          },
           { status: 403 },
         );
       }
@@ -1397,10 +2663,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       });
     }
 
-    return NextResponse.json(
-      { error: "Unsupported format" },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: "Unsupported format" }, { status: 400 });
   } catch (error) {
     console.error("Download error:", error);
     return NextResponse.json(
