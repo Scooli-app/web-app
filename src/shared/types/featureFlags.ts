@@ -14,6 +14,9 @@ export enum FeatureFlag {
 
   /** Controls whether users can create worksheet documents. */
   WORKSHEET_CREATION = "worksheet_creation",
+
+  /** Controls whether users can upload a document and convert it into a custom template. */
+  TEMPLATE_FROM_DOCUMENT = "template_from_document",
   
   /** When ON: shared documents await admin review. When OFF: auto-approved on submit. */
   DOCUMENT_REVIEW = "document_review",

@@ -33,6 +33,10 @@ export const selectIsWorksheetCreationEnabled = createSelector(
   (enabledFeatures) => enabledFeatures.includes(FeatureFlag.WORKSHEET_CREATION)
 );
 
+export const selectIsTemplateFromDocumentEnabled = createSelector(
+  [selectEnabledFeatureFlags],
+  (enabledFeatures) => enabledFeatures.includes(FeatureFlag.TEMPLATE_FROM_DOCUMENT)
+);
 
 
 
