@@ -6,45 +6,24 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   selectWorkspaceError,
-  selectHasOrganizationWorkspace,
-  selectIsOrganizationAdmin,
   selectWorkspaceContext,
   selectWorkspaceDashboard,
   selectWorkspaceLoading,
-  selectWorkspaceReady,
 } from "@/store/workspace/selectors";
 import { fetchOrganizationDashboard } from "@/store/workspace/workspaceSlice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
 
 export default function SchoolSettingsPage() {
   const dispatch = useAppDispatch();
-  const router = useRouter();
   const workspace = useAppSelector(selectWorkspaceContext);
   const dashboard = useAppSelector(selectWorkspaceDashboard);
   const loading = useAppSelector(selectWorkspaceLoading);
   const error = useAppSelector(selectWorkspaceError);
-  const workspaceReady = useAppSelector(selectWorkspaceReady);
-  const hasOrganizationWorkspace = useAppSelector(selectHasOrganizationWorkspace);
-  const isOrganizationAdmin = useAppSelector(selectIsOrganizationAdmin);
 
   useEffect(() => {
-    if (!workspaceReady) {
-      return;
-    }
-
-    if (!hasOrganizationWorkspace || !isOrganizationAdmin) {
-      router.replace("/dashboard");
-      return;
-    }
-
     void dispatch(fetchOrganizationDashboard());
-  }, [dispatch, hasOrganizationWorkspace, isOrganizationAdmin, router, workspaceReady]);
-
-  if (!workspaceReady || !hasOrganizationWorkspace || !isOrganizationAdmin) {
-    return null;
-  }
+  }, [dispatch]);
 
   return (
     <PageContainer size="xl" contentClassName="py-4 sm:py-8">

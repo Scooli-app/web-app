@@ -8,6 +8,8 @@ import { AUTO_SAVE_DELAY } from "@/shared/config/constants";
 import { Routes } from "@/shared/types";
 import type { RagSource } from "@/shared/types/document";
 import { htmlToMarkdown, markdownToHtml } from "@/shared/utils/markdown";
+import { fetchEntitlements } from "@/store/entitlements/entitlementsSlice";
+import { selectEntitlementLoading } from "@/store/entitlements/selectors";
 import {
   chatWithDocument,
   clearLastChatAnswer,
@@ -26,7 +28,6 @@ import {
 } from "@/store/hooks";
 import {
   selectIsPro,
-  selectSubscriptionLoading,
 } from "@/store/subscription/selectors";
 import {
   fetchSubscription,
@@ -126,7 +127,7 @@ export default function DocumentEditor({
     imageError,
   } = useAppSelector(selectEditorState);
   const isPremium = useAppSelector(selectIsPro);
-  const isSubscriptionLoading = useAppSelector(selectSubscriptionLoading);
+  const isEntitlementLoading = useAppSelector(selectEntitlementLoading);
   const {
     content,
     setContent,
@@ -225,6 +226,7 @@ export default function DocumentEditor({
 
   useEffect(() => {
     dispatch(fetchSubscription());
+    dispatch(fetchEntitlements());
   }, [dispatch]);
 
   const handleEditorReady = useCallback((editor: Editor) => {
@@ -602,6 +604,7 @@ export default function DocumentEditor({
               }
               dispatch(setGeneratingImages(false));
               dispatch(fetchUsage());
+              dispatch(fetchEntitlements());
 
               if (expectedVisualCount > 0) {
                 const pollImages = async (attempt: number) => {
@@ -1111,7 +1114,7 @@ export default function DocumentEditor({
                           ✨ Documento Refinado
                         </span>
                       )}
-                      {!isSubscriptionLoading && !isPremium && (
+                      {!isEntitlementLoading && !isPremium && (
                         <Link
                           href={Routes.CHECKOUT}
                           className="hidden md:inline-flex items-center gap-2 rounded-full border border-amber-300/60 bg-gradient-to-r from-amber-50 to-yellow-50 px-2.5 py-1 text-[11px] font-medium text-amber-800 transition-colors hover:bg-amber-100 dark:border-amber-700/60 dark:from-amber-950/40 dark:to-yellow-950/40 dark:text-amber-300 dark:hover:bg-amber-900/30"
@@ -1165,7 +1168,7 @@ export default function DocumentEditor({
               placeholder={chatPlaceholder}
               title={chatTitle}
               sources={sources}
-              showGenerationHint={!isSubscriptionLoading && !isPremium}
+              showGenerationHint={!isEntitlementLoading && !isPremium}
             />
           </div>
         </div>
@@ -1180,7 +1183,7 @@ export default function DocumentEditor({
           placeholder={chatPlaceholder}
           title={chatTitle}
           sources={sources}
-          showGenerationHint={!isSubscriptionLoading && !isPremium}
+          showGenerationHint={!isEntitlementLoading && !isPremium}
         />
       </div>
     </>

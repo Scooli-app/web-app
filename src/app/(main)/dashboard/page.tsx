@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { PaymentSuccessModal } from "@/components/ui/payment-success-modal";
 import { selectIsWorksheetCreationEnabled } from "@/store/features/selectors";
 import { useAppSelector } from "@/store/hooks";
+import { fetchEntitlements } from "@/store/entitlements/entitlementsSlice";
 import { fetchSubscription, fetchUsage } from "@/store/subscription/subscriptionSlice";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
@@ -30,6 +31,7 @@ function DashboardContent() {
       posthog.capture("payment_success");
       dispatch(fetchSubscription());
       dispatch(fetchUsage());
+      dispatch(fetchEntitlements());
 
       window.history.replaceState({}, "", "/dashboard");
     }
