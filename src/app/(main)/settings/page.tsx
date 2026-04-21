@@ -23,7 +23,6 @@ import {
   CreditCard,
   Crown,
   ExternalLink,
-  Infinity,
   Loader2,
   Monitor,
   Moon,
@@ -35,6 +34,10 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import {
+  selectCurrentEntitlement,
+  selectEntitlementLoading,
+} from "@/store/entitlements/selectors";
 
 function getStatusBadge(
   status: SubscriptionStatus,
@@ -103,12 +106,32 @@ function formatDate(dateString: string): string {
   });
 }
 
+function getEffectiveAccessDisplayLabel(
+  source: string | undefined,
+  isPro: boolean,
+): string {
+  if (!isPro) {
+    return "Plano gratuito";
+  }
+
+  switch (source) {
+    case "organization":
+      return "Pro via organização";
+    case "both":
+      return "Pro pessoal + organização";
+    default:
+      return "Scooli Pro";
+  }
+}
+
 function SettingsContent() {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
   const { user, isLoaded: isUserLoaded } = useUser();
   const { openUserProfile } = useClerk();
   const theme = useSelector((state: RootState) => state.ui.theme);
+  const entitlement = useSelector(selectCurrentEntitlement);
+  const isEntitlementLoading = useSelector(selectEntitlementLoading);
 
   const [subscription, setSubscription] = useState<CurrentSubscription | null>(null);
   const [usage, setUsage] = useState<UsageStats | null>(null);
@@ -176,9 +199,27 @@ function SettingsContent() {
   };
 
   const isFreeUser = !subscription || subscription.planCode === "free";
-  const creditsUsedPercent = usage
+  const creditsUsedPercent = usage && usage.limit > 0
     ? Math.min((usage.used / usage.limit) * 100, 100)
     : 0;
+  const effectiveUsage = entitlement?.usage ?? null;
+  const effectiveIsPro = entitlement?.isPro ?? false;
+  const effectiveCreditsUsedPercent =
+    !effectiveIsPro && effectiveUsage && effectiveUsage.limit > 0
+      ? Math.min((effectiveUsage.used / effectiveUsage.limit) * 100, 100)
+      : 0;
+  const effectiveAccessLabel = getEffectiveAccessDisplayLabel(
+    entitlement?.source,
+    effectiveIsPro,
+  );
+  const effectiveUsageBadge = effectiveIsPro
+    ? "∞"
+    : effectiveUsage
+      ? `${effectiveUsage.remaining} / ${effectiveUsage.limit}`
+      : "--";
+  const hasOrganizationBackedAccess =
+    entitlement?.source === "organization" || entitlement?.source === "both";
+  const showPersonalUpgradeOptions = isFreeUser && !hasOrganizationBackedAccess;
 
   const planInfo = subscription
     ? PLAN_DISPLAY_INFO[subscription.planCode] || {
@@ -281,6 +322,24 @@ function SettingsContent() {
             </div>
           ) : isFreeUser ? (
             <>
+              <div className="mb-6 rounded-xl border border-border bg-muted/40 p-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-medium text-foreground">
+                      Acesso efetivo
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {isEntitlementLoading
+                        ? "A validar acessos..."
+                        : effectiveAccessLabel}
+                    </p>
+                  </div>
+                  <span className="inline-flex rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
+                    {effectiveUsageBadge}
+                  </span>
+                </div>
+              </div>
+
               {/* Free Trial Plan Info */}
               <div className="flex flex-wrap items-center gap-3 mb-4">
                 <span className="font-semibold text-foreground text-lg">
@@ -294,7 +353,7 @@ function SettingsContent() {
               </div>
 
               {/* Free Trial Usage */}
-              {usage && (
+              {showPersonalUpgradeOptions && usage && (
                 <div className="mb-6">
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-sm font-medium text-foreground">
@@ -322,8 +381,19 @@ function SettingsContent() {
                 </div>
               )}
 
+              {hasOrganizationBackedAccess && (
+                <div className="mb-6 rounded-xl border border-emerald-200 bg-emerald-50/70 p-4 dark:border-emerald-900/40 dark:bg-emerald-950/20">
+                  <p className="text-sm font-medium text-emerald-800 dark:text-emerald-300">
+                    O teu acesso Pro está a ser fornecido pela tua organização.
+                  </p>
+                  <p className="mt-1 text-sm text-emerald-700/90 dark:text-emerald-200/90">
+                    A faturação pessoal continua no plano gratuito, mas o acesso efetivo na app mantém a experiência Pro.
+                  </p>
+                </div>
+              )}
+
               {/* Upgrade Plan Options */}
-              {plans.length > 0 && (
+              {showPersonalUpgradeOptions && plans.length > 0 && (
                 <div className="space-y-3">
                   <p className="text-sm font-medium text-muted-foreground">
                     Atualizar para Pro
@@ -379,6 +449,24 @@ function SettingsContent() {
             </>
           ) : (
             <>
+              <div className="mb-6 rounded-xl border border-border bg-muted/40 p-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-medium text-foreground">
+                      Acesso efetivo
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {isEntitlementLoading
+                        ? "A validar acessos..."
+                        : effectiveAccessLabel}
+                    </p>
+                  </div>
+                  <span className="inline-flex rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
+                    {effectiveUsageBadge}
+                  </span>
+                </div>
+              </div>
+
               {/* Pro Plan Info */}
               <div className="flex flex-wrap items-center gap-3 mb-4">
                 <span className="font-semibold text-foreground text-lg">
@@ -400,27 +488,33 @@ function SettingsContent() {
                 </p>
               )}
 
-              {/* Pro Usage - Unlimited */}
+              {/* Effective Pro Usage */}
               <div className="mb-6">
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-sm font-medium text-foreground">
                     Gerações utilizadas
                   </span>
                   <span className="text-sm text-muted-foreground flex items-center gap-1">
-                    {usage?.used ?? 0}
+                    {effectiveUsage?.used ?? 0}
                     <span className="mx-0.5">/</span>
-                    <Infinity className="w-4 h-4" />
+                    {effectiveIsPro ? "∞" : (effectiveUsage?.limit ?? "--")}
                   </span>
                 </div>
                 <div className="h-3 bg-muted rounded-full overflow-hidden">
                   <div
                     className="h-full bg-gradient-to-r from-primary to-primary/60 rounded-full"
-                    style={{ width: "100%" }}
+                    style={{ width: `${effectiveCreditsUsedPercent}%` }}
                   />
                 </div>
-                <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-2">
-                  Gerações ilimitadas com o plano Pro
-                </p>
+                {effectiveIsPro ? (
+                  <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-2">
+                    Gerações ilimitadas com o plano Pro.
+                  </p>
+                ) : (
+                  <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-2">
+                    Restam {effectiveUsage?.remaining ?? 0} gerações neste período.
+                  </p>
+                )}
               </div>
 
               {/* Actions */}

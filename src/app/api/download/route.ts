@@ -35,9 +35,8 @@ interface DownloadRequestBody {
   images?: DownloadImagePayload[];
 }
 
-interface CurrentSubscriptionResponse {
-  planCode?: string;
-  status?: string;
+interface CurrentEntitlementResponse {
+  isPro?: boolean;
 }
 
 type TextBlockType =
@@ -195,7 +194,7 @@ async function resolveIsProUser(): Promise<boolean> {
       return false;
     }
 
-    const response = await fetch(`${baseUrl}/subscriptions/current`, {
+    const response = await fetch(`${baseUrl}/entitlements/current`, {
       headers: { Authorization: `Bearer ${token}` },
       cache: "no-store",
     });
@@ -203,17 +202,12 @@ async function resolveIsProUser(): Promise<boolean> {
       return false;
     }
 
-    const subscription =
-      (await response.json()) as CurrentSubscriptionResponse | null;
-    const planCode = String(subscription?.planCode ?? "").toLowerCase();
-    const status = String(subscription?.status ?? "").toLowerCase();
+    const entitlement =
+      (await response.json()) as CurrentEntitlementResponse | null;
 
-    return (
-      planCode !== "free" &&
-      (status === "active" || status === "trialing")
-    );
+    return entitlement?.isPro === true;
   } catch (error) {
-    console.warn("Failed to resolve subscription for download:", error);
+    console.warn("Failed to resolve entitlements for download:", error);
     return false;
   }
 }
@@ -1414,4 +1408,4 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       { status: 500 },
     );
   }
-}
+}

@@ -7,13 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
-  selectHasOrganizationWorkspace,
-  selectIsOrganizationAdmin,
   selectWorkspaceContext,
   selectWorkspaceDashboard,
   selectWorkspaceError,
   selectWorkspaceLoading,
-  selectWorkspaceReady,
 } from "@/store/workspace/selectors";
 import { fetchOrganizationDashboard } from "@/store/workspace/workspaceSlice";
 import {
@@ -25,7 +22,6 @@ import {
   ShieldCheck,
   Users,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 const STATS = [
@@ -100,31 +96,14 @@ function formatCountLabel(count: number, singular: string, plural: string): stri
 
 export default function SchoolDashboardPage() {
   const dispatch = useAppDispatch();
-  const router = useRouter();
   const workspace = useAppSelector(selectWorkspaceContext);
   const dashboard = useAppSelector(selectWorkspaceDashboard);
   const loading = useAppSelector(selectWorkspaceLoading);
   const error = useAppSelector(selectWorkspaceError);
-  const workspaceReady = useAppSelector(selectWorkspaceReady);
-  const hasOrganizationWorkspace = useAppSelector(selectHasOrganizationWorkspace);
-  const isOrganizationAdmin = useAppSelector(selectIsOrganizationAdmin);
 
   useEffect(() => {
-    if (!workspaceReady) {
-      return;
-    }
-
-    if (!hasOrganizationWorkspace || !isOrganizationAdmin) {
-      router.replace("/dashboard");
-      return;
-    }
-
     void dispatch(fetchOrganizationDashboard());
-  }, [dispatch, hasOrganizationWorkspace, isOrganizationAdmin, router, workspaceReady]);
-
-  if (!workspaceReady || !hasOrganizationWorkspace || !isOrganizationAdmin) {
-    return null;
-  }
+  }, [dispatch]);
 
   const maxActivity = Math.max(
     ...(dashboard?.activityByDay?.map((point) => point.generations) ?? [0]),

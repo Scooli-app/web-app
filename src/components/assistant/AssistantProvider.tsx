@@ -1,6 +1,7 @@
 "use client";
 
 import { useIsMobile } from "@/hooks/use-mobile";
+import { selectEntitlementLoading } from "@/store/entitlements/selectors";
 import {
   clearConversation,
   closePanel,
@@ -16,7 +17,7 @@ import {
   toggleOpen,
 } from "@/store/assistant";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { selectIsPro, selectSubscriptionLoading } from "@/store/subscription/selectors";
+import { selectIsPro } from "@/store/subscription/selectors";
 import { useAuth } from "@clerk/nextjs";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect } from "react";
@@ -43,9 +44,9 @@ export function AssistantProvider() {
   const hasUnread = useAppSelector(selectHasUnreadMessages);
   const inputValue = useAppSelector(selectInputValue);
   const isProUser = useAppSelector(selectIsPro);
-  const isSubscriptionLoading = useAppSelector(selectSubscriptionLoading);
+  const isEntitlementLoading = useAppSelector(selectEntitlementLoading);
 
-  const showGenerationHint = !isSubscriptionLoading && !isProUser;
+  const showGenerationHint = !isEntitlementLoading && !isProUser;
 
   const shouldHideAssistant =
     isMobile && MOBILE_EDITOR_ROUTE_PATTERN.test(pathname ?? "");

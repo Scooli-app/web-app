@@ -36,7 +36,10 @@ import {
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { selectIsPro } from "@/store/subscription/selectors";
 import { setUpgradeModalOpen } from "@/store/ui/uiSlice";
-import { selectHasOrganizationWorkspace, selectWorkspaceContext } from "@/store/workspace/selectors";
+import {
+  selectHasAccessibleOrganization,
+  selectWorkspaceContext,
+} from "@/store/workspace/selectors";
 import { BarChart3, Plus, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -54,7 +57,7 @@ function CommunityLibraryPage() {
   const isReusing = useAppSelector(selectIsReusing);
   const reusedResourceIds = useAppSelector(selectReusedResourceIds) as string[];
   const workspace = useAppSelector(selectWorkspaceContext);
-  const hasOrganizationWorkspace = useAppSelector(selectHasOrganizationWorkspace);
+  const hasAccessibleOrganization = useAppSelector(selectHasAccessibleOrganization);
   const activeScope = (filters.scope ?? "community") as LibraryScope;
 
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
@@ -183,7 +186,7 @@ function CommunityLibraryPage() {
           >
             Biblioteca geral
           </Button>
-          {hasOrganizationWorkspace ? (
+          {hasAccessibleOrganization ? (
             <Button
               variant={activeScope === "organization" ? "default" : "outline"}
               size="sm"
@@ -233,7 +236,7 @@ function CommunityLibraryPage() {
           onSubmit={handleShareResource}
           isLoading={false}
           libraryScope={activeScope}
-          allowOrganizationScope={hasOrganizationWorkspace}
+          allowOrganizationScope={hasAccessibleOrganization}
           organizationName={workspace?.organization?.name ?? null}
         />
       </div>
@@ -244,9 +247,9 @@ function CommunityLibraryPage() {
 export default function CommunityPage() {
   const isPro = useAppSelector(selectIsPro);
   const dispatch = useAppDispatch();
-  const hasOrganizationWorkspace = useAppSelector(selectHasOrganizationWorkspace);
+  const hasAccessibleOrganization = useAppSelector(selectHasAccessibleOrganization);
 
-  if (!isPro && !hasOrganizationWorkspace) {
+  if (!isPro && !hasAccessibleOrganization) {
     return (
       <CommunityUpgradePrompt
         onUpgrade={() => dispatch(setUpgradeModalOpen(true))}
