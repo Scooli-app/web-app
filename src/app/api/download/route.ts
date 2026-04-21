@@ -69,7 +69,8 @@ const MARKDOWN_IMAGE_LINE_PATTERN = /^!\[(.*?)\]\((.+?)\)\s*$/;
 const MARKDOWN_IMAGE_PREFIX_PATTERN = /^!\[(.*?)\]\((.+?)\)\s*(.*)$/;
 const HTML_IMAGE_LINE_PATTERN = /^<img\b[^>]*>$/i;
 const DATA_URI_PATTERN = /^data:([^;]+);base64,(.+)$/;
-const HTML_COMMENT_PATTERN = /<!--(?:[\s\S]*?-->|[\s\S]*)/g;
+const HTML_COMPLETE_COMMENT_PATTERN = /<!--[\s\S]*?-->/g;
+const HTML_INCOMPLETE_COMMENT_PATTERN = /<!--[\s\S]*/g;
 const HTML_BREAK_PATTERN = /<br\s*\/?>/gi;
 const HTML_PARAGRAPH_OPEN_PATTERN = /<p\b[^>]*>/gi;
 const HTML_PARAGRAPH_CLOSE_PATTERN = /<\/p>/gi;
@@ -78,6 +79,20 @@ const ANSWER_BLANK_PATTERN = /_{3,}/g;
 const ANSWER_BLANK_TOKEN_PATTERN = /@@EXPORTBLANK(\d+)@@/g;
 const BLOCK_MATH_PATTERN = /\$\$([^$]+)\$\$/g;
 const INLINE_MATH_PATTERN = /\$([^$\n]+)\$/g;
+
+/**
+ * Removes HTML comments from a string, including malformed/incomplete ones.
+ * Uses a two-pass approach to ensure complete sanitization and avoid
+ * incomplete multi-character sanitization vulnerabilities
+ * (CodeQL: js/incomplete-multi-character-sanitization).
+ * First pass removes well-formed comments (<!-- ... -->),
+ * second pass removes any remaining dangling comment openers (<!--).
+ */
+function removeHtmlComments(text: string): string {
+  return text
+    .replace(HTML_COMPLETE_COMMENT_PATTERN, "")
+    .replace(HTML_INCOMPLETE_COMMENT_PATTERN, "");
+}
 
 /**
  * Convert a LaTeX expression to readable plain text for PDF/DOCX export.
@@ -345,8 +360,7 @@ function protectAnswerBlanks(text: string): {
 
 function stripInlineMarkdown(text: string): string {
   const blankProtected = protectAnswerBlanks(convertMathToText(text));
-  const withoutMarkdown = blankProtected.content
-    .replace(HTML_COMMENT_PATTERN, "")
+  const withoutMarkdown = removeHtmlComments(blankProtected.content)
     .replace(HTML_BREAK_PATTERN, " ")
     .replace(/<[^>]*>?/g, "")
     .replace(/</g, "")
@@ -363,10 +377,9 @@ function stripInlineMarkdown(text: string): string {
 }
 
 function normalizeExportContent(content: string): string {
-  return normalizeEscapedAnswerBlanks(content)
+  return removeHtmlComments(normalizeEscapedAnswerBlanks(content)
     .replace(/\r\n/g, "\n")
-    .replace(/\r/g, "\n")
-    .replace(HTML_COMMENT_PATTERN, "")
+    .replace(/\r/g, "\n"))
     .replace(HTML_BREAK_PATTERN, "\n")
     .replace(HTML_PARAGRAPH_OPEN_PATTERN, "")
     .replace(HTML_PARAGRAPH_CLOSE_PATTERN, "\n")
@@ -1360,7 +1373,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     const sanitizedTitle = title
-      .replace(/[^a-zA-Z0-9Ã¡Ã Ã¢Ã£Ã©Ã¨ÃªÃ­Ã¯Ã³Ã´ÃµÃ¶ÃºÃ§Ã±ÃÃ€Ã‚ÃƒÃ‰ÃˆÃŠÃÃÃ“Ã”Ã•Ã–ÃšÃ‡Ã‘\s-_]/g, "")
+      .replace(/[^a-zA-Z0-9\u00C0-\u00FF\s\-_]/g, "")
       .replace(/\s+/g, "_")
       .substring(0, 100);
 
