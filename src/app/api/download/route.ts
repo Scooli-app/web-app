@@ -85,7 +85,8 @@ const MARKDOWN_IMAGE_LINE_PATTERN = /^!\[(.*?)\]\((.+?)\)\s*$/;
 const MARKDOWN_IMAGE_PREFIX_PATTERN = /^!\[(.*?)\]\((.+?)\)\s*(.*)$/;
 const HTML_IMAGE_LINE_PATTERN = /^<img\b[^>]*>$/i;
 const DATA_URI_PATTERN = /^data:([^;]+);base64,(.+)$/;
-const HTML_COMMENT_PATTERN = /<!--(?:[\s\S]*?-->|[\s\S]*)/g;
+const HTML_COMPLETE_COMMENT_PATTERN = /<!--[\s\S]*?-->/g;
+const HTML_INCOMPLETE_COMMENT_PATTERN = /<!--[\s\S]*/g;
 const HTML_BREAK_PATTERN = /<br\s*\/?>/gi;
 const HTML_PARAGRAPH_OPEN_PATTERN = /<p\b[^>]*>/gi;
 const HTML_PARAGRAPH_CLOSE_PATTERN = /<\/p>/gi;
@@ -1328,6 +1329,17 @@ function protectAnswerBlanks(text: string): {
   };
 }
 
+/**
+ * Removes HTML comments from a string, including malformed/incomplete ones.
+ * Uses a two-pass approach to ensure complete sanitization and avoid
+ * incomplete multi-character sanitization vulnerabilities.
+ */
+function removeHtmlComments(text: string): string {
+  return text
+    .replace(HTML_COMPLETE_COMMENT_PATTERN, "")
+    .replace(HTML_INCOMPLETE_COMMENT_PATTERN, "");
+}
+
 function stripInlineMarkdown(
   text: string,
   mathOptions: Required<MathTextRenderOptions> = DEFAULT_MATH_TEXT_RENDER_OPTIONS,
@@ -1335,8 +1347,7 @@ function stripInlineMarkdown(
   const blankProtected = protectAnswerBlanks(
     convertMathToText(text, mathOptions),
   );
-  const withoutMarkdown = blankProtected.content
-    .replace(HTML_COMMENT_PATTERN, "")
+  const withoutMarkdown = removeHtmlComments(blankProtected.content)
     .replace(HTML_BREAK_PATTERN, " ")
     .replace(/<[^>]*>?/g, "")
     .replace(/</g, "")
@@ -1353,10 +1364,9 @@ function stripInlineMarkdown(
 }
 
 function normalizeExportContent(content: string): string {
-  return normalizeEscapedAnswerBlanks(content)
+  return removeHtmlComments(normalizeEscapedAnswerBlanks(content))
     .replace(/\r\n/g, "\n")
     .replace(/\r/g, "\n")
-    .replace(HTML_COMMENT_PATTERN, "")
     .replace(HTML_BREAK_PATTERN, "\n")
     .replace(HTML_PARAGRAPH_OPEN_PATTERN, "")
     .replace(HTML_PARAGRAPH_CLOSE_PATTERN, "\n")
@@ -2616,10 +2626,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     const sanitizedTitle = title
-      .replace(
-        /[^a-zA-Z0-9Ã¡Ã Ã¢Ã£Ã©Ã¨ÃªÃ­Ã¯Ã³Ã´ÃµÃ¶ÃºÃ§Ã±ÃÃ€Ã‚ÃƒÃ‰ÃˆÃŠÃÃÃ“Ã”Ã•Ã–ÃšÃ‡Ã‘\s-_]/g,
-        "",
-      )
+      .replace(/[^a-zA-Z0-9\u00C0-\u00FF\s\-_]/g, "")
       .replace(/\s+/g, "_")
       .substring(0, 100);
 
@@ -2672,3 +2679,4 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     );
   }
 }
+
