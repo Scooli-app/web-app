@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Routes, type DocumentTemplate, type DocumentType } from "@/shared/types";
 import { cn } from "@/shared/utils/utils";
+import { selectIsTemplateFromDocumentEnabled } from "@/store/features/selectors";
 import { selectIsPro } from "@/store/subscription/selectors";
 import { useAppSelector } from "@/store/hooks";
 import {
@@ -26,7 +27,7 @@ import {
   Star,
   UploadCloud,
 } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { TemplateCard } from "./TemplateCard";
 import { TemplateCreator } from "./TemplateCreator";
@@ -57,6 +58,9 @@ export function TemplateBrowserModal({
 }: TemplateBrowserModalProps) {
   const router = useRouter();
   const isProUser = useAppSelector(selectIsPro);
+  const isTemplateFromDocumentEnabled = useAppSelector(
+    selectIsTemplateFromDocumentEnabled
+  );
   const [view, setView] = useState<ModalView>("browse");
   const [previewTemplate, setPreviewTemplate] =
     useState<DocumentTemplate | null>(null);
@@ -71,6 +75,9 @@ export function TemplateBrowserModal({
     (() => void) | null
   >(null);
   const [isSettingDefault, setIsSettingDefault] = useState(false);
+  const canAccessTemplateFromDocument = isProUser && isTemplateFromDocumentEnabled;
+  const isFromDocumentViewActive =
+    view === "from-document" && isTemplateFromDocumentEnabled;
 
   const resetModalState = useCallback(() => {
     setView("browse");
@@ -138,6 +145,12 @@ export function TemplateBrowserModal({
     setPreviewTemplate(null);
   };
 
+  useEffect(() => {
+    if (!isTemplateFromDocumentEnabled && view === "from-document") {
+      setView("browse");
+    }
+  }, [isTemplateFromDocumentEnabled, view]);
+
   const handleTemplateSaved = (
     template: DocumentTemplate,
     isUpdate: boolean,
@@ -188,11 +201,9 @@ export function TemplateBrowserModal({
           className={cn(
             "flex h-[min(90dvh,820px)] max-h-[90dvh] w-[min(100%,44rem)] flex-col gap-0 overflow-scroll p-0",
           )}
-          hideCloseButton={
-            view === "create" || view === "edit" || view === "from-document"
-          }
+          hideCloseButton={view === "create" || view === "edit" || isFromDocumentViewActive}
         >
-          {view === "from-document" ? (
+          {isFromDocumentViewActive ? (
             <TemplateFromDocumentCreator
               documentType={documentType}
               onBack={handleBackToBrowse}
@@ -366,33 +377,34 @@ export function TemplateBrowserModal({
                     </div>
                   </div>
                   <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
-                    {isProUser ? (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setView("from-document")}
-                        className="h-9 w-full items-center gap-1.5 rounded-lg border-border text-secondary-foreground hover:border-primary hover:bg-accent sm:h-8 sm:w-auto"
-                        aria-label="Criar modelo a partir de documento"
-                      >
-                        <UploadCloud className="h-4 w-4" />
-                        <span>Importar documento</span>
-                      </Button>
-                    ) : (
-                      <Button
-                        type="button"
-                        size="sm"
-                        onClick={() => router.push(Routes.CHECKOUT)}
-                        className="h-9 w-full items-center gap-1.5 rounded-lg border border-amber-300/60 bg-gradient-to-r from-amber-50 to-yellow-50 text-amber-800 hover:from-amber-100 hover:to-yellow-100 dark:border-amber-700/60 dark:from-amber-950/40 dark:to-yellow-950/40 dark:text-amber-300 sm:h-8 sm:w-auto"
-                        aria-label="Importar documento (funcionalidade Pro)"
-                      >
-                        <Crown className="h-4 w-4 text-amber-500 dark:text-amber-300" />
-                        <span>Importar documento</span>
-                        <span className="ml-1 rounded-full border border-amber-400/60 bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700 dark:border-amber-500/40 dark:bg-amber-900/40 dark:text-amber-200">
-                          Pro
-                        </span>
-                      </Button>
-                    )}
+                    {isTemplateFromDocumentEnabled &&
+                      (canAccessTemplateFromDocument ? (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setView("from-document")}
+                          className="h-9 w-full items-center gap-1.5 rounded-lg border-border text-secondary-foreground hover:border-primary hover:bg-accent sm:h-8 sm:w-auto"
+                          aria-label="Criar modelo a partir de documento"
+                        >
+                          <UploadCloud className="h-4 w-4" />
+                          <span>Importar documento</span>
+                        </Button>
+                      ) : (
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={() => router.push(Routes.CHECKOUT)}
+                          className="h-9 w-full items-center gap-1.5 rounded-lg border border-amber-300/60 bg-gradient-to-r from-amber-50 to-yellow-50 text-amber-800 hover:from-amber-100 hover:to-yellow-100 dark:border-amber-700/60 dark:from-amber-950/40 dark:to-yellow-950/40 dark:text-amber-300 sm:h-8 sm:w-auto"
+                          aria-label="Importar documento (funcionalidade Pro)"
+                        >
+                          <Crown className="h-4 w-4 text-amber-500 dark:text-amber-300" />
+                          <span>Importar documento</span>
+                          <span className="ml-1 rounded-full border border-amber-400/60 bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700 dark:border-amber-500/40 dark:bg-amber-900/40 dark:text-amber-200">
+                            Pro
+                          </span>
+                        </Button>
+                      ))}
                     <Button
                       type="button"
                       variant="outline"

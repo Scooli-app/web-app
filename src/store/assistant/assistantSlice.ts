@@ -1,4 +1,5 @@
 import { type ChatHistoryItem, type ChatStreamCallbacks, streamChatMessage } from "@/services/api";
+import { fetchEntitlements } from "@/store/entitlements/entitlementsSlice";
 import { fetchUsage } from "@/store/subscription/subscriptionSlice";
 import { createAsyncThunk, createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type { AppDispatch } from "../store";
@@ -59,6 +60,7 @@ export const sendMessage = createAsyncThunk<
       dispatch(completeStreaming(fullResponse));
       // Refetch usage stats after AI interaction
       dispatch(fetchUsage());
+      dispatch(fetchEntitlements());
     },
     onError: (error: string) => {
       dispatch(streamError(error));

@@ -7,17 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
-  selectHasOrganizationWorkspace,
-  selectIsOrganizationAdmin,
   selectWorkspaceContext,
   selectWorkspaceError,
   selectWorkspaceLoading,
   selectWorkspaceMembers,
-  selectWorkspaceReady,
 } from "@/store/workspace/selectors";
 import { fetchOrganizationMembers } from "@/store/workspace/workspaceSlice";
 import { Activity, Building2, FileText, Share2, Sparkles, Users } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 const ROLE_LABELS: Record<string, string> = {
@@ -59,31 +55,14 @@ function formatCountLabel(count: number, singular: string, plural: string): stri
 
 export default function SchoolMembersPage() {
   const dispatch = useAppDispatch();
-  const router = useRouter();
   const workspace = useAppSelector(selectWorkspaceContext);
   const members = useAppSelector(selectWorkspaceMembers);
   const loading = useAppSelector(selectWorkspaceLoading);
   const error = useAppSelector(selectWorkspaceError);
-  const workspaceReady = useAppSelector(selectWorkspaceReady);
-  const hasOrganizationWorkspace = useAppSelector(selectHasOrganizationWorkspace);
-  const isOrganizationAdmin = useAppSelector(selectIsOrganizationAdmin);
 
   useEffect(() => {
-    if (!workspaceReady) {
-      return;
-    }
-
-    if (!hasOrganizationWorkspace || !isOrganizationAdmin) {
-      router.replace("/dashboard");
-      return;
-    }
-
     void dispatch(fetchOrganizationMembers());
-  }, [dispatch, hasOrganizationWorkspace, isOrganizationAdmin, router, workspaceReady]);
-
-  if (!workspaceReady || !hasOrganizationWorkspace || !isOrganizationAdmin) {
-    return null;
-  }
+  }, [dispatch]);
 
   const totalMembers = members.length;
   const activeMembers = members.filter((member) => member.status === "active").length;

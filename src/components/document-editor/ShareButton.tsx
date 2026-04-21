@@ -23,7 +23,7 @@ import {
 } from "@/store/documents/documentSlice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
-  selectHasOrganizationWorkspace,
+  selectHasAccessibleOrganization,
   selectWorkspaceContext,
 } from "@/store/workspace/selectors";
 import type { RootState } from "@/store/store";
@@ -89,7 +89,7 @@ function ShareButtonComponent({
     SharedResourceStatus | "UNSHARED" | null
   >(null);
   const workspace = useAppSelector(selectWorkspaceContext);
-  const hasOrganizationWorkspace = useAppSelector(selectHasOrganizationWorkspace);
+  const hasAccessibleOrganization = useAppSelector(selectHasAccessibleOrganization);
 
   // Check feature flag — if community library is OFF, hide the button entirely
   const features = useSelector((state: RootState) => state.features.flags);
@@ -211,8 +211,8 @@ function ShareButtonComponent({
       initialGrade={grade}
       initialSubject={subject}
       initialResourceType={resourceType}
-      libraryScope={hasOrganizationWorkspace ? "both" : "community"}
-      allowOrganizationScope={hasOrganizationWorkspace}
+      libraryScope={hasAccessibleOrganization ? "both" : "community"}
+      allowOrganizationScope={hasAccessibleOrganization}
       organizationName={workspace?.organization?.name ?? null}
       documentId={documentId}
     />

@@ -59,6 +59,12 @@ const FEATURE_FLAG_METADATA: Record<string, { name: string; description: string;
       "Controla se os utilizadores podem criar fichas de trabalho a partir da plataforma.",
     order: 35,
   },
+  [FeatureFlagKey.TEMPLATE_FROM_DOCUMENT]: {
+    name: "Modelo a partir de Documento",
+    description:
+      "Controla se os utilizadores podem fazer upload de um documento e convertê-lo num modelo personalizado.",
+    order: 37,
+  },
   [FeatureFlagKey.DOCUMENT_IMAGES]: {
     name: "Imagens em Documentos",
     description:

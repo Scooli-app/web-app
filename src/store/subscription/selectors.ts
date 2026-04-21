@@ -7,15 +7,8 @@ export const selectSubscriptionLoading = (state: RootState) => state.subscriptio
 
 
 /**
- * Check if the user is a Pro subscriber
- * Pro users have any planCode other than 'free' and an 'active' or 'trialing' status
+ * Effective Pro access is resolved by the entitlements API.
+ * Personal subscription data remains billing-focused.
  */
-export const selectIsPro = (state: RootState) => {
-  const subscription = state.subscription?.subscription;
-  if (!subscription) return false;
-  
-  return (
-    subscription.planCode !== "free" && 
-    (subscription.status === "active" || subscription.status === "trialing")
-  );
-};
+export const selectIsPro = (state: RootState) =>
+  state.entitlements?.entitlement?.isPro ?? false;

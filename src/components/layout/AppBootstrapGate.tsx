@@ -6,6 +6,10 @@ import {
 } from "@/store/features/featuresSlice";
 import { useAppDispatch } from "@/store/hooks";
 import {
+  fetchEntitlements,
+  resetEntitlementsState,
+} from "@/store/entitlements/entitlementsSlice";
+import {
   fetchSubscription,
   fetchUsage,
   resetSubscriptionState,
@@ -213,6 +217,7 @@ export function AppBootstrapGate() {
 
     if (!isSignedIn || !user?.id) {
       dispatch(resetSubscriptionState());
+      dispatch(resetEntitlementsState());
       dispatch(resetFeaturesState());
       dispatch(resetWorkspaceState());
       setBootstrappedIdentity(null);
@@ -232,6 +237,7 @@ export function AppBootstrapGate() {
     setIsBootstrapping(true);
     setBootstrappedIdentity(null);
     dispatch(resetSubscriptionState());
+    dispatch(resetEntitlementsState());
     dispatch(resetFeaturesState());
     dispatch(resetWorkspaceState());
 
@@ -253,6 +259,7 @@ export function AppBootstrapGate() {
       await Promise.all([
         dispatch(fetchSubscription()),
         dispatch(fetchUsage()),
+        dispatch(fetchEntitlements()),
         dispatch(fetchFeatureFlags()),
         dispatch(fetchWorkspace()),
       ]);
