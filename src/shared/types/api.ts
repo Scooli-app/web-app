@@ -27,6 +27,10 @@ export interface CreateDocumentParams {
   templateId?: string;
   isSpecificComponent?: boolean;
   worksheetVariant?: WorksheetVariant;
+  /** Explicit user/org source IDs to include in RAG retrieval. */
+  sourceIds?: string[];
+  /** Whether to include Aprendizagens Essenciais corpus (default true). */
+  includeAe?: boolean;
 }
 
 
@@ -119,4 +123,3 @@ export interface DocumentStreamCallbacks {
   onComplete?: (documentId: string, response: StreamedResponse) => void;
   onError?: (error: string) => void;
 }
-

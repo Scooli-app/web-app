@@ -6,6 +6,7 @@ import documentReducer from "./documents/documentSlice";
 import entitlementsReducer from "./entitlements/entitlementsSlice";
 import featuresReducer from "./features/featuresSlice";
 import { moderationReducer } from "./moderation";
+import sourcesReducer from "./sources/sourcesSlice";
 import subscriptionReducer from "./subscription/subscriptionSlice";
 import uiReducer from "./ui/uiSlice";
 import workspaceReducer from "./workspace/workspaceSlice";
@@ -21,6 +22,7 @@ const rootReducer = combineReducers({
   moderation: moderationReducer,
   features: featuresReducer,
   workspace: workspaceReducer,
+  sources: sourcesReducer,
 });
 
 export default rootReducer;

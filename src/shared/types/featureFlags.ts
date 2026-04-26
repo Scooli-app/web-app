@@ -17,7 +17,7 @@ export enum FeatureFlag {
 
   /** Controls whether users can upload a document and convert it into a custom template. */
   TEMPLATE_FROM_DOCUMENT = "template_from_document",
-  
+
   /** When ON: shared documents await admin review. When OFF: auto-approved on submit. */
   DOCUMENT_REVIEW = "document_review",
 
@@ -26,4 +26,7 @@ export enum FeatureFlag {
 
   /** Controls the timed in-app feedback survey shown after first login. */
   APP_FEEDBACK_SURVEY = "app_feedback_survey",
+
+  /** Controls user source uploads and the source picker in document creation (Pro/Org only). */
+  USER_SOURCES = "user_sources",
 }
