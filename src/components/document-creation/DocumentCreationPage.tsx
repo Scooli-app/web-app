@@ -9,6 +9,7 @@ import {
 } from "@/store/documents/documentSlice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { selectIsPro } from "@/store/subscription/selectors";
+import { FeatureFlag } from "@/shared/types/featureFlags";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { AMBIGUOUS_COMPONENTS_SUBJECTS, SUBJECTS, SUBJECTS_BY_GRADE } from "./constants";
@@ -18,6 +19,7 @@ import {
   FormActions,
   FormHeader,
   GradeSection,
+  SourcePickerSection,
   SubjectSection,
   TeachingMethodSection,
   TopicSection,
@@ -46,6 +48,8 @@ function useDocumentForm(documentTypeId: DocumentTypeConfig["id"]) {
     templateId: undefined,
     template: undefined,
     worksheetVariant: undefined,
+    sourceIds: [],
+    includeAe: true,
   });
   const [error, setError] = useState("");
 
@@ -94,6 +98,9 @@ export default function DocumentCreationPage({
   const dispatch = useAppDispatch();
   const isProUser = useAppSelector(selectIsPro);
   const isEntitlementLoading = useAppSelector(selectEntitlementLoading);
+  const isUserSourcesEnabled = useAppSelector(
+    (state) => state.features.flags[FeatureFlag.USER_SOURCES] === true
+  );
   const [isLoading, setIsLoading] = useState(false);
 
   const { formState, error, setError, updateForm, isFormValid, handleTemplateSelect } =
@@ -103,7 +110,6 @@ export default function DocumentCreationPage({
   useEffect(() => {
     if (formState.schoolYear && formState.subject) {
       const validSubjects = SUBJECTS_BY_GRADE[String(formState.schoolYear)];
-      // If we have a list for this grade, and the current subject isn't in it
       if (validSubjects && !validSubjects.includes(formState.subject)) {
         updateForm("subject", "");
       }
@@ -133,10 +139,10 @@ export default function DocumentCreationPage({
 
   const handleCreateDocument = async () => {
     if (isLoading) return;
-    
+
     if (!formState.templateId) {
       setError("Por favor, selecione um modelo de documento");
-      return; 
+      return;
     }
 
     if (showWorksheetVariantSection && !formState.worksheetVariant) {
@@ -183,6 +189,13 @@ export default function DocumentCreationPage({
           templateId: formState.templateId,
           isSpecificComponent: formState.isSpecificComponent,
           worksheetVariant: formState.worksheetVariant,
+          ...(isUserSourcesEnabled && {
+            sourceIds:
+              formState.sourceIds && formState.sourceIds.length > 0
+                ? formState.sourceIds
+                : undefined,
+            includeAe: formState.includeAe ?? true,
+          }),
         })
       );
 
@@ -198,9 +211,9 @@ export default function DocumentCreationPage({
           has_teaching_method: !!formState.teachingMethod,
           has_duration: !!formState.lessonTime,
           has_additional_details: !!formState.additionalDetails?.trim(),
+          has_user_sources: (formState.sourceIds?.length ?? 0) > 0,
         });
 
-        // Store the initial prompt for display in chat
         dispatch(
           setPendingInitialPrompt({
             documentId: streamResponse.id,
@@ -272,10 +285,10 @@ export default function DocumentCreationPage({
             />
           </div>
 
-          <SubjectSection 
-            subject={formState.subject} 
+          <SubjectSection
+            subject={formState.subject}
             isSpecificComponent={formState.isSpecificComponent}
-            onUpdate={updateForm} 
+            onUpdate={updateForm}
             availableSubjects={formState.schoolYear ? SUBJECTS_BY_GRADE[String(formState.schoolYear)] : undefined}
             className="shadow-none border-0 p-0 hover:shadow-none transition-none"
             disabled={!formState.schoolYear}
@@ -298,6 +311,16 @@ export default function DocumentCreationPage({
             additionalDetails={formState.additionalDetails}
             onUpdate={updateForm}
           />
+
+          {isUserSourcesEnabled && (
+            <SourcePickerSection
+              sourceIds={formState.sourceIds ?? []}
+              includeAe={formState.includeAe ?? true}
+              subject={formState.subject}
+              schoolYear={formState.schoolYear || undefined}
+              onUpdate={updateForm}
+            />
+          )}
 
           <FormActions
             documentType={documentType}
