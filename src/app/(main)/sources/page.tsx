@@ -12,7 +12,6 @@ import type { UploadSourceParams } from "@/shared/types/sources";
 import { cn } from "@/shared/utils/utils";
 import {
   AlertCircle,
-  Check,
   CheckCircle2,
   Clock,
   FileText,
@@ -161,7 +160,7 @@ export default function SourcesPage() {
               {file ? file.name : "Clique ou arraste um ficheiro"}
             </p>
             <p className="text-xs text-muted-foreground">
-              {file ? formatSize(file.size) : "PDF ou DOCX, até 200 MB"}
+              {file ? formatSize(file.size) : "PDF ou DOCX, até 200 MB"}
             </p>
           </div>
           <input
