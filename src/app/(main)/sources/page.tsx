@@ -65,8 +65,6 @@ export default function SourcesPage() {
   );
 
   const [name, setName] = useState("");
-  const [subject, setSubject] = useState("");
-  const [schoolYear, setSchoolYear] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -107,15 +105,11 @@ export default function SourcesPage() {
     const params: UploadSourceParams = {
       file,
       name: name.trim(),
-      subject: subject.trim() || undefined,
-      schoolYear: schoolYear ? Number(schoolYear) : undefined,
     };
     const result = await dispatch(uploadUserSource(params));
     if (uploadUserSource.fulfilled.match(result)) {
       setFile(null);
       setName("");
-      setSubject("");
-      setSchoolYear("");
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
@@ -160,7 +154,7 @@ export default function SourcesPage() {
               {file ? file.name : "Clique ou arraste um ficheiro"}
             </p>
             <p className="text-xs text-muted-foreground">
-              {file ? formatSize(file.size) : "PDF ou DOCX, até 200 MB"}
+              {file ? formatSize(file.size) : "PDF ou DOCX, até 25 MB"}
             </p>
           </div>
           <input
@@ -172,37 +166,21 @@ export default function SourcesPage() {
           />
         </div>
 
-        {/* Form fields — only shown after a file is chosen */}
+        {/* Name + upload — only shown after a file is chosen */}
         {file && (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="flex gap-3">
             <input
               type="text"
               placeholder="Nome da fonte *"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="sm:col-span-3 rounded-lg border border-border bg-muted px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-            />
-            <input
-              type="text"
-              placeholder="Disciplina (opcional)"
-              value={subject}
-              onChange={(e) => setSubject(e.target.value)}
-              className="rounded-lg border border-border bg-muted px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-            />
-            <input
-              type="number"
-              placeholder="Ano (1-12)"
-              min={1}
-              max={12}
-              value={schoolYear}
-              onChange={(e) => setSchoolYear(e.target.value)}
-              className="rounded-lg border border-border bg-muted px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              className="flex-1 rounded-lg border border-border bg-muted px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
             />
             <button
               type="button"
               onClick={() => void handleUpload()}
               disabled={uploading || !name.trim()}
-              className="flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
             >
               {uploading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -268,8 +246,6 @@ export default function SourcesPage() {
                     {formatSize(source.fileSizeBytes)}
                     {source.chunkCount > 0 &&
                       ` · ${source.chunkCount} segmentos`}
-                    {source.subject && ` · ${source.subject}`}
-                    {source.schoolYear && ` · ${source.schoolYear}º ano`}
                     {` · ${source.fileKind.toUpperCase()}`}
                   </p>
                   {source.status === "failed" && source.lastError && (
