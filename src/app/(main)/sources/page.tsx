@@ -7,9 +7,8 @@ import {
   fetchSources,
   refreshSource,
   uploadUserSource,
-  updateSource,
 } from "@/store/sources/sourcesSlice";
-import type { UploadSourceParams, UserSource } from "@/shared/types/sources";
+import type { UploadSourceParams } from "@/shared/types/sources";
 import { cn } from "@/shared/utils/utils";
 import {
   AlertCircle,
@@ -321,4 +320,109 @@ export default function SourcesPage() {
 
         {uploadError && (
           <p className="flex items-center gap-1.5 text-sm text-destructive">
-            <AlertCir
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            {uploadError}
+          </p>
+        )}
+      </Card>
+
+      {/* Sources list */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-base font-semibold">
+            Fontes carregadas
+            {sources.length > 0 && (
+              <span className="ml-2 text-sm font-normal text-muted-foreground">
+                ({sources.length})
+              </span>
+            )}
+          </h2>
+          {sources.some((s) => !["indexed", "failed"].includes(s.status)) && (
+            <span className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400">
+              <Clock className="w-3.5 h-3.5" />
+              A processar...
+            </span>
+          )}
+        </div>
+
+        {loading && sources.length === 0 && (
+          <div className="flex items-center gap-2 py-8 text-sm text-muted-foreground">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            A carregar fontes...
+          </div>
+        )}
+
+        {!loading && sources.length === 0 && (
+          <Card className="flex flex-col items-center gap-3 p-10 text-center">
+            <FileText className="w-10 h-10 text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">
+              Ainda nao tem fontes carregadas.
+            </p>
+          </Card>
+        )}
+
+        {sources.map((source) => (
+          <Card key={source.id} className="p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex min-w-0 items-start gap-3">
+                <FileText className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground" />
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium">{source.name}</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    {formatSize(source.fileSizeBytes)}
+                    {source.chunkCount > 0 &&
+                      ` · ${source.chunkCount} segmentos`}
+                    {` · ${source.fileKind.toUpperCase()}`}
+                  </p>
+                  {source.status === "failed" && source.lastError && (
+                    <p className="mt-1 truncate text-xs text-destructive">
+                      {source.lastError}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex shrink-0 items-center gap-2">
+                <StatusBadge status={source.status} />
+
+                {deleteConfirmId === source.id ? (
+                  <div className="flex gap-1">
+                    <button
+                      type="button"
+                      onClick={() => void handleDelete(source.id)}
+                      className="rounded px-2 py-1 text-xs font-medium text-destructive ring-1 ring-destructive transition-colors hover:bg-destructive hover:text-destructive-foreground"
+                    >
+                      Confirmar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDeleteConfirmId(null)}
+                      className="rounded px-2 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    aria-label="Eliminar fonte"
+                    onClick={() => setDeleteConfirmId(source.id)}
+                    className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-destructive"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
+            </div>
+          </Card>
+        ))}
+      </div>
+
+      {/* Pro info note */}
+      <p className="text-xs text-muted-foreground">
+        As fontes ficam disponiveis apenas para as suas geracoes. O conteudo
+        e processado e indexado automaticamente em segundo plano.
+      </p>
+    </div>
+  );
+}

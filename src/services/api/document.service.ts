@@ -331,6 +331,7 @@ interface DocumentImportRequest {
   fileKey: string;
   isSpecificComponent?: boolean;
   worksheetVariant?: WorksheetVariant;
+  usageIntent?: "reference" | "standing_context";
 }
 
 export async function getUploadUrl(
