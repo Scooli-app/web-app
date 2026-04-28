@@ -70,6 +70,7 @@ export function UploadDocumentModal({
   >("");
   const [schoolYear, setSchoolYear] = useState<string>("");
   const [subject, setSubject] = useState<string>("");
+  const [usageIntent, setUsageIntent] = useState<"reference" | "standing_context">("reference");
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -97,6 +98,7 @@ export function UploadDocumentModal({
     setWorksheetVariant("");
     setSchoolYear("");
     setSubject("");
+    setUsageIntent("reference");
     setError(null);
     setIsUploading(false);
   }, [isOpen]);
@@ -222,6 +224,7 @@ export function UploadDocumentModal({
           fileKey,
           worksheetVariant:
             documentType === "worksheet" ? worksheetVariant || undefined : undefined,
+          usageIntent,
         });
 
         await waitForDocument(id);
@@ -495,33 +498,19 @@ export function UploadDocumentModal({
                 </SelectContent>
               </Select>
             </div>
-          </div>
 
-          <div className="flex flex-col-reverse gap-3 px-6 pb-6 pt-2 sm:flex-row sm:items-center sm:justify-end">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onClose}
-              disabled={isUploading}
-            >
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={!isFormValid || isUploading}>
-              {isUploading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  A Importar...
-                </>
-              ) : (
-                <>
-                  <UploadCloud className="mr-2 h-4 w-4" />
-                  Importar e Converter
-                </>
-              )}
-            </Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
-}
+            {/* Usage intent — SCOOL-108 */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">Como usar este recurso</label>
+              <div className="flex gap-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="usageIntent"
+                    value="reference"
+                    checked={usageIntent === "reference"}
+                    onChange={() => setUsageIntent("reference")}
+                    className="accent-indigo-600"
+                    disabled={isUploading}
+                  />
+                  <span className="text-
