@@ -70,6 +70,9 @@ export function UploadDocumentModal({
   >("");
   const [schoolYear, setSchoolYear] = useState<string>("");
   const [subject, setSubject] = useState<string>("");
+  const [usageIntent, setUsageIntent] = useState<
+    "reference" | "standing_context"
+  >("reference");
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -97,6 +100,7 @@ export function UploadDocumentModal({
     setWorksheetVariant("");
     setSchoolYear("");
     setSubject("");
+    setUsageIntent("reference");
     setError(null);
     setIsUploading(false);
   }, [isOpen]);
@@ -222,6 +226,7 @@ export function UploadDocumentModal({
           fileKey,
           worksheetVariant:
             documentType === "worksheet" ? worksheetVariant || undefined : undefined,
+          usageIntent,
         });
 
         await waitForDocument(id);
@@ -494,6 +499,47 @@ export function UploadDocumentModal({
                     })()}
                 </SelectContent>
               </Select>
+            </div>
+
+            {/* Usage intent — SCOOL-108 */}
+            <div className="space-y-2">
+              <Label className="text-sm">Como usar este recurso</Label>
+              <div className="grid gap-2 sm:grid-cols-2">
+                <label className="flex cursor-pointer items-start gap-2 rounded-md border border-border p-3 text-sm">
+                  <input
+                    type="radio"
+                    name="usageIntent"
+                    value="reference"
+                    checked={usageIntent === "reference"}
+                    onChange={() => setUsageIntent("reference")}
+                    className="mt-1 accent-primary"
+                    disabled={isUploading}
+                  />
+                  <span>
+                    <span className="font-medium">Apenas neste documento</span>
+                    <span className="mt-0.5 block text-xs text-muted-foreground">
+                      Usa o ficheiro como referencia para a importacao atual.
+                    </span>
+                  </span>
+                </label>
+                <label className="flex cursor-pointer items-start gap-2 rounded-md border border-border p-3 text-sm">
+                  <input
+                    type="radio"
+                    name="usageIntent"
+                    value="standing_context"
+                    checked={usageIntent === "standing_context"}
+                    onChange={() => setUsageIntent("standing_context")}
+                    className="mt-1 accent-primary"
+                    disabled={isUploading}
+                  />
+                  <span>
+                    <span className="font-medium">Guardar nas minhas fontes</span>
+                    <span className="mt-0.5 block text-xs text-muted-foreground">
+                      Indexa o ficheiro para futuras geracoes de conteudo.
+                    </span>
+                  </span>
+                </label>
+              </div>
             </div>
           </div>
 

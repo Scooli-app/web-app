@@ -64,6 +64,7 @@ import {
   FolderArchiveIcon,
   HelpCircle,
   Home,
+  Library,
   LogOut,
   Menu,
   MessageSquare,
@@ -193,6 +194,13 @@ const SCHOOL_NAVIGATION: NavItem[] = [
     description: "Ver membros e lugares da escola",
   },
 ];
+
+const SOURCES_NAV_ITEM: NavItem = {
+  title: "As minhas fontes",
+  href: Routes.SOURCES,
+  icon: Library,
+  description: "Gerir fontes de conteúdo para geração",
+};
 
 const NavMenuItem = memo(function NavMenuItem({
   item,
@@ -433,9 +441,16 @@ const SidebarNavigationContent = memo(function SidebarNavigationContent({
     features[FeatureFlag.PRESENTATION_CREATION] === true;
   const isWorksheetCreationEnabled =
     features[FeatureFlag.WORKSHEET_CREATION] === true;
+  const isUserSourcesEnabled = features[FeatureFlag.USER_SOURCES] === true;
+
   const disabledContentCreationKeys = [
     ...(isWorksheetCreationEnabled ? [] : [Routes.WORKSHEET]),
     ...(isPresentationCreationEnabled ? [] : [Routes.PRESENTATION]),
+  ];
+
+  const navigationItems: NavItem[] = [
+    ...NAVIGATION,
+    ...(isUserSourcesEnabled ? [SOURCES_NAV_ITEM] : []),
   ];
 
   return (
@@ -454,7 +469,7 @@ const SidebarNavigationContent = memo(function SidebarNavigationContent({
       <SidebarContent className="py-4">
         <NavGroup
           label="Navegação"
-          items={NAVIGATION}
+          items={navigationItems}
           pathname={pathname}
           onItemClick={onItemClick}
           disabledKeys={isCommunityEnabled ? [] : [Routes.COMMUNITY]}
