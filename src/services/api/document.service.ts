@@ -243,9 +243,11 @@ export async function streamDocumentContent(
                 console.warn("[SSE] Could not parse final document payload");
               }
             }
+            // Abort before onComplete to prevent fetchEventSource from reconnecting
+            // with a potentially expired token after the server closes the stream.
+            abortController.abort();
             const documentId = streamedResponse.id ?? parsed.data;
             callbacks.onComplete?.(documentId, streamedResponse);
-            abortController.abort();
             break;
           }
           case "error":
@@ -258,6 +260,10 @@ export async function streamDocumentContent(
       }
     },
     onerror(error) {
+      if (abortController.signal.aborted) {
+        // Stream was cleanly completed and we aborted — ignore the close event.
+        throw error;
+      }
       console.error("[SSE] Error:", error);
       callbacks.onError?.("Erro de ligação ao stream");
       throw error;

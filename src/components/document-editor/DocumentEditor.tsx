@@ -35,7 +35,7 @@ import {
 } from "@/store/subscription/subscriptionSlice";
 import { useAuth } from "@clerk/nextjs";
 import type { Editor } from "@tiptap/react";
-import { Crown, Loader2 } from "lucide-react";
+import { CheckCircle2, Crown, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import posthog from "posthog-js";
@@ -63,6 +63,67 @@ interface DocumentEditorProps {
   generateMessage?: string;
   chatTitle?: string;
   chatPlaceholder?: string;
+}
+
+const GENERATION_STEPS = [
+  { key: "preparing", label: "Preparar", description: "A analisar o currículo e preparar o contexto" },
+  { key: "generating", label: "Rascunho", description: "A gerar o documento com IA" },
+  { key: "reviewing", label: "Revisão", description: "A avaliar a qualidade do documento" },
+  { key: "revised", label: "Melhorias", description: "A aplicar melhorias ao documento" },
+] as const;
+
+type GenerationStepKey = (typeof GENERATION_STEPS)[number]["key"];
+
+const STEP_ORDER: GenerationStepKey[] = ["preparing", "generating", "reviewing", "revised"];
+
+function GenerationProgress({ streamStatus }: { streamStatus: string }) {
+  const currentIndex = STEP_ORDER.indexOf(streamStatus as GenerationStepKey);
+  const activeStep = GENERATION_STEPS.find((s) => s.key === streamStatus) ?? GENERATION_STEPS[1];
+
+  return (
+    <div className="flex h-full min-h-[45dvh] w-full flex-col items-center justify-center gap-6 sm:min-h-[550px]">
+      <Loader2 className="w-10 h-10 animate-spin text-primary" />
+      <div className="text-center">
+        <p className="text-lg font-medium text-foreground">{activeStep.label}…</p>
+        <p className="text-sm text-muted-foreground mt-1">{activeStep.description}</p>
+      </div>
+      {currentIndex >= 0 && (
+        <div className="flex items-center gap-1.5">
+          {GENERATION_STEPS.map((step, i) => {
+            const isDone = i < currentIndex;
+            const isActive = i === currentIndex;
+            return (
+              <div key={step.key} className="flex items-center gap-1.5">
+                {isDone ? (
+                  <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />
+                ) : (
+                  <div
+                    className={`w-2 h-2 rounded-full shrink-0 ${
+                      isActive ? "bg-primary animate-pulse" : "bg-muted-foreground/30"
+                    }`}
+                  />
+                )}
+                <span
+                  className={`text-xs ${
+                    isDone
+                      ? "text-primary"
+                      : isActive
+                        ? "text-foreground font-medium"
+                        : "text-muted-foreground/50"
+                  }`}
+                >
+                  {step.label}
+                </span>
+                {i < GENERATION_STEPS.length - 1 && (
+                  <div className={`w-6 h-px ${i < currentIndex ? "bg-primary" : "bg-muted-foreground/20"}`} />
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
 }
 
 const LEAKED_IMAGE_SEGMENT_TOKEN_PATTERN = /@@CODEX\\?_IMAGE\\?_SEGMENT\\?_\d+@@|CODEXIMAGESEGMENT\d+TOKEN/g;
@@ -1071,21 +1132,7 @@ export default function DocumentEditor({
                       className="prose prose-sm max-w-none whitespace-pre-wrap text-foreground leading-relaxed"
                     />
                   ) : (
-                  <div className="flex h-full min-h-[45dvh] w-full flex-col items-center justify-center sm:min-h-[550px]">
-                      <Loader2 className="w-12 h-12 animate-spin text-primary mb-4" />
-                      <p className="text-lg font-medium text-foreground">
-                        {streamStatus === "preparing"
-                          ? "A preparar a geração..."
-                          : streamStatus === "generating"
-                            ? "A gerar o documento..."
-                            : "A gerar o documento..."}
-                      </p>
-                      {streamStatus === "preparing" && (
-                        <p className="text-sm text-muted-foreground mt-2">
-                          A analisar o currículo e preparar o conteúdo
-                        </p>
-                      )}
-                    </div>
+                    <GenerationProgress streamStatus={streamStatus} />
                   )}
                 </div>
               </>
