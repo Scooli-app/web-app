@@ -447,7 +447,10 @@ export default function DocumentEditor({
       // Get auth token and start streaming
       const startStream = async () => {
         const template = process.env.NEXT_PUBLIC_CLERK_JWT_TEMPLATE;
-        const token = await getToken(template ? { template } : undefined);
+        // Build a getter so streamDocumentContent can fetch a fresh token on
+        // every connection attempt (initial + any reconnect after a network blip).
+        const tokenGetter = () => getToken(template ? { template } : undefined);
+        const token = await tokenGetter();
         if (!token) {
           eventSourceRef.current = null;
 
@@ -710,7 +713,7 @@ export default function DocumentEditor({
               dispatch(setGeneratingImages(false));
             },
           },
-          token,
+          tokenGetter,
         )
           .then((cleanup) => {
             eventSourceRef.current = cleanup;
