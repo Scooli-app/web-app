@@ -9,7 +9,11 @@ import {
   Packer,
   Paragraph,
   type ParagraphChild,
+  Table,
+  TableCell,
+  TableRow,
   TextRun,
+  WidthType,
 } from "docx";
 import katex from "katex";
 import { cookies } from "next/headers";
@@ -56,7 +60,8 @@ type TextBlockType =
 
 type ExportBlock =
   | { type: TextBlockType; text: string }
-  | { type: "image"; alt: string; source: string };
+  | { type: "image"; alt: string; source: string }
+  | { type: "table"; headers: string[]; rows: string[][] };
 
 interface ResolvedImage {
   alt: string;
@@ -1514,18 +1519,73 @@ function parseHtmlImageLine(
   };
 }
 
+/**
+ * Parse a buffer of markdown table lines (all starting with `|`) into a
+ * structured table block. Separator rows (`|---|---|`) are filtered out.
+ * Returns null if no parseable content is found.
+ */
+function parseTableLines(
+  tableLines: string[],
+): { type: "table"; headers: string[]; rows: string[][] } | null {
+  const parseRow = (line: string): string[] =>
+    line
+      .replace(/^\|/, "")
+      .replace(/\|$/, "")
+      .split("|")
+      .map((cell) => cell.trim());
+
+  // Filter out separator rows (cells contain only -, :, space)
+  const contentLines = tableLines.filter(
+    (line) =>
+      !parseRow(line).every((cell) => /^[\s\-:]+$/.test(cell)),
+  );
+
+  if (contentLines.length === 0) return null;
+
+  const [headerLine, ...dataLines] = contentLines;
+  return {
+    type: "table",
+    headers: parseRow(headerLine),
+    rows: dataLines.map(parseRow),
+  };
+}
+
 function parseMarkdownToBlocks(content: string): ExportBlock[] {
   const blocks: ExportBlock[] = [];
   const lines = normalizeExportContent(content).split("\n");
   let inCodeBlock = false;
+  let codeBlockType: string | undefined;
   let codeBlockContent: string[] = [];
+  let tableBuffer: string[] = [];
   let isFirstH1 = true;
 
+  function flushTableBuffer() {
+    if (tableBuffer.length === 0) return;
+    const tableBlock = parseTableLines(tableBuffer);
+    if (tableBlock) blocks.push(tableBlock);
+    tableBuffer = [];
+  }
+
   for (const line of lines) {
+    // ── Code / exercise block boundaries ────────────────────────────────────
     if (line.startsWith("```")) {
+      flushTableBuffer();
       if (inCodeBlock) {
-        blocks.push({ type: "code", text: codeBlockContent.join("\n") });
+        const blockContent = codeBlockContent.join("\n");
+        if (codeBlockType?.startsWith("exercise:")) {
+          // Exercise blocks are interactive-only; show a neutral placeholder
+          const exerciseKind = codeBlockType.slice(9);
+          blocks.push({
+            type: "paragraph",
+            text: `[Exercício interativo (${exerciseKind}) — visível apenas na aplicação]`,
+          });
+        } else {
+          blocks.push({ type: "code", text: blockContent });
+        }
         codeBlockContent = [];
+        codeBlockType = undefined;
+      } else {
+        codeBlockType = line.slice(3).trim() || undefined;
       }
       inCodeBlock = !inCodeBlock;
       continue;
@@ -1536,11 +1596,29 @@ function parseMarkdownToBlocks(content: string): ExportBlock[] {
       continue;
     }
 
-    let trimmed = line.trim();
-    if (/^([-*_])(?:\s*\1){2,}\s*$/.test(trimmed)) {
+    const trimmedForRule = line.trim();
+
+    // ── Horizontal rule — skip ───────────────────────────────────────────────
+    if (/^([-*_])(?:\s*\1){2,}\s*$/.test(trimmedForRule)) {
+      flushTableBuffer();
       continue;
     }
 
+    // ── Table rows (lines starting with |) ───────────────────────────────────
+    if (
+      trimmedForRule.startsWith("|") &&
+      trimmedForRule.indexOf("|", 1) !== -1
+    ) {
+      tableBuffer.push(trimmedForRule);
+      continue;
+    }
+
+    // Non-table line — flush any buffered table rows first
+    flushTableBuffer();
+
+    let trimmed = trimmedForRule;
+
+    // ── Image prefixes ───────────────────────────────────────────────────────
     const markdownImage = parseMarkdownImagePrefix(trimmed);
     if (markdownImage) {
       blocks.push({
@@ -1549,9 +1627,7 @@ function parseMarkdownToBlocks(content: string): ExportBlock[] {
         source: markdownImage.source,
       });
       trimmed = markdownImage.remaining;
-      if (!trimmed) {
-        continue;
-      }
+      if (!trimmed) continue;
     }
 
     const markdownImageLine = parseMarkdownImageLine(trimmed);
@@ -1576,14 +1652,11 @@ function parseMarkdownToBlocks(content: string): ExportBlock[] {
 
     const normalizedTokenCandidate = normalizeImageSource(trimmed);
     if (IMAGE_REFERENCE_TOKEN_PATTERN.test(normalizedTokenCandidate)) {
-      blocks.push({
-        type: "image",
-        alt: "",
-        source: normalizedTokenCandidate,
-      });
+      blocks.push({ type: "image", alt: "", source: normalizedTokenCandidate });
       continue;
     }
 
+    // ── Headings ─────────────────────────────────────────────────────────────
     if (trimmed.startsWith("# ")) {
       blocks.push({
         type: isFirstH1 ? "title" : "h1",
@@ -1592,32 +1665,37 @@ function parseMarkdownToBlocks(content: string): ExportBlock[] {
       isFirstH1 = false;
       continue;
     }
-
     if (trimmed.startsWith("## ")) {
       blocks.push({ type: "h2", text: trimmed.substring(3) });
       continue;
     }
-
     if (trimmed.startsWith("### ")) {
       blocks.push({ type: "h3", text: trimmed.substring(4) });
       continue;
     }
+    // h4/h5/h6 → map to h3 (no dedicated export style below h3)
+    if (/^#{4,}\s/.test(trimmed)) {
+      blocks.push({ type: "h3", text: trimmed.replace(/^#{4,}\s+/, "") });
+      continue;
+    }
 
+    // ── Lists ────────────────────────────────────────────────────────────────
     if (trimmed.match(/^[\*\-]\s/)) {
       blocks.push({ type: "bullet", text: trimmed });
       continue;
     }
-
     if (trimmed.match(/^\d+\.\s/)) {
       blocks.push({ type: "numbered", text: trimmed });
       continue;
     }
 
+    // ── Blockquote ───────────────────────────────────────────────────────────
     if (trimmed.startsWith("> ")) {
       blocks.push({ type: "quote", text: trimmed.substring(2) });
       continue;
     }
 
+    // ── Empty line ───────────────────────────────────────────────────────────
     if (trimmed === "") {
       blocks.push({ type: "empty", text: "" });
       continue;
@@ -1626,6 +1704,8 @@ function parseMarkdownToBlocks(content: string): ExportBlock[] {
     blocks.push({ type: "paragraph", text: trimmed });
   }
 
+  // Flush any remaining table rows or unclosed code block
+  flushTableBuffer();
   if (codeBlockContent.length > 0) {
     blocks.push({ type: "code", text: codeBlockContent.join("\n") });
   }
@@ -1883,17 +1963,67 @@ function parseInlineFormatting(
       ];
 }
 
+function buildDocxTable(headers: string[], rows: string[][]): Table {
+  const colCount = Math.max(headers.length, 1);
+  const colPercent = Math.floor(100 / colCount);
+
+  const cellBorders = {
+    top: { style: BorderStyle.SINGLE, size: 4, color: "CCCCCC" },
+    bottom: { style: BorderStyle.SINGLE, size: 4, color: "CCCCCC" },
+    left: { style: BorderStyle.SINGLE, size: 4, color: "CCCCCC" },
+    right: { style: BorderStyle.SINGLE, size: 4, color: "CCCCCC" },
+  };
+
+  const makeCell = (text: string, isHeader: boolean) =>
+    new TableCell({
+      children: [
+        new Paragraph({
+          children: parseInlineFormatting(text, 22, isHeader ? { bold: true } : {}),
+          spacing: { before: 60, after: 60 },
+        }),
+      ],
+      borders: cellBorders,
+      shading: isHeader ? { fill: "EBEBF5" } : undefined,
+      width: { size: colPercent, type: WidthType.PERCENTAGE },
+      margins: { top: 60, bottom: 60, left: 100, right: 100 },
+    });
+
+  const headerRow = new TableRow({
+    children: headers.map((h) => makeCell(h, true)),
+    tableHeader: true,
+  });
+
+  const dataRows = rows.map(
+    (row) =>
+      new TableRow({
+        children: row.map((cell) => makeCell(cell, false)),
+      }),
+  );
+
+  return new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    rows: [headerRow, ...dataRows],
+    margins: { top: 0, bottom: 0, left: 0, right: 0 },
+  });
+}
+
 async function generateDocx(
   content: string,
   images?: DownloadImagePayload[],
 ): Promise<Buffer> {
   const blocks = parseMarkdownToBlocks(content);
   const imageLookup = buildImageLookup(images);
-  const children: InstanceType<typeof Paragraph>[] = [];
+  const children: (Paragraph | Table)[] = [];
 
   let isFirstTitle = true;
 
   for (const block of blocks) {
+    if (block.type === "table") {
+      children.push(buildDocxTable(block.headers, block.rows));
+      children.push(new Paragraph({ children: [], spacing: { after: 160 } }));
+      continue;
+    }
+
     if (block.type === "image") {
       const resolvedImage = await resolveImageBlock(block, imageLookup);
       if (resolvedImage.bytes && resolvedImage.contentType) {
@@ -2344,7 +2474,143 @@ async function generatePdf(
     }
   }
 
+  function drawPdfTable(headers: string[], rows: string[][]) {
+    const colCount = Math.max(headers.length, 1);
+    const colWidth = contentWidth / colCount;
+    const headerRowHeight = 18;
+    const dataRowHeight = 15;
+    const cellPaddingX = 4;
+    const cellPaddingY = 4;
+    const tableFontSize = 9;
+    const borderColor = rgb(0.75, 0.75, 0.78);
+    const headerFill = rgb(0.92, 0.92, 0.96);
+    const headerTextColor = rgb(0.04, 0.05, 0.09);
+    const dataTextColor = rgb(0.18, 0.18, 0.22);
+
+    const estimatedHeight =
+      headerRowHeight + rows.length * dataRowHeight + 10;
+    ensureSpace(estimatedHeight);
+
+    const tableTop = yPosition;
+
+    // ── Header row ──────────────────────────────────────────────────────────
+    currentPage.drawRectangle({
+      x: margin,
+      y: tableTop - headerRowHeight,
+      width: contentWidth,
+      height: headerRowHeight,
+      color: headerFill,
+    });
+
+    for (let c = 0; c < colCount; c++) {
+      const cellText = normalizePdfLine(
+        stripInlineMarkdown(headers[c] ?? "", pdfMathTextOptions),
+        supportsUnicode,
+      );
+      // Clip cell text to fit column
+      let displayText = cellText;
+      const maxCellWidth = colWidth - cellPaddingX * 2;
+      while (
+        displayText.length > 1 &&
+        helveticaBold.widthOfTextAtSize(displayText, tableFontSize) > maxCellWidth
+      ) {
+        displayText = displayText.slice(0, -1);
+      }
+      drawPdfLine(
+        currentPage,
+        displayText,
+        margin + c * colWidth + cellPaddingX,
+        tableTop - headerRowHeight + cellPaddingY,
+        helveticaBold,
+        tableFontSize,
+        headerTextColor,
+      );
+    }
+
+    yPosition = tableTop - headerRowHeight;
+
+    // ── Data rows ────────────────────────────────────────────────────────────
+    for (const row of rows) {
+      ensureSpace(dataRowHeight + 4);
+
+      for (let c = 0; c < colCount; c++) {
+        const cellText = normalizePdfLine(
+          stripInlineMarkdown(row[c] ?? "", pdfMathTextOptions),
+          supportsUnicode,
+        );
+        let displayText = cellText;
+        const maxCellWidth = colWidth - cellPaddingX * 2;
+        while (
+          displayText.length > 1 &&
+          helvetica.widthOfTextAtSize(displayText, tableFontSize) > maxCellWidth
+        ) {
+          displayText = displayText.slice(0, -1);
+        }
+        drawPdfLine(
+          currentPage,
+          displayText,
+          margin + c * colWidth + cellPaddingX,
+          yPosition - dataRowHeight + cellPaddingY,
+          helvetica,
+          tableFontSize,
+          dataTextColor,
+        );
+      }
+
+      // Horizontal row separator
+      currentPage.drawLine({
+        start: { x: margin, y: yPosition - dataRowHeight },
+        end: { x: margin + contentWidth, y: yPosition - dataRowHeight },
+        thickness: 0.5,
+        color: borderColor,
+      });
+
+      yPosition -= dataRowHeight;
+    }
+
+    // ── Outer border + vertical column dividers ──────────────────────────────
+    // Draw from tableTop down to yPosition
+    const tableBottom = yPosition;
+    const tableHeight = tableTop - tableBottom;
+
+    // Outer rectangle
+    currentPage.drawRectangle({
+      x: margin,
+      y: tableBottom,
+      width: contentWidth,
+      height: tableHeight,
+      borderColor,
+      borderWidth: 1,
+      opacity: 0,
+    });
+
+    // Vertical dividers
+    for (let c = 1; c < colCount; c++) {
+      currentPage.drawLine({
+        start: { x: margin + c * colWidth, y: tableTop },
+        end: { x: margin + c * colWidth, y: tableBottom },
+        thickness: 0.5,
+        color: borderColor,
+      });
+    }
+
+    // Header bottom separator (slightly thicker)
+    currentPage.drawLine({
+      start: { x: margin, y: tableTop - headerRowHeight },
+      end: { x: margin + contentWidth, y: tableTop - headerRowHeight },
+      thickness: 1,
+      color: borderColor,
+    });
+
+    yPosition -= 8; // gap after table
+  }
+
   for (const block of blocks) {
+    if (block.type === "table") {
+      drawPdfTable(block.headers, block.rows);
+      continue;
+    }
+
     if (block.type !== "image") {
       drawTextBlock(block);
       continue;
