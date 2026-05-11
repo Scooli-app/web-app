@@ -5,131 +5,473 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useAdmin } from "@/hooks/useAdmin";
-import apiClient from "@/services/api/client";
+import {
+  type AdminFeatureFlag,
+  type FeatureOverrideDto,
+  type OrganizationSearchResult,
+  type OverrideTargetType,
+  type PlanOption,
+  type UserSearchResult,
+  getFlag,
+  listFlags,
+  listPlans,
+  removeOrganizationOverride,
+  removePlanOverride,
+  removeRoleOverride,
+  removeUserOverride,
+  searchOrganizations,
+  searchUsers,
+  setOrganizationOverride,
+  setPlanOverride,
+  setRoleOverride,
+  setUserOverride,
+  updateFlag as updateFlagApi,
+} from "@/services/api/admin-features.service";
 import { FeatureFlag as FeatureFlagKey } from "@/shared/types/featureFlags";
-import { AlertCircle, ArrowLeft, ChevronDown, ChevronUp, Loader2, ToggleLeft } from "lucide-react";
+import {
+  AlertCircle,
+  ArrowLeft,
+  ChevronDown,
+  ChevronUp,
+  Loader2,
+  Plus,
+  ToggleLeft,
+  Trash2,
+  X,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
-type FeatureOverride = {
-  id: string;
-  enabled: boolean;
-  userId?: string;
-  role?: string;
-  plan?: string;
-  createdAt: string;
-};
-
-type FeatureFlag = {
-  id: string;
-  key: string;
-  name: string;
-  description: string;
-  enabled: boolean;
-  rolloutPercentage: number;
-  createdAt: string;
-  updatedAt: string;
-  overrides?: FeatureOverride[];
-};
-
-const FEATURE_FLAG_METADATA: Record<string, { name: string; description: string; order: number }> = {
-  [FeatureFlagKey.COMMUNITY_LIBRARY]: {
-    name: "Biblioteca Comunitaria",
-    description: "Ativa a partilha e descoberta de recursos na biblioteca da comunidade.",
-    order: 10,
-  },
-  [FeatureFlagKey.DOCUMENT_REVIEW]: {
-    name: "Revisao de Documentos",
-    description:
-      "Quando ativa, recursos partilhados aguardam moderacao de admin antes de publicacao.",
-    order: 20,
-  },
-  [FeatureFlagKey.PRESENTATION_CREATION]: {
-    name: "Criacao de Apresentacoes",
-    description:
-      "Controla se os utilizadores podem criar apresentacoes a partir da plataforma.",
-    order: 30,
-  },
-  [FeatureFlagKey.WORKSHEET_CREATION]: {
-    name: "Criacao de Fichas de Trabalho",
-    description:
-      "Controla se os utilizadores podem criar fichas de trabalho a partir da plataforma.",
-    order: 35,
-  },
-  [FeatureFlagKey.TEMPLATE_FROM_DOCUMENT]: {
-    name: "Modelo a partir de Documento",
-    description:
-      "Controla se os utilizadores podem fazer upload de um documento e convertê-lo num modelo personalizado.",
-    order: 37,
-  },
-  [FeatureFlagKey.DOCUMENT_IMAGES]: {
-    name: "Imagens em Documentos",
-    description:
-      "Controla a geracao e inclusao de imagens automaticas em testes, quizzes, fichas e planos de aula.",
-    order: 40,
-  },
-};
-
-const applyFlagMetadata = (flag: FeatureFlag): FeatureFlag => {
-  const metadata = FEATURE_FLAG_METADATA[flag.key];
-  if (!metadata) {
-    return flag;
-  }
-
-  return {
-    ...flag,
-    name: metadata.name,
-    description: metadata.description,
+const FEATURE_FLAG_METADATA: Record<string, { name: string; description: string; order: number }> =
+  {
+    [FeatureFlagKey.COMMUNITY_LIBRARY]: {
+      name: "Biblioteca Comunitária",
+      description: "Ativa a partilha e descoberta de recursos na biblioteca da comunidade.",
+      order: 10,
+    },
+    [FeatureFlagKey.DOCUMENT_REVIEW]: {
+      name: "Revisão de Documentos",
+      description:
+        "Quando ativa, recursos partilhados aguardam moderação de admin antes de publicação.",
+      order: 20,
+    },
+    [FeatureFlagKey.PRESENTATION_CREATION]: {
+      name: "Criação de Apresentações",
+      description:
+        "Controla se os utilizadores podem criar apresentações a partir da plataforma.",
+      order: 30,
+    },
+    [FeatureFlagKey.WORKSHEET_CREATION]: {
+      name: "Criação de Fichas de Trabalho",
+      description:
+        "Controla se os utilizadores podem criar fichas de trabalho a partir da plataforma.",
+      order: 35,
+    },
+    [FeatureFlagKey.TEMPLATE_FROM_DOCUMENT]: {
+      name: "Modelo a partir de Documento",
+      description:
+        "Controla se os utilizadores podem fazer upload de um documento e convertê-lo num modelo personalizado.",
+      order: 37,
+    },
+    [FeatureFlagKey.DOCUMENT_IMAGES]: {
+      name: "Imagens em Documentos",
+      description:
+        "Controla a geração e inclusão de imagens automáticas em testes, quizzes, fichas e planos de aula.",
+      order: 40,
+    },
   };
+
+const applyFlagMetadata = (flag: AdminFeatureFlag): AdminFeatureFlag => {
+  const metadata = FEATURE_FLAG_METADATA[flag.key];
+  if (!metadata) return flag;
+  return { ...flag, name: metadata.name, description: metadata.description };
 };
 
-const compareFlagOrder = (a: FeatureFlag, b: FeatureFlag): number => {
+const compareFlagOrder = (a: AdminFeatureFlag, b: AdminFeatureFlag): number => {
   const orderA = FEATURE_FLAG_METADATA[a.key]?.order ?? Number.MAX_SAFE_INTEGER;
   const orderB = FEATURE_FLAG_METADATA[b.key]?.order ?? Number.MAX_SAFE_INTEGER;
-  if (orderA !== orderB) {
-    return orderA - orderB;
-  }
-
+  if (orderA !== orderB) return orderA - orderB;
   return a.name.localeCompare(b.name, "pt-PT");
 };
 
-function OverrideRow({ override }: { override: FeatureOverride }) {
-  const label = override.userId
-    ? `Utilizador: ${override.userId}`
-    : override.role
-      ? `Perfil: ${override.role}`
-      : override.plan
-        ? `Plano: ${override.plan}`
-        : "Desconhecido";
+// =============================================================================
+// OverrideRow
+// =============================================================================
+
+function OverrideRow({
+  override,
+  onDelete,
+}: {
+  override: FeatureOverrideDto;
+  onDelete: () => Promise<void>;
+}) {
+  const [deleting, setDeleting] = useState(false);
+
+  const { label, prefix } = useMemo(() => {
+    if (override.userId) return { prefix: "Utilizador", label: override.userId };
+    if (override.organizationId)
+      return { prefix: "Organização", label: override.organizationId };
+    if (override.role) return { prefix: "Perfil", label: override.role };
+    if (override.plan) return { prefix: "Plano", label: override.plan };
+    return { prefix: "Desconhecido", label: "—" };
+  }, [override]);
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    try {
+      await onDelete();
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   return (
-    <div className="flex items-center justify-between rounded-lg bg-muted/40 px-3 py-2 text-sm">
-      <span className="font-mono text-xs text-muted-foreground">{label}</span>
+    <div className="flex items-center justify-between gap-3 rounded-lg bg-muted/40 px-3 py-2 text-sm">
+      <div className="flex min-w-0 flex-1 items-center gap-2">
+        <Badge variant="outline" className="shrink-0 text-xs">
+          {prefix}
+        </Badge>
+        <span className="truncate font-mono text-xs text-muted-foreground" title={label}>
+          {label}
+        </span>
+      </div>
       <Badge variant={override.enabled ? "default" : "secondary"}>
         {override.enabled ? "Ativo" : "Inativo"}
       </Badge>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-7 w-7"
+        onClick={handleDelete}
+        disabled={deleting}
+        aria-label="Remover exceção"
+      >
+        {deleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+      </Button>
     </div>
   );
 }
 
+// =============================================================================
+// AddOverrideForm
+// =============================================================================
+
+function useDebouncedValue<T>(value: T, delayMs: number): T {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const id = setTimeout(() => setDebounced(value), delayMs);
+    return () => clearTimeout(id);
+  }, [value, delayMs]);
+  return debounced;
+}
+
+type SelectedTarget =
+  | { type: "user"; id: string; label: string }
+  | { type: "organization"; id: string; label: string }
+  | { type: "role"; value: string }
+  | { type: "plan"; value: string };
+
+function AddOverrideForm({
+  flagKey,
+  flagName,
+  plans,
+  onCreated,
+  onCancel,
+}: {
+  flagKey: string;
+  flagName: string;
+  plans: PlanOption[];
+  onCreated: () => Promise<void>;
+  onCancel: () => void;
+}) {
+  const [targetType, setTargetType] = useState<OverrideTargetType>("user");
+  const [enabled, setEnabled] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+
+  // Selected target across types
+  const [selected, setSelected] = useState<SelectedTarget | null>(null);
+
+  // User/org typeahead state
+  const [searchQuery, setSearchQuery] = useState("");
+  const debouncedQuery = useDebouncedValue(searchQuery, 250);
+  const [userResults, setUserResults] = useState<UserSearchResult[]>([]);
+  const [orgResults, setOrgResults] = useState<OrganizationSearchResult[]>([]);
+  const [searching, setSearching] = useState(false);
+  const searchAbortRef = useRef<AbortController | null>(null);
+
+  // Reset selection when type changes
+  useEffect(() => {
+    setSelected(null);
+    setSearchQuery("");
+    setUserResults([]);
+    setOrgResults([]);
+  }, [targetType]);
+
+  // Typeahead effect for user/org
+  useEffect(() => {
+    if (targetType !== "user" && targetType !== "organization") return;
+    if (debouncedQuery.trim().length < 2) {
+      setUserResults([]);
+      setOrgResults([]);
+      return;
+    }
+    searchAbortRef.current?.abort();
+    const controller = new AbortController();
+    searchAbortRef.current = controller;
+
+    setSearching(true);
+    (async () => {
+      try {
+        if (targetType === "user") {
+          const r = await searchUsers(debouncedQuery);
+          if (!controller.signal.aborted) setUserResults(r);
+        } else {
+          const r = await searchOrganizations(debouncedQuery);
+          if (!controller.signal.aborted) setOrgResults(r);
+        }
+      } catch {
+        // Silent — typeahead shouldn't block the form
+      } finally {
+        if (!controller.signal.aborted) setSearching(false);
+      }
+    })();
+
+    return () => controller.abort();
+  }, [debouncedQuery, targetType]);
+
+  const canSubmit = selected !== null && !submitting;
+
+  const handleSubmit = async () => {
+    if (!selected) return;
+    setSubmitting(true);
+    try {
+      if (selected.type === "user") {
+        await setUserOverride(flagKey, selected.id, enabled);
+      } else if (selected.type === "organization") {
+        await setOrganizationOverride(flagKey, selected.id, enabled);
+      } else if (selected.type === "role") {
+        await setRoleOverride(flagKey, selected.value, enabled);
+      } else if (selected.type === "plan") {
+        await setPlanOverride(flagKey, selected.value, enabled);
+      }
+      toast.success(`Exceção adicionada a '${flagName}'`);
+      await onCreated();
+      onCancel();
+    } catch {
+      toast.error("Não foi possível adicionar a exceção.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="space-y-3 rounded-lg border border-dashed border-border bg-background p-3">
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-medium">Nova exceção</p>
+        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onCancel}>
+          <X className="h-3.5 w-3.5" />
+        </Button>
+      </div>
+
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-[160px_1fr]">
+        <div>
+          <label className="mb-1 block text-xs text-muted-foreground">Tipo</label>
+          <Select
+            value={targetType}
+            onValueChange={(v) => setTargetType(v as OverrideTargetType)}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="user">Utilizador</SelectItem>
+              <SelectItem value="organization">Organização</SelectItem>
+              <SelectItem value="role">Perfil</SelectItem>
+              <SelectItem value="plan">Plano</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div>
+          <label className="mb-1 block text-xs text-muted-foreground">Alvo</label>
+
+          {(targetType === "user" || targetType === "organization") && (
+            <div className="relative">
+              {selected && (selected.type === "user" || selected.type === "organization") ? (
+                <div className="flex items-center justify-between rounded-md border border-input bg-muted/30 px-3 py-1.5 text-sm">
+                  <span className="truncate">{selected.label}</span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6"
+                    onClick={() => setSelected(null)}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+              ) : (
+                <>
+                  <Input
+                    placeholder={
+                      targetType === "user"
+                        ? "Pesquisar por email ou nome…"
+                        : "Pesquisar por nome ou slug…"
+                    }
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                  {debouncedQuery.trim().length >= 2 && (
+                    <div className="absolute left-0 right-0 top-full z-10 mt-1 max-h-56 overflow-y-auto rounded-md border border-border bg-popover shadow-md">
+                      {searching && (
+                        <div className="flex items-center justify-center py-3 text-xs text-muted-foreground">
+                          <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />A pesquisar…
+                        </div>
+                      )}
+                      {!searching &&
+                        targetType === "user" &&
+                        userResults.length === 0 && (
+                          <div className="py-3 text-center text-xs text-muted-foreground">
+                            Sem resultados
+                          </div>
+                        )}
+                      {!searching &&
+                        targetType === "organization" &&
+                        orgResults.length === 0 && (
+                          <div className="py-3 text-center text-xs text-muted-foreground">
+                            Sem resultados
+                          </div>
+                        )}
+                      {!searching &&
+                        targetType === "user" &&
+                        userResults.map((u) => (
+                          <button
+                            type="button"
+                            key={u.id}
+                            className="block w-full px-3 py-2 text-left text-sm hover:bg-muted"
+                            onClick={() =>
+                              setSelected({
+                                type: "user",
+                                id: u.id,
+                                label: u.name ? `${u.name} (${u.email})` : u.email,
+                              })
+                            }
+                          >
+                            <div className="font-medium">{u.name ?? u.email}</div>
+                            {u.name && (
+                              <div className="text-xs text-muted-foreground">{u.email}</div>
+                            )}
+                          </button>
+                        ))}
+                      {!searching &&
+                        targetType === "organization" &&
+                        orgResults.map((o) => (
+                          <button
+                            type="button"
+                            key={o.id}
+                            className="block w-full px-3 py-2 text-left text-sm hover:bg-muted"
+                            onClick={() =>
+                              setSelected({
+                                type: "organization",
+                                id: o.id,
+                                label: o.slug ? `${o.name} (${o.slug})` : o.name,
+                              })
+                            }
+                          >
+                            <div className="font-medium">{o.name}</div>
+                            {o.slug && (
+                              <div className="text-xs text-muted-foreground">{o.slug}</div>
+                            )}
+                          </button>
+                        ))}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+
+          {targetType === "role" && (
+            <Select
+              value={selected?.type === "role" ? selected.value : ""}
+              onValueChange={(v) => setSelected({ type: "role", value: v })}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Escolher perfil…" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="admin">admin</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
+
+          {targetType === "plan" && (
+            <Select
+              value={selected?.type === "plan" ? selected.value : ""}
+              onValueChange={(v) => setSelected({ type: "plan", value: v })}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Escolher plano…" />
+              </SelectTrigger>
+              <SelectContent>
+                {plans.map((p) => (
+                  <SelectItem key={p.planCode} value={p.planCode}>
+                    {p.name} ({p.planCode})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between gap-3 border-t border-border pt-3">
+        <div className="flex items-center gap-2">
+          <Switch checked={enabled} onCheckedChange={setEnabled} id={`enable-${flagKey}`} />
+          <label htmlFor={`enable-${flagKey}`} className="text-sm">
+            {enabled ? "Ativar" : "Desativar"} para este alvo
+          </label>
+        </div>
+        <Button size="sm" onClick={handleSubmit} disabled={!canSubmit}>
+          {submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Adicionar exceção"}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+// =============================================================================
+// FlagCard
+// =============================================================================
+
 function FlagCard({
   flag,
-  onToggle,
+  plans,
+  onFlagUpdated,
 }: {
-  flag: FeatureFlag;
-  onToggle: (key: string, newValue: boolean) => void;
+  flag: AdminFeatureFlag;
+  plans: PlanOption[];
+  onFlagUpdated: (updated: AdminFeatureFlag) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [showAddForm, setShowAddForm] = useState(false);
 
   const handleToggle = async (checked: boolean) => {
     setIsUpdating(true);
     try {
-      await apiClient.patch(`/admin/features/${flag.key}`, { enabled: checked });
-      onToggle(flag.key, checked);
+      const updated = await updateFlagApi(flag.key, { enabled: checked });
+      onFlagUpdated({ ...updated, overrides: flag.overrides });
       toast.success(`Funcionalidade '${flag.name}' ${checked ? "ativada" : "desativada"}`);
     } catch {
       toast.error(`Erro ao atualizar a funcionalidade '${flag.name}'`);
@@ -138,7 +480,30 @@ function FlagCard({
     }
   };
 
-  const overrideCount = flag.overrides?.length ?? 0;
+  const refreshFlag = useCallback(async () => {
+    try {
+      const fresh = await getFlag(flag.key);
+      onFlagUpdated(fresh);
+    } catch {
+      // ignore
+    }
+  }, [flag.key, onFlagUpdated]);
+
+  const handleDeleteOverride = async (o: FeatureOverrideDto) => {
+    try {
+      if (o.userId) await removeUserOverride(flag.key, o.userId);
+      else if (o.organizationId)
+        await removeOrganizationOverride(flag.key, o.organizationId);
+      else if (o.role) await removeRoleOverride(flag.key, o.role);
+      else if (o.plan) await removePlanOverride(flag.key, o.plan);
+      toast.success("Exceção removida");
+      await refreshFlag();
+    } catch {
+      toast.error("Não foi possível remover a exceção.");
+    }
+  };
+
+  const overrides = flag.overrides ?? [];
 
   return (
     <Card className="border border-border shadow-sm">
@@ -146,7 +511,7 @@ function FlagCard({
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
             <CardTitle className="text-base">{flag.name}</CardTitle>
-            <p className="mt-0.5 text-xs font-mono text-muted-foreground">{flag.key}</p>
+            <p className="mt-0.5 font-mono text-xs text-muted-foreground">{flag.key}</p>
             {flag.description && (
               <p className="mt-1 text-sm text-muted-foreground">{flag.description}</p>
             )}
@@ -168,7 +533,7 @@ function FlagCard({
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-2 pt-0">
+      <CardContent className="space-y-3 pt-0">
         {flag.rolloutPercentage > 0 && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <span>Distribuição:</span>
@@ -176,8 +541,8 @@ function FlagCard({
           </div>
         )}
 
-        {overrideCount > 0 && (
-          <div>
+        <div>
+          <div className="flex items-center justify-between">
             <button
               className="flex items-center gap-1.5 text-sm text-primary hover:underline"
               onClick={() => setExpanded((v) => !v)}
@@ -187,52 +552,79 @@ function FlagCard({
               ) : (
                 <ChevronDown className="h-3.5 w-3.5" />
               )}
-              {overrideCount} {overrideCount === 1 ? "exceção" : "exceções"}
+              {overrides.length} {overrides.length === 1 ? "exceção" : "exceções"}
             </button>
-            {expanded && (
-              <div className="mt-2 space-y-1.5">
-                {flag.overrides?.map((o) => (
-                  <OverrideRow key={o.id} override={o} />
-                ))}
-              </div>
+            {expanded && !showAddForm && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setShowAddForm(true)}
+                className="gap-1.5"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Adicionar
+              </Button>
             )}
           </div>
-        )}
+
+          {expanded && (
+            <div className="mt-2 space-y-2">
+              {overrides.map((o) => (
+                <OverrideRow
+                  key={o.id}
+                  override={o}
+                  onDelete={() => handleDeleteOverride(o)}
+                />
+              ))}
+              {showAddForm && (
+                <AddOverrideForm
+                  flagKey={flag.key}
+                  flagName={flag.name}
+                  plans={plans}
+                  onCreated={refreshFlag}
+                  onCancel={() => setShowAddForm(false)}
+                />
+              )}
+            </div>
+          )}
+        </div>
       </CardContent>
     </Card>
   );
 }
 
+// =============================================================================
+// Page
+// =============================================================================
+
 export default function AdminFeaturesPage() {
   const { isAdmin, isLoaded } = useAdmin();
   const router = useRouter();
-  const [flags, setFlags] = useState<FeatureFlag[]>([]);
+  const [flags, setFlags] = useState<AdminFeatureFlag[]>([]);
+  const [plans, setPlans] = useState<PlanOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (isLoaded && !isAdmin) {
-      router.push("/dashboard");
-    }
+    if (isLoaded && !isAdmin) router.push("/dashboard");
   }, [isLoaded, isAdmin, router]);
 
   const loadFlags = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const [listRes] = await Promise.all([apiClient.get<FeatureFlag[]>("/admin/features")]);
-      const flagsData = listRes.data;
+      const [flagsData, plansData] = await Promise.all([listFlags(), listPlans()]);
       const withOverrides = await Promise.all(
-        flagsData.map(async (flag) => {
+        flagsData.map(async (f) => {
           try {
-            const res = await apiClient.get<FeatureFlag>(`/admin/features/${flag.key}`);
-            return res.data;
+            return await getFlag(f.key);
           } catch {
-            return flag;
+            return f;
           }
         }),
       );
       setFlags(withOverrides.map(applyFlagMetadata).sort(compareFlagOrder));
+      setPlans(plansData);
     } catch {
       setError("Não foi possível carregar as configurações de funcionalidades.");
     } finally {
@@ -241,13 +633,13 @@ export default function AdminFeaturesPage() {
   }, []);
 
   useEffect(() => {
-    if (isAdmin) {
-      loadFlags();
-    }
+    if (isAdmin) loadFlags();
   }, [isAdmin, loadFlags]);
 
-  const handleToggle = useCallback((key: string, newValue: boolean) => {
-    setFlags((prev) => prev.map((f) => (f.key === key ? { ...f, enabled: newValue } : f)));
+  const handleFlagUpdated = useCallback((updated: AdminFeatureFlag) => {
+    setFlags((prev) =>
+      prev.map((f) => (f.key === updated.key ? applyFlagMetadata(updated) : f)),
+    );
   }, []);
 
   if (!isLoaded || !isAdmin) {
@@ -262,7 +654,7 @@ export default function AdminFeaturesPage() {
     <PageContainer size="lg" contentClassName="py-4 sm:py-8">
       <PageHeader
         title="Controlo de Funcionalidades"
-        description="Controla a disponibilidade de funcionalidades por utilizador, perfil ou plano."
+        description="Controla a disponibilidade de funcionalidades por utilizador, organização, perfil ou plano."
         icon={
           <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 sm:h-12 sm:w-12">
             <ToggleLeft className="h-5 w-5 text-primary sm:h-6 sm:w-6" />
@@ -303,7 +695,12 @@ export default function AdminFeaturesPage() {
       {!loading && (
         <div className="space-y-4">
           {flags.map((flag) => (
-            <FlagCard key={flag.key} flag={flag} onToggle={handleToggle} />
+            <FlagCard
+              key={flag.key}
+              flag={flag}
+              plans={plans}
+              onFlagUpdated={handleFlagUpdated}
+            />
           ))}
         </div>
       )}
