@@ -3,7 +3,6 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { getUploadUrl } from "@/services/api/document.service";
 import { createTemplateFromDocument } from "@/services/api/template.service";
 import type { DocumentTemplate, DocumentType } from "@/shared/types";
 import { cn } from "@/shared/utils/utils";
@@ -81,24 +80,8 @@ export function TemplateFromDocumentCreator({
       setIsProcessing(true);
       setError(null);
 
-      const { uploadUrl, fileKey } = await getUploadUrl(
-        file.name,
-        file.type,
-        documentType
-      );
-
-      const uploadResponse = await fetch(uploadUrl, {
-        method: "PUT",
-        headers: { "Content-Type": file.type },
-        body: file,
-      });
-
-      if (!uploadResponse.ok) {
-        throw new Error("Falha ao carregar o ficheiro para o armazenamento.");
-      }
-
       const template = await createTemplateFromDocument({
-        fileKey,
+        file,
         documentType,
         name: name.trim(),
       });
