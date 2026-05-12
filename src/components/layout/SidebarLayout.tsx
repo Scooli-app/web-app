@@ -3,6 +3,8 @@
 import { AssistantProvider } from "@/components/assistant";
 import { AppFeedbackSurveyGate } from "@/components/feedback-survey/AppFeedbackSurveyGate";
 import { AppBootstrapGate } from "@/components/layout/AppBootstrapGate";
+import { SourceIngestionTracker } from "@/components/layout/SourceIngestionTracker";
+import { SourcesPendingBadge } from "@/components/layout/SourcesPendingBadge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -206,10 +208,12 @@ const NavMenuItem = memo(function NavMenuItem({
   item,
   isActive,
   onClick,
+  badge,
 }: {
   item: NavItem;
   isActive: boolean;
   onClick?: () => void;
+  badge?: React.ReactNode;
 }) {
   const Icon = item.icon;
 
@@ -231,7 +235,8 @@ const NavMenuItem = memo(function NavMenuItem({
           )}
         >
           <Icon className="h-4 w-4" />
-          {item.title}
+          <span className="flex-1 truncate">{item.title}</span>
+          {badge}
         </SidebarMenuButton>
       </Link>
     </SidebarMenuItem>
@@ -329,6 +334,7 @@ const NavGroup = memo(function NavGroup({
                 item={item}
                 isActive={pathname === item.href}
                 onClick={onItemClick}
+                badge={item.href === Routes.SOURCES ? <SourcesPendingBadge /> : undefined}
               />
             ),
           )}
@@ -664,6 +670,7 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
     <SidebarProvider>
       <div className="flex min-h-dvh w-full">
         <AppBootstrapGate />
+        <SourceIngestionTracker />
         <UpgradePlanModal
           open={isUpgradeModalOpen}
           onOpenChange={handleUpgradeModalChange}
