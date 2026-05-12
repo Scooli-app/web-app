@@ -1,15 +1,15 @@
 "use client";
 
 import { Card } from "@/components/ui/card";
+import { getSourceQuota } from "@/services/api/sources.service";
+import type { SourceQuota, UploadSourceParams } from "@/shared/types/sources";
+import { cn } from "@/shared/utils/utils";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
   deleteUserSource,
   fetchSources,
-  refreshSource,
   uploadUserSource,
 } from "@/store/sources/sourcesSlice";
-import type { UploadSourceParams } from "@/shared/types/sources";
-import { cn } from "@/shared/utils/utils";
 import {
   AlertCircle,
   CheckCircle2,
@@ -19,18 +19,25 @@ import {
   Trash2,
   Upload,
 } from "lucide-react";
-import { useAuth } from "@clerk/nextjs";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 
 function statusLabel(status: string): string {
   switch (status) {
-    case "uploaded": return "A processar";
-    case "parsing": return "A ler ficheiro";
-    case "chunking": return "A segmentar";
-    case "embedding": return "A indexar";
-    case "indexed": return "Indexado";
-    case "failed": return "Falhou";
-    default: return status;
+    case "uploaded":
+      return "A processar";
+    case "parsing":
+      return "A ler ficheiro";
+    case "chunking":
+      return "A segmentar";
+    case "embedding":
+      return "A indexar";
+    case "indexed":
+      return "Indexado";
+    case "failed":
+      return "Falhou";
+    default:
+      return status;
   }
 }
 
@@ -40,9 +47,12 @@ function StatusBadge({ status }: { status: string }) {
     <span
       className={cn(
         "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium",
-        status === "indexed" && "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
-        status === "failed" && "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
-        isPending && "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+        status === "indexed" &&
+          "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+        status === "failed" &&
+          "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+        isPending &&
+          "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
       )}
     >
       {status === "indexed" && <CheckCircle2 className="w-3 h-3" />}
@@ -59,171 +69,128 @@ function formatSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+function QuotaBar({ quota }: { quota: SourceQuota }) {
+  const bytesPct = Math.min(
+    100,
+    quota.bytesMax > 0
+      ? Math.round((quota.bytesUsed / quota.bytesMax) * 100)
+      : 0,
+  );
+  const filesPct = Math.min(
+    100,
+    quota.filesMax > 0
+      ? Math.round((quota.filesUsed / quota.filesMax) * 100)
+      : 0,
+  );
+  const isNearLimit = bytesPct >= 80 || filesPct >= 80;
+  const isAtLimit = bytesPct >= 100 || filesPct >= 100;
+
+  return (
+    <div className="rounded-lg border border-border bg-muted/30 px-3 py-2 text-xs">
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-muted-foreground">
+          {formatSize(quota.bytesUsed)} de {formatSize(quota.bytesMax)} usados
+        </span>
+        <span className="text-muted-foreground">
+          {quota.filesUsed} / {quota.filesMax} ficheiros
+        </span>
+      </div>
+      <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+        <div
+          className={cn(
+            "h-full transition-all",
+            isAtLimit
+              ? "bg-destructive"
+              : isNearLimit
+                ? "bg-amber-500"
+                : "bg-primary",
+          )}
+          style={{ width: `${Math.max(bytesPct, filesPct)}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
 export default function SourcesPage() {
   const dispatch = useAppDispatch();
   const { sources, loading, uploading, uploadError } = useAppSelector(
-    (state) => state.sources
+    (state) => state.sources,
   );
-  const { getToken } = useAuth();
 
   const [name, setName] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [quota, setQuota] = useState<SourceQuota | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const sseRef = useRef<Map<string, () => void>>(new Map()); // Track SSE unsubscribe functions by source ID
-  const [sseFeaturesEnabled, setSseFeaturesEnabled] = useState(false);
 
+  // Re-fetch on mount so navigating to this page always shows fresh state.
+  // Polling of pending sources is handled globally by SourceIngestionTracker
+  // (mounted in SidebarLayout) so the rest of the app stays in sync too.
   useEffect(() => {
     dispatch(fetchSources());
+  }, [dispatch]);
 
-    // Check if sources_sse feature is enabled
-    const checkFeatures = async () => {
-      try {
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_BASE_API_URL || ""}/features`,
-          {
-            headers: {
-              Authorization: `Bearer ${await getToken()}`,
-            },
-          }
+  const refreshQuota = useCallback(async () => {
+    try {
+      const q = await getSourceQuota();
+      setQuota(q);
+    } catch {
+      // Soft-fail: keep the previous quota snapshot (or null if first load).
+    }
+  }, []);
+
+  useEffect(() => {
+    void refreshQuota();
+  }, [refreshQuota]);
+
+  // Re-fetch quota whenever the sources list changes (upload/delete/ingest).
+  // The amount of pending bytes doesn't change as ingestion progresses, but
+  // count/bytes do change on add/remove, so keying on sources is enough.
+  useEffect(() => {
+    void refreshQuota();
+  }, [sources.length, refreshQuota]);
+
+  const maxFileBytes = quota?.maxFileBytes ?? 25 * 1024 * 1024;
+
+  const validateAndSetFile = useCallback(
+    (selectedFile: File): boolean => {
+      if (selectedFile.size > maxFileBytes) {
+        toast.error(
+          `O ficheiro excede o limite de ${formatSize(maxFileBytes)}.`,
         );
-        if (response.ok) {
-          const features = (await response.json()) as string[];
-          setSseFeaturesEnabled(features.includes("sources_sse"));
-        }
-      } catch {
-        // Feature check failed, default to polling
-        setSseFeaturesEnabled(false);
+        return false;
       }
-    };
-
-    checkFeatures();
-  }, [dispatch, getToken]);
-
-  // SSE-based progress tracking (when feature is enabled)
-  useEffect(() => {
-    if (!sseFeaturesEnabled || !getToken) {
-      return;
-    }
-
-    const pending = sources.filter(
-      (s) => !["indexed", "failed"].includes(s.status)
-    );
-
-    // Subscribe to pending sources that don't already have SSE
-    pending.forEach((source) => {
-      if (sseRef.current.has(source.id)) {
-        return; // Already subscribed
+      if (quota && quota.filesUsed >= quota.filesMax) {
+        toast.error(
+          `Atingiu o limite de ${quota.filesMax} fontes. Remova uma para carregar outra.`,
+        );
+        return false;
       }
-
-      const setupSSE = async () => {
-        try {
-          const token = await getToken();
-          if (!token) return;
-
-          const baseUrl = process.env.NEXT_PUBLIC_BASE_API_URL || "";
-          const url = `${baseUrl}/sources/${source.id}/stream`;
-          const abortController = new AbortController();
-
-          const unsubscribe = () => abortController.abort();
-          sseRef.current.set(source.id, unsubscribe);
-
-          const { fetchEventSource } = await import("@microsoft/fetch-event-source");
-
-          await fetchEventSource(url, {
-            signal: abortController.signal,
-            headers: { Authorization: `Bearer ${token}` },
-            async onopen(res) {
-              if (!res.ok) {
-                console.warn(`SSE open failed for source ${source.id}: ${res.status}`);
-                throw new Error(`SSE open failed: ${res.status}`);
-              }
-            },
-            onmessage(event) {
-              try {
-                const parsed = JSON.parse(event.data) as {
-                  type?: string;
-                  data?: string;
-                  status?: string;
-                };
-
-                // The backend sends: {"type":"status","data":"<status>"}
-                const status = parsed.data || parsed.status;
-                if (status) {
-                  // Fetch updated source from backend
-                  dispatch(refreshSource(source.id));
-                }
-              } catch {
-                // Ignore parse errors
-              }
-            },
-            onerror(err) {
-              console.warn(`SSE error for source ${source.id}:`, err);
-              // Cleanup and fall back to polling for this source
-              sseRef.current.delete(source.id);
-              // Close event source by throwing
-              throw err;
-            },
-          }).catch(() => {
-            // Expected when stream ends or errors
-            sseRef.current.delete(source.id);
-          });
-        } catch (error) {
-          console.warn(`Failed to setup SSE for source ${source.id}:`, error);
-          sseRef.current.delete(source.id);
-        }
-      };
-
-      setupSSE();
-    });
-
-    // Unsubscribe from sources that are no longer pending
-    const pendingIds = new Set(pending.map((s) => s.id));
-    for (const [sourceId, unsubscribe] of sseRef.current.entries()) {
-      if (!pendingIds.has(sourceId)) {
-        unsubscribe();
-        sseRef.current.delete(sourceId);
+      if (quota && quota.bytesUsed + selectedFile.size > quota.bytesMax) {
+        const remaining = Math.max(0, quota.bytesMax - quota.bytesUsed);
+        toast.error(
+          `Espaço insuficiente. Restam ${formatSize(remaining)} do total de ${formatSize(quota.bytesMax)}.`,
+        );
+        return false;
       }
-    }
-
-    return () => {
-      for (const unsubscribe of sseRef.current.values()) {
-        unsubscribe();
-      }
-      sseRef.current.clear();
-    };
-  }, [sources, sseFeaturesEnabled, dispatch, getToken]);
-
-  // Polling fallback (when SSE is disabled or as a secondary refresh mechanism)
-  useEffect(() => {
-    // Only use polling if SSE is not enabled
-    if (sseFeaturesEnabled) {
-      return;
-    }
-
-    const pending = sources.filter(
-      (s) => !["indexed", "failed"].includes(s.status)
-    );
-    if (pending.length > 0) {
-      pollRef.current = setInterval(() => {
-        for (const s of pending) dispatch(refreshSource(s.id));
-      }, 5000);
-    } else {
-      if (pollRef.current) {
-        clearInterval(pollRef.current);
-        pollRef.current = null;
-      }
-    }
-    return () => {
-      if (pollRef.current) clearInterval(pollRef.current);
-    };
-  }, [sources, sseFeaturesEnabled, dispatch]);
+      setFile(selectedFile);
+      if (!name) setName(selectedFile.name.replace(/\.[^.]+$/, ""));
+      return true;
+    },
+    [maxFileBytes, name, quota],
+  );
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0] ?? null;
-    setFile(f);
-    if (f && !name) setName(f.name.replace(/\.[^.]+$/, ""));
+    if (f) {
+      const accepted = validateAndSetFile(f);
+      if (!accepted && fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    } else {
+      setFile(null);
+    }
   };
 
   const handleUpload = async () => {
@@ -237,12 +204,14 @@ export default function SourcesPage() {
       setFile(null);
       setName("");
       if (fileInputRef.current) fileInputRef.current.value = "";
+      void refreshQuota();
     }
   };
 
   const handleDelete = async (id: string) => {
     await dispatch(deleteUserSource(id));
     setDeleteConfirmId(null);
+    void refreshQuota();
   };
 
   return (
@@ -268,10 +237,7 @@ export default function SourcesPage() {
           onDrop={(e) => {
             e.preventDefault();
             const f = e.dataTransfer.files?.[0];
-            if (f) {
-              setFile(f);
-              if (!name) setName(f.name.replace(/\.[^.]+$/, ""));
-            }
+            if (f) validateAndSetFile(f);
           }}
         >
           <Upload className="w-8 h-8 text-muted-foreground" />
@@ -280,7 +246,9 @@ export default function SourcesPage() {
               {file ? file.name : "Clique ou arraste um ficheiro"}
             </p>
             <p className="text-xs text-muted-foreground">
-              {file ? formatSize(file.size) : "PDF ou DOCX, até 25 MB"}
+              {file
+                ? formatSize(file.size)
+                : `PDF ou DOCX, até ${formatSize(maxFileBytes)}`}
             </p>
           </div>
           <input
@@ -291,6 +259,9 @@ export default function SourcesPage() {
             onChange={handleFileChange}
           />
         </div>
+
+        {/* Quota usage */}
+        {quota && <QuotaBar quota={quota} />}
 
         {/* Name + upload — only shown after a file is chosen */}
         {file && (
@@ -339,16 +310,14 @@ export default function SourcesPage() {
           </h2>
           {sources.some((s) => !["indexed", "failed"].includes(s.status)) && (
             <span className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400">
-              <Clock className="w-3.5 h-3.5" />
-              A processar...
+              <Clock className="w-3.5 h-3.5" />A processar...
             </span>
           )}
         </div>
 
         {loading && sources.length === 0 && (
           <div className="flex items-center gap-2 py-8 text-sm text-muted-foreground">
-            <Loader2 className="w-4 h-4 animate-spin" />
-            A carregar fontes...
+            <Loader2 className="w-4 h-4 animate-spin" />A carregar fontes...
           </div>
         )}
 
@@ -374,6 +343,15 @@ export default function SourcesPage() {
                       ` · ${source.chunkCount} segmentos`}
                     {` · ${source.fileKind.toUpperCase()}`}
                   </p>
+                  {source.strippedBackMatter &&
+                    source.strippedBackMatter.charsRemoved > 0 && (
+                      <p
+                        className="mt-1 text-xs text-muted-foreground"
+                        title={`Excluímos ${formatSize(source.strippedBackMatter.charsRemoved)} de ${source.strippedBackMatter.matchedHeading ?? "back-matter"} antes de processar.`}
+                      >
+                        Secção {source.strippedBackMatter.matchedHeading ?? "final"} omitida
+                      </p>
+                    )}
                   {source.status === "failed" && source.lastError && (
                     <p className="mt-1 truncate text-xs text-destructive">
                       {source.lastError}
@@ -420,8 +398,8 @@ export default function SourcesPage() {
 
       {/* Pro info note */}
       <p className="text-xs text-muted-foreground">
-        As fontes ficam disponiveis apenas para as suas geracoes. O conteudo
-        e processado e indexado automaticamente em segundo plano.
+        As fontes ficam disponíveis apenas para as suas gerações. O conteúdo é
+        processado e indexado automaticamente em segundo plano.
       </p>
     </div>
   );

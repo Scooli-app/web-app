@@ -1,18 +1,21 @@
 "use client";
 
 import { Card } from "@/components/ui/card";
+import { listRegulatorySources } from "@/services/api/sources.service";
+import { Routes } from "@/shared/types/routes";
+import type { UserSource } from "@/shared/types/sources";
+import { cn } from "@/shared/utils/utils";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { fetchSources } from "@/store/sources/sourcesSlice";
-import { cn } from "@/shared/utils/utils";
-import { Routes } from "@/shared/types/routes";
-import { AlertCircle, Check, Library, Loader2, Upload } from "lucide-react";
+import { AlertCircle, Check, ExternalLink, Library, Loader2, Scale, Upload } from "lucide-react";
 import Link from "next/link";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import type { FormUpdateFn } from "../types";
 
 interface SourcePickerSectionProps {
   sourceIds: string[];
   includeAe: boolean;
+  regulatorySourceIds?: string[];
   subject?: string;
   schoolYear?: number;
   onUpdate: FormUpdateFn;
@@ -21,6 +24,7 @@ interface SourcePickerSectionProps {
 export function SourcePickerSection({
   sourceIds,
   includeAe,
+  regulatorySourceIds,
   subject,
   schoolYear,
   onUpdate,
@@ -28,15 +32,46 @@ export function SourcePickerSection({
   const dispatch = useAppDispatch();
   const { sources, loading } = useAppSelector((state) => state.sources);
 
+  const [regulatorySources, setRegulatorySources] = useState<UserSource[]>([]);
+  const [regulatoryLoading, setRegulatoryLoading] = useState(true);
+
   useEffect(() => {
     dispatch(fetchSources());
   }, [dispatch]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setRegulatoryLoading(true);
+    listRegulatorySources()
+      .then((data) => {
+        if (cancelled) return;
+        setRegulatorySources(data);
+        // Default: pre-select everything so behavior matches today's auto-injection,
+        // but only if the form hasn't been initialised yet (regulatorySourceIds is undefined).
+        if (regulatorySourceIds === undefined && data.length > 0) {
+          onUpdate(
+            "regulatorySourceIds",
+            data.map((s) => s.id),
+          );
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setRegulatorySources([]);
+      })
+      .finally(() => {
+        if (!cancelled) setRegulatoryLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const indexedSources = sources.filter(
     (s) =>
       s.status === "indexed" &&
       (!subject || !s.subject || s.subject === subject) &&
-      (!schoolYear || !s.schoolYear || s.schoolYear === schoolYear)
+      (!schoolYear || !s.schoolYear || s.schoolYear === schoolYear),
   );
 
   const toggleSource = (id: string) => {
@@ -44,6 +79,14 @@ export function SourcePickerSection({
       ? sourceIds.filter((s) => s !== id)
       : [...sourceIds, id];
     onUpdate("sourceIds", next);
+  };
+
+  const toggleRegulatory = (id: string) => {
+    const current = regulatorySourceIds ?? [];
+    const next = current.includes(id)
+      ? current.filter((s) => s !== id)
+      : [...current, id];
+    onUpdate("regulatorySourceIds", next);
   };
 
   return (
@@ -88,9 +131,7 @@ export function SourcePickerSection({
           <div
             className={cn(
               "w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors",
-              includeAe
-                ? "bg-primary border-primary"
-                : "border-border bg-background"
+              includeAe ? "bg-primary border-primary" : "border-border bg-background",
             )}
           >
             {includeAe && <Check className="w-2.5 h-2.5 text-primary-foreground" />}
@@ -102,6 +143,75 @@ export function SourcePickerSection({
             </span>
           </span>
         </div>
+
+        {/* Regulatory documents (scooli-managed) */}
+        {regulatoryLoading ? (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            A carregar documentos regulatórios...
+          </div>
+        ) : regulatorySources.length > 0 ? (
+          <div className="space-y-2">
+            <div className="flex items-center gap-1.5">
+              <Scale className="w-3.5 h-3.5 text-muted-foreground" />
+              <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
+                Documentos Regulatórios ({regulatorySources.length})
+              </p>
+            </div>
+            <div className="space-y-1">
+              {regulatorySources.map((source) => {
+                const selected = (regulatorySourceIds ?? []).includes(source.id);
+                return (
+                  <div
+                    key={source.id}
+                    className={cn(
+                      "flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition-colors select-none",
+                      selected ? "bg-primary/10" : "hover:bg-muted",
+                    )}
+                    onClick={() => toggleRegulatory(source.id)}
+                    role="checkbox"
+                    aria-checked={selected}
+                    tabIndex={0}
+                    onKeyDown={(e) => e.key === " " && toggleRegulatory(source.id)}
+                  >
+                    <div
+                      className={cn(
+                        "w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors",
+                        selected
+                          ? "bg-primary border-primary"
+                          : "border-border bg-background",
+                      )}
+                    >
+                      {selected && (
+                        <Check className="w-2.5 h-2.5 text-primary-foreground" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-sm font-medium truncate">{source.name}</p>
+                        {source.externalUrl && (
+                          <a
+                            href={source.externalUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-primary hover:text-primary/80 shrink-0"
+                            aria-label={`Abrir ${source.name} numa nova janela`}
+                          >
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {source.chunkCount} segmentos
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ) : null}
 
         {/* User sources */}
         {loading ? (
@@ -136,7 +246,7 @@ export function SourcePickerSection({
                     key={source.id}
                     className={cn(
                       "flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition-colors select-none",
-                      selected ? "bg-primary/10" : "hover:bg-muted"
+                      selected ? "bg-primary/10" : "hover:bg-muted",
                     )}
                     onClick={() => toggleSource(source.id)}
                     role="checkbox"
@@ -149,7 +259,7 @@ export function SourcePickerSection({
                         "w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors",
                         selected
                           ? "bg-primary border-primary"
-                          : "border-border bg-background"
+                          : "border-border bg-background",
                       )}
                     >
                       {selected && (

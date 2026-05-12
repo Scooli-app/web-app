@@ -1,11 +1,9 @@
 "use client";
 
 import type { RagSource } from "@/shared/types/document";
-import { cn } from "@/shared/utils/utils";
 import { BookOpen, ChevronDown, ChevronUp, ExternalLink, FileText } from "lucide-react";
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "./card";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./tooltip";
 
 interface SourcesListProps {
   sources: RagSource[];
@@ -21,9 +19,6 @@ function SourceCard({
   isExpanded: boolean;
   onToggle: () => void;
 }) {
-  // Format similarity as percentage
-  const relevancePercent = Math.round(source.similarity * 100);
-  
   return (
     <div className="border border-border/50 rounded-xl overflow-hidden bg-background/50 transition-all hover:border-primary/30">
       <button
@@ -33,7 +28,7 @@ function SourceCard({
         <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center mt-0.5">
           <BookOpen className="w-4 h-4 text-primary" />
         </div>
-        
+
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
             {source.url ? (
@@ -52,25 +47,8 @@ function SourceCard({
                 {source.documentName}
               </span>
             )}
-            <TooltipProvider delayDuration={500}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span className={cn(
-                    "text-xs px-2 py-0.5 rounded-full font-semibold whitespace-nowrap cursor-help",
-                    relevancePercent >= 80 ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" :
-                    relevancePercent >= 60 ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400" :
-                    "bg-muted text-muted-foreground"
-                  )}>
-                    {relevancePercent}%
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent side="top" sideOffset={4}>
-                  <p>Relevância com o pedido</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
           </div>
-          
+
           <p className="text-sm font-medium text-foreground leading-tight">
             {source.topicLeaf}
           </p>
@@ -118,30 +96,25 @@ export function SourcesList({
     );
   }
 
-  // Remove duplicates by chunkId
+  // Remove duplicates by chunkId, preserving insertion order
   const uniqueSources = sources.filter(
     (source, index, self) =>
       index === self.findIndex((s) => s.chunkId === source.chunkId)
   );
 
-  // Sort by similarity (most relevant first)
-  const sortedSources = [...uniqueSources].sort(
-    (a, b) => b.similarity - a.similarity
-  );
-
   return (
-    <Card className="border-0 shadow-none bg-transparent">
-      <CardHeader className="px-0 pt-0">
+    <Card className="border-0 shadow-none bg-transparent h-full flex flex-col min-h-0">
+      <CardHeader className="px-0 pt-0 shrink-0">
         <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
           <FileText className="w-5 h-5 text-primary" />
           {title}
           <span className="text-xs font-normal text-muted-foreground ml-auto">
-            {sortedSources.length} fonte{sortedSources.length !== 1 ? "s" : ""}
+            {uniqueSources.length} fonte{uniqueSources.length !== 1 ? "s" : ""}
           </span>
         </CardTitle>
       </CardHeader>
-      <CardContent className="px-0 pb-0 space-y-2">
-        {sortedSources.map((source, index) => (
+      <CardContent className="px-0 pb-0 space-y-2 flex-1 min-h-0 overflow-y-auto">
+        {uniqueSources.map((source, index) => (
           <SourceCard
             key={source.chunkId || index}
             source={source}

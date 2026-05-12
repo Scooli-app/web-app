@@ -1,8 +1,18 @@
-import type { UploadSourceParams, UserSource } from "@/shared/types/sources";
+import type { SourceQuota, UploadSourceParams, UserSource } from "@/shared/types/sources";
 import apiClient from "./client";
 
 export async function listSources(): Promise<UserSource[]> {
   const response = await apiClient.get<UserSource[]>("/sources");
+  return response.data;
+}
+
+export async function listRegulatorySources(): Promise<UserSource[]> {
+  const response = await apiClient.get<UserSource[]>("/sources/regulatory");
+  return response.data;
+}
+
+export async function getSourceQuota(): Promise<SourceQuota> {
+  const response = await apiClient.get<SourceQuota>("/sources/quota");
   return response.data;
 }
 

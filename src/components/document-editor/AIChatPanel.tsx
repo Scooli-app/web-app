@@ -58,16 +58,23 @@ function Tabs({
           "flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium transition-all rounded-lg",
           activeTab === "assistant"
             ? "bg-background text-foreground shadow-sm"
-            : "text-muted-foreground hover:text-foreground"
+            : "text-muted-foreground hover:text-foreground",
         )}
       >
-        <Sparkles className={cn("w-4 h-4", activeTab === "assistant" ? "text-primary" : "")} />
+        <Sparkles
+          className={cn(
+            "w-4 h-4",
+            activeTab === "assistant" ? "text-primary" : "",
+          )}
+        />
         Conversa
       </button>
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            <div className={cn("flex-1 flex", !hasSources && "cursor-not-allowed")}>
+            <div
+              className={cn("flex-1 flex", !hasSources && "cursor-not-allowed")}
+            >
               <button
                 onClick={(e) => {
                   if (!hasSources) {
@@ -81,12 +88,17 @@ function Tabs({
                   activeTab === "sources"
                     ? "bg-background text-foreground shadow-sm"
                     : "text-muted-foreground hover:text-foreground",
-                  !hasSources && "opacity-50 pointer-events-none"
+                  !hasSources && "opacity-50 pointer-events-none",
                 )}
                 aria-disabled={!hasSources}
                 type="button"
               >
-                <FileText className={cn("w-4 h-4", activeTab === "sources" ? "text-primary" : "")} />
+                <FileText
+                  className={cn(
+                    "w-4 h-4",
+                    activeTab === "sources" ? "text-primary" : "",
+                  )}
+                />
                 Fontes
               </button>
             </div>
@@ -129,22 +141,24 @@ function ChatContent({
   showGenerationHint?: boolean;
 }) {
   const isDesktop = variant === "desktop";
-  const [activeTab, setActiveTab] = useState<"assistant" | "sources">("assistant");
+  const [activeTab, setActiveTab] = useState<"assistant" | "sources">(
+    "assistant",
+  );
 
   return (
     <Card
       className={cn(
         "flex flex-col transition-all duration-300",
-        isDesktop 
-          ? "h-[min(70dvh,760px)] border-border bg-card/50 backdrop-blur-sm lg:h-[calc(100dvh-12rem)]" 
-          : "h-full border-0 shadow-none bg-transparent"
+        isDesktop
+          ? "h-[min(70dvh,760px)] border-border bg-card/50 backdrop-blur-sm lg:h-[calc(100dvh-12rem)]"
+          : "h-full border-0 shadow-none bg-transparent",
       )}
     >
-      <div className="px-4 py-4 md:px-6">
-        <Tabs 
-          activeTab={activeTab} 
-          onTabChange={setActiveTab} 
-          hasSources={sources.length > 0} 
+      <div className="py-4 md:px-6">
+        <Tabs
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          hasSources={sources.length > 0}
         />
       </div>
 
@@ -169,7 +183,7 @@ function ChatContent({
                     "p-3 rounded-2xl text-sm leading-relaxed max-w-[85%] animate-in fade-in slide-in-from-bottom-2 duration-300 relative",
                     message.role === "user"
                       ? "bg-primary text-primary-foreground ml-auto rounded-tr-none"
-                      : "bg-muted text-foreground mr-auto rounded-tl-none border border-border/50"
+                      : "bg-muted text-foreground mr-auto rounded-tl-none border border-border/50",
                   )}
                 >
                   {message.content}
@@ -236,18 +250,16 @@ function ChatContent({
             </p>
           </>
         ) : (
-          <div className="flex-1 overflow-y-auto pb-6 animate-in fade-in slide-in-from-right-4 duration-300">
+          <div className="flex-1 min-h-0 pb-6 animate-in fade-in slide-in-from-right-4 duration-300">
             <SourcesList sources={sources} />
           </div>
         )}
-         {error && (
-        <div className="p-3 bg-destructive/5 border border-destructive/20 rounded-xl text-destructive text-xs font-medium animate-in shake-1">
-          {error}
-        </div>
-      )}
+        {error && (
+          <div className="p-3 bg-destructive/5 border border-destructive/20 rounded-xl text-destructive text-xs font-medium animate-in shake-1">
+            {error}
+          </div>
+        )}
       </div>
-
-     
     </Card>
   );
 }
