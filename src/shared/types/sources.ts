@@ -6,7 +6,7 @@ export type SourceStatus =
   | "indexed"
   | "failed";
 
-export type SourceScope = "personal" | "organization";
+export type SourceScope = "personal" | "organization" | "scooli";
 export type SourceFileKind = "pdf" | "docx" | "md";
 
 export interface UserSource {
@@ -24,6 +24,16 @@ export interface UserSource {
   indexedAt?: string | null;
   createdAt: string;
   updatedAt: string;
+  /** Canonical external URL (e.g. official publication for regulatory sources). */
+  externalUrl?: string | null;
+  /**
+   * Set when the ingestion worker stripped a references/bibliography section
+   * from the document before chunking. {@code null} when nothing was stripped.
+   */
+  strippedBackMatter?: {
+    charsRemoved: number;
+    matchedHeading: string | null;
+  } | null;
 }
 
 export interface UploadSourceParams {
@@ -32,4 +42,12 @@ export interface UploadSourceParams {
   subject?: string;
   schoolYear?: number;
   scope?: SourceScope;
+}
+
+export interface SourceQuota {
+  filesUsed: number;
+  filesMax: number;
+  bytesUsed: number;
+  bytesMax: number;
+  maxFileBytes: number;
 }

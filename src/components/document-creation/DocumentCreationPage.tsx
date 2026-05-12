@@ -195,6 +195,7 @@ export default function DocumentCreationPage({
                 ? formState.sourceIds
                 : undefined,
             includeAe: formState.includeAe ?? true,
+            regulatorySourceIds: formState.regulatorySourceIds,
           }),
         })
       );
@@ -316,6 +317,7 @@ export default function DocumentCreationPage({
             <SourcePickerSection
               sourceIds={formState.sourceIds ?? []}
               includeAe={formState.includeAe ?? true}
+              regulatorySourceIds={formState.regulatorySourceIds}
               subject={formState.subject}
               schoolYear={formState.schoolYear || undefined}
               onUpdate={updateForm}

@@ -31,6 +31,12 @@ export interface CreateDocumentParams {
   sourceIds?: string[];
   /** Whether to include Aprendizagens Essenciais corpus (default true). */
   includeAe?: boolean;
+  /**
+   * Allow-list of regulatory (scope='scooli') source IDs to include as standing
+   * context. When omitted, the backend falls back to its default policy-driven
+   * injection of all matching scooli sources.
+   */
+  regulatorySourceIds?: string[];
 }
 
 
