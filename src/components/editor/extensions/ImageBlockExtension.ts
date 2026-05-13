@@ -9,7 +9,7 @@ interface ImageBlockOptions {
 const WIDTH_TITLE_PREFIX = "scooli-width:";
 const MIN_IMAGE_WIDTH_PERCENT = 30;
 const MAX_IMAGE_WIDTH_PERCENT = 100;
-const DEFAULT_IMAGE_WIDTH_PERCENT = 100;
+const DEFAULT_IMAGE_WIDTH_PERCENT = 70;
 
 function clampImageWidth(rawValue: unknown): number {
   const numeric =
