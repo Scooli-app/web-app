@@ -6,17 +6,11 @@
 export { TeachingMethod } from "./document";
 export type { Document, DocumentType, WorksheetVariant } from "./document";
 
-// Lesson Plan types
-
-
 // API types
 export type { BackendPaginatedResponse, ChatResponse, CreateDocumentParams, CreateDocumentStreamResponse, DocumentFilters, DocumentStatsResponse, DocumentStreamCallbacks, GetDocumentsParams, GetDocumentsResponse, StreamEvent, StreamedResponse } from "./api";
 
 // UI types
 export type { UIState } from "./ui";
-
-// Community types
-
 
 // Route types
 export { Routes } from "./routes";
@@ -26,18 +20,6 @@ export type { CreateTemplateParams, DocumentTemplate, TemplateSection } from "./
 
 // Subscription types
 export type { CurrentEntitlement, EntitlementSource } from "./entitlement";
-
-
-// Feedback types
-
-
-
-// Feedback survey types
-
-
-
-// User types
-
 
 // Workspace / organization types
 export type {
@@ -51,3 +33,5 @@ export type {
     WorkspaceType
 } from "./workspace";
 
+// Sources types
+export type { UserSource, UploadSourceParams, SourceStatus, SourceScope, SourceFileKind } from "./sources";

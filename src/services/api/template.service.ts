@@ -181,16 +181,22 @@ export async function setDefaultTemplate(
 
 /**
  * Create a new template from an uploaded document using AI extraction.
- * Expects the file to have already been uploaded via getUploadUrl + PUT.
+ * Sends the file directly as multipart/form-data to the backend.
  */
 export async function createTemplateFromDocument(params: {
-  fileKey: string;
+  file: File;
   documentType: DocumentType;
   name: string;
 }): Promise<DocumentTemplate> {
+  const formData = new FormData();
+  formData.append("file", params.file);
+  formData.append("documentType", params.documentType);
+  if (params.name) formData.append("name", params.name);
+
   const response = await apiClient.post<TemplateResponse>(
     "/templates/from-document",
-    params
+    formData,
+    { headers: { "Content-Type": undefined } }
   );
 
   if (response.status !== 200 && response.status !== 201) {

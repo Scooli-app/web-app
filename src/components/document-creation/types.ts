@@ -26,6 +26,12 @@ export interface FormState {
   templateId?: string;
   template?: DocumentTemplate;
   worksheetVariant?: WorksheetVariant;
+  /** Source IDs selected for RAG context (user/org sources). */
+  sourceIds?: string[];
+  /** Whether to include Aprendizagens Essenciais corpus. Default true. */
+  includeAe?: boolean;
+  /** Selected regulatory (scope='scooli') source IDs to inject as standing context. */
+  regulatorySourceIds?: string[];
 }
 
 export type FormUpdateFn = <K extends keyof FormState>(

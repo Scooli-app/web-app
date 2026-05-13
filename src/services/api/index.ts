@@ -36,3 +36,6 @@ export * from "./user.service";
 
 // Workspace / organization service
 export * from "./workspace.service";
+
+// Sources service
+export * from "./sources.service";

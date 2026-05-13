@@ -114,11 +114,16 @@ export async function createDocument(
 
 /**
  * Connect to SSE stream and receive document content chunks.
+ *
+ * Accepts a {@code getToken} callback rather than a static token so that every
+ * connection attempt (including automatic reconnects after network blips) uses
+ * a freshly-issued JWT.  The caller is responsible for providing a function
+ * that returns a valid token or null.
  */
 export async function streamDocumentContent(
   streamUrl: string,
   callbacks: DocumentStreamCallbacks,
-  authToken: string
+  getToken: () => Promise<string | null>
 ): Promise<() => void> {
   const { fetchEventSource } = await import("@microsoft/fetch-event-source");
   const baseUrl = process.env.NEXT_PUBLIC_BASE_API_URL || "";
@@ -132,8 +137,17 @@ export async function streamDocumentContent(
 
   fetchEventSource(fullUrl, {
     signal: abortController.signal,
-    headers: {
-      Authorization: `Bearer ${authToken}`,
+    // Resolve a fresh JWT on every connection attempt (initial + reconnects).
+    // This prevents 401s when the SSE stream is reconnected after a network
+    // blip and the original short-lived Clerk token has already expired.
+    fetch: async (input: RequestInfo | URL, init?: RequestInit) => {
+      const token = await getToken();
+      if (!token) {
+        throw new Error("Erro de autenticação: token não disponível");
+      }
+      const headers = new Headers(init?.headers);
+      headers.set("Authorization", `Bearer ${token}`);
+      return window.fetch(input, { ...init, headers });
     },
     async onopen(response) {
       if (response.ok) {
@@ -243,9 +257,11 @@ export async function streamDocumentContent(
                 console.warn("[SSE] Could not parse final document payload");
               }
             }
+            // Abort before onComplete to prevent fetchEventSource from reconnecting
+            // with a potentially expired token after the server closes the stream.
+            abortController.abort();
             const documentId = streamedResponse.id ?? parsed.data;
             callbacks.onComplete?.(documentId, streamedResponse);
-            abortController.abort();
             break;
           }
           case "error":
@@ -258,9 +274,14 @@ export async function streamDocumentContent(
       }
     },
     onerror(error) {
-      console.error("[SSE] Error:", error);
-      callbacks.onError?.("Erro de ligação ao stream");
-      throw error;
+      if (abortController.signal.aborted) {
+        // Stream was cleanly completed and we aborted — stop retrying.
+        throw error;
+      }
+      // For transient network errors: log and let fetchEventSource reconnect.
+      // The custom fetch above will get a fresh token on the next attempt.
+      console.warn("[SSE] Transient error, will retry:", error);
+      // Returning undefined (implicit) allows fetchEventSource to reconnect.
     },
   });
 
@@ -331,6 +352,7 @@ interface DocumentImportRequest {
   fileKey: string;
   isSpecificComponent?: boolean;
   worksheetVariant?: WorksheetVariant;
+  usageIntent?: "reference" | "standing_context";
 }
 
 export async function getUploadUrl(

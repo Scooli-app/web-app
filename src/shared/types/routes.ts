@@ -18,6 +18,7 @@ export enum Routes {
   SCHOOL_USAGE = "/school/usage",
   SCHOOL_SETTINGS = "/school/settings",
   SETTINGS = "/settings",
+  SOURCES = "/sources",
   ADMIN = "/admin",
   SUPPORT = "/support",
 }

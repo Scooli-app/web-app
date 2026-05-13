@@ -27,6 +27,16 @@ export interface CreateDocumentParams {
   templateId?: string;
   isSpecificComponent?: boolean;
   worksheetVariant?: WorksheetVariant;
+  /** Explicit user/org source IDs to include in RAG retrieval. */
+  sourceIds?: string[];
+  /** Whether to include Aprendizagens Essenciais corpus (default true). */
+  includeAe?: boolean;
+  /**
+   * Allow-list of regulatory (scope='scooli') source IDs to include as standing
+   * context. When omitted, the backend falls back to its default policy-driven
+   * injection of all matching scooli sources.
+   */
+  regulatorySourceIds?: string[];
 }
 
 
@@ -119,4 +129,3 @@ export interface DocumentStreamCallbacks {
   onComplete?: (documentId: string, response: StreamedResponse) => void;
   onError?: (error: string) => void;
 }
-
