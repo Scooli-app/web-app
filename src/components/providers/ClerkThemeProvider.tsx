@@ -81,6 +81,8 @@ export default function ClerkThemeProvider({
       localization={ptPT}
       signInUrl="/sign-in"
       signUpUrl="/sign-up"
+      afterSignInUrl="/"
+      afterSignUpUrl="/"
     >
       {children}
     </ClerkProvider>

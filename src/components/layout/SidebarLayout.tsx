@@ -2,6 +2,7 @@
 
 import { AssistantProvider } from "@/components/assistant";
 import { AppFeedbackSurveyGate } from "@/components/feedback-survey/AppFeedbackSurveyGate";
+import { OnboardingGate } from "@/components/onboarding/OnboardingGate";
 import { AppBootstrapGate } from "@/components/layout/AppBootstrapGate";
 import { SourceIngestionTracker } from "@/components/layout/SourceIngestionTracker";
 import { SourcesPendingBadge } from "@/components/layout/SourcesPendingBadge";
@@ -676,6 +677,7 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
           onOpenChange={handleUpgradeModalChange}
         />
         <AppFeedbackSurveyGate />
+        <OnboardingGate />
 
         <div className="hidden md:block md:min-h-dvh">
           {desktopSidebarContent}

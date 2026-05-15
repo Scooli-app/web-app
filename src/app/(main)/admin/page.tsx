@@ -5,7 +5,7 @@ import { PageContainer } from "@/components/layout/PageContainer";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAdmin } from "@/hooks/useAdmin";
-import { DollarSign, LayoutDashboard, Library, MessageSquare, Shield, ToggleLeft, Users } from "lucide-react";
+import { DollarSign, LayoutDashboard, Library, MapPin, MessageSquare, Shield, ToggleLeft, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
@@ -164,6 +164,26 @@ export default function AdminPage() {
             <CardContent>
               <div className="text-sm text-muted-foreground">
                 Custo total, média por utilizador e breakdown detalhado por modelo, ferramenta e tipo de evento.
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card
+            className="group cursor-pointer border-border transition-colors hover:bg-muted/50"
+            onClick={() => router.push("/admin/onboarding")}
+          >
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 transition-colors group-hover:text-primary">
+                <MapPin className="h-5 w-5" />
+                Onboarding
+              </CardTitle>
+              <CardDescription>
+                Respostas do onboarding de novos utilizadores.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-sm text-muted-foreground">
+                Fontes de aquisição, disciplinas e níveis de ensino dos professores que se registaram.
               </div>
             </CardContent>
           </Card>
