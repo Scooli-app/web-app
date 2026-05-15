@@ -54,6 +54,16 @@ export default function AuthProvider({
         email: user.primaryEmailAddress?.emailAddress,
         name: user.fullName,
       });
+
+      const isNewUser =
+        user.createdAt !== null &&
+        user.createdAt !== undefined &&
+        Date.now() - user.createdAt.getTime() < 60_000;
+      if (isNewUser) {
+        posthog.capture("user_signed_up", {
+          signup_method: user.externalAccounts.length > 0 ? "google" : "email",
+        });
+      }
     } else {
       posthog.reset();
     }
