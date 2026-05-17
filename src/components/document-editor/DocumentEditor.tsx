@@ -224,6 +224,13 @@ export default function DocumentEditor({
   const [streamStatus, setStreamStatus] = useState<string>("");
 
   const eventSourceRef = useRef<(() => void) | null>(null);
+  // Tracks which documentId has had a stream started; prevents the streaming
+  // effect from opening a second connection when eventSourceRef is briefly null
+  // (e.g., between onComplete nulling the ref and clearStreamInfo propagating).
+  const streamStartedForIdRef = useRef<string | null>(null);
+  // Set to true when onSources fires so the post-fetch sources sync doesn't
+  // overwrite sources that arrived through the SSE stream for this document.
+  const hasStreamingSourcesRef = useRef(false);
   const rawStreamRef = useRef("");
   const latestDisplayContentRef = useRef("");
   const latestContentRef = useRef(content);
@@ -251,6 +258,8 @@ export default function DocumentEditor({
       eventSourceRef.current();
       eventSourceRef.current = null;
     }
+    streamStartedForIdRef.current = null;
+    hasStreamingSourcesRef.current = false;
     setIsStreaming(false);
     setChatHistory([]);
     setSources([]);
@@ -426,13 +435,18 @@ export default function DocumentEditor({
 
   // Connect to SSE stream when we have stream info for this document
   useEffect(() => {
-    // Only connect if we have stream info for this document and aren't already streaming
+    // Only connect if we have stream info for this document and haven't already
+    // started a stream for this documentId. Using a separate ref (instead of
+    // checking eventSourceRef.current) prevents a second connection from opening
+    // during the brief window between onComplete nulling the ref and
+    // clearStreamInfo propagating through Redux.
     if (
       streamInfo &&
       streamInfo.id === documentId &&
       streamInfo.status === "generating" &&
-      !eventSourceRef.current
+      streamStartedForIdRef.current !== documentId
     ) {
+      streamStartedForIdRef.current = documentId;
       // Set a placeholder immediately to prevent double execution
       const abortController = new AbortController();
       eventSourceRef.current = () => abortController.abort();
@@ -508,6 +522,7 @@ export default function DocumentEditor({
               setDocumentTitle(title);
             },
             onSources: (newSources) => {
+              hasStreamingSourcesRef.current = true;
               setSources(newSources);
             },
             onStatus: (status) => {
@@ -589,6 +604,7 @@ export default function DocumentEditor({
 
               // Update sources if returned in response
               if (response.sources && response.sources.length > 0) {
+                hasStreamingSourcesRef.current = true;
                 setSources(response.sources);
               }
 
@@ -814,25 +830,17 @@ export default function DocumentEditor({
   ]);
 
   useEffect(() => {
-    if (currentDocument?.id !== documentId) {
+    if (currentDocument?.id !== documentId || isStreaming) {
       return;
     }
-    if (currentDocument?.title && !isStreaming) {
-      const normalizedCurrentTitle = normalizePendingTitle(currentDocument.title);
-      if (
-        !documentTitle ||
-        normalizedCurrentTitle === documentTitle ||
-        normalizedCurrentTitle.length >= documentTitle.length
-      ) {
-        setDocumentTitle(normalizedCurrentTitle);
-      }
+    if (currentDocument?.title) {
+      setDocumentTitle(normalizePendingTitle(currentDocument.title));
     }
   }, [
     currentDocument?.id,
     currentDocument?.title,
     documentId,
     isStreaming,
-    documentTitle,
     normalizePendingTitle,
   ]);
 
@@ -860,9 +868,14 @@ export default function DocumentEditor({
     chatHistory.length,
   ]);
 
-  // Sync sources from currentDocument when document loads
+  // Sync sources from currentDocument when document loads.
+  // Skipped when the current stream already provided sources so that
+  // post-stream fetchDocument calls don't overwrite SSE-sourced results.
   useEffect(() => {
     if (currentDocument?.id !== documentId || isStreaming) {
+      return;
+    }
+    if (hasStreamingSourcesRef.current) {
       return;
     }
     const metadataSources = Array.isArray(currentDocument?.metadata?.sources)

@@ -28,6 +28,8 @@ export const onboardingService = {
       ...payload,
       subjectArea: payload.subjectArea?.join(",") ?? null,
       teachingLevel: payload.teachingLevel?.join(",") ?? null,
+      acquisitionSourceOther: payload.acquisitionSourceOther ?? null,
+      subjectAreaOther: payload.subjectAreaOther ?? null,
     });
   },
 };

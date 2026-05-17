@@ -7,6 +7,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   ACQUISITION_SOURCE_LABELS,
   ONBOARDING_PROMPT_KEY,
@@ -156,21 +157,27 @@ export function OnboardingModal({
   const [step, setStep] = useState<1 | 2>(1);
   const [acquisitionSource, setAcquisitionSource] =
     useState<AcquisitionSource | null>(null);
+  const [acquisitionSourceOther, setAcquisitionSourceOther] = useState("");
   const [subjectAreas, setSubjectAreas] = useState<SubjectArea[]>([]);
+  const [subjectAreaOther, setSubjectAreaOther] = useState("");
   const [teachingLevels, setTeachingLevels] = useState<TeachingLevel[]>([]);
 
   useEffect(() => {
     if (!open) {
       setStep(1);
       setAcquisitionSource(null);
+      setAcquisitionSourceOther("");
       setSubjectAreas([]);
+      setSubjectAreaOther("");
       setTeachingLevels([]);
     }
   }, [open]);
 
   const handleSelectSource = (value: AcquisitionSource) => {
     setAcquisitionSource(value);
-    setStep(2);
+    if (value !== "OTHER") {
+      setStep(2);
+    }
   };
 
   const toggleSubjectArea = (value: SubjectArea) => {
@@ -195,6 +202,8 @@ export function OnboardingModal({
       acquisitionSource,
       subjectArea: subjectAreas.length > 0 ? subjectAreas : null,
       teachingLevel: teachingLevels.length > 0 ? teachingLevels : null,
+      acquisitionSourceOther: acquisitionSource === "OTHER" && acquisitionSourceOther.trim() ? acquisitionSourceOther.trim() : null,
+      subjectAreaOther: subjectAreas.includes("OTHER") && subjectAreaOther.trim() ? subjectAreaOther.trim() : null,
     });
   };
 
@@ -240,34 +249,49 @@ export function OnboardingModal({
 
         <div className="space-y-4 px-5 pb-5 pt-4 sm:px-6 sm:pb-6">
           {step === 1 ? (
-            <div className="grid grid-cols-2 gap-2">
-              {acquisitionOptions.map((option) => {
-                const Icon = option.icon;
-                return (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onClick={() => handleSelectSource(option.value)}
-                    disabled={isBusy}
-                    className={cn(
-                      "group flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-left text-foreground transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 disabled:cursor-not-allowed disabled:opacity-60",
-                      option.cardClassName,
-                    )}
-                  >
-                    <div
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-2">
+                {acquisitionOptions.map((option) => {
+                  const Icon = option.icon;
+                  const isSelected = acquisitionSource === option.value;
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => handleSelectSource(option.value)}
+                      disabled={isBusy}
                       className={cn(
-                        "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border shadow-sm",
-                        option.iconClassName,
+                        "group flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-left text-foreground transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 disabled:cursor-not-allowed disabled:opacity-60",
+                        option.cardClassName,
+                        isSelected && "ring-2 ring-primary/40",
                       )}
                     >
-                      <Icon className="h-4 w-4" />
-                    </div>
-                    <span className="text-sm font-medium leading-tight">
-                      {option.label}
-                    </span>
-                  </button>
-                );
-              })}
+                      <div
+                        className={cn(
+                          "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border shadow-sm",
+                          option.iconClassName,
+                        )}
+                      >
+                        <Icon className="h-4 w-4" />
+                      </div>
+                      <span className="text-sm font-medium leading-tight">
+                        {option.label}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+              {acquisitionSource === "OTHER" && (
+                <Input
+                  autoFocus
+                  placeholder="Conta-nos onde nos encontraste... (opcional)"
+                  value={acquisitionSourceOther}
+                  onChange={(e) => setAcquisitionSourceOther(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && setStep(2)}
+                  disabled={isBusy}
+                  className="rounded-xl"
+                />
+              )}
             </div>
           ) : (
             <div className="space-y-4">
@@ -323,6 +347,16 @@ export function OnboardingModal({
                     );
                   })}
                 </div>
+                {subjectAreas.includes("OTHER") && (
+                  <Input
+                    autoFocus
+                    placeholder="Qual é a tua disciplina? (opcional)"
+                    value={subjectAreaOther}
+                    onChange={(e) => setSubjectAreaOther(e.target.value)}
+                    disabled={isBusy}
+                    className="mt-2.5 rounded-xl"
+                  />
+                )}
               </div>
             </div>
           )}
@@ -355,6 +389,18 @@ export function OnboardingModal({
               >
                 Saltar
               </Button>
+
+              {step === 1 && acquisitionSource === "OTHER" && (
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={() => setStep(2)}
+                  disabled={isBusy}
+                  className="rounded-xl px-4 shadow-sm"
+                >
+                  Próximo
+                </Button>
+              )}
 
               {step === 2 && (
                 <Button
