@@ -29,4 +29,7 @@ export enum FeatureFlag {
 
   /** Controls user source uploads and the source picker in document creation (Pro/Org only). */
   USER_SOURCES = "user_sources",
+
+  /** Controls regulatory document injection via the v2 context pipeline. When OFF, regulatory documents are hidden everywhere. */
+  CONTEXT_PIPELINE_V2 = "context_pipeline_v2",
 }

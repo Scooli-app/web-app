@@ -15,6 +15,7 @@ if (isPostHogEnabled && posthogKey) {
     disable_compression: isDevelopment,
     disable_session_recording: isDevelopment,
     debug: isDevelopment,
+    cross_subdomain_cookie: true,
   });
 } else if (isDevelopment && isPostHogEnabled && !posthogKey) {
   console.warn(
