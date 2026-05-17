@@ -38,6 +38,11 @@ export const selectIsTemplateFromDocumentEnabled = createSelector(
   (enabledFeatures) => enabledFeatures.includes(FeatureFlag.TEMPLATE_FROM_DOCUMENT)
 );
 
+export const selectIsContextPipelineV2Enabled = createSelector(
+  [selectEnabledFeatureFlags],
+  (enabledFeatures) => enabledFeatures.includes(FeatureFlag.CONTEXT_PIPELINE_V2)
+);
+
 
 
 

@@ -86,4 +86,6 @@ export interface OnboardingSubmitRequest {
   acquisitionSource: AcquisitionSource;
   subjectArea?: SubjectArea[] | null;
   teachingLevel?: TeachingLevel[] | null;
+  acquisitionSourceOther?: string | null;
+  subjectAreaOther?: string | null;
 }

@@ -6,6 +6,7 @@ import { Routes } from "@/shared/types/routes";
 import type { UserSource } from "@/shared/types/sources";
 import { cn } from "@/shared/utils/utils";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { selectIsContextPipelineV2Enabled } from "@/store/features/selectors";
 import { fetchSources } from "@/store/sources/sourcesSlice";
 import { AlertCircle, Check, ExternalLink, Library, Loader2, Scale, Upload } from "lucide-react";
 import Link from "next/link";
@@ -31,6 +32,7 @@ export function SourcePickerSection({
 }: SourcePickerSectionProps) {
   const dispatch = useAppDispatch();
   const { sources, loading } = useAppSelector((state) => state.sources);
+  const isContextPipelineV2Enabled = useAppSelector(selectIsContextPipelineV2Enabled);
 
   const [regulatorySources, setRegulatorySources] = useState<UserSource[]>([]);
   const [regulatoryLoading, setRegulatoryLoading] = useState(true);
@@ -40,6 +42,11 @@ export function SourcePickerSection({
   }, [dispatch]);
 
   useEffect(() => {
+    if (!isContextPipelineV2Enabled) {
+      setRegulatoryLoading(false);
+      return;
+    }
+
     let cancelled = false;
     setRegulatoryLoading(true);
     listRegulatorySources()
@@ -65,7 +72,7 @@ export function SourcePickerSection({
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isContextPipelineV2Enabled]);
 
   const indexedSources = sources.filter(
     (s) =>
@@ -144,13 +151,13 @@ export function SourcePickerSection({
           </span>
         </div>
 
-        {/* Regulatory documents (scooli-managed) */}
-        {regulatoryLoading ? (
+        {/* Regulatory documents (scooli-managed) — only shown when context_pipeline_v2 is enabled */}
+        {isContextPipelineV2Enabled && regulatoryLoading ? (
           <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
             <Loader2 className="w-4 h-4 animate-spin" />
             A carregar documentos regulatórios...
           </div>
-        ) : regulatorySources.length > 0 ? (
+        ) : isContextPipelineV2Enabled && regulatorySources.length > 0 ? (
           <div className="space-y-2">
             <div className="flex items-center gap-1.5">
               <Scale className="w-3.5 h-3.5 text-muted-foreground" />

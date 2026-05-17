@@ -190,10 +190,7 @@ export default function DocumentCreationPage({
           isSpecificComponent: formState.isSpecificComponent,
           worksheetVariant: formState.worksheetVariant,
           ...(isUserSourcesEnabled && {
-            sourceIds:
-              formState.sourceIds && formState.sourceIds.length > 0
-                ? formState.sourceIds
-                : undefined,
+            sourceIds: formState.sourceIds ?? [],
             includeAe: formState.includeAe ?? true,
             regulatorySourceIds: formState.regulatorySourceIds,
           }),
