@@ -3,6 +3,13 @@
  * Base axios instance for Chalkboard backend
  */
 
+export class UpgradeLimitError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "UpgradeLimitError";
+  }
+}
+
 import { setUpgradeModalOpen } from "@/store/ui/uiSlice";
 import type { UnknownAction } from "@reduxjs/toolkit";
 import axios, { type AxiosError, type AxiosInstance } from "axios";
@@ -74,6 +81,12 @@ apiClient.interceptors.response.use(undefined, async (error: AxiosError) => {
       originalRequest.headers.Authorization = `Bearer ${token}`;
       return apiClient(originalRequest);
     }
+
+    // Token still unavailable after retry — session has expired. Redirect to
+    // sign-in so the user can re-authenticate instead of silently failing.
+    if (typeof window !== "undefined") {
+      window.location.href = "/sign-in";
+    }
   }
   return Promise.reject(error);
 });
@@ -92,11 +105,18 @@ apiClient.interceptors.response.use(
     return response;
   },
   (error: AxiosError<{ message?: string; error?: string } | string>) => {
-    // Trata 402 para abrir o modal de upgrade quando o limite de gerações é atingido
+    // 402 = usage limit reached. Open the upgrade modal and reject with a
+    // typed error so callers can distinguish it from real application errors.
     if (error.response?.status === 402) {
       if (storeDispatch) {
         storeDispatch(setUpgradeModalOpen(true));
       }
+      const limitMessage =
+        typeof error.response.data === "string"
+          ? error.response.data
+          : (error.response.data as { message?: string })?.message ||
+            "Limite de utilização excedido";
+      return Promise.reject(new UpgradeLimitError(limitMessage));
     }
 
     // Handle common errors
