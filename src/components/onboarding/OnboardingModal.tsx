@@ -208,7 +208,7 @@ export function OnboardingModal({
   };
 
   return (
-    <Dialog open={open} onOpenChange={(_open) => { /* controlled externally */ }}>
+    <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen && !isBusy) void onSkip(); }}>
       <DialogContent
         data-onboarding-modal
         onEscapeKeyDown={(event) => event.preventDefault()}
