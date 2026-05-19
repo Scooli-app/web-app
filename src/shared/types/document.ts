@@ -52,7 +52,7 @@ export interface Document {
   documentType: DocumentType;
   content: string;
   status: string;
-  metadata: DocumentMetadata;
+  metadata: DocumentMetadata | null;
   isPublic: boolean;
   subject: string | null;
   gradeLevel: string | null;

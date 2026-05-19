@@ -91,7 +91,6 @@ export function AppFeedbackSurveyGate() {
     if (statusResult.status === "fulfilled") {
       setSurveyStatus(statusResult.value);
       setPendingOpen(statusResult.value.shouldShow);
-      setLastCheckedAt(Date.now());
 
       if (!statusResult.value.shouldShow) {
         setOpen(false);
@@ -105,6 +104,10 @@ export function AppFeedbackSurveyGate() {
     } else {
       posthog.captureException(profileResult.reason);
     }
+
+    // Always stamp the check time so the focus-based retry handler
+    // doesn't fire again immediately after a failure.
+    setLastCheckedAt(Date.now());
   }, [isAuthLoaded, isSignedIn, isUserLoaded, user?.id]);
 
   useEffect(() => {

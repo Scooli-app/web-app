@@ -384,6 +384,7 @@ export const DiffExtension = Extension.create({
 
   addProseMirrorPlugins() {
     const { storage } = this;
+    const tiptapEditor = this.editor;
 
     return [
       new Plugin({
@@ -472,7 +473,7 @@ export const DiffExtension = Extension.create({
 
           // Handle clicks on accept/reject buttons
           handleDOMEvents: {
-            click(view, event) {
+            click(_view, event) {
               const target = event.target as HTMLElement;
               const btn = target.closest(".diff-action-btn");
               if (!btn) return false;
@@ -484,47 +485,14 @@ export const DiffExtension = Extension.create({
               const changeId = btn.getAttribute("data-change-id");
               if (!action || !changeId) return false;
 
-              // Use setTimeout to avoid issues with DOM updates during event handling
-              setTimeout(() => {
-                if (action === "accept") {
-                  const cmd = view.state.schema
-                    ? (view as import("@tiptap/pm/view").EditorView).dispatch
-                    : null;
-                  if (cmd) {
-                    // Find the extension commands via the editor — we use meta instead
-                    const tr = view.state.tr;
-                    tr.setMeta(REMOVE_CHANGE_META, changeId);
-                    view.dispatch(tr);
-                  }
-                } else if (action === "reject") {
-                  const pluginState = diffPluginKey.getState(view.state);
-                  const change = pluginState?.changes.find((c) => c.id === changeId);
-                  if (change) {
-                    const tr = view.state.tr;
-                    const docSize = view.state.doc.content.size;
-
-                    if (change.type === "insert") {
-                      const from = Math.min(change.fromB, docSize);
-                      const to = Math.min(change.toB, docSize);
-                      if (from < to) tr.delete(from, to);
-                    } else if (change.type === "delete" && change.deletedSlice) {
-                      const pos = Math.min(change.fromB, docSize);
-                      tr.insert(pos, change.deletedSlice.content);
-                    } else if (change.type === "replace") {
-                      const from = Math.min(change.fromB, docSize);
-                      const to = Math.min(change.toB, docSize);
-                      if (change.deletedSlice) {
-                        tr.replaceWith(from, to, change.deletedSlice.content);
-                      } else if (from < to) {
-                        tr.delete(from, to);
-                      }
-                    }
-
-                    tr.setMeta(REMOVE_CHANGE_META, changeId);
-                    view.dispatch(tr);
-                  }
-                }
-              }, 0);
+              // Use the Tiptap command interface so transactions are always
+              // created from the current state, avoiding the "mismatched
+              // transaction" RangeError that a setTimeout-based dispatch caused.
+              if (action === "accept") {
+                tiptapEditor.commands.acceptChange(changeId);
+              } else if (action === "reject") {
+                tiptapEditor.commands.rejectChange(changeId);
+              }
 
               return true;
             },
