@@ -1,15 +1,13 @@
 "use client";
 
-import { useEditorAnalytics } from "@/hooks/useEditorAnalytics";
 import { useDocumentManager } from "@/hooks/useDocumentManager";
+import { useEditorAnalytics } from "@/hooks/useEditorAnalytics";
 import { uploadDocumentImage } from "@/services/api/document-images.service";
 import { streamDocumentContent } from "@/services/api/document.service";
 import { AUTO_SAVE_DELAY } from "@/shared/config/constants";
 import { Routes } from "@/shared/types";
 import type { RagSource } from "@/shared/types/document";
 import { htmlToMarkdown, markdownToHtml } from "@/shared/utils/markdown";
-import { fetchEntitlements } from "@/store/entitlements/entitlementsSlice";
-import { selectEntitlementLoading } from "@/store/entitlements/selectors";
 import {
   chatWithDocument,
   clearLastChatAnswer,
@@ -21,14 +19,14 @@ import {
   setImages,
   upsertImage,
 } from "@/store/documents/documentSlice";
+import { fetchEntitlements } from "@/store/entitlements/entitlementsSlice";
+import { selectEntitlementLoading } from "@/store/entitlements/selectors";
 import {
   selectEditorState,
   useAppDispatch,
   useAppSelector,
 } from "@/store/hooks";
-import {
-  selectIsPro,
-} from "@/store/subscription/selectors";
+import { selectIsPro } from "@/store/subscription/selectors";
 import {
   fetchSubscription,
   fetchUsage,
@@ -66,26 +64,52 @@ interface DocumentEditorProps {
 }
 
 const GENERATION_STEPS = [
-  { key: "preparing", label: "Preparar", description: "A analisar o currículo e preparar o contexto" },
-  { key: "generating", label: "Rascunho", description: "A gerar o documento com IA" },
-  { key: "reviewing", label: "Revisão", description: "A avaliar a qualidade do documento" },
-  { key: "revised", label: "Melhorias", description: "A aplicar melhorias ao documento" },
+  {
+    key: "preparing",
+    label: "Preparar",
+    description: "A analisar o currículo e preparar o contexto",
+  },
+  {
+    key: "generating",
+    label: "Rascunho",
+    description: "A gerar o documento com IA",
+  },
+  {
+    key: "reviewing",
+    label: "Revisão",
+    description: "A avaliar a qualidade do documento",
+  },
+  {
+    key: "revised",
+    label: "Melhorias",
+    description: "A aplicar melhorias ao documento",
+  },
 ] as const;
 
 type GenerationStepKey = (typeof GENERATION_STEPS)[number]["key"];
 
-const STEP_ORDER: GenerationStepKey[] = ["preparing", "generating", "reviewing", "revised"];
+const STEP_ORDER: GenerationStepKey[] = [
+  "preparing",
+  "generating",
+  "reviewing",
+  "revised",
+];
 
 function GenerationProgress({ streamStatus }: { streamStatus: string }) {
   const currentIndex = STEP_ORDER.indexOf(streamStatus as GenerationStepKey);
-  const activeStep = GENERATION_STEPS.find((s) => s.key === streamStatus) ?? GENERATION_STEPS[1];
+  const activeStep =
+    GENERATION_STEPS.find((s) => s.key === streamStatus) ?? GENERATION_STEPS[1];
 
   return (
     <div className="flex h-full min-h-[45dvh] w-full flex-col items-center justify-center gap-6 sm:min-h-[550px]">
       <Loader2 className="w-10 h-10 animate-spin text-primary" />
       <div className="text-center">
-        <p className="text-lg font-medium text-foreground">{activeStep.label}…</p>
-        <p className="text-sm text-muted-foreground mt-1">{activeStep.description}</p>
+        <p className="text-lg font-medium text-foreground">
+          {activeStep.label}…
+        </p>
+        <p className="text-sm text-muted-foreground mt-1">
+          {activeStep.description}
+        </p>
       </div>
       {currentIndex >= 0 && (
         <div className="flex items-center gap-1.5">
@@ -99,7 +123,9 @@ function GenerationProgress({ streamStatus }: { streamStatus: string }) {
                 ) : (
                   <div
                     className={`w-2 h-2 rounded-full shrink-0 ${
-                      isActive ? "bg-primary animate-pulse" : "bg-muted-foreground/30"
+                      isActive
+                        ? "bg-primary animate-pulse"
+                        : "bg-muted-foreground/30"
                     }`}
                   />
                 )}
@@ -115,7 +141,9 @@ function GenerationProgress({ streamStatus }: { streamStatus: string }) {
                   {step.label}
                 </span>
                 {i < GENERATION_STEPS.length - 1 && (
-                  <div className={`w-6 h-px ${i < currentIndex ? "bg-primary" : "bg-muted-foreground/20"}`} />
+                  <div
+                    className={`w-6 h-px ${i < currentIndex ? "bg-primary" : "bg-muted-foreground/20"}`}
+                  />
                 )}
               </div>
             );
@@ -126,18 +154,26 @@ function GenerationProgress({ streamStatus }: { streamStatus: string }) {
   );
 }
 
-const LEAKED_IMAGE_SEGMENT_TOKEN_PATTERN = /@@CODEX\\?_IMAGE\\?_SEGMENT\\?_\d+@@|CODEXIMAGESEGMENT\d+TOKEN/g;
-const STABLE_DOCUMENT_IMAGE_TOKEN_PATTERN = /\{\{DOCUMENT_IMAGE:([0-9a-fA-F-]+)\}\}/g;
+const LEAKED_IMAGE_SEGMENT_TOKEN_PATTERN =
+  /@@CODEX\\?_IMAGE\\?_SEGMENT\\?_\d+@@|CODEXIMAGESEGMENT\d+TOKEN/g;
+const STABLE_DOCUMENT_IMAGE_TOKEN_PATTERN =
+  /\{\{DOCUMENT_IMAGE:([0-9a-fA-F-]+)\}\}/g;
 
 function containsLeakedImageSegmentTokens(content: string): boolean {
-  return /@@CODEX\\?_IMAGE\\?_SEGMENT\\?_\d+@@|CODEXIMAGESEGMENT\d+TOKEN/i.test(content);
+  return /@@CODEX\\?_IMAGE\\?_SEGMENT\\?_\d+@@|CODEXIMAGESEGMENT\d+TOKEN/i.test(
+    content,
+  );
 }
 
 function repairLeakedImageSegmentTokens(
   content: string,
   images: Array<{ id: string; alt: string }>,
 ): string {
-  if (!content || !images.length || !containsLeakedImageSegmentTokens(content)) {
+  if (
+    !content ||
+    !images.length ||
+    !containsLeakedImageSegmentTokens(content)
+  ) {
     return content;
   }
 
@@ -303,15 +339,12 @@ export default function DocumentEditor({
     editorRef.current = editor;
   }, []);
 
-
   const normalizePendingTitle = useCallback((rawTitle: string): string => {
     const trimmed = rawTitle?.trim() ?? "";
     if (!trimmed) {
       return "";
     }
-    if (/^generating\.{0,3}$/i.test(trimmed)) {
-      return "A gerar...";
-    }
+
     return trimmed;
   }, []);
 
@@ -377,8 +410,9 @@ export default function DocumentEditor({
         dispatch(upsertImage(result.image));
         registerImageUpload(file, result.image);
 
-        const stableToken = result.markdown.match(/\{\{DOCUMENT_IMAGE:[^}]+\}\}/)?.[0]
-          ?? `{{DOCUMENT_IMAGE:${result.image.id}}}`;
+        const stableToken =
+          result.markdown.match(/\{\{DOCUMENT_IMAGE:[^}]+\}\}/)?.[0] ??
+          `{{DOCUMENT_IMAGE:${result.image.id}}}`;
         const altText = escapeHtmlAttribute(result.image.alt || file.name);
 
         if (editorRef.current) {
@@ -388,7 +422,9 @@ export default function DocumentEditor({
             .insertContent(`<img src="${stableToken}" alt="${altText}" />`)
             .run();
         } else {
-          const fallbackMarkdown = result.markdown || `![${result.image.alt || "Imagem"}](${stableToken})`;
+          const fallbackMarkdown =
+            result.markdown ||
+            `![${result.image.alt || "Imagem"}](${stableToken})`;
           const previousContent = latestContentRef.current;
           const nextContent = previousContent
             ? `${previousContent}\n\n${fallbackMarkdown}`
@@ -405,13 +441,20 @@ export default function DocumentEditor({
         const apiMessage =
           typeof error === "object" && error !== null
             ? (
-                (error as { response?: { data?: { error?: string; message?: string } } })
-                  .response?.data?.error ||
-                (error as { response?: { data?: { error?: string; message?: string } } })
-                  .response?.data?.message
-              )
+                error as {
+                  response?: { data?: { error?: string; message?: string } };
+                }
+              ).response?.data?.error ||
+              (
+                error as {
+                  response?: { data?: { error?: string; message?: string } };
+                }
+              ).response?.data?.message
             : null;
-        const fallbackMessage = error instanceof Error ? error.message : "Não foi possível carregar a imagem.";
+        const fallbackMessage =
+          error instanceof Error
+            ? error.message
+            : "Não foi possível carregar a imagem.";
         toast.error(apiMessage || fallbackMessage);
       } finally {
         setIsImageUploading(false);
@@ -430,7 +473,7 @@ export default function DocumentEditor({
       streamInfo?.id,
       streamInfo?.status,
       setContent,
-    ]
+    ],
   );
 
   // Connect to SSE stream when we have stream info for this document
@@ -497,7 +540,8 @@ export default function DocumentEditor({
           dispatch(setGeneratingImages(false));
 
           // rawStreamRef now holds decoded Markdown directly
-          const fallbackContent = latestDisplayContentRef.current || rawStreamRef.current;
+          const fallbackContent =
+            latestDisplayContentRef.current || rawStreamRef.current;
           if (fallbackContent) {
             setContent(fallbackContent);
           }
@@ -861,9 +905,9 @@ export default function DocumentEditor({
     }
   }, [
     currentDocument?.id,
-    currentDocument?.metadata.prompt,
-    currentDocument?.metadata.initialPrompt,
-    currentDocument?.metadata.initial_prompt,
+    currentDocument?.metadata?.prompt,
+    currentDocument?.metadata?.initialPrompt,
+    currentDocument?.metadata?.initial_prompt,
     documentId,
     chatHistory.length,
   ]);
@@ -922,7 +966,9 @@ export default function DocumentEditor({
 
     setContent(repaired);
     void handleTrackedAutosave(repaired);
-    toast.warning("Detetámos e corrigimos referências internas de imagem no documento.");
+    toast.warning(
+      "Detetámos e corrigimos referências internas de imagem no documento.",
+    );
   }, [content, handleTrackedAutosave, images, setContent]);
 
   const handleChatSubmit = useCallback(
@@ -1189,14 +1235,6 @@ export default function DocumentEditor({
                             Upgrade
                           </span>
                         </Link>
-                      )}
-                      {isGenerating && (
-                        <div className="flex items-center space-x-2 text-primary">
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          <span className="text-sm font-medium hidden sm:inline">
-                            A gerar...
-                          </span>
-                        </div>
                       )}
                       <ShareButton
                         title={resolvedTitle || defaultTitle}
