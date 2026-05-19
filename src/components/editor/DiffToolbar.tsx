@@ -36,6 +36,7 @@ export const DiffToolbar = memo(function DiffToolbar({
   };
 
   const handleExit = () => {
+    posthog.capture("ai_suggestion_accepted_all", { changes_count: changesCount });
     editor.commands.acceptAllChanges();
     onExitDiffMode();
   };
