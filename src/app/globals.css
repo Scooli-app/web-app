@@ -254,6 +254,16 @@
   margin-bottom: 0.25em;
 }
 
+/* Remove spacing between consecutive paragraphs inside ordered list items.
+   TipTap may split <br>-separated content into multiple <p> nodes within a <li>;
+   this prevents each MCQ option from getting a blank-line gap above/below it.
+   The :first-child paragraph (the question stem) keeps its bottom margin as a
+   subtle separator from the options block. Bullet list items are unaffected. */
+.tiptap ol li p:not(:first-child) {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
 /* Nested list styling with proper bullet points */
 .tiptap ul ul {
   list-style-type: circle;
