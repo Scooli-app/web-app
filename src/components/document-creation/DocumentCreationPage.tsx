@@ -1,6 +1,7 @@
 "use client";
 
 import posthog from "posthog-js";
+import { UpgradeLimitError } from "@/services/api/client";
 import type { DocumentTemplate } from "@/shared/types";
 import { selectEntitlementLoading } from "@/store/entitlements/selectors";
 import {
@@ -245,7 +246,11 @@ export default function DocumentCreationPage({
         document_type: documentType.id,
         error_message: errorMessage,
       });
-      posthog.captureException(error);
+      // Usage limit errors are expected business events — the upgrade modal
+      // already handles the UX, so don't log them as application exceptions.
+      if (!(error instanceof UpgradeLimitError)) {
+        posthog.captureException(error);
+      }
       setError(errorMessage);
       setIsLoading(false);
     }
