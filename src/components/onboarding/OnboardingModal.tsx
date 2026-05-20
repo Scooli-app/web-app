@@ -1,19 +1,15 @@
 "use client";
 
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   ACQUISITION_SOURCE_LABELS,
+  ONBOARDING_GOAL_LABELS,
   ONBOARDING_PROMPT_KEY,
   SUBJECT_AREA_LABELS,
   TEACHING_LEVEL_LABELS,
   type AcquisitionSource,
+  type OnboardingGoal,
   type OnboardingSubmitRequest,
   type SubjectArea,
   type TeachingLevel,
@@ -21,6 +17,7 @@ import {
 import { cn } from "@/shared/utils/utils";
 import {
   ArrowLeft,
+  ArrowRight,
   Bot,
   Facebook,
   GraduationCap,
@@ -31,7 +28,8 @@ import {
   Sparkles,
   Users,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import posthog from "posthog-js";
+import { useEffect, useRef, useState } from "react";
 
 interface OnboardingModalProps {
   open: boolean;
@@ -148,35 +146,98 @@ const teachingLevelOptions: { value: TeachingLevel; label: string }[] = [
   { value: "SECONDARY", label: TEACHING_LEVEL_LABELS.SECONDARY },
 ];
 
+const goalOptions: { value: OnboardingGoal; label: string; emoji: string }[] = [
+  { value: "FASTER_DOCUMENTS", label: ONBOARDING_GOAL_LABELS.FASTER_DOCUMENTS, emoji: "⚡" },
+  { value: "AI_ASSISTANCE", label: ONBOARDING_GOAL_LABELS.AI_ASSISTANCE, emoji: "🤖" },
+  { value: "SAVE_TIME_TESTS", label: ONBOARDING_GOAL_LABELS.SAVE_TIME_TESTS, emoji: "📝" },
+  { value: "SHARE_WITH_STUDENTS", label: ONBOARDING_GOAL_LABELS.SHARE_WITH_STUDENTS, emoji: "🎓" },
+  { value: "REDUCE_REPETITIVE_WORK", label: ONBOARDING_GOAL_LABELS.REDUCE_REPETITIVE_WORK, emoji: "♻️" },
+  { value: "CURIOSITY", label: ONBOARDING_GOAL_LABELS.CURIOSITY, emoji: "✨" },
+];
+
+const TOTAL_STEPS = 3;
+
+const stepMeta = {
+  1: {
+    title: "Como nos encontraste?",
+    description: "Ajuda-nos a perceber onde os professores nos descobrem.",
+    eyebrow: "Bem-vindo à Scooli 👋",
+  },
+  2: {
+    title: "Conta-nos sobre ti",
+    description: "Opcional — ajuda-nos a personalizar a tua experiência.",
+    eyebrow: "O teu perfil",
+  },
+  3: {
+    title: "O que procuras na Scooli?",
+    description: "Seleciona tudo o que se aplica. Podes escolher várias opções.",
+    eyebrow: "Os teus objetivos",
+  },
+} as const;
+
 export function OnboardingModal({
   open,
   isBusy,
   onSkip,
   onSubmit,
 }: OnboardingModalProps) {
-  const [step, setStep] = useState<1 | 2>(1);
+  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [direction, setDirection] = useState<"forward" | "backward">("forward");
+  const [animKey, setAnimKey] = useState(0);
+
   const [acquisitionSource, setAcquisitionSource] =
     useState<AcquisitionSource | null>(null);
   const [acquisitionSourceOther, setAcquisitionSourceOther] = useState("");
   const [subjectAreas, setSubjectAreas] = useState<SubjectArea[]>([]);
   const [subjectAreaOther, setSubjectAreaOther] = useState("");
   const [teachingLevels, setTeachingLevels] = useState<TeachingLevel[]>([]);
+  const [goals, setGoals] = useState<OnboardingGoal[]>([]);
+
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!open) {
       setStep(1);
+      setDirection("forward");
+      setAnimKey(0);
       setAcquisitionSource(null);
       setAcquisitionSourceOther("");
       setSubjectAreas([]);
       setSubjectAreaOther("");
       setTeachingLevels([]);
+      setGoals([]);
     }
   }, [open]);
+
+  // Scroll content to top on step change
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = 0;
+    }
+  }, [step]);
+
+  // Track step views
+  useEffect(() => {
+    if (!open) return;
+    posthog.capture("onboarding_step_viewed", { step });
+  }, [open, step]);
+
+  const goTo = (next: 1 | 2 | 3, dir: "forward" | "backward") => {
+    posthog.capture("onboarding_step_completed", { step, direction: dir });
+    setDirection(dir);
+    setAnimKey((k) => k + 1);
+    setStep(next);
+  };
+
+  const handleSkipWithTracking = () => {
+    posthog.capture("onboarding_skipped", { step });
+    void onSkip();
+  };
 
   const handleSelectSource = (value: AcquisitionSource) => {
     setAcquisitionSource(value);
     if (value !== "OTHER") {
-      setStep(2);
+      goTo(2, "forward");
     }
   };
 
@@ -192,238 +253,350 @@ export function OnboardingModal({
     );
   };
 
-  const handleSubmit = async () => {
-    if (!acquisitionSource || isBusy) {
-      return;
-    }
+  const toggleGoal = (value: OnboardingGoal) => {
+    setGoals((prev) =>
+      prev.includes(value) ? prev.filter((g) => g !== value) : [...prev, value],
+    );
+  };
 
+  const handleSubmit = async () => {
+    if (!acquisitionSource || isBusy) return;
     await onSubmit({
       promptKey: ONBOARDING_PROMPT_KEY,
       acquisitionSource,
       subjectArea: subjectAreas.length > 0 ? subjectAreas : null,
       teachingLevel: teachingLevels.length > 0 ? teachingLevels : null,
-      acquisitionSourceOther: acquisitionSource === "OTHER" && acquisitionSourceOther.trim() ? acquisitionSourceOther.trim() : null,
-      subjectAreaOther: subjectAreas.includes("OTHER") && subjectAreaOther.trim() ? subjectAreaOther.trim() : null,
+      acquisitionSourceOther:
+        acquisitionSource === "OTHER" && acquisitionSourceOther.trim()
+          ? acquisitionSourceOther.trim()
+          : null,
+      subjectAreaOther:
+        subjectAreas.includes("OTHER") && subjectAreaOther.trim()
+          ? subjectAreaOther.trim()
+          : null,
+      goals: goals.length > 0 ? goals : null,
     });
   };
 
+  if (!open) return null;
+
+  const meta = stepMeta[step];
+
+  const slideInClass =
+    direction === "forward"
+      ? "animate-in fade-in-0 slide-in-from-right-6 duration-300"
+      : "animate-in fade-in-0 slide-in-from-left-6 duration-300";
+
   return (
-    <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen && !isBusy) void onSkip(); }}>
-      <DialogContent
-        data-onboarding-modal
-        onEscapeKeyDown={(event) => event.preventDefault()}
-        onPointerDownOutside={(event) => event.preventDefault()}
-        className="max-w-lg overflow-hidden border-border/80 bg-card p-0 shadow-xl shadow-black/10"
+    <div
+      data-onboarding-modal
+      className="fixed inset-0 z-[9999] flex flex-col bg-background"
+      aria-modal="true"
+      role="dialog"
+      aria-label="Bem-vindo à Scooli"
+    >
+      {/* Subtle background decoration */}
+      <div
+        className="pointer-events-none absolute inset-0 opacity-40"
+        aria-hidden="true"
       >
-        <div className="bg-gradient-to-br from-accent/80 via-card to-muted/60 px-5 pb-4 pt-5 sm:px-6 sm:pt-6 dark:from-accent/60 dark:via-card dark:to-background">
-          <div className="flex items-center justify-between gap-4">
-            <div className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-              <GraduationCap className="h-3.5 w-3.5" />
-              Bem-vindo à Scooli
-            </div>
-            <div className="text-sm font-semibold text-muted-foreground">
-              {step}/2
-            </div>
-          </div>
+        <div className="absolute -left-32 -top-32 h-96 w-96 rounded-full bg-primary/8 blur-3xl" />
+        <div className="absolute -bottom-32 -right-32 h-96 w-96 rounded-full bg-primary/6 blur-3xl" />
+      </div>
 
-          <div className="mt-3 h-1.5 rounded-full bg-muted/80">
+      {/* ── Top bar ── */}
+      <header className="relative z-10 flex h-16 shrink-0 items-center justify-between px-6 sm:px-10">
+        {/* Logo */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/scooli.svg"
+          alt="Scooli"
+          className="h-7 w-auto"
+          draggable={false}
+        />
+
+        {/* Step dots */}
+        <div className="flex items-center gap-2" aria-label={`Passo ${step} de ${TOTAL_STEPS}`}>
+          {Array.from({ length: TOTAL_STEPS }, (_, i) => (
             <div
-              className="h-full rounded-full bg-primary transition-all"
-              style={{ width: step === 1 ? "50%" : "100%" }}
+              key={i}
+              className={cn(
+                "rounded-full transition-all duration-300",
+                i + 1 === step
+                  ? "h-2.5 w-6 bg-primary"
+                  : i + 1 < step
+                    ? "h-2 w-2 bg-primary/50"
+                    : "h-2 w-2 bg-muted-foreground/25",
+              )}
             />
-          </div>
-
-          <div className="mt-4 space-y-1">
-            <DialogTitle className="text-xl font-semibold tracking-tight text-foreground">
-              {step === 1
-                ? "Como nos encontraste?"
-                : "Conta-nos mais sobre ti"}
-            </DialogTitle>
-            <DialogDescription className="text-sm text-muted-foreground">
-              {step === 1
-                ? "Ajuda-nos a perceber onde os professores nos descobrem."
-                : "Informação opcional. Ajuda-nos a melhorar a plataforma."}
-            </DialogDescription>
-          </div>
+          ))}
         </div>
 
-        <div className="space-y-4 px-5 pb-5 pt-4 sm:px-6 sm:pb-6">
-          {step === 1 ? (
-            <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-2">
-                {acquisitionOptions.map((option) => {
-                  const Icon = option.icon;
-                  const isSelected = acquisitionSource === option.value;
+        {/* Skip */}
+        <button
+          type="button"
+          onClick={handleSkipWithTracking}
+          disabled={isBusy}
+          className="text-sm text-muted-foreground transition-colors hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
+        >
+          Saltar
+        </button>
+      </header>
+
+      {/* ── Main scrollable content ── */}
+      <main
+        ref={scrollRef}
+        className="relative z-10 flex-1 overflow-y-auto"
+      >
+        <div className="mx-auto w-full max-w-2xl px-6 py-10 sm:px-10 sm:py-14">
+          {/* Step header */}
+          <div
+            key={`header-${animKey}`}
+            className={cn("mb-8", slideInClass)}
+          >
+            <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-primary/80">
+              {meta.eyebrow}
+            </p>
+            <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+              {meta.title}
+            </h1>
+            <p className="mt-2 text-base text-muted-foreground">
+              {meta.description}
+            </p>
+          </div>
+
+          {/* Step content */}
+          <div
+            key={`content-${animKey}`}
+            className={cn(slideInClass, "fill-mode-both")}
+            style={{ animationDelay: "40ms" }}
+          >
+            {/* ── Step 1: acquisition source ── */}
+            {step === 1 && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  {acquisitionOptions.map((option) => {
+                    const Icon = option.icon;
+                    const isSelected = acquisitionSource === option.value;
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => handleSelectSource(option.value)}
+                        disabled={isBusy}
+                        className={cn(
+                          "group flex flex-col items-center gap-3 rounded-2xl border p-4 text-center text-foreground transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 disabled:cursor-not-allowed disabled:opacity-60",
+                          option.cardClassName,
+                          isSelected && "ring-2 ring-primary/50 shadow-md",
+                        )}
+                      >
+                        <div
+                          className={cn(
+                            "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border shadow-sm transition-transform group-hover:scale-110",
+                            option.iconClassName,
+                          )}
+                        >
+                          <Icon className="h-5 w-5" />
+                        </div>
+                        <span className="text-xs font-medium leading-tight">
+                          {option.label}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {acquisitionSource === "OTHER" && (
+                  <div className="animate-in fade-in-0 slide-in-from-bottom-2 duration-200">
+                    <Input
+                      autoFocus
+                      placeholder="Conta-nos onde nos encontraste... (opcional)"
+                      value={acquisitionSourceOther}
+                      onChange={(e) => setAcquisitionSourceOther(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && goTo(2, "forward")}
+                      disabled={isBusy}
+                      className="rounded-xl text-base"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ── Step 2: teaching level + subjects ── */}
+            {step === 2 && (
+              <div className="space-y-8">
+                <div>
+                  <p className="mb-3 text-sm font-semibold text-foreground">
+                    Nível de ensino
+                  </p>
+                  <div className="flex flex-wrap gap-2.5">
+                    {teachingLevelOptions.map((option) => {
+                      const isSelected = teachingLevels.includes(option.value);
+                      return (
+                        <button
+                          key={option.value}
+                          type="button"
+                          disabled={isBusy}
+                          onClick={() => toggleTeachingLevel(option.value)}
+                          className={cn(
+                            "rounded-2xl border px-5 py-2.5 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 disabled:cursor-not-allowed disabled:opacity-45",
+                            isSelected
+                              ? "border-primary bg-primary text-primary-foreground shadow-sm scale-[1.02]"
+                              : "border-border bg-muted/50 text-foreground hover:border-primary/30 hover:bg-accent/80",
+                          )}
+                        >
+                          {option.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div>
+                  <p className="mb-3 text-sm font-semibold text-foreground">
+                    Disciplinas que ensinas
+                  </p>
+                  <div className="flex flex-wrap gap-2.5">
+                    {subjectAreaOptions.map((option) => {
+                      const isSelected = subjectAreas.includes(option.value);
+                      return (
+                        <button
+                          key={option.value}
+                          type="button"
+                          disabled={isBusy}
+                          onClick={() => toggleSubjectArea(option.value)}
+                          className={cn(
+                            "rounded-2xl border px-4 py-2 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 disabled:cursor-not-allowed disabled:opacity-45",
+                            isSelected
+                              ? "border-primary bg-primary text-primary-foreground shadow-sm scale-[1.02]"
+                              : "border-border bg-muted/50 text-foreground hover:border-primary/30 hover:bg-accent/80",
+                          )}
+                        >
+                          {option.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {subjectAreas.includes("OTHER") && (
+                    <div className="mt-3 animate-in fade-in-0 slide-in-from-bottom-2 duration-200">
+                      <Input
+                        autoFocus
+                        placeholder="Qual é a tua disciplina? (opcional)"
+                        value={subjectAreaOther}
+                        onChange={(e) => setSubjectAreaOther(e.target.value)}
+                        disabled={isBusy}
+                        className="rounded-xl text-base"
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* ── Step 3: goals ── */}
+            {step === 3 && (
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {goalOptions.map((option) => {
+                  const isSelected = goals.includes(option.value);
                   return (
                     <button
                       key={option.value}
                       type="button"
-                      onClick={() => handleSelectSource(option.value)}
                       disabled={isBusy}
+                      onClick={() => toggleGoal(option.value)}
                       className={cn(
-                        "group flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-left text-foreground transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 disabled:cursor-not-allowed disabled:opacity-60",
-                        option.cardClassName,
-                        isSelected && "ring-2 ring-primary/40",
+                        "flex items-center gap-4 rounded-2xl border p-4 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 disabled:cursor-not-allowed disabled:opacity-45",
+                        isSelected
+                          ? "border-primary bg-primary/8 shadow-sm ring-1 ring-primary/30"
+                          : "border-border bg-muted/40 text-foreground hover:border-primary/25 hover:bg-accent/60",
                       )}
                     >
-                      <div
-                        className={cn(
-                          "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border shadow-sm",
-                          option.iconClassName,
-                        )}
-                      >
-                        <Icon className="h-4 w-4" />
-                      </div>
-                      <span className="text-sm font-medium leading-tight">
+                      <span className="text-2xl leading-none select-none" aria-hidden="true">
+                        {option.emoji}
+                      </span>
+                      <span className="text-sm font-medium leading-snug text-foreground">
                         {option.label}
                       </span>
                     </button>
                   );
                 })}
               </div>
-              {acquisitionSource === "OTHER" && (
-                <Input
-                  autoFocus
-                  placeholder="Conta-nos onde nos encontraste... (opcional)"
-                  value={acquisitionSourceOther}
-                  onChange={(e) => setAcquisitionSourceOther(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && setStep(2)}
-                  disabled={isBusy}
-                  className="rounded-xl"
-                />
-              )}
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div>
-                <p className="mb-2.5 text-sm font-medium text-foreground">
-                  Nível de ensino
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {teachingLevelOptions.map((option) => {
-                    const isSelected = teachingLevels.includes(option.value);
-                    return (
-                      <button
-                        key={option.value}
-                        type="button"
-                        disabled={isBusy}
-                        onClick={() => toggleTeachingLevel(option.value)}
-                        className={cn(
-                          "rounded-xl border px-3.5 py-2 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 disabled:cursor-not-allowed disabled:opacity-45",
-                          isSelected
-                            ? "border-primary bg-primary text-primary-foreground shadow-sm"
-                            : "border-border bg-muted/60 text-foreground hover:border-primary/20 hover:bg-accent/70",
-                        )}
-                      >
-                        {option.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div>
-                <p className="mb-2.5 text-sm font-medium text-foreground">
-                  Disciplinas que ensinas
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {subjectAreaOptions.map((option) => {
-                    const isSelected = subjectAreas.includes(option.value);
-                    return (
-                      <button
-                        key={option.value}
-                        type="button"
-                        disabled={isBusy}
-                        onClick={() => toggleSubjectArea(option.value)}
-                        className={cn(
-                          "rounded-xl border px-3.5 py-2 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 disabled:cursor-not-allowed disabled:opacity-45",
-                          isSelected
-                            ? "border-primary bg-primary text-primary-foreground shadow-sm"
-                            : "border-border bg-muted/60 text-foreground hover:border-primary/20 hover:bg-accent/70",
-                        )}
-                      >
-                        {option.label}
-                      </button>
-                    );
-                  })}
-                </div>
-                {subjectAreas.includes("OTHER") && (
-                  <Input
-                    autoFocus
-                    placeholder="Qual é a tua disciplina? (opcional)"
-                    value={subjectAreaOther}
-                    onChange={(e) => setSubjectAreaOther(e.target.value)}
-                    disabled={isBusy}
-                    className="mt-2.5 rounded-xl"
-                  />
-                )}
-              </div>
-            </div>
-          )}
-
-          <div className="flex items-center justify-between gap-3 border-t border-border/70 pt-3">
-            <div>
-              {step === 2 && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setStep(1)}
-                  disabled={isBusy}
-                  className="rounded-xl border-border bg-background"
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                  Voltar
-                </Button>
-              )}
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => void onSkip()}
-                disabled={isBusy}
-                className="rounded-xl text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-              >
-                Saltar
-              </Button>
-
-              {step === 1 && acquisitionSource === "OTHER" && (
-                <Button
-                  type="button"
-                  size="sm"
-                  onClick={() => setStep(2)}
-                  disabled={isBusy}
-                  className="rounded-xl px-4 shadow-sm"
-                >
-                  Próximo
-                </Button>
-              )}
-
-              {step === 2 && (
-                <Button
-                  type="button"
-                  size="sm"
-                  onClick={() => void handleSubmit()}
-                  disabled={isBusy}
-                  className="rounded-xl px-4 shadow-sm"
-                >
-                  {isBusy ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      A guardar...
-                    </>
-                  ) : (
-                    "Começar"
-                  )}
-                </Button>
-              )}
-            </div>
+            )}
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+      </main>
+
+      {/* ── Bottom navigation bar ── */}
+      <footer className="relative z-10 flex h-20 shrink-0 items-center justify-between border-t border-border/60 bg-background/80 px-6 backdrop-blur-sm sm:px-10">
+        {/* Back */}
+        <div className="w-28">
+          {step > 1 && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => goTo((step - 1) as 1 | 2 | 3, "backward")}
+              disabled={isBusy}
+              className="rounded-xl border-border bg-background"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Voltar
+            </Button>
+          )}
+        </div>
+
+        {/* Step counter */}
+        <span className="text-sm tabular-nums text-muted-foreground">
+          {step} / {TOTAL_STEPS}
+        </span>
+
+        {/* Next / Submit */}
+        <div className="flex w-28 justify-end">
+          {step === 1 && acquisitionSource === "OTHER" && (
+            <Button
+              type="button"
+              onClick={() => goTo(2, "forward")}
+              disabled={isBusy}
+              className="rounded-xl px-5 shadow-sm"
+            >
+              Próximo
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          )}
+
+          {step === 2 && (
+            <Button
+              type="button"
+              onClick={() => goTo(3, "forward")}
+              disabled={isBusy}
+              className="rounded-xl px-5 shadow-sm"
+            >
+              Próximo
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          )}
+
+          {step === 3 && (
+            <Button
+              type="button"
+              onClick={() => void handleSubmit()}
+              disabled={isBusy}
+              className="rounded-xl px-5 shadow-sm"
+            >
+              {isBusy ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  A guardar...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4" />
+                  Começar
+                </>
+              )}
+            </Button>
+          )}
+        </div>
+      </footer>
+    </div>
   );
 }

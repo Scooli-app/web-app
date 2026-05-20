@@ -263,11 +263,13 @@ export default function DocumentCreationPage({
 
         <div className="space-y-4 sm:space-y-6">
 
-          <TopicSection
-            topic={formState.topic}
-            placeholder={documentType.placeholder}
-            onUpdate={updateForm}
-          />
+          <div data-tutorial="topic">
+            <TopicSection
+              topic={formState.topic}
+              placeholder={documentType.placeholder}
+              onUpdate={updateForm}
+            />
+          </div>
 
           {showWorksheetVariantSection && (
             <WorksheetVariantSection
@@ -277,10 +279,12 @@ export default function DocumentCreationPage({
           )}
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6">
-            <GradeSection
-              schoolYear={formState.schoolYear}
-              onUpdate={updateForm}
-            />
+            <div data-tutorial="grade">
+              <GradeSection
+                schoolYear={formState.schoolYear}
+                onUpdate={updateForm}
+              />
+            </div>
             <DurationSection
               lessonTime={formState.lessonTime}
               customTime={formState.customTime}
@@ -288,20 +292,24 @@ export default function DocumentCreationPage({
             />
           </div>
 
-          <SubjectSection
-            subject={formState.subject}
-            isSpecificComponent={formState.isSpecificComponent}
-            onUpdate={updateForm}
-            availableSubjects={formState.schoolYear ? SUBJECTS_BY_GRADE[String(formState.schoolYear)] : undefined}
-            className="shadow-none border-0 p-0 hover:shadow-none transition-none"
-            disabled={!formState.schoolYear}
-          />
+          <div data-tutorial="subject">
+            <SubjectSection
+              subject={formState.subject}
+              isSpecificComponent={formState.isSpecificComponent}
+              onUpdate={updateForm}
+              availableSubjects={formState.schoolYear ? SUBJECTS_BY_GRADE[String(formState.schoolYear)] : undefined}
+              className="shadow-none border-0 p-0 hover:shadow-none transition-none"
+              disabled={!formState.schoolYear}
+            />
+          </div>
 
-          <TemplateSection
-            documentType={documentType.id}
-            selectedTemplateId={formState.templateId || null}
-            onTemplateSelect={handleTemplateSelect}
-          />
+          <div data-tutorial="template">
+            <TemplateSection
+              documentType={documentType.id}
+              selectedTemplateId={formState.templateId || null}
+              onTemplateSelect={handleTemplateSelect}
+            />
+          </div>
 
           {showTeachingMethodSection && (
             <TeachingMethodSection
@@ -326,14 +334,16 @@ export default function DocumentCreationPage({
             />
           )}
 
-          <FormActions
-            documentType={documentType}
-            isLoading={isLoading}
-            isFormValid={isFormValid()}
-            error={error}
-            onSubmit={handleCreateDocument}
-            showGenerationHint={!isEntitlementLoading && !isProUser}
-          />
+          <div data-tutorial="generate">
+            <FormActions
+              documentType={documentType}
+              isLoading={isLoading}
+              isFormValid={isFormValid()}
+              error={error}
+              onSubmit={handleCreateDocument}
+              showGenerationHint={!isEntitlementLoading && !isProUser}
+            />
+          </div>
         </div>
       </div>
     </div>
