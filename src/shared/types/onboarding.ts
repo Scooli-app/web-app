@@ -4,16 +4,16 @@ export type OnboardingGoal =
   | "FASTER_DOCUMENTS"
   | "AI_ASSISTANCE"
   | "SAVE_TIME_TESTS"
-  | "SHARE_WITH_STUDENTS"
   | "REDUCE_REPETITIVE_WORK"
+  | "DISCOVER_COMMUNITY"
   | "CURIOSITY";
 
 export const ONBOARDING_GOAL_LABELS: Record<OnboardingGoal, string> = {
   FASTER_DOCUMENTS: "Criar materiais mais rápido",
   AI_ASSISTANCE: "Usar IA para me ajudar",
   SAVE_TIME_TESTS: "Poupar tempo com testes e fichas",
-  SHARE_WITH_STUDENTS: "Partilhar materiais com alunos",
   REDUCE_REPETITIVE_WORK: "Reduzir trabalho repetitivo",
+  DISCOVER_COMMUNITY: "Descobrir recursos partilhados por colegas",
   CURIOSITY: "Curiosidade / recomendação de colega",
 };
 

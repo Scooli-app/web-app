@@ -150,8 +150,8 @@ const goalOptions: { value: OnboardingGoal; label: string; emoji: string }[] = [
   { value: "FASTER_DOCUMENTS", label: ONBOARDING_GOAL_LABELS.FASTER_DOCUMENTS, emoji: "⚡" },
   { value: "AI_ASSISTANCE", label: ONBOARDING_GOAL_LABELS.AI_ASSISTANCE, emoji: "🤖" },
   { value: "SAVE_TIME_TESTS", label: ONBOARDING_GOAL_LABELS.SAVE_TIME_TESTS, emoji: "📝" },
-  { value: "SHARE_WITH_STUDENTS", label: ONBOARDING_GOAL_LABELS.SHARE_WITH_STUDENTS, emoji: "🎓" },
   { value: "REDUCE_REPETITIVE_WORK", label: ONBOARDING_GOAL_LABELS.REDUCE_REPETITIVE_WORK, emoji: "♻️" },
+  { value: "DISCOVER_COMMUNITY", label: ONBOARDING_GOAL_LABELS.DISCOVER_COMMUNITY, emoji: "🌐" },
   { value: "CURIOSITY", label: ONBOARDING_GOAL_LABELS.CURIOSITY, emoji: "✨" },
 ];
 
