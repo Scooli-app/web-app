@@ -683,7 +683,7 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
           {desktopSidebarContent}
         </div>
 
-        <div className="flex flex-1 flex-col">
+        <div className="flex min-w-0 flex-1 flex-col">
           <header className="flex h-14 w-full shrink-0 items-center gap-2 border-b border-border bg-background/70 backdrop-blur-md sm:h-16">
             <div className="flex w-full items-center justify-between gap-2 px-3 sm:px-4">
               <div className="flex items-center gap-1">
@@ -721,9 +721,7 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
                     >
                       Acesso antecipado
                     </Badge>
-                    <div className="hidden sm:block">
-                      <GenerationsIndicator />
-                    </div>
+                    <GenerationsIndicator />
                   </div>
                 </SignedIn>
                 <ThemeToggle />
@@ -743,11 +741,11 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
 
           <main
             className={cn(
-              "w-full flex-1 overflow-auto bg-slate-50 dark:bg-background",
+              "w-full flex-1 overflow-y-auto overflow-x-hidden bg-slate-50 dark:bg-background",
               className,
             )}
           >
-            <div className="flex h-full w-full flex-col items-center p-3 sm:p-4 md:p-6">
+            <div className="flex h-full w-full min-w-0 flex-col items-center overflow-x-hidden p-3 sm:p-4 md:p-6">
               {children}
             </div>
           </main>

@@ -129,8 +129,8 @@ export function ModerationQueue() {
           key={resource.id}
           className="rounded-xl border border-border bg-card p-4"
         >
-          <div className="mb-2 flex items-start justify-between gap-3">
-            <div className="min-w-0">
+          <div className="mb-2 flex items-start gap-3">
+            <div className="min-w-0 flex-1">
               <h4 className="truncate font-medium">{resource.title}</h4>
               {resource.description && (
                 <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
@@ -138,14 +138,16 @@ export function ModerationQueue() {
                 </p>
               )}
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleReview(resource)}
-            >
-              <Eye className="mr-1.5 h-4 w-4" />
-              Revisar
-            </Button>
+            <div className="shrink-0">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleReview(resource)}
+              >
+                <Eye className="mr-1.5 h-4 w-4" />
+                Revisar
+              </Button>
+            </div>
           </div>
           <div className="flex flex-wrap gap-1.5">
             <Badge variant="secondary" className="text-xs">
@@ -168,6 +170,7 @@ export function ModerationQueue() {
 
   const desktopTable = (
     <Card>
+      <div className="overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow>
@@ -223,6 +226,7 @@ export function ModerationQueue() {
           ))}
         </TableBody>
       </Table>
+      </div>
     </Card>
   );
 

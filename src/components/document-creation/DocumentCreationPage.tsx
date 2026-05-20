@@ -257,7 +257,7 @@ export default function DocumentCreationPage({
   };
 
   return (
-    <div className="w-full">
+    <div className="w-full overflow-x-hidden">
       <div className="max-w-4xl mx-auto">
         <FormHeader documentType={documentType} />
 

@@ -17,7 +17,13 @@ export interface FeatureOverrideDto {
   id: string;
   enabled: boolean;
   userId?: string;
+  /** Optional: backend may return the user's display name alongside the ID */
+  userName?: string;
+  /** Optional: backend may return the user's email alongside the ID */
+  userEmail?: string;
   organizationId?: string;
+  /** Optional: backend may return the org name alongside the ID */
+  organizationName?: string;
   role?: string;
   plan?: string;
   createdAt: string;
@@ -143,6 +149,15 @@ export async function searchUsers(query: string): Promise<UserSearchResult[]> {
   return res.data;
 }
 
+export async function getUserById(id: string): Promise<UserSearchResult | null> {
+  try {
+    const res = await apiClient.get<UserSearchResult>(`/admin/search/users/${id}`);
+    return res.data;
+  } catch {
+    return null;
+  }
+}
+
 export async function searchOrganizations(
   query: string,
 ): Promise<OrganizationSearchResult[]> {
@@ -151,6 +166,15 @@ export async function searchOrganizations(
     params: { q: query },
   });
   return res.data;
+}
+
+export async function getOrganizationById(id: string): Promise<OrganizationSearchResult | null> {
+  try {
+    const res = await apiClient.get<OrganizationSearchResult>(`/admin/search/organizations/${id}`);
+    return res.data;
+  } catch {
+    return null;
+  }
 }
 
 export async function listPlans(): Promise<PlanOption[]> {
