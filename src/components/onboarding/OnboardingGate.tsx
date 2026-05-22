@@ -1,7 +1,7 @@
 "use client";
 
 import { OnboardingModal } from "@/components/onboarding/OnboardingModal";
-import { useTutorial, TUTORIAL_ROUTE } from "@/contexts/TutorialContext";
+import { TUTORIAL_ROUTE, useTutorial } from "@/contexts/TutorialContext";
 import { onboardingService } from "@/services/api/onboarding.service";
 import { Routes } from "@/shared/types";
 import {
@@ -30,7 +30,9 @@ export function OnboardingGate() {
   const { user } = useUser();
 
   // Status is pre-loaded by AppBootstrapGate — available synchronously on mount
-  const onboardingStatus = useSelector((state: RootState) => state.onboarding.status);
+  const onboardingStatus = useSelector(
+    (state: RootState) => state.onboarding.status,
+  );
 
   const [open, setOpen] = useState(false);
   const [isBusy, setIsBusy] = useState(false);
@@ -38,8 +40,7 @@ export function OnboardingGate() {
   const hasTrackedViewRef = useRef(false);
 
   const isRouteSuppressed = useMemo(
-    () =>
-      pathname === Routes.SUPPORT || pathname.startsWith(Routes.ADMIN),
+    () => pathname === Routes.SUPPORT || pathname.startsWith(Routes.ADMIN),
     [pathname],
   );
 
@@ -47,11 +48,21 @@ export function OnboardingGate() {
   // Re-evaluated whenever the route or upgrade modal state changes so it
   // correctly defers when the user is on a suppressed route.
   useEffect(() => {
-    if (open || !onboardingStatus?.shouldShow || isRouteSuppressed || isUpgradeModalOpen) {
+    if (
+      open ||
+      !onboardingStatus?.shouldShow ||
+      isRouteSuppressed ||
+      isUpgradeModalOpen
+    ) {
       return;
     }
     setOpen(true);
-  }, [onboardingStatus?.shouldShow, open, isRouteSuppressed, isUpgradeModalOpen]);
+  }, [
+    onboardingStatus?.shouldShow,
+    open,
+    isRouteSuppressed,
+    isUpgradeModalOpen,
+  ]);
 
   // Close and clear shouldShow when the user navigates to a suppressed route
   // while the modal is open, or when the upgrade modal opens on top of it.
@@ -145,7 +156,7 @@ export function OnboardingGate() {
         setIsBusy(false);
       }
     },
-    [dispatch, isBusy, router, startTutorial],
+    [dispatch, isBusy, onboardingStatus?.hasDocuments, router, startTutorial],
   );
 
   if (!isSignedIn || !user?.id || !onboardingStatus) {

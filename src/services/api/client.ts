@@ -95,7 +95,7 @@ apiClient.interceptors.response.use(undefined, async (error: AxiosError) => {
 apiClient.interceptors.response.use(
   (response) => {
     // Validate response is JSON
-    const contentType = response.headers["content-type"];
+    const contentType = response.headers["content-type"]?.toString();
     if (contentType && !contentType.includes("application/json")) {
       console.error("A API devolveu resposta não JSON:", contentType);
       throw new Error(
@@ -122,7 +122,7 @@ apiClient.interceptors.response.use(
     // Handle common errors
     if (error.response) {
       // Check if response is HTML (error page)
-      const contentType = error.response.headers["content-type"];
+      const contentType = error.response.headers["content-type"]?.toString();
       if (contentType && contentType.includes("text/html")) {
         const status = error.response.status;
         return Promise.reject(

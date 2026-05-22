@@ -214,7 +214,7 @@ const ChartTooltipContent = React.forwardRef<
                   : "value";
             const itemConfig = config[key];
             const indicatorColor =
-              entry.color ?? `var(--color-${key})` ?? "var(--primary)";
+              entry.color ?? `var(--color-${key})`;
 
             return (
               <div
