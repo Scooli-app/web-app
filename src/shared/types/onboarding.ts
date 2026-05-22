@@ -92,6 +92,7 @@ export interface OnboardingStatusResponse {
   status: string;
   nextPromptAt: string;
   shownCount: number;
+  hasDocuments: boolean;
 }
 
 export interface OnboardingPromptRequest {

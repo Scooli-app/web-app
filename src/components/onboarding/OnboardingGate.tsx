@@ -132,9 +132,12 @@ export function OnboardingGate() {
           acquisition_source: payload.acquisitionSource,
         });
 
-        // Navigate to quiz page and start the first-time tutorial
-        router.push(TUTORIAL_ROUTE);
-        startTutorial();
+        // Only show the first-time tutorial for brand-new users.
+        // Users who already have documents know the product — skip straight to dashboard.
+        if (!onboardingStatus?.hasDocuments) {
+          router.push(TUTORIAL_ROUTE);
+          startTutorial();
+        }
       } catch (error) {
         posthog.captureException(error);
         toast.error("Não foi possível guardar a tua resposta.");
