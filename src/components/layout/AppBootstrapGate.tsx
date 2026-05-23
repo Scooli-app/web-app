@@ -10,6 +10,10 @@ import {
   resetEntitlementsState,
 } from "@/store/entitlements/entitlementsSlice";
 import {
+  fetchOnboardingStatus,
+  resetOnboardingState,
+} from "@/store/onboarding/onboardingSlice";
+import {
   fetchSubscription,
   fetchUsage,
   resetSubscriptionState,
@@ -220,6 +224,7 @@ export function AppBootstrapGate() {
       dispatch(resetEntitlementsState());
       dispatch(resetFeaturesState());
       dispatch(resetWorkspaceState());
+      dispatch(resetOnboardingState());
       setBootstrappedIdentity(null);
       setIsBootstrapping(false);
       return;
@@ -240,6 +245,7 @@ export function AppBootstrapGate() {
     dispatch(resetEntitlementsState());
     dispatch(resetFeaturesState());
     dispatch(resetWorkspaceState());
+    dispatch(resetOnboardingState());
 
     const bootstrap = async () => {
       // Give the AuthProvider one effect cycle to register the Clerk token getter
@@ -262,6 +268,7 @@ export function AppBootstrapGate() {
         dispatch(fetchEntitlements()),
         dispatch(fetchFeatureFlags()),
         dispatch(fetchWorkspace()),
+        dispatch(fetchOnboardingStatus()),
       ]);
 
       if (!isActive || bootstrapRunIdRef.current !== runId) {

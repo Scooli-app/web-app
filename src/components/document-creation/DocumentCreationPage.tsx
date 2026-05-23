@@ -1,6 +1,7 @@
 "use client";
 
 import posthog from "posthog-js";
+import { UpgradeLimitError } from "@/services/api/client";
 import type { DocumentTemplate } from "@/shared/types";
 import { selectEntitlementLoading } from "@/store/entitlements/selectors";
 import {
@@ -245,24 +246,30 @@ export default function DocumentCreationPage({
         document_type: documentType.id,
         error_message: errorMessage,
       });
-      posthog.captureException(error);
+      // Usage limit errors are expected business events — the upgrade modal
+      // already handles the UX, so don't log them as application exceptions.
+      if (!(error instanceof UpgradeLimitError)) {
+        posthog.captureException(error);
+      }
       setError(errorMessage);
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="w-full">
+    <div className="w-full overflow-x-hidden">
       <div className="max-w-4xl mx-auto">
         <FormHeader documentType={documentType} />
 
         <div className="space-y-4 sm:space-y-6">
 
-          <TopicSection
-            topic={formState.topic}
-            placeholder={documentType.placeholder}
-            onUpdate={updateForm}
-          />
+          <div data-tutorial="topic">
+            <TopicSection
+              topic={formState.topic}
+              placeholder={documentType.placeholder}
+              onUpdate={updateForm}
+            />
+          </div>
 
           {showWorksheetVariantSection && (
             <WorksheetVariantSection
@@ -272,10 +279,12 @@ export default function DocumentCreationPage({
           )}
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6">
-            <GradeSection
-              schoolYear={formState.schoolYear}
-              onUpdate={updateForm}
-            />
+            <div data-tutorial="grade">
+              <GradeSection
+                schoolYear={formState.schoolYear}
+                onUpdate={updateForm}
+              />
+            </div>
             <DurationSection
               lessonTime={formState.lessonTime}
               customTime={formState.customTime}
@@ -283,20 +292,24 @@ export default function DocumentCreationPage({
             />
           </div>
 
-          <SubjectSection
-            subject={formState.subject}
-            isSpecificComponent={formState.isSpecificComponent}
-            onUpdate={updateForm}
-            availableSubjects={formState.schoolYear ? SUBJECTS_BY_GRADE[String(formState.schoolYear)] : undefined}
-            className="shadow-none border-0 p-0 hover:shadow-none transition-none"
-            disabled={!formState.schoolYear}
-          />
+          <div data-tutorial="subject">
+            <SubjectSection
+              subject={formState.subject}
+              isSpecificComponent={formState.isSpecificComponent}
+              onUpdate={updateForm}
+              availableSubjects={formState.schoolYear ? SUBJECTS_BY_GRADE[String(formState.schoolYear)] : undefined}
+              className="shadow-none border-0 p-0 hover:shadow-none transition-none"
+              disabled={!formState.schoolYear}
+            />
+          </div>
 
-          <TemplateSection
-            documentType={documentType.id}
-            selectedTemplateId={formState.templateId || null}
-            onTemplateSelect={handleTemplateSelect}
-          />
+          <div data-tutorial="template">
+            <TemplateSection
+              documentType={documentType.id}
+              selectedTemplateId={formState.templateId || null}
+              onTemplateSelect={handleTemplateSelect}
+            />
+          </div>
 
           {showTeachingMethodSection && (
             <TeachingMethodSection
@@ -321,14 +334,16 @@ export default function DocumentCreationPage({
             />
           )}
 
-          <FormActions
-            documentType={documentType}
-            isLoading={isLoading}
-            isFormValid={isFormValid()}
-            error={error}
-            onSubmit={handleCreateDocument}
-            showGenerationHint={!isEntitlementLoading && !isProUser}
-          />
+          <div data-tutorial="generate">
+            <FormActions
+              documentType={documentType}
+              isLoading={isLoading}
+              isFormValid={isFormValid()}
+              error={error}
+              onSubmit={handleCreateDocument}
+              showGenerationHint={!isEntitlementLoading && !isProUser}
+            />
+          </div>
         </div>
       </div>
     </div>

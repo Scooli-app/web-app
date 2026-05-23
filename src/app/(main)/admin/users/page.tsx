@@ -172,19 +172,19 @@ function InsightMetric({
 
 function UserInsightCard({ user }: { user: AdminUserInsight }) {
   return (
-    <Card className="border-border/70 shadow-sm">
-      <CardHeader className="gap-4 pb-4">
-        <div className="flex items-start justify-between gap-4">
-          <div className="min-w-0 space-y-1">
-            <CardTitle className="text-base leading-tight">
-              {user.name || user.email}
-            </CardTitle>
-            <CardDescription className="truncate">{user.email}</CardDescription>
-            <p className="truncate text-xs text-muted-foreground">
-              {user.username ? `@${user.username}` : user.clerkUserId}
-            </p>
-          </div>
+    <Card className="overflow-hidden border-border/70 shadow-sm">
+      <CardHeader className="flex flex-row items-start gap-3 pb-4">
+        <div className="min-w-0 flex-1 space-y-1">
+          <CardTitle className="text-base leading-tight">
+            {user.name || user.email}
+          </CardTitle>
+          <CardDescription className="truncate">{user.email}</CardDescription>
+          <p className="truncate text-xs text-muted-foreground">
+            {user.username ? `@${user.username}` : user.clerkUserId}
+          </p>
+        </div>
 
+        <div className="shrink-0">
           <ActivityBadge bucket={user.activityBucket} />
         </div>
       </CardHeader>
@@ -592,7 +592,7 @@ export default function AdminUsersPage() {
                   </div>
                 }
                 desktopTableView={
-                  <div className="overflow-hidden rounded-2xl border border-border/70">
+                  <div className="overflow-x-auto rounded-2xl border border-border/70">
                     <Table>
                       <TableHeader className="bg-muted/35">
                         <TableRow className="hover:bg-transparent">

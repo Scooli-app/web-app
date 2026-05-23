@@ -23,6 +23,8 @@ import {
   type PlanOption,
   type UserSearchResult,
   getFlag,
+  getOrganizationById,
+  getUserById,
   listFlags,
   listPlans,
   removeOrganizationOverride,
@@ -53,44 +55,47 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
-const FEATURE_FLAG_METADATA: Record<string, { name: string; description: string; order: number }> =
-  {
-    [FeatureFlagKey.COMMUNITY_LIBRARY]: {
-      name: "Biblioteca Comunitária",
-      description: "Ativa a partilha e descoberta de recursos na biblioteca da comunidade.",
-      order: 10,
-    },
-    [FeatureFlagKey.DOCUMENT_REVIEW]: {
-      name: "Revisão de Documentos",
-      description:
-        "Quando ativa, recursos partilhados aguardam moderação de admin antes de publicação.",
-      order: 20,
-    },
-    [FeatureFlagKey.PRESENTATION_CREATION]: {
-      name: "Criação de Apresentações",
-      description:
-        "Controla se os utilizadores podem criar apresentações a partir da plataforma.",
-      order: 30,
-    },
-    [FeatureFlagKey.WORKSHEET_CREATION]: {
-      name: "Criação de Fichas de Trabalho",
-      description:
-        "Controla se os utilizadores podem criar fichas de trabalho a partir da plataforma.",
-      order: 35,
-    },
-    [FeatureFlagKey.TEMPLATE_FROM_DOCUMENT]: {
-      name: "Modelo a partir de Documento",
-      description:
-        "Controla se os utilizadores podem fazer upload de um documento e convertê-lo num modelo personalizado.",
-      order: 37,
-    },
-    [FeatureFlagKey.DOCUMENT_IMAGES]: {
-      name: "Imagens em Documentos",
-      description:
-        "Controla a geração e inclusão de imagens automáticas em testes, quizzes, fichas e planos de aula.",
-      order: 40,
-    },
-  };
+const FEATURE_FLAG_METADATA: Record<
+  string,
+  { name: string; description: string; order: number }
+> = {
+  [FeatureFlagKey.COMMUNITY_LIBRARY]: {
+    name: "Biblioteca Comunitária",
+    description:
+      "Ativa a partilha e descoberta de recursos na biblioteca da comunidade.",
+    order: 10,
+  },
+  [FeatureFlagKey.DOCUMENT_REVIEW]: {
+    name: "Revisão de Documentos",
+    description:
+      "Quando ativa, recursos partilhados aguardam moderação de admin antes de publicação.",
+    order: 20,
+  },
+  [FeatureFlagKey.PRESENTATION_CREATION]: {
+    name: "Criação de Apresentações",
+    description:
+      "Controla se os utilizadores podem criar apresentações a partir da plataforma.",
+    order: 30,
+  },
+  [FeatureFlagKey.WORKSHEET_CREATION]: {
+    name: "Criação de Fichas de Trabalho",
+    description:
+      "Controla se os utilizadores podem criar fichas de trabalho a partir da plataforma.",
+    order: 35,
+  },
+  [FeatureFlagKey.TEMPLATE_FROM_DOCUMENT]: {
+    name: "Modelo a partir de Documento",
+    description:
+      "Controla se os utilizadores podem fazer upload de um documento e convertê-lo num modelo personalizado.",
+    order: 37,
+  },
+  [FeatureFlagKey.DOCUMENT_IMAGES]: {
+    name: "Imagens em Documentos",
+    description:
+      "Controla a geração e inclusão de imagens automáticas em testes, quizzes, fichas e planos de aula.",
+    order: 40,
+  },
+};
 
 const applyFlagMetadata = (flag: AdminFeatureFlag): AdminFeatureFlag => {
   const metadata = FEATURE_FLAG_METADATA[flag.key];
@@ -111,21 +116,66 @@ const compareFlagOrder = (a: AdminFeatureFlag, b: AdminFeatureFlag): number => {
 
 function OverrideRow({
   override,
+  plans,
   onDelete,
 }: {
   override: FeatureOverrideDto;
+  plans: PlanOption[];
   onDelete: () => Promise<void>;
 }) {
   const [deleting, setDeleting] = useState(false);
+  const [resolvedLabel, setResolvedLabel] = useState<string | null>(null);
+
+  // Lazily resolve user/org display names via the backend lookup endpoints
+  useEffect(() => {
+    if (override.userId) {
+      // Use backend-enriched fields if already present
+      if (override.userName || override.userEmail) {
+        const lbl =
+          override.userName && override.userEmail
+            ? `${override.userName} <${override.userEmail}>`
+            : (override.userName ?? override.userEmail ?? override.userId);
+        setResolvedLabel(lbl);
+        return;
+      }
+      void getUserById(override.userId).then((u) => {
+        if (!u) return;
+        setResolvedLabel(u.name ? `${u.name} <${u.email}>` : u.email);
+      });
+    } else if (override.organizationId) {
+      if (override.organizationName) {
+        setResolvedLabel(`${override.organizationName}`);
+        return;
+      }
+      void getOrganizationById(override.organizationId).then((o) => {
+        if (!o) return;
+        setResolvedLabel(`${o.name}`);
+      });
+    }
+  }, [override]);
 
   const { label, prefix } = useMemo(() => {
-    if (override.userId) return { prefix: "Utilizador", label: override.userId };
-    if (override.organizationId)
-      return { prefix: "Organização", label: override.organizationId };
-    if (override.role) return { prefix: "Perfil", label: override.role };
-    if (override.plan) return { prefix: "Plano", label: override.plan };
+    if (override.userId) {
+      return { prefix: "Utilizador", label: resolvedLabel ?? override.userId };
+    }
+    if (override.organizationId) {
+      return {
+        prefix: "Organização",
+        label: resolvedLabel ?? override.organizationId,
+      };
+    }
+    if (override.role) {
+      return { prefix: "Perfil", label: `${override.role}` };
+    }
+    if (override.plan) {
+      const planName = plans.find((p) => p.planCode === override.plan)?.name;
+      return {
+        prefix: "Plano",
+        label: planName ? `${planName}` : override.plan,
+      };
+    }
     return { prefix: "Desconhecido", label: "—" };
-  }, [override]);
+  }, [override, plans, resolvedLabel]);
 
   const handleDelete = async () => {
     setDeleting(true);
@@ -142,22 +192,29 @@ function OverrideRow({
         <Badge variant="outline" className="shrink-0 text-xs">
           {prefix}
         </Badge>
-        <span className="truncate font-mono text-xs text-muted-foreground" title={label}>
+        <span className="truncate text-xs text-muted-foreground" title={label}>
           {label}
         </span>
       </div>
-      <Badge variant={override.enabled ? "default" : "secondary"}>
+      <Badge
+        variant={override.enabled ? "default" : "secondary"}
+        className="shrink-0"
+      >
         {override.enabled ? "Ativo" : "Inativo"}
       </Badge>
       <Button
         variant="ghost"
         size="icon"
-        className="h-7 w-7"
+        className="h-7 w-7 shrink-0"
         onClick={handleDelete}
         disabled={deleting}
         aria-label="Remover exceção"
       >
-        {deleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+        {deleting ? (
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+        ) : (
+          <Trash2 className="h-3.5 w-3.5" />
+        )}
       </Button>
     </div>
   );
@@ -279,14 +336,21 @@ function AddOverrideForm({
     <div className="space-y-3 rounded-lg border border-dashed border-border bg-background p-3">
       <div className="flex items-center justify-between">
         <p className="text-sm font-medium">Nova exceção</p>
-        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onCancel}>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7"
+          onClick={onCancel}
+        >
           <X className="h-3.5 w-3.5" />
         </Button>
       </div>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-[160px_1fr]">
         <div>
-          <label className="mb-1 block text-xs text-muted-foreground">Tipo</label>
+          <label className="mb-1 block text-xs text-muted-foreground">
+            Tipo
+          </label>
           <Select
             value={targetType}
             onValueChange={(v) => setTargetType(v as OverrideTargetType)}
@@ -304,11 +368,14 @@ function AddOverrideForm({
         </div>
 
         <div>
-          <label className="mb-1 block text-xs text-muted-foreground">Alvo</label>
+          <label className="mb-1 block text-xs text-muted-foreground">
+            Alvo
+          </label>
 
           {(targetType === "user" || targetType === "organization") && (
             <div className="relative">
-              {selected && (selected.type === "user" || selected.type === "organization") ? (
+              {selected &&
+              (selected.type === "user" || selected.type === "organization") ? (
                 <div className="flex items-center justify-between rounded-md border border-input bg-muted/30 px-3 py-1.5 text-sm">
                   <span className="truncate">{selected.label}</span>
                   <Button
@@ -335,7 +402,8 @@ function AddOverrideForm({
                     <div className="absolute left-0 right-0 top-full z-10 mt-1 max-h-56 overflow-y-auto rounded-md border border-border bg-popover shadow-md">
                       {searching && (
                         <div className="flex items-center justify-center py-3 text-xs text-muted-foreground">
-                          <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />A pesquisar…
+                          <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />A
+                          pesquisar…
                         </div>
                       )}
                       {!searching &&
@@ -363,13 +431,19 @@ function AddOverrideForm({
                               setSelected({
                                 type: "user",
                                 id: u.id,
-                                label: u.name ? `${u.name} (${u.email})` : u.email,
+                                label: u.name
+                                  ? `${u.name} (${u.email})`
+                                  : u.email,
                               })
                             }
                           >
-                            <div className="font-medium">{u.name ?? u.email}</div>
+                            <div className="font-medium">
+                              {u.name ?? u.email}
+                            </div>
                             {u.name && (
-                              <div className="text-xs text-muted-foreground">{u.email}</div>
+                              <div className="text-xs text-muted-foreground">
+                                {u.email}
+                              </div>
                             )}
                           </button>
                         ))}
@@ -384,13 +458,17 @@ function AddOverrideForm({
                               setSelected({
                                 type: "organization",
                                 id: o.id,
-                                label: o.slug ? `${o.name} (${o.slug})` : o.name,
+                                label: o.slug
+                                  ? `${o.name} (${o.slug})`
+                                  : o.name,
                               })
                             }
                           >
                             <div className="font-medium">{o.name}</div>
                             {o.slug && (
-                              <div className="text-xs text-muted-foreground">{o.slug}</div>
+                              <div className="text-xs text-muted-foreground">
+                                {o.slug}
+                              </div>
                             )}
                           </button>
                         ))}
@@ -437,13 +515,21 @@ function AddOverrideForm({
 
       <div className="flex items-center justify-between gap-3 border-t border-border pt-3">
         <div className="flex items-center gap-2">
-          <Switch checked={enabled} onCheckedChange={setEnabled} id={`enable-${flagKey}`} />
+          <Switch
+            checked={enabled}
+            onCheckedChange={setEnabled}
+            id={`enable-${flagKey}`}
+          />
           <label htmlFor={`enable-${flagKey}`} className="text-sm">
             {enabled ? "Ativar" : "Desativar"} para este alvo
           </label>
         </div>
         <Button size="sm" onClick={handleSubmit} disabled={!canSubmit}>
-          {submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Adicionar exceção"}
+          {submitting ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            "Adicionar exceção"
+          )}
         </Button>
       </div>
     </div>
@@ -472,7 +558,9 @@ function FlagCard({
     try {
       const updated = await updateFlagApi(flag.key, { enabled: checked });
       onFlagUpdated({ ...updated, overrides: flag.overrides });
-      toast.success(`Funcionalidade '${flag.name}' ${checked ? "ativada" : "desativada"}`);
+      toast.success(
+        `Funcionalidade '${flag.name}' ${checked ? "ativada" : "desativada"}`,
+      );
     } catch {
       toast.error(`Erro ao atualizar a funcionalidade '${flag.name}'`);
     } finally {
@@ -506,30 +594,32 @@ function FlagCard({
   const overrides = flag.overrides ?? [];
 
   return (
-    <Card className="border border-border shadow-sm">
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between gap-4">
-          <div className="min-w-0 flex-1">
-            <CardTitle className="text-base">{flag.name}</CardTitle>
-            <p className="mt-0.5 font-mono text-xs text-muted-foreground">{flag.key}</p>
-            {flag.description && (
-              <p className="mt-1 text-sm text-muted-foreground">{flag.description}</p>
-            )}
-          </div>
-          <div className="flex shrink-0 items-center gap-2">
-            {isUpdating ? (
-              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-            ) : (
-              <Switch
-                id={`flag-${flag.key}`}
-                checked={flag.enabled}
-                onCheckedChange={handleToggle}
-              />
-            )}
-            <Badge variant={flag.enabled ? "default" : "secondary"}>
-              {flag.enabled ? "Ativo" : "Inativo"}
-            </Badge>
-          </div>
+    <Card className="overflow-hidden border border-border shadow-sm">
+      <CardHeader className="flex flex-row items-start gap-4 pb-3">
+        <div className="min-w-0 flex-1">
+          <CardTitle className="text-base">{flag.name}</CardTitle>
+          <p className="mt-0.5 font-mono text-xs text-muted-foreground">
+            {flag.key}
+          </p>
+          {flag.description && (
+            <p className="mt-1 text-sm text-muted-foreground">
+              {flag.description}
+            </p>
+          )}
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          {isUpdating ? (
+            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+          ) : (
+            <Switch
+              id={`flag-${flag.key}`}
+              checked={flag.enabled}
+              onCheckedChange={handleToggle}
+            />
+          )}
+          <Badge variant={flag.enabled ? "default" : "secondary"}>
+            {flag.enabled ? "Ativo" : "Inativo"}
+          </Badge>
         </div>
       </CardHeader>
 
@@ -552,7 +642,8 @@ function FlagCard({
               ) : (
                 <ChevronDown className="h-3.5 w-3.5" />
               )}
-              {overrides.length} {overrides.length === 1 ? "exceção" : "exceções"}
+              {overrides.length}{" "}
+              {overrides.length === 1 ? "exceção" : "exceções"}
             </button>
             {expanded && !showAddForm && (
               <Button
@@ -573,6 +664,7 @@ function FlagCard({
                 <OverrideRow
                   key={o.id}
                   override={o}
+                  plans={plans}
                   onDelete={() => handleDeleteOverride(o)}
                 />
               ))}
@@ -613,7 +705,10 @@ export default function AdminFeaturesPage() {
     setLoading(true);
     setError(null);
     try {
-      const [flagsData, plansData] = await Promise.all([listFlags(), listPlans()]);
+      const [flagsData, plansData] = await Promise.all([
+        listFlags(),
+        listPlans(),
+      ]);
       const withOverrides = await Promise.all(
         flagsData.map(async (f) => {
           try {
@@ -626,7 +721,9 @@ export default function AdminFeaturesPage() {
       setFlags(withOverrides.map(applyFlagMetadata).sort(compareFlagOrder));
       setPlans(plansData);
     } catch {
-      setError("Não foi possível carregar as configurações de funcionalidades.");
+      setError(
+        "Não foi possível carregar as configurações de funcionalidades.",
+      );
     } finally {
       setLoading(false);
     }

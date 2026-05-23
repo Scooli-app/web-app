@@ -87,7 +87,7 @@ const ChartContainer = React.forwardRef<
         {...props}
       >
         <ChartStyle id={chartId} config={config} />
-        <RechartsPrimitive.ResponsiveContainer>
+        <RechartsPrimitive.ResponsiveContainer width="100%" height="100%">
           {children}
         </RechartsPrimitive.ResponsiveContainer>
       </div>
@@ -116,6 +116,28 @@ type ChartTooltipContentProps = React.ComponentProps<"div"> & {
     value: number | string | undefined,
     entry: ChartTooltipPayloadItem,
   ) => React.ReactNode;
+  // Recharts internal props — accepted so they don't leak to the DOM via ...props
+  cursor?: unknown;
+  allowEscapeViewBox?: unknown;
+  animationDuration?: unknown;
+  animationEasing?: unknown;
+  axisId?: unknown;
+  contentStyle?: unknown;
+  filterNull?: unknown;
+  includeHidden?: unknown;
+  isAnimationActive?: unknown;
+  itemSorter?: unknown;
+  itemStyle?: unknown;
+  labelStyle?: unknown;
+  reverseDirection?: unknown;
+  useTranslate3d?: unknown;
+  wrapperStyle?: unknown;
+  activeIndex?: unknown;
+  accessibilityLayer?: unknown;
+  coordinate?: unknown;
+  offset?: unknown;
+  position?: unknown;
+  viewBox?: unknown;
 };
 
 const ChartTooltipContent = React.forwardRef<
@@ -131,6 +153,28 @@ const ChartTooltipContent = React.forwardRef<
       hideLabel = false,
       labelFormatter,
       valueFormatter,
+      // Recharts internal props — destructured to prevent spreading to DOM
+      cursor: _cursor,
+      allowEscapeViewBox: _allowEscapeViewBox,
+      animationDuration: _animationDuration,
+      animationEasing: _animationEasing,
+      axisId: _axisId,
+      contentStyle: _contentStyle,
+      filterNull: _filterNull,
+      includeHidden: _includeHidden,
+      isAnimationActive: _isAnimationActive,
+      itemSorter: _itemSorter,
+      itemStyle: _itemStyle,
+      labelStyle: _labelStyle,
+      reverseDirection: _reverseDirection,
+      useTranslate3d: _useTranslate3d,
+      wrapperStyle: _wrapperStyle,
+      activeIndex: _activeIndex,
+      accessibilityLayer: _accessibilityLayer,
+      coordinate: _coordinate,
+      offset: _offset,
+      position: _position,
+      viewBox: _viewBox,
       ...props
     },
     ref,
@@ -170,7 +214,7 @@ const ChartTooltipContent = React.forwardRef<
                   : "value";
             const itemConfig = config[key];
             const indicatorColor =
-              entry.color ?? `var(--color-${key})` ?? "var(--primary)";
+              entry.color ?? `var(--color-${key})`;
 
             return (
               <div

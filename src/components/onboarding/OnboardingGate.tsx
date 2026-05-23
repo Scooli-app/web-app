@@ -1,145 +1,79 @@
 "use client";
 
 import { OnboardingModal } from "@/components/onboarding/OnboardingModal";
+import { TUTORIAL_ROUTE, useTutorial } from "@/contexts/TutorialContext";
 import { onboardingService } from "@/services/api/onboarding.service";
 import { Routes } from "@/shared/types";
 import {
   ONBOARDING_PROMPT_KEY,
-  type OnboardingStatusResponse,
   type OnboardingSubmitRequest,
 } from "@/shared/types/onboarding";
+import { useAppDispatch } from "@/store/hooks";
+import { setOnboardingStatus } from "@/store/onboarding/onboardingSlice";
 import type { RootState } from "@/store/store";
 import { useAuth, useUser } from "@clerk/nextjs";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import posthog from "posthog-js";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSelector } from "react-redux";
 import { toast } from "sonner";
 
-const OPEN_DELAY_MS = 1200;
-
 export function OnboardingGate() {
   const pathname = usePathname();
+  const router = useRouter();
+  const dispatch = useAppDispatch();
+  const { startTutorial } = useTutorial();
   const isUpgradeModalOpen = useSelector(
     (state: RootState) => state.ui.isUpgradeModalOpen,
   );
-  const { isLoaded: isAuthLoaded, isSignedIn } = useAuth();
-  const { isLoaded: isUserLoaded, user } = useUser();
+  const { isSignedIn } = useAuth();
+  const { user } = useUser();
 
-  const [onboardingStatus, setOnboardingStatus] =
-    useState<OnboardingStatusResponse | null>(null);
+  // Status is pre-loaded by AppBootstrapGate — available synchronously on mount
+  const onboardingStatus = useSelector(
+    (state: RootState) => state.onboarding.status,
+  );
+
   const [open, setOpen] = useState(false);
-  const [pendingOpen, setPendingOpen] = useState(false);
   const [isBusy, setIsBusy] = useState(false);
-  const [uiRevision, setUiRevision] = useState(0);
 
   const hasTrackedViewRef = useRef(false);
 
   const isRouteSuppressed = useMemo(
-    () =>
-      pathname === Routes.SUPPORT || pathname.startsWith(Routes.ADMIN),
+    () => pathname === Routes.SUPPORT || pathname.startsWith(Routes.ADMIN),
     [pathname],
   );
 
-  const hasBlockingUi = useCallback(() => {
-    if (typeof document === "undefined") {
-      return true;
+  // Open as soon as the pre-loaded status says shouldShow and nothing blocks it.
+  // Re-evaluated whenever the route or upgrade modal state changes so it
+  // correctly defers when the user is on a suppressed route.
+  useEffect(() => {
+    if (
+      open ||
+      !onboardingStatus?.shouldShow ||
+      isRouteSuppressed ||
+      isUpgradeModalOpen
+    ) {
+      return;
     }
+    setOpen(true);
+  }, [
+    onboardingStatus?.shouldShow,
+    open,
+    isRouteSuppressed,
+    isUpgradeModalOpen,
+  ]);
 
+  // Close and clear shouldShow when the user navigates to a suppressed route
+  // while the modal is open, or when the upgrade modal opens on top of it.
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
     if (isRouteSuppressed || isUpgradeModalOpen) {
-      return true;
-    }
-
-    const appBootstrapOverlay = document.querySelector(
-      '[role="status"][aria-busy="true"]',
-    );
-    if (appBootstrapOverlay) {
-      return true;
-    }
-
-    const otherOpenDialogs = Array.from(
-      document.querySelectorAll<HTMLElement>('[data-slot="dialog-content"]'),
-    ).some(
-      (element) =>
-        !element.hasAttribute("data-onboarding-modal") &&
-        !element.hasAttribute("data-feedback-survey-modal"),
-    );
-
-    return otherOpenDialogs;
-  }, [isRouteSuppressed, isUpgradeModalOpen]);
-
-  const loadStatus = useCallback(async () => {
-    if (!isAuthLoaded || !isUserLoaded || !isSignedIn || !user?.id) {
-      return;
-    }
-
-    try {
-      const status = await onboardingService.getStatus();
-      setOnboardingStatus(status);
-      setPendingOpen(status.shouldShow);
-
-      if (!status.shouldShow) {
-        setOpen(false);
-      }
-    } catch (error) {
-      posthog.captureException(error);
-    }
-  }, [isAuthLoaded, isSignedIn, isUserLoaded, user?.id]);
-
-  useEffect(() => {
-    if (!isAuthLoaded || (isSignedIn && !isUserLoaded)) {
-      return;
-    }
-
-    if (!isSignedIn || !user?.id) {
-      setOnboardingStatus(null);
       setOpen(false);
-      setPendingOpen(false);
-      setIsBusy(false);
-      return;
     }
-
-    void loadStatus();
-  }, [isAuthLoaded, isSignedIn, isUserLoaded, loadStatus, user?.id]);
-
-  useEffect(() => {
-    if (typeof document === "undefined" || !pendingOpen || open) {
-      return;
-    }
-
-    const observer = new MutationObserver(() => {
-      setUiRevision((current) => current + 1);
-    });
-
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true,
-      attributes: true,
-      attributeFilter: ["data-state", "aria-busy"],
-    });
-
-    return () => observer.disconnect();
-  }, [open, pendingOpen]);
-
-  useEffect(() => {
-    if (!pendingOpen || open || !onboardingStatus?.shouldShow) {
-      return;
-    }
-
-    if (hasBlockingUi()) {
-      return;
-    }
-
-    const timer = window.setTimeout(() => {
-      if (hasBlockingUi()) {
-        return;
-      }
-
-      setOpen(true);
-    }, OPEN_DELAY_MS);
-
-    return () => window.clearTimeout(timer);
-  }, [hasBlockingUi, open, pendingOpen, onboardingStatus?.shouldShow, uiRevision]);
+  }, [isRouteSuppressed, isUpgradeModalOpen, open]);
 
   useEffect(() => {
     if (!open) {
@@ -156,7 +90,7 @@ export function OnboardingGate() {
     void onboardingService
       .markViewed(ONBOARDING_PROMPT_KEY)
       .then((nextStatus) => {
-        setOnboardingStatus(nextStatus);
+        dispatch(setOnboardingStatus(nextStatus));
         posthog.capture("onboarding_viewed", {
           promptKey: nextStatus.promptKey,
           shownCount: nextStatus.shownCount,
@@ -165,7 +99,7 @@ export function OnboardingGate() {
       .catch((error) => {
         posthog.captureException(error);
       });
-  }, [open]);
+  }, [dispatch, open]);
 
   const handleSkip = useCallback(async () => {
     if (isBusy) {
@@ -174,17 +108,17 @@ export function OnboardingGate() {
 
     setIsBusy(true);
     try {
-      await onboardingService.skip(ONBOARDING_PROMPT_KEY);
+      const nextStatus = await onboardingService.skip(ONBOARDING_PROMPT_KEY);
+      dispatch(setOnboardingStatus(nextStatus));
       setOpen(false);
-      setPendingOpen(false);
-      posthog.capture("onboarding_skipped");
+      // Step-level event fired in OnboardingModal before this callback runs
     } catch (error) {
       posthog.captureException(error);
       toast.error("Não foi possível ignorar o onboarding.");
     } finally {
       setIsBusy(false);
     }
-  }, [isBusy]);
+  }, [dispatch, isBusy]);
 
   const handleSubmit = useCallback(
     async (payload: OnboardingSubmitRequest) => {
@@ -196,8 +130,8 @@ export function OnboardingGate() {
       try {
         await onboardingService.submit(payload);
 
+        dispatch(setOnboardingStatus(null));
         setOpen(false);
-        setPendingOpen(false);
 
         posthog.capture("onboarding_completed", {
           acquisitionSource: payload.acquisitionSource,
@@ -208,6 +142,13 @@ export function OnboardingGate() {
         posthog.setPersonPropertiesForFlags({
           acquisition_source: payload.acquisitionSource,
         });
+
+        // Only show the first-time tutorial for brand-new users.
+        // Users who already have documents know the product — skip straight to dashboard.
+        if (!onboardingStatus?.hasDocuments) {
+          router.push(TUTORIAL_ROUTE);
+          startTutorial();
+        }
       } catch (error) {
         posthog.captureException(error);
         toast.error("Não foi possível guardar a tua resposta.");
@@ -215,7 +156,7 @@ export function OnboardingGate() {
         setIsBusy(false);
       }
     },
-    [isBusy],
+    [dispatch, isBusy, onboardingStatus?.hasDocuments, router, startTutorial],
   );
 
   if (!isSignedIn || !user?.id || !onboardingStatus) {

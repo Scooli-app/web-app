@@ -1,5 +1,22 @@
 export const ONBOARDING_PROMPT_KEY = "user_onboarding_v1" as const;
 
+export type OnboardingGoal =
+  | "FASTER_DOCUMENTS"
+  | "AI_ASSISTANCE"
+  | "SAVE_TIME_TESTS"
+  | "REDUCE_REPETITIVE_WORK"
+  | "DISCOVER_COMMUNITY"
+  | "CURIOSITY";
+
+export const ONBOARDING_GOAL_LABELS: Record<OnboardingGoal, string> = {
+  FASTER_DOCUMENTS: "Criar materiais mais rápido",
+  AI_ASSISTANCE: "Usar IA para me ajudar",
+  SAVE_TIME_TESTS: "Poupar tempo com testes e fichas",
+  REDUCE_REPETITIVE_WORK: "Reduzir trabalho repetitivo",
+  DISCOVER_COMMUNITY: "Descobrir recursos partilhados por colegas",
+  CURIOSITY: "Curiosidade / recomendação de colega",
+};
+
 export type AcquisitionSource =
   | "SEARCH_ENGINE"
   | "FACEBOOK"
@@ -75,6 +92,7 @@ export interface OnboardingStatusResponse {
   status: string;
   nextPromptAt: string;
   shownCount: number;
+  hasDocuments: boolean;
 }
 
 export interface OnboardingPromptRequest {
@@ -88,4 +106,5 @@ export interface OnboardingSubmitRequest {
   teachingLevel?: TeachingLevel[] | null;
   acquisitionSourceOther?: string | null;
   subjectAreaOther?: string | null;
+  goals?: OnboardingGoal[] | null;
 }

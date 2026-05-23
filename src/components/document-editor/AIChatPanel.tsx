@@ -154,7 +154,7 @@ function ChatContent({
           : "h-full border-0 shadow-none bg-transparent",
       )}
     >
-      <div className="py-4 md:px-6">
+      <div className="px-4 py-4 md:px-6">
         <Tabs
           activeTab={activeTab}
           onTabChange={setActiveTab}
@@ -327,7 +327,7 @@ export default function AIChatPanel({
         <Sheet open={isOpen} onOpenChange={setIsOpen}>
           <SheetTrigger asChild>
             <Button
-              className="fixed right-4 z-50 h-14 w-14 rounded-full bg-primary shadow-lg transition-all duration-300 hover:scale-105 hover:bg-primary/90 hover:shadow-xl active:scale-95 sm:right-6 bottom-[max(env(safe-area-inset-bottom),1rem)]"
+              className="fixed right-4 z-50 h-14 w-14 rounded-full bg-primary shadow-lg transition-all duration-300 hover:scale-105 hover:bg-primary/90 hover:shadow-xl active:scale-95 sm:right-6 bottom-[calc(max(env(safe-area-inset-bottom),1rem)+4.5rem)]"
               size="icon"
             >
               <MessageCircle className="h-6 w-6 text-primary-foreground" />

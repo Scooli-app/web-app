@@ -30,6 +30,7 @@ export const onboardingService = {
       teachingLevel: payload.teachingLevel?.join(",") ?? null,
       acquisitionSourceOther: payload.acquisitionSourceOther ?? null,
       subjectAreaOther: payload.subjectAreaOther ?? null,
+      goals: payload.goals?.join(",") ?? null,
     });
   },
 };

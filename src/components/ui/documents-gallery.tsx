@@ -303,16 +303,16 @@ export function DocumentsGallery() {
 
           {/* Right side: actions */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-2 w-full sm:w-auto">
-            {/* Upload button – always visible on desktop */}
+            {/* Upload button – visible on all screen sizes */}
             {!selectionMode && (
               <Button
                 onClick={() => setShowUploadModal(true)}
                 variant="outline"
                 size="sm"
-                className="hidden sm:flex flex-shrink-0"
+                className="flex flex-shrink-0"
               >
                 <UploadCloud className="w-4 h-4 mr-2" />
-                Importar
+                <span>Importar</span>
               </Button>
             )}
 

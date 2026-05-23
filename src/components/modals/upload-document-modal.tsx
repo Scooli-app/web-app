@@ -263,7 +263,7 @@ export function UploadDocumentModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={isUploading ? undefined : onClose}>
-      <DialogContent className="max-w-md overflow-hidden p-0">
+      <DialogContent className="max-w-md overflow-y-auto p-0">
         <div className="border-b border-border px-6 pb-4 pt-6 pr-14">
           <div className="mb-1 flex items-center gap-3">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10">

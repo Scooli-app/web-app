@@ -26,6 +26,7 @@ const converterOptions: showdown.ConverterOptions = {
 // Create showdown converter instance
 const converter = new showdown.Converter(converterOptions);
 const MARKDOWN_CODE_FENCE_PATTERN = /```[\s\S]*?```/g;
+const MCQ_OPTION_LINE_PATTERN = /^\s*\([A-Ea-e]\)\s/;
 const HTML_PRE_BLOCK_PATTERN = /<pre[\s\S]*?<\/pre>/gi;
 const HTML_IMAGE_TAG_PATTERN = /<img\b[^>]*>/gi;
 // Math protection patterns
@@ -280,8 +281,37 @@ function normalizeMultipleChoiceOptions(markdown: string): string {
     return line;
   });
 
+  // Collapse blank lines that sit between two consecutive MCQ option lines.
+  // Pass 1 may produce elements with embedded \n (inline-split path); flatMap flattens them first.
+  // Also strip any <br> HTML tags the AI may have injected — these cause double line-breaks
+  // when combined with the hard-break markers we add at the end.
+  const flatLines = rewrittenLines
+    .flatMap((l) => l.split("\n"))
+    .map((l) => l.replace(/<br\s*\/?>/gi, "").trimEnd());
+  const collapsed: string[] = [];
+  for (let i = 0; i < flatLines.length; i++) {
+    const line = flatLines[i];
+    if (line.trim() === "") {
+      // Find the nearest non-blank line before this one
+      let prev: string | undefined;
+      for (let j = collapsed.length - 1; j >= 0; j--) {
+        if (collapsed[j].trim() !== "") { prev = collapsed[j]; break; }
+      }
+      // Find the nearest non-blank line after this one
+      let next: string | undefined;
+      for (let j = i + 1; j < flatLines.length; j++) {
+        if (flatLines[j].trim() !== "") { next = flatLines[j]; break; }
+      }
+      if (prev && MCQ_OPTION_LINE_PATTERN.test(prev) && next && MCQ_OPTION_LINE_PATTERN.test(next)) {
+        // Drop this blank line — it sits between two MCQ options
+        continue;
+      }
+    }
+    collapsed.push(line);
+  }
+
   // Force markdown hard line-breaks before option lines so renderers never collapse them.
-  return rewrittenLines
+  return collapsed
     .join("\n")
     .replace(/\n(\s*(?:\([A-Ea-e]\)|[A-Ea-e]\))\s+)/g, "  \n$1");
 }
