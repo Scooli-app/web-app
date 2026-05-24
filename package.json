@@ -14,6 +14,9 @@
     "knip": "knip"
   },
   "dependencies": {
+    "@blocknote/core": "^0.51.2",
+    "@blocknote/mantine": "^0.51.2",
+    "@blocknote/react": "^0.51.2",
     "@clerk/localizations": "^3.35.3",
     "@clerk/nextjs": "^6.36.0",
     "@clerk/themes": "^2.4.47",

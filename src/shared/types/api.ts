@@ -37,6 +37,12 @@ export interface CreateDocumentParams {
    * injection of all matching scooli sources.
    */
   regulatorySourceIds?: string[];
+  /**
+   * Number of slides for Presentations only (range 5–20, default 10 server-side).
+   * Backend stores it in `metadata.slideCount` and feeds it to the prompt.
+   * Ignored for other document types.
+   */
+  slideCount?: number;
 }
 
 

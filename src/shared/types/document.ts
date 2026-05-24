@@ -61,6 +61,15 @@ export interface Document {
   id: string;
   title: string;
   documentType: DocumentType;
+  /**
+   * Storage format of {@link #content}:
+   *   - {@code "markdown"} (default for all legacy doc types)
+   *   - {@code "json"} (Presentations pilot — content is a serialized
+   *     {@link import("./blocks").PresentationDocument})
+   *
+   * Renderers branch on this; if absent assume "markdown" (older docs).
+   */
+  contentFormat?: "markdown" | "json";
   content: string;
   status: string;
   metadata: DocumentMetadata | null;

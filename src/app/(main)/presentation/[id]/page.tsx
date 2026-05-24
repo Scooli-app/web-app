@@ -16,13 +16,18 @@ function EditorLoading() {
   );
 }
 
-// Dynamic import for the heavy DocumentEditor component
-const DocumentEditor = dynamic(
-  () => import("@/components/document-editor/DocumentEditor"),
+// Presentations use the JSON-backed BlockDocumentEditor instead of the legacy
+// Markdown DocumentEditor. Dynamic import keeps BlockNote / KaTeX out of the
+// initial bundle for non-presentation pages.
+const BlockDocumentEditor = dynamic(
+  () =>
+    import("@/components/document-editor-v2/BlockDocumentEditor").then(
+      (m) => m.BlockDocumentEditor,
+    ),
   {
     loading: EditorLoading,
     ssr: false,
-  }
+  },
 );
 
 interface PresentationEditorPageProps {
@@ -36,14 +41,7 @@ export default function PresentationEditorPage({
 
   return (
     <Suspense fallback={<EditorLoading />}>
-      <DocumentEditor
-        documentId={id}
-        defaultTitle="Nova Apresentação"
-        loadingMessage="A carregar apresentação..."
-        generateMessage="Gerar apresentação"
-        chatTitle="Assistente de Apresentações"
-        chatPlaceholder="Faça uma pergunta sobre a apresentação ou peça para modificar algo..."
-      />
+      <BlockDocumentEditor documentId={id} />
     </Suspense>
   );
 }
