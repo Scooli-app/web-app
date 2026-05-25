@@ -7,7 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useAppSelector } from "@/store/hooks";
 import { selectWorkspaceContext } from "@/store/workspace/selectors";
 import { Routes, type Document } from "@/shared/types";
-import { Building2, FileText, Globe2, Sparkles, Trash2, Upload, User } from "lucide-react";
+import { Building2, FileText, Globe2, Trash2, Upload, User } from "lucide-react";
 import Link from "next/link";
 import { memo, useCallback, useMemo } from "react";
 
@@ -181,21 +181,13 @@ function DocumentCardComponent({
             >
               {typeLabel}
             </Badge>
-            {document.originalFormat ? (
+            {document.originalFormat && (
               <Badge
                 title={`Importado de ${document.originalFormat.toUpperCase()}`}
                 className="shrink-0 whitespace-nowrap border border-violet-400/40 bg-violet-400/10 px-2 py-1 text-xs font-medium text-violet-700 dark:text-violet-300"
               >
                 <Upload className="mr-1 h-3 w-3" />
                 Importado
-              </Badge>
-            ) : (
-              <Badge
-                title="Gerado por IA"
-                className="shrink-0 whitespace-nowrap border border-sky-400/30 bg-sky-400/10 px-2 py-1 text-xs font-medium text-sky-700 dark:text-sky-300"
-              >
-                <Sparkles className="mr-1 h-3 w-3" />
-                IA
               </Badge>
             )}
             {sharedScopes.has("community") && (
