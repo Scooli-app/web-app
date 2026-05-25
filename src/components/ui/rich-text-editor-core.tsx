@@ -18,7 +18,7 @@ import {
   type Editor,
 } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { ImagePlus, Loader2, Table2, ChevronDown } from "lucide-react";
+import { ImagePlus, Loader2, Table2 } from "lucide-react";
 import {
   memo,
   useCallback,
@@ -81,7 +81,6 @@ const MenuBar = memo(function MenuBar({
       isCodeBlock: ctx.editor.isActive("codeBlock"),
       isMath:
         ctx.editor.isActive("inlineMath") || ctx.editor.isActive("blockMath"),
-      isInTable: ctx.editor.isActive("table"),
     }),
   });
 
@@ -158,103 +157,17 @@ const MenuBar = memo(function MenuBar({
       }),
     [editor, runEditorCommand],
   );
+  const handleInsertTable = useCallback(
+    () => runEditorCommand(() =>
+      editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()
+    ),
+    [editor, runEditorCommand],
+  );
+
   const handleUploadImage = useCallback(() => {
     onEditorActivity?.();
     onUploadImage?.();
   }, [onEditorActivity, onUploadImage]);
-
-  const [tableMenuOpen, setTableMenuOpen] = useState(false);
-  const [tableMenuCoords, setTableMenuCoords] = useState({ top: 0, left: 0 });
-  const tableBtnRef = useRef<HTMLButtonElement>(null);
-  const tableDropdownRef = useRef<HTMLDivElement>(null);
-
-  function openTableMenu() {
-    if (tableBtnRef.current) {
-      const r = tableBtnRef.current.getBoundingClientRect();
-      setTableMenuCoords({ top: r.bottom + 4, left: r.left });
-    }
-    setTableMenuOpen(true);
-  }
-
-  // Close table menu on outside click or scroll
-  useEffect(() => {
-    function close(e: MouseEvent) {
-      if (
-        tableDropdownRef.current &&
-        !tableDropdownRef.current.contains(e.target as Node) &&
-        tableBtnRef.current &&
-        !tableBtnRef.current.contains(e.target as Node)
-      ) {
-        setTableMenuOpen(false);
-      }
-    }
-    if (tableMenuOpen) {
-      document.addEventListener("mousedown", close);
-      document.addEventListener("scroll", () => setTableMenuOpen(false), true);
-    }
-    return () => {
-      document.removeEventListener("mousedown", close);
-      document.removeEventListener("scroll", () => setTableMenuOpen(false), true);
-    };
-  }, [tableMenuOpen]);
-
-  const tableActions = [
-    {
-      label: "Inserir tabela (3×3)",
-      run: () => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run(),
-      show: true,
-    },
-    {
-      label: "—",
-      run: () => {},
-      show: editorState.isInTable,
-      divider: true,
-    },
-    {
-      label: "Adicionar linha acima",
-      run: () => editor.chain().focus().addRowBefore().run(),
-      show: editorState.isInTable,
-    },
-    {
-      label: "Adicionar linha abaixo",
-      run: () => editor.chain().focus().addRowAfter().run(),
-      show: editorState.isInTable,
-    },
-    {
-      label: "Eliminar linha",
-      run: () => editor.chain().focus().deleteRow().run(),
-      show: editorState.isInTable,
-      danger: true,
-    },
-    {
-      label: "Adicionar coluna à esquerda",
-      run: () => editor.chain().focus().addColumnBefore().run(),
-      show: editorState.isInTable,
-    },
-    {
-      label: "Adicionar coluna à direita",
-      run: () => editor.chain().focus().addColumnAfter().run(),
-      show: editorState.isInTable,
-    },
-    {
-      label: "Eliminar coluna",
-      run: () => editor.chain().focus().deleteColumn().run(),
-      show: editorState.isInTable,
-      danger: true,
-    },
-    {
-      label: "—",
-      run: () => {},
-      show: editorState.isInTable,
-      divider: true,
-    },
-    {
-      label: "Eliminar tabela",
-      run: () => editor.chain().focus().deleteTable().run(),
-      show: editorState.isInTable,
-      danger: true,
-    },
-  ] as const;
 
   return (
     <div className="sticky top-0 z-10 flex w-full items-center gap-2 overflow-hidden rounded-t-xl border-b border-border bg-card p-2">
@@ -351,14 +264,20 @@ const MenuBar = memo(function MenuBar({
         >
           Σ
         </button>
+        <button
+          onClick={handleInsertTable}
+          className="p-2 rounded hover:bg-accent transition-colors text-foreground"
+          title="Inserir tabela (clique direito na tabela para editar)"
+          type="button"
+        >
+          <Table2 className="h-4 w-4" />
+        </button>
         {onUploadImage && (
           <button
             onClick={handleUploadImage}
             disabled={isImageUploading}
             className={`p-2 rounded hover:bg-accent transition-colors ${isImageUploading ? "text-muted-foreground opacity-70" : "text-foreground"}`}
-            title={
-              isImageUploading ? "A carregar imagem..." : "Carregar imagem"
-            }
+            title={isImageUploading ? "A carregar imagem..." : "Carregar imagem"}
             type="button"
           >
             {isImageUploading ? (
@@ -369,57 +288,11 @@ const MenuBar = memo(function MenuBar({
           </button>
         )}
       </div>
-      {/* Table button — lives outside the scrollable area so its portal dropdown is never clipped */}
-      <div className="flex shrink-0 items-center border-l border-border pl-2">
-        <button
-          ref={tableBtnRef}
-          type="button"
-          onClick={() => (tableMenuOpen ? setTableMenuOpen(false) : openTableMenu())}
-          className={`flex items-center gap-0.5 rounded p-2 hover:bg-accent transition-colors ${editorState.isInTable ? "bg-primary/10 text-primary" : "text-foreground"}`}
-          title="Tabela"
-        >
-          <Table2 className="h-4 w-4" />
-          <ChevronDown className="h-3 w-3" />
-        </button>
-      </div>
       {rightHeaderContent && (
         <div className="flex shrink-0 items-center gap-2 pl-1 sm:pl-2">
           {rightHeaderContent}
         </div>
       )}
-      {/* Portal dropdown — rendered at document.body so overflow:hidden can't clip it */}
-      {tableMenuOpen && typeof document !== "undefined" &&
-        createPortal(
-          <div
-            ref={tableDropdownRef}
-            style={{ position: "fixed", top: tableMenuCoords.top, left: tableMenuCoords.left, zIndex: 9999 }}
-            className="w-56 rounded-lg border border-border bg-card shadow-xl py-1"
-          >
-            {tableActions.map((action, i) => {
-              if (!action.show) return null;
-              if ("divider" in action && action.divider) {
-                return <div key={i} className="my-1 border-t border-border" />;
-              }
-              return (
-                <button
-                  key={i}
-                  type="button"
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    action.run();
-                    setTableMenuOpen(false);
-                    onEditorActivity?.();
-                  }}
-                  className={`w-full px-3 py-1.5 text-left text-sm hover:bg-accent transition-colors ${"danger" in action && action.danger ? "text-destructive" : "text-foreground"}`}
-                >
-                  {action.label}
-                </button>
-              );
-            })}
-          </div>,
-          document.body
-        )
-      }
     </div>
   );
 });
@@ -597,6 +470,48 @@ export function TipTapEditorCore({
     };
   }, [editor, onAutosave]);
 
+  // ── Table right-click context menu ─────────────────────────────────────────
+  const [tableCtx, setTableCtx] = useState<{ x: number; y: number } | null>(null);
+  const tableCtxRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!tableCtx) return;
+    function close(e: MouseEvent) {
+      if (tableCtxRef.current && !tableCtxRef.current.contains(e.target as Node)) {
+        setTableCtx(null);
+      }
+    }
+    function onKey(e: globalThis.KeyboardEvent) {
+      if (e.key === "Escape") setTableCtx(null);
+    }
+    document.addEventListener("mousedown", close);
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("scroll", () => setTableCtx(null), { once: true, capture: true });
+    return () => {
+      document.removeEventListener("mousedown", close);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [tableCtx]);
+
+  function handleContextMenu(e: React.MouseEvent) {
+    const target = e.target as HTMLElement;
+    if (!target.closest("td, th")) return;
+    e.preventDefault();
+    setTableCtx({ x: e.clientX, y: e.clientY });
+  }
+
+  const tableCtxActions: { label: string; run: () => void; danger?: boolean; divider?: true }[] = [
+    { label: "Adicionar linha acima",     run: () => editor!.chain().focus().addRowBefore().run() },
+    { label: "Adicionar linha abaixo",    run: () => editor!.chain().focus().addRowAfter().run() },
+    { label: "Eliminar linha",            run: () => editor!.chain().focus().deleteRow().run(), danger: true },
+    { divider: true, label: "", run: () => {} },
+    { label: "Adicionar coluna à esquerda", run: () => editor!.chain().focus().addColumnBefore().run() },
+    { label: "Adicionar coluna à direita",  run: () => editor!.chain().focus().addColumnAfter().run() },
+    { label: "Eliminar coluna",           run: () => editor!.chain().focus().deleteColumn().run(), danger: true },
+    { divider: true, label: "", run: () => {} },
+    { label: "Eliminar tabela",           run: () => editor!.chain().focus().deleteTable().run(), danger: true },
+  ];
+
   if (!editor) {
     return (
       <div className="border border-border rounded-xl bg-card w-full">
@@ -658,10 +573,41 @@ export function TipTapEditorCore({
           className="hidden"
           onChange={handleImageFileChange}
         />
-        <div className="p-2 sm:p-4">
+        {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
+        <div className="p-2 sm:p-4" onContextMenu={handleContextMenu}>
           <EditorContent editor={editor} />
         </div>
       </div>
+      {/* Table right-click context menu portal */}
+      {tableCtx && typeof document !== "undefined" &&
+        createPortal(
+          <div
+            ref={tableCtxRef}
+            style={{ position: "fixed", top: tableCtx.y, left: tableCtx.x, zIndex: 9999 }}
+            className="w-52 rounded-lg border border-border bg-card py-1 shadow-xl"
+          >
+            {tableCtxActions.map((action, i) =>
+              action.divider ? (
+                <div key={i} className="my-1 border-t border-border" />
+              ) : (
+                <button
+                  key={i}
+                  type="button"
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    action.run();
+                    setTableCtx(null);
+                  }}
+                  className={`w-full px-3 py-1.5 text-left text-sm transition-colors hover:bg-accent ${action.danger ? "text-destructive" : "text-foreground"}`}
+                >
+                  {action.label}
+                </button>
+              )
+            )}
+          </div>,
+          document.body
+        )
+      }
     </div>
   );
 }
