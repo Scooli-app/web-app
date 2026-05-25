@@ -53,7 +53,6 @@ function buildDecorations(
       const to = Math.max(from, Math.min(change.toB, docSize));
 
       if (from < to) {
-        let inlineCount = 0;
         // Walk through text blocks within the range and create per-block
         // inline decorations. Decoration.inline() cannot span block boundaries.
         state.doc.nodesBetween(from, to, (node, pos) => {
@@ -71,7 +70,6 @@ function buildDecorations(
                   "data-diff-id": change.id,
                 })
               );
-              inlineCount++;
             }
             return false; // don't descend into text block children
           }
