@@ -61,6 +61,7 @@ import {
 import {
   BookOpen,
   Building2,
+  CalendarDays,
   ClipboardList,
   Clock,
   ExternalLink,
@@ -151,6 +152,12 @@ const CONTENT_CREATION: NavItem[] = [
     href: Routes.PRESENTATION,
     icon: Presentation,
     description: "Criar e editar apresentações",
+  },
+  {
+    title: "Planificações Macro",
+    href: Routes.CURRICULUM_PLAN,
+    icon: CalendarDays,
+    description: "Planificações curriculares de período",
   },
 ];
 
@@ -451,10 +458,13 @@ const SidebarNavigationContent = memo(function SidebarNavigationContent({
   const isWorksheetCreationEnabled =
     features[FeatureFlag.WORKSHEET_CREATION] === true;
   const isUserSourcesEnabled = features[FeatureFlag.USER_SOURCES] === true;
+  const isCurriculumPlanEnabled =
+    features[FeatureFlag.CURRICULUM_PLAN_ENABLED] === true;
 
   const disabledContentCreationKeys = [
     ...(isWorksheetCreationEnabled ? [] : [Routes.WORKSHEET]),
     ...(isPresentationCreationEnabled ? [] : [Routes.PRESENTATION]),
+    ...(isCurriculumPlanEnabled ? [] : [Routes.CURRICULUM_PLAN]),
   ];
 
   const navigationItems: NavItem[] = [

@@ -7,7 +7,18 @@ export type DocumentType =
   | "quiz"
   | "presentation"
   | "test"
-  | "worksheet";
+  | "worksheet"
+  | "curriculumPlan";
+
+/**
+ * Macro curriculum-plan planning period. Drives prompt depth on the backend
+ * (annual = high level, trimester = fine grain).
+ */
+export type CurriculumPlanningType =
+  | "annual"
+  | "semester"
+  | "trimester"
+  | "custom";
 
 // `assessment` remains only for compatibility with legacy worksheet documents.
 export type WorksheetVariant =

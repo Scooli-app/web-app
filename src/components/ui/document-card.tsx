@@ -25,6 +25,7 @@ const DOCUMENT_TYPE_LABELS: Record<Document["documentType"], string> = {
   test: "Teste",
   quiz: "Quiz",
   presentation: "Apresentação",
+  curriculumPlan: "Planificação",
 };
 
 const DOCUMENT_TYPE_COLORS: Record<Document["documentType"], string> = {
@@ -33,6 +34,7 @@ const DOCUMENT_TYPE_COLORS: Record<Document["documentType"], string> = {
   test: "bg-orange-500 text-white dark:bg-orange-600",
   quiz: "bg-amber-500 text-white dark:bg-amber-600",
   presentation: "bg-rose-500 text-white dark:bg-rose-600",
+  curriculumPlan: "bg-indigo-500 text-white dark:bg-indigo-600",
 };
 
 const DOCUMENT_TYPE_ICONS: Record<Document["documentType"], string> = {
@@ -41,6 +43,7 @@ const DOCUMENT_TYPE_ICONS: Record<Document["documentType"], string> = {
   test: "📝",
   quiz: "❓",
   presentation: "📊",
+  curriculumPlan: "📅",
 };
 
 const ROUTE_MAP: Record<Document["documentType"], string> = {
@@ -49,6 +52,7 @@ const ROUTE_MAP: Record<Document["documentType"], string> = {
   presentation: Routes.PRESENTATION,
   test: Routes.TEST,
   quiz: Routes.QUIZ,
+  curriculumPlan: Routes.LESSON_PLAN,
 };
 
 const dateFormatter = new Intl.DateTimeFormat("pt-PT", {

@@ -52,6 +52,11 @@ const TEMPLATE_PLACEHOLDERS: Record<
     name: "Ex: Apresentacao Interativa com Atividades",
     description: "Descreva quando usar este modelo de apresentacao...",
   },
+  curriculumPlan: {
+    name: "Ex: Planificacao Trimestral por Dominios",
+    description:
+      "Descreva quando usar este modelo de planificacao (anual, semestral, trimestral)...",
+  },
 };
 
 interface TemplateCreatorProps {
