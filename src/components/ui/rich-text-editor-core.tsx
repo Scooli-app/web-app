@@ -28,6 +28,7 @@ import {
   type ChangeEvent,
   type KeyboardEvent,
 } from "react";
+import { createPortal } from "react-dom";
 
 interface TipTapEditorCoreProps {
   content: string;
@@ -163,17 +164,38 @@ const MenuBar = memo(function MenuBar({
   }, [onEditorActivity, onUploadImage]);
 
   const [tableMenuOpen, setTableMenuOpen] = useState(false);
-  const tableMenuRef = useRef<HTMLDivElement>(null);
+  const [tableMenuCoords, setTableMenuCoords] = useState({ top: 0, left: 0 });
+  const tableBtnRef = useRef<HTMLButtonElement>(null);
+  const tableDropdownRef = useRef<HTMLDivElement>(null);
 
-  // Close table menu on outside click
+  function openTableMenu() {
+    if (tableBtnRef.current) {
+      const r = tableBtnRef.current.getBoundingClientRect();
+      setTableMenuCoords({ top: r.bottom + 4, left: r.left });
+    }
+    setTableMenuOpen(true);
+  }
+
+  // Close table menu on outside click or scroll
   useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (tableMenuRef.current && !tableMenuRef.current.contains(e.target as Node)) {
+    function close(e: MouseEvent) {
+      if (
+        tableDropdownRef.current &&
+        !tableDropdownRef.current.contains(e.target as Node) &&
+        tableBtnRef.current &&
+        !tableBtnRef.current.contains(e.target as Node)
+      ) {
         setTableMenuOpen(false);
       }
     }
-    if (tableMenuOpen) document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
+    if (tableMenuOpen) {
+      document.addEventListener("mousedown", close);
+      document.addEventListener("scroll", () => setTableMenuOpen(false), true);
+    }
+    return () => {
+      document.removeEventListener("mousedown", close);
+      document.removeEventListener("scroll", () => setTableMenuOpen(false), true);
+    };
   }, [tableMenuOpen]);
 
   const tableActions = [
@@ -329,43 +351,6 @@ const MenuBar = memo(function MenuBar({
         >
           Σ
         </button>
-        {/* Table dropdown */}
-        <div className="relative" ref={tableMenuRef}>
-          <button
-            type="button"
-            onClick={() => setTableMenuOpen((v) => !v)}
-            className={`flex items-center gap-0.5 p-2 rounded hover:bg-accent transition-colors ${editorState.isInTable ? "bg-primary/10 text-primary" : "text-foreground"}`}
-            title="Tabela"
-          >
-            <Table2 className="h-4 w-4" />
-            <ChevronDown className="h-3 w-3" />
-          </button>
-          {tableMenuOpen && (
-            <div className="absolute left-0 top-full z-50 mt-1 w-52 rounded-lg border border-border bg-card shadow-lg py-1">
-              {tableActions.map((action, i) => {
-                if (!action.show) return null;
-                if ("divider" in action && action.divider) {
-                  return <div key={i} className="my-1 border-t border-border" />;
-                }
-                return (
-                  <button
-                    key={i}
-                    type="button"
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      action.run();
-                      setTableMenuOpen(false);
-                      onEditorActivity?.();
-                    }}
-                    className={`w-full px-3 py-1.5 text-left text-sm hover:bg-accent transition-colors ${"danger" in action && action.danger ? "text-destructive" : "text-foreground"}`}
-                  >
-                    {action.label}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
         {onUploadImage && (
           <button
             onClick={handleUploadImage}
@@ -384,11 +369,57 @@ const MenuBar = memo(function MenuBar({
           </button>
         )}
       </div>
+      {/* Table button — lives outside the scrollable area so its portal dropdown is never clipped */}
+      <div className="flex shrink-0 items-center border-l border-border pl-2">
+        <button
+          ref={tableBtnRef}
+          type="button"
+          onClick={() => (tableMenuOpen ? setTableMenuOpen(false) : openTableMenu())}
+          className={`flex items-center gap-0.5 rounded p-2 hover:bg-accent transition-colors ${editorState.isInTable ? "bg-primary/10 text-primary" : "text-foreground"}`}
+          title="Tabela"
+        >
+          <Table2 className="h-4 w-4" />
+          <ChevronDown className="h-3 w-3" />
+        </button>
+      </div>
       {rightHeaderContent && (
         <div className="flex shrink-0 items-center gap-2 pl-1 sm:pl-2">
           {rightHeaderContent}
         </div>
       )}
+      {/* Portal dropdown — rendered at document.body so overflow:hidden can't clip it */}
+      {tableMenuOpen && typeof document !== "undefined" &&
+        createPortal(
+          <div
+            ref={tableDropdownRef}
+            style={{ position: "fixed", top: tableMenuCoords.top, left: tableMenuCoords.left, zIndex: 9999 }}
+            className="w-56 rounded-lg border border-border bg-card shadow-xl py-1"
+          >
+            {tableActions.map((action, i) => {
+              if (!action.show) return null;
+              if ("divider" in action && action.divider) {
+                return <div key={i} className="my-1 border-t border-border" />;
+              }
+              return (
+                <button
+                  key={i}
+                  type="button"
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    action.run();
+                    setTableMenuOpen(false);
+                    onEditorActivity?.();
+                  }}
+                  className={`w-full px-3 py-1.5 text-left text-sm hover:bg-accent transition-colors ${"danger" in action && action.danger ? "text-destructive" : "text-foreground"}`}
+                >
+                  {action.label}
+                </button>
+              );
+            })}
+          </div>,
+          document.body
+        )
+      }
     </div>
   );
 });
