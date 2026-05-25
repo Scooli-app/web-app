@@ -2,7 +2,7 @@
 
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { DocumentCard } from "@/components/ui/document-card";
-import { DocumentFilters } from "@/components/ui/document-filters";
+import { DocumentFilters, type DocumentOriginFilter } from "@/components/ui/document-filters";
 import { DocumentsEmptyState } from "@/components/ui/documents-empty-state";
 import {
   deleteDocument,
@@ -42,6 +42,9 @@ export function DocumentsGallery() {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedType, setSelectedType] = useState<string>("all");
+  const [selectedSubject, setSelectedSubject] = useState<string>("");
+  const [selectedGrade, setSelectedGrade] = useState<string>("");
+  const [selectedOrigin, setSelectedOrigin] = useState<DocumentOriginFilter>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedDocuments, setSelectedDocuments] = useState<Set<string>>(
@@ -95,6 +98,8 @@ export function DocumentsGallery() {
           limit: pagination.limit,
           filters: {
             documentType: selectedType !== "all" ? selectedType : undefined,
+            subject: selectedSubject || undefined,
+            gradeLevel: selectedGrade || undefined,
           },
         });
 
@@ -114,7 +119,7 @@ export function DocumentsGallery() {
         initialLoadRef.current = true;
       }
     },
-    [isAuthReady, selectedType, pagination.limit]
+    [isAuthReady, selectedType, selectedSubject, selectedGrade, pagination.limit]
   );
 
   // Selection handlers - memoized
@@ -130,19 +135,27 @@ export function DocumentsGallery() {
     });
   }, []);
 
-  // Memoize filtered documents
+  // Memoize filtered documents (search + origin are client-side; type/subject/grade go to backend)
   const filteredDocuments = useMemo(() => {
-    if (!debouncedSearchQuery) {
-      return documents;
+    let result = documents;
+
+    if (debouncedSearchQuery) {
+      const query = debouncedSearchQuery.toLowerCase();
+      result = result.filter(
+        (doc) =>
+          doc.title.toLowerCase().includes(query) ||
+          doc.content.toLowerCase().includes(query)
+      );
     }
-    
-    const query = debouncedSearchQuery.toLowerCase();
-    return documents.filter(
-      (doc) =>
-        doc.title.toLowerCase().includes(query) ||
-        doc.content.toLowerCase().includes(query)
-    );
-  }, [documents, debouncedSearchQuery]);
+
+    if (selectedOrigin === "imported") {
+      result = result.filter((doc) => !!doc.originalFormat);
+    } else if (selectedOrigin === "ai") {
+      result = result.filter((doc) => !doc.originalFormat);
+    }
+
+    return result;
+  }, [documents, debouncedSearchQuery, selectedOrigin]);
 
   const handleSelectAll = useCallback(() => {
     if (selectedDocuments.size === filteredDocuments.length) {
@@ -263,7 +276,7 @@ export function DocumentsGallery() {
       isActive = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedType, isAuthReady]);
+  }, [selectedType, selectedSubject, selectedGrade, isAuthReady]);
 
   const loadMore = useCallback(() => {
     if (pagination.hasMore && !loading) {
@@ -402,6 +415,12 @@ export function DocumentsGallery() {
           selectedType={selectedType}
           onTypeChange={setSelectedType}
           documentCounts={documentCounts}
+          selectedSubject={selectedSubject}
+          onSubjectChange={setSelectedSubject}
+          selectedGrade={selectedGrade}
+          onGradeChange={setSelectedGrade}
+          selectedOrigin={selectedOrigin}
+          onOriginChange={setSelectedOrigin}
         />
 
         {/* Documents Grid */}

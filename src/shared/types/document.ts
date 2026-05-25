@@ -67,6 +67,8 @@ export interface Document {
   isPublic: boolean;
   subject: string | null;
   gradeLevel: string | null;
+  /** Non-null for imported documents (e.g. "docx", "pdf"). Null for AI-generated. */
+  originalFormat?: string | null;
   isSpecificComponent: boolean;
   rating: number;
   downloads: number;

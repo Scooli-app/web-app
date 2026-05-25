@@ -7,7 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useAppSelector } from "@/store/hooks";
 import { selectWorkspaceContext } from "@/store/workspace/selectors";
 import { Routes, type Document } from "@/shared/types";
-import { Building2, FileText, Globe2, Trash2, User } from "lucide-react";
+import { Building2, FileText, Globe2, Sparkles, Trash2, Upload, User } from "lucide-react";
 import Link from "next/link";
 import { memo, useCallback, useMemo } from "react";
 
@@ -181,6 +181,23 @@ function DocumentCardComponent({
             >
               {typeLabel}
             </Badge>
+            {document.originalFormat ? (
+              <Badge
+                title={`Importado de ${document.originalFormat.toUpperCase()}`}
+                className="shrink-0 whitespace-nowrap border border-violet-400/40 bg-violet-400/10 px-2 py-1 text-xs font-medium text-violet-700 dark:text-violet-300"
+              >
+                <Upload className="mr-1 h-3 w-3" />
+                Importado
+              </Badge>
+            ) : (
+              <Badge
+                title="Gerado por IA"
+                className="shrink-0 whitespace-nowrap border border-sky-400/30 bg-sky-400/10 px-2 py-1 text-xs font-medium text-sky-700 dark:text-sky-300"
+              >
+                <Sparkles className="mr-1 h-3 w-3" />
+                IA
+              </Badge>
+            )}
             {sharedScopes.has("community") && (
               <Badge
                 title="Partilhado na biblioteca comunitaria"
@@ -210,24 +227,20 @@ function DocumentCardComponent({
           {contentPreview}
         </p>
 
-        {document.metadata && Object.keys(document.metadata).length > 0 && (
-          <div className="mb-4 space-y-2">
-            {typeof document.metadata.subject === "string" &&
-              document.metadata.subject && (
-                <div className="flex items-center text-xs text-muted-foreground">
-                  <FileText className="mr-2 h-3 w-3 shrink-0" />
-                  <span className="shrink-0 font-medium">Disciplina:</span>
-                  <span className="ml-1 truncate">{document.metadata.subject}</span>
-                </div>
-              )}
-            {typeof document.metadata.grade === "string" &&
-              document.metadata.grade && (
-                <div className="flex items-center text-xs text-muted-foreground">
-                  <User className="mr-2 h-3 w-3 shrink-0" />
-                  <span className="shrink-0 font-medium">Ano:</span>
-                  <span className="ml-1 truncate">{document.metadata.grade}</span>
-                </div>
-              )}
+        {(document.subject || document.gradeLevel) && (
+          <div className="mb-4 space-y-1.5">
+            {document.subject && (
+              <div className="flex items-center text-xs text-muted-foreground">
+                <FileText className="mr-2 h-3 w-3 shrink-0" />
+                <span className="truncate">{document.subject}</span>
+              </div>
+            )}
+            {document.gradeLevel && (
+              <div className="flex items-center text-xs text-muted-foreground">
+                <User className="mr-2 h-3 w-3 shrink-0" />
+                <span>{document.gradeLevel}.º ano</span>
+              </div>
+            )}
           </div>
         )}
 
