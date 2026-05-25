@@ -7,6 +7,7 @@ import {
 import { ImageBlockExtension } from "@/components/editor/extensions/ImageBlockExtension";
 import { AUTO_SAVE_DELAY } from "@/shared/config/constants";
 import { htmlToMarkdown, markdownToHtml } from "@/shared/utils/markdown";
+import { TableKit } from "@tiptap/extension-table";
 import Highlight from "@tiptap/extension-highlight";
 import { Mathematics } from "@tiptap/extension-mathematics";
 import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
@@ -349,6 +350,7 @@ export function TipTapEditorCore({
   const editor = useEditor({
     extensions: [
       StarterKit,
+      TableKit,
       Highlight,
       Mathematics.configure({
         inlineOptions: { onClick: mathOnClick.current.inline },
