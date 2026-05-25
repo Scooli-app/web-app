@@ -16,6 +16,8 @@ import apiClient from "@/services/api/client";
 import { getUploadUrl, waitForDocument } from "@/services/api/document.service";
 import { selectIsCurriculumPlanEnabled } from "@/store/features/selectors";
 import { Routes, type CurriculumPlanningType } from "@/shared/types";
+import { cn } from "@/shared/utils/utils";
+import { CheckCircle2, Circle, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { useSelector } from "react-redux";
@@ -32,6 +34,52 @@ const SCHOOL_YEARS = Array.from({ length: 12 }, (_, i) => i + 1);
 
 const ACCEPTED_EXTENSIONS = [".docx", ".xlsx", ".pdf", ".txt"];
 const ACCEPT_ATTR = ACCEPTED_EXTENSIONS.join(",");
+
+type StepStatus = "pending" | "active" | "done" | "error";
+
+interface ImportStep {
+  id: string;
+  label: string;
+  status: StepStatus;
+}
+
+const INITIAL_STEPS: ImportStep[] = [
+  { id: "upload", label: "A enviar ficheiro", status: "pending" },
+  { id: "import", label: "A iniciar importação", status: "pending" },
+  { id: "normalize", label: "A normalizar com IA", status: "pending" },
+  { id: "done", label: "Concluído", status: "pending" },
+];
+
+function StepIndicatorList({ steps }: { steps: ImportStep[] }) {
+  return (
+    <div className="flex flex-col gap-4">
+      {steps.map((step) => (
+        <div key={step.id} className="flex items-center gap-3">
+          {step.status === "done" ? (
+            <CheckCircle2 className="h-5 w-5 shrink-0 text-primary" />
+          ) : step.status === "active" ? (
+            <Loader2 className="h-5 w-5 shrink-0 animate-spin text-primary" />
+          ) : step.status === "error" ? (
+            <Circle className="h-5 w-5 shrink-0 text-destructive" />
+          ) : (
+            <Circle className="h-5 w-5 shrink-0 text-muted-foreground/40" />
+          )}
+          <span
+            className={cn(
+              "text-sm",
+              step.status === "active" && "font-medium text-foreground",
+              step.status === "done" && "text-muted-foreground",
+              step.status === "pending" && "text-muted-foreground/60",
+              step.status === "error" && "text-destructive"
+            )}
+          >
+            {step.label}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 function detectFormat(filename: string): string {
   const lower = filename.toLowerCase();
@@ -63,6 +111,7 @@ export default function CurriculumPlanImportPage() {
   const [periodStart, setPeriodStart] = useState("");
   const [periodEnd, setPeriodEnd] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [steps, setSteps] = useState<ImportStep[]>(INITIAL_STEPS);
 
   useEffect(() => {
     if (!enabled) router.replace(Routes.DASHBOARD);
@@ -77,19 +126,25 @@ export default function CurriculumPlanImportPage() {
     !!subjectValue &&
     !submitting;
 
+  function setStepStatus(id: string, status: StepStatus) {
+    setSteps((prev) =>
+      prev.map((s) => (s.id === id ? { ...s, status } : s))
+    );
+  }
+
   async function handleSubmit() {
     if (!canSubmit || !file) return;
     setSubmitting(true);
+    setSteps(INITIAL_STEPS.map((s) => ({ ...s, status: "pending" as StepStatus })));
 
     try {
-      // 1. Get presigned PUT URL
+      // Step 1: Upload to R2
+      setStepStatus("upload", "active");
       const { uploadUrl, fileKey } = await getUploadUrl(
         file.name,
         detectContentType(file.name),
         "curriculumPlan"
       );
-
-      // 2. Upload directly to R2
       const putResp = await fetch(uploadUrl, {
         method: "PUT",
         headers: { "Content-Type": detectContentType(file.name) },
@@ -98,8 +153,10 @@ export default function CurriculumPlanImportPage() {
       if (!putResp.ok) {
         throw new Error("Falha ao enviar o ficheiro para o armazenamento.");
       }
+      setStepStatus("upload", "done");
 
-      // 3. Kick off backend import (normalisation)
+      // Step 2: Kick off backend import
+      setStepStatus("import", "active");
       const importResp = await apiClient.post<{
         documentId: string;
         message: string;
@@ -114,18 +171,27 @@ export default function CurriculumPlanImportPage() {
         originalFilename: file.name,
         originalFormat: detectedFormat,
       });
-
       const docId = importResp.data.documentId;
-      toast.success("A normalizar a planificação...");
+      setStepStatus("import", "done");
 
-      // 4. Wait for the async normalisation to finish, then open the editor.
+      // Step 3: Wait for AI normalisation
+      setStepStatus("normalize", "active");
       await waitForDocument(docId);
+      setStepStatus("normalize", "done");
+
+      // Step 4: Done — brief pause then redirect
+      setStepStatus("done", "done");
+      await new Promise((resolve) => setTimeout(resolve, 600));
       router.push(`/lesson-plan/${docId}`);
     } catch (err) {
       const message =
         err instanceof Error
           ? err.message
           : "Não foi possível importar a planificação.";
+      // Mark the currently-active step as errored
+      setSteps((prev) =>
+        prev.map((s) => (s.status === "active" ? { ...s, status: "error" } : s))
+      );
       toast.error(message);
       setSubmitting(false);
     }
@@ -145,123 +211,137 @@ export default function CurriculumPlanImportPage() {
         </p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Ficheiro e metadados</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="file">Ficheiro</Label>
-            <Input
-              id="file"
-              type="file"
-              accept={ACCEPT_ATTR}
-              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-            />
-            {file && !detectedFormat && (
-              <p className="text-sm text-destructive">
-                Formato não suportado. Usa DOCX, XLSX, PDF ou TXT.
+      {submitting ? (
+        <Card>
+          <CardContent className="flex flex-col items-center gap-8 py-12">
+            <div className="text-center">
+              <p className="text-base font-medium">A importar a tua planificação…</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Isto pode demorar até um minuto.
               </p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="title">Título da planificação</Label>
-            <Input
-              id="title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Ex: Planificação Trimestral Matemática 5.º ano"
-            />
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
+            </div>
+            <StepIndicatorList steps={steps} />
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle>Ficheiro e metadados</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="subject">Disciplina</Label>
-              <Select value={subjectValue} onValueChange={setSubjectValue}>
-                <SelectTrigger id="subject">
-                  <SelectValue placeholder="Seleciona" />
-                </SelectTrigger>
-                <SelectContent>
-                  {SUBJECTS.map((s) => (
-                    <SelectItem key={s.id} value={s.value}>
-                      {s.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label htmlFor="file">Ficheiro</Label>
+              <Input
+                id="file"
+                type="file"
+                accept={ACCEPT_ATTR}
+                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+              />
+              {file && !detectedFormat && (
+                <p className="text-sm text-destructive">
+                  Formato não suportado. Usa DOCX, XLSX, PDF ou TXT.
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="schoolYear">Ano de escolaridade</Label>
+              <Label htmlFor="title">Título da planificação</Label>
+              <Input
+                id="title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Ex: Planificação Trimestral Matemática 5.º ano"
+              />
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="subject">Disciplina</Label>
+                <Select value={subjectValue} onValueChange={setSubjectValue}>
+                  <SelectTrigger id="subject">
+                    <SelectValue placeholder="Seleciona" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SUBJECTS.map((s) => (
+                      <SelectItem key={s.id} value={s.value}>
+                        {s.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="schoolYear">Ano de escolaridade</Label>
+                <Select
+                  value={String(schoolYear)}
+                  onValueChange={(v) => setSchoolYear(Number(v))}
+                >
+                  <SelectTrigger id="schoolYear">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SCHOOL_YEARS.map((y) => (
+                      <SelectItem key={y} value={String(y)}>
+                        {y}.º ano
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="planningType">Tipo de período</Label>
               <Select
-                value={String(schoolYear)}
-                onValueChange={(v) => setSchoolYear(Number(v))}
+                value={planningType}
+                onValueChange={(v) => setPlanningType(v as CurriculumPlanningType)}
               >
-                <SelectTrigger id="schoolYear">
+                <SelectTrigger id="planningType">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {SCHOOL_YEARS.map((y) => (
-                    <SelectItem key={y} value={String(y)}>
-                      {y}.º ano
+                  {PLANNING_TYPES.map((t) => (
+                    <SelectItem key={t.value} value={t.value}>
+                      {t.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-          </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="planningType">Tipo de período</Label>
-            <Select
-              value={planningType}
-              onValueChange={(v) => setPlanningType(v as CurriculumPlanningType)}
-            >
-              <SelectTrigger id="planningType">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {PLANNING_TYPES.map((t) => (
-                  <SelectItem key={t.value} value={t.value}>
-                    {t.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="periodStart">Início (opcional)</Label>
-              <Input
-                id="periodStart"
-                type="date"
-                value={periodStart}
-                onChange={(e) => setPeriodStart(e.target.value)}
-              />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="periodStart">Início (opcional)</Label>
+                <Input
+                  id="periodStart"
+                  type="date"
+                  value={periodStart}
+                  onChange={(e) => setPeriodStart(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="periodEnd">Fim (opcional)</Label>
+                <Input
+                  id="periodEnd"
+                  type="date"
+                  value={periodEnd}
+                  onChange={(e) => setPeriodEnd(e.target.value)}
+                />
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="periodEnd">Fim (opcional)</Label>
-              <Input
-                id="periodEnd"
-                type="date"
-                value={periodEnd}
-                onChange={(e) => setPeriodEnd(e.target.value)}
-              />
-            </div>
-          </div>
 
-          <div className="flex justify-end gap-2 pt-2">
-            <Button variant="outline" onClick={() => router.back()}>
-              Cancelar
-            </Button>
-            <Button onClick={handleSubmit} disabled={!canSubmit}>
-              {submitting ? "A importar..." : "Importar"}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => router.back()}>
+                Cancelar
+              </Button>
+              <Button onClick={handleSubmit} disabled={!canSubmit}>
+                Importar
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
