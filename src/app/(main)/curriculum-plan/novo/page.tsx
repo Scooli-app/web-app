@@ -71,6 +71,28 @@ const STEPS = [
 
 type StepId = (typeof STEPS)[number]["id"];
 
+// ─── School year configuration (easily adjustable) ───────────────────────────
+
+// The Portuguese school year runs Sep 1 → Jun 30. Update these each year.
+const SCHOOL_YEAR_START_MONTH = 9; // September (1-based)
+const SCHOOL_YEAR_START_DAY = 1;
+const SCHOOL_YEAR_END_MONTH = 6; // June (1-based)
+const SCHOOL_YEAR_END_DAY = 30;
+
+function schoolYearEnd(forDate: Date): Date {
+  // Returns the end of the school year that contains forDate.
+  // If we are before the start month, the school year ended last June.
+  const y = forDate.getFullYear();
+  const m = forDate.getMonth() + 1; // 1-based
+  const endYear = m >= SCHOOL_YEAR_START_MONTH ? y + 1 : y;
+  return new Date(endYear, SCHOOL_YEAR_END_MONTH - 1, SCHOOL_YEAR_END_DAY);
+}
+
+function capToSchoolYearEnd(d: Date, ref: Date): Date {
+  const end = schoolYearEnd(ref);
+  return d > end ? end : d;
+}
+
 // ─── Presets ──────────────────────────────────────────────────────────────────
 
 interface Preset {
@@ -92,6 +114,11 @@ function addDays(d: Date, n: number): Date {
 function buildPresets(): Preset[] {
   const today = new Date();
   const year = today.getFullYear();
+  // Determine school year labels: if Sep–Dec, it's year/year+1; otherwise year-1/year.
+  const m = today.getMonth() + 1;
+  const syStart = m >= SCHOOL_YEAR_START_MONTH ? year : year - 1;
+  const syEnd = syStart + 1;
+  const syEndDate = new Date(syEnd, SCHOOL_YEAR_END_MONTH - 1, SCHOOL_YEAR_END_DAY);
 
   return [
     {
@@ -99,7 +126,7 @@ function buildPresets(): Preset[] {
       planningType: "custom",
       getRange: () => ({
         start: toISO(today),
-        end: toISO(addDays(today, 14)),
+        end: toISO(capToSchoolYearEnd(addDays(today, 14), today)),
       }),
     },
     {
@@ -108,7 +135,7 @@ function buildPresets(): Preset[] {
       getRange: () => {
         const end = new Date(today);
         end.setMonth(end.getMonth() + 2);
-        return { start: toISO(today), end: toISO(end) };
+        return { start: toISO(today), end: toISO(capToSchoolYearEnd(end, today)) };
       },
     },
     {
@@ -117,7 +144,7 @@ function buildPresets(): Preset[] {
       getRange: () => {
         const end = new Date(today);
         end.setMonth(end.getMonth() + 3);
-        return { start: toISO(today), end: toISO(end) };
+        return { start: toISO(today), end: toISO(capToSchoolYearEnd(end, today)) };
       },
     },
     {
@@ -126,23 +153,15 @@ function buildPresets(): Preset[] {
       getRange: () => {
         const end = new Date(today);
         end.setMonth(end.getMonth() + 6);
-        return { start: toISO(today), end: toISO(end) };
+        return { start: toISO(today), end: toISO(capToSchoolYearEnd(end, today)) };
       },
     },
     {
-      label: `Ano ${year}`,
+      label: `Ano letivo ${syStart}/${syEnd}`,
       planningType: "annual",
       getRange: () => ({
-        start: `${year}-01-01`,
-        end: `${year}-12-31`,
-      }),
-    },
-    {
-      label: `Ano letivo ${year}/${year + 1}`,
-      planningType: "annual",
-      getRange: () => ({
-        start: `${year}-09-01`,
-        end: `${year + 1}-06-30`,
+        start: `${syStart}-${String(SCHOOL_YEAR_START_MONTH).padStart(2, "0")}-${String(SCHOOL_YEAR_START_DAY).padStart(2, "0")}`,
+        end: toISO(syEndDate),
       }),
     },
   ];
@@ -201,7 +220,13 @@ function buildPrompt(p: {
 
 // ─── Step indicator ───────────────────────────────────────────────────────────
 
-function StepIndicator({ current }: { current: StepId }) {
+function StepIndicator({
+  current,
+  onNavigate,
+}: {
+  current: StepId;
+  onNavigate: (step: StepId) => void;
+}) {
   const currentIdx = STEPS.findIndex((s) => s.id === current);
   return (
     <div className="flex items-center gap-0">
@@ -209,28 +234,35 @@ function StepIndicator({ current }: { current: StepId }) {
         const Icon = step.icon;
         const done = idx < currentIdx;
         const active = idx === currentIdx;
+        const clickable = done; // only allow going back to completed steps
         return (
           <div key={step.id} className="flex items-center">
-            <div
+            <button
+              type="button"
+              disabled={!clickable}
+              onClick={() => clickable && onNavigate(step.id)}
               className={cn(
                 "flex h-9 w-9 items-center justify-center rounded-full border-2 transition-colors",
                 active && "border-primary bg-primary text-primary-foreground",
-                done && "border-primary bg-primary/10 text-primary",
-                !active && !done && "border-muted-foreground/30 text-muted-foreground/50"
+                done && "border-primary bg-primary/10 text-primary hover:bg-primary/20 cursor-pointer",
+                !active && !done && "border-muted-foreground/30 text-muted-foreground/50 cursor-default"
               )}
             >
               <Icon className="h-4 w-4" />
-            </div>
-            <span
+            </button>
+            <button
+              type="button"
+              disabled={!clickable}
+              onClick={() => clickable && onNavigate(step.id)}
               className={cn(
-                "ml-2 hidden text-sm font-medium sm:inline",
-                active && "text-foreground",
-                done && "text-primary",
-                !active && !done && "text-muted-foreground/50"
+                "ml-2 hidden text-sm font-medium sm:inline transition-colors",
+                active && "text-foreground cursor-default",
+                done && "text-primary hover:text-primary/80 cursor-pointer",
+                !active && !done && "text-muted-foreground/50 cursor-default"
               )}
             >
               {step.label}
-            </span>
+            </button>
             {idx < STEPS.length - 1 && (
               <div
                 className={cn(
@@ -459,7 +491,7 @@ export default function CurriculumPlanNewPage() {
       </div>
 
       {/* Step indicator */}
-      <StepIndicator current={step} />
+      <StepIndicator current={step} onNavigate={setStep} />
 
       {/* Step content */}
       <Card>
