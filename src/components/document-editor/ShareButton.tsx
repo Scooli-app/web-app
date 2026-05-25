@@ -10,6 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { UpgradeLimitError } from "@/services/api/client";
 import type { ShareResourceRequest } from "@/services/api/community.service";
 import type {
   DocumentSharedScope,
@@ -144,7 +145,9 @@ function ShareButtonComponent({
           toast.success("Recurso submetido para revisão! Receberá notificação em 24-48h.");
         }
       } catch (error) {
-        posthog.captureException(error);
+        if (!(error instanceof UpgradeLimitError)) {
+          posthog.captureException(error);
+        }
         toast.error(
           error instanceof Error ? error.message : "Erro ao partilhar recurso"
         );
@@ -180,7 +183,9 @@ function ShareButtonComponent({
       });
       toast.success("Recurso removido das bibliotecas.");
     } catch (error) {
-      posthog.captureException(error);
+      if (!(error instanceof UpgradeLimitError)) {
+        posthog.captureException(error);
+      }
       toast.error(
         error instanceof Error
           ? error.message

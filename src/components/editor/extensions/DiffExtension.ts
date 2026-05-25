@@ -77,8 +77,6 @@ function buildDecorations(
           }
           return true; // descend into wrapper nodes (e.g. list, blockquote)
         });
-
-        console.warn(`[DIFF] buildDecorations: change ${change.id} type=${change.type} from=${from} to=${to} docSize=${docSize} inlineDecos=${inlineCount}`);
       }
     }
 
@@ -103,7 +101,6 @@ function buildDecorations(
     );
   }
 
-  console.warn(`[DIFF] buildDecorations total: ${decorations.length} decorations for ${changes.length} changes`);
   return DecorationSet.create(state.doc, decorations);
 }
 
@@ -356,28 +353,33 @@ export const DiffExtension = Extension.create({
 
       acceptAllChanges:
         () =>
-        ({ chain }) => {
-          return chain()
-            .setMeta(CLEAR_META, true)
-            .run();
+        ({ tr, dispatch }) => {
+          if (dispatch) {
+            tr.setMeta(CLEAR_META, true);
+            dispatch(tr);
+          }
+          return true;
         },
 
       rejectAllChanges:
         () =>
-        ({ editor, chain }) => {
+        ({ editor, tr, dispatch }) => {
           const storage = (editor.storage as unknown as Record<string, { originalContent?: string | null }>).diff;
           const originalContent = storage?.originalContent;
 
-          if (originalContent) {
-            return chain()
-              .setMeta(CLEAR_META, true)
-              .setContent(originalContent, { emitUpdate: false })
-              .run();
+          if (dispatch) {
+            tr.setMeta(CLEAR_META, true);
+            dispatch(tr);
           }
 
-          return chain()
-            .setMeta(CLEAR_META, true)
-            .run();
+          // Restore original content in a separate command so it uses a fresh
+          // transaction built from the post-clear state, avoiding a mismatched
+          // transaction on devices where React re-renders between dispatches.
+          if (originalContent) {
+            editor.commands.setContent(originalContent, { emitUpdate: false });
+          }
+
+          return true;
         },
     };
   },

@@ -5,6 +5,7 @@ import { deleteDocumentImage, regenerateDocumentImage } from "@/store/documents/
 import { selectIsPro } from "@/store/subscription/selectors";
 import { useCallback, useEffect, useState } from "react";
 import posthog from "posthog-js";
+import { UpgradeLimitError } from "@/services/api/client";
 import { toast } from "sonner";
 import { cn } from "@/shared/utils/utils";
 
@@ -180,7 +181,9 @@ export default function ImageBlockNodeView({ node, deleteNode, editor, getPos, u
         toast.success("Imagem removida com sucesso");
       } catch (error) {
         posthog.capture("document_image_delete_failed", imageEventProps);
-        posthog.captureException(error);
+        if (!(error instanceof UpgradeLimitError)) {
+          posthog.captureException(error);
+        }
         restoreNode();
         toast.error("Erro ao remover a imagem. A imagem foi restaurada.");
       }
@@ -230,7 +233,9 @@ export default function ImageBlockNodeView({ node, deleteNode, editor, getPos, u
       toast.success("A gerar nova versao da imagem...");
     } catch (error) {
       posthog.capture("document_image_regeneration_failed", imageEventProps);
-      posthog.captureException(error);
+      if (!(error instanceof UpgradeLimitError)) {
+        posthog.captureException(error);
+      }
       toast.error("Erro ao regenerar a imagem");
     }
   }, [currentDocument, imageEventProps, imageId, dispatch, isCurrentImageGenerating, isPremium, isUserUploadedImage]);

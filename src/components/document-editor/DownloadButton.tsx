@@ -7,6 +7,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { UpgradeLimitError } from "@/services/api/client";
 import { downloadDocument, type DownloadFormat } from "@/services/download/documentDownload";
 import { Routes } from "@/shared/types";
 import type { DocumentImage } from "@/shared/types/document";
@@ -54,7 +55,9 @@ function DownloadButtonComponent({
         });
       } catch (error) {
         console.error(`Failed to download as ${format}:`, error);
-        posthog.captureException(error);
+        if (!(error instanceof UpgradeLimitError)) {
+          posthog.captureException(error);
+        }
       } finally {
         setIsDownloading(false);
         setDownloadFormat(null);
