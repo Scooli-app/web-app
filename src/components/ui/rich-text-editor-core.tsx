@@ -18,7 +18,7 @@ import {
   type Editor,
 } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { ImagePlus, Loader2 } from "lucide-react";
+import { ImagePlus, Loader2, Table2, ChevronDown } from "lucide-react";
 import {
   memo,
   useCallback,
@@ -80,6 +80,7 @@ const MenuBar = memo(function MenuBar({
       isCodeBlock: ctx.editor.isActive("codeBlock"),
       isMath:
         ctx.editor.isActive("inlineMath") || ctx.editor.isActive("blockMath"),
+      isInTable: ctx.editor.isActive("table"),
     }),
   });
 
@@ -160,6 +161,78 @@ const MenuBar = memo(function MenuBar({
     onEditorActivity?.();
     onUploadImage?.();
   }, [onEditorActivity, onUploadImage]);
+
+  const [tableMenuOpen, setTableMenuOpen] = useState(false);
+  const tableMenuRef = useRef<HTMLDivElement>(null);
+
+  // Close table menu on outside click
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (tableMenuRef.current && !tableMenuRef.current.contains(e.target as Node)) {
+        setTableMenuOpen(false);
+      }
+    }
+    if (tableMenuOpen) document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [tableMenuOpen]);
+
+  const tableActions = [
+    {
+      label: "Inserir tabela (3×3)",
+      run: () => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run(),
+      show: true,
+    },
+    {
+      label: "—",
+      run: () => {},
+      show: editorState.isInTable,
+      divider: true,
+    },
+    {
+      label: "Adicionar linha acima",
+      run: () => editor.chain().focus().addRowBefore().run(),
+      show: editorState.isInTable,
+    },
+    {
+      label: "Adicionar linha abaixo",
+      run: () => editor.chain().focus().addRowAfter().run(),
+      show: editorState.isInTable,
+    },
+    {
+      label: "Eliminar linha",
+      run: () => editor.chain().focus().deleteRow().run(),
+      show: editorState.isInTable,
+      danger: true,
+    },
+    {
+      label: "Adicionar coluna à esquerda",
+      run: () => editor.chain().focus().addColumnBefore().run(),
+      show: editorState.isInTable,
+    },
+    {
+      label: "Adicionar coluna à direita",
+      run: () => editor.chain().focus().addColumnAfter().run(),
+      show: editorState.isInTable,
+    },
+    {
+      label: "Eliminar coluna",
+      run: () => editor.chain().focus().deleteColumn().run(),
+      show: editorState.isInTable,
+      danger: true,
+    },
+    {
+      label: "—",
+      run: () => {},
+      show: editorState.isInTable,
+      divider: true,
+    },
+    {
+      label: "Eliminar tabela",
+      run: () => editor.chain().focus().deleteTable().run(),
+      show: editorState.isInTable,
+      danger: true,
+    },
+  ] as const;
 
   return (
     <div className="sticky top-0 z-10 flex w-full items-center gap-2 overflow-hidden rounded-t-xl border-b border-border bg-card p-2">
@@ -256,6 +329,43 @@ const MenuBar = memo(function MenuBar({
         >
           Σ
         </button>
+        {/* Table dropdown */}
+        <div className="relative" ref={tableMenuRef}>
+          <button
+            type="button"
+            onClick={() => setTableMenuOpen((v) => !v)}
+            className={`flex items-center gap-0.5 p-2 rounded hover:bg-accent transition-colors ${editorState.isInTable ? "bg-primary/10 text-primary" : "text-foreground"}`}
+            title="Tabela"
+          >
+            <Table2 className="h-4 w-4" />
+            <ChevronDown className="h-3 w-3" />
+          </button>
+          {tableMenuOpen && (
+            <div className="absolute left-0 top-full z-50 mt-1 w-52 rounded-lg border border-border bg-card shadow-lg py-1">
+              {tableActions.map((action, i) => {
+                if (!action.show) return null;
+                if ("divider" in action && action.divider) {
+                  return <div key={i} className="my-1 border-t border-border" />;
+                }
+                return (
+                  <button
+                    key={i}
+                    type="button"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      action.run();
+                      setTableMenuOpen(false);
+                      onEditorActivity?.();
+                    }}
+                    className={`w-full px-3 py-1.5 text-left text-sm hover:bg-accent transition-colors ${"danger" in action && action.danger ? "text-destructive" : "text-foreground"}`}
+                  >
+                    {action.label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
         {onUploadImage && (
           <button
             onClick={handleUploadImage}
