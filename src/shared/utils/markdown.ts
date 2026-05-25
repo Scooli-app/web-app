@@ -411,7 +411,7 @@ function ensureMarkdownTableSeparators(md: string): string {
     // If this is a table row, the next line is also a table row, but NOT a separator → insert one.
     if (isTableRow(lines[i]) && isTableRow(next) && !isSeparatorRow(next)) {
       const cols = lines[i].split("|").length - 2;
-      out.push("|" + Array(Math.max(cols, 1)).fill(" --- ").join("|") + "|");
+      out.push(`|${Array(Math.max(cols, 1)).fill(" --- ").join("|")}|`);
     }
   }
   return out.join("\n");

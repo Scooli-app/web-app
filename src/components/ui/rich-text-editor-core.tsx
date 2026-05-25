@@ -538,22 +538,6 @@ export function TipTapEditorCore({
     setTableCtx({ x: safeX, y });
   }
 
-  type CtxAction =
-    | { divider: true }
-    | { label: string; icon: React.ElementType; run: () => void; destructive?: boolean };
-
-  const tableCtxActions: CtxAction[] = [
-    { label: "Inserir linha acima",       icon: ArrowUpToLine,    run: () => editor!.chain().focus().addRowBefore().run() },
-    { label: "Inserir linha abaixo",      icon: ArrowDownToLine,  run: () => editor!.chain().focus().addRowAfter().run() },
-    { label: "Eliminar linha",            icon: Rows2,            run: () => editor!.chain().focus().deleteRow().run() },
-    { divider: true },
-    { label: "Inserir coluna à esquerda", icon: ArrowLeftToLine,  run: () => editor!.chain().focus().addColumnBefore().run() },
-    { label: "Inserir coluna à direita",  icon: ArrowRightToLine, run: () => editor!.chain().focus().addColumnAfter().run() },
-    { label: "Eliminar coluna",           icon: Columns2,         run: () => editor!.chain().focus().deleteColumn().run() },
-    { divider: true },
-    { label: "Eliminar tabela",           icon: Trash2,           run: () => editor!.chain().focus().deleteTable().run(), destructive: true },
-  ];
-
   if (!editor) {
     return (
       <div className="border border-border rounded-xl bg-card w-full">
@@ -563,6 +547,23 @@ export function TipTapEditorCore({
       </div>
     );
   }
+
+  // Defined after the !editor guard so `editor` is non-null throughout.
+  type CtxAction =
+    | { divider: true }
+    | { label: string; icon: React.ElementType; run: () => void; destructive?: boolean };
+
+  const tableCtxActions: CtxAction[] = [
+    { label: "Inserir linha acima",       icon: ArrowUpToLine,    run: () => editor.chain().focus().addRowBefore().run() },
+    { label: "Inserir linha abaixo",      icon: ArrowDownToLine,  run: () => editor.chain().focus().addRowAfter().run() },
+    { label: "Eliminar linha",            icon: Rows2,            run: () => editor.chain().focus().deleteRow().run() },
+    { divider: true },
+    { label: "Inserir coluna à esquerda", icon: ArrowLeftToLine,  run: () => editor.chain().focus().addColumnBefore().run() },
+    { label: "Inserir coluna à direita",  icon: ArrowRightToLine, run: () => editor.chain().focus().addColumnAfter().run() },
+    { label: "Eliminar coluna",           icon: Columns2,         run: () => editor.chain().focus().deleteColumn().run() },
+    { divider: true },
+    { label: "Eliminar tabela",           icon: Trash2,           run: () => editor.chain().focus().deleteTable().run(), destructive: true },
+  ];
 
   return (
     <div className="relative w-full">
@@ -615,7 +616,6 @@ export function TipTapEditorCore({
           className="hidden"
           onChange={handleImageFileChange}
         />
-        {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
         <div
           className="p-2 sm:p-4"
           onContextMenu={handleContextMenu}

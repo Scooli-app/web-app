@@ -79,20 +79,6 @@ const SCHOOL_YEAR_START_DAY = 1;
 const SCHOOL_YEAR_END_MONTH = 6; // June (1-based)
 const SCHOOL_YEAR_END_DAY = 30;
 
-function schoolYearEnd(forDate: Date): Date {
-  // Returns the end of the school year that contains forDate.
-  // If we are before the start month, the school year ended last June.
-  const y = forDate.getFullYear();
-  const m = forDate.getMonth() + 1; // 1-based
-  const endYear = m >= SCHOOL_YEAR_START_MONTH ? y + 1 : y;
-  return new Date(endYear, SCHOOL_YEAR_END_MONTH - 1, SCHOOL_YEAR_END_DAY);
-}
-
-function capToSchoolYearEnd(d: Date, ref: Date): Date {
-  const end = schoolYearEnd(ref);
-  return d > end ? end : d;
-}
-
 // ─── Presets ──────────────────────────────────────────────────────────────────
 
 interface Preset {
