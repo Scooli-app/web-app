@@ -18,7 +18,18 @@ import {
   type Editor,
 } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { ImagePlus, Loader2, Table2 } from "lucide-react";
+import {
+  ArrowDownToLine,
+  ArrowLeftToLine,
+  ArrowRightToLine,
+  ArrowUpToLine,
+  Columns2,
+  ImagePlus,
+  Loader2,
+  Rows2,
+  Table2,
+  Trash2,
+} from "lucide-react";
 import {
   memo,
   useCallback,
@@ -27,6 +38,7 @@ import {
   useState,
   type ChangeEvent,
   type KeyboardEvent,
+  type TouchEvent,
 } from "react";
 import { createPortal } from "react-dom";
 
@@ -497,19 +509,49 @@ export function TipTapEditorCore({
     const target = e.target as HTMLElement;
     if (!target.closest("td, th")) return;
     e.preventDefault();
-    setTableCtx({ x: e.clientX, y: e.clientY });
+    showTableCtx(e.clientX, e.clientY);
   }
 
-  const tableCtxActions: { label: string; run: () => void; danger?: boolean; divider?: true }[] = [
-    { label: "Adicionar linha acima",     run: () => editor!.chain().focus().addRowBefore().run() },
-    { label: "Adicionar linha abaixo",    run: () => editor!.chain().focus().addRowAfter().run() },
-    { label: "Eliminar linha",            run: () => editor!.chain().focus().deleteRow().run(), danger: true },
-    { divider: true, label: "", run: () => {} },
-    { label: "Adicionar coluna à esquerda", run: () => editor!.chain().focus().addColumnBefore().run() },
-    { label: "Adicionar coluna à direita",  run: () => editor!.chain().focus().addColumnAfter().run() },
-    { label: "Eliminar coluna",           run: () => editor!.chain().focus().deleteColumn().run(), danger: true },
-    { divider: true, label: "", run: () => {} },
-    { label: "Eliminar tabela",           run: () => editor!.chain().focus().deleteTable().run(), danger: true },
+  // Long-press for touch screens (500 ms hold on a table cell)
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressPos = useRef<{ x: number; y: number } | null>(null);
+
+  function handleTouchStart(e: TouchEvent<HTMLDivElement>) {
+    const target = e.target as HTMLElement;
+    if (!target.closest("td, th")) return;
+    const touch = e.touches[0];
+    longPressPos.current = { x: touch.clientX, y: touch.clientY };
+    longPressTimer.current = setTimeout(() => {
+      if (longPressPos.current) showTableCtx(longPressPos.current.x, longPressPos.current.y);
+    }, 500);
+  }
+
+  function handleTouchEnd() {
+    if (longPressTimer.current) clearTimeout(longPressTimer.current);
+    longPressPos.current = null;
+  }
+
+  function showTableCtx(x: number, y: number) {
+    // Keep menu inside viewport horizontally
+    const menuWidth = 224;
+    const safeX = x + menuWidth > window.innerWidth ? window.innerWidth - menuWidth - 8 : x;
+    setTableCtx({ x: safeX, y });
+  }
+
+  type CtxAction =
+    | { divider: true }
+    | { label: string; icon: React.ElementType; run: () => void; destructive?: boolean };
+
+  const tableCtxActions: CtxAction[] = [
+    { label: "Inserir linha acima",       icon: ArrowUpToLine,    run: () => editor!.chain().focus().addRowBefore().run() },
+    { label: "Inserir linha abaixo",      icon: ArrowDownToLine,  run: () => editor!.chain().focus().addRowAfter().run() },
+    { label: "Eliminar linha",            icon: Rows2,            run: () => editor!.chain().focus().deleteRow().run() },
+    { divider: true },
+    { label: "Inserir coluna à esquerda", icon: ArrowLeftToLine,  run: () => editor!.chain().focus().addColumnBefore().run() },
+    { label: "Inserir coluna à direita",  icon: ArrowRightToLine, run: () => editor!.chain().focus().addColumnAfter().run() },
+    { label: "Eliminar coluna",           icon: Columns2,         run: () => editor!.chain().focus().deleteColumn().run() },
+    { divider: true },
+    { label: "Eliminar tabela",           icon: Trash2,           run: () => editor!.chain().focus().deleteTable().run(), destructive: true },
   ];
 
   if (!editor) {
@@ -574,22 +616,30 @@ export function TipTapEditorCore({
           onChange={handleImageFileChange}
         />
         {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
-        <div className="p-2 sm:p-4" onContextMenu={handleContextMenu}>
+        <div
+          className="p-2 sm:p-4"
+          onContextMenu={handleContextMenu}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+          onTouchMove={handleTouchEnd}
+        >
           <EditorContent editor={editor} />
         </div>
       </div>
-      {/* Table right-click context menu portal */}
+      {/* Table context menu portal */}
       {tableCtx && typeof document !== "undefined" &&
         createPortal(
           <div
             ref={tableCtxRef}
             style={{ position: "fixed", top: tableCtx.y, left: tableCtx.x, zIndex: 9999 }}
-            className="w-52 rounded-lg border border-border bg-card py-1 shadow-xl"
+            className="w-56 rounded-lg border border-border bg-card py-1 shadow-xl"
           >
-            {tableCtxActions.map((action, i) =>
-              action.divider ? (
-                <div key={i} className="my-1 border-t border-border" />
-              ) : (
+            {tableCtxActions.map((action, i) => {
+              if ("divider" in action) {
+                return <div key={i} className="my-1 border-t border-border" />;
+              }
+              const Icon = action.icon;
+              return (
                 <button
                   key={i}
                   type="button"
@@ -598,12 +648,13 @@ export function TipTapEditorCore({
                     action.run();
                     setTableCtx(null);
                   }}
-                  className={`w-full px-3 py-1.5 text-left text-sm transition-colors hover:bg-accent ${action.danger ? "text-destructive" : "text-foreground"}`}
+                  className={`flex w-full items-center gap-2.5 px-3 py-1.5 text-left text-sm transition-colors hover:bg-accent ${action.destructive ? "text-destructive hover:text-destructive" : "text-foreground"}`}
                 >
+                  <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                   {action.label}
                 </button>
-              )
-            )}
+              );
+            })}
           </div>,
           document.body
         )
