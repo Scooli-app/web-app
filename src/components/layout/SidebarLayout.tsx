@@ -154,7 +154,7 @@ const CONTENT_CREATION: NavItem[] = [
     description: "Criar e editar apresentações",
   },
   {
-    title: "Planificações Macro",
+    title: "Planificações",
     href: Routes.CURRICULUM_PLAN,
     icon: CalendarDays,
     description: "Planificações curriculares de período",

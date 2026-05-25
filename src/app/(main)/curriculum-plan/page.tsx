@@ -28,7 +28,7 @@ export default function CurriculumPlanLandingPage() {
         <CalendarDays className="h-8 w-8 text-primary" />
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
-            Planificações Macro
+            Planificações
           </h1>
           <p className="text-muted-foreground">
             Cria ou importa uma planificação curricular para um período letivo

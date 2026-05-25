@@ -96,7 +96,7 @@ const FEATURE_FLAG_METADATA: Record<
     order: 40,
   },
   [FeatureFlagKey.CURRICULUM_PLAN_ENABLED]: {
-    name: "Planificações Macro",
+    name: "Planificações",
     description:
       "Controla a criação e importação de planificações curriculares de período. Disponível nos planos Pro e Institucional.",
     order: 45,

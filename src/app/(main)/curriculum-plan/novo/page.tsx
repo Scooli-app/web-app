@@ -120,14 +120,13 @@ function buildPresets(): Preset[] {
   const syEnd = syStart + 1;
   const syEndDate = new Date(syEnd, SCHOOL_YEAR_END_MONTH - 1, SCHOOL_YEAR_END_DAY);
 
-  return [
+  // Relative presets use their natural duration — no school-year cap — so they
+  // never collapse to the same date and multiple can't be "active" at once.
+  const raw: Preset[] = [
     {
       label: "Próximas 2 semanas",
       planningType: "custom",
-      getRange: () => ({
-        start: toISO(today),
-        end: toISO(capToSchoolYearEnd(addDays(today, 14), today)),
-      }),
+      getRange: () => ({ start: toISO(today), end: toISO(addDays(today, 14)) }),
     },
     {
       label: "Próximos 2 meses",
@@ -135,7 +134,7 @@ function buildPresets(): Preset[] {
       getRange: () => {
         const end = new Date(today);
         end.setMonth(end.getMonth() + 2);
-        return { start: toISO(today), end: toISO(capToSchoolYearEnd(end, today)) };
+        return { start: toISO(today), end: toISO(end) };
       },
     },
     {
@@ -144,7 +143,7 @@ function buildPresets(): Preset[] {
       getRange: () => {
         const end = new Date(today);
         end.setMonth(end.getMonth() + 3);
-        return { start: toISO(today), end: toISO(capToSchoolYearEnd(end, today)) };
+        return { start: toISO(today), end: toISO(end) };
       },
     },
     {
@@ -153,7 +152,7 @@ function buildPresets(): Preset[] {
       getRange: () => {
         const end = new Date(today);
         end.setMonth(end.getMonth() + 6);
-        return { start: toISO(today), end: toISO(capToSchoolYearEnd(end, today)) };
+        return { start: toISO(today), end: toISO(end) };
       },
     },
     {
@@ -165,6 +164,7 @@ function buildPresets(): Preset[] {
       }),
     },
   ];
+  return raw;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -210,7 +210,7 @@ function buildPrompt(p: {
   totalLessons: number;
 }) {
   return (
-    `Planificação macro ${planningTypeLabel(p.planningType).toLowerCase()} de ${p.subjectLabel} para o ` +
+    `Planificação ${planningTypeLabel(p.planningType).toLowerCase()} de ${p.subjectLabel} para o ` +
     `${p.schoolYear}.º ano, de ${p.periodStart} a ${p.periodEnd}, com cerca de ` +
     `${p.lessonsPerWeek} aulas por semana (${p.totalLessons} aulas totais estimadas). ` +
     "Gera as 7 secções canónicas (Identificação, Perfil do Aluno, AEs, Calendarização, " +
@@ -484,7 +484,7 @@ export default function CurriculumPlanNewPage() {
     <div className="mx-auto w-full max-w-3xl space-y-8 px-4 py-8">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Nova planificação macro</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Nova planificação</h1>
         <p className="text-muted-foreground">
           A IA gera as 7 secções canónicas. Pode editar tudo depois.
         </p>
