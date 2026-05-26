@@ -1,6 +1,5 @@
 import * as showdown from "showdown";
 
-// Configure showdown converter with appropriate options for TipTap
 const converterOptions: showdown.ConverterOptions = {
   headerLevelStart: 1,
   simplifiedAutoLink: true,
@@ -23,13 +22,11 @@ const converterOptions: showdown.ConverterOptions = {
   splitAdjacentBlockquotes: false,
 };
 
-// Create showdown converter instance
 const converter = new showdown.Converter(converterOptions);
 const MARKDOWN_CODE_FENCE_PATTERN = /```[\s\S]*?```/g;
 const MCQ_OPTION_LINE_PATTERN = /^\s*\([A-Ea-e]\)\s/;
 const HTML_PRE_BLOCK_PATTERN = /<pre[\s\S]*?<\/pre>/gi;
 const HTML_IMAGE_TAG_PATTERN = /<img\b[^>]*>/gi;
-// Math protection patterns
 const MARKDOWN_BLOCK_MATH_PATTERN = /\$\$([^$]+)\$\$/g;
 const MARKDOWN_INLINE_MATH_PATTERN = /(?<!\$)\$([^$\n]+)\$(?!\$)/g;
 const HTML_BLOCK_MATH_PATTERN = /<div\b[^>]*\bdata-type="block-math"[^>]*>[\s\S]*?<\/div>/gi;
@@ -49,7 +46,7 @@ const HTML_ENTITY_MAP: Record<string, string> = {
   amp: "&",
   lt: "<",
   gt: ">",
-  quot: "\"",
+  quot: '"',
   apos: "'",
   nbsp: " ",
 };
@@ -81,7 +78,7 @@ function decodeHtmlEntities(value: string): string {
 
 function getHtmlAttribute(tag: string, attrName: string): string | null {
   const escapedName = attrName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const doubleQuoteRegex = new RegExp(`${escapedName}\\s*=\\s*\"([^\"]*)\"`, "i");
+  const doubleQuoteRegex = new RegExp(`${escapedName}\\s*=\\s*"([^"]*)"`, "i");
   const singleQuoteRegex = new RegExp(`${escapedName}\\s*=\\s*'([^']*)'`, "i");
 
   const doubleQuoteMatch = tag.match(doubleQuoteRegex);
@@ -246,7 +243,6 @@ function normalizeMultipleChoiceOptions(markdown: string): string {
       return line;
     }
 
-    // Reformat inline options: "Pergunta ... (A) ... (B) ..." -> one option per line.
     if (matches.length >= 2) {
       const first = matches[0];
       if (first.index === null) {
@@ -281,10 +277,6 @@ function normalizeMultipleChoiceOptions(markdown: string): string {
     return line;
   });
 
-  // Collapse blank lines that sit between two consecutive MCQ option lines.
-  // Pass 1 may produce elements with embedded \n (inline-split path); flatMap flattens them first.
-  // Also strip any <br> HTML tags the AI may have injected — these cause double line-breaks
-  // when combined with the hard-break markers we add at the end.
   const flatLines = rewrittenLines
     .flatMap((l) => l.split("\n"))
     .map((l) => l.replace(/<br\s*\/?>/gi, "").trimEnd());
@@ -292,34 +284,26 @@ function normalizeMultipleChoiceOptions(markdown: string): string {
   for (let i = 0; i < flatLines.length; i++) {
     const line = flatLines[i];
     if (line.trim() === "") {
-      // Find the nearest non-blank line before this one
       let prev: string | undefined;
       for (let j = collapsed.length - 1; j >= 0; j--) {
         if (collapsed[j].trim() !== "") { prev = collapsed[j]; break; }
       }
-      // Find the nearest non-blank line after this one
       let next: string | undefined;
       for (let j = i + 1; j < flatLines.length; j++) {
         if (flatLines[j].trim() !== "") { next = flatLines[j]; break; }
       }
       if (prev && MCQ_OPTION_LINE_PATTERN.test(prev) && next && MCQ_OPTION_LINE_PATTERN.test(next)) {
-        // Drop this blank line — it sits between two MCQ options
         continue;
       }
     }
     collapsed.push(line);
   }
 
-  // Force markdown hard line-breaks before option lines so renderers never collapse them.
   return collapsed
     .join("\n")
     .replace(/\n(\s*(?:\([A-Ea-e]\)|[A-Ea-e]\))\s+)/g, "  \n$1");
 }
 
-/**
- * Convert markdown to HTML using showdown.js
- * Optimized for TipTap rich text editor
- */
 export function markdownToHtml(markdown: string): string {
   if (!markdown || markdown.trim() === "") {
     return "";
@@ -331,56 +315,39 @@ export function markdownToHtml(markdown: string): string {
       MARKDOWN_CODE_FENCE_PATTERN
     );
 
-    // Protect math expressions AFTER code blocks, so math inside code is left alone
     const mathProtected = protectMathMarkdown(codeProtected.content);
 
-    // Clean input markdown
     const cleanMarkdown = escapeAnswerBlanks(
       normalizeMultipleChoiceOptions(
         normalizeEducationalListFormatting(mathProtected.content)
       )
     )
-      // Remove any leaked internal image placeholder tokens from older buggy serializations.
       .replace(LEGACY_IMAGE_SEGMENT_TOKEN_PATTERN, "")
       .replace(FALLBACK_IMAGE_SEGMENT_TOKEN_PATTERN, "")
-      // Remove invisible characters that can break markdown parsing (e.g., headings)
-      .replace(/[\u200B-\u200D\u2060\uFEFF]/g, "")
-      // Ensure markdown headings have a space after #'s so all parsers render them consistently.
+      .replace(/[​-‍⁠﻿]/g, "")
       .replace(/(^|\n)(\s{0,3}#{1,6})([^\s#])/g, "$1$2 $3")
-      // Convert non-standard checkbox format ( ) to standard [ ]
       .replace(/- \( \)/g, "- [ ]")
       .replace(/- \(x\)/gi, "- [x]")
-      // Remove plain markdown separators that should not render as literal syntax in the editor.
       .replace(/^\s*([-*_])(?:\s*\1){2,}\s*$/gm, "")
-      // Normalize trailing spaces
       .replace(/[ \t]+\n/g, (match) => {
         const whitespace = match.slice(0, -1);
         return whitespace === "  " ? match : "\n";
       })
-      // Remove excessive newlines while preserving intentional breaks
       .replace(/\n{3,}/g, "\n\n")
       .trim();
     const restoredMarkdown = codeProtected.restore(cleanMarkdown);
 
-    // Convert markdown to HTML
     let html = converter.makeHtml(restoredMarkdown);
 
-    // Restore math as Tiptap-compatible HTML elements (after showdown, which can't handle $...$)
     html = mathProtected.restoreAsHtml(html);
 
     const htmlProtected = protectSegments(html, HTML_PRE_BLOCK_PATTERN);
 
-    // Post-process HTML for better TipTap compatibility
     html = htmlProtected.content
-      // Ensure paragraphs have proper spacing
       .replace(/<\/p>\s*<p>/g, "</p><p>")
-      // Clean up empty paragraphs
       .replace(/<p>\s*<\/p>/g, "")
-      // Ensure lists are properly formatted
       .replace(/<\/li>\s*<li>/g, "</li><li>")
-      // Remove layout-only whitespace between tags
       .replace(/>\s+</g, "><")
-      // Collapse repeated spaces/tabs outside code blocks
       .replace(/[ \t]{2,}/g, " ")
       .trim();
     html = htmlProtected.restore(html);
@@ -388,15 +355,27 @@ export function markdownToHtml(markdown: string): string {
     return html;
   } catch (error) {
     console.error("Error converting markdown to HTML:", error);
-    // Fallback: return the original markdown wrapped in a paragraph
     return `<p>${markdown.replace(/\n/g, "<br>")}</p>`;
   }
 }
 
-/**
- * Convert HTML to markdown using showdown.js
- * Optimized for TipTap rich text editor output
- */
+function ensureMarkdownTableSeparators(md: string): string {
+  const lines = md.split("\n");
+  const out: string[] = [];
+  const isTableRow = (s: string) => s.trimEnd().startsWith("|") && s.trimEnd().endsWith("|");
+  const isSeparatorRow = (s: string) => /^\|[\s|:|-]+\|$/.test(s.trim());
+
+  for (let i = 0; i < lines.length; i++) {
+    out.push(lines[i]);
+    const next = lines[i + 1] ?? "";
+    if (isTableRow(lines[i]) && isTableRow(next) && !isSeparatorRow(next)) {
+      const cols = lines[i].split("|").length - 2;
+      out.push(`|${Array(Math.max(cols, 1)).fill(" --- ").join("|")}|`);
+    }
+  }
+  return out.join("\n");
+}
+
 export function htmlToMarkdown(html: string): string {
   if (!html || html.trim() === "") {
     return "";
@@ -404,68 +383,59 @@ export function htmlToMarkdown(html: string): string {
 
   try {
     const htmlProtected = protectSegments(html, HTML_PRE_BLOCK_PATTERN);
-    // Protect math HTML elements before data-* attribute stripping removes data-latex
     const mathHtmlProtected = protectMathHtml(htmlProtected.content);
     const imageProtected = protectImageSegments(mathHtmlProtected.content);
 
-    // Pre-process HTML for better conversion
     const cleanHtml = enforceImageTokenBlockBoundaries(
       imageProtected.content
-      // Normalize line endings
       .replace(/\r\n/g, "\n")
       .replace(/\r/g, "\n")
-      // Normalize repeated spaces/tabs without collapsing newlines
       .replace(/[ \t]{2,}/g, " ")
-      // Remove TipTap-specific attributes and classes
       .replace(/\s*class="[^"]*"/g, "")
       .replace(/\s*data-[^=]*="[^"]*"/g, "")
       .replace(/\s*style="[^"]*"/g, "")
-      // Clean up empty elements
+      .replace(/(<t[dh][^>]*>)\s*<p>/g, "$1")
+      .replace(/<\/p>\s*(<\/t[dh]>)/g, "$1")
+      .replace(/<colgroup[\s\S]*?<\/colgroup>/g, "")
+      .replace(
+        /<tbody>(<tr>(?:<th[^>]*>[\s\S]*?<\/th>)+<\/tr>)([\s\S]*?)<\/tbody>/g,
+        "<thead>$1</thead><tbody>$2</tbody>",
+      )
       .replace(/<(\w+)>\s*<\/\1>/g, "")
-      // Normalize paragraph spacing
       .replace(/\s*<\/p>\s*<p>\s*/g, "</p>\n<p>")
-      // Remove layout-only whitespace between tags
       .replace(/>\s+</g, "><")
       .trim()
     );
     const restoredHtml = htmlProtected.restore(cleanHtml);
 
-    // Convert HTML to markdown
     let markdown = converter.makeMarkdown(restoredHtml);
     const markdownProtected = protectSegments(markdown, MARKDOWN_CODE_FENCE_PATTERN);
 
-    // Post-process markdown for consistency
     markdown = enforceImageTokenBlockBoundaries(
       markdownProtected.content
-      // Normalize line endings
       .replace(/\r\n/g, "\n")
       .replace(/\r/g, "\n")
-      // Clean up excessive newlines
       .replace(/\n{3,}/g, "\n\n")
-      // Ensure proper spacing around headers
       .replace(/\n(#{1,6}\s)/g, "\n\n$1")
       .replace(/(#{1,6}\s.*)\n(?!\n)/g, "$1\n\n")
-      // Ensure proper spacing around lists
       .replace(/\n(\s*[\*\-\+]|\s*\d+\.)/g, "\n\n$1")
       .replace(
-        /((\s*[\*\-\+]|\s*\d+\.).*)\n(?!\n|\s*[\*\-\+]|\s*\d+\.)/g,
+        /((\s*[\*\-\+]|\s*\d+\.).*) \n(?!\n|\s*[\*\-\+]|\s*\d+\.)/g,
         "$1\n\n",
       )
       .trim()
     );
+    markdown = ensureMarkdownTableSeparators(markdown);
     markdown = markdownProtected.restore(markdown);
-    // Restore math as $...$ and $$...$$ markdown notation
     markdown = mathHtmlProtected.restore(markdown);
     markdown = imageProtected.restore(markdown);
     markdown = markdown
-      // Safety net: never persist leaked internal image tokens.
       .replace(LEGACY_IMAGE_SEGMENT_TOKEN_PATTERN, "")
       .replace(FALLBACK_IMAGE_SEGMENT_TOKEN_PATTERN, "");
 
     return markdown;
   } catch (error) {
     console.error("Error converting HTML to markdown:", error);
-    // Fallback: strip HTML tags and return plain text
     return html
       .replace(/<[^>]*>/g, "")
       .replace(/\s+/g, " ")
@@ -473,27 +443,6 @@ export function htmlToMarkdown(html: string): string {
   }
 }
 
-/**
- * Sanitize markdown for safe rendering
- * Removes potentially harmful content while preserving formatting
- */
-
-
-/**
- * Get plain text from markdown
- * Useful for previews and search
- */
-
-
-/**
- * Check if content is valid markdown
- */
-
-
-/**
- * Protect math expressions in markdown ($...$, $$...$$) before passing to showdown.
- * Returns tokens that are restored as Tiptap Mathematics HTML elements after makeHtml.
- */
 function protectMathMarkdown(input: string): {
   content: string;
   restoreAsHtml: (html: string) => string;
@@ -501,13 +450,11 @@ function protectMathMarkdown(input: string): {
   const blockSegments: string[] = [];
   const inlineSegments: string[] = [];
 
-  // Block math first ($$...$$) to avoid false matches by inline pattern
   let content = input.replace(MARKDOWN_BLOCK_MATH_PATTERN, (_match, latex) => {
     const id = blockSegments.push(latex.trim()) - 1;
     return `${MATH_BLOCK_TOKEN_PREFIX}${id}${MATH_TOKEN_SUFFIX}`;
   });
 
-  // Inline math ($...$)
   content = content.replace(MARKDOWN_INLINE_MATH_PATTERN, (_match, latex) => {
     const id = inlineSegments.push(latex.trim()) - 1;
     return `${MATH_INLINE_TOKEN_PREFIX}${id}${MATH_TOKEN_SUFFIX}`;
@@ -516,7 +463,6 @@ function protectMathMarkdown(input: string): {
   return {
     content,
     restoreAsHtml: (html: string) => {
-      // Block math: replace entire <p>TOKEN</p> wrapper if present (block elements can't be in <p>)
       let result = html.replace(
         new RegExp(`<p>\\s*${MATH_BLOCK_TOKEN_PREFIX}(\\d+)${MATH_TOKEN_SUFFIX}\\s*<\\/p>`, "g"),
         (_match, rawId) => {
@@ -526,14 +472,12 @@ function protectMathMarkdown(input: string): {
           return `<div data-type="block-math" data-latex="${escaped}"></div>`;
         }
       );
-      // Remaining block tokens not wrapped in <p>
       result = result.replace(MATH_BLOCK_TOKEN_RESTORE_PATTERN, (_match, rawId) => {
         const index = Number(rawId);
         const latex = blockSegments[index] ?? "";
         const escaped = latex.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
         return `<div data-type="block-math" data-latex="${escaped}"></div>`;
       });
-      // Inline math tokens
       result = result.replace(MATH_INLINE_TOKEN_RESTORE_PATTERN, (_match, rawId) => {
         const index = Number(rawId);
         const latex = inlineSegments[index] ?? "";
@@ -545,11 +489,6 @@ function protectMathMarkdown(input: string): {
   };
 }
 
-/**
- * Protect math HTML elements (<div data-type="block-math">, <span data-type="inline-math">)
- * before passing to showdown's makeMarkdown, to avoid losing data-latex attributes.
- * Restored as $...$ and $$...$$ markdown.
- */
 function protectMathHtml(input: string): {
   content: string;
   restore: (value: string) => string;
@@ -557,14 +496,12 @@ function protectMathHtml(input: string): {
   const blockSegments: string[] = [];
   const inlineSegments: string[] = [];
 
-  // Block math divs
   let content = input.replace(HTML_BLOCK_MATH_PATTERN, (match) => {
     const latex = decodeHtmlEntities(getHtmlAttribute(match, "data-latex") ?? "");
     const id = blockSegments.push(latex) - 1;
     return `${MATH_BLOCK_TOKEN_PREFIX}${id}${MATH_TOKEN_SUFFIX}`;
   });
 
-  // Inline math spans
   content = content.replace(HTML_INLINE_MATH_PATTERN, (match) => {
     const latex = decodeHtmlEntities(getHtmlAttribute(match, "data-latex") ?? "");
     const id = inlineSegments.push(latex) - 1;
