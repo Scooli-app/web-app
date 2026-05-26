@@ -389,6 +389,56 @@
   margin: 0.25rem 0;
 }
 
+/* Table styles */
+.tiptap table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1.25rem 0;
+  font-size: 0.875rem;
+  overflow-x: auto;
+  display: block;
+}
+
+.tiptap table th,
+.tiptap table td {
+  border: 1px solid var(--border);
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.tiptap table th {
+  background-color: var(--muted);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.tiptap table tr:nth-child(even) td {
+  background-color: var(--muted)/30;
+}
+
+.tiptap table p {
+  margin: 0;
+}
+
+.tiptap table .selectedCell {
+  background-color: hsl(var(--primary) / 0.12);
+}
+
+.tiptap table .column-resize-handle {
+  position: absolute;
+  right: -2px;
+  top: 0;
+  bottom: -2px;
+  width: 4px;
+  background-color: hsl(var(--primary) / 0.4);
+  pointer-events: none;
+}
+
+.tableWrapper {
+  overflow-x: auto;
+}
+
 /* ============================================================
    Diff / Suggestions Mode Styles
    ============================================================ */
