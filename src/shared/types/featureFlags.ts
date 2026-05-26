@@ -33,6 +33,9 @@ export enum FeatureFlag {
   /** Controls regulatory document injection via the v2 context pipeline. When OFF, regulatory documents are hidden everywhere. */
   CONTEXT_PIPELINE_V2 = "context_pipeline_v2",
 
+  /** Controls access to Planificacoes (curriculum plans) — Pro / Institucional only. */
+  CURRICULUM_PLAN_ENABLED = "curriculum_plan_enabled",
+
   /** Controls access to timetable management and AI-generated lesson plans (Pro/Institucional only). */
   HORARIO_PLANOS = "horario_planos_enabled",
 }
