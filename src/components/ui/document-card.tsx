@@ -7,7 +7,20 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useAppSelector } from "@/store/hooks";
 import { selectWorkspaceContext } from "@/store/workspace/selectors";
 import { Routes, type Document } from "@/shared/types";
-import { Building2, FileText, Globe2, Trash2, Upload, User } from "lucide-react";
+import {
+  Building2,
+  CalendarDays,
+  FileText,
+  Globe2,
+  HelpCircle,
+  MonitorPlay,
+  NotebookPen,
+  ScrollText,
+  Trash2,
+  Upload,
+  User,
+  type LucideIcon,
+} from "lucide-react";
 import Link from "next/link";
 import { memo, useCallback, useMemo } from "react";
 
@@ -37,13 +50,13 @@ const DOCUMENT_TYPE_COLORS: Record<Document["documentType"], string> = {
   curriculumPlan: "bg-indigo-500 text-white dark:bg-indigo-600",
 };
 
-const DOCUMENT_TYPE_ICONS: Record<Document["documentType"], string> = {
-  lessonPlan: "📄",
-  worksheet: "🧾",
-  test: "📝",
-  quiz: "❓",
-  presentation: "📊",
-  curriculumPlan: "📅",
+const DOCUMENT_TYPE_ICONS: Record<Document["documentType"], LucideIcon> = {
+  lessonPlan: FileText,
+  worksheet: ScrollText,
+  test: NotebookPen,
+  quiz: HelpCircle,
+  presentation: MonitorPlay,
+  curriculumPlan: CalendarDays,
 };
 
 const ROUTE_MAP: Record<Document["documentType"], string> = {
@@ -128,8 +141,8 @@ function DocumentCardComponent({
       "bg-secondary text-secondary-foreground",
     [document.documentType]
   );
-  const typeIcon = useMemo(
-    () => DOCUMENT_TYPE_ICONS[document.documentType] || "📄",
+  const TypeIcon = useMemo(
+    () => DOCUMENT_TYPE_ICONS[document.documentType] || FileText,
     [document.documentType]
   );
   const documentRoute = useMemo(() => getDocumentRoute(document), [document]);
@@ -175,7 +188,7 @@ function DocumentCardComponent({
       <div className={`flex h-full flex-col ${selectionMode ? "ml-6" : ""}`}>
         <div className="mb-4 flex w-full flex-col gap-2 md:flex-row md:items-start md:justify-between">
           <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2 md:flex-initial">
-            <span className="shrink-0 text-xl sm:text-2xl">{typeIcon}</span>
+            <TypeIcon className="h-5 w-5 shrink-0 sm:h-6 sm:w-6" />
             <Badge
               className={`${typeColor} shrink-0 whitespace-nowrap px-2 py-1 text-xs font-medium`}
             >
