@@ -461,10 +461,14 @@ const SidebarNavigationContent = memo(function SidebarNavigationContent({
   const isCurriculumPlanEnabled =
     features[FeatureFlag.CURRICULUM_PLAN_ENABLED] === true;
 
+  const contentCreationItems = CONTENT_CREATION.filter((item) => {
+    if (item.href === Routes.CURRICULUM_PLAN && !isCurriculumPlanEnabled) return false;
+    return true;
+  });
+
   const disabledContentCreationKeys = [
     ...(isWorksheetCreationEnabled ? [] : [Routes.WORKSHEET]),
     ...(isPresentationCreationEnabled ? [] : [Routes.PRESENTATION]),
-    ...(isCurriculumPlanEnabled ? [] : [Routes.CURRICULUM_PLAN]),
   ];
 
   const navigationItems: NavItem[] = [
@@ -498,7 +502,7 @@ const SidebarNavigationContent = memo(function SidebarNavigationContent({
 
         <NavGroup
           label="Criação de Conteúdo"
-          items={CONTENT_CREATION}
+          items={contentCreationItems}
           pathname={pathname}
           onItemClick={onItemClick}
           disabledKeys={disabledContentCreationKeys}
