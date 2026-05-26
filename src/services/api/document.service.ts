@@ -38,23 +38,25 @@ function normalizeDocument(document: Document): Document {
   };
 }
 
-/**
- * Get list of documents
- * Backend returns paginated response with items, page, size, totalItems, etc.
- */
 export async function getDocuments(
   params: GetDocumentsParams
 ): Promise<GetDocumentsResponse> {
   const { page = 1, limit = 10, filters } = params;
 
   const queryParams = new URLSearchParams();
-  queryParams.set("page", String(page - 1)); // Backend uses 0-based pages
+  queryParams.set("page", String(page - 1));
   queryParams.set("size", String(limit));
   if (filters?.documentType && filters.documentType !== "all") {
     queryParams.set("documentType", filters.documentType);
   }
   if (filters?.search) {
     queryParams.set("search", filters.search);
+  }
+  if (filters?.subject) {
+    queryParams.set("subject", filters.subject);
+  }
+  if (filters?.gradeLevel) {
+    queryParams.set("gradeLevel", filters.gradeLevel);
   }
 
   const response = await apiClient.get<BackendPaginatedResponse>(
@@ -67,7 +69,7 @@ export async function getDocuments(
   return {
     documents,
     pagination: {
-      page: (data?.page ?? 0) + 1, // Convert back to 1-based
+      page: (data?.page ?? 0) + 1,
       limit: data?.size ?? limit,
       total: data?.totalItems ?? 0,
       hasMore: data?.hasNext ?? false,
@@ -75,9 +77,6 @@ export async function getDocuments(
   };
 }
 
-/**
- * Get document statistics (counts by type and status)
- */
 export async function getDocumentStats(): Promise<DocumentStatsResponse> {
   const response = await apiClient.get<DocumentStatsResponse>(
     "/documents/stats"
@@ -85,18 +84,11 @@ export async function getDocumentStats(): Promise<DocumentStatsResponse> {
   return response.data;
 }
 
-/**
- * Get a single document by ID
- */
 export async function getDocument(id: string): Promise<Document> {
   const response = await apiClient.get<Document>(`/documents/${id}`);
   return normalizeDocument(response.data);
 }
 
-/**
- * Create a new document with SSE streaming
- * Returns initial response with streamUrl for content streaming
- */
 export async function createDocument(
   params: CreateDocumentParams
 ): Promise<CreateDocumentStreamResponse> {
@@ -112,14 +104,6 @@ export async function createDocument(
   return response.data;
 }
 
-/**
- * Connect to SSE stream and receive document content chunks.
- *
- * Accepts a {@code getToken} callback rather than a static token so that every
- * connection attempt (including automatic reconnects after network blips) uses
- * a freshly-issued JWT.  The caller is responsible for providing a function
- * that returns a valid token or null.
- */
 export async function streamDocumentContent(
   streamUrl: string,
   callbacks: DocumentStreamCallbacks,
@@ -137,9 +121,6 @@ export async function streamDocumentContent(
 
   fetchEventSource(fullUrl, {
     signal: abortController.signal,
-    // Resolve a fresh JWT on every connection attempt (initial + reconnects).
-    // This prevents 401s when the SSE stream is reconnected after a network
-    // blip and the original short-lived Clerk token has already expired.
     fetch: async (input: RequestInfo | URL, init?: RequestInit) => {
       const token = await getToken();
       if (!token) {
@@ -257,8 +238,6 @@ export async function streamDocumentContent(
                 console.warn("[SSE] Could not parse final document payload");
               }
             }
-            // Abort before onComplete to prevent fetchEventSource from reconnecting
-            // with a potentially expired token after the server closes the stream.
             abortController.abort();
             const documentId = streamedResponse.id ?? parsed.data;
             callbacks.onComplete?.(documentId, streamedResponse);
@@ -275,13 +254,9 @@ export async function streamDocumentContent(
     },
     onerror(error) {
       if (abortController.signal.aborted) {
-        // Stream was cleanly completed and we aborted — stop retrying.
         throw error;
       }
-      // For transient network errors: log and let fetchEventSource reconnect.
-      // The custom fetch above will get a fresh token on the next attempt.
       console.warn("[SSE] Transient error, will retry:", error);
-      // Returning undefined (implicit) allows fetchEventSource to reconnect.
     },
   });
 
@@ -298,10 +273,6 @@ export async function updateDocument(
   return response.data;
 }
 
-/**
- * Send a chat message to update a document via AI
- * Returns updated document with chatAnswer
- */
 export async function chatWithDocument(
   id: string,
   message: string
@@ -312,23 +283,13 @@ export async function chatWithDocument(
   return response.data;
 }
 
-/**
- * Delete a single document
- * Note: Backend DELETE doesn't show query params in Swagger
- */
 export async function deleteDocument(id: string): Promise<void> {
   await apiClient.delete(`/documents/${id}`);
 }
 
-/**
- * Delete multiple documents
- * Note: Backend doesn't show batch delete endpoint in Swagger
- * This needs to be implemented on backend or delete one by one
- */
 export async function deleteDocuments(
   ids: string[]
 ): Promise<{ deletedCount: number }> {
-  // Delete one by one until backend implements batch delete
   let deletedCount = 0;
   for (const id of ids) {
     try {
@@ -341,9 +302,6 @@ export async function deleteDocuments(
   return { deletedCount };
 }
 
-/**
- * Get a Presigned PUT URL for uploading a document to R2
- */
 interface DocumentImportRequest {
   title: string;
   documentType: DocumentType;
@@ -371,9 +329,6 @@ export async function getUploadUrl(
   return response.data;
 }
 
-/**
- * Import a document from R2 and normalize it via AI
- */
 export async function importDocument(
   data: DocumentImportRequest
 ): Promise<{ id: string; message: string }> {
@@ -384,39 +339,28 @@ export async function importDocument(
   return response.data;
 }
 
-/**
- * Poll the backend until the document is available (status 200 OK)
- * Used to wait for background jobs (like import) to finish.
- */
 export async function waitForDocument(id: string, maxAttempts = 60): Promise<void> {
   const delayMs = 3000;
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     try {
       const doc = await getDocument(id);
       if (doc.status === "completed") {
-        return; // Success!
+        return;
       }
       if (doc.status === "error") {
-        // The backend saves the specific error message into the 'content' field
         throw new Error(doc.content || "Erro ao processar o formato do ficheiro.");
       }
-      // If status is still "processing", we just catch the timeout below
     } catch (e: unknown) {
-      // If it's a custom error we threw above (like doc.status === "error"), throw it immediately to break the promise
       if (!axios.isAxiosError(e)) {
         throw e;
       }
       
       const axiosError = e as AxiosError;
       
-      // If it's an Axios error that is NOT a 404, we might want to rethrow if it's a fatal 500
       if (axiosError.response?.status && axiosError.response.status >= 500) {
         throw new Error(`Erro de servidor ao importar o documento. (${axiosError.response.status})`);
       }
-      
-      // Otherwise (e.g., 404 or network hiccup), just wait and try again
     }
-    // Wait before next attempt
     await new Promise((resolve) => setTimeout(resolve, delayMs));
   }
   throw new Error("Tempo limite excedido a aguardar pela formatação do documento.");

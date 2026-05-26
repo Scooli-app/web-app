@@ -13,7 +13,12 @@
 
 import { Extension } from "@tiptap/core";
 import { DOMSerializer } from "@tiptap/pm/model";
-import { Plugin, PluginKey, type EditorState, type Transaction } from "@tiptap/pm/state";
+import {
+  Plugin,
+  PluginKey,
+  type EditorState,
+  type Transaction,
+} from "@tiptap/pm/state";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
 import type { DiffChange } from "../utils/diffEngine";
 
@@ -39,7 +44,7 @@ const CLEAR_META = "clearDiffChanges";
 
 function buildDecorations(
   state: EditorState,
-  changes: DiffChange[]
+  changes: DiffChange[],
 ): DecorationSet {
   if (changes.length === 0) return DecorationSet.empty;
 
@@ -47,20 +52,15 @@ function buildDecorations(
   const docSize = state.doc.content.size;
 
   for (const change of changes) {
-    // Insertion/replace decorations (in the new doc, positions are fromB/toB)
     if (change.type === "insert" || change.type === "replace") {
       const from = Math.max(0, Math.min(change.fromB, docSize));
       const to = Math.max(from, Math.min(change.toB, docSize));
 
       if (from < to) {
-        let inlineCount = 0;
-        // Walk through text blocks within the range and create per-block
-        // inline decorations. Decoration.inline() cannot span block boundaries.
         state.doc.nodesBetween(from, to, (node, pos) => {
           if (node.isTextblock) {
-            // Clamp the inline decoration to this text block's content
-            const blockStart = pos + 1; // inside the node (after opening token)
-            const blockEnd = pos + node.nodeSize - 1; // before closing token
+            const blockStart = pos + 1;
+            const blockEnd = pos + node.nodeSize - 1;
             const decoFrom = Math.max(from, blockStart);
             const decoTo = Math.min(to, blockEnd);
 
@@ -69,55 +69,48 @@ function buildDecorations(
                 Decoration.inline(decoFrom, decoTo, {
                   class: "diff-insert",
                   "data-diff-id": change.id,
-                })
+                }),
               );
-              inlineCount++;
             }
-            return false; // don't descend into text block children
+            return false;
           }
-          return true; // descend into wrapper nodes (e.g. list, blockquote)
+          return true;
         });
-
-        console.warn(`[DIFF] buildDecorations: change ${change.id} type=${change.type} from=${from} to=${to} docSize=${docSize} inlineDecos=${inlineCount}`);
       }
     }
 
-    // Deletion decorations — show as widget at the deletion point
     if (change.type === "delete" || change.type === "replace") {
       const pos = Math.max(0, Math.min(change.fromB, docSize));
       decorations.push(
         Decoration.widget(pos, createDeleteWidget(change), {
           id: `del-${change.id}`,
           side: -1,
-        })
+        }),
       );
     }
 
-    // Action buttons widget — positioned at the end of the change
     const actionPos = Math.max(0, Math.min(change.toB, docSize));
     decorations.push(
       Decoration.widget(actionPos, createActionWidget(change.id), {
         id: `actions-${change.id}`,
         side: 1,
-      })
+      }),
     );
   }
 
-  console.warn(`[DIFF] buildDecorations total: ${decorations.length} decorations for ${changes.length} changes`);
   return DecorationSet.create(state.doc, decorations);
 }
 
-/**
- * Create a DOM element showing deleted content with strikethrough styling.
- * For large deletions (e.g. entire chapters), shows a prominent block.
- */
-function createDeleteWidget(change: DiffChange): (view: import("@tiptap/pm/view").EditorView) => HTMLElement {
+function createDeleteWidget(
+  change: DiffChange,
+): (view: import("@tiptap/pm/view").EditorView) => HTMLElement {
   return (view) => {
     const text = change.deletedSlice ? sliceToText(change.deletedSlice) : "";
-    const isLargeDeletion = text.length > 100 || (change.deletedSlice && change.deletedSlice.content.childCount > 1);
+    const isLargeDeletion =
+      text.length > 100 ||
+      (change.deletedSlice && change.deletedSlice.content.childCount > 1);
 
     if (isLargeDeletion && change.deletedSlice) {
-      // Block-level deletion indicator for large chunks (chapters, sections)
       const wrapper = document.createElement("div");
       wrapper.className = "diff-delete-block";
       wrapper.setAttribute("data-diff-id", change.id);
@@ -129,8 +122,7 @@ function createDeleteWidget(change: DiffChange): (view: import("@tiptap/pm/view"
 
       const preview = document.createElement("div");
       preview.className = "diff-delete-content";
-      
-      // Render the deleted slice with full editor formatting
+
       const fragment = renderSlice(change.deletedSlice, view.state.schema);
       preview.appendChild(fragment);
 
@@ -138,11 +130,10 @@ function createDeleteWidget(change: DiffChange): (view: import("@tiptap/pm/view"
       wrapper.appendChild(preview);
       return wrapper;
     } else {
-      // Inline deletion for small changes
       const wrapper = document.createElement("span");
       wrapper.className = "diff-delete";
       wrapper.setAttribute("data-diff-id", change.id);
-      
+
       if (change.deletedSlice) {
         const fragment = renderSlice(change.deletedSlice, view.state.schema);
         wrapper.appendChild(fragment);
@@ -154,21 +145,17 @@ function createDeleteWidget(change: DiffChange): (view: import("@tiptap/pm/view"
   };
 }
 
-/**
- * Render a ProseMirror Slice to a DOM Fragment using the provided schema.
- */
 function renderSlice(
   slice: import("@tiptap/pm/model").Slice,
-  schema: import("@tiptap/pm/model").Schema
+  schema: import("@tiptap/pm/model").Schema,
 ): DocumentFragment | HTMLElement {
   const serializer = DOMSerializer.fromSchema(schema);
   return serializer.serializeFragment(slice.content);
 }
 
-/**
- * Create accept/reject action buttons for a change.
- */
-function createActionWidget(changeId: string): (view: import("@tiptap/pm/view").EditorView) => HTMLElement {
+function createActionWidget(
+  changeId: string,
+): (view: import("@tiptap/pm/view").EditorView) => HTMLElement {
   return () => {
     const wrapper = document.createElement("span");
     wrapper.className = "diff-actions";
@@ -198,9 +185,6 @@ function createActionWidget(changeId: string): (view: import("@tiptap/pm/view").
   };
 }
 
-/**
- * Extract plain text from a Slice for display in delete widgets.
- */
 function sliceToText(slice: import("@tiptap/pm/model").Slice): string {
   const parts: string[] = [];
   slice.content.forEach((node) => {
@@ -229,29 +213,11 @@ function sliceToText(slice: import("@tiptap/pm/model").Slice): string {
 declare module "@tiptap/core" {
   interface Commands<ReturnType> {
     diff: {
-      /**
-       * Enter suggestions mode with the given diff changes.
-       */
       setDiffChanges: (changes: DiffChange[]) => ReturnType;
-      /**
-       * Exit suggestions mode, clearing all diff state.
-       */
       clearDiffChanges: () => ReturnType;
-      /**
-       * Accept a single change by ID.
-       */
       acceptChange: (id: string) => ReturnType;
-      /**
-       * Reject a single change by ID.
-       */
       rejectChange: (id: string) => ReturnType;
-      /**
-       * Accept all remaining changes.
-       */
       acceptAllChanges: () => ReturnType;
-      /**
-       * Reject all remaining changes.
-       */
       rejectAllChanges: () => ReturnType;
     };
   }
@@ -262,10 +228,10 @@ export const DiffExtension = Extension.create({
 
   addStorage() {
     return {
-      /** Original document content (HTML) before entering diff mode */
       originalContent: null as string | null,
-      /** Callback fired when diff state changes */
-      onDiffStateChange: null as ((active: boolean, count: number) => void) | null,
+      onDiffStateChange: null as
+        | ((active: boolean, count: number) => void)
+        | null,
     };
   },
 
@@ -301,11 +267,6 @@ export const DiffExtension = Extension.create({
           if (!change) return false;
 
           if (dispatch) {
-            // For insertions: content is already in the document, just remove decoration
-            // For deletions: content needs to be removed from document (the deleted part
-            //   is shown as a widget, not in the doc, so nothing to do for the doc)
-            // For replacements: insertion is already in the doc, deletion widget is visual only
-            // In our approach (editor shows AI doc), ACCEPT = keep as-is, remove decoration
             tr.setMeta(REMOVE_CHANGE_META, id);
             dispatch(tr);
           }
@@ -325,20 +286,17 @@ export const DiffExtension = Extension.create({
             const docSize = state.doc.content.size;
 
             if (change.type === "insert") {
-              // Reject insertion: remove the inserted content
               const from = Math.min(change.fromB, docSize);
               const to = Math.min(change.toB, docSize);
               if (from < to) {
                 tr.delete(from, to);
               }
             } else if (change.type === "delete") {
-              // Reject deletion: re-insert the deleted content
               if (change.deletedSlice) {
                 const pos = Math.min(change.fromB, docSize);
                 tr.insert(pos, change.deletedSlice.content);
               }
             } else if (change.type === "replace") {
-              // Reject replace: remove inserted content, re-insert deleted content
               const from = Math.min(change.fromB, docSize);
               const to = Math.min(change.toB, docSize);
               if (change.deletedSlice) {
@@ -356,28 +314,35 @@ export const DiffExtension = Extension.create({
 
       acceptAllChanges:
         () =>
-        ({ chain }) => {
-          return chain()
-            .setMeta(CLEAR_META, true)
-            .run();
+        ({ tr, dispatch }) => {
+          if (dispatch) {
+            tr.setMeta(CLEAR_META, true);
+            dispatch(tr);
+          }
+          return true;
         },
 
       rejectAllChanges:
         () =>
-        ({ editor, chain }) => {
-          const storage = (editor.storage as unknown as Record<string, { originalContent?: string | null }>).diff;
+        ({ editor, tr, dispatch }) => {
+          const storage = (
+            editor.storage as unknown as Record<
+              string,
+              { originalContent?: string | null }
+            >
+          ).diff;
           const originalContent = storage?.originalContent;
 
-          if (originalContent) {
-            return chain()
-              .setMeta(CLEAR_META, true)
-              .setContent(originalContent, { emitUpdate: false })
-              .run();
+          if (dispatch) {
+            tr.setMeta(CLEAR_META, true);
+            dispatch(tr);
           }
 
-          return chain()
-            .setMeta(CLEAR_META, true)
-            .run();
+          if (originalContent) {
+            editor.commands.setContent(originalContent, { emitUpdate: false });
+          }
+
+          return true;
         },
     };
   },
@@ -399,10 +364,13 @@ export const DiffExtension = Extension.create({
             };
           },
 
-          apply(tr: Transaction, prev: DiffPluginState, _oldState, newState): DiffPluginState {
-            // Handle clear
+          apply(
+            tr: Transaction,
+            prev: DiffPluginState,
+            _oldState,
+            newState,
+          ): DiffPluginState {
             if (tr.getMeta(CLEAR_META)) {
-              // Notify about state change
               storage.onDiffStateChange?.(false, 0);
               return {
                 changes: [],
@@ -411,8 +379,9 @@ export const DiffExtension = Extension.create({
               };
             }
 
-            // Handle set changes
-            const newChanges = tr.getMeta(SET_CHANGES_META) as DiffChange[] | undefined;
+            const newChanges = tr.getMeta(SET_CHANGES_META) as
+              | DiffChange[]
+              | undefined;
             if (newChanges) {
               const decorations = buildDecorations(newState, newChanges);
               storage.onDiffStateChange?.(true, newChanges.length);
@@ -423,13 +392,13 @@ export const DiffExtension = Extension.create({
               };
             }
 
-            // Handle remove single change
-            const removeId = tr.getMeta(REMOVE_CHANGE_META) as string | undefined;
+            const removeId = tr.getMeta(REMOVE_CHANGE_META) as
+              | string
+              | undefined;
             if (removeId) {
               const remaining = prev.changes.filter((c) => c.id !== removeId);
               const isActive = remaining.length > 0;
 
-              // Remap positions of remaining changes if the transaction modified the doc
               const remapped = tr.docChanged
                 ? remapChanges(remaining, tr)
                 : remaining;
@@ -443,7 +412,6 @@ export const DiffExtension = Extension.create({
               };
             }
 
-            // If doc changed for other reasons and we have active diff, remap decorations
             if (prev.active && tr.docChanged) {
               const remapped = remapChanges(prev.changes, tr);
               const decorations = buildDecorations(newState, remapped);
@@ -454,7 +422,6 @@ export const DiffExtension = Extension.create({
               };
             }
 
-            // Map existing decorations through the transaction mapping
             if (prev.active) {
               return {
                 ...prev,
@@ -468,10 +435,11 @@ export const DiffExtension = Extension.create({
 
         props: {
           decorations(state) {
-            return diffPluginKey.getState(state)?.decorations ?? DecorationSet.empty;
+            return (
+              diffPluginKey.getState(state)?.decorations ?? DecorationSet.empty
+            );
           },
 
-          // Handle clicks on accept/reject buttons
           handleDOMEvents: {
             click(_view, event) {
               const target = event.target as HTMLElement;
@@ -485,9 +453,6 @@ export const DiffExtension = Extension.create({
               const changeId = btn.getAttribute("data-change-id");
               if (!action || !changeId) return false;
 
-              // Use the Tiptap command interface so transactions are always
-              // created from the current state, avoiding the "mismatched
-              // transaction" RangeError that a setTimeout-based dispatch caused.
               if (action === "accept") {
                 tiptapEditor.commands.acceptChange(changeId);
               } else if (action === "reject") {
@@ -507,10 +472,6 @@ export const DiffExtension = Extension.create({
 // Position remapping
 // ---------------------------------------------------------------------------
 
-/**
- * Remap DiffChange positions through a transaction mapping.
- * This keeps positions aligned after the document changes.
- */
 function remapChanges(changes: DiffChange[], tr: Transaction): DiffChange[] {
   return changes.map((change) => ({
     ...change,
@@ -523,9 +484,6 @@ function remapChanges(changes: DiffChange[], tr: Transaction): DiffChange[] {
 // State accessor
 // ---------------------------------------------------------------------------
 
-/**
- * Get the current diff plugin state from an editor state.
- */
 export function getDiffState(state: EditorState): DiffPluginState | undefined {
   return diffPluginKey.getState(state);
 }
