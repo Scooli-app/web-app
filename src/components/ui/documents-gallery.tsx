@@ -2,7 +2,7 @@
 
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { DocumentCard } from "@/components/ui/document-card";
-import { DocumentFilters } from "@/components/ui/document-filters";
+import { DocumentFilters, type DocumentOriginFilter } from "@/components/ui/document-filters";
 import { DocumentsEmptyState } from "@/components/ui/documents-empty-state";
 import {
   deleteDocument,
@@ -20,7 +20,6 @@ import { useInView } from "react-intersection-observer";
 import { Button } from "./button";
 import { Input } from "./input";
 
-// Debounce hook for search
 function useDebouncedValue<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = useState(value);
 
@@ -42,6 +41,9 @@ export function DocumentsGallery() {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedType, setSelectedType] = useState<string>("all");
+  const [selectedSubject, setSelectedSubject] = useState<string>("");
+  const [selectedGrade, setSelectedGrade] = useState<string>("");
+  const [selectedOrigin, setSelectedOrigin] = useState<DocumentOriginFilter>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedDocuments, setSelectedDocuments] = useState<Set<string>>(
@@ -61,10 +63,8 @@ export function DocumentsGallery() {
     {}
   );
 
-  // Debounce search query for performance
   const debouncedSearchQuery = useDebouncedValue(searchQuery, 300);
 
-  // Track if initial load is complete
   const initialLoadRef = useRef(false);
   const isAuthReady = isAuthLoaded && Boolean(isSignedIn);
 
@@ -95,6 +95,8 @@ export function DocumentsGallery() {
           limit: pagination.limit,
           filters: {
             documentType: selectedType !== "all" ? selectedType : undefined,
+            subject: selectedSubject || undefined,
+            gradeLevel: selectedGrade || undefined,
           },
         });
 
@@ -114,10 +116,9 @@ export function DocumentsGallery() {
         initialLoadRef.current = true;
       }
     },
-    [isAuthReady, selectedType, pagination.limit]
+    [isAuthReady, selectedType, selectedSubject, selectedGrade, pagination.limit]
   );
 
-  // Selection handlers - memoized
   const handleSelectDocument = useCallback((documentId: string, selected: boolean) => {
     setSelectedDocuments((prev) => {
       const newSet = new Set(prev);
@@ -130,19 +131,26 @@ export function DocumentsGallery() {
     });
   }, []);
 
-  // Memoize filtered documents
   const filteredDocuments = useMemo(() => {
-    if (!debouncedSearchQuery) {
-      return documents;
+    let result = documents;
+
+    if (debouncedSearchQuery) {
+      const query = debouncedSearchQuery.toLowerCase();
+      result = result.filter(
+        (doc) =>
+          doc.title.toLowerCase().includes(query) ||
+          doc.content.toLowerCase().includes(query)
+      );
     }
-    
-    const query = debouncedSearchQuery.toLowerCase();
-    return documents.filter(
-      (doc) =>
-        doc.title.toLowerCase().includes(query) ||
-        doc.content.toLowerCase().includes(query)
-    );
-  }, [documents, debouncedSearchQuery]);
+
+    if (selectedOrigin === "imported") {
+      result = result.filter((doc) => !!doc.originalFormat);
+    } else if (selectedOrigin === "ai") {
+      result = result.filter((doc) => !doc.originalFormat);
+    }
+
+    return result;
+  }, [documents, debouncedSearchQuery, selectedOrigin]);
 
   const handleSelectAll = useCallback(() => {
     if (selectedDocuments.size === filteredDocuments.length) {
@@ -220,7 +228,6 @@ export function DocumentsGallery() {
     setSearchQuery(e.target.value);
   }, []);
 
-  // Initial load
   useEffect(() => {
     if (!isAuthReady) {
       return;
@@ -263,7 +270,7 @@ export function DocumentsGallery() {
       isActive = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedType, isAuthReady]);
+  }, [selectedType, selectedSubject, selectedGrade, isAuthReady]);
 
   const loadMore = useCallback(() => {
     if (pagination.hasMore && !loading) {
@@ -274,7 +281,7 @@ export function DocumentsGallery() {
   const { ref: loadMoreRef, inView } = useInView({
     threshold: 0,
     triggerOnce: false,
-    rootMargin: "100px", // Start loading earlier
+    rootMargin: "100px",
   });
 
   useEffect(() => {
@@ -283,7 +290,6 @@ export function DocumentsGallery() {
     }
   }, [inView, pagination.hasMore, loading, loadMore]);
 
-  // Memoize selection info
   const selectionInfo = useMemo(() => ({
     count: selectedDocuments.size,
     isAllSelected: selectedDocuments.size === filteredDocuments.length && filteredDocuments.length > 0,
@@ -301,9 +307,7 @@ export function DocumentsGallery() {
             </h2>
           </div>
 
-          {/* Right side: actions */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-2 w-full sm:w-auto">
-            {/* Upload button – visible on all screen sizes */}
             {!selectionMode && (
               <Button
                 onClick={() => setShowUploadModal(true)}
@@ -316,7 +320,6 @@ export function DocumentsGallery() {
               </Button>
             )}
 
-            {/* Search and Selection */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-2 w-full sm:w-auto">
             {selectionMode && (
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
@@ -393,8 +396,8 @@ export function DocumentsGallery() {
                 </Button>
               </div>
             )}
-          </div>{/* /inner search+selection div */}
-          </div>{/* /right-side actions */}
+          </div>
+          </div>
         </div>
 
         {/* Filters */}
@@ -402,6 +405,12 @@ export function DocumentsGallery() {
           selectedType={selectedType}
           onTypeChange={setSelectedType}
           documentCounts={documentCounts}
+          selectedSubject={selectedSubject}
+          onSubjectChange={setSelectedSubject}
+          selectedGrade={selectedGrade}
+          onGradeChange={setSelectedGrade}
+          selectedOrigin={selectedOrigin}
+          onOriginChange={setSelectedOrigin}
         />
 
         {/* Documents Grid */}
@@ -439,7 +448,6 @@ export function DocumentsGallery() {
               ))}
             </div>
 
-            {/* Infinite Scroll Trigger */}
             {pagination.hasMore && (
               <div ref={loadMoreRef} className="flex justify-center pt-6 pb-4">
                 {loading && (
@@ -471,7 +479,7 @@ export function DocumentsGallery() {
         isOpen={showUploadModal}
         onClose={() => {
           setShowUploadModal(false);
-          fetchDocuments(1, true); // Refresh list
+          fetchDocuments(1, true);
         }}
       />
     </div>
