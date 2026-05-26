@@ -95,6 +95,12 @@ const FEATURE_FLAG_METADATA: Record<
       "Controla a geração e inclusão de imagens automáticas em testes, quizzes, fichas e planos de aula.",
     order: 40,
   },
+  [FeatureFlagKey.CURRICULUM_PLAN_ENABLED]: {
+    name: "Planificações",
+    description:
+      "Controla a criação e importação de planificações curriculares de período. Disponível nos planos Pro e Institucional.",
+    order: 45,
+  },
 };
 
 const applyFlagMetadata = (flag: AdminFeatureFlag): AdminFeatureFlag => {

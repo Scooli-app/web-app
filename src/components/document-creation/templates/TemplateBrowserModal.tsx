@@ -168,6 +168,7 @@ export function TemplateBrowserModal({
       test: "Testes",
       worksheet: "Fichas de Trabalho",
       presentation: "Apresentações",
+      curriculumPlan: "Planificações",
     };
     return labels[type];
   };

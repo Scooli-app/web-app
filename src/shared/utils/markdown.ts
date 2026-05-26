@@ -394,6 +394,30 @@ export function markdownToHtml(markdown: string): string {
 }
 
 /**
+ * Ensure every GFM table in a markdown string has a |---|---| separator row.
+ * showdown's makeMarkdown() can omit the separator when the source HTML uses
+ * <tbody>-only structure; without it, makeHtml() won't recognise the table
+ * and renders the pipe characters as plain text on the next reload.
+ */
+function ensureMarkdownTableSeparators(md: string): string {
+  const lines = md.split("\n");
+  const out: string[] = [];
+  const isTableRow = (s: string) => s.trimEnd().startsWith("|") && s.trimEnd().endsWith("|");
+  const isSeparatorRow = (s: string) => /^\|[\s|:|-]+\|$/.test(s.trim());
+
+  for (let i = 0; i < lines.length; i++) {
+    out.push(lines[i]);
+    const next = lines[i + 1] ?? "";
+    // If this is a table row, the next line is also a table row, but NOT a separator → insert one.
+    if (isTableRow(lines[i]) && isTableRow(next) && !isSeparatorRow(next)) {
+      const cols = lines[i].split("|").length - 2;
+      out.push(`|${Array(Math.max(cols, 1)).fill(" --- ").join("|")}|`);
+    }
+  }
+  return out.join("\n");
+}
+
+/**
  * Convert HTML to markdown using showdown.js
  * Optimized for TipTap rich text editor output
  */
@@ -420,6 +444,19 @@ export function htmlToMarkdown(html: string): string {
       .replace(/\s*class="[^"]*"/g, "")
       .replace(/\s*data-[^=]*="[^"]*"/g, "")
       .replace(/\s*style="[^"]*"/g, "")
+      // ── Table normalisation for showdown compatibility ──────────────────
+      // TipTap wraps every cell in <p>; strip those so showdown sees plain text.
+      .replace(/(<t[dh][^>]*>)\s*<p>/g, "$1")
+      .replace(/<\/p>\s*(<\/t[dh]>)/g, "$1")
+      // TipTap adds <colgroup> which showdown's makeMarkdown doesn't need.
+      .replace(/<colgroup[\s\S]*?<\/colgroup>/g, "")
+      // Move the first <tr> whose cells are all <th> from <tbody> into <thead>
+      // so showdown knows to emit a separator row.
+      .replace(
+        /<tbody>(<tr>(?:<th[^>]*>[\s\S]*?<\/th>)+<\/tr>)([\s\S]*?)<\/tbody>/g,
+        "<thead>$1</thead><tbody>$2</tbody>",
+      )
+      // ───────────────────────────────────────────────────────────────────
       // Clean up empty elements
       .replace(/<(\w+)>\s*<\/\1>/g, "")
       // Normalize paragraph spacing
@@ -453,6 +490,10 @@ export function htmlToMarkdown(html: string): string {
       )
       .trim()
     );
+    // Safety net: ensure every markdown table has a |---|---| separator row.
+    // showdown's makeMarkdown() omits the separator when <thead> is missing,
+    // causing makeHtml() to treat the pipes as plain text on the next load.
+    markdown = ensureMarkdownTableSeparators(markdown);
     markdown = markdownProtected.restore(markdown);
     // Restore math as $...$ and $$...$$ markdown notation
     markdown = mathHtmlProtected.restore(markdown);

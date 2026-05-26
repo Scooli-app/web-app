@@ -43,6 +43,8 @@ export interface CreateDocumentParams {
 export interface DocumentFilters {
   documentType?: string;
   search?: string;
+  subject?: string;
+  gradeLevel?: string;
 }
 
 export interface DocumentStatsResponse {

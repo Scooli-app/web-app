@@ -56,6 +56,12 @@ export async function getDocuments(
   if (filters?.search) {
     queryParams.set("search", filters.search);
   }
+  if (filters?.subject) {
+    queryParams.set("subject", filters.subject);
+  }
+  if (filters?.gradeLevel) {
+    queryParams.set("gradeLevel", filters.gradeLevel);
+  }
 
   const response = await apiClient.get<BackendPaginatedResponse>(
     `/documents?${queryParams.toString()}`
