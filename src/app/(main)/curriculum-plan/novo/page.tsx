@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -373,8 +373,8 @@ export default function CurriculumPlanNewPage() {
 
   const [step, setStep] = useState<StepId>("period");
   const [planningType, setPlanningType] = useState<CurriculumPlanningType>("trimester");
-  const [periodStart, setPeriodStart] = useState("");
-  const [periodEnd, setPeriodEnd] = useState("");
+  const [periodStart, setPeriodStart] = useState<Date | undefined>(undefined);
+  const [periodEnd, setPeriodEnd] = useState<Date | undefined>(undefined);
   const [subjectValue, setSubjectValue] = useState("");
   const [schoolYear, setSchoolYear] = useState(5);
   const [schedule, setSchedule] = useState<WeekSchedule>(DEFAULT_SCHEDULE);
@@ -387,7 +387,9 @@ export default function CurriculumPlanNewPage() {
   }, [enabled, router]);
 
   const lpw = useMemo(() => lessonsPerWeekFromSchedule(schedule), [schedule]);
-  const weeks = useMemo(() => weeksBetween(periodStart, periodEnd), [periodStart, periodEnd]);
+  const periodStartISO = useMemo(() => (periodStart ? toISO(periodStart) : ""), [periodStart]);
+  const periodEndISO = useMemo(() => (periodEnd ? toISO(periodEnd) : ""), [periodEnd]);
+  const weeks = useMemo(() => weeksBetween(periodStartISO, periodEndISO), [periodStartISO, periodEndISO]);
   const totalLessons = lpw * weeks;
 
   const subjectLabel = useMemo(
@@ -397,8 +399,8 @@ export default function CurriculumPlanNewPage() {
 
   function applyPreset(preset: Preset) {
     const { start, end } = preset.getRange();
-    setPeriodStart(start);
-    setPeriodEnd(end);
+    setPeriodStart(new Date(start));
+    setPeriodEnd(new Date(end));
     setPlanningType(preset.planningType);
   }
 
@@ -428,8 +430,8 @@ export default function CurriculumPlanNewPage() {
       planningType,
       subjectLabel,
       schoolYear,
-      periodStart,
-      periodEnd,
+      periodStart: periodStartISO,
+      periodEnd: periodEndISO,
       lessonsPerWeek: lpw,
       totalLessons,
     });
@@ -445,8 +447,8 @@ export default function CurriculumPlanNewPage() {
           schoolYear,
           additionalDetails: JSON.stringify({
             planningType,
-            periodStart,
-            periodEnd,
+            periodStart: periodStartISO,
+            periodEnd: periodEndISO,
             lessonsPerWeek: lpw,
             totalLessonsEstimate: totalLessons,
             weekSchedule: schedule,
@@ -497,7 +499,7 @@ export default function CurriculumPlanNewPage() {
               <div className="flex flex-wrap gap-2">
                 {PRESETS.map((preset) => {
                   const { start, end } = preset.getRange();
-                  const active = periodStart === start && periodEnd === end;
+                  const active = periodStartISO === start && periodEndISO === end;
                   return (
                     <button
                       key={preset.label}
@@ -518,21 +520,21 @@ export default function CurriculumPlanNewPage() {
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="periodStart">Data de início</Label>
-                  <Input
-                    id="periodStart"
-                    type="date"
+                  <Label>Data de início</Label>
+                  <DatePicker
                     value={periodStart}
-                    onChange={(e) => setPeriodStart(e.target.value)}
+                    onChange={setPeriodStart}
+                    placeholder="Início do período"
+                    toDate={periodEnd}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="periodEnd">Data de fim</Label>
-                  <Input
-                    id="periodEnd"
-                    type="date"
+                  <Label>Data de fim</Label>
+                  <DatePicker
                     value={periodEnd}
-                    onChange={(e) => setPeriodEnd(e.target.value)}
+                    onChange={setPeriodEnd}
+                    placeholder="Fim do período"
+                    fromDate={periodStart}
                   />
                 </div>
               </div>
@@ -541,9 +543,9 @@ export default function CurriculumPlanNewPage() {
                 <div className="rounded-lg bg-muted px-4 py-3 text-sm">
                   <span className="font-medium">{weeks} semana{weeks !== 1 ? "s" : ""}</span>
                   {" "}de{" "}
-                  <span className="font-medium">{formatDatePT(periodStart)}</span>
+                  <span className="font-medium">{formatDatePT(periodStartISO)}</span>
                   {" "}a{" "}
-                  <span className="font-medium">{formatDatePT(periodEnd)}</span>
+                  <span className="font-medium">{formatDatePT(periodEndISO)}</span>
                   {" · "}
                   <span className="text-muted-foreground capitalize">{planningTypeLabel(planningType)}</span>
                 </div>
@@ -653,7 +655,7 @@ export default function CurriculumPlanNewPage() {
                 <div className="flex items-center justify-between px-4 py-3">
                   <span className="text-sm text-muted-foreground">Período</span>
                   <span className="text-sm font-medium">
-                    {formatDatePT(periodStart)} – {formatDatePT(periodEnd)}
+                    {formatDatePT(periodStartISO)} – {formatDatePT(periodEndISO)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between px-4 py-3">
