@@ -117,7 +117,8 @@ export const mathBlockSchema = z.object({
   id: blockIdSchema,
   type: z.literal("math"),
   tex: z.string().max(500),
-  display: z.boolean().optional(),
+  // OpenAI structured output emits null for absent optional fields; normalize to undefined.
+  display: z.boolean().nullish().transform((v) => v ?? undefined),
 });
 export type MathBlock = z.infer<typeof mathBlockSchema>;
 
@@ -167,10 +168,13 @@ export const slideBlockSchema = z.object({
   type: z.literal("slide"),
   layout: z.enum(SLIDE_LAYOUTS),
   title: inlineTextSchema,
-  subtitle: inlineTextSchema.optional(),
-  content: z.array(contentBlockSchema).max(12).optional(),
-  image: slideImageSchema.optional(),
-  notes: z.string().max(2000).optional(),
+  // OpenAI structured output requires all properties in `required` and expresses
+  // optional fields as nullable. Normalize null → undefined so the rest of the
+  // codebase doesn't have to handle null.
+  subtitle: inlineTextSchema.nullish().transform((v) => v ?? undefined),
+  content: z.array(contentBlockSchema).max(12).nullish().transform((v) => v ?? undefined),
+  image: slideImageSchema.nullish().transform((v) => v ?? undefined),
+  notes: z.string().max(2000).nullish().transform((v) => v ?? undefined),
 });
 export type SlideBlock = z.infer<typeof slideBlockSchema>;
 

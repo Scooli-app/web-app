@@ -78,20 +78,43 @@ export function useGenerationProgress({
           },
           onmessage(event) {
             if (cancelled) return;
-            // Heartbeats arrive as empty data; skip parsing those.
             if (!event.data) return;
-            // Some browsers deliver the event type on `event.event`; the
-            // fetch-event-source library puts it there too.
-            const type = event.event || "message";
 
-            // The Markdown stream uses {type, data} envelopes; the JSON stream
-            // uses event-type SSE fields. Support both for defensive coding.
-            let payload: Record<string, unknown> = {};
+            let parsed: unknown;
             try {
-              payload = JSON.parse(event.data);
+              parsed = JSON.parse(event.data);
             } catch {
-              // Heartbeat or malformed — ignore.
               return;
+            }
+
+            // Backend emits JSON envelopes: {"type":"status","data":"..."}
+            // as SSE "message" events (no SSE event-type field set).
+            // Unwrap the envelope so the switch below works for both paths.
+            let type = event.event || "message";
+            let payload: Record<string, unknown> = {};
+
+            if (
+              type === "message" &&
+              parsed !== null &&
+              typeof parsed === "object" &&
+              !Array.isArray(parsed) &&
+              typeof (parsed as Record<string, unknown>).type === "string"
+            ) {
+              const envelope = parsed as Record<string, unknown>;
+              type = envelope.type as string;
+              const inner = envelope.data;
+              if (typeof inner === "string") {
+                try {
+                  payload = JSON.parse(inner) as Record<string, unknown>;
+                } catch {
+                  // plain string data (e.g. done event carries documentId)
+                  payload = { _raw: inner };
+                }
+              } else if (typeof inner === "object" && inner !== null) {
+                payload = inner as Record<string, unknown>;
+              }
+            } else if (typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)) {
+              payload = parsed as Record<string, unknown>;
             }
 
             switch (type) {
@@ -119,13 +142,12 @@ export function useGenerationProgress({
                 return;
               }
               case "error": {
-                setError(String(payload.message ?? "Erro desconhecido"));
+                setError(String(payload.message ?? payload._raw ?? "Erro desconhecido"));
                 ctrl.abort();
                 return;
               }
               case "heartbeat":
               default:
-                // ignore
                 return;
             }
           },

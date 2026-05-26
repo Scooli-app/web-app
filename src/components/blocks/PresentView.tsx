@@ -19,6 +19,8 @@
 "use client";
 
 import { parsePresentationDocument, type PresentationDocument } from "@/shared/types/blocks";
+import { canvasToPresentation } from "@/components/document-editor-v2/canvas-layout";
+import { isCanvasPresentation } from "@/shared/types/canvas-presentation";
 import { fetchDocument } from "@/store/documents/documentSlice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { Loader2, Printer, X } from "lucide-react";
@@ -43,10 +45,16 @@ export function PresentView({ documentId }: Props) {
     if (documentId) void dispatch(fetchDocument(documentId));
   }, [dispatch, documentId]);
 
-  // Parse to typed model (memoized).
+  // Parse to typed model (memoized). Handles both v1 (layout-based) and
+  // v2 (canvas/position-based) content formats.
   const parsed = useMemo<PresentationDocument | null>(() => {
     if (!document || document.contentFormat !== "json" || !document.content) return null;
     try {
+      const raw: unknown = JSON.parse(document.content);
+      if (isCanvasPresentation(raw)) {
+        // v2 canvas format — reconstruct SlideBlocks for SlideRenderer
+        return canvasToPresentation(raw);
+      }
       return parsePresentationDocument(document.content);
     } catch {
       return null;

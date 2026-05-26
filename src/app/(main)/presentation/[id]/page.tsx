@@ -4,7 +4,6 @@ import { Suspense, use } from "react";
 import dynamic from "next/dynamic";
 import { Loader2 } from "lucide-react";
 
-// Loading component
 function EditorLoading() {
   return (
     <div className="flex items-center justify-center min-h-[400px] w-full">
@@ -16,9 +15,8 @@ function EditorLoading() {
   );
 }
 
-// Presentations use the JSON-backed BlockDocumentEditor instead of the legacy
-// Markdown DocumentEditor. Dynamic import keeps BlockNote / KaTeX out of the
-// initial bundle for non-presentation pages.
+// Dynamic import keeps Konva / pptxgenjs out of the initial bundle for
+// non-presentation pages.
 const BlockDocumentEditor = dynamic(
   () =>
     import("@/components/document-editor-v2/BlockDocumentEditor").then(
@@ -40,8 +38,12 @@ export default function PresentationEditorPage({
   const { id } = use(params);
 
   return (
-    <Suspense fallback={<EditorLoading />}>
-      <BlockDocumentEditor documentId={id} />
-    </Suspense>
+    // Negate SidebarLayout's padding so the editor is full-bleed within the
+    // content area. The editor itself controls its own internal spacing.
+    <div className="-m-3 flex w-full flex-1 min-h-0 sm:-m-4 md:-m-6">
+      <Suspense fallback={<EditorLoading />}>
+        <BlockDocumentEditor documentId={id} />
+      </Suspense>
+    </div>
   );
 }
