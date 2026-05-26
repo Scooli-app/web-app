@@ -132,10 +132,8 @@ function OverrideRow({
   const [deleting, setDeleting] = useState(false);
   const [resolvedLabel, setResolvedLabel] = useState<string | null>(null);
 
-  // Lazily resolve user/org display names via the backend lookup endpoints
   useEffect(() => {
     if (override.userId) {
-      // Use backend-enriched fields if already present
       if (override.userName || override.userEmail) {
         const lbl =
           override.userName && override.userEmail
@@ -262,10 +260,8 @@ function AddOverrideForm({
   const [enabled, setEnabled] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
-  // Selected target across types
   const [selected, setSelected] = useState<SelectedTarget | null>(null);
 
-  // User/org typeahead state
   const [searchQuery, setSearchQuery] = useState("");
   const debouncedQuery = useDebouncedValue(searchQuery, 250);
   const [userResults, setUserResults] = useState<UserSearchResult[]>([]);
@@ -273,7 +269,6 @@ function AddOverrideForm({
   const [searching, setSearching] = useState(false);
   const searchAbortRef = useRef<AbortController | null>(null);
 
-  // Reset selection when type changes
   useEffect(() => {
     setSelected(null);
     setSearchQuery("");
@@ -281,7 +276,6 @@ function AddOverrideForm({
     setOrgResults([]);
   }, [targetType]);
 
-  // Typeahead effect for user/org
   useEffect(() => {
     if (targetType !== "user" && targetType !== "organization") return;
     if (debouncedQuery.trim().length < 2) {
