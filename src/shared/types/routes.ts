@@ -21,4 +21,7 @@ export enum Routes {
   SOURCES = "/sources",
   ADMIN = "/admin",
   SUPPORT = "/support",
+  TIMETABLE = "/timetable",
+  TIMETABLE_NEW = "/timetable/new",
+  TIMETABLE_DETAIL = "/timetable/:id",
 }
