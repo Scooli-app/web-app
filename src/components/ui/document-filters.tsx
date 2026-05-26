@@ -46,14 +46,67 @@ const typeFilterOptions: Array<{
   value: Document["documentType"] | "all";
   label: string;
   icon: LucideIcon;
+  // Tailwind classes for selected and unselected states
+  selectedCls: string;
+  unselectedCls: string;
+  badgeSelectedCls: string;
 }> = [
-  { value: "all", label: "Todos", icon: Folder },
-  { value: "lessonPlan", label: "Planos de Aula", icon: FileText },
-  { value: "worksheet", label: "Fichas de Trabalho", icon: ScrollText },
-  { value: "test", label: "Testes", icon: NotebookPen },
-  { value: "quiz", label: "Quizzes", icon: HelpCircle },
-  { value: "presentation", label: "Apresentações", icon: MonitorPlay },
-  { value: "curriculumPlan", label: "Planificações", icon: CalendarDays },
+  {
+    value: "all",
+    label: "Todos",
+    icon: Folder,
+    selectedCls: "border-primary bg-primary text-primary-foreground shadow-sm",
+    unselectedCls: "border-border bg-card text-muted-foreground hover:border-primary/60 hover:text-primary",
+    badgeSelectedCls: "bg-white/20 text-primary-foreground",
+  },
+  {
+    value: "lessonPlan",
+    label: "Planos de Aula",
+    icon: FileText,
+    selectedCls: "border-primary bg-primary text-primary-foreground shadow-sm",
+    unselectedCls: "border-border bg-card text-muted-foreground hover:border-primary/60 hover:text-primary",
+    badgeSelectedCls: "bg-white/20 text-primary-foreground",
+  },
+  {
+    value: "worksheet",
+    label: "Fichas de Trabalho",
+    icon: ScrollText,
+    selectedCls: "border-teal-500 bg-teal-500 text-white shadow-sm dark:border-teal-600 dark:bg-teal-600",
+    unselectedCls: "border-border bg-card text-muted-foreground hover:border-teal-400 hover:text-teal-600 dark:hover:text-teal-400",
+    badgeSelectedCls: "bg-white/20 text-white",
+  },
+  {
+    value: "test",
+    label: "Testes",
+    icon: NotebookPen,
+    selectedCls: "border-orange-500 bg-orange-500 text-white shadow-sm dark:border-orange-600 dark:bg-orange-600",
+    unselectedCls: "border-border bg-card text-muted-foreground hover:border-orange-400 hover:text-orange-600 dark:hover:text-orange-400",
+    badgeSelectedCls: "bg-white/20 text-white",
+  },
+  {
+    value: "quiz",
+    label: "Quizzes",
+    icon: HelpCircle,
+    selectedCls: "border-amber-500 bg-amber-500 text-white shadow-sm dark:border-amber-600 dark:bg-amber-600",
+    unselectedCls: "border-border bg-card text-muted-foreground hover:border-amber-400 hover:text-amber-600 dark:hover:text-amber-400",
+    badgeSelectedCls: "bg-white/20 text-white",
+  },
+  {
+    value: "presentation",
+    label: "Apresentações",
+    icon: MonitorPlay,
+    selectedCls: "border-rose-500 bg-rose-500 text-white shadow-sm dark:border-rose-600 dark:bg-rose-600",
+    unselectedCls: "border-border bg-card text-muted-foreground hover:border-rose-400 hover:text-rose-600 dark:hover:text-rose-400",
+    badgeSelectedCls: "bg-white/20 text-white",
+  },
+  {
+    value: "curriculumPlan",
+    label: "Planificações",
+    icon: CalendarDays,
+    selectedCls: "border-indigo-500 bg-indigo-500 text-white shadow-sm dark:border-indigo-600 dark:bg-indigo-600",
+    unselectedCls: "border-border bg-card text-muted-foreground hover:border-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-400",
+    badgeSelectedCls: "bg-white/20 text-white",
+  },
 ];
 
 const originOptions: Array<{ value: DocumentOriginFilter; label: string }> = [
@@ -106,25 +159,13 @@ export function DocumentFilters({
             <button
               key={option.value}
               onClick={() => onTypeChange(option.value)}
-              className={`
-                inline-flex items-center gap-1.5 whitespace-nowrap rounded-xl border px-3 py-2 text-xs font-medium
-                transition-all duration-200 sm:gap-2 sm:px-4 sm:text-sm
-                ${
-                  isSelected
-                    ? "border-primary bg-primary text-primary-foreground shadow-sm"
-                    : "border-border bg-card text-muted-foreground hover:border-primary/50 hover:text-primary"
-                }
-              `}
+              className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-xl border px-3 py-2 text-xs font-medium transition-all duration-200 sm:gap-2 sm:px-4 sm:text-sm ${isSelected ? option.selectedCls : option.unselectedCls}`}
             >
               <Icon className="h-3.5 w-3.5 shrink-0" />
               <span>{option.label}</span>
               {documentCounts && (
                 <Badge
-                  className={`ml-0.5 px-2 py-0 text-xs ${
-                    isSelected
-                      ? "bg-white/20 text-primary-foreground"
-                      : "bg-muted text-muted-foreground"
-                  }`}
+                  className={`ml-0.5 px-2 py-0 text-xs ${isSelected ? option.badgeSelectedCls : "bg-muted text-muted-foreground"}`}
                 >
                   {count}
                 </Badge>
