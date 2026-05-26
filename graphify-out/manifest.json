@@ -1,0 +1,1242 @@
+{
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\middleware.ts": {
+    "mtime": 1779836985.5921497,
+    "ast_hash": "da83da1acc1eb8168a620e956c9d09fa",
+    "semantic_hash": "da83da1acc1eb8168a620e956c9d09fa"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\app\\global-error.tsx": {
+    "mtime": 1779836985.3804836,
+    "ast_hash": "2b20b1483dbd4fb3d042edb88aa7ff2b",
+    "semantic_hash": "2b20b1483dbd4fb3d042edb88aa7ff2b"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\app\\layout.tsx": {
+    "mtime": 1779836985.3834858,
+    "ast_hash": "6746e12e7d5a0edcbf206d87b9e8ee18",
+    "semantic_hash": "6746e12e7d5a0edcbf206d87b9e8ee18"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\app\\not-found.tsx": {
+    "mtime": 1779836985.3844824,
+    "ast_hash": "52e1a32fdf426c2ad2b750518b146c78",
+    "semantic_hash": "52e1a32fdf426c2ad2b750518b146c78"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\app\\robots.ts": {
+    "mtime": 1779836985.3854878,
+    "ast_hash": "865ab0eb0b174146f2a1d2571800431a",
+    "semantic_hash": "865ab0eb0b174146f2a1d2571800431a"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\app\\(checkout)\\layout.tsx": {
+    "mtime": 1779836985.2858286,
+    "ast_hash": "fccfe940f47e824a95f5e922a852c578",
+    "semantic_hash": "fccfe940f47e824a95f5e922a852c578"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\app\\(checkout)\\checkout\\loading.tsx": {
+    "mtime": 1779836985.2838318,
+    "ast_hash": "b8cfbcb655786bed0cde2ffee8bd7bbe",
+    "semantic_hash": "b8cfbcb655786bed0cde2ffee8bd7bbe"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\app\\(checkout)\\checkout\\page.tsx": {
+    "mtime": 1779836985.2848318,
+    "ast_hash": "91b17e027308393ff3a2cc5672aa0d5e",
+    "semantic_hash": "91b17e027308393ff3a2cc5672aa0d5e"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\app\\(checkout)\\checkout\\cancel\\loading.tsx": {
+    "mtime": 1779836985.2808318,
+    "ast_hash": "69f351cc277a320e0ce1a75e4760ce37",
+    "semantic_hash": "69f351cc277a320e0ce1a75e4760ce37"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\app\\(checkout)\\checkout\\cancel\\page.tsx": {
+    "mtime": 1779836985.2828288,
+    "ast_hash": "22c189e0ee47e8a5f0be984e5624b97f",
+    "semantic_hash": "22c189e0ee47e8a5f0be984e5624b97f"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\app\\(main)\\layout.tsx": {
+    "mtime": 1779836985.3244803,
+    "ast_hash": "c8d907eda37b32750bf7d39871c24903",
+    "semantic_hash": "c8d907eda37b32750bf7d39871c24903"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\app\\(main)\\admin\\page.tsx": {
+    "mtime": 1779836985.3008287,
+    "ast_hash": "99b850080b3ba062cb43c90344351e74",
+    "semantic_hash": "99b850080b3ba062cb43c90344351e74"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\app\\(main)\\admin\\costs\\page.tsx": {
+    "mtime": 1779836985.2898252,
+    "ast_hash": "0ce0e5558b91d88b5737e8e3da7b4bf1",
+    "semantic_hash": "0ce0e5558b91d88b5737e8e3da7b4bf1"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\app\\(main)\\admin\\costs\\[userId]\\page.tsx": {
+    "mtime": 1779836985.2888246,
+    "ast_hash": "aead6ffde56801a697048e657a443695",
+    "semantic_hash": "aead6ffde56801a697048e657a443695"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\app\\(main)\\admin\\features\\page.tsx": {
+    "mtime": 1779836985.2928295,
+    "ast_hash": "15a0987b6509ac81bd5c1cedef2f9ff5",
+    "semantic_hash": "15a0987b6509ac81bd5c1cedef2f9ff5"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\app\\(main)\\admin\\feedback\\page.tsx": {
+    "mtime": 1779836985.294825,
+    "ast_hash": "85ee62453bbaf93d6aa32521b4eaa33f",
+    "semantic_hash": "85ee62453bbaf93d6aa32521b4eaa33f"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\app\\(main)\\admin\\feedback\\surveys\\page.tsx": {
+    "mtime": 1779836985.2968252,
+    "ast_hash": "302fd06fdd618957899c7bc731ae6706",
+    "semantic_hash": "302fd06fdd618957899c7bc731ae6706"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\app\\(main)\\admin\\feedback\\[id]\\page.tsx": {
+    "mtime": 1779836985.2938266,
+    "ast_hash": "e0183ce32bf90861ce4ca1c2f766b177",
+    "semantic_hash": "e0183ce32bf90861ce4ca1c2f766b177"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\app\\(main)\\admin\\moderation\\page.tsx": {
+    "mtime": 1779836985.297825,
+    "ast_hash": "b8facc263874909cbf8b4ad524c10019",
+    "semantic_hash": "b8facc263874909cbf8b4ad524c10019"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\app\\(main)\\admin\\onboarding\\page.tsx": {
+    "mtime": 1779836985.2998266,
+    "ast_hash": "475b946ec54ec8c619e81d2afcdaa276",
+    "semantic_hash": "475b946ec54ec8c619e81d2afcdaa276"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\app\\(main)\\admin\\users\\page.tsx": {
+    "mtime": 1779836985.3028271,
+    "ast_hash": "5356619df2a1aebc8cbc12882f849eaf",
+    "semantic_hash": "5356619df2a1aebc8cbc12882f849eaf"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\app\\(main)\\community\\page.tsx": {
+    "mtime": 1779836985.3058243,
+    "ast_hash": "23b92a38a7406917575ac9ab2a33c625",
+    "semantic_hash": "23b92a38a7406917575ac9ab2a33c625"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\app\\(main)\\community\\dashboard\\page.tsx": {
+    "mtime": 1779836985.3048248,
+    "ast_hash": "a3bf2e06b637581cc5ad3edfc101e5df",
+    "semantic_hash": "a3bf2e06b637581cc5ad3edfc101e5df"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\app\\(main)\\dashboard\\page.tsx": {
+    "mtime": 1779836985.3204892,
+    "ast_hash": "ef78eb9bd8cc704b989fd1a22c42160f",
+    "semantic_hash": "ef78eb9bd8cc704b989fd1a22c42160f"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\app\\(main)\\documents\\loading.tsx": {
+    "mtime": 1779836985.322484,
+    "ast_hash": "295923e97bf862166b471ee3fa08ba1f",
+    "semantic_hash": "295923e97bf862166b471ee3fa08ba1f"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\app\\(main)\\documents\\page.tsx": {
+    "mtime": 1779836985.3234794,
+    "ast_hash": "2e2a4873d1e116c8f6fe6a59bf658d28",
+    "semantic_hash": "2e2a4873d1e116c8f6fe6a59bf658d28"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\app\\(main)\\lesson-plan\\loading.tsx": {
+    "mtime": 1779836985.3284817,
+    "ast_hash": "fc9bb1cab5bcb8a85931513a079dd196",
+    "semantic_hash": "fc9bb1cab5bcb8a85931513a079dd196"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\app\\(main)\\lesson-plan\\page.tsx": {
+    "mtime": 1779836985.3284817,
+    "ast_hash": "a4d757a26fa10988a134edf50bec8f6e",
+    "semantic_hash": "a4d757a26fa10988a134edf50bec8f6e"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\app\\(main)\\lesson-plan\\[id]\\loading.tsx": {
+    "mtime": 1779836985.326481,
+    "ast_hash": "c19bfcb8aee1d00dfe73a94ab96f6218",
+    "semantic_hash": "c19bfcb8aee1d00dfe73a94ab96f6218"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\app\\(main)\\lesson-plan\\[id]\\page.tsx": {
+    "mtime": 1779836985.3274815,
+    "ast_hash": "ae549d3175d3561b2a467e91f1234dee",
+    "semantic_hash": "ae549d3175d3561b2a467e91f1234dee"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\app\\(main)\\presentation\\loading.tsx": {
+    "mtime": 1779836985.3334837,
+    "ast_hash": "121e6c0b74c87dbb426af3499799fc3a",
+    "semantic_hash": "121e6c0b74c87dbb426af3499799fc3a"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\app\\(main)\\presentation\\page.tsx": {
+    "mtime": 1779836985.3344817,
+    "ast_hash": "9fc003a51f5425c0d4bf39e0fc05bbd5",
+    "semantic_hash": "9fc003a51f5425c0d4bf39e0fc05bbd5"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\app\\(main)\\presentation\\[id]\\loading.tsx": {
+    "mtime": 1779836985.330483,
+    "ast_hash": "31e64021e3c395573c1d1966de7f8d95",
+    "semantic_hash": "31e64021e3c395573c1d1966de7f8d95"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\app\\(main)\\presentation\\[id]\\page.tsx": {
+    "mtime": 1779836985.3324864,
+    "ast_hash": "9122ef1ac05ea3f9870e05c13b1dee72",
+    "semantic_hash": "9122ef1ac05ea3f9870e05c13b1dee72"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\app\\(main)\\quiz\\loading.tsx": {
+    "mtime": 1779836985.3374815,
+    "ast_hash": "6085f385b1c042e79ed757fded3d790a",
+    "semantic_hash": "6085f385b1c042e79ed757fded3d790a"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\app\\(main)\\quiz\\page.tsx": {
+    "mtime": 1779836985.3384817,
+    "ast_hash": "a446432a80e861d7994591016b93afc2",
+    "semantic_hash": "a446432a80e861d7994591016b93afc2"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\app\\(main)\\quiz\\[id]\\loading.tsx": {
+    "mtime": 1779836985.3354838,
+    "ast_hash": "1f0c68bbb828a299160887e658d97967",
+    "semantic_hash": "1f0c68bbb828a299160887e658d97967"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\app\\(main)\\quiz\\[id]\\page.tsx": {
+    "mtime": 1779836985.3364828,
+    "ast_hash": "aadc6227fd9f5e0e9b44f1cf069e6235",
+    "semantic_hash": "aadc6227fd9f5e0e9b44f1cf069e6235"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\app\\(main)\\school\\layout.tsx": {
+    "mtime": 1779836985.3394823,
+    "ast_hash": "fd4eb276b2e611b4acee524483692544",
+    "semantic_hash": "fd4eb276b2e611b4acee524483692544"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\app\\(main)\\school\\page.tsx": {
+    "mtime": 1779836985.3424854,
+    "ast_hash": "209af4dc0d2c578d13ba434ef10d3cd5",
+    "semantic_hash": "209af4dc0d2c578d13ba434ef10d3cd5"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\app\\(main)\\school\\members\\page.tsx": {
+    "mtime": 1779836985.3414857,
+    "ast_hash": "43859d3d00ceb15ca7a632d74cd435b6",
+    "semantic_hash": "43859d3d00ceb15ca7a632d74cd435b6"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\app\\(main)\\school\\settings\\page.tsx": {
+    "mtime": 1779836985.344486,
+    "ast_hash": "e4f115f918308e941c7b9e9ba094d85d",
+    "semantic_hash": "e4f115f918308e941c7b9e9ba094d85d"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\app\\(main)\\school\\usage\\page.tsx": {
+    "mtime": 1779836985.3454845,
+    "ast_hash": "c07502a701c92c569266233082cd1941",
+    "semantic_hash": "c07502a701c92c569266233082cd1941"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\app\\(main)\\settings\\loading.tsx": {
+    "mtime": 1779836985.3464837,
+    "ast_hash": "92ecf4fffe9b6192857cc8bac44e444d",
+    "semantic_hash": "92ecf4fffe9b6192857cc8bac44e444d"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\app\\(main)\\settings\\page.tsx": {
+    "mtime": 1779836985.3474844,
+    "ast_hash": "e4dcb9a81137250664d584556ad180ad",
+    "semantic_hash": "e4dcb9a81137250664d584556ad180ad"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\app\\(main)\\sources\\page.tsx": {
+    "mtime": 1779836985.3494833,
+    "ast_hash": "03f5e5e3ea78d6d9e2f7b0af74c20638",
+    "semantic_hash": "03f5e5e3ea78d6d9e2f7b0af74c20638"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\app\\(main)\\support\\page.tsx": {
+    "mtime": 1779836985.3504825,
+    "ast_hash": "99b85d711ae3a80ce9a222f534ba6056",
+    "semantic_hash": "99b85d711ae3a80ce9a222f534ba6056"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\app\\(main)\\test\\loading.tsx": {
+    "mtime": 1779836985.3544836,
+    "ast_hash": "838b22f6985ccc8102ea3a3189e52ac4",
+    "semantic_hash": "838b22f6985ccc8102ea3a3189e52ac4"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\app\\(main)\\test\\page.tsx": {
+    "mtime": 1779836985.3554823,
+    "ast_hash": "64ac1f096a9b9459448bbf4862eb09b1",
+    "semantic_hash": "64ac1f096a9b9459448bbf4862eb09b1"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\app\\(main)\\test\\[id]\\loading.tsx": {
+    "mtime": 1779836985.352484,
+    "ast_hash": "e6b16f0ab887fd0ea1c314e4e861dac4",
+    "semantic_hash": "e6b16f0ab887fd0ea1c314e4e861dac4"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\app\\(main)\\test\\[id]\\page.tsx": {
+    "mtime": 1779836985.3534827,
+    "ast_hash": "9bb66d8ff778c70cc09a5f341a830fd5",
+    "semantic_hash": "9bb66d8ff778c70cc09a5f341a830fd5"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\app\\(main)\\worksheet\\page.tsx": {
+    "mtime": 1779836985.3584836,
+    "ast_hash": "44d66c88a415671f76f0677068f6fe8b",
+    "semantic_hash": "44d66c88a415671f76f0677068f6fe8b"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\app\\(main)\\worksheet\\[id]\\loading.tsx": {
+    "mtime": 1779836985.357484,
+    "ast_hash": "f36b10346968fede3c695ebda6c7b3a4",
+    "semantic_hash": "f36b10346968fede3c695ebda6c7b3a4"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\app\\(main)\\worksheet\\[id]\\page.tsx": {
+    "mtime": 1779836985.3584836,
+    "ast_hash": "d062e01b9a40aa5c0440bb4bdd5b8c81",
+    "semantic_hash": "d062e01b9a40aa5c0440bb4bdd5b8c81"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\app\\accept-organization-invitation\\[[...rest]]\\page.tsx": {
+    "mtime": 1779836985.3604858,
+    "ast_hash": "0ccb9165633a8702a1e13e7193d1522e",
+    "semantic_hash": "0ccb9165633a8702a1e13e7193d1522e"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\app\\api\\download\\route.ts": {
+    "mtime": 1779836985.3734863,
+    "ast_hash": "cd408eae443382748a25278ce2ca77cf",
+    "semantic_hash": "cd408eae443382748a25278ce2ca77cf"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\app\\forgot-password\\[[...forgot-password]]\\page.tsx": {
+    "mtime": 1779836985.3774848,
+    "ast_hash": "f26fa67c61814bd2e15cf99092493a24",
+    "semantic_hash": "f26fa67c61814bd2e15cf99092493a24"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\app\\sign-in\\[[...sign-in]]\\page.tsx": {
+    "mtime": 1779836985.3884864,
+    "ast_hash": "83852dec211e27c6e8160b1a6ea84aac",
+    "semantic_hash": "83852dec211e27c6e8160b1a6ea84aac"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\app\\sign-up\\[[...sign-up]]\\page.tsx": {
+    "mtime": 1779836985.390487,
+    "ast_hash": "6a5a342aeb0db9f961ca2acbc23d7250",
+    "semantic_hash": "6a5a342aeb0db9f961ca2acbc23d7250"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\admin\\StatusCard.tsx": {
+    "mtime": 1779836985.3934875,
+    "ast_hash": "8e8c0275e45b87e17a662a7189079de7",
+    "semantic_hash": "8e8c0275e45b87e17a662a7189079de7"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\admin\\feedback\\FeedbackSeverityBadge.tsx": {
+    "mtime": 1779836985.395491,
+    "ast_hash": "bfdaa11a0a49f91a10e8e9b450edba65",
+    "semantic_hash": "bfdaa11a0a49f91a10e8e9b450edba65"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\admin\\feedback\\FeedbackStatusBadge.tsx": {
+    "mtime": 1779836985.408487,
+    "ast_hash": "85e9b350a5f99488f1ceefc52b052a35",
+    "semantic_hash": "85e9b350a5f99488f1ceefc52b052a35"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\assistant\\AssistantButton.tsx": {
+    "mtime": 1779836985.411494,
+    "ast_hash": "e8671150f98f64a67495572f5d72da03",
+    "semantic_hash": "e8671150f98f64a67495572f5d72da03"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\assistant\\AssistantPanel.tsx": {
+    "mtime": 1779836985.412492,
+    "ast_hash": "fa6e0c3e78e4b2a32b82a71d6b8457a1",
+    "semantic_hash": "fa6e0c3e78e4b2a32b82a71d6b8457a1"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\assistant\\AssistantProvider.tsx": {
+    "mtime": 1779836985.4134922,
+    "ast_hash": "462978a52222a91f18cfbca3b11bae9a",
+    "semantic_hash": "462978a52222a91f18cfbca3b11bae9a"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\assistant\\EmptyState.tsx": {
+    "mtime": 1779836985.4144974,
+    "ast_hash": "d0ee80b69fab1121706f72aa7a478207",
+    "semantic_hash": "d0ee80b69fab1121706f72aa7a478207"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\assistant\\index.ts": {
+    "mtime": 1779836985.4154916,
+    "ast_hash": "b801875cbf5fc33244871e17af9ab832",
+    "semantic_hash": "b801875cbf5fc33244871e17af9ab832"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\auth\\AuthLayout.tsx": {
+    "mtime": 1779836985.417488,
+    "ast_hash": "0c01452820a49d37adeca3acb64147ba",
+    "semantic_hash": "0c01452820a49d37adeca3acb64147ba"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\chat\\ChatInput.tsx": {
+    "mtime": 1779836985.4194937,
+    "ast_hash": "43e1301403ab2a28d21cf48676b6f59a",
+    "semantic_hash": "43e1301403ab2a28d21cf48676b6f59a"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\chat\\ChatMessage.tsx": {
+    "mtime": 1779836985.4204893,
+    "ast_hash": "4cdb1cf83d0987aae328d9a00e7777d2",
+    "semantic_hash": "4cdb1cf83d0987aae328d9a00e7777d2"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\chat\\index.ts": {
+    "mtime": 1779836985.4224892,
+    "ast_hash": "a5116971981977310846053c14dbaa3b",
+    "semantic_hash": "a5116971981977310846053c14dbaa3b"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\chat\\TypingIndicator.tsx": {
+    "mtime": 1779836985.4214864,
+    "ast_hash": "e600c43b5b515ded1e98030e825e26d3",
+    "semantic_hash": "e600c43b5b515ded1e98030e825e26d3"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\community\\CommunityFilters.tsx": {
+    "mtime": 1779836985.4244854,
+    "ast_hash": "008afad1e57b4095a085caa00adfba96",
+    "semantic_hash": "008afad1e57b4095a085caa00adfba96"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\community\\CommunityUpgradePrompt.tsx": {
+    "mtime": 1779836985.4264858,
+    "ast_hash": "c42b06fbb68ce01a49e899aca64f00bf",
+    "semantic_hash": "c42b06fbb68ce01a49e899aca64f00bf"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\community\\ContributorDashboard.tsx": {
+    "mtime": 1779836985.427486,
+    "ast_hash": "e4c0dc7a95ab4f3064a40511e5be2a3a",
+    "semantic_hash": "e4c0dc7a95ab4f3064a40511e5be2a3a"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\community\\index.ts": {
+    "mtime": 1779836985.4352715,
+    "ast_hash": "9015b7b7678d99ea41e94f890915505b",
+    "semantic_hash": "9015b7b7678d99ea41e94f890915505b"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\community\\ModerationQueue.tsx": {
+    "mtime": 1779836985.4284852,
+    "ast_hash": "c58910c7a583ee5d00342b1330c2e98a",
+    "semantic_hash": "c58910c7a583ee5d00342b1330c2e98a"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\community\\ResourceCard.tsx": {
+    "mtime": 1779836985.430485,
+    "ast_hash": "2fcae521af4cc7baaa584c6807416ce4",
+    "semantic_hash": "2fcae521af4cc7baaa584c6807416ce4"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\community\\ResourceGrid.tsx": {
+    "mtime": 1779836985.432487,
+    "ast_hash": "e2413420aa1853894012c8a6f845d1a2",
+    "semantic_hash": "e2413420aa1853894012c8a6f845d1a2"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\community\\ShareResourceModal.tsx": {
+    "mtime": 1779836985.4334862,
+    "ast_hash": "0962df89fdabfe0cdc7d2b502752e43b",
+    "semantic_hash": "0962df89fdabfe0cdc7d2b502752e43b"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\document-creation\\constants.ts": {
+    "mtime": 1779836985.4378042,
+    "ast_hash": "eb7e23610975c2959cfef304c5c2a15b",
+    "semantic_hash": "eb7e23610975c2959cfef304c5c2a15b"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\document-creation\\DocumentCreationPage.tsx": {
+    "mtime": 1779836985.4368064,
+    "ast_hash": "f7b125f9d9c0822955c67192692f86ec",
+    "semantic_hash": "f7b125f9d9c0822955c67192692f86ec"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\document-creation\\documentTypes.ts": {
+    "mtime": 1779836985.4488006,
+    "ast_hash": "0f3810f547dbd18df6e38acb67a13b62",
+    "semantic_hash": "0f3810f547dbd18df6e38acb67a13b62"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\document-creation\\index.ts": {
+    "mtime": 1779836985.4659433,
+    "ast_hash": "625830c2d41788a2fbf8c7d4961c14fe",
+    "semantic_hash": "625830c2d41788a2fbf8c7d4961c14fe"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\document-creation\\types.ts": {
+    "mtime": 1779836985.497027,
+    "ast_hash": "80a989f44d3a3addd567b38d7e50f6a4",
+    "semantic_hash": "80a989f44d3a3addd567b38d7e50f6a4"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\document-creation\\sections\\AdditionalDetailsSection.tsx": {
+    "mtime": 1779836985.4722471,
+    "ast_hash": "ad8823d28f44b3dd5f13d285a371e162",
+    "semantic_hash": "ad8823d28f44b3dd5f13d285a371e162"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\document-creation\\sections\\DurationSection.tsx": {
+    "mtime": 1779836985.4747496,
+    "ast_hash": "7f051872995f609a7b2c15e16b1f48b1",
+    "semantic_hash": "7f051872995f609a7b2c15e16b1f48b1"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\document-creation\\sections\\FormActions.tsx": {
+    "mtime": 1779836985.475309,
+    "ast_hash": "0dc3fae43434000e46d08187ace108f0",
+    "semantic_hash": "0dc3fae43434000e46d08187ace108f0"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\document-creation\\sections\\FormHeader.tsx": {
+    "mtime": 1779836985.4764006,
+    "ast_hash": "a836f42918a6e3164fa963d3e2ee1c73",
+    "semantic_hash": "a836f42918a6e3164fa963d3e2ee1c73"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\document-creation\\sections\\GradeSection.tsx": {
+    "mtime": 1779836985.4774902,
+    "ast_hash": "9588b5406b4fad23f57b78be6444dc5c",
+    "semantic_hash": "9588b5406b4fad23f57b78be6444dc5c"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\document-creation\\sections\\index.ts": {
+    "mtime": 1779836985.4850287,
+    "ast_hash": "3322dc0e4f3e428b6d878a39474636a9",
+    "semantic_hash": "3322dc0e4f3e428b6d878a39474636a9"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\document-creation\\sections\\SourcePickerSection.tsx": {
+    "mtime": 1779836985.478837,
+    "ast_hash": "02989c84c176fdf6d081a01ca87faa2c",
+    "semantic_hash": "02989c84c176fdf6d081a01ca87faa2c"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\document-creation\\sections\\SubjectSection.tsx": {
+    "mtime": 1779836985.4809482,
+    "ast_hash": "77373747afb2655f8c9eefa43c06a181",
+    "semantic_hash": "77373747afb2655f8c9eefa43c06a181"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\document-creation\\sections\\TeachingMethodSection.tsx": {
+    "mtime": 1779836985.481505,
+    "ast_hash": "77849b6bade20dc8f43cfd0f11a828e5",
+    "semantic_hash": "77849b6bade20dc8f43cfd0f11a828e5"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\document-creation\\sections\\TopicSection.tsx": {
+    "mtime": 1779836985.482013,
+    "ast_hash": "4dcb705f74f372e44529eaab6d2e8afa",
+    "semantic_hash": "4dcb705f74f372e44529eaab6d2e8afa"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\document-creation\\sections\\WorksheetVariantSection.tsx": {
+    "mtime": 1779836985.4840357,
+    "ast_hash": "6c41433816251a96f5a98b00a3e4f18d",
+    "semantic_hash": "6c41433816251a96f5a98b00a3e4f18d"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\document-creation\\templates\\index.ts": {
+    "mtime": 1779836985.4960277,
+    "ast_hash": "0577ae0dfe204e7862f13a375f3b9dbe",
+    "semantic_hash": "0577ae0dfe204e7862f13a375f3b9dbe"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\document-creation\\templates\\SortableSection.tsx": {
+    "mtime": 1779836985.4870243,
+    "ast_hash": "4555f535c80c871dd27833f3c774c86c",
+    "semantic_hash": "4555f535c80c871dd27833f3c774c86c"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\document-creation\\templates\\TemplateBrowserModal.tsx": {
+    "mtime": 1779836985.489029,
+    "ast_hash": "0a15b0efaee826f831d5520ffc00ee03",
+    "semantic_hash": "0a15b0efaee826f831d5520ffc00ee03"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\document-creation\\templates\\TemplateCard.tsx": {
+    "mtime": 1779836985.4900267,
+    "ast_hash": "6b1f47a6666a3d01aaad4140fa80fb10",
+    "semantic_hash": "6b1f47a6666a3d01aaad4140fa80fb10"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\document-creation\\templates\\TemplateCreator.tsx": {
+    "mtime": 1779836985.491029,
+    "ast_hash": "43bc32b6beeca82a2af12573fda83beb",
+    "semantic_hash": "43bc32b6beeca82a2af12573fda83beb"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\document-creation\\templates\\TemplateEmptyState.tsx": {
+    "mtime": 1779836985.4920263,
+    "ast_hash": "188f88c06b285b97ed70e25465243830",
+    "semantic_hash": "188f88c06b285b97ed70e25465243830"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\document-creation\\templates\\TemplateFromDocumentCreator.tsx": {
+    "mtime": 1779836985.4940326,
+    "ast_hash": "3bddbcc6d8fa720ca4835656b87b7d8e",
+    "semantic_hash": "3bddbcc6d8fa720ca4835656b87b7d8e"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\document-creation\\templates\\TemplateSection.tsx": {
+    "mtime": 1779836985.4950283,
+    "ast_hash": "caf8f126f90c6dae69c92e051e252069",
+    "semantic_hash": "caf8f126f90c6dae69c92e051e252069"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\document-editor\\AIChatPanel.tsx": {
+    "mtime": 1779836985.4990277,
+    "ast_hash": "f3aa3b4c756b6902e3c253dd55f34ccf",
+    "semantic_hash": "f3aa3b4c756b6902e3c253dd55f34ccf"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\document-editor\\DocumentEditor.tsx": {
+    "mtime": 1779836985.5010283,
+    "ast_hash": "64f84b74bb2c8cca204d0f25dcfe6cf3",
+    "semantic_hash": "64f84b74bb2c8cca204d0f25dcfe6cf3"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\document-editor\\DocumentTitle.tsx": {
+    "mtime": 1779836985.5020268,
+    "ast_hash": "309a139ac550eff2c13ab2e2ec36db26",
+    "semantic_hash": "309a139ac550eff2c13ab2e2ec36db26"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\document-editor\\DownloadButton.tsx": {
+    "mtime": 1779836985.5030282,
+    "ast_hash": "03fba05445d35245bfad44e7a1efed99",
+    "semantic_hash": "03fba05445d35245bfad44e7a1efed99"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\document-editor\\ShareButton.tsx": {
+    "mtime": 1779836985.5040348,
+    "ast_hash": "8d00e5b888bf1af7ace5e5f6b05a83cd",
+    "semantic_hash": "8d00e5b888bf1af7ace5e5f6b05a83cd"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\editor\\DiffToolbar.tsx": {
+    "mtime": 1779836985.506025,
+    "ast_hash": "42bdc7edc6091eb266b0ccc7ed3a5946",
+    "semantic_hash": "42bdc7edc6091eb266b0ccc7ed3a5946"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\editor\\extensions\\DiffExtension.ts": {
+    "mtime": 1779836985.507028,
+    "ast_hash": "700dad6eb3c8d1c4417b2a4a92df13e2",
+    "semantic_hash": "700dad6eb3c8d1c4417b2a4a92df13e2"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\editor\\extensions\\ImageBlockExtension.ts": {
+    "mtime": 1779836985.508027,
+    "ast_hash": "e3cad239dbfdda24e3c9f0d09a68f90c",
+    "semantic_hash": "e3cad239dbfdda24e3c9f0d09a68f90c"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\editor\\extensions\\ImageBlockNodeView.tsx": {
+    "mtime": 1779836985.5090263,
+    "ast_hash": "d6d3b5736c2feeb6b5c2bb3c24a7f386",
+    "semantic_hash": "d6d3b5736c2feeb6b5c2bb3c24a7f386"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\editor\\utils\\diffEngine.ts": {
+    "mtime": 1779836985.5110352,
+    "ast_hash": "ee338b58cdfc67d04d03f7684d312a6f",
+    "semantic_hash": "ee338b58cdfc67d04d03f7684d312a6f"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\feedback\\BugReportForm.tsx": {
+    "mtime": 1779836985.5166667,
+    "ast_hash": "ede195c5984ac45b07068f42c05f2a97",
+    "semantic_hash": "ede195c5984ac45b07068f42c05f2a97"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\feedback\\FeedbackActionCards.tsx": {
+    "mtime": 1779836985.5175629,
+    "ast_hash": "6391bad5c2745a061d14d2a2c787fd34",
+    "semantic_hash": "6391bad5c2745a061d14d2a2c787fd34"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\feedback\\FeedbackHistory.tsx": {
+    "mtime": 1779836985.5185618,
+    "ast_hash": "af06a39234266dfc1fc308acfef5188f",
+    "semantic_hash": "af06a39234266dfc1fc308acfef5188f"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\feedback\\FeedbackModal.tsx": {
+    "mtime": 1779836985.5195656,
+    "ast_hash": "3dc1228b11827cc30d51bd641e46da62",
+    "semantic_hash": "3dc1228b11827cc30d51bd641e46da62"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\feedback\\SuggestionForm.tsx": {
+    "mtime": 1779836985.5205677,
+    "ast_hash": "e8a59b9969116efd3f2b674b8eb942d1",
+    "semantic_hash": "e8a59b9969116efd3f2b674b8eb942d1"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\feedback-survey\\AppFeedbackSurveyGate.tsx": {
+    "mtime": 1779836985.5140276,
+    "ast_hash": "180b08032fda87050a34ea1349c796e9",
+    "semantic_hash": "180b08032fda87050a34ea1349c796e9"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\feedback-survey\\AppFeedbackSurveyModal.tsx": {
+    "mtime": 1779836985.5150325,
+    "ast_hash": "e1cf8d3da135257b656eb345bd9fe39c",
+    "semantic_hash": "e1cf8d3da135257b656eb345bd9fe39c"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\layout\\AppBootstrapGate.tsx": {
+    "mtime": 1779836985.5235577,
+    "ast_hash": "11be0c51cf58f1d3ee7b0dd61775c9f2",
+    "semantic_hash": "11be0c51cf58f1d3ee7b0dd61775c9f2"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\layout\\PageContainer.tsx": {
+    "mtime": 1779836985.526558,
+    "ast_hash": "1f8a91754e4411c18e059c40837ac909",
+    "semantic_hash": "1f8a91754e4411c18e059c40837ac909"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\layout\\PageHeader.tsx": {
+    "mtime": 1779836985.5295608,
+    "ast_hash": "c55da1a64dd4591715379f70e363dcaa",
+    "semantic_hash": "c55da1a64dd4591715379f70e363dcaa"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\layout\\SchoolAdminGuard.tsx": {
+    "mtime": 1779836985.53056,
+    "ast_hash": "84ab36d79450cfce28bc4516d17dacf1",
+    "semantic_hash": "84ab36d79450cfce28bc4516d17dacf1"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\layout\\SidebarLayout.tsx": {
+    "mtime": 1779836985.5315573,
+    "ast_hash": "c1fd7c8865e3e578387b575dc1c25881",
+    "semantic_hash": "c1fd7c8865e3e578387b575dc1c25881"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\layout\\SourceIngestionTracker.tsx": {
+    "mtime": 1779836985.5325613,
+    "ast_hash": "ce1906e63839fc5196ca94e80de03d21",
+    "semantic_hash": "ce1906e63839fc5196ca94e80de03d21"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\layout\\SourcesPendingBadge.tsx": {
+    "mtime": 1779836985.5345573,
+    "ast_hash": "09e072eefd11dbb191fca21e48305740",
+    "semantic_hash": "09e072eefd11dbb191fca21e48305740"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\layout\\ThemeToggle.tsx": {
+    "mtime": 1779836985.5355618,
+    "ast_hash": "f8f0f1171f196e4bbe804310ccaf896d",
+    "semantic_hash": "f8f0f1171f196e4bbe804310ccaf896d"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\modals\\upload-document-modal.tsx": {
+    "mtime": 1779836985.5375614,
+    "ast_hash": "91ba24f8dfb1213ffe08854e3415ee0e",
+    "semantic_hash": "91ba24f8dfb1213ffe08854e3415ee0e"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\onboarding\\OnboardingGate.tsx": {
+    "mtime": 1779836985.5395591,
+    "ast_hash": "286912f973c95636e3eef0d9da958d03",
+    "semantic_hash": "286912f973c95636e3eef0d9da958d03"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\onboarding\\OnboardingModal.tsx": {
+    "mtime": 1779836985.5405607,
+    "ast_hash": "4e7a2bf369a020a4a414af9e4c67615b",
+    "semantic_hash": "4e7a2bf369a020a4a414af9e4c67615b"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\providers\\AuthProvider.tsx": {
+    "mtime": 1779836985.5425577,
+    "ast_hash": "0d54194fc153455cb9c52f8f30e37c54",
+    "semantic_hash": "0d54194fc153455cb9c52f8f30e37c54"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\providers\\ClerkThemeProvider.tsx": {
+    "mtime": 1779836985.5435586,
+    "ast_hash": "acbeaba6371e04b521af8c7e6cbbedd6",
+    "semantic_hash": "acbeaba6371e04b521af8c7e6cbbedd6"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\providers\\StoreProvider.tsx": {
+    "mtime": 1779836985.5445745,
+    "ast_hash": "c417ee8f5c2fe365910c8e821fb34e97",
+    "semantic_hash": "c417ee8f5c2fe365910c8e821fb34e97"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\providers\\ThemeProvider.tsx": {
+    "mtime": 1779836985.5455618,
+    "ast_hash": "ac7902f5e094653f975cf68ff66592a7",
+    "semantic_hash": "ac7902f5e094653f975cf68ff66592a7"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\tutorial\\TutorialOverlay.tsx": {
+    "mtime": 1779836985.5475595,
+    "ast_hash": "ca3b9017ef24ce2112c9729b7a2025c1",
+    "semantic_hash": "ca3b9017ef24ce2112c9729b7a2025c1"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\ui\\badge.tsx": {
+    "mtime": 1779836985.5498674,
+    "ast_hash": "c69a15057598ff231f42938d48e1a2b6",
+    "semantic_hash": "c69a15057598ff231f42938d48e1a2b6"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\ui\\button.tsx": {
+    "mtime": 1779836985.5505588,
+    "ast_hash": "aad763b0aa8bc661c027a30dbc8b3a78",
+    "semantic_hash": "aad763b0aa8bc661c027a30dbc8b3a78"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\ui\\card.tsx": {
+    "mtime": 1779836985.5515616,
+    "ast_hash": "4c01182b1e66d1ac38b913053d7a3b41",
+    "semantic_hash": "4c01182b1e66d1ac38b913053d7a3b41"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\ui\\chart.tsx": {
+    "mtime": 1779836985.5535588,
+    "ast_hash": "cb7b4cf6754f2fd81186769b17c2e6c1",
+    "semantic_hash": "cb7b4cf6754f2fd81186769b17c2e6c1"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\ui\\checkbox.tsx": {
+    "mtime": 1779836985.5545604,
+    "ast_hash": "ed0ba4e8d3be55ae0fc65e4fbc10b39d",
+    "semantic_hash": "ed0ba4e8d3be55ae0fc65e4fbc10b39d"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\ui\\confirmation-dialog.tsx": {
+    "mtime": 1779836985.555561,
+    "ast_hash": "5cee5848136d095c5d38385405617851",
+    "semantic_hash": "5cee5848136d095c5d38385405617851"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\ui\\dialog.tsx": {
+    "mtime": 1779836985.5570931,
+    "ast_hash": "7f8e84ea337dc75f734382b640fcaa2d",
+    "semantic_hash": "7f8e84ea337dc75f734382b640fcaa2d"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\ui\\document-card.tsx": {
+    "mtime": 1779836985.557624,
+    "ast_hash": "9feaccd923514044b108cfc4fa68cb29",
+    "semantic_hash": "9feaccd923514044b108cfc4fa68cb29"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\ui\\document-filters.tsx": {
+    "mtime": 1779836985.5586238,
+    "ast_hash": "89d09850d38e419c14e9a98891c29ea3",
+    "semantic_hash": "89d09850d38e419c14e9a98891c29ea3"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\ui\\documents-empty-state.tsx": {
+    "mtime": 1779836985.5606246,
+    "ast_hash": "1fa7fef5d40010d9898f0387bb5fce53",
+    "semantic_hash": "1fa7fef5d40010d9898f0387bb5fce53"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\ui\\documents-gallery.tsx": {
+    "mtime": 1779836985.561627,
+    "ast_hash": "85bbd66d233ed253aefd7197c4327e8b",
+    "semantic_hash": "85bbd66d233ed253aefd7197c4327e8b"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\ui\\dropdown-menu.tsx": {
+    "mtime": 1779836985.5626218,
+    "ast_hash": "45ed08aad0d80ae5bd88ed4b2a55b354",
+    "semantic_hash": "45ed08aad0d80ae5bd88ed4b2a55b354"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\ui\\generation-cost-hint.tsx": {
+    "mtime": 1779836985.5636218,
+    "ast_hash": "b7caaf593b17caf0ce1ea4e7623c7e6e",
+    "semantic_hash": "b7caaf593b17caf0ce1ea4e7623c7e6e"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\ui\\input.tsx": {
+    "mtime": 1779836985.5646217,
+    "ast_hash": "e3e2c3747d7d3427936bf5a24e26010d",
+    "semantic_hash": "e3e2c3747d7d3427936bf5a24e26010d"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\ui\\label.tsx": {
+    "mtime": 1779836985.566623,
+    "ast_hash": "bc6ae138aee80dd459e75c428266eeba",
+    "semantic_hash": "bc6ae138aee80dd459e75c428266eeba"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\ui\\payment-success-modal.tsx": {
+    "mtime": 1779836985.567619,
+    "ast_hash": "ec2806f1d49f63177fdb292c796ac891",
+    "semantic_hash": "ec2806f1d49f63177fdb292c796ac891"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\ui\\responsive-data-view.tsx": {
+    "mtime": 1779836985.5686207,
+    "ast_hash": "80d029a81bf82ea0812d2f1724a644b3",
+    "semantic_hash": "80d029a81bf82ea0812d2f1724a644b3"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\ui\\rich-text-editor-core.tsx": {
+    "mtime": 1779836985.5696216,
+    "ast_hash": "dbb2a72deaed293e9da4be23191f7163",
+    "semantic_hash": "dbb2a72deaed293e9da4be23191f7163"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\ui\\rich-text-editor.tsx": {
+    "mtime": 1779836985.571627,
+    "ast_hash": "ac193581abeecbf279bbe12c14be694d",
+    "semantic_hash": "ac193581abeecbf279bbe12c14be694d"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\ui\\scroll-area.tsx": {
+    "mtime": 1779836985.5726204,
+    "ast_hash": "189c7b12fec35693b0fb6b16f8845f91",
+    "semantic_hash": "189c7b12fec35693b0fb6b16f8845f91"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\ui\\select.tsx": {
+    "mtime": 1779836985.5736198,
+    "ast_hash": "6628531e48d8826dd9c17d9f1f28555e",
+    "semantic_hash": "6628531e48d8826dd9c17d9f1f28555e"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\ui\\separator.tsx": {
+    "mtime": 1779836985.574622,
+    "ast_hash": "06c5d38f149f032be2f93b71d99921d2",
+    "semantic_hash": "06c5d38f149f032be2f93b71d99921d2"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\ui\\sheet.tsx": {
+    "mtime": 1779836985.5751908,
+    "ast_hash": "d58438eb96309fdfae4a1e36bdd45c02",
+    "semantic_hash": "d58438eb96309fdfae4a1e36bdd45c02"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\ui\\sidebar.tsx": {
+    "mtime": 1779836985.576146,
+    "ast_hash": "8f45d1985bef404d41bd724f44aa0993",
+    "semantic_hash": "8f45d1985bef404d41bd724f44aa0993"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\ui\\skeleton.tsx": {
+    "mtime": 1779836985.5771472,
+    "ast_hash": "ff875e68f986ad22b3087be27586c9bd",
+    "semantic_hash": "ff875e68f986ad22b3087be27586c9bd"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\ui\\sonner.tsx": {
+    "mtime": 1779836985.5771472,
+    "ast_hash": "53d596e252ac5e28dbe4583eb8633271",
+    "semantic_hash": "53d596e252ac5e28dbe4583eb8633271"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\ui\\sources-list.tsx": {
+    "mtime": 1779836985.5781472,
+    "ast_hash": "508b1cd2b6d4f1b131892fbf4f63d077",
+    "semantic_hash": "508b1cd2b6d4f1b131892fbf4f63d077"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\ui\\streaming-text.tsx": {
+    "mtime": 1779836985.5791452,
+    "ast_hash": "12f90095c3e8bbb22732c0aaa9084c13",
+    "semantic_hash": "12f90095c3e8bbb22732c0aaa9084c13"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\ui\\switch.tsx": {
+    "mtime": 1779836985.5801463,
+    "ast_hash": "d63eef6ac69ee8984ed5b27ee3d1c405",
+    "semantic_hash": "d63eef6ac69ee8984ed5b27ee3d1c405"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\ui\\table.tsx": {
+    "mtime": 1779836985.5811493,
+    "ast_hash": "f368101ca96cb4e16afe8f893aea7401",
+    "semantic_hash": "f368101ca96cb4e16afe8f893aea7401"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\ui\\textarea.tsx": {
+    "mtime": 1779836985.5811493,
+    "ast_hash": "222817da956ab6fe5688926ae915f8ae",
+    "semantic_hash": "222817da956ab6fe5688926ae915f8ae"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\ui\\tooltip.tsx": {
+    "mtime": 1779836985.5821486,
+    "ast_hash": "1d082cfc8571a7918542888515152189",
+    "semantic_hash": "1d082cfc8571a7918542888515152189"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\components\\ui\\upgrade-plan-modal.tsx": {
+    "mtime": 1779836985.5831459,
+    "ast_hash": "4132076d623db78509429d187e40f34d",
+    "semantic_hash": "4132076d623db78509429d187e40f34d"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\contexts\\TutorialContext.tsx": {
+    "mtime": 1779836985.5841465,
+    "ast_hash": "4738ee382899ba41241856b67cea24f7",
+    "semantic_hash": "4738ee382899ba41241856b67cea24f7"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\hooks\\use-mobile.ts": {
+    "mtime": 1779836985.5851479,
+    "ast_hash": "a1b02c048dba9309e7dcc9064e8c7bbe",
+    "semantic_hash": "a1b02c048dba9309e7dcc9064e8c7bbe"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\hooks\\useAdmin.ts": {
+    "mtime": 1779836985.5871465,
+    "ast_hash": "54daeefad1fedd6a33db62f32cee148d",
+    "semantic_hash": "54daeefad1fedd6a33db62f32cee148d"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\hooks\\useDocumentManager.ts": {
+    "mtime": 1779836985.5871465,
+    "ast_hash": "476c472c61b9166e5eaabfa75da520d7",
+    "semantic_hash": "476c472c61b9166e5eaabfa75da520d7"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\hooks\\useEditorAnalytics.ts": {
+    "mtime": 1779836985.5881498,
+    "ast_hash": "1ab66d716ded553c1bb1a9cfa6644c8b",
+    "semantic_hash": "1ab66d716ded553c1bb1a9cfa6644c8b"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\hooks\\useUnsavedChanges.ts": {
+    "mtime": 1779836985.5891473,
+    "ast_hash": "1e66aa3faad81d692a1e994378f07fd7",
+    "semantic_hash": "1e66aa3faad81d692a1e994378f07fd7"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\lib\\posthog-server.ts": {
+    "mtime": 1779836985.591149,
+    "ast_hash": "b6845a52a2e16cc0b44deb1b7078821a",
+    "semantic_hash": "b6845a52a2e16cc0b44deb1b7078821a"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\services\\api\\admin-cost-insights.service.ts": {
+    "mtime": 1779836985.5941498,
+    "ast_hash": "19710c978fc468c275cc39ebb983803e",
+    "semantic_hash": "19710c978fc468c275cc39ebb983803e"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\services\\api\\admin-features.service.ts": {
+    "mtime": 1779836985.5961494,
+    "ast_hash": "0c796153070be8e9a92e111530dcba34",
+    "semantic_hash": "0c796153070be8e9a92e111530dcba34"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\services\\api\\admin-feedback-survey.service.ts": {
+    "mtime": 1779836985.5961494,
+    "ast_hash": "d8345d017020819a7c7d4b0ca7df2d30",
+    "semantic_hash": "d8345d017020819a7c7d4b0ca7df2d30"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\services\\api\\admin-feedback.service.ts": {
+    "mtime": 1779836985.5971484,
+    "ast_hash": "49a1efc2d9db006f31f42286a66d57e5",
+    "semantic_hash": "49a1efc2d9db006f31f42286a66d57e5"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\services\\api\\admin-onboarding.service.ts": {
+    "mtime": 1779836985.5981512,
+    "ast_hash": "7e5e3eeeecdae907c0a03fb49613c121",
+    "semantic_hash": "7e5e3eeeecdae907c0a03fb49613c121"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\services\\api\\admin-user-insights.service.ts": {
+    "mtime": 1779836985.5991476,
+    "ast_hash": "e3ddfbdfb760afacbae52ea6fbe26fd6",
+    "semantic_hash": "e3ddfbdfb760afacbae52ea6fbe26fd6"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\services\\api\\assistant.service.ts": {
+    "mtime": 1779836985.6011517,
+    "ast_hash": "e6bca130c00bc5b780575c2c22fe914c",
+    "semantic_hash": "e6bca130c00bc5b780575c2c22fe914c"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\services\\api\\client.ts": {
+    "mtime": 1779836985.6021538,
+    "ast_hash": "65f200fd70e961596b1e9154cc2ad2e9",
+    "semantic_hash": "65f200fd70e961596b1e9154cc2ad2e9"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\services\\api\\community.service.ts": {
+    "mtime": 1779836985.6031504,
+    "ast_hash": "2341c9eb2e425a3f730a4758449e6e83",
+    "semantic_hash": "2341c9eb2e425a3f730a4758449e6e83"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\services\\api\\document-images.service.ts": {
+    "mtime": 1779836985.6031504,
+    "ast_hash": "9143efdcbf2183d1b9dbb7a7b912d273",
+    "semantic_hash": "9143efdcbf2183d1b9dbb7a7b912d273"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\services\\api\\document.service.ts": {
+    "mtime": 1779836985.605152,
+    "ast_hash": "0f4071988a4d7acb0236101c30b89fe3",
+    "semantic_hash": "0f4071988a4d7acb0236101c30b89fe3"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\services\\api\\entitlement.service.ts": {
+    "mtime": 1779836985.606151,
+    "ast_hash": "5c40514c2bbfce8b9d55700f66bb19a0",
+    "semantic_hash": "5c40514c2bbfce8b9d55700f66bb19a0"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\services\\api\\features.service.ts": {
+    "mtime": 1779836985.6071491,
+    "ast_hash": "555f28dc5725d8133a8ba6b643c4ab29",
+    "semantic_hash": "555f28dc5725d8133a8ba6b643c4ab29"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\services\\api\\feedback-survey.service.ts": {
+    "mtime": 1779836985.6081505,
+    "ast_hash": "edb47a30225e9840175a8306043e359b",
+    "semantic_hash": "edb47a30225e9840175a8306043e359b"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\services\\api\\feedback.service.ts": {
+    "mtime": 1779836985.6091506,
+    "ast_hash": "87f88cd45da49654e4637911a3b571b8",
+    "semantic_hash": "87f88cd45da49654e4637911a3b571b8"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\services\\api\\health.service.ts": {
+    "mtime": 1779836985.6091506,
+    "ast_hash": "3aad65eb7835229728fa74c19851923b",
+    "semantic_hash": "3aad65eb7835229728fa74c19851923b"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\services\\api\\index.ts": {
+    "mtime": 1779836985.6101513,
+    "ast_hash": "d1681aa1c7a4a8835eb0a1159034a7cd",
+    "semantic_hash": "d1681aa1c7a4a8835eb0a1159034a7cd"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\services\\api\\moderation.service.ts": {
+    "mtime": 1779836985.612154,
+    "ast_hash": "978b193f870431dd4583dc97c2ea3ba8",
+    "semantic_hash": "978b193f870431dd4583dc97c2ea3ba8"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\services\\api\\onboarding.service.ts": {
+    "mtime": 1779836985.612154,
+    "ast_hash": "273a7050aa73d2ea29c67a82eb68e8f4",
+    "semantic_hash": "273a7050aa73d2ea29c67a82eb68e8f4"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\services\\api\\sources.service.ts": {
+    "mtime": 1779836985.613152,
+    "ast_hash": "b212b69adcf051748e2a2778b269ce14",
+    "semantic_hash": "b212b69adcf051748e2a2778b269ce14"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\services\\api\\subscription.service.ts": {
+    "mtime": 1779836985.6141527,
+    "ast_hash": "cd9dedf1655905240dc82fba8bca9b99",
+    "semantic_hash": "cd9dedf1655905240dc82fba8bca9b99"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\services\\api\\template.service.ts": {
+    "mtime": 1779836985.6151516,
+    "ast_hash": "15bd5cb0f358e4c46f005cb98574e21e",
+    "semantic_hash": "15bd5cb0f358e4c46f005cb98574e21e"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\services\\api\\user.service.ts": {
+    "mtime": 1779836985.6161494,
+    "ast_hash": "34d84fbab2d180d530ac1105a2331067",
+    "semantic_hash": "34d84fbab2d180d530ac1105a2331067"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\services\\api\\workspace.service.ts": {
+    "mtime": 1779836985.6341481,
+    "ast_hash": "4d304b10f4106124084422bf9247a259",
+    "semantic_hash": "4d304b10f4106124084422bf9247a259"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\services\\download\\documentDownload.ts": {
+    "mtime": 1779836985.63615,
+    "ast_hash": "42787dc2ebb4f458965990f1c0dfea08",
+    "semantic_hash": "42787dc2ebb4f458965990f1c0dfea08"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\shared\\config\\constants.ts": {
+    "mtime": 1779836985.642203,
+    "ast_hash": "7251d33b5cfffa48e5bdcf1564702c61",
+    "semantic_hash": "7251d33b5cfffa48e5bdcf1564702c61"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\shared\\types\\api.ts": {
+    "mtime": 1779836985.64487,
+    "ast_hash": "45daac1925519254e023ee6494e20625",
+    "semantic_hash": "45daac1925519254e023ee6494e20625"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\shared\\types\\document.ts": {
+    "mtime": 1779836985.6457348,
+    "ast_hash": "9e791580561c9e9a13ebfdebc5ca56a8",
+    "semantic_hash": "9e791580561c9e9a13ebfdebc5ca56a8"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\shared\\types\\entitlement.ts": {
+    "mtime": 1779836985.646749,
+    "ast_hash": "b72aeb216b8544affab22a7f351b8b22",
+    "semantic_hash": "b72aeb216b8544affab22a7f351b8b22"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\shared\\types\\featureFlags.ts": {
+    "mtime": 1779836985.6477492,
+    "ast_hash": "df3f06dea86e362d2b8169a2bd538dc2",
+    "semantic_hash": "df3f06dea86e362d2b8169a2bd538dc2"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\shared\\types\\feedback.ts": {
+    "mtime": 1779836985.6487498,
+    "ast_hash": "45c8247da87abe4a2415d02fdb4da3c7",
+    "semantic_hash": "45c8247da87abe4a2415d02fdb4da3c7"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\shared\\types\\feedbackSurvey.ts": {
+    "mtime": 1779836985.6499941,
+    "ast_hash": "0c1246f94365d167cd3d070d58832c21",
+    "semantic_hash": "0c1246f94365d167cd3d070d58832c21"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\shared\\types\\index.ts": {
+    "mtime": 1779836985.6515293,
+    "ast_hash": "7d6475173e071f16510f7f2991e9d99b",
+    "semantic_hash": "7d6475173e071f16510f7f2991e9d99b"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\shared\\types\\onboarding.ts": {
+    "mtime": 1779836985.6525228,
+    "ast_hash": "69c39babc9c09dda6c76c496b5b07323",
+    "semantic_hash": "69c39babc9c09dda6c76c496b5b07323"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\shared\\types\\routes.ts": {
+    "mtime": 1779836985.6535237,
+    "ast_hash": "9e15c6a24de85851444c184333e1099f",
+    "semantic_hash": "9e15c6a24de85851444c184333e1099f"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\shared\\types\\sources.ts": {
+    "mtime": 1779836985.654523,
+    "ast_hash": "3c3679c12760831150e4f69d3c02efd2",
+    "semantic_hash": "3c3679c12760831150e4f69d3c02efd2"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\shared\\types\\subscription.ts": {
+    "mtime": 1779836985.6565232,
+    "ast_hash": "cd419de3942a3fa0248b26946f512a9e",
+    "semantic_hash": "cd419de3942a3fa0248b26946f512a9e"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\shared\\types\\template.ts": {
+    "mtime": 1779836985.6575215,
+    "ast_hash": "42992888cbe6bede6521f0a23d252dff",
+    "semantic_hash": "42992888cbe6bede6521f0a23d252dff"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\shared\\types\\ui.ts": {
+    "mtime": 1779836985.6595259,
+    "ast_hash": "54a0f4a890d39186235635070d305294",
+    "semantic_hash": "54a0f4a890d39186235635070d305294"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\shared\\types\\user.ts": {
+    "mtime": 1779836985.6605232,
+    "ast_hash": "62fb7e022d3b3c04844395913ad8d711",
+    "semantic_hash": "62fb7e022d3b3c04844395913ad8d711"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\shared\\types\\workspace.ts": {
+    "mtime": 1779836985.667528,
+    "ast_hash": "64d515ceb69bb82350f43fe7f017fd42",
+    "semantic_hash": "64d515ceb69bb82350f43fe7f017fd42"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\shared\\utils\\clerkOrganizationRole.ts": {
+    "mtime": 1779836985.6765273,
+    "ast_hash": "e3234bdb5bd2addcdb8431070409cd3d",
+    "semantic_hash": "e3234bdb5bd2addcdb8431070409cd3d"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\shared\\utils\\markdown.ts": {
+    "mtime": 1779836985.6795225,
+    "ast_hash": "4d44ec19efaa7e9440959f0f32d041f7",
+    "semantic_hash": "4d44ec19efaa7e9440959f0f32d041f7"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\shared\\utils\\utils.ts": {
+    "mtime": 1779836985.6835253,
+    "ast_hash": "e3f848f1b39f863e6164cf58b5a8e752",
+    "semantic_hash": "e3f848f1b39f863e6164cf58b5a8e752"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\store\\hooks.ts": {
+    "mtime": 1779836985.7320907,
+    "ast_hash": "3302ab1f9ee3bac2f1119a4642d4590c",
+    "semantic_hash": "3302ab1f9ee3bac2f1119a4642d4590c"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\store\\rootReducer.ts": {
+    "mtime": 1779836985.741368,
+    "ast_hash": "94a535348814e9d3e7f10bf9e8ebecd8",
+    "semantic_hash": "94a535348814e9d3e7f10bf9e8ebecd8"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\store\\store.ts": {
+    "mtime": 1779836985.8121326,
+    "ast_hash": "f8178cc3dafe972812df2be1fc3fd812",
+    "semantic_hash": "f8178cc3dafe972812df2be1fc3fd812"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\store\\admin-feedback\\adminFeedbackSlice.ts": {
+    "mtime": 1779836985.6865242,
+    "ast_hash": "d50b52977611f29bafb9dbb784a6d6af",
+    "semantic_hash": "d50b52977611f29bafb9dbb784a6d6af"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\store\\assistant\\assistantSlice.ts": {
+    "mtime": 1779836985.688241,
+    "ast_hash": "ea815f1363ed8e5cae6e0d9e0c3431bd",
+    "semantic_hash": "ea815f1363ed8e5cae6e0d9e0c3431bd"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\store\\assistant\\index.ts": {
+    "mtime": 1779836985.69011,
+    "ast_hash": "f8e53fea57ca18d3cb858dbb97688998",
+    "semantic_hash": "f8e53fea57ca18d3cb858dbb97688998"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\store\\assistant\\selectors.ts": {
+    "mtime": 1779836985.6913035,
+    "ast_hash": "39e13a357d6481569090b08da5dab204",
+    "semantic_hash": "39e13a357d6481569090b08da5dab204"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\store\\community\\communitySlice.ts": {
+    "mtime": 1779836985.69376,
+    "ast_hash": "59ebe539b8d335bc3454ed565ab8ece0",
+    "semantic_hash": "59ebe539b8d335bc3454ed565ab8ece0"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\store\\community\\index.ts": {
+    "mtime": 1779836985.7088907,
+    "ast_hash": "43986b7f1599532f85a112c1fbeed69e",
+    "semantic_hash": "43986b7f1599532f85a112c1fbeed69e"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\store\\community\\selectors.ts": {
+    "mtime": 1779836985.7098897,
+    "ast_hash": "9d10aa12dd192033a334ee3c9e566803",
+    "semantic_hash": "9d10aa12dd192033a334ee3c9e566803"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\store\\documents\\documentSlice.ts": {
+    "mtime": 1779836985.7118921,
+    "ast_hash": "2b8ef73c643fbf535bb703365465f582",
+    "semantic_hash": "2b8ef73c643fbf535bb703365465f582"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\store\\documents\\selectors.ts": {
+    "mtime": 1779836985.7128932,
+    "ast_hash": "0bee79613fe5f49e7a4fa8024c4751f9",
+    "semantic_hash": "0bee79613fe5f49e7a4fa8024c4751f9"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\store\\entitlements\\entitlementsSlice.ts": {
+    "mtime": 1779836985.7148917,
+    "ast_hash": "5a33a7ada774a8368c8d6592f9e63ee3",
+    "semantic_hash": "5a33a7ada774a8368c8d6592f9e63ee3"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\store\\entitlements\\selectors.ts": {
+    "mtime": 1779836985.7168949,
+    "ast_hash": "2d1b972ea0b3153a19d63c01ab07b138",
+    "semantic_hash": "2d1b972ea0b3153a19d63c01ab07b138"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\store\\features\\featuresSlice.ts": {
+    "mtime": 1779836985.7287524,
+    "ast_hash": "f4f30774297eefd5d29974a13891d9eb",
+    "semantic_hash": "f4f30774297eefd5d29974a13891d9eb"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\store\\features\\selectors.ts": {
+    "mtime": 1779836985.7310884,
+    "ast_hash": "7359fda1cc9618ac74aaeb926a5da6a8",
+    "semantic_hash": "7359fda1cc9618ac74aaeb926a5da6a8"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\store\\moderation\\index.ts": {
+    "mtime": 1779836985.734087,
+    "ast_hash": "5a0456944bda5881a6cc6cb8e5ca2f28",
+    "semantic_hash": "5a0456944bda5881a6cc6cb8e5ca2f28"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\store\\moderation\\moderationSlice.ts": {
+    "mtime": 1779836985.7360888,
+    "ast_hash": "2792e28959ae4311d96c6d3104b02531",
+    "semantic_hash": "2792e28959ae4311d96c6d3104b02531"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\store\\moderation\\selectors.ts": {
+    "mtime": 1779836985.7370875,
+    "ast_hash": "ba6bc66304e0cce7215b219472db8d85",
+    "semantic_hash": "ba6bc66304e0cce7215b219472db8d85"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\store\\onboarding\\onboardingSlice.ts": {
+    "mtime": 1779836985.7388582,
+    "ast_hash": "f825be647a7180bb11fdfbe2ce3f861c",
+    "semantic_hash": "f825be647a7180bb11fdfbe2ce3f861c"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\store\\sources\\sourcesSlice.ts": {
+    "mtime": 1779836985.8101273,
+    "ast_hash": "1953e4e058ec03e1844dc1fb11322e7b",
+    "semantic_hash": "1953e4e058ec03e1844dc1fb11322e7b"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\store\\subscription\\selectors.ts": {
+    "mtime": 1779836985.8244984,
+    "ast_hash": "9ee1edd97353ad42bb389590b4fe2ac9",
+    "semantic_hash": "9ee1edd97353ad42bb389590b4fe2ac9"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\store\\subscription\\subscriptionSlice.ts": {
+    "mtime": 1779836985.8254983,
+    "ast_hash": "7ff4f4ad66e6108e55fe9137b9b55155",
+    "semantic_hash": "7ff4f4ad66e6108e55fe9137b9b55155"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\store\\ui\\uiSlice.ts": {
+    "mtime": 1779836985.827497,
+    "ast_hash": "0ebea18dd43e36e433ee125295c44e0f",
+    "semantic_hash": "0ebea18dd43e36e433ee125295c44e0f"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\store\\workspace\\selectors.ts": {
+    "mtime": 1779836985.8304956,
+    "ast_hash": "d03dc24eb21789d0dda8bc237d1becc9",
+    "semantic_hash": "d03dc24eb21789d0dda8bc237d1becc9"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\store\\workspace\\workspaceSlice.ts": {
+    "mtime": 1779836985.8455575,
+    "ast_hash": "5ed341418c5eaff76e031ee4ab9cdb52",
+    "semantic_hash": "5ed341418c5eaff76e031ee4ab9cdb52"
+  },
+  "D:\\Scooli\\web-app\\.claude\\worktrees\\interesting-borg-6a32ac\\src\\types\\next-fontkit.d.ts": {
+    "mtime": 1779836985.848558,
+    "ast_hash": "7521de375ad7b844943e535bb29bc447",
+    "semantic_hash": "7521de375ad7b844943e535bb29bc447"
+  }
+}
