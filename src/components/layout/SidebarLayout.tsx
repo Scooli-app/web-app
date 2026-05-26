@@ -61,6 +61,7 @@ import {
 import {
   BookOpen,
   Building2,
+  CalendarDays,
   ClipboardList,
   Clock,
   ExternalLink,
@@ -151,6 +152,12 @@ const CONTENT_CREATION: NavItem[] = [
     href: Routes.PRESENTATION,
     icon: Presentation,
     description: "Criar e editar apresentações",
+  },
+  {
+    title: "Planificações",
+    href: Routes.CURRICULUM_PLAN,
+    icon: CalendarDays,
+    description: "Planificações curriculares de período",
   },
 ];
 
@@ -451,6 +458,13 @@ const SidebarNavigationContent = memo(function SidebarNavigationContent({
   const isWorksheetCreationEnabled =
     features[FeatureFlag.WORKSHEET_CREATION] === true;
   const isUserSourcesEnabled = features[FeatureFlag.USER_SOURCES] === true;
+  const isCurriculumPlanEnabled =
+    features[FeatureFlag.CURRICULUM_PLAN_ENABLED] === true;
+
+  const contentCreationItems = CONTENT_CREATION.filter((item) => {
+    if (item.href === Routes.CURRICULUM_PLAN && !isCurriculumPlanEnabled) return false;
+    return true;
+  });
 
   const disabledContentCreationKeys = [
     ...(isWorksheetCreationEnabled ? [] : [Routes.WORKSHEET]),
@@ -488,7 +502,7 @@ const SidebarNavigationContent = memo(function SidebarNavigationContent({
 
         <NavGroup
           label="Criação de Conteúdo"
-          items={CONTENT_CREATION}
+          items={contentCreationItems}
           pathname={pathname}
           onItemClick={onItemClick}
           disabledKeys={disabledContentCreationKeys}
