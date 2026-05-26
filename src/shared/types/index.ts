@@ -37,22 +37,7 @@ export type {
 export type { UserSource, UploadSourceParams, SourceStatus, SourceScope, SourceFileKind } from "./sources";
 
 // Timetable types (Feature 2)
-export type {
-  TimetableSession,
-  TimetableSlot,
-  LessonSlot,
-  LessonSlotDocument,
-  LessonContextSummary,
-  CreateSessionRequest,
-  UpdateSessionRequest,
-  CreateSlotRequest,
-  UpdateSlotRequest,
-  UpdateLessonRequest,
-  GenerateLessonRequest,
-  GenerateLessonResponse,
-  GenerateTopicsResponse,
-} from "./timetable";
+export type { TimetableSession, TimetableSlot, LessonSlot, LessonSlotDocument, LessonContextSummary, CreateSessionRequest, UpdateSessionRequest, CreateSlotRequest, UpdateSlotRequest, UpdateLessonRequest, GenerateLessonRequest, GenerateLessonResponse, GenerateTopicsResponse } from "./timetable";
 export type { TimetableSessionStatus, LessonSlotStatus, LessonType } from "./timetable";
-
 // Feature flags
 export { FeatureFlag } from "./featureFlags";

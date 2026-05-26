@@ -138,7 +138,6 @@ export default function CurriculumPlanImportPage() {
     setSteps(INITIAL_STEPS.map((s) => ({ ...s, status: "pending" as StepStatus })));
 
     try {
-      // Step 1: Upload to R2
       setStepStatus("upload", "active");
       const { uploadUrl, fileKey } = await getUploadUrl(
         file.name,
@@ -155,7 +154,6 @@ export default function CurriculumPlanImportPage() {
       }
       setStepStatus("upload", "done");
 
-      // Step 2: Kick off backend import
       setStepStatus("import", "active");
       const importResp = await apiClient.post<{
         documentId: string;
@@ -174,12 +172,10 @@ export default function CurriculumPlanImportPage() {
       const docId = importResp.data.documentId;
       setStepStatus("import", "done");
 
-      // Step 3: Wait for AI normalisation
       setStepStatus("normalize", "active");
       await waitForDocument(docId);
       setStepStatus("normalize", "done");
 
-      // Step 4: Done — brief pause then redirect
       setStepStatus("done", "done");
       await new Promise((resolve) => setTimeout(resolve, 600));
       router.push(`/lesson-plan/${docId}`);
@@ -188,7 +184,6 @@ export default function CurriculumPlanImportPage() {
         err instanceof Error
           ? err.message
           : "Não foi possível importar a planificação.";
-      // Mark the currently-active step as errored
       setSteps((prev) =>
         prev.map((s) => (s.status === "active" ? { ...s, status: "error" } : s))
       );

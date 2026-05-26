@@ -255,11 +255,6 @@
   margin-bottom: 0.25em;
 }
 
-/* Remove spacing between consecutive paragraphs inside ordered list items.
-   TipTap may split <br>-separated content into multiple <p> nodes within a <li>;
-   this prevents each MCQ option from getting a blank-line gap above/below it.
-   The :first-child paragraph (the question stem) keeps its bottom margin as a
-   subtle separator from the options block. Bullet list items are unaffected. */
 .tiptap ol li p:not(:first-child) {
   margin-top: 0;
   margin-bottom: 0;
@@ -571,7 +566,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 10px 20px;
-  background: hsl(var(--card)); /* 100% solid color */
+  background: hsl(var(--card));
   border: 1px solid var(--border);
   border-radius: 16px;
   gap: 16px;
@@ -582,7 +577,7 @@
 }
 
 .dark .diff-toolbar {
-  background: #1e1e28; /* Specific solid color for dark mode */
+  background: #1e1e28;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 

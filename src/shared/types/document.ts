@@ -7,7 +7,18 @@ export type DocumentType =
   | "quiz"
   | "presentation"
   | "test"
-  | "worksheet";
+  | "worksheet"
+  | "curriculumPlan";
+
+/**
+ * Macro curriculum-plan planning period. Drives prompt depth on the backend
+ * (annual = high level, trimester = fine grain).
+ */
+export type CurriculumPlanningType =
+  | "annual"
+  | "semester"
+  | "trimester"
+  | "custom";
 
 // `assessment` remains only for compatibility with legacy worksheet documents.
 export type WorksheetVariant =
@@ -56,6 +67,8 @@ export interface Document {
   isPublic: boolean;
   subject: string | null;
   gradeLevel: string | null;
+  /** Non-null for imported documents (e.g. "docx", "pdf"). Null for AI-generated. */
+  originalFormat?: string | null;
   isSpecificComponent: boolean;
   rating: number;
   downloads: number;
@@ -128,5 +141,3 @@ export interface UploadDocumentImageResponse {
   image: DocumentImage;
   markdown: string;
 }
-
-

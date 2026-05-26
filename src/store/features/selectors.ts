@@ -43,6 +43,10 @@ export const selectIsContextPipelineV2Enabled = createSelector(
   (enabledFeatures) => enabledFeatures.includes(FeatureFlag.CONTEXT_PIPELINE_V2)
 );
 
+export const selectIsCurriculumPlanEnabled = createSelector(
+  [selectEnabledFeatureFlags],
+  (enabledFeatures) => enabledFeatures.includes(FeatureFlag.CURRICULUM_PLAN_ENABLED)
+);
 
 
 

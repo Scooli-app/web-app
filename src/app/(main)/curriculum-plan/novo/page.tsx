@@ -73,10 +73,9 @@ type StepId = (typeof STEPS)[number]["id"];
 
 // ─── School year configuration (easily adjustable) ───────────────────────────
 
-// The Portuguese school year runs Sep 1 → Jun 30. Update these each year.
-const SCHOOL_YEAR_START_MONTH = 9; // September (1-based)
+const SCHOOL_YEAR_START_MONTH = 9;
 const SCHOOL_YEAR_START_DAY = 1;
-const SCHOOL_YEAR_END_MONTH = 6; // June (1-based)
+const SCHOOL_YEAR_END_MONTH = 6;
 const SCHOOL_YEAR_END_DAY = 30;
 
 // ─── Presets ──────────────────────────────────────────────────────────────────
@@ -100,14 +99,11 @@ function addDays(d: Date, n: number): Date {
 function buildPresets(): Preset[] {
   const today = new Date();
   const year = today.getFullYear();
-  // Determine school year labels: if Sep–Dec, it's year/year+1; otherwise year-1/year.
   const m = today.getMonth() + 1;
   const syStart = m >= SCHOOL_YEAR_START_MONTH ? year : year - 1;
   const syEnd = syStart + 1;
   const syEndDate = new Date(syEnd, SCHOOL_YEAR_END_MONTH - 1, SCHOOL_YEAR_END_DAY);
 
-  // Relative presets use their natural duration — no school-year cap — so they
-  // never collapse to the same date and multiple can't be "active" at once.
   const raw: Preset[] = [
     {
       label: "Próximas 2 semanas",
@@ -220,7 +216,7 @@ function StepIndicator({
         const Icon = step.icon;
         const done = idx < currentIdx;
         const active = idx === currentIdx;
-        const clickable = done; // only allow going back to completed steps
+        const clickable = done;
         return (
           <div key={step.id} className="flex items-center">
             <button
@@ -404,7 +400,6 @@ export default function CurriculumPlanNewPage() {
     setPlanningType(preset.planningType);
   }
 
-  // step validation
   const step1Valid = !!periodStart && !!periodEnd && periodEnd > periodStart;
   const step2Valid = !!subjectValue;
   const step3Valid = lpw > 0;
@@ -470,7 +465,6 @@ export default function CurriculumPlanNewPage() {
 
   return (
     <div className="mx-auto w-full max-w-3xl space-y-8 px-4 py-8">
-      {/* Header */}
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Nova planificação</h1>
         <p className="text-muted-foreground">
@@ -478,14 +472,11 @@ export default function CurriculumPlanNewPage() {
         </p>
       </div>
 
-      {/* Step indicator */}
       <StepIndicator current={step} onNavigate={setStep} />
 
-      {/* Step content */}
       <Card>
         <CardContent className="p-6">
 
-          {/* ── Step 1: Period ── */}
           {step === "period" && (
             <div className="space-y-6">
               <div>
@@ -495,7 +486,6 @@ export default function CurriculumPlanNewPage() {
                 </p>
               </div>
 
-              {/* Presets */}
               <div className="flex flex-wrap gap-2">
                 {PRESETS.map((preset) => {
                   const { start, end } = preset.getRange();
@@ -542,9 +532,9 @@ export default function CurriculumPlanNewPage() {
               {step1Valid && (
                 <div className="rounded-lg bg-muted px-4 py-3 text-sm">
                   <span className="font-medium">{weeks} semana{weeks !== 1 ? "s" : ""}</span>
-                  {" "}de{" "}
+                  {" de "}
                   <span className="font-medium">{formatDatePT(periodStartISO)}</span>
-                  {" "}a{" "}
+                  {" a "}
                   <span className="font-medium">{formatDatePT(periodEndISO)}</span>
                   {" · "}
                   <span className="text-muted-foreground capitalize">{planningTypeLabel(planningType)}</span>
@@ -571,7 +561,6 @@ export default function CurriculumPlanNewPage() {
             </div>
           )}
 
-          {/* ── Step 2: Class details ── */}
           {step === "class" && (
             <div className="space-y-6">
               <div>
@@ -620,7 +609,6 @@ export default function CurriculumPlanNewPage() {
             </div>
           )}
 
-          {/* ── Step 3: Schedule ── */}
           {step === "schedule" && (
             <div className="space-y-6">
               <div>
@@ -641,7 +629,6 @@ export default function CurriculumPlanNewPage() {
             </div>
           )}
 
-          {/* ── Step 4: Review ── */}
           {step === "review" && (
             <div className="space-y-6">
               <div>
@@ -690,7 +677,6 @@ export default function CurriculumPlanNewPage() {
         </CardContent>
       </Card>
 
-      {/* Navigation */}
       <div className="flex items-center justify-between">
         <Button variant="outline" onClick={goBack} className="gap-2">
           <ChevronLeft className="h-4 w-4" />
