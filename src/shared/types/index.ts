@@ -4,7 +4,7 @@
 
 // Document types
 export { TeachingMethod } from "./document";
-export type { Document, DocumentType, WorksheetVariant } from "./document";
+export type { CurriculumPlanningType, Document, DocumentType, WorksheetVariant } from "./document";
 
 // API types
 export type { BackendPaginatedResponse, ChatResponse, CreateDocumentParams, CreateDocumentStreamResponse, DocumentFilters, DocumentStatsResponse, DocumentStreamCallbacks, GetDocumentsParams, GetDocumentsResponse, StreamEvent, StreamedResponse } from "./api";
