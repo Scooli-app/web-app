@@ -87,6 +87,35 @@ function getContentPreview(content: string) {
     return "Sem conteúdo disponível";
   }
 
+  // Handle JSON presentation content (v1 or v2)
+  if (content.trimStart().startsWith("{")) {
+    try {
+      const obj = JSON.parse(content) as Record<string, unknown>;
+      if (obj.documentType === "presentation") {
+        if (obj.schemaVersion === 2) {
+          // v2 canvas format — extract title-role text elements
+          type V2Slide = { elements: Array<{ type: string; role?: string; text?: string }> };
+          const slides = (obj.slides as V2Slide[] | undefined) ?? [];
+          const titles = slides
+            .slice(0, 4)
+            .map((s) => s.elements?.find((e) => e.type === "text" && e.role === "title")?.text ?? "")
+            .filter(Boolean);
+          return titles.length > 0 ? titles.join(" · ") : "Apresentação";
+        }
+        // v1 layout format — extract slide titles
+        type V1Block = { title?: string };
+        const blocks = (obj.blocks as V1Block[] | undefined) ?? [];
+        const titles = blocks
+          .slice(0, 4)
+          .map((b) => b.title ?? "")
+          .filter(Boolean);
+        return titles.length > 0 ? titles.join(" · ") : "Apresentação";
+      }
+    } catch {
+      // fall through to markdown processing
+    }
+  }
+
   let plainText = content
     .replace(/<[^>]*>/g, "")
     .replace(/#{1,6}\s+/g, "")

@@ -51,6 +51,8 @@ interface DocumentState {
   };
   filters: DocumentFilters;
   isLoading: boolean;
+  /** ID of the document currently being fetched, to deduplicate concurrent requests. */
+  loadingDocumentId: string | null;
   isSaving: boolean;
   isChatting: boolean;
   lastChatAnswer: string | null;
@@ -81,6 +83,7 @@ const initialState: DocumentState = {
   },
   filters: {},
   isLoading: false,
+  loadingDocumentId: null,
   isSaving: false,
   isChatting: false,
   lastChatAnswer: null,
@@ -195,8 +198,10 @@ export const fetchDocument = createAsyncThunk(
   {
     condition: (id, { getState }) => {
       const state = getState() as { documents: DocumentState };
-      const { isLoading } = state.documents;
-      if (isLoading) {
+      // Only block if we're already fetching this exact document.
+      // The old blanket isLoading guard was blocking legitimate fetches
+      // when navigating from one document to another.
+      if (state.documents.loadingDocumentId === id) {
         return false;
       }
       return true;
@@ -462,17 +467,20 @@ const documentSlice = createSlice({
         state.isLoading = false;
       })
       // Fetch Document
-      .addCase(fetchDocument.pending, (state) => {
+      .addCase(fetchDocument.pending, (state, action) => {
         state.isLoading = true;
+        state.loadingDocumentId = action.meta.arg;
         state.error = null;
       })
       .addCase(fetchDocument.fulfilled, (state, action) => {
         state.currentDocument = action.payload;
         state.isLoading = false;
+        state.loadingDocumentId = null;
       })
       .addCase(fetchDocument.rejected, (state, action) => {
         state.error = action.payload as string;
         state.isLoading = false;
+        state.loadingDocumentId = null;
       })
       // Create Document (returns stream info, not full document)
       .addCase(createDocument.pending, (state) => {

@@ -17,6 +17,7 @@ import { AMBIGUOUS_COMPONENTS_SUBJECTS, SUBJECTS, SUBJECTS_BY_GRADE } from "./co
 import {
   AdditionalDetailsSection,
   DurationSection,
+  SlideCountSection,
   FormActions,
   FormHeader,
   GradeSection,
@@ -128,6 +129,7 @@ export default function DocumentCreationPage({
 
   const showTeachingMethodSection = documentType.id === "lessonPlan";
   const showWorksheetVariantSection = documentType.id === "worksheet";
+  const isPresentation = documentType.id === "presentation";
 
   const handleWorksheetVariantChange = useCallback(
     (worksheetVariant: FormState["worksheetVariant"]) => {
@@ -195,6 +197,11 @@ export default function DocumentCreationPage({
             includeAe: formState.includeAe ?? true,
             regulatorySourceIds: formState.regulatorySourceIds,
           }),
+          // Presentations-only: pass the picked slide count through. Backend
+          // defaults to 10 when omitted.
+          ...(isPresentation && formState.slideCount
+            ? { slideCount: formState.slideCount }
+            : {}),
         })
       );
 
@@ -285,11 +292,18 @@ export default function DocumentCreationPage({
                 onUpdate={updateForm}
               />
             </div>
-            <DurationSection
-              lessonTime={formState.lessonTime}
-              customTime={formState.customTime}
-              onUpdate={updateForm}
-            />
+            {isPresentation ? (
+              <SlideCountSection
+                slideCount={formState.slideCount}
+                onUpdate={updateForm}
+              />
+            ) : (
+              <DurationSection
+                lessonTime={formState.lessonTime}
+                customTime={formState.customTime}
+                onUpdate={updateForm}
+              />
+            )}
           </div>
 
           <div data-tutorial="subject">
