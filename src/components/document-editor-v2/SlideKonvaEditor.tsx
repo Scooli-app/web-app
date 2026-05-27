@@ -30,7 +30,7 @@ import type {
 } from "@/shared/types/canvas-presentation";
 import type Konva from "konva";
 import { useCallback, useEffect, useImperativeHandle, useRef, useState, forwardRef } from "react";
-import { Group, Layer, Rect, Stage, Text, Transformer } from "react-konva";
+import { Group, Image as KonvaImage, Layer, Rect, Stage, Text, Transformer } from "react-konva";
 
 /* --------------------------------------------------------------------------
  * Theme tokens — canvas can't use CSS vars so dark-theme values are hardcoded.
@@ -85,20 +85,27 @@ const COLOR_PRESETS: { color: string; label: string }[] = [
 
 /* --------------------------------------------------------------------------
  * useStageSize — responsive 16:9 canvas.
+ * Observes a "wrapper" div that fills the available parent space and computes
+ * the largest 16:9 stage that fits within both its width AND height, so the
+ * slide never needs vertical scrolling.
  * -------------------------------------------------------------------------- */
-function useStageSize(containerRef: React.RefObject<HTMLDivElement | null>) {
+function useStageSize(wrapperRef: React.RefObject<HTMLDivElement | null>) {
   const [size, setSize] = useState({ W: 900, H: 506 });
 
   useEffect(() => {
-    const el = containerRef.current;
+    const el = wrapperRef.current;
     if (!el) return;
     const ro = new ResizeObserver(([entry]) => {
-      const w = entry.contentRect.width;
-      if (w > 0) setSize({ W: w, H: Math.round(w * (9 / 16)) });
+      const availW = entry.contentRect.width;
+      const availH = entry.contentRect.height;
+      if (availW <= 0) return;
+      // If we know the available height, constrain width so H = W*9/16 ≤ availH.
+      const W = availH > 0 ? Math.min(availW, availH * (16 / 9)) : availW;
+      setSize({ W: Math.round(W), H: Math.round(W * (9 / 16)) });
     });
     ro.observe(el);
     return () => ro.disconnect();
-  }, [containerRef]);
+  }, [wrapperRef]);
 
   return size;
 }
@@ -194,14 +201,45 @@ export const SlideKonvaEditor = forwardRef<
     onSelectionChange?: (id: string | null) => void;
   }
 >(function SlideKonvaEditor({ slide, onChange, onSelectionChange }, ref) {
-  const containerRef = useRef<HTMLDivElement>(null);
+  /** Fills the available parent space — measured to compute stage size. */
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<Konva.Stage | null>(null);
   const trRef = useRef<Konva.Transformer | null>(null);
-  const { W, H } = useStageSize(containerRef);
+  const { W, H } = useStageSize(wrapperRef);
 
   const elements = slide.elements;
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [editState, setEditState] = useState<EditState | null>(null);
+
+  /* ── Image URL cache: url → loaded HTMLImageElement ────────────────────── */
+  // We use a ref as the cache store (avoids re-renders during load) and a
+  // counter state to trigger a redraw once each image finishes loading.
+  const imgCacheRef = useRef<Record<string, HTMLImageElement | "loading">>({});
+  const [imgRevision, setImgRevision] = useState(0);
+
+  useEffect(() => {
+    let changed = false;
+    for (const el of elements) {
+      if (el.type !== "image_placeholder") continue;
+      const img = el as CanvasImageElement;
+      if (!img.url || img.url in imgCacheRef.current) continue;
+      imgCacheRef.current[img.url] = "loading";
+      changed = true;
+      const i = new window.Image();
+      i.crossOrigin = "anonymous";
+      i.onload = () => {
+        imgCacheRef.current[img.url!] = i;
+        setImgRevision((r) => r + 1); // trigger re-render
+      };
+      i.onerror = () => {
+        // Remove from cache so a retry is possible
+        delete imgCacheRef.current[img.url!];
+      };
+      i.src = img.url;
+    }
+    if (changed) setImgRevision((r) => r + 1); // repaint while loading
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [elements]);
 
   /* ── Notify parent when selection changes ──────────────────────────────── */
   useEffect(() => {
@@ -417,12 +455,14 @@ export const SlideKonvaEditor = forwardRef<
       : null;
 
   /* ── Render ──────────────────────────────────────────────────────────────── */
+  // imgRevision is intentionally read here so React re-renders when images load.
+  void imgRevision;
   return (
-    <div className="flex flex-col">
-      {/* ── Canvas ──────────────────────────────────────────────────────── */}
+    <div ref={wrapperRef} className="flex h-full w-full items-center justify-center">
+      {/* Inner div is explicitly sized to the 16:9 stage dimensions. */}
       <div
-        ref={containerRef}
-        className="relative w-full select-none overflow-hidden rounded-xl"
+        className="relative select-none overflow-hidden rounded-xl shadow-xl"
+        style={{ width: W, height: H }}
       >
         <Stage
           ref={stageRef}
@@ -560,9 +600,41 @@ export const SlideKonvaEditor = forwardRef<
                 );
               }
 
-              /* ── Image placeholder ──────────────────────────────────── */
+              /* ── Image placeholder / actual image ───────────────────── */
               if (el.type === "image_placeholder") {
                 const img = el as CanvasImageElement;
+                const dblHandlers = {
+                  onDblClick: () => {
+                    const node = stageRef.current?.findOne(`#${el.id}`);
+                    if (node) startEdit(el.id, node, img.prompt);
+                  },
+                  onDblTap: () => {
+                    const node = stageRef.current?.findOne(`#${el.id}`);
+                    if (node) startEdit(el.id, node, img.prompt);
+                  },
+                };
+
+                // If the element has a URL and it's loaded, render the real image.
+                const cached = img.url ? imgCacheRef.current[img.url] : undefined;
+                if (cached && cached !== "loading") {
+                  return (
+                    <KonvaImage
+                      key={el.id}
+                      id={el.id}
+                      image={cached}
+                      x={el.x * W}
+                      y={el.y * H}
+                      width={el.w * W}
+                      height={el.h * H}
+                      cornerRadius={6}
+                      visible={!isEditing}
+                      {...dragSelectProps(el.id)}
+                      {...dblHandlers}
+                    />
+                  );
+                }
+
+                // Fallback: placeholder box with prompt text
                 const promptFs = Math.max(10, Math.round(el.w * W * 0.035));
                 return (
                   <Group
@@ -570,15 +642,9 @@ export const SlideKonvaEditor = forwardRef<
                     id={el.id}
                     x={el.x * W}
                     y={el.y * H}
+                    visible={!isEditing}
                     {...dragSelectProps(el.id)}
-                    onDblClick={() => {
-                      const node = stageRef.current?.findOne(`#${el.id}`);
-                      if (node) startEdit(el.id, node, img.prompt);
-                    }}
-                    onDblTap={() => {
-                      const node = stageRef.current?.findOne(`#${el.id}`);
-                      if (node) startEdit(el.id, node, img.prompt);
-                    }}
+                    {...dblHandlers}
                   >
                     <Rect
                       width={el.w * W}
@@ -601,7 +667,7 @@ export const SlideKonvaEditor = forwardRef<
                       listening={false}
                     />
                     <Text
-                      text={img.prompt || "Duplo-clique para editar descrição"}
+                      text={img.url && cached === "loading" ? "A carregar imagem…" : (img.prompt || "Duplo-clique para editar descrição")}
                       x={el.w * W * 0.08}
                       y={el.h * H * 0.55}
                       width={el.w * W * 0.84}

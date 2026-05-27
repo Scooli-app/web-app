@@ -29,6 +29,12 @@
 import AIChatPanel from "@/components/document-editor/AIChatPanel";
 import { GenerationProgress } from "@/components/blocks/GenerationProgress";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useGenerationProgress } from "@/hooks/useGenerationProgress";
 import { parsePresentationDocument } from "@/shared/types/blocks";
 import type {
@@ -51,12 +57,12 @@ import {
   ChevronDown,
   ChevronUp,
   Download,
+  FileText,
   Italic,
   Loader2,
   Play,
   Plus,
   Redo2,
-  Save,
   Sparkles,
   Trash2,
   Undo2,
@@ -99,6 +105,16 @@ function toHex6(color: string): string {
       .toUpperCase();
   }
   return "FFFFFF";
+}
+
+/** Convert any CSS colour to { r, g, b } in 0–1 range for pdf-lib. */
+function hexToRgb01(color: string): { r: number; g: number; b: number } {
+  const hex = toHex6(color);
+  return {
+    r: parseInt(hex.substring(0, 2), 16) / 255,
+    g: parseInt(hex.substring(2, 4), 16) / 255,
+    b: parseInt(hex.substring(4, 6), 16) / 255,
+  };
 }
 
 type FontStyle = CanvasTextElement["fontStyle"];
@@ -203,11 +219,20 @@ export function BlockDocumentEditor({ documentId }: Props) {
   const [activeSlideId, setActiveSlideId] = useState<string | null>(null);
   const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
-  const [saving, setSaving] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
+  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (canvasFromDoc) {
+      // Only do a full reset the very first time this document's canvas is
+      // initialised (canvasRef.current is null).  When canvasRef already has
+      // content the update comes from our own auto-save writing back through
+      // Redux (updateDocument.fulfilled → currentDocument.content changes →
+      // canvasFromDoc recomputes).  In that case we must NOT wipe the undo
+      // stack — the user should still be able to Ctrl+Z after saving.
+      if (canvasRef.current !== null) return;
+
       setCanvas(canvasFromDoc);
       setActiveSlideId((prev) => {
         if (prev && canvasFromDoc.slides.some((s) => s.id === prev)) return prev;
@@ -408,6 +433,13 @@ export function BlockDocumentEditor({ documentId }: Props) {
   const [isChatting, setIsChatting] = useState(false);
   const [chatError, setChatError] = useState("");
 
+  /**
+   * When an AI quick-action button (Simplificar / Expandir / Melhorar) is
+   * clicked we record which element should receive the response so that
+   * handleChatSubmit can write the answer back to the canvas.
+   */
+  const pendingAIActionRef = useRef<{ elementId: string; slideId: string } | null>(null);
+
   const handleChatSubmit = useCallback(
     async (userMessage: string) => {
       if (!document?.id) return;
@@ -423,6 +455,46 @@ export function BlockDocumentEditor({ documentId }: Props) {
             ...prev,
             { role: "assistant", content: response.chatAnswer },
           ]);
+
+          // If this was a quick-action (Simplificar / Expandir / Melhorar),
+          // apply the AI text directly to the targeted canvas element.
+          const pending = pendingAIActionRef.current;
+          if (pending) {
+            pendingAIActionRef.current = null;
+            pushHistory();
+            setCanvas((prev) => {
+              if (!prev) return prev;
+              return {
+                ...prev,
+                slides: prev.slides.map((s) =>
+                  s.id !== pending.slideId
+                    ? s
+                    : {
+                        ...s,
+                        elements: s.elements.map((el) => {
+                          if (el.id !== pending.elementId) return el;
+                          if (el.type === "text") {
+                            return { ...el, text: response.chatAnswer } as CanvasTextElement;
+                          }
+                          if (el.type === "bullet_list" || el.type === "ordered_list") {
+                            // AI returns one item per line; strip leading bullets / numbers
+                            const items = response.chatAnswer
+                              .split("\n")
+                              .map((line) => line.trim().replace(/^(\d+[.)]\s*|[-•]\s*)/, ""))
+                              .filter(Boolean);
+                            return {
+                              ...el,
+                              items: items.length > 0 ? items : (el as CanvasListElement).items,
+                            } as CanvasListElement;
+                          }
+                          return el;
+                        }),
+                      },
+                ),
+              };
+            });
+            setDirty(true);
+          }
         }
       } catch (err) {
         const msg = err instanceof Error ? err.message : "Erro na conversa com IA.";
@@ -431,37 +503,53 @@ export function BlockDocumentEditor({ documentId }: Props) {
         setIsChatting(false);
       }
     },
-    [dispatch, document?.id],
+    [dispatch, document?.id, pushHistory], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
-  /** Convenience: fire a preset AI prompt pre-filled with element context. */
+  /**
+   * Fire a preset AI prompt for the selected element.
+   * Records the element target so handleChatSubmit can write the answer back.
+   */
   const sendAIAction = useCallback(
     (prompt: string) => {
+      if (selectedElementId && activeSlideId) {
+        const el = activeSlide?.elements.find((e) => e.id === selectedElementId);
+        if (el && (el.type === "text" || el.type === "bullet_list" || el.type === "ordered_list")) {
+          pendingAIActionRef.current = { elementId: selectedElementId, slideId: activeSlideId };
+        }
+      }
       void handleChatSubmit(prompt);
     },
-    [handleChatSubmit],
+    [handleChatSubmit, selectedElementId, activeSlideId, activeSlide],
   );
 
-  /* ── Save ────────────────────────────────────────────────────────────── */
-  const handleSave = async () => {
-    if (!canvas || !document) return;
-    setSaving(true);
-    try {
-      const result = await dispatch(
-        updateDocument({ id: documentId, title: document.title, content: JSON.stringify(canvas) }),
-      );
-      if (updateDocument.fulfilled.match(result)) {
-        toast.success("Apresentação guardada");
-        setDirty(false);
-      } else {
-        toast.error("Não foi possível guardar.");
+  /* ── Auto-save (debounced, 1.5 s after last change) ─────────────────── */
+  useEffect(() => {
+    // Only trigger when user has made changes (dirty=true).
+    // On initial load canvasFromDoc sets dirty=false, so this won't fire.
+    if (!dirty || !canvas || !document) return;
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    setSaveStatus("saving");
+    autoSaveTimerRef.current = setTimeout(async () => {
+      try {
+        const result = await dispatch(
+          updateDocument({ id: documentId, title: document.title, content: JSON.stringify(canvas) }),
+        );
+        if (updateDocument.fulfilled.match(result)) {
+          setDirty(false);
+          setSaveStatus("saved");
+          setTimeout(() => setSaveStatus((s) => s === "saved" ? "idle" : s), 2000);
+        } else {
+          setSaveStatus("idle");
+        }
+      } catch {
+        setSaveStatus("idle");
       }
-    } catch {
-      toast.error("Erro ao guardar.");
-    } finally {
-      setSaving(false);
-    }
-  };
+    }, 1500);
+    return () => {
+      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    };
+  }, [canvas]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* ── Export PPTX (native — programmatic, text editable in PowerPoint) ── */
   const handleExportPPTX = async () => {
@@ -529,6 +617,77 @@ export function BlockDocumentEditor({ documentId }: Props) {
     }
   };
 
+  /* ── Export PDF (pdf-lib, vector — text is selectable) ──────────────── */
+  const handleExportPDF = async () => {
+    if (!canvas || !document) return;
+    setExporting(true);
+    try {
+      const { PDFDocument, rgb } = await import("pdf-lib");
+      const pdfDoc = await PDFDocument.create();
+      const PAGE_W = 960;
+      const PAGE_H = 540;
+
+      for (const cs of canvas.slides) {
+        const page = pdfDoc.addPage([PAGE_W, PAGE_H]);
+        const bgC = hexToRgb01(cs.background);
+        // Background fill
+        page.drawRectangle({ x: 0, y: 0, width: PAGE_W, height: PAGE_H, color: rgb(bgC.r, bgC.g, bgC.b) });
+
+        for (const el of cs.elements) {
+          if (el.type === "text") {
+            const t = el as CanvasTextElement;
+            const c = hexToRgb01(t.color);
+            const fontSize = Math.max(6, Math.round(t.fontSize * PAGE_W));
+            // pdf-lib y origin is bottom-left; flip from top-left
+            page.drawText(t.text, {
+              x: el.x * PAGE_W,
+              y: PAGE_H - el.y * PAGE_H - fontSize * 1.3,
+              size: fontSize,
+              color: rgb(c.r, c.g, c.b),
+              maxWidth: el.w * PAGE_W,
+              lineHeight: fontSize * 1.3,
+            });
+          } else if (el.type === "bullet_list" || el.type === "ordered_list") {
+            const l = el as CanvasListElement;
+            const isOrdered = el.type === "ordered_list";
+            const fontSize = Math.max(6, Math.round(l.fontSize * PAGE_W));
+            const c = hexToRgb01(l.color);
+            const itemH = (el.h * PAGE_H) / Math.max(1, l.items.length);
+            l.items.forEach((item, i) => {
+              const text = isOrdered ? `${i + 1}. ${item}` : `• ${item}`;
+              page.drawText(text, {
+                x: el.x * PAGE_W,
+                y: PAGE_H - el.y * PAGE_H - i * itemH - fontSize * 1.3,
+                size: fontSize,
+                color: rgb(c.r, c.g, c.b),
+                maxWidth: el.w * PAGE_W,
+              });
+            });
+          }
+        }
+      }
+
+      const pdfBytes = await pdfDoc.save();
+      const blob = new Blob([pdfBytes.buffer as ArrayBuffer], { type: "application/pdf" });
+      const url = URL.createObjectURL(blob);
+      const a = window.document.createElement("a");
+      a.href = url;
+      const fileName = (document.title || "apresentacao")
+        .replace(/[^a-z0-9À-ÿ\s-]/gi, "").trim().replace(/\s+/g, "_");
+      a.download = `${fileName}.pdf`;
+      window.document.body.appendChild(a);
+      a.click();
+      window.document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success("PDF exportado");
+    } catch (err) {
+      console.error("PDF export error:", err);
+      toast.error("Erro ao exportar PDF.");
+    } finally {
+      setExporting(false);
+    }
+  };
+
   /* ── Render branches ─────────────────────────────────────────────────── */
   const isFetchingThisDoc = loadingDocumentId === documentId;
   if (!document && (isFetchingThisDoc || isLoading)) {
@@ -580,12 +739,14 @@ export function BlockDocumentEditor({ documentId }: Props) {
 
       {/* ── Main toolbar ───────────────────────────────────────────────── */}
       <div className="flex flex-shrink-0 flex-wrap items-center gap-1.5 border-b border-border bg-background px-3 py-2">
-        {/* Title */}
+        {/* Title + auto-save status */}
         <div className="mr-2 min-w-0">
           <p className="truncate text-sm font-semibold text-foreground">{document.title}</p>
           <p className="text-[10px] text-muted-foreground">
             {canvas.slides.length} slide{canvas.slides.length !== 1 ? "s" : ""}
-            {dirty ? " · por guardar" : ""}
+            {saveStatus === "saving" && " · A guardar…"}
+            {saveStatus === "saved" && " · Guardado ✓"}
+            {saveStatus === "idle" && dirty && " · Por guardar"}
           </p>
         </div>
 
@@ -616,28 +777,45 @@ export function BlockDocumentEditor({ documentId }: Props) {
 
         <ThemePicker currentThemeId={canvas.themeId} onSelect={handleThemeSelect} />
 
-        <Button variant="outline" size="sm" className="h-8" onClick={handleExportPPTX} disabled={exporting}>
-          {exporting ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Download className="mr-1.5 h-3.5 w-3.5" />}
-          Exportar PPTX
-        </Button>
+        {/* ── Right side: Export dropdown + Present ──────────────────── */}
+        <div className="ml-auto flex items-center gap-1.5">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-8 gap-1" disabled={exporting}>
+                {exporting
+                  ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  : <Download className="h-3.5 w-3.5" />}
+                Exportar
+                <ChevronDown className="h-3 w-3 opacity-70" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52">
+              <DropdownMenuItem
+                onClick={handleExportPPTX}
+                disabled={exporting}
+                className="cursor-pointer gap-2"
+              >
+                <FileText className="h-4 w-4 text-blue-500" />
+                Exportar como PPTX
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={handleExportPDF}
+                disabled={exporting}
+                className="cursor-pointer gap-2"
+              >
+                <FileText className="h-4 w-4 text-red-500" />
+                Exportar como PDF
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
-        <Button
-          onClick={handleSave}
-          disabled={!dirty || saving}
-          variant={dirty ? "default" : "outline"}
-          size="sm"
-          className="h-8"
-        >
-          {saving ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Save className="mr-1.5 h-3.5 w-3.5" />}
-          Guardar
-        </Button>
-
-        <Link href={Routes.PRESENTATION_EDITOR.replace(":id", documentId) + "/present"}>
-          <Button variant="default" size="sm" className="h-8">
-            <Play className="mr-1.5 h-3.5 w-3.5" />
-            Apresentar
-          </Button>
-        </Link>
+          <Link href={Routes.PRESENTATION_EDITOR.replace(":id", documentId) + "/present"}>
+            <Button variant="default" size="sm" className="h-8">
+              <Play className="mr-1.5 h-3.5 w-3.5" />
+              Apresentar
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* ── Contextual toolbar — formatting + AI actions ──────────────── */}
@@ -711,7 +889,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
               <Button
                 variant="ghost" size="sm" className="h-7 gap-1 text-xs text-primary"
                 title="Pede à IA para simplificar este texto"
-                onClick={() => sendAIAction(`Simplifica este texto para ser mais conciso e claro, mantendo o significado. Responde apenas com o texto melhorado (sem explicações): "${selectedTextEl.text}"`)}
+                onClick={() => sendAIAction(`Texto original: "${selectedTextEl.text}". Como ficaria numa versão mais concisa e clara, mantendo o significado?`)}
               >
                 <Sparkles className="h-3 w-3" />
                 Simplificar
@@ -719,7 +897,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
               <Button
                 variant="ghost" size="sm" className="h-7 gap-1 text-xs text-primary"
                 title="Pede à IA para expandir este texto"
-                onClick={() => sendAIAction(`Expande este texto com mais detalhes relevantes, mantendo um estilo adequado para apresentação. Responde apenas com o texto expandido: "${selectedTextEl.text}"`)}
+                onClick={() => sendAIAction(`Texto original: "${selectedTextEl.text}". Como ficaria expandido com mais detalhes relevantes para uma apresentação?`)}
               >
                 <Sparkles className="h-3 w-3" />
                 Expandir
@@ -743,7 +921,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
               <Button
                 variant="ghost" size="sm" className="h-7 gap-1 text-xs text-primary"
                 title="Pede à IA para melhorar esta lista"
-                onClick={() => sendAIAction(`Melhora esta lista para uma apresentação escolar. Mantém o mesmo número de itens. Responde apenas com os itens da lista (um por linha): ${selectedListEl.items.join("\n")}`)}
+                onClick={() => sendAIAction(`Lista para apresentação escolar: ${selectedListEl.items.join(" | ")}. Como ficaria melhorada, com o mesmo número de itens (devolve um item por linha)?`)}
               >
                 <Sparkles className="h-3 w-3" />
                 Melhorar lista
@@ -756,7 +934,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
             <Button
               variant="ghost" size="sm" className="h-7 gap-1 text-xs text-primary"
               title="Pede à IA uma melhor descrição para a imagem"
-              onClick={() => sendAIAction(`Sugere uma descrição mais específica e visual para uma imagem numa apresentação. Descrição atual: "${(selectedImgEl as { prompt?: string }).prompt ?? ""}". Responde com 1 frase descritiva.`)}
+              onClick={() => sendAIAction(`Imagem com descrição atual: "${(selectedImgEl as { prompt?: string }).prompt ?? ""}". Qual seria uma descrição visual mais específica e concreta para apresentação educativa?`)}
             >
               <Sparkles className="h-3 w-3" />
               Melhorar imagem
@@ -809,23 +987,28 @@ export function BlockDocumentEditor({ documentId }: Props) {
           </div>
         </aside>
 
-        {/* Main canvas */}
-        <main className="flex flex-1 flex-col items-center justify-start overflow-auto bg-zinc-800 p-4 pt-6">
+        {/* Main canvas — flex-1 so it fills remaining height; overflow-hidden
+             so the slide never causes scrolling (SlideKonvaEditor computes
+             stage size to fit within available h/w).                        */}
+        <main className="flex flex-1 min-h-0 flex-col items-center overflow-hidden bg-neutral-100 dark:bg-zinc-900">
           {activeSlide ? (
-            <div className="flex w-full flex-col gap-2">
-              <p className="text-center text-xs text-white/40">
+            <div className="flex w-full flex-1 min-h-0 flex-col items-center justify-center">
+              <p className="mb-2 shrink-0 text-center text-xs text-muted-foreground">
                 Slide {activeSlideIdx + 1} / {canvas.slides.length}
                 {selectedElement ? ` · ${selectedElement.type}` : ""}
               </p>
-              <SlideKonvaEditor
-                ref={editorRef}
-                slide={activeSlide}
-                onChange={(elements) => updateSlide(activeSlide.id, elements)}
-                onSelectionChange={setSelectedElementId}
-              />
+              {/* This div passes its full height down to SlideKonvaEditor's wrapperRef */}
+              <div className="flex w-full flex-1 min-h-0 items-center justify-center px-6 pb-4">
+                <SlideKonvaEditor
+                  ref={editorRef}
+                  slide={activeSlide}
+                  onChange={(elements) => updateSlide(activeSlide.id, elements)}
+                  onSelectionChange={setSelectedElementId}
+                />
+              </div>
             </div>
           ) : (
-            <p className="text-sm text-white/30">Nenhum slide selecionado</p>
+            <p className="text-sm text-muted-foreground">Nenhum slide selecionado</p>
           )}
         </main>
 
