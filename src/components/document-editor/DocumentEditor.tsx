@@ -33,7 +33,7 @@ import {
 } from "@/store/subscription/subscriptionSlice";
 import { useAuth } from "@clerk/nextjs";
 import type { Editor } from "@tiptap/react";
-import { CheckCircle2, Crown, Loader2 } from "lucide-react";
+import { CalendarClock, CheckCircle2, Crown, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import posthog from "posthog-js";
@@ -260,12 +260,7 @@ export default function DocumentEditor({
   const [streamStatus, setStreamStatus] = useState<string>("");
 
   const eventSourceRef = useRef<(() => void) | null>(null);
-  // Tracks which documentId has had a stream started; prevents the streaming
-  // effect from opening a second connection when eventSourceRef is briefly null
-  // (e.g., between onComplete nulling the ref and clearStreamInfo propagating).
   const streamStartedForIdRef = useRef<string | null>(null);
-  // Set to true when onSources fires so the post-fetch sources sync doesn't
-  // overwrite sources that arrived through the SSE stream for this document.
   const hasStreamingSourcesRef = useRef(false);
   const rawStreamRef = useRef("");
   const latestDisplayContentRef = useRef("");
@@ -280,11 +275,10 @@ export default function DocumentEditor({
     typeof setTimeout
   > | null>(null);
 
-  // Diff / Suggestions mode state
   const [isSuggestionsMode, setIsSuggestionsMode] = useState(false);
 
-  // Reset document-scoped UI state when switching document IDs.
-  // This prevents chat/source leakage between documents during route transitions.
+  const isCurriculumPlan = activeDocument?.documentType === "curriculumPlan";
+
   useEffect(() => {
     latestContentRef.current = content;
   }, [content]);
@@ -311,7 +305,6 @@ export default function DocumentEditor({
     accumulatedTitleRef.current = "";
   }, [documentId]);
 
-  // Check for imported query parameter
   useEffect(() => {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
@@ -324,7 +317,6 @@ export default function DocumentEditor({
             },
           );
         });
-        // Remove the query param to avoid repeating on refresh
         router.replace(window.location.pathname, { scroll: false });
       }
     }
@@ -344,7 +336,6 @@ export default function DocumentEditor({
     if (!trimmed) {
       return "";
     }
-
     return trimmed;
   }, []);
 
@@ -476,13 +467,7 @@ export default function DocumentEditor({
     ],
   );
 
-  // Connect to SSE stream when we have stream info for this document
   useEffect(() => {
-    // Only connect if we have stream info for this document and haven't already
-    // started a stream for this documentId. Using a separate ref (instead of
-    // checking eventSourceRef.current) prevents a second connection from opening
-    // during the brief window between onComplete nulling the ref and
-    // clearStreamInfo propagating through Redux.
     if (
       streamInfo &&
       streamInfo.id === documentId &&
@@ -490,7 +475,6 @@ export default function DocumentEditor({
       streamStartedForIdRef.current !== documentId
     ) {
       streamStartedForIdRef.current = documentId;
-      // Set a placeholder immediately to prevent double execution
       const abortController = new AbortController();
       eventSourceRef.current = () => abortController.abort();
 
@@ -501,11 +485,8 @@ export default function DocumentEditor({
       setDisplayContent("");
       setDocumentTitle("");
 
-      // Get auth token and start streaming
       const startStream = async () => {
         const template = process.env.NEXT_PUBLIC_CLERK_JWT_TEMPLATE;
-        // Build a getter so streamDocumentContent can fetch a fresh token on
-        // every connection attempt (initial + any reconnect after a network blip).
         const tokenGetter = () => getToken(template ? { template } : undefined);
         const token = await tokenGetter();
         if (!token) {
@@ -539,7 +520,6 @@ export default function DocumentEditor({
           dispatch(clearStreamInfo());
           dispatch(setGeneratingImages(false));
 
-          // rawStreamRef now holds decoded Markdown directly
           const fallbackContent =
             latestDisplayContentRef.current || rawStreamRef.current;
           if (fallbackContent) {
@@ -554,14 +534,11 @@ export default function DocumentEditor({
           streamInfo.streamUrl,
           {
             onContent: (chunk) => {
-              // Content events now carry decoded Markdown directly
-              // (no longer raw JSON fragments that need extraction)
               rawStreamRef.current += chunk;
               latestDisplayContentRef.current = rawStreamRef.current;
               setDisplayContent(rawStreamRef.current);
             },
             onTitle: (title) => {
-              // Title now arrives as a complete string in a single event
               accumulatedTitleRef.current = title;
               setDocumentTitle(title);
             },
@@ -646,7 +623,6 @@ export default function DocumentEditor({
                 setContent(finalContent);
               }
 
-              // Update sources if returned in response
               if (response.sources && response.sources.length > 0) {
                 hasStreamingSourcesRef.current = true;
                 setSources(response.sources);
@@ -664,17 +640,13 @@ export default function DocumentEditor({
               }
 
               if (finalContent && editorRef.current) {
-                // Enter suggestions mode with diff
                 try {
                   const editor = editorRef.current;
                   const baseDoc = editor.state.doc;
                   const aiNode = markdownToNode(finalContent, editor.schema);
-
-                  // Compute diff between current and AI-generated content
                   const diffChanges = computeDiff(baseDoc, aiNode);
 
                   if (diffChanges.length > 0) {
-                    // Store original content for "Reject All"
                     const storage = (
                       editor.storage as unknown as Record<
                         string,
@@ -685,15 +657,11 @@ export default function DocumentEditor({
                       storage.originalContent = editor.getHTML();
                     }
 
-                    // Replace editor content with AI content
                     const aiHtml = markdownToHtml(finalContent);
                     editor.commands.setContent(aiHtml, { emitUpdate: false });
-
-                    // Apply diff decorations
                     editor.commands.setDiffChanges(diffChanges);
                     setIsSuggestionsMode(true);
                   } else {
-                    // No differences — just update content directly
                     setContent(finalContent);
                     setShowUpdateIndicator(true);
                     setTimeout(
@@ -703,7 +671,6 @@ export default function DocumentEditor({
                   }
                 } catch (err) {
                   console.error("Error computing diff:", err);
-                  // Fallback: direct update without diff
                   setContent(finalContent);
                   setShowUpdateIndicator(true);
                   setTimeout(
@@ -712,7 +679,6 @@ export default function DocumentEditor({
                   );
                 }
               } else if (finalContent) {
-                // No editor ref available, direct update
                 setContent(finalContent);
                 setShowUpdateIndicator(true);
                 setTimeout(
@@ -799,7 +765,6 @@ export default function DocumentEditor({
     normalizePendingTitle,
   ]);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       clearCompletionFallback();
@@ -810,7 +775,6 @@ export default function DocumentEditor({
     };
   }, []);
 
-  // Register callback to auto-exit suggestions mode when all changes are resolved
   useEffect(() => {
     const editor = editorRef.current;
     if (!editor) return;
@@ -827,9 +791,7 @@ export default function DocumentEditor({
 
     storage.onDiffStateChange = (active: boolean, count: number) => {
       if (!active && count === 0 && isSuggestionsMode) {
-        // All changes have been individually accepted/rejected
         setIsSuggestionsMode(false);
-        // Sync the final editor content back to state
         const html = editor.getHTML();
         const markdown = htmlToMarkdown(html);
         setContent(markdown);
@@ -842,17 +804,12 @@ export default function DocumentEditor({
     };
   }, [handleTrackedAutosave, isSuggestionsMode, setContent]);
 
-  // Handle chat answer from Redux (for non-chat paths or fallback)
   useEffect(() => {
     if (lastChatAnswer) {
-      // Chat answer is now handled in handleChatSubmit directly,
-      // but clear it from Redux to prevent stale state
       dispatch(clearLastChatAnswer());
     }
   }, [lastChatAnswer, dispatch]);
 
-  // Sync content when currentDocument changes
-  // Skip sync during suggestions mode OR if a chat submission is in progress
   useEffect(() => {
     if (
       currentDocument?.id !== documentId ||
@@ -888,7 +845,6 @@ export default function DocumentEditor({
     normalizePendingTitle,
   ]);
 
-  // Load initial prompt from document metadata
   useEffect(() => {
     if (currentDocument?.id !== documentId) {
       return;
@@ -912,9 +868,6 @@ export default function DocumentEditor({
     chatHistory.length,
   ]);
 
-  // Sync sources from currentDocument when document loads.
-  // Skipped when the current stream already provided sources so that
-  // post-stream fetchDocument calls don't overwrite SSE-sourced results.
   useEffect(() => {
     if (currentDocument?.id !== documentId || isStreaming) {
       return;
@@ -934,7 +887,6 @@ export default function DocumentEditor({
     isStreaming,
   ]);
 
-  // Keep image state in sync with the current document.
   useEffect(() => {
     dispatch(setImages([]));
     dispatch(setImageError(null));
@@ -944,7 +896,6 @@ export default function DocumentEditor({
     }
   }, [dispatch, currentDocument?.id, documentId]);
 
-  // Recover from older leaked internal image tokens by remapping them to stable refs.
   useEffect(() => {
     if (hasAttemptedLeakedTokenRepairRef.current) {
       return;
@@ -995,7 +946,6 @@ export default function DocumentEditor({
       const baseDocBefore = editor ? editor.state.doc : null;
       const originalHtmlBefore = editor ? editor.getHTML() : null;
 
-      // Prevent content sync during the request
       isChatInProgressRef.current = true;
       skipNextEditorKeyBumpRef.current = true;
 
@@ -1005,7 +955,6 @@ export default function DocumentEditor({
         ).unwrap();
         dispatch(fetchDocumentImages(currentDocument.id));
 
-        // Add chat answer to history
         if (response.chatAnswer) {
           setChatHistory((prev) => [
             ...prev,
@@ -1017,12 +966,10 @@ export default function DocumentEditor({
           ]);
         }
 
-        // Handle content update with diff mode
         if (response.content && editor) {
           try {
             const aiContent = response.content.trim();
             const aiNode = markdownToNode(aiContent, editor.schema);
-            // Use baseDocBefore to ensure we compare with the document BEFORE the API updated Redux
             const diffChanges = computeDiff(
               baseDocBefore || editor.state.doc,
               aiNode,
@@ -1030,7 +977,6 @@ export default function DocumentEditor({
 
             if (diffChanges.length > 0) {
               registerAiSuggestionReceived(diffChanges.length);
-              // Store original content for "Reject All"
               const storage = (
                 editor.storage as unknown as Record<
                   string,
@@ -1042,15 +988,11 @@ export default function DocumentEditor({
                   originalHtmlBefore || editor.getHTML();
               }
 
-              // Replace editor content with AI content
               const aiHtml = markdownToHtml(aiContent);
               editor.commands.setContent(aiHtml, { emitUpdate: false });
-
-              // Apply diff decorations
               editor.commands.setDiffChanges(diffChanges);
               setIsSuggestionsMode(true);
             } else {
-              // No differences — just sync normally
               setContent(aiContent);
               syncContent(aiContent);
             }
@@ -1060,12 +1002,10 @@ export default function DocumentEditor({
             syncContent(response.content);
           }
         } else if (response.content) {
-          // No editor ref — direct update
           setContent(response.content);
           syncContent(response.content);
         }
 
-        // Update sources if available
         if (response.sources && response.sources.length > 0) {
           setSources(response.sources);
         }
@@ -1097,11 +1037,9 @@ export default function DocumentEditor({
   const resolvedTitle =
     documentTitle || normalizePendingTitle(activeDocument?.title || "");
 
-  // Handle exiting diff / suggestions mode
   const handleExitDiffMode = useCallback(() => {
     setIsSuggestionsMode(false);
     if (editorRef.current) {
-      // Sync current editor content back to state
       const html = editorRef.current.getHTML();
       const markdown = htmlToMarkdown(html);
       setContent(markdown);
@@ -1166,6 +1104,18 @@ export default function DocumentEditor({
                     Editor
                   </h2>
                   <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                    {isCurriculumPlan && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          router.push(`/timetable/new?curriculumPlanId=${documentId}`)
+                        }
+                        className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-sm font-medium text-foreground hover:border-primary hover:text-primary transition-colors"
+                      >
+                        <CalendarClock className="h-4 w-4" />
+                        <span className="hidden sm:inline">Criar Horário</span>
+                      </button>
+                    )}
                     <ShareButton
                       title={resolvedTitle || defaultTitle}
                       content={content}
@@ -1235,6 +1185,18 @@ export default function DocumentEditor({
                             Upgrade
                           </span>
                         </Link>
+                      )}
+                      {isCurriculumPlan && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            router.push(`/timetable/new?curriculumPlanId=${documentId}`)
+                          }
+                          className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-sm font-medium text-foreground hover:border-primary hover:text-primary transition-colors"
+                        >
+                          <CalendarClock className="h-4 w-4" />
+                          <span className="hidden sm:inline">Criar Horário</span>
+                        </button>
                       )}
                       <ShareButton
                         title={resolvedTitle || defaultTitle}
