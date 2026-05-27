@@ -116,12 +116,18 @@ function toggleItalic(s: FontStyle): FontStyle {
 }
 
 const COLOR_PRESETS = [
-  { color: "#e5e7eb", label: "Branco" },
+  { color: "#ffffff", label: "Branco" },
   { color: "#9ca3af", label: "Cinzento" },
-  { color: "#6753FF", label: "Primário" },
-  { color: "#fbbf24", label: "Âmbar" },
+  { color: "#1e293b", label: "Azul-escuro" },
+  { color: "#6753FF", label: "Violeta" },
+  { color: "#3b82f6", label: "Azul" },
+  { color: "#06b6d4", label: "Ciano" },
   { color: "#4ade80", label: "Verde" },
-  { color: "#f43f5e", label: "Rosa" },
+  { color: "#fbbf24", label: "Âmbar" },
+  { color: "#f97316", label: "Laranja" },
+  { color: "#f43f5e", label: "Vermelho" },
+  { color: "#ec4899", label: "Rosa" },
+  { color: "#a855f7", label: "Roxo" },
 ];
 
 function makeNewSlide(themeId?: string): CanvasSlide {
@@ -804,9 +810,9 @@ export function BlockDocumentEditor({ documentId }: Props) {
         </aside>
 
         {/* Main canvas */}
-        <main className="flex flex-1 flex-col items-center justify-center overflow-auto bg-zinc-950 p-6">
+        <main className="flex flex-1 flex-col items-center justify-start overflow-auto bg-zinc-800 p-4 pt-6">
           {activeSlide ? (
-            <div className="flex w-full max-w-4xl flex-col gap-2">
+            <div className="flex w-full flex-col gap-2">
               <p className="text-center text-xs text-white/40">
                 Slide {activeSlideIdx + 1} / {canvas.slides.length}
                 {selectedElement ? ` · ${selectedElement.type}` : ""}
@@ -861,22 +867,42 @@ function SlideItem({
   onClick, onMoveUp, onMoveDown, onDelete,
 }: SlideItemProps) {
   return (
-    <div className="group relative">
+    <div className="group relative cursor-pointer" onClick={onClick}>
       <SlideThumbnail slide={slide} index={index} isActive={isActive} onClick={onClick} />
-      <div onClick={onClick} className="pointer-events-none absolute inset-0 flex items-center justify-around rounded bg-black/50 opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100">
-        <button type="button" disabled={isFirst} onClick={(e) => { e.stopPropagation(); onMoveUp(); }}
-          className="rounded bg-white/10 p-0.5 text-white transition-colors hover:bg-white/25 disabled:cursor-not-allowed disabled:opacity-30" title="Mover para cima">
-          <ChevronUp className="h-3.5 w-3.5" />
+
+      {/* Up / Down arrows — bottom-right corner, stacked vertically */}
+      <div className="absolute bottom-1 right-1 flex flex-col gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+        <button
+          type="button"
+          disabled={isFirst}
+          onClick={(e) => { e.stopPropagation(); onMoveUp(); }}
+          className="rounded bg-black/50 p-0.5 text-white transition-colors hover:bg-black/80 disabled:cursor-not-allowed disabled:opacity-30"
+          title="Mover para cima"
+        >
+          <ChevronUp className="h-3 w-3" />
         </button>
-        <button type="button" disabled={isOnly} onClick={(e) => { e.stopPropagation(); onDelete(); }}
-          className="rounded bg-red-500/30 p-0.5 text-red-300 transition-colors hover:bg-red-500/60 disabled:cursor-not-allowed disabled:opacity-30" title="Eliminar slide">
-          <Trash2 className="h-3.5 w-3.5" />
-        </button>
-        <button type="button" disabled={isLast} onClick={(e) => { e.stopPropagation(); onMoveDown(); }}
-          className="rounded bg-white/10 p-0.5 text-white transition-colors hover:bg-white/25 disabled:cursor-not-allowed disabled:opacity-30" title="Mover para baixo">
-          <ChevronDown className="h-3.5 w-3.5" />
+        <button
+          type="button"
+          disabled={isLast}
+          onClick={(e) => { e.stopPropagation(); onMoveDown(); }}
+          className="rounded bg-black/50 p-0.5 text-white transition-colors hover:bg-black/80 disabled:cursor-not-allowed disabled:opacity-30"
+          title="Mover para baixo"
+        >
+          <ChevronDown className="h-3 w-3" />
         </button>
       </div>
+
+      {/* Delete — top-right corner, only shown when not the only slide */}
+      {!isOnly && (
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onDelete(); }}
+          className="absolute right-1 top-1 rounded bg-red-600/80 p-0.5 text-white opacity-0 transition-opacity hover:bg-red-600 group-hover:opacity-100"
+          title="Eliminar slide"
+        >
+          <Trash2 className="h-3 w-3" />
+        </button>
+      )}
     </div>
   );
 }

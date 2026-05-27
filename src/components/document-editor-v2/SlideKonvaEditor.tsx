@@ -69,10 +69,18 @@ function toggleItalic(s: FontStyle): FontStyle {
 }
 
 const COLOR_PRESETS: { color: string; label: string }[] = [
-  { color: "#e5e7eb", label: "Branco" },
+  { color: "#ffffff", label: "Branco" },
   { color: "#9ca3af", label: "Cinzento" },
-  { color: "#6753FF", label: "Primário" },
+  { color: "#1e293b", label: "Azul-escuro" },
+  { color: "#6753FF", label: "Violeta" },
+  { color: "#3b82f6", label: "Azul" },
+  { color: "#06b6d4", label: "Ciano" },
+  { color: "#4ade80", label: "Verde" },
   { color: "#fbbf24", label: "Âmbar" },
+  { color: "#f97316", label: "Laranja" },
+  { color: "#f43f5e", label: "Vermelho" },
+  { color: "#ec4899", label: "Rosa" },
+  { color: "#a855f7", label: "Roxo" },
 ];
 
 /* --------------------------------------------------------------------------
