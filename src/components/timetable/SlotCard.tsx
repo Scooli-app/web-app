@@ -22,9 +22,12 @@ const STATUS_LABELS: Record<string, string> = {
 
 const STATUS_COLORS: Record<string, string> = {
   pending: "bg-muted text-muted-foreground",
-  generating: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
-  generated: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300",
-  skipped: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
+  generating:
+    "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
+  generated:
+    "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300",
+  skipped:
+    "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
   error: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300",
 };
 
@@ -38,9 +41,10 @@ export default function SlotCard({
   color,
 }: SlotCardProps) {
   const statusLabel = STATUS_LABELS[lesson.status] ?? lesson.status;
-  const statusColor = STATUS_COLORS[lesson.status] ?? "bg-muted text-muted-foreground";
+  const statusColor =
+    STATUS_COLORS[lesson.status] ?? "bg-muted text-muted-foreground";
 
-  const borderColor = color ? `border-l-4` : "";
+  const borderColor = color ? "border-l-4" : "";
   const borderStyle = color ? { borderLeftColor: color } : {};
 
   return (
@@ -58,7 +62,9 @@ export default function SlotCard({
             {lesson.topicTitle ?? "Tópico por definir"}
           </p>
         </div>
-        <span className={`shrink-0 text-xs px-2 py-0.5 rounded-full font-medium ${statusColor}`}>
+        <span
+          className={`shrink-0 text-xs px-2 py-0.5 rounded-full font-medium ${statusColor}`}
+        >
           {statusLabel}
         </span>
       </div>
@@ -72,7 +78,9 @@ export default function SlotCard({
 
       {/* Error */}
       {lesson.status === "error" && lesson.errorMessage && (
-        <p className="text-xs text-red-600 dark:text-red-400 truncate">{lesson.errorMessage}</p>
+        <p className="text-xs text-red-600 dark:text-red-400 truncate">
+          {lesson.errorMessage}
+        </p>
       )}
 
       {/* Actions */}
@@ -88,11 +96,19 @@ export default function SlotCard({
         ) : (
           <button
             type="button"
-            disabled={isGenerating || lesson.status === "skipped" || lesson.status === "generating"}
+            disabled={
+              isGenerating ||
+              lesson.status === "skipped" ||
+              lesson.status === "generating"
+            }
             onClick={() => onGenerate?.(lesson.id)}
             className="flex-1 text-xs rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed px-2.5 py-1.5 font-medium transition-colors"
           >
-            {lesson.status === "generating" ? "A gerar…" : lesson.status === "error" ? "Tentar novamente" : "Gerar plano"}
+            {lesson.status === "generating"
+              ? "A gerar…"
+              : lesson.status === "error"
+                ? "Tentar novamente"
+                : "Gerar plano"}
           </button>
         )}
 
