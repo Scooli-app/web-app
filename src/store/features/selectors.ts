@@ -17,12 +17,6 @@ const selectEnabledFeatureFlags = createSelector(
       .map(([feature]) => feature as FeatureFlag))
 );
 
-
-
-
-
-
-
 export const selectIsPresentationCreationEnabled = createSelector(
   [selectEnabledFeatureFlags],
   (enabledFeatures) => enabledFeatures.includes(FeatureFlag.PRESENTATION_CREATION)
@@ -48,6 +42,7 @@ export const selectIsCurriculumPlanEnabled = createSelector(
   (enabledFeatures) => enabledFeatures.includes(FeatureFlag.CURRICULUM_PLAN_ENABLED)
 );
 
-
-
-
+export const selectIsHorarioEnabled = createSelector(
+  [selectEnabledFeatureFlags],
+  (enabledFeatures) => enabledFeatures.includes(FeatureFlag.HORARIO_PLANOS)
+);

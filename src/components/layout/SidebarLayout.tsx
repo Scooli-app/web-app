@@ -61,6 +61,7 @@ import {
 import {
   BookOpen,
   Building2,
+  CalendarClock,
   CalendarDays,
   ClipboardList,
   Clock,
@@ -158,6 +159,12 @@ const CONTENT_CREATION: NavItem[] = [
     href: Routes.CURRICULUM_PLAN,
     icon: CalendarDays,
     description: "Planificações curriculares de período",
+  },
+  {
+    title: "Horário & Planos",
+    href: Routes.TIMETABLE,
+    icon: CalendarClock,
+    description: "Gerir horário semanal e criar planos de aula com IA",
   },
 ];
 
@@ -460,9 +467,11 @@ const SidebarNavigationContent = memo(function SidebarNavigationContent({
   const isUserSourcesEnabled = features[FeatureFlag.USER_SOURCES] === true;
   const isCurriculumPlanEnabled =
     features[FeatureFlag.CURRICULUM_PLAN_ENABLED] === true;
+  const isHorarioEnabled = features[FeatureFlag.HORARIO_PLANOS] === true;
 
   const contentCreationItems = CONTENT_CREATION.filter((item) => {
     if (item.href === Routes.CURRICULUM_PLAN && !isCurriculumPlanEnabled) return false;
+    if (item.href === Routes.TIMETABLE && !isHorarioEnabled) return false;
     return true;
   });
 
