@@ -15,7 +15,6 @@ import type {
   ContentBlock,
   ImageBlock,
   SlideImage,
-  VisualPlaceholderBlock,
 } from "@/shared/types/blocks";
 import { InlineText } from "./inline-text";
 

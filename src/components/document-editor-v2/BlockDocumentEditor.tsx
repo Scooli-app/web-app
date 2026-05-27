@@ -37,14 +37,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useGenerationProgress } from "@/hooks/useGenerationProgress";
 import { parsePresentationDocument } from "@/shared/types/blocks";
-import type {
-  CanvasElement,
-  CanvasListElement,
-  CanvasPresentation,
-  CanvasSlide,
-  CanvasTextElement,
+import {
+  isCanvasPresentation,
+  type CanvasElement,
+  type CanvasListElement,
+  type CanvasPresentation,
+  type CanvasSlide,
+  type CanvasTextElement,
 } from "@/shared/types/canvas-presentation";
-import { isCanvasPresentation } from "@/shared/types/canvas-presentation";
 import { getThemeById } from "@/shared/types/presentation-theme";
 import { Routes } from "@/shared/types";
 import { fetchDocument, updateDocument, chatWithDocument } from "@/store/documents/documentSlice";
@@ -71,8 +71,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { applyTheme, presentationToCanvas } from "./canvas-layout";
-import type { SlideKonvaEditorHandle } from "./SlideKonvaEditor";
-import { SlideKonvaEditor } from "./SlideKonvaEditor";
+import { SlideKonvaEditor, type SlideKonvaEditorHandle } from "./SlideKonvaEditor";
 import { SlideThumbnail } from "./SlideThumbnail";
 import { ThemePicker } from "./ThemePicker";
 
@@ -809,7 +808,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <Link href={Routes.PRESENTATION_EDITOR.replace(":id", documentId) + "/present"}>
+          <Link href={`${Routes.PRESENTATION_EDITOR.replace(":id", documentId)}/present`}>
             <Button variant="default" size="sm" className="h-8">
               <Play className="mr-1.5 h-3.5 w-3.5" />
               Apresentar

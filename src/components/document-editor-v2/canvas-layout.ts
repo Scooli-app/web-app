@@ -11,12 +11,12 @@
  *   canvasToPresentation(cp)    → PresentationDocument (v2 → v1, full doc)
  */
 
-import type {
-  ContentBlock,
-  PresentationDocument,
-  SlideBlock,
+import {
+  SCHEMA_VERSION,
+  type ContentBlock,
+  type PresentationDocument,
+  type SlideBlock,
 } from "@/shared/types/blocks";
-import { SCHEMA_VERSION } from "@/shared/types/blocks";
 import type {
   CanvasElement,
   CanvasImageElement,
@@ -163,7 +163,7 @@ export function slideToCanvas(slide: SlideBlock): CanvasSlide {
       fontSize: 0.048, fontStyle: "bold", align: "center",
       role: "title",
     }));
-    if (slide.subtitle != null) {
+    if (slide.subtitle !== null && slide.subtitle !== undefined) {
       elements.push(makeText(`${slide.id}-subtitle`, {
         text: slide.subtitle,
         x: 0.10, y: 0.58, w: 0.80, h: 0.14,
@@ -275,7 +275,7 @@ export function slideToCanvas(slide: SlideBlock): CanvasSlide {
       role: "title",
     }));
 
-    if (slide.subtitle != null) {
+    if (slide.subtitle !== null && slide.subtitle !== undefined) {
       elements.push(makeText(`${slide.id}-subtitle`, {
         text: slide.subtitle,
         x: PX, y: 0.82, w: 1 - PX * 2, h: 0.10,

@@ -49,41 +49,6 @@ const T = {
 const FS_BASE = 0.021; // base body font size fraction of W
 
 /* --------------------------------------------------------------------------
- * Text formatting helpers
- * -------------------------------------------------------------------------- */
-
-type FontStyle = CanvasTextElement["fontStyle"];
-
-function toggleBold(s: FontStyle): FontStyle {
-  if (s === "bold") return "normal";
-  if (s === "bold italic") return "italic";
-  if (s === "italic") return "bold italic";
-  return "bold";
-}
-
-function toggleItalic(s: FontStyle): FontStyle {
-  if (s === "italic") return "normal";
-  if (s === "bold italic") return "bold";
-  if (s === "bold") return "bold italic";
-  return "italic";
-}
-
-const COLOR_PRESETS: { color: string; label: string }[] = [
-  { color: "#ffffff", label: "Branco" },
-  { color: "#9ca3af", label: "Cinzento" },
-  { color: "#1e293b", label: "Azul-escuro" },
-  { color: "#6753FF", label: "Violeta" },
-  { color: "#3b82f6", label: "Azul" },
-  { color: "#06b6d4", label: "Ciano" },
-  { color: "#4ade80", label: "Verde" },
-  { color: "#fbbf24", label: "Âmbar" },
-  { color: "#f97316", label: "Laranja" },
-  { color: "#f43f5e", label: "Vermelho" },
-  { color: "#ec4899", label: "Rosa" },
-  { color: "#a855f7", label: "Roxo" },
-];
-
-/* --------------------------------------------------------------------------
  * useStageSize — responsive 16:9 canvas.
  * Observes a "wrapper" div that fills the available parent space and computes
  * the largest 16:9 stage that fits within both its width AND height, so the
@@ -435,24 +400,6 @@ export const SlideKonvaEditor = forwardRef<
     onTransformEnd: (e: Konva.KonvaEventObject<Event>) =>
       handleTransformEnd(id, e.target),
   });
-
-  /* ── Derived: selected text element (for formatting toolbar) ──────────── */
-  const selectedTextEl =
-    selectedId != null
-      ? (elements.find(
-          (e): e is CanvasTextElement =>
-            e.id === selectedId && e.type === "text",
-        ) ?? null)
-      : null;
-
-  const selectedListEl =
-    selectedId != null
-      ? (elements.find(
-          (e): e is CanvasListElement =>
-            e.id === selectedId &&
-            (e.type === "bullet_list" || e.type === "ordered_list"),
-        ) ?? null)
-      : null;
 
   /* ── Render ──────────────────────────────────────────────────────────────── */
   // imgRevision is intentionally read here so React re-renders when images load.
