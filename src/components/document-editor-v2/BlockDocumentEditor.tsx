@@ -187,6 +187,15 @@ export function BlockDocumentEditor({ documentId }: Props) {
     if (documentId) void dispatch(fetchDocument(documentId));
   }, [dispatch, documentId]);
 
+  // Lock the page scroll while the editor is mounted — this is a full-viewport
+  // canvas app and any body overflow causes jarring layout shifts.
+  useEffect(() => {
+    const html = window.document.documentElement;
+    const prev = html.style.overflow;
+    html.style.overflow = "hidden";
+    return () => { html.style.overflow = prev; };
+  }, []);
+
   /* ── Generation progress ─────────────────────────────────────────────── */
   const inProgress =
     !!document &&
@@ -888,7 +897,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
               <Button
                 variant="ghost" size="sm" className="h-7 gap-1 text-xs text-primary"
                 title="Pede à IA para simplificar este texto"
-                onClick={() => sendAIAction(`Texto original: "${selectedTextEl.text}". Como ficaria numa versão mais concisa e clara, mantendo o significado?`)}
+                onClick={() => sendAIAction(`Simplifica este texto de slide (responde só com o texto simplificado, sem introdução): "${selectedTextEl.text}"?`)}
               >
                 <Sparkles className="h-3 w-3" />
                 Simplificar
@@ -896,7 +905,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
               <Button
                 variant="ghost" size="sm" className="h-7 gap-1 text-xs text-primary"
                 title="Pede à IA para expandir este texto"
-                onClick={() => sendAIAction(`Texto original: "${selectedTextEl.text}". Como ficaria expandido com mais detalhes relevantes para uma apresentação?`)}
+                onClick={() => sendAIAction(`Expande este texto de slide com mais detalhes (responde só com o texto expandido, sem introdução): "${selectedTextEl.text}"?`)}
               >
                 <Sparkles className="h-3 w-3" />
                 Expandir
@@ -920,7 +929,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
               <Button
                 variant="ghost" size="sm" className="h-7 gap-1 text-xs text-primary"
                 title="Pede à IA para melhorar esta lista"
-                onClick={() => sendAIAction(`Lista para apresentação escolar: ${selectedListEl.items.join(" | ")}. Como ficaria melhorada, com o mesmo número de itens (devolve um item por linha)?`)}
+                onClick={() => sendAIAction(`Melhora estes itens de lista para apresentação (responde só com os itens melhorados, um por linha, sem introdução): ${selectedListEl.items.join(" | ")}?`)}
               >
                 <Sparkles className="h-3 w-3" />
                 Melhorar lista
@@ -933,7 +942,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
             <Button
               variant="ghost" size="sm" className="h-7 gap-1 text-xs text-primary"
               title="Pede à IA uma melhor descrição para a imagem"
-              onClick={() => sendAIAction(`Imagem com descrição atual: "${(selectedImgEl as { prompt?: string }).prompt ?? ""}". Qual seria uma descrição visual mais específica e concreta para apresentação educativa?`)}
+              onClick={() => sendAIAction(`Melhora esta descrição de imagem para apresentação (responde só com a nova descrição, sem introdução): "${(selectedImgEl as { prompt?: string }).prompt ?? ""}"?`)}
             >
               <Sparkles className="h-3 w-3" />
               Melhorar imagem

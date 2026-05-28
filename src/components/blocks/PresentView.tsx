@@ -74,7 +74,11 @@ export function PresentView({ documentId }: Props) {
   const first = useCallback(() => setCurrentIdx(0), []);
   const last = useCallback(() => setCurrentIdx(total - 1), [total]);
 
+  // Guard against double-navigation (keydown handler + fullscreenchange can both fire).
+  const hasExitedRef = useRef(false);
   const exit = useCallback(() => {
+    if (hasExitedRef.current) return;
+    hasExitedRef.current = true;
     if (window.document.fullscreenElement) {
       void window.document.exitFullscreen().catch(() => undefined);
     }
@@ -92,6 +96,16 @@ export function PresentView({ documentId }: Props) {
       }
     };
   }, []);
+
+  // Navigate back whenever the user exits fullscreen (e.g. by pressing Esc in
+  // browsers that swallow the keydown event for fullscreen exit).
+  useEffect(() => {
+    const onFullscreenChange = () => {
+      if (!window.document.fullscreenElement) exit();
+    };
+    window.document.addEventListener("fullscreenchange", onFullscreenChange);
+    return () => window.document.removeEventListener("fullscreenchange", onFullscreenChange);
+  }, [exit]);
 
   /* Keyboard nav -------------------------------------------------------- */
 
