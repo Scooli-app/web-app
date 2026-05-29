@@ -826,9 +826,11 @@ export function BlockDocumentEditor({ documentId }: Props) {
         </div>
       </div>
 
-      {/* ── Contextual toolbar — formatting + AI actions ──────────────── */}
+      {/* ── Contextual toolbar — always rendered to prevent layout shift.
+           Fixed h-9, no wrapping, horizontal scroll if needed.          */}
+      <div className={`flex flex-shrink-0 items-center gap-1 border-b border-border px-3 h-11 overflow-x-auto${selectedElement ? " bg-muted/30" : ""}`}>
       {selectedElement && (
-        <div className="flex flex-shrink-0 flex-wrap items-center gap-1 border-b border-border bg-muted/30 px-3 py-1.5">
+        <>
 
           {/* TEXT formatting */}
           {selectedTextEl && (
@@ -963,8 +965,9 @@ export function BlockDocumentEditor({ documentId }: Props) {
               Apagar
             </Button>
           </div>
-        </div>
+        </>
       )}
+      </div>
 
       {/* ── Editor body: slide sidebar | canvas | AI chat ─────────────── */}
       <div className="flex flex-1 min-h-0 overflow-hidden">
