@@ -67,7 +67,6 @@ import {
   Eye,
   EyeOff,
   FileText,
-  ImageIcon,
   Italic,
   Link2,
   Loader2,
@@ -157,20 +156,6 @@ const FONT_OPTIONS = [
   { label: "Merriweather",value: "Merriweather",        cssVar: "var(--font-merriweather, serif)" },
 ] as const;
 
-const COLOR_PRESETS = [
-  { color: "#ffffff", label: "Branco" },
-  { color: "#9ca3af", label: "Cinzento" },
-  { color: "#1e293b", label: "Azul-escuro" },
-  { color: "#6753FF", label: "Violeta" },
-  { color: "#3b82f6", label: "Azul" },
-  { color: "#06b6d4", label: "Ciano" },
-  { color: "#4ade80", label: "Verde" },
-  { color: "#fbbf24", label: "Âmbar" },
-  { color: "#f97316", label: "Laranja" },
-  { color: "#f43f5e", label: "Vermelho" },
-  { color: "#ec4899", label: "Rosa" },
-  { color: "#a855f7", label: "Roxo" },
-];
 
 function makeNewSlide(themeId?: string): CanvasSlide {
   const theme = getThemeById(themeId ?? "dark");
