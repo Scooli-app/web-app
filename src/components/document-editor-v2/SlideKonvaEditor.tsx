@@ -86,6 +86,7 @@ interface EditState {
   width: number;
   height: number;
   fontSize: number;
+  fontFamily?: string;
   color: string;
   multiline: boolean;
 }
@@ -130,7 +131,7 @@ function TextEditOverlay({
         width: edit.width,
         minHeight: edit.height,
         fontSize: edit.fontSize,
-        fontFamily: T.font,
+        fontFamily: edit.fontFamily || T.font,
         color: edit.color,
         background: "rgba(103,83,255,0.10)",
         border: `2px solid ${T.selection}`,
@@ -311,6 +312,8 @@ export const SlideKonvaEditor = forwardRef<
         el.type === "text" ? (el as CanvasTextElement).color
         : el.type === "math" ? T.primary
         : T.muted;
+      const fontFamily =
+        el.type === "text" ? (el as CanvasTextElement).fontFamily : undefined;
 
       setSelectedId(null); // clear transformer while editing
       setEditState({
@@ -321,6 +324,7 @@ export const SlideKonvaEditor = forwardRef<
         width: el.w * W,
         height: Math.max(el.h * H, fs * 1.5),
         fontSize: fs,
+        fontFamily,
         color,
         multiline,
       });
@@ -411,6 +415,36 @@ export const SlideKonvaEditor = forwardRef<
         className="relative select-none overflow-hidden rounded-xl shadow-xl"
         style={{ width: W, height: H }}
       >
+        {/* Floating delete button — appears to the left of the selected element */}
+        {selectedId && !editState && (() => {
+          const el = elements.find((e) => e.id === selectedId);
+          if (!el) return null;
+          const bx = el.x * W - 30;
+          const by = el.y * H;
+          return (
+            <button
+              type="button"
+              title="Apagar elemento"
+              style={{
+                position: "absolute",
+                left: Math.max(4, bx),
+                top: Math.max(4, by),
+                zIndex: 20,
+              }}
+              className="flex h-7 w-7 items-center justify-center rounded-md bg-white/90 text-destructive shadow-md border border-border hover:bg-destructive hover:text-white transition-colors"
+              onMouseDown={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation();
+                removeSelected();
+              }}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
+              </svg>
+            </button>
+          );
+        })()}
+
         <Stage
           ref={stageRef}
           width={W}
@@ -445,7 +479,7 @@ export const SlideKonvaEditor = forwardRef<
                     width={el.w * W}
                     height={el.h * H}
                     fontSize={t.fontSize * W}
-                    fontFamily={T.font}
+                    fontFamily={t.fontFamily || T.font}
                     fontStyle={t.fontStyle}
                     fill={t.color}
                     align={t.align}

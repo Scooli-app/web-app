@@ -6,7 +6,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import type { Metadata } from "next";
-import { Lexend } from "next/font/google";
+import { Lato, Lexend, Merriweather, Montserrat, Poppins, Raleway } from "next/font/google";
 import "./globals.css";
 import "katex/dist/katex.min.css";
 
@@ -28,6 +28,14 @@ const lexend = Lexend({
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700"],
 });
+
+// Fonts available for slide text in the presentation editor.
+// next/font ensures they're subset and served from the same origin.
+const poppins = Poppins({ variable: "--font-poppins", subsets: ["latin"], weight: ["300", "400", "500", "600", "700"] });
+const montserrat = Montserrat({ variable: "--font-montserrat", subsets: ["latin"], weight: ["300", "400", "500", "600", "700"] });
+const raleway = Raleway({ variable: "--font-raleway", subsets: ["latin"], weight: ["300", "400", "500", "600", "700"] });
+const lato = Lato({ variable: "--font-lato", subsets: ["latin"], weight: ["300", "400", "700"] });
+const merriweather = Merriweather({ variable: "--font-merriweather", subsets: ["latin"], weight: ["300", "400", "700"] });
 
 export const metadata: Metadata = {
   title: "Scooli - Plataforma AI para Professores",
@@ -53,7 +61,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="pt" className={lexend.variable} suppressHydrationWarning>
+    <html lang="pt" className={`${lexend.variable} ${poppins.variable} ${montserrat.variable} ${raleway.variable} ${lato.variable} ${merriweather.variable}`} suppressHydrationWarning>
       <head>
         <link
           rel="preconnect"

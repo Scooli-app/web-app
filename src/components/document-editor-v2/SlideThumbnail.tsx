@@ -88,6 +88,7 @@ export function SlideThumbnail({ slide, index, isActive, onClick }: Props) {
                   height={el.h * THUMB_H}
                   text={t.text}
                   fontSize={Math.max(5, Math.round(t.fontSize * THUMB_W))}
+                  fontFamily={t.fontFamily || "Inter, system-ui, sans-serif"}
                   fontStyle={t.fontStyle}
                   fill={t.color}
                   align={t.align}

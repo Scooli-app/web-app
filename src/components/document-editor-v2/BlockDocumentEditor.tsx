@@ -71,6 +71,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { applyTheme, presentationToCanvas } from "./canvas-layout";
+import { ColorPickerPopover } from "./ColorPickerPopover";
 import { SlideKonvaEditor, type SlideKonvaEditorHandle } from "./SlideKonvaEditor";
 import { SlideThumbnail } from "./SlideThumbnail";
 import { ThemePicker } from "./ThemePicker";
@@ -129,6 +130,16 @@ function toggleItalic(s: FontStyle): FontStyle {
   if (s === "bold") return "bold italic";
   return "italic";
 }
+
+/** Fonts available in the slide editor. CSS variable names match next/font variables in layout.tsx */
+const FONT_OPTIONS = [
+  { label: "Padrão",      value: "",                    cssVar: "var(--font-lexend-variable, sans-serif)" },
+  { label: "Poppins",     value: "Poppins",             cssVar: "var(--font-poppins, sans-serif)" },
+  { label: "Montserrat",  value: "Montserrat",          cssVar: "var(--font-montserrat, sans-serif)" },
+  { label: "Raleway",     value: "Raleway",             cssVar: "var(--font-raleway, sans-serif)" },
+  { label: "Lato",        value: "Lato",                cssVar: "var(--font-lato, sans-serif)" },
+  { label: "Merriweather",value: "Merriweather",        cssVar: "var(--font-merriweather, serif)" },
+] as const;
 
 const COLOR_PRESETS = [
   { color: "#ffffff", label: "Branco" },
@@ -880,18 +891,39 @@ export function BlockDocumentEditor({ documentId }: Props) {
 
               <div className="mx-1 h-5 w-px bg-border" />
 
-              {/* Colour swatches */}
-              {COLOR_PRESETS.map(({ color, label }) => (
+              {/* Font family selector */}
+              <select
+                className="h-7 rounded border border-border bg-background px-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
+                value={selectedTextEl.fontFamily ?? ""}
+                onChange={(e) => applyElementPatch({ fontFamily: e.target.value || undefined })}
+                title="Tipo de letra"
+                style={{ fontFamily: selectedTextEl.fontFamily || "inherit", maxWidth: 110 }}
+              >
+                {FONT_OPTIONS.map(({ label, value }) => (
+                  <option key={value} value={value} style={{ fontFamily: value || "inherit" }}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+
+              <div className="mx-1 h-5 w-px bg-border" />
+
+              {/* Full colour picker */}
+              <ColorPickerPopover
+                color={selectedTextEl.color || "#ffffff"}
+                onChange={(color) => applyElementPatch({ color })}
+              >
                 <button
-                  key={color}
-                  title={label}
-                  className={`h-5 w-5 rounded-full border-2 transition-transform hover:scale-110 ${
-                    selectedTextEl.color === color ? "scale-110 border-foreground" : "border-transparent"
-                  }`}
-                  style={{ background: color }}
-                  onClick={() => applyElementPatch({ color })}
-                />
-              ))}
+                  title="Cor do texto"
+                  className="flex h-7 w-7 flex-col items-center justify-center rounded hover:bg-muted"
+                >
+                  <span className="text-xs font-bold leading-none text-foreground">A</span>
+                  <span
+                    className="mt-0.5 h-1 w-5 rounded-sm border border-border/40"
+                    style={{ background: selectedTextEl.color || "#ffffff" }}
+                  />
+                </button>
+              </ColorPickerPopover>
 
               <div className="mx-1 h-5 w-px bg-border" />
 
@@ -925,6 +957,22 @@ export function BlockDocumentEditor({ documentId }: Props) {
               </span>
               <Button variant="ghost" size="sm" className="h-7 w-7 p-0 font-bold" title="Aumentar tamanho"
                 onClick={() => applyElementPatch({ fontSize: Math.min(0.10, selectedListEl.fontSize + 0.004) })}>+</Button>
+
+              <div className="mx-1 h-5 w-px bg-border" />
+
+              {/* List colour picker */}
+              <ColorPickerPopover
+                color={selectedListEl.color || "#e5e7eb"}
+                onChange={(color) => applyElementPatch({ color })}
+              >
+                <button
+                  title="Cor do texto"
+                  className="flex h-7 w-7 flex-col items-center justify-center rounded hover:bg-muted"
+                >
+                  <span className="text-xs font-bold leading-none text-foreground">A</span>
+                  <span className="mt-0.5 h-1 w-5 rounded-sm border border-border/40" style={{ background: selectedListEl.color || "#e5e7eb" }} />
+                </button>
+              </ColorPickerPopover>
 
               <div className="mx-1 h-5 w-px bg-border" />
 

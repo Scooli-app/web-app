@@ -26,6 +26,7 @@ export interface CanvasTextElement extends CanvasBaseElement {
   text: string;
   fontSize: number; // fraction of W
   fontStyle: "normal" | "bold" | "italic" | "bold italic";
+  fontFamily?: string; // CSS font-family name; undefined → app default
   color: string;
   align: "left" | "center" | "right";
   /**
