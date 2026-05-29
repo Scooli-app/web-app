@@ -82,14 +82,18 @@ export function SlideThumbnail({ slide, index, isActive, onClick }: Props) {
               return (
                 <Text
                   key={el.id}
-                  x={el.x * THUMB_W}
-                  y={el.y * THUMB_H}
+                  x={el.x * THUMB_W + el.w * THUMB_W / 2}
+                  y={el.y * THUMB_H + el.h * THUMB_H / 2}
+                  offsetX={el.w * THUMB_W / 2}
+                  offsetY={el.h * THUMB_H / 2}
+                  rotation={el.rotation ?? 0}
                   width={el.w * THUMB_W}
                   height={el.h * THUMB_H}
                   text={t.text}
                   fontSize={Math.max(5, Math.round(t.fontSize * THUMB_W))}
                   fontFamily={t.fontFamily || "Inter, system-ui, sans-serif"}
                   fontStyle={t.fontStyle}
+                  textDecoration={t.underline ? "underline" : ""}
                   fill={t.color}
                   align={t.align}
                   wrap="word"
@@ -109,8 +113,11 @@ export function SlideThumbnail({ slide, index, isActive, onClick }: Props) {
               return (
                 <Text
                   key={el.id}
-                  x={el.x * THUMB_W}
-                  y={el.y * THUMB_H}
+                  x={el.x * THUMB_W + el.w * THUMB_W / 2}
+                  y={el.y * THUMB_H + el.h * THUMB_H / 2}
+                  offsetX={el.w * THUMB_W / 2}
+                  offsetY={el.h * THUMB_H / 2}
+                  rotation={el.rotation ?? 0}
                   width={el.w * THUMB_W}
                   height={el.h * THUMB_H}
                   text={text}
@@ -131,8 +138,11 @@ export function SlideThumbnail({ slide, index, isActive, onClick }: Props) {
                   <KonvaImage
                     key={el.id}
                     image={cached}
-                    x={el.x * THUMB_W}
-                    y={el.y * THUMB_H}
+                    x={el.x * THUMB_W + el.w * THUMB_W / 2}
+                    y={el.y * THUMB_H + el.h * THUMB_H / 2}
+                    offsetX={el.w * THUMB_W / 2}
+                    offsetY={el.h * THUMB_H / 2}
+                    rotation={el.rotation ?? 0}
                     width={el.w * THUMB_W}
                     height={el.h * THUMB_H}
                     cornerRadius={2}
@@ -144,8 +154,11 @@ export function SlideThumbnail({ slide, index, isActive, onClick }: Props) {
               return (
                 <Rect
                   key={el.id}
-                  x={el.x * THUMB_W}
-                  y={el.y * THUMB_H}
+                  x={el.x * THUMB_W + el.w * THUMB_W / 2}
+                  y={el.y * THUMB_H + el.h * THUMB_H / 2}
+                  offsetX={el.w * THUMB_W / 2}
+                  offsetY={el.h * THUMB_H / 2}
+                  rotation={el.rotation ?? 0}
                   width={el.w * THUMB_W}
                   height={el.h * THUMB_H}
                   fill="#2a2a3a"
@@ -164,6 +177,7 @@ export function SlideThumbnail({ slide, index, isActive, onClick }: Props) {
       <span className="pointer-events-none absolute bottom-1 left-1 rounded bg-black/50 px-1 text-[9px] leading-tight text-white/70">
         {index + 1}
       </span>
+
     </button>
   );
 }

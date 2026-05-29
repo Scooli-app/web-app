@@ -70,8 +70,13 @@ export function PresentView({ documentId }: Props) {
     }
   }, [document]);
 
-  const total = canvasPresentation
-    ? canvasPresentation.slides.length
+  // For canvas presentations, filter out hidden slides for the presentation view.
+  const visibleCanvasSlides = canvasPresentation
+    ? canvasPresentation.slides.filter((s) => !s.hidden)
+    : null;
+
+  const total = visibleCanvasSlides
+    ? visibleCanvasSlides.length
     : (parsed?.blocks.length ?? 0);
 
   /* Navigation handlers ------------------------------------------------- */
@@ -178,8 +183,8 @@ export function PresentView({ documentId }: Props) {
     );
   }
 
-  // Resolve current slide for either format
-  const currentCanvasSlide = canvasPresentation?.slides[currentIdx] ?? null;
+  // Resolve current slide for either format (canvas uses the filtered visible list)
+  const currentCanvasSlide = visibleCanvasSlides?.[currentIdx] ?? null;
   const currentV1Slide = parsed?.blocks[currentIdx] ?? null;
 
   return (
@@ -263,8 +268,8 @@ export function PresentView({ documentId }: Props) {
           all of them, one per page. The on-screen viewer above is hidden by the
           print stylesheet. */}
       <div className="scooli-print-deck hidden print:block">
-        {canvasPresentation
-          ? canvasPresentation.slides.map((slide) => (
+        {visibleCanvasSlides
+          ? visibleCanvasSlides.map((slide) => (
               <div key={slide.id} className="break-after-page" style={{ width: "100vw", height: "100vh" }}>
                 <CanvasSlideView slide={slide} />
               </div>

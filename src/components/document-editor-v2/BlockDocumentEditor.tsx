@@ -40,6 +40,7 @@ import { parsePresentationDocument } from "@/shared/types/blocks";
 import {
   isCanvasPresentation,
   type CanvasElement,
+  type CanvasImageElement,
   type CanvasListElement,
   type CanvasPresentation,
   type CanvasSlide,
@@ -56,15 +57,21 @@ import {
   Bold,
   ChevronDown,
   ChevronUp,
+  Copy,
   Download,
+  Eye,
+  EyeOff,
   FileText,
+  ImageIcon,
   Italic,
   Loader2,
+  MoreHorizontal,
   Play,
   Plus,
   Redo2,
   Sparkles,
   Trash2,
+  Underline,
   Undo2,
 } from "lucide-react";
 import Link from "next/link";
@@ -242,6 +249,15 @@ export function BlockDocumentEditor({ documentId }: Props) {
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  /* ── Zoom ──────────────────────────────────────────────────────────────── */
+  const [zoom, setZoom] = useState(1.0);
+  const ZOOM_MIN = 0.25; // 25 %
+  const ZOOM_MAX = 2.0;  // 200 %
+
+  /* ── Change-image URL input inline state ─────────────────────────────── */
+  const [showImgUrlInput, setShowImgUrlInput] = useState(false);
+  const [imgUrlDraft, setImgUrlDraft] = useState("");
+
   useEffect(() => {
     if (canvasFromDoc) {
       // Only do a full reset the very first time this document's canvas is
@@ -411,6 +427,87 @@ export function BlockDocumentEditor({ documentId }: Props) {
       setDirty(true);
     },
     [pushHistory, activeSlideId],
+  );
+
+  const duplicateSlide = useCallback(
+    (slideId: string) => {
+      const cur = canvasRef.current;
+      if (!cur) return;
+      const src = cur.slides.find((s) => s.id === slideId);
+      if (!src) return;
+      const newId = `s${Date.now().toString(36)}`;
+      const newSlide: CanvasSlide = {
+        ...src,
+        id: newId,
+        hidden: false,
+        elements: src.elements.map((el) => ({
+          ...el,
+          id: `${el.id}-c${Date.now().toString(36)}`,
+        })),
+      };
+      const idx = cur.slides.findIndex((s) => s.id === slideId);
+      pushHistory();
+      setCanvas((prev) => {
+        if (!prev) return prev;
+        const slides = [...prev.slides];
+        slides.splice(idx + 1, 0, newSlide);
+        return { ...prev, slides };
+      });
+      setActiveSlideId(newSlide.id);
+      setDirty(true);
+    },
+    [pushHistory],
+  );
+
+  const toggleHideSlide = useCallback(
+    (slideId: string) => {
+      pushHistory();
+      setCanvas((prev) =>
+        prev
+          ? {
+              ...prev,
+              slides: prev.slides.map((s) =>
+                s.id === slideId ? { ...s, hidden: !s.hidden } : s,
+              ),
+            }
+          : prev,
+      );
+      setDirty(true);
+    },
+    [pushHistory],
+  );
+
+  const patchSlideBackground = useCallback(
+    (bg: string) => {
+      if (!activeSlideId) return;
+      pushHistory();
+      setCanvas((prev) =>
+        prev
+          ? {
+              ...prev,
+              slides: prev.slides.map((s) =>
+                s.id === activeSlideId ? { ...s, background: bg } : s,
+              ),
+            }
+          : prev,
+      );
+      setDirty(true);
+    },
+    [activeSlideId, pushHistory],
+  );
+
+  const applyBgToAll = useCallback(
+    (bg: string) => {
+      if (!canvasRef.current) return;
+      pushHistory();
+      setCanvas((prev) =>
+        prev
+          ? { ...prev, slides: prev.slides.map((s) => ({ ...s, background: bg })) }
+          : prev,
+      );
+      setDirty(true);
+    },
+    [pushHistory],
   );
 
   const moveSlide = useCallback(
@@ -860,6 +957,13 @@ export function BlockDocumentEditor({ documentId }: Props) {
               >
                 <Italic className="h-3.5 w-3.5" />
               </Button>
+              <Button
+                variant={selectedTextEl.underline ? "secondary" : "ghost"}
+                size="sm" className="h-7 w-7 p-0" title="Sublinhado (U)"
+                onClick={() => applyElementPatch({ underline: !selectedTextEl.underline })}
+              >
+                <Underline className="h-3.5 w-3.5" />
+              </Button>
 
               <div className="mx-1 h-5 w-px bg-border" />
 
@@ -989,14 +1093,72 @@ export function BlockDocumentEditor({ documentId }: Props) {
 
           {/* IMAGE actions */}
           {selectedImgEl && (
-            <Button
-              variant="ghost" size="sm" className="h-7 gap-1 text-xs text-primary"
-              title="Pede à IA uma melhor descrição para a imagem"
-              onClick={() => sendAIAction(`Melhora esta descrição de imagem para apresentação (responde só com a nova descrição, sem introdução): "${(selectedImgEl as { prompt?: string }).prompt ?? ""}"?`)}
-            >
-              <Sparkles className="h-3 w-3" />
-              Melhorar imagem
-            </Button>
+            <>
+              {showImgUrlInput ? (
+                <div className="flex items-center gap-1">
+                  <input
+                    type="url"
+                    value={imgUrlDraft}
+                    autoFocus
+                    onChange={(e) => setImgUrlDraft(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && imgUrlDraft.trim()) {
+                        applyElementPatch({ url: imgUrlDraft.trim() } as Partial<CanvasImageElement>);
+                        setShowImgUrlInput(false);
+                        setImgUrlDraft("");
+                      }
+                      if (e.key === "Escape") {
+                        setShowImgUrlInput(false);
+                        setImgUrlDraft("");
+                      }
+                    }}
+                    placeholder="https://..."
+                    className="h-7 w-52 rounded border border-border bg-background px-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+                  />
+                  <Button
+                    size="sm" className="h-7 text-xs"
+                    onClick={() => {
+                      if (imgUrlDraft.trim()) {
+                        applyElementPatch({ url: imgUrlDraft.trim() } as Partial<CanvasImageElement>);
+                      }
+                      setShowImgUrlInput(false);
+                      setImgUrlDraft("");
+                    }}
+                  >
+                    OK
+                  </Button>
+                  <Button
+                    variant="ghost" size="sm" className="h-7 text-xs"
+                    onClick={() => { setShowImgUrlInput(false); setImgUrlDraft(""); }}
+                  >
+                    Cancelar
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  variant="ghost" size="sm" className="h-7 gap-1 text-xs"
+                  title="Trocar imagem por URL"
+                  onClick={() => {
+                    setImgUrlDraft((selectedImgEl as CanvasImageElement).url ?? "");
+                    setShowImgUrlInput(true);
+                  }}
+                >
+                  <ImageIcon className="h-3 w-3" />
+                  Trocar imagem
+                </Button>
+              )}
+
+              <div className="mx-1 h-5 w-px bg-border" />
+
+              <Button
+                variant="ghost" size="sm" className="h-7 gap-1 text-xs text-primary"
+                title="Pede à IA uma melhor descrição para a imagem"
+                onClick={() => sendAIAction(`Melhora esta descrição de imagem para apresentação (responde só com a nova descrição, sem introdução): "${(selectedImgEl as CanvasImageElement).prompt ?? ""}"?`)}
+              >
+                <Sparkles className="h-3 w-3" />
+                Melhorar imagem
+              </Button>
+            </>
           )}
 
           {/* Delete selected element */}
@@ -1013,6 +1175,34 @@ export function BlockDocumentEditor({ documentId }: Props) {
               Apagar
             </Button>
           </div>
+        </>
+      )}
+
+      {/* Per-slide background picker — shown when nothing is selected */}
+      {!selectedElement && activeSlide && (
+        <>
+          <span className="text-xs text-muted-foreground">Fundo:</span>
+          <ColorPickerPopover
+            color={activeSlide.background}
+            onChange={patchSlideBackground}
+          >
+            <button
+              title="Cor de fundo do slide"
+              className="flex h-7 w-9 items-center justify-center rounded border border-border hover:bg-muted"
+            >
+              <span
+                className="h-4 w-6 rounded-sm border border-border/40"
+                style={{ background: activeSlide.background }}
+              />
+            </button>
+          </ColorPickerPopover>
+          <Button
+            variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground"
+            title="Aplicar esta cor de fundo a todos os slides"
+            onClick={() => applyBgToAll(activeSlide.background)}
+          >
+            Aplicar a todos
+          </Button>
         </>
       )}
       </div>
@@ -1036,6 +1226,8 @@ export function BlockDocumentEditor({ documentId }: Props) {
                 onMoveUp={() => moveSlide(cs.id, "up")}
                 onMoveDown={() => moveSlide(cs.id, "down")}
                 onDelete={() => deleteSlide(cs.id)}
+                onDuplicate={() => duplicateSlide(cs.id)}
+                onToggleHide={() => toggleHideSlide(cs.id)}
               />
             ))}
           </div>
@@ -1052,18 +1244,60 @@ export function BlockDocumentEditor({ documentId }: Props) {
         <main className="flex flex-1 min-h-0 flex-col items-center overflow-hidden bg-neutral-100 dark:bg-zinc-900">
           {activeSlide ? (
             <div className="flex w-full flex-1 min-h-0 flex-col items-center justify-center">
-              <p className="mb-2 shrink-0 text-center text-xs text-muted-foreground">
+              <p className="mb-1 shrink-0 text-center text-xs text-muted-foreground">
                 Slide {activeSlideIdx + 1} / {canvas.slides.length}
                 {selectedElement ? ` · ${selectedElement.type}` : ""}
+                {activeSlide.hidden ? " · oculto" : ""}
               </p>
-              {/* This div passes its full height down to SlideKonvaEditor's wrapperRef */}
-              <div className="flex w-full flex-1 min-h-0 items-center justify-center px-6 pb-4">
-                <SlideKonvaEditor
-                  ref={editorRef}
-                  slide={activeSlide}
-                  onChange={(elements) => updateSlide(activeSlide.id, elements)}
-                  onSelectionChange={setSelectedElementId}
+              {/* Canvas wrapper — flex-1 takes all remaining height.
+                   zoom ≤ 1 : shrink the inner div height so the ResizeObserver inside
+                              SlideKonvaEditor sees a smaller container and renders the
+                              Konva stage at a proportionally smaller pixel size.
+                   zoom > 1 : keep the inner div at 100 % and apply a CSS scale
+                              transform so the stage renders at native resolution and
+                              visually enlarges (edges clip at the overflow boundary). */}
+              <div className="flex w-full flex-1 min-h-0 items-center justify-center overflow-hidden">
+                <div
+                  style={{
+                    width: "100%",
+                    height: zoom <= 1 ? `${zoom * 100}%` : "100%",
+                    maxWidth: "100%",
+                    maxHeight: "100%",
+                    transform: zoom > 1 ? `scale(${zoom})` : undefined,
+                    transformOrigin: "center center",
+                  }}
+                >
+                  <SlideKonvaEditor
+                    ref={editorRef}
+                    slide={activeSlide}
+                    onChange={(elements) => updateSlide(activeSlide.id, elements)}
+                    onSelectionChange={setSelectedElementId}
+                  />
+                </div>
+              </div>
+
+              {/* Zoom slider */}
+              <div className="flex shrink-0 items-center gap-2 pb-1.5">
+                <input
+                  type="range"
+                  min={ZOOM_MIN * 100}
+                  max={ZOOM_MAX * 100}
+                  step={5}
+                  value={Math.round(zoom * 100)}
+                  onChange={(e) =>
+                    setZoom(parseFloat((Number(e.target.value) / 100).toFixed(2)))
+                  }
+                  className="w-24 accent-primary cursor-pointer"
+                  title="Zoom"
                 />
+                <button
+                  type="button"
+                  onClick={() => setZoom(1.0)}
+                  className="min-w-[3rem] rounded border border-border bg-background px-2 py-0.5 text-center text-[11px] text-muted-foreground hover:bg-muted"
+                  title="Repor zoom para 100%"
+                >
+                  {Math.round(zoom * 100)}%
+                </button>
               </div>
             </div>
           ) : (
@@ -1102,48 +1336,71 @@ interface SlideItemProps {
   onMoveUp: () => void;
   onMoveDown: () => void;
   onDelete: () => void;
+  onDuplicate: () => void;
+  onToggleHide: () => void;
 }
 
 function SlideItem({
   slide, index, isActive, isFirst, isLast, isOnly,
-  onClick, onMoveUp, onMoveDown, onDelete,
+  onClick, onMoveUp, onMoveDown, onDelete, onDuplicate, onToggleHide,
 }: SlideItemProps) {
   return (
     <div className="group relative cursor-pointer" onClick={onClick}>
       <SlideThumbnail slide={slide} index={index} isActive={isActive} onClick={onClick} />
 
-      {/* Up / Down arrows — bottom-right corner, stacked vertically */}
-      <div className="absolute bottom-1 right-1 flex flex-col gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
-        <button
-          type="button"
-          disabled={isFirst}
-          onClick={(e) => { e.stopPropagation(); onMoveUp(); }}
-          className="rounded bg-black/50 p-0.5 text-white transition-colors hover:bg-black/80 disabled:cursor-not-allowed disabled:opacity-30"
-          title="Mover para cima"
-        >
-          <ChevronUp className="h-3 w-3" />
-        </button>
-        <button
-          type="button"
-          disabled={isLast}
-          onClick={(e) => { e.stopPropagation(); onMoveDown(); }}
-          className="rounded bg-black/50 p-0.5 text-white transition-colors hover:bg-black/80 disabled:cursor-not-allowed disabled:opacity-30"
-          title="Mover para baixo"
-        >
-          <ChevronDown className="h-3 w-3" />
-        </button>
-      </div>
+      {/* ⋯ actions dropdown — top-right, fades in on hover */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            onClick={(e) => e.stopPropagation()}
+            className="absolute right-1 top-1 rounded bg-black/50 p-0.5 text-white opacity-0 transition-opacity hover:bg-black/80 group-hover:opacity-100"
+            title="Ações do slide"
+          >
+            <MoreHorizontal className="h-3 w-3" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent side="right" align="start" className="w-44">
+          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDuplicate(); }}>
+            <Copy className="mr-2 h-3.5 w-3.5" />
+            Duplicar
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onToggleHide(); }}>
+            {slide.hidden
+              ? <><Eye className="mr-2 h-3.5 w-3.5" />Mostrar na apresentação</>
+              : <><EyeOff className="mr-2 h-3.5 w-3.5" />Ocultar da apresentação</>}
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            disabled={isFirst}
+            onClick={(e) => { e.stopPropagation(); onMoveUp(); }}
+          >
+            <ChevronUp className="mr-2 h-3.5 w-3.5" />
+            Mover para cima
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            disabled={isLast}
+            onClick={(e) => { e.stopPropagation(); onMoveDown(); }}
+          >
+            <ChevronDown className="mr-2 h-3.5 w-3.5" />
+            Mover para baixo
+          </DropdownMenuItem>
+          {!isOnly && (
+            <DropdownMenuItem
+              onClick={(e) => { e.stopPropagation(); onDelete(); }}
+              className="text-destructive focus:text-destructive"
+            >
+              <Trash2 className="mr-2 h-3.5 w-3.5" />
+              Eliminar slide
+            </DropdownMenuItem>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
 
-      {/* Delete — top-right corner, only shown when not the only slide */}
-      {!isOnly && (
-        <button
-          type="button"
-          onClick={(e) => { e.stopPropagation(); onDelete(); }}
-          className="absolute right-1 top-1 rounded bg-red-600/80 p-0.5 text-white opacity-0 transition-opacity hover:bg-red-600 group-hover:opacity-100"
-          title="Eliminar slide"
-        >
-          <Trash2 className="h-3 w-3" />
-        </button>
+      {/* Passive hidden indicator — centre overlay, not a button */}
+      {slide.hidden && (
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center rounded bg-black/40">
+          <EyeOff className="h-4 w-4 text-white/70" />
+        </div>
       )}
     </div>
   );

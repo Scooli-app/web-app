@@ -90,8 +90,11 @@ export function CanvasSlideView({ slide }: Props) {
               return (
                 <Text
                   key={el.id}
-                  x={el.x * W}
-                  y={el.y * H}
+                  x={el.x * W + el.w * W / 2}
+                  y={el.y * H + el.h * H / 2}
+                  offsetX={el.w * W / 2}
+                  offsetY={el.h * H / 2}
+                  rotation={el.rotation ?? 0}
                   width={el.w * W}
                   height={el.h * H}
                   text={t.text}
@@ -102,6 +105,7 @@ export function CanvasSlideView({ slide }: Props) {
                       : "Lexend, Inter, system-ui, sans-serif"
                   }
                   fontStyle={t.fontStyle}
+                  textDecoration={t.underline ? "underline" : ""}
                   fill={t.color}
                   align={t.align}
                   wrap="word"
@@ -122,8 +126,11 @@ export function CanvasSlideView({ slide }: Props) {
               return (
                 <Text
                   key={el.id}
-                  x={el.x * W}
-                  y={el.y * H}
+                  x={el.x * W + el.w * W / 2}
+                  y={el.y * H + el.h * H / 2}
+                  offsetX={el.w * W / 2}
+                  offsetY={el.h * H / 2}
+                  rotation={el.rotation ?? 0}
                   width={el.w * W}
                   height={el.h * H}
                   text={text}
@@ -144,8 +151,11 @@ export function CanvasSlideView({ slide }: Props) {
               return (
                 <Text
                   key={el.id}
-                  x={el.x * W}
-                  y={el.y * H}
+                  x={el.x * W + el.w * W / 2}
+                  y={el.y * H + el.h * H / 2}
+                  offsetX={el.w * W / 2}
+                  offsetY={el.h * H / 2}
+                  rotation={el.rotation ?? 0}
                   width={el.w * W}
                   height={el.h * H}
                   text={m.tex}
@@ -166,8 +176,11 @@ export function CanvasSlideView({ slide }: Props) {
                   <KonvaImage
                     key={el.id}
                     image={cached}
-                    x={el.x * W}
-                    y={el.y * H}
+                    x={el.x * W + el.w * W / 2}
+                    y={el.y * H + el.h * H / 2}
+                    offsetX={el.w * W / 2}
+                    offsetY={el.h * H / 2}
+                    rotation={el.rotation ?? 0}
                     width={el.w * W}
                     height={el.h * H}
                     cornerRadius={4}
@@ -179,8 +192,11 @@ export function CanvasSlideView({ slide }: Props) {
               return (
                 <Rect
                   key={el.id}
-                  x={el.x * W}
-                  y={el.y * H}
+                  x={el.x * W + el.w * W / 2}
+                  y={el.y * H + el.h * H / 2}
+                  offsetX={el.w * W / 2}
+                  offsetY={el.h * H / 2}
+                  rotation={el.rotation ?? 0}
                   width={el.w * W}
                   height={el.h * H}
                   fill="#2a2a3a"
