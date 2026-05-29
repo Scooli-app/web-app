@@ -221,13 +221,21 @@ export function slideToCanvas(slide: SlideBlock): CanvasSlide {
     }));
 
     if (slide.image?.type === "visual_placeholder") {
-      const img: CanvasImageElement = {
+      elements.push({
         id: `${slide.id}-image`,
         type: "image_placeholder",
         x: imgX, y: BODY_Y, w: imgW, h: bodyH,
         prompt: slide.image.prompt,
-      };
-      elements.push(img);
+      } as CanvasImageElement);
+    } else if (slide.image?.type === "image") {
+      // Resolved image: carry the URL into the canvas element so the editor renders it.
+      elements.push({
+        id: `${slide.id}-image`,
+        type: "image_placeholder",
+        x: imgX, y: BODY_Y, w: imgW, h: bodyH,
+        prompt: slide.image.alt,
+        url: slide.image.url,
+      } as CanvasImageElement);
     }
 
     elements.push(
@@ -259,13 +267,20 @@ export function slideToCanvas(slide: SlideBlock): CanvasSlide {
   /* ── full-image ────────────────────────────────────────────────────────── */
   else if (layout === "full-image") {
     if (slide.image?.type === "visual_placeholder") {
-      const img: CanvasImageElement = {
+      elements.push({
         id: `${slide.id}-image`,
         type: "image_placeholder",
         x: 0, y: 0, w: 1, h: 1,
         prompt: slide.image.prompt,
-      };
-      elements.push(img);
+      } as CanvasImageElement);
+    } else if (slide.image?.type === "image") {
+      elements.push({
+        id: `${slide.id}-image`,
+        type: "image_placeholder",
+        x: 0, y: 0, w: 1, h: 1,
+        prompt: slide.image.alt,
+        url: slide.image.url,
+      } as CanvasImageElement);
     }
 
     elements.push(makeText(`${slide.id}-title`, {

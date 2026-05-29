@@ -40,6 +40,7 @@ import { parsePresentationDocument } from "@/shared/types/blocks";
 import {
   isCanvasPresentation,
   type CanvasElement,
+  type CanvasImageElement,
   type CanvasListElement,
   type CanvasPresentation,
   type CanvasSlide,
@@ -50,27 +51,40 @@ import { Routes } from "@/shared/types";
 import { fetchDocument, updateDocument, chatWithDocument } from "@/store/documents/documentSlice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
+  generateDocumentImage,
+  regenerateDocumentImage as regenerateDocumentImageService,
+  uploadDocumentImage,
+} from "@/services/api";
+import {
   AlignCenter,
   AlignLeft,
   AlignRight,
   Bold,
   ChevronDown,
   ChevronUp,
+  Copy,
   Download,
+  Eye,
+  EyeOff,
   FileText,
   Italic,
+  Link2,
   Loader2,
+  MoreHorizontal,
   Play,
   Plus,
   Redo2,
   Sparkles,
   Trash2,
+  Underline,
   Undo2,
+  Upload,
 } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { applyTheme, presentationToCanvas } from "./canvas-layout";
+import { ColorPickerPopover } from "./ColorPickerPopover";
 import { SlideKonvaEditor, type SlideKonvaEditorHandle } from "./SlideKonvaEditor";
 import { SlideThumbnail } from "./SlideThumbnail";
 import { ThemePicker } from "./ThemePicker";
@@ -84,6 +98,8 @@ interface ChatMessage {
   content: string;
   hasUpdate?: boolean;
 }
+
+type ImgMode = "none" | "url" | "generate";
 
 /* --------------------------------------------------------------------------
  * Helpers
@@ -130,20 +146,16 @@ function toggleItalic(s: FontStyle): FontStyle {
   return "italic";
 }
 
-const COLOR_PRESETS = [
-  { color: "#ffffff", label: "Branco" },
-  { color: "#9ca3af", label: "Cinzento" },
-  { color: "#1e293b", label: "Azul-escuro" },
-  { color: "#6753FF", label: "Violeta" },
-  { color: "#3b82f6", label: "Azul" },
-  { color: "#06b6d4", label: "Ciano" },
-  { color: "#4ade80", label: "Verde" },
-  { color: "#fbbf24", label: "Âmbar" },
-  { color: "#f97316", label: "Laranja" },
-  { color: "#f43f5e", label: "Vermelho" },
-  { color: "#ec4899", label: "Rosa" },
-  { color: "#a855f7", label: "Roxo" },
-];
+/** Fonts available in the slide editor. CSS variable names match next/font variables in layout.tsx */
+const FONT_OPTIONS = [
+  { label: "Padrão",      value: "",                    cssVar: "var(--font-lexend-variable, sans-serif)" },
+  { label: "Poppins",     value: "Poppins",             cssVar: "var(--font-poppins, sans-serif)" },
+  { label: "Montserrat",  value: "Montserrat",          cssVar: "var(--font-montserrat, sans-serif)" },
+  { label: "Raleway",     value: "Raleway",             cssVar: "var(--font-raleway, sans-serif)" },
+  { label: "Lato",        value: "Lato",                cssVar: "var(--font-lato, sans-serif)" },
+  { label: "Merriweather",value: "Merriweather",        cssVar: "var(--font-merriweather, serif)" },
+] as const;
+
 
 function makeNewSlide(themeId?: string): CanvasSlide {
   const theme = getThemeById(themeId ?? "dark");
@@ -187,6 +199,15 @@ export function BlockDocumentEditor({ documentId }: Props) {
     if (documentId) void dispatch(fetchDocument(documentId));
   }, [dispatch, documentId]);
 
+  // Lock the page scroll while the editor is mounted — this is a full-viewport
+  // canvas app and any body overflow causes jarring layout shifts.
+  useEffect(() => {
+    const html = window.document.documentElement;
+    const prev = html.style.overflow;
+    html.style.overflow = "hidden";
+    return () => { html.style.overflow = prev; };
+  }, []);
+
   /* ── Generation progress ─────────────────────────────────────────────── */
   const inProgress =
     !!document &&
@@ -221,6 +242,19 @@ export function BlockDocumentEditor({ documentId }: Props) {
   const [exporting, setExporting] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  /* ── Zoom ──────────────────────────────────────────────────────────────── */
+  const [zoom, setZoom] = useState(1.0);
+  const ZOOM_MIN = 0.25; // 25 %
+  const ZOOM_MAX = 2.0;  // 200 %
+
+  /* ── Image toolbar state ─────────────────────────────────────────────── */
+  const [imgMode, setImgMode] = useState<ImgMode>("none");
+  const [imgUrlDraft, setImgUrlDraft] = useState("");
+  const [imgPromptDraft, setImgPromptDraft] = useState("");
+  const [isUploadingImg, setIsUploadingImg] = useState(false);
+  const [isGeneratingImg, setIsGeneratingImg] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (canvasFromDoc) {
@@ -393,6 +427,87 @@ export function BlockDocumentEditor({ documentId }: Props) {
     [pushHistory, activeSlideId],
   );
 
+  const duplicateSlide = useCallback(
+    (slideId: string) => {
+      const cur = canvasRef.current;
+      if (!cur) return;
+      const src = cur.slides.find((s) => s.id === slideId);
+      if (!src) return;
+      const newId = `s${Date.now().toString(36)}`;
+      const newSlide: CanvasSlide = {
+        ...src,
+        id: newId,
+        hidden: false,
+        elements: src.elements.map((el) => ({
+          ...el,
+          id: `${el.id}-c${Date.now().toString(36)}`,
+        })),
+      };
+      const idx = cur.slides.findIndex((s) => s.id === slideId);
+      pushHistory();
+      setCanvas((prev) => {
+        if (!prev) return prev;
+        const slides = [...prev.slides];
+        slides.splice(idx + 1, 0, newSlide);
+        return { ...prev, slides };
+      });
+      setActiveSlideId(newSlide.id);
+      setDirty(true);
+    },
+    [pushHistory],
+  );
+
+  const toggleHideSlide = useCallback(
+    (slideId: string) => {
+      pushHistory();
+      setCanvas((prev) =>
+        prev
+          ? {
+              ...prev,
+              slides: prev.slides.map((s) =>
+                s.id === slideId ? { ...s, hidden: !s.hidden } : s,
+              ),
+            }
+          : prev,
+      );
+      setDirty(true);
+    },
+    [pushHistory],
+  );
+
+  const patchSlideBackground = useCallback(
+    (bg: string) => {
+      if (!activeSlideId) return;
+      pushHistory();
+      setCanvas((prev) =>
+        prev
+          ? {
+              ...prev,
+              slides: prev.slides.map((s) =>
+                s.id === activeSlideId ? { ...s, background: bg } : s,
+              ),
+            }
+          : prev,
+      );
+      setDirty(true);
+    },
+    [activeSlideId, pushHistory],
+  );
+
+  const applyBgToAll = useCallback(
+    (bg: string) => {
+      if (!canvasRef.current) return;
+      pushHistory();
+      setCanvas((prev) =>
+        prev
+          ? { ...prev, slides: prev.slides.map((s) => ({ ...s, background: bg })) }
+          : prev,
+      );
+      setDirty(true);
+    },
+    [pushHistory],
+  );
+
   const moveSlide = useCallback(
     (slideId: string, direction: "up" | "down") => {
       const cur = canvasRef.current;
@@ -520,6 +635,69 @@ export function BlockDocumentEditor({ documentId }: Props) {
       void handleChatSubmit(prompt);
     },
     [handleChatSubmit, selectedElementId, activeSlideId, activeSlide],
+  );
+
+  /* ── Reset image toolbar when selection changes ────────────────────────── */
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { setImgMode("none"); }, [selectedElementId]);
+
+  /* ── Image toolbar handlers ──────────────────────────────────────────── */
+
+  const handleImageFileUpload = useCallback(
+    async (file: File) => {
+      if (!document?.id) return;
+      setIsUploadingImg(true);
+      try {
+        const result = await uploadDocumentImage(
+          document.id,
+          file,
+          (selectedImgEl as CanvasImageElement)?.prompt ?? "",
+        );
+        applyElementPatch({
+          url: result.image.url ?? undefined,
+          imageBackendId: result.image.id,
+        } as Partial<CanvasImageElement>);
+        toast.success("Imagem carregada com sucesso");
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Erro ao carregar imagem";
+        toast.error(msg);
+      } finally {
+        setIsUploadingImg(false);
+        // Reset the input so the same file can be re-selected
+        if (fileInputRef.current) fileInputRef.current.value = "";
+      }
+    },
+    [document?.id, selectedImgEl, applyElementPatch],
+  );
+
+  const handleGenerateImage = useCallback(
+    async (prompt: string) => {
+      if (!document?.id) return;
+      setIsGeneratingImg(true);
+      try {
+        const imgEl = selectedImgEl as CanvasImageElement;
+        const result = imgEl.imageBackendId
+          ? await regenerateDocumentImageService(document.id, imgEl.imageBackendId, prompt)
+          : await generateDocumentImage(document.id, prompt);
+        if (result.newUrl) {
+          applyElementPatch({
+            url: result.newUrl,
+            prompt,
+            imageBackendId: result.id,
+          } as Partial<CanvasImageElement>);
+          toast.success("Imagem gerada com sucesso");
+          setImgMode("none");
+        } else {
+          toast.error("A imagem ficou em processamento. Tenta novamente em breve.");
+        }
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Erro ao gerar imagem";
+        toast.error(msg);
+      } finally {
+        setIsGeneratingImg(false);
+      }
+    },
+    [document?.id, selectedImgEl, applyElementPatch],
   );
 
   /* ── Auto-save (debounced, 1.5 s after last change) ─────────────────── */
@@ -817,9 +995,11 @@ export function BlockDocumentEditor({ documentId }: Props) {
         </div>
       </div>
 
-      {/* ── Contextual toolbar — formatting + AI actions ──────────────── */}
+      {/* ── Contextual toolbar — always rendered to prevent layout shift.
+           Fixed h-9, no wrapping, horizontal scroll if needed.          */}
+      <div className={`flex flex-shrink-0 items-center gap-1 border-b border-border px-3 h-11 overflow-x-auto${selectedElement ? " bg-muted/30" : ""}`}>
       {selectedElement && (
-        <div className="flex flex-shrink-0 flex-wrap items-center gap-1 border-b border-border bg-muted/30 px-3 py-1.5">
+        <>
 
           {/* TEXT formatting */}
           {selectedTextEl && (
@@ -837,6 +1017,13 @@ export function BlockDocumentEditor({ documentId }: Props) {
                 onClick={() => applyElementPatch({ fontStyle: toggleItalic(selectedTextEl.fontStyle) })}
               >
                 <Italic className="h-3.5 w-3.5" />
+              </Button>
+              <Button
+                variant={selectedTextEl.underline ? "secondary" : "ghost"}
+                size="sm" className="h-7 w-7 p-0" title="Sublinhado (U)"
+                onClick={() => applyElementPatch({ underline: !selectedTextEl.underline })}
+              >
+                <Underline className="h-3.5 w-3.5" />
               </Button>
 
               <div className="mx-1 h-5 w-px bg-border" />
@@ -869,18 +1056,39 @@ export function BlockDocumentEditor({ documentId }: Props) {
 
               <div className="mx-1 h-5 w-px bg-border" />
 
-              {/* Colour swatches */}
-              {COLOR_PRESETS.map(({ color, label }) => (
+              {/* Font family selector */}
+              <select
+                className="h-7 rounded border border-border bg-background px-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
+                value={selectedTextEl.fontFamily ?? ""}
+                onChange={(e) => applyElementPatch({ fontFamily: e.target.value || undefined })}
+                title="Tipo de letra"
+                style={{ fontFamily: selectedTextEl.fontFamily || "inherit", maxWidth: 110 }}
+              >
+                {FONT_OPTIONS.map(({ label, value }) => (
+                  <option key={value} value={value} style={{ fontFamily: value || "inherit" }}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+
+              <div className="mx-1 h-5 w-px bg-border" />
+
+              {/* Full colour picker */}
+              <ColorPickerPopover
+                color={selectedTextEl.color || "#ffffff"}
+                onChange={(color) => applyElementPatch({ color })}
+              >
                 <button
-                  key={color}
-                  title={label}
-                  className={`h-5 w-5 rounded-full border-2 transition-transform hover:scale-110 ${
-                    selectedTextEl.color === color ? "scale-110 border-foreground" : "border-transparent"
-                  }`}
-                  style={{ background: color }}
-                  onClick={() => applyElementPatch({ color })}
-                />
-              ))}
+                  title="Cor do texto"
+                  className="flex h-7 w-7 flex-col items-center justify-center rounded hover:bg-muted"
+                >
+                  <span className="text-xs font-bold leading-none text-foreground">A</span>
+                  <span
+                    className="mt-0.5 h-1 w-5 rounded-sm border border-border/40"
+                    style={{ background: selectedTextEl.color || "#ffffff" }}
+                  />
+                </button>
+              </ColorPickerPopover>
 
               <div className="mx-1 h-5 w-px bg-border" />
 
@@ -888,7 +1096,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
               <Button
                 variant="ghost" size="sm" className="h-7 gap-1 text-xs text-primary"
                 title="Pede à IA para simplificar este texto"
-                onClick={() => sendAIAction(`Texto original: "${selectedTextEl.text}". Como ficaria numa versão mais concisa e clara, mantendo o significado?`)}
+                onClick={() => sendAIAction(`Simplifica este texto de slide (responde só com o texto simplificado, sem introdução): "${selectedTextEl.text}"?`)}
               >
                 <Sparkles className="h-3 w-3" />
                 Simplificar
@@ -896,7 +1104,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
               <Button
                 variant="ghost" size="sm" className="h-7 gap-1 text-xs text-primary"
                 title="Pede à IA para expandir este texto"
-                onClick={() => sendAIAction(`Texto original: "${selectedTextEl.text}". Como ficaria expandido com mais detalhes relevantes para uma apresentação?`)}
+                onClick={() => sendAIAction(`Expande este texto de slide com mais detalhes (responde só com o texto expandido, sem introdução): "${selectedTextEl.text}"?`)}
               >
                 <Sparkles className="h-3 w-3" />
                 Expandir
@@ -917,10 +1125,26 @@ export function BlockDocumentEditor({ documentId }: Props) {
 
               <div className="mx-1 h-5 w-px bg-border" />
 
+              {/* List colour picker */}
+              <ColorPickerPopover
+                color={selectedListEl.color || "#e5e7eb"}
+                onChange={(color) => applyElementPatch({ color })}
+              >
+                <button
+                  title="Cor do texto"
+                  className="flex h-7 w-7 flex-col items-center justify-center rounded hover:bg-muted"
+                >
+                  <span className="text-xs font-bold leading-none text-foreground">A</span>
+                  <span className="mt-0.5 h-1 w-5 rounded-sm border border-border/40" style={{ background: selectedListEl.color || "#e5e7eb" }} />
+                </button>
+              </ColorPickerPopover>
+
+              <div className="mx-1 h-5 w-px bg-border" />
+
               <Button
                 variant="ghost" size="sm" className="h-7 gap-1 text-xs text-primary"
                 title="Pede à IA para melhorar esta lista"
-                onClick={() => sendAIAction(`Lista para apresentação escolar: ${selectedListEl.items.join(" | ")}. Como ficaria melhorada, com o mesmo número de itens (devolve um item por linha)?`)}
+                onClick={() => sendAIAction(`Melhora estes itens de lista para apresentação (responde só com os itens melhorados, um por linha, sem introdução): ${selectedListEl.items.join(" | ")}?`)}
               >
                 <Sparkles className="h-3 w-3" />
                 Melhorar lista
@@ -930,14 +1154,113 @@ export function BlockDocumentEditor({ documentId }: Props) {
 
           {/* IMAGE actions */}
           {selectedImgEl && (
-            <Button
-              variant="ghost" size="sm" className="h-7 gap-1 text-xs text-primary"
-              title="Pede à IA uma melhor descrição para a imagem"
-              onClick={() => sendAIAction(`Imagem com descrição atual: "${(selectedImgEl as { prompt?: string }).prompt ?? ""}". Qual seria uma descrição visual mais específica e concreta para apresentação educativa?`)}
-            >
-              <Sparkles className="h-3 w-3" />
-              Melhorar imagem
-            </Button>
+            <>
+              {/* Hidden file input — triggered by "Carregar da PC" button */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) void handleImageFileUpload(file);
+                }}
+              />
+
+              {imgMode === "url" ? (
+                /* ── URL paste input ── */
+                <div className="flex items-center gap-1">
+                  <input
+                    type="url"
+                    value={imgUrlDraft}
+                    autoFocus
+                    onChange={(e) => setImgUrlDraft(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && imgUrlDraft.trim()) {
+                        applyElementPatch({ url: imgUrlDraft.trim() } as Partial<CanvasImageElement>);
+                        setImgMode("none"); setImgUrlDraft("");
+                      }
+                      if (e.key === "Escape") { setImgMode("none"); setImgUrlDraft(""); }
+                    }}
+                    placeholder="https://..."
+                    className="h-7 w-52 rounded border border-border bg-background px-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+                  />
+                  <Button size="sm" className="h-7 text-xs"
+                    onClick={() => {
+                      if (imgUrlDraft.trim()) applyElementPatch({ url: imgUrlDraft.trim() } as Partial<CanvasImageElement>);
+                      setImgMode("none"); setImgUrlDraft("");
+                    }}>OK</Button>
+                  <Button variant="ghost" size="sm" className="h-7 text-xs"
+                    onClick={() => { setImgMode("none"); setImgUrlDraft(""); }}>Cancelar</Button>
+                </div>
+              ) : imgMode === "generate" ? (
+                /* ── AI generation panel ── */
+                <div className="flex items-center gap-1.5">
+                  <input
+                    type="text"
+                    value={imgPromptDraft}
+                    autoFocus
+                    onChange={(e) => setImgPromptDraft(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && imgPromptDraft.trim() && !isGeneratingImg) {
+                        void handleGenerateImage(imgPromptDraft.trim());
+                      }
+                      if (e.key === "Escape") setImgMode("none");
+                    }}
+                    placeholder="Descreve a imagem a gerar..."
+                    className="h-7 w-64 rounded border border-border bg-background px-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+                    disabled={isGeneratingImg}
+                  />
+                  <Button size="sm" className="h-7 gap-1 text-xs"
+                    disabled={!imgPromptDraft.trim() || isGeneratingImg}
+                    onClick={() => void handleGenerateImage(imgPromptDraft.trim())}
+                  >
+                    {isGeneratingImg ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                    {isGeneratingImg ? "A gerar…" : "Gerar"}
+                  </Button>
+                  <Button variant="ghost" size="sm" className="h-7 text-xs"
+                    onClick={() => setImgMode("none")} disabled={isGeneratingImg}>Cancelar</Button>
+                </div>
+              ) : (
+                /* ── Normal: Trocar / Gerar buttons ── */
+                <>
+                  <Button
+                    variant="ghost" size="sm" className="h-7 gap-1 text-xs"
+                    title="Carregar imagem do computador"
+                    disabled={isUploadingImg}
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    {isUploadingImg
+                      ? <Loader2 className="h-3 w-3 animate-spin" />
+                      : <Upload className="h-3 w-3" />}
+                    {isUploadingImg ? "A carregar…" : "Carregar da PC"}
+                  </Button>
+                  <Button
+                    variant="ghost" size="sm" className="h-7 gap-1 text-xs"
+                    title="Colar URL de imagem"
+                    onClick={() => {
+                      setImgUrlDraft((selectedImgEl as CanvasImageElement).url ?? "");
+                      setImgMode("url");
+                    }}
+                  >
+                    <Link2 className="h-3 w-3" />
+                    Por URL
+                  </Button>
+                  <div className="mx-1 h-5 w-px bg-border" />
+                  <Button
+                    variant="ghost" size="sm" className="h-7 gap-1 text-xs text-primary"
+                    title="Gera uma nova imagem com IA a partir de um prompt"
+                    onClick={() => {
+                      setImgPromptDraft((selectedImgEl as CanvasImageElement).prompt ?? "");
+                      setImgMode("generate");
+                    }}
+                  >
+                    <Sparkles className="h-3 w-3" />
+                    Gerar imagem
+                  </Button>
+                </>
+              )}
+            </>
           )}
 
           {/* Delete selected element */}
@@ -954,8 +1277,37 @@ export function BlockDocumentEditor({ documentId }: Props) {
               Apagar
             </Button>
           </div>
-        </div>
+        </>
       )}
+
+      {/* Per-slide background picker — shown when nothing is selected */}
+      {!selectedElement && activeSlide && (
+        <>
+          <span className="text-xs text-muted-foreground">Fundo:</span>
+          <ColorPickerPopover
+            color={activeSlide.background}
+            onChange={patchSlideBackground}
+          >
+            <button
+              title="Cor de fundo do slide"
+              className="flex h-7 w-9 items-center justify-center rounded border border-border hover:bg-muted"
+            >
+              <span
+                className="h-4 w-6 rounded-sm border border-border/40"
+                style={{ background: activeSlide.background }}
+              />
+            </button>
+          </ColorPickerPopover>
+          <Button
+            variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground"
+            title="Aplicar esta cor de fundo a todos os slides"
+            onClick={() => applyBgToAll(activeSlide.background)}
+          >
+            Aplicar a todos
+          </Button>
+        </>
+      )}
+      </div>
 
       {/* ── Editor body: slide sidebar | canvas | AI chat ─────────────── */}
       <div className="flex flex-1 min-h-0 overflow-hidden">
@@ -976,6 +1328,8 @@ export function BlockDocumentEditor({ documentId }: Props) {
                 onMoveUp={() => moveSlide(cs.id, "up")}
                 onMoveDown={() => moveSlide(cs.id, "down")}
                 onDelete={() => deleteSlide(cs.id)}
+                onDuplicate={() => duplicateSlide(cs.id)}
+                onToggleHide={() => toggleHideSlide(cs.id)}
               />
             ))}
           </div>
@@ -992,18 +1346,60 @@ export function BlockDocumentEditor({ documentId }: Props) {
         <main className="flex flex-1 min-h-0 flex-col items-center overflow-hidden bg-neutral-100 dark:bg-zinc-900">
           {activeSlide ? (
             <div className="flex w-full flex-1 min-h-0 flex-col items-center justify-center">
-              <p className="mb-2 shrink-0 text-center text-xs text-muted-foreground">
+              <p className="mb-1 shrink-0 text-center text-xs text-muted-foreground">
                 Slide {activeSlideIdx + 1} / {canvas.slides.length}
                 {selectedElement ? ` · ${selectedElement.type}` : ""}
+                {activeSlide.hidden ? " · oculto" : ""}
               </p>
-              {/* This div passes its full height down to SlideKonvaEditor's wrapperRef */}
-              <div className="flex w-full flex-1 min-h-0 items-center justify-center px-6 pb-4">
-                <SlideKonvaEditor
-                  ref={editorRef}
-                  slide={activeSlide}
-                  onChange={(elements) => updateSlide(activeSlide.id, elements)}
-                  onSelectionChange={setSelectedElementId}
+              {/* Canvas wrapper — flex-1 takes all remaining height.
+                   zoom ≤ 1 : shrink the inner div height so the ResizeObserver inside
+                              SlideKonvaEditor sees a smaller container and renders the
+                              Konva stage at a proportionally smaller pixel size.
+                   zoom > 1 : keep the inner div at 100 % and apply a CSS scale
+                              transform so the stage renders at native resolution and
+                              visually enlarges (edges clip at the overflow boundary). */}
+              <div className="flex w-full flex-1 min-h-0 items-center justify-center overflow-hidden">
+                <div
+                  style={{
+                    width: "100%",
+                    height: zoom <= 1 ? `${zoom * 100}%` : "100%",
+                    maxWidth: "100%",
+                    maxHeight: "100%",
+                    transform: zoom > 1 ? `scale(${zoom})` : undefined,
+                    transformOrigin: "center center",
+                  }}
+                >
+                  <SlideKonvaEditor
+                    ref={editorRef}
+                    slide={activeSlide}
+                    onChange={(elements) => updateSlide(activeSlide.id, elements)}
+                    onSelectionChange={setSelectedElementId}
+                  />
+                </div>
+              </div>
+
+              {/* Zoom slider */}
+              <div className="flex shrink-0 items-center gap-2 pb-1.5">
+                <input
+                  type="range"
+                  min={ZOOM_MIN * 100}
+                  max={ZOOM_MAX * 100}
+                  step={5}
+                  value={Math.round(zoom * 100)}
+                  onChange={(e) =>
+                    setZoom(parseFloat((Number(e.target.value) / 100).toFixed(2)))
+                  }
+                  className="w-24 accent-primary cursor-pointer"
+                  title="Zoom"
                 />
+                <button
+                  type="button"
+                  onClick={() => setZoom(1.0)}
+                  className="min-w-[3rem] rounded border border-border bg-background px-2 py-0.5 text-center text-[11px] text-muted-foreground hover:bg-muted"
+                  title="Repor zoom para 100%"
+                >
+                  {Math.round(zoom * 100)}%
+                </button>
               </div>
             </div>
           ) : (
@@ -1042,48 +1438,71 @@ interface SlideItemProps {
   onMoveUp: () => void;
   onMoveDown: () => void;
   onDelete: () => void;
+  onDuplicate: () => void;
+  onToggleHide: () => void;
 }
 
 function SlideItem({
   slide, index, isActive, isFirst, isLast, isOnly,
-  onClick, onMoveUp, onMoveDown, onDelete,
+  onClick, onMoveUp, onMoveDown, onDelete, onDuplicate, onToggleHide,
 }: SlideItemProps) {
   return (
     <div className="group relative cursor-pointer" onClick={onClick}>
       <SlideThumbnail slide={slide} index={index} isActive={isActive} onClick={onClick} />
 
-      {/* Up / Down arrows — bottom-right corner, stacked vertically */}
-      <div className="absolute bottom-1 right-1 flex flex-col gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
-        <button
-          type="button"
-          disabled={isFirst}
-          onClick={(e) => { e.stopPropagation(); onMoveUp(); }}
-          className="rounded bg-black/50 p-0.5 text-white transition-colors hover:bg-black/80 disabled:cursor-not-allowed disabled:opacity-30"
-          title="Mover para cima"
-        >
-          <ChevronUp className="h-3 w-3" />
-        </button>
-        <button
-          type="button"
-          disabled={isLast}
-          onClick={(e) => { e.stopPropagation(); onMoveDown(); }}
-          className="rounded bg-black/50 p-0.5 text-white transition-colors hover:bg-black/80 disabled:cursor-not-allowed disabled:opacity-30"
-          title="Mover para baixo"
-        >
-          <ChevronDown className="h-3 w-3" />
-        </button>
-      </div>
+      {/* ⋯ actions dropdown — top-right, fades in on hover */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            onClick={(e) => e.stopPropagation()}
+            className="absolute right-1 top-1 rounded bg-black/50 p-0.5 text-white opacity-0 transition-opacity hover:bg-black/80 group-hover:opacity-100"
+            title="Ações do slide"
+          >
+            <MoreHorizontal className="h-3 w-3" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent side="right" align="start" className="w-44">
+          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDuplicate(); }}>
+            <Copy className="mr-2 h-3.5 w-3.5" />
+            Duplicar
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onToggleHide(); }}>
+            {slide.hidden
+              ? <><Eye className="mr-2 h-3.5 w-3.5" />Mostrar na apresentação</>
+              : <><EyeOff className="mr-2 h-3.5 w-3.5" />Ocultar da apresentação</>}
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            disabled={isFirst}
+            onClick={(e) => { e.stopPropagation(); onMoveUp(); }}
+          >
+            <ChevronUp className="mr-2 h-3.5 w-3.5" />
+            Mover para cima
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            disabled={isLast}
+            onClick={(e) => { e.stopPropagation(); onMoveDown(); }}
+          >
+            <ChevronDown className="mr-2 h-3.5 w-3.5" />
+            Mover para baixo
+          </DropdownMenuItem>
+          {!isOnly && (
+            <DropdownMenuItem
+              onClick={(e) => { e.stopPropagation(); onDelete(); }}
+              className="text-destructive focus:text-destructive"
+            >
+              <Trash2 className="mr-2 h-3.5 w-3.5" />
+              Eliminar slide
+            </DropdownMenuItem>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
 
-      {/* Delete — top-right corner, only shown when not the only slide */}
-      {!isOnly && (
-        <button
-          type="button"
-          onClick={(e) => { e.stopPropagation(); onDelete(); }}
-          className="absolute right-1 top-1 rounded bg-red-600/80 p-0.5 text-white opacity-0 transition-opacity hover:bg-red-600 group-hover:opacity-100"
-          title="Eliminar slide"
-        >
-          <Trash2 className="h-3 w-3" />
-        </button>
+      {/* Passive hidden indicator — centre overlay, not a button */}
+      {slide.hidden && (
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center rounded bg-black/40">
+          <EyeOff className="h-4 w-4 text-white/70" />
+        </div>
       )}
     </div>
   );

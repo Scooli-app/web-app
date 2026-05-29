@@ -19,6 +19,8 @@ export interface CanvasBaseElement {
   y: number; // fraction of H  (0 = top edge)
   w: number; // fraction of W
   h: number; // fraction of H
+  /** Clockwise rotation in degrees; 0 = upright; undefined treated as 0. */
+  rotation?: number;
 }
 
 export interface CanvasTextElement extends CanvasBaseElement {
@@ -26,8 +28,10 @@ export interface CanvasTextElement extends CanvasBaseElement {
   text: string;
   fontSize: number; // fraction of W
   fontStyle: "normal" | "bold" | "italic" | "bold italic";
+  fontFamily?: string; // CSS font-family name; undefined → app default
   color: string;
   align: "left" | "center" | "right";
+  underline?: boolean; // text-decoration underline
   /**
    * Semantic role — used when reconstructing a SlideBlock from canvas elements.
    * "title"    → slide.title
@@ -59,6 +63,8 @@ export interface CanvasImageElement extends CanvasBaseElement {
   type: "image_placeholder";
   prompt: string;
   url?: string;
+  /** Backend image record ID — set after upload or AI generation so we can regenerate. */
+  imageBackendId?: string;
 }
 
 export type CanvasElement =
@@ -73,6 +79,8 @@ export interface CanvasSlide {
   layout: string;
   background: string;
   elements: CanvasElement[];
+  /** Hidden slides are dimmed in the sidebar and skipped in presentation mode. */
+  hidden?: boolean;
 }
 
 export interface CanvasPresentation {
