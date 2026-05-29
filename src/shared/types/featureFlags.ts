@@ -35,4 +35,7 @@ export enum FeatureFlag {
 
   /** Controls access to Planificacoes (curriculum plans) — Pro / Institucional only. */
   CURRICULUM_PLAN_ENABLED = "curriculum_plan_enabled",
+
+  /** Controls access to Horário & Sequências de Aulas (Feature 2) — Pro / Institucional only. */
+  HORARIO_PLANOS_ENABLED = "horario_planos_enabled",
 }
