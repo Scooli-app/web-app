@@ -30,6 +30,17 @@ export async function deleteDocumentImage(documentId: string, imageId: string): 
   await apiClient.delete(`/documents/${documentId}/images/${imageId}`);
 }
 
+export async function generateDocumentImage(
+  documentId: string,
+  prompt: string
+): Promise<RegenerateDocumentImageResponse> {
+  const response = await apiClient.post<RegenerateDocumentImageResponse>(
+    `/documents/${documentId}/images/generate`,
+    { prompt }
+  );
+  return response.data;
+}
+
 export async function uploadDocumentImage(
   documentId: string,
   file: File,

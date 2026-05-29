@@ -63,6 +63,8 @@ export interface CanvasImageElement extends CanvasBaseElement {
   type: "image_placeholder";
   prompt: string;
   url?: string;
+  /** Backend image record ID — set after upload or AI generation so we can regenerate. */
+  imageBackendId?: string;
 }
 
 export type CanvasElement =

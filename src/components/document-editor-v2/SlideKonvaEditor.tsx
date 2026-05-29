@@ -30,7 +30,7 @@ import type {
 } from "@/shared/types/canvas-presentation";
 import type Konva from "konva";
 import { useCallback, useEffect, useImperativeHandle, useRef, useState, forwardRef } from "react";
-import { Group, Image as KonvaImage, Layer, Rect, Stage, Text, Transformer } from "react-konva";
+import { Group, Image as KonvaImage, Layer, Line, Rect, Stage, Text, Transformer } from "react-konva";
 
 /* --------------------------------------------------------------------------
  * Theme tokens — canvas can't use CSS vars so dark-theme values are hardcoded.
@@ -213,6 +213,8 @@ export const SlideKonvaEditor = forwardRef<
   const elements = slide.elements;
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [editState, setEditState] = useState<EditState | null>(null);
+  /** Active snap guide lines (cleared on drag end). */
+  const [guides, setGuides] = useState<{ vLines: number[]; hLines: number[] }>({ vLines: [], hLines: [] });
 
   /* ── Image URL cache: url → loaded HTMLImageElement ────────────────────── */
   // We use a ref as the cache store (avoids re-renders during load) and a
@@ -301,8 +303,68 @@ export const SlideKonvaEditor = forwardRef<
     [elements, onChange],
   );
 
+  /**
+   * Snaps the node to nearby alignment lines during drag and draws guide lines.
+   * Checks left/center/right and top/center/bottom edges of the dragged element
+   * against stage boundaries, stage centre, and all other elements' edges.
+   */
+  const handleDragMove = useCallback(
+    (id: string, node: Konva.Node) => {
+      const THRESH = 6;
+      const hw = node.offsetX(); // half pixel width (offsetX = w*W/2)
+      const hh = node.offsetY(); // half pixel height
+      const cx = node.x();
+      const cy = node.y();
+
+      // Collect vertical (x) and horizontal (y) snap lines
+      const vLines: number[] = [0, W / 2, W];
+      const hLines: number[] = [0, H / 2, H];
+      for (const el of elements) {
+        if (el.id === id) continue;
+        const ecx = el.x * W + el.w * W / 2;
+        const ecy = el.y * H + el.h * H / 2;
+        const ehw = el.w * W / 2;
+        const ehh = el.h * H / 2;
+        vLines.push(ecx - ehw, ecx, ecx + ehw);
+        hLines.push(ecy - ehh, ecy, ecy + ehh);
+      }
+
+      // Find closest snap for x axis: test left / center / right edge of dragged el
+      type Snap = { newCenter: number; guide: number; dist: number };
+      let bestX: Snap | null = null;
+      for (const edge of [cx - hw, cx, cx + hw]) {
+        for (const line of vLines) {
+          const dist = Math.abs(edge - line);
+          if (dist < THRESH && (bestX === null || dist < bestX.dist)) {
+            bestX = { newCenter: cx + (line - edge), guide: line, dist };
+          }
+        }
+      }
+
+      let bestY: Snap | null = null;
+      for (const edge of [cy - hh, cy, cy + hh]) {
+        for (const line of hLines) {
+          const dist = Math.abs(edge - line);
+          if (dist < THRESH && (bestY === null || dist < bestY.dist)) {
+            bestY = { newCenter: cy + (line - edge), guide: line, dist };
+          }
+        }
+      }
+
+      if (bestX !== null) node.x(bestX.newCenter);
+      if (bestY !== null) node.y(bestY.newCenter);
+
+      setGuides({
+        vLines: bestX !== null ? [bestX.guide] : [],
+        hLines: bestY !== null ? [bestY.guide] : [],
+      });
+    },
+    [W, H, elements],
+  );
+
   const handleDragEnd = useCallback(
     (id: string, node: Konva.Node) => {
+      setGuides({ vLines: [], hLines: [] }); // clear guides
       const el = elements.find((e) => e.id === id);
       if (!el) return;
       // node.x()/y() = center of element (we render with offsetX/Y = w*W/2, h*H/2)
@@ -322,6 +384,7 @@ export const SlideKonvaEditor = forwardRef<
    */
   const handleTransformEnd = useCallback(
     (id: string, node: Konva.Node) => {
+      setGuides({ vLines: [], hLines: [] });
       const el = elements.find((e) => e.id === id);
       if (!el) return;
       const sx = node.scaleX();
@@ -466,6 +529,8 @@ export const SlideKonvaEditor = forwardRef<
       e.cancelBubble = true;
       if (editState?.id !== id) setSelectedId(id);
     },
+    onDragMove: (e: Konva.KonvaEventObject<DragEvent>) =>
+      handleDragMove(id, e.target),
     onDragEnd: (e: Konva.KonvaEventObject<DragEvent>) =>
       handleDragEnd(id, e.target),
     onTransformEnd: (e: Konva.KonvaEventObject<Event>) =>
@@ -783,6 +848,30 @@ export const SlideKonvaEditor = forwardRef<
 
               return null;
             })}
+
+            {/* ── Snap alignment guides ───────────────────────────────── */}
+            {guides.vLines.map((x, i) => (
+              <Line
+                key={`vg${i}`}
+                points={[x, -10, x, H + 10]}
+                stroke={T.primary}
+                strokeWidth={1}
+                dash={[4, 3]}
+                opacity={0.75}
+                listening={false}
+              />
+            ))}
+            {guides.hLines.map((y, i) => (
+              <Line
+                key={`hg${i}`}
+                points={[-10, y, W + 10, y]}
+                stroke={T.primary}
+                strokeWidth={1}
+                dash={[4, 3]}
+                opacity={0.75}
+                listening={false}
+              />
+            ))}
 
             {/* ── Single Transformer for all elements ─────────────────── */}
             <Transformer

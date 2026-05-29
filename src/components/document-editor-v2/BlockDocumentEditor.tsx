@@ -51,6 +51,11 @@ import { Routes } from "@/shared/types";
 import { fetchDocument, updateDocument, chatWithDocument } from "@/store/documents/documentSlice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
+  generateDocumentImage,
+  regenerateDocumentImage as regenerateDocumentImageService,
+  uploadDocumentImage,
+} from "@/services/api";
+import {
   AlignCenter,
   AlignLeft,
   AlignRight,
@@ -64,6 +69,7 @@ import {
   FileText,
   ImageIcon,
   Italic,
+  Link2,
   Loader2,
   MoreHorizontal,
   Play,
@@ -73,6 +79,7 @@ import {
   Trash2,
   Underline,
   Undo2,
+  Upload,
 } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -92,6 +99,8 @@ interface ChatMessage {
   content: string;
   hasUpdate?: boolean;
 }
+
+type ImgMode = "none" | "url" | "generate";
 
 /* --------------------------------------------------------------------------
  * Helpers
@@ -254,9 +263,13 @@ export function BlockDocumentEditor({ documentId }: Props) {
   const ZOOM_MIN = 0.25; // 25 %
   const ZOOM_MAX = 2.0;  // 200 %
 
-  /* ── Change-image URL input inline state ─────────────────────────────── */
-  const [showImgUrlInput, setShowImgUrlInput] = useState(false);
+  /* ── Image toolbar state ─────────────────────────────────────────────── */
+  const [imgMode, setImgMode] = useState<ImgMode>("none");
   const [imgUrlDraft, setImgUrlDraft] = useState("");
+  const [imgPromptDraft, setImgPromptDraft] = useState("");
+  const [isUploadingImg, setIsUploadingImg] = useState(false);
+  const [isGeneratingImg, setIsGeneratingImg] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (canvasFromDoc) {
@@ -637,6 +650,69 @@ export function BlockDocumentEditor({ documentId }: Props) {
       void handleChatSubmit(prompt);
     },
     [handleChatSubmit, selectedElementId, activeSlideId, activeSlide],
+  );
+
+  /* ── Reset image toolbar when selection changes ────────────────────────── */
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { setImgMode("none"); }, [selectedElementId]);
+
+  /* ── Image toolbar handlers ──────────────────────────────────────────── */
+
+  const handleImageFileUpload = useCallback(
+    async (file: File) => {
+      if (!document?.id) return;
+      setIsUploadingImg(true);
+      try {
+        const result = await uploadDocumentImage(
+          document.id,
+          file,
+          (selectedImgEl as CanvasImageElement)?.prompt ?? "",
+        );
+        applyElementPatch({
+          url: result.image.url ?? undefined,
+          imageBackendId: result.image.id,
+        } as Partial<CanvasImageElement>);
+        toast.success("Imagem carregada com sucesso");
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Erro ao carregar imagem";
+        toast.error(msg);
+      } finally {
+        setIsUploadingImg(false);
+        // Reset the input so the same file can be re-selected
+        if (fileInputRef.current) fileInputRef.current.value = "";
+      }
+    },
+    [document?.id, selectedImgEl, applyElementPatch],
+  );
+
+  const handleGenerateImage = useCallback(
+    async (prompt: string) => {
+      if (!document?.id) return;
+      setIsGeneratingImg(true);
+      try {
+        const imgEl = selectedImgEl as CanvasImageElement;
+        const result = imgEl.imageBackendId
+          ? await regenerateDocumentImageService(document.id, imgEl.imageBackendId, prompt)
+          : await generateDocumentImage(document.id, prompt);
+        if (result.newUrl) {
+          applyElementPatch({
+            url: result.newUrl,
+            prompt,
+            imageBackendId: result.id,
+          } as Partial<CanvasImageElement>);
+          toast.success("Imagem gerada com sucesso");
+          setImgMode("none");
+        } else {
+          toast.error("A imagem ficou em processamento. Tenta novamente em breve.");
+        }
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Erro ao gerar imagem";
+        toast.error(msg);
+      } finally {
+        setIsGeneratingImg(false);
+      }
+    },
+    [document?.id, selectedImgEl, applyElementPatch],
   );
 
   /* ── Auto-save (debounced, 1.5 s after last change) ─────────────────── */
@@ -1094,7 +1170,20 @@ export function BlockDocumentEditor({ documentId }: Props) {
           {/* IMAGE actions */}
           {selectedImgEl && (
             <>
-              {showImgUrlInput ? (
+              {/* Hidden file input — triggered by "Carregar da PC" button */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) void handleImageFileUpload(file);
+                }}
+              />
+
+              {imgMode === "url" ? (
+                /* ── URL paste input ── */
                 <div className="flex items-center gap-1">
                   <input
                     type="url"
@@ -1104,60 +1193,88 @@ export function BlockDocumentEditor({ documentId }: Props) {
                     onKeyDown={(e) => {
                       if (e.key === "Enter" && imgUrlDraft.trim()) {
                         applyElementPatch({ url: imgUrlDraft.trim() } as Partial<CanvasImageElement>);
-                        setShowImgUrlInput(false);
-                        setImgUrlDraft("");
+                        setImgMode("none"); setImgUrlDraft("");
                       }
-                      if (e.key === "Escape") {
-                        setShowImgUrlInput(false);
-                        setImgUrlDraft("");
-                      }
+                      if (e.key === "Escape") { setImgMode("none"); setImgUrlDraft(""); }
                     }}
                     placeholder="https://..."
                     className="h-7 w-52 rounded border border-border bg-background px-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
                   />
-                  <Button
-                    size="sm" className="h-7 text-xs"
+                  <Button size="sm" className="h-7 text-xs"
                     onClick={() => {
-                      if (imgUrlDraft.trim()) {
-                        applyElementPatch({ url: imgUrlDraft.trim() } as Partial<CanvasImageElement>);
+                      if (imgUrlDraft.trim()) applyElementPatch({ url: imgUrlDraft.trim() } as Partial<CanvasImageElement>);
+                      setImgMode("none"); setImgUrlDraft("");
+                    }}>OK</Button>
+                  <Button variant="ghost" size="sm" className="h-7 text-xs"
+                    onClick={() => { setImgMode("none"); setImgUrlDraft(""); }}>Cancelar</Button>
+                </div>
+              ) : imgMode === "generate" ? (
+                /* ── AI generation panel ── */
+                <div className="flex items-center gap-1.5">
+                  <input
+                    type="text"
+                    value={imgPromptDraft}
+                    autoFocus
+                    onChange={(e) => setImgPromptDraft(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && imgPromptDraft.trim() && !isGeneratingImg) {
+                        void handleGenerateImage(imgPromptDraft.trim());
                       }
-                      setShowImgUrlInput(false);
-                      setImgUrlDraft("");
+                      if (e.key === "Escape") setImgMode("none");
                     }}
+                    placeholder="Descreve a imagem a gerar..."
+                    className="h-7 w-64 rounded border border-border bg-background px-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+                    disabled={isGeneratingImg}
+                  />
+                  <Button size="sm" className="h-7 gap-1 text-xs"
+                    disabled={!imgPromptDraft.trim() || isGeneratingImg}
+                    onClick={() => void handleGenerateImage(imgPromptDraft.trim())}
                   >
-                    OK
+                    {isGeneratingImg ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                    {isGeneratingImg ? "A gerar…" : "Gerar"}
                   </Button>
-                  <Button
-                    variant="ghost" size="sm" className="h-7 text-xs"
-                    onClick={() => { setShowImgUrlInput(false); setImgUrlDraft(""); }}
-                  >
-                    Cancelar
-                  </Button>
+                  <Button variant="ghost" size="sm" className="h-7 text-xs"
+                    onClick={() => setImgMode("none")} disabled={isGeneratingImg}>Cancelar</Button>
                 </div>
               ) : (
-                <Button
-                  variant="ghost" size="sm" className="h-7 gap-1 text-xs"
-                  title="Trocar imagem por URL"
-                  onClick={() => {
-                    setImgUrlDraft((selectedImgEl as CanvasImageElement).url ?? "");
-                    setShowImgUrlInput(true);
-                  }}
-                >
-                  <ImageIcon className="h-3 w-3" />
-                  Trocar imagem
-                </Button>
+                /* ── Normal: Trocar / Gerar buttons ── */
+                <>
+                  <Button
+                    variant="ghost" size="sm" className="h-7 gap-1 text-xs"
+                    title="Carregar imagem do computador"
+                    disabled={isUploadingImg}
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    {isUploadingImg
+                      ? <Loader2 className="h-3 w-3 animate-spin" />
+                      : <Upload className="h-3 w-3" />}
+                    {isUploadingImg ? "A carregar…" : "Carregar da PC"}
+                  </Button>
+                  <Button
+                    variant="ghost" size="sm" className="h-7 gap-1 text-xs"
+                    title="Colar URL de imagem"
+                    onClick={() => {
+                      setImgUrlDraft((selectedImgEl as CanvasImageElement).url ?? "");
+                      setImgMode("url");
+                    }}
+                  >
+                    <Link2 className="h-3 w-3" />
+                    Por URL
+                  </Button>
+                  <div className="mx-1 h-5 w-px bg-border" />
+                  <Button
+                    variant="ghost" size="sm" className="h-7 gap-1 text-xs text-primary"
+                    title="Gera uma nova imagem com IA a partir de um prompt"
+                    onClick={() => {
+                      setImgPromptDraft((selectedImgEl as CanvasImageElement).prompt ?? "");
+                      setImgMode("generate");
+                    }}
+                  >
+                    <Sparkles className="h-3 w-3" />
+                    Gerar imagem
+                  </Button>
+                </>
               )}
-
-              <div className="mx-1 h-5 w-px bg-border" />
-
-              <Button
-                variant="ghost" size="sm" className="h-7 gap-1 text-xs text-primary"
-                title="Pede à IA uma melhor descrição para a imagem"
-                onClick={() => sendAIAction(`Melhora esta descrição de imagem para apresentação (responde só com a nova descrição, sem introdução): "${(selectedImgEl as CanvasImageElement).prompt ?? ""}"?`)}
-              >
-                <Sparkles className="h-3 w-3" />
-                Melhorar imagem
-              </Button>
             </>
           )}
 
