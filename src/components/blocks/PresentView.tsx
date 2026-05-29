@@ -19,8 +19,8 @@
 "use client";
 
 import { parsePresentationDocument, type PresentationDocument } from "@/shared/types/blocks";
-import { canvasToPresentation } from "@/components/document-editor-v2/canvas-layout";
-import { isCanvasPresentation } from "@/shared/types/canvas-presentation";
+import { CanvasSlideView } from "@/components/document-editor-v2/CanvasSlideView";
+import { isCanvasPresentation, type CanvasPresentation } from "@/shared/types/canvas-presentation";
 import { fetchDocument } from "@/store/documents/documentSlice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { Loader2, Printer, X } from "lucide-react";
@@ -47,21 +47,32 @@ export function PresentView({ documentId }: Props) {
 
   // Parse to typed model (memoized). Handles both v1 (layout-based) and
   // v2 (canvas/position-based) content formats.
-  const parsed = useMemo<PresentationDocument | null>(() => {
-    if (!document || document.contentFormat !== "json" || !document.content) return null;
+  //
+  // v2 canvas presentations are stored as-is so CanvasSlideView can render
+  // them with the correct background, colours, fonts and element positions.
+  // v1 presentations fall through to the legacy SlideRenderer.
+  const { canvasPresentation, parsed } = useMemo<{
+    canvasPresentation: CanvasPresentation | null;
+    parsed: PresentationDocument | null;
+  }>(() => {
+    if (!document || document.contentFormat !== "json" || !document.content) {
+      return { canvasPresentation: null, parsed: null };
+    }
     try {
       const raw: unknown = JSON.parse(document.content);
       if (isCanvasPresentation(raw)) {
-        // v2 canvas format — reconstruct SlideBlocks for SlideRenderer
-        return canvasToPresentation(raw);
+        // v2 canvas format — render directly via CanvasSlideView
+        return { canvasPresentation: raw, parsed: null };
       }
-      return parsePresentationDocument(document.content);
+      return { canvasPresentation: null, parsed: parsePresentationDocument(document.content) };
     } catch {
-      return null;
+      return { canvasPresentation: null, parsed: null };
     }
   }, [document]);
 
-  const total = parsed?.blocks.length ?? 0;
+  const total = canvasPresentation
+    ? canvasPresentation.slides.length
+    : (parsed?.blocks.length ?? 0);
 
   /* Navigation handlers ------------------------------------------------- */
 
@@ -159,7 +170,7 @@ export function PresentView({ documentId }: Props) {
 
   /* Render branches ----------------------------------------------------- */
 
-  if (!parsed) {
+  if (!canvasPresentation && !parsed) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black text-white">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -167,7 +178,9 @@ export function PresentView({ documentId }: Props) {
     );
   }
 
-  const currentSlide = parsed.blocks[currentIdx];
+  // Resolve current slide for either format
+  const currentCanvasSlide = canvasPresentation?.slides[currentIdx] ?? null;
+  const currentV1Slide = parsed?.blocks[currentIdx] ?? null;
 
   return (
     <div
@@ -180,7 +193,13 @@ export function PresentView({ documentId }: Props) {
         className="w-[min(96vw,calc(96vh*16/9))] max-h-[96vh]"
         onClick={(e) => e.stopPropagation()}
       >
-        <SlideRenderer slide={currentSlide} />
+        {currentCanvasSlide ? (
+          /* v2 canvas presentation — rendered with exact background + styling */
+          <CanvasSlideView slide={currentCanvasSlide} />
+        ) : currentV1Slide ? (
+          /* v1 layout-based presentation */
+          <SlideRenderer slide={currentV1Slide} />
+        ) : null}
       </div>
 
       {/* HUD: counter + controls. Always shown for ~2s after any mouse move. */}
@@ -244,15 +263,17 @@ export function PresentView({ documentId }: Props) {
           all of them, one per page. The on-screen viewer above is hidden by the
           print stylesheet. */}
       <div className="scooli-print-deck hidden print:block">
-        {parsed.blocks.map((slide) => (
-          <div
-            key={slide.id}
-            className="break-after-page"
-            style={{ width: "100vw", height: "100vh" }}
-          >
-            <SlideRenderer slide={slide} />
-          </div>
-        ))}
+        {canvasPresentation
+          ? canvasPresentation.slides.map((slide) => (
+              <div key={slide.id} className="break-after-page" style={{ width: "100vw", height: "100vh" }}>
+                <CanvasSlideView slide={slide} />
+              </div>
+            ))
+          : parsed?.blocks.map((slide) => (
+              <div key={slide.id} className="break-after-page" style={{ width: "100vw", height: "100vh" }}>
+                <SlideRenderer slide={slide} />
+              </div>
+            ))}
       </div>
     </div>
   );
