@@ -48,6 +48,11 @@ export const selectIsCurriculumPlanEnabled = createSelector(
   (enabledFeatures) => enabledFeatures.includes(FeatureFlag.CURRICULUM_PLAN_ENABLED)
 );
 
+export const selectIsHorarioPlanosEnabled = createSelector(
+  [selectEnabledFeatureFlags],
+  (enabledFeatures) => enabledFeatures.includes(FeatureFlag.HORARIO_PLANOS_ENABLED)
+);
+
 
 
 

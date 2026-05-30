@@ -122,7 +122,21 @@ const NAVIGATION: NavItem[] = [
   },
 ];
 
+// Calendário is a nav-level item (after "As minhas fontes") — added conditionally in SidebarNavigationContent
+const CALENDAR_NAV_ITEM: NavItem = {
+  title: "Calendário",
+  href: Routes.CALENDAR,
+  icon: Clock,
+  description: "Sequências de aulas e geração automática",
+};
+
 const CONTENT_CREATION: NavItem[] = [
+  {
+    title: "Planificações",
+    href: Routes.CURRICULUM_PLAN,
+    icon: CalendarDays,
+    description: "Planificações curriculares de período",
+  },
   {
     title: "Planos de Aula",
     href: Routes.LESSON_PLAN,
@@ -152,12 +166,6 @@ const CONTENT_CREATION: NavItem[] = [
     href: Routes.PRESENTATION,
     icon: Presentation,
     description: "Criar e editar apresentações",
-  },
-  {
-    title: "Planificações",
-    href: Routes.CURRICULUM_PLAN,
-    icon: CalendarDays,
-    description: "Planificações curriculares de período",
   },
 ];
 
@@ -460,6 +468,8 @@ const SidebarNavigationContent = memo(function SidebarNavigationContent({
   const isUserSourcesEnabled = features[FeatureFlag.USER_SOURCES] === true;
   const isCurriculumPlanEnabled =
     features[FeatureFlag.CURRICULUM_PLAN_ENABLED] === true;
+  const isHorarioPlanosEnabled =
+    features[FeatureFlag.HORARIO_PLANOS_ENABLED] === true;
 
   const contentCreationItems = CONTENT_CREATION.filter((item) => {
     if (item.href === Routes.CURRICULUM_PLAN && !isCurriculumPlanEnabled) return false;
@@ -474,6 +484,7 @@ const SidebarNavigationContent = memo(function SidebarNavigationContent({
   const navigationItems: NavItem[] = [
     ...NAVIGATION,
     ...(isUserSourcesEnabled ? [SOURCES_NAV_ITEM] : []),
+    ...(isHorarioPlanosEnabled ? [CALENDAR_NAV_ITEM] : []),
   ];
 
   return (

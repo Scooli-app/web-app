@@ -11,11 +11,13 @@
  */
 
 import type {
+  CanvasImageElement,
   CanvasListElement,
   CanvasSlide,
   CanvasTextElement,
 } from "@/shared/types/canvas-presentation";
-import { Layer, Rect, Stage, Text } from "react-konva";
+import { useEffect, useRef, useState } from "react";
+import { Image as KonvaImage, Layer, Rect, Stage, Text } from "react-konva";
 
 const THUMB_W = 160;
 const THUMB_H = 90; // 16:9
@@ -28,6 +30,27 @@ interface Props {
 }
 
 export function SlideThumbnail({ slide, index, isActive, onClick }: Props) {
+  /* Image cache: url → loaded HTMLImageElement | "loading" */
+  const imgCacheRef = useRef<Record<string, HTMLImageElement | "loading">>({});
+  const [, setImgRevision] = useState(0);
+
+  useEffect(() => {
+    for (const el of slide.elements) {
+      if (el.type !== "image_placeholder") continue;
+      const img = el as CanvasImageElement;
+      if (!img.url || img.url in imgCacheRef.current) continue;
+      imgCacheRef.current[img.url] = "loading";
+      const i = new window.Image();
+      i.crossOrigin = "anonymous";
+      i.onload = () => {
+        imgCacheRef.current[img.url!] = i;
+        setImgRevision((r) => r + 1);
+      };
+      i.onerror = () => { delete imgCacheRef.current[img.url!]; };
+      i.src = img.url;
+    }
+  }, [slide.elements]);
+
   return (
     <button
       type="button"
@@ -59,13 +82,18 @@ export function SlideThumbnail({ slide, index, isActive, onClick }: Props) {
               return (
                 <Text
                   key={el.id}
-                  x={el.x * THUMB_W}
-                  y={el.y * THUMB_H}
+                  x={el.x * THUMB_W + el.w * THUMB_W / 2}
+                  y={el.y * THUMB_H + el.h * THUMB_H / 2}
+                  offsetX={el.w * THUMB_W / 2}
+                  offsetY={el.h * THUMB_H / 2}
+                  rotation={el.rotation ?? 0}
                   width={el.w * THUMB_W}
                   height={el.h * THUMB_H}
                   text={t.text}
                   fontSize={Math.max(5, Math.round(t.fontSize * THUMB_W))}
+                  fontFamily={t.fontFamily || "Inter, system-ui, sans-serif"}
                   fontStyle={t.fontStyle}
+                  textDecoration={t.underline ? "underline" : ""}
                   fill={t.color}
                   align={t.align}
                   wrap="word"
@@ -85,8 +113,11 @@ export function SlideThumbnail({ slide, index, isActive, onClick }: Props) {
               return (
                 <Text
                   key={el.id}
-                  x={el.x * THUMB_W}
-                  y={el.y * THUMB_H}
+                  x={el.x * THUMB_W + el.w * THUMB_W / 2}
+                  y={el.y * THUMB_H + el.h * THUMB_H / 2}
+                  offsetX={el.w * THUMB_W / 2}
+                  offsetY={el.h * THUMB_H / 2}
+                  rotation={el.rotation ?? 0}
                   width={el.w * THUMB_W}
                   height={el.h * THUMB_H}
                   text={text}
@@ -94,6 +125,44 @@ export function SlideThumbnail({ slide, index, isActive, onClick }: Props) {
                   fill={l.color}
                   wrap="word"
                   ellipsis
+                  listening={false}
+                />
+              );
+            }
+
+            if (el.type === "image_placeholder") {
+              const img = el as CanvasImageElement;
+              const cached = img.url ? imgCacheRef.current[img.url] : undefined;
+              if (cached && cached !== "loading") {
+                return (
+                  <KonvaImage
+                    key={el.id}
+                    image={cached}
+                    x={el.x * THUMB_W + el.w * THUMB_W / 2}
+                    y={el.y * THUMB_H + el.h * THUMB_H / 2}
+                    offsetX={el.w * THUMB_W / 2}
+                    offsetY={el.h * THUMB_H / 2}
+                    rotation={el.rotation ?? 0}
+                    width={el.w * THUMB_W}
+                    height={el.h * THUMB_H}
+                    cornerRadius={2}
+                    listening={false}
+                  />
+                );
+              }
+              // Placeholder while loading or no URL
+              return (
+                <Rect
+                  key={el.id}
+                  x={el.x * THUMB_W + el.w * THUMB_W / 2}
+                  y={el.y * THUMB_H + el.h * THUMB_H / 2}
+                  offsetX={el.w * THUMB_W / 2}
+                  offsetY={el.h * THUMB_H / 2}
+                  rotation={el.rotation ?? 0}
+                  width={el.w * THUMB_W}
+                  height={el.h * THUMB_H}
+                  fill="#2a2a3a"
+                  cornerRadius={2}
                   listening={false}
                 />
               );
@@ -108,6 +177,7 @@ export function SlideThumbnail({ slide, index, isActive, onClick }: Props) {
       <span className="pointer-events-none absolute bottom-1 left-1 rounded bg-black/50 px-1 text-[9px] leading-tight text-white/70">
         {index + 1}
       </span>
+
     </button>
   );
 }

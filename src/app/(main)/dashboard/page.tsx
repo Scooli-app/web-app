@@ -3,7 +3,8 @@
 import { PageContainer } from "@/components/layout/PageContainer";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PaymentSuccessModal } from "@/components/ui/payment-success-modal";
-import { selectIsWorksheetCreationEnabled } from "@/store/features/selectors";
+import { CalendarDashboardWidget } from "@/components/calendar/CalendarDashboardWidget";
+import { selectIsWorksheetCreationEnabled, selectIsHorarioPlanosEnabled } from "@/store/features/selectors";
 import { useAppSelector } from "@/store/hooks";
 import { fetchEntitlements } from "@/store/entitlements/entitlementsSlice";
 import { fetchSubscription, fetchUsage } from "@/store/subscription/subscriptionSlice";
@@ -21,6 +22,7 @@ function DashboardContent() {
   const isWorksheetCreationEnabled = useAppSelector(
     selectIsWorksheetCreationEnabled
   );
+  const isHorarioPlanosEnabled = useAppSelector(selectIsHorarioPlanosEnabled);
 
   const dispatch = useDispatch<AppDispatch>();
 
@@ -50,6 +52,13 @@ function DashboardContent() {
       />
 
       <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2">
+        {/* Calendar widget — only shown to Pro/Institucional (horario_planos_enabled) */}
+        {isHorarioPlanosEnabled && (
+          <div className="md:col-span-2">
+            <CalendarDashboardWidget />
+          </div>
+        )}
+
         <div className="rounded-2xl border border-border bg-card p-5 shadow-md sm:p-8">
           <h2 className="mb-4 text-xl font-semibold text-foreground sm:text-2xl">
             Ações Rápidas
