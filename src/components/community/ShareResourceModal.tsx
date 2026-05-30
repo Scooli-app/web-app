@@ -275,7 +275,7 @@ export function ShareResourceModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto p-0">
+      <DialogContent className="max-h-[90dvh] max-w-2xl overflow-y-auto p-0">
         <DialogHeader className="border-b border-border/70 bg-muted/40 px-6 py-5 pr-14">
           <div className="flex items-center gap-3">
             {allowOrganizationScope && (

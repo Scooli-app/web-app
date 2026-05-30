@@ -38,7 +38,7 @@ export function UpgradePlanModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md p-0 overflow-hidden">
+      <DialogContent className="max-w-md p-0 overflow-y-auto">
         {/* Header with gradient background */}
         <div className="bg-gradient-to-b from-amber-50 to-transparent px-8 pb-6 pt-8 pr-16 text-center dark:from-amber-900/10">
           <div className="w-14 h-14 bg-amber-100 dark:bg-amber-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-amber-200 dark:border-amber-800">

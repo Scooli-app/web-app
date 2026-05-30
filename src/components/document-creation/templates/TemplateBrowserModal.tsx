@@ -200,7 +200,7 @@ export function TemplateBrowserModal({
       <Dialog open={isOpen} onOpenChange={handleOpenChange}>
         <DialogContent
           className={cn(
-            "flex h-[min(90dvh,820px)] max-h-[90dvh] w-[min(100%,44rem)] flex-col gap-0 overflow-scroll p-0",
+            "flex h-[min(90dvh,820px)] max-h-[90dvh] w-[min(100%,44rem)] flex-col gap-0 overflow-auto p-0",
           )}
           hideCloseButton={view === "create" || view === "edit" || isFromDocumentViewActive}
         >

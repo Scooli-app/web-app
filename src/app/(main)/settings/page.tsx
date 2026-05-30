@@ -106,6 +106,10 @@ function formatDate(dateString: string): string {
   });
 }
 
+function getLocalizedPlanName(plan: SubscriptionPlan): string {
+  return PLAN_DISPLAY_INFO[plan.planCode]?.name ?? plan.name;
+}
+
 function getEffectiveAccessDisplayLabel(
   source: string | undefined,
   isPro: boolean,
@@ -424,7 +428,7 @@ function SettingsContent() {
                           <div className="flex items-center gap-2 mb-1">
                             <Crown className="w-4 h-4 text-primary" />
                             <span className="font-semibold text-foreground">
-                              {plan.name}
+                              {getLocalizedPlanName(plan)}
                             </span>
                           </div>
                           <div className="flex items-baseline gap-1">
@@ -487,35 +491,6 @@ function SettingsContent() {
                     : `Renova a ${formatDate(subscription.currentPeriodEnd)}`}
                 </p>
               )}
-
-              {/* Effective Pro Usage */}
-              <div className="mb-6">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm font-medium text-foreground">
-                    Gerações utilizadas
-                  </span>
-                  <span className="text-sm text-muted-foreground flex items-center gap-1">
-                    {effectiveUsage?.used ?? 0}
-                    <span className="mx-0.5">/</span>
-                    {effectiveIsPro ? "∞" : (effectiveUsage?.limit ?? "--")}
-                  </span>
-                </div>
-                <div className="h-3 bg-muted rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-primary to-primary/60 rounded-full"
-                    style={{ width: `${effectiveCreditsUsedPercent}%` }}
-                  />
-                </div>
-                {effectiveIsPro ? (
-                  <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-2">
-                    Gerações ilimitadas com o plano Pro.
-                  </p>
-                ) : (
-                  <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-2">
-                    Restam {effectiveUsage?.remaining ?? 0} gerações neste período.
-                  </p>
-                )}
-              </div>
 
               {/* Actions */}
               <Button

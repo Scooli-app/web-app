@@ -194,7 +194,7 @@ export function AppFeedbackSurveyModal({
         hideCloseButton
         onEscapeKeyDown={(event) => event.preventDefault()}
         onPointerDownOutside={(event) => event.preventDefault()}
-        className="max-w-xl overflow-hidden border-border/80 bg-card p-0 shadow-xl shadow-black/10"
+        className="max-w-xl overflow-y-auto border-border/80 bg-card p-0 shadow-xl shadow-black/10"
       >
         <div className="bg-gradient-to-br from-accent/80 via-card to-muted/60 px-6 pb-5 pt-6 sm:px-8 sm:pt-7 dark:from-accent/60 dark:via-card dark:to-background">
           <div className="flex items-center justify-between gap-4">

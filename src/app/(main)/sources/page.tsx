@@ -340,7 +340,7 @@ export default function SourcesPage() {
                   <p className="mt-0.5 text-xs text-muted-foreground">
                     {formatSize(source.fileSizeBytes)}
                     {source.chunkCount > 0 &&
-                      ` · ${source.chunkCount} segmentos`}
+                      ` · ${source.chunkCount} excertos`}
                     {` · ${source.fileKind.toUpperCase()}`}
                   </p>
                   {source.strippedBackMatter &&

@@ -20,7 +20,7 @@ import {
   createCheckoutSession,
   getSubscriptionPlans,
 } from "@/services/api/subscription.service";
-import type { SubscriptionPlan } from "@/shared/types/subscription";
+import { PLAN_DISPLAY_INFO, type SubscriptionPlan } from "@/shared/types/subscription";
 import posthog from "posthog-js";
 
 type ErrorType = "network" | "server" | "validation" | "checkout" | "unknown";
@@ -226,6 +226,10 @@ function formatPrice(priceCents: number, currency?: string): string {
     minimumFractionDigits: 2,
   });
   return formatter.format(price);
+}
+
+function getLocalizedPlanName(plan: SubscriptionPlan): string {
+  return PLAN_DISPLAY_INFO[plan.planCode]?.name ?? plan.name;
 }
 
 function getPlanBadge(plan: SubscriptionPlan): string | null {
@@ -536,7 +540,7 @@ function CheckoutContent() {
                     <div className="flex items-start justify-between mb-6">
                       <div>
                         <h3 className="text-xl font-semibold text-foreground mb-1">
-                          {plan.name}
+                          {getLocalizedPlanName(plan)}
                         </h3>
                         {savings && (
                           <span className="inline-block bg-success/20 text-success text-xs font-medium px-2 py-1 rounded-full">
@@ -612,7 +616,7 @@ function CheckoutContent() {
                         Plano selecionado
                       </p>
                       <p className="text-xl font-semibold text-foreground">
-                        {selectedPlan.name} —{" "}
+                        {getLocalizedPlanName(selectedPlan)} —{" "}
                         {formatPrice(
                           selectedPlan.priceCents,
                           selectedPlan.currency

@@ -210,7 +210,7 @@ export function SourcePickerSection({
                         )}
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        {source.chunkCount} segmentos
+                        {source.chunkCount} excertos
                       </p>
                     </div>
                   </div>
@@ -276,7 +276,7 @@ export function SourcePickerSection({
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{source.name}</p>
                       <p className="text-xs text-muted-foreground">
-                        {source.chunkCount} segmentos
+                        {source.chunkCount} excertos
                         {source.subject && ` · ${source.subject}`}
                         {source.schoolYear && ` · ${source.schoolYear}º ano`}
                       </p>
