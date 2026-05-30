@@ -46,3 +46,6 @@ curriculum-docs
 # clerk configuration (can include secrets)
 /.clerk/
 .env.local
+
+graphify-out/manifest.json
+graphify-out/cost.json
