@@ -25,7 +25,6 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 // pdf-lib retained so dead-code functions compile; can be removed in a cleanup sprint.
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import type { PDFPage, PDFFont } from "pdf-lib";
 
 export const runtime = "nodejs";
 // Increase Vercel function timeout for PDF generation via Puppeteer.
@@ -265,7 +264,6 @@ const SUBSCRIPT_MAP: Record<string, string> = {
   t: "\u209C",
 };
 
-
 function isKatexNode(value: unknown): value is KatexParseNode {
   return typeof value === "object" && value !== null;
 }
@@ -494,7 +492,10 @@ function createTextRun(text: string, style: InlineTextStyle): TextRun {
   });
 }
 
-function createDocxMathTextRun(text: string, style: InlineTextStyle): TextRun[] {
+function createDocxMathTextRun(
+  text: string,
+  style: InlineTextStyle,
+): TextRun[] {
   if (!text) {
     return [];
   }
@@ -1251,7 +1252,10 @@ type PdfLineFragment = {
   yOffset: number;
 };
 
-function _parsePdfLineFragments(line: string, fontSize: number): PdfLineFragment[] {
+function _parsePdfLineFragments(
+  line: string,
+  fontSize: number,
+): PdfLineFragment[] {
   const fragments: PdfLineFragment[] = [];
   let buffer = "";
 
@@ -1431,8 +1435,7 @@ function parseTableLines(
 
   // Filter out separator rows (cells contain only -, :, space)
   const contentLines = tableLines.filter(
-    (line) =>
-      !parseRow(line).every((cell) => /^[\s\-:]+$/.test(cell)),
+    (line) => !parseRow(line).every((cell) => /^[\s\-:]+$/.test(cell)),
   );
 
   if (contentLines.length === 0) return null;
@@ -1880,7 +1883,11 @@ function buildDocxTable(headers: string[], rows: string[][]): Table {
     new TableCell({
       children: [
         new Paragraph({
-          children: parseInlineFormatting(text, 22, isHeader ? { bold: true } : {}),
+          children: parseInlineFormatting(
+            text,
+            22,
+            isHeader ? { bold: true } : {},
+          ),
           spacing: { before: 60, after: 60 },
         }),
       ],
@@ -2278,7 +2285,7 @@ async function buildHtmlForPdf(
   }
 
   const footerHtml = !isProUser
-    ? "<div class=\"pdf-footer\">Gerado em scooli.app</div>"
+    ? '<div class="pdf-footer">Gerado em scooli.app</div>'
     : "";
 
   return `<!DOCTYPE html>
@@ -2506,8 +2513,9 @@ async function launchBrowser() {
       });
     }
     throw new Error(
-      "No Chrome installation found on " + process.platform + ". " +
-        "Install Chrome or set the CHROME_PATH environment variable.",
+      "No Chrome installation found on " +
+        process.platform +
+        ". Install Chrome or set the CHROME_PATH environment variable.",
     );
   }
 
@@ -2627,4 +2635,3 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     );
   }
 }
-
