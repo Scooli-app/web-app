@@ -208,7 +208,7 @@ function SettingsContent() {
     : 0;
   const effectiveUsage = entitlement?.usage ?? null;
   const effectiveIsPro = entitlement?.isPro ?? false;
-  const effectiveCreditsUsedPercent =
+  const _effectiveCreditsUsedPercent =
     !effectiveIsPro && effectiveUsage && effectiveUsage.limit > 0
       ? Math.min((effectiveUsage.used / effectiveUsage.limit) * 100, 100)
       : 0;

@@ -137,6 +137,7 @@ export function CalendarDashboardWidget() {
             : first.documentRole === "test" ? Routes.TEST
             : first.documentRole === "worksheet" ? Routes.WORKSHEET
             : first.documentRole === "presentation" ? Routes.PRESENTATION
+            : first.documentRole === "curriculumPlan" ? Routes.CURRICULUM_PLAN
             : Routes.LESSON_PLAN;
           router.push(`${base}/${first.documentId}`);
         } else {
@@ -314,10 +315,12 @@ export function CalendarDashboardWidget() {
 
                 {/* Status + action */}
                 <div className="flex shrink-0 items-center gap-2">
-                  <Badge className={`gap-1 border text-xs ${cfg.cls}`}>
-                    {cfg.icon}
-                    {cfg.label}
-                  </Badge>
+                  {lesson.status !== "generating" && (
+                    <Badge className={`gap-1 border text-xs ${cfg.cls}`}>
+                      {cfg.icon}
+                      {cfg.label}
+                    </Badge>
+                  )}
                   {(lesson.status === "pending" || lesson.status === "failed") && (
                     <Button
                       size="sm"

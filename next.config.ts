@@ -3,6 +3,10 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   output: "standalone",
 
+  // Puppeteer and Chromium contain native binaries that webpack cannot bundle.
+  // Mark them as external so Next.js loads them from node_modules at runtime.
+  serverExternalPackages: ["@sparticuz/chromium", "puppeteer-core"],
+
   // pptxgenjs (used in the presentation editor) references Node.js built-ins
   // (node:fs, node:https, …) that webpack cannot resolve for the browser
   // bundle.  Two-step fix:
