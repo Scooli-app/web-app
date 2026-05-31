@@ -40,7 +40,7 @@ export default function CurriculumPlanEditorPage({
         loadingMessage="A carregar planificação..."
         generateMessage="Gerar planificação"
         chatTitle="Assistente de Planificações"
-        chatPlaceholder="Faça uma pergunta sobre a planificação ou peça para modificar algo..."
+        chatPlaceholder="Pergunta algo ou pede para modificar a planificação..."
       />
     </Suspense>
   );

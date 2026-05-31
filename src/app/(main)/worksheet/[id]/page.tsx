@@ -40,7 +40,7 @@ export default function WorksheetEditorPage({
         loadingMessage="A carregar ficha de trabalho..."
         generateMessage="Gerar ficha de trabalho"
         chatTitle="Assistente de Fichas"
-        chatPlaceholder="Faça uma pergunta sobre a ficha de trabalho ou peça para modificar algo..."
+        chatPlaceholder="Pergunta algo ou pede para modificar a ficha..."
       />
     </Suspense>
   );
