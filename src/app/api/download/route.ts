@@ -1,4 +1,5 @@
-import { getPostHogClient } from "@/lib/posthog-server";
+﻿import { getPostHogClient } from "@/lib/posthog-server";
+import { markdownToHtml } from "@/shared/utils/markdown";
 import { auth } from "@clerk/nextjs/server";
 import {
   AlignmentType,
@@ -6,11 +7,13 @@ import {
   Document,
   HeadingLevel,
   ImageRun,
+  LevelFormat,
   Packer,
   Paragraph,
   type ParagraphChild,
   Table,
   TableCell,
+  TableLayoutType,
   TableRow,
   TextRun,
   WidthType,
@@ -20,9 +23,13 @@ import { cookies } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { PDFDocument, type PDFPage, type PDFFont, rgb, StandardFonts } from "pdf-lib";
+// pdf-lib retained so dead-code functions compile; can be removed in a cleanup sprint.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import type { PDFPage, PDFFont } from "pdf-lib";
 
 export const runtime = "nodejs";
+// Increase Vercel function timeout for PDF generation via Puppeteer.
+export const maxDuration = 60;
 
 type DownloadFormat = "pdf" | "docx";
 
@@ -258,40 +265,6 @@ const SUBSCRIPT_MAP: Record<string, string> = {
   t: "\u209C",
 };
 
-const PDF_FONT_FILE_PATHS = {
-  regular: join(
-    process.cwd(),
-    "node_modules",
-    "katex",
-    "dist",
-    "fonts",
-    "KaTeX_Main-Regular.ttf",
-  ),
-  bold: join(
-    process.cwd(),
-    "node_modules",
-    "katex",
-    "dist",
-    "fonts",
-    "KaTeX_Main-Bold.ttf",
-  ),
-  italic: join(
-    process.cwd(),
-    "node_modules",
-    "katex",
-    "dist",
-    "fonts",
-    "KaTeX_Main-Italic.ttf",
-  ),
-  mono: join(
-    process.cwd(),
-    "node_modules",
-    "katex",
-    "dist",
-    "fonts",
-    "KaTeX_Typewriter-Regular.ttf",
-  ),
-};
 
 function isKatexNode(value: unknown): value is KatexParseNode {
   return typeof value === "object" && value !== null;
@@ -681,58 +654,8 @@ function appendInlineContent(
   }
 }
 
-async function loadPdfFonts(pdfDoc: PDFDocument): Promise<{
-  regular: PDFFont;
-  bold: PDFFont;
-  italic: PDFFont;
-  mono: PDFFont;
-  supportsUnicode: boolean;
-}> {
-  try {
-    const fontkitModule =
-      (await import("next/dist/compiled/@next/font/dist/fontkit")) as {
-        default: (data: Uint8Array) => unknown;
-      };
-
-    const fontkit = {
-      create: (data: Uint8Array) => fontkitModule.default(data),
-    } as unknown as Parameters<PDFDocument["registerFontkit"]>[0];
-
-    pdfDoc.registerFontkit(fontkit);
-
-    const [regularBytes, boldBytes, italicBytes, monoBytes] = await Promise.all(
-      [
-        readFile(PDF_FONT_FILE_PATHS.regular),
-        readFile(PDF_FONT_FILE_PATHS.bold),
-        readFile(PDF_FONT_FILE_PATHS.italic),
-        readFile(PDF_FONT_FILE_PATHS.mono),
-      ],
-    );
-
-    const [regular, bold, italic, mono] = await Promise.all([
-      pdfDoc.embedFont(regularBytes),
-      pdfDoc.embedFont(boldBytes),
-      pdfDoc.embedFont(italicBytes),
-      pdfDoc.embedFont(monoBytes),
-    ]);
-
-    return { regular, bold, italic, mono, supportsUnicode: true };
-  } catch (error) {
-    console.warn("Failed to load custom PDF fonts for export:", error);
-
-    const [regular, bold, italic, mono] = await Promise.all([
-      pdfDoc.embedFont(StandardFonts.Helvetica),
-      pdfDoc.embedFont(StandardFonts.HelveticaBold),
-      pdfDoc.embedFont(StandardFonts.HelveticaOblique),
-      pdfDoc.embedFont(StandardFonts.Courier),
-    ]);
-
-    return { regular, bold, italic, mono, supportsUnicode: false };
-  }
-}
-
 /**
- * Convert a LaTeX expression to readable plain text for PDF/DOCX export.
+ * Convert a LaTeX expression to readable plain text for DOCX export.
  * Not a full renderer — handles the most common patterns teachers encounter.
  */
 function latexToText(
@@ -1155,7 +1078,7 @@ function removeHtmlComments(text: string): string {
     .replace(HTML_INCOMPLETE_COMMENT_PATTERN, "");
 }
 
-function stripInlineMarkdown(
+function _stripInlineMarkdown(
   text: string,
   mathOptions: Required<MathTextRenderOptions> = DEFAULT_MATH_TEXT_RENDER_OPTIONS,
 ): string {
@@ -1285,7 +1208,7 @@ function toAsciiPdfText(text: string): string {
     .join("");
 }
 
-function normalizePdfLine(
+function _normalizePdfLine(
   text: string,
   supportsUnicode: boolean = true,
 ): string {
@@ -1298,7 +1221,7 @@ function normalizePdfLine(
     .replace(/[\u201C\u201D]/g, '"')
     .replace(/[\u2013\u2014]/g, "-")
     .replace(/\u2026/g, "...")
-    .replace(/\u2022/g, "\u2022")
+    .replace(/\u2022/g, "-")
     .replace(/\u00E2\u20AC\u00A2/g, "-")
     .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "");
 
@@ -1309,7 +1232,7 @@ function normalizePdfLine(
   return toAsciiPdfText(normalized).replace(/[^\x20-\x7E\xA0-\xFF]/g, "?");
 }
 
-function normalizePdfText(
+function _normalizePdfText(
   text: string,
   supportsUnicode: boolean = true,
 ): string {
@@ -1318,7 +1241,7 @@ function normalizePdfText(
     .replace(/\r/g, "\n")
     .replace(/\t/g, "    ")
     .split("\n")
-    .map((line) => normalizePdfLine(line, supportsUnicode))
+    .map((line) => _normalizePdfLine(line, supportsUnicode))
     .join("\n");
 }
 
@@ -1328,7 +1251,7 @@ type PdfLineFragment = {
   yOffset: number;
 };
 
-function parsePdfLineFragments(line: string, fontSize: number): PdfLineFragment[] {
+function _parsePdfLineFragments(line: string, fontSize: number): PdfLineFragment[] {
   const fragments: PdfLineFragment[] = [];
   let buffer = "";
 
@@ -1413,34 +1336,6 @@ function parsePdfLineFragments(line: string, fontSize: number): PdfLineFragment[
 
   flushBuffer();
   return fragments;
-}
-
-function drawPdfLine(
-  page: PDFPage,
-  line: string,
-  x: number,
-  y: number,
-  font: PDFFont,
-  fontSize: number,
-  color: ReturnType<typeof rgb>,
-) {
-  const fragments = parsePdfLineFragments(line, fontSize);
-  let cursorX = x;
-
-  for (const fragment of fragments) {
-    if (!fragment.text) {
-      continue;
-    }
-
-    page.drawText(fragment.text, {
-      x: cursorX,
-      y: y + fragment.yOffset,
-      size: fragment.size,
-      font,
-      color,
-    });
-    cursorX += font.widthOfTextAtSize(fragment.text, fragment.size);
-  }
 }
 
 function normalizeImageSource(source: string): string {
@@ -1965,7 +1860,14 @@ function parseInlineFormatting(
 
 function buildDocxTable(headers: string[], rows: string[][]): Table {
   const colCount = Math.max(headers.length, 1);
-  const colPercent = Math.floor(100 / colCount);
+
+  // A4 page (11906 twips) minus 1-inch margins each side (2 × 1440 = 2880 twips)
+  // → 9026 twips of usable content width.
+  const CONTENT_WIDTH_DXA = 9026;
+  const colWidthDxa = Math.floor(CONTENT_WIDTH_DXA / colCount);
+  // columnWidths array drives the <w:tblGrid> element — the definitive grid in OOXML.
+  // Combined with TableLayoutType.FIXED, Word cannot auto-resize columns.
+  const columnWidths = Array<number>(colCount).fill(colWidthDxa);
 
   const cellBorders = {
     top: { style: BorderStyle.SINGLE, size: 4, color: "CCCCCC" },
@@ -1984,7 +1886,7 @@ function buildDocxTable(headers: string[], rows: string[][]): Table {
       ],
       borders: cellBorders,
       shading: isHeader ? { fill: "EBEBF5" } : undefined,
-      width: { size: colPercent, type: WidthType.PERCENTAGE },
+      width: { size: colWidthDxa, type: WidthType.DXA },
       margins: { top: 60, bottom: 60, left: 100, right: 100 },
     });
 
@@ -2001,7 +1903,9 @@ function buildDocxTable(headers: string[], rows: string[][]): Table {
   );
 
   return new Table({
-    width: { size: 100, type: WidthType.PERCENTAGE },
+    width: { size: CONTENT_WIDTH_DXA, type: WidthType.DXA },
+    columnWidths,
+    layout: TableLayoutType.FIXED,
     rows: [headerRow, ...dataRows],
     margins: { top: 0, bottom: 0, left: 0, right: 0 },
   });
@@ -2147,7 +2051,7 @@ async function generateDocx(
               block.text.replace(/^[\*\-]\s/, ""),
               22,
             ),
-            bullet: { level: 0 },
+            numbering: { reference: "bullet-numbering", level: 0 },
             spacing: { after: 80 },
           }),
         );
@@ -2228,9 +2132,27 @@ async function generateDocx(
           levels: [
             {
               level: 0,
-              format: "decimal" as const,
+              format: LevelFormat.DECIMAL,
               text: "%1.",
               alignment: AlignmentType.START,
+              style: {
+                paragraph: { indent: { left: 720, hanging: 360 } },
+              },
+            },
+          ],
+        },
+        {
+          reference: "bullet-numbering",
+          levels: [
+            {
+              level: 0,
+              format: LevelFormat.BULLET,
+              text: "-",
+              alignment: AlignmentType.START,
+              style: {
+                paragraph: { indent: { left: 720, hanging: 360 } },
+                run: { font: "Calibri" },
+              },
             },
           ],
         },
@@ -2251,442 +2173,391 @@ async function generateDocx(
   return await Packer.toBuffer(doc);
 }
 
-async function generatePdf(
+// generatePdf (pdf-lib) removed — see generatePdfWithPuppeteer below.
+
+// \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+// \u2500\u2500 Puppeteer PDF generation (replaces the old pdf-lib path) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+// \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+
+/** Escape a string for safe embedding in an HTML attribute value. */
+function escapeHtmlAttr(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+/**
+ * Build a complete, self-contained HTML document from the markdown content.
+ * - Converts markdown \u2192 HTML via the shared markdownToHtml utility
+ * - Replaces TipTap inline-math / block-math elements with rendered KaTeX HTML
+ * - Resolves document image tokens to their public URLs
+ * - Embeds KaTeX CSS (font URLs rewritten to jsDelivr CDN)
+ * - Applies print-optimised CSS
+ */
+async function buildHtmlForPdf(
+  title: string,
   content: string,
-  images?: DownloadImagePayload[],
-  isProUser: boolean = false,
-): Promise<Uint8Array> {
-  const pdfDoc = await PDFDocument.create();
-  const {
-    regular: helvetica,
-    bold: helveticaBold,
-    italic: helveticaOblique,
-    mono: courier,
-    supportsUnicode,
-  } = await loadPdfFonts(pdfDoc);
-
-  const pageWidth = 595.28;
-  const pageHeight = 841.89;
-  const margin = 50;
-  const contentWidth = pageWidth - 2 * margin;
-
-  const blocks = parseMarkdownToBlocks(content);
+  images: DownloadImagePayload[],
+  isProUser: boolean,
+): Promise<string> {
   const imageLookup = buildImageLookup(images);
 
-  const fontSizes: Record<TextBlockType, number> = {
-    title: 24,
-    h1: 18,
-    h2: 16,
-    h3: 14,
-    paragraph: 11,
-    bullet: 11,
-    numbered: 11,
-    quote: 11,
-    code: 10,
-    empty: 11,
-  };
+  // 1. Markdown \u2192 HTML (handles tables, MCQ, math protection, etc.)
+  let html = markdownToHtml(content);
 
-  const lineHeights: Record<TextBlockType, number> = {
-    title: 32,
-    h1: 28,
-    h2: 24,
-    h3: 20,
-    paragraph: 16,
-    bullet: 16,
-    numbered: 16,
-    quote: 16,
-    code: 14,
-    empty: 12,
-  };
-
-  const colors: Record<TextBlockType, ReturnType<typeof rgb>> = {
-    title: rgb(0.04, 0.05, 0.09),
-    h1: rgb(0.04, 0.05, 0.09),
-    h2: rgb(0.04, 0.05, 0.09),
-    h3: rgb(0.18, 0.18, 0.22),
-    paragraph: rgb(0.18, 0.18, 0.22),
-    bullet: rgb(0.18, 0.18, 0.22),
-    numbered: rgb(0.18, 0.18, 0.22),
-    quote: rgb(0.42, 0.43, 0.5),
-    code: rgb(0.18, 0.18, 0.22),
-    empty: rgb(0, 0, 0),
-  };
-
-  const pdfMathTextOptions: Required<MathTextRenderOptions> = {
-    unicodeSuperscripts: false,
-    unicodeSubscripts: false,
-  };
-
-  let currentPage = pdfDoc.addPage([pageWidth, pageHeight]);
-  let yPosition = pageHeight - margin;
-
-  function ensureSpace(requiredHeight: number) {
-    if (yPosition < margin + requiredHeight) {
-      currentPage = pdfDoc.addPage([pageWidth, pageHeight]);
-      yPosition = pageHeight - margin;
-    }
-  }
-
-  function wrapText(
-    text: string,
-    maxWidth: number,
-    font: PDFFont,
-    fontSize: number,
-  ): string[] {
-    const lines: string[] = [];
-    const paragraphs = normalizePdfText(text, supportsUnicode).split("\n");
-
-    for (const paragraph of paragraphs) {
-      const words = paragraph.trim().split(/\s+/).filter(Boolean);
-      if (words.length === 0) {
-        lines.push("");
-        continue;
-      }
-
-      let currentLine = "";
-      for (const word of words) {
-        const testLine = currentLine ? `${currentLine} ${word}` : word;
-        const testWidth = font.widthOfTextAtSize(testLine, fontSize);
-
-        if (testWidth > maxWidth && currentLine) {
-          lines.push(currentLine);
-          currentLine = word;
-        } else {
-          currentLine = testLine;
-        }
-      }
-
-      if (currentLine) {
-        lines.push(currentLine);
-      }
-    }
-    return lines.length > 0 ? lines : [""];
-  }
-
-  function wrapCodeText(
-    text: string,
-    maxWidth: number,
-    font: PDFFont,
-    fontSize: number,
-  ): string[] {
-    const lines: string[] = [];
-    const rawLines = normalizePdfText(text, supportsUnicode).split("\n");
-
-    for (const rawLine of rawLines) {
-      if (rawLine.length === 0) {
-        lines.push("");
-        continue;
-      }
-
-      let currentLine = "";
-      for (const character of rawLine) {
-        const testLine = `${currentLine}${character}`;
-        const testWidth = font.widthOfTextAtSize(testLine, fontSize);
-        if (testWidth > maxWidth && currentLine.length > 0) {
-          lines.push(currentLine);
-          currentLine = character === " " ? "" : character;
-        } else {
-          currentLine = testLine;
-        }
-      }
-
-      if (currentLine.length > 0) {
-        lines.push(currentLine);
-      }
-    }
-    return lines.length > 0 ? lines : [""];
-  }
-
-  function drawTextBlock(block: Extract<ExportBlock, { type: TextBlockType }>) {
-    if (block.type === "empty") {
-      yPosition -= lineHeights.empty;
-      ensureSpace(lineHeights.empty);
-      return;
-    }
-
-    const fontSize = fontSizes[block.type];
-    const lineHeight = lineHeights[block.type];
-    const color = colors[block.type];
-
-    let font: PDFFont = helvetica;
-    if (["title", "h1", "h2", "h3"].includes(block.type)) {
-      font = helveticaBold;
-    } else if (block.type === "quote") {
-      font = helveticaOblique;
-    } else if (block.type === "code") {
-      font = courier;
-    }
-
-    let displayText = stripInlineMarkdown(block.text, pdfMathTextOptions);
-    if (block.type === "bullet") {
-      displayText = `• ${stripInlineMarkdown(
-        block.text.replace(/^[\*\-]\s/, ""),
-        pdfMathTextOptions,
-      )}`;
-    } else if (block.type === "numbered") {
-      displayText = stripInlineMarkdown(block.text, pdfMathTextOptions);
-    }
-    displayText = normalizePdfText(displayText, supportsUnicode);
-
-    const indent =
-      block.type === "bullet" || block.type === "numbered"
-        ? 20
-        : block.type === "quote"
-          ? 30
-          : block.type === "code"
-            ? 20
-            : 0;
-
-    const wrappedLines =
-      block.type === "code"
-        ? wrapCodeText(displayText, contentWidth - indent, font, fontSize)
-        : wrapText(displayText, contentWidth - indent, font, fontSize);
-
-    if (["h1", "h2", "h3"].includes(block.type)) {
-      yPosition -= 10;
-    }
-
-    ensureSpace(wrappedLines.length * lineHeight + 20);
-
-    for (const wrappedLine of wrappedLines) {
-      ensureSpace(lineHeight + 10);
-      const safeLine = normalizePdfLine(wrappedLine, supportsUnicode);
-      drawPdfLine(
-        currentPage,
-        safeLine,
-        margin + indent,
-        yPosition,
-        font,
-        fontSize,
-        color,
-      );
-      yPosition -= lineHeight;
-    }
-
-    if (block.type === "title") {
-      currentPage.drawLine({
-        start: { x: margin, y: yPosition + 8 },
-        end: { x: margin + 150, y: yPosition + 8 },
-        thickness: 2,
-        color: rgb(0.4, 0.33, 1),
-      });
-      yPosition -= 15;
-    }
-  }
-
-  function drawPdfTable(headers: string[], rows: string[][]) {
-    const colCount = Math.max(headers.length, 1);
-    const colWidth = contentWidth / colCount;
-    const headerRowHeight = 18;
-    const dataRowHeight = 15;
-    const cellPaddingX = 4;
-    const cellPaddingY = 4;
-    const tableFontSize = 9;
-    const borderColor = rgb(0.75, 0.75, 0.78);
-    const headerFill = rgb(0.92, 0.92, 0.96);
-    const headerTextColor = rgb(0.04, 0.05, 0.09);
-    const dataTextColor = rgb(0.18, 0.18, 0.22);
-
-    const estimatedHeight =
-      headerRowHeight + rows.length * dataRowHeight + 10;
-    ensureSpace(estimatedHeight);
-
-    const tableTop = yPosition;
-
-    // ── Header row ──────────────────────────────────────────────────────────
-    currentPage.drawRectangle({
-      x: margin,
-      y: tableTop - headerRowHeight,
-      width: contentWidth,
-      height: headerRowHeight,
-      color: headerFill,
-    });
-
-    for (let c = 0; c < colCount; c++) {
-      const cellText = normalizePdfLine(
-        stripInlineMarkdown(headers[c] ?? "", pdfMathTextOptions),
-        supportsUnicode,
-      );
-      // Clip cell text to fit column
-      let displayText = cellText;
-      const maxCellWidth = colWidth - cellPaddingX * 2;
-      while (
-        displayText.length > 1 &&
-        helveticaBold.widthOfTextAtSize(displayText, tableFontSize) > maxCellWidth
-      ) {
-        displayText = displayText.slice(0, -1);
-      }
-      drawPdfLine(
-        currentPage,
-        displayText,
-        margin + c * colWidth + cellPaddingX,
-        tableTop - headerRowHeight + cellPaddingY,
-        helveticaBold,
-        tableFontSize,
-        headerTextColor,
-      );
-    }
-
-    yPosition = tableTop - headerRowHeight;
-
-    // ── Data rows ────────────────────────────────────────────────────────────
-    for (const row of rows) {
-      ensureSpace(dataRowHeight + 4);
-
-      for (let c = 0; c < colCount; c++) {
-        const cellText = normalizePdfLine(
-          stripInlineMarkdown(row[c] ?? "", pdfMathTextOptions),
-          supportsUnicode,
-        );
-        let displayText = cellText;
-        const maxCellWidth = colWidth - cellPaddingX * 2;
-        while (
-          displayText.length > 1 &&
-          helvetica.widthOfTextAtSize(displayText, tableFontSize) > maxCellWidth
-        ) {
-          displayText = displayText.slice(0, -1);
-        }
-        drawPdfLine(
-          currentPage,
-          displayText,
-          margin + c * colWidth + cellPaddingX,
-          yPosition - dataRowHeight + cellPaddingY,
-          helvetica,
-          tableFontSize,
-          dataTextColor,
-        );
-      }
-
-      // Horizontal row separator
-      currentPage.drawLine({
-        start: { x: margin, y: yPosition - dataRowHeight },
-        end: { x: margin + contentWidth, y: yPosition - dataRowHeight },
-        thickness: 0.5,
-        color: borderColor,
-      });
-
-      yPosition -= dataRowHeight;
-    }
-
-    // ── Outer border + vertical column dividers ──────────────────────────────
-    // Draw from tableTop down to yPosition
-    const tableBottom = yPosition;
-    const tableHeight = tableTop - tableBottom;
-
-    // Outer rectangle
-    currentPage.drawRectangle({
-      x: margin,
-      y: tableBottom,
-      width: contentWidth,
-      height: tableHeight,
-      borderColor,
-      borderWidth: 1,
-      opacity: 0,
-    });
-
-    // Vertical dividers
-    for (let c = 1; c < colCount; c++) {
-      currentPage.drawLine({
-        start: { x: margin + c * colWidth, y: tableTop },
-        end: { x: margin + c * colWidth, y: tableBottom },
-        thickness: 0.5,
-        color: borderColor,
-      });
-    }
-
-    // Header bottom separator (slightly thicker)
-    currentPage.drawLine({
-      start: { x: margin, y: tableTop - headerRowHeight },
-      end: { x: margin + contentWidth, y: tableTop - headerRowHeight },
-      thickness: 1,
-      color: borderColor,
-    });
-
-    yPosition -= 8; // gap after table
-  }
-
-  for (const block of blocks) {
-    if (block.type === "table") {
-      drawPdfTable(block.headers, block.rows);
-      continue;
-    }
-
-    if (block.type !== "image") {
-      drawTextBlock(block);
-      continue;
-    }
-
-    const resolvedImage = await resolveImageBlock(block, imageLookup);
-    if (resolvedImage.bytes && resolvedImage.contentType) {
-      const embeddedImage =
-        resolvedImage.contentType === "image/png"
-          ? await pdfDoc.embedPng(resolvedImage.bytes)
-          : await pdfDoc.embedJpg(resolvedImage.bytes);
-      const size = scaleDimensions(
-        embeddedImage.width,
-        embeddedImage.height,
-        contentWidth,
-        280,
-      );
-
-      ensureSpace(size.height + 40);
-      currentPage.drawImage(embeddedImage, {
-        x: margin + (contentWidth - size.width) / 2,
-        y: yPosition - size.height,
-        width: size.width,
-        height: size.height,
-      });
-      yPosition -= size.height + 20;
-      continue;
-    }
-
-    drawTextBlock({
-      type: "quote",
-      text: `[Imagem: ${block.alt || "Ilustracao"}]`,
-    });
-  }
-
-  if (!isProUser) {
-    let watermarkLogo: Awaited<ReturnType<PDFDocument["embedPng"]>> | null =
-      null;
-    try {
-      const logoPath = join(process.cwd(), "public", "logo-transparent.png");
-      const logoBytes = await readFile(logoPath);
-      watermarkLogo = await pdfDoc.embedPng(logoBytes);
-    } catch (error) {
-      console.warn("Failed to load logo watermark for PDF export:", error);
-    }
-
-    const footerText = "Gerado em scooli.app";
-    for (const page of pdfDoc.getPages()) {
-      page.drawText(footerText, {
-        x: margin,
-        y: 25,
-        size: 9,
-        font: helvetica,
-        color: rgb(0.42, 0.43, 0.5),
-      });
-
-      if (watermarkLogo) {
-        const watermarkSize = scaleDimensions(
-          watermarkLogo.width,
-          watermarkLogo.height,
-          pageWidth * 0.5,
-          pageHeight * 0.22,
-        );
-
-        page.drawImage(watermarkLogo, {
-          x: (pageWidth - watermarkSize.width) / 2,
-          y: (pageHeight - watermarkSize.height) / 2,
-          width: watermarkSize.width,
-          height: watermarkSize.height,
-          opacity: 0.14,
+  // 2. Render TipTap inline-math nodes \u2192 KaTeX HTML
+  html = html.replace(
+    /<span\b[^>]*?\bdata-type="inline-math"[^>]*?\bdata-latex="([^"]*)"[^>]*?>[\s\S]*?<\/span>/gi,
+    (_match, rawLatex) => {
+      const latex = rawLatex
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .replace(/&amp;/g, "&");
+      try {
+        return katex.renderToString(latex, {
+          displayMode: false,
+          throwOnError: false,
+          output: "html",
         });
+      } catch {
+        return `<span class="math-inline">${escapeHtmlAttr(latex)}</span>`;
       }
-    }
+    },
+  );
+
+  // 3. Render TipTap block-math nodes \u2192 KaTeX HTML (display mode)
+  html = html.replace(
+    /<div\b[^>]*?\bdata-type="block-math"[^>]*?\bdata-latex="([^"]*)"[^>]*?>[\s\S]*?<\/div>/gi,
+    (_match, rawLatex) => {
+      const latex = rawLatex
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .replace(/&amp;/g, "&");
+      try {
+        return `<div class="math-block">${katex.renderToString(latex, {
+          displayMode: true,
+          throwOnError: false,
+          output: "html",
+        })}</div>`;
+      } catch {
+        return `<div class="math-block">$$${escapeHtmlAttr(latex)}$$</div>`;
+      }
+    },
+  );
+
+  // 4. Resolve image tokens \u2192 public URLs
+  html = html.replace(
+    /src="(\{\{(?:DOCUMENT_IMAGE|IMAGE_PLACEHOLDER):([^}]+)\}\})"/gi,
+    (_match, _token, id) => {
+      const img = imageLookup.get(id.trim());
+      return img?.url ? `src="${escapeHtmlAttr(img.url)}"` : 'src=""';
+    },
+  );
+
+  // 5. KaTeX CSS \u2014 read from node_modules, rewrite font paths to CDN
+  let katexCss = "";
+  try {
+    const katexCssPath = join(
+      process.cwd(),
+      "node_modules",
+      "katex",
+      "dist",
+      "katex.min.css",
+    );
+    const rawCss = await readFile(katexCssPath, "utf-8");
+    // Point font src() calls to jsDelivr so Puppeteer can load them
+    katexCss = rawCss.replace(
+      /url\(fonts\//g,
+      "url(https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/fonts/",
+    );
+  } catch {
+    katexCss =
+      '@import url("https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css");';
   }
 
-  return (await pdfDoc.save()) as Uint8Array;
+  const footerHtml = !isProUser
+    ? "<div class=\"pdf-footer\">Gerado em scooli.app</div>"
+    : "";
+
+  return `<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+<meta charset="UTF-8">
+<title>${escapeHtmlAttr(title)}</title>
+<style>
+${katexCss}
+
+/* \u2500\u2500 Reset \u2500\u2500 */
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+/* \u2500\u2500 Base \u2500\u2500 */
+body {
+  font-family: -apple-system, 'Liberation Sans', Arial, Helvetica, sans-serif;
+  font-size: 11pt;
+  line-height: 1.65;
+  color: #1a1a1a;
+  margin: 0;
+  padding: 0;
+}
+
+/* \u2500\u2500 Headings \u2500\u2500 */
+h1 {
+  font-size: 20pt;
+  font-weight: 700;
+  margin: 0 0 14pt;
+  padding-bottom: 6pt;
+  border-bottom: 2pt solid #6753FF;
+  color: #0B0D17;
+  page-break-after: avoid;
+}
+h2 {
+  font-size: 14pt;
+  font-weight: 700;
+  margin: 18pt 0 8pt;
+  color: #1a1a1a;
+  page-break-after: avoid;
+}
+h3 {
+  font-size: 12pt;
+  font-weight: 600;
+  margin: 12pt 0 5pt;
+  color: #2E2F38;
+  page-break-after: avoid;
+}
+h4, h5, h6 {
+  font-size: 11pt;
+  font-weight: 600;
+  margin: 10pt 0 4pt;
+  page-break-after: avoid;
+}
+
+/* \u2500\u2500 Paragraphs \u2500\u2500 */
+p { margin: 0 0 7pt; }
+strong, b { font-weight: 700; }
+em, i { font-style: italic; }
+
+/* \u2500\u2500 Lists \u2500\u2500 */
+ul, ol { margin: 4pt 0 8pt; padding-left: 18pt; }
+li { margin: 2pt 0; line-height: 1.55; }
+ul > li { list-style-type: disc; }
+ol > li { list-style-type: decimal; }
+
+/* \u2500\u2500 Tables \u2500\u2500 */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 10pt 0;
+  font-size: 10pt;
+  page-break-inside: auto;
+  table-layout: fixed;
+}
+thead { display: table-header-group; }
+th {
+  background-color: #EBEBF5;
+  font-weight: 700;
+  text-align: left;
+  padding: 6pt 8pt;
+  border: 0.75pt solid #CCCCCC;
+  vertical-align: top;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+td {
+  padding: 5pt 8pt;
+  border: 0.75pt solid #CCCCCC;
+  vertical-align: top;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+tr { page-break-inside: avoid; }
+
+/* \u2500\u2500 Code \u2500\u2500 */
+code {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 9.5pt;
+  background: #F4F5F8;
+  padding: 1pt 3pt;
+  border-radius: 2pt;
+}
+pre {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 9pt;
+  background: #F4F5F8;
+  padding: 8pt 10pt;
+  margin: 6pt 0;
+  border-radius: 3pt;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  page-break-inside: avoid;
+}
+pre code { background: none; padding: 0; }
+
+/* \u2500\u2500 Blockquotes \u2500\u2500 */
+blockquote {
+  border-left: 3pt solid #6753FF;
+  margin: 8pt 0 8pt 4pt;
+  padding: 4pt 0 4pt 12pt;
+  color: #555;
+  font-style: italic;
+}
+
+/* \u2500\u2500 Images \u2500\u2500 */
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 10pt auto;
+}
+
+/* \u2500\u2500 Math \u2500\u2500 */
+.math-block { margin: 12pt 0; text-align: center; overflow-x: auto; }
+.katex-display { margin: 0; }
+.katex { font-size: 1.08em; }
+
+/* \u2500\u2500 Horizontal rule \u2500\u2500 */
+hr { border: none; border-top: 0.75pt solid #ddd; margin: 12pt 0; }
+
+/* \u2500\u2500 Scooli branding footer (free users) \u2500\u2500 */
+.pdf-footer {
+  margin-top: 24pt;
+  padding-top: 8pt;
+  border-top: 0.5pt solid #ddd;
+  font-size: 8pt;
+  color: #aaa;
+  text-align: center;
+}
+
+/* \u2500\u2500 Print \u2500\u2500 */
+@media print {
+  @page { size: A4; margin: 20mm; }
+  body { margin: 0; }
+  a { color: inherit; text-decoration: none; }
+}
+</style>
+</head>
+<body>
+${html}
+${footerHtml}
+</body>
+</html>`;
+}
+
+/**
+ * Launch a Puppeteer browser instance.
+ *
+ * On Vercel / Linux: uses @sparticuz/chromium (downloaded automatically).
+ * On local Windows/Mac dev: set CHROME_PATH env var to the Chrome executable.
+ */
+/**
+ * Common Chrome/Chromium install paths per platform.
+ * Tried in order; first one that exists wins.
+ */
+const CHROME_CANDIDATES: Record<string, string[]> = {
+  win32: [
+    "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+    "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
+    `${process.env.LOCALAPPDATA ?? "C:\\Users\\Default\\AppData\\Local"}\\Google\\Chrome\\Application\\chrome.exe`,
+    "C:\\Program Files\\Chromium\\Application\\chrome.exe",
+  ],
+  darwin: [
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    "/Applications/Chromium.app/Contents/MacOS/Chromium",
+    "/usr/bin/google-chrome",
+    "/usr/bin/chromium-browser",
+  ],
+};
+
+async function findLocalChrome(): Promise<string | null> {
+  // Explicit env var always wins
+  if (process.env.CHROME_PATH) return process.env.CHROME_PATH;
+
+  const candidates = CHROME_CANDIDATES[process.platform] ?? [];
+  for (const candidate of candidates) {
+    try {
+      await readFile(candidate); // just stat-check
+      return candidate;
+    } catch {
+      continue;
+    }
+  }
+  return null;
+}
+
+async function launchBrowser() {
+  const puppeteer = await import("puppeteer-core").then((m) => m.default);
+
+  // On non-Linux (Windows dev, Mac dev): try to find a local Chrome install.
+  // @sparticuz/chromium only ships a Linux binary and will fail on Windows/Mac.
+  if (process.platform !== "linux") {
+    const localChrome = await findLocalChrome();
+    if (localChrome) {
+      return puppeteer.launch({
+        executablePath: localChrome,
+        headless: true,
+        args: [
+          "--no-sandbox",
+          "--disable-setuid-sandbox",
+          "--disable-dev-shm-usage",
+        ],
+        defaultViewport: { width: 1200, height: 800 },
+      });
+    }
+    throw new Error(
+      `No Chrome installation found on ${process.platform}. ` +
+        `Install Chrome or set the CHROME_PATH environment variable.`,
+    );
+  }
+
+  // Linux (Vercel / Render / production) \u2014 use @sparticuz/chromium
+  const chromium = await import("@sparticuz/chromium").then((m) => m.default);
+  return puppeteer.launch({
+    args: chromium.args,
+    executablePath: await chromium.executablePath(),
+    headless: chromium.headless,
+    defaultViewport: chromium.defaultViewport,
+  });
+}
+
+/**
+ * Generate a PDF from markdown content using Puppeteer + Chrome.
+ * Renders KaTeX math, tables, images, and all formatting with full fidelity.
+ */
+async function generatePdfWithPuppeteer(
+  title: string,
+  content: string,
+  images: DownloadImagePayload[],
+  isProUser: boolean,
+): Promise<Buffer> {
+  const html = await buildHtmlForPdf(title, content, images, isProUser);
+
+  const browser = await launchBrowser();
+  try {
+    const page = await browser.newPage();
+
+    // Load the HTML and wait for network resources (KaTeX fonts, images) to finish
+    await page.setContent(html, {
+      waitUntil: "networkidle2",
+      timeout: 25_000,
+    });
+
+    const pdfBuffer = await page.pdf({
+      format: "A4",
+      printBackground: true,
+      margin: {
+        top: "20mm",
+        right: "20mm",
+        bottom: "20mm",
+        left: "20mm",
+      },
+    });
+
+    return Buffer.from(pdfBuffer);
+  } finally {
+    await browser.close();
+  }
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
@@ -2711,13 +2582,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const isProUser = await resolveIsProUser();
 
     if (format === "pdf") {
-      const pdfBytes = (await generatePdf(
+      const pdfBuffer = await generatePdfWithPuppeteer(
+        title,
         content,
-        images,
+        images ?? [],
         isProUser,
-      )) as Uint8Array;
+      );
       await captureDownloadEvent(distinctId, "pdf", title);
-      return new NextResponse(toArrayBuffer(pdfBytes), {
+      return new NextResponse(new Uint8Array(pdfBuffer), {
         headers: {
           "Content-Type": "application/pdf",
           "Content-Disposition": `attachment; filename="${sanitizedTitle}.pdf"`,

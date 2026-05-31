@@ -457,7 +457,7 @@ export default function CurriculumPlanNewPage() {
         })
       ).unwrap();
 
-      router.push(`/lesson-plan/${result.id}`);
+      router.push(`/curriculum-plan/${result.id}`);
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Não foi possível criar a planificação.";

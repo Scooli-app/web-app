@@ -36,8 +36,46 @@ import {
   selectModerationPagination,
   selectPendingResources,
 } from "@/store/moderation";
-import { Check, Clock, Eye, MessageSquare, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { ArrowUpDown, Check, ChevronDown, ChevronUp, Clock, Eye, MessageSquare, X } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+
+type ModerationSortField = "title" | "contributor" | "date";
+type SortDir = "asc" | "desc";
+
+function SortableHead({
+  field,
+  label,
+  current,
+  dir,
+  onSort,
+}: {
+  field: ModerationSortField;
+  label: string;
+  current: ModerationSortField;
+  dir: SortDir;
+  onSort: (f: ModerationSortField) => void;
+}) {
+  const active = current === field;
+  return (
+    <TableHead
+      className="cursor-pointer select-none hover:text-foreground"
+      onClick={() => onSort(field)}
+    >
+      <span className="flex items-center gap-1">
+        {label}
+        {active ? (
+          dir === "asc" ? (
+            <ChevronUp className="h-3.5 w-3.5" />
+          ) : (
+            <ChevronDown className="h-3.5 w-3.5" />
+          )
+        ) : (
+          <ArrowUpDown className="h-3.5 w-3.5 opacity-40" />
+        )}
+      </span>
+    </TableHead>
+  );
+}
 import { toast } from "sonner";
 
 export function ModerationQueue() {
@@ -51,6 +89,35 @@ export function ModerationQueue() {
     useState<SharedResource | null>(null);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [feedback, setFeedback] = useState("");
+  const [sortField, setSortField] = useState<ModerationSortField>("date");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
+
+  const handleSort = (field: ModerationSortField) => {
+    if (sortField === field) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortField(field);
+      setSortDir("asc");
+    }
+  };
+
+  const sortedResources = useMemo(() => {
+    return [...pendingResources].sort((a, b) => {
+      let cmp = 0;
+      switch (sortField) {
+        case "title":
+          cmp = a.title.localeCompare(b.title);
+          break;
+        case "contributor":
+          cmp = (a.contributorName ?? "").localeCompare(b.contributorName ?? "");
+          break;
+        case "date":
+          cmp = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+          break;
+      }
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+  }, [pendingResources, sortField, sortDir]);
 
   useEffect(() => {
     dispatch(fetchModerationQueue({ page: 0, size: 20 }));
@@ -124,7 +191,7 @@ export function ModerationQueue() {
 
   const mobileCards = (
     <div className="space-y-3">
-      {pendingResources.map((resource) => (
+      {sortedResources.map((resource) => (
         <div
           key={resource.id}
           className="rounded-xl border border-border bg-card p-4"
@@ -174,15 +241,15 @@ export function ModerationQueue() {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Título</TableHead>
-            <TableHead>Contribuidor</TableHead>
+            <SortableHead field="title" label="Título" current={sortField} dir={sortDir} onSort={handleSort} />
+            <SortableHead field="contributor" label="Contribuidor" current={sortField} dir={sortDir} onSort={handleSort} />
             <TableHead>Currículo</TableHead>
-            <TableHead>Data</TableHead>
+            <SortableHead field="date" label="Data" current={sortField} dir={sortDir} onSort={handleSort} />
             <TableHead className="text-center">Ações</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {pendingResources.map((resource) => (
+          {sortedResources.map((resource) => (
             <TableRow key={resource.id}>
               <TableCell>
                 <div>

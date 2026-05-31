@@ -12,9 +12,49 @@ import {
   type AdminCostInsightsResponse,
   adminCostInsightsService,
 } from "@/services/api/admin-cost-insights.service";
-import { DollarSign, Image as ImageIcon, Loader2, RefreshCw, Shield, Type } from "lucide-react";
+import { ArrowUpDown, ChevronDown, ChevronUp, DollarSign, Image as ImageIcon, Loader2, RefreshCw, Shield, Type } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+
+type CostSortField = "name" | "interactions" | "textCost" | "imageCost" | "total";
+type SortDir = "asc" | "desc";
+
+function SortableHead({
+  field,
+  label,
+  current,
+  dir,
+  className,
+  onSort,
+}: {
+  field: CostSortField;
+  label: string;
+  current: CostSortField;
+  dir: SortDir;
+  className?: string;
+  onSort: (f: CostSortField) => void;
+}) {
+  const active = current === field;
+  return (
+    <TableHead
+      className={`cursor-pointer select-none hover:text-foreground${className ? ` ${className}` : ""}`}
+      onClick={() => onSort(field)}
+    >
+      <span className="flex items-center justify-end gap-1">
+        {label}
+        {active ? (
+          dir === "asc" ? (
+            <ChevronUp className="h-3.5 w-3.5" />
+          ) : (
+            <ChevronDown className="h-3.5 w-3.5" />
+          )
+        ) : (
+          <ArrowUpDown className="h-3.5 w-3.5 opacity-40" />
+        )}
+      </span>
+    </TableHead>
+  );
+}
 import { toast } from "sonner";
 
 const PERIOD_OPTIONS = [
@@ -73,6 +113,17 @@ export default function AdminCostsPage() {
   const [loading, setLoading] = useState(false);
   const [invalidating, setInvalidating] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
+  const [sortField, setSortField] = useState<CostSortField>("total");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
+
+  const handleSort = (field: CostSortField) => {
+    if (sortField === field) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortField(field);
+      setSortDir("desc");
+    }
+  };
 
   const loadData = useCallback(async (p: string) => {
     if (abortRef.current) abortRef.current.abort();
@@ -110,6 +161,31 @@ export default function AdminCostsPage() {
     }
   };
 
+  // Hooks must be called before any early return
+  const users = useMemo(() => {
+    return [...(data?.users ?? [])].sort((a, b) => {
+      let cmp = 0;
+      switch (sortField) {
+        case "name":
+          cmp = (a.name ?? a.email ?? "").localeCompare(b.name ?? b.email ?? "");
+          break;
+        case "interactions":
+          cmp = (a.interactions ?? 0) - (b.interactions ?? 0);
+          break;
+        case "textCost":
+          cmp = a.textCostUsd - b.textCostUsd;
+          break;
+        case "imageCost":
+          cmp = a.imageCostUsd - b.imageCostUsd;
+          break;
+        case "total":
+          cmp = a.totalCostUsd - b.totalCostUsd;
+          break;
+      }
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+  }, [data?.users, sortField, sortDir]);
+
   if (!isLoaded || !isAdmin) {
     return (
       <div className="flex min-h-[50dvh] items-center justify-center">
@@ -119,7 +195,6 @@ export default function AdminCostsPage() {
   }
 
   const summary = data?.summary;
-  const users = data?.users ?? [];
 
   return (
     <PageContainer size="xl" contentClassName="py-4 sm:py-8">
@@ -313,13 +388,13 @@ export default function AdminCostsPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Utilizador</TableHead>
-                      <TableHead className="text-right">Interações</TableHead>
+                      <SortableHead field="name" label="Utilizador" current={sortField} dir={sortDir} className="text-left" onSort={handleSort} />
+                      <SortableHead field="interactions" label="Interações" current={sortField} dir={sortDir} onSort={handleSort} />
                       <TableHead className="text-right">Tokens in/out</TableHead>
                       <TableHead className="text-right">Imagens</TableHead>
-                      <TableHead className="text-right">Custo Texto</TableHead>
-                      <TableHead className="text-right">Custo Imagens</TableHead>
-                      <TableHead className="text-right font-semibold">Total</TableHead>
+                      <SortableHead field="textCost" label="Custo Texto" current={sortField} dir={sortDir} onSort={handleSort} />
+                      <SortableHead field="imageCost" label="Custo Imagens" current={sortField} dir={sortDir} onSort={handleSort} />
+                      <SortableHead field="total" label="Total" current={sortField} dir={sortDir} className="font-semibold" onSort={handleSort} />
                     </TableRow>
                   </TableHeader>
                   <TableBody>

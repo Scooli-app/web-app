@@ -27,7 +27,10 @@ import { format } from "date-fns";
 import { pt } from "date-fns/locale";
 import {
   ArrowLeft,
+  ArrowUpDown,
   BarChart3,
+  ChevronDown,
+  ChevronUp,
   Loader2,
   MessageSquare,
   RefreshCw,
@@ -35,7 +38,10 @@ import {
   Users,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+
+type SurveySortField = "user" | "sentiment" | "date";
+type SortDir = "asc" | "desc";
 import { Bar, BarChart, CartesianGrid, Cell, XAxis, YAxis } from "recharts";
 import { toast } from "sonner";
 
@@ -139,12 +145,58 @@ function EmptyChartState({ message }: { message: string }) {
   );
 }
 
+function SortableHead({
+  field,
+  label,
+  current,
+  dir,
+  onSort,
+}: {
+  field: SurveySortField;
+  label: string;
+  current: SurveySortField;
+  dir: SortDir;
+  onSort: (f: SurveySortField) => void;
+}) {
+  const active = current === field;
+  return (
+    <TableHead
+      className="cursor-pointer select-none hover:text-foreground"
+      onClick={() => onSort(field)}
+    >
+      <span className="flex items-center gap-1">
+        {label}
+        {active ? (
+          dir === "asc" ? (
+            <ChevronUp className="h-3.5 w-3.5" />
+          ) : (
+            <ChevronDown className="h-3.5 w-3.5" />
+          )
+        ) : (
+          <ArrowUpDown className="h-3.5 w-3.5 opacity-40" />
+        )}
+      </span>
+    </TableHead>
+  );
+}
+
 export default function AdminFeedbackSurveyPage() {
   const router = useRouter();
   const [overview, setOverview] = useState<AdminFeedbackSurveyOverview | null>(
     null,
   );
   const [loading, setLoading] = useState(true);
+  const [sortField, setSortField] = useState<SurveySortField>("date");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
+
+  const handleSort = (field: SurveySortField) => {
+    if (sortField === field) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortField(field);
+      setSortDir("asc");
+    }
+  };
 
   const loadOverview = useCallback(async () => {
     setLoading(true);
@@ -183,7 +235,24 @@ export default function AdminFeedbackSurveyPage() {
       label: getTagLabel(item.key),
     })) ?? [];
 
-  const responses = overview?.recentResponses ?? [];
+  const responses = useMemo(() => {
+    const raw = overview?.recentResponses ?? [];
+    return [...raw].sort((a, b) => {
+      let cmp = 0;
+      switch (sortField) {
+        case "user":
+          cmp = (a.userName || a.userEmail).localeCompare(b.userName || b.userEmail);
+          break;
+        case "sentiment":
+          cmp = a.sentiment.localeCompare(b.sentiment);
+          break;
+        case "date":
+          cmp = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+          break;
+      }
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+  }, [overview?.recentResponses, sortField, sortDir]);
 
   const mobileResponses = (
     <div className="space-y-3">
@@ -247,11 +316,11 @@ export default function AdminFeedbackSurveyPage() {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Utilizador</TableHead>
-            <TableHead>Sentimento</TableHead>
+            <SortableHead field="user" label="Utilizador" current={sortField} dir={sortDir} onSort={handleSort} />
+            <SortableHead field="sentiment" label="Sentimento" current={sortField} dir={sortDir} onSort={handleSort} />
             <TableHead>Tags</TableHead>
             <TableHead>Comentário</TableHead>
-            <TableHead>Data</TableHead>
+            <SortableHead field="date" label="Data" current={sortField} dir={sortDir} onSort={handleSort} />
           </TableRow>
         </TableHeader>
         <TableBody>

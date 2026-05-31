@@ -70,7 +70,7 @@ import {
 /** Maps a lesson_slot_documents.documentRole to the correct Next.js route prefix. */
 const ROLE_ROUTE: Record<string, string> = {
   lessonPlan: Routes.LESSON_PLAN,
-  curriculumPlan: Routes.LESSON_PLAN,
+  curriculumPlan: Routes.CURRICULUM_PLAN,
   quiz: Routes.QUIZ,
   test: Routes.TEST,
   worksheet: Routes.WORKSHEET,
