@@ -2513,9 +2513,7 @@ async function launchBrowser() {
       });
     }
     throw new Error(
-      "No Chrome installation found on " +
-        process.platform +
-        ". Install Chrome or set the CHROME_PATH environment variable.",
+      `No Chrome installation found on ${process.platform}. Install Chrome or set the CHROME_PATH environment variable.`,
     );
   }
 
