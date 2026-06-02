@@ -7,7 +7,20 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useAppSelector } from "@/store/hooks";
 import { selectWorkspaceContext } from "@/store/workspace/selectors";
 import { Routes, type Document } from "@/shared/types";
-import { Building2, FileText, Globe2, Trash2, User } from "lucide-react";
+import {
+  Building2,
+  FileText,
+  GanttChart,
+  Globe2,
+  HelpCircle,
+  MonitorPlay,
+  NotebookPen,
+  ScrollText,
+  Trash2,
+  Upload,
+  User,
+  type LucideIcon,
+} from "lucide-react";
 import Link from "next/link";
 import { memo, useCallback, useMemo } from "react";
 
@@ -25,6 +38,7 @@ const DOCUMENT_TYPE_LABELS: Record<Document["documentType"], string> = {
   test: "Teste",
   quiz: "Quiz",
   presentation: "Apresentação",
+  curriculumPlan: "Planificação",
 };
 
 const DOCUMENT_TYPE_COLORS: Record<Document["documentType"], string> = {
@@ -33,14 +47,16 @@ const DOCUMENT_TYPE_COLORS: Record<Document["documentType"], string> = {
   test: "bg-orange-500 text-white dark:bg-orange-600",
   quiz: "bg-amber-500 text-white dark:bg-amber-600",
   presentation: "bg-rose-500 text-white dark:bg-rose-600",
+  curriculumPlan: "bg-indigo-500 text-white dark:bg-indigo-600",
 };
 
-const DOCUMENT_TYPE_ICONS: Record<Document["documentType"], string> = {
-  lessonPlan: "📄",
-  worksheet: "🧾",
-  test: "📝",
-  quiz: "❓",
-  presentation: "📊",
+const DOCUMENT_TYPE_ICONS: Record<Document["documentType"], LucideIcon> = {
+  lessonPlan: FileText,
+  worksheet: ScrollText,
+  test: NotebookPen,
+  quiz: HelpCircle,
+  presentation: MonitorPlay,
+  curriculumPlan: GanttChart,
 };
 
 const ROUTE_MAP: Record<Document["documentType"], string> = {
@@ -49,6 +65,7 @@ const ROUTE_MAP: Record<Document["documentType"], string> = {
   presentation: Routes.PRESENTATION,
   test: Routes.TEST,
   quiz: Routes.QUIZ,
+  curriculumPlan: Routes.CURRICULUM_PLAN,
 };
 
 const dateFormatter = new Intl.DateTimeFormat("pt-PT", {
@@ -68,6 +85,35 @@ function formatDate(dateString: string) {
 function getContentPreview(content: string) {
   if (!content) {
     return "Sem conteúdo disponível";
+  }
+
+  // Handle JSON presentation content (v1 or v2)
+  if (content.trimStart().startsWith("{")) {
+    try {
+      const obj = JSON.parse(content) as Record<string, unknown>;
+      if (obj.documentType === "presentation") {
+        if (obj.schemaVersion === 2) {
+          // v2 canvas format — extract title-role text elements
+          type V2Slide = { elements: Array<{ type: string; role?: string; text?: string }> };
+          const slides = (obj.slides as V2Slide[] | undefined) ?? [];
+          const titles = slides
+            .slice(0, 4)
+            .map((s) => s.elements?.find((e) => e.type === "text" && e.role === "title")?.text ?? "")
+            .filter(Boolean);
+          return titles.length > 0 ? titles.join(" · ") : "Apresentação";
+        }
+        // v1 layout format — extract slide titles
+        type V1Block = { title?: string };
+        const blocks = (obj.blocks as V1Block[] | undefined) ?? [];
+        const titles = blocks
+          .slice(0, 4)
+          .map((b) => b.title ?? "")
+          .filter(Boolean);
+        return titles.length > 0 ? titles.join(" · ") : "Apresentação";
+      }
+    } catch {
+      // fall through to markdown processing
+    }
   }
 
   let plainText = content
@@ -124,8 +170,8 @@ function DocumentCardComponent({
       "bg-secondary text-secondary-foreground",
     [document.documentType]
   );
-  const typeIcon = useMemo(
-    () => DOCUMENT_TYPE_ICONS[document.documentType] || "📄",
+  const TypeIcon = useMemo(
+    () => DOCUMENT_TYPE_ICONS[document.documentType] || FileText,
     [document.documentType]
   );
   const documentRoute = useMemo(() => getDocumentRoute(document), [document]);
@@ -171,12 +217,21 @@ function DocumentCardComponent({
       <div className={`flex h-full flex-col ${selectionMode ? "ml-6" : ""}`}>
         <div className="mb-4 flex w-full flex-col gap-2 md:flex-row md:items-start md:justify-between">
           <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2 md:flex-initial">
-            <span className="shrink-0 text-xl sm:text-2xl">{typeIcon}</span>
+            <TypeIcon className="h-5 w-5 shrink-0 sm:h-6 sm:w-6" />
             <Badge
               className={`${typeColor} shrink-0 whitespace-nowrap px-2 py-1 text-xs font-medium`}
             >
               {typeLabel}
             </Badge>
+            {document.originalFormat && (
+              <Badge
+                title={`Importado de ${document.originalFormat.toUpperCase()}`}
+                className="shrink-0 whitespace-nowrap border border-violet-400/40 bg-violet-400/10 px-2 py-1 text-xs font-medium text-violet-700 dark:text-violet-300"
+              >
+                <Upload className="mr-1 h-3 w-3" />
+                Importado
+              </Badge>
+            )}
             {sharedScopes.has("community") && (
               <Badge
                 title="Partilhado na biblioteca comunitaria"
@@ -206,24 +261,20 @@ function DocumentCardComponent({
           {contentPreview}
         </p>
 
-        {document.metadata && Object.keys(document.metadata).length > 0 && (
-          <div className="mb-4 space-y-2">
-            {typeof document.metadata.subject === "string" &&
-              document.metadata.subject && (
-                <div className="flex items-center text-xs text-muted-foreground">
-                  <FileText className="mr-2 h-3 w-3 shrink-0" />
-                  <span className="shrink-0 font-medium">Disciplina:</span>
-                  <span className="ml-1 truncate">{document.metadata.subject}</span>
-                </div>
-              )}
-            {typeof document.metadata.grade === "string" &&
-              document.metadata.grade && (
-                <div className="flex items-center text-xs text-muted-foreground">
-                  <User className="mr-2 h-3 w-3 shrink-0" />
-                  <span className="shrink-0 font-medium">Ano:</span>
-                  <span className="ml-1 truncate">{document.metadata.grade}</span>
-                </div>
-              )}
+        {(document.subject || document.gradeLevel) && (
+          <div className="mb-4 space-y-1.5">
+            {document.subject && (
+              <div className="flex items-center text-xs text-muted-foreground">
+                <FileText className="mr-2 h-3 w-3 shrink-0" />
+                <span className="truncate">{document.subject}</span>
+              </div>
+            )}
+            {document.gradeLevel && (
+              <div className="flex items-center text-xs text-muted-foreground">
+                <User className="mr-2 h-3 w-3 shrink-0" />
+                <span>{document.gradeLevel}.º ano</span>
+              </div>
+            )}
           </div>
         )}
 

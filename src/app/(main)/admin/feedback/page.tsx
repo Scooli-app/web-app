@@ -27,17 +27,22 @@ import { format } from "date-fns";
 import { pt } from "date-fns/locale";
 import {
   AlertCircle,
+  ArrowUpDown,
   BarChart3,
   Bug,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  ChevronUp,
   Lightbulb,
   Loader2,
   RefreshCw,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+
+type FeedbackSortField = "title" | "user" | "status" | "severity" | "date";
+type SortDir = "asc" | "desc";
 import { toast } from "sonner";
 
 const TYPE_OPTIONS = [
@@ -86,13 +91,103 @@ const getFilterButtonLabel = <T extends string>(
   return `${title}: ${selectedLabels.length} selecionados`;
 };
 
+const STATUS_ORDER: Record<string, number> = {
+  SUBMITTED: 0,
+  IN_REVIEW: 1,
+  IN_DEVELOPMENT: 2,
+  RESOLVED: 3,
+  REJECTED: 4,
+};
+
+const SEVERITY_ORDER: Record<string, number> = {
+  CRITICAL: 0,
+  HIGH: 1,
+  MEDIUM: 2,
+  LOW: 3,
+};
+
+function SortableHead({
+  field,
+  label,
+  current,
+  dir,
+  className,
+  onSort,
+}: {
+  field: FeedbackSortField;
+  label: string;
+  current: FeedbackSortField;
+  dir: SortDir;
+  className?: string;
+  onSort: (f: FeedbackSortField) => void;
+}) {
+  const active = current === field;
+  return (
+    <TableHead
+      className={`cursor-pointer select-none hover:text-foreground${className ? ` ${className}` : ""}`}
+      onClick={() => onSort(field)}
+    >
+      <span className="flex items-center gap-1">
+        {label}
+        {active ? (
+          dir === "asc" ? (
+            <ChevronUp className="h-3.5 w-3.5" />
+          ) : (
+            <ChevronDown className="h-3.5 w-3.5" />
+          )
+        ) : (
+          <ArrowUpDown className="h-3.5 w-3.5 opacity-40" />
+        )}
+      </span>
+    </TableHead>
+  );
+}
+
 export default function AdminFeedbackPage() {
   const router = useRouter();
   const dispatch = useAppDispatch();
+  const [sortField, setSortField] = useState<FeedbackSortField>("date");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
 
-  const { items, metrics, loading, filters, totalItems } = useAppSelector(
+  const handleSort = (field: FeedbackSortField) => {
+    if (sortField === field) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortField(field);
+      setSortDir("asc");
+    }
+  };
+
+  const { items: rawItems, metrics, loading, filters, totalItems } = useAppSelector(
     (state) => state.adminFeedback,
   );
+
+  const items = useMemo(() => {
+    return [...rawItems].sort((a, b) => {
+      let cmp = 0;
+      switch (sortField) {
+        case "title":
+          cmp = a.title.localeCompare(b.title);
+          break;
+        case "user":
+          cmp = a.userEmail.localeCompare(b.userEmail);
+          break;
+        case "status":
+          cmp = (STATUS_ORDER[a.status] ?? 99) - (STATUS_ORDER[b.status] ?? 99);
+          break;
+        case "severity":
+          cmp =
+            (SEVERITY_ORDER[a.severity ?? ""] ?? 99) -
+            (SEVERITY_ORDER[b.severity ?? ""] ?? 99);
+          break;
+        case "date":
+          cmp =
+            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+          break;
+      }
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+  }, [rawItems, sortField, sortDir]);
 
   const fetchData = useCallback(async () => {
     try {
@@ -211,12 +306,12 @@ export default function AdminFeedbackPage() {
         <TableHeader>
           <TableRow className="border-white/10 hover:bg-transparent">
             <TableHead className="w-[90px]">Tipo</TableHead>
-            <TableHead>Título</TableHead>
-            <TableHead>Utilizador</TableHead>
+            <SortableHead field="title" label="Título" current={sortField} dir={sortDir} onSort={handleSort} />
+            <SortableHead field="user" label="Utilizador" current={sortField} dir={sortDir} onSort={handleSort} />
             <TableHead>Categoria</TableHead>
-            <TableHead>Estado</TableHead>
-            <TableHead>Severidade</TableHead>
-            <TableHead>Data</TableHead>
+            <SortableHead field="status" label="Estado" current={sortField} dir={sortDir} onSort={handleSort} />
+            <SortableHead field="severity" label="Severidade" current={sortField} dir={sortDir} onSort={handleSort} />
+            <SortableHead field="date" label="Data" current={sortField} dir={sortDir} onSort={handleSort} />
             <TableHead className="text-right">Ações</TableHead>
           </TableRow>
         </TableHeader>

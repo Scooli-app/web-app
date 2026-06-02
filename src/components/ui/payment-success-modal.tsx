@@ -30,7 +30,7 @@ export function PaymentSuccessModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md p-0 overflow-hidden" hideCloseButton>
+      <DialogContent className="max-w-md p-0 overflow-y-auto" hideCloseButton>
         {/* Confetti animation */}
         {showConfetti && (
           <div className="absolute inset-0 pointer-events-none overflow-hidden z-10">

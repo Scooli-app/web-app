@@ -13,7 +13,12 @@
 
 import { Extension } from "@tiptap/core";
 import { DOMSerializer } from "@tiptap/pm/model";
-import { Plugin, PluginKey, type EditorState, type Transaction } from "@tiptap/pm/state";
+import {
+  Plugin,
+  PluginKey,
+  type EditorState,
+  type Transaction,
+} from "@tiptap/pm/state";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
 import type { DiffChange } from "../utils/diffEngine";
 
@@ -39,7 +44,7 @@ const CLEAR_META = "clearDiffChanges";
 
 function buildDecorations(
   state: EditorState,
-  changes: DiffChange[]
+  changes: DiffChange[],
 ): DecorationSet {
   if (changes.length === 0) return DecorationSet.empty;
 
@@ -53,7 +58,6 @@ function buildDecorations(
       const to = Math.max(from, Math.min(change.toB, docSize));
 
       if (from < to) {
-        let inlineCount = 0;
         // Walk through text blocks within the range and create per-block
         // inline decorations. Decoration.inline() cannot span block boundaries.
         state.doc.nodesBetween(from, to, (node, pos) => {
@@ -69,16 +73,13 @@ function buildDecorations(
                 Decoration.inline(decoFrom, decoTo, {
                   class: "diff-insert",
                   "data-diff-id": change.id,
-                })
+                }),
               );
-              inlineCount++;
             }
             return false; // don't descend into text block children
           }
           return true; // descend into wrapper nodes (e.g. list, blockquote)
         });
-
-        console.warn(`[DIFF] buildDecorations: change ${change.id} type=${change.type} from=${from} to=${to} docSize=${docSize} inlineDecos=${inlineCount}`);
       }
     }
 
@@ -89,7 +90,7 @@ function buildDecorations(
         Decoration.widget(pos, createDeleteWidget(change), {
           id: `del-${change.id}`,
           side: -1,
-        })
+        }),
       );
     }
 
@@ -99,11 +100,10 @@ function buildDecorations(
       Decoration.widget(actionPos, createActionWidget(change.id), {
         id: `actions-${change.id}`,
         side: 1,
-      })
+      }),
     );
   }
 
-  console.warn(`[DIFF] buildDecorations total: ${decorations.length} decorations for ${changes.length} changes`);
   return DecorationSet.create(state.doc, decorations);
 }
 
@@ -111,10 +111,14 @@ function buildDecorations(
  * Create a DOM element showing deleted content with strikethrough styling.
  * For large deletions (e.g. entire chapters), shows a prominent block.
  */
-function createDeleteWidget(change: DiffChange): (view: import("@tiptap/pm/view").EditorView) => HTMLElement {
+function createDeleteWidget(
+  change: DiffChange,
+): (view: import("@tiptap/pm/view").EditorView) => HTMLElement {
   return (view) => {
     const text = change.deletedSlice ? sliceToText(change.deletedSlice) : "";
-    const isLargeDeletion = text.length > 100 || (change.deletedSlice && change.deletedSlice.content.childCount > 1);
+    const isLargeDeletion =
+      text.length > 100 ||
+      (change.deletedSlice && change.deletedSlice.content.childCount > 1);
 
     if (isLargeDeletion && change.deletedSlice) {
       // Block-level deletion indicator for large chunks (chapters, sections)
@@ -129,7 +133,7 @@ function createDeleteWidget(change: DiffChange): (view: import("@tiptap/pm/view"
 
       const preview = document.createElement("div");
       preview.className = "diff-delete-content";
-      
+
       // Render the deleted slice with full editor formatting
       const fragment = renderSlice(change.deletedSlice, view.state.schema);
       preview.appendChild(fragment);
@@ -142,7 +146,7 @@ function createDeleteWidget(change: DiffChange): (view: import("@tiptap/pm/view"
       const wrapper = document.createElement("span");
       wrapper.className = "diff-delete";
       wrapper.setAttribute("data-diff-id", change.id);
-      
+
       if (change.deletedSlice) {
         const fragment = renderSlice(change.deletedSlice, view.state.schema);
         wrapper.appendChild(fragment);
@@ -159,7 +163,7 @@ function createDeleteWidget(change: DiffChange): (view: import("@tiptap/pm/view"
  */
 function renderSlice(
   slice: import("@tiptap/pm/model").Slice,
-  schema: import("@tiptap/pm/model").Schema
+  schema: import("@tiptap/pm/model").Schema,
 ): DocumentFragment | HTMLElement {
   const serializer = DOMSerializer.fromSchema(schema);
   return serializer.serializeFragment(slice.content);
@@ -168,7 +172,9 @@ function renderSlice(
 /**
  * Create accept/reject action buttons for a change.
  */
-function createActionWidget(changeId: string): (view: import("@tiptap/pm/view").EditorView) => HTMLElement {
+function createActionWidget(
+  changeId: string,
+): (view: import("@tiptap/pm/view").EditorView) => HTMLElement {
   return () => {
     const wrapper = document.createElement("span");
     wrapper.className = "diff-actions";
@@ -265,7 +271,9 @@ export const DiffExtension = Extension.create({
       /** Original document content (HTML) before entering diff mode */
       originalContent: null as string | null,
       /** Callback fired when diff state changes */
-      onDiffStateChange: null as ((active: boolean, count: number) => void) | null,
+      onDiffStateChange: null as
+        | ((active: boolean, count: number) => void)
+        | null,
     };
   },
 
@@ -356,28 +364,38 @@ export const DiffExtension = Extension.create({
 
       acceptAllChanges:
         () =>
-        ({ chain }) => {
-          return chain()
-            .setMeta(CLEAR_META, true)
-            .run();
+        ({ tr, dispatch }) => {
+          if (dispatch) {
+            tr.setMeta(CLEAR_META, true);
+            dispatch(tr);
+          }
+          return true;
         },
 
       rejectAllChanges:
         () =>
-        ({ editor, chain }) => {
-          const storage = (editor.storage as unknown as Record<string, { originalContent?: string | null }>).diff;
+        ({ editor, tr, dispatch }) => {
+          const storage = (
+            editor.storage as unknown as Record<
+              string,
+              { originalContent?: string | null }
+            >
+          ).diff;
           const originalContent = storage?.originalContent;
 
-          if (originalContent) {
-            return chain()
-              .setMeta(CLEAR_META, true)
-              .setContent(originalContent, { emitUpdate: false })
-              .run();
+          if (dispatch) {
+            tr.setMeta(CLEAR_META, true);
+            dispatch(tr);
           }
 
-          return chain()
-            .setMeta(CLEAR_META, true)
-            .run();
+          // Restore original content in a separate command so it uses a fresh
+          // transaction built from the post-clear state, avoiding a mismatched
+          // transaction on devices where React re-renders between dispatches.
+          if (originalContent) {
+            editor.commands.setContent(originalContent, { emitUpdate: false });
+          }
+
+          return true;
         },
     };
   },
@@ -399,7 +417,12 @@ export const DiffExtension = Extension.create({
             };
           },
 
-          apply(tr: Transaction, prev: DiffPluginState, _oldState, newState): DiffPluginState {
+          apply(
+            tr: Transaction,
+            prev: DiffPluginState,
+            _oldState,
+            newState,
+          ): DiffPluginState {
             // Handle clear
             if (tr.getMeta(CLEAR_META)) {
               // Notify about state change
@@ -412,7 +435,9 @@ export const DiffExtension = Extension.create({
             }
 
             // Handle set changes
-            const newChanges = tr.getMeta(SET_CHANGES_META) as DiffChange[] | undefined;
+            const newChanges = tr.getMeta(SET_CHANGES_META) as
+              | DiffChange[]
+              | undefined;
             if (newChanges) {
               const decorations = buildDecorations(newState, newChanges);
               storage.onDiffStateChange?.(true, newChanges.length);
@@ -424,7 +449,9 @@ export const DiffExtension = Extension.create({
             }
 
             // Handle remove single change
-            const removeId = tr.getMeta(REMOVE_CHANGE_META) as string | undefined;
+            const removeId = tr.getMeta(REMOVE_CHANGE_META) as
+              | string
+              | undefined;
             if (removeId) {
               const remaining = prev.changes.filter((c) => c.id !== removeId);
               const isActive = remaining.length > 0;
@@ -468,7 +495,9 @@ export const DiffExtension = Extension.create({
 
         props: {
           decorations(state) {
-            return diffPluginKey.getState(state)?.decorations ?? DecorationSet.empty;
+            return (
+              diffPluginKey.getState(state)?.decorations ?? DecorationSet.empty
+            );
           },
 
           // Handle clicks on accept/reject buttons

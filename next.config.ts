@@ -3,6 +3,57 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   output: "standalone",
 
+  // Puppeteer and Chromium contain native binaries that webpack cannot bundle.
+  // Mark them as external so Next.js loads them from node_modules at runtime.
+  serverExternalPackages: ["@sparticuz/chromium", "puppeteer-core"],
+
+  // pptxgenjs (used in the presentation editor) references Node.js built-ins
+  // (node:fs, node:https, …) that webpack cannot resolve for the browser
+  // bundle.  Two-step fix:
+  //   1. NormalModuleReplacementPlugin strips the "node:" prefix so bare
+  //      specifiers like "fs" are used instead.
+  //   2. resolve.fallback stubs those bare specifiers to `false` (empty
+  //      module) for client bundles — the code paths that use them are never
+  //      reached in the browser.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  webpack(config: any, { isServer }: { isServer: boolean }) {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { NormalModuleReplacementPlugin } = require("webpack");
+    // Strip "node:" URI scheme → bare specifier so fallback entries match.
+    config.plugins.push(
+      new NormalModuleReplacementPlugin(/^node:/, (resource: { request: string }) => {
+        resource.request = resource.request.replace(/^node:/, "");
+      }),
+    );
+
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...(config.resolve.fallback ?? {}),
+        fs: false,
+        net: false,
+        tls: false,
+        https: false,
+        http: false,
+        http2: false,
+        stream: false,
+        zlib: false,
+        path: false,
+        os: false,
+        crypto: false,
+        util: false,
+        events: false,
+        buffer: false,
+        url: false,
+        querystring: false,
+        string_decoder: false,
+        child_process: false,
+        worker_threads: false,
+      };
+    }
+
+    return config;
+  },
+
   async rewrites() {
     return [
       {

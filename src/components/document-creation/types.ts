@@ -32,6 +32,11 @@ export interface FormState {
   includeAe?: boolean;
   /** Selected regulatory (scope='scooli') source IDs to inject as standing context. */
   regulatorySourceIds?: string[];
+  /**
+   * Number of slides to generate (Presentations only). Range 5–20, default 10.
+   * Persisted into `metadata.slideCount` and read by the backend prompt.
+   */
+  slideCount?: number;
 }
 
 export type FormUpdateFn = <K extends keyof FormState>(

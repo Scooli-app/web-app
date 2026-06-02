@@ -9,6 +9,7 @@ import { moderationReducer } from "./moderation";
 import onboardingReducer from "./onboarding/onboardingSlice";
 import sourcesReducer from "./sources/sourcesSlice";
 import subscriptionReducer from "./subscription/subscriptionSlice";
+import timetableReducer from "./timetable/timetableSlice";
 import uiReducer from "./ui/uiSlice";
 import workspaceReducer from "./workspace/workspaceSlice";
 
@@ -25,6 +26,7 @@ const rootReducer = combineReducers({
   workspace: workspaceReducer,
   sources: sourcesReducer,
   onboarding: onboardingReducer,
+  timetable: timetableReducer,
 });
 
 export default rootReducer;

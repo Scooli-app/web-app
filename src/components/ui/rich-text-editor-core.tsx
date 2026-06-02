@@ -7,6 +7,7 @@ import {
 import { ImageBlockExtension } from "@/components/editor/extensions/ImageBlockExtension";
 import { AUTO_SAVE_DELAY } from "@/shared/config/constants";
 import { htmlToMarkdown, markdownToHtml } from "@/shared/utils/markdown";
+import { TableKit } from "@tiptap/extension-table";
 import Highlight from "@tiptap/extension-highlight";
 import { Mathematics } from "@tiptap/extension-mathematics";
 import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
@@ -17,7 +18,18 @@ import {
   type Editor,
 } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { ImagePlus, Loader2 } from "lucide-react";
+import {
+  ArrowDownToLine,
+  ArrowLeftToLine,
+  ArrowRightToLine,
+  ArrowUpToLine,
+  Columns2,
+  ImagePlus,
+  Loader2,
+  Rows2,
+  Table2,
+  Trash2,
+} from "lucide-react";
 import {
   memo,
   useCallback,
@@ -26,7 +38,9 @@ import {
   useState,
   type ChangeEvent,
   type KeyboardEvent,
+  type TouchEvent,
 } from "react";
+import { createPortal } from "react-dom";
 
 interface TipTapEditorCoreProps {
   content: string;
@@ -155,6 +169,13 @@ const MenuBar = memo(function MenuBar({
       }),
     [editor, runEditorCommand],
   );
+  const handleInsertTable = useCallback(
+    () => runEditorCommand(() =>
+      editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()
+    ),
+    [editor, runEditorCommand],
+  );
+
   const handleUploadImage = useCallback(() => {
     onEditorActivity?.();
     onUploadImage?.();
@@ -255,14 +276,20 @@ const MenuBar = memo(function MenuBar({
         >
           Σ
         </button>
+        <button
+          onClick={handleInsertTable}
+          className="p-2 rounded hover:bg-accent transition-colors text-foreground"
+          title="Inserir tabela (clique direito na tabela para editar)"
+          type="button"
+        >
+          <Table2 className="h-4 w-4" />
+        </button>
         {onUploadImage && (
           <button
             onClick={handleUploadImage}
             disabled={isImageUploading}
             className={`p-2 rounded hover:bg-accent transition-colors ${isImageUploading ? "text-muted-foreground opacity-70" : "text-foreground"}`}
-            title={
-              isImageUploading ? "A carregar imagem..." : "Carregar imagem"
-            }
+            title={isImageUploading ? "A carregar imagem..." : "Carregar imagem"}
             type="button"
           >
             {isImageUploading ? (
@@ -349,6 +376,7 @@ export function TipTapEditorCore({
   const editor = useEditor({
     extensions: [
       StarterKit,
+      TableKit,
       Highlight,
       Mathematics.configure({
         inlineOptions: { onClick: mathOnClick.current.inline },
@@ -454,6 +482,62 @@ export function TipTapEditorCore({
     };
   }, [editor, onAutosave]);
 
+  // ── Table right-click context menu ─────────────────────────────────────────
+  const [tableCtx, setTableCtx] = useState<{ x: number; y: number } | null>(null);
+  const tableCtxRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!tableCtx) return;
+    function close(e: MouseEvent) {
+      if (tableCtxRef.current && !tableCtxRef.current.contains(e.target as Node)) {
+        setTableCtx(null);
+      }
+    }
+    function onKey(e: globalThis.KeyboardEvent) {
+      if (e.key === "Escape") setTableCtx(null);
+    }
+    document.addEventListener("mousedown", close);
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("scroll", () => setTableCtx(null), { once: true, capture: true });
+    return () => {
+      document.removeEventListener("mousedown", close);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [tableCtx]);
+
+  function handleContextMenu(e: React.MouseEvent) {
+    const target = e.target as HTMLElement;
+    if (!target.closest("td, th")) return;
+    e.preventDefault();
+    showTableCtx(e.clientX, e.clientY);
+  }
+
+  // Long-press for touch screens (500 ms hold on a table cell)
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressPos = useRef<{ x: number; y: number } | null>(null);
+
+  function handleTouchStart(e: TouchEvent<HTMLDivElement>) {
+    const target = e.target as HTMLElement;
+    if (!target.closest("td, th")) return;
+    const touch = e.touches[0];
+    longPressPos.current = { x: touch.clientX, y: touch.clientY };
+    longPressTimer.current = setTimeout(() => {
+      if (longPressPos.current) showTableCtx(longPressPos.current.x, longPressPos.current.y);
+    }, 500);
+  }
+
+  function handleTouchEnd() {
+    if (longPressTimer.current) clearTimeout(longPressTimer.current);
+    longPressPos.current = null;
+  }
+
+  function showTableCtx(x: number, y: number) {
+    // Keep menu inside viewport horizontally
+    const menuWidth = 224;
+    const safeX = x + menuWidth > window.innerWidth ? window.innerWidth - menuWidth - 8 : x;
+    setTableCtx({ x: safeX, y });
+  }
+
   if (!editor) {
     return (
       <div className="border border-border rounded-xl bg-card w-full">
@@ -463,6 +547,23 @@ export function TipTapEditorCore({
       </div>
     );
   }
+
+  // Defined after the !editor guard so `editor` is non-null throughout.
+  type CtxAction =
+    | { divider: true }
+    | { label: string; icon: React.ElementType; run: () => void; destructive?: boolean };
+
+  const tableCtxActions: CtxAction[] = [
+    { label: "Inserir linha acima",       icon: ArrowUpToLine,    run: () => editor.chain().focus().addRowBefore().run() },
+    { label: "Inserir linha abaixo",      icon: ArrowDownToLine,  run: () => editor.chain().focus().addRowAfter().run() },
+    { label: "Eliminar linha",            icon: Rows2,            run: () => editor.chain().focus().deleteRow().run() },
+    { divider: true },
+    { label: "Inserir coluna à esquerda", icon: ArrowLeftToLine,  run: () => editor.chain().focus().addColumnBefore().run() },
+    { label: "Inserir coluna à direita",  icon: ArrowRightToLine, run: () => editor.chain().focus().addColumnAfter().run() },
+    { label: "Eliminar coluna",           icon: Columns2,         run: () => editor.chain().focus().deleteColumn().run() },
+    { divider: true },
+    { label: "Eliminar tabela",           icon: Trash2,           run: () => editor.chain().focus().deleteTable().run(), destructive: true },
+  ];
 
   return (
     <div className="relative w-full">
@@ -515,10 +616,49 @@ export function TipTapEditorCore({
           className="hidden"
           onChange={handleImageFileChange}
         />
-        <div className="p-2 sm:p-4">
+        <div
+          className="p-2 sm:p-4"
+          onContextMenu={handleContextMenu}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+          onTouchMove={handleTouchEnd}
+        >
           <EditorContent editor={editor} />
         </div>
       </div>
+      {/* Table context menu portal */}
+      {tableCtx && typeof document !== "undefined" &&
+        createPortal(
+          <div
+            ref={tableCtxRef}
+            style={{ position: "fixed", top: tableCtx.y, left: tableCtx.x, zIndex: 9999 }}
+            className="w-56 rounded-lg border border-border bg-card py-1 shadow-xl"
+          >
+            {tableCtxActions.map((action, i) => {
+              if ("divider" in action) {
+                return <div key={i} className="my-1 border-t border-border" />;
+              }
+              const Icon = action.icon;
+              return (
+                <button
+                  key={i}
+                  type="button"
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    action.run();
+                    setTableCtx(null);
+                  }}
+                  className={`flex w-full items-center gap-2.5 px-3 py-1.5 text-left text-sm transition-colors hover:bg-accent ${action.destructive ? "text-destructive hover:text-destructive" : "text-foreground"}`}
+                >
+                  <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                  {action.label}
+                </button>
+              );
+            })}
+          </div>,
+          document.body
+        )
+      }
     </div>
   );
 }

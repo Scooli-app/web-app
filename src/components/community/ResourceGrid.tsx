@@ -64,10 +64,10 @@ export function ResourceGrid({
 
   if (resources.length === 0) {
     return (
-      <div className="text-center py-16">
-        <div className="text-5xl mb-4">📚</div>
-        <h3 className="text-lg font-semibold text-foreground mb-1">Nenhum recurso encontrado</h3>
-        <p className="text-center text-sm text-muted-foreground sm:text-left">
+      <div className="flex flex-col items-center py-16 text-center">
+        <div className="mb-4 text-5xl">📚</div>
+        <h3 className="mb-1 text-lg font-semibold text-foreground">Nenhum recurso encontrado</h3>
+        <p className="max-w-sm text-sm text-muted-foreground">
           Tente ajustar os filtros ou seja o primeiro a partilhar recursos desta categoria!
         </p>
       </div>

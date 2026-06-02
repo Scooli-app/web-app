@@ -40,7 +40,7 @@ export default function QuizEditorPage({ params }: QuizEditorPageProps) {
         loadingMessage="A carregar quiz..."
         generateMessage="Gerar quiz"
         chatTitle="Assistente de Quizzes"
-        chatPlaceholder="Faça uma pergunta sobre o quiz ou peça para modificar algo..."
+        chatPlaceholder="Pergunta algo ou pede para modificar o quiz..."
       />
     </Suspense>
   );

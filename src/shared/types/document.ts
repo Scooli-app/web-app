@@ -7,7 +7,18 @@ export type DocumentType =
   | "quiz"
   | "presentation"
   | "test"
-  | "worksheet";
+  | "worksheet"
+  | "curriculumPlan";
+
+/**
+ * Macro curriculum-plan planning period. Drives prompt depth on the backend
+ * (annual = high level, trimester = fine grain).
+ */
+export type CurriculumPlanningType =
+  | "annual"
+  | "semester"
+  | "trimester"
+  | "custom";
 
 // `assessment` remains only for compatibility with legacy worksheet documents.
 export type WorksheetVariant =
@@ -50,12 +61,23 @@ export interface Document {
   id: string;
   title: string;
   documentType: DocumentType;
+  /**
+   * Storage format of {@link #content}:
+   *   - {@code "markdown"} (default for all legacy doc types)
+   *   - {@code "json"} (Presentations pilot — content is a serialized
+   *     {@link import("./blocks").PresentationDocument})
+   *
+   * Renderers branch on this; if absent assume "markdown" (older docs).
+   */
+  contentFormat?: "markdown" | "json";
   content: string;
   status: string;
   metadata: DocumentMetadata | null;
   isPublic: boolean;
   subject: string | null;
   gradeLevel: string | null;
+  /** Non-null for imported documents (e.g. "docx", "pdf"). Null for AI-generated. */
+  originalFormat?: string | null;
   isSpecificComponent: boolean;
   rating: number;
   downloads: number;

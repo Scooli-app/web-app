@@ -1270,6 +1270,8 @@ export default function DocumentEditor({
               title={chatTitle}
               sources={sources}
               showGenerationHint={!isEntitlementLoading && !isPremium}
+              documentType={activeDocument?.documentType}
+              documentId={documentId}
             />
           </div>
         </div>
@@ -1285,6 +1287,8 @@ export default function DocumentEditor({
           title={chatTitle}
           sources={sources}
           showGenerationHint={!isEntitlementLoading && !isPremium}
+          documentType={activeDocument?.documentType}
+          documentId={documentId}
         />
       </div>
     </>

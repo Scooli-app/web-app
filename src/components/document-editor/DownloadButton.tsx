@@ -7,6 +7,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { UpgradeLimitError } from "@/services/api/client";
 import { downloadDocument, type DownloadFormat } from "@/services/download/documentDownload";
 import { Routes } from "@/shared/types";
 import type { DocumentImage } from "@/shared/types/document";
@@ -54,7 +55,9 @@ function DownloadButtonComponent({
         });
       } catch (error) {
         console.error(`Failed to download as ${format}:`, error);
-        posthog.captureException(error);
+        if (!(error instanceof UpgradeLimitError)) {
+          posthog.captureException(error);
+        }
       } finally {
         setIsDownloading(false);
         setDownloadFormat(null);
@@ -89,7 +92,9 @@ function DownloadButtonComponent({
           ) : (
             <Download className="h-4 w-4" />
           )}
-          <span className="hidden sm:inline">Exportar</span>
+          <span className="hidden sm:inline">
+            {isDownloading ? "A exportar…" : "Exportar"}
+          </span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-[18rem] p-1.5">
@@ -103,7 +108,9 @@ function DownloadButtonComponent({
           ) : (
             <FileText className="h-4 w-4 text-red-500 dark:text-red-400" />
           )}
-          <span className="whitespace-nowrap">Exportar como PDF</span>
+          <span className="whitespace-nowrap">
+            {downloadFormat === "pdf" ? "A gerar PDF…" : "Exportar como PDF"}
+          </span>
         </DropdownMenuItem>
         {isProUser ? (
           <DropdownMenuItem
@@ -116,7 +123,9 @@ function DownloadButtonComponent({
             ) : (
               <FileText className="h-4 w-4 text-blue-500 dark:text-blue-400" />
             )}
-            <span className="whitespace-nowrap">Exportar como Word</span>
+            <span className="whitespace-nowrap">
+              {downloadFormat === "docx" ? "A gerar Word…" : "Exportar como Word"}
+            </span>
           </DropdownMenuItem>
         ) : (
           <DropdownMenuItem

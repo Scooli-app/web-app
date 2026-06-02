@@ -1,6 +1,7 @@
 "use client";
 
 import { AppFeedbackSurveyModal } from "@/components/feedback-survey/AppFeedbackSurveyModal";
+import { UpgradeLimitError } from "@/services/api/client";
 import { feedbackSurveyService } from "@/services/api/feedback-survey.service";
 import { userService } from "@/services/api/user.service";
 import { Routes } from "@/shared/types";
@@ -96,13 +97,17 @@ export function AppFeedbackSurveyGate() {
         setOpen(false);
       }
     } else {
-      posthog.captureException(statusResult.reason);
+      if (!(statusResult.reason instanceof UpgradeLimitError)) {
+        posthog.captureException(statusResult.reason);
+      }
     }
 
     if (profileResult.status === "fulfilled") {
       setCurrentUserProfile(profileResult.value);
     } else {
-      posthog.captureException(profileResult.reason);
+      if (!(profileResult.reason instanceof UpgradeLimitError)) {
+        posthog.captureException(profileResult.reason);
+      }
     }
 
     // Always stamp the check time so the focus-based retry handler
@@ -190,7 +195,9 @@ export function AppFeedbackSurveyGate() {
         });
       })
       .catch((error) => {
-        posthog.captureException(error);
+        if (!(error instanceof UpgradeLimitError)) {
+          posthog.captureException(error);
+        }
       });
   }, [getDaysSinceSignup, open, surveyStatus?.promptKey]);
 
@@ -233,7 +240,9 @@ export function AppFeedbackSurveyGate() {
         daysSinceSignup: getDaysSinceSignup(),
       });
     } catch (error) {
-      posthog.captureException(error);
+      if (!(error instanceof UpgradeLimitError)) {
+        posthog.captureException(error);
+      }
       toast.error("Não foi possível adiar o pedido de feedback.");
     } finally {
       setIsBusy(false);
@@ -273,7 +282,9 @@ export function AppFeedbackSurveyGate() {
 
         toast.success("Obrigado pelo teu feedback.");
       } catch (error) {
-        posthog.captureException(error);
+        if (!(error instanceof UpgradeLimitError)) {
+          posthog.captureException(error);
+        }
         toast.error("Não foi possível enviar o feedback.");
       } finally {
         setIsBusy(false);
