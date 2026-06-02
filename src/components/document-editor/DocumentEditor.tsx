@@ -1186,7 +1186,7 @@ export default function DocumentEditor({
                   </div>
                 </div>
                 <div className="min-h-[50dvh] w-full overflow-auto rounded-xl border border-border bg-card p-3 sm:min-h-[600px] sm:p-4">
-                  {displayContent ? (
+                  {displayContent && streamStatus !== "reviewing" && streamStatus !== "revised" ? (
                     <StreamingText
                       text={displayContent}
                       isStreaming={isGenerating}
