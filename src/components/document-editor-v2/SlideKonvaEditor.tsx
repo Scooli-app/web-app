@@ -202,19 +202,36 @@ export const SlideKonvaEditor = forwardRef<
     slide: CanvasSlide;
     onChange: (elements: CanvasElement[]) => void;
     onSelectionChange?: (id: string | null) => void;
+    /** Called when the user clicks the change-image button on an image element. */
+    onChangeImage?: (elementId: string) => void;
   }
->(function SlideKonvaEditor({ slide, onChange, onSelectionChange }, ref) {
+>(function SlideKonvaEditor({ slide, onChange, onSelectionChange, onChangeImage }, ref) {
   /** Fills the available parent space — measured to compute stage size. */
   const wrapperRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<Konva.Stage | null>(null);
   const trRef = useRef<Konva.Transformer | null>(null);
   const { W, H } = useStageSize(wrapperRef);
+  // Overflow region (30% on each side) — elements render outside the slide bounds
+  // and are clipped by the Stage canvas edges, just like in Teachy.
+  const OX = Math.round(W * 0.3);
+  const OY = Math.round(H * 0.3);
 
   const elements = slide.elements;
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [editState, setEditState] = useState<EditState | null>(null);
   /** Active snap guide lines (cleared on drag end). */
   const [guides, setGuides] = useState<{ vLines: number[]; hLines: number[] }>({ vLines: [], hLines: [] });
+  /**
+   * Live position of the selected node while dragging/transforming.
+   * Updated on every onDragMove / onTransform tick so overlay buttons
+   * follow the element in real-time (like Teachy). Cleared on pointer-up.
+   */
+  const [livePos, setLivePos] = useState<{
+    cx: number; cy: number; halfW: number; halfH: number; rotation: number;
+  } | null>(null);
+
+  // Clear live position whenever selection changes.
+  useEffect(() => { setLivePos(null); }, [selectedId]);
 
   /* ── Image URL cache: url → loaded HTMLImageElement ────────────────────── */
   // We use a ref as the cache store (avoids re-renders during load) and a
@@ -316,13 +333,13 @@ export const SlideKonvaEditor = forwardRef<
       const cx = node.x();
       const cy = node.y();
 
-      // Collect vertical (x) and horizontal (y) snap lines
-      const vLines: number[] = [0, W / 2, W];
-      const hLines: number[] = [0, H / 2, H];
+      // Collect vertical (x) and horizontal (y) snap lines — in stage space (offset by OX/OY)
+      const vLines: number[] = [OX, OX + W / 2, OX + W];
+      const hLines: number[] = [OY, OY + H / 2, OY + H];
       for (const el of elements) {
         if (el.id === id) continue;
-        const ecx = el.x * W + el.w * W / 2;
-        const ecy = el.y * H + el.h * H / 2;
+        const ecx = el.x * W + OX + el.w * W / 2;
+        const ecy = el.y * H + OY + el.h * H / 2;
         const ehw = el.w * W / 2;
         const ehh = el.h * H / 2;
         vLines.push(ecx - ehw, ecx, ecx + ehw);
@@ -358,6 +375,16 @@ export const SlideKonvaEditor = forwardRef<
         vLines: bestX !== null ? [bestX.guide] : [],
         hLines: bestY !== null ? [bestY.guide] : [],
       });
+
+      // Update live overlay position so buttons follow in real-time.
+      // Store in container space (stage space minus OX/OY).
+      setLivePos({
+        cx: node.x() - OX,
+        cy: node.y() - OY,
+        halfW: node.offsetX(),
+        halfH: node.offsetY(),
+        rotation: node.rotation(),
+      });
     },
     [W, H, elements],
   );
@@ -365,15 +392,50 @@ export const SlideKonvaEditor = forwardRef<
   const handleDragEnd = useCallback(
     (id: string, node: Konva.Node) => {
       setGuides({ vLines: [], hLines: [] }); // clear guides
+      setLivePos(null); // return to committed-state position
       const el = elements.find((e) => e.id === id);
       if (!el) return;
-      // node.x()/y() = center of element (we render with offsetX/Y = w*W/2, h*H/2)
+      // node positions are in stage space (include OX/OY offset).
+      // Subtract OX/OY before converting back to slide fractions.
       updateElement(id, {
-        x: (node.x() - el.w * W / 2) / W,
-        y: (node.y() - el.h * H / 2) / H,
+        x: (node.x() - OX - el.w * W / 2) / W,
+        y: (node.y() - OY - el.h * H / 2) / H,
       });
     },
     [W, H, elements, updateElement],
+  );
+
+  /**
+   * Called on every Transformer tick (onTransform) — keeps the overlay buttons
+   * locked to the element's visual corner during live resize/rotate, and shows
+   * snap guide lines when the rotation is close to a cardinal/diagonal angle.
+   */
+  const handleTransformLive = useCallback(
+    (id: string, node: Konva.Node) => {
+      const el = elements.find((e) => e.id === id);
+      if (!el) return;
+      setLivePos({
+        cx: node.x() - OX,  // container space
+        cy: node.y() - OY,
+        halfW: el.w * W / 2 * Math.abs(node.scaleX()),
+        halfH: el.h * H / 2 * Math.abs(node.scaleY()),
+        rotation: node.rotation(),
+      });
+
+      // Show guide lines through the element center when near a snap angle.
+      const SNAP_ANGLES = [0, 45, 90, 135, 180, 225, 270, 315];
+      const THRESH = 4; // degrees
+      const rot = ((node.rotation() % 360) + 360) % 360;
+      const nearSnap = SNAP_ANGLES.some(
+        (a) => Math.min(Math.abs(rot - a), Math.abs(rot - a + 360), Math.abs(rot - a - 360)) < THRESH,
+      );
+      if (nearSnap) {
+        setGuides({ vLines: [node.x()], hLines: [node.y()] });
+      } else {
+        setGuides({ vLines: [], hLines: [] });
+      }
+    },
+    [W, H, elements],
   );
 
   /**
@@ -385,6 +447,7 @@ export const SlideKonvaEditor = forwardRef<
   const handleTransformEnd = useCallback(
     (id: string, node: Konva.Node) => {
       setGuides({ vLines: [], hLines: [] });
+      setLivePos(null);
       const el = elements.find((e) => e.id === id);
       if (!el) return;
       const sx = node.scaleX();
@@ -399,10 +462,13 @@ export const SlideKonvaEditor = forwardRef<
       node.offsetX(newW * W / 2);
       node.offsetY(newH * H / 2);
       node.getLayer()?.batchDraw();
-      // Convert center position back to top-left fraction for storage
+      // Convert center position back to top-left fraction for storage.
+      // Subtract OX/OY (stage space → slide space).
+      const rawX = (cx - OX - newW * W / 2) / W;
+      const rawY = (cy - OY - newH * H / 2) / H;
       updateElement(id, {
-        x: (cx - newW * W / 2) / W,
-        y: (cy - newH * H / 2) / H,
+        x: rawX,
+        y: rawY,
         w: newW,
         h: newH,
         rotation: node.rotation(),
@@ -442,13 +508,14 @@ export const SlideKonvaEditor = forwardRef<
       // toolbar stays visible.  The Transformer effect clears its handles
       // whenever editState is non-null (see effect above).
       //
-      // absPos is the node's ORIGIN (= center, because offsetX/Y = w/2, h/2).
-      // Subtract the offset to get the visual top-left for the textarea.
+      // absPos is stage-space origin (= center, because offsetX/Y = w/2, h/2).
+      // Subtract OX/OY to convert to container space, then the half-size offset
+      // to get the visual top-left for the textarea overlay.
       setEditState({
         id,
         value,
-        x: absPos.x - el.w * W / 2,
-        y: absPos.y - el.h * H / 2,
+        x: absPos.x - OX - el.w * W / 2,
+        y: absPos.y - OY - el.h * H / 2,
         width: el.w * W,
         height: Math.max(el.h * H, fs * 1.5),
         fontSize: fs,
@@ -533,6 +600,8 @@ export const SlideKonvaEditor = forwardRef<
       handleDragMove(id, e.target),
     onDragEnd: (e: Konva.KonvaEventObject<DragEvent>) =>
       handleDragEnd(id, e.target),
+    onTransform: (e: Konva.KonvaEventObject<Event>) =>
+      handleTransformLive(id, e.target),
     onTransformEnd: (e: Konva.KonvaEventObject<Event>) =>
       handleTransformEnd(id, e.target),
   });
@@ -542,53 +611,93 @@ export const SlideKonvaEditor = forwardRef<
   void imgRevision;
   return (
     <div ref={wrapperRef} className="flex h-full w-full items-center justify-center">
-      {/* Inner div is explicitly sized to the 16:9 stage dimensions. */}
+      {/* Inner div is the visible slide area; overflow:visible lets elements
+          spill outside the slide boundary (the oversized Stage handles the rest). */}
       <div
-        className="relative select-none overflow-hidden rounded-xl shadow-xl"
-        style={{ width: W, height: H }}
+        className="relative select-none rounded-xl shadow-xl"
+        style={{ width: W, height: H, overflow: "visible" }}
       >
-        {/* Floating delete button — appears to the left of the selected element */}
+        {/* Floating action buttons — stacked to the left of the selected element */}
         {selectedId && !editState && (() => {
           const el = elements.find((e) => e.id === selectedId);
           if (!el) return null;
-          const bx = el.x * W - 30;
-          const by = el.y * H;
+          // Use livePos during drag/transform for real-time tracking, else
+          // fall back to committed element state.
+          const halfW = livePos ? livePos.halfW : (el.w * W) / 2;
+          const halfH = livePos ? livePos.halfH : (el.h * H) / 2;
+          const cx = livePos ? livePos.cx : (el.x * W + halfW);
+          const cy = livePos ? livePos.cy : (el.y * H + halfH);
+          // Rotate the top-left corner (local -halfW,-halfH) around the center
+          // so the controls follow the element's rotation.
+          const rot = livePos ? livePos.rotation : (el.rotation ?? 0);
+          const rad = (rot * Math.PI) / 180;
+          const cos = Math.cos(rad);
+          const sin = Math.sin(rad);
+          const cornerX = cx + (-halfW * cos - -halfH * sin);
+          const cornerY = cy + (-halfW * sin + -halfH * cos);
+          // The control stack pivots about the element corner, which sits 34px
+          // (button width + gap) to the right of the stack's own left edge.
+          const PIVOT = 34;
+          const isImg = el.type === "image_placeholder";
+          const btnBase = "flex h-7 w-7 items-center justify-center rounded-md bg-white/90 shadow-md border border-border transition-colors";
           return (
-            <button
-              type="button"
-              title="Apagar elemento"
+            <div
               style={{
                 position: "absolute",
-                left: Math.max(4, bx),
-                top: Math.max(4, by),
+                left: cornerX - PIVOT,
+                top: cornerY,
+                transformOrigin: `${PIVOT}px 0px`,
+                transform: `rotate(${rot}deg)`,
                 zIndex: 20,
               }}
-              className="flex h-7 w-7 items-center justify-center rounded-md bg-white/90 text-destructive shadow-md border border-border hover:bg-destructive hover:text-white transition-colors"
+              className="flex flex-col gap-1"
               onMouseDown={(e) => e.stopPropagation()}
-              onClick={(e) => {
-                e.stopPropagation();
-                removeSelected();
-              }}
             >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
-              </svg>
-            </button>
+              {/* Change image (only for image_placeholder elements) */}
+              {isImg && onChangeImage && (
+                <button
+                  type="button"
+                  title="Trocar imagem"
+                  className={`${btnBase} text-foreground hover:bg-muted`}
+                  onClick={(e) => { e.stopPropagation(); onChangeImage(selectedId); }}
+                >
+                  {/* Swap/refresh icon */}
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/>
+                  </svg>
+                </button>
+              )}
+              {/* Delete */}
+              <button
+                type="button"
+                title="Apagar elemento"
+                className={`${btnBase} text-destructive hover:bg-destructive hover:text-white`}
+                onClick={(e) => { e.stopPropagation(); removeSelected(); }}
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
+                </svg>
+              </button>
+            </div>
           );
         })()}
 
+        {/* Stage is larger than the slide (OX/OY padding on each side) and offset
+            so its (OX,OY) origin lines up with the container top-left.
+            This lets elements render visually outside the slide boundary. */}
         <Stage
           ref={stageRef}
-          width={W}
-          height={H}
+          width={W + 2 * OX}
+          height={H + 2 * OY}
+          style={{ position: "absolute", left: -OX, top: -OY }}
           onClick={() => setSelectedId(null)}
           onTap={() => setSelectedId(null)}
         >
           <Layer>
-            {/* Slide background */}
+            {/* Slide background — offset to the centre of the oversized stage */}
             <Rect
               name="bg"
-              x={0} y={0} width={W} height={H}
+              x={OX} y={OY} width={W} height={H}
               fill={slide.background}
               cornerRadius={12}
               listening={false}
@@ -605,8 +714,8 @@ export const SlideKonvaEditor = forwardRef<
                   <Text
                     key={el.id}
                     id={el.id}
-                    x={el.x * W + el.w * W / 2}
-                    y={el.y * H + el.h * H / 2}
+                    x={el.x * W + OX + el.w * W / 2}
+                    y={el.y * H + OY + el.h * H / 2}
                     offsetX={el.w * W / 2}
                     offsetY={el.h * H / 2}
                     rotation={el.rotation ?? 0}
@@ -663,8 +772,8 @@ export const SlideKonvaEditor = forwardRef<
                   <Group
                     key={el.id}
                     id={el.id}
-                    x={el.x * W + el.w * W / 2}
-                    y={el.y * H + el.h * H / 2}
+                    x={el.x * W + OX + el.w * W / 2}
+                    y={el.y * H + OY + el.h * H / 2}
                     offsetX={el.w * W / 2}
                     offsetY={el.h * H / 2}
                     rotation={el.rotation ?? 0}
@@ -729,8 +838,8 @@ export const SlideKonvaEditor = forwardRef<
                   <Text
                     key={el.id}
                     id={el.id}
-                    x={el.x * W + el.w * W / 2}
-                    y={el.y * H + el.h * H / 2}
+                    x={el.x * W + OX + el.w * W / 2}
+                    y={el.y * H + OY + el.h * H / 2}
                     offsetX={el.w * W / 2}
                     offsetY={el.h * H / 2}
                     rotation={el.rotation ?? 0}
@@ -780,8 +889,8 @@ export const SlideKonvaEditor = forwardRef<
                       key={el.id}
                       id={el.id}
                       image={cached}
-                      x={el.x * W + el.w * W / 2}
-                      y={el.y * H + el.h * H / 2}
+                      x={el.x * W + OX + el.w * W / 2}
+                      y={el.y * H + OY + el.h * H / 2}
                       offsetX={el.w * W / 2}
                       offsetY={el.h * H / 2}
                       rotation={el.rotation ?? 0}
@@ -801,8 +910,8 @@ export const SlideKonvaEditor = forwardRef<
                   <Group
                     key={el.id}
                     id={el.id}
-                    x={el.x * W + el.w * W / 2}
-                    y={el.y * H + el.h * H / 2}
+                    x={el.x * W + OX + el.w * W / 2}
+                    y={el.y * H + OY + el.h * H / 2}
                     offsetX={el.w * W / 2}
                     offsetY={el.h * H / 2}
                     rotation={el.rotation ?? 0}
@@ -877,6 +986,8 @@ export const SlideKonvaEditor = forwardRef<
             <Transformer
               ref={trRef}
               rotateEnabled={true}
+              rotationSnaps={[0, 45, 90, 135, 180, 225, 270, 315]}
+              rotationSnapTolerance={6}
               keepRatio={false}
               centeredScaling={false}
               borderStroke={T.selection}
@@ -888,9 +999,12 @@ export const SlideKonvaEditor = forwardRef<
               anchorSize={8}
               anchorCornerRadius={2}
               padding={4}
-              boundBoxFunc={(oldBox, newBox) =>
-                newBox.width < 20 || newBox.height < 10 ? oldBox : newBox
-              }
+              boundBoxFunc={(oldBox, newBox) => {
+                // Only enforce a minimum size — elements are free to overlap the
+                // slide boundary (Konva clips at canvas edges).
+                if (newBox.width < 20 || newBox.height < 10) return oldBox;
+                return newBox;
+              }}
             />
           </Layer>
         </Stage>

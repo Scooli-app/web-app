@@ -36,7 +36,7 @@ const TEMPLATE_PLACEHOLDERS: Record<
     description: "Descreva quando usar este modelo de plano de aula...",
   },
   quiz: {
-    name: "Ex: Quiz Rapido de Revisao",
+    name: "Ex: Quiz Rápido de Revisão",
     description: "Descreva quando usar este modelo de quiz...",
   },
   test: {
@@ -49,11 +49,11 @@ const TEMPLATE_PLACEHOLDERS: Record<
       "Descreva a estrutura da ficha e quando este modelo faz mais sentido...",
   },
   presentation: {
-    name: "Ex: Apresentacao Interativa com Atividades",
-    description: "Descreva quando usar este modelo de apresentacao...",
+    name: "Ex: Apresentação Interativa com Atividades",
+    description: "Descreva quando usar este modelo de apresentação...",
   },
   curriculumPlan: {
-    name: "Ex: Planificacao Trimestral por Dominios",
+    name: "Ex: Planificação Trimestral por Domínios",
     description:
       "Descreva quando usar este modelo de planificacao (anual, semestral, trimestral)...",
   },
@@ -297,7 +297,7 @@ export function TemplateCreator({
                   htmlFor="template-description"
                   className="mb-1.5 block text-sm font-medium text-foreground"
                 >
-                  Descricao{" "}
+                  Descrição{" "}
                   <span className="text-xs font-normal text-muted-foreground">
                     (Opcional)
                   </span>
@@ -317,10 +317,10 @@ export function TemplateCreator({
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <h3 className="text-sm font-medium text-foreground">
-                    Seccoes do Modelo <span className="text-destructive">*</span>
+                    Secções do Modelo <span className="text-destructive">*</span>
                   </h3>
                   <p className="text-xs text-muted-foreground">
-                    Arraste para reordenar as seccoes
+                    Arraste para reordenar as secções
                   </p>
                 </div>
                 <Button

@@ -100,17 +100,17 @@ export function SortableSection({
           <Input
             value={section.title}
             onChange={(e) => onUpdate(section.id, "title", e.target.value)}
-            placeholder="Titulo da seccao"
+            placeholder="Título da secção"
             className="h-10 rounded-lg border-input bg-input px-3 text-sm font-medium placeholder:text-muted-foreground"
-            aria-label="Titulo da seccao"
+            aria-label="Título da secção"
           />
           <Textarea
             value={section.description}
             onChange={(e) => onUpdate(section.id, "description", e.target.value)}
-            placeholder="Instrucoes para a IA: o que incluir nesta seccao..."
+            placeholder="Instruções para a IA: o que incluir nesta secção..."
             rows={2}
             className="min-h-0 rounded-lg border-input bg-input px-3 py-2 text-sm placeholder:text-muted-foreground"
-            aria-label="Instrucoes para a seccao"
+            aria-label="Instruções para a secção"
           />
         </div>
 

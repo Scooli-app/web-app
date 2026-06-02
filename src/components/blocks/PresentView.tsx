@@ -23,7 +23,7 @@ import { CanvasSlideView } from "@/components/document-editor-v2/CanvasSlideView
 import { isCanvasPresentation, type CanvasPresentation } from "@/shared/types/canvas-presentation";
 import { fetchDocument } from "@/store/documents/documentSlice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { Loader2, Printer, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2, Printer, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SlideRenderer } from "./SlideRenderer";
@@ -163,7 +163,7 @@ export function PresentView({ documentId }: Props) {
   const showHud = useCallback(() => {
     setHudVisible(true);
     if (hudTimerRef.current) clearTimeout(hudTimerRef.current);
-    hudTimerRef.current = setTimeout(() => setHudVisible(false), 2000);
+    hudTimerRef.current = setTimeout(() => setHudVisible(false), 5000);
   }, []);
 
   useEffect(() => {
@@ -207,15 +207,42 @@ export function PresentView({ documentId }: Props) {
         ) : null}
       </div>
 
-      {/* HUD: counter + controls. Always shown for ~2s after any mouse move. */}
+      {/* HUD: counter + controls. Shown for 5s after any mouse move, stays
+          visible while the cursor is over it so teachers can click the buttons. */}
       <div
         className={`pointer-events-none fixed inset-x-0 bottom-0 flex items-end justify-between p-4 transition-opacity duration-300 ${
           hudVisible ? "opacity-100" : "opacity-0"
         }`}
+        onMouseEnter={showHud}
       >
+        {/* Left: slide counter */}
         <div className="pointer-events-auto rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur-sm">
           {currentIdx + 1} / {total}
         </div>
+
+        {/* Centre: ← → navigation arrows */}
+        <div className="pointer-events-auto flex gap-2">
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); prev(); }}
+            disabled={currentIdx === 0}
+            className="rounded-full bg-white/10 p-2 text-white backdrop-blur-sm transition-colors hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed"
+            aria-label="Slide anterior"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); next(); }}
+            disabled={currentIdx === total - 1}
+            className="rounded-full bg-white/10 p-2 text-white backdrop-blur-sm transition-colors hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed"
+            aria-label="Próximo slide"
+          >
+            <ChevronRight className="h-5 w-5" />
+          </button>
+        </div>
+
+        {/* Right: print + exit */}
         <div className="pointer-events-auto flex gap-2">
           <button
             type="button"

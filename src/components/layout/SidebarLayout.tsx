@@ -697,7 +697,7 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
   return (
     <TutorialProvider>
     <SidebarProvider>
-      <div className="flex min-h-dvh w-full">
+      <div className="flex h-dvh w-full">
         <AppBootstrapGate />
         <SourceIngestionTracker />
         <UpgradePlanModal
@@ -708,7 +708,7 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
         <OnboardingGate />
         <TutorialOverlay />
 
-        <div className="hidden md:block md:min-h-dvh">
+        <div className="hidden md:block md:h-dvh">
           {desktopSidebarContent}
         </div>
 

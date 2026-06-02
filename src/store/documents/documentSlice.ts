@@ -254,11 +254,11 @@ export const updateDocument = createAsyncThunk(
 export const chatWithDocument = createAsyncThunk(
   "documents/chatWithDocument",
   async (
-    { id, message }: { id: string; message: string },
+    { id, message, canvasState }: { id: string; message: string; canvasState?: string },
     { rejectWithValue, dispatch }
   ) => {
     try {
-      const response = await chatWithDocumentService(id, message);
+      const response = await chatWithDocumentService(id, message, canvasState);
       
       dispatch(fetchUsage());
       dispatch(fetchEntitlements());
