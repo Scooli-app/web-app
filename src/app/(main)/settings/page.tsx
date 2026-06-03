@@ -120,9 +120,9 @@ function getEffectiveAccessDisplayLabel(
 
   switch (source) {
     case "organization":
-      return "Pro via organização";
+      return "Pro (via organização)";
     case "both":
-      return "Pro pessoal + organização";
+      return "Pro (pessoal e organização)";
     default:
       return "Scooli Pro";
   }
@@ -246,7 +246,7 @@ function SettingsContent() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-foreground mb-2 sm:text-4xl">Definições</h1>
         <p className="text-lg text-muted-foreground">
-          Gerir a sua conta, subscrição e preferências.
+          Gere a tua conta, subscrição e preferências.
         </p>
       </div>
 
@@ -330,11 +330,11 @@ function SettingsContent() {
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <p className="text-sm font-medium text-foreground">
-                      Acesso efetivo
+                      O teu plano
                     </p>
                     <p className="text-sm text-muted-foreground">
                       {isEntitlementLoading
-                        ? "A validar acessos..."
+                        ? "A carregar..."
                         : effectiveAccessLabel}
                     </p>
                   </div>
@@ -344,17 +344,19 @@ function SettingsContent() {
                 </div>
               </div>
 
-              {/* Free Trial Plan Info */}
-              <div className="flex flex-wrap items-center gap-3 mb-4">
-                <span className="font-semibold text-foreground text-lg">
-                  {planInfo.name}
-                </span>
-                <span
-                  className={`inline-flex px-3 py-1 rounded-full text-sm font-medium ${statusBadge.className}`}
-                >
-                  {statusBadge.label}
-                </span>
-              </div>
+              {/* Free Trial Plan Info — hidden when org provides Pro access */}
+              {!hasOrganizationBackedAccess && (
+                <div className="flex flex-wrap items-center gap-3 mb-4">
+                  <span className="font-semibold text-foreground text-lg">
+                    {planInfo.name}
+                  </span>
+                  <span
+                    className={`inline-flex px-3 py-1 rounded-full text-sm font-medium ${statusBadge.className}`}
+                  >
+                    {statusBadge.label}
+                  </span>
+                </div>
+              )}
 
               {/* Free Trial Usage */}
               {showPersonalUpgradeOptions && usage && (
@@ -388,10 +390,10 @@ function SettingsContent() {
               {hasOrganizationBackedAccess && (
                 <div className="mb-6 rounded-xl border border-emerald-200 bg-emerald-50/70 p-4 dark:border-emerald-900/40 dark:bg-emerald-950/20">
                   <p className="text-sm font-medium text-emerald-800 dark:text-emerald-300">
-                    O teu acesso Pro está a ser fornecido pela tua organização.
+                    Tens acesso Pro através da tua organização.
                   </p>
                   <p className="mt-1 text-sm text-emerald-700/90 dark:text-emerald-200/90">
-                    A faturação pessoal continua no plano gratuito, mas o acesso efetivo na app mantém a experiência Pro.
+                    O teu acesso é gerido pela escola — não precisas de uma subscrição pessoal.
                   </p>
                 </div>
               )}
@@ -457,11 +459,11 @@ function SettingsContent() {
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <p className="text-sm font-medium text-foreground">
-                      Acesso efetivo
+                      O teu plano
                     </p>
                     <p className="text-sm text-muted-foreground">
                       {isEntitlementLoading
-                        ? "A validar acessos..."
+                        ? "A carregar..."
                         : effectiveAccessLabel}
                     </p>
                   </div>
