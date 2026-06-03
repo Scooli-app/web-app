@@ -17,7 +17,7 @@ export enum Routes {
   CURRICULUM_PLAN_IMPORT = "/curriculum-plan/importar",
   CALENDAR = "/calendar",
   CALENDAR_NEW = "/calendar/novo",
-  CALENDAR_SEQUENCES = "/calendar/sequencias",
+  CALENDAR_SEQUENCES = "/calendar/planos-letivos",
   CALENDAR_MONTH = "/calendar/mes",
   CALENDAR_VIEW = "/calendar/:id",
   COMMUNITY = "/community",

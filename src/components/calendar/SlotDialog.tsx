@@ -244,7 +244,7 @@ export function SlotDialog({
                     <p className="text-sm italic text-muted-foreground/60">
                       {isSlotGenerating
                         ? "A processar…"
-                        : "Gera os tópicos da sequência para ver os objetivos de aprendizagem."}
+                        : "Gera os tópicos do plano letivo para ver os objetivos de aprendizagem."}
                     </p>
                   )}
                 </div>

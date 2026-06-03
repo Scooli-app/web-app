@@ -56,14 +56,14 @@ function DeleteDialog({ timetable, isDeleting, onConfirm, onCancel }: DeleteDial
               <AlertTriangle className="h-6 w-6" />
             </div>
             <div>
-              <DialogTitle>Eliminar sequência?</DialogTitle>
+              <DialogTitle>Eliminar plano letivo?</DialogTitle>
               <DialogDescription className="mt-1">
                 Tens a certeza que queres eliminar{" "}
                 <span className="font-medium text-foreground">
                   &quot;{timetable?.title}&quot;
                 </span>
                 ? Escolhe se pretendes manter ou eliminar os documentos gerados
-                associados a esta sequência.
+                associados a este plano letivo.
               </DialogDescription>
             </div>
           </div>
@@ -76,7 +76,7 @@ function DeleteDialog({ timetable, isDeleting, onConfirm, onCancel }: DeleteDial
             className="w-full justify-start text-left h-auto py-3 px-4"
           >
             <div className="flex flex-col items-start">
-              <span className="font-medium">Eliminar apenas a sequência</span>
+              <span className="font-medium">Eliminar apenas o plano letivo</span>
               <span className="text-xs text-muted-foreground font-normal">
                 Os documentos gerados são mantidos
               </span>
@@ -94,7 +94,7 @@ function DeleteDialog({ timetable, isDeleting, onConfirm, onCancel }: DeleteDial
               <Trash2 className="mr-2 h-4 w-4 shrink-0" />
             )}
             <div className="flex flex-col items-start">
-              <span className="font-medium">Eliminar sequência e documentos</span>
+              <span className="font-medium">Eliminar plano letivo e documentos</span>
               <span className="text-xs text-red-200 font-normal">
                 Todos os documentos associados serão apagados
               </span>
@@ -163,7 +163,7 @@ function EditDialog({ timetable, isSaving, onSave, onCancel }: EditDialogProps) 
     <Dialog open={!!timetable} onOpenChange={(open) => !open && onCancel()}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Editar sequência</DialogTitle>
+          <DialogTitle>Editar plano letivo</DialogTitle>
           <DialogDescription>Altera o nome, turma, cor ou planificação ligada.</DialogDescription>
         </DialogHeader>
 
@@ -326,7 +326,7 @@ function SequenceCard({ timetable, onDelete, onEdit }: SequenceCardProps) {
             e.preventDefault();
             onEdit(timetable);
           }}
-          title="Editar sequência"
+          title="Editar plano letivo"
         >
           <Edit2 className="h-4 w-4" />
         </Button>
@@ -421,16 +421,16 @@ export default function SequenciasPage() {
             </Link>
           </Button>
           <div>
-            <h1 className="text-xl font-semibold">Minhas sequências</h1>
+            <h1 className="text-xl font-semibold">Planos letivos</h1>
             <p className="text-sm text-muted-foreground">
-              Todas as tuas sequências de aulas
+              Todos os teus planos letivos
             </p>
           </div>
         </div>
         <Button asChild size="sm">
           <Link href={Routes.CALENDAR_NEW}>
             <Plus className="mr-1.5 h-4 w-4" />
-            Nova sequência
+            Novo plano letivo
           </Link>
         </Button>
       </div>
@@ -443,15 +443,15 @@ export default function SequenciasPage() {
         <div className="flex flex-col items-center justify-center gap-4 rounded-lg border border-dashed border-border py-20 text-center">
           <CalendarDays className="h-12 w-12 text-muted-foreground" />
           <div>
-            <p className="font-medium text-foreground">Nenhuma sequência</p>
+            <p className="font-medium text-foreground">Nenhum plano letivo</p>
             <p className="mt-1 text-sm text-muted-foreground">
-              Cria a tua primeira sequência de aulas para começar a planificar.
+              Cria o teu primeiro plano letivo para começar a planificar.
             </p>
           </div>
           <Button asChild>
             <Link href={Routes.CALENDAR_NEW}>
               <Plus className="mr-2 h-4 w-4" />
-              Criar sequência
+              Criar plano letivo
             </Link>
           </Button>
         </div>

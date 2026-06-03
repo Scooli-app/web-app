@@ -128,7 +128,7 @@ const CALENDAR_NAV_ITEM: NavItem = {
   title: "Calendário",
   href: Routes.CALENDAR,
   icon: CalendarRange,
-  description: "Sequências de aulas e geração automática",
+  description: "Planos letivos e geração automática",
 };
 
 const CONTENT_CREATION: NavItem[] = [
