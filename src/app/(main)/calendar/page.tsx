@@ -215,8 +215,8 @@ function CalendarGridSkeleton({
   today: string;
 }) {
   return (
-    <div className="overflow-x-auto rounded-lg border border-border w-[169.14px]">
-      <div className="min-w-[169.14px] w-full">
+    <div className="overflow-x-auto rounded-lg border border-border w-full">
+      <div className="min-w-[640px] w-full">
         {/* Real day headers */}
         <div className="grid grid-cols-7 divide-x divide-border border-b bg-muted/20">
           {weekDays.map((day, i) => {
@@ -1216,95 +1216,94 @@ function CalendarPageInner() {
   if (!enabled) return null;
 
   return (
-    <div className="flex flex-col">
+    <div className="flex w-full flex-col">
       {/* ── Top bar ───────────────────────────────────────────────────── */}
-      <div className="sticky top-0 z-10 border-b bg-card/95 backdrop-blur px-4 py-2.5">
-        <div className="mx-auto flex max-w-[1400px] flex-wrap items-center gap-2">
-          <h1 className="mr-2 text-lg font-semibold">Calendário</h1>
+      <div className="sticky top-0 z-10 border-b bg-card/95 backdrop-blur px-4 pt-2.5 pb-2">
+        <div className="mx-auto max-w-[1400px] space-y-2">
+          {/* Row 1: navigation + action buttons */}
+          <div className="flex items-center gap-2">
+            <h1 className="mr-2 text-lg font-semibold">Calendário</h1>
 
-          <Button variant="outline" size="sm" onClick={goToday} className="h-8">
-            Hoje
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            onClick={prevWeek}
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            onClick={nextWeek}
-          >
-            <ArrowRight className="h-4 w-4" />
-          </Button>
-          <span className="min-w-[160px] text-sm font-medium text-foreground">
-            {formatWeekLabel(weekStart)}
-          </span>
+            <Button variant="outline" size="sm" onClick={goToday} className="h-8">
+              Hoje
+            </Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={prevWeek}>
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={nextWeek}>
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+            <span className="min-w-[160px] text-sm font-medium text-foreground">
+              {formatWeekLabel(weekStart)}
+            </span>
 
-          <div className="flex-1" />
+            <div className="flex-1" />
 
-          {/* Sequence filter chips */}
-          <div className="flex flex-wrap items-center gap-1.5">
-            {activeTimetables.map((t) => {
-              const isActive = filterIds.size === 0 || filterIds.has(t.id);
-              return (
-                <button
-                  key={t.id}
-                  type="button"
-                  onClick={() => toggleFilter(t.id)}
-                  className={`flex h-7 items-center gap-1.5 rounded-full border px-2.5 text-xs font-medium transition-all ${
-                    isActive
-                      ? "border-transparent text-white shadow-sm"
-                      : "border-border bg-transparent text-muted-foreground opacity-40"
-                  }`}
-                  style={
-                    isActive ? { backgroundColor: t.color || "#7F77DD" } : {}
-                  }
-                >
-                  <span
-                    className="h-1.5 w-1.5 shrink-0 rounded-full"
-                    style={{ backgroundColor: t.color || "#7F77DD" }}
-                  />
-                  {t.subject}
-                  {t.classLabel ? ` · ${t.classLabel}` : ""}
-                </button>
-              );
-            })}
+            <Button variant="outline" size="sm" asChild className="h-8">
+              <Link href={Routes.CALENDAR_SEQUENCES}>
+                <CalendarDays className="mr-1 h-3.5 w-3.5" />
+                Minhas sequências
+              </Link>
+            </Button>
+
+            <Button variant="outline" size="sm" asChild className="h-8">
+              <Link href={Routes.CALENDAR_NEW}>
+                <Plus className="mr-1 h-3.5 w-3.5" />
+                Nova sequência
+              </Link>
+            </Button>
+
+            {pendingThisWeek > 0 && (
+              <Button
+                size="sm"
+                className="h-8"
+                onClick={handleGenerateWeek}
+                disabled={generatingWeek}
+              >
+                {generatingWeek ? (
+                  <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Sparkles className="mr-1 h-3.5 w-3.5" />
+                )}
+                Gerar semana ({pendingThisWeek})
+              </Button>
+            )}
           </div>
 
-          <Button variant="outline" size="sm" asChild className="h-8">
-            <Link href={Routes.CALENDAR_SEQUENCES}>
-              <CalendarDays className="mr-1 h-3.5 w-3.5" />
-              Minhas sequências
-            </Link>
-          </Button>
-
-          <Button variant="outline" size="sm" asChild className="h-8">
-            <Link href={Routes.CALENDAR_NEW}>
-              <Plus className="mr-1 h-3.5 w-3.5" />
-              Nova sequência
-            </Link>
-          </Button>
-
-          {pendingThisWeek > 0 && (
-            <Button
-              size="sm"
-              className="h-8"
-              onClick={handleGenerateWeek}
-              disabled={generatingWeek}
-            >
-              {generatingWeek ? (
-                <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <Sparkles className="mr-1 h-3.5 w-3.5" />
-              )}
-              Gerar semana ({pendingThisWeek})
-            </Button>
-          )}
+          {/* Row 2: sequence filter chips — always rendered to hold height */}
+          <div className="flex flex-wrap items-center gap-1.5 min-h-[28px]">
+            {isLoadingTimetables ? (
+              <>
+                <div className="h-7 w-20 animate-pulse rounded-full bg-muted" />
+                <div className="h-7 w-28 animate-pulse rounded-full bg-muted" />
+                <div className="h-7 w-24 animate-pulse rounded-full bg-muted" />
+              </>
+            ) : (
+              activeTimetables.map((t) => {
+                const isActive = filterIds.size === 0 || filterIds.has(t.id);
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => toggleFilter(t.id)}
+                    className={`flex h-7 items-center gap-1.5 rounded-full border px-2.5 text-xs font-medium transition-all ${
+                      isActive
+                        ? "border-transparent text-white shadow-sm"
+                        : "border-border bg-transparent text-muted-foreground opacity-40"
+                    }`}
+                    style={isActive ? { backgroundColor: t.color || "#7F77DD" } : {}}
+                  >
+                    <span
+                      className="h-1.5 w-1.5 shrink-0 rounded-full"
+                      style={{ backgroundColor: t.color || "#7F77DD" }}
+                    />
+                    {t.subject}
+                    {t.classLabel ? ` · ${t.classLabel}` : ""}
+                  </button>
+                );
+              })
+            )}
+          </div>
         </div>
       </div>
 
@@ -1390,7 +1389,7 @@ function CalendarPageInner() {
             </div>
 
             {/* ── Desktop: 7-column grid (hidden on mobile) ────────── */}
-            <div className="hidden md:block overflow-x-auto rounded-lg border border-border">
+            <div className="hidden md:block overflow-x-auto rounded-lg border border-border w-full">
               <div className="min-w-[640px] w-full">
                 {/* Day headers */}
                 <div className="grid grid-cols-7 divide-x divide-border border-b bg-muted/20">
