@@ -15,19 +15,23 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
-import { Routes } from "@/shared/types";
+import { Routes, type Document } from "@/shared/types";
 import { selectIsHorarioPlanosEnabled } from "@/store/features/selectors";
-import { fetchTimetables, deleteTimetable } from "@/store/timetable/timetableSlice";
+import { fetchTimetables, deleteTimetable, updateTimetable } from "@/store/timetable/timetableSlice";
 import { useAppDispatch } from "@/store/hooks";
 import type { RootState } from "@/store/store";
 import type { Timetable } from "@/services/api/timetable.service";
+import { getDocuments } from "@/services/api/document.service";
 
 import {
   AlertTriangle,
   ArrowLeft,
   CalendarDays,
   ChevronRight,
+  Edit2,
   Loader2,
   Plus,
   Trash2,
@@ -110,14 +114,168 @@ function DeleteDialog({ timetable, isDeleting, onConfirm, onCancel }: DeleteDial
   );
 }
 
+// ── Edit dialog ───────────────────────────────────────────────────────────────
+
+interface EditDialogProps {
+  timetable: Timetable | null;
+  isSaving: boolean;
+  onSave: (data: { title: string; classLabel: string; color: string; linkedCurriculumPlan: string | null }) => void;
+  onCancel: () => void;
+}
+
+const TIMETABLE_COLORS = [
+  "#7F77DD", "#2BB5A0", "#E27060", "#4A90D9",
+  "#F5A623", "#5CB85C", "#E91E8C", "#9E9E9E",
+];
+
+function EditDialog({ timetable, isSaving, onSave, onCancel }: EditDialogProps) {
+  const [title, setTitle] = useState("");
+  const [classLabel, setClassLabel] = useState("");
+  const [color, setColor] = useState("");
+  const [plans, setPlans] = useState<Document[]>([]);
+  const [plansLoading, setPlansLoading] = useState(false);
+  const [linkedPlanId, setLinkedPlanId] = useState<string>("");
+
+  useEffect(() => {
+    if (!timetable) return;
+    setTitle(timetable.title);
+    setClassLabel(timetable.classLabel ?? "");
+    setColor(timetable.color ?? "#7F77DD");
+    setLinkedPlanId(timetable.linkedCurriculumPlan ?? "");
+    setPlansLoading(true);
+    getDocuments({ page: 1, limit: 50, filters: { documentType: "curriculum_plan" } })
+      .then((res) => setPlans(res.documents ?? []))
+      .catch(() => setPlans([]))
+      .finally(() => setPlansLoading(false));
+  }, [timetable?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (!timetable) return null;
+
+  const periodLabel = (() => {
+    const fmt = (iso: string) =>
+      new Date(`${iso}T00:00:00`).toLocaleDateString("pt-PT", {
+        day: "numeric", month: "short", year: "numeric",
+      });
+    return `${fmt(timetable.periodStart)} – ${fmt(timetable.periodEnd)}`;
+  })();
+
+  return (
+    <Dialog open={!!timetable} onOpenChange={(open) => !open && onCancel()}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Editar sequência</DialogTitle>
+          <DialogDescription>Altera o nome, turma, cor ou planificação ligada.</DialogDescription>
+        </DialogHeader>
+
+        {/* Read-only summary */}
+        <div className="rounded-lg border border-border bg-muted/30 px-4 py-3 text-sm text-muted-foreground space-y-0.5">
+          <p>
+            <span className="font-medium text-foreground">{timetable.subject}</span>
+            {" · "}
+            {timetable.gradeLevel}.º ano
+          </p>
+          <p>{periodLabel}</p>
+        </div>
+
+        <div className="space-y-4">
+          {/* Title */}
+          <div className="space-y-1.5">
+            <Label>Nome</Label>
+            <Input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder={timetable.title}
+            />
+          </div>
+
+          {/* Turma + Cor in a row */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label>Turma</Label>
+              <Input
+                placeholder="Ex: A"
+                value={classLabel}
+                onChange={(e) => setClassLabel(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Cor</Label>
+              <div className="flex flex-wrap gap-1.5 pt-0.5">
+                {TIMETABLE_COLORS.map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => setColor(c)}
+                    className={`h-6 w-6 rounded-full border-2 transition-transform hover:scale-110 ${
+                      color === c ? "border-foreground scale-110" : "border-transparent"
+                    }`}
+                    style={{ backgroundColor: c }}
+                    aria-label={c}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Planificação ligada */}
+          <div className="space-y-1.5">
+            <Label>Planificação ligada</Label>
+            {plansLoading ? (
+              <div className="flex items-center gap-2 py-1 text-xs text-muted-foreground">
+                <Loader2 className="h-3 w-3 animate-spin" />A carregar…
+              </div>
+            ) : (
+              <select
+                className="h-9 w-full rounded-lg border border-input bg-background px-2 text-sm"
+                value={linkedPlanId}
+                onChange={(e) => setLinkedPlanId(e.target.value)}
+              >
+                <option value="">Nenhuma</option>
+                {plans.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.title}
+                    {p.subject ? ` · ${p.subject}` : ""}
+                    {p.gradeLevel ? ` · ${p.gradeLevel}.º ano` : ""}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+        </div>
+
+        <DialogFooter className="pt-2">
+          <Button variant="ghost" onClick={onCancel} disabled={isSaving}>
+            Cancelar
+          </Button>
+          <Button
+            onClick={() =>
+              onSave({
+                title: title.trim() || timetable.title,
+                classLabel: classLabel.trim(),
+                color,
+                linkedCurriculumPlan: linkedPlanId || null,
+              })
+            }
+            disabled={isSaving || !title.trim()}
+          >
+            {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Guardar
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // ── Sequence card ─────────────────────────────────────────────────────────────
 
 interface SequenceCardProps {
   timetable: Timetable;
   onDelete: (timetable: Timetable) => void;
+  onEdit: (timetable: Timetable) => void;
 }
 
-function SequenceCard({ timetable, onDelete }: SequenceCardProps) {
+function SequenceCard({ timetable, onDelete, onEdit }: SequenceCardProps) {
   const color = timetable.color || "#7F77DD";
   const isActive = timetable.status === "active";
 
@@ -163,6 +321,18 @@ function SequenceCard({ timetable, onDelete }: SequenceCardProps) {
         <Button
           variant="ghost"
           size="icon"
+          className="h-8 w-8 text-muted-foreground hover:bg-muted"
+          onClick={(e) => {
+            e.preventDefault();
+            onEdit(timetable);
+          }}
+          title="Editar sequência"
+        >
+          <Edit2 className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
           className="h-8 w-8 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
           onClick={(e) => {
             e.preventDefault();
@@ -191,6 +361,8 @@ export default function SequenciasPage() {
 
   const [pendingDelete, setPendingDelete] = useState<Timetable | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [pendingEdit, setPendingEdit] = useState<Timetable | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (!enabled) {
@@ -208,6 +380,32 @@ export default function SequenciasPage() {
     } finally {
       setIsDeleting(false);
       setPendingDelete(null);
+    }
+  };
+
+  const handleEditSave = async (data: {
+    title: string;
+    classLabel: string;
+    color: string;
+    linkedCurriculumPlan: string | null;
+  }) => {
+    if (!pendingEdit) return;
+    setIsSaving(true);
+    try {
+      await dispatch(
+        updateTimetable({
+          id: pendingEdit.id,
+          params: {
+            title: data.title,
+            classLabel: data.classLabel,
+            color: data.color,
+            linkedCurriculumPlan: data.linkedCurriculumPlan ?? undefined,
+          },
+        })
+      ).unwrap();
+    } finally {
+      setIsSaving(false);
+      setPendingEdit(null);
     }
   };
 
@@ -260,7 +458,12 @@ export default function SequenciasPage() {
       ) : (
         <div className="space-y-2">
           {timetables.map((t) => (
-            <SequenceCard key={t.id} timetable={t} onDelete={setPendingDelete} />
+            <SequenceCard
+              key={t.id}
+              timetable={t}
+              onDelete={setPendingDelete}
+              onEdit={setPendingEdit}
+            />
           ))}
         </div>
       )}
@@ -270,6 +473,13 @@ export default function SequenciasPage() {
         isDeleting={isDeleting}
         onConfirm={handleDeleteConfirm}
         onCancel={() => setPendingDelete(null)}
+      />
+
+      <EditDialog
+        timetable={pendingEdit}
+        isSaving={isSaving}
+        onSave={handleEditSave}
+        onCancel={() => setPendingEdit(null)}
       />
     </div>
   );

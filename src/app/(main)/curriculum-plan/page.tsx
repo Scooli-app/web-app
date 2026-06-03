@@ -1,24 +1,36 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { selectIsCurriculumPlanEnabled } from "@/store/features/selectors";
-import { Routes } from "@/shared/types";
-import { CalendarDays, Sparkles, Upload } from "lucide-react";
+import { Routes, type Document } from "@/shared/types";
+import { getDocuments } from "@/services/api/document.service";
+import { CalendarDays, ChevronRight, Loader2, Sparkles, Upload } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
 import { useSelector } from "react-redux";
 
 export default function CurriculumPlanLandingPage() {
   const enabled = useSelector(selectIsCurriculumPlanEnabled);
   const router = useRouter();
+  const [plans, setPlans] = useState<Document[]>([]);
+  const [plansLoading, setPlansLoading] = useState(true);
 
   useEffect(() => {
     if (!enabled) {
       router.replace(Routes.DASHBOARD);
     }
   }, [enabled, router]);
+
+  useEffect(() => {
+    if (!enabled) return;
+    setPlansLoading(true);
+    getDocuments({ page: 1, limit: 50, filters: { documentType: "curriculum_plan" } })
+      .then((res) => setPlans(res.documents ?? []))
+      .catch(() => setPlans([]))
+      .finally(() => setPlansLoading(false));
+  }, [enabled]);
 
   if (!enabled) return null;
 
@@ -75,6 +87,56 @@ export default function CurriculumPlanLandingPage() {
             </Button>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Existing plans */}
+      <div className="space-y-3">
+        <h2 className="text-base font-semibold">As tuas planificações</h2>
+
+        {plansLoading ? (
+          <div className="flex items-center justify-center py-10">
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          </div>
+        ) : plans.length === 0 ? (
+          <div className="rounded-lg border border-dashed border-border py-10 text-center text-sm text-muted-foreground">
+            Ainda não tens planificações. Cria ou importa a primeira acima.
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {plans.map((plan) => (
+              <Link
+                key={plan.id}
+                href={`${Routes.CURRICULUM_PLAN}/${plan.id}`}
+                className="flex items-center gap-3 rounded-lg border border-border bg-card px-4 py-3 transition hover:border-primary/50 hover:shadow-sm"
+              >
+                <CalendarDays className="h-4 w-4 shrink-0 text-primary" />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-medium text-foreground">
+                    {plan.title}
+                  </p>
+                  {(plan.subject ?? plan.gradeLevel) && (
+                    <p className="text-xs text-muted-foreground">
+                      {[
+                        plan.subject,
+                        plan.gradeLevel ? `${plan.gradeLevel}.º ano` : null,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </p>
+                  )}
+                </div>
+                <p className="shrink-0 text-xs text-muted-foreground">
+                  {new Date(plan.createdAt).toLocaleDateString("pt-PT", {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                  })}
+                </p>
+                <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

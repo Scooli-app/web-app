@@ -13,19 +13,7 @@ import {
 } from "react";
 import { useSelector } from "react-redux";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 
 import { Routes } from "@/shared/types";
 import { selectIsHorarioPlanosEnabled } from "@/store/features/selectors";
@@ -37,171 +25,34 @@ import { fetchTimetables } from "@/store/timetable/timetableSlice";
 import {
   generateLesson as generateLessonStream,
   generateWeek as generateWeekStream,
-  listLessonDocuments,
   listLessons,
   regenerateLesson as regenerateLessonStream,
   skipLesson as skipLessonService,
   updateLesson as updateLessonService,
-  type LessonDocument,
   type LessonSlot,
   type LessonSlotType,
-  type Timetable,
 } from "@/services/api/timetable.service";
 
 import {
-  AlertTriangle,
   ArrowLeft,
   ArrowRight,
   CalendarDays,
-  CheckCircle2,
   ChevronDown,
-  Clock,
-  ExternalLink,
-  FileText,
+  ChevronUp,
   Loader2,
   Plus,
-  RotateCcw,
-  SkipForward,
   Sparkles,
 } from "lucide-react";
 
-// ─────────────────────── Types / helpers ─────────────────────────────────────
+import { SLOT_STATUS_CONFIG } from "@/shared/constants/lessonSlotStatus";
+import { SlotDialog } from "@/components/calendar/SlotDialog";
+import { SlotSkeleton } from "@/components/calendar/SlotSkeleton";
+import type { SlotWithTimetable, DayMap } from "@/shared/types/calendar";
+import { toIso, addDays, getWeekStart, formatWeekLabel, hexToRgb, DAY_LABELS } from "@/shared/utils/calendar";
 
-/** Maps a lesson_slot_documents.documentRole to the correct Next.js route prefix. */
-const ROLE_ROUTE: Record<string, string> = {
-  lessonPlan: Routes.LESSON_PLAN,
-  curriculumPlan: Routes.CURRICULUM_PLAN,
-  quiz: Routes.QUIZ,
-  test: Routes.TEST,
-  worksheet: Routes.WORKSHEET,
-  presentation: Routes.PRESENTATION,
-};
-function docUrl(role: string, documentId: string): string {
-  return `${ROLE_ROUTE[role] ?? Routes.LESSON_PLAN}/${documentId}`;
-}
+// ─────────────────────── Local helpers ───────────────────────────────────────
 
-interface SlotWithTimetable extends LessonSlot {
-  timetable: Timetable;
-}
-
-type DayMap = Map<string, SlotWithTimetable[]>;
-
-function getWeekStart(date: Date = new Date()): Date {
-  const d = new Date(date);
-  const day = d.getDay();
-  const diff = day === 0 ? -6 : 1 - day;
-  d.setDate(d.getDate() + diff);
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
-
-function toIso(d: Date): string {
-  // Use local date components — toISOString() converts to UTC which shifts the date
-  // when the local timezone is ahead of UTC (e.g. Portugal WEST = UTC+1 in summer).
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
-function addDays(d: Date, n: number): Date {
-  const r = new Date(d);
-  r.setDate(r.getDate() + n);
-  return r;
-}
-
-function formatWeekLabel(weekStart: Date): string {
-  const end = addDays(weekStart, 6);
-  const fmt = (d: Date) =>
-    d.toLocaleDateString("pt-PT", { day: "numeric", month: "short" });
-  return `${fmt(weekStart)} – ${fmt(end)}`;
-}
-
-function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
-  const m = hex.replace("#", "").match(/.{2}/g);
-  if (!m || m.length < 3) return null;
-  return {
-    r: parseInt(m[0], 16),
-    g: parseInt(m[1], 16),
-    b: parseInt(m[2], 16),
-  };
-}
-
-const DAY_LABELS = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
-
-type BadgeCfg = {
-  label: string;
-  badgeCls: string;
-  dotCls: string;
-  icon: React.ReactNode;
-};
-
-const STATUS_CONFIG: Record<LessonSlot["status"], BadgeCfg> = {
-  pending: {
-    label: "Pendente",
-    badgeCls: "bg-muted text-muted-foreground border",
-    dotCls: "bg-muted-foreground/50",
-    icon: <Clock className="h-3 w-3" />,
-  },
-  generating: {
-    label: "A gerar",
-    badgeCls:
-      "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-950 dark:text-blue-300",
-    dotCls: "bg-blue-500 animate-pulse",
-    icon: <Loader2 className="h-3 w-3 animate-spin" />,
-  },
-  completed: {
-    label: "Gerado",
-    badgeCls:
-      "bg-green-100 text-green-800 border-green-200 dark:bg-green-950 dark:text-green-300",
-    dotCls: "bg-green-500",
-    icon: <CheckCircle2 className="h-3 w-3" />,
-  },
-  failed: {
-    label: "Falhou",
-    badgeCls:
-      "bg-red-100 text-red-800 border-red-200 dark:bg-red-950 dark:text-red-300",
-    dotCls: "bg-red-500",
-    icon: <AlertTriangle className="h-3 w-3" />,
-  },
-  skipped: {
-    label: "Ignorado",
-    badgeCls: "bg-muted text-muted-foreground/60 border",
-    dotCls: "bg-muted-foreground/30",
-    icon: <SkipForward className="h-3 w-3" />,
-  },
-};
-
-// ─────────────────────── Skeleton components ─────────────────────────────────
-
-/** Single card-shaped skeleton with optional timetable color on the left border. */
-function SlotSkeleton({ color }: { color?: string }) {
-  return (
-    <div
-      className="animate-pulse rounded-md border border-border/60 min-h-[64px]"
-      style={{ borderLeftWidth: "3px", borderLeftColor: color ?? "#d1d5db" }}
-    >
-      <div className="px-2 py-1.5 flex flex-col gap-1.5">
-        {/* Topic title line(s) */}
-        <div className="flex items-start gap-1">
-          <div className="mt-0.5 h-2 w-3 shrink-0 rounded bg-muted" />
-          <div className="flex-1 space-y-1">
-            <div className="h-2.5 w-4/5 rounded bg-muted" />
-            <div className="h-2.5 w-3/5 rounded bg-muted" />
-          </div>
-        </div>
-        {/* Subject */}
-        <div
-          className="h-2.5 w-3/5 rounded"
-          style={{ background: color ? `${color}35` : "hsl(var(--muted))" }}
-        />
-        {/* Status */}
-        <div className="flex items-center gap-1">
-          <div className="h-1.5 w-1.5 rounded-full bg-muted/60" />
-          <div className="h-2 w-12 rounded bg-muted/60" />
-          <div className="h-2 w-8 rounded bg-muted/40 ml-1" />
-        </div>
-      </div>
-    </div>
-  );
-}
+const STATUS_CONFIG = SLOT_STATUS_CONFIG;
 
 /**
  * Full week-grid skeleton shown while timetables are still loading.
@@ -274,6 +125,7 @@ interface LessonCardProps {
   onOpen: (slot: SlotWithTimetable) => void;
   onDragStart: (e: React.DragEvent, slot: SlotWithTimetable) => void;
   onCardDrop: (e: React.DragEvent, slot: SlotWithTimetable) => void;
+  highlightPending?: boolean;
 }
 
 function LessonCard({
@@ -281,6 +133,7 @@ function LessonCard({
   onOpen,
   onDragStart,
   onCardDrop,
+  highlightPending = false,
 }: LessonCardProps) {
   const { timetable } = slot;
   const color = timetable.color || "#7F77DD";
@@ -322,6 +175,10 @@ function LessonCard({
       }}
       className={`group rounded-md border text-left transition-all ${
         isDropTarget ? "ring-2 ring-primary/50 ring-offset-1" : ""
+      } ${
+        highlightPending && slot.status === "pending" && !isHoliday
+          ? "ring-2 ring-primary/40 ring-offset-1 animate-pulse"
+          : ""
       } ${
         isHoliday
           ? "cursor-default opacity-50"
@@ -392,347 +249,6 @@ function LessonCard({
   );
 }
 
-// ─────────────────────── Slot dialog ─────────────────────────────────────────
-
-interface SlotDialogProps {
-  slot: SlotWithTimetable | null;
-  /** True only when THIS specific slot is being generated. Other slots may generate in parallel. */
-  isSlotGenerating: boolean;
-  onClose: () => void;
-  onGenerate: (slot: SlotWithTimetable, message?: string) => void;
-  onRegenerate: (slot: SlotWithTimetable, message?: string) => void;
-  onSkip: (slot: SlotWithTimetable) => void;
-  onTypeChange: (slot: SlotWithTimetable, type: LessonSlotType) => void;
-  onTitleChange: (slot: SlotWithTimetable, title: string) => void;
-}
-
-function SlotDialog({
-  slot,
-  isSlotGenerating,
-  onClose,
-  onGenerate,
-  onRegenerate,
-  onSkip,
-  onTypeChange,
-  onTitleChange,
-}: SlotDialogProps) {
-  const router = useRouter();
-  const [editingTitle, setEditingTitle] = useState(false);
-  const [draftTitle, setDraftTitle] = useState("");
-  const [customMessage, setCustomMessage] = useState("");
-  const [slotDocs, setSlotDocs] = useState<LessonDocument[]>([]);
-  const [docsLoading, setDocsLoading] = useState(false);
-  const [docsOpen, setDocsOpen] = useState(true);
-
-  const slotId = slot?.id;
-  useEffect(() => {
-    if (slot) {
-      setDraftTitle(slot.topicTitle || "");
-      setEditingTitle(false);
-      setCustomMessage("");
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [slotId]);
-
-  // Fetch linked documents whenever a completed slot is opened
-  useEffect(() => {
-    if (!slot || slot.status !== "completed") {
-      setSlotDocs([]);
-      return;
-    }
-    setDocsLoading(true);
-    listLessonDocuments(slot.timetable.id, slot.id)
-      .then(setSlotDocs)
-      .catch(() => setSlotDocs([]))
-      .finally(() => setDocsLoading(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [slotId]);
-
-  if (!slot) return null;
-
-  const color = slot.timetable.color || "#7F77DD";
-  const cfg = STATUS_CONFIG[slot.status];
-  const canGenerate =
-    (slot.status === "pending" || slot.status === "failed") &&
-    !isSlotGenerating;
-  const isCompleted = slot.status === "completed";
-  const isAssessment = slot.slotType === "ASSESSMENT";
-  const isHoliday = slot.slotType === "HOLIDAY";
-
-  const handleTitleSave = () => {
-    if (draftTitle.trim() !== slot.topicTitle) {
-      onTitleChange(slot, draftTitle.trim());
-    }
-    setEditingTitle(false);
-  };
-
-  const dateLabel = new Date(`${slot.slotDate}T00:00:00`).toLocaleDateString(
-    "pt-PT",
-    { weekday: "long", day: "numeric", month: "long" },
-  );
-
-  return (
-    <Dialog open={!!slot} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-lg gap-0 p-0 overflow-hidden">
-        {/* Colored header strip */}
-        <div className="h-1 w-full" style={{ background: color }} />
-        <div className="p-6">
-          <DialogHeader className="mb-4">
-            {/* Sequence pill */}
-            <div className="mb-3 flex items-center gap-2">
-              <span
-                className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium text-white"
-                style={{ backgroundColor: color }}
-              >
-                <span className="h-1.5 w-1.5 rounded-full bg-white/70" />
-                {slot.timetable.subject}
-                {slot.timetable.classLabel
-                  ? ` · ${slot.timetable.classLabel}`
-                  : ""}
-              </span>
-              <Badge className={`gap-1 border text-xs ${cfg.badgeCls}`}>
-                {cfg.icon}
-                {cfg.label}
-              </Badge>
-              {isAssessment && (
-                <Badge
-                  variant="outline"
-                  className="text-xs text-amber-600 border-amber-300"
-                >
-                  Avaliação
-                </Badge>
-              )}
-            </div>
-
-            {/* Editable title */}
-            {editingTitle ? (
-              <Input
-                autoFocus
-                value={draftTitle}
-                onChange={(e) => setDraftTitle(e.target.value)}
-                onBlur={handleTitleSave}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") handleTitleSave();
-                  if (e.key === "Escape") setEditingTitle(false);
-                }}
-                className="h-9 text-base font-semibold"
-              />
-            ) : (
-              <DialogTitle
-                className="cursor-text text-left text-base leading-snug hover:underline decoration-dashed underline-offset-2"
-                onClick={() => !isHoliday && setEditingTitle(true)}
-                title={isHoliday ? undefined : "Clica para editar o tópico"}
-              >
-                {slot.topicTitle ||
-                  (isHoliday
-                    ? "Feriado / Sem aula"
-                    : "Sem tópico — clica para editar")}
-              </DialogTitle>
-            )}
-
-            <DialogDescription className="mt-1 flex items-center gap-1.5 text-sm">
-              <Clock className="h-3.5 w-3.5" />
-              Aula {slot.sequenceNumber} · {dateLabel}
-              {slot.durationMinutes > 0 && ` · ${slot.durationMinutes} min`}
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            {/* Type selector */}
-            {!isHoliday && (
-              <div className="flex items-center gap-2">
-                <Label className="text-xs text-muted-foreground shrink-0">
-                  Tipo:
-                </Label>
-                <select
-                  className="h-8 flex-1 rounded-lg border border-input bg-background px-2 text-xs"
-                  value={slot.slotType}
-                  onChange={(e) =>
-                    onTypeChange(slot, e.target.value as LessonSlotType)
-                  }
-                >
-                  <option value="LESSON">Aula</option>
-                  <option value="ASSESSMENT">Avaliação</option>
-                  <option value="HOLIDAY">Feriado</option>
-                </select>
-              </div>
-            )}
-
-            {/* Aprendizagens Essenciais — always shown; populated by backend after generation */}
-            {!isHoliday && (
-              <>
-                <Separator />
-                <div className="space-y-1.5">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    Objetivos de Aprendizagem
-                  </p>
-                  {slot.description ? (
-                    <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-line">
-                      {slot.description}
-                    </p>
-                  ) : (
-                    <p className="text-sm italic text-muted-foreground/60">
-                      {isSlotGenerating
-                        ? "A processar…"
-                        : "Gera os tópicos da sequência para ver os objetivos de aprendizagem."}
-                    </p>
-                  )}
-                </div>
-              </>
-            )}
-
-            {/* Documents accordion — shown when slot has generated documents */}
-            {(isCompleted || docsLoading) && (
-              <>
-                <Separator />
-                <div>
-                  <button
-                    type="button"
-                    onClick={() => setDocsOpen((p) => !p)}
-                    className="flex w-full items-center justify-between py-0.5"
-                  >
-                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      Documentos gerados
-                      {slotDocs.length > 0 && (
-                        <span className="ml-1.5 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] text-primary">
-                          {slotDocs.length}
-                        </span>
-                      )}
-                    </p>
-                    <ChevronDown
-                      className={`h-3.5 w-3.5 text-muted-foreground transition-transform ${
-                        docsOpen ? "rotate-180" : ""
-                      }`}
-                    />
-                  </button>
-                  {docsOpen && (
-                    <div className="mt-1.5 space-y-1">
-                      {docsLoading ? (
-                        <div className="flex items-center gap-2 py-1 text-xs text-muted-foreground">
-                          <Loader2 className="h-3 w-3 animate-spin" />A carregar
-                          documentos…
-                        </div>
-                      ) : slotDocs.length === 0 ? (
-                        <p className="py-1 text-xs text-muted-foreground">
-                          Nenhum documento encontrado.
-                        </p>
-                      ) : (
-                        slotDocs.map((doc) => (
-                          <button
-                            key={doc.id}
-                            type="button"
-                            onClick={() => {
-                              onClose();
-                              router.push(
-                                docUrl(doc.documentRole, doc.documentId),
-                              );
-                            }}
-                            className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm transition-colors hover:bg-muted"
-                          >
-                            <FileText className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                            <span className="flex-1 truncate">{doc.title}</span>
-                            <ExternalLink className="h-3 w-3 shrink-0 text-muted-foreground/40" />
-                          </button>
-                        ))
-                      )}
-                    </div>
-                  )}
-                </div>
-              </>
-            )}
-
-            {/* Linked curriculum plan */}
-            {slot.timetable.linkedCurriculumPlan && (
-              <a
-                href={`/curriculum-plan/${slot.timetable.linkedCurriculumPlan}`}
-                className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
-                target="_blank"
-                rel="noreferrer"
-              >
-                <ExternalLink className="h-3 w-3" />
-                Ver planificação ligada
-              </a>
-            )}
-
-            {/* Custom instruction */}
-            {(canGenerate || isCompleted) && (
-              <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">
-                  Instrução adicional (opcional)
-                </Label>
-                <Input
-                  placeholder="Ex: inclui atividade prática em grupo"
-                  value={customMessage}
-                  onChange={(e) => setCustomMessage(e.target.value)}
-                  className="h-9"
-                />
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Footer actions */}
-        {!isHoliday && (
-          <DialogFooter className="border-t bg-muted/30 px-6 py-4 gap-2">
-            {canGenerate && (
-              <Button
-                onClick={() => onGenerate(slot, customMessage || undefined)}
-                className="h-9 rounded-lg"
-              >
-                <Sparkles className="mr-1.5 h-4 w-4" />
-                Gerar plano de aula
-              </Button>
-            )}
-            {isSlotGenerating && (
-              <Button disabled className="h-9 rounded-lg">
-                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />A gerar…
-              </Button>
-            )}
-            {isCompleted && (
-              <>
-                <Button
-                  onClick={() => {
-                    const first = slotDocs[0];
-                    onClose();
-                    router.push(
-                      first
-                        ? docUrl(first.documentRole, first.documentId)
-                        : Routes.DOCUMENTS,
-                    );
-                  }}
-                  className="h-9 rounded-lg"
-                >
-                  <FileText className="mr-1.5 h-4 w-4" />
-                  Abrir plano de aula
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => onRegenerate(slot, customMessage || undefined)}
-                  disabled={isSlotGenerating}
-                  className="h-9 rounded-lg"
-                >
-                  <RotateCcw className="mr-1.5 h-4 w-4" />
-                  Regenerar
-                </Button>
-              </>
-            )}
-            {slot.status !== "skipped" && slot.status !== "completed" && (
-              <Button
-                variant="ghost"
-                className="h-9 rounded-lg text-muted-foreground ml-auto"
-                onClick={() => onSkip(slot)}
-              >
-                <SkipForward className="mr-1.5 h-4 w-4" />
-                Ignorar
-              </Button>
-            )}
-          </DialogFooter>
-        )}
-      </DialogContent>
-    </Dialog>
-  );
-}
-
 // ─────────────────────── Main page ───────────────────────────────────────────
 
 /** Suspense wrapper required by useSearchParams in Next.js App Router. */
@@ -799,6 +315,7 @@ function CalendarPageInner() {
   );
   const [generatingWeek, setGeneratingWeek] = useState(false);
   const [dragOverDay, setDragOverDay] = useState<string | null>(null);
+  const [previewGenerating, setPreviewGenerating] = useState(false);
 
   // Feature gate
   useEffect(() => {
@@ -906,6 +423,26 @@ function CalendarPageInner() {
   const prevWeek = () => setWeekStart((p) => addDays(p, -7));
   const nextWeek = () => setWeekStart((p) => addDays(p, 7));
   const goToday = () => setWeekStart(getWeekStart());
+
+  // Keyboard shortcuts: ← prev week, → next week, T = today
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (selectedSlot !== null) return;
+      const target = e.target as HTMLElement;
+      if (
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.tagName === "SELECT" ||
+        target.isContentEditable
+      )
+        return;
+      if (e.key === "ArrowLeft") { e.preventDefault(); prevWeek(); }
+      else if (e.key === "ArrowRight") { e.preventDefault(); nextWeek(); }
+      else if (e.key === "t" || e.key === "T") { e.preventDefault(); goToday(); }
+    };
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
+  }, [selectedSlot]);
   const toggleFilter = (id: string) =>
     setFilterIds((prev) => {
       const next = new Set(prev);
@@ -1063,7 +600,6 @@ function CalendarPageInner() {
 
   const handleGenerateLesson = useCallback(
     async (slot: SlotWithTimetable, message?: string) => {
-      setSelectedSlot(null);
       startSlotGenerating(slot.id);
       patchSlotStatus(slot.timetable.id, slot.id, "generating");
       try {
@@ -1075,6 +611,7 @@ function CalendarPageInner() {
             onDone: () => {
               patchSlotStatus(slot.timetable.id, slot.id, "completed");
               void refreshTimetable(slot.timetable.id);
+              setSelectedSlot(null);
             },
             onError: () =>
               patchSlotStatus(slot.timetable.id, slot.id, "failed"),
@@ -1090,7 +627,6 @@ function CalendarPageInner() {
 
   const handleRegenerateLesson = useCallback(
     async (slot: SlotWithTimetable, message?: string) => {
-      setSelectedSlot(null);
       startSlotGenerating(slot.id);
       patchSlotStatus(slot.timetable.id, slot.id, "generating");
       try {
@@ -1102,6 +638,7 @@ function CalendarPageInner() {
             onDone: () => {
               patchSlotStatus(slot.timetable.id, slot.id, "completed");
               void refreshTimetable(slot.timetable.id);
+              setSelectedSlot(null);
             },
             onError: () =>
               patchSlotStatus(slot.timetable.id, slot.id, "failed"),
@@ -1224,6 +761,19 @@ function CalendarPageInner() {
           <div className="flex items-center gap-2">
             <h1 className="mr-2 text-lg font-semibold">Calendário</h1>
 
+            {/* View toggle */}
+            <div className="flex items-center rounded-lg border border-border overflow-hidden">
+              <span className="px-3 py-1 text-xs font-medium bg-primary text-primary-foreground">
+                Semana
+              </span>
+              <Link
+                href={Routes.CALENDAR_MONTH}
+                className="px-3 py-1 text-xs font-medium text-muted-foreground hover:bg-muted transition-colors"
+              >
+                Mês
+              </Link>
+            </div>
+
             <Button variant="outline" size="sm" onClick={goToday} className="h-8">
               Hoje
             </Button>
@@ -1257,7 +807,9 @@ function CalendarPageInner() {
               <Button
                 size="sm"
                 className="h-8"
-                onClick={handleGenerateWeek}
+                onClick={() => { setPreviewGenerating(false); void handleGenerateWeek(); }}
+                onMouseEnter={() => setPreviewGenerating(true)}
+                onMouseLeave={() => setPreviewGenerating(false)}
                 disabled={generatingWeek}
               >
                 {generatingWeek ? (
@@ -1289,7 +841,7 @@ function CalendarPageInner() {
                     className={`flex h-7 items-center gap-1.5 rounded-full border px-2.5 text-xs font-medium transition-all ${
                       isActive
                         ? "border-transparent text-white shadow-sm"
-                        : "border-border bg-transparent text-muted-foreground opacity-40"
+                        : "border-border bg-transparent text-muted-foreground/50 hover:text-muted-foreground hover:border-border/80"
                     }`}
                     style={isActive ? { backgroundColor: t.color || "#7F77DD" } : {}}
                   >
@@ -1373,14 +925,50 @@ function CalendarPageInner() {
                             .map((t) => (
                               <SlotSkeleton key={t.id} color={t.color} />
                             ))
-                        : daySlots.map((slot) => (
-                            <LessonCard
-                              key={slot.id}
-                              slot={slot}
-                              onOpen={setSelectedSlot}
-                              onDragStart={handleDragStart}
-                              onCardDrop={handleCardDrop}
-                            />
+                        : daySlots.map((slot, slotIdx) => (
+                            <div key={slot.id} className="flex items-stretch gap-1">
+                              <div className="flex flex-col gap-0.5">
+                                <button
+                                  type="button"
+                                  disabled={slotIdx === 0}
+                                  onClick={() => {
+                                    const prev = daySlots[slotIdx - 1];
+                                    if (prev) void handleCardDrop(
+                                      { dataTransfer: { getData: (k: string) => k === "slotId" ? slot.id : k === "timetableId" ? slot.timetable.id : slot.slotDate } } as unknown as React.DragEvent,
+                                      prev,
+                                    );
+                                  }}
+                                  className="flex-1 rounded px-0.5 text-muted-foreground hover:bg-muted disabled:opacity-20"
+                                  aria-label="Mover para cima"
+                                >
+                                  <ChevronUp className="h-3.5 w-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={slotIdx === daySlots.length - 1}
+                                  onClick={() => {
+                                    const next = daySlots[slotIdx + 1];
+                                    if (next) void handleCardDrop(
+                                      { dataTransfer: { getData: (k: string) => k === "slotId" ? slot.id : k === "timetableId" ? slot.timetable.id : slot.slotDate } } as unknown as React.DragEvent,
+                                      next,
+                                    );
+                                  }}
+                                  className="flex-1 rounded px-0.5 text-muted-foreground hover:bg-muted disabled:opacity-20"
+                                  aria-label="Mover para baixo"
+                                >
+                                  <ChevronDown className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
+                              <div className="flex-1">
+                                <LessonCard
+                                  slot={slot}
+                                  onOpen={setSelectedSlot}
+                                  onDragStart={handleDragStart}
+                                  onCardDrop={handleCardDrop}
+                                  highlightPending={previewGenerating}
+                                />
+                              </div>
+                            </div>
                           ))}
                     </div>
                   </div>
@@ -1451,7 +1039,10 @@ function CalendarPageInner() {
                                 <SlotSkeleton key={t.id} color={t.color} />
                               ))}
                             </div>
-                          ) : null
+                          ) : (
+                            // Weekend placeholder — keeps the column sized during load
+                            <div className="min-h-[180px]" />
+                          )
                         ) : (
                           daySlots.map((slot) => (
                             <LessonCard
@@ -1460,6 +1051,7 @@ function CalendarPageInner() {
                               onOpen={setSelectedSlot}
                               onDragStart={handleDragStart}
                               onCardDrop={handleCardDrop}
+                              highlightPending={previewGenerating}
                             />
                           ))
                         )}

@@ -28,6 +28,7 @@ import { Routes as AppRoutes, type Document } from "@/shared/types";
 import { getDocuments } from "@/services/api/document.service";
 import type { RecurringSlot } from "@/services/api/timetable.service";
 import { cn } from "@/shared/utils/utils";
+import { getPortugueseHolidays } from "@/shared/constants/portugueseHolidays";
 import {
   ArrowLeft,
   ArrowRight,
@@ -41,6 +42,7 @@ import {
   Plus,
   Settings2,
   Sparkles,
+  Trash2,
   X,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -98,14 +100,24 @@ const LOADING_STEPS = [
   "Revisão pedagógica final",
 ];
 
-const PERIOD_PRESETS: { label: string; start: string; end: string }[] = [
-  { label: "1.º Período",  start: "2025-09-16", end: "2025-12-19" },
-  { label: "2.º Período",  start: "2026-01-06", end: "2026-03-27" },
-  { label: "3.º Período",  start: "2026-04-14", end: "2026-06-19" },
-  { label: "1.º Semestre", start: "2025-09-16", end: "2026-01-31" },
-  { label: "2.º Semestre", start: "2026-02-01", end: "2026-06-30" },
-  { label: "Ano letivo",   start: "2025-09-16", end: "2026-06-19" },
-];
+function currentSchoolYearBase(): number {
+  const now = new Date();
+  return now.getMonth() >= 8 ? now.getFullYear() : now.getFullYear() - 1;
+}
+
+function buildPeriodPresets(): { label: string; start: string; end: string }[] {
+  const y = currentSchoolYearBase();
+  return [
+    { label: "1.º Período",  start: `${y}-09-16`,     end: `${y}-12-19` },
+    { label: "2.º Período",  start: `${y + 1}-01-06`, end: `${y + 1}-03-27` },
+    { label: "3.º Período",  start: `${y + 1}-04-14`, end: `${y + 1}-06-19` },
+    { label: "1.º Semestre", start: `${y}-09-16`,     end: `${y + 1}-01-31` },
+    { label: "2.º Semestre", start: `${y + 1}-02-01`, end: `${y + 1}-06-30` },
+    { label: "Ano letivo",   start: `${y}-09-16`,     end: `${y + 1}-06-19` },
+  ];
+}
+
+const PERIOD_PRESETS = buildPeriodPresets();
 
 // ─────────────────────── Slot expansion util ──────────────────────────────────
 
@@ -121,6 +133,10 @@ function expandSlotsLocally(
     dayMap.set(rs.dayOfWeek, rs);
   }
 
+  const startYear = parseInt(periodStart.slice(0, 4), 10);
+  const endYear = parseInt(periodEnd.slice(0, 4), 10);
+  const holidays = getPortugueseHolidays(startYear, endYear);
+
   const slots: PreviewSlot[] = [];
   let seq = 1;
   const current = new Date(`${periodStart}T00:00:00`);
@@ -131,12 +147,14 @@ function expandSlotsLocally(
     const rs = dayMap.get(isoDow);
     if (rs) {
       const count = rs.slotsPerDay ?? 1;
-      const dateStr = current.toISOString().slice(0, 10);
+      // Use local date components — toISOString() converts to UTC, shifting dates for UTC+ timezones
+      const dateStr = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, "0")}-${String(current.getDate()).padStart(2, "0")}`;
+      const isHoliday = holidays.has(dateStr);
       for (let s = 0; s < count; s++) {
         slots.push({
           id: `preview-${dateStr}-${s}`,
           date: dateStr,
-          slotType: "LESSON",
+          slotType: isHoliday ? "HOLIDAY" : "LESSON",
           sequenceNumber: seq++,
           durationMinutes: rs.durationMinutes ?? 50,
         });
@@ -177,7 +195,17 @@ function isoToDate(iso: string): Date | undefined {
 
 function dateToIso(d: Date | undefined): string {
   if (!d) return "";
-  return d.toISOString().slice(0, 10);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function formatPresetRange(start: string, end: string): string {
+  const fmt = (iso: string) =>
+    new Date(`${iso}T00:00:00`).toLocaleDateString("pt-PT", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+  return `${fmt(start)} – ${fmt(end)}`;
 }
 
 // ─────────────────────── Step indicator ───────────────────────────────────────
@@ -191,42 +219,39 @@ function StepIndicator({
 }) {
   const currentIdx = steps.findIndex((s) => s.id === currentStep);
   return (
-    <div className="flex items-center gap-0">
+    <div className="flex items-center">
       {steps.map((step, idx) => {
-        const Icon = step.icon;
         const done = idx < currentIdx;
         const active = idx === currentIdx;
         return (
           <div key={step.id} className="flex items-center">
-            <div
-              className={cn(
-                "flex h-8 w-8 items-center justify-center rounded-full border-2 transition-colors",
-                active && "border-primary bg-primary text-primary-foreground",
-                done && "border-primary bg-primary/10 text-primary",
-                !active && !done && "border-muted text-muted-foreground/40"
-              )}
-            >
-              {done ? (
-                <CheckCircle2 className="h-4 w-4" />
-              ) : (
-                <Icon className="h-3.5 w-3.5" />
-              )}
+            <div className="flex items-center gap-2">
+              <span
+                className={cn(
+                  "flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold leading-none transition-colors",
+                  active && "bg-primary text-primary-foreground",
+                  done && "bg-primary/15 text-primary",
+                  !active && !done && "bg-muted text-muted-foreground/40"
+                )}
+              >
+                {done ? "✓" : idx + 1}
+              </span>
+              <span
+                className={cn(
+                  "text-sm font-medium transition-colors",
+                  active && "text-foreground",
+                  done && "text-primary",
+                  !active && !done && "text-muted-foreground/40"
+                )}
+              >
+                {step.label}
+              </span>
             </div>
-            <span
-              className={cn(
-                "ml-2 hidden text-xs font-medium sm:inline",
-                active && "text-foreground",
-                done && "text-primary",
-                !active && !done && "text-muted-foreground/40"
-              )}
-            >
-              {step.label}
-            </span>
             {idx < steps.length - 1 && (
               <div
                 className={cn(
-                  "mx-3 h-px w-6 sm:w-10",
-                  idx < currentIdx ? "bg-primary" : "bg-muted"
+                  "mx-3 h-px w-8",
+                  idx < currentIdx ? "bg-primary/40" : "bg-muted"
                 )}
               />
             )}
@@ -391,17 +416,30 @@ function StepPeriod({ periodStart, periodEnd, schoolYearLabel, onChange, onNext 
         <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           Atalhos
         </Label>
-        <div className="flex flex-wrap gap-2">
-          {PERIOD_PRESETS.map((p) => (
-            <Button
-              key={p.label}
-              size="sm"
-              variant={periodStart === p.start && periodEnd === p.end ? "default" : "outline"}
-              onClick={() => onChange(p.start, p.end, schoolYearLabel)}
-            >
-              {p.label}
-            </Button>
-          ))}
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {PERIOD_PRESETS.map((p) => {
+            const isActive = periodStart === p.start && periodEnd === p.end;
+            return (
+              <button
+                key={p.label}
+                type="button"
+                onClick={() => onChange(p.start, p.end, schoolYearLabel)}
+                className={cn(
+                  "flex flex-col items-start gap-0.5 rounded-lg border px-3 py-2.5 text-left transition-colors hover:border-primary/60",
+                  isActive
+                    ? "border-primary bg-primary/5 text-foreground"
+                    : "border-border bg-card text-foreground"
+                )}
+              >
+                <span className={cn("text-sm font-medium", isActive && "text-primary")}>
+                  {p.label}
+                </span>
+                <span className="text-[11px] text-muted-foreground">
+                  {formatPresetRange(p.start, p.end)}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -694,6 +732,9 @@ function StepDetails({
                   <SelectContent>
                     <SelectItem value="45">45 min</SelectItem>
                     <SelectItem value="50">50 min</SelectItem>
+                    <SelectItem value="55">55 min</SelectItem>
+                    <SelectItem value="60">60 min</SelectItem>
+                    <SelectItem value="75">75 min</SelectItem>
                     <SelectItem value="90">90 min</SelectItem>
                     <SelectItem value="100">100 min</SelectItem>
                     <SelectItem value="120">120 min</SelectItem>
@@ -722,17 +763,43 @@ interface StepReverDatasProps {
 }
 
 function StepReverDatas({ slots, onSlotsChange, onCreate, isCreating }: StepReverDatasProps) {
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+
   const changeType = (id: string, type: SlotType) =>
     onSlotsChange(slots.map((s) => (s.id === id ? { ...s, slotType: type } : s)));
 
-  const removeSlot = (id: string) =>
+  const removeSlot = (id: string) => {
+    setSelected((prev) => { const n = new Set(prev); n.delete(id); return n; });
     onSlotsChange(slots.filter((s) => s.id !== id));
+  };
+
+  const toggleSelect = (id: string) =>
+    setSelected((prev) => {
+      const n = new Set(prev);
+      if (n.has(id)) n.delete(id);
+      else n.add(id);
+      return n;
+    });
+
+  const selectAll = () => setSelected(new Set(slots.map((s) => s.id)));
+  const clearSelection = () => setSelected(new Set());
+
+  const applyBulkType = (type: SlotType) => {
+    onSlotsChange(slots.map((s) => selected.has(s.id) ? { ...s, slotType: type } : s));
+    clearSelection();
+  };
+
+  const removeBulk = () => {
+    onSlotsChange(slots.filter((s) => !selected.has(s.id)));
+    clearSelection();
+  };
 
   const grouped = groupByMonth(slots);
   const lessons = slots.filter((s) => s.slotType === "LESSON").length;
   const assessments = slots.filter((s) => s.slotType === "ASSESSMENT").length;
   const holidays = slots.filter((s) => s.slotType === "HOLIDAY").length;
   const actionable = lessons + assessments;
+  const hasSelection = selected.size > 0;
 
   return (
     <div className="space-y-5">
@@ -745,21 +812,44 @@ function StepReverDatas({ slots, onSlotsChange, onCreate, isCreating }: StepReve
 
       {/* Summary bar */}
       <div className="flex flex-wrap gap-x-4 gap-y-1 rounded-lg border bg-muted/40 px-4 py-3 text-sm">
-        <span>
-          Total: <strong>{slots.length}</strong>
-        </span>
+        <span>Total: <strong>{slots.length}</strong></span>
         <span className="text-muted-foreground">·</span>
-        <span>
-          Aulas: <strong>{lessons}</strong>
-        </span>
+        <span>Aulas: <strong>{lessons}</strong></span>
         <span className="text-muted-foreground">·</span>
-        <span>
-          Avaliações: <strong>{assessments}</strong>
-        </span>
+        <span>Avaliações: <strong>{assessments}</strong></span>
         <span className="text-muted-foreground">·</span>
-        <span>
-          Feriados: <strong>{holidays}</strong>
-        </span>
+        <span>Feriados: <strong>{holidays}</strong></span>
+      </div>
+
+      {/* Bulk actions bar */}
+      <div className="flex flex-wrap items-center gap-2">
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          className="h-7 text-xs"
+          onClick={hasSelection ? clearSelection : selectAll}
+        >
+          {hasSelection ? `Desselecionar (${selected.size})` : "Selecionar tudo"}
+        </Button>
+        {hasSelection && (
+          <>
+            <span className="text-xs text-muted-foreground">Marcar como:</span>
+            <Button type="button" size="sm" variant="outline" className="h-7 text-xs" onClick={() => applyBulkType("LESSON")}>Aula</Button>
+            <Button type="button" size="sm" variant="outline" className="h-7 text-xs" onClick={() => applyBulkType("ASSESSMENT")}>Avaliação</Button>
+            <Button type="button" size="sm" variant="outline" className="h-7 text-xs" onClick={() => applyBulkType("HOLIDAY")}>Feriado</Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="destructive"
+              className="h-7 text-xs"
+              onClick={removeBulk}
+            >
+              <Trash2 className="mr-1 h-3 w-3" />
+              Remover
+            </Button>
+          </>
+        )}
       </div>
 
       {slots.length === 0 ? (
@@ -780,7 +870,8 @@ function StepReverDatas({ slots, onSlotsChange, onCreate, isCreating }: StepReve
                   <div
                     key={slot.id}
                     className={cn(
-                      "flex items-center gap-2 rounded-lg border px-3 py-2",
+                      "flex items-center gap-2 rounded-lg border px-3 py-2 transition-colors",
+                      selected.has(slot.id) ? "border-primary bg-primary/5" :
                       slot.slotType === "HOLIDAY"
                         ? "border-muted bg-muted/40 opacity-60"
                         : slot.slotType === "ASSESSMENT"
@@ -788,6 +879,12 @@ function StepReverDatas({ slots, onSlotsChange, onCreate, isCreating }: StepReve
                         : "bg-card"
                     )}
                   >
+                    <input
+                      type="checkbox"
+                      checked={selected.has(slot.id)}
+                      onChange={() => toggleSelect(slot.id)}
+                      className="h-3.5 w-3.5 shrink-0 accent-primary"
+                    />
                     <span className="min-w-0 flex-1 text-xs font-medium">
                       {formatDayLabel(slot.date)}
                     </span>
@@ -904,7 +1001,10 @@ export default function CalendarNewPage() {
   const [title, setTitle] = useState("");
   const [periodStart, setPeriodStart] = useState("");
   const [periodEnd, setPeriodEnd] = useState("");
-  const [schoolYearLabel, setSchoolYearLabel] = useState("2025/2026");
+  const [schoolYearLabel, setSchoolYearLabel] = useState(() => {
+    const y = currentSchoolYearBase();
+    return `${y}/${y + 1}`;
+  });
   const [recurringSlots, setRecurringSlots] = useState<RecurringSlot[]>([
     { dayOfWeek: 1, slotsPerDay: 1, durationMinutes: 50 },
     { dayOfWeek: 3, slotsPerDay: 1, durationMinutes: 50 },
@@ -1011,23 +1111,13 @@ export default function CalendarNewPage() {
 
     const timetableId = result.payload.id;
     setStep("loading");
-
-    let stepIdx = 0;
-    const advance = setInterval(() => {
-      stepIdx++;
-      setLoadingStep(stepIdx);
-      if (stepIdx >= LOADING_STEPS.length - 1) clearInterval(advance);
-    }, 1800);
+    setLoadingStep(0);
 
     try {
       await dispatch(generateTopics(timetableId));
     } finally {
-      clearInterval(advance);
       setLoadingStep(LOADING_STEPS.length - 1);
-      setTimeout(() => {
-        // Redirect to the unified calendar view
-        router.push(AppRoutes.CALENDAR);
-      }, 800);
+      router.push(AppRoutes.CALENDAR);
     }
   };
 
