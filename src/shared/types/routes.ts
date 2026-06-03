@@ -18,6 +18,7 @@ export enum Routes {
   CALENDAR = "/calendar",
   CALENDAR_NEW = "/calendar/novo",
   CALENDAR_SEQUENCES = "/calendar/sequencias",
+  CALENDAR_MONTH = "/calendar/mes",
   CALENDAR_VIEW = "/calendar/:id",
   COMMUNITY = "/community",
   SCHOOL = "/school",

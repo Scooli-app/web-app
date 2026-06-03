@@ -30,6 +30,7 @@ export interface UpdateTimetableParams {
   title?: string;
   color?: string;
   classLabel?: string;
+  linkedCurriculumPlan?: string | null;
 }
 
 export interface Timetable {
