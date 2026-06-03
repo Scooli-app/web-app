@@ -1,5 +1,5 @@
 /**
- * Timetable Service — Feature 2: Horário & Sequências de Aulas
+ * Timetable Service — Feature 2: Horário & Planos Letivos
  */
 
 import apiClient from "./client";

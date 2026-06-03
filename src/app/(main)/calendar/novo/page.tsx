@@ -268,7 +268,7 @@ function StepChooseMode({ onSelect }: { onSelect: (mode: "from_plan" | "custom")
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold">Como queres criar a sequência?</h2>
+        <h2 className="text-xl font-semibold">Como queres criar o plano letivo?</h2>
         <p className="mt-1 text-sm text-muted-foreground">
           Escolhe o método que melhor se adapta ao teu fluxo de trabalho.
         </p>
@@ -408,7 +408,7 @@ function StepPeriod({ periodStart, periodEnd, schoolYearLabel, onChange, onNext 
     <div className="space-y-5">
       <div>
         <h2 className="text-lg font-semibold">Período letivo</h2>
-        <p className="text-sm text-muted-foreground">Define as datas de início e fim da sequência.</p>
+        <p className="text-sm text-muted-foreground">Define as datas de início e fim do plano letivo.</p>
       </div>
 
       {/* Presets */}
@@ -647,7 +647,7 @@ function StepDetails({
 
       {/* Title */}
       <div className="space-y-1.5">
-        <Label>Nome da sequência</Label>
+        <Label>Nome do plano letivo</Label>
         <Input
           placeholder="Auto-preenchido"
           value={title}
@@ -927,7 +927,7 @@ function StepReverDatas({ slots, onSlotsChange, onCreate, isCreating }: StepReve
         ) : (
           <Sparkles className="mr-2 h-4 w-4" />
         )}
-        Criar sequência ({actionable} aula{actionable !== 1 ? "s" : ""})
+        Criar plano letivo ({actionable} aula{actionable !== 1 ? "s" : ""})
       </Button>
     </div>
   );
@@ -940,7 +940,7 @@ function LoadingScreen({ currentStep }: { currentStep: number }) {
     <div className="flex flex-col items-center justify-center space-y-8 py-16">
       <div className="space-y-2 text-center">
         <Sparkles className="mx-auto h-12 w-12 animate-pulse text-primary" />
-        <h2 className="text-xl font-semibold">A criar a tua sequência…</h2>
+        <h2 className="text-xl font-semibold">A criar o teu plano letivo…</h2>
         <p className="text-sm text-muted-foreground">
           A Scooli está a gerar os tópicos e a distribuição pedagógica.
         </p>
@@ -1092,7 +1092,7 @@ export default function CalendarNewPage() {
 
     const result = await dispatch(
       createTimetable({
-        title: title || autoTitle || "Nova Sequência",
+        title: title || autoTitle || "Novo Plano Letivo",
         subject: subjectValue,
         gradeLevel: Number(gradeLevel),
         classLabel: classLabel || undefined,
@@ -1157,7 +1157,7 @@ export default function CalendarNewPage() {
           </Button>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Clock className="h-4 w-4" />
-            <span className="font-medium text-foreground">Nova Sequência de Aulas</span>
+            <span className="font-medium text-foreground">Novo Plano Letivo</span>
           </div>
         </div>
       )}
@@ -1165,7 +1165,7 @@ export default function CalendarNewPage() {
       {step === "loading" && (
         <div className="mb-4 flex items-center gap-2">
           <Clock className="h-5 w-5 text-primary" />
-          <span className="font-semibold">Nova Sequência de Aulas</span>
+          <span className="font-semibold">Novo Plano Letivo</span>
         </div>
       )}
 

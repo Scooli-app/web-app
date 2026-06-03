@@ -185,13 +185,13 @@ export default function CalendarMonthPage() {
             <Button variant="outline" size="sm" asChild className="h-8">
               <Link href={Routes.CALENDAR_SEQUENCES}>
                 <CalendarDays className="mr-1 h-3.5 w-3.5" />
-                Minhas sequências
+                Planos letivos
               </Link>
             </Button>
             <Button variant="outline" size="sm" asChild className="h-8">
               <Link href={Routes.CALENDAR_NEW}>
                 <Plus className="mr-1 h-3.5 w-3.5" />
-                Nova sequência
+                Novo plano letivo
               </Link>
             </Button>
           </div>
@@ -232,14 +232,14 @@ export default function CalendarMonthPage() {
         ) : activeTimetables.length === 0 && !timetablesLoading ? (
           <div className="py-20 text-center">
             <CalendarDays className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-            <p className="text-lg font-medium">Nenhuma sequência de aulas</p>
+            <p className="text-lg font-medium">Nenhum plano letivo</p>
             <p className="mt-1 text-sm text-muted-foreground">
-              Cria a tua primeira sequência para começar a planificar.
+              Cria o teu primeiro plano letivo para começar a planificar.
             </p>
             <Button asChild className="mt-5">
               <Link href={Routes.CALENDAR_NEW}>
                 <Plus className="mr-2 h-4 w-4" />
-                Criar sequência
+                Criar plano letivo
               </Link>
             </Button>
           </div>

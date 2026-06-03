@@ -14,6 +14,12 @@ import {
 import { useSelector } from "react-redux";
 
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 import { Routes } from "@/shared/types";
 import { selectIsHorarioPlanosEnabled } from "@/store/features/selectors";
@@ -40,6 +46,7 @@ import {
   ChevronDown,
   ChevronUp,
   Loader2,
+  MoreHorizontal,
   Plus,
   Sparkles,
 } from "lucide-react";
@@ -206,7 +213,7 @@ function LessonCard({
               {slot.sequenceNumber}
             </span>
             <p
-              className={`line-clamp-2 text-xs font-medium leading-tight ${
+              className={`line-clamp-1 sm:line-clamp-2 text-xs font-medium leading-tight ${
                 isHoliday
                   ? "line-through text-muted-foreground"
                   : "text-foreground"
@@ -583,6 +590,39 @@ function CalendarPageInner() {
     [slotsByTimetable, refreshTimetable],
   );
 
+  // ── Mobile reorder (swap sequence numbers across any two slots) ──────────
+  const handleMobileSwap = useCallback(
+    async (a: SlotWithTimetable, b: SlotWithTimetable) => {
+      const seqA = a.sequenceNumber;
+      const seqB = b.sequenceNumber;
+
+      // Optimistic update for both slots (may belong to different timetables)
+      setSlotsByTimetable((prev) => {
+        const next = new Map(prev);
+        const updateInTimetable = (tId: string, slotId: string, seq: number) => {
+          const slots = (next.get(tId) ?? []).map((s) =>
+            s.id === slotId ? { ...s, sequenceNumber: seq } : s,
+          );
+          next.set(tId, slots);
+        };
+        updateInTimetable(a.timetable.id, a.id, seqB);
+        updateInTimetable(b.timetable.id, b.id, seqA);
+        return next;
+      });
+
+      try {
+        await Promise.all([
+          updateLessonService(a.timetable.id, a.id, { sequenceNumber: seqB }),
+          updateLessonService(b.timetable.id, b.id, { sequenceNumber: seqA }),
+        ]);
+      } catch {
+        void refreshTimetable(a.timetable.id);
+        if (a.timetable.id !== b.timetable.id) void refreshTimetable(b.timetable.id);
+      }
+    },
+    [refreshTimetable],
+  );
+
   // ── Individual generate (parallel-safe) ──────────────────────────────────
   const startSlotGenerating = useCallback((slotId: string) => {
     setLocalGeneratingSlots((prev) => new Set([...prev, slotId]));
@@ -757,11 +797,79 @@ function CalendarPageInner() {
       {/* ── Top bar ───────────────────────────────────────────────────── */}
       <div className="sticky top-0 z-10 border-b bg-card/95 backdrop-blur px-4 pt-2.5 pb-2">
         <div className="mx-auto max-w-[1400px] space-y-2">
-          {/* Row 1: navigation + action buttons */}
-          <div className="flex items-center gap-2">
+
+          {/* ── Mobile header: single compact row ── */}
+          <div className="flex md:hidden items-center gap-1.5">
+            {/* View toggle */}
+            <div className="flex shrink-0 items-center rounded-md border border-border overflow-hidden">
+              <span className="px-2.5 py-1 text-xs font-medium bg-primary text-primary-foreground">
+                Sem
+              </span>
+              <Link
+                href={Routes.CALENDAR_MONTH}
+                className="px-2.5 py-1 text-xs font-medium text-muted-foreground hover:bg-muted transition-colors"
+              >
+                Mês
+              </Link>
+            </div>
+
+            <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={prevWeek}>
+              <ArrowLeft className="h-3.5 w-3.5" />
+            </Button>
+            <button
+              type="button"
+              onClick={goToday}
+              className="flex-1 min-w-0 truncate text-center text-sm font-medium text-foreground"
+            >
+              {formatWeekLabel(weekStart)}
+            </button>
+            <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={nextWeek}>
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Button>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0">
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem asChild>
+                  <Link href={Routes.CALENDAR_SEQUENCES} className="flex items-center gap-2">
+                    <CalendarDays className="h-4 w-4" />
+                    Planos letivos
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href={Routes.CALENDAR_NEW} className="flex items-center gap-2">
+                    <Plus className="h-4 w-4" />
+                    Novo plano letivo
+                  </Link>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {pendingThisWeek > 0 && (
+              <Button
+                size="sm"
+                className="h-7 shrink-0 gap-1 px-2 text-xs"
+                onClick={() => { setPreviewGenerating(false); void handleGenerateWeek(); }}
+                disabled={generatingWeek}
+              >
+                {generatingWeek ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  <Sparkles className="h-3 w-3" />
+                )}
+                Gerar ({pendingThisWeek})
+              </Button>
+            )}
+          </div>
+
+          {/* ── Desktop header: full layout ── */}
+          <div className="hidden md:flex items-center gap-2">
             <h1 className="mr-2 text-lg font-semibold">Calendário</h1>
 
-            {/* View toggle */}
             <div className="flex items-center rounded-lg border border-border overflow-hidden">
               <span className="px-3 py-1 text-xs font-medium bg-primary text-primary-foreground">
                 Semana
@@ -792,14 +900,14 @@ function CalendarPageInner() {
             <Button variant="outline" size="sm" asChild className="h-8">
               <Link href={Routes.CALENDAR_SEQUENCES}>
                 <CalendarDays className="mr-1 h-3.5 w-3.5" />
-                Minhas sequências
+                Planos letivos
               </Link>
             </Button>
 
             <Button variant="outline" size="sm" asChild className="h-8">
               <Link href={Routes.CALENDAR_NEW}>
                 <Plus className="mr-1 h-3.5 w-3.5" />
-                Nova sequência
+                Novo plano letivo
               </Link>
             </Button>
 
@@ -822,7 +930,7 @@ function CalendarPageInner() {
             )}
           </div>
 
-          {/* Row 2: sequence filter chips — always rendered to hold height */}
+          {/* Filter chips — shared ── */}
           <div className="flex flex-wrap items-center gap-1.5 min-h-[28px]">
             {isLoadingTimetables ? (
               <>
@@ -866,14 +974,14 @@ function CalendarPageInner() {
         ) : activeTimetables.length === 0 ? (
           <div className="py-20 text-center">
             <CalendarDays className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-            <p className="text-lg font-medium">Nenhuma sequência de aulas</p>
+            <p className="text-lg font-medium">Nenhum plano letivo</p>
             <p className="mt-1 text-sm text-muted-foreground">
-              Cria a tua primeira sequência para começar a planificar.
+              Cria o teu primeiro plano letivo para começar a planificar.
             </p>
             <Button asChild className="mt-5">
               <Link href={Routes.CALENDAR_NEW}>
                 <Plus className="mr-2 h-4 w-4" />
-                Criar sequência
+                Criar plano letivo
               </Link>
             </Button>
           </div>
@@ -927,36 +1035,30 @@ function CalendarPageInner() {
                             ))
                         : daySlots.map((slot, slotIdx) => (
                             <div key={slot.id} className="flex items-stretch gap-1">
-                              <div className="flex flex-col gap-0.5">
+                              <div className="flex flex-col">
                                 <button
                                   type="button"
                                   disabled={slotIdx === 0}
                                   onClick={() => {
                                     const prev = daySlots[slotIdx - 1];
-                                    if (prev) void handleCardDrop(
-                                      { dataTransfer: { getData: (k: string) => k === "slotId" ? slot.id : k === "timetableId" ? slot.timetable.id : slot.slotDate } } as unknown as React.DragEvent,
-                                      prev,
-                                    );
+                                    if (prev) void handleMobileSwap(slot, prev);
                                   }}
-                                  className="flex-1 rounded px-0.5 text-muted-foreground hover:bg-muted disabled:opacity-20"
+                                  className="flex-1 flex items-center justify-center rounded px-1 text-muted-foreground hover:bg-muted active:bg-muted disabled:opacity-20"
                                   aria-label="Mover para cima"
                                 >
-                                  <ChevronUp className="h-3.5 w-3.5" />
+                                  <ChevronUp className="h-4 w-4" />
                                 </button>
                                 <button
                                   type="button"
                                   disabled={slotIdx === daySlots.length - 1}
                                   onClick={() => {
                                     const next = daySlots[slotIdx + 1];
-                                    if (next) void handleCardDrop(
-                                      { dataTransfer: { getData: (k: string) => k === "slotId" ? slot.id : k === "timetableId" ? slot.timetable.id : slot.slotDate } } as unknown as React.DragEvent,
-                                      next,
-                                    );
+                                    if (next) void handleMobileSwap(slot, next);
                                   }}
-                                  className="flex-1 rounded px-0.5 text-muted-foreground hover:bg-muted disabled:opacity-20"
+                                  className="flex-1 flex items-center justify-center rounded px-1 text-muted-foreground hover:bg-muted active:bg-muted disabled:opacity-20"
                                   aria-label="Mover para baixo"
                                 >
-                                  <ChevronDown className="h-3.5 w-3.5" />
+                                  <ChevronDown className="h-4 w-4" />
                                 </button>
                               </div>
                               <div className="flex-1">

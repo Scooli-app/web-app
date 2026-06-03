@@ -375,7 +375,7 @@ export default function CalendarViewPage() {
           <p>Sem aulas programadas para esta semana.</p>
           <p className="mt-1 text-sm">
             {slots.length === 0
-              ? "Ainda não tens aulas criadas para esta sequência."
+              ? "Ainda não tens aulas criadas para este plano letivo."
               : "Navega para outra semana."}
           </p>
         </div>
