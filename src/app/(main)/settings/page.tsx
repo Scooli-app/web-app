@@ -344,17 +344,19 @@ function SettingsContent() {
                 </div>
               </div>
 
-              {/* Free Trial Plan Info */}
-              <div className="flex flex-wrap items-center gap-3 mb-4">
-                <span className="font-semibold text-foreground text-lg">
-                  {planInfo.name}
-                </span>
-                <span
-                  className={`inline-flex px-3 py-1 rounded-full text-sm font-medium ${statusBadge.className}`}
-                >
-                  {statusBadge.label}
-                </span>
-              </div>
+              {/* Free Trial Plan Info — hidden when org provides Pro access */}
+              {!hasOrganizationBackedAccess && (
+                <div className="flex flex-wrap items-center gap-3 mb-4">
+                  <span className="font-semibold text-foreground text-lg">
+                    {planInfo.name}
+                  </span>
+                  <span
+                    className={`inline-flex px-3 py-1 rounded-full text-sm font-medium ${statusBadge.className}`}
+                  >
+                    {statusBadge.label}
+                  </span>
+                </div>
+              )}
 
               {/* Free Trial Usage */}
               {showPersonalUpgradeOptions && usage && (
