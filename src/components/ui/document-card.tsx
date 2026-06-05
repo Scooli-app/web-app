@@ -9,8 +9,8 @@ import { selectWorkspaceContext } from "@/store/workspace/selectors";
 import { Routes, type Document } from "@/shared/types";
 import {
   Building2,
-  CalendarDays,
   FileText,
+  GanttChart,
   Globe2,
   HelpCircle,
   MonitorPlay,
@@ -56,7 +56,7 @@ const DOCUMENT_TYPE_ICONS: Record<Document["documentType"], LucideIcon> = {
   test: NotebookPen,
   quiz: HelpCircle,
   presentation: MonitorPlay,
-  curriculumPlan: CalendarDays,
+  curriculumPlan: GanttChart,
 };
 
 const ROUTE_MAP: Record<Document["documentType"], string> = {
@@ -65,7 +65,7 @@ const ROUTE_MAP: Record<Document["documentType"], string> = {
   presentation: Routes.PRESENTATION,
   test: Routes.TEST,
   quiz: Routes.QUIZ,
-  curriculumPlan: Routes.LESSON_PLAN,
+  curriculumPlan: Routes.CURRICULUM_PLAN,
 };
 
 const dateFormatter = new Intl.DateTimeFormat("pt-PT", {

@@ -40,7 +40,7 @@ export default function TestEditorPage({ params }: TestEditorPageProps) {
         loadingMessage="A carregar teste..."
         generateMessage="Gerar teste"
         chatTitle="Assistente de Testes"
-        chatPlaceholder="Faça uma pergunta sobre o teste ou peça para modificar algo..."
+        chatPlaceholder="Pergunta algo ou pede para modificar o teste..."
       />
     </Suspense>
   );

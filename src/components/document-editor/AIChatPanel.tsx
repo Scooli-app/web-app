@@ -21,7 +21,87 @@ import {
 import type { RagSource } from "@/shared/types/document";
 import { cn } from "@/shared/utils/utils";
 import { FileText, MessageCircle, Send, Sparkles } from "lucide-react";
+import posthog from "posthog-js";
 import { useEffect, useRef, useState } from "react";
+
+// ---------------------------------------------------------------------------
+// Suggestion chips
+// ---------------------------------------------------------------------------
+
+interface SuggestionChip {
+  label: string;
+  message: string;
+}
+
+const SUGGESTION_CHIPS: Record<string, SuggestionChip[]> = {
+  lessonPlan: [
+    { label: "Melhora a estrutura ✏️", message: "Melhora a estrutura e organização da aula." },
+    { label: "Adiciona atividades práticas 🎯", message: "Adiciona atividades práticas e interativas à aula." },
+    { label: "Simplifica a linguagem 🔤", message: "Simplifica a linguagem para ser mais acessível aos alunos." },
+    { label: "Adiciona critérios de avaliação 📋", message: "Adiciona critérios de avaliação detalhados." },
+  ],
+  quiz: [
+    { label: "Adiciona mais perguntas ➕", message: "Adiciona mais 5 perguntas ao quiz." },
+    { label: "Aumenta a dificuldade 🎯", message: "Aumenta o nível de dificuldade das perguntas." },
+    { label: "Explica as respostas 💡", message: "Adiciona uma explicação para cada resposta correta." },
+    { label: "Varia os tipos de perguntas 🔄", message: "Varia os tipos de perguntas com verdadeiro/falso e resposta curta." },
+  ],
+  test: [
+    { label: "Adiciona mais exercícios ➕", message: "Adiciona mais exercícios ao teste." },
+    { label: "Aumenta a dificuldade 🎯", message: "Aumenta o nível de dificuldade das questões." },
+    { label: "Adiciona cotações 📊", message: "Adiciona cotações a cada questão do teste." },
+    { label: "Melhora as instruções 📋", message: "Melhora as instruções de cada secção do teste." },
+  ],
+  worksheet: [
+    { label: "Adiciona mais exercícios ➕", message: "Adiciona mais exercícios à ficha de trabalho." },
+    { label: "Simplifica as instruções 🔤", message: "Simplifica as instruções para serem mais claras." },
+    { label: "Adiciona exemplos resolvidos 💡", message: "Adiciona exemplos resolvidos antes dos exercícios." },
+    { label: "Melhora a conclusão 📝", message: "Melhora a secção de conclusão da ficha." },
+  ],
+  presentation: [
+    { label: "Adiciona mais slides ➕", message: "Adiciona mais slides à apresentação." },
+    { label: "Melhora o slide de título ✏️", message: "Melhora o slide de título e introdução." },
+    { label: "Adiciona notas do apresentador 📋", message: "Adiciona notas do apresentador a cada slide." },
+    { label: "Simplifica o conteúdo 🔤", message: "Simplifica o conteúdo dos slides para ser mais visual e direto." },
+  ],
+};
+
+const DEFAULT_SUGGESTIONS: SuggestionChip[] = [
+  { label: "Melhora a introdução ✏️", message: "Melhora a introdução do documento." },
+  { label: "Adiciona mais exemplos 📚", message: "Adiciona mais exemplos práticos ao documento." },
+  { label: "Simplifica a linguagem 🔤", message: "Simplifica a linguagem para ser mais acessível." },
+  { label: "Adiciona uma conclusão 📝", message: "Adiciona ou melhora a conclusão do documento." },
+];
+
+function SuggestionChips({
+  documentType,
+  onChipClick,
+  disabled,
+}: {
+  documentType?: string;
+  onChipClick: (chip: SuggestionChip) => void;
+  disabled?: boolean;
+}) {
+  const chips = documentType
+    ? (SUGGESTION_CHIPS[documentType] ?? DEFAULT_SUGGESTIONS)
+    : DEFAULT_SUGGESTIONS;
+
+  return (
+    <div className="grid grid-cols-2 gap-1.5 mb-3">
+      {chips.map((chip) => (
+        <button
+          key={chip.label}
+          type="button"
+          disabled={disabled}
+          onClick={() => onChipClick(chip)}
+          className="w-full px-3 py-1.5 text-xs font-medium rounded-xl bg-muted hover:bg-primary/10 text-foreground border border-border/50 hover:border-primary/40 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-center leading-snug"
+        >
+          {chip.label}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -47,6 +127,10 @@ interface AIChatPanelProps {
   onImageRegen?: () => void;
   /** Called when the user clicks "Não" on an image-regen offer */
   onDismissImageRegen?: () => void;
+  /** Document type used to pick contextual suggestion chips */
+  documentType?: string;
+  /** Document id used for PostHog event properties */
+  documentId?: string;
 }
 
 function Tabs({
@@ -136,6 +220,9 @@ function ChatContent({
   showGenerationHint = false,
   onImageRegen,
   onDismissImageRegen,
+  showSuggestions = false,
+  documentType,
+  onSuggestionClick,
 }: {
   chatHistory: ChatMessage[];
   isStreaming: boolean;
@@ -151,6 +238,9 @@ function ChatContent({
   showGenerationHint?: boolean;
   onImageRegen?: () => void;
   onDismissImageRegen?: () => void;
+  showSuggestions?: boolean;
+  documentType?: string;
+  onSuggestionClick?: (chip: SuggestionChip) => void;
 }) {
   const isDesktop = variant === "desktop";
   const [activeTab, setActiveTab] = useState<"assistant" | "sources">(
@@ -236,6 +326,15 @@ function ChatContent({
               )}
             </div>
 
+            {/* Suggestion chips — visible until user sends their first follow-up */}
+            {showSuggestions && onSuggestionClick && (
+              <SuggestionChips
+                documentType={documentType}
+                onChipClick={onSuggestionClick}
+                disabled={isStreaming}
+              />
+            )}
+
             {/* Chat Input */}
             <form
               onSubmit={handleSubmit}
@@ -303,9 +402,12 @@ export default function AIChatPanel({
   showGenerationHint = false,
   onImageRegen,
   onDismissImageRegen,
+  documentType,
+  documentId,
 }: AIChatPanelProps) {
   const [chatMessage, setChatMessage] = useState("");
   const [isOpen, setIsOpen] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(true);
   const chatContainerRef = useRef<HTMLDivElement | null>(null);
   const mobileChatContainerRef = useRef<HTMLDivElement | null>(null);
 
@@ -315,9 +417,22 @@ export default function AIChatPanel({
       return;
     }
 
+    setShowSuggestions(false);
     const userMessage = chatMessage;
     setChatMessage("");
     await onChatSubmit(userMessage);
+  };
+
+  const handleSuggestionClick = async (chip: SuggestionChip) => {
+    if (isStreaming) return;
+    setShowSuggestions(false);
+    posthog.capture("ai_chat_suggestion_clicked", {
+      suggestion_label: chip.label,
+      suggestion_message: chip.message,
+      document_type: documentType,
+      document_id: documentId,
+    });
+    await onChatSubmit(chip.message);
   };
 
   // Scroll chat to bottom when chatHistory changes
@@ -351,6 +466,9 @@ export default function AIChatPanel({
           showGenerationHint={showGenerationHint}
           onImageRegen={onImageRegen}
           onDismissImageRegen={onDismissImageRegen}
+          showSuggestions={showSuggestions}
+          documentType={documentType}
+          onSuggestionClick={handleSuggestionClick}
         />
       </div>
 
@@ -395,6 +513,9 @@ export default function AIChatPanel({
                 showGenerationHint={showGenerationHint}
                 onImageRegen={onImageRegen}
                 onDismissImageRegen={onDismissImageRegen}
+                showSuggestions={showSuggestions}
+                documentType={documentType}
+                onSuggestionClick={handleSuggestionClick}
               />
             </div>
           </SheetContent>

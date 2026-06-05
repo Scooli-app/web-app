@@ -408,8 +408,8 @@ function ensureMarkdownTableSeparators(md: string): string {
   for (let i = 0; i < lines.length; i++) {
     out.push(lines[i]);
     const next = lines[i + 1] ?? "";
-    // If this is a table row, the next line is also a table row, but NOT a separator → insert one.
-    if (isTableRow(lines[i]) && isTableRow(next) && !isSeparatorRow(next)) {
+    // If this is a non-separator table row and the next line is also a table row but NOT a separator → insert one.
+    if (isTableRow(lines[i]) && !isSeparatorRow(lines[i]) && isTableRow(next) && !isSeparatorRow(next)) {
       const cols = lines[i].split("|").length - 2;
       out.push(`|${Array(Math.max(cols, 1)).fill(" --- ").join("|")}|`);
     }

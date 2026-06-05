@@ -22,6 +22,7 @@ export interface AdminOnboardingResponse {
   acquisitionSource: string;
   subjectArea?: string | null;
   teachingLevel?: string | null;
+  goals?: string | null;
   createdAt: string;
 }
 
@@ -30,6 +31,7 @@ export interface AdminOnboardingOverview {
   acquisitionSourceBreakdown: AdminOnboardingBreakdownItem[];
   subjectAreaBreakdown: AdminOnboardingBreakdownItem[];
   teachingLevelBreakdown: AdminOnboardingBreakdownItem[];
+  goalsBreakdown: AdminOnboardingBreakdownItem[];
   recentResponses: AdminOnboardingResponse[];
 }
 

@@ -182,7 +182,7 @@ export default function CurriculumPlanImportPage() {
       // Step 4: Done — brief pause then redirect
       setStepStatus("done", "done");
       await new Promise((resolve) => setTimeout(resolve, 600));
-      router.push(`/lesson-plan/${docId}`);
+      router.push(`/curriculum-plan/${docId}`);
     } catch (err) {
       const message =
         err instanceof Error

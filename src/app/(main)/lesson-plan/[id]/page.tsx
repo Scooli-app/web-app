@@ -42,7 +42,7 @@ export default function LessonPlanEditorPage({
         loadingMessage="A carregar plano de aula..."
         generateMessage="Gerar plano de aula"
         chatTitle="Assistente de Planos"
-        chatPlaceholder="Faça uma pergunta sobre o plano de aula ou peça para modificar algo..."
+        chatPlaceholder="Pergunta algo ou pede para modificar o plano..."
       />
     </Suspense>
   );

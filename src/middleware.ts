@@ -12,6 +12,8 @@ const isPublicRoute = createRouteMatcher([
   "/checkout/cancel",
   "/webhooks/stripe",
   "/.well-known/(.*)",
+  "/robots.txt",
+  "/sitemap.xml",
 ]);
 const TOKEN_COOKIE_NAME = "scooli_token";
 
@@ -87,9 +89,10 @@ export default clerkMiddleware(async (auth, req) => {
   }
 
   if (req.nextUrl.pathname === "/") {
-    const dashboardUrl = new URL("/dashboard", req.url);
-    dashboardUrl.search = req.nextUrl.search;
-    const res = NextResponse.redirect(dashboardUrl);
+    const destination = authObj.userId ? "/dashboard" : "/sign-in";
+    const redirectUrl = new URL(destination, req.url);
+    redirectUrl.search = req.nextUrl.search;
+    const res = NextResponse.redirect(redirectUrl);
     await setTokenCookie(res);
     return res;
   }

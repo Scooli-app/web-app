@@ -61,13 +61,14 @@ import {
 import {
   BookOpen,
   Building2,
-  CalendarDays,
+  CalendarRange,
   ClipboardList,
   Clock,
   ExternalLink,
   FileCheck,
   FileText,
   FolderArchiveIcon,
+  GanttChart,
   HelpCircle,
   Home,
   Library,
@@ -126,15 +127,15 @@ const NAVIGATION: NavItem[] = [
 const CALENDAR_NAV_ITEM: NavItem = {
   title: "Calendário",
   href: Routes.CALENDAR,
-  icon: Clock,
-  description: "Sequências de aulas e geração automática",
+  icon: CalendarRange,
+  description: "Planos letivos e geração automática",
 };
 
 const CONTENT_CREATION: NavItem[] = [
   {
     title: "Planificações",
     href: Routes.CURRICULUM_PLAN,
-    icon: CalendarDays,
+    icon: GanttChart,
     description: "Planificações curriculares de período",
   },
   {

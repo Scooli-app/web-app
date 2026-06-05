@@ -32,15 +32,15 @@ export function CommunityUpgradePrompt({
         </div>
 
         {/* Feature Preview - Disabled */}
-        <div className="relative mb-8">
+        <div className="relative mb-8 max-h-[360px] overflow-hidden rounded-xl sm:max-h-[480px]">
           {/* Overlay */}
-          <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-10 flex items-center justify-center">
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/80 backdrop-blur-sm">
             <Card className="max-w-md p-6 text-center sm:p-8">
               <Lock className="mx-auto mb-4 h-12 w-12 text-primary sm:h-16 sm:w-16" />
               <h2 className="mb-3 text-xl font-semibold sm:text-2xl">
                 Funcionalidade Pro
               </h2>
-              <p className="text-muted-foreground mb-6">
+              <p className="mb-6 text-muted-foreground">
                 Aceda à Biblioteca Comunitária com uma subscrição Pro
               </p>
               <Button
@@ -57,59 +57,44 @@ export function CommunityUpgradePrompt({
           {/* Preview Content (Blurred) */}
           <div className="opacity-50">
             {/* Mock Filters */}
-            <Card className="p-4 mb-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card className="mb-6 p-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                 <div className="space-y-2">
-                  <div className="h-4 bg-muted rounded w-16" />
-                  <div className="h-10 bg-muted rounded" />
+                  <div className="h-4 w-16 rounded bg-muted" />
+                  <div className="h-10 rounded bg-muted" />
                 </div>
                 <div className="space-y-2">
-                  <div className="h-4 bg-muted rounded w-20" />
-                  <div className="h-10 bg-muted rounded" />
+                  <div className="h-4 w-20 rounded bg-muted" />
+                  <div className="h-10 rounded bg-muted" />
                 </div>
                 <div className="space-y-2">
-                  <div className="h-4 bg-muted rounded w-24" />
-                  <div className="h-10 bg-muted rounded" />
+                  <div className="h-4 w-24 rounded bg-muted" />
+                  <div className="h-10 rounded bg-muted" />
                 </div>
               </div>
             </Card>
 
             {/* Mock Resource Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {Array.from({ length: 6 }, (_, i) => (
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {Array.from({ length: 3 }, (_, i) => (
                 <Card key={i} className="p-4">
                   <div className="space-y-3">
-                    {/* Title */}
-                    <div className="h-6 bg-muted rounded w-3/4" />
-
-                    {/* Description */}
+                    <div className="h-6 w-3/4 rounded bg-muted" />
                     <div className="space-y-2">
-                      <div className="h-4 bg-muted rounded w-full" />
-                      <div className="h-4 bg-muted rounded w-2/3" />
+                      <div className="h-4 w-full rounded bg-muted" />
+                      <div className="h-4 w-2/3 rounded bg-muted" />
                     </div>
-
-                    {/* Tags */}
                     <div className="flex gap-2">
-                      <Badge
-                        variant="secondary"
-                        className="h-6 w-16 bg-muted"
-                      />
-                      <Badge
-                        variant="secondary"
-                        className="h-6 w-20 bg-muted"
-                      />
+                      <Badge variant="secondary" className="h-6 w-16 bg-muted" />
+                      <Badge variant="secondary" className="h-6 w-20 bg-muted" />
                     </div>
-
-                    {/* Stats */}
                     <div className="flex justify-between">
-                      <div className="h-4 bg-muted rounded w-24" />
-                      <div className="h-4 bg-muted rounded w-32" />
+                      <div className="h-4 w-24 rounded bg-muted" />
+                      <div className="h-4 w-32 rounded bg-muted" />
                     </div>
-
-                    {/* Buttons */}
                     <div className="flex gap-2">
-                      <div className="h-8 bg-muted rounded flex-1" />
-                      <div className="h-8 bg-muted rounded flex-1" />
+                      <div className="h-8 flex-1 rounded bg-muted" />
+                      <div className="h-8 flex-1 rounded bg-muted" />
                     </div>
                   </div>
                 </Card>

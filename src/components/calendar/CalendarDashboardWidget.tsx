@@ -19,20 +19,20 @@ import {
 } from "@/services/api/timetable.service";
 import { Routes } from "@/shared/types";
 import {
-  AlertTriangle,
   ArrowRight,
-  CheckCircle2,
   Clock,
   Loader2,
   Plus,
-  SkipForward,
   Sparkles,
 } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useSyncExternalStore, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
+import { useAppDispatch } from "@/store/hooks";
+import { fetchTimetables } from "@/store/timetable/timetableSlice";
 import { generationStore } from "@/store/generationStore";
+import { SLOT_STATUS_CONFIG } from "@/shared/constants/lessonSlotStatus";
 
 interface UpcomingLesson extends LessonSlot {
   timetable: Timetable;
@@ -78,39 +78,18 @@ function relativeDate(slotDate: string): string {
   });
 }
 
-type BadgeCfg = { label: string; cls: string; icon: React.ReactNode };
-
-const STATUS_CFG: Record<LessonSlot["status"], BadgeCfg> = {
-  pending: {
-    label: "Pendente",
-    cls: "bg-muted text-muted-foreground border",
-    icon: <Clock className="h-3 w-3" />,
-  },
-  generating: {
-    label: "A gerar",
-    cls: "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-950 dark:text-blue-300",
-    icon: <Loader2 className="h-3 w-3 animate-spin" />,
-  },
-  completed: {
-    label: "Gerado",
-    cls: "bg-green-100 text-green-800 border-green-200 dark:bg-green-950 dark:text-green-300",
-    icon: <CheckCircle2 className="h-3 w-3" />,
-  },
-  failed: {
-    label: "Falhou",
-    cls: "bg-red-100 text-red-800 border-red-200 dark:bg-red-950 dark:text-red-300",
-    icon: <AlertTriangle className="h-3 w-3" />,
-  },
-  skipped: {
-    label: "Ignorado",
-    cls: "bg-muted text-muted-foreground/60 border",
-    icon: <SkipForward className="h-3 w-3" />,
-  },
-};
+// Map shared config to the local cls alias used by this widget
+const STATUS_CFG = Object.fromEntries(
+  Object.entries(SLOT_STATUS_CONFIG).map(([k, v]) => [
+    k,
+    { label: v.label, cls: v.badgeCls, icon: v.icon },
+  ])
+) as Record<LessonSlot["status"], { label: string; cls: string; icon: React.ReactNode }>;
 
 export function CalendarDashboardWidget() {
   const router = useRouter();
   const { getToken } = useAuth();
+  const dispatch = useAppDispatch();
   const [upcoming, setUpcoming] = useState<UpcomingLesson[]>([]);
   const [loading, setLoading] = useState(true);
   /** Slot ID whose document is being fetched for navigation. */
@@ -137,6 +116,7 @@ export function CalendarDashboardWidget() {
             : first.documentRole === "test" ? Routes.TEST
             : first.documentRole === "worksheet" ? Routes.WORKSHEET
             : first.documentRole === "presentation" ? Routes.PRESENTATION
+            : first.documentRole === "curriculumPlan" ? Routes.CURRICULUM_PLAN
             : Routes.LESSON_PLAN;
           router.push(`${base}/${first.documentId}`);
         } else {
@@ -182,6 +162,9 @@ export function CalendarDashboardWidget() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
+      // Hydrate Redux store so other pages (calendar grid) don't need to re-fetch
+      void dispatch(fetchTimetables());
+
       const timetables = await listTimetables();
       const active = timetables.filter((t) => t.status === "active");
 
@@ -216,7 +199,7 @@ export function CalendarDashboardWidget() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [dispatch]);
 
   useEffect(() => { void load(); }, [load]);
 
@@ -263,7 +246,7 @@ export function CalendarDashboardWidget() {
           <Button asChild size="sm" className="mt-3">
             <Link href={Routes.CALENDAR_NEW}>
               <Plus className="mr-1 h-3 w-3" />
-              Criar sequência
+              Criar plano letivo
             </Link>
           </Button>
         </div>
@@ -314,10 +297,12 @@ export function CalendarDashboardWidget() {
 
                 {/* Status + action */}
                 <div className="flex shrink-0 items-center gap-2">
-                  <Badge className={`gap-1 border text-xs ${cfg.cls}`}>
-                    {cfg.icon}
-                    {cfg.label}
-                  </Badge>
+                  {lesson.status !== "generating" && (
+                    <Badge className={`gap-1 border text-xs ${cfg.cls}`}>
+                      {cfg.icon}
+                      {cfg.label}
+                    </Badge>
+                  )}
                   {(lesson.status === "pending" || lesson.status === "failed") && (
                     <Button
                       size="sm"

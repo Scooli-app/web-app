@@ -29,8 +29,11 @@ import {
 } from "@/services/api/admin-user-insights.service";
 import { cn } from "@/shared/utils/utils";
 import {
+  ArrowUpDown,
   BarChart3,
   Bot,
+  ChevronDown,
+  ChevronUp,
   FileText,
   MessageSquare,
   RefreshCw,
@@ -40,6 +43,101 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
+
+type UserSortField =
+  | "name"
+  | "activeDays"
+  | "documents"
+  | "conversations"
+  | "shared"
+  | "lastActivity"
+  | "clerkSignIn";
+type SortDir = "asc" | "desc";
+
+function sortUsers(
+  users: AdminUserInsight[],
+  field: UserSortField,
+  dir: SortDir,
+): AdminUserInsight[] {
+  return [...users].sort((a, b) => {
+    let cmp = 0;
+    switch (field) {
+      case "name":
+        cmp = (a.name || a.email).localeCompare(b.name || b.email);
+        break;
+      case "activeDays":
+        cmp = (a.activeDays ?? 0) - (b.activeDays ?? 0);
+        break;
+      case "documents":
+        cmp = (a.documentsCreated ?? 0) - (b.documentsCreated ?? 0);
+        break;
+      case "conversations":
+        cmp =
+          (a.documentChatInteractions + a.assistantChatInteractions) -
+          (b.documentChatInteractions + b.assistantChatInteractions);
+        break;
+      case "shared":
+        cmp = (a.resourcesShared ?? 0) - (b.resourcesShared ?? 0);
+        break;
+      case "lastActivity":
+        cmp =
+          (a.lastTrackedActivityAt
+            ? new Date(a.lastTrackedActivityAt).getTime()
+            : 0) -
+          (b.lastTrackedActivityAt
+            ? new Date(b.lastTrackedActivityAt).getTime()
+            : 0);
+        break;
+      case "clerkSignIn":
+        cmp =
+          (a.clerkLastSignInAt
+            ? new Date(a.clerkLastSignInAt).getTime()
+            : 0) -
+          (b.clerkLastSignInAt
+            ? new Date(b.clerkLastSignInAt).getTime()
+            : 0);
+        break;
+    }
+    return dir === "asc" ? cmp : -cmp;
+  });
+}
+
+function SortableHead({
+  field,
+  label,
+  current,
+  dir,
+  className,
+  onSort,
+}: {
+  field: UserSortField;
+  label: string;
+  current: UserSortField;
+  dir: SortDir;
+  className?: string;
+  onSort: (f: UserSortField) => void;
+}) {
+  const active = current === field;
+  return (
+    <TableHead
+      className={cn("h-12 cursor-pointer select-none px-4 hover:text-foreground", className)}
+      onClick={() => onSort(field)}
+    >
+      <span className="flex items-center gap-1">
+        {label}
+        {active ? (
+          dir === "asc" ? (
+            <ChevronUp className="h-3.5 w-3.5" />
+          ) : (
+            <ChevronDown className="h-3.5 w-3.5" />
+          )
+        ) : (
+          <ArrowUpDown className="h-3.5 w-3.5 opacity-40" />
+        )}
+      </span>
+    </TableHead>
+  );
+}
 
 const bucketLabels: Record<AdminUserActivityBucket | "all", string> = {
   all: "Todos",
@@ -269,6 +367,17 @@ export default function AdminUsersPage() {
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [bucket, setBucket] = useState<AdminUserActivityBucket | "all">("all");
+  const [sortField, setSortField] = useState<UserSortField>("lastActivity");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
+
+  const handleSort = (field: UserSortField) => {
+    if (sortField === field) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortField(field);
+      setSortDir("desc");
+    }
+  };
 
   const deferredQuery = useDeferredValue(query);
 
@@ -306,14 +415,16 @@ export default function AdminUsersPage() {
   const filteredUsers = useMemo(() => {
     const users = insights?.users ?? [];
 
-    return users.filter((user) => {
+    const filtered = users.filter((user) => {
       if (bucket !== "all" && user.activityBucket !== bucket) {
         return false;
       }
 
       return matchesSearch(user, deferredQuery);
     });
-  }, [bucket, deferredQuery, insights?.users]);
+
+    return sortUsers(filtered, sortField, sortDir);
+  }, [bucket, deferredQuery, insights?.users, sortField, sortDir]);
 
   const summary = insights?.summary;
   const totalUsers = summary?.totalUsers ?? 0;
@@ -596,19 +707,13 @@ export default function AdminUsersPage() {
                     <Table>
                       <TableHeader className="bg-muted/35">
                         <TableRow className="hover:bg-transparent">
-                          <TableHead className="h-12 px-4">
-                            Utilizador
-                          </TableHead>
-                          <TableHead className="h-12 px-4">Retencao</TableHead>
-                          <TableHead className="h-12 px-4">Conteudo</TableHead>
-                          <TableHead className="h-12 px-4">Conversas</TableHead>
-                          <TableHead className="h-12 px-4">
-                            Comunidade
-                          </TableHead>
-                          <TableHead className="h-12 px-4">
-                            Ultima atividade
-                          </TableHead>
-                          <TableHead className="h-12 px-4">Clerk</TableHead>
+                          <SortableHead field="name" label="Utilizador" current={sortField} dir={sortDir} onSort={handleSort} />
+                          <SortableHead field="activeDays" label="Retencao" current={sortField} dir={sortDir} onSort={handleSort} />
+                          <SortableHead field="documents" label="Conteudo" current={sortField} dir={sortDir} onSort={handleSort} />
+                          <SortableHead field="conversations" label="Conversas" current={sortField} dir={sortDir} onSort={handleSort} />
+                          <SortableHead field="shared" label="Comunidade" current={sortField} dir={sortDir} onSort={handleSort} />
+                          <SortableHead field="lastActivity" label="Ultima atividade" current={sortField} dir={sortDir} onSort={handleSort} />
+                          <SortableHead field="clerkSignIn" label="Clerk" current={sortField} dir={sortDir} onSort={handleSort} />
                         </TableRow>
                       </TableHeader>
 

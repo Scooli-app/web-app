@@ -23,12 +23,15 @@ import {
 import {
   adminOnboardingService,
   type AdminOnboardingOverview,
+  type AdminOnboardingResponse,
 } from "@/services/api/admin-onboarding.service";
 import {
   ACQUISITION_SOURCE_LABELS,
+  ONBOARDING_GOAL_LABELS,
   SUBJECT_AREA_LABELS,
   TEACHING_LEVEL_LABELS,
   type AcquisitionSource,
+  type OnboardingGoal,
   type SubjectArea,
   type TeachingLevel,
 } from "@/shared/types/onboarding";
@@ -36,7 +39,10 @@ import { format } from "date-fns";
 import { pt } from "date-fns/locale";
 import {
   ArrowLeft,
+  ArrowUpDown,
   BarChart3,
+  ChevronDown,
+  ChevronUp,
   Loader2,
   MapPin,
   MessageSquare,
@@ -44,7 +50,7 @@ import {
   Users,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { toast } from "sonner";
 
@@ -62,6 +68,10 @@ const subjectChartConfig = {
 
 const levelChartConfig = {
   count: { label: "Respostas", color: "var(--chart-3)" },
+} satisfies ChartConfig;
+
+const goalsChartConfig = {
+  count: { label: "Respostas", color: "var(--chart-4)" },
 } satisfies ChartConfig;
 
 const metricCardClassName =
@@ -83,6 +93,18 @@ function getLevelLabel(key: string) {
   return TEACHING_LEVEL_LABELS[key as TeachingLevel] ?? key;
 }
 
+function getGoalLabel(key: string) {
+  return ONBOARDING_GOAL_LABELS[key as OnboardingGoal] ?? key;
+}
+
+function parseCommaSeparated(value: string | null | undefined): string[] {
+  if (!value) return [];
+  return value
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
 function EmptyChartState({ message }: { message: string }) {
   return (
     <div className="flex h-[260px] items-center justify-center rounded-xl border border-dashed border-border/70 bg-muted/20 text-sm text-muted-foreground">
@@ -91,10 +113,70 @@ function EmptyChartState({ message }: { message: string }) {
   );
 }
 
+type SortField = "user" | "source" | "date";
+type SortDir = "asc" | "desc";
+
+function SortableHead({
+  field,
+  label,
+  current,
+  dir,
+  onSort,
+}: {
+  field: SortField;
+  label: string;
+  current: SortField;
+  dir: SortDir;
+  onSort: (f: SortField) => void;
+}) {
+  const active = current === field;
+  return (
+    <TableHead
+      className="cursor-pointer select-none hover:text-foreground"
+      onClick={() => onSort(field)}
+    >
+      <span className="flex items-center gap-1">
+        {label}
+        {active ? (
+          dir === "asc" ? (
+            <ChevronUp className="h-3.5 w-3.5" />
+          ) : (
+            <ChevronDown className="h-3.5 w-3.5" />
+          )
+        ) : (
+          <ArrowUpDown className="h-3.5 w-3.5 opacity-40" />
+        )}
+      </span>
+    </TableHead>
+  );
+}
+
+function sortResponses(
+  responses: AdminOnboardingResponse[],
+  field: SortField,
+  dir: SortDir,
+): AdminOnboardingResponse[] {
+  return [...responses].sort((a, b) => {
+    let cmp = 0;
+    if (field === "user") {
+      const nameA = (a.userName || a.userUsername || a.userEmail).toLowerCase();
+      const nameB = (b.userName || b.userUsername || b.userEmail).toLowerCase();
+      cmp = nameA.localeCompare(nameB);
+    } else if (field === "source") {
+      cmp = a.acquisitionSource.localeCompare(b.acquisitionSource);
+    } else if (field === "date") {
+      cmp = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+    }
+    return dir === "asc" ? cmp : -cmp;
+  });
+}
+
 export default function AdminOnboardingPage() {
   const router = useRouter();
   const [overview, setOverview] = useState<AdminOnboardingOverview | null>(null);
   const [loading, setLoading] = useState(true);
+  const [sortField, setSortField] = useState<SortField>("date");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
 
   const loadOverview = useCallback(async () => {
     setLoading(true);
@@ -111,6 +193,15 @@ export default function AdminOnboardingPage() {
   useEffect(() => {
     loadOverview();
   }, [loadOverview]);
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortField(field);
+      setSortDir("asc");
+    }
+  };
 
   const acquisitionData =
     overview?.acquisitionSourceBreakdown.map((item) => ({
@@ -130,7 +221,17 @@ export default function AdminOnboardingPage() {
       label: getLevelLabel(item.key),
     })) ?? [];
 
-  const responses = overview?.recentResponses ?? [];
+  const goalsData =
+    overview?.goalsBreakdown?.map((item) => ({
+      ...item,
+      label: getGoalLabel(item.key),
+    })) ?? [];
+
+
+  const responses = useMemo(
+    () => sortResponses(overview?.recentResponses ?? [], sortField, sortDir),
+    [overview?.recentResponses, sortField, sortDir],
+  );
 
   const mobileResponses = (
     <div className="space-y-3">
@@ -142,6 +243,9 @@ export default function AdminOnboardingPage() {
         responses.map((response) => {
           const displayName =
             response.userName || response.userUsername || response.userEmail;
+          const subjects = parseCommaSeparated(response.subjectArea);
+          const levels = parseCommaSeparated(response.teachingLevel);
+          const goals = parseCommaSeparated(response.goals);
           return (
             <div
               key={response.id}
@@ -164,16 +268,21 @@ export default function AdminOnboardingPage() {
                 <Badge variant="outline" className="border-primary/20 bg-primary/8 text-primary text-xs">
                   {getAcquisitionLabel(response.acquisitionSource)}
                 </Badge>
-                {response.subjectArea && (
-                  <Badge variant="secondary" className="text-xs">
-                    {getSubjectLabel(response.subjectArea)}
+                {subjects.map((s) => (
+                  <Badge key={s} variant="secondary" className="text-xs">
+                    {getSubjectLabel(s)}
                   </Badge>
-                )}
-                {response.teachingLevel && (
-                  <Badge variant="secondary" className="text-xs">
-                    {getLevelLabel(response.teachingLevel)}
+                ))}
+                {levels.map((l) => (
+                  <Badge key={l} variant="secondary" className="text-xs">
+                    {getLevelLabel(l)}
                   </Badge>
-                )}
+                ))}
+                {goals.map((g) => (
+                  <Badge key={g} variant="outline" className="border-violet-400/30 bg-violet-400/8 text-xs text-violet-700 dark:text-violet-300">
+                    {getGoalLabel(g)}
+                  </Badge>
+                ))}
               </div>
             </div>
           );
@@ -187,18 +296,19 @@ export default function AdminOnboardingPage() {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Utilizador</TableHead>
-            <TableHead>Como nos encontrou</TableHead>
+            <SortableHead field="user" label="Utilizador" current={sortField} dir={sortDir} onSort={handleSort} />
+            <SortableHead field="source" label="Como nos encontrou" current={sortField} dir={sortDir} onSort={handleSort} />
             <TableHead>Disciplina</TableHead>
             <TableHead>Nível</TableHead>
-            <TableHead>Data</TableHead>
+            <TableHead>Objetivos</TableHead>
+            <SortableHead field="date" label="Data" current={sortField} dir={sortDir} onSort={handleSort} />
           </TableRow>
         </TableHeader>
         <TableBody>
           {responses.length === 0 ? (
             <TableRow>
               <TableCell
-                colSpan={5}
+                colSpan={6}
                 className="h-24 text-center text-muted-foreground"
               >
                 Ainda não existem respostas ao onboarding.
@@ -210,6 +320,9 @@ export default function AdminOnboardingPage() {
                 response.userName ||
                 response.userUsername ||
                 response.userEmail;
+              const subjects = parseCommaSeparated(response.subjectArea);
+              const levels = parseCommaSeparated(response.teachingLevel);
+              const goals = parseCommaSeparated(response.goals);
               return (
                 <TableRow key={response.id}>
                   <TableCell className="max-w-[220px]">
@@ -228,15 +341,48 @@ export default function AdminOnboardingPage() {
                       {getAcquisitionLabel(response.acquisitionSource)}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {response.subjectArea
-                      ? getSubjectLabel(response.subjectArea)
-                      : "—"}
+                  <TableCell className="text-sm">
+                    {subjects.length === 0 ? (
+                      <span className="text-muted-foreground">—</span>
+                    ) : (
+                      <div className="flex flex-wrap gap-1">
+                        {subjects.map((s) => (
+                          <Badge key={s} variant="secondary" className="text-xs">
+                            {getSubjectLabel(s)}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
                   </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {response.teachingLevel
-                      ? getLevelLabel(response.teachingLevel)
-                      : "—"}
+                  <TableCell className="text-sm">
+                    {levels.length === 0 ? (
+                      <span className="text-muted-foreground">—</span>
+                    ) : (
+                      <div className="flex flex-wrap gap-1">
+                        {levels.map((l) => (
+                          <Badge key={l} variant="secondary" className="text-xs">
+                            {getLevelLabel(l)}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-sm">
+                    {goals.length === 0 ? (
+                      <span className="text-muted-foreground">—</span>
+                    ) : (
+                      <div className="flex flex-wrap gap-1">
+                        {goals.map((g) => (
+                          <Badge
+                            key={g}
+                            variant="outline"
+                            className="border-violet-400/30 bg-violet-400/8 text-xs text-violet-700 dark:text-violet-300"
+                          >
+                            {getGoalLabel(g)}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
                   </TableCell>
                   <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
                     {format(
@@ -465,6 +611,49 @@ export default function AdminOnboardingPage() {
                 </CardContent>
               </Card>
             </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>O que Procuram na Scooli</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {goalsData.length === 0 ? (
+                  <EmptyChartState message="Nenhum objetivo registado ainda." />
+                ) : (
+                  <ChartContainer
+                    config={goalsChartConfig}
+                    className="aspect-auto h-[280px]"
+                  >
+                    <BarChart data={goalsData} layout="vertical" margin={{ left: 10 }}>
+                      <CartesianGrid horizontal={false} />
+                      <XAxis
+                        type="number"
+                        allowDecimals={false}
+                        tickLine={false}
+                        axisLine={false}
+                      />
+                      <YAxis
+                        dataKey="label"
+                        type="category"
+                        tickLine={false}
+                        axisLine={false}
+                        width={180}
+                        tick={{ fontSize: 12 }}
+                      />
+                      <ChartTooltip
+                        cursor={false}
+                        content={<ChartTooltipContent hideLabel />}
+                      />
+                      <Bar
+                        dataKey="count"
+                        fill="var(--color-count)"
+                        radius={10}
+                      />
+                    </BarChart>
+                  </ChartContainer>
+                )}
+              </CardContent>
+            </Card>
 
             <Card>
               <CardHeader>

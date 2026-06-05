@@ -104,8 +104,8 @@ function DocumentGroupCard({
           <p className="mt-0.5 text-[11px] text-muted-foreground">
             {group.chunks.length}{" "}
             {group.chunks.length === 1
-              ? "segmento consultado"
-              : "segmentos consultados"}
+              ? "excerto consultado"
+              : "excertos consultados"}
           </p>
         </div>
         <div className="shrink-0 self-center text-muted-foreground">
@@ -197,7 +197,7 @@ export function SourcesList({
         <p className="mt-1 text-xs text-muted-foreground">
           {groups.length} {groups.length === 1 ? "documento" : "documentos"}
           {" · "}
-          {totalChunks} {totalChunks === 1 ? "segmento" : "segmentos"}
+          {totalChunks} {totalChunks === 1 ? "excerto" : "excertos"}
         </p>
       </CardHeader>
       <CardContent className="px-0 pb-0 space-y-2.5 flex-1 min-h-0 overflow-y-auto">
