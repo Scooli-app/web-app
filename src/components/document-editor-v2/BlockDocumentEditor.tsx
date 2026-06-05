@@ -671,7 +671,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
               if (el.type === "text") return `[texto] "${(el as CanvasTextElement).text}"`;
               if (el.type === "bullet_list" || el.type === "ordered_list")
                 return `[lista] ${(el as CanvasListElement).items.join(" | ")}`;
-              if (el.type === "image_placeholder") return `[imagem]`;
+              if (el.type === "image_placeholder") return "[imagem]";
               return `[${el.type}]`;
             })
             .join("; ");
