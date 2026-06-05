@@ -310,10 +310,12 @@ export async function updateDocument(
  */
 export async function chatWithDocument(
   id: string,
-  message: string
+  message: string,
+  canvasState?: string
 ): Promise<ChatResponse> {
   const response = await apiClient.post<ChatResponse>(`/documents/${id}/chat`, {
     chatMessage: message,
+    ...(canvasState ? { canvasState } : {}),
   });
   return response.data;
 }

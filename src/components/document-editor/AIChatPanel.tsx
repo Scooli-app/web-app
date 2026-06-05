@@ -107,6 +107,10 @@ interface ChatMessage {
   role: "user" | "assistant";
   content: string;
   hasUpdate?: boolean;
+  /** When true, render Sim/Não quick-action buttons below the message */
+  imageRegenOffer?: boolean;
+  /** Set to true after user clicks Sim or Não to hide the buttons */
+  imageRegenResolved?: boolean;
 }
 
 interface AIChatPanelProps {
@@ -119,6 +123,10 @@ interface AIChatPanelProps {
   sources?: RagSource[];
   variant?: "desktop" | "mobile";
   showGenerationHint?: boolean;
+  /** Called when the user clicks "Sim" on an image-regen offer */
+  onImageRegen?: () => void;
+  /** Called when the user clicks "Não" on an image-regen offer */
+  onDismissImageRegen?: () => void;
   /** Document type used to pick contextual suggestion chips */
   documentType?: string;
   /** Document id used for PostHog event properties */
@@ -210,6 +218,8 @@ function ChatContent({
   variant = "desktop",
   sources = [],
   showGenerationHint = false,
+  onImageRegen,
+  onDismissImageRegen,
   showSuggestions = false,
   documentType,
   onSuggestionClick,
@@ -226,6 +236,8 @@ function ChatContent({
   variant?: "desktop" | "mobile";
   sources?: RagSource[];
   showGenerationHint?: boolean;
+  onImageRegen?: () => void;
+  onDismissImageRegen?: () => void;
   showSuggestions?: boolean;
   documentType?: string;
   onSuggestionClick?: (chip: SuggestionChip) => void;
@@ -281,6 +293,22 @@ function ChatContent({
                     <div className="mt-2 pt-2 border-t border-border/30 flex items-center gap-1.5 text-[10px] font-semibold text-primary uppercase tracking-wider">
                       <Sparkles className="w-3 h-3" />
                       Documento Refinado
+                    </div>
+                  )}
+                  {message.imageRegenOffer && !message.imageRegenResolved && onImageRegen && (
+                    <div className="mt-2 pt-2 border-t border-border/30 flex gap-2">
+                      <button
+                        onClick={onImageRegen}
+                        className="px-3 py-1 rounded-lg text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                      >
+                        Sim, regenerar
+                      </button>
+                      <button
+                        onClick={onDismissImageRegen}
+                        className="px-3 py-1 rounded-lg text-xs font-medium bg-muted text-muted-foreground hover:bg-muted/70 transition-colors"
+                      >
+                        Não
+                      </button>
                     </div>
                   )}
                 </div>
@@ -372,6 +400,8 @@ export default function AIChatPanel({
   title = "Assistente de IA",
   sources = [],
   showGenerationHint = false,
+  onImageRegen,
+  onDismissImageRegen,
   documentType,
   documentId,
 }: AIChatPanelProps) {
@@ -434,6 +464,8 @@ export default function AIChatPanel({
           variant="desktop"
           sources={sources}
           showGenerationHint={showGenerationHint}
+          onImageRegen={onImageRegen}
+          onDismissImageRegen={onDismissImageRegen}
           showSuggestions={showSuggestions}
           documentType={documentType}
           onSuggestionClick={handleSuggestionClick}
@@ -479,6 +511,8 @@ export default function AIChatPanel({
                 variant="mobile"
                 sources={sources}
                 showGenerationHint={showGenerationHint}
+                onImageRegen={onImageRegen}
+                onDismissImageRegen={onDismissImageRegen}
                 showSuggestions={showSuggestions}
                 documentType={documentType}
                 onSuggestionClick={handleSuggestionClick}

@@ -37,6 +37,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useGenerationProgress } from "@/hooks/useGenerationProgress";
 import { parsePresentationDocument } from "@/shared/types/blocks";
+import type { RagSource } from "@/shared/types/document";
 import {
   isCanvasPresentation,
   type CanvasElement,
@@ -49,12 +50,8 @@ import {
 import { getThemeById } from "@/shared/types/presentation-theme";
 import { Routes } from "@/shared/types";
 import { fetchDocument, updateDocument, chatWithDocument } from "@/store/documents/documentSlice";
+import { regenerateDocumentImage as regenerateDocumentImageApi, generateDocumentImage as generateDocumentImageApi } from "@/services/api/document-images.service";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import {
-  generateDocumentImage,
-  regenerateDocumentImage as regenerateDocumentImageService,
-  uploadDocumentImage,
-} from "@/services/api";
 import {
   AlignCenter,
   AlignLeft,
@@ -62,13 +59,14 @@ import {
   Bold,
   ChevronDown,
   ChevronUp,
+  Minus,
   Copy,
   Download,
   Eye,
   EyeOff,
   FileText,
+  Image as ImageIcon,
   Italic,
-  Link2,
   Loader2,
   MoreHorizontal,
   Play,
@@ -78,12 +76,12 @@ import {
   Trash2,
   Underline,
   Undo2,
-  Upload,
 } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { applyTheme, presentationToCanvas } from "./canvas-layout";
+import { applyTheme, clampCanvasSlide, presentationToCanvas } from "./canvas-layout";
+import { ImagePickerModal, type ImageInsertResult } from "./ImagePickerModal";
 import { ColorPickerPopover } from "./ColorPickerPopover";
 import { SlideKonvaEditor, type SlideKonvaEditorHandle } from "./SlideKonvaEditor";
 import { SlideThumbnail } from "./SlideThumbnail";
@@ -96,10 +94,12 @@ interface Props {
 interface ChatMessage {
   role: "user" | "assistant";
   content: string;
+  /** Show Sim/Não image-regen offer buttons below this message */
+  imageRegenOffer?: boolean;
+  /** Set after user clicks Sim or Não to hide buttons */
+  imageRegenResolved?: boolean;
   hasUpdate?: boolean;
 }
-
-type ImgMode = "none" | "url" | "generate";
 
 /* --------------------------------------------------------------------------
  * Helpers
@@ -192,6 +192,13 @@ export function BlockDocumentEditor({ documentId }: Props) {
   const dispatch = useAppDispatch();
   const rawDocument = useAppSelector((s) => s.documents.currentDocument);
   const document = rawDocument?.id === documentId ? rawDocument : null;
+
+  // Derive RAG sources for the "Fontes" tab — same pattern as DocumentEditor.
+  const sources: RagSource[] = Array.isArray(document?.sources)
+    ? (document.sources as RagSource[])
+    : Array.isArray(document?.metadata?.sources)
+      ? (document.metadata.sources as RagSource[])
+      : [];
   const isLoading = useAppSelector((s) => s.documents.isLoading);
   const loadingDocumentId = useAppSelector((s) => s.documents.loadingDocumentId);
 
@@ -226,7 +233,10 @@ export function BlockDocumentEditor({ documentId }: Props) {
     if (!document || document.contentFormat !== "json" || !document.content) return null;
     try {
       const raw: unknown = JSON.parse(document.content);
-      if (isCanvasPresentation(raw)) return raw;
+      if (isCanvasPresentation(raw)) {
+        // Clamp any elements that drifted out-of-bounds in a previous session.
+        return { ...raw, slides: raw.slides.map(clampCanvasSlide) };
+      }
       const v1 = parsePresentationDocument(document.content);
       return presentationToCanvas(v1);
     } catch {
@@ -245,16 +255,13 @@ export function BlockDocumentEditor({ documentId }: Props) {
 
   /* ── Zoom ──────────────────────────────────────────────────────────────── */
   const [zoom, setZoom] = useState(1.0);
-  const ZOOM_MIN = 0.25; // 25 %
-  const ZOOM_MAX = 2.0;  // 200 %
+  const ZOOM_MIN = 0.25;
+  const ZOOM_MAX = 2.0;
 
   /* ── Image toolbar state ─────────────────────────────────────────────── */
-  const [imgMode, setImgMode] = useState<ImgMode>("none");
-  const [imgUrlDraft, setImgUrlDraft] = useState("");
-  const [imgPromptDraft, setImgPromptDraft] = useState("");
-  const [isUploadingImg, setIsUploadingImg] = useState(false);
-  const [isGeneratingImg, setIsGeneratingImg] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [imageModalOpen, setImageModalOpen] = useState(false);
+  /** true = replacing an existing selected image; false = inserting a new one */
+  const [imageModalReplacing, setImageModalReplacing] = useState(false);
 
   useEffect(() => {
     if (canvasFromDoc) {
@@ -288,6 +295,10 @@ export function BlockDocumentEditor({ documentId }: Props) {
   const [canRedo, setCanRedo] = useState(false);
 
   useEffect(() => { canvasRef.current = canvas; });
+
+  /** Kept in sync with activeSlideId state so keyboard handlers don't go stale. */
+  const activeSlideIdRef = useRef(activeSlideId);
+  useEffect(() => { activeSlideIdRef.current = activeSlideId; }, [activeSlideId]);
 
   const pushHistory = useCallback(() => {
     const cur = canvasRef.current;
@@ -324,10 +335,37 @@ export function BlockDocumentEditor({ documentId }: Props) {
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      // ── Undo / Redo ──────────────────────────────────────────────────────
       const mod = e.ctrlKey || e.metaKey;
-      if (!mod) return;
-      if (e.key === "z" && !e.shiftKey) { e.preventDefault(); undo(); }
-      if (e.key === "y" || (e.key === "z" && e.shiftKey)) { e.preventDefault(); redo(); }
+      if (mod) {
+        if (e.key === "z" && !e.shiftKey) { e.preventDefault(); undo(); }
+        if (e.key === "y" || (e.key === "z" && e.shiftKey)) { e.preventDefault(); redo(); }
+        return;
+      }
+
+      // ── Arrow-key slide navigation ────────────────────────────────────────
+      // Skip when typing in any text input, textarea, or contenteditable so
+      // cursor movement inside text elements is not hijacked.
+      const target = e.target as HTMLElement | null;
+      const inTextInput =
+        target?.tagName === "INPUT" ||
+        target?.tagName === "TEXTAREA" ||
+        target?.contentEditable === "true";
+      if (inTextInput) return;
+
+      if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+        const slides = canvasRef.current?.slides;
+        if (!slides) return;
+        const idx = slides.findIndex((s) => s.id === activeSlideIdRef.current);
+        const next = slides[idx + 1];
+        if (next) { e.preventDefault(); setActiveSlideId(next.id); setSelectedElementId(null); }
+      } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+        const slides = canvasRef.current?.slides;
+        if (!slides) return;
+        const idx = slides.findIndex((s) => s.id === activeSlideIdRef.current);
+        const prev = slides[idx - 1];
+        if (prev) { e.preventDefault(); setActiveSlideId(prev.id); setSelectedElementId(null); }
+      }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
@@ -399,6 +437,64 @@ export function BlockDocumentEditor({ documentId }: Props) {
       setDirty(true);
     },
     [selectedElementId, activeSlideId, pushHistory],
+  );
+
+  /**
+   * Unified handler for the image picker modal.
+   * - Replacing mode: patches the currently selected image element.
+   * - Insert mode: adds a new image_placeholder element to the active slide.
+   */
+  const handleImageFromModal = useCallback(
+    ({ url, prompt, backendId }: ImageInsertResult) => {
+      if (imageModalReplacing) {
+        // Patch the existing selected element
+        applyElementPatch({
+          url,
+          prompt,
+          imageBackendId: backendId,
+        } as Partial<CanvasImageElement>);
+        return;
+      }
+      // Insert new element
+      if (!activeSlideId) return;
+      const newId = `img-${Date.now().toString(36)}`;
+      const newEl: CanvasImageElement = {
+        id: newId,
+        type: "image_placeholder",
+        x: 0.10,
+        y: 0.20,
+        w: 0.80,
+        h: 0.60,
+        prompt,
+        url,
+        imageBackendId: backendId,
+      };
+      pushHistory();
+      setCanvas((prev) =>
+        prev
+          ? {
+              ...prev,
+              slides: prev.slides.map((s) =>
+                s.id === activeSlideId
+                  ? { ...s, elements: [...s.elements, newEl] }
+                  : s,
+              ),
+            }
+          : prev,
+      );
+      setSelectedElementId(newId);
+      setDirty(true);
+    },
+    [imageModalReplacing, applyElementPatch, activeSlideId, pushHistory],
+  );
+
+  /** Called from the floating change-image button on the Konva canvas. */
+  const handleChangeImageFromCanvas = useCallback(
+    (_elementId: string) => {
+      setImageModalReplacing(true);
+      setImageModalOpen(true);
+    },
+    [],
   );
 
   const addSlide = useCallback(() => {
@@ -561,15 +657,31 @@ export function BlockDocumentEditor({ documentId }: Props) {
       setChatError("");
       setIsChatting(true);
       try {
+        // Build a slide-aware message so the AI knows which slide the teacher is looking at.
+        const slides = canvas?.slides ?? [];
+        const activeIdx = slides.findIndex((s) => s.id === activeSlideId);
+        const slide = activeSlideId ? slides.find((s) => s.id === activeSlideId) : null;
+        let enrichedMessage = userMessage;
+        if (slide && activeIdx !== -1) {
+          const slideTitle = (slide.elements.find(
+            (el) => el.type === "text" && (el as CanvasTextElement).role === "title",
+          ) as CanvasTextElement | undefined)?.text ?? "Sem título";
+          const elemSummary = slide.elements
+            .map((el) => {
+              if (el.type === "text") return `[texto] "${(el as CanvasTextElement).text}"`;
+              if (el.type === "bullet_list" || el.type === "ordered_list")
+                return `[lista] ${(el as CanvasListElement).items.join(" | ")}`;
+              if (el.type === "image_placeholder") return "[imagem]";
+              return `[${el.type}]`;
+            })
+            .join("; ");
+          enrichedMessage = `Contexto: slide ${activeIdx + 1} de ${slides.length} ("${slideTitle}"). Elementos: ${elemSummary}.\n\nPedido: ${userMessage}`;
+        }
+
         const response = await dispatch(
-          chatWithDocument({ id: document.id, message: userMessage }),
+          chatWithDocument({ id: document.id, message: enrichedMessage, canvasState: canvas ? JSON.stringify(canvas) : undefined }),
         ).unwrap();
         if (response.chatAnswer) {
-          setChatHistory((prev) => [
-            ...prev,
-            { role: "assistant", content: response.chatAnswer },
-          ]);
-
           // If this was a quick-action (Simplificar / Expandir / Melhorar),
           // apply the AI text directly to the targeted canvas element.
           const pending = pendingAIActionRef.current;
@@ -610,6 +722,44 @@ export function BlockDocumentEditor({ documentId }: Props) {
             setDirty(true);
           }
         }
+
+        // If the backend returned updated presentation JSON, apply it to the canvas.
+        // Always apply when valid — JSON.stringify key ordering can differ even for
+        // identical content, so strict equality checks produce false negatives.
+        let canvasWasUpdated = false;
+        if (response.content && response.content.trim().startsWith("{")) {
+          try {
+            const raw: unknown = JSON.parse(response.content);
+            if (isCanvasPresentation(raw)) {
+              pushHistory();
+              setCanvas(raw);
+              setDirty(false); // just synced from server
+              canvasWasUpdated = true;
+            }
+          } catch {
+            // not valid JSON — ignore, keep existing canvas
+          }
+        }
+        if (response.chatAnswer) {
+          setChatHistory((prev) => [
+            ...prev,
+            {
+              role: "assistant",
+              content: response.chatAnswer ?? (canvasWasUpdated ? "Slide atualizado! ✓" : ""),
+            },
+          ]);
+        }
+        // Proactively offer image regeneration when the AI detected a context change on a slide with an image
+        if (response.suggestImageRegen) {
+          setChatHistory((prev) => [
+            ...prev,
+            {
+              role: "assistant",
+              content: "🖼️ O contexto visual do slide mudou. Queres que regenere a imagem para corresponder ao novo conteúdo?",
+              imageRegenOffer: true,
+            },
+          ]);
+        }
       } catch (err) {
         const msg = err instanceof Error ? err.message : "Erro na conversa com IA.";
         setChatError(msg);
@@ -617,8 +767,76 @@ export function BlockDocumentEditor({ documentId }: Props) {
         setIsChatting(false);
       }
     },
-    [dispatch, document?.id, pushHistory], // eslint-disable-line react-hooks/exhaustive-deps
+    [dispatch, document?.id, pushHistory, canvas, activeSlideId], // eslint-disable-line react-hooks/exhaustive-deps
   );
+
+  /** Marks all pending image-regen offers as resolved in chat history */
+  const resolveImageRegenOffers = useCallback(() => {
+    setChatHistory(prev =>
+      prev.map(msg => msg.imageRegenOffer ? { ...msg, imageRegenResolved: true } : msg)
+    );
+  }, []);
+
+  /** Called when user clicks "Não" on the image-regen offer bubble */
+  const handleImageRegenDismiss = useCallback(() => {
+    resolveImageRegenOffers();
+  }, [resolveImageRegenOffers]);
+
+  /** Called when user clicks "Sim, regenerar" on the image-regen offer bubble */
+  const handleImageRegen = useCallback(async () => {
+    resolveImageRegenOffers();
+    if (!document?.id || !canvas) return;
+    const activeSlide = canvas.slides.find(s => s.id === activeSlideId);
+    const imageEl = activeSlide?.elements.find(
+      (el): el is CanvasImageElement => el.type === "image_placeholder"
+    ) as CanvasImageElement | undefined;
+    if (!imageEl) {
+      toast.error("Não encontrei uma imagem neste slide para regenerar.");
+      return;
+    }
+    try {
+      const textContent = activeSlide?.elements
+        .filter(el => el.type === "text" || el.type === "bullet_list" || el.type === "ordered_list")
+        .map(el => {
+          if (el.type === "text") return (el as CanvasTextElement).text;
+          if (el.type === "bullet_list" || el.type === "ordered_list") return (el as CanvasListElement).items?.join(", ") ?? "";
+          return "";
+        })
+        .filter(Boolean)
+        .join(" ") ?? "";
+      const prompt = imageEl.prompt
+        ? `${imageEl.prompt}. Contexto: ${textContent}`
+        : textContent || "ilustração educativa";
+      let newUrl: string | null = null;
+      if (imageEl.imageBackendId) {
+        const result = await regenerateDocumentImageApi(document.id, imageEl.imageBackendId, prompt);
+        newUrl = result.newUrl;
+      } else {
+        const result = await generateDocumentImageApi(document.id, prompt);
+        newUrl = result.newUrl;
+      }
+      if (newUrl) {
+        const finalUrl = newUrl;
+        setCanvas(prev => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            slides: prev.slides.map(slide =>
+              slide.id === activeSlideId
+                ? { ...slide, elements: slide.elements.map(el => el.id === imageEl.id ? { ...el, url: finalUrl } : el) }
+                : slide
+            ),
+          };
+        });
+        setDirty(true);
+        toast.success("Imagem regenerada com sucesso!");
+      } else {
+        toast.info("A imagem está a ser processada. Atualiza a página em breve.");
+      }
+    } catch {
+      toast.error("Erro ao regenerar a imagem.");
+    }
+  }, [resolveImageRegenOffers, document?.id, canvas, activeSlideId]);
 
   /**
    * Fire a preset AI prompt for the selected element.
@@ -635,69 +853,6 @@ export function BlockDocumentEditor({ documentId }: Props) {
       void handleChatSubmit(prompt);
     },
     [handleChatSubmit, selectedElementId, activeSlideId, activeSlide],
-  );
-
-  /* ── Reset image toolbar when selection changes ────────────────────────── */
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { setImgMode("none"); }, [selectedElementId]);
-
-  /* ── Image toolbar handlers ──────────────────────────────────────────── */
-
-  const handleImageFileUpload = useCallback(
-    async (file: File) => {
-      if (!document?.id) return;
-      setIsUploadingImg(true);
-      try {
-        const result = await uploadDocumentImage(
-          document.id,
-          file,
-          (selectedImgEl as CanvasImageElement)?.prompt ?? "",
-        );
-        applyElementPatch({
-          url: result.image.url ?? undefined,
-          imageBackendId: result.image.id,
-        } as Partial<CanvasImageElement>);
-        toast.success("Imagem carregada com sucesso");
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : "Erro ao carregar imagem";
-        toast.error(msg);
-      } finally {
-        setIsUploadingImg(false);
-        // Reset the input so the same file can be re-selected
-        if (fileInputRef.current) fileInputRef.current.value = "";
-      }
-    },
-    [document?.id, selectedImgEl, applyElementPatch],
-  );
-
-  const handleGenerateImage = useCallback(
-    async (prompt: string) => {
-      if (!document?.id) return;
-      setIsGeneratingImg(true);
-      try {
-        const imgEl = selectedImgEl as CanvasImageElement;
-        const result = imgEl.imageBackendId
-          ? await regenerateDocumentImageService(document.id, imgEl.imageBackendId, prompt)
-          : await generateDocumentImage(document.id, prompt);
-        if (result.newUrl) {
-          applyElementPatch({
-            url: result.newUrl,
-            prompt,
-            imageBackendId: result.id,
-          } as Partial<CanvasImageElement>);
-          toast.success("Imagem gerada com sucesso");
-          setImgMode("none");
-        } else {
-          toast.error("A imagem ficou em processamento. Tenta novamente em breve.");
-        }
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : "Erro ao gerar imagem";
-        toast.error(msg);
-      } finally {
-        setIsGeneratingImg(false);
-      }
-    },
-    [document?.id, selectedImgEl, applyElementPatch],
   );
 
   /* ── Auto-save (debounced, 1.5 s after last change) ─────────────────── */
@@ -950,6 +1105,19 @@ export function BlockDocumentEditor({ documentId }: Props) {
           Texto
         </Button>
 
+        {/* Add image — opens the image picker modal */}
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8 gap-1.5"
+          disabled={!activeSlide}
+          title="Adicionar imagem"
+          onClick={() => { setImageModalReplacing(false); setImageModalOpen(true); }}
+        >
+          <ImageIcon className="h-3.5 w-3.5" />
+          Imagem
+        </Button>
+
         <div className="h-5 w-px bg-border" />
 
         <ThemePicker currentThemeId={canvas.themeId} onSelect={handleThemeSelect} />
@@ -1152,115 +1320,18 @@ export function BlockDocumentEditor({ documentId }: Props) {
             </>
           )}
 
-          {/* IMAGE actions */}
+          {/* IMAGE actions — single button that opens the picker modal */}
           {selectedImgEl && (
-            <>
-              {/* Hidden file input — triggered by "Carregar da PC" button */}
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) void handleImageFileUpload(file);
-                }}
-              />
-
-              {imgMode === "url" ? (
-                /* ── URL paste input ── */
-                <div className="flex items-center gap-1">
-                  <input
-                    type="url"
-                    value={imgUrlDraft}
-                    autoFocus
-                    onChange={(e) => setImgUrlDraft(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && imgUrlDraft.trim()) {
-                        applyElementPatch({ url: imgUrlDraft.trim() } as Partial<CanvasImageElement>);
-                        setImgMode("none"); setImgUrlDraft("");
-                      }
-                      if (e.key === "Escape") { setImgMode("none"); setImgUrlDraft(""); }
-                    }}
-                    placeholder="https://..."
-                    className="h-7 w-52 rounded border border-border bg-background px-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
-                  />
-                  <Button size="sm" className="h-7 text-xs"
-                    onClick={() => {
-                      if (imgUrlDraft.trim()) applyElementPatch({ url: imgUrlDraft.trim() } as Partial<CanvasImageElement>);
-                      setImgMode("none"); setImgUrlDraft("");
-                    }}>OK</Button>
-                  <Button variant="ghost" size="sm" className="h-7 text-xs"
-                    onClick={() => { setImgMode("none"); setImgUrlDraft(""); }}>Cancelar</Button>
-                </div>
-              ) : imgMode === "generate" ? (
-                /* ── AI generation panel ── */
-                <div className="flex items-center gap-1.5">
-                  <input
-                    type="text"
-                    value={imgPromptDraft}
-                    autoFocus
-                    onChange={(e) => setImgPromptDraft(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && imgPromptDraft.trim() && !isGeneratingImg) {
-                        void handleGenerateImage(imgPromptDraft.trim());
-                      }
-                      if (e.key === "Escape") setImgMode("none");
-                    }}
-                    placeholder="Descreve a imagem a gerar..."
-                    className="h-7 w-64 rounded border border-border bg-background px-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
-                    disabled={isGeneratingImg}
-                  />
-                  <Button size="sm" className="h-7 gap-1 text-xs"
-                    disabled={!imgPromptDraft.trim() || isGeneratingImg}
-                    onClick={() => void handleGenerateImage(imgPromptDraft.trim())}
-                  >
-                    {isGeneratingImg ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-                    {isGeneratingImg ? "A gerar…" : "Gerar"}
-                  </Button>
-                  <Button variant="ghost" size="sm" className="h-7 text-xs"
-                    onClick={() => setImgMode("none")} disabled={isGeneratingImg}>Cancelar</Button>
-                </div>
-              ) : (
-                /* ── Normal: Trocar / Gerar buttons ── */
-                <>
-                  <Button
-                    variant="ghost" size="sm" className="h-7 gap-1 text-xs"
-                    title="Carregar imagem do computador"
-                    disabled={isUploadingImg}
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    {isUploadingImg
-                      ? <Loader2 className="h-3 w-3 animate-spin" />
-                      : <Upload className="h-3 w-3" />}
-                    {isUploadingImg ? "A carregar…" : "Carregar da PC"}
-                  </Button>
-                  <Button
-                    variant="ghost" size="sm" className="h-7 gap-1 text-xs"
-                    title="Colar URL de imagem"
-                    onClick={() => {
-                      setImgUrlDraft((selectedImgEl as CanvasImageElement).url ?? "");
-                      setImgMode("url");
-                    }}
-                  >
-                    <Link2 className="h-3 w-3" />
-                    Por URL
-                  </Button>
-                  <div className="mx-1 h-5 w-px bg-border" />
-                  <Button
-                    variant="ghost" size="sm" className="h-7 gap-1 text-xs text-primary"
-                    title="Gera uma nova imagem com IA a partir de um prompt"
-                    onClick={() => {
-                      setImgPromptDraft((selectedImgEl as CanvasImageElement).prompt ?? "");
-                      setImgMode("generate");
-                    }}
-                  >
-                    <Sparkles className="h-3 w-3" />
-                    Gerar imagem
-                  </Button>
-                </>
-              )}
-            </>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 gap-1.5 text-xs"
+              title="Trocar imagem"
+              onClick={() => { setImageModalReplacing(true); setImageModalOpen(true); }}
+            >
+              <ImageIcon className="h-3.5 w-3.5" />
+              Trocar imagem
+            </Button>
           )}
 
           {/* Delete selected element */}
@@ -1313,8 +1384,8 @@ export function BlockDocumentEditor({ documentId }: Props) {
       <div className="flex flex-1 min-h-0 overflow-hidden">
 
         {/* Slide sidebar */}
-        <aside className="flex w-44 flex-shrink-0 flex-col overflow-y-auto border-r border-border bg-muted/20">
-          <div className="flex flex-col gap-3 p-3">
+        <aside className="flex w-44 flex-shrink-0 flex-col overflow-y-auto overflow-x-hidden border-r border-border bg-muted/20">
+          <div className="flex flex-col items-center gap-3 p-3">
             {canvas.slides.map((cs, idx) => (
               <SlideItem
                 key={cs.id}
@@ -1340,25 +1411,17 @@ export function BlockDocumentEditor({ documentId }: Props) {
           </div>
         </aside>
 
-        {/* Main canvas — flex-1 so it fills remaining height; overflow-hidden
-             so the slide never causes scrolling (SlideKonvaEditor computes
-             stage size to fit within available h/w).                        */}
+        {/* Main canvas */}
         <main className="flex flex-1 min-h-0 flex-col items-center overflow-hidden bg-neutral-100 dark:bg-zinc-900">
           {activeSlide ? (
-            <div className="flex w-full flex-1 min-h-0 flex-col items-center justify-center">
+            <div className="relative flex w-full flex-1 min-h-0 flex-col items-center justify-center">
               <p className="mb-1 shrink-0 text-center text-xs text-muted-foreground">
                 Slide {activeSlideIdx + 1} / {canvas.slides.length}
                 {selectedElement ? ` · ${selectedElement.type}` : ""}
                 {activeSlide.hidden ? " · oculto" : ""}
               </p>
-              {/* Canvas wrapper — flex-1 takes all remaining height.
-                   zoom ≤ 1 : shrink the inner div height so the ResizeObserver inside
-                              SlideKonvaEditor sees a smaller container and renders the
-                              Konva stage at a proportionally smaller pixel size.
-                   zoom > 1 : keep the inner div at 100 % and apply a CSS scale
-                              transform so the stage renders at native resolution and
-                              visually enlarges (edges clip at the overflow boundary). */}
-              <div className="flex w-full flex-1 min-h-0 items-center justify-center overflow-hidden">
+              {/* Canvas with padding so the slide has breathing room */}
+              <div className="flex w-full flex-1 min-h-0 items-center justify-center overflow-hidden p-4">
                 <div
                   style={{
                     width: "100%",
@@ -1374,29 +1437,44 @@ export function BlockDocumentEditor({ documentId }: Props) {
                     slide={activeSlide}
                     onChange={(elements) => updateSlide(activeSlide.id, elements)}
                     onSelectionChange={setSelectedElementId}
+                    onChangeImage={handleChangeImageFromCanvas}
                   />
                 </div>
               </div>
 
-              {/* Zoom slider */}
-              <div className="flex shrink-0 items-center gap-2 pb-1.5">
+              {/* Zoom — bottom-right overlay, like Teachy */}
+              <div className="absolute bottom-3 right-3 flex items-center gap-1 rounded-lg border border-border bg-background/90 px-2 py-1 shadow-sm backdrop-blur-sm">
+                <button
+                  type="button"
+                  title="Diminuir zoom"
+                  onClick={() => setZoom((z) => Math.max(ZOOM_MIN, parseFloat((z - 0.1).toFixed(2))))}
+                  className="flex h-5 w-5 items-center justify-center rounded hover:bg-muted text-muted-foreground"
+                >
+                  <Minus className="h-3 w-3" />
+                </button>
                 <input
                   type="range"
                   min={ZOOM_MIN * 100}
                   max={ZOOM_MAX * 100}
                   step={5}
                   value={Math.round(zoom * 100)}
-                  onChange={(e) =>
-                    setZoom(parseFloat((Number(e.target.value) / 100).toFixed(2)))
-                  }
-                  className="w-24 accent-primary cursor-pointer"
+                  onChange={(e) => setZoom(parseFloat((Number(e.target.value) / 100).toFixed(2)))}
+                  className="w-20 accent-primary cursor-pointer"
                   title="Zoom"
                 />
                 <button
                   type="button"
+                  title="Aumentar zoom"
+                  onClick={() => setZoom((z) => Math.min(ZOOM_MAX, parseFloat((z + 0.1).toFixed(2))))}
+                  className="flex h-5 w-5 items-center justify-center rounded hover:bg-muted text-muted-foreground"
+                >
+                  <Plus className="h-3 w-3" />
+                </button>
+                <button
+                  type="button"
                   onClick={() => setZoom(1.0)}
-                  className="min-w-[3rem] rounded border border-border bg-background px-2 py-0.5 text-center text-[11px] text-muted-foreground hover:bg-muted"
-                  title="Repor zoom para 100%"
+                  title="Repor zoom"
+                  className="min-w-[2.5rem] text-center text-[11px] tabular-nums text-muted-foreground hover:text-foreground"
                 >
                   {Math.round(zoom * 100)}%
                 </button>
@@ -1417,9 +1495,22 @@ export function BlockDocumentEditor({ documentId }: Props) {
             placeholder="Pede ajuda para melhorar a apresentação..."
             title="Assistente de IA"
             showGenerationHint
+            sources={sources}
+            onImageRegen={handleImageRegen}
+            onDismissImageRegen={handleImageRegenDismiss}
           />
         </aside>
       </div>
+
+      {/* Image picker modal */}
+      {document && (
+        <ImagePickerModal
+          open={imageModalOpen}
+          documentId={document.id}
+          onClose={() => setImageModalOpen(false)}
+          onInsert={handleImageFromModal}
+        />
+      )}
     </div>
   );
 }

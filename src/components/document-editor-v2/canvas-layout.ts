@@ -369,6 +369,23 @@ export function canvasToSlide(cs: CanvasSlide, slideIdx: number): SlideBlock {
 }
 
 /* --------------------------------------------------------------------------
+ * clampCanvasSlide — ensure element dimensions are sane.
+ * Position (x/y) is intentionally NOT clamped so elements can overlap the
+ * slide boundary (Konva clips at canvas edges, same behaviour as Teachy).
+ * -------------------------------------------------------------------------- */
+
+export function clampCanvasSlide(cs: CanvasSlide): CanvasSlide {
+  return {
+    ...cs,
+    elements: cs.elements.map((el): CanvasElement => {
+      const w = Math.max(0.01, el.w);
+      const h = Math.max(0.01, el.h);
+      return { ...el, w, h };
+    }),
+  };
+}
+
+/* --------------------------------------------------------------------------
  * Full document conversions
  * -------------------------------------------------------------------------- */
 
