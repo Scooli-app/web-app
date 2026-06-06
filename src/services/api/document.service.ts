@@ -4,7 +4,7 @@
  * Based on Chalkboard backend API (Quarkus)
  */
 
-import type { BackendPaginatedResponse, ChatResponse, CreateDocumentParams, CreateDocumentStreamResponse, Document, DocumentFilters, DocumentStatsResponse, DocumentStreamCallbacks, DocumentType, GetDocumentsParams, GetDocumentsResponse, StreamedResponse, StreamEvent, WorksheetVariant } from "@/shared/types";
+import type { BackendPaginatedResponse, ChatResponse, CreateDocumentParams, CreateDocumentStreamResponse, Document, DocumentFilters, DocumentStatsResponse, DocumentStreamCallbacks, DocumentType, GenerateSlideResponse, GetDocumentsParams, GetDocumentsResponse, StreamedResponse, StreamEvent, WorksheetVariant } from "@/shared/types";
 import type { DocumentImage, RagSource } from "@/shared/types/document";
 import axios, { type AxiosError } from "axios";
 import apiClient from "./client";
@@ -317,6 +317,21 @@ export async function chatWithDocument(
     chatMessage: message,
     ...(canvasState ? { canvasState } : {}),
   });
+  return response.data;
+}
+
+export async function generateSlide(
+  id: string,
+  topic: string | undefined,
+  canvasState: string
+): Promise<GenerateSlideResponse> {
+  const response = await apiClient.post<GenerateSlideResponse>(
+    `/documents/${id}/slides/generate`,
+    {
+      ...(topic?.trim() ? { topic: topic.trim() } : {}),
+      canvasState,
+    }
+  );
   return response.data;
 }
 

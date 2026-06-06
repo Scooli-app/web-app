@@ -30,13 +30,22 @@ import AIChatPanel from "@/components/document-editor/AIChatPanel";
 import { GenerationProgress } from "@/components/blocks/GenerationProgress";
 import { Button } from "@/components/ui/button";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
 import { useGenerationProgress } from "@/hooks/useGenerationProgress";
-import { parsePresentationDocument } from "@/shared/types/blocks";
+import { parsePresentationDocument, slideBlockSchema } from "@/shared/types/blocks";
 import type { RagSource } from "@/shared/types/document";
 import {
   isCanvasPresentation,
@@ -44,6 +53,7 @@ import {
   type CanvasImageElement,
   type CanvasListElement,
   type CanvasPresentation,
+  type CanvasShapeElement,
   type CanvasSlide,
   type CanvasTextElement,
 } from "@/shared/types/canvas-presentation";
@@ -71,6 +81,7 @@ import {
   MoreHorizontal,
   Play,
   Plus,
+  Shapes,
   Redo2,
   Sparkles,
   Trash2,
@@ -80,7 +91,8 @@ import {
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { applyTheme, clampCanvasSlide, presentationToCanvas } from "./canvas-layout";
+import { generateSlide as generateSlideApi } from "@/services/api/document.service";
+import { applyTheme, clampCanvasSlide, presentationToCanvas, slideToCanvas } from "./canvas-layout";
 import { ImagePickerModal, type ImageInsertResult } from "./ImagePickerModal";
 import { ColorPickerPopover } from "./ColorPickerPopover";
 import { SlideKonvaEditor, type SlideKonvaEditorHandle } from "./SlideKonvaEditor";
@@ -156,6 +168,10 @@ const FONT_OPTIONS = [
   { label: "Merriweather",value: "Merriweather",        cssVar: "var(--font-merriweather, serif)" },
 ] as const;
 
+const DEFAULT_SHAPE_FILL = "rgba(103, 83, 255, 0.22)";
+const DEFAULT_SHAPE_STROKE = "#6753FF";
+const DEFAULT_SHAPE_STROKE_WIDTH = 0.004;
+
 
 function makeNewSlide(themeId?: string): CanvasSlide {
   const theme = getThemeById(themeId ?? "dark");
@@ -183,6 +199,121 @@ function makeNewSlide(themeId?: string): CanvasSlide {
     role: "subtitle",
   };
   return { id, layout: "title", background: theme.bg, elements: [titleEl, subtitleEl] };
+}
+
+function applyThemeToSlide(slide: CanvasSlide, themeId?: string): CanvasSlide {
+  const theme = getThemeById(themeId ?? "dark");
+
+  return {
+    ...slide,
+    background: theme.bg,
+    elements: slide.elements.map((el): CanvasElement => {
+      if (el.type === "text") {
+        const color =
+          el.role === "title"
+            ? theme.titleColor
+            : el.role === "subtitle"
+              ? theme.mutedColor
+              : el.role === "label"
+                ? theme.accentColor
+                : theme.bodyColor;
+        return { ...el, color };
+      }
+      if (el.type === "bullet_list" || el.type === "ordered_list") {
+        return { ...el, color: theme.bodyColor };
+      }
+      return el;
+    }),
+  };
+}
+
+function buildGeneratedCanvasSlide(slide: CanvasSlide, themeId?: string): CanvasSlide {
+  const freshSlideId = `s${Date.now().toString(36)}`;
+  let elementCounter = 0;
+  const nextElementId = () => `${freshSlideId}-e${(++elementCounter).toString(36)}`;
+
+  const dedupedSlide: CanvasSlide = {
+    ...slide,
+    id: freshSlideId,
+    hidden: false,
+    elements: slide.elements.map((el) => {
+      const freshElementId = nextElementId();
+      if (el.type === "bullet_list" || el.type === "ordered_list") {
+        return { ...el, id: freshElementId, blockId: freshElementId };
+      }
+      if (el.type === "math") {
+        return { ...el, id: freshElementId, blockId: freshElementId };
+      }
+      return { ...el, id: freshElementId };
+    }),
+  };
+
+  return applyThemeToSlide(dedupedSlide, themeId);
+}
+
+function makeShapeElement(shape: CanvasShapeElement["shape"]): CanvasShapeElement {
+  const id = `shape-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
+  const base: Pick<CanvasShapeElement, "id" | "type" | "shape" | "fill" | "stroke" | "strokeWidth" | "rotation"> = {
+    id,
+    type: "shape",
+    shape,
+    fill: DEFAULT_SHAPE_FILL,
+    stroke: DEFAULT_SHAPE_STROKE,
+    strokeWidth: DEFAULT_SHAPE_STROKE_WIDTH,
+    rotation: 0,
+  };
+
+  if (shape === "line") {
+    return {
+      ...base,
+      x: 0.3,
+      y: 0.49,
+      w: 0.4,
+      h: 0.02,
+    };
+  }
+
+  return {
+    ...base,
+    x: 0.35,
+    y: 0.35,
+    w: 0.3,
+    h: 0.3,
+  };
+}
+
+function PresentationEditorLoadingState() {
+  return (
+    <div className="flex min-h-[400px] w-full items-center justify-center">
+      <div className="flex items-center gap-2">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        <span className="text-lg text-muted-foreground">A carregar apresentação...</span>
+      </div>
+    </div>
+  );
+}
+
+function getPresentSlideIndex(slides: CanvasSlide[], activeSlideId: string | null): number {
+  const visibleSlides = slides.filter((slide) => !slide.hidden);
+  if (visibleSlides.length === 0) return 0;
+  const directVisibleIdx = visibleSlides.findIndex((slide) => slide.id === activeSlideId);
+  if (directVisibleIdx >= 0) return directVisibleIdx;
+
+  const activeIdx = slides.findIndex((slide) => slide.id === activeSlideId);
+  if (activeIdx < 0) return 0;
+
+  for (let offset = 1; offset < slides.length; offset += 1) {
+    const prev = slides[activeIdx - offset];
+    if (prev && !prev.hidden) {
+      return visibleSlides.findIndex((slide) => slide.id === prev.id);
+    }
+    const next = slides[activeIdx + offset];
+    if (next && !next.hidden) {
+      return visibleSlides.findIndex((slide) => slide.id === next.id);
+    }
+  }
+
+  return 0;
 }
 
 /* --------------------------------------------------------------------------
@@ -262,6 +393,10 @@ export function BlockDocumentEditor({ documentId }: Props) {
   const [imageModalOpen, setImageModalOpen] = useState(false);
   /** true = replacing an existing selected image; false = inserting a new one */
   const [imageModalReplacing, setImageModalReplacing] = useState(false);
+  const [addSlideMenuOpen, setAddSlideMenuOpen] = useState(false);
+  const [generateSlideDialogOpen, setGenerateSlideDialogOpen] = useState(false);
+  const [generateSlideTopic, setGenerateSlideTopic] = useState("");
+  const [isGeneratingSlide, setIsGeneratingSlide] = useState(false);
 
   useEffect(() => {
     if (canvasFromDoc) {
@@ -285,7 +420,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
       setCanUndo(false);
       setCanRedo(false);
     }
-  }, [canvasFromDoc]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [canvasFromDoc]);
 
   /* ── Undo / Redo ─────────────────────────────────────────────────────── */
   const canvasRef = useRef<CanvasPresentation | null>(null);
@@ -299,6 +434,10 @@ export function BlockDocumentEditor({ documentId }: Props) {
   /** Kept in sync with activeSlideId state so keyboard handlers don't go stale. */
   const activeSlideIdRef = useRef(activeSlideId);
   useEffect(() => { activeSlideIdRef.current = activeSlideId; }, [activeSlideId]);
+  const selectedElementIdRef = useRef(selectedElementId);
+  useEffect(() => { selectedElementIdRef.current = selectedElementId; }, [selectedElementId]);
+  const nudgeSessionActiveRef = useRef(false);
+  const applyElementPatchRef = useRef<((patch: Partial<CanvasElement>, options?: { pushToHistory?: boolean }) => void) | null>(null);
 
   const pushHistory = useCallback(() => {
     const cur = canvasRef.current;
@@ -334,6 +473,10 @@ export function BlockDocumentEditor({ documentId }: Props) {
   }, []);
 
   useEffect(() => {
+    const resetNudgeSession = () => {
+      nudgeSessionActiveRef.current = false;
+    };
+
     const handler = (e: KeyboardEvent) => {
       // ── Undo / Redo ──────────────────────────────────────────────────────
       const mod = e.ctrlKey || e.metaKey;
@@ -353,6 +496,41 @@ export function BlockDocumentEditor({ documentId }: Props) {
         target?.contentEditable === "true";
       if (inTextInput) return;
 
+      const selectedId = selectedElementIdRef.current;
+      const isArrowKey =
+        e.key === "ArrowRight" ||
+        e.key === "ArrowLeft" ||
+        e.key === "ArrowUp" ||
+        e.key === "ArrowDown";
+
+      if (selectedId && isArrowKey) {
+        const slideId = activeSlideIdRef.current;
+        const slide = canvasRef.current?.slides.find((s) => s.id === slideId);
+        const el = slide?.elements.find((element) => element.id === selectedId);
+        if (!slideId || !el) return;
+
+        if (!nudgeSessionActiveRef.current) {
+          pushHistory();
+          nudgeSessionActiveRef.current = true;
+        }
+
+        const step = e.shiftKey ? 0.02 : 0.004;
+
+        if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+          const deltaX = e.key === "ArrowLeft" ? -step : step;
+          const newX = Math.min(Math.max(el.x + deltaX, 0), Math.max(0, 1 - el.w));
+          e.preventDefault();
+          applyElementPatchRef.current?.({ x: newX }, { pushToHistory: false });
+          return;
+        }
+
+        const deltaY = e.key === "ArrowUp" ? -step : step;
+        const newY = Math.min(Math.max(el.y + deltaY, 0), Math.max(0, 1 - el.h));
+        e.preventDefault();
+        applyElementPatchRef.current?.({ y: newY }, { pushToHistory: false });
+        return;
+      }
+
       if (e.key === "ArrowRight" || e.key === "ArrowDown") {
         const slides = canvasRef.current?.slides;
         if (!slides) return;
@@ -368,12 +546,26 @@ export function BlockDocumentEditor({ documentId }: Props) {
       }
     };
     window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [undo, redo]);
+    window.addEventListener("keyup", resetNudgeSession);
+    window.addEventListener("blur", resetNudgeSession);
+    return () => {
+      window.removeEventListener("keydown", handler);
+      window.removeEventListener("keyup", resetNudgeSession);
+      window.removeEventListener("blur", resetNudgeSession);
+    };
+  }, [pushHistory, undo, redo]);
+
+  useEffect(() => {
+    nudgeSessionActiveRef.current = false;
+  }, [selectedElementId, activeSlideId]);
 
   /* ── Derived: active slide + selected element ────────────────────────── */
   const activeSlide = canvas?.slides.find((s) => s.id === activeSlideId) ?? null;
   const activeSlideIdx = canvas?.slides.findIndex((s) => s.id === activeSlideId) ?? -1;
+  const presentSlideIndex = useMemo(
+    () => (canvas ? getPresentSlideIndex(canvas.slides, activeSlideId) : 0),
+    [canvas, activeSlideId],
+  );
 
   const selectedElement = useMemo<CanvasElement | null>(() => {
     if (!activeSlide || !selectedElementId) return null;
@@ -391,6 +583,10 @@ export function BlockDocumentEditor({ documentId }: Props) {
 
   const selectedImgEl = selectedElement?.type === "image_placeholder"
     ? selectedElement
+    : null;
+
+  const selectedShapeEl = selectedElement?.type === "shape"
+    ? (selectedElement as CanvasShapeElement)
     : null;
 
   /* ── Editor ref (addText / removeSelected) ───────────────────────────── */
@@ -412,11 +608,13 @@ export function BlockDocumentEditor({ documentId }: Props) {
 
   /** Update a single property of the currently selected element. */
   const applyElementPatch = useCallback(
-    (patch: Partial<CanvasElement>) => {
+    (patch: Partial<CanvasElement>, options?: { pushToHistory?: boolean }) => {
       if (!selectedElementId || !activeSlideId || !canvasRef.current) return;
       const slide = canvasRef.current.slides.find((s) => s.id === activeSlideId);
       if (!slide) return;
-      pushHistory();
+      if (options?.pushToHistory !== false) {
+        pushHistory();
+      }
       setCanvas((prev) =>
         prev
           ? {
@@ -439,23 +637,12 @@ export function BlockDocumentEditor({ documentId }: Props) {
     [selectedElementId, activeSlideId, pushHistory],
   );
 
-  /**
-   * Unified handler for the image picker modal.
-   * - Replacing mode: patches the currently selected image element.
-   * - Insert mode: adds a new image_placeholder element to the active slide.
-   */
-  const handleImageFromModal = useCallback(
+  useEffect(() => {
+    applyElementPatchRef.current = applyElementPatch;
+  }, [applyElementPatch]);
+
+  const insertImageElement = useCallback(
     ({ url, prompt, backendId }: ImageInsertResult) => {
-      if (imageModalReplacing) {
-        // Patch the existing selected element
-        applyElementPatch({
-          url,
-          prompt,
-          imageBackendId: backendId,
-        } as Partial<CanvasImageElement>);
-        return;
-      }
-      // Insert new element
       if (!activeSlideId) return;
       const newId = `img-${Date.now().toString(36)}`;
       const newEl: CanvasImageElement = {
@@ -485,7 +672,64 @@ export function BlockDocumentEditor({ documentId }: Props) {
       setSelectedElementId(newId);
       setDirty(true);
     },
-    [imageModalReplacing, applyElementPatch, activeSlideId, pushHistory],
+    [activeSlideId, pushHistory],
+  );
+
+  /**
+   * Unified handler for the image picker modal.
+   * - Replacing mode: patches the currently selected image element.
+   * - Insert mode: adds a new image_placeholder element to the active slide.
+   */
+  const handleImageFromModal = useCallback(
+    ({ url, prompt, backendId }: ImageInsertResult) => {
+      if (imageModalReplacing) {
+        applyElementPatch({
+          url,
+          prompt,
+          imageBackendId: backendId,
+        } as Partial<CanvasImageElement>);
+        return;
+      }
+      insertImageElement({ url, prompt, backendId });
+    },
+    [imageModalReplacing, applyElementPatch, insertImageElement],
+  );
+
+  const handleGenerateImageFromModal = useCallback(
+    async (prompt: string) => {
+      if (!document?.id) return;
+
+      const loadingToastId = toast.loading("A gerar imagem...");
+      try {
+        const result = await generateDocumentImageApi(document.id, prompt);
+        toast.dismiss(loadingToastId);
+
+        if (!result.newUrl) {
+          toast.error("A imagem ficou em processamento. Tenta novamente.");
+          return;
+        }
+
+        if (imageModalReplacing) {
+          applyElementPatch({
+            url: result.newUrl,
+            prompt,
+            imageBackendId: result.id,
+          } as Partial<CanvasImageElement>);
+        } else {
+          insertImageElement({
+            url: result.newUrl,
+            prompt,
+            backendId: result.id,
+          });
+        }
+
+        toast.success("Imagem gerada com sucesso!");
+      } catch (err) {
+        toast.dismiss(loadingToastId);
+        toast.error(err instanceof Error ? err.message : "Erro ao gerar imagem");
+      }
+    },
+    [document?.id, imageModalReplacing, applyElementPatch, insertImageElement],
   );
 
   /** Called from the floating change-image button on the Konva canvas. */
@@ -502,8 +746,87 @@ export function BlockDocumentEditor({ documentId }: Props) {
     pushHistory();
     setCanvas((prev) => prev ? { ...prev, slides: [...prev.slides, newSlide] } : prev);
     setActiveSlideId(newSlide.id);
+    setSelectedElementId(null);
     setDirty(true);
   }, [pushHistory]);
+
+  const insertGeneratedSlide = useCallback(
+    (generatedSlide: CanvasSlide) => {
+      const cur = canvasRef.current;
+      if (!cur) return;
+
+      const activeIdx = activeSlideId
+        ? cur.slides.findIndex((slide) => slide.id === activeSlideId)
+        : -1;
+      const insertAt = activeIdx >= 0 ? activeIdx + 1 : cur.slides.length;
+
+      pushHistory();
+      setCanvas((prev) => {
+        if (!prev) return prev;
+        const slides = [...prev.slides];
+        slides.splice(insertAt, 0, generatedSlide);
+        return { ...prev, slides };
+      });
+      setActiveSlideId(generatedSlide.id);
+      setSelectedElementId(null);
+      setDirty(true);
+    },
+    [activeSlideId, pushHistory],
+  );
+
+  const insertShapeElement = useCallback(
+    (shape: CanvasShapeElement["shape"]) => {
+      if (!activeSlideId) return;
+      const newEl = makeShapeElement(shape);
+      pushHistory();
+      setCanvas((prev) =>
+        prev
+          ? {
+              ...prev,
+              slides: prev.slides.map((s) =>
+                s.id === activeSlideId
+                  ? { ...s, elements: [...s.elements, newEl] }
+                  : s,
+              ),
+            }
+          : prev,
+      );
+      setSelectedElementId(newEl.id);
+      setDirty(true);
+    },
+    [activeSlideId, pushHistory],
+  );
+
+  const handleGenerateSlide = useCallback(async () => {
+    if (!document?.id || !canvas) return;
+
+    setIsGeneratingSlide(true);
+    const loadingToastId = toast.loading("A gerar slide...");
+
+    try {
+      const response = await generateSlideApi(
+        document.id,
+        generateSlideTopic.trim() || undefined,
+        JSON.stringify(canvas),
+      );
+      const parsedSlide = slideBlockSchema.parse(JSON.parse(response.slide));
+      const generatedSlide = buildGeneratedCanvasSlide(
+        slideToCanvas(parsedSlide),
+        canvas.themeId,
+      );
+
+      insertGeneratedSlide(generatedSlide);
+      setGenerateSlideDialogOpen(false);
+      setGenerateSlideTopic("");
+      toast.dismiss(loadingToastId);
+      toast.success("Slide gerado com sucesso!");
+    } catch (err) {
+      toast.dismiss(loadingToastId);
+      toast.error(err instanceof Error ? err.message : "Erro ao gerar slide");
+    } finally {
+      setIsGeneratingSlide(false);
+    }
+  }, [canvas, document?.id, generateSlideTopic, insertGeneratedSlide]);
 
   const deleteSlide = useCallback(
     (slideId: string) => {
@@ -767,7 +1090,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
         setIsChatting(false);
       }
     },
-    [dispatch, document?.id, pushHistory, canvas, activeSlideId], // eslint-disable-line react-hooks/exhaustive-deps
+    [dispatch, document?.id, pushHistory, canvas, activeSlideId],
   );
 
   /** Marks all pending image-regen offers as resolved in chat history */
@@ -933,6 +1256,42 @@ export function BlockDocumentEditor({ documentId }: Props) {
               valign: "top",
               wrap: true,
             });
+          } else if (el.type === "shape") {
+            const shape = el as CanvasShapeElement;
+            const strokeColor = toHex6(shape.stroke ?? DEFAULT_SHAPE_STROKE);
+            const fillColor = toHex6(shape.fill ?? DEFAULT_SHAPE_FILL);
+            const lineWidth = Math.max(0.75, (shape.strokeWidth ?? DEFAULT_SHAPE_STROKE_WIDTH) * 72 * SLIDE_W);
+
+            if (shape.shape === "rect") {
+              slide.addShape(PptxGenJS.ShapeType.rect, {
+                x,
+                y,
+                w,
+                h,
+                rotate: shape.rotation ?? 0,
+                fill: { color: fillColor, transparency: 35 },
+                line: { color: strokeColor, width: lineWidth },
+              });
+            } else if (shape.shape === "ellipse") {
+              slide.addShape(PptxGenJS.ShapeType.ellipse, {
+                x,
+                y,
+                w,
+                h,
+                rotate: shape.rotation ?? 0,
+                fill: { color: fillColor, transparency: 35 },
+                line: { color: strokeColor, width: lineWidth },
+              });
+            } else {
+              slide.addShape(PptxGenJS.ShapeType.line, {
+                x,
+                y: y + h / 2,
+                w,
+                h: 0,
+                rotate: shape.rotation ?? 0,
+                line: { color: strokeColor, width: lineWidth, beginArrowType: "none", endArrowType: "none" },
+              });
+            }
           }
         }
       }
@@ -954,7 +1313,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
     if (!canvas || !document) return;
     setExporting(true);
     try {
-      const { PDFDocument, rgb } = await import("pdf-lib");
+      const { PDFDocument, degrees, rgb } = await import("pdf-lib");
       const pdfDoc = await PDFDocument.create();
       const PAGE_W = 960;
       const PAGE_H = 540;
@@ -995,6 +1354,52 @@ export function BlockDocumentEditor({ documentId }: Props) {
                 maxWidth: el.w * PAGE_W,
               });
             });
+          } else if (el.type === "shape") {
+            const shape = el as CanvasShapeElement;
+            const strokeRgb = hexToRgb01(shape.stroke ?? DEFAULT_SHAPE_STROKE);
+            const fillRgb = hexToRgb01(shape.fill ?? DEFAULT_SHAPE_FILL);
+            const strokeWidth = Math.max(1, (shape.strokeWidth ?? DEFAULT_SHAPE_STROKE_WIDTH) * PAGE_W);
+            const rotation = degrees(shape.rotation ?? 0);
+            const x = el.x * PAGE_W;
+            const y = PAGE_H - (el.y + el.h) * PAGE_H;
+            const width = el.w * PAGE_W;
+            const height = el.h * PAGE_H;
+
+            if (shape.shape === "rect") {
+              page.drawRectangle({
+                x,
+                y,
+                width,
+                height,
+                rotate: rotation,
+                color: rgb(fillRgb.r, fillRgb.g, fillRgb.b),
+                borderColor: rgb(strokeRgb.r, strokeRgb.g, strokeRgb.b),
+                borderWidth: strokeWidth,
+              });
+            } else if (shape.shape === "ellipse") {
+              page.drawEllipse({
+                x: x + width / 2,
+                y: y + height / 2,
+                xScale: width / 2,
+                yScale: height / 2,
+                rotate: rotation,
+                color: rgb(fillRgb.r, fillRgb.g, fillRgb.b),
+                borderColor: rgb(strokeRgb.r, strokeRgb.g, strokeRgb.b),
+                borderWidth: strokeWidth,
+              });
+            } else {
+              const centerX = x + width / 2;
+              const centerY = y + height / 2;
+              const angle = ((shape.rotation ?? 0) * Math.PI) / 180;
+              const dx = Math.cos(angle) * (width / 2);
+              const dy = Math.sin(angle) * (width / 2);
+              page.drawLine({
+                start: { x: centerX - dx, y: centerY - dy },
+                end: { x: centerX + dx, y: centerY + dy },
+                thickness: strokeWidth,
+                color: rgb(strokeRgb.r, strokeRgb.g, strokeRgb.b),
+              });
+            }
           }
         }
       }
@@ -1023,11 +1428,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
   /* ── Render branches ─────────────────────────────────────────────────── */
   const isFetchingThisDoc = loadingDocumentId === documentId;
   if (!document && (isFetchingThisDoc || isLoading)) {
-    return (
-      <div className="flex h-[60vh] items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-primary" />
-      </div>
-    );
+    return <PresentationEditorLoadingState />;
   }
   if (!document) {
     return (
@@ -1054,6 +1455,9 @@ export function BlockDocumentEditor({ documentId }: Props) {
     );
   }
   if (!canvas) {
+    if (isFetchingThisDoc || isLoading) {
+      return <PresentationEditorLoadingState />;
+    }
     return (
       <div className="mx-auto max-w-md p-8 text-center">
         <h2 className="text-lg font-semibold text-foreground">
@@ -1118,6 +1522,33 @@ export function BlockDocumentEditor({ documentId }: Props) {
           Imagem
         </Button>
 
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 gap-1.5"
+              disabled={!activeSlide}
+              title="Adicionar forma"
+            >
+              <Shapes className="h-3.5 w-3.5" />
+              Formas
+              <ChevronDown className="h-3 w-3 opacity-70" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-40">
+            <DropdownMenuItem onClick={() => insertShapeElement("rect")}>
+              Retângulo
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => insertShapeElement("ellipse")}>
+              Círculo
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => insertShapeElement("line")}>
+              Linha
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
         <div className="h-5 w-px bg-border" />
 
         <ThemePicker currentThemeId={canvas.themeId} onSelect={handleThemeSelect} />
@@ -1154,7 +1585,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <Link href={`${Routes.PRESENTATION_EDITOR.replace(":id", documentId)}/present`}>
+          <Link href={`${Routes.PRESENTATION_EDITOR.replace(":id", documentId)}/present?slide=${presentSlideIndex}`}>
             <Button variant="default" size="sm" className="h-8">
               <Play className="mr-1.5 h-3.5 w-3.5" />
               Apresentar
@@ -1320,6 +1751,77 @@ export function BlockDocumentEditor({ documentId }: Props) {
             </>
           )}
 
+          {selectedShapeEl && (
+            <>
+              <span className="text-xs text-muted-foreground">Preenchimento:</span>
+              <ColorPickerPopover
+                color={selectedShapeEl.fill || DEFAULT_SHAPE_FILL}
+                onChange={(fill) => applyElementPatch({ fill } as Partial<CanvasShapeElement>)}
+              >
+                <button
+                  title="Cor de preenchimento"
+                  className="flex h-7 w-9 items-center justify-center rounded border border-border hover:bg-muted"
+                >
+                  <span
+                    className="h-4 w-6 rounded-sm border border-border/40"
+                    style={{ background: selectedShapeEl.fill || DEFAULT_SHAPE_FILL }}
+                  />
+                </button>
+              </ColorPickerPopover>
+
+              <div className="mx-1 h-5 w-px bg-border" />
+
+              <span className="text-xs text-muted-foreground">Contorno:</span>
+              <ColorPickerPopover
+                color={selectedShapeEl.stroke || DEFAULT_SHAPE_STROKE}
+                onChange={(stroke) => applyElementPatch({ stroke } as Partial<CanvasShapeElement>)}
+              >
+                <button
+                  title="Cor do contorno"
+                  className="flex h-7 w-9 items-center justify-center rounded border border-border hover:bg-muted"
+                >
+                  <span
+                    className="h-4 w-6 rounded-sm border border-border/40"
+                    style={{ background: selectedShapeEl.stroke || DEFAULT_SHAPE_STROKE }}
+                  />
+                </button>
+              </ColorPickerPopover>
+
+              <div className="mx-1 h-5 w-px bg-border" />
+
+              <span className="text-xs text-muted-foreground">Espessura:</span>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 w-7 p-0 font-bold"
+                title="Diminuir espessura"
+                onClick={() =>
+                  applyElementPatch({
+                    strokeWidth: Math.max(0.001, (selectedShapeEl.strokeWidth ?? DEFAULT_SHAPE_STROKE_WIDTH) - 0.001),
+                  } as Partial<CanvasShapeElement>)
+                }
+              >
+                −
+              </Button>
+              <span className="w-8 select-none text-center text-xs tabular-nums text-muted-foreground">
+                {Math.round((selectedShapeEl.strokeWidth ?? DEFAULT_SHAPE_STROKE_WIDTH) * 900)}
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 w-7 p-0 font-bold"
+                title="Aumentar espessura"
+                onClick={() =>
+                  applyElementPatch({
+                    strokeWidth: Math.min(0.05, (selectedShapeEl.strokeWidth ?? DEFAULT_SHAPE_STROKE_WIDTH) + 0.001),
+                  } as Partial<CanvasShapeElement>)
+                }
+              >
+                +
+              </Button>
+            </>
+          )}
+
           {/* IMAGE actions — single button that opens the picker modal */}
           {selectedImgEl && (
             <Button
@@ -1405,9 +1907,31 @@ export function BlockDocumentEditor({ documentId }: Props) {
             ))}
           </div>
           <div className="sticky bottom-0 mt-auto p-3 pt-0">
-            <Button variant="outline" size="sm" className="w-full border-dashed text-xs" onClick={addSlide}>
-              + Slide
-            </Button>
+            <DropdownMenu open={addSlideMenuOpen} onOpenChange={setAddSlideMenuOpen}>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="w-full border-dashed text-xs">
+                  + Slide
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="center" className="w-48">
+                <DropdownMenuItem
+                  onSelect={() => {
+                    setAddSlideMenuOpen(false);
+                    addSlide();
+                  }}
+                >
+                  Slide em branco
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={() => {
+                    setAddSlideMenuOpen(false);
+                    setGenerateSlideDialogOpen(true);
+                  }}
+                >
+                  Gerar com IA
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </aside>
 
@@ -1509,8 +2033,53 @@ export function BlockDocumentEditor({ documentId }: Props) {
           documentId={document.id}
           onClose={() => setImageModalOpen(false)}
           onInsert={handleImageFromModal}
+          onGenerate={handleGenerateImageFromModal}
         />
       )}
+
+      <Dialog
+        open={generateSlideDialogOpen}
+        onOpenChange={(open) => {
+          if (!isGeneratingSlide) {
+            setGenerateSlideDialogOpen(open);
+            if (!open) {
+              setGenerateSlideTopic("");
+            }
+          }
+        }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Gerar com IA</DialogTitle>
+            <DialogDescription>
+              Indica um tema opcional. Se deixares em branco, a IA continua a apresentação de forma lógica.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="px-6">
+            <Input
+              value={generateSlideTopic}
+              onChange={(event) => setGenerateSlideTopic(event.target.value)}
+              placeholder="Tema do slide"
+              disabled={isGeneratingSlide}
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setGenerateSlideDialogOpen(false);
+                setGenerateSlideTopic("");
+              }}
+              disabled={isGeneratingSlide}
+            >
+              Cancelar
+            </Button>
+            <Button onClick={() => void handleGenerateSlide()} disabled={isGeneratingSlide}>
+              {isGeneratingSlide ? "A gerar..." : "Gerar slide"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

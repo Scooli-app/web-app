@@ -25,12 +25,13 @@ import type {
   CanvasImageElement,
   CanvasListElement,
   CanvasMathElement,
+  CanvasShapeElement,
   CanvasSlide,
   CanvasTextElement,
 } from "@/shared/types/canvas-presentation";
 import type Konva from "konva";
 import { useCallback, useEffect, useImperativeHandle, useRef, useState, forwardRef } from "react";
-import { Group, Image as KonvaImage, Layer, Line, Rect, Stage, Text, Transformer } from "react-konva";
+import { Ellipse, Group, Image as KonvaImage, Layer, Line, Rect, Stage, Text, Transformer } from "react-konva";
 
 /* --------------------------------------------------------------------------
  * Theme tokens — canvas can't use CSS vars so dark-theme values are hardcoded.
@@ -47,6 +48,32 @@ const T = {
 };
 
 const FS_BASE = 0.021; // base body font size fraction of W
+const MIN_ELEMENT_W = 0.05;
+const MIN_ELEMENT_H = 0.02;
+const MIN_TEXT_FONT = 0.012;
+const MAX_TEXT_FONT = 0.1;
+const SHAPE_FILL = "rgba(103, 83, 255, 0.22)";
+const SHAPE_STROKE = "#6753FF";
+const SHAPE_STROKE_WIDTH = 0.004;
+const CORNER_ANCHORS = new Set(["top-left", "top-right", "bottom-left", "bottom-right"]);
+const HORIZONTAL_SIDE_ANCHORS = new Set(["middle-left", "middle-right"]);
+const VERTICAL_SIDE_ANCHORS = new Set(["top-center", "bottom-center"]);
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max);
+}
+
+function isTextLikeElement(el: CanvasElement): el is CanvasTextElement | CanvasMathElement | CanvasListElement {
+  return el.type === "text" || el.type === "math" || el.type === "bullet_list" || el.type === "ordered_list";
+}
+
+function isShapeElement(el: CanvasElement): el is CanvasShapeElement {
+  return el.type === "shape";
+}
+
+function getTextLikeFontSize(el: CanvasTextElement | CanvasMathElement | CanvasListElement) {
+  return el.fontSize;
+}
 
 /* --------------------------------------------------------------------------
  * useStageSize — responsive 16:9 canvas.
@@ -221,6 +248,7 @@ export const SlideKonvaEditor = forwardRef<
   const [editState, setEditState] = useState<EditState | null>(null);
   /** Active snap guide lines (cleared on drag end). */
   const [guides, setGuides] = useState<{ vLines: number[]; hLines: number[] }>({ vLines: [], hLines: [] });
+  const isDraggingRef = useRef(false);
   /**
    * Live position of the selected node while dragging/transforming.
    * Updated on every onDragMove / onTransform tick so overlay buttons
@@ -244,23 +272,23 @@ export const SlideKonvaEditor = forwardRef<
     for (const el of elements) {
       if (el.type !== "image_placeholder") continue;
       const img = el as CanvasImageElement;
-      if (!img.url || img.url in imgCacheRef.current) continue;
-      imgCacheRef.current[img.url] = "loading";
+      const { url } = img;
+      if (!url || url in imgCacheRef.current) continue;
+      imgCacheRef.current[url] = "loading";
       changed = true;
       const i = new window.Image();
       i.crossOrigin = "anonymous";
       i.onload = () => {
-        imgCacheRef.current[img.url!] = i;
+        imgCacheRef.current[url] = i;
         setImgRevision((r) => r + 1); // trigger re-render
       };
       i.onerror = () => {
         // Remove from cache so a retry is possible
-        delete imgCacheRef.current[img.url!];
+        delete imgCacheRef.current[url];
       };
-      i.src = img.url;
+      i.src = url;
     }
     if (changed) setImgRevision((r) => r + 1); // repaint while loading
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [elements]);
 
   /* ── Notify parent when selection changes ──────────────────────────────── */
@@ -320,6 +348,97 @@ export const SlideKonvaEditor = forwardRef<
     [elements, onChange],
   );
 
+  const setStageCursor = useCallback((cursor: string) => {
+    if (stageRef.current) {
+      stageRef.current.container().style.cursor = cursor;
+    }
+  }, []);
+
+  const applyLiveTextLikeGeometry = useCallback(
+    (
+      node: Konva.Node,
+      el: CanvasTextElement | CanvasMathElement | CanvasListElement,
+      nextW: number,
+      nextH: number,
+      nextFontSize: number,
+    ) => {
+      const widthPx = nextW * W;
+      const heightPx = nextH * H;
+      const fontSizePx = nextFontSize * W;
+
+      node.offsetX(widthPx / 2);
+      node.offsetY(heightPx / 2);
+      node.setAttr("scooliWidth", nextW);
+      node.setAttr("scooliHeight", nextH);
+      node.setAttr("scooliFontSize", nextFontSize);
+
+      if (el.type === "bullet_list" || el.type === "ordered_list") {
+        const group = node as Konva.Group;
+        const hitRect = group.findOne("Rect");
+        if (hitRect) {
+          hitRect.width(widthPx);
+          hitRect.height(heightPx);
+        }
+
+        const itemH = Math.max(20, heightPx / Math.max(1, el.items.length));
+        group.find("Text").forEach((textNode, index) => {
+          const listTextNode = textNode as Konva.Text;
+          textNode.x(0);
+          textNode.y(index * itemH);
+          listTextNode.width(widthPx);
+          listTextNode.height(itemH);
+          listTextNode.fontSize(fontSizePx);
+        });
+      } else {
+        const textNode = node as Konva.Text;
+        textNode.width(widthPx);
+        textNode.height(heightPx);
+        textNode.fontSize(fontSizePx);
+      }
+    },
+    [W, H],
+  );
+
+  const getTextTransformMetrics = useCallback(
+    (
+      el: CanvasTextElement | CanvasMathElement | CanvasListElement,
+      sx: number,
+      sy: number,
+      activeAnchor?: string | null,
+    ) => {
+      const absScaleX = Math.abs(sx);
+      const absScaleY = Math.abs(sy);
+
+      if (activeAnchor && CORNER_ANCHORS.has(activeAnchor)) {
+        const factor = (absScaleX + absScaleY) / 2;
+        return {
+          newW: Math.max(MIN_ELEMENT_W, el.w * absScaleX),
+          newH: Math.max(MIN_ELEMENT_H, el.h * absScaleY),
+          newFontSize: clamp(getTextLikeFontSize(el) * factor, MIN_TEXT_FONT, MAX_TEXT_FONT),
+        };
+      }
+
+      if (activeAnchor && HORIZONTAL_SIDE_ANCHORS.has(activeAnchor)) {
+        return {
+          newW: Math.max(MIN_ELEMENT_W, el.w * absScaleX),
+          newH: el.h,
+          newFontSize: getTextLikeFontSize(el),
+        };
+      }
+
+      if (activeAnchor && VERTICAL_SIDE_ANCHORS.has(activeAnchor)) {
+        return {
+          newW: el.w,
+          newH: Math.max(MIN_ELEMENT_H, el.h * absScaleY),
+          newFontSize: getTextLikeFontSize(el),
+        };
+      }
+
+      return null;
+    },
+    [],
+  );
+
   /**
    * Snaps the node to nearby alignment lines during drag and draws guide lines.
    * Checks left/center/right and top/center/bottom edges of the dragged element
@@ -328,8 +447,8 @@ export const SlideKonvaEditor = forwardRef<
   const handleDragMove = useCallback(
     (id: string, node: Konva.Node) => {
       const THRESH = 6;
-      const hw = node.offsetX(); // half pixel width (offsetX = w*W/2)
-      const hh = node.offsetY(); // half pixel height
+      const hw = Number(node.getAttr("scooliHalfW")) || node.offsetX();
+      const hh = Number(node.getAttr("scooliHalfH")) || node.offsetY();
       const cx = node.x();
       const cy = node.y();
 
@@ -386,11 +505,13 @@ export const SlideKonvaEditor = forwardRef<
         rotation: node.rotation(),
       });
     },
-    [W, H, elements],
+    [W, H, OX, OY, elements],
   );
 
   const handleDragEnd = useCallback(
     (id: string, node: Konva.Node) => {
+      isDraggingRef.current = false;
+      setStageCursor("default");
       setGuides({ vLines: [], hLines: [] }); // clear guides
       setLivePos(null); // return to committed-state position
       const el = elements.find((e) => e.id === id);
@@ -402,7 +523,7 @@ export const SlideKonvaEditor = forwardRef<
         y: (node.y() - OY - el.h * H / 2) / H,
       });
     },
-    [W, H, elements, updateElement],
+    [W, H, OX, OY, elements, updateElement, setStageCursor],
   );
 
   /**
@@ -414,11 +535,27 @@ export const SlideKonvaEditor = forwardRef<
     (id: string, node: Konva.Node) => {
       const el = elements.find((e) => e.id === id);
       if (!el) return;
+      const activeAnchor = trRef.current?.getActiveAnchor();
+      let liveW = Math.max(MIN_ELEMENT_W, el.w * Math.abs(node.scaleX()));
+      let liveH = Math.max(MIN_ELEMENT_H, el.h * Math.abs(node.scaleY()));
+
+      if (isTextLikeElement(el) && activeAnchor) {
+        const metrics = getTextTransformMetrics(el, node.scaleX(), node.scaleY(), activeAnchor);
+        if (metrics) {
+          liveW = metrics.newW;
+          liveH = metrics.newH;
+          applyLiveTextLikeGeometry(node, el, metrics.newW, metrics.newH, metrics.newFontSize);
+          node.scaleX(1);
+          node.scaleY(1);
+          node.getLayer()?.batchDraw();
+        }
+      }
+
       setLivePos({
         cx: node.x() - OX,  // container space
         cy: node.y() - OY,
-        halfW: el.w * W / 2 * Math.abs(node.scaleX()),
-        halfH: el.h * H / 2 * Math.abs(node.scaleY()),
+        halfW: liveW * W / 2,
+        halfH: liveH * H / 2,
         rotation: node.rotation(),
       });
 
@@ -435,7 +572,7 @@ export const SlideKonvaEditor = forwardRef<
         setGuides({ vLines: [], hLines: [] });
       }
     },
-    [W, H, elements],
+    [W, H, OX, OY, applyLiveTextLikeGeometry, elements, getTextTransformMetrics],
   );
 
   /**
@@ -450,17 +587,51 @@ export const SlideKonvaEditor = forwardRef<
       setLivePos(null);
       const el = elements.find((e) => e.id === id);
       if (!el) return;
+      const activeAnchor = trRef.current?.getActiveAnchor();
       const sx = node.scaleX();
       const sy = node.scaleY();
-      const newW = Math.max(0.05, el.w * Math.abs(sx));
-      const newH = Math.max(0.02, el.h * Math.abs(sy));
+      let newW = Math.max(MIN_ELEMENT_W, el.w * Math.abs(sx));
+      let newH = Math.max(MIN_ELEMENT_H, el.h * Math.abs(sy));
+      let newFontSize: number | null = null;
+
+      if (isTextLikeElement(el)) {
+        const liveW = Number(node.getAttr("scooliWidth"));
+        const liveH = Number(node.getAttr("scooliHeight"));
+        const liveFontSize = Number(node.getAttr("scooliFontSize"));
+        const liveMetricsAvailable =
+          Number.isFinite(liveW) &&
+          Number.isFinite(liveH) &&
+          Number.isFinite(liveFontSize);
+
+        if (liveMetricsAvailable) {
+          newW = liveW;
+          newH = liveH;
+          newFontSize = liveFontSize;
+        } else {
+          const metrics = getTextTransformMetrics(el, sx, sy, activeAnchor);
+          if (metrics) {
+            newW = metrics.newW;
+            newH = metrics.newH;
+            newFontSize = metrics.newFontSize;
+          }
+        }
+      } else if (isShapeElement(el)) {
+        newW = Math.max(MIN_ELEMENT_W, el.w * Math.abs(sx));
+        newH = Math.max(MIN_ELEMENT_H, el.h * Math.abs(sy));
+      }
+
       const cx = node.x(); // center x in pixels
       const cy = node.y(); // center y in pixels
       // Reset scale and update offset so the pivot matches the new size
       node.scaleX(1);
       node.scaleY(1);
-      node.offsetX(newW * W / 2);
-      node.offsetY(newH * H / 2);
+      if (isShapeElement(el) && el.shape === "ellipse") {
+        node.offsetX(0);
+        node.offsetY(0);
+      } else {
+        node.offsetX(newW * W / 2);
+        node.offsetY(newH * H / 2);
+      }
       node.getLayer()?.batchDraw();
       // Convert center position back to top-left fraction for storage.
       // Subtract OX/OY (stage space → slide space).
@@ -471,10 +642,11 @@ export const SlideKonvaEditor = forwardRef<
         y: rawY,
         w: newW,
         h: newH,
+        ...(newFontSize !== null ? { fontSize: newFontSize } : {}),
         rotation: node.rotation(),
       });
     },
-    [W, H, elements, updateElement],
+    [W, H, OX, OY, elements, getTextTransformMetrics, updateElement],
   );
 
   const startEdit = useCallback(
@@ -526,7 +698,7 @@ export const SlideKonvaEditor = forwardRef<
         multiline,
       });
     },
-    [elements, W, H],
+    [elements, W, H, OX, OY],
   );
 
   const commitEdit = useCallback(
@@ -598,8 +770,14 @@ export const SlideKonvaEditor = forwardRef<
     },
     onDragMove: (e: Konva.KonvaEventObject<DragEvent>) =>
       handleDragMove(id, e.target),
-    onDragEnd: (e: Konva.KonvaEventObject<DragEvent>) =>
-      handleDragEnd(id, e.target),
+    onDragStart: () => {
+      isDraggingRef.current = true;
+      setStageCursor("grabbing");
+    },
+    onDragEnd: (e: Konva.KonvaEventObject<DragEvent>) => {
+      handleDragEnd(id, e.target);
+      setStageCursor("default");
+    },
     onTransform: (e: Konva.KonvaEventObject<Event>) =>
       handleTransformLive(id, e.target),
     onTransformEnd: (e: Konva.KonvaEventObject<Event>) =>
@@ -754,10 +932,10 @@ export const SlideKonvaEditor = forwardRef<
                     }}
                     // Change cursor to text-beam on hover so users know it's editable.
                     onMouseEnter={() => {
-                      if (stageRef.current) stageRef.current.container().style.cursor = "text";
+                      if (!isDraggingRef.current) setStageCursor("grab");
                     }}
                     onMouseLeave={() => {
-                      if (stageRef.current) stageRef.current.container().style.cursor = "default";
+                      if (!isDraggingRef.current) setStageCursor("default");
                     }}
                   />
                 );
@@ -798,10 +976,10 @@ export const SlideKonvaEditor = forwardRef<
                       if (node) startEdit(el.id, node, l.items.join("\n"), true);
                     }}
                     onMouseEnter={() => {
-                      if (stageRef.current) stageRef.current.container().style.cursor = "text";
+                      if (!isDraggingRef.current) setStageCursor("text");
                     }}
                     onMouseLeave={() => {
-                      if (stageRef.current) stageRef.current.container().style.cursor = "default";
+                      if (!isDraggingRef.current) setStageCursor("default");
                     }}
                   >
                     {/* Hit rect gives the Group an explicit bounding box */}
@@ -863,6 +1041,12 @@ export const SlideKonvaEditor = forwardRef<
                       const node = stageRef.current?.findOne(`#${el.id}`);
                       if (node) startEdit(el.id, node, m.tex);
                     }}
+                    onMouseEnter={() => {
+                      if (!isDraggingRef.current) setStageCursor("grab");
+                    }}
+                    onMouseLeave={() => {
+                      if (!isDraggingRef.current) setStageCursor("default");
+                    }}
                   />
                 );
               }
@@ -900,6 +1084,12 @@ export const SlideKonvaEditor = forwardRef<
                       visible={!isEditing}
                       {...dragSelectProps(el.id)}
                       {...dblHandlers}
+                      onMouseEnter={() => {
+                        if (!isDraggingRef.current) setStageCursor("grab");
+                      }}
+                      onMouseLeave={() => {
+                        if (!isDraggingRef.current) setStageCursor("default");
+                      }}
                     />
                   );
                 }
@@ -918,6 +1108,12 @@ export const SlideKonvaEditor = forwardRef<
                     visible={!isEditing}
                     {...dragSelectProps(el.id)}
                     {...dblHandlers}
+                    onMouseEnter={() => {
+                      if (!isDraggingRef.current) setStageCursor("grab");
+                    }}
+                    onMouseLeave={() => {
+                      if (!isDraggingRef.current) setStageCursor("default");
+                    }}
                   >
                     <Rect
                       width={el.w * W}
@@ -952,6 +1148,96 @@ export const SlideKonvaEditor = forwardRef<
                       listening={false}
                     />
                   </Group>
+                );
+              }
+
+              if (el.type === "shape") {
+                const shape = el as CanvasShapeElement;
+                const fill = shape.fill ?? SHAPE_FILL;
+                const stroke = shape.stroke ?? SHAPE_STROKE;
+                const strokeWidth = Math.max(1, (shape.strokeWidth ?? SHAPE_STROKE_WIDTH) * W);
+                const centerX = el.x * W + OX + (el.w * W) / 2;
+                const centerY = el.y * H + OY + (el.h * H) / 2;
+
+                if (shape.shape === "rect") {
+                  return (
+                    <Rect
+                      key={el.id}
+                      id={el.id}
+                      x={centerX}
+                      y={centerY}
+                      offsetX={el.w * W / 2}
+                      offsetY={el.h * H / 2}
+                      rotation={el.rotation ?? 0}
+                      width={el.w * W}
+                      height={el.h * H}
+                      fill={fill}
+                      stroke={stroke}
+                      strokeWidth={strokeWidth}
+                      scooliHalfW={el.w * W / 2}
+                      scooliHalfH={el.h * H / 2}
+                      cornerRadius={8}
+                      {...dragSelectProps(el.id)}
+                      onMouseEnter={() => {
+                        if (!isDraggingRef.current) setStageCursor("grab");
+                      }}
+                      onMouseLeave={() => {
+                        if (!isDraggingRef.current) setStageCursor("default");
+                      }}
+                    />
+                  );
+                }
+
+                if (shape.shape === "ellipse") {
+                  return (
+                    <Ellipse
+                      key={el.id}
+                      id={el.id}
+                      x={centerX}
+                      y={centerY}
+                      rotation={el.rotation ?? 0}
+                      radiusX={el.w * W / 2}
+                      radiusY={el.h * H / 2}
+                      fill={fill}
+                      stroke={stroke}
+                      strokeWidth={strokeWidth}
+                      scooliHalfW={el.w * W / 2}
+                      scooliHalfH={el.h * H / 2}
+                      {...dragSelectProps(el.id)}
+                      onMouseEnter={() => {
+                        if (!isDraggingRef.current) setStageCursor("grab");
+                      }}
+                      onMouseLeave={() => {
+                        if (!isDraggingRef.current) setStageCursor("default");
+                      }}
+                    />
+                  );
+                }
+
+                return (
+                  <Line
+                    key={el.id}
+                    id={el.id}
+                    x={centerX}
+                    y={centerY}
+                    offsetX={el.w * W / 2}
+                    offsetY={el.h * H / 2}
+                    rotation={el.rotation ?? 0}
+                    points={[0, el.h * H / 2, el.w * W, el.h * H / 2]}
+                    stroke={stroke}
+                    strokeWidth={strokeWidth}
+                    scooliHalfW={el.w * W / 2}
+                    scooliHalfH={el.h * H / 2}
+                    hitStrokeWidth={Math.max(strokeWidth + 10, el.h * H)}
+                    lineCap="round"
+                    {...dragSelectProps(el.id)}
+                    onMouseEnter={() => {
+                      if (!isDraggingRef.current) setStageCursor("grab");
+                    }}
+                    onMouseLeave={() => {
+                      if (!isDraggingRef.current) setStageCursor("default");
+                    }}
+                  />
                 );
               }
 

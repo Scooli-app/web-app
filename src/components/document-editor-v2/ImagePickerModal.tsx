@@ -1,29 +1,29 @@
 "use client";
 
 /**
- * ImagePickerModal — modal for adding an image to a slide.
+ * ImagePickerModal â€” modal for adding an image to a slide.
  *
  * Three tabs:
- *   1. Gerar com IA  — prompt → AI-generated image (Bloom)
- *   2. Carregar      — upload from PC (drag-drop or click)
- *   3. Por URL       — paste any image URL
+ *   1. Gerar com IA  â€” prompt â†’ AI-generated image (Bloom)
+ *   2. Carregar      â€” upload from PC (drag-drop or click)
+ *   3. Por URL       â€” paste any image URL
  *
  * On confirm the parent receives { url, prompt, backendId? } and is
  * responsible for inserting the canvas element.
  */
 
-import { generateDocumentImage, uploadDocumentImage } from "@/services/api";
-import { cn } from "@/shared/utils/utils";
-import { Image as ImageIcon, Link2, Loader2, Sparkles, Upload } from "lucide-react";
-import { useCallback, useRef, useState } from "react";
-import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import { uploadDocumentImage } from "@/services/api";
+import { cn } from "@/shared/utils/utils";
+import { Image as ImageIcon, Link2, Loader2, Sparkles, Upload } from "lucide-react";
+import { useCallback, useRef, useState } from "react";
+import { toast } from "sonner";
 
 /* --------------------------------------------------------------------------
  * Types
@@ -42,6 +42,7 @@ interface Props {
   documentId: string;
   onClose: () => void;
   onInsert: (result: ImageInsertResult) => void;
+  onGenerate: (prompt: string) => void;
 }
 
 /* --------------------------------------------------------------------------
@@ -79,31 +80,19 @@ function TabBtn({
  * Generate tab
  * -------------------------------------------------------------------------- */
 function GenerateTab({
-  documentId,
-  onInsert,
+  onClose,
+  onGenerate,
 }: {
-  documentId: string;
-  onInsert: (r: ImageInsertResult) => void;
+  onClose: () => void;
+  onGenerate: (prompt: string) => void;
 }) {
   const [prompt, setPrompt] = useState("");
-  const [loading, setLoading] = useState(false);
 
-  const handleGenerate = async () => {
+  const handleGenerate = () => {
     const p = prompt.trim();
     if (!p) return;
-    setLoading(true);
-    try {
-      const result = await generateDocumentImage(documentId, p);
-      if (result.newUrl) {
-        onInsert({ url: result.newUrl, prompt: p, backendId: result.id });
-      } else {
-        toast.error("A imagem ficou em processamento. Tenta novamente.");
-      }
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Erro ao gerar imagem");
-    } finally {
-      setLoading(false);
-    }
+    onClose();
+    onGenerate(p);
   };
 
   return (
@@ -117,12 +106,11 @@ function GenerateTab({
           onChange={(e) => setPrompt(e.target.value)}
           placeholder="Ex: uma pizza dividida em 6 partes iguais, estilo cartoon colorido para crianças"
           rows={4}
-          disabled={loading}
           autoFocus
           onKeyDown={(e) => {
             if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) handleGenerate();
           }}
-          className="w-full resize-none rounded-lg border border-border bg-muted/30 px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
+          className="w-full resize-none rounded-lg border border-border bg-muted/30 px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
         />
         <p className="text-xs text-muted-foreground">
           Ctrl+Enter para gerar
@@ -130,21 +118,12 @@ function GenerateTab({
       </div>
 
       <Button
-        onClick={() => void handleGenerate()}
-        disabled={!prompt.trim() || loading}
+        onClick={handleGenerate}
+        disabled={!prompt.trim()}
         className="gap-2 self-end"
       >
-        {loading ? (
-          <>
-            <Loader2 className="h-4 w-4 animate-spin" />
-            A gerar…
-          </>
-        ) : (
-          <>
-            <Sparkles className="h-4 w-4" />
-            Gerar imagem
-          </>
-        )}
+        <Sparkles className="h-4 w-4" />
+        Gerar imagem
       </Button>
     </div>
   );
@@ -221,7 +200,7 @@ function UploadTab({
         {loading ? (
           <>
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <span className="text-sm">A carregar {selectedFile?.name}…</span>
+            <span className="text-sm">A carregar {selectedFile?.name}â€¦</span>
           </>
         ) : (
           <>
@@ -283,7 +262,7 @@ function UrlTab({ onInsert }: { onInsert: (r: ImageInsertResult) => void }) {
 /* --------------------------------------------------------------------------
  * Main modal
  * -------------------------------------------------------------------------- */
-export function ImagePickerModal({ open, documentId, onClose, onInsert }: Props) {
+export function ImagePickerModal({ open, documentId, onClose, onInsert, onGenerate }: Props) {
   const [tab, setTab] = useState<Tab>("generate");
 
   const handleInsert = (result: ImageInsertResult) => {
@@ -293,16 +272,15 @@ export function ImagePickerModal({ open, documentId, onClose, onInsert }: Props)
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="max-w-lg p-0 gap-0 overflow-hidden">
-        <DialogHeader className="px-4 pt-4 pb-0">
+      <DialogContent className="max-w-lg gap-0 overflow-hidden p-0">
+        <DialogHeader className="px-4 pb-0 pt-4">
           <DialogTitle className="flex items-center gap-2 text-base">
             <ImageIcon className="h-4 w-4 text-primary" />
             Adicionar imagem
           </DialogTitle>
         </DialogHeader>
 
-        {/* Tab strip */}
-        <div className="flex gap-1 rounded-lg bg-muted/60 mx-4 mt-3 p-0.5">
+        <div className="mx-4 mt-3 flex gap-1 rounded-lg bg-muted/60 p-0.5">
           <TabBtn
             active={tab === "generate"}
             onClick={() => setTab("generate")}
@@ -323,10 +301,9 @@ export function ImagePickerModal({ open, documentId, onClose, onInsert }: Props)
           />
         </div>
 
-        {/* Tab content */}
         <div className="min-h-[220px]">
           {tab === "generate" && (
-            <GenerateTab documentId={documentId} onInsert={handleInsert} />
+            <GenerateTab onClose={onClose} onGenerate={onGenerate} />
           )}
           {tab === "upload" && (
             <UploadTab documentId={documentId} onInsert={handleInsert} />

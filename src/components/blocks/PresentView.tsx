@@ -24,7 +24,7 @@ import { isCanvasPresentation, type CanvasPresentation } from "@/shared/types/ca
 import { fetchDocument } from "@/store/documents/documentSlice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { ChevronLeft, ChevronRight, Loader2, Printer, X } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SlideRenderer } from "./SlideRenderer";
 
@@ -34,6 +34,7 @@ interface Props {
 
 export function PresentView({ documentId }: Props) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const dispatch = useAppDispatch();
   const document = useAppSelector((s) => s.documents.currentDocument);
   const [currentIdx, setCurrentIdx] = useState(0);
@@ -78,17 +79,30 @@ export function PresentView({ documentId }: Props) {
   const total = visibleCanvasSlides
     ? visibleCanvasSlides.length
     : (parsed?.blocks.length ?? 0);
+  const requestedSlideParam = searchParams.get("slide");
+  const requestedSlide = requestedSlideParam === null
+    ? 0
+    : Number.parseInt(requestedSlideParam, 10);
+
+  useEffect(() => {
+    if (total <= 0) {
+      setCurrentIdx(0);
+      return;
+    }
+    const safeIdx = Number.isFinite(requestedSlide) ? requestedSlide : 0;
+    setCurrentIdx(Math.min(Math.max(safeIdx, 0), total - 1));
+  }, [requestedSlide, total]);
 
   /* Navigation handlers ------------------------------------------------- */
 
   const next = useCallback(() => {
-    setCurrentIdx((i) => Math.min(total - 1, i + 1));
+    setCurrentIdx((i) => Math.min(Math.max(total - 1, 0), i + 1));
   }, [total]);
   const prev = useCallback(() => {
     setCurrentIdx((i) => Math.max(0, i - 1));
   }, []);
   const first = useCallback(() => setCurrentIdx(0), []);
-  const last = useCallback(() => setCurrentIdx(total - 1), [total]);
+  const last = useCallback(() => setCurrentIdx(Math.max(total - 1, 0)), [total]);
 
   // Guard against double-navigation (keydown handler + fullscreenchange can both fire).
   const hasExitedRef = useRef(false);
