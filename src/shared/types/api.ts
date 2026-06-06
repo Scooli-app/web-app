@@ -104,6 +104,10 @@ export interface ChatResponse {
   suggestImageRegen?: boolean;
 }
 
+export interface GenerateSlideResponse {
+  slide: string;
+}
+
 
 
 // SSE Streaming types for document creation

@@ -6,10 +6,10 @@ import { Loader2 } from "lucide-react";
 
 function EditorLoading() {
   return (
-    <div className="flex items-center justify-center min-h-[400px] w-full">
-      <div className="flex items-center space-x-2">
-        <Loader2 className="w-6 h-6 animate-spin text-[#6753FF]" />
-        <span className="text-lg text-[#6C6F80]">A carregar apresentação...</span>
+    <div className="flex min-h-[400px] w-full items-center justify-center">
+      <div className="flex items-center gap-2">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        <span className="text-lg text-muted-foreground">A carregar apresentação...</span>
       </div>
     </div>
   );

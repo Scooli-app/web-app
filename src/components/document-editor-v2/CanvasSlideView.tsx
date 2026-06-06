@@ -15,15 +15,20 @@ import type {
   CanvasImageElement,
   CanvasListElement,
   CanvasMathElement,
+  CanvasShapeElement,
   CanvasSlide,
   CanvasTextElement,
 } from "@/shared/types/canvas-presentation";
 import { useEffect, useRef, useState } from "react";
-import { Image as KonvaImage, Layer, Rect, Stage, Text } from "react-konva";
+import { Ellipse, Image as KonvaImage, Layer, Line, Rect, Stage, Text } from "react-konva";
 
 interface Props {
   slide: CanvasSlide;
 }
+
+const SHAPE_FILL = "rgba(103, 83, 255, 0.22)";
+const SHAPE_STROKE = "#6753FF";
+const SHAPE_STROKE_WIDTH = 0.004;
 
 export function CanvasSlideView({ slide }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -53,18 +58,19 @@ export function CanvasSlideView({ slide }: Props) {
     for (const el of slide.elements) {
       if (el.type !== "image_placeholder") continue;
       const img = el as CanvasImageElement;
-      if (!img.url || img.url in imgCacheRef.current) continue;
-      imgCacheRef.current[img.url] = "loading";
+      const { url } = img;
+      if (!url || url in imgCacheRef.current) continue;
+      imgCacheRef.current[url] = "loading";
       const i = new window.Image();
       i.crossOrigin = "anonymous";
       i.onload = () => {
-        imgCacheRef.current[img.url!] = i;
+        imgCacheRef.current[url] = i;
         setImgRevision((r) => r + 1);
       };
       i.onerror = () => {
-        delete imgCacheRef.current[img.url!];
+        delete imgCacheRef.current[url];
       };
-      i.src = img.url;
+      i.src = url;
     }
   }, [slide.elements]);
 
@@ -201,6 +207,68 @@ export function CanvasSlideView({ slide }: Props) {
                   height={el.h * H}
                   fill="#2a2a3a"
                   cornerRadius={4}
+                  listening={false}
+                />
+              );
+            }
+
+            if (el.type === "shape") {
+              const shape = el as CanvasShapeElement;
+              const fill = shape.fill ?? SHAPE_FILL;
+              const stroke = shape.stroke ?? SHAPE_STROKE;
+              const strokeWidth = Math.max(1, (shape.strokeWidth ?? SHAPE_STROKE_WIDTH) * W);
+              const centerX = el.x * W + (el.w * W) / 2;
+              const centerY = el.y * H + (el.h * H) / 2;
+
+              if (shape.shape === "rect") {
+                return (
+                  <Rect
+                    key={el.id}
+                    x={centerX}
+                    y={centerY}
+                    offsetX={el.w * W / 2}
+                    offsetY={el.h * H / 2}
+                    rotation={el.rotation ?? 0}
+                    width={el.w * W}
+                    height={el.h * H}
+                    fill={fill}
+                    stroke={stroke}
+                    strokeWidth={strokeWidth}
+                    cornerRadius={8}
+                    listening={false}
+                  />
+                );
+              }
+
+              if (shape.shape === "ellipse") {
+                return (
+                  <Ellipse
+                    key={el.id}
+                    x={centerX}
+                    y={centerY}
+                    rotation={el.rotation ?? 0}
+                    radiusX={el.w * W / 2}
+                    radiusY={el.h * H / 2}
+                    fill={fill}
+                    stroke={stroke}
+                    strokeWidth={strokeWidth}
+                    listening={false}
+                  />
+                );
+              }
+
+              return (
+                <Line
+                  key={el.id}
+                  x={centerX}
+                  y={centerY}
+                  offsetX={el.w * W / 2}
+                  offsetY={el.h * H / 2}
+                  rotation={el.rotation ?? 0}
+                  points={[0, el.h * H / 2, el.w * W, el.h * H / 2]}
+                  stroke={stroke}
+                  strokeWidth={strokeWidth}
+                  lineCap="round"
                   listening={false}
                 />
               );

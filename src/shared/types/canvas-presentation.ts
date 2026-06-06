@@ -2,9 +2,9 @@
  * Canvas presentation (schemaVersion: 2).
  *
  * Position-based free-form slide model for the Konva editor.
- * All x, y, w, h values are fractions of slide dimensions (0–1):
+ * All x, y, w, h values are fractions of slide dimensions (0-1):
  *   pixel_x = x * W,   pixel_y = y * H,   pixel_w = w * W,   pixel_h = h * H
- *   where W = stage width and H = stage height = W × 9/16.
+ *   where W = stage width and H = stage height = W * 9/16.
  *
  * Font sizes are stored as fractions of stage WIDTH (e.g. 0.036 = 3.6% of W).
  *   pixel_fontSize = fontSize * W
@@ -28,15 +28,15 @@ export interface CanvasTextElement extends CanvasBaseElement {
   text: string;
   fontSize: number; // fraction of W
   fontStyle: "normal" | "bold" | "italic" | "bold italic";
-  fontFamily?: string; // CSS font-family name; undefined → app default
+  fontFamily?: string; // CSS font-family name; undefined -> app default
   color: string;
   align: "left" | "center" | "right";
   underline?: boolean; // text-decoration underline
   /**
-   * Semantic role — used when reconstructing a SlideBlock from canvas elements.
-   * "title"    → slide.title
-   * "subtitle" → slide.subtitle
-   * "label"    → decorative text (e.g. "CONCLUSÃO"), not mapped to SlideBlock fields
+   * Semantic role -> used when reconstructing a SlideBlock from canvas elements.
+   * "title"    -> slide.title
+   * "subtitle" -> slide.subtitle
+   * "label"    -> decorative text, not mapped to SlideBlock fields
    */
   role?: "title" | "subtitle" | "label";
 }
@@ -46,7 +46,7 @@ export interface CanvasListElement extends CanvasBaseElement {
   items: string[];
   fontSize: number; // fraction of W
   color: string;
-  /** Original ContentBlock.id — preserved for round-trip reconstruction. */
+  /** Original ContentBlock.id -> preserved for round-trip reconstruction. */
   blockId: string;
 }
 
@@ -63,19 +63,29 @@ export interface CanvasImageElement extends CanvasBaseElement {
   type: "image_placeholder";
   prompt: string;
   url?: string;
-  /** Backend image record ID — set after upload or AI generation so we can regenerate. */
+  /** Backend image record ID -> set after upload or AI generation so we can regenerate. */
   imageBackendId?: string;
+}
+
+export interface CanvasShapeElement extends CanvasBaseElement {
+  type: "shape";
+  shape: "rect" | "ellipse" | "line";
+  fill?: string;
+  stroke?: string;
+  /** Fraction of slide width (same convention as fontSize). */
+  strokeWidth?: number;
 }
 
 export type CanvasElement =
   | CanvasTextElement
   | CanvasListElement
   | CanvasMathElement
-  | CanvasImageElement;
+  | CanvasImageElement
+  | CanvasShapeElement;
 
 export interface CanvasSlide {
   id: string;
-  /** Original SlideBlock.layout — kept for PresentView reconstruction. */
+  /** Original SlideBlock.layout -> kept for PresentView reconstruction. */
   layout: string;
   background: string;
   elements: CanvasElement[];
@@ -91,7 +101,7 @@ export interface CanvasPresentation {
   slides: CanvasSlide[];
 }
 
-/** Runtime check for v2 canvas format (shallow — does NOT deep-validate). */
+/** Runtime check for v2 canvas format (shallow -> does NOT deep-validate). */
 export function isCanvasPresentation(raw: unknown): raw is CanvasPresentation {
   return (
     typeof raw === "object" &&
