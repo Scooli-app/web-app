@@ -215,8 +215,8 @@ function CalendarGridSkeleton({
   today: string;
 }) {
   return (
-    <div className="overflow-x-auto rounded-lg border border-border w-[169.14px]">
-      <div className="min-w-[169.14px] w-full">
+    <div className="overflow-x-auto rounded-lg border border-border w-full">
+      <div className="min-w-[640px] w-full">
         {/* Real day headers */}
         <div className="grid grid-cols-7 divide-x divide-border border-b bg-muted/20">
           {weekDays.map((day, i) => {
