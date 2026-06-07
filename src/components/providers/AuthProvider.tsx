@@ -2,8 +2,8 @@
 
 import { setApiTokenGetter } from "@/services/api/client";
 import { useAuth, useUser } from "@clerk/nextjs";
-import { useEffect, useLayoutEffect, useRef } from "react";
 import posthog from "posthog-js";
+import { useEffect, useLayoutEffect, useRef } from "react";
 
 export default function AuthProvider({
   children,
@@ -33,7 +33,7 @@ export default function AuthProvider({
     const tokenGetter = async () => {
       try {
         return await getTokenRef.current(
-          template ? { template, skipCache: true } : { skipCache: true }
+          template ? { template, skipCache: true } : { skipCache: true },
         );
       } catch {
         // Clerk may throw if session is expired or being refreshed;
@@ -62,7 +62,7 @@ export default function AuthProvider({
       const trackedKey = `scooli_signup_ev_${user.id}`;
       const alreadyTracked = localStorage.getItem(trackedKey);
       const isNewAccount =
-        user.createdAt != null &&
+        user.createdAt !== null &&
         Date.now() - user.createdAt.getTime() < 300_000;
       if (!alreadyTracked && isNewAccount) {
         localStorage.setItem(trackedKey, "1");
