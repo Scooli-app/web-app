@@ -36,6 +36,7 @@ import {
   CheckCircle2,
   Clock,
   ExternalLink,
+  Info,
   Loader2,
   Play,
   RotateCcw,
@@ -109,6 +110,27 @@ const STATUS_CONFIG: Record<LessonSlot["status"], BadgeCfg> = {
   },
 };
 
+
+// ─────────────────────── Skeleton ────────────────────────────────────────────
+
+function SlotCardSkeleton({ color }: { color?: string }) {
+  return (
+    <div
+      className="animate-pulse w-full rounded-lg border border-border/60 min-h-[76px]"
+      style={{ borderLeftWidth: "4px", borderLeftColor: color ?? "#d1d5db" }}
+    >
+      <div className="flex items-center gap-3 px-3 py-3">
+        <div className="w-7 h-3 rounded bg-muted" />
+        <div className="flex-1 space-y-2">
+          <div className="h-3 w-4/5 rounded bg-muted" />
+          <div className="h-2.5 w-3/5 rounded bg-muted/70" />
+          <div className="h-2 w-2/5 rounded bg-muted/50" />
+        </div>
+        <div className="h-5 w-16 rounded-full bg-muted/60" />
+      </div>
+    </div>
+  );
+}
 
 // ─────────────────────── Slot card ───────────────────────────────────────────
 
@@ -581,6 +603,11 @@ export default function CalendarViewPage() {
   const timetableSubject = currentTimetable?.subject ?? "";
   const timetableClassLabel = currentTimetable?.classLabel ?? "";
 
+  const slotsWithoutTopic = useMemo(
+    () => slots.filter((s) => !s.topicTitle && s.slotType === "LESSON" && s.status !== "skipped").length,
+    [slots]
+  );
+
   if (!enabled) return null;
 
   return (
@@ -639,6 +666,24 @@ export default function CalendarViewPage() {
         </div>
       </div>
 
+      {/* Missing topics banner */}
+      {!isSlotsLoading && slotsWithoutTopic > 0 && (
+        <div className="flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
+          <Info className="h-4 w-4 shrink-0" />
+          <span>
+            {slotsWithoutTopic} aula{slotsWithoutTopic !== 1 ? "s" : ""} sem tópico definido.{" "}
+            <button
+              type="button"
+              onClick={handleGenerateTopics}
+              disabled={isGeneratingTopics}
+              className="font-medium underline underline-offset-2 hover:no-underline"
+            >
+              {isGeneratingTopics ? "A gerar…" : "Gerar tópicos agora"}
+            </button>
+          </span>
+        </div>
+      )}
+
       {/* Week navigator */}
       <div className="flex items-center justify-between rounded-lg border bg-card px-4 py-2">
         <Button variant="ghost" size="icon" onClick={prevWeek}>
@@ -658,8 +703,10 @@ export default function CalendarViewPage() {
 
       {/* Week grid */}
       {isSlotsLoading ? (
-        <div className="py-12 text-center text-muted-foreground">
-          <Loader2 className="mx-auto h-6 w-6 animate-spin" />
+        <div className="space-y-2">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <SlotCardSkeleton key={i} color={timetableColor} />
+          ))}
         </div>
       ) : currentWeekSlots.length === 0 ? (
         <div className="py-12 text-center text-muted-foreground">
