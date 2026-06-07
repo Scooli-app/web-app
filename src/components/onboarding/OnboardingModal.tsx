@@ -223,7 +223,9 @@ export function OnboardingModal({
   }, [open, step]);
 
   const goTo = (next: 1 | 2 | 3, dir: "forward" | "backward") => {
-    posthog.capture("onboarding_step_completed", { step, direction: dir });
+    if (dir === "forward") {
+      posthog.capture("onboarding_step_completed", { step });
+    }
     setDirection(dir);
     setAnimKey((k) => k + 1);
     setStep(next);
