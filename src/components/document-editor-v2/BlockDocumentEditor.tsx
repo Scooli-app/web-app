@@ -52,6 +52,7 @@ import {
   type CanvasElement,
   type CanvasImageElement,
   type CanvasListElement,
+  type CanvasMathElement,
   type CanvasPresentation,
   type CanvasShapeElement,
   type CanvasSlide,
@@ -69,6 +70,7 @@ import {
   Bold,
   ChevronDown,
   ChevronUp,
+  Circle,
   Minus,
   Copy,
   Download,
@@ -83,7 +85,9 @@ import {
   Plus,
   Shapes,
   Redo2,
+  Sigma,
   Sparkles,
+  Square,
   Trash2,
   Underline,
   Undo2,
@@ -95,9 +99,12 @@ import { generateSlide as generateSlideApi } from "@/services/api/document.servi
 import { applyTheme, clampCanvasSlide, presentationToCanvas, slideToCanvas } from "./canvas-layout";
 import { ImagePickerModal, type ImageInsertResult } from "./ImagePickerModal";
 import { ColorPickerPopover } from "./ColorPickerPopover";
+import { FormulaModal } from "./FormulaModal";
 import { SlideKonvaEditor, type SlideKonvaEditorHandle } from "./SlideKonvaEditor";
 import { SlideThumbnail } from "./SlideThumbnail";
 import { ThemePicker } from "./ThemePicker";
+// @ts-ignore -- sibling task provides this module.
+import { renderKatexToPngDataUrl } from "./math-render";
 
 interface Props {
   documentId: string;
@@ -171,6 +178,116 @@ const FONT_OPTIONS = [
 const DEFAULT_SHAPE_FILL = "rgba(103, 83, 255, 0.22)";
 const DEFAULT_SHAPE_STROKE = "#6753FF";
 const DEFAULT_SHAPE_STROKE_WIDTH = 0.004;
+
+type PdfFontLike = {
+  widthOfTextAtSize: (text: string, size: number) => number;
+};
+
+function sanitizeWinAnsiText(text: string): string {
+  return text
+    .replace(/\u2022/g, "-")
+    .replace(/[−–—]/g, "-")
+    .replace(/[“”]/g, "\"")
+    .replace(/[‘’]/g, "'")
+    .replace(/\u00a0/g, " ")
+    .replace(/[^\x09\x0A\x0D\x20-\x7E\xA0-\xFF]/g, "");
+}
+
+function splitLongPdfWord(word: string, maxWidth: number, font: PdfFontLike, fontSize: number): string[] {
+  const parts: string[] = [];
+  let chunk = "";
+  for (const char of word) {
+    const candidate = `${chunk}${char}`;
+    if (chunk && font.widthOfTextAtSize(candidate, fontSize) > maxWidth) {
+      parts.push(chunk);
+      chunk = char;
+    } else {
+      chunk = candidate;
+    }
+  }
+  if (chunk) parts.push(chunk);
+  return parts;
+}
+
+function wrapPdfText(text: string, maxWidth: number, font: PdfFontLike, fontSize: number): string[] {
+  const sanitized = sanitizeWinAnsiText(text);
+  const paragraphs = sanitized.split(/\r?\n/);
+  const lines: string[] = [];
+
+  for (const paragraph of paragraphs) {
+    const words = paragraph.split(/\s+/).filter(Boolean);
+    if (words.length === 0) {
+      lines.push("");
+      continue;
+    }
+
+    let currentLine = "";
+    for (const word of words) {
+      const wordParts =
+        font.widthOfTextAtSize(word, fontSize) > maxWidth
+          ? splitLongPdfWord(word, maxWidth, font, fontSize)
+          : [word];
+
+      for (const part of wordParts) {
+        const candidate = currentLine ? `${currentLine} ${part}` : part;
+        if (currentLine && font.widthOfTextAtSize(candidate, fontSize) > maxWidth) {
+          lines.push(currentLine);
+          currentLine = part;
+        } else {
+          currentLine = candidate;
+        }
+      }
+    }
+
+    if (currentLine) {
+      lines.push(currentLine);
+    }
+  }
+
+  return lines.length > 0 ? lines : [""];
+}
+
+function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      if (typeof reader.result === "string") {
+        resolve(reader.result);
+      } else {
+        reject(new Error("Falha ao converter imagem"));
+      }
+    };
+    reader.onerror = () => reject(reader.error ?? new Error("Falha ao converter imagem"));
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function fetchImageAsset(url: string): Promise<{ bytes: Uint8Array; contentType: string; dataUrl: string } | null> {
+  try {
+    const response = await fetch(url);
+    if (!response.ok) return null;
+    const blob = await response.blob();
+    const bytes = new Uint8Array(await blob.arrayBuffer());
+    const dataUrl = await blobToDataUrl(blob);
+    return {
+      bytes,
+      contentType: response.headers.get("content-type") || blob.type || "",
+      dataUrl,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function dataUrlToBytes(dataUrl: string): Uint8Array {
+  const base64 = dataUrl.split(",")[1] ?? "";
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes;
+}
 
 
 function makeNewSlide(themeId?: string): CanvasSlide {
@@ -279,6 +396,22 @@ function makeShapeElement(shape: CanvasShapeElement["shape"]): CanvasShapeElemen
     y: 0.35,
     w: 0.3,
     h: 0.3,
+  };
+}
+
+function makeMathElement(tex: string): CanvasMathElement {
+  const id = `math-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
+  return {
+    id,
+    type: "math",
+    x: 0.28,
+    y: 0.40,
+    w: 0.44,
+    h: 0.14,
+    tex,
+    fontSize: 0.034,
+    display: true,
+    blockId: id,
   };
 }
 
@@ -391,6 +524,9 @@ export function BlockDocumentEditor({ documentId }: Props) {
 
   /* ── Image toolbar state ─────────────────────────────────────────────── */
   const [imageModalOpen, setImageModalOpen] = useState(false);
+  const [formulaModalOpen, setFormulaModalOpen] = useState(false);
+  /** Non-null when the formula modal is editing an existing math element. */
+  const [editingMathId, setEditingMathId] = useState<string | null>(null);
   /** true = replacing an existing selected image; false = inserting a new one */
   const [imageModalReplacing, setImageModalReplacing] = useState(false);
   const [addSlideMenuOpen, setAddSlideMenuOpen] = useState(false);
@@ -795,6 +931,69 @@ export function BlockDocumentEditor({ documentId }: Props) {
       setDirty(true);
     },
     [activeSlideId, pushHistory],
+  );
+
+  const insertMathElement = useCallback(
+    (tex: string) => {
+      if (!activeSlideId) return;
+      const newEl = makeMathElement(tex);
+      pushHistory();
+      setCanvas((prev) =>
+        prev
+          ? {
+              ...prev,
+              slides: prev.slides.map((s) =>
+                s.id === activeSlideId
+                  ? { ...s, elements: [...s.elements, newEl] }
+                  : s,
+              ),
+            }
+          : prev,
+      );
+      setSelectedElementId(newEl.id);
+      setDirty(true);
+    },
+    [activeSlideId, pushHistory],
+  );
+
+  /** Open the formula modal to edit an existing math element. */
+  const handleEditMath = useCallback((elementId: string) => {
+    setSelectedElementId(elementId);
+    setEditingMathId(elementId);
+    setFormulaModalOpen(true);
+  }, []);
+
+  /** Modal confirm: update the edited math element, or insert a new one. */
+  const handleFormulaConfirm = useCallback(
+    (tex: string) => {
+      if (!editingMathId) {
+        insertMathElement(tex);
+        return;
+      }
+      const targetId = editingMathId;
+      pushHistory();
+      setCanvas((prev) =>
+        prev
+          ? {
+              ...prev,
+              slides: prev.slides.map((s) =>
+                s.id === activeSlideId
+                  ? {
+                      ...s,
+                      elements: s.elements.map((el) =>
+                        el.id === targetId && el.type === "math"
+                          ? ({ ...el, tex } as CanvasElement)
+                          : el,
+                      ),
+                    }
+                  : s,
+              ),
+            }
+          : prev,
+      );
+      setDirty(true);
+    },
+    [editingMathId, activeSlideId, insertMathElement, pushHistory],
   );
 
   const handleGenerateSlide = useCallback(async () => {
@@ -1230,7 +1429,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
 
           if (el.type === "text") {
             const t = el as CanvasTextElement;
-            slide.addText(t.text, {
+            slide.addText(sanitizeWinAnsiText(t.text), {
               x, y, w, h,
               fontSize: Math.max(8, Math.round(t.fontSize * FS_SCALE)),
               bold: t.fontStyle.includes("bold"),
@@ -1248,13 +1447,44 @@ export function BlockDocumentEditor({ documentId }: Props) {
               text: isOrdered ? `${i + 1}. ${item}` : `• ${item}`,
               options: {},
             }));
-            slide.addText(bulletItems, {
+            const safeBulletItems = bulletItems.map((item) => ({
+              ...item,
+              text: sanitizeWinAnsiText(item.text),
+            }));
+            slide.addText(safeBulletItems, {
               x, y, w, h,
               fontSize: Math.max(8, Math.round(l.fontSize * FS_SCALE)),
               color: toHex6(l.color),
               fontFace: "Calibri",
               valign: "top",
               wrap: true,
+            });
+          } else if (el.type === "image_placeholder") {
+            const image = el as CanvasImageElement;
+            if (!image.url) continue;
+            const asset = await fetchImageAsset(image.url);
+            if (!asset) continue;
+            slide.addImage({
+              data: asset.dataUrl,
+              x,
+              y,
+              w,
+              h,
+              rotate: image.rotation ?? 0,
+            });
+          } else if (el.type === "math") {
+            const math = el as CanvasMathElement;
+            const rendered = await renderKatexToPngDataUrl(math.tex, {
+              color: "#FFFFFF",
+              pixelHeight: Math.max(48, Math.round(h * 96)),
+            });
+            slide.addImage({
+              data: rendered.dataUrl,
+              x,
+              y,
+              w,
+              h,
+              rotate: math.rotation ?? 0,
             });
           } else if (el.type === "shape") {
             const shape = el as CanvasShapeElement;
@@ -1313,10 +1543,14 @@ export function BlockDocumentEditor({ documentId }: Props) {
     if (!canvas || !document) return;
     setExporting(true);
     try {
-      const { PDFDocument, degrees, rgb } = await import("pdf-lib");
+      const { PDFDocument, StandardFonts, degrees, rgb } = await import("pdf-lib");
       const pdfDoc = await PDFDocument.create();
       const PAGE_W = 960;
       const PAGE_H = 540;
+      const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
+      const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+      const fontItalic = await pdfDoc.embedFont(StandardFonts.HelveticaOblique);
+      const fontBoldItalic = await pdfDoc.embedFont(StandardFonts.HelveticaBoldOblique);
 
       for (const cs of canvas.slides) {
         const page = pdfDoc.addPage([PAGE_W, PAGE_H]);
@@ -1329,14 +1563,32 @@ export function BlockDocumentEditor({ documentId }: Props) {
             const t = el as CanvasTextElement;
             const c = hexToRgb01(t.color);
             const fontSize = Math.max(6, Math.round(t.fontSize * PAGE_W));
-            // pdf-lib y origin is bottom-left; flip from top-left
-            page.drawText(t.text, {
-              x: el.x * PAGE_W,
-              y: PAGE_H - el.y * PAGE_H - fontSize * 1.3,
-              size: fontSize,
-              color: rgb(c.r, c.g, c.b),
-              maxWidth: el.w * PAGE_W,
-              lineHeight: fontSize * 1.3,
+            const lineHeight = fontSize * 1.3;
+            const font =
+              t.fontStyle === "bold"
+                ? fontBold
+                : t.fontStyle === "italic"
+                  ? fontItalic
+                  : t.fontStyle === "bold italic"
+                    ? fontBoldItalic
+                    : fontRegular;
+            const lines = wrapPdfText(t.text, el.w * PAGE_W, font, fontSize);
+            const maxLines = Math.max(1, Math.floor((el.h * PAGE_H) / lineHeight));
+            lines.slice(0, maxLines).forEach((line, index) => {
+              const lineWidth = font.widthOfTextAtSize(line, fontSize);
+              const drawX =
+                t.align === "center"
+                  ? el.x * PAGE_W + Math.max(0, (el.w * PAGE_W - lineWidth) / 2)
+                  : t.align === "right"
+                    ? el.x * PAGE_W + Math.max(0, el.w * PAGE_W - lineWidth)
+                    : el.x * PAGE_W;
+              page.drawText(line, {
+                x: drawX,
+                y: PAGE_H - el.y * PAGE_H - fontSize - index * lineHeight,
+                size: fontSize,
+                font,
+                color: rgb(c.r, c.g, c.b),
+              });
             });
           } else if (el.type === "bullet_list" || el.type === "ordered_list") {
             const l = el as CanvasListElement;
@@ -1345,11 +1597,13 @@ export function BlockDocumentEditor({ documentId }: Props) {
             const c = hexToRgb01(l.color);
             const itemH = (el.h * PAGE_H) / Math.max(1, l.items.length);
             l.items.forEach((item, i) => {
-              const text = isOrdered ? `${i + 1}. ${item}` : `• ${item}`;
-              page.drawText(text, {
+              const prefix = isOrdered ? `${i + 1}. ` : "- ";
+              const [firstLine = ""] = wrapPdfText(`${prefix}${item}`, el.w * PAGE_W, fontRegular, fontSize);
+              page.drawText(firstLine, {
                 x: el.x * PAGE_W,
                 y: PAGE_H - el.y * PAGE_H - i * itemH - fontSize * 1.3,
                 size: fontSize,
+                font: fontRegular,
                 color: rgb(c.r, c.g, c.b),
                 maxWidth: el.w * PAGE_W,
               });
@@ -1399,6 +1653,44 @@ export function BlockDocumentEditor({ documentId }: Props) {
                 thickness: strokeWidth,
                 color: rgb(strokeRgb.r, strokeRgb.g, strokeRgb.b),
               });
+            }
+          } else if (el.type === "image_placeholder") {
+            const image = el as CanvasImageElement;
+            if (!image.url) continue;
+            const asset = await fetchImageAsset(image.url);
+            if (!asset) continue;
+            try {
+              const embedded = /png/i.test(asset.contentType)
+                ? await pdfDoc.embedPng(asset.bytes)
+                : await pdfDoc.embedJpg(asset.bytes);
+              page.drawImage(embedded, {
+                x: el.x * PAGE_W,
+                y: PAGE_H - (el.y + el.h) * PAGE_H,
+                width: el.w * PAGE_W,
+                height: el.h * PAGE_H,
+                rotate: degrees(image.rotation ?? 0),
+              });
+            } catch {
+              // Skip images pdf-lib cannot decode (e.g. webp) rather than failing the export.
+            }
+          } else if (el.type === "math") {
+            const math = el as CanvasMathElement;
+            const rendered = await renderKatexToPngDataUrl(math.tex, {
+              color: "#FFFFFF",
+              pixelHeight: Math.max(48, Math.round(el.h * PAGE_H)),
+            });
+            if (!rendered.dataUrl) continue;
+            try {
+              const embedded = await pdfDoc.embedPng(dataUrlToBytes(rendered.dataUrl));
+              page.drawImage(embedded, {
+                x: el.x * PAGE_W,
+                y: PAGE_H - (el.y + el.h) * PAGE_H,
+                width: el.w * PAGE_W,
+                height: el.h * PAGE_H,
+                rotate: degrees(math.rotation ?? 0),
+              });
+            } catch {
+              // Ignore math that fails to rasterize.
             }
           }
         }
@@ -1537,17 +1829,33 @@ export function BlockDocumentEditor({ documentId }: Props) {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-40">
-            <DropdownMenuItem onClick={() => insertShapeElement("rect")}>
+            <DropdownMenuItem onClick={() => insertShapeElement("rect")} className="cursor-pointer gap-2">
+              <Square className="h-4 w-4" />
               Retângulo
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => insertShapeElement("ellipse")}>
+            <DropdownMenuItem onClick={() => insertShapeElement("ellipse")} className="cursor-pointer gap-2">
+              <Circle className="h-4 w-4" />
               Círculo
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => insertShapeElement("line")}>
+            <DropdownMenuItem onClick={() => insertShapeElement("line")} className="cursor-pointer gap-2">
+              <Minus className="h-4 w-4" />
               Linha
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+
+        {/* Add math formula — opens the formula builder modal */}
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8 gap-1.5"
+          disabled={!activeSlide}
+          title="Adicionar fórmula"
+          onClick={() => { setEditingMathId(null); setFormulaModalOpen(true); }}
+        >
+          <Sigma className="h-3.5 w-3.5" />
+          Fórmula
+        </Button>
 
         <div className="h-5 w-px bg-border" />
 
@@ -1962,6 +2270,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
                     onChange={(elements) => updateSlide(activeSlide.id, elements)}
                     onSelectionChange={setSelectedElementId}
                     onChangeImage={handleChangeImageFromCanvas}
+                    onEditMath={handleEditMath}
                   />
                 </div>
               </div>
@@ -2036,6 +2345,20 @@ export function BlockDocumentEditor({ documentId }: Props) {
           onGenerate={handleGenerateImageFromModal}
         />
       )}
+
+      {/* Formula builder modal — insert new, or edit an existing math element */}
+      <FormulaModal
+        open={formulaModalOpen}
+        initialTex={
+          editingMathId
+            ? (activeSlide?.elements.find(
+                (e): e is CanvasMathElement => e.id === editingMathId && e.type === "math",
+              )?.tex ?? undefined)
+            : undefined
+        }
+        onClose={() => { setFormulaModalOpen(false); setEditingMathId(null); }}
+        onInsert={handleFormulaConfirm}
+      />
 
       <Dialog
         open={generateSlideDialogOpen}

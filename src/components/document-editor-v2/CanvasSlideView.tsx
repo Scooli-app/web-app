@@ -19,6 +19,7 @@ import type {
   CanvasSlide,
   CanvasTextElement,
 } from "@/shared/types/canvas-presentation";
+import { renderKatexToPngDataUrl } from "@/components/document-editor-v2/math-render";
 import { useEffect, useRef, useState } from "react";
 import { Ellipse, Image as KonvaImage, Layer, Line, Rect, Stage, Text } from "react-konva";
 
@@ -29,6 +30,8 @@ interface Props {
 const SHAPE_FILL = "rgba(103, 83, 255, 0.22)";
 const SHAPE_STROKE = "#6753FF";
 const SHAPE_STROKE_WIDTH = 0.004;
+const MATH_COLOR = "#ffffff";
+const TEXT_LINE_HEIGHT = 1.3;
 
 export function CanvasSlideView({ slide }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -36,6 +39,7 @@ export function CanvasSlideView({ slide }: Props) {
 
   /* Image cache: url → loaded HTMLImageElement | "loading" */
   const imgCacheRef = useRef<Record<string, HTMLImageElement | "loading">>({});
+  const mathCacheRef = useRef<Record<string, HTMLImageElement | "loading">>({});
   const [, setImgRevision] = useState(0);
 
   /* Track container dimensions */
@@ -76,6 +80,44 @@ export function CanvasSlideView({ slide }: Props) {
 
   const { w: W, h: H } = size;
 
+  useEffect(() => {
+    let cancelled = false;
+
+    for (const el of slide.elements) {
+      if (el.type !== "math") continue;
+      const math = el as CanvasMathElement;
+      const pixelHeight = Math.max(1, Math.round(el.h * H));
+      const cacheKey = `${math.tex}__${MATH_COLOR}__${pixelHeight}`;
+      if (cacheKey in mathCacheRef.current) continue;
+      mathCacheRef.current[cacheKey] = "loading";
+
+      void renderKatexToPngDataUrl(math.tex, { color: MATH_COLOR, pixelHeight })
+        .then(({ dataUrl }) => {
+          if (cancelled || !dataUrl) {
+            if (!dataUrl) delete mathCacheRef.current[cacheKey];
+            return;
+          }
+          const image = new window.Image();
+          image.onload = () => {
+            if (cancelled) return;
+            mathCacheRef.current[cacheKey] = image;
+            setImgRevision((r) => r + 1);
+          };
+          image.onerror = () => {
+            delete mathCacheRef.current[cacheKey];
+          };
+          image.src = dataUrl;
+        })
+        .catch(() => {
+          delete mathCacheRef.current[cacheKey];
+        });
+    }
+
+    return () => {
+      cancelled = true;
+    };
+  }, [H, slide.elements]);
+
   return (
     <div ref={containerRef} style={{ width: "100%", aspectRatio: "16/9" }}>
       <Stage width={W} height={H} listening={false}>
@@ -114,6 +156,7 @@ export function CanvasSlideView({ slide }: Props) {
                   textDecoration={t.underline ? "underline" : ""}
                   fill={t.color}
                   align={t.align}
+                  lineHeight={TEXT_LINE_HEIGHT}
                   wrap="word"
                   ellipsis={false}
                   listening={false}
@@ -143,7 +186,7 @@ export function CanvasSlideView({ slide }: Props) {
                   fontSize={Math.round(el.fontSize * W)}
                   fontFamily="Lexend, Inter, system-ui, sans-serif"
                   fill={l.color}
-                  lineHeight={1.4}
+                  lineHeight={TEXT_LINE_HEIGHT}
                   wrap="word"
                   ellipsis={false}
                   listening={false}
@@ -154,6 +197,33 @@ export function CanvasSlideView({ slide }: Props) {
             /* ---- math placeholder ---- */
             if (el.type === "math") {
               const m = el as CanvasMathElement;
+              const pixelHeight = Math.max(1, Math.round(el.h * H));
+              const cacheKey = `${m.tex}__${MATH_COLOR}__${pixelHeight}`;
+              const cached = mathCacheRef.current[cacheKey];
+              if (cached && cached !== "loading") {
+                // Aspect-fit the formula inside its box (no stretching), centred.
+                const boxW = el.w * W;
+                const boxH = el.h * H;
+                const natW = cached.naturalWidth || cached.width || boxW;
+                const natH = cached.naturalHeight || cached.height || boxH;
+                const fit = Math.min(boxW / natW, boxH / natH);
+                const drawW = natW * fit;
+                const drawH = natH * fit;
+                return (
+                  <KonvaImage
+                    key={el.id}
+                    image={cached}
+                    x={el.x * W + el.w * W / 2}
+                    y={el.y * H + el.h * H / 2}
+                    offsetX={drawW / 2}
+                    offsetY={drawH / 2}
+                    rotation={el.rotation ?? 0}
+                    width={drawW}
+                    height={drawH}
+                    listening={false}
+                  />
+                );
+              }
               return (
                 <Text
                   key={el.id}
@@ -167,7 +237,7 @@ export function CanvasSlideView({ slide }: Props) {
                   text={m.tex}
                   fontSize={Math.round(el.fontSize * W)}
                   fontFamily="monospace"
-                  fill="#ffffff"
+                  fill={MATH_COLOR}
                   listening={false}
                 />
               );

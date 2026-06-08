@@ -29,7 +29,8 @@ import type {
   CanvasSlide,
   CanvasTextElement,
 } from "@/shared/types/canvas-presentation";
-import type Konva from "konva";
+import { renderKatexToPngDataUrl } from "@/components/document-editor-v2/math-render";
+import Konva from "konva";
 import { useCallback, useEffect, useImperativeHandle, useRef, useState, forwardRef } from "react";
 import { Ellipse, Group, Image as KonvaImage, Layer, Line, Rect, Stage, Text, Transformer } from "react-konva";
 
@@ -58,21 +59,116 @@ const SHAPE_STROKE_WIDTH = 0.004;
 const CORNER_ANCHORS = new Set(["top-left", "top-right", "bottom-left", "bottom-right"]);
 const HORIZONTAL_SIDE_ANCHORS = new Set(["middle-left", "middle-right"]);
 const VERTICAL_SIDE_ANCHORS = new Set(["top-center", "bottom-center"]);
+const MATH_COLOR = T.primary;
+const TEXT_LINE_HEIGHT = 1.3;
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
 }
 
-function isTextLikeElement(el: CanvasElement): el is CanvasTextElement | CanvasMathElement | CanvasListElement {
-  return el.type === "text" || el.type === "math" || el.type === "bullet_list" || el.type === "ordered_list";
+function isTextLikeElement(el: CanvasElement): el is CanvasTextElement | CanvasListElement {
+  return el.type === "text" || el.type === "bullet_list" || el.type === "ordered_list";
 }
 
 function isShapeElement(el: CanvasElement): el is CanvasShapeElement {
   return el.type === "shape";
 }
 
-function getTextLikeFontSize(el: CanvasTextElement | CanvasMathElement | CanvasListElement) {
+function getTextLikeFontSize(el: CanvasTextElement | CanvasListElement) {
   return el.fontSize;
+}
+
+function getTextLikeFontFamily(el: CanvasTextElement | CanvasListElement) {
+  return el.type === "text" ? (el.fontFamily || T.font) : T.font;
+}
+
+function getTextLikeFontStyle(el: CanvasTextElement | CanvasListElement) {
+  return el.type === "text" ? el.fontStyle : undefined;
+}
+
+function getListItemDisplayText(el: CanvasListElement, item: string, index: number) {
+  return el.type === "ordered_list" ? `${index + 1}. ${item}` : `\u2022 ${item}`;
+}
+
+function getListDisplayText(el: CanvasListElement) {
+  return el.items
+    .map((item, index) => getListItemDisplayText(el, item, index))
+    .join("\n");
+}
+
+function getTextLikeDisplayText(el: CanvasTextElement | CanvasListElement) {
+  return el.type === "text" ? el.text : getListDisplayText(el);
+}
+
+function measureWrappedTextHeightPx({
+  text,
+  widthPx,
+  fontSizePx,
+  fontFamily,
+  fontStyle,
+}: {
+  text: string;
+  widthPx: number;
+  fontSizePx: number;
+  fontFamily: string;
+  fontStyle?: string;
+}) {
+  const probe = new Konva.Text({
+    text,
+    fontSize: fontSizePx,
+    fontFamily,
+    fontStyle,
+    lineHeight: TEXT_LINE_HEIGHT,
+    width: Math.max(1, widthPx),
+    padding: 0,
+    wrap: "word",
+  });
+  return Math.max(fontSizePx * TEXT_LINE_HEIGHT, probe.height());
+}
+
+function measureListItemHeightsPx(el: CanvasListElement, widthPx: number, fontSizePx: number) {
+  return el.items.map((item, index) =>
+    measureWrappedTextHeightPx({
+      text: getListItemDisplayText(el, item, index),
+      widthPx,
+      fontSizePx,
+      fontFamily: getTextLikeFontFamily(el),
+      fontStyle: getTextLikeFontStyle(el),
+    }),
+  );
+}
+
+function getOppositeAnchorVector(activeAnchor: string, halfW: number, halfH: number) {
+  switch (activeAnchor) {
+    case "top-left":
+      return { x: halfW, y: halfH };
+    case "top-right":
+      return { x: -halfW, y: halfH };
+    case "bottom-left":
+      return { x: halfW, y: -halfH };
+    case "bottom-right":
+      return { x: -halfW, y: -halfH };
+    case "middle-left":
+      return { x: halfW, y: 0 };
+    case "middle-right":
+      return { x: -halfW, y: 0 };
+    case "top-center":
+      return { x: 0, y: halfH };
+    case "bottom-center":
+      return { x: 0, y: -halfH };
+    default:
+      return { x: 0, y: 0 };
+  }
+}
+
+function rotateVector(x: number, y: number, rotation: number) {
+  const rad = (rotation * Math.PI) / 180;
+  const cos = Math.cos(rad);
+  const sin = Math.sin(rad);
+  return {
+    x: x * cos - y * sin,
+    y: x * sin + y * cos,
+  };
 }
 
 /* --------------------------------------------------------------------------
@@ -231,8 +327,10 @@ export const SlideKonvaEditor = forwardRef<
     onSelectionChange?: (id: string | null) => void;
     /** Called when the user clicks the change-image button on an image element. */
     onChangeImage?: (elementId: string) => void;
+    /** Called when a math element is double-clicked, to open the formula modal. */
+    onEditMath?: (elementId: string) => void;
   }
->(function SlideKonvaEditor({ slide, onChange, onSelectionChange, onChangeImage }, ref) {
+>(function SlideKonvaEditor({ slide, onChange, onSelectionChange, onChangeImage, onEditMath }, ref) {
   /** Fills the available parent space — measured to compute stage size. */
   const wrapperRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<Konva.Stage | null>(null);
@@ -250,6 +348,13 @@ export const SlideKonvaEditor = forwardRef<
   const [guides, setGuides] = useState<{ vLines: number[]; hLines: number[] }>({ vLines: [], hLines: [] });
   const isDraggingRef = useRef(false);
   /**
+   * Absolute position of the anchor OPPOSITE the one being dragged, captured
+   * once at transform start. Reused every tick so the resize keeps that corner
+   * visually fixed (Konva moves node.x()/y() mid-transform, so recomputing the
+   * fixed point each tick would drift and make the element jump).
+   */
+  const transformFixedRef = useRef<{ x: number; y: number } | null>(null);
+  /**
    * Live position of the selected node while dragging/transforming.
    * Updated on every onDragMove / onTransform tick so overlay buttons
    * follow the element in real-time (like Teachy). Cleared on pointer-up.
@@ -265,6 +370,7 @@ export const SlideKonvaEditor = forwardRef<
   // We use a ref as the cache store (avoids re-renders during load) and a
   // counter state to trigger a redraw once each image finishes loading.
   const imgCacheRef = useRef<Record<string, HTMLImageElement | "loading">>({});
+  const mathCacheRef = useRef<Record<string, HTMLImageElement | "loading">>({});
   const [imgRevision, setImgRevision] = useState(0);
 
   useEffect(() => {
@@ -290,6 +396,47 @@ export const SlideKonvaEditor = forwardRef<
     }
     if (changed) setImgRevision((r) => r + 1); // repaint while loading
   }, [elements]);
+
+  useEffect(() => {
+    let cancelled = false;
+    let changed = false;
+
+    for (const el of elements) {
+      if (el.type !== "math") continue;
+      const math = el as CanvasMathElement;
+      const pixelHeight = Math.max(1, Math.round(el.h * H));
+      const cacheKey = `${math.tex}__${MATH_COLOR}__${pixelHeight}`;
+      if (cacheKey in mathCacheRef.current) continue;
+      mathCacheRef.current[cacheKey] = "loading";
+      changed = true;
+
+      void renderKatexToPngDataUrl(math.tex, { color: MATH_COLOR, pixelHeight })
+        .then(({ dataUrl }) => {
+          if (cancelled || !dataUrl) {
+            if (!dataUrl) delete mathCacheRef.current[cacheKey];
+            return;
+          }
+          const image = new window.Image();
+          image.onload = () => {
+            if (cancelled) return;
+            mathCacheRef.current[cacheKey] = image;
+            setImgRevision((r) => r + 1);
+          };
+          image.onerror = () => {
+            delete mathCacheRef.current[cacheKey];
+          };
+          image.src = dataUrl;
+        })
+        .catch(() => {
+          delete mathCacheRef.current[cacheKey];
+        });
+    }
+
+    if (changed) setImgRevision((r) => r + 1);
+    return () => {
+      cancelled = true;
+    };
+  }, [elements, H]);
 
   /* ── Notify parent when selection changes ──────────────────────────────── */
   useEffect(() => {
@@ -354,23 +501,63 @@ export const SlideKonvaEditor = forwardRef<
     }
   }, []);
 
+  const getFittedTextLikeHeight = useCallback(
+    (
+      el: CanvasTextElement | CanvasListElement,
+      widthFraction: number,
+      fontSizeFraction: number,
+    ) => {
+      const widthPx = Math.max(1, widthFraction * W);
+      const fontSizePx = fontSizeFraction * W;
+      const heightPx =
+        el.type === "text"
+          ? measureWrappedTextHeightPx({
+              text: getTextLikeDisplayText(el),
+              widthPx,
+              fontSizePx,
+              fontFamily: getTextLikeFontFamily(el),
+              fontStyle: getTextLikeFontStyle(el),
+            })
+          : measureListItemHeightsPx(el, widthPx, fontSizePx).reduce((sum, itemHeight) => sum + itemHeight, 0);
+      return Math.max(MIN_ELEMENT_H, heightPx / H);
+    },
+    [W, H],
+  );
+
   const applyLiveTextLikeGeometry = useCallback(
     (
       node: Konva.Node,
-      el: CanvasTextElement | CanvasMathElement | CanvasListElement,
+      el: CanvasTextElement | CanvasListElement,
+      activeAnchor: string,
       nextW: number,
       nextH: number,
       nextFontSize: number,
     ) => {
+      // Prefer the fixed point captured at transform start; only fall back to a
+      // live recompute (which can drift) when it is unavailable.
+      const fixedPoint = transformFixedRef.current ?? (() => {
+        const v = getOppositeAnchorVector(activeAnchor, node.offsetX(), node.offsetY());
+        const off = rotateVector(v.x, v.y, node.rotation());
+        return { x: node.x() + off.x, y: node.y() + off.y };
+      })();
       const widthPx = nextW * W;
       const heightPx = nextH * H;
       const fontSizePx = nextFontSize * W;
+      const nextHalfW = widthPx / 2;
+      const nextHalfH = heightPx / 2;
+      const nextVector = getOppositeAnchorVector(activeAnchor, nextHalfW, nextHalfH);
+      const nextOffset = rotateVector(nextVector.x, nextVector.y, node.rotation());
 
-      node.offsetX(widthPx / 2);
-      node.offsetY(heightPx / 2);
+      node.x(fixedPoint.x - nextOffset.x);
+      node.y(fixedPoint.y - nextOffset.y);
+
+      node.offsetX(nextHalfW);
+      node.offsetY(nextHalfH);
       node.setAttr("scooliWidth", nextW);
       node.setAttr("scooliHeight", nextH);
       node.setAttr("scooliFontSize", nextFontSize);
+      node.setAttr("scooliHalfW", nextHalfW);
+      node.setAttr("scooliHalfH", nextHalfH);
 
       if (el.type === "bullet_list" || el.type === "ordered_list") {
         const group = node as Konva.Group;
@@ -380,20 +567,25 @@ export const SlideKonvaEditor = forwardRef<
           hitRect.height(heightPx);
         }
 
-        const itemH = Math.max(20, heightPx / Math.max(1, el.items.length));
+        let nextY = 0;
+        const itemHeights = measureListItemHeightsPx(el, widthPx, fontSizePx);
         group.find("Text").forEach((textNode, index) => {
           const listTextNode = textNode as Konva.Text;
+          const itemHeight = itemHeights[index] ?? fontSizePx * TEXT_LINE_HEIGHT;
           textNode.x(0);
-          textNode.y(index * itemH);
+          textNode.y(nextY);
           listTextNode.width(widthPx);
-          listTextNode.height(itemH);
+          listTextNode.height(itemHeight);
           listTextNode.fontSize(fontSizePx);
+          listTextNode.lineHeight(TEXT_LINE_HEIGHT);
+          nextY += itemHeight;
         });
       } else {
         const textNode = node as Konva.Text;
         textNode.width(widthPx);
         textNode.height(heightPx);
         textNode.fontSize(fontSizePx);
+        textNode.lineHeight(TEXT_LINE_HEIGHT);
       }
     },
     [W, H],
@@ -401,7 +593,7 @@ export const SlideKonvaEditor = forwardRef<
 
   const getTextTransformMetrics = useCallback(
     (
-      el: CanvasTextElement | CanvasMathElement | CanvasListElement,
+      el: CanvasTextElement | CanvasListElement,
       sx: number,
       sy: number,
       activeAnchor?: string | null,
@@ -543,10 +735,19 @@ export const SlideKonvaEditor = forwardRef<
         const metrics = getTextTransformMetrics(el, node.scaleX(), node.scaleY(), activeAnchor);
         if (metrics) {
           liveW = metrics.newW;
-          liveH = metrics.newH;
-          applyLiveTextLikeGeometry(node, el, metrics.newW, metrics.newH, metrics.newFontSize);
+          const fittedH = getFittedTextLikeHeight(el, metrics.newW, metrics.newFontSize);
+          liveH =
+            CORNER_ANCHORS.has(activeAnchor) || HORIZONTAL_SIDE_ANCHORS.has(activeAnchor)
+              ? fittedH
+              : Math.max(metrics.newH, fittedH);
+          applyLiveTextLikeGeometry(node, el, activeAnchor, metrics.newW, liveH, metrics.newFontSize);
           node.scaleX(1);
           node.scaleY(1);
+          // We mutated the node's size/offset mid-transform; without this the
+          // Konva Transformer keeps drawing its own (stale) drag rectangle,
+          // which looks like a second box overlapping the element. forceUpdate
+          // re-syncs the handles/border to the node's actual current bounds.
+          trRef.current?.forceUpdate();
           node.getLayer()?.batchDraw();
         }
       }
@@ -572,7 +773,7 @@ export const SlideKonvaEditor = forwardRef<
         setGuides({ vLines: [], hLines: [] });
       }
     },
-    [W, H, OX, OY, applyLiveTextLikeGeometry, elements, getTextTransformMetrics],
+    [W, H, OX, OY, applyLiveTextLikeGeometry, elements, getFittedTextLikeHeight, getTextTransformMetrics],
   );
 
   /**
@@ -615,6 +816,14 @@ export const SlideKonvaEditor = forwardRef<
             newFontSize = metrics.newFontSize;
           }
         }
+
+        if (newFontSize !== null) {
+          const fittedH = getFittedTextLikeHeight(el, newW, newFontSize);
+          newH =
+            activeAnchor && VERTICAL_SIDE_ANCHORS.has(activeAnchor)
+              ? Math.max(newH, fittedH)
+              : fittedH;
+        }
       } else if (isShapeElement(el)) {
         newW = Math.max(MIN_ELEMENT_W, el.w * Math.abs(sx));
         newH = Math.max(MIN_ELEMENT_H, el.h * Math.abs(sy));
@@ -632,6 +841,15 @@ export const SlideKonvaEditor = forwardRef<
         node.offsetX(newW * W / 2);
         node.offsetY(newH * H / 2);
       }
+      node.setAttr("scooliHalfW", newW * W / 2);
+      node.setAttr("scooliHalfH", newH * H / 2);
+      // Keep the Text node's own width/height authoritative so the Transformer
+      // border matches the committed (fitted) box exactly — no ghost second box.
+      if (!isShapeElement(el) && typeof (node as Konva.Text).width === "function") {
+        (node as Konva.Text).width(newW * W);
+        (node as Konva.Text).height(newH * H);
+      }
+      trRef.current?.forceUpdate();
       node.getLayer()?.batchDraw();
       // Convert center position back to top-left fraction for storage.
       // Subtract OX/OY (stage space → slide space).
@@ -646,7 +864,7 @@ export const SlideKonvaEditor = forwardRef<
         rotation: node.rotation(),
       });
     },
-    [W, H, OX, OY, elements, getTextTransformMetrics, updateElement],
+    [W, H, OX, OY, elements, getFittedTextLikeHeight, getTextTransformMetrics, updateElement],
   );
 
   const startEdit = useCallback(
@@ -667,7 +885,7 @@ export const SlideKonvaEditor = forwardRef<
         : FS_BASE * W;
       const color =
         el.type === "text" ? (el as CanvasTextElement).color
-        : el.type === "math" ? T.primary
+        : el.type === "math" ? MATH_COLOR
         : T.muted;
       const fontFamily =
         el.type === "text" ? (el as CanvasTextElement).fontFamily : undefined;
@@ -707,11 +925,25 @@ export const SlideKonvaEditor = forwardRef<
       const el = elements.find((e) => e.id === id);
       if (!el) return;
       if (el.type === "text") {
-        updateElement(id, { text: raw } as Partial<CanvasTextElement>);
+        if (raw.trim().length === 0) {
+          onChange(elements.filter((element) => element.id !== id));
+          if (selectedId === id) setSelectedId(null);
+          return;
+        }
+        const nextEl = { ...el, text: raw };
+        updateElement(id, {
+          text: raw,
+          h: getFittedTextLikeHeight(nextEl, nextEl.w, nextEl.fontSize),
+        } as Partial<CanvasTextElement>);
       } else if (el.type === "bullet_list" || el.type === "ordered_list") {
         const items = raw.split("\n").map((s) => s.trim()).filter(Boolean);
-        updateElement(id, {
+        const nextEl = {
+          ...el,
           items: items.length > 0 ? items : [""],
+        };
+        updateElement(id, {
+          items: nextEl.items,
+          h: getFittedTextLikeHeight(nextEl, nextEl.w, nextEl.fontSize),
         } as Partial<CanvasListElement>);
       } else if (el.type === "math") {
         updateElement(id, { tex: raw } as Partial<CanvasMathElement>);
@@ -719,7 +951,7 @@ export const SlideKonvaEditor = forwardRef<
         updateElement(id, { prompt: raw } as Partial<CanvasImageElement>);
       }
     },
-    [elements, updateElement],
+    [elements, getFittedTextLikeHeight, onChange, selectedId, updateElement],
   );
 
   /* ── Add text element ──────────────────────────────────────────────────── */
@@ -778,10 +1010,22 @@ export const SlideKonvaEditor = forwardRef<
       handleDragEnd(id, e.target);
       setStageCursor("default");
     },
+    onTransformStart: (e: Konva.KonvaEventObject<Event>) => {
+      const node = e.target;
+      const anchor = trRef.current?.getActiveAnchor();
+      if (!anchor) { transformFixedRef.current = null; return; }
+      // node geometry is still committed here (scale = 1), so the opposite
+      // anchor's absolute position is the true pivot to keep fixed.
+      const v = getOppositeAnchorVector(anchor, node.offsetX(), node.offsetY());
+      const off = rotateVector(v.x, v.y, node.rotation());
+      transformFixedRef.current = { x: node.x() + off.x, y: node.y() + off.y };
+    },
     onTransform: (e: Konva.KonvaEventObject<Event>) =>
       handleTransformLive(id, e.target),
-    onTransformEnd: (e: Konva.KonvaEventObject<Event>) =>
-      handleTransformEnd(id, e.target),
+    onTransformEnd: (e: Konva.KonvaEventObject<Event>) => {
+      handleTransformEnd(id, e.target);
+      transformFixedRef.current = null;
+    },
   });
 
   /* ── Render ──────────────────────────────────────────────────────────────── */
@@ -906,27 +1150,21 @@ export const SlideKonvaEditor = forwardRef<
                     textDecoration={t.underline ? "underline" : ""}
                     fill={t.color}
                     align={t.align}
-                    lineHeight={1.3}
+                    lineHeight={TEXT_LINE_HEIGHT}
                     wrap="word"
                     visible={!isEditing}
+                    scooliHalfW={el.w * W / 2}
+                    scooliHalfH={el.h * H / 2}
                     {...dragSelectProps(el.id)}
-                    // Click on an already-selected text element enters edit mode
-                    // immediately (same as Teachy: 1st click = select, 2nd = edit).
-                    onClick={(e: Konva.KonvaEventObject<MouseEvent>) => {
+                    onDblClick={(e: Konva.KonvaEventObject<MouseEvent>) => {
                       e.cancelBubble = true;
-                      if (editState?.id === el.id) return;
-                      if (selectedId === el.id) {
-                        const node = stageRef.current?.findOne(`#${el.id}`);
-                        if (node) startEdit(el.id, node, t.text);
-                      } else {
-                        setSelectedId(el.id);
-                      }
-                    }}
-                    onDblClick={() => {
+                      setSelectedId(el.id);
                       const node = stageRef.current?.findOne(`#${el.id}`);
                       if (node) startEdit(el.id, node, t.text);
                     }}
-                    onDblTap={() => {
+                    onDblTap={(e: Konva.KonvaEventObject<TouchEvent>) => {
+                      e.cancelBubble = true;
+                      setSelectedId(el.id);
                       const node = stageRef.current?.findOne(`#${el.id}`);
                       if (node) startEdit(el.id, node, t.text);
                     }}
@@ -944,8 +1182,14 @@ export const SlideKonvaEditor = forwardRef<
               /* ── Bullet / ordered list ──────────────────────────────── */
               if (el.type === "bullet_list" || el.type === "ordered_list") {
                 const l = el as CanvasListElement;
-                const itemH = Math.max(20, (el.h * H) / Math.max(1, l.items.length));
                 const ordered = el.type === "ordered_list";
+                const itemHeights = measureListItemHeightsPx(l, el.w * W, l.fontSize * W);
+                let nextY = 0;
+                const itemOffsets = itemHeights.map((itemHeight) => {
+                  const offset = nextY;
+                  nextY += itemHeight;
+                  return offset;
+                });
                 return (
                   <Group
                     key={el.id}
@@ -956,22 +1200,18 @@ export const SlideKonvaEditor = forwardRef<
                     offsetY={el.h * H / 2}
                     rotation={el.rotation ?? 0}
                     visible={!isEditing}
+                    scooliHalfW={el.w * W / 2}
+                    scooliHalfH={el.h * H / 2}
                     {...dragSelectProps(el.id)}
-                    onClick={(e: Konva.KonvaEventObject<MouseEvent>) => {
+                    onDblClick={(e: Konva.KonvaEventObject<MouseEvent>) => {
                       e.cancelBubble = true;
-                      if (editState?.id === el.id) return;
-                      if (selectedId === el.id) {
-                        const node = stageRef.current?.findOne(`#${el.id}`);
-                        if (node) startEdit(el.id, node, l.items.join("\n"), true);
-                      } else {
-                        setSelectedId(el.id);
-                      }
-                    }}
-                    onDblClick={() => {
+                      setSelectedId(el.id);
                       const node = stageRef.current?.findOne(`#${el.id}`);
                       if (node) startEdit(el.id, node, l.items.join("\n"), true);
                     }}
-                    onDblTap={() => {
+                    onDblTap={(e: Konva.KonvaEventObject<TouchEvent>) => {
+                      e.cancelBubble = true;
+                      setSelectedId(el.id);
                       const node = stageRef.current?.findOne(`#${el.id}`);
                       if (node) startEdit(el.id, node, l.items.join("\n"), true);
                     }}
@@ -990,17 +1230,17 @@ export const SlideKonvaEditor = forwardRef<
                       strokeEnabled={false}
                     />
                     {l.items.map((item, i) => (
-                      <Text
+                    <Text
                         key={i}
                         text={ordered ? `${i + 1}. ${item}` : `• ${item}`}
                         x={0}
-                        y={i * itemH}
+                        y={itemOffsets[i] ?? 0}
                         width={el.w * W}
-                        height={itemH}
+                        height={itemHeights[i] ?? l.fontSize * W * TEXT_LINE_HEIGHT}
                         fontSize={l.fontSize * W}
                         fontFamily={T.font}
                         fill={l.color}
-                        lineHeight={1.3}
+                        lineHeight={TEXT_LINE_HEIGHT}
                         wrap="word"
                         listening={false}
                       />
@@ -1012,6 +1252,66 @@ export const SlideKonvaEditor = forwardRef<
               /* ── Math (TeX rendered as italic text) ──────────────────── */
               if (el.type === "math") {
                 const m = el as CanvasMathElement;
+                const pixelHeight = Math.max(1, Math.round(el.h * H));
+                const cacheKey = `${m.tex}__${MATH_COLOR}__${pixelHeight}`;
+                const cached = mathCacheRef.current[cacheKey];
+
+                if (cached && cached !== "loading") {
+                  // Fit the rendered formula inside the element box while
+                  // preserving its natural aspect ratio (no stretching), centred.
+                  const boxW = el.w * W;
+                  const boxH = el.h * H;
+                  const natW = cached.naturalWidth || cached.width || boxW;
+                  const natH = cached.naturalHeight || cached.height || boxH;
+                  const fit = Math.min(boxW / natW, boxH / natH);
+                  const drawW = natW * fit;
+                  const drawH = natH * fit;
+                  return (
+                    <Group
+                      key={el.id}
+                      id={el.id}
+                      x={el.x * W + OX + el.w * W / 2}
+                      y={el.y * H + OY + el.h * H / 2}
+                      offsetX={el.w * W / 2}
+                      offsetY={el.h * H / 2}
+                      rotation={el.rotation ?? 0}
+                      visible={!isEditing}
+                      scooliHalfW={el.w * W / 2}
+                      scooliHalfH={el.h * H / 2}
+                      {...dragSelectProps(el.id)}
+                      onDblClick={(e: Konva.KonvaEventObject<MouseEvent>) => {
+                        e.cancelBubble = true;
+                        setSelectedId(el.id);
+                        const node = stageRef.current?.findOne(`#${el.id}`);
+                        if (onEditMath) { onEditMath(el.id); } else if (node) startEdit(el.id, node, m.tex);
+                      }}
+                      onDblTap={(e: Konva.KonvaEventObject<TouchEvent>) => {
+                        e.cancelBubble = true;
+                        setSelectedId(el.id);
+                        const node = stageRef.current?.findOne(`#${el.id}`);
+                        if (onEditMath) { onEditMath(el.id); } else if (node) startEdit(el.id, node, m.tex);
+                      }}
+                      onMouseEnter={() => {
+                        if (!isDraggingRef.current) setStageCursor("grab");
+                      }}
+                      onMouseLeave={() => {
+                        if (!isDraggingRef.current) setStageCursor("default");
+                      }}
+                    >
+                      {/* Transparent hit rect so the whole box is selectable */}
+                      <Rect width={boxW} height={boxH} fill="transparent" strokeEnabled={false} />
+                      <KonvaImage
+                        image={cached}
+                        x={(boxW - drawW) / 2}
+                        y={(boxH - drawH) / 2}
+                        width={drawW}
+                        height={drawH}
+                        listening={false}
+                      />
+                    </Group>
+                  );
+                }
+
                 return (
                   <Text
                     key={el.id}
@@ -1027,19 +1327,25 @@ export const SlideKonvaEditor = forwardRef<
                     fontSize={m.fontSize * W}
                     fontFamily={T.font}
                     fontStyle="italic"
-                    fill={T.primary}
+                    fill={MATH_COLOR}
                     align="center"
                     lineHeight={1.3}
                     wrap="word"
                     visible={!isEditing}
+                    scooliHalfW={el.w * W / 2}
+                    scooliHalfH={el.h * H / 2}
                     {...dragSelectProps(el.id)}
-                    onDblClick={() => {
+                    onDblClick={(e: Konva.KonvaEventObject<MouseEvent>) => {
+                      e.cancelBubble = true;
+                      setSelectedId(el.id);
                       const node = stageRef.current?.findOne(`#${el.id}`);
-                      if (node) startEdit(el.id, node, m.tex);
+                      if (onEditMath) { onEditMath(el.id); } else if (node) startEdit(el.id, node, m.tex);
                     }}
-                    onDblTap={() => {
+                    onDblTap={(e: Konva.KonvaEventObject<TouchEvent>) => {
+                      e.cancelBubble = true;
+                      setSelectedId(el.id);
                       const node = stageRef.current?.findOne(`#${el.id}`);
-                      if (node) startEdit(el.id, node, m.tex);
+                      if (onEditMath) { onEditMath(el.id); } else if (node) startEdit(el.id, node, m.tex);
                     }}
                     onMouseEnter={() => {
                       if (!isDraggingRef.current) setStageCursor("grab");
@@ -1144,9 +1450,9 @@ export const SlideKonvaEditor = forwardRef<
                       fontFamily={T.font}
                       fill={T.muted}
                       align="center"
-                      wrap="word"
-                      listening={false}
-                    />
+                        wrap="word"
+                        listening={false}
+                      />
                   </Group>
                 );
               }
