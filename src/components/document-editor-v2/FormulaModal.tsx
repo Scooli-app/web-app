@@ -210,7 +210,7 @@ export function FormulaModal({ open, onClose, onInsert, initialTex }: Props) {
   useEffect(() => {
     if (open) {
       setLatexMode(true);
-      setValue(isEditing ? initialTex!.trim() : "\\frac{a}{b}");
+      setValue(isEditing && initialTex ? initialTex.trim() : "\\frac{a}{b}");
     }
   }, [open, isEditing, initialTex]);
 

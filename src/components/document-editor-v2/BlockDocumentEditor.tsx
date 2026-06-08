@@ -103,7 +103,6 @@ import { FormulaModal } from "./FormulaModal";
 import { SlideKonvaEditor, type SlideKonvaEditorHandle } from "./SlideKonvaEditor";
 import { SlideThumbnail } from "./SlideThumbnail";
 import { ThemePicker } from "./ThemePicker";
-// @ts-ignore -- sibling task provides this module.
 import { renderKatexToPngDataUrl } from "./math-render";
 
 interface Props {

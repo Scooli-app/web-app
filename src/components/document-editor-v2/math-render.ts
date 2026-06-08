@@ -48,7 +48,7 @@ async function renderSvgMarkupToPngDataUrl(markup: string, color: string, pixelH
   const REF_FONT = 64;
   const measure = document.createElement("div");
   measure.style.cssText =
-    `position:fixed;left:-99999px;top:0;display:inline-block;padding:0;margin:0;` +
+    "position:fixed;left:-99999px;top:0;display:inline-block;padding:0;margin:0;" +
     `background:transparent;color:${color};font-size:${REF_FONT}px;line-height:1.2;width:max-content;`;
   measure.innerHTML = markup;
   document.body.appendChild(measure);
@@ -71,7 +71,7 @@ async function renderSvgMarkupToPngDataUrl(markup: string, color: string, pixelH
   const height = Math.max(1, Math.ceil(pixelHeight));
   const svg = [
     `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">`,
-    `<foreignObject width="100%" height="100%">`,
+    "<foreignObject width=\"100%\" height=\"100%\">",
     `<div xmlns="http://www.w3.org/1999/xhtml" style="display:inline-block;padding:0;margin:0;background:transparent;color:${escapeHtml(color)};font-size:${fontSize}px;line-height:1.2;width:max-content;">`,
     markup,
     "</div>",
