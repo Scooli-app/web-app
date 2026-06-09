@@ -25,6 +25,7 @@ import { AssistantButton } from "./AssistantButton";
 import { AssistantPanel } from "./AssistantPanel";
 
 const MOBILE_EDITOR_ROUTE_PATTERN = /^\/(lesson-plan|test|quiz|presentation|worksheet)\/[^/]+$/;
+const PRESENTATION_MODE_ROUTE_PATTERN = /\/present\/?$/;
 
 /**
  * Provider component that renders the floating assistant button and panel.
@@ -50,6 +51,7 @@ export function AssistantProvider() {
 
   const shouldHideAssistant =
     isMobile && MOBILE_EDITOR_ROUTE_PATTERN.test(pathname ?? "");
+  const isPresentationMode = PRESENTATION_MODE_ROUTE_PATTERN.test(pathname ?? "");
 
   // Mark messages as read when panel opens
   useEffect(() => {
@@ -59,10 +61,10 @@ export function AssistantProvider() {
   }, [isOpen, hasUnread, dispatch]);
 
   useEffect(() => {
-    if (shouldHideAssistant && isOpen) {
+    if ((shouldHideAssistant || isPresentationMode) && isOpen) {
       dispatch(closePanel());
     }
-  }, [shouldHideAssistant, isOpen, dispatch]);
+  }, [shouldHideAssistant, isPresentationMode, isOpen, dispatch]);
 
   const handleToggle = useCallback(() => {
     dispatch(toggleOpen());
@@ -100,7 +102,7 @@ export function AssistantProvider() {
     }
   }, [inputValue, isProcessing, getToken, dispatch]);
 
-  if (shouldHideAssistant) {
+  if (shouldHideAssistant || isPresentationMode) {
     return null;
   }
 

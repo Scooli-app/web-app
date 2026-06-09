@@ -20,10 +20,11 @@
 
 import { parsePresentationDocument, type PresentationDocument } from "@/shared/types/blocks";
 import { CanvasSlideView } from "@/components/document-editor-v2/CanvasSlideView";
+import { presentationToCanvas } from "@/components/document-editor-v2/canvas-layout";
 import { isCanvasPresentation, type CanvasPresentation } from "@/shared/types/canvas-presentation";
 import { fetchDocument } from "@/store/documents/documentSlice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { ChevronLeft, ChevronRight, Loader2, Printer, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2, X } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SlideRenderer } from "./SlideRenderer";
@@ -46,12 +47,13 @@ export function PresentView({ documentId }: Props) {
     if (documentId) void dispatch(fetchDocument(documentId));
   }, [dispatch, documentId]);
 
-  // Parse to typed model (memoized). Handles both v1 (layout-based) and
-  // v2 (canvas/position-based) content formats.
-  //
-  // v2 canvas presentations are stored as-is so CanvasSlideView can render
-  // them with the correct background, colours, fonts and element positions.
-  // v1 presentations fall through to the legacy SlideRenderer.
+  // Parse to typed model (memoized). Both v1 (layout-based) and v2
+  // (canvas/position-based) content are rendered through CanvasSlideView so the
+  // presenter is pixel-identical to the editor (same dark background, colours,
+  // fonts and element positions). v1 content is converted with the exact same
+  // `presentationToCanvas` the editor uses on load — without this, an un-resaved
+  // (still-v1) deck rendered via the light SlideRenderer and looked white in
+  // fullscreen while the editor showed it dark.
   const { canvasPresentation, parsed } = useMemo<{
     canvasPresentation: CanvasPresentation | null;
     parsed: PresentationDocument | null;
@@ -65,7 +67,8 @@ export function PresentView({ documentId }: Props) {
         // v2 canvas format — render directly via CanvasSlideView
         return { canvasPresentation: raw, parsed: null };
       }
-      return { canvasPresentation: null, parsed: parsePresentationDocument(document.content) };
+      // v1 layout format — convert to canvas so it matches the editor exactly.
+      return { canvasPresentation: presentationToCanvas(parsePresentationDocument(document.content)), parsed: null };
     } catch {
       return { canvasPresentation: null, parsed: null };
     }
@@ -256,19 +259,8 @@ export function PresentView({ documentId }: Props) {
           </button>
         </div>
 
-        {/* Right: print + exit */}
+        {/* Right: exit */}
         <div className="pointer-events-auto flex gap-2">
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              window.print();
-            }}
-            className="rounded-full bg-white/10 p-2 text-white backdrop-blur-sm transition-colors hover:bg-white/20"
-            aria-label="Imprimir ou exportar PDF"
-          >
-            <Printer className="h-4 w-4" />
-          </button>
           <button
             type="button"
             onClick={(e) => {
@@ -281,45 +273,6 @@ export function PresentView({ documentId }: Props) {
             <X className="h-4 w-4" />
           </button>
         </div>
-      </div>
-
-      {/* Print stylesheet: one slide per page, no HUD, full bleed. */}
-      <style jsx global>{`
-        @media print {
-          @page {
-            size: landscape;
-            margin: 0;
-          }
-          body * {
-            visibility: hidden;
-          }
-          .scooli-print-deck,
-          .scooli-print-deck * {
-            visibility: visible;
-          }
-          .scooli-print-deck {
-            position: absolute;
-            inset: 0;
-            background: white;
-          }
-        }
-      `}</style>
-
-      {/* Hidden print-only deck: render every slide so window.print() captures
-          all of them, one per page. The on-screen viewer above is hidden by the
-          print stylesheet. */}
-      <div className="scooli-print-deck hidden print:block">
-        {visibleCanvasSlides
-          ? visibleCanvasSlides.map((slide) => (
-              <div key={slide.id} className="break-after-page" style={{ width: "100vw", height: "100vh" }}>
-                <CanvasSlideView slide={slide} />
-              </div>
-            ))
-          : parsed?.blocks.map((slide) => (
-              <div key={slide.id} className="break-after-page" style={{ width: "100vw", height: "100vh" }}>
-                <SlideRenderer slide={slide} />
-              </div>
-            ))}
       </div>
     </div>
   );
