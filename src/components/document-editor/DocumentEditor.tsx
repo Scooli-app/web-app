@@ -282,6 +282,10 @@ export default function DocumentEditor({
   // Diff / Suggestions mode state
   const [isSuggestionsMode, setIsSuggestionsMode] = useState(false);
 
+  const [showChatNudge, setShowChatNudge] = useState(false);
+  const prevIsGeneratingRef = useRef(false);
+  const nudgeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // Reset document-scoped UI state when switching document IDs.
   // This prevents chat/source leakage between documents during route transitions.
   useEffect(() => {
@@ -976,6 +980,7 @@ export default function DocumentEditor({
         return;
       }
 
+      dismissChatNudge();
       setChatHistory((prev) => [
         ...prev,
         { role: "user", content: userMessage },
@@ -1095,6 +1100,24 @@ export default function DocumentEditor({
     (streamInfo?.id === documentId && streamInfo?.status === "generating");
   const resolvedTitle =
     documentTitle || normalizePendingTitle(activeDocument?.title || "");
+
+  // Show chat nudge once when document generation finishes
+  useEffect(() => {
+    if (prevIsGeneratingRef.current && !isGenerating) {
+      setShowChatNudge(true);
+      if (nudgeTimerRef.current) clearTimeout(nudgeTimerRef.current);
+      nudgeTimerRef.current = setTimeout(() => setShowChatNudge(false), 8000);
+    }
+    prevIsGeneratingRef.current = isGenerating;
+  }, [isGenerating]);
+
+  // Cleanup nudge timer on unmount
+  useEffect(() => () => { if (nudgeTimerRef.current) clearTimeout(nudgeTimerRef.current); }, []);
+
+  const dismissChatNudge = useCallback(() => {
+    setShowChatNudge(false);
+    if (nudgeTimerRef.current) clearTimeout(nudgeTimerRef.current);
+  }, []);
 
   // Handle exiting diff / suggestions mode
   const handleExitDiffMode = useCallback(() => {
@@ -1272,6 +1295,8 @@ export default function DocumentEditor({
               showGenerationHint={!isEntitlementLoading && !isPremium}
               documentType={activeDocument?.documentType}
               documentId={documentId}
+              nudge={showChatNudge}
+              onNudgeDismiss={dismissChatNudge}
             />
           </div>
         </div>
@@ -1289,6 +1314,8 @@ export default function DocumentEditor({
           showGenerationHint={!isEntitlementLoading && !isPremium}
           documentType={activeDocument?.documentType}
           documentId={documentId}
+          nudge={showChatNudge}
+          onNudgeDismiss={dismissChatNudge}
         />
       </div>
     </>
