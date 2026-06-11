@@ -108,6 +108,36 @@ export default function DocumentCreationPage({
   const { formState, error, setError, updateForm, isFormValid, handleTemplateSelect } =
     useDocumentForm(documentType.id);
 
+  // Prefill from quick-create query params (?topic=&year=&subject=) set by the
+  // dashboard prompt box and quick-start examples. Reads window.location instead
+  // of useSearchParams() to avoid requiring a Suspense boundary on every
+  // creation page. Invalid or missing values are simply left for the form.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const topic = params.get("topic");
+    const yearRaw = params.get("year");
+    const subjectId = params.get("subject");
+    if (!topic && !yearRaw && !subjectId) return;
+
+    if (topic?.trim()) {
+      updateForm("topic", topic.trim());
+    }
+
+    const year = yearRaw ? Number(yearRaw) : Number.NaN;
+    const hasValidYear = Number.isInteger(year) && year >= 1 && year <= 12;
+    if (hasValidYear) {
+      updateForm("schoolYear", year);
+    }
+
+    if (subjectId && SUBJECTS.some((subject) => subject.id === subjectId)) {
+      const validForYear =
+        !hasValidYear || SUBJECTS_BY_GRADE[String(year)]?.includes(subjectId);
+      if (validForYear) {
+        updateForm("subject", subjectId);
+      }
+    }
+  }, [updateForm]);
+
   // Reset subject if it's not available for the selected school year
   useEffect(() => {
     if (formState.schoolYear && formState.subject) {

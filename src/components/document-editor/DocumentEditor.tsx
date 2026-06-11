@@ -42,7 +42,6 @@ import { toast } from "sonner";
 import { DiffToolbar } from "../editor/DiffToolbar";
 import { computeDiff, markdownToNode } from "../editor/utils/diffEngine";
 import RichTextEditor from "../ui/rich-text-editor";
-import { StreamingText } from "../ui/streaming-text";
 import AIChatPanel from "./AIChatPanel";
 import DocumentTitle from "./DocumentTitle";
 import DownloadButton from "./DownloadButton";
@@ -1186,16 +1185,17 @@ export default function DocumentEditor({
                   </div>
                 </div>
                 <div className="min-h-[50dvh] w-full overflow-auto rounded-xl border border-border bg-card p-3 sm:min-h-[600px] sm:p-4">
-                  {displayContent && streamStatus !== "reviewing" && streamStatus !== "revised" ? (
-                    <StreamingText
-                      text={displayContent}
-                      isStreaming={isGenerating}
-                      as="div"
-                      className="prose prose-sm max-w-none whitespace-pre-wrap text-foreground leading-relaxed"
-                    />
-                  ) : (
-                    <GenerationProgress streamStatus={streamStatus} />
-                  )}
+                  {/* Never show the raw markdown stream — keep the stepper until
+                      the formatted document is ready. Content chunks arriving
+                      while the status is still early means we're generating. */}
+                  <GenerationProgress
+                    streamStatus={
+                      displayContent &&
+                      (!streamStatus || streamStatus === "preparing")
+                        ? "generating"
+                        : streamStatus
+                    }
+                  />
                 </div>
               </>
             ) : (

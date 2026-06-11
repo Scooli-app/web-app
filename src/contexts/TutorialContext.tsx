@@ -11,14 +11,14 @@ import {
   useState,
 } from "react";
 
-export const TUTORIAL_ROUTE = "/quiz";
+export const TUTORIAL_ROUTE = "/lesson-plan";
 export const TUTORIAL_TOTAL_STEPS = 5;
 
 interface TutorialContextValue {
   isTutorialActive: boolean;
   currentStep: number;
   totalSteps: number;
-  startTutorial: () => void;
+  startTutorial: (source?: "onboarding" | "sidebar") => void;
   nextStep: () => void;
   exitTutorial: (reason?: "completed" | "skipped") => void;
 }
@@ -36,11 +36,11 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
   const sessionIdRef = useRef<string | null>(null);
   // Only auto-exit once the tutorial has been confirmed active on the tutorial route.
   // This prevents a race condition where startTutorial() is called on the onboarding
-  // page before router.push('/quiz') completes, which would otherwise trigger an
+  // page before router.push(TUTORIAL_ROUTE) completes, which would otherwise trigger an
   // immediate auto-exit because pathname hasn't updated yet.
   const confirmedOnRouteRef = useRef(false);
 
-  // Auto-exit if user navigates away from the quiz page
+  // Auto-exit if user navigates away from the tutorial page
   useEffect(() => {
     if (!isTutorialActive) {
       confirmedOnRouteRef.current = false;
@@ -69,13 +69,13 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
     }
   }, [pathname, isTutorialActive, currentStep]);
 
-  const startTutorial = useCallback(() => {
+  const startTutorial = useCallback((source: "onboarding" | "sidebar" = "onboarding") => {
     completedRef.current = false;
     const sessionId = crypto.randomUUID();
     sessionIdRef.current = sessionId;
     setCurrentStep(0);
     setIsTutorialActive(true);
-    posthog.capture("tutorial_started", { tutorial_session_id: sessionId });
+    posthog.capture("tutorial_started", { tutorial_session_id: sessionId, source });
     posthog.capture("tutorial_step_viewed", { tutorial_session_id: sessionId, step: 1 });
   }, []);
 
