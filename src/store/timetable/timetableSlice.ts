@@ -30,7 +30,7 @@ const initialState: TimetableState = {
   timetables: [],
   currentTimetable: null,
   slots: [],
-  isLoading: false,
+  isLoading: true,
   isSlotsLoading: false,
   isGeneratingTopics: false,
   error: null,

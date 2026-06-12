@@ -292,7 +292,21 @@ function CheckoutContent() {
 
     posthog.capture("checkout_initiated", {
       plan_code: planCode,
+      plan_interval: plans.find((p) => p.planCode === planCode)?.interval ?? null,
+      price_cents: plans.find((p) => p.planCode === planCode)?.priceCents ?? null,
     });
+    // Persist plan details so payment_success can include them after the
+    // Stripe redirect lands on the dashboard with no plan info in the URL.
+    try {
+      sessionStorage.setItem("scooli_pending_plan", planCode);
+      const pendingPlan = plans.find((p) => p.planCode === planCode);
+      if (pendingPlan) {
+        sessionStorage.setItem("scooli_pending_plan_interval", pendingPlan.interval);
+        sessionStorage.setItem("scooli_pending_plan_price", String(pendingPlan.priceCents));
+      }
+    } catch {
+      // sessionStorage unavailable (private browsing edge case) — non-fatal
+    }
 
     try {
       const response = await createCheckoutSession({ planCode });

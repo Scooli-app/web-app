@@ -20,11 +20,12 @@
 
 import { parsePresentationDocument, type PresentationDocument } from "@/shared/types/blocks";
 import { CanvasSlideView } from "@/components/document-editor-v2/CanvasSlideView";
+import { presentationToCanvas } from "@/components/document-editor-v2/canvas-layout";
 import { isCanvasPresentation, type CanvasPresentation } from "@/shared/types/canvas-presentation";
 import { fetchDocument } from "@/store/documents/documentSlice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { Loader2, Printer, X } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { ChevronLeft, ChevronRight, Loader2, X } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SlideRenderer } from "./SlideRenderer";
 
@@ -34,6 +35,7 @@ interface Props {
 
 export function PresentView({ documentId }: Props) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const dispatch = useAppDispatch();
   const document = useAppSelector((s) => s.documents.currentDocument);
   const [currentIdx, setCurrentIdx] = useState(0);
@@ -45,12 +47,13 @@ export function PresentView({ documentId }: Props) {
     if (documentId) void dispatch(fetchDocument(documentId));
   }, [dispatch, documentId]);
 
-  // Parse to typed model (memoized). Handles both v1 (layout-based) and
-  // v2 (canvas/position-based) content formats.
-  //
-  // v2 canvas presentations are stored as-is so CanvasSlideView can render
-  // them with the correct background, colours, fonts and element positions.
-  // v1 presentations fall through to the legacy SlideRenderer.
+  // Parse to typed model (memoized). Both v1 (layout-based) and v2
+  // (canvas/position-based) content are rendered through CanvasSlideView so the
+  // presenter is pixel-identical to the editor (same dark background, colours,
+  // fonts and element positions). v1 content is converted with the exact same
+  // `presentationToCanvas` the editor uses on load — without this, an un-resaved
+  // (still-v1) deck rendered via the light SlideRenderer and looked white in
+  // fullscreen while the editor showed it dark.
   const { canvasPresentation, parsed } = useMemo<{
     canvasPresentation: CanvasPresentation | null;
     parsed: PresentationDocument | null;
@@ -64,7 +67,8 @@ export function PresentView({ documentId }: Props) {
         // v2 canvas format — render directly via CanvasSlideView
         return { canvasPresentation: raw, parsed: null };
       }
-      return { canvasPresentation: null, parsed: parsePresentationDocument(document.content) };
+      // v1 layout format — convert to canvas so it matches the editor exactly.
+      return { canvasPresentation: presentationToCanvas(parsePresentationDocument(document.content)), parsed: null };
     } catch {
       return { canvasPresentation: null, parsed: null };
     }
@@ -78,17 +82,30 @@ export function PresentView({ documentId }: Props) {
   const total = visibleCanvasSlides
     ? visibleCanvasSlides.length
     : (parsed?.blocks.length ?? 0);
+  const requestedSlideParam = searchParams.get("slide");
+  const requestedSlide = requestedSlideParam === null
+    ? 0
+    : Number.parseInt(requestedSlideParam, 10);
+
+  useEffect(() => {
+    if (total <= 0) {
+      setCurrentIdx(0);
+      return;
+    }
+    const safeIdx = Number.isFinite(requestedSlide) ? requestedSlide : 0;
+    setCurrentIdx(Math.min(Math.max(safeIdx, 0), total - 1));
+  }, [requestedSlide, total]);
 
   /* Navigation handlers ------------------------------------------------- */
 
   const next = useCallback(() => {
-    setCurrentIdx((i) => Math.min(total - 1, i + 1));
+    setCurrentIdx((i) => Math.min(Math.max(total - 1, 0), i + 1));
   }, [total]);
   const prev = useCallback(() => {
     setCurrentIdx((i) => Math.max(0, i - 1));
   }, []);
   const first = useCallback(() => setCurrentIdx(0), []);
-  const last = useCallback(() => setCurrentIdx(total - 1), [total]);
+  const last = useCallback(() => setCurrentIdx(Math.max(total - 1, 0)), [total]);
 
   // Guard against double-navigation (keydown handler + fullscreenchange can both fire).
   const hasExitedRef = useRef(false);
@@ -163,7 +180,7 @@ export function PresentView({ documentId }: Props) {
   const showHud = useCallback(() => {
     setHudVisible(true);
     if (hudTimerRef.current) clearTimeout(hudTimerRef.current);
-    hudTimerRef.current = setTimeout(() => setHudVisible(false), 2000);
+    hudTimerRef.current = setTimeout(() => setHudVisible(false), 5000);
   }, []);
 
   useEffect(() => {
@@ -207,27 +224,43 @@ export function PresentView({ documentId }: Props) {
         ) : null}
       </div>
 
-      {/* HUD: counter + controls. Always shown for ~2s after any mouse move. */}
+      {/* HUD: counter + controls. Shown for 5s after any mouse move, stays
+          visible while the cursor is over it so teachers can click the buttons. */}
       <div
         className={`pointer-events-none fixed inset-x-0 bottom-0 flex items-end justify-between p-4 transition-opacity duration-300 ${
           hudVisible ? "opacity-100" : "opacity-0"
         }`}
+        onMouseEnter={showHud}
       >
+        {/* Left: slide counter */}
         <div className="pointer-events-auto rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur-sm">
           {currentIdx + 1} / {total}
         </div>
+
+        {/* Centre: ← → navigation arrows */}
         <div className="pointer-events-auto flex gap-2">
           <button
             type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              window.print();
-            }}
-            className="rounded-full bg-white/10 p-2 text-white backdrop-blur-sm transition-colors hover:bg-white/20"
-            aria-label="Imprimir ou exportar PDF"
+            onClick={(e) => { e.stopPropagation(); prev(); }}
+            disabled={currentIdx === 0}
+            className="rounded-full bg-white/10 p-2 text-white backdrop-blur-sm transition-colors hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed"
+            aria-label="Slide anterior"
           >
-            <Printer className="h-4 w-4" />
+            <ChevronLeft className="h-5 w-5" />
           </button>
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); next(); }}
+            disabled={currentIdx === total - 1}
+            className="rounded-full bg-white/10 p-2 text-white backdrop-blur-sm transition-colors hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed"
+            aria-label="Próximo slide"
+          >
+            <ChevronRight className="h-5 w-5" />
+          </button>
+        </div>
+
+        {/* Right: exit */}
+        <div className="pointer-events-auto flex gap-2">
           <button
             type="button"
             onClick={(e) => {
@@ -240,45 +273,6 @@ export function PresentView({ documentId }: Props) {
             <X className="h-4 w-4" />
           </button>
         </div>
-      </div>
-
-      {/* Print stylesheet: one slide per page, no HUD, full bleed. */}
-      <style jsx global>{`
-        @media print {
-          @page {
-            size: landscape;
-            margin: 0;
-          }
-          body * {
-            visibility: hidden;
-          }
-          .scooli-print-deck,
-          .scooli-print-deck * {
-            visibility: visible;
-          }
-          .scooli-print-deck {
-            position: absolute;
-            inset: 0;
-            background: white;
-          }
-        }
-      `}</style>
-
-      {/* Hidden print-only deck: render every slide so window.print() captures
-          all of them, one per page. The on-screen viewer above is hidden by the
-          print stylesheet. */}
-      <div className="scooli-print-deck hidden print:block">
-        {visibleCanvasSlides
-          ? visibleCanvasSlides.map((slide) => (
-              <div key={slide.id} className="break-after-page" style={{ width: "100vw", height: "100vh" }}>
-                <CanvasSlideView slide={slide} />
-              </div>
-            ))
-          : parsed?.blocks.map((slide) => (
-              <div key={slide.id} className="break-after-page" style={{ width: "100vw", height: "100vh" }}>
-                <SlideRenderer slide={slide} />
-              </div>
-            ))}
       </div>
     </div>
   );

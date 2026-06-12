@@ -100,6 +100,12 @@ export interface ChatResponse {
   chatAnswer: string;
   sources?: RagSource[];
   updatedAt: string;
+  /** Present (true) when the AI detected a visual context change on a slide that has an image */
+  suggestImageRegen?: boolean;
+}
+
+export interface GenerateSlideResponse {
+  slide: string;
 }
 
 

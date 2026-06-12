@@ -137,6 +137,7 @@ export function OnboardingGate() {
           acquisitionSource: payload.acquisitionSource,
           subjectArea: payload.subjectArea ?? null,
           teachingLevel: payload.teachingLevel ?? null,
+          goals: payload.goals ?? null,
         });
 
         posthog.setPersonPropertiesForFlags({

@@ -17,7 +17,6 @@ import { AMBIGUOUS_COMPONENTS_SUBJECTS, SUBJECTS, SUBJECTS_BY_GRADE } from "./co
 import {
   AdditionalDetailsSection,
   DurationSection,
-  SlideCountSection,
   FormActions,
   FormHeader,
   GradeSection,
@@ -70,11 +69,12 @@ function useDocumentForm(documentTypeId: DocumentTypeConfig["id"]) {
 
   const isFormValid = () => {
     const requiresWorksheetVariant = documentTypeId === "worksheet";
+    const isPresentation = documentTypeId === "presentation";
     return Boolean(
       formState.topic.trim() &&
         formState.subject &&
         formState.schoolYear &&
-        formState.templateId &&
+        (isPresentation || formState.templateId) &&
         (!requiresWorksheetVariant || formState.worksheetVariant)
     );
   };
@@ -143,7 +143,7 @@ export default function DocumentCreationPage({
   const handleCreateDocument = async () => {
     if (isLoading) return;
 
-    if (!formState.templateId) {
+    if (!isPresentation && !formState.templateId) {
       setError("Por favor, selecione um modelo de documento");
       return;
     }
@@ -197,11 +197,9 @@ export default function DocumentCreationPage({
             includeAe: formState.includeAe ?? true,
             regulatorySourceIds: formState.regulatorySourceIds,
           }),
-          // Presentations-only: pass the picked slide count through. Backend
-          // defaults to 10 when omitted.
-          ...(isPresentation && formState.slideCount
-            ? { slideCount: formState.slideCount }
-            : {}),
+          // Presentations use class duration (like other document types) so the
+          // backend can infer an appropriate slide count. duration is already
+          // included above from formState.lessonTime — nothing extra needed here.
         })
       );
 
@@ -292,18 +290,11 @@ export default function DocumentCreationPage({
                 onUpdate={updateForm}
               />
             </div>
-            {isPresentation ? (
-              <SlideCountSection
-                slideCount={formState.slideCount}
-                onUpdate={updateForm}
-              />
-            ) : (
-              <DurationSection
-                lessonTime={formState.lessonTime}
-                customTime={formState.customTime}
-                onUpdate={updateForm}
-              />
-            )}
+            <DurationSection
+              lessonTime={formState.lessonTime}
+              customTime={formState.customTime}
+              onUpdate={updateForm}
+            />
           </div>
 
           <div data-tutorial="subject">
@@ -317,13 +308,15 @@ export default function DocumentCreationPage({
             />
           </div>
 
-          <div data-tutorial="template">
-            <TemplateSection
-              documentType={documentType.id}
-              selectedTemplateId={formState.templateId || null}
-              onTemplateSelect={handleTemplateSelect}
-            />
-          </div>
+          {!isPresentation && (
+            <div data-tutorial="template">
+              <TemplateSection
+                documentType={documentType.id}
+                selectedTemplateId={formState.templateId || null}
+                onTemplateSelect={handleTemplateSelect}
+              />
+            </div>
+          )}
 
           {showTeachingMethodSection && (
             <TeachingMethodSection

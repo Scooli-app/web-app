@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/tooltip";
 import type { RagSource } from "@/shared/types/document";
 import { cn } from "@/shared/utils/utils";
-import { FileText, MessageCircle, Send, Sparkles } from "lucide-react";
+import { FileText, Loader2, MessageCircle, Send, Sparkles } from "lucide-react";
 import posthog from "posthog-js";
 import { useEffect, useRef, useState } from "react";
 
@@ -107,6 +107,10 @@ interface ChatMessage {
   role: "user" | "assistant";
   content: string;
   hasUpdate?: boolean;
+  /** When true, render Sim/Não quick-action buttons below the message */
+  imageRegenOffer?: boolean;
+  /** Set to true after user clicks Sim or Não to hide the buttons */
+  imageRegenResolved?: boolean;
 }
 
 interface AIChatPanelProps {
@@ -119,6 +123,10 @@ interface AIChatPanelProps {
   sources?: RagSource[];
   variant?: "desktop" | "mobile";
   showGenerationHint?: boolean;
+  /** Called when the user clicks "Sim" on an image-regen offer */
+  onImageRegen?: () => void;
+  /** Called when the user clicks "Não" on an image-regen offer */
+  onDismissImageRegen?: () => void;
   /** Document type used to pick contextual suggestion chips */
   documentType?: string;
   /** Document id used for PostHog event properties */
@@ -210,6 +218,8 @@ function ChatContent({
   variant = "desktop",
   sources = [],
   showGenerationHint = false,
+  onImageRegen,
+  onDismissImageRegen,
   showSuggestions = false,
   documentType,
   onSuggestionClick,
@@ -226,11 +236,14 @@ function ChatContent({
   variant?: "desktop" | "mobile";
   sources?: RagSource[];
   showGenerationHint?: boolean;
+  onImageRegen?: () => void;
+  onDismissImageRegen?: () => void;
   showSuggestions?: boolean;
   documentType?: string;
   onSuggestionClick?: (chip: SuggestionChip) => void;
 }) {
   const isDesktop = variant === "desktop";
+  const isInputLocked = isStreaming;
   const [activeTab, setActiveTab] = useState<"assistant" | "sources">(
     "assistant",
   );
@@ -283,6 +296,22 @@ function ChatContent({
                       Documento Refinado
                     </div>
                   )}
+                  {message.imageRegenOffer && !message.imageRegenResolved && onImageRegen && (
+                    <div className="mt-2 pt-2 border-t border-border/30 flex gap-2">
+                      <button
+                        onClick={onImageRegen}
+                        className="px-3 py-1 rounded-lg text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                      >
+                        Sim, regenerar
+                      </button>
+                      <button
+                        onClick={onDismissImageRegen}
+                        className="px-3 py-1 rounded-lg text-xs font-medium bg-muted text-muted-foreground hover:bg-muted/70 transition-colors"
+                      >
+                        Não
+                      </button>
+                    </div>
+                  )}
                 </div>
               ))}
 
@@ -322,15 +351,19 @@ function ChatContent({
                 onChange={(e) => setChatMessage(e.target.value)}
                 placeholder={placeholder}
                 className="flex-1 border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 px-3 h-10 text-sm"
-                disabled={isStreaming}
+                disabled={isInputLocked}
               />
               <Button
                 type="submit"
-                disabled={!chatMessage.trim() || isStreaming}
+                disabled={!chatMessage.trim() || isInputLocked}
                 size="icon"
                 className="relative h-10 w-10 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground shrink-0 shadow-sm overflow-visible"
               >
-                <Send className="h-4 w-4" />
+                {isStreaming ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Send className="h-4 w-4" />
+                )}
                 {showGenerationHint && (
                   <GenerationCostHint
                     compact
@@ -372,38 +405,74 @@ export default function AIChatPanel({
   title = "Assistente de IA",
   sources = [],
   showGenerationHint = false,
+  onImageRegen,
+  onDismissImageRegen,
   documentType,
   documentId,
 }: AIChatPanelProps) {
   const [chatMessage, setChatMessage] = useState("");
+  const [lockedMessage, setLockedMessage] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(true);
   const chatContainerRef = useRef<HTMLDivElement | null>(null);
   const mobileChatContainerRef = useRef<HTMLDivElement | null>(null);
+  const isStreamingRef = useRef(isStreaming);
+  const wasStreamingRef = useRef(isStreaming);
+  const lockedInputValue = isStreaming && lockedMessage !== null ? lockedMessage : chatMessage;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!chatMessage.trim()) {
+    if (isStreaming || lockedMessage !== null || !chatMessage.trim()) {
       return;
     }
 
     setShowSuggestions(false);
-    const userMessage = chatMessage;
-    setChatMessage("");
-    await onChatSubmit(userMessage);
+    const userMessage = chatMessage.trim();
+    setLockedMessage(userMessage);
+    setChatMessage(userMessage);
+    try {
+      await onChatSubmit(userMessage);
+      if (!isStreamingRef.current) {
+        setChatMessage("");
+        setLockedMessage(null);
+      }
+    } catch {
+      setChatMessage("");
+      setLockedMessage(null);
+    }
   };
 
   const handleSuggestionClick = async (chip: SuggestionChip) => {
-    if (isStreaming) return;
+    if (isStreaming || lockedMessage !== null) return;
     setShowSuggestions(false);
+    setLockedMessage(chip.message);
+    setChatMessage(chip.message);
     posthog.capture("ai_chat_suggestion_clicked", {
       suggestion_label: chip.label,
       suggestion_message: chip.message,
       document_type: documentType,
       document_id: documentId,
     });
-    await onChatSubmit(chip.message);
+    try {
+      await onChatSubmit(chip.message);
+      if (!isStreamingRef.current) {
+        setChatMessage("");
+        setLockedMessage(null);
+      }
+    } catch {
+      setChatMessage("");
+      setLockedMessage(null);
+    }
   };
+
+  useEffect(() => {
+    isStreamingRef.current = isStreaming;
+    if (wasStreamingRef.current && !isStreaming) {
+      setChatMessage("");
+      setLockedMessage(null);
+    }
+    wasStreamingRef.current = isStreaming;
+  }, [isStreaming]);
 
   // Scroll chat to bottom when chatHistory changes
   useEffect(() => {
@@ -427,13 +496,15 @@ export default function AIChatPanel({
           error={error}
           placeholder={placeholder}
           title={title}
-          chatMessage={chatMessage}
+          chatMessage={lockedInputValue}
           setChatMessage={setChatMessage}
           handleSubmit={handleSubmit}
           chatContainerRef={chatContainerRef}
           variant="desktop"
           sources={sources}
           showGenerationHint={showGenerationHint}
+          onImageRegen={onImageRegen}
+          onDismissImageRegen={onDismissImageRegen}
           showSuggestions={showSuggestions}
           documentType={documentType}
           onSuggestionClick={handleSuggestionClick}
@@ -472,13 +543,15 @@ export default function AIChatPanel({
                 error={error}
                 placeholder={placeholder}
                 title={title}
-                chatMessage={chatMessage}
+                chatMessage={lockedInputValue}
                 setChatMessage={setChatMessage}
                 handleSubmit={handleSubmit}
                 chatContainerRef={mobileChatContainerRef}
                 variant="mobile"
                 sources={sources}
                 showGenerationHint={showGenerationHint}
+                onImageRegen={onImageRegen}
+                onDismissImageRegen={onDismissImageRegen}
                 showSuggestions={showSuggestions}
                 documentType={documentType}
                 onSuggestionClick={handleSuggestionClick}

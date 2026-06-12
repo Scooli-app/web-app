@@ -1,8 +1,7 @@
 "use client";
 
 import { Card } from "@/components/ui/card";
-import { getSourceQuota } from "@/services/api/sources.service";
-import type { SourceQuota, UploadSourceParams } from "@/shared/types/sources";
+import type { UploadSourceParams } from "@/shared/types/sources";
 import { cn } from "@/shared/utils/utils";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
@@ -20,7 +19,6 @@ import {
   Upload,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
 
 function statusLabel(status: string): string {
   switch (status) {
@@ -69,49 +67,6 @@ function formatSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-function QuotaBar({ quota }: { quota: SourceQuota }) {
-  const bytesPct = Math.min(
-    100,
-    quota.bytesMax > 0
-      ? Math.round((quota.bytesUsed / quota.bytesMax) * 100)
-      : 0,
-  );
-  const filesPct = Math.min(
-    100,
-    quota.filesMax > 0
-      ? Math.round((quota.filesUsed / quota.filesMax) * 100)
-      : 0,
-  );
-  const isNearLimit = bytesPct >= 80 || filesPct >= 80;
-  const isAtLimit = bytesPct >= 100 || filesPct >= 100;
-
-  return (
-    <div className="rounded-lg border border-border bg-muted/30 px-3 py-2 text-xs">
-      <div className="flex items-center justify-between gap-3">
-        <span className="text-muted-foreground">
-          {formatSize(quota.bytesUsed)} de {formatSize(quota.bytesMax)} usados
-        </span>
-        <span className="text-muted-foreground">
-          {quota.filesUsed} / {quota.filesMax} ficheiros
-        </span>
-      </div>
-      <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-        <div
-          className={cn(
-            "h-full transition-all",
-            isAtLimit
-              ? "bg-destructive"
-              : isNearLimit
-                ? "bg-amber-500"
-                : "bg-primary",
-          )}
-          style={{ width: `${Math.max(bytesPct, filesPct)}%` }}
-        />
-      </div>
-    </div>
-  );
-}
-
 export default function SourcesPage() {
   const dispatch = useAppDispatch();
   const { sources, loading, uploading, uploadError } = useAppSelector(
@@ -121,64 +76,19 @@ export default function SourcesPage() {
   const [name, setName] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
-  const [quota, setQuota] = useState<SourceQuota | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Re-fetch on mount so navigating to this page always shows fresh state.
-  // Polling of pending sources is handled globally by SourceIngestionTracker
-  // (mounted in SidebarLayout) so the rest of the app stays in sync too.
   useEffect(() => {
     dispatch(fetchSources());
   }, [dispatch]);
 
-  const refreshQuota = useCallback(async () => {
-    try {
-      const q = await getSourceQuota();
-      setQuota(q);
-    } catch {
-      // Soft-fail: keep the previous quota snapshot (or null if first load).
-    }
-  }, []);
-
-  useEffect(() => {
-    void refreshQuota();
-  }, [refreshQuota]);
-
-  // Re-fetch quota whenever the sources list changes (upload/delete/ingest).
-  // The amount of pending bytes doesn't change as ingestion progresses, but
-  // count/bytes do change on add/remove, so keying on sources is enough.
-  useEffect(() => {
-    void refreshQuota();
-  }, [sources.length, refreshQuota]);
-
-  const maxFileBytes = quota?.maxFileBytes ?? 25 * 1024 * 1024;
-
   const validateAndSetFile = useCallback(
     (selectedFile: File): boolean => {
-      if (selectedFile.size > maxFileBytes) {
-        toast.error(
-          `O ficheiro excede o limite de ${formatSize(maxFileBytes)}.`,
-        );
-        return false;
-      }
-      if (quota && quota.filesUsed >= quota.filesMax) {
-        toast.error(
-          `Atingiu o limite de ${quota.filesMax} fontes. Remova uma para carregar outra.`,
-        );
-        return false;
-      }
-      if (quota && quota.bytesUsed + selectedFile.size > quota.bytesMax) {
-        const remaining = Math.max(0, quota.bytesMax - quota.bytesUsed);
-        toast.error(
-          `Espaço insuficiente. Restam ${formatSize(remaining)} do total de ${formatSize(quota.bytesMax)}.`,
-        );
-        return false;
-      }
       setFile(selectedFile);
       if (!name) setName(selectedFile.name.replace(/\.[^.]+$/, ""));
       return true;
     },
-    [maxFileBytes, name, quota],
+    [name],
   );
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -204,14 +114,12 @@ export default function SourcesPage() {
       setFile(null);
       setName("");
       if (fileInputRef.current) fileInputRef.current.value = "";
-      void refreshQuota();
     }
   };
 
   const handleDelete = async (id: string) => {
     await dispatch(deleteUserSource(id));
     setDeleteConfirmId(null);
-    void refreshQuota();
   };
 
   return (
@@ -246,9 +154,7 @@ export default function SourcesPage() {
               {file ? file.name : "Clique ou arraste um ficheiro"}
             </p>
             <p className="text-xs text-muted-foreground">
-              {file
-                ? formatSize(file.size)
-                : `PDF ou DOCX, até ${formatSize(maxFileBytes)}`}
+              {file ? formatSize(file.size) : "PDF ou DOCX"}
             </p>
           </div>
           <input
@@ -259,9 +165,6 @@ export default function SourcesPage() {
             onChange={handleFileChange}
           />
         </div>
-
-        {/* Quota usage */}
-        {quota && <QuotaBar quota={quota} />}
 
         {/* Name + upload — only shown after a file is chosen */}
         {file && (
@@ -349,7 +252,9 @@ export default function SourcesPage() {
                         className="mt-1 text-xs text-muted-foreground"
                         title={`Excluímos ${formatSize(source.strippedBackMatter.charsRemoved)} de ${source.strippedBackMatter.matchedHeading ?? "back-matter"} antes de processar.`}
                       >
-                        Secção {source.strippedBackMatter.matchedHeading ?? "final"} omitida
+                        Secção{" "}
+                        {source.strippedBackMatter.matchedHeading ?? "final"}{" "}
+                        omitida
                       </p>
                     )}
                   {source.status === "failed" && source.lastError && (

@@ -128,7 +128,7 @@ const CALENDAR_NAV_ITEM: NavItem = {
   title: "Calendário",
   href: Routes.CALENDAR,
   icon: CalendarRange,
-  description: "Sequências de aulas e geração automática",
+  description: "Planos letivos e geração automática",
 };
 
 const CONTENT_CREATION: NavItem[] = [
@@ -698,7 +698,7 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
   return (
     <TutorialProvider>
     <SidebarProvider>
-      <div className="flex min-h-dvh w-full">
+      <div className="flex h-dvh w-full">
         <AppBootstrapGate />
         <SourceIngestionTracker />
         <UpgradePlanModal
@@ -709,7 +709,7 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
         <OnboardingGate />
         <TutorialOverlay />
 
-        <div className="hidden md:block md:min-h-dvh">
+        <div className="hidden md:block md:h-dvh">
           {desktopSidebarContent}
         </div>
 

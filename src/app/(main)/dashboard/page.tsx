@@ -30,7 +30,29 @@ function DashboardContent() {
     const paymentParam = searchParams.get("payment");
     if (paymentParam === "success") {
       setShowPaymentSuccess(true);
-      posthog.capture("payment_success");
+
+      // Read plan details stored by the checkout page before the Stripe redirect.
+      let planCode: string | null = null;
+      let planInterval: string | null = null;
+      let priceCents: number | null = null;
+      try {
+        planCode = sessionStorage.getItem("scooli_pending_plan");
+        planInterval = sessionStorage.getItem("scooli_pending_plan_interval");
+        const priceRaw = sessionStorage.getItem("scooli_pending_plan_price");
+        priceCents = priceRaw ? Number(priceRaw) : null;
+        sessionStorage.removeItem("scooli_pending_plan");
+        sessionStorage.removeItem("scooli_pending_plan_interval");
+        sessionStorage.removeItem("scooli_pending_plan_price");
+      } catch {
+        // sessionStorage unavailable — non-fatal
+      }
+
+      posthog.capture("payment_success", {
+        plan_code: planCode,
+        plan_interval: planInterval,
+        price_cents: priceCents,
+      });
+
       dispatch(fetchSubscription());
       dispatch(fetchUsage());
       dispatch(fetchEntitlements());

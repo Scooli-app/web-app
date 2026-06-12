@@ -1,5 +1,5 @@
 /**
- * Timetable Service — Feature 2: Horário & Sequências de Aulas
+ * Timetable Service — Feature 2: Horário & Planos Letivos
  */
 
 import apiClient from "./client";
@@ -30,6 +30,7 @@ export interface UpdateTimetableParams {
   title?: string;
   color?: string;
   classLabel?: string;
+  linkedCurriculumPlan?: string | null;
 }
 
 export interface Timetable {

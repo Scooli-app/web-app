@@ -29,6 +29,8 @@ interface Props {
 
 export function ColorPickerPopover({ color, onChange, children }: Props) {
   const [open, setOpen] = useState(false);
+  // AI-generated elements may return non-string color values — guard against it
+  const safeColor = typeof color === "string" ? color : "";
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -40,7 +42,7 @@ export function ColorPickerPopover({ color, onChange, children }: Props) {
       >
         {/* Gradient + hue picker */}
         <HexColorPicker
-          color={color}
+          color={safeColor}
           onChange={onChange}
           style={{ width: "100%", height: 140 }}
         />
@@ -49,7 +51,7 @@ export function ColorPickerPopover({ color, onChange, children }: Props) {
         <div className="flex items-center gap-2">
           <span className="text-xs text-muted-foreground font-mono">#</span>
           <HexColorInput
-            color={color}
+            color={safeColor}
             onChange={onChange}
             prefixed={false}
             className="h-7 w-full rounded border border-border bg-background px-2 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary"
@@ -57,7 +59,7 @@ export function ColorPickerPopover({ color, onChange, children }: Props) {
           {/* Live preview swatch */}
           <div
             className="h-7 w-7 flex-shrink-0 rounded border border-border"
-            style={{ background: color }}
+            style={{ background: safeColor }}
           />
         </div>
 
@@ -68,7 +70,7 @@ export function ColorPickerPopover({ color, onChange, children }: Props) {
               key={c}
               title={c}
               className={`h-5 w-5 rounded-sm border transition-transform hover:scale-110 ${
-                color.toLowerCase() === c ? "border-foreground scale-110" : "border-transparent"
+                safeColor.toLowerCase() === c ? "border-foreground scale-110" : "border-transparent"
               }`}
               style={{ background: c, boxShadow: c === "#ffffff" ? "inset 0 0 0 1px #e5e7eb" : undefined }}
               onClick={() => onChange(c)}

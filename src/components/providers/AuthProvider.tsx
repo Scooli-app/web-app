@@ -2,8 +2,8 @@
 
 import { setApiTokenGetter } from "@/services/api/client";
 import { useAuth, useUser } from "@clerk/nextjs";
-import { useEffect, useLayoutEffect, useRef } from "react";
 import posthog from "posthog-js";
+import { useEffect, useLayoutEffect, useRef } from "react";
 
 export default function AuthProvider({
   children,
@@ -33,7 +33,7 @@ export default function AuthProvider({
     const tokenGetter = async () => {
       try {
         return await getTokenRef.current(
-          template ? { template, skipCache: true } : { skipCache: true }
+          template ? { template, skipCache: true } : { skipCache: true },
         );
       } catch {
         // Clerk may throw if session is expired or being refreshed;
@@ -55,11 +55,17 @@ export default function AuthProvider({
         name: user.fullName,
       });
 
-      const isNewUser =
+      // Fire user_signed_up once per user per browser using localStorage as a
+      // dedup guard. The 5-minute window tolerates slow hydration while still
+      // catching genuinely new accounts; localStorage prevents re-firing on
+      // refreshes within that window.
+      const trackedKey = `scooli_signup_ev_${user.id}`;
+      const alreadyTracked = localStorage.getItem(trackedKey);
+      const isNewAccount =
         user.createdAt !== null &&
-        user.createdAt !== undefined &&
-        Date.now() - user.createdAt.getTime() < 60_000;
-      if (isNewUser) {
+        Date.now() - user.createdAt.getTime() < 300_000;
+      if (!alreadyTracked && isNewAccount) {
+        localStorage.setItem(trackedKey, "1");
         posthog.capture("user_signed_up", {
           signup_method: user.externalAccounts.length > 0 ? "google" : "email",
         });

@@ -24,7 +24,6 @@ import { type NextRequest, NextResponse } from "next/server";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 // pdf-lib retained so dead-code functions compile; can be removed in a cleanup sprint.
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 
 export const runtime = "nodejs";
 // Increase Vercel function timeout for PDF generation via Puppeteer.
