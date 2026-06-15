@@ -19,6 +19,7 @@ import {
   SUBJECTS,
   GRADE_GROUPS,
   SUBJECTS_BY_GRADE,
+  translateSubject,
 } from "@/components/document-creation/constants";
 import { selectIsHorarioPlanosEnabled } from "@/store/features/selectors";
 import { createTimetable, generateTopics } from "@/store/timetable/timetableSlice";
@@ -30,11 +31,12 @@ import type { RecurringSlot } from "@/services/api/timetable.service";
 import { cn } from "@/shared/utils/utils";
 import { getPortugueseHolidays } from "@/shared/constants/portugueseHolidays";
 import {
-  ArrowLeft,
   ArrowRight,
   BookOpen,
   CalendarDays,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
   Clock,
   ListChecks,
   Loader2,
@@ -219,39 +221,38 @@ function StepIndicator({
 }) {
   const currentIdx = steps.findIndex((s) => s.id === currentStep);
   return (
-    <div className="flex items-center">
+    <div className="flex items-center gap-0">
       {steps.map((step, idx) => {
+        const Icon = step.icon;
         const done = idx < currentIdx;
         const active = idx === currentIdx;
         return (
           <div key={step.id} className="flex items-center">
-            <div className="flex items-center gap-2">
-              <span
-                className={cn(
-                  "flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold leading-none transition-colors",
-                  active && "bg-primary text-primary-foreground",
-                  done && "bg-primary/15 text-primary",
-                  !active && !done && "bg-muted text-muted-foreground/40"
-                )}
-              >
-                {done ? "✓" : idx + 1}
-              </span>
-              <span
-                className={cn(
-                  "text-sm font-medium transition-colors",
-                  active && "text-foreground",
-                  done && "text-primary",
-                  !active && !done && "text-muted-foreground/40"
-                )}
-              >
-                {step.label}
-              </span>
+            <div
+              className={cn(
+                "flex h-9 w-9 items-center justify-center rounded-full border-2 transition-colors",
+                active && "border-primary bg-primary text-primary-foreground",
+                done && "border-primary bg-primary/10 text-primary",
+                !active && !done && "border-muted-foreground/30 text-muted-foreground/50"
+              )}
+            >
+              <Icon className="h-4 w-4" />
             </div>
+            <span
+              className={cn(
+                "ml-2 hidden text-sm font-medium sm:inline transition-colors",
+                active && "text-foreground",
+                done && "text-primary",
+                !active && !done && "text-muted-foreground/50"
+              )}
+            >
+              {step.label}
+            </span>
             {idx < steps.length - 1 && (
               <div
                 className={cn(
-                  "mx-3 h-px w-8",
-                  idx < currentIdx ? "bg-primary/40" : "bg-muted"
+                  "mx-3 h-px w-8 transition-colors sm:w-12",
+                  idx < currentIdx ? "bg-primary" : "bg-muted-foreground/20"
                 )}
               />
             )}
@@ -375,7 +376,7 @@ function StepSelectPlan({
                   <p className="truncate text-sm font-medium">{plan.title}</p>
                   {(plan.subject ?? plan.gradeLevel) && (
                     <p className="text-xs text-muted-foreground">
-                      {[plan.subject, plan.gradeLevel ? `${plan.gradeLevel}.º ano` : null]
+                      {[plan.subject ? translateSubject(plan.subject) : null, plan.gradeLevel ? `${plan.gradeLevel}.º ano` : null]
                         .filter(Boolean)
                         .join(" · ")}
                     </p>
@@ -398,11 +399,9 @@ interface StepPeriodProps {
   periodEnd: string;
   schoolYearLabel: string;
   onChange: (start: string, end: string, label: string) => void;
-  onNext: () => void;
 }
 
-function StepPeriod({ periodStart, periodEnd, schoolYearLabel, onChange, onNext }: StepPeriodProps) {
-  const canProceed = !!periodStart && !!periodEnd && periodStart <= periodEnd;
+function StepPeriod({ periodStart, periodEnd, schoolYearLabel, onChange }: StepPeriodProps) {
 
   return (
     <div className="space-y-5">
@@ -473,10 +472,6 @@ function StepPeriod({ periodStart, periodEnd, schoolYearLabel, onChange, onNext 
           onChange={(e) => onChange(periodStart, periodEnd, e.target.value)}
         />
       </div>
-
-      <Button onClick={onNext} disabled={!canProceed} className="w-full h-10">
-        Continuar <ArrowRight className="ml-2 h-4 w-4" />
-      </Button>
     </div>
   );
 }
@@ -491,7 +486,6 @@ interface StepDetailsProps {
   recurringSlots: RecurringSlot[];
   onFieldChange: (field: string, value: string) => void;
   onSlotsChange: (slots: RecurringSlot[]) => void;
-  onNext: () => void;
 }
 
 /** Subject IDs available for the chosen grade, or all subjects if no grade yet. */
@@ -515,9 +509,8 @@ const SUBJECT_CATEGORY_ORDER = [
 
 function StepDetails({
   subject, gradeLevel, classLabel, title,
-  recurringSlots, onFieldChange, onSlotsChange, onNext,
+  recurringSlots, onFieldChange, onSlotsChange,
 }: StepDetailsProps) {
-  const canProceed = !!subject && !!gradeLevel && recurringSlots.length > 0;
 
   const availableSubjects = useAvailableSubjects(gradeLevel);
   const groupedSubjects = availableSubjects.reduce<Record<string, typeof SUBJECTS>>((acc, s) => {
@@ -745,10 +738,6 @@ function StepDetails({
           </div>
         )}
       </div>
-
-      <Button onClick={onNext} disabled={!canProceed} className="w-full h-10">
-        Rever datas <ArrowRight className="ml-2 h-4 w-4" />
-      </Button>
     </div>
   );
 }
@@ -758,11 +747,9 @@ function StepDetails({
 interface StepReverDatasProps {
   slots: PreviewSlot[];
   onSlotsChange: (slots: PreviewSlot[]) => void;
-  onCreate: () => void;
-  isCreating: boolean;
 }
 
-function StepReverDatas({ slots, onSlotsChange, onCreate, isCreating }: StepReverDatasProps) {
+function StepReverDatas({ slots, onSlotsChange }: StepReverDatasProps) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
   const changeType = (id: string, type: SlotType) =>
@@ -798,7 +785,6 @@ function StepReverDatas({ slots, onSlotsChange, onCreate, isCreating }: StepReve
   const lessons = slots.filter((s) => s.slotType === "LESSON").length;
   const assessments = slots.filter((s) => s.slotType === "ASSESSMENT").length;
   const holidays = slots.filter((s) => s.slotType === "HOLIDAY").length;
-  const actionable = lessons + assessments;
   const hasSelection = selected.size > 0;
 
   return (
@@ -915,20 +901,6 @@ function StepReverDatas({ slots, onSlotsChange, onCreate, isCreating }: StepReve
           ))}
         </div>
       )}
-
-      <Button
-        onClick={onCreate}
-        disabled={isCreating || actionable === 0}
-        className="h-11 w-full"
-        size="lg"
-      >
-        {isCreating ? (
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-        ) : (
-          <Sparkles className="mr-2 h-4 w-4" />
-        )}
-        Criar plano letivo ({actionable} aula{actionable !== 1 ? "s" : ""})
-      </Button>
     </div>
   );
 }
@@ -1013,6 +985,13 @@ export default function CalendarNewPage() {
   const [previewSlots, setPreviewSlots] = useState<PreviewSlot[]>([]);
   const [loadingStep, setLoadingStep] = useState(0);
 
+  // Step validity (computed in parent so bottom nav can disable buttons)
+  const periodCanProceed = !!periodStart && !!periodEnd && periodStart <= periodEnd;
+  const detailsCanProceed = !!subject && !!gradeLevel && recurringSlots.length > 0;
+  const actionableSlots = previewSlots.filter(
+    (s) => s.slotType === "LESSON" || s.slotType === "ASSESSMENT"
+  ).length;
+
   // Auto-generate title using the Portuguese display label (not the internal id/English value)
   const autoTitle = useMemo(() => {
     const subjectLabel = SUBJECTS.find((s) => s.id === subject)?.label ?? subject;
@@ -1041,24 +1020,44 @@ export default function CalendarNewPage() {
 
   const handlePlanSelect = (plan: Document) => {
     setSelectedPlan(plan);
+
     if (plan.subject) {
-      // plan.subject is the English value stored by the backend — map back to our id
       const config = SUBJECTS.find((s) => s.value === plan.subject)
-        ?? SUBJECTS.find((s) => s.id === plan.subject); // fallback for legacy plans
+        ?? SUBJECTS.find((s) => s.id === plan.subject);
       setSubject(config?.id ?? "");
     }
     if (plan.gradeLevel) setGradeLevel(String(plan.gradeLevel));
+
+    // The backend stores additionalDetails as a raw JSON string in metadata.additionalDetails
     const meta = plan.metadata as Record<string, unknown> | null;
-    if (typeof meta?.periodStart === "string") setPeriodStart(meta.periodStart);
-    if (typeof meta?.periodEnd === "string") setPeriodEnd(meta.periodEnd);
-    if (typeof meta?.schoolYearLabel === "string") setSchoolYearLabel(meta.schoolYearLabel);
-    // Try to extract week schedule from plan metadata and convert to RecurringSlot[]
-    if (meta?.weekSchedule && typeof meta.weekSchedule === "object") {
+    let planDetails: Record<string, unknown> = {};
+    if (typeof meta?.additionalDetails === "string") {
+      try { planDetails = JSON.parse(meta.additionalDetails) as Record<string, unknown>; } catch { /* ignore */ }
+    }
+
+    const metaPeriodStart = typeof planDetails.periodStart === "string" ? planDetails.periodStart : "";
+    const metaPeriodEnd   = typeof planDetails.periodEnd   === "string" ? planDetails.periodEnd   : "";
+
+    if (metaPeriodStart) setPeriodStart(metaPeriodStart);
+    if (metaPeriodEnd)   setPeriodEnd(metaPeriodEnd);
+
+    // Derive school year label from stored value or infer from period start
+    if (typeof planDetails.schoolYearLabel === "string") {
+      setSchoolYearLabel(planDetails.schoolYearLabel);
+    } else if (metaPeriodStart) {
+      const yr    = parseInt(metaPeriodStart.slice(0, 4), 10);
+      const month = parseInt(metaPeriodStart.slice(5, 7), 10);
+      const base  = month >= 9 ? yr : yr - 1;
+      setSchoolYearLabel(`${base}/${base + 1}`);
+    }
+
+    // Convert planificação week schedule → recurring slots
+    if (planDetails.weekSchedule && typeof planDetails.weekSchedule === "object") {
       type DayKey = "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun";
       const dayKeyToIso: Record<DayKey, number> = {
         mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6, sun: 7,
       };
-      const ws = meta.weekSchedule as Record<DayKey, { enabled: boolean; periods: number }>;
+      const ws = planDetails.weekSchedule as Record<DayKey, { enabled: boolean; periods: number }>;
       const extracted: RecurringSlot[] = (Object.entries(ws) as [DayKey, { enabled: boolean; periods: number }][])
         .filter(([, v]) => v.enabled && v.periods > 0)
         .map(([key, v]) => ({
@@ -1069,8 +1068,9 @@ export default function CalendarNewPage() {
         .sort((a, b) => a.dayOfWeek - b.dayOfWeek);
       if (extracted.length > 0) setRecurringSlots(extracted);
     }
-    // Always go through the period step so user can confirm / fill in dates
-    setStep("mode_b_period");
+
+    // Skip the period step when dates are already pre-filled from the planificação
+    setStep(metaPeriodStart && metaPeriodEnd ? "mode_b_details" : "mode_b_period");
   };
 
   const handleGoToReverDatas = () => {
@@ -1139,44 +1139,32 @@ export default function CalendarNewPage() {
   };
 
   const showIndicator = step !== "choose_mode" && step !== "loading";
-  const showBack = step !== "choose_mode" && step !== "loading";
 
   return (
-    <div className="mx-auto w-full max-w-2xl px-4 py-8">
-      {/* ── Top nav ─────────────────────────────────────────────── */}
-      {showBack && (
-        <div className="mb-6 flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleBack}
-            disabled={isSubmitting}
-            className="h-8 w-8 shrink-0"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Clock className="h-4 w-4" />
-            <span className="font-medium text-foreground">Novo Plano Letivo</span>
-          </div>
+    <div className="mx-auto w-full max-w-2xl space-y-8 px-4 py-8">
+      {/* ── Header ──────────────────────────────────────────────── */}
+      {step !== "loading" && (
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Novo plano letivo</h1>
+          <p className="text-muted-foreground">
+            Define o período, disciplina e horário semanal.
+          </p>
         </div>
       )}
 
       {step === "loading" && (
-        <div className="mb-4 flex items-center gap-2">
+        <div className="flex items-center gap-2">
           <Clock className="h-5 w-5 text-primary" />
-          <span className="font-semibold">Novo Plano Letivo</span>
+          <span className="text-xl font-semibold">Novo Plano Letivo</span>
         </div>
       )}
 
       {/* ── Step indicator ──────────────────────────────────────── */}
       {showIndicator && (
-        <div className="mb-6 rounded-lg border bg-card px-4 py-3">
-          <StepIndicator
-            steps={indicatorSteps}
-            currentStep={step as StepIndicatorId}
-          />
-        </div>
+        <StepIndicator
+          steps={indicatorSteps}
+          currentStep={step as StepIndicatorId}
+        />
       )}
 
       {/* ── Step content ────────────────────────────────────────── */}
@@ -1188,48 +1176,100 @@ export default function CalendarNewPage() {
         <StepSelectPlan onSelect={handlePlanSelect} />
       )}
 
-      {step === "mode_b_period" && (
-        <StepPeriod
-          periodStart={periodStart}
-          periodEnd={periodEnd}
-          schoolYearLabel={schoolYearLabel}
-          onChange={(s, e, l) => {
-            setPeriodStart(s);
-            setPeriodEnd(e);
-            setSchoolYearLabel(l);
-          }}
-          onNext={() => setStep("mode_b_details")}
-        />
-      )}
-
-      {step === "mode_b_details" && (
-        <StepDetails
-          subject={subject}
-          gradeLevel={gradeLevel}
-          classLabel={classLabel}
-          title={title}
-          recurringSlots={recurringSlots}
-          onFieldChange={(field, value) => {
-            if (field === "subject") setSubject(value);
-            else if (field === "gradeLevel") setGradeLevel(value);
-            else if (field === "classLabel") setClassLabel(value);
-            else if (field === "title") setTitle(value);
-          }}
-          onSlotsChange={setRecurringSlots}
-          onNext={handleGoToReverDatas}
-        />
-      )}
-
-      {step === "rever_datas" && (
-        <StepReverDatas
-          slots={previewSlots}
-          onSlotsChange={setPreviewSlots}
-          onCreate={handleCreate}
-          isCreating={isSubmitting}
-        />
+      {(step === "mode_b_period" || step === "mode_b_details" || step === "rever_datas") && (
+        <Card>
+          <CardContent className="p-6">
+            {step === "mode_b_period" && (
+              <StepPeriod
+                periodStart={periodStart}
+                periodEnd={periodEnd}
+                schoolYearLabel={schoolYearLabel}
+                onChange={(s, e, l) => {
+                  setPeriodStart(s);
+                  setPeriodEnd(e);
+                  setSchoolYearLabel(l);
+                }}
+              />
+            )}
+            {step === "mode_b_details" && (
+              <StepDetails
+                subject={subject}
+                gradeLevel={gradeLevel}
+                classLabel={classLabel}
+                title={title}
+                recurringSlots={recurringSlots}
+                onFieldChange={(field, value) => {
+                  if (field === "subject") setSubject(value);
+                  else if (field === "gradeLevel") setGradeLevel(value);
+                  else if (field === "classLabel") setClassLabel(value);
+                  else if (field === "title") setTitle(value);
+                }}
+                onSlotsChange={setRecurringSlots}
+              />
+            )}
+            {step === "rever_datas" && (
+              <StepReverDatas
+                slots={previewSlots}
+                onSlotsChange={setPreviewSlots}
+              />
+            )}
+          </CardContent>
+        </Card>
       )}
 
       {step === "loading" && <LoadingScreen currentStep={loadingStep} />}
+
+      {/* ── Navigation ──────────────────────────────────────────── */}
+      {step !== "loading" && (
+        <div className="flex items-center justify-between">
+          <Button
+            variant="outline"
+            onClick={step === "choose_mode" ? () => router.back() : handleBack}
+            disabled={isSubmitting}
+            className="gap-2"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            {step === "choose_mode" ? "Cancelar" : "Anterior"}
+          </Button>
+
+          {step === "mode_b_period" && (
+            <Button
+              onClick={() => setStep("mode_b_details")}
+              disabled={!periodCanProceed}
+              className="gap-2"
+            >
+              Seguinte
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          )}
+
+          {step === "mode_b_details" && (
+            <Button
+              onClick={handleGoToReverDatas}
+              disabled={!detailsCanProceed}
+              className="gap-2"
+            >
+              Seguinte
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          )}
+
+          {step === "rever_datas" && (
+            <Button
+              onClick={handleCreate}
+              disabled={isSubmitting || actionableSlots === 0}
+              className="gap-2"
+            >
+              {isSubmitting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Sparkles className="h-4 w-4" />
+              )}
+              Criar plano letivo ({actionableSlots} aula{actionableSlots !== 1 ? "s" : ""})
+            </Button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

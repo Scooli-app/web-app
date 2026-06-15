@@ -17,6 +17,7 @@ import {
   type LessonSlotStatus,
   type Timetable,
 } from "@/services/api/timetable.service";
+import { translateSubject } from "@/components/document-creation/constants";
 import { Routes } from "@/shared/types";
 import {
   ArrowRight,
@@ -290,7 +291,7 @@ export function CalendarDashboardWidget() {
                       {dateLabel}
                     </span>
                     {" · "}
-                    {lesson.timetable.subject}
+                    {translateSubject(lesson.timetable.subject)}
                     {lesson.timetable.classLabel ? ` · ${lesson.timetable.classLabel}` : ""}
                   </p>
                 </div>
