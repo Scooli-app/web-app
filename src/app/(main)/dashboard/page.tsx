@@ -106,7 +106,7 @@ function DashboardContent() {
   }, [searchParams, dispatch]);
 
   return (
-    <PageContainer size="7xl" contentClassName="py-1 sm:py-2">
+    <PageContainer size="7xl" className="h-full" contentClassName="flex h-full flex-col py-1 sm:py-2">
       <PaymentSuccessModal
         open={showPaymentSuccess}
         onOpenChange={setShowPaymentSuccess}
@@ -117,49 +117,52 @@ function DashboardContent() {
         description="Aqui está o que pode fazer hoje na Scooli."
       />
 
-      <div className="grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-2">
+      <div className="flex min-h-0 flex-1 flex-col gap-3 sm:gap-4">
         {isHorarioPlanosEnabled && (
-          <div className="md:col-span-2">
+          <div className="shrink-0">
             <CalendarDashboardWidget />
           </div>
         )}
 
-        <div className="md:col-span-2">
+        <div className="shrink-0">
           <QuickCreateCard isWorksheetCreationEnabled={isWorksheetCreationEnabled} />
         </div>
 
-        {/* Doc-type grid — left column */}
-        <div className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
-          <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Criar documento
-          </p>
-          <div className="grid grid-cols-2 gap-1.5">
-            {visibleActions.map((action) => {
-              const Icon = action.icon;
-              return (
-                <button
-                  key={action.id}
-                  type="button"
-                  onClick={() => {
-                    posthog.capture("dashboard_quick_action_clicked", { action: action.id });
-                    router.push(action.route);
-                  }}
-                  className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-accent"
-                >
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
-                    <Icon className="h-3.5 w-3.5" />
-                  </div>
-                  <span className="truncate text-sm font-medium text-foreground">
-                    {action.label}
-                  </span>
-                </button>
-              );
-            })}
+        {/* Bottom row — fills remaining height; each card scrolls internally if needed */}
+        <div className="flex min-h-[160px] flex-1 flex-col gap-3 sm:gap-4 md:flex-row">
+          {/* Doc-type grid */}
+          <div className="min-h-0 flex-1 overflow-y-auto rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Criar documento
+            </p>
+            <div className="grid grid-cols-2 gap-1.5">
+              {visibleActions.map((action) => {
+                const Icon = action.icon;
+                return (
+                  <button
+                    key={action.id}
+                    type="button"
+                    onClick={() => {
+                      posthog.capture("dashboard_quick_action_clicked", { action: action.id });
+                      router.push(action.route);
+                    }}
+                    className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-accent"
+                  >
+                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+                      <Icon className="h-3.5 w-3.5" />
+                    </div>
+                    <span className="truncate text-sm font-medium text-foreground">
+                      {action.label}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
 
-        {/* Recent documents — right column */}
-        <RecentDocumentsCard />
+          {/* Recent documents */}
+          <RecentDocumentsCard className="min-h-0 flex-1 overflow-y-auto" />
+        </div>
       </div>
     </PageContainer>
   );

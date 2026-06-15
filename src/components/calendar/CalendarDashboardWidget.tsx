@@ -18,6 +18,7 @@ import {
   type Timetable,
 } from "@/services/api/timetable.service";
 import { translateSubject } from "@/components/document-creation/constants";
+import { dashboardCache, CACHE_KEYS, CACHE_TTL } from "@/lib/dashboardCache";
 import { Routes } from "@/shared/types";
 import {
   ArrowRight,
@@ -142,15 +143,18 @@ export function CalendarDashboardWidget() {
     async (lesson: UpcomingLesson) => {
       generationStore.start(lesson.id);
       patchStatus(lesson.id, "generating");
+      dashboardCache.invalidate(CACHE_KEYS.UPCOMING_LESSONS);
       try {
         await generateLesson(lesson.timetable.id, lesson.id, undefined, {
           onDone: () => {
             patchStatus(lesson.id, "completed");
             generationStore.finish(lesson.id);
+            dashboardCache.invalidate(CACHE_KEYS.UPCOMING_LESSONS);
           },
           onError: () => {
             patchStatus(lesson.id, "failed");
             generationStore.finish(lesson.id);
+            dashboardCache.invalidate(CACHE_KEYS.UPCOMING_LESSONS);
           },
         }, getToken);
       } catch {
@@ -161,6 +165,13 @@ export function CalendarDashboardWidget() {
   );
 
   const load = useCallback(async () => {
+    const cached = dashboardCache.get<UpcomingLesson[]>(CACHE_KEYS.UPCOMING_LESSONS, CACHE_TTL.UPCOMING_LESSONS);
+    if (cached) {
+      setUpcoming(cached);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     try {
       // Hydrate Redux store so other pages (calendar grid) don't need to re-fetch
@@ -194,7 +205,9 @@ export function CalendarDashboardWidget() {
         if (a.slotDate !== b.slotDate) return a.slotDate < b.slotDate ? -1 : 1;
         return a.sequenceNumber - b.sequenceNumber;
       });
-      setUpcoming(all.slice(0, 5));
+      const upcoming = all.slice(0, 5);
+      dashboardCache.set(CACHE_KEYS.UPCOMING_LESSONS, upcoming);
+      setUpcoming(upcoming);
     } catch {
       setUpcoming([]);
     } finally {
@@ -205,9 +218,9 @@ export function CalendarDashboardWidget() {
   useEffect(() => { void load(); }, [load]);
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-5 shadow-md sm:p-8">
+    <div className="rounded-2xl border border-border bg-card p-4 shadow-md sm:p-5">
       {/* Header */}
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Clock className="h-5 w-5 text-primary" />
           <h2 className="text-xl font-semibold text-foreground sm:text-2xl">
@@ -252,7 +265,7 @@ export function CalendarDashboardWidget() {
           </Button>
         </div>
       ) : (
-        <div className="space-y-2.5">
+        <div className="max-h-40 space-y-2.5 overflow-y-auto">
           {upcoming.map((lesson) => {
             const cfg = STATUS_CFG[lesson.status];
             const dateLabel = relativeDate(lesson.slotDate);

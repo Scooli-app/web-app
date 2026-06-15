@@ -1,7 +1,9 @@
 "use client";
 
+import { dashboardCache, CACHE_KEYS, CACHE_TTL } from "@/lib/dashboardCache";
 import { getDocuments } from "@/services/api/document.service";
 import { Routes, type Document } from "@/shared/types";
+import { cn } from "@/shared/utils/utils";
 import { useAuth } from "@clerk/nextjs";
 import {
   FileText,
@@ -50,7 +52,7 @@ const dateFormatter = new Intl.DateTimeFormat("pt-PT", {
 
 const RECENT_LIMIT = 5;
 
-export function RecentDocumentsCard() {
+export function RecentDocumentsCard({ className }: { className?: string }) {
   const { isLoaded: isAuthLoaded, isSignedIn } = useAuth();
   const isAuthReady = isAuthLoaded && Boolean(isSignedIn);
 
@@ -60,10 +62,19 @@ export function RecentDocumentsCard() {
   useEffect(() => {
     if (!isAuthReady) return;
 
+    const cached = dashboardCache.get<Document[]>(CACHE_KEYS.RECENT_DOCUMENTS, CACHE_TTL.RECENT_DOCUMENTS);
+    if (cached) {
+      setDocuments(cached);
+      return;
+    }
+
     let cancelled = false;
     getDocuments({ page: 1, limit: RECENT_LIMIT })
       .then((result) => {
-        if (!cancelled) setDocuments(result.documents);
+        if (!cancelled) {
+          dashboardCache.set(CACHE_KEYS.RECENT_DOCUMENTS, result.documents);
+          setDocuments(result.documents);
+        }
       })
       .catch((error) => {
         console.error("Error fetching recent documents:", error);
@@ -76,7 +87,7 @@ export function RecentDocumentsCard() {
   }, [isAuthReady]);
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
+    <div className={cn("rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5", className)}>
       <div className="mb-3 flex items-center justify-between gap-2">
         <h2 className="text-base font-semibold text-foreground">
           Continuar onde ficaste

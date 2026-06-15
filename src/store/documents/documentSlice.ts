@@ -1,3 +1,4 @@
+import { dashboardCache, CACHE_KEYS } from "@/lib/dashboardCache";
 import {
   chatWithDocument as chatWithDocumentService,
   createDocument as createDocumentService,
@@ -491,6 +492,7 @@ const documentSlice = createSlice({
       .addCase(createDocument.fulfilled, (state, action) => {
         state.streamInfo = action.payload;
         state.isLoading = false;
+        dashboardCache.invalidate(CACHE_KEYS.RECENT_DOCUMENTS);
       })
       .addCase(createDocument.rejected, (state, action) => {
         state.error = action.payload as string;
