@@ -1,3 +1,4 @@
+import { dashboardCache, CACHE_KEYS } from "@/lib/dashboardCache";
 import {
   createTimetable as createTimetableService,
   deleteTimetable as deleteTimetableService,
@@ -190,6 +191,7 @@ const timetableSlice = createSlice({
       .addCase(createTimetable.fulfilled, (state, action) => {
         state.timetables.unshift(action.payload);
         state.currentTimetable = action.payload;
+        dashboardCache.invalidate(CACHE_KEYS.UPCOMING_LESSONS);
       })
       // updateTimetable
       .addCase(updateTimetable.fulfilled, (state, action) => {
@@ -198,6 +200,7 @@ const timetableSlice = createSlice({
         if (state.currentTimetable?.id === action.payload.id) {
           state.currentTimetable = action.payload;
         }
+        dashboardCache.invalidate(CACHE_KEYS.UPCOMING_LESSONS);
       })
       // deleteTimetable
       .addCase(deleteTimetable.fulfilled, (state, action) => {
@@ -205,6 +208,7 @@ const timetableSlice = createSlice({
         if (state.currentTimetable?.id === action.payload) {
           state.currentTimetable = null;
         }
+        dashboardCache.invalidate(CACHE_KEYS.UPCOMING_LESSONS);
       })
       // fetchLessons
       .addCase(fetchLessons.pending, (state) => {

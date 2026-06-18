@@ -71,86 +71,42 @@ const STEPS = [
 
 type StepId = (typeof STEPS)[number]["id"];
 
-// ─── School year configuration (easily adjustable) ───────────────────────────
-
-// The Portuguese school year runs Sep 1 → Jun 30. Update these each year.
-const SCHOOL_YEAR_START_MONTH = 9; // September (1-based)
-const SCHOOL_YEAR_START_DAY = 1;
-const SCHOOL_YEAR_END_MONTH = 6; // June (1-based)
-const SCHOOL_YEAR_END_DAY = 30;
-
 // ─── Presets ──────────────────────────────────────────────────────────────────
 
-interface Preset {
+interface SchoolPeriodPreset {
   label: string;
   planningType: CurriculumPlanningType;
-  getRange: () => { start: string; end: string };
+  start: string; // ISO date
+  end: string;   // ISO date
 }
 
 function toISO(d: Date): string {
-  return d.toISOString().slice(0, 10);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-function addDays(d: Date, n: number): Date {
-  const r = new Date(d);
-  r.setDate(r.getDate() + n);
-  return r;
+function currentSchoolYearBase(): number {
+  const now = new Date();
+  return now.getMonth() >= 8 ? now.getFullYear() : now.getFullYear() - 1;
 }
 
-function buildPresets(): Preset[] {
-  const today = new Date();
-  const year = today.getFullYear();
-  // Determine school year labels: if Sep–Dec, it's year/year+1; otherwise year-1/year.
-  const m = today.getMonth() + 1;
-  const syStart = m >= SCHOOL_YEAR_START_MONTH ? year : year - 1;
-  const syEnd = syStart + 1;
-  const syEndDate = new Date(syEnd, SCHOOL_YEAR_END_MONTH - 1, SCHOOL_YEAR_END_DAY);
-
-  // Relative presets use their natural duration — no school-year cap — so they
-  // never collapse to the same date and multiple can't be "active" at once.
-  const raw: Preset[] = [
-    {
-      label: "Próximas 2 semanas",
-      planningType: "custom",
-      getRange: () => ({ start: toISO(today), end: toISO(addDays(today, 14)) }),
-    },
-    {
-      label: "Próximos 2 meses",
-      planningType: "custom",
-      getRange: () => {
-        const end = new Date(today);
-        end.setMonth(end.getMonth() + 2);
-        return { start: toISO(today), end: toISO(end) };
-      },
-    },
-    {
-      label: "Próximo trimestre",
-      planningType: "trimester",
-      getRange: () => {
-        const end = new Date(today);
-        end.setMonth(end.getMonth() + 3);
-        return { start: toISO(today), end: toISO(end) };
-      },
-    },
-    {
-      label: "Próximo semestre",
-      planningType: "semester",
-      getRange: () => {
-        const end = new Date(today);
-        end.setMonth(end.getMonth() + 6);
-        return { start: toISO(today), end: toISO(end) };
-      },
-    },
-    {
-      label: `Ano letivo ${syStart}/${syEnd}`,
-      planningType: "annual",
-      getRange: () => ({
-        start: `${syStart}-${String(SCHOOL_YEAR_START_MONTH).padStart(2, "0")}-${String(SCHOOL_YEAR_START_DAY).padStart(2, "0")}`,
-        end: toISO(syEndDate),
-      }),
-    },
+function buildSchoolPeriodPresets(): SchoolPeriodPreset[] {
+  const y = currentSchoolYearBase();
+  return [
+    { label: "1.º Período",              planningType: "trimester", start: `${y}-09-16`,     end: `${y}-12-19`     },
+    { label: "2.º Período",              planningType: "trimester", start: `${y + 1}-01-06`, end: `${y + 1}-03-27` },
+    { label: "3.º Período",              planningType: "trimester", start: `${y + 1}-04-14`, end: `${y + 1}-06-19` },
+    { label: "1.º Semestre",             planningType: "semester",  start: `${y}-09-16`,     end: `${y + 1}-01-31` },
+    { label: "2.º Semestre",             planningType: "semester",  start: `${y + 1}-02-01`, end: `${y + 1}-06-30` },
+    { label: `Ano letivo ${y}/${y + 1}`, planningType: "annual",    start: `${y}-09-16`,     end: `${y + 1}-06-19` },
   ];
-  return raw;
+}
+
+function formatPresetRange(start: string, end: string): string {
+  const fmt = (iso: string) =>
+    new Date(`${iso}T00:00:00`).toLocaleDateString("pt-PT", {
+      day: "numeric", month: "short", year: "numeric",
+    });
+  return `${fmt(start)} – ${fmt(end)}`;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -380,7 +336,7 @@ export default function CurriculumPlanNewPage() {
   const [schedule, setSchedule] = useState<WeekSchedule>(DEFAULT_SCHEDULE);
   const [submitting, setSubmitting] = useState(false);
 
-  const PRESETS = useMemo(() => buildPresets(), []);
+  const PRESETS = useMemo(() => buildSchoolPeriodPresets(), []);
 
   useEffect(() => {
     if (!enabled) router.replace(Routes.DASHBOARD);
@@ -397,10 +353,9 @@ export default function CurriculumPlanNewPage() {
     [subjectValue]
   );
 
-  function applyPreset(preset: Preset) {
-    const { start, end } = preset.getRange();
-    setPeriodStart(new Date(start));
-    setPeriodEnd(new Date(end));
+  function applyPreset(preset: SchoolPeriodPreset) {
+    setPeriodStart(new Date(`${preset.start}T00:00:00`));
+    setPeriodEnd(new Date(`${preset.end}T00:00:00`));
     setPlanningType(preset.planningType);
   }
 
@@ -495,24 +450,28 @@ export default function CurriculumPlanNewPage() {
                 </p>
               </div>
 
-              {/* Presets */}
-              <div className="flex flex-wrap gap-2">
+              {/* Period presets */}
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                 {PRESETS.map((preset) => {
-                  const { start, end } = preset.getRange();
-                  const active = periodStartISO === start && periodEndISO === end;
+                  const isActive = periodStartISO === preset.start && periodEndISO === preset.end;
                   return (
                     <button
                       key={preset.label}
                       type="button"
                       onClick={() => applyPreset(preset)}
                       className={cn(
-                        "rounded-full border px-4 py-1.5 text-sm font-medium transition-colors",
-                        active
-                          ? "border-primary bg-primary text-primary-foreground"
-                          : "border-border bg-background hover:border-primary hover:text-primary"
+                        "flex flex-col items-start gap-0.5 rounded-lg border px-3 py-2.5 text-left transition-colors hover:border-primary/60",
+                        isActive
+                          ? "border-primary bg-primary/5 text-foreground"
+                          : "border-border bg-card text-foreground"
                       )}
                     >
-                      {preset.label}
+                      <span className={cn("text-sm font-medium", isActive && "text-primary")}>
+                        {preset.label}
+                      </span>
+                      <span className="text-[11px] text-muted-foreground">
+                        {formatPresetRange(preset.start, preset.end)}
+                      </span>
                     </button>
                   );
                 })}

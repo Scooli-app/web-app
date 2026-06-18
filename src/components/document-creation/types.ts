@@ -37,6 +37,8 @@ export interface FormState {
    * Persisted into `metadata.slideCount` and read by the backend prompt.
    */
   slideCount?: number;
+  /** Theme ID to pre-apply when the presentation editor first loads (Presentations only). */
+  themeId?: string;
 }
 
 export type FormUpdateFn = <K extends keyof FormState>(

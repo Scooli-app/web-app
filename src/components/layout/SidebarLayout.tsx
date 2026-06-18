@@ -4,7 +4,11 @@ import { AssistantProvider } from "@/components/assistant";
 import { AppFeedbackSurveyGate } from "@/components/feedback-survey/AppFeedbackSurveyGate";
 import { OnboardingGate } from "@/components/onboarding/OnboardingGate";
 import { TutorialOverlay } from "@/components/tutorial/TutorialOverlay";
-import { TutorialProvider } from "@/contexts/TutorialContext";
+import {
+  TUTORIAL_ROUTE,
+  TutorialProvider,
+  useTutorial,
+} from "@/contexts/TutorialContext";
 import { AppBootstrapGate } from "@/components/layout/AppBootstrapGate";
 import { SourceIngestionTracker } from "@/components/layout/SourceIngestionTracker";
 import { SourcesPendingBadge } from "@/components/layout/SourcesPendingBadge";
@@ -69,6 +73,7 @@ import {
   FileText,
   FolderArchiveIcon,
   GanttChart,
+  GraduationCap,
   HelpCircle,
   Home,
   Library,
@@ -318,18 +323,47 @@ const DisabledNavMenuItem = memo(function DisabledNavMenuItem({
   );
 });
 
+const TutorialNavMenuItem = memo(function TutorialNavMenuItem({
+  onClick,
+}: {
+  onClick?: () => void;
+}) {
+  const router = useRouter();
+  const { startTutorial } = useTutorial();
+
+  const handleClick = () => {
+    onClick?.();
+    router.push(TUTORIAL_ROUTE);
+    startTutorial("sidebar");
+  };
+
+  return (
+    <SidebarMenuItem>
+      <SidebarMenuButton
+        onClick={handleClick}
+        className="h-10 px-4 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+      >
+        <GraduationCap className="h-4 w-4" />
+        <span className="flex-1 truncate">Ver tutorial</span>
+      </SidebarMenuButton>
+    </SidebarMenuItem>
+  );
+});
+
 const NavGroup = memo(function NavGroup({
   label,
   items,
   pathname,
   onItemClick,
   disabledKeys = [],
+  trailing,
 }: {
   label: string;
   items: readonly NavItem[];
   pathname: string;
   onItemClick?: () => void;
   disabledKeys?: string[];
+  trailing?: React.ReactNode;
 }) {
   return (
     <SidebarGroup>
@@ -357,6 +391,7 @@ const NavGroup = memo(function NavGroup({
               />
             ),
           )}
+          {trailing}
         </SidebarMenu>
       </SidebarGroupContent>
     </SidebarGroup>
@@ -527,6 +562,7 @@ const SidebarNavigationContent = memo(function SidebarNavigationContent({
           items={SECONDARY_NAVIGATION}
           pathname={pathname}
           onItemClick={onItemClick}
+          trailing={<TutorialNavMenuItem onClick={onItemClick} />}
         />
         <SignedIn>
           <SidebarProfileCard onClick={onItemClick} />

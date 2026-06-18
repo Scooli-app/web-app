@@ -148,7 +148,7 @@ export function OnboardingGate() {
         // Users who already have documents know the product — skip straight to dashboard.
         if (!onboardingStatus?.hasDocuments) {
           router.push(TUTORIAL_ROUTE);
-          startTutorial();
+          startTutorial("onboarding");
         }
       } catch (error) {
         posthog.captureException(error);

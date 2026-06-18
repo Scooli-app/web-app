@@ -18,6 +18,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+import { translateSubject } from "@/components/document-creation/constants";
 import { Routes, type Document } from "@/shared/types";
 import { selectIsHorarioPlanosEnabled } from "@/store/features/selectors";
 import { fetchTimetables, deleteTimetable, updateTimetable } from "@/store/timetable/timetableSlice";
@@ -170,7 +171,7 @@ function EditDialog({ timetable, isSaving, onSave, onCancel }: EditDialogProps) 
         {/* Read-only summary */}
         <div className="rounded-lg border border-border bg-muted/30 px-4 py-3 text-sm text-muted-foreground space-y-0.5">
           <p>
-            <span className="font-medium text-foreground">{timetable.subject}</span>
+            <span className="font-medium text-foreground">{translateSubject(timetable.subject)}</span>
             {" · "}
             {timetable.gradeLevel}.º ano
           </p>
@@ -234,7 +235,7 @@ function EditDialog({ timetable, isSaving, onSave, onCancel }: EditDialogProps) 
                 {plans.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.title}
-                    {p.subject ? ` · ${p.subject}` : ""}
+                    {p.subject ? ` · ${translateSubject(p.subject)}` : ""}
                     {p.gradeLevel ? ` · ${p.gradeLevel}.º ano` : ""}
                   </option>
                 ))}
@@ -305,7 +306,7 @@ function SequenceCard({ timetable, onDelete, onEdit }: SequenceCardProps) {
             {timetable.title}
           </p>
           <p className="text-sm text-muted-foreground">
-            {timetable.subject}
+            {translateSubject(timetable.subject)}
             {timetable.gradeLevel ? ` · ${timetable.gradeLevel}.º ano` : ""}
             {timetable.classLabel ? ` · Turma ${timetable.classLabel}` : ""}
           </p>

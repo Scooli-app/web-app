@@ -13,6 +13,7 @@ import {
 } from "@/shared/types/blocks";
 import type {
   CanvasElement,
+  CanvasGradient,
   CanvasImageElement,
   CanvasListElement,
   CanvasMathElement,
@@ -400,6 +401,9 @@ export function clampCanvasSlide(cs: CanvasSlide): CanvasSlide {
   return {
     ...cs,
     elements: cs.elements.map((el): CanvasElement => {
+      // Decoration shapes may intentionally extend beyond the slide (bleed off edges).
+      if (el.type === "shape" && (el as CanvasShapeElement).isDecoration) return el;
+
       const x = Math.min(Math.max(el.x, 0), 1);
       const y = Math.min(Math.max(el.y, 0), 1);
       const w = Math.min(Math.max(el.w, 0.01), 1);
@@ -441,29 +445,91 @@ export function canvasToPresentation(cp: CanvasPresentation): PresentationDocume
 export function applyTheme(cp: CanvasPresentation, themeId: string): CanvasPresentation {
   const theme = getThemeById(themeId);
 
+  const backgroundGradient: CanvasGradient | undefined = theme.bgGradient
+    ? { type: "linear", angle: theme.bgGradient.angle, stops: theme.bgGradient.stops }
+    : undefined;
+
+  function buildDecorations(decoList: typeof theme.decorations): CanvasShapeElement[] {
+    return (decoList ?? []).map((d, i) => ({
+      type: "shape" as const,
+      id: `__deco_${i}`,
+      x: d.x,
+      y: d.y,
+      w: d.w,
+      h: d.h,
+      rotation: d.rotation,
+      shape: d.shape,
+      fill: d.fill,
+      stroke: d.stroke,
+      strokeWidth: d.strokeWidth,
+      cornerRadius: d.cornerRadius,
+      isDecoration: true,
+    }));
+  }
+
   return {
     ...cp,
     themeId,
-    slides: cp.slides.map((slide) => ({
-      ...slide,
-      background: theme.bg,
-      elements: slide.elements.map((el): CanvasElement => {
-        if (el.type === "text") {
-          const color =
-            el.role === "title"
-              ? theme.titleColor
-              : el.role === "subtitle"
-                ? theme.mutedColor
-                : el.role === "label"
-                  ? theme.accentColor
-                  : theme.bodyColor;
-          return { ...el, color };
-        }
-        if (el.type === "bullet_list" || el.type === "ordered_list") {
-          return { ...el, color: theme.bodyColor };
-        }
-        return el;
-      }),
-    })),
+    slides: cp.slides.map((slide) => {
+      const isCover = slide.layout === "title";
+      const decoSource = isCover
+        ? (theme.coverDecorations ?? theme.decorations)
+        : theme.decorations;
+      const decorationShapes = buildDecorations(decoSource);
+
+      const contentElements = slide.elements
+        .filter((el) => !(el.type === "shape" && (el as CanvasShapeElement).isDecoration))
+        .map((el): CanvasElement => {
+          if (el.type === "text") {
+            const color =
+              el.role === "title"
+                ? theme.titleColor
+                : el.role === "subtitle"
+                  ? theme.mutedColor
+                  : el.role === "label"
+                    ? theme.accentColor
+                    : theme.bodyColor;
+            const fontFamily =
+              el.role === "title" || el.role === "label"
+                ? theme.titleFont
+                : el.role === "subtitle"
+                  ? theme.titleFont
+                  : theme.bodyFont;
+            // Reposition cover-slide title/subtitle when the theme has a side panel
+            if (isCover && theme.coverTextLayout) {
+              const slot =
+                el.role === "title"
+                  ? theme.coverTextLayout.title
+                  : el.role === "subtitle"
+                    ? theme.coverTextLayout.subtitle
+                    : undefined;
+              if (slot) {
+                return {
+                  ...el,
+                  color,
+                  fontFamily,
+                  x: slot.x,
+                  y: slot.y,
+                  w: slot.w,
+                  ...(slot.h !== undefined ? { h: slot.h } : {}),
+                  ...(slot.align !== undefined ? { align: slot.align } : {}),
+                };
+              }
+            }
+            return { ...el, color, fontFamily };
+          }
+          if (el.type === "bullet_list" || el.type === "ordered_list") {
+            return { ...el, color: theme.bodyColor };
+          }
+          return el;
+        });
+
+      return {
+        ...slide,
+        background: theme.bg,
+        backgroundGradient,
+        elements: [...decorationShapes, ...contentElements],
+      };
+    }),
   };
 }

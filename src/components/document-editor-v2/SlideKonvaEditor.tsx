@@ -22,6 +22,7 @@
 
 import type {
   CanvasElement,
+  CanvasGradient,
   CanvasImageElement,
   CanvasListElement,
   CanvasMathElement,
@@ -79,7 +80,20 @@ function getTextLikeFontSize(el: CanvasTextElement | CanvasListElement) {
 }
 
 function getTextLikeFontFamily(el: CanvasTextElement | CanvasListElement) {
-  return el.type === "text" ? (el.fontFamily || T.font) : T.font;
+  if (el.type === "text") return el.fontFamily || T.font;
+  return (el as CanvasListElement & { fontFamily?: string }).fontFamily || T.font;
+}
+
+function gradientProps(g: CanvasGradient, W: number, H: number, OX = 0, OY = 0) {
+  const rad = (g.angle * Math.PI) / 180;
+  const dx = Math.sin(rad);
+  const dy = -Math.cos(rad);
+  const halfDiag = Math.sqrt(W * W + H * H) / 2;
+  return {
+    fillLinearGradientStartPoint: { x: OX + W / 2 - dx * halfDiag, y: OY + H / 2 - dy * halfDiag },
+    fillLinearGradientEndPoint: { x: OX + W / 2 + dx * halfDiag, y: OY + H / 2 + dy * halfDiag },
+    fillLinearGradientColorStops: g.stops.flatMap((s) => [s.offset, s.color]) as number[],
+  };
 }
 
 function getTextLikeFontStyle(el: CanvasTextElement | CanvasListElement) {
@@ -472,7 +486,7 @@ export const SlideKonvaEditor = forwardRef<
         const tag = (e.target as HTMLElement)?.tagName;
         if (tag === "INPUT" || tag === "TEXTAREA") return;
         e.preventDefault();
-        onChange(elements.filter((el) => el.id !== selectedId));
+        onChange(elements.filter((el) => el.id !== selectedId && !(el.type === "shape" && (el as CanvasShapeElement).isDecoration)));
         setSelectedId(null);
       } else if (e.key === "Escape") {
         setSelectedId(null);
@@ -977,7 +991,7 @@ export const SlideKonvaEditor = forwardRef<
   /* ── Remove selected element ──────────────────────────────────────────── */
   const removeSelected = useCallback(() => {
     if (!selectedId) return;
-    onChange(elements.filter((e) => e.id !== selectedId));
+    onChange(elements.filter((e) => e.id !== selectedId && !(e.type === "shape" && (e as CanvasShapeElement).isDecoration)));
     setSelectedId(null);
   }, [selectedId, elements, onChange]);
 
@@ -1120,7 +1134,8 @@ export const SlideKonvaEditor = forwardRef<
             <Rect
               name="bg"
               x={OX} y={OY} width={W} height={H}
-              fill={slide.background}
+              fill={slide.backgroundGradient ? undefined : slide.background}
+              {...(slide.backgroundGradient ? gradientProps(slide.backgroundGradient, W, H, OX, OY) : {})}
               cornerRadius={12}
               listening={false}
             />
@@ -1238,7 +1253,7 @@ export const SlideKonvaEditor = forwardRef<
                         width={el.w * W}
                         height={itemHeights[i] ?? l.fontSize * W * TEXT_LINE_HEIGHT}
                         fontSize={l.fontSize * W}
-                        fontFamily={T.font}
+                        fontFamily={getTextLikeFontFamily(l)}
                         fill={l.color}
                         lineHeight={TEXT_LINE_HEIGHT}
                         wrap="word"
@@ -1461,7 +1476,8 @@ export const SlideKonvaEditor = forwardRef<
                 const shape = el as CanvasShapeElement;
                 const fill = shape.fill ?? SHAPE_FILL;
                 const stroke = shape.stroke ?? SHAPE_STROKE;
-                const strokeWidth = Math.max(1, (shape.strokeWidth ?? SHAPE_STROKE_WIDTH) * W);
+                const rawSW = shape.strokeWidth ?? SHAPE_STROKE_WIDTH;
+                const strokeWidth = rawSW === 0 ? 0 : Math.max(1, rawSW * W);
                 const centerX = el.x * W + OX + (el.w * W) / 2;
                 const centerY = el.y * H + OY + (el.h * H) / 2;
 
@@ -1482,8 +1498,8 @@ export const SlideKonvaEditor = forwardRef<
                       strokeWidth={strokeWidth}
                       scooliHalfW={el.w * W / 2}
                       scooliHalfH={el.h * H / 2}
-                      cornerRadius={8}
-                      {...dragSelectProps(el.id)}
+                      cornerRadius={shape.cornerRadius ?? 8}
+                      {...(shape.isDecoration ? {} : dragSelectProps(el.id))}
                       onMouseEnter={() => {
                         if (!isDraggingRef.current) setStageCursor("grab");
                       }}
