@@ -12,7 +12,7 @@ import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { selectIsPro } from "@/store/subscription/selectors";
 import { FeatureFlag } from "@/shared/types/featureFlags";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { AMBIGUOUS_COMPONENTS_SUBJECTS, SUBJECTS, SUBJECTS_BY_GRADE } from "./constants";
 import {
   AdditionalDetailsSection,
@@ -28,6 +28,11 @@ import {
 } from "./sections";
 import { TemplateSection } from "./templates";
 import type { DocumentTypeConfig, FormState, FormUpdateFn } from "./types";
+import { THEMES } from "@/shared/types/presentation-theme";
+import { cn } from "@/shared/utils/utils";
+import type { CanvasPresentation, CanvasSlide } from "@/shared/types/canvas-presentation";
+import { applyTheme } from "@/components/document-editor-v2/canvas-layout";
+import { SlideThumbnail } from "@/components/document-editor-v2/SlideThumbnail";
 
 
 
@@ -157,6 +162,46 @@ export default function DocumentCreationPage({
     }
   }, [formState.subject, formState.isSpecificComponent, updateForm]);
 
+  const themedCoverSlides = useMemo<CanvasSlide[]>(() => {
+    return THEMES.map((theme) => {
+      const bareSlide: CanvasSlide = {
+        id: `mock-${theme.id}`,
+        layout: "title",
+        background: theme.bg,
+        elements: [
+          {
+            id: "mock-title",
+            type: "text",
+            x: 0.10, y: 0.20, w: 0.80, h: 0.22,
+            text: theme.name,
+            fontSize: 0.052,
+            fontStyle: "bold",
+            color: "#ffffff",
+            align: "center",
+            role: "title",
+          },
+          {
+            id: "mock-sub",
+            type: "text",
+            x: 0.10, y: 0.46, w: 0.80, h: 0.12,
+            text: "Apresentação",
+            fontSize: 0.026,
+            fontStyle: "normal",
+            color: "#ffffff",
+            align: "center",
+            role: "subtitle",
+          },
+        ],
+      };
+      const mockCanvas: CanvasPresentation = {
+        schemaVersion: 2,
+        documentType: "presentation",
+        slides: [bareSlide],
+      };
+      return applyTheme(mockCanvas, theme.id).slides[0] ?? bareSlide;
+    });
+  }, []);
+
   const showTeachingMethodSection = documentType.id === "lessonPlan";
   const showWorksheetVariantSection = documentType.id === "worksheet";
   const isPresentation = documentType.id === "presentation";
@@ -255,10 +300,10 @@ export default function DocumentCreationPage({
           })
         );
 
-        const redirectUrl = documentType.redirectPath.replace(
-          ":id",
-          streamResponse.id
-        );
+        let redirectUrl = documentType.redirectPath.replace(":id", streamResponse.id);
+        if (isPresentation && formState.themeId) {
+          redirectUrl += `?theme=${encodeURIComponent(formState.themeId)}`;
+        }
         router.push(redirectUrl);
       } else {
         const errorMessage =
@@ -345,6 +390,30 @@ export default function DocumentCreationPage({
                 selectedTemplateId={formState.templateId || null}
                 onTemplateSelect={handleTemplateSelect}
               />
+            </div>
+          )}
+
+          {isPresentation && (
+            <div className="rounded-xl border bg-card p-4 shadow-sm">
+              <p className="text-sm font-medium mb-3">Tema visual</p>
+              <div className={cn("flex flex-wrap gap-2")}>
+                {THEMES.map((theme, i) => (
+                  <SlideThumbnail
+                    key={theme.id}
+                    slide={themedCoverSlides[i]!}
+                    index={i}
+                    isActive={(formState.themeId ?? "clean") === theme.id}
+                    onClick={() => updateForm("themeId", theme.id)}
+                    w={110}
+                    h={62}
+                    showIndex={false}
+                    ringOffset="ring-offset-card"
+                  />
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                {THEMES.find((t) => t.id === (formState.themeId ?? "clean"))?.name ?? "Branco"}
+              </p>
             </div>
           )}
 

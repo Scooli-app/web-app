@@ -11,6 +11,7 @@
  */
 
 import type {
+  CanvasGradient,
   CanvasImageElement,
   CanvasListElement,
   CanvasShapeElement,
@@ -26,14 +27,34 @@ const SHAPE_FILL = "rgba(103, 83, 255, 0.22)";
 const SHAPE_STROKE = "#6753FF";
 const SHAPE_STROKE_WIDTH = 0.004;
 
+function gradientProps(g: CanvasGradient, W: number, H: number) {
+  const rad = (g.angle * Math.PI) / 180;
+  const dx = Math.sin(rad);
+  const dy = -Math.cos(rad);
+  const halfDiag = Math.sqrt(W * W + H * H) / 2;
+  return {
+    fillLinearGradientStartPoint: { x: W / 2 - dx * halfDiag, y: H / 2 - dy * halfDiag },
+    fillLinearGradientEndPoint: { x: W / 2 + dx * halfDiag, y: H / 2 + dy * halfDiag },
+    fillLinearGradientColorStops: g.stops.flatMap((s) => [s.offset, s.color]) as number[],
+  };
+}
+
 interface Props {
   slide: CanvasSlide;
   index: number;
   isActive?: boolean;
   onClick?: () => void;
+  /** Thumbnail width in px. Defaults to 160. */
+  w?: number;
+  /** Thumbnail height in px. Defaults to 90. */
+  h?: number;
+  /** Show slide number badge. Defaults to true. */
+  showIndex?: boolean;
+  /** Tailwind class for the ring-offset color. Defaults to "ring-offset-sidebar". */
+  ringOffset?: string;
 }
 
-export function SlideThumbnail({ slide, index, isActive, onClick }: Props) {
+export function SlideThumbnail({ slide, index, isActive, onClick, w = THUMB_W, h = THUMB_H, showIndex = true, ringOffset = "ring-offset-sidebar" }: Props) {
   /* Image cache: url → loaded HTMLImageElement | "loading" */
   const imgCacheRef = useRef<Record<string, HTMLImageElement | "loading">>({});
   const [, setImgRevision] = useState(0);
@@ -63,20 +84,21 @@ export function SlideThumbnail({ slide, index, isActive, onClick }: Props) {
       aria-label={`Slide ${index + 1}`}
       className={`group relative overflow-hidden rounded transition-all outline-none ${
         isActive
-          ? "ring-2 ring-primary ring-offset-2 ring-offset-sidebar"
+          ? `ring-2 ring-primary ring-offset-2 ${ringOffset}`
           : "ring-1 ring-border hover:ring-primary/50"
       }`}
-      style={{ width: THUMB_W, height: THUMB_H }}
+      style={{ width: w, height: h }}
     >
-      <Stage width={THUMB_W} height={THUMB_H} listening={false}>
+      <Stage width={w} height={h} listening={false}>
         <Layer listening={false}>
           {/* Background */}
           <Rect
             x={0}
             y={0}
-            width={THUMB_W}
-            height={THUMB_H}
-            fill={slide.background}
+            width={w}
+            height={h}
+            fill={slide.backgroundGradient ? undefined : slide.background}
+            {...(slide.backgroundGradient ? gradientProps(slide.backgroundGradient, w, h) : {})}
             listening={false}
           />
 
@@ -87,15 +109,15 @@ export function SlideThumbnail({ slide, index, isActive, onClick }: Props) {
               return (
                 <Text
                   key={el.id}
-                  x={el.x * THUMB_W + el.w * THUMB_W / 2}
-                  y={el.y * THUMB_H + el.h * THUMB_H / 2}
-                  offsetX={el.w * THUMB_W / 2}
-                  offsetY={el.h * THUMB_H / 2}
+                  x={el.x * w + el.w * w / 2}
+                  y={el.y * h + el.h * h / 2}
+                  offsetX={el.w * w / 2}
+                  offsetY={el.h * h / 2}
                   rotation={el.rotation ?? 0}
-                  width={el.w * THUMB_W}
-                  height={el.h * THUMB_H}
+                  width={el.w * w}
+                  height={el.h * h}
                   text={t.text}
-                  fontSize={Math.max(5, Math.round(t.fontSize * THUMB_W))}
+                  fontSize={Math.max(5, Math.round(t.fontSize * w))}
                   fontFamily={t.fontFamily || "Inter, system-ui, sans-serif"}
                   fontStyle={t.fontStyle}
                   textDecoration={t.underline ? "underline" : ""}
@@ -118,15 +140,15 @@ export function SlideThumbnail({ slide, index, isActive, onClick }: Props) {
               return (
                 <Text
                   key={el.id}
-                  x={el.x * THUMB_W + el.w * THUMB_W / 2}
-                  y={el.y * THUMB_H + el.h * THUMB_H / 2}
-                  offsetX={el.w * THUMB_W / 2}
-                  offsetY={el.h * THUMB_H / 2}
+                  x={el.x * w + el.w * w / 2}
+                  y={el.y * h + el.h * h / 2}
+                  offsetX={el.w * w / 2}
+                  offsetY={el.h * h / 2}
                   rotation={el.rotation ?? 0}
-                  width={el.w * THUMB_W}
-                  height={el.h * THUMB_H}
+                  width={el.w * w}
+                  height={el.h * h}
                   text={text}
-                  fontSize={Math.max(4, Math.round(el.fontSize * THUMB_W))}
+                  fontSize={Math.max(4, Math.round(el.fontSize * w))}
                   fill={l.color}
                   wrap="word"
                   ellipsis
@@ -143,13 +165,13 @@ export function SlideThumbnail({ slide, index, isActive, onClick }: Props) {
                   <KonvaImage
                     key={el.id}
                     image={cached}
-                    x={el.x * THUMB_W + el.w * THUMB_W / 2}
-                    y={el.y * THUMB_H + el.h * THUMB_H / 2}
-                    offsetX={el.w * THUMB_W / 2}
-                    offsetY={el.h * THUMB_H / 2}
+                    x={el.x * w + el.w * w / 2}
+                    y={el.y * h + el.h * h / 2}
+                    offsetX={el.w * w / 2}
+                    offsetY={el.h * h / 2}
                     rotation={el.rotation ?? 0}
-                    width={el.w * THUMB_W}
-                    height={el.h * THUMB_H}
+                    width={el.w * w}
+                    height={el.h * h}
                     cornerRadius={2}
                     listening={false}
                   />
@@ -159,13 +181,13 @@ export function SlideThumbnail({ slide, index, isActive, onClick }: Props) {
               return (
                 <Rect
                   key={el.id}
-                  x={el.x * THUMB_W + el.w * THUMB_W / 2}
-                  y={el.y * THUMB_H + el.h * THUMB_H / 2}
-                  offsetX={el.w * THUMB_W / 2}
-                  offsetY={el.h * THUMB_H / 2}
+                  x={el.x * w + el.w * w / 2}
+                  y={el.y * h + el.h * h / 2}
+                  offsetX={el.w * w / 2}
+                  offsetY={el.h * h / 2}
                   rotation={el.rotation ?? 0}
-                  width={el.w * THUMB_W}
-                  height={el.h * THUMB_H}
+                  width={el.w * w}
+                  height={el.h * h}
                   fill="#2a2a3a"
                   cornerRadius={2}
                   listening={false}
@@ -177,9 +199,10 @@ export function SlideThumbnail({ slide, index, isActive, onClick }: Props) {
               const shape = el as CanvasShapeElement;
               const fill = shape.fill ?? SHAPE_FILL;
               const stroke = shape.stroke ?? SHAPE_STROKE;
-              const strokeWidth = Math.max(1, (shape.strokeWidth ?? SHAPE_STROKE_WIDTH) * THUMB_W);
-              const centerX = el.x * THUMB_W + (el.w * THUMB_W) / 2;
-              const centerY = el.y * THUMB_H + (el.h * THUMB_H) / 2;
+              const rawSW = shape.strokeWidth ?? SHAPE_STROKE_WIDTH;
+              const strokeWidth = rawSW === 0 ? 0 : Math.max(1, rawSW * w);
+              const centerX = el.x * w + (el.w * w) / 2;
+              const centerY = el.y * h + (el.h * h) / 2;
 
               if (shape.shape === "rect") {
                 return (
@@ -187,15 +210,15 @@ export function SlideThumbnail({ slide, index, isActive, onClick }: Props) {
                     key={el.id}
                     x={centerX}
                     y={centerY}
-                    offsetX={(el.w * THUMB_W) / 2}
-                    offsetY={(el.h * THUMB_H) / 2}
+                    offsetX={(el.w * w) / 2}
+                    offsetY={(el.h * h) / 2}
                     rotation={el.rotation ?? 0}
-                    width={el.w * THUMB_W}
-                    height={el.h * THUMB_H}
+                    width={el.w * w}
+                    height={el.h * h}
                     fill={fill}
                     stroke={stroke}
                     strokeWidth={strokeWidth}
-                    cornerRadius={4}
+                    cornerRadius={shape.cornerRadius ?? 4}
                     listening={false}
                   />
                 );
@@ -208,8 +231,8 @@ export function SlideThumbnail({ slide, index, isActive, onClick }: Props) {
                     x={centerX}
                     y={centerY}
                     rotation={el.rotation ?? 0}
-                    radiusX={(el.w * THUMB_W) / 2}
-                    radiusY={(el.h * THUMB_H) / 2}
+                    radiusX={(el.w * w) / 2}
+                    radiusY={(el.h * h) / 2}
                     fill={fill}
                     stroke={stroke}
                     strokeWidth={strokeWidth}
@@ -223,10 +246,10 @@ export function SlideThumbnail({ slide, index, isActive, onClick }: Props) {
                   key={el.id}
                   x={centerX}
                   y={centerY}
-                  offsetX={(el.w * THUMB_W) / 2}
-                  offsetY={(el.h * THUMB_H) / 2}
+                  offsetX={(el.w * w) / 2}
+                  offsetY={(el.h * h) / 2}
                   rotation={el.rotation ?? 0}
-                  points={[0, (el.h * THUMB_H) / 2, el.w * THUMB_W, (el.h * THUMB_H) / 2]}
+                  points={[0, (el.h * h) / 2, el.w * w, (el.h * h) / 2]}
                   stroke={stroke}
                   strokeWidth={strokeWidth}
                   lineCap="round"
@@ -241,9 +264,11 @@ export function SlideThumbnail({ slide, index, isActive, onClick }: Props) {
       </Stage>
 
       {/* Slide number badge */}
-      <span className="pointer-events-none absolute bottom-1 left-1 rounded bg-black/50 px-1 text-[9px] leading-tight text-white/70">
-        {index + 1}
-      </span>
+      {showIndex && (
+        <span className="pointer-events-none absolute bottom-1 left-1 rounded bg-black/50 px-1 text-[9px] leading-tight text-white/70">
+          {index + 1}
+        </span>
+      )}
 
     </button>
   );
