@@ -12,6 +12,7 @@
  */
 
 import type {
+  CanvasGradient,
   CanvasImageElement,
   CanvasListElement,
   CanvasMathElement,
@@ -32,6 +33,18 @@ const SHAPE_STROKE = "#6753FF";
 const SHAPE_STROKE_WIDTH = 0.004;
 const MATH_COLOR = "#ffffff";
 const TEXT_LINE_HEIGHT = 1.3;
+
+function gradientProps(g: CanvasGradient, W: number, H: number) {
+  const rad = (g.angle * Math.PI) / 180;
+  const dx = Math.sin(rad);
+  const dy = -Math.cos(rad);
+  const halfDiag = Math.sqrt(W * W + H * H) / 2;
+  return {
+    fillLinearGradientStartPoint: { x: W / 2 - dx * halfDiag, y: H / 2 - dy * halfDiag },
+    fillLinearGradientEndPoint: { x: W / 2 + dx * halfDiag, y: H / 2 + dy * halfDiag },
+    fillLinearGradientColorStops: g.stops.flatMap((s) => [s.offset, s.color]) as number[],
+  };
+}
 
 export function CanvasSlideView({ slide }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -126,7 +139,8 @@ export function CanvasSlideView({ slide }: Props) {
           <Rect
             x={0} y={0}
             width={W} height={H}
-            fill={slide.background}
+            fill={slide.backgroundGradient ? undefined : slide.background}
+            {...(slide.backgroundGradient ? gradientProps(slide.backgroundGradient, W, H) : {})}
             listening={false}
           />
 
@@ -184,7 +198,7 @@ export function CanvasSlideView({ slide }: Props) {
                   height={el.h * H}
                   text={text}
                   fontSize={Math.round(el.fontSize * W)}
-                  fontFamily="Lexend, Inter, system-ui, sans-serif"
+                  fontFamily="Lato, Inter, system-ui, sans-serif"
                   fill={l.color}
                   lineHeight={TEXT_LINE_HEIGHT}
                   wrap="word"
@@ -286,7 +300,8 @@ export function CanvasSlideView({ slide }: Props) {
               const shape = el as CanvasShapeElement;
               const fill = shape.fill ?? SHAPE_FILL;
               const stroke = shape.stroke ?? SHAPE_STROKE;
-              const strokeWidth = Math.max(1, (shape.strokeWidth ?? SHAPE_STROKE_WIDTH) * W);
+              const rawSW = shape.strokeWidth ?? SHAPE_STROKE_WIDTH;
+              const strokeWidth = rawSW === 0 ? 0 : Math.max(1, rawSW * W);
               const centerX = el.x * W + (el.w * W) / 2;
               const centerY = el.y * H + (el.h * H) / 2;
 
@@ -304,7 +319,7 @@ export function CanvasSlideView({ slide }: Props) {
                     fill={fill}
                     stroke={stroke}
                     strokeWidth={strokeWidth}
-                    cornerRadius={8}
+                    cornerRadius={shape.cornerRadius ?? 8}
                     listening={false}
                   />
                 );
