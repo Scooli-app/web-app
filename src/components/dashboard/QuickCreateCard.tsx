@@ -100,18 +100,18 @@ export function QuickCreateCard({
         </h2>
       </div>
 
-      <form onSubmit={handleSubmit} className="flex gap-2">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-2 sm:flex-row">
         <Input
           value={text}
           onChange={(event) => setText(event.target.value)}
           placeholder='Ex: "Plano de aula sobre frações para o 3.º ano" ou apenas "frações"'
-          className="h-10 flex-1 rounded-lg"
+          className="h-10 w-full rounded-lg placeholder:text-xs sm:flex-1 sm:placeholder:text-sm"
           aria-label="Descreve o que queres criar"
         />
         <Button
           type="submit"
           disabled={!text.trim()}
-          className="h-10 shrink-0 rounded-lg px-4"
+          className="h-10 w-full rounded-lg sm:w-auto sm:shrink-0 sm:px-4"
         >
           Criar com IA
           <ArrowRight className="ml-1.5 h-4 w-4" />

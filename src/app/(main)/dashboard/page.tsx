@@ -43,8 +43,8 @@ interface DocTypeAction {
 const DOC_TYPE_ACTIONS: DocTypeAction[] = [
   { id: "lessonPlan",     label: "Plano de Aula",     route: Routes.LESSON_PLAN,     icon: FileText },
   { id: "test",          label: "Teste",              route: Routes.TEST,            icon: NotebookPen },
-  { id: "quiz",          label: "Quiz",               route: Routes.QUIZ,            icon: HelpCircle },
   { id: "worksheet",     label: "Ficha de Trabalho",  route: Routes.WORKSHEET,       icon: ScrollText,  gate: "worksheet" },
+  { id: "quiz",          label: "Quiz",               route: Routes.QUIZ,            icon: HelpCircle },
   { id: "presentation",  label: "Apresentação",       route: Routes.PRESENTATION,    icon: MonitorPlay, gate: "presentation" },
   { id: "curriculumPlan",label: "Planificação",       route: Routes.CURRICULUM_PLAN, icon: GanttChart,  gate: "curriculumPlan" },
 ];
@@ -128,10 +128,10 @@ function DashboardContent() {
           <QuickCreateCard isWorksheetCreationEnabled={isWorksheetCreationEnabled} />
         </div>
 
-        {/* Bottom row — fills remaining height; each card scrolls internally if needed */}
-        <div className="flex min-h-[160px] flex-1 flex-col gap-3 sm:gap-4 md:flex-row">
+        {/* Bottom row — fills remaining height on md+; natural height on mobile */}
+        <div className="flex flex-col gap-3 sm:gap-4 md:min-h-[160px] md:flex-1 md:flex-row">
           {/* Doc-type grid */}
-          <div className="min-h-0 flex-1 overflow-y-auto rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
+          <div className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5 md:min-h-0 md:flex-1 md:overflow-y-auto">
             <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Criar documento
             </p>
@@ -151,7 +151,7 @@ function DashboardContent() {
                     <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
                       <Icon className="h-3.5 w-3.5" />
                     </div>
-                    <span className="truncate text-sm font-medium text-foreground">
+                    <span className="text-sm font-medium leading-tight text-foreground">
                       {action.label}
                     </span>
                   </button>
@@ -161,7 +161,7 @@ function DashboardContent() {
           </div>
 
           {/* Recent documents */}
-          <RecentDocumentsCard className="min-h-0 flex-1 overflow-y-auto" />
+          <RecentDocumentsCard className="md:min-h-0 md:flex-1 md:overflow-y-auto" />
         </div>
       </div>
     </PageContainer>

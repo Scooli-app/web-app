@@ -6,7 +6,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import type { Metadata } from "next";
-import { Lato, Lexend, Merriweather, Montserrat, Poppins, Raleway } from "next/font/google";
+import { Lato, Lexend, Merriweather, Montserrat, Nunito, Playfair_Display, Poppins, Raleway } from "next/font/google";
 import "./globals.css";
 import "katex/dist/katex.min.css";
 
@@ -36,6 +36,8 @@ const montserrat = Montserrat({ variable: "--font-montserrat", subsets: ["latin"
 const raleway = Raleway({ variable: "--font-raleway", subsets: ["latin"], weight: ["300", "400", "500", "600", "700"] });
 const lato = Lato({ variable: "--font-lato", subsets: ["latin"], weight: ["300", "400", "700"] });
 const merriweather = Merriweather({ variable: "--font-merriweather", subsets: ["latin"], weight: ["300", "400", "700"] });
+const nunito = Nunito({ variable: "--font-nunito", subsets: ["latin"], weight: ["300", "400", "500", "600", "700"] });
+const playfair = Playfair_Display({ variable: "--font-playfair", subsets: ["latin"], weight: ["400", "500", "600", "700"] });
 
 export const metadata: Metadata = {
   title: "Scooli - Plataforma AI para Professores",
@@ -61,7 +63,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="pt" className={`${lexend.variable} ${poppins.variable} ${montserrat.variable} ${raleway.variable} ${lato.variable} ${merriweather.variable}`} suppressHydrationWarning>
+    <html lang="pt" className={`${lexend.variable} ${poppins.variable} ${montserrat.variable} ${raleway.variable} ${lato.variable} ${merriweather.variable} ${nunito.variable} ${playfair.variable}`} suppressHydrationWarning>
       <head>
         <link
           rel="preconnect"
