@@ -311,31 +311,6 @@ function makeNewSlide(themeId?: string): CanvasSlide {
   return { id, layout: "title-content", background: theme.bg, elements: [titleEl] };
 }
 
-function applyThemeToSlide(slide: CanvasSlide, themeId?: string): CanvasSlide {
-  const theme = getThemeById(themeId ?? "dark");
-
-  return {
-    ...slide,
-    background: theme.bg,
-    elements: slide.elements.map((el): CanvasElement => {
-      if (el.type === "text") {
-        const color =
-          el.role === "title"
-            ? theme.titleColor
-            : el.role === "subtitle"
-              ? theme.mutedColor
-              : el.role === "label"
-                ? theme.accentColor
-                : theme.bodyColor;
-        return { ...el, color };
-      }
-      if (el.type === "bullet_list" || el.type === "ordered_list") {
-        return { ...el, color: theme.bodyColor };
-      }
-      return el;
-    }),
-  };
-}
 
 function buildGeneratedCanvasSlide(slide: CanvasSlide, themeId?: string): CanvasSlide {
   const freshSlideId = `s${Date.now().toString(36)}`;
@@ -561,7 +536,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
         return initialCanvas.slides[0]?.id ?? null;
       });
       setSelectedElementId(null);
-      setDirty(urlThemeId != null && !canvasFromDoc.themeId);
+      setDirty(urlThemeId !== null && !canvasFromDoc.themeId);
       undoStack.current = [];
       redoStack.current = [];
       setCanUndo(false);

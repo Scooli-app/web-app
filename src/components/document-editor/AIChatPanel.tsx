@@ -546,7 +546,7 @@ export default function AIChatPanel({
       <div className="lg:hidden">
         {nudge && onNudgeDismiss && (
           <div className="fixed right-4 z-40 sm:right-6 animate-in fade-in slide-in-from-right-2 duration-300"
-            style={{ bottom: 'calc(max(env(safe-area-inset-bottom), 1rem) + 4.5rem + 4rem)' }}>
+            style={{ bottom: "calc(max(env(safe-area-inset-bottom), 1rem) + 4.5rem + 4rem)" }}>
             <div className="relative rounded-2xl bg-foreground px-3.5 py-2.5 shadow-lg max-w-[190px]">
               <div className="flex items-start gap-2">
                 <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />

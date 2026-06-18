@@ -397,19 +397,23 @@ export default function DocumentCreationPage({
             <div className="rounded-xl border bg-card p-4 shadow-sm">
               <p className="text-sm font-medium mb-3">Tema visual</p>
               <div className={cn("flex flex-wrap gap-2")}>
-                {THEMES.map((theme, i) => (
-                  <SlideThumbnail
-                    key={theme.id}
-                    slide={themedCoverSlides[i]!}
-                    index={i}
-                    isActive={(formState.themeId ?? "clean") === theme.id}
-                    onClick={() => updateForm("themeId", theme.id)}
-                    w={110}
-                    h={62}
-                    showIndex={false}
-                    ringOffset="ring-offset-card"
-                  />
-                ))}
+                {themedCoverSlides.map((slide, i) => {
+                  const theme = THEMES[i];
+                  if (!theme) return null;
+                  return (
+                    <SlideThumbnail
+                      key={theme.id}
+                      slide={slide}
+                      index={i}
+                      isActive={(formState.themeId ?? "clean") === theme.id}
+                      onClick={() => updateForm("themeId", theme.id)}
+                      w={110}
+                      h={62}
+                      showIndex={false}
+                      ringOffset="ring-offset-card"
+                    />
+                  );
+                })}
               </div>
               <p className="text-xs text-muted-foreground mt-2">
                 {THEMES.find((t) => t.id === (formState.themeId ?? "clean"))?.name ?? "Branco"}
