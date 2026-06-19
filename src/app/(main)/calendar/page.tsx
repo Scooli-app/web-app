@@ -21,6 +21,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+import { translateSubject } from "@/components/document-creation/constants";
 import { Routes } from "@/shared/types";
 import { selectIsHorarioPlanosEnabled } from "@/store/features/selectors";
 import { generationStore } from "@/store/generationStore";
@@ -231,7 +232,7 @@ function LessonCard({
               className="mt-0.5 truncate text-[11px] font-medium"
               style={{ color }}
             >
-              {timetable.subject}
+              {translateSubject(timetable.subject)}
               {timetable.classLabel ? ` · ${timetable.classLabel}` : ""}
             </p>
           )}
@@ -957,7 +958,7 @@ function CalendarPageInner() {
                       className="h-1.5 w-1.5 shrink-0 rounded-full"
                       style={{ backgroundColor: t.color || "#7F77DD" }}
                     />
-                    {t.subject}
+                    {translateSubject(t.subject)}
                     {t.classLabel ? ` · ${t.classLabel}` : ""}
                   </button>
                 );
