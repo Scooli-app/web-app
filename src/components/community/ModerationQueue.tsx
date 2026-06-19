@@ -212,7 +212,7 @@ export function ModerationQueue() {
                 onClick={() => handleReview(resource)}
               >
                 <Eye className="mr-1.5 h-4 w-4" />
-                Revisar
+                Rever
               </Button>
             </div>
           </div>
@@ -285,7 +285,7 @@ export function ModerationQueue() {
                     onClick={() => handleReview(resource)}
                   >
                     <Eye className="mr-2 h-4 w-4" />
-                    Revisar
+                    Rever
                   </Button>
                 </div>
               </TableCell>
@@ -329,7 +329,7 @@ export function ModerationQueue() {
       <Dialog open={isReviewModalOpen} onOpenChange={setIsReviewModalOpen}>
         <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
           <DialogHeader className="pr-14">
-            <DialogTitle>Revisar Recurso</DialogTitle>
+            <DialogTitle>Rever Recurso</DialogTitle>
             <DialogDescription>
               Analise o recurso para conformidade curricular e qualidade
               pedagógica
