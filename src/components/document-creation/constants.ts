@@ -786,6 +786,11 @@ export const SUBJECTS_BY_GRADE: Record<string, Subject["id"][]> = {
   ],
 };
 
+/** Translates an English backend subject value to its Portuguese display label. */
+export function translateSubject(englishValue: string): string {
+  return SUBJECTS.find((s) => s.value === englishValue)?.label ?? englishValue;
+}
+
 export const AMBIGUOUS_COMPONENTS_SUBJECTS = [
   "ingles_cont",
   "frances_cont",

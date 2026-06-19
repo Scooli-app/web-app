@@ -16,6 +16,8 @@ export default function AuthProvider({
   // Use a ref so the API client always calls the latest getToken
   // without waiting for React effect cycles on re-renders.
   const getTokenRef = useRef(getToken);
+  // undefined = effect hasn't run yet; null = was unauthenticated; string = previous user id
+  const prevUserIdRef = useRef<string | null | undefined>(undefined);
   useEffect(() => {
     getTokenRef.current = getToken;
   }, [getToken]);
@@ -70,9 +72,14 @@ export default function AuthProvider({
           signup_method: user.externalAccounts.length > 0 ? "google" : "email",
         });
       }
-    } else {
+    } else if (prevUserIdRef.current !== null) {
+      // Only reset when transitioning from an authenticated user to null (sign-out).
+      // Calling reset() for unauthenticated visitors (e.g. the sign-up page) would
+      // destroy the anonymous distinct_id shared from the landing page, breaking the
+      // marketing_cta_clicked → user_signed_up conversion funnel.
       posthog.reset();
     }
+    prevUserIdRef.current = user?.id ?? null;
   }, [isLoaded, user]);
 
   return children;

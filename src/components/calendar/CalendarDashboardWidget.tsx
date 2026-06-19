@@ -17,6 +17,8 @@ import {
   type LessonSlotStatus,
   type Timetable,
 } from "@/services/api/timetable.service";
+import { translateSubject } from "@/components/document-creation/constants";
+import { dashboardCache, CACHE_KEYS, CACHE_TTL } from "@/lib/dashboardCache";
 import { Routes } from "@/shared/types";
 import {
   ArrowRight,
@@ -141,15 +143,18 @@ export function CalendarDashboardWidget() {
     async (lesson: UpcomingLesson) => {
       generationStore.start(lesson.id);
       patchStatus(lesson.id, "generating");
+      dashboardCache.invalidate(CACHE_KEYS.UPCOMING_LESSONS);
       try {
         await generateLesson(lesson.timetable.id, lesson.id, undefined, {
           onDone: () => {
             patchStatus(lesson.id, "completed");
             generationStore.finish(lesson.id);
+            dashboardCache.invalidate(CACHE_KEYS.UPCOMING_LESSONS);
           },
           onError: () => {
             patchStatus(lesson.id, "failed");
             generationStore.finish(lesson.id);
+            dashboardCache.invalidate(CACHE_KEYS.UPCOMING_LESSONS);
           },
         }, getToken);
       } catch {
@@ -160,6 +165,13 @@ export function CalendarDashboardWidget() {
   );
 
   const load = useCallback(async () => {
+    const cached = dashboardCache.get<UpcomingLesson[]>(CACHE_KEYS.UPCOMING_LESSONS, CACHE_TTL.UPCOMING_LESSONS);
+    if (cached) {
+      setUpcoming(cached);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     try {
       // Hydrate Redux store so other pages (calendar grid) don't need to re-fetch
@@ -193,7 +205,9 @@ export function CalendarDashboardWidget() {
         if (a.slotDate !== b.slotDate) return a.slotDate < b.slotDate ? -1 : 1;
         return a.sequenceNumber - b.sequenceNumber;
       });
-      setUpcoming(all.slice(0, 5));
+      const upcoming = all.slice(0, 5);
+      dashboardCache.set(CACHE_KEYS.UPCOMING_LESSONS, upcoming);
+      setUpcoming(upcoming);
     } catch {
       setUpcoming([]);
     } finally {
@@ -204,9 +218,9 @@ export function CalendarDashboardWidget() {
   useEffect(() => { void load(); }, [load]);
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-5 shadow-md sm:p-8">
+    <div className="rounded-2xl border border-border bg-card p-4 shadow-md sm:p-5">
       {/* Header */}
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Clock className="h-5 w-5 text-primary" />
           <h2 className="text-xl font-semibold text-foreground sm:text-2xl">
@@ -251,7 +265,7 @@ export function CalendarDashboardWidget() {
           </Button>
         </div>
       ) : (
-        <div className="space-y-2.5">
+        <div className="max-h-40 space-y-2.5 overflow-y-auto">
           {upcoming.map((lesson) => {
             const cfg = STATUS_CFG[lesson.status];
             const dateLabel = relativeDate(lesson.slotDate);
@@ -271,80 +285,83 @@ export function CalendarDashboardWidget() {
                     router.push(`${Routes.CALENDAR}?week=${weekStart}`);
                   }
                 }}
-                className="flex cursor-pointer items-start gap-3 rounded-lg border border-border bg-background px-3 py-2.5 transition hover:border-primary/40 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                className="flex cursor-pointer items-start gap-2.5 rounded-lg border border-border bg-background px-3 py-2.5 transition hover:border-primary/40 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 style={{ borderLeft: `3px solid ${lesson.timetable.color || "#7F77DD"}` }}
               >
                 {/* Color dot */}
                 <div
-                  className="mt-1 h-2 w-2 shrink-0 rounded-full"
+                  className="mt-1.5 h-2 w-2 shrink-0 rounded-full"
                   style={{ background: lesson.timetable.color || "#7F77DD" }}
                 />
 
-                {/* Info */}
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">
-                    {lesson.topicTitle || "Sem tópico"}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    <span className={isToday ? "font-semibold text-primary" : ""}>
-                      {dateLabel}
-                    </span>
-                    {" · "}
-                    {lesson.timetable.subject}
-                    {lesson.timetable.classLabel ? ` · ${lesson.timetable.classLabel}` : ""}
-                  </p>
-                </div>
+                {/* Info + actions — wraps on mobile so actions sit below the text */}
+                <div className="flex min-w-0 flex-1 flex-wrap items-start gap-x-2 gap-y-1.5">
+                  {/* Text info: full-width row on mobile, grows inline on sm+ */}
+                  <div className="min-w-0 basis-full sm:basis-0 sm:flex-1">
+                    <p className="truncate text-sm font-medium">
+                      {lesson.topicTitle || "Sem tópico"}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      <span className={isToday ? "font-semibold text-primary" : ""}>
+                        {dateLabel}
+                      </span>
+                      {" · "}
+                      {translateSubject(lesson.timetable.subject)}
+                      {lesson.timetable.classLabel ? ` · ${lesson.timetable.classLabel}` : ""}
+                    </p>
+                  </div>
 
-                {/* Status + action */}
-                <div className="flex shrink-0 items-center gap-2">
-                  {lesson.status !== "generating" && (
-                    <Badge className={`gap-1 border text-xs ${cfg.cls}`}>
-                      {cfg.icon}
-                      {cfg.label}
-                    </Badge>
-                  )}
-                  {(lesson.status === "pending" || lesson.status === "failed") && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-7 px-2 text-xs"
-                      disabled={generatingSlots.has(lesson.id)}
-                      onClick={(e) => { e.stopPropagation(); void handleGenerate(lesson); }}
-                    >
-                      {generatingSlots.has(lesson.id) ? (
+                  {/* Status + action */}
+                  <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+                    {lesson.status !== "generating" && (
+                      <Badge className={`gap-1 border text-xs ${cfg.cls}`}>
+                        {cfg.icon}
+                        {cfg.label}
+                      </Badge>
+                    )}
+                    {(lesson.status === "pending" || lesson.status === "failed") && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 px-2 text-xs"
+                        disabled={generatingSlots.has(lesson.id)}
+                        onClick={(e) => { e.stopPropagation(); void handleGenerate(lesson); }}
+                      >
+                        {generatingSlots.has(lesson.id) ? (
+                          <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                        ) : (
+                          <Sparkles className="mr-1 h-3 w-3" />
+                        )}
+                        Gerar
+                      </Button>
+                    )}
+                    {lesson.status === "generating" && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 px-2 text-xs"
+                        disabled
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                      ) : (
-                        <Sparkles className="mr-1 h-3 w-3" />
-                      )}
-                      Gerar
-                    </Button>
-                  )}
-                  {lesson.status === "generating" && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-7 px-2 text-xs"
-                      disabled
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                      A gerar…
-                    </Button>
-                  )}
-                  {lesson.status === "completed" && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-7 px-2 text-xs text-primary"
-                      disabled={openingSlot === lesson.id}
-                      onClick={(e) => void handleOpen(lesson, e)}
-                    >
-                      {openingSlot === lesson.id ? (
-                        <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                      ) : null}
-                      Abrir
-                    </Button>
-                  )}
+                        A gerar…
+                      </Button>
+                    )}
+                    {lesson.status === "completed" && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 px-2 text-xs text-primary"
+                        disabled={openingSlot === lesson.id}
+                        onClick={(e) => void handleOpen(lesson, e)}
+                      >
+                        {openingSlot === lesson.id ? (
+                          <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                        ) : null}
+                        Abrir
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
             );

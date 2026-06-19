@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/tooltip";
 import type { RagSource } from "@/shared/types/document";
 import { cn } from "@/shared/utils/utils";
-import { FileText, Loader2, MessageCircle, Send, Sparkles } from "lucide-react";
+import { FileText, Loader2, MessageCircle, Send, Sparkles, X } from "lucide-react";
 import posthog from "posthog-js";
 import { useEffect, useRef, useState } from "react";
 
@@ -131,6 +131,10 @@ interface AIChatPanelProps {
   documentType?: string;
   /** Document id used for PostHog event properties */
   documentId?: string;
+  /** Show post-generation nudge pointing users toward the assistant */
+  nudge?: boolean;
+  /** Called when the nudge is dismissed (X click or auto-timeout) */
+  onNudgeDismiss?: () => void;
 }
 
 function Tabs({
@@ -223,6 +227,8 @@ function ChatContent({
   showSuggestions = false,
   documentType,
   onSuggestionClick,
+  nudge,
+  onNudgeDismiss,
 }: {
   chatHistory: ChatMessage[];
   isStreaming: boolean;
@@ -241,6 +247,8 @@ function ChatContent({
   showSuggestions?: boolean;
   documentType?: string;
   onSuggestionClick?: (chip: SuggestionChip) => void;
+  nudge?: boolean;
+  onNudgeDismiss?: () => void;
 }) {
   const isDesktop = variant === "desktop";
   const isInputLocked = isStreaming;
@@ -257,6 +265,25 @@ function ChatContent({
           : "h-full border-0 shadow-none bg-transparent",
       )}
     >
+      {nudge && onNudgeDismiss && (
+        <div className="mx-4 mt-4 md:mx-6 animate-in slide-in-from-top-2 fade-in duration-300">
+          <div className="flex items-start gap-3 rounded-xl border border-primary/20 bg-primary/10 px-4 py-3">
+            <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+            <p className="flex-1 text-sm font-medium leading-snug text-foreground">
+              Documento pronto! Usa o Assistente para refinar ou adaptar o conteúdo.
+            </p>
+            <button
+              type="button"
+              onClick={onNudgeDismiss}
+              className="shrink-0 rounded-md p-0.5 text-muted-foreground transition-colors hover:text-foreground"
+              aria-label="Fechar"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="px-4 py-4 md:px-6">
         <Tabs
           activeTab={activeTab}
@@ -409,6 +436,8 @@ export default function AIChatPanel({
   onDismissImageRegen,
   documentType,
   documentId,
+  nudge = false,
+  onNudgeDismiss,
 }: AIChatPanelProps) {
   const [chatMessage, setChatMessage] = useState("");
   const [lockedMessage, setLockedMessage] = useState<string | null>(null);
@@ -508,11 +537,31 @@ export default function AIChatPanel({
           showSuggestions={showSuggestions}
           documentType={documentType}
           onSuggestionClick={handleSuggestionClick}
+          nudge={nudge}
+          onNudgeDismiss={onNudgeDismiss}
         />
       </div>
 
       {/* Mobile/Tablet: Floating button + Sheet */}
       <div className="lg:hidden">
+        {nudge && onNudgeDismiss && (
+          <div className="fixed right-4 z-40 sm:right-6 animate-in fade-in slide-in-from-right-2 duration-300"
+            style={{ bottom: "calc(max(env(safe-area-inset-bottom), 1rem) + 4.5rem + 4rem)" }}>
+            <div className="relative rounded-2xl bg-foreground px-3.5 py-2.5 shadow-lg max-w-[190px]">
+              <div className="flex items-start gap-2">
+                <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+                <p className="text-xs font-medium leading-snug text-background">
+                  Toca para melhorar o documento com IA!
+                </p>
+                <button type="button" onClick={onNudgeDismiss} className="shrink-0 text-background/50 hover:text-background transition-colors">
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+              {/* Arrow pointing down toward button */}
+              <div className="absolute -bottom-1.5 right-7 h-3 w-3 rotate-45 rounded-sm bg-foreground" />
+            </div>
+          </div>
+        )}
         <Sheet open={isOpen} onOpenChange={setIsOpen}>
           <SheetTrigger asChild>
             <Button

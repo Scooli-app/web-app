@@ -58,8 +58,8 @@ const STEPS: TutorialStep[] = [
   },
   {
     selector: '[data-tutorial="topic"]',
-    title: "Tema do quiz",
-    description: "Escreve o tema ou conteúdo a avaliar. Ex: 'Revolução Francesa' ou 'Frações'.",
+    title: "Tema da aula",
+    description: "Escreve o tema que queres ensinar. Ex: 'A fotossíntese' ou 'Frações'.",
     hint: "Clica em Próximo quando estiveres pronto",
     watchMode: "mutation",
     isCompleted: (el) =>
@@ -68,7 +68,7 @@ const STEPS: TutorialStep[] = [
   },
   {
     selector: '[data-tutorial="template"]',
-    title: "Modelo do quiz",
+    title: "Modelo do plano",
     description: "Um modelo foi selecionado automaticamente. Podes clicar para explorar outros.",
     hint: "Clica em Próximo para continuar",
     watchMode: "mutation",
@@ -78,9 +78,9 @@ const STEPS: TutorialStep[] = [
   },
   {
     selector: '[data-tutorial="generate"]',
-    title: "Gerar o quiz! 🎉",
-    description: "Tudo pronto! Clica em 'Criar Quiz' para gerar o teu primeiro quiz com IA.",
-    hint: "Clica no botão para criar o teu quiz",
+    title: "Gerar o plano de aula! 🎉",
+    description: "Tudo pronto! Clica em 'Criar Plano de Aula' para gerar o teu primeiro plano de aula com IA.",
+    hint: "Clica no botão para criar o teu plano de aula",
     watchMode: "click",
     isCompleted: () => false, // click handler drives this step
   },
@@ -158,17 +158,17 @@ function TutorialIntro({ onStart, onSkip, leaving }: TutorialIntroProps) {
         </div>
 
         <h2 className="mb-2 text-2xl font-bold tracking-tight text-foreground">
-          Vamos criar o teu primeiro quiz!
+          Vamos criar o teu primeiro plano de aula!
         </h2>
         <p className="mb-1 text-sm leading-relaxed text-muted-foreground">
-          Em menos de um minuto vais gerar um quiz completo com IA. Vamos
-          guiar-te passo a passo — é muito fácil.
+          Em menos de um minuto vais gerar um plano de aula completo com IA.
+          Vamos guiar-te passo a passo — é muito fácil.
         </p>
 
         <div className="my-5 space-y-2 rounded-2xl border border-border/60 bg-muted/40 p-4">
           {[
             "Escolhe o ano e a disciplina",
-            "Escreve o tema a avaliar",
+            "Escreve o tema da aula",
             "Seleciona um modelo e gera",
           ].map((label, i) => (
             <div key={i} className="flex items-center gap-3 text-sm text-foreground">

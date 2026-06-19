@@ -553,7 +553,7 @@ export function OnboardingModal({
 
         {/* Next / Submit */}
         <div className="flex w-28 justify-end">
-          {step === 1 && acquisitionSource === "OTHER" && (
+          {step === 1 && acquisitionSource !== null && (
             <Button
               type="button"
               onClick={() => goTo(2, "forward")}

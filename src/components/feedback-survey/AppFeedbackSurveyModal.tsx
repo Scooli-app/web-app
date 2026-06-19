@@ -194,14 +194,27 @@ export function AppFeedbackSurveyModal({
         hideCloseButton
         onEscapeKeyDown={(event) => event.preventDefault()}
         onPointerDownOutside={(event) => event.preventDefault()}
-        className="max-w-xl overflow-y-auto border-border/80 bg-card p-0 shadow-xl shadow-black/10"
+        className="flex flex-col max-w-xl overflow-hidden border-border/80 bg-card p-0 shadow-xl shadow-black/10"
       >
-        <div className="bg-gradient-to-br from-accent/80 via-card to-muted/60 px-6 pb-5 pt-6 sm:px-8 sm:pt-7 dark:from-accent/60 dark:via-card dark:to-background">
+        <div className="shrink-0 bg-gradient-to-br from-accent/80 via-card to-muted/60 px-6 pb-5 pt-6 sm:px-8 sm:pt-7 dark:from-accent/60 dark:via-card dark:to-background">
           <div className="flex items-center justify-between gap-4">
-            <div className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-              <Clock3 className="h-3.5 w-3.5" />
-              Leva menos de 20 segundos
-            </div>
+            {step === 2 ? (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setStep(1)}
+                disabled={isBusy}
+                className="rounded-xl border-border bg-background"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Voltar
+              </Button>
+            ) : (
+              <div className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                <Clock3 className="h-3.5 w-3.5" />
+                Leva menos de 20 segundos
+              </div>
+            )}
             <div className="text-sm font-semibold text-muted-foreground">
               {step}/2
             </div>
@@ -248,7 +261,7 @@ export function AppFeedbackSurveyModal({
           </div>
         </div>
 
-        <div className="space-y-6 px-6 pb-6 pt-5 sm:px-8 sm:pb-8">
+        <div className="flex-1 overflow-y-auto space-y-6 px-6 pb-4 pt-5 sm:px-8">
           {step === 1 ? (
             <div className="grid gap-3">
               {sentimentOptions.map((option) => {
@@ -336,53 +349,36 @@ export function AppFeedbackSurveyModal({
               </div>
             </div>
           )}
+        </div>
 
-          <div className="flex flex-col gap-3 border-t border-border/70 pt-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-2">
-              {step === 2 && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setStep(1)}
-                  disabled={isBusy}
-                  className="rounded-xl border-border bg-background"
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                  Voltar
-                </Button>
+        <div className="shrink-0 flex flex-col gap-3 border-t border-border/70 px-6 pb-6 pt-4 sm:flex-row sm:items-center sm:justify-end sm:px-8 sm:pb-8">
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => void onMaybeLater()}
+            disabled={isBusy}
+            className="rounded-xl text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+          >
+            Talvez mais tarde
+          </Button>
+
+          {step === 2 && (
+            <Button
+              type="button"
+              onClick={() => void handleSubmit()}
+              disabled={!canSubmit}
+              className="h-11 rounded-xl px-5 shadow-sm"
+            >
+              {isBusy ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  A enviar...
+                </>
+              ) : (
+                "Enviar feedback"
               )}
-            </div>
-
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => void onMaybeLater()}
-                disabled={isBusy}
-                className="rounded-xl text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-              >
-                Talvez mais tarde
-              </Button>
-
-              {step === 2 && (
-                <Button
-                  type="button"
-                  onClick={() => void handleSubmit()}
-                  disabled={!canSubmit}
-                  className="h-11 rounded-xl px-5 shadow-sm"
-                >
-                  {isBusy ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      A enviar...
-                    </>
-                  ) : (
-                    "Enviar feedback"
-                  )}
-                </Button>
-              )}
-            </div>
-          </div>
+            </Button>
+          )}
         </div>
       </DialogContent>
     </Dialog>

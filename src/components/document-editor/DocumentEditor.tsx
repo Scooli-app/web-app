@@ -42,7 +42,6 @@ import { toast } from "sonner";
 import { DiffToolbar } from "../editor/DiffToolbar";
 import { computeDiff, markdownToNode } from "../editor/utils/diffEngine";
 import RichTextEditor from "../ui/rich-text-editor";
-import { StreamingText } from "../ui/streaming-text";
 import AIChatPanel from "./AIChatPanel";
 import DocumentTitle from "./DocumentTitle";
 import DownloadButton from "./DownloadButton";
@@ -282,6 +281,10 @@ export default function DocumentEditor({
 
   // Diff / Suggestions mode state
   const [isSuggestionsMode, setIsSuggestionsMode] = useState(false);
+
+  const [showChatNudge, setShowChatNudge] = useState(false);
+  const prevIsGeneratingRef = useRef(false);
+  const nudgeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Reset document-scoped UI state when switching document IDs.
   // This prevents chat/source leakage between documents during route transitions.
@@ -977,6 +980,7 @@ export default function DocumentEditor({
         return;
       }
 
+      dismissChatNudge();
       setChatHistory((prev) => [
         ...prev,
         { role: "user", content: userMessage },
@@ -1070,7 +1074,7 @@ export default function DocumentEditor({
           setSources(response.sources);
         }
       } catch {
-        setError("Erro ao processar sua mensagem. Tente novamente mais tarde.");
+        setError("Erro ao processar a sua mensagem. Tente novamente mais tarde.");
       } finally {
         isChatInProgressRef.current = false;
         skipNextEditorKeyBumpRef.current = false;
@@ -1096,6 +1100,24 @@ export default function DocumentEditor({
     (streamInfo?.id === documentId && streamInfo?.status === "generating");
   const resolvedTitle =
     documentTitle || normalizePendingTitle(activeDocument?.title || "");
+
+  // Show chat nudge once when document generation finishes
+  useEffect(() => {
+    if (prevIsGeneratingRef.current && !isGenerating) {
+      setShowChatNudge(true);
+      if (nudgeTimerRef.current) clearTimeout(nudgeTimerRef.current);
+      nudgeTimerRef.current = setTimeout(() => setShowChatNudge(false), 8000);
+    }
+    prevIsGeneratingRef.current = isGenerating;
+  }, [isGenerating]);
+
+  // Cleanup nudge timer on unmount
+  useEffect(() => () => { if (nudgeTimerRef.current) clearTimeout(nudgeTimerRef.current); }, []);
+
+  const dismissChatNudge = useCallback(() => {
+    setShowChatNudge(false);
+    if (nudgeTimerRef.current) clearTimeout(nudgeTimerRef.current);
+  }, []);
 
   // Handle exiting diff / suggestions mode
   const handleExitDiffMode = useCallback(() => {
@@ -1186,16 +1208,17 @@ export default function DocumentEditor({
                   </div>
                 </div>
                 <div className="min-h-[50dvh] w-full overflow-auto rounded-xl border border-border bg-card p-3 sm:min-h-[600px] sm:p-4">
-                  {displayContent && streamStatus !== "reviewing" && streamStatus !== "revised" ? (
-                    <StreamingText
-                      text={displayContent}
-                      isStreaming={isGenerating}
-                      as="div"
-                      className="prose prose-sm max-w-none whitespace-pre-wrap text-foreground leading-relaxed"
-                    />
-                  ) : (
-                    <GenerationProgress streamStatus={streamStatus} />
-                  )}
+                  {/* Never show the raw markdown stream — keep the stepper until
+                      the formatted document is ready. Content chunks arriving
+                      while the status is still early means we're generating. */}
+                  <GenerationProgress
+                    streamStatus={
+                      displayContent &&
+                      (!streamStatus || streamStatus === "preparing")
+                        ? "generating"
+                        : streamStatus
+                    }
+                  />
                 </div>
               </>
             ) : (
@@ -1272,6 +1295,8 @@ export default function DocumentEditor({
               showGenerationHint={!isEntitlementLoading && !isPremium}
               documentType={activeDocument?.documentType}
               documentId={documentId}
+              nudge={showChatNudge}
+              onNudgeDismiss={dismissChatNudge}
             />
           </div>
         </div>
@@ -1289,6 +1314,8 @@ export default function DocumentEditor({
           showGenerationHint={!isEntitlementLoading && !isPremium}
           documentType={activeDocument?.documentType}
           documentId={documentId}
+          nudge={showChatNudge}
+          onNudgeDismiss={dismissChatNudge}
         />
       </div>
     </>

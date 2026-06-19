@@ -63,6 +63,8 @@ import { Routes } from "@/shared/types";
 import { fetchDocument, updateDocument, chatWithDocument } from "@/store/documents/documentSlice";
 import { regenerateDocumentImage as regenerateDocumentImageApi, generateDocumentImage as generateDocumentImageApi } from "@/services/api/document-images.service";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { selectIsPro } from "@/store/subscription/selectors";
+import { selectEntitlementLoading } from "@/store/entitlements/selectors";
 import {
   AlignCenter,
   AlignLeft,
@@ -93,6 +95,7 @@ import {
   Undo2,
 } from "lucide-react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { generateSlide as generateSlideApi } from "@/services/api/document.service";
@@ -295,53 +298,19 @@ function makeNewSlide(themeId?: string): CanvasSlide {
   const titleEl: CanvasTextElement = {
     id: `${id}-title`,
     type: "text",
-    x: 0.04, y: 0.28, w: 0.92, h: 0.22,
+    x: 0.04, y: 0.071, w: 0.92, h: 0.17,
     text: "Novo Slide",
     fontSize: 0.036,
     fontStyle: "bold",
     color: theme.titleColor,
-    align: "center",
+    align: "left",
     role: "title",
   };
-  const subtitleEl: CanvasTextElement = {
-    id: `${id}-sub`,
-    type: "text",
-    x: 0.10, y: 0.55, w: 0.80, h: 0.14,
-    text: "Clica duas vezes para editar",
-    fontSize: 0.021,
-    fontStyle: "normal",
-    color: theme.mutedColor,
-    align: "center",
-    role: "subtitle",
-  };
-  return { id, layout: "title", background: theme.bg, elements: [titleEl, subtitleEl] };
+  // Use title-content layout so the theme applies content-slide decorations
+  // (not the heavy cover decorations reserved for the first slide).
+  return { id, layout: "title-content", background: theme.bg, elements: [titleEl] };
 }
 
-function applyThemeToSlide(slide: CanvasSlide, themeId?: string): CanvasSlide {
-  const theme = getThemeById(themeId ?? "dark");
-
-  return {
-    ...slide,
-    background: theme.bg,
-    elements: slide.elements.map((el): CanvasElement => {
-      if (el.type === "text") {
-        const color =
-          el.role === "title"
-            ? theme.titleColor
-            : el.role === "subtitle"
-              ? theme.mutedColor
-              : el.role === "label"
-                ? theme.accentColor
-                : theme.bodyColor;
-        return { ...el, color };
-      }
-      if (el.type === "bullet_list" || el.type === "ordered_list") {
-        return { ...el, color: theme.bodyColor };
-      }
-      return el;
-    }),
-  };
-}
 
 function buildGeneratedCanvasSlide(slide: CanvasSlide, themeId?: string): CanvasSlide {
   const freshSlideId = `s${Date.now().toString(36)}`;
@@ -364,7 +333,13 @@ function buildGeneratedCanvasSlide(slide: CanvasSlide, themeId?: string): Canvas
     }),
   };
 
-  return applyThemeToSlide(dedupedSlide, themeId);
+  const tid = themeId ?? "dark";
+  return (
+    applyTheme(
+      { schemaVersion: 2, documentType: "presentation", slides: [dedupedSlide] },
+      tid,
+    ).slides[0] ?? dedupedSlide
+  );
 }
 
 function makeShapeElement(shape: CanvasShapeElement["shape"]): CanvasShapeElement {
@@ -464,6 +439,10 @@ export function BlockDocumentEditor({ documentId }: Props) {
       : [];
   const isLoading = useAppSelector((s) => s.documents.isLoading);
   const loadingDocumentId = useAppSelector((s) => s.documents.loadingDocumentId);
+  const isPremium = useAppSelector(selectIsPro);
+  const isEntitlementLoading = useAppSelector(selectEntitlementLoading);
+  const searchParams = useSearchParams();
+  const urlThemeId = searchParams.get("theme") ?? undefined;
 
   useEffect(() => {
     if (documentId) void dispatch(fetchDocument(documentId));
@@ -543,19 +522,27 @@ export function BlockDocumentEditor({ documentId }: Props) {
       // stack — the user should still be able to Ctrl+Z after saving.
       if (canvasRef.current !== null) return;
 
-      setCanvas(canvasFromDoc);
+      // If the URL carries a theme choice (set from the creation form) and the
+      // presentation has no stored theme yet, apply it now so the editor opens
+      // with the user's pre-selected theme.
+      const initialCanvas =
+        urlThemeId && !canvasFromDoc.themeId
+          ? applyTheme(canvasFromDoc, urlThemeId)
+          : canvasFromDoc;
+
+      setCanvas(initialCanvas);
       setActiveSlideId((prev) => {
-        if (prev && canvasFromDoc.slides.some((s) => s.id === prev)) return prev;
-        return canvasFromDoc.slides[0]?.id ?? null;
+        if (prev && initialCanvas.slides.some((s) => s.id === prev)) return prev;
+        return initialCanvas.slides[0]?.id ?? null;
       });
       setSelectedElementId(null);
-      setDirty(false);
+      setDirty(urlThemeId !== null && !canvasFromDoc.themeId);
       undoStack.current = [];
       redoStack.current = [];
       setCanUndo(false);
       setCanRedo(false);
     }
-  }, [canvasFromDoc]);
+  }, [canvasFromDoc, urlThemeId]);
 
   /* ── Undo / Redo ─────────────────────────────────────────────────────── */
   const canvasRef = useRef<CanvasPresentation | null>(null);
@@ -877,13 +864,25 @@ export function BlockDocumentEditor({ documentId }: Props) {
   );
 
   const addSlide = useCallback(() => {
-    const newSlide = makeNewSlide(canvasRef.current?.themeId);
+    const cur = canvasRef.current;
+    const themeId = cur?.themeId;
+    const bare = makeNewSlide(themeId);
+    // Apply the active theme so the new slide gets its decorative shapes.
+    const themed =
+      themeId && cur
+        ? (applyTheme({ ...cur, slides: [bare] }, themeId).slides[0] ?? bare)
+        : bare;
+    // Inherit background from the active slide so manual bg overrides carry forward.
+    const activeSlide = cur?.slides.find((s) => s.id === activeSlideId);
+    const newSlide = activeSlide
+      ? { ...themed, background: activeSlide.background, backgroundGradient: activeSlide.backgroundGradient }
+      : themed;
     pushHistory();
     setCanvas((prev) => prev ? { ...prev, slides: [...prev.slides, newSlide] } : prev);
-    setActiveSlideId(newSlide.id);
+    setActiveSlideId(bare.id);
     setSelectedElementId(null);
     setDirty(true);
-  }, [pushHistory]);
+  }, [activeSlideId, pushHistory]);
 
   const insertGeneratedSlide = useCallback(
     (generatedSlide: CanvasSlide) => {
@@ -1008,10 +1007,12 @@ export function BlockDocumentEditor({ documentId }: Props) {
         JSON.stringify(canvas),
       );
       const parsedSlide = slideBlockSchema.parse(JSON.parse(response.slide));
-      const generatedSlide = buildGeneratedCanvasSlide(
-        slideToCanvas(parsedSlide),
-        canvas.themeId,
-      );
+      const themed = buildGeneratedCanvasSlide(slideToCanvas(parsedSlide), canvas.themeId);
+      // Inherit background from the active slide so manual bg overrides carry forward.
+      const activeSlide = canvas.slides.find((s) => s.id === activeSlideId);
+      const generatedSlide = activeSlide
+        ? { ...themed, background: activeSlide.background, backgroundGradient: activeSlide.backgroundGradient }
+        : themed;
 
       insertGeneratedSlide(generatedSlide);
       setGenerateSlideDialogOpen(false);
@@ -1024,7 +1025,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
     } finally {
       setIsGeneratingSlide(false);
     }
-  }, [canvas, document?.id, generateSlideTopic, insertGeneratedSlide]);
+  }, [activeSlideId, canvas, document?.id, generateSlideTopic, insertGeneratedSlide]);
 
   const deleteSlide = useCallback(
     (slideId: string) => {
@@ -1101,7 +1102,9 @@ export function BlockDocumentEditor({ documentId }: Props) {
           ? {
               ...prev,
               slides: prev.slides.map((s) =>
-                s.id === activeSlideId ? { ...s, background: bg } : s,
+                s.id === activeSlideId
+                  ? { ...s, background: bg, backgroundGradient: undefined }
+                  : s,
               ),
             }
           : prev,
@@ -1117,7 +1120,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
       pushHistory();
       setCanvas((prev) =>
         prev
-          ? { ...prev, slides: prev.slides.map((s) => ({ ...s, background: bg })) }
+          ? { ...prev, slides: prev.slides.map((s) => ({ ...s, background: bg, backgroundGradient: undefined })) }
           : prev,
       );
       setDirty(true);
@@ -1253,7 +1256,8 @@ export function BlockDocumentEditor({ documentId }: Props) {
             const raw: unknown = JSON.parse(response.content);
             if (isCanvasPresentation(raw)) {
               pushHistory();
-              setCanvas(raw);
+              const activeThemeId = canvasRef.current?.themeId ?? raw.themeId;
+              setCanvas(activeThemeId ? applyTheme(raw, activeThemeId) : raw);
               setDirty(false); // just synced from server
               canvasWasUpdated = true;
             }
@@ -2326,7 +2330,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
             error={chatError}
             placeholder="Pede ajuda para melhorar a apresentação..."
             title="Assistente de IA"
-            showGenerationHint
+            showGenerationHint={!isEntitlementLoading && !isPremium}
             sources={sources}
             onImageRegen={handleImageRegen}
             onDismissImageRegen={handleImageRegenDismiss}

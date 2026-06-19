@@ -291,6 +291,6 @@ export const RESOURCE_TYPE_OPTIONS = [
   { value: "worksheet", label: "Ficha de Trabalho" },
   { value: "test", label: "Teste" },
   { value: "quiz", label: "Quiz" },
-  // { value: "presentation", label: "Apresentação" },
-  // { value: "activity", label: "Atividade" },
+  { value: "presentation", label: "Apresentação" },
+  { value: "curriculumPlan", label: "Plano Curricular" },
 ];

@@ -172,7 +172,7 @@ function CommunityLibraryPage() {
     <PageContainer size="7xl" contentClassName="py-1 sm:py-2">
       <div className="space-y-5 sm:space-y-6">
         <PageHeader
-          title="Biblioteca Comunitaria"
+          title="Biblioteca Comunitária"
           description="Descubra e partilhe recursos educacionais criados por professores portugueses"
           icon={<Users className="h-6 w-6 text-primary" />}
           actions={headerActions}

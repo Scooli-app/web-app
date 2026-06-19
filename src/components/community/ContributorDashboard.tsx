@@ -17,6 +17,7 @@ import {
   selectMyResources,
 } from "@/store/community";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { translateSubject } from "@/components/document-creation/constants";
 import {
   AlertCircle,
   BarChart3,
@@ -228,7 +229,7 @@ export function ContributorDashboard() {
                       {resource.title}
                     </h4>
                     <p className="mt-0.5 break-words text-xs text-muted-foreground">
-                      {resource.grade} · {resource.subject}
+                      {resource.grade} · {translateSubject(resource.subject)}
                     </p>
                   </div>
                   <Badge className="max-w-full self-start whitespace-normal break-words border border-amber-200 bg-amber-100 px-2 py-0.5 text-left text-xs text-amber-700 dark:border-amber-800 dark:bg-amber-900/40 dark:text-amber-300 sm:self-auto sm:text-center">
@@ -297,7 +298,7 @@ export function ContributorDashboard() {
                         {resource.title}
                       </h4>
                       <p className="mt-0.5 break-words text-xs text-muted-foreground">
-                        {resource.grade} · {resource.subject}
+                        {resource.grade} · {translateSubject(resource.subject)}
                       </p>
                     </div>
                     <div className="self-start text-left sm:ml-3 sm:self-auto sm:text-right">
@@ -340,7 +341,7 @@ export function ContributorDashboard() {
                           {resource.title}
                         </h4>
                         <p className="mt-0.5 break-words text-xs text-muted-foreground">
-                          {resource.grade} · {resource.subject}
+                          {resource.grade} · {translateSubject(resource.subject)}
                         </p>
                       </div>
                     </div>

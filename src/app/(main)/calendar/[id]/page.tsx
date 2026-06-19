@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 
 import { SLOT_STATUS_CONFIG } from "@/shared/constants/lessonSlotStatus";
+import { translateSubject } from "@/components/document-creation/constants";
 import { SlotDialog } from "@/components/calendar/SlotDialog";
 import type { SlotWithTimetable } from "@/shared/types/calendar";
 import { toIso, getWeekStart, addDays, formatWeekLabel } from "@/shared/utils/calendar";
@@ -324,7 +325,7 @@ export default function CalendarViewPage() {
             </h1>
             {currentTimetable && (
               <p className="text-sm text-muted-foreground">
-                {currentTimetable.subject} · {currentTimetable.gradeLevel}.º ano
+                {translateSubject(currentTimetable.subject)} · {currentTimetable.gradeLevel}.º ano
                 {currentTimetable.classLabel ? ` · Turma ${currentTimetable.classLabel}` : ""}
               </p>
             )}

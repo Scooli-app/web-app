@@ -74,6 +74,18 @@ export interface CanvasShapeElement extends CanvasBaseElement {
   stroke?: string;
   /** Fraction of slide width (same convention as fontSize). */
   strokeWidth?: number;
+  /** Corner radius in pixels (rects only). 0 = square corners. */
+  cornerRadius?: number;
+  /** True for shapes owned by the active theme; replaced when theme changes. */
+  isDecoration?: boolean;
+}
+
+/** Linear gradient descriptor stored per-slide (applied by applyTheme). */
+export interface CanvasGradient {
+  type: "linear";
+  /** CSS-convention angle in degrees: 0=up, 90=right, 135=bottom-right, 180=down. */
+  angle: number;
+  stops: Array<{ offset: number; color: string }>;
 }
 
 export type CanvasElement =
@@ -88,6 +100,8 @@ export interface CanvasSlide {
   /** Original SlideBlock.layout -> kept for PresentView reconstruction. */
   layout: string;
   background: string;
+  /** Optional gradient overlay; when set, rendered on top of `background`. */
+  backgroundGradient?: CanvasGradient;
   elements: CanvasElement[];
   /** Hidden slides are dimmed in the sidebar and skipped in presentation mode. */
   hidden?: boolean;
