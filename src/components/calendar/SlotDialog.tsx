@@ -26,6 +26,7 @@ import { Separator } from "@/components/ui/separator";
 
 import { Routes } from "@/shared/types";
 import { SLOT_STATUS_CONFIG } from "@/shared/constants/lessonSlotStatus";
+import { translateSubject } from "@/components/document-creation/constants";
 import type { SlotWithTimetable } from "@/shared/types/calendar";
 import {
   listLessonDocuments,
@@ -155,7 +156,7 @@ export function SlotDialog({
                 style={{ backgroundColor: color }}
               >
                 <span className="h-1.5 w-1.5 rounded-full bg-white/70" />
-                {slot.timetable.subject}
+                {translateSubject(slot.timetable.subject)}
                 {slot.timetable.classLabel ? ` · ${slot.timetable.classLabel}` : ""}
               </span>
               <Badge className={`gap-1 border text-xs ${cfg.badgeCls}`}>

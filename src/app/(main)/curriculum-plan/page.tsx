@@ -7,6 +7,7 @@ import { selectIsCurriculumPlanEnabled } from "@/store/features/selectors";
 import { Routes, type Document } from "@/shared/types";
 import { getDocuments } from "@/services/api/document.service";
 import { CalendarDays, ChevronRight, Loader2, Sparkles, Upload } from "lucide-react";
+import { translateSubject } from "@/components/document-creation/constants";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
@@ -117,7 +118,7 @@ export default function CurriculumPlanLandingPage() {
                   {(plan.subject ?? plan.gradeLevel) && (
                     <p className="text-xs text-muted-foreground">
                       {[
-                        plan.subject,
+                        plan.subject ? translateSubject(plan.subject) : null,
                         plan.gradeLevel ? `${plan.gradeLevel}.º ano` : null,
                       ]
                         .filter(Boolean)

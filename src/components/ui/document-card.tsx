@@ -7,6 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useAppSelector } from "@/store/hooks";
 import { selectWorkspaceContext } from "@/store/workspace/selectors";
 import { Routes, type Document } from "@/shared/types";
+import { translateSubject } from "@/components/document-creation/constants";
 import {
   Building2,
   FileText,
@@ -266,7 +267,7 @@ function DocumentCardComponent({
             {document.subject && (
               <div className="flex items-center text-xs text-muted-foreground">
                 <FileText className="mr-2 h-3 w-3 shrink-0" />
-                <span className="truncate">{document.subject}</span>
+                <span className="truncate">{translateSubject(document.subject)}</span>
               </div>
             )}
             {document.gradeLevel && (
