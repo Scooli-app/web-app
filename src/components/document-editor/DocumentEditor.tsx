@@ -1074,7 +1074,7 @@ export default function DocumentEditor({
           setSources(response.sources);
         }
       } catch {
-        setError("Erro ao processar sua mensagem. Tente novamente mais tarde.");
+        setError("Erro ao processar a sua mensagem. Tente novamente mais tarde.");
       } finally {
         isChatInProgressRef.current = false;
         skipNextEditorKeyBumpRef.current = false;
