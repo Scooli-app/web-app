@@ -1,27 +1,30 @@
 "use client";
 
-import { useEffect, useState, Suspense, useCallback, useRef } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
-import { useAuth } from "@clerk/nextjs";
-import {
-  Check,
-  Loader2,
-  Sparkles,
-  ArrowLeft,
-  Shield,
-  Zap,
-  AlertCircle,
-  WifiOff,
-  RefreshCw,
-  MessageCircle,
-  XCircle,
-} from "lucide-react";
 import {
   createCheckoutSession,
   getSubscriptionPlans,
 } from "@/services/api/subscription.service";
-import { PLAN_DISPLAY_INFO, type SubscriptionPlan } from "@/shared/types/subscription";
+import {
+  PLAN_DISPLAY_INFO,
+  type SubscriptionPlan,
+} from "@/shared/types/subscription";
+import { useAuth } from "@clerk/nextjs";
+import {
+  AlertCircle,
+  ArrowLeft,
+  Check,
+  Loader2,
+  MessageCircle,
+  RefreshCw,
+  Shield,
+  Sparkles,
+  WifiOff,
+  XCircle,
+  Zap,
+} from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
 import posthog from "posthog-js";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 
 type ErrorType = "network" | "server" | "validation" | "checkout" | "unknown";
 
@@ -31,7 +34,10 @@ interface CheckoutError {
   details?: string;
 }
 
-function parseError(err: unknown, context: "plans" | "checkout"): CheckoutError {
+function parseError(
+  err: unknown,
+  context: "plans" | "checkout",
+): CheckoutError {
   const message = err instanceof Error ? err.message : String(err);
   const lowerMessage = message.toLowerCase();
 
@@ -60,7 +66,8 @@ function parseError(err: unknown, context: "plans" | "checkout"): CheckoutError 
     return {
       type: "server",
       message: "Serviço temporariamente indisponível",
-      details: "Os nossos servidores estão a ter dificuldades. Tente novamente em alguns minutos.",
+      details:
+        "Os nossos servidores estão a ter dificuldades. Tente novamente em alguns minutos.",
     };
   }
 
@@ -107,9 +114,10 @@ function parseError(err: unknown, context: "plans" | "checkout"): CheckoutError 
   // Default error
   return {
     type: "unknown",
-    message: context === "checkout" 
-      ? "Não foi possível iniciar o pagamento" 
-      : "Ocorreu um erro inesperado",
+    message:
+      context === "checkout"
+        ? "Não foi possível iniciar o pagamento"
+        : "Ocorreu um erro inesperado",
     details: message,
   };
 }
@@ -143,11 +151,11 @@ function ErrorCard({
       <div className="mb-4 flex justify-center">
         <ErrorIcon type={error.type} />
       </div>
-      
+
       <h2 className="text-xl font-semibold text-foreground mb-2">
         {error.message}
       </h2>
-      
+
       {error.details && (
         <p className="text-muted-foreground mb-6 text-sm">{error.details}</p>
       )}
@@ -201,7 +209,9 @@ function InlineError({
       <div className="flex items-start gap-3">
         <AlertCircle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
         <div className="flex-1">
-          <p className="text-destructive font-medium text-sm">{error.message}</p>
+          <p className="text-destructive font-medium text-sm">
+            {error.message}
+          </p>
           {error.details && (
             <p className="text-destructive/80 text-sm mt-1">{error.details}</p>
           )}
@@ -244,7 +254,7 @@ function getPlanBadge(plan: SubscriptionPlan): string | null {
 
 function calculateSavings(
   monthlyPlan: SubscriptionPlan | undefined,
-  annualPlan: SubscriptionPlan
+  annualPlan: SubscriptionPlan,
 ): string | null {
   if (!monthlyPlan) {
     return null;
@@ -274,7 +284,7 @@ function CheckoutContent() {
   const planParam = searchParams.get("plan");
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [selectedPlanCode, setSelectedPlanCode] = useState<string | null>(
-    planParam
+    planParam,
   );
   const [isLoadingPlans, setIsLoadingPlans] = useState(true);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
@@ -292,8 +302,10 @@ function CheckoutContent() {
 
     posthog.capture("checkout_initiated", {
       plan_code: planCode,
-      plan_interval: plans.find((p) => p.planCode === planCode)?.interval ?? null,
-      price_cents: plans.find((p) => p.planCode === planCode)?.priceCents ?? null,
+      plan_interval:
+        plans.find((p) => p.planCode === planCode)?.interval ?? null,
+      price_cents:
+        plans.find((p) => p.planCode === planCode)?.priceCents ?? null,
     });
     // Persist plan details so payment_success can include them after the
     // Stripe redirect lands on the dashboard with no plan info in the URL.
@@ -301,8 +313,14 @@ function CheckoutContent() {
       sessionStorage.setItem("scooli_pending_plan", planCode);
       const pendingPlan = plans.find((p) => p.planCode === planCode);
       if (pendingPlan) {
-        sessionStorage.setItem("scooli_pending_plan_interval", pendingPlan.interval);
-        sessionStorage.setItem("scooli_pending_plan_price", String(pendingPlan.priceCents));
+        sessionStorage.setItem(
+          "scooli_pending_plan_interval",
+          pendingPlan.interval,
+        );
+        sessionStorage.setItem(
+          "scooli_pending_plan_price",
+          String(pendingPlan.priceCents),
+        );
       }
     } catch {
       // sessionStorage unavailable (private browsing edge case) — non-fatal
@@ -333,16 +351,18 @@ function CheckoutContent() {
     try {
       setIsLoadingPlans(true);
       setError(null);
-      
+
       const fetchedPlans = await getSubscriptionPlans();
-      
+
       if (!fetchedPlans || !Array.isArray(fetchedPlans)) {
         throw new Error("Resposta inválida do servidor");
       }
 
       // Filter out free plan and sort: monthly first, then annual
       const paidPlans = fetchedPlans
-        .filter((p) => p && typeof p.priceCents === "number" && p.priceCents > 0)
+        .filter(
+          (p) => p && typeof p.priceCents === "number" && p.priceCents > 0,
+        )
         .sort((a, b) => {
           if (a.interval === "month" && b.interval === "year") {
             return -1;
@@ -352,7 +372,7 @@ function CheckoutContent() {
           }
           return 0;
         });
-      
+
       if (paidPlans.length === 0) {
         throw new Error("Nenhum plano disponível no momento");
       }
@@ -368,7 +388,10 @@ function CheckoutContent() {
         autoCheckoutTriggered.current = true;
         setSelectedPlanCode(planParam);
         await initiateCheckout(planParam);
-      } else if (planParam && !paidPlans.some((p) => p.planCode === planParam)) {
+      } else if (
+        planParam &&
+        !paidPlans.some((p) => p.planCode === planParam)
+      ) {
         // Invalid plan param - show warning but continue
         setError({
           type: "validation",
@@ -579,15 +602,15 @@ function CheckoutContent() {
                     <div className="mb-6">
                       <div className="flex items-baseline gap-1">
                         <span className="text-3xl font-bold text-foreground sm:text-4xl">
-                          {formatPrice(plan.priceCents, plan.currency)}
+                          {plan.interval === "year" && monthlyEquivalent
+                            ? monthlyEquivalent
+                            : formatPrice(plan.priceCents, plan.currency)}
                         </span>
-                        <span className="text-muted-foreground">
-                          /{plan.interval === "month" ? "mês" : "ano"}
-                        </span>
+                        <span className="text-muted-foreground">/mês</span>
                       </div>
-                      {monthlyEquivalent && (
+                      {plan.interval === "year" && (
                         <p className="text-sm text-muted-foreground mt-1">
-                          Equivalente a {monthlyEquivalent}/mês
+                          Pago anualmente 95,90€ · poupe 20%
                         </p>
                       )}
                     </div>
@@ -598,18 +621,21 @@ function CheckoutContent() {
                       </p>
                     )}
 
-                    {Array.isArray(plan.features) && plan.features.length > 0 && (
-                      <ul className="space-y-3">
-                        {plan.features.map((feature, idx) => (
-                          <li key={idx} className="flex items-start gap-3">
-                            <div className="w-5 h-5 rounded-full bg-success/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                              <Check className="w-3 h-3 text-success" />
-                            </div>
-                            <span className="text-secondary-foreground">{feature}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
+                    {Array.isArray(plan.features) &&
+                      plan.features.length > 0 && (
+                        <ul className="space-y-3">
+                          {plan.features.map((feature, idx) => (
+                            <li key={idx} className="flex items-start gap-3">
+                              <div className="w-5 h-5 rounded-full bg-success/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                <Check className="w-3 h-3 text-success" />
+                              </div>
+                              <span className="text-secondary-foreground">
+                                {feature}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
                   </div>
                 );
               })}
@@ -633,7 +659,7 @@ function CheckoutContent() {
                         {getLocalizedPlanName(selectedPlan)} —{" "}
                         {formatPrice(
                           selectedPlan.priceCents,
-                          selectedPlan.currency
+                          selectedPlan.currency,
                         )}
                         /{selectedPlan.interval === "month" ? "mês" : "ano"}
                       </p>
@@ -648,8 +674,7 @@ function CheckoutContent() {
                 >
                   {isCheckingOut ? (
                     <>
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      A processar...
+                      <Loader2 className="w-5 h-5 animate-spin" />A processar...
                     </>
                   ) : (
                     <>
