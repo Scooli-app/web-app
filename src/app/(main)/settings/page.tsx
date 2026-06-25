@@ -435,15 +435,17 @@ function SettingsContent() {
                           </div>
                           <div className="flex items-baseline gap-1">
                             <span className="text-lg font-bold text-foreground">
-                              {formatPrice(plan.priceCents, plan.currency)}
+                              {isAnnual && monthlyEquivalent
+                                ? monthlyEquivalent
+                                : formatPrice(plan.priceCents, plan.currency)}
                             </span>
                             <span className="text-sm text-muted-foreground">
-                              /{plan.interval === "month" ? "mês" : "ano"}
+                              /mês
                             </span>
                           </div>
-                          {monthlyEquivalent && (
+                          {isAnnual && (
                             <p className="text-xs text-muted-foreground mt-1">
-                              ≈ {monthlyEquivalent}/mês
+                              Pago anualmente
                             </p>
                           )}
                         </button>
