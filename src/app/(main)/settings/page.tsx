@@ -15,6 +15,10 @@ import {
   type SubscriptionStatus,
   type UsageStats,
 } from "@/shared/types/subscription";
+import {
+  selectCurrentEntitlement,
+  selectEntitlementLoading,
+} from "@/store/entitlements/selectors";
 import type { AppDispatch, RootState } from "@/store/store";
 import { setTheme, type ThemeMode } from "@/store/ui/uiSlice";
 import { useClerk, useUser } from "@clerk/nextjs";
@@ -34,28 +38,26 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import {
-  selectCurrentEntitlement,
-  selectEntitlementLoading,
-} from "@/store/entitlements/selectors";
 
 function getStatusBadge(
   status: SubscriptionStatus,
   cancelAtPeriodEnd: boolean,
-  planCode?: string
+  planCode?: string,
 ) {
   // Free plan always shows "Período de Teste" badge
   if (planCode === "free") {
     return {
       label: "Período de Teste",
-      className: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+      className:
+        "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
     };
   }
 
   if (cancelAtPeriodEnd) {
     return {
       label: "Cancela no fim do período",
-      className: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+      className:
+        "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
     };
   }
 
@@ -64,12 +66,14 @@ function getStatusBadge(
     case "trialing":
       return {
         label: "Ativo",
-        className: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
+        className:
+          "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
       };
     case "past_due":
       return {
         label: "Pagamento Pendente",
-        className: "bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400",
+        className:
+          "bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400",
       };
     case "canceled":
       return {
@@ -137,7 +141,9 @@ function SettingsContent() {
   const entitlement = useSelector(selectCurrentEntitlement);
   const isEntitlementLoading = useSelector(selectEntitlementLoading);
 
-  const [subscription, setSubscription] = useState<CurrentSubscription | null>(null);
+  const [subscription, setSubscription] = useState<CurrentSubscription | null>(
+    null,
+  );
   const [usage, setUsage] = useState<UsageStats | null>(null);
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
@@ -189,7 +195,9 @@ function SettingsContent() {
         throw new Error("Não foi possível obter a ligação do portal");
       }
     } catch {
-      setError("Não foi possível abrir o portal de pagamentos. Tente novamente.");
+      setError(
+        "Não foi possível abrir o portal de pagamentos. Tente novamente.",
+      );
       setIsLoadingPortal(false);
     }
   };
@@ -203,9 +211,10 @@ function SettingsContent() {
   };
 
   const isFreeUser = !subscription || subscription.planCode === "free";
-  const creditsUsedPercent = usage && usage.limit > 0
-    ? Math.min((usage.used / usage.limit) * 100, 100)
-    : 0;
+  const creditsUsedPercent =
+    usage && usage.limit > 0
+      ? Math.min((usage.used / usage.limit) * 100, 100)
+      : 0;
   const effectiveUsage = entitlement?.usage ?? null;
   const effectiveIsPro = entitlement?.isPro ?? false;
   const _effectiveCreditsUsedPercent =
@@ -233,7 +242,11 @@ function SettingsContent() {
     : PLAN_DISPLAY_INFO.free;
 
   const statusBadge = subscription
-    ? getStatusBadge(subscription.status, subscription.cancelAtPeriodEnd, subscription.planCode)
+    ? getStatusBadge(
+        subscription.status,
+        subscription.cancelAtPeriodEnd,
+        subscription.planCode,
+      )
     : getStatusBadge("free", false, "free");
 
   if (!isUserLoaded) {
@@ -244,7 +257,9 @@ function SettingsContent() {
     <div className="w-full max-w-4xl mx-auto">
       {/* Page Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-foreground mb-2 sm:text-4xl">Definições</h1>
+        <h1 className="text-3xl font-bold text-foreground mb-2 sm:text-4xl">
+          Definições
+        </h1>
         <p className="text-lg text-muted-foreground">
           Gere a tua conta, subscrição e preferências.
         </p>
@@ -377,11 +392,14 @@ function SettingsContent() {
                   </div>
                   {usage.remaining === 0 ? (
                     <p className="text-xs text-destructive font-semibold mt-2 animate-pulse">
-                      Esgotou as suas gerações gratuitas. Atualize para o plano Pro para continuar a criar.
+                      Esgotou as suas gerações gratuitas. Atualize para o plano
+                      Pro para continuar a criar.
                     </p>
-                  ) : usage.limit > 0 && usage.remaining / usage.limit <= 0.2 ? (
+                  ) : usage.limit > 0 &&
+                    usage.remaining / usage.limit <= 0.2 ? (
                     <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
-                      Restam poucas gerações. Considere atualizar para o plano Pro.
+                      Restam poucas gerações. Considere atualizar para o plano
+                      Pro.
                     </p>
                   ) : null}
                 </div>
@@ -393,7 +411,8 @@ function SettingsContent() {
                     Tens acesso Pro através da tua organização.
                   </p>
                   <p className="mt-1 text-sm text-emerald-700/90 dark:text-emerald-200/90">
-                    O teu acesso é gerido pela escola — não precisas de uma subscrição pessoal.
+                    O teu acesso é gerido pela escola — não precisas de uma
+                    subscrição pessoal.
                   </p>
                 </div>
               )}
@@ -407,11 +426,14 @@ function SettingsContent() {
                   <div className="grid gap-3 sm:grid-cols-2">
                     {plans.map((plan) => {
                       const isAnnual = plan.interval === "year";
-                      const monthlyEquivalent = calculateMonthlyEquivalent(plan);
+                      const monthlyEquivalent =
+                        calculateMonthlyEquivalent(plan);
                       return (
                         <button
                           key={plan.planCode}
-                          onClick={() => router.push(`/checkout?plan=${plan.planCode}`)}
+                          onClick={() =>
+                            router.push(`/checkout?plan=${plan.planCode}`)
+                          }
                           className={`relative p-4 rounded-xl border-2 text-left transition-all hover:border-primary hover:shadow-md ${
                             isAnnual
                               ? "border-primary bg-primary/5"
@@ -419,11 +441,13 @@ function SettingsContent() {
                           }`}
                         >
                           {(plan.popular || isAnnual) && (
-                            <span className={`absolute -top-2.5 left-3 px-2 py-0.5 text-xs font-medium rounded-full ${
-                              isAnnual
-                                ? "bg-primary text-primary-foreground"
-                                : "bg-secondary text-secondary-foreground"
-                            }`}>
+                            <span
+                              className={`absolute -top-2.5 left-3 px-2 py-0.5 text-xs font-medium rounded-full ${
+                                isAnnual
+                                  ? "bg-primary text-primary-foreground"
+                                  : "bg-secondary text-secondary-foreground"
+                              }`}
+                            >
                               {isAnnual ? "Poupa 20%" : "Mais Popular"}
                             </span>
                           )}
@@ -445,7 +469,7 @@ function SettingsContent() {
                           </div>
                           {isAnnual && (
                             <p className="text-xs text-muted-foreground mt-1">
-                              Pago anualmente
+                              Pago anualmente 95,90€ · poupe 20%
                             </p>
                           )}
                         </button>
@@ -504,8 +528,7 @@ function SettingsContent() {
               >
                 {isLoadingPortal ? (
                   <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    A abrir...
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />A abrir...
                   </>
                 ) : (
                   <>
@@ -563,7 +586,9 @@ function SettingsContent() {
                 >
                   <Sun className="w-4 h-4" />
                   <span className="hidden sm:inline">Claro</span>
-                  {theme === "light" && <Check className="w-4 h-4 hidden sm:block" />}
+                  {theme === "light" && (
+                    <Check className="w-4 h-4 hidden sm:block" />
+                  )}
                 </Button>
                 <Button
                   onClick={() => handleThemeChange("dark")}
@@ -576,7 +601,9 @@ function SettingsContent() {
                 >
                   <Moon className="w-4 h-4" />
                   <span className="hidden sm:inline">Escuro</span>
-                  {theme === "dark" && <Check className="w-4 h-4 hidden sm:block" />}
+                  {theme === "dark" && (
+                    <Check className="w-4 h-4 hidden sm:block" />
+                  )}
                 </Button>
                 <Button
                   onClick={() => handleThemeChange("system")}
@@ -589,7 +616,9 @@ function SettingsContent() {
                 >
                   <Monitor className="w-4 h-4" />
                   <span className="hidden sm:inline">Sistema</span>
-                  {theme === "system" && <Check className="w-4 h-4 hidden sm:block" />}
+                  {theme === "system" && (
+                    <Check className="w-4 h-4 hidden sm:block" />
+                  )}
                 </Button>
               </div>
             </div>
@@ -628,7 +657,6 @@ function SettingsContent() {
           </div>
         </div>
       </div>
-
     </div>
   );
 }
@@ -656,4 +684,3 @@ export default function SettingsPage() {
     </Suspense>
   );
 }
-
