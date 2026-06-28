@@ -57,7 +57,7 @@ export async function streamChatMessage(
             throw new Error("Não autorizado");
           }
           if (response.status === 402) {
-            callbacks.onError("Limite de gerações atingido. Atualize para o plano Pro para continuar.");
+            callbacks.onError("Limite de créditos atingido. Atualize para o plano Pro para continuar.");
             throw new Error("Pagamento necessário");
           }
           callbacks.onError(`Erro no servidor: ${response.status}`);

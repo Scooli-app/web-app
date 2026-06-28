@@ -682,7 +682,7 @@ function GenerationsIndicator() {
     >
       <Sparkles className="h-4 w-4" />
       <span>
-        {usage.remaining} {usage.remaining === 1 ? "geração" : "gerações"}
+        {usage.remaining} {usage.remaining === 1 ? "crédito" : "créditos"}
       </span>
     </Link>
   );
