@@ -284,6 +284,20 @@ export default function AdminOnboardingPage() {
                   </Badge>
                 ))}
               </div>
+              {(response.acquisitionSourceOther ?? response.subjectAreaOther) && (
+                <div className="mt-2 space-y-0.5">
+                  {response.acquisitionSourceOther && (
+                    <p className="text-xs text-muted-foreground italic">
+                      Como nos encontrou: "{response.acquisitionSourceOther}"
+                    </p>
+                  )}
+                  {response.subjectAreaOther && (
+                    <p className="text-xs text-muted-foreground italic">
+                      Disciplina: "{response.subjectAreaOther}"
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           );
         })
@@ -334,23 +348,37 @@ export default function AdminOnboardingPage() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge
-                      variant="outline"
-                      className="border-primary/20 bg-primary/8 text-primary text-xs"
-                    >
-                      {getAcquisitionLabel(response.acquisitionSource)}
-                    </Badge>
+                    <div className="flex flex-col gap-1">
+                      <Badge
+                        variant="outline"
+                        className="border-primary/20 bg-primary/8 text-primary text-xs w-fit"
+                      >
+                        {getAcquisitionLabel(response.acquisitionSource)}
+                      </Badge>
+                      {response.acquisitionSourceOther && (
+                        <span className="text-xs text-muted-foreground italic">
+                          "{response.acquisitionSourceOther}"
+                        </span>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell className="text-sm">
-                    {subjects.length === 0 ? (
+                    {subjects.length === 0 && !response.subjectAreaOther ? (
                       <span className="text-muted-foreground">—</span>
                     ) : (
-                      <div className="flex flex-wrap gap-1">
-                        {subjects.map((s) => (
-                          <Badge key={s} variant="secondary" className="text-xs">
-                            {getSubjectLabel(s)}
-                          </Badge>
-                        ))}
+                      <div className="flex flex-col gap-1">
+                        <div className="flex flex-wrap gap-1">
+                          {subjects.map((s) => (
+                            <Badge key={s} variant="secondary" className="text-xs">
+                              {getSubjectLabel(s)}
+                            </Badge>
+                          ))}
+                        </div>
+                        {response.subjectAreaOther && (
+                          <span className="text-xs text-muted-foreground italic">
+                            "{response.subjectAreaOther}"
+                          </span>
+                        )}
                       </div>
                     )}
                   </TableCell>
