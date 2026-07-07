@@ -20,7 +20,9 @@ export interface AdminOnboardingResponse {
   userName?: string | null;
   userUsername?: string | null;
   acquisitionSource: string;
+  acquisitionSourceOther?: string | null;
   subjectArea?: string | null;
+  subjectAreaOther?: string | null;
   teachingLevel?: string | null;
   goals?: string | null;
   createdAt: string;
