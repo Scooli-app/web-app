@@ -288,12 +288,12 @@ export default function AdminOnboardingPage() {
                 <div className="mt-2 space-y-0.5">
                   {response.acquisitionSourceOther && (
                     <p className="text-xs text-muted-foreground italic">
-                      Como nos encontrou: "{response.acquisitionSourceOther}"
+                      {`Como nos encontrou: "${response.acquisitionSourceOther}"`}
                     </p>
                   )}
                   {response.subjectAreaOther && (
                     <p className="text-xs text-muted-foreground italic">
-                      Disciplina: "{response.subjectAreaOther}"
+                      {`Disciplina: "${response.subjectAreaOther}"`}
                     </p>
                   )}
                 </div>
@@ -357,7 +357,7 @@ export default function AdminOnboardingPage() {
                       </Badge>
                       {response.acquisitionSourceOther && (
                         <span className="text-xs text-muted-foreground italic">
-                          "{response.acquisitionSourceOther}"
+                          {`"${response.acquisitionSourceOther}"`}
                         </span>
                       )}
                     </div>
@@ -376,7 +376,7 @@ export default function AdminOnboardingPage() {
                         </div>
                         {response.subjectAreaOther && (
                           <span className="text-xs text-muted-foreground italic">
-                            "{response.subjectAreaOther}"
+                            {`"${response.subjectAreaOther}"`}
                           </span>
                         )}
                       </div>
