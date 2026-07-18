@@ -8,6 +8,7 @@ import {
   PLAN_DISPLAY_INFO,
   type SubscriptionPlan,
 } from "@/shared/types/subscription";
+import { PROMO_PLANS, isPromoActive } from "@/shared/utils/promo";
 import { useAuth } from "@clerk/nextjs";
 import {
   AlertCircle,
@@ -392,7 +393,12 @@ function CheckoutContent() {
         throw new Error("Nenhum plano disponível no momento");
       }
 
-      setPlans(paidPlans);
+      // While the promo is active, the plan grid/default selection show the
+      // discounted (unadvertised) plans instead of the live pro_monthly/
+      // pro_annual ones - those are excluded from /subscriptions/plans on
+      // purpose, so there's nothing to merge them with.
+      const displayPlans = isPromoActive() ? PROMO_PLANS : paidPlans;
+      setPlans(displayPlans);
 
       // If a plan param is present, always attempt checkout directly rather
       // than requiring it to appear in the public plans list first: unlisted
@@ -404,9 +410,9 @@ function CheckoutContent() {
         autoCheckoutTriggered.current = true;
         setSelectedPlanCode(planParam);
         await initiateCheckout(planParam);
-      } else if (paidPlans.length > 0 && !selectedPlanCode) {
+      } else if (displayPlans.length > 0 && !selectedPlanCode) {
         // Set default selection if no planParam
-        setSelectedPlanCode(paidPlans[0].planCode);
+        setSelectedPlanCode(displayPlans[0].planCode);
       }
     } catch (err) {
       const parsedError = parseError(err, "plans");
