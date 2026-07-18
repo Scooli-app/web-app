@@ -43,7 +43,7 @@ export function PromoOfferModal({ open, onOpenChange }: PromoOfferModalProps) {
           </div>
 
           <DialogTitle className="text-2xl font-bold text-foreground mb-1">
-            Oferta de lançamento
+            Oferta limitada
           </DialogTitle>
 
           <DialogDescription className="text-muted-foreground">
