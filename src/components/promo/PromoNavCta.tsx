@@ -1,7 +1,7 @@
 "use client";
 
 import { Routes } from "@/shared/types";
-import { isPromoActive } from "@/shared/utils/promo";
+import { PROMO_PLAN_CODES, isPromoActive } from "@/shared/utils/promo";
 import { useAppSelector } from "@/store/hooks";
 import { X, Zap } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -47,7 +47,7 @@ export function PromoNavCta() {
 
   const handleClick = () => {
     posthog.capture("promo_navbar_cta_clicked");
-    router.push(`${Routes.CHECKOUT}?plan=pro_monthly_promo`);
+    router.push(`${Routes.CHECKOUT}?plan=${PROMO_PLAN_CODES.monthly}`);
   };
 
   const handleDismiss = () => {

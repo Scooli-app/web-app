@@ -15,6 +15,7 @@ import {
   type SubscriptionStatus,
   type UsageStats,
 } from "@/shared/types/subscription";
+import { PROMO_PLANS, isPromoActive } from "@/shared/utils/promo";
 import {
   selectCurrentEntitlement,
   selectEntitlementLoading,
@@ -244,6 +245,12 @@ function SettingsContent() {
   const hasOrganizationBackedAccess =
     entitlement?.source === "organization" || entitlement?.source === "both";
   const showPersonalUpgradeOptions = isFreeUser && !hasOrganizationBackedAccess;
+  // While the promo is running, free users upgrading from Settings should see
+  // the discounted (unadvertised) plans, not the regular pro_monthly/pro_annual
+  // pricing from the public /subscriptions/plans list - otherwise the promo is
+  // unreachable through the most natural in-app "upgrade" path.
+  const promoActive = isPromoActive();
+  const upgradeOptionPlans = promoActive ? PROMO_PLANS : plans;
 
   const planInfo = subscription
     ? PLAN_DISPLAY_INFO[subscription.planCode] || {
@@ -429,19 +436,22 @@ function SettingsContent() {
               )}
 
               {/* Upgrade Plan Options */}
-              {showPersonalUpgradeOptions && plans.length > 0 && (
+              {showPersonalUpgradeOptions &&
+                (promoActive || plans.length > 0) && (
                 <div className="space-y-3">
                   <p className="text-sm font-medium text-muted-foreground">
                     Atualizar para Pro
                   </p>
                   <div className="grid gap-3 sm:grid-cols-2">
-                    {plans.map((plan) => {
+                    {upgradeOptionPlans.map((plan) => {
                       const isAnnual = plan.interval === "year";
                       const monthlyEquivalent =
                         calculateMonthlyEquivalent(plan);
                       const savingsPercent = isAnnual
                         ? calculateSavingsPercent(
-                            plans.find((p) => p.interval === "month"),
+                            upgradeOptionPlans.find(
+                              (p) => p.interval === "month",
+                            ),
                             plan,
                           )
                         : null;
