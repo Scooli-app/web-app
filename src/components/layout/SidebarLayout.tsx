@@ -4,6 +4,7 @@ import { AssistantProvider } from "@/components/assistant";
 import { AppFeedbackSurveyGate } from "@/components/feedback-survey/AppFeedbackSurveyGate";
 import { OnboardingGate } from "@/components/onboarding/OnboardingGate";
 import { PromoGate } from "@/components/promo/PromoGate";
+import { PromoNavCta } from "@/components/promo/PromoNavCta";
 import { TutorialOverlay } from "@/components/tutorial/TutorialOverlay";
 import {
   TUTORIAL_ROUTE,
@@ -783,6 +784,7 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
               <div className="flex items-center gap-2">
                 <SignedIn>
                   <div className="flex items-center gap-2">
+                    <PromoNavCta />
                     <Badge
                       variant="secondary"
                       className="hidden h-8 rounded border border-dashed border-primary/20 bg-primary/10 px-3 text-[11px] font-semibold uppercase tracking-wide text-primary sm:inline-flex"
