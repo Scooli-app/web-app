@@ -131,7 +131,7 @@ export default function AdminUserCostPage() {
               <CardContent>
                 <p className="text-2xl font-bold">{formatUsd(userData.totalCostUsd)}</p>
                 <p className="mt-0.5 text-xs text-muted-foreground">
-                  {formatNumber(userData.interactions)} interações
+                  {formatNumber(userData.interactions)} créditos
                 </p>
               </CardContent>
             </Card>
@@ -219,7 +219,7 @@ export default function AdminUserCostPage() {
                         <p className="text-sm" title={m.model}>
                           {m.model.length > 35 ? `${m.model.slice(0, 35)}…` : m.model}
                         </p>
-                        <p className="text-xs text-muted-foreground">{formatNumber(m.interactions)} interações</p>
+                        <p className="text-xs text-muted-foreground">{formatNumber(m.interactions)} créditos</p>
                       </div>
                       <span className="font-mono text-sm font-medium">{formatUsd(m.costUsd)}</span>
                     </div>

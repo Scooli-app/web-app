@@ -15,6 +15,7 @@ import {
   type SubscriptionStatus,
   type UsageStats,
 } from "@/shared/types/subscription";
+import { PROMO_PLANS, isPromoActive } from "@/shared/utils/promo";
 import {
   selectCurrentEntitlement,
   selectEntitlementLoading,
@@ -99,6 +100,17 @@ function calculateMonthlyEquivalent(plan: SubscriptionPlan): string | null {
   if (plan.interval !== "year") return null;
   const monthlyPrice = plan.priceCents / 12;
   return formatPrice(monthlyPrice, plan.currency);
+}
+
+function calculateSavingsPercent(
+  monthlyPlan: SubscriptionPlan | undefined,
+  annualPlan: SubscriptionPlan,
+): string | null {
+  if (!monthlyPlan) return null;
+  const yearlyFromMonthly = monthlyPlan.priceCents * 12;
+  const savings = yearlyFromMonthly - annualPlan.priceCents;
+  if (savings <= 0) return null;
+  return `${Math.round((savings / yearlyFromMonthly) * 100)}%`;
 }
 
 function formatDate(dateString: string): string {
@@ -233,6 +245,12 @@ function SettingsContent() {
   const hasOrganizationBackedAccess =
     entitlement?.source === "organization" || entitlement?.source === "both";
   const showPersonalUpgradeOptions = isFreeUser && !hasOrganizationBackedAccess;
+  // While the promo is running, free users upgrading from Settings should see
+  // the discounted (unadvertised) plans, not the regular pro_monthly/pro_annual
+  // pricing from the public /subscriptions/plans list - otherwise the promo is
+  // unreachable through the most natural in-app "upgrade" path.
+  const promoActive = isPromoActive();
+  const upgradeOptionPlans = promoActive ? PROMO_PLANS : plans;
 
   const planInfo = subscription
     ? PLAN_DISPLAY_INFO[subscription.planCode] || {
@@ -392,13 +410,13 @@ function SettingsContent() {
                   </div>
                   {usage.remaining === 0 ? (
                     <p className="text-xs text-destructive font-semibold mt-2 animate-pulse">
-                      Esgotou as suas gerações gratuitas. Atualize para o plano
+                      Esgotou os seus créditos gratuitos. Atualize para o plano
                       Pro para continuar a criar.
                     </p>
                   ) : usage.limit > 0 &&
                     usage.remaining / usage.limit <= 0.2 ? (
                     <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
-                      Restam poucas gerações. Considere atualizar para o plano
+                      Restam poucos créditos. Considere atualizar para o plano
                       Pro.
                     </p>
                   ) : null}
@@ -418,16 +436,25 @@ function SettingsContent() {
               )}
 
               {/* Upgrade Plan Options */}
-              {showPersonalUpgradeOptions && plans.length > 0 && (
+              {showPersonalUpgradeOptions &&
+                (promoActive || plans.length > 0) && (
                 <div className="space-y-3">
                   <p className="text-sm font-medium text-muted-foreground">
                     Atualizar para Pro
                   </p>
                   <div className="grid gap-3 sm:grid-cols-2">
-                    {plans.map((plan) => {
+                    {upgradeOptionPlans.map((plan) => {
                       const isAnnual = plan.interval === "year";
                       const monthlyEquivalent =
                         calculateMonthlyEquivalent(plan);
+                      const savingsPercent = isAnnual
+                        ? calculateSavingsPercent(
+                            upgradeOptionPlans.find(
+                              (p) => p.interval === "month",
+                            ),
+                            plan,
+                          )
+                        : null;
                       return (
                         <button
                           key={plan.planCode}
@@ -448,7 +475,11 @@ function SettingsContent() {
                                   : "bg-secondary text-secondary-foreground"
                               }`}
                             >
-                              {isAnnual ? "Poupa 20%" : "Mais Popular"}
+                              {isAnnual
+                                ? savingsPercent
+                                  ? `Poupa ${savingsPercent}`
+                                  : "Anual"
+                                : "Mais Popular"}
                             </span>
                           )}
                           <div className="flex items-center gap-2 mb-1">
@@ -469,7 +500,11 @@ function SettingsContent() {
                           </div>
                           {isAnnual && (
                             <p className="text-xs text-muted-foreground mt-1">
-                              Pago anualmente 95,90€ · poupe 20%
+                              Pago anualmente{" "}
+                              {formatPrice(plan.priceCents, plan.currency)}
+                              {savingsPercent
+                                ? ` · poupe ${savingsPercent}`
+                                : ""}
                             </p>
                           )}
                         </button>

@@ -50,7 +50,7 @@ export function UpgradePlanModal({
           </DialogTitle>
           
           <DialogDescription className="text-muted-foreground">
-            Chegou ao limite de gerações do seu plano gratuito.
+            Chegou ao limite de créditos do seu plano gratuito.
           </DialogDescription>
         </div>
 

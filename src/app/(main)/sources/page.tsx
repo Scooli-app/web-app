@@ -303,7 +303,7 @@ export default function SourcesPage() {
 
       {/* Pro info note */}
       <p className="text-xs text-muted-foreground">
-        As fontes ficam disponíveis apenas para as suas gerações. O conteúdo é
+        As fontes ficam disponíveis apenas para os seus créditos. O conteúdo é
         processado e indexado automaticamente em segundo plano.
       </p>
     </div>

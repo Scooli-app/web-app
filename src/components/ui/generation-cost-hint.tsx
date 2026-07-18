@@ -20,8 +20,8 @@ export function GenerationCostHint({
         compact ? "px-1.5 py-0.5 text-[10px]" : "px-2 py-0.5 text-xs",
         className,
       )}
-      aria-label="Consome 1 geração"
-      title="Consome 1 geração"
+      aria-label="Consome 1 crédito"
+      title="Consome 1 crédito"
     >
       <Sparkles className={compact ? "h-2.5 w-2.5" : "h-3 w-3"} />
       <span>1</span>

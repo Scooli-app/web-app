@@ -8,6 +8,7 @@ import {
   PLAN_DISPLAY_INFO,
   type SubscriptionPlan,
 } from "@/shared/types/subscription";
+import { PROMO_PLANS, isPromoActive } from "@/shared/utils/promo";
 import { useAuth } from "@clerk/nextjs";
 import {
   AlertCircle,
@@ -276,6 +277,21 @@ function calculateMonthlyEquivalent(plan: SubscriptionPlan): string | null {
   return formatPrice(monthlyPrice, plan.currency);
 }
 
+function calculateSavingsPercent(
+  monthlyPlan: SubscriptionPlan | undefined,
+  annualPlan: SubscriptionPlan,
+): string | null {
+  if (!monthlyPlan) {
+    return null;
+  }
+  const yearlyFromMonthly = monthlyPlan.priceCents * 12;
+  const savings = yearlyFromMonthly - annualPlan.priceCents;
+  if (savings <= 0) {
+    return null;
+  }
+  return `${Math.round((savings / yearlyFromMonthly) * 100)}%`;
+}
+
 function CheckoutContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -377,31 +393,26 @@ function CheckoutContent() {
         throw new Error("Nenhum plano disponível no momento");
       }
 
-      setPlans(paidPlans);
+      // While the promo is active, the plan grid/default selection show the
+      // discounted (unadvertised) plans instead of the live pro_monthly/
+      // pro_annual ones - those are excluded from /subscriptions/plans on
+      // purpose, so there's nothing to merge them with.
+      const displayPlans = isPromoActive() ? PROMO_PLANS : paidPlans;
+      setPlans(displayPlans);
 
-      // If plan param is valid, auto-checkout
-      if (
-        planParam &&
-        paidPlans.some((p) => p.planCode === planParam) &&
-        !autoCheckoutTriggered.current
-      ) {
+      // If a plan param is present, always attempt checkout directly rather
+      // than requiring it to appear in the public plans list first: unlisted
+      // plan codes (e.g. time-limited promos excluded from /subscriptions/plans
+      // on purpose) are still valid checkout targets - the backend is the
+      // source of truth and will reject an unknown/expired code via
+      // createCheckoutSession, surfaced through the existing error handling.
+      if (planParam && !autoCheckoutTriggered.current) {
         autoCheckoutTriggered.current = true;
         setSelectedPlanCode(planParam);
         await initiateCheckout(planParam);
-      } else if (
-        planParam &&
-        !paidPlans.some((p) => p.planCode === planParam)
-      ) {
-        // Invalid plan param - show warning but continue
-        setError({
-          type: "validation",
-          message: "Plano não encontrado",
-          details: `O plano "${planParam}" não está disponível. Por favor, escolha um dos planos abaixo.`,
-        });
-        setSelectedPlanCode(paidPlans[0].planCode);
-      } else if (paidPlans.length > 0 && !selectedPlanCode) {
+      } else if (displayPlans.length > 0 && !selectedPlanCode) {
         // Set default selection if no planParam
-        setSelectedPlanCode(paidPlans[0].planCode);
+        setSelectedPlanCode(displayPlans[0].planCode);
       }
     } catch (err) {
       const parsedError = parseError(err, "plans");
@@ -545,6 +556,10 @@ function CheckoutContent() {
                     ? calculateSavings(monthlyPlan, plan)
                     : null;
                 const monthlyEquivalent = calculateMonthlyEquivalent(plan);
+                const savingsPercent =
+                  plan.interval === "year"
+                    ? calculateSavingsPercent(monthlyPlan, plan)
+                    : null;
                 const isSelected = selectedPlanCode === plan.planCode;
 
                 return (
@@ -610,7 +625,9 @@ function CheckoutContent() {
                       </div>
                       {plan.interval === "year" && (
                         <p className="text-sm text-muted-foreground mt-1">
-                          Pago anualmente 95,90€ · poupe 20%
+                          Pago anualmente{" "}
+                          {formatPrice(plan.priceCents, plan.currency)}
+                          {savingsPercent ? ` · poupe ${savingsPercent}` : ""}
                         </p>
                       )}
                     </div>
