@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Routes } from "@/shared/types";
+import { PROMO_PLAN_CODES } from "@/shared/utils/promo";
 import { ArrowRight, PartyPopper, Sparkles, Tag } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
@@ -17,9 +18,6 @@ interface PromoOfferModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
-
-const MONTHLY_PROMO_PLAN_CODE = "pro_monthly_promo";
-const ANNUAL_PROMO_PLAN_CODE = "pro_annual_promo";
 
 export function PromoOfferModal({ open, onOpenChange }: PromoOfferModalProps) {
   const router = useRouter();
@@ -86,14 +84,14 @@ export function PromoOfferModal({ open, onOpenChange }: PromoOfferModalProps) {
 
         <div className="px-6 pb-6 pt-2 pr-14">
           <Button
-            onClick={() => goToCheckout(MONTHLY_PROMO_PLAN_CODE)}
+            onClick={() => goToCheckout(PROMO_PLAN_CODES.monthly)}
             className="w-full h-12 rounded-xl font-bold shadow-md transition-all flex items-center justify-center gap-2 group"
           >
             Ativar por 2,99€/mês
             <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
           </Button>
           <button
-            onClick={() => goToCheckout(ANNUAL_PROMO_PLAN_CODE)}
+            onClick={() => goToCheckout(PROMO_PLAN_CODES.annual)}
             className="w-full mt-3 text-sm text-primary hover:text-primary/80 transition-colors py-1 font-medium"
           >
             Prefiro o anual por 28,70€
