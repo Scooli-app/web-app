@@ -101,6 +101,17 @@ function calculateMonthlyEquivalent(plan: SubscriptionPlan): string | null {
   return formatPrice(monthlyPrice, plan.currency);
 }
 
+function calculateSavingsPercent(
+  monthlyPlan: SubscriptionPlan | undefined,
+  annualPlan: SubscriptionPlan,
+): string | null {
+  if (!monthlyPlan) return null;
+  const yearlyFromMonthly = monthlyPlan.priceCents * 12;
+  const savings = yearlyFromMonthly - annualPlan.priceCents;
+  if (savings <= 0) return null;
+  return `${Math.round((savings / yearlyFromMonthly) * 100)}%`;
+}
+
 function formatDate(dateString: string): string {
   const date = new Date(dateString);
   return date.toLocaleDateString("pt-PT", {
@@ -428,6 +439,12 @@ function SettingsContent() {
                       const isAnnual = plan.interval === "year";
                       const monthlyEquivalent =
                         calculateMonthlyEquivalent(plan);
+                      const savingsPercent = isAnnual
+                        ? calculateSavingsPercent(
+                            plans.find((p) => p.interval === "month"),
+                            plan,
+                          )
+                        : null;
                       return (
                         <button
                           key={plan.planCode}
@@ -448,7 +465,11 @@ function SettingsContent() {
                                   : "bg-secondary text-secondary-foreground"
                               }`}
                             >
-                              {isAnnual ? "Poupa 20%" : "Mais Popular"}
+                              {isAnnual
+                                ? savingsPercent
+                                  ? `Poupa ${savingsPercent}`
+                                  : "Anual"
+                                : "Mais Popular"}
                             </span>
                           )}
                           <div className="flex items-center gap-2 mb-1">
@@ -469,7 +490,11 @@ function SettingsContent() {
                           </div>
                           {isAnnual && (
                             <p className="text-xs text-muted-foreground mt-1">
-                              Pago anualmente 95,90€ · poupe 20%
+                              Pago anualmente{" "}
+                              {formatPrice(plan.priceCents, plan.currency)}
+                              {savingsPercent
+                                ? ` · poupe ${savingsPercent}`
+                                : ""}
                             </p>
                           )}
                         </button>
