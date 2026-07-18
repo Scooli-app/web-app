@@ -10,6 +10,7 @@ interface UIStoreState extends UIState {
   loading: boolean;
   error: string | null;
   isUpgradeModalOpen: boolean;
+  isPromoModalOpen: boolean;
 }
 
 const initialState: UIStoreState = {
@@ -19,6 +20,7 @@ const initialState: UIStoreState = {
   loading: false,
   error: null,
   isUpgradeModalOpen: false,
+  isPromoModalOpen: false,
 };
 
 const uiSlice = createSlice({
@@ -46,6 +48,9 @@ const uiSlice = createSlice({
     setUpgradeModalOpen(state, action: PayloadAction<boolean>) {
       state.isUpgradeModalOpen = action.payload;
     },
+    setPromoModalOpen(state, action: PayloadAction<boolean>) {
+      state.isPromoModalOpen = action.payload;
+    },
     toggleTheme(state) {
       if (state.theme === "light") {
         state.theme = "dark";
@@ -64,6 +69,7 @@ const uiSlice = createSlice({
 export const {
   setTheme,
   setUpgradeModalOpen,
+  setPromoModalOpen,
 } = uiSlice.actions;
 
 export default uiSlice.reducer;

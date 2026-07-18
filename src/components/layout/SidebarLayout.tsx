@@ -3,6 +3,7 @@
 import { AssistantProvider } from "@/components/assistant";
 import { AppFeedbackSurveyGate } from "@/components/feedback-survey/AppFeedbackSurveyGate";
 import { OnboardingGate } from "@/components/onboarding/OnboardingGate";
+import { PromoGate } from "@/components/promo/PromoGate";
 import { TutorialOverlay } from "@/components/tutorial/TutorialOverlay";
 import {
   TUTORIAL_ROUTE,
@@ -743,6 +744,7 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
         />
         <AppFeedbackSurveyGate />
         <OnboardingGate />
+        <PromoGate />
         <TutorialOverlay />
 
         <div className="hidden md:block md:h-dvh">
