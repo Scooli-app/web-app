@@ -1,6 +1,7 @@
 "use client";
 
 import { PromoOfferModal } from "@/components/promo/PromoOfferModal";
+import { isPromoActive } from "@/shared/utils/promo";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setPromoModalOpen } from "@/store/ui/uiSlice";
 import { useEffect } from "react";
@@ -10,16 +11,7 @@ import { useEffect } from "react";
 // localStorage dismiss flag rather than the server-tracked prompt pattern
 // used by OnboardingGate/AppFeedbackSurveyGate - building backend "prompt
 // status" plumbing for a 30-day tactical promo isn't worth it.
-const PROMO_ENDS_AT = process.env.NEXT_PUBLIC_PROMO_ENDS_AT;
 const DISMISSED_KEY = "scooli_promo_dismissed";
-
-function isPromoActive(): boolean {
-  if (!PROMO_ENDS_AT) {
-    return false;
-  }
-  const endsAt = new Date(PROMO_ENDS_AT);
-  return !Number.isNaN(endsAt.getTime()) && new Date() < endsAt;
-}
 
 function wasDismissed(): boolean {
   try {
