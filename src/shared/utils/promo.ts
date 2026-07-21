@@ -15,6 +15,15 @@ export const PROMO_PLAN_CODES = {
   annual: "pro_annual_promo",
 } as const;
 
+// Used to tag analytics events with a boolean instead of forcing every
+// downstream chart/insight to do a "plan_code contains _promo" filter.
+export function isPromoPlanCode(planCode: string | null | undefined): boolean {
+  return (
+    planCode === PROMO_PLAN_CODES.monthly ||
+    planCode === PROMO_PLAN_CODES.annual
+  );
+}
+
 // Mirrors the real pro_monthly/pro_annual pricing - these plan codes are
 // deliberately excluded from GET /subscriptions/plans (unadvertised promo),
 // so there's no live source to fetch this display data from.

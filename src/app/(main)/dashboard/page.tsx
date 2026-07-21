@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { fetchEntitlements } from "@/store/entitlements/entitlementsSlice";
 import { fetchSubscription, fetchUsage } from "@/store/subscription/subscriptionSlice";
+import { isPromoPlanCode } from "@/shared/utils/promo";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useDispatch } from "react-redux";
@@ -95,6 +96,7 @@ function DashboardContent() {
         plan_code: planCode,
         plan_interval: planInterval,
         price_cents: priceCents,
+        is_promo: isPromoPlanCode(planCode),
       });
 
       dispatch(fetchSubscription());

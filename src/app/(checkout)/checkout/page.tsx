@@ -8,7 +8,11 @@ import {
   PLAN_DISPLAY_INFO,
   type SubscriptionPlan,
 } from "@/shared/types/subscription";
-import { PROMO_PLANS, isPromoActive } from "@/shared/utils/promo";
+import {
+  PROMO_PLANS,
+  isPromoActive,
+  isPromoPlanCode,
+} from "@/shared/utils/promo";
 import { useAuth } from "@clerk/nextjs";
 import {
   AlertCircle,
@@ -322,6 +326,7 @@ function CheckoutContent() {
         plans.find((p) => p.planCode === planCode)?.interval ?? null,
       price_cents:
         plans.find((p) => p.planCode === planCode)?.priceCents ?? null,
+      is_promo: isPromoPlanCode(planCode),
     });
     // Persist plan details so payment_success can include them after the
     // Stripe redirect lands on the dashboard with no plan info in the URL.
@@ -356,6 +361,7 @@ function CheckoutContent() {
         plan_code: planCode,
         error_type: parsedError.type,
         error_message: parsedError.message,
+        is_promo: isPromoPlanCode(planCode),
       });
       posthog.captureException(err);
       setError(parsedError);
