@@ -11,7 +11,7 @@ import { Routes } from "@/shared/types";
 import { PROMO_PLAN_CODES } from "@/shared/utils/promo";
 import { ArrowRight, PartyPopper, Sparkles, Tag } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import posthog from "posthog-js";
 
 interface PromoOfferModalProps {
@@ -21,21 +21,34 @@ interface PromoOfferModalProps {
 
 export function PromoOfferModal({ open, onOpenChange }: PromoOfferModalProps) {
   const router = useRouter();
+  const convertingRef = useRef(false);
 
   useEffect(() => {
     if (open) {
       posthog.capture("promo_offer_modal_viewed");
+      convertingRef.current = false;
     }
   }, [open]);
 
   const goToCheckout = (planCode: string) => {
+    convertingRef.current = true;
     posthog.capture("promo_offer_modal_cta_clicked", { plan_code: planCode });
     onOpenChange(false);
     router.push(`${Routes.CHECKOUT}?plan=${planCode}`);
   };
 
+  // Wraps onOpenChange so every non-conversion close (X button, overlay
+  // click, Escape, "Talvez mais tarde") fires a single dismissed event,
+  // while goToCheckout calls the raw onOpenChange prop directly and skips it.
+  const handleDismiss = (nextOpen: boolean) => {
+    if (!nextOpen && open && !convertingRef.current) {
+      posthog.capture("promo_offer_modal_dismissed");
+    }
+    onOpenChange(nextOpen);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleDismiss}>
       <DialogContent className="max-w-md p-0 overflow-y-auto">
         <div className="bg-gradient-to-b from-primary/10 to-transparent px-8 pb-6 pt-8 pr-16 text-center">
           <div className="w-14 h-14 bg-primary/15 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-primary/20">
@@ -97,7 +110,7 @@ export function PromoOfferModal({ open, onOpenChange }: PromoOfferModalProps) {
             Prefiro o anual por 28,70€
           </button>
           <button
-            onClick={() => onOpenChange(false)}
+            onClick={() => handleDismiss(false)}
             className="w-full mt-1 text-sm text-muted-foreground hover:text-foreground transition-colors py-1"
           >
             Talvez mais tarde

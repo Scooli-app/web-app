@@ -6,7 +6,7 @@ import { useAppSelector } from "@/store/hooks";
 import { X, Zap } from "lucide-react";
 import { useRouter } from "next/navigation";
 import posthog from "posthog-js";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const DISMISSED_KEY = "scooli_promo_navbar_dismissed";
 
@@ -36,12 +36,23 @@ export function PromoNavCta() {
     (state) => state.subscription.subscription,
   );
   const [dismissed, setDismissed] = useState(true);
+  const hasTrackedViewRef = useRef(false);
 
   useEffect(() => {
     setDismissed(wasDismissed());
   }, []);
 
-  if (dismissed || !isPromoActive() || subscription?.planCode !== "free") {
+  const shouldShow =
+    !dismissed && isPromoActive() && subscription?.planCode === "free";
+
+  useEffect(() => {
+    if (shouldShow && !hasTrackedViewRef.current) {
+      hasTrackedViewRef.current = true;
+      posthog.capture("promo_navbar_cta_viewed");
+    }
+  }, [shouldShow]);
+
+  if (!shouldShow) {
     return null;
   }
 
