@@ -15,7 +15,11 @@ import {
   type SubscriptionStatus,
   type UsageStats,
 } from "@/shared/types/subscription";
-import { PROMO_PLANS, isPromoActive } from "@/shared/utils/promo";
+import {
+  PROMO_PLANS,
+  isPromoActive,
+  isPromoPlanCode,
+} from "@/shared/utils/promo";
 import {
   selectCurrentEntitlement,
   selectEntitlementLoading,
@@ -37,8 +41,9 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Suspense, useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import posthog from "posthog-js";
 
 function getStatusBadge(
   status: SubscriptionStatus,
@@ -252,6 +257,18 @@ function SettingsContent() {
   const promoActive = isPromoActive();
   const upgradeOptionPlans = promoActive ? PROMO_PLANS : plans;
 
+  const hasTrackedPromoViewRef = useRef(false);
+  useEffect(() => {
+    if (
+      showPersonalUpgradeOptions &&
+      promoActive &&
+      !hasTrackedPromoViewRef.current
+    ) {
+      hasTrackedPromoViewRef.current = true;
+      posthog.capture("promo_settings_card_viewed");
+    }
+  }, [showPersonalUpgradeOptions, promoActive]);
+
   const planInfo = subscription
     ? PLAN_DISPLAY_INFO[subscription.planCode] || {
         name: subscription.planName,
@@ -458,9 +475,13 @@ function SettingsContent() {
                       return (
                         <button
                           key={plan.planCode}
-                          onClick={() =>
-                            router.push(`/checkout?plan=${plan.planCode}`)
-                          }
+                          onClick={() => {
+                            posthog.capture("promo_settings_card_clicked", {
+                              plan_code: plan.planCode,
+                              is_promo: isPromoPlanCode(plan.planCode),
+                            });
+                            router.push(`/checkout?plan=${plan.planCode}`);
+                          }}
                           className={`relative p-4 rounded-xl border-2 text-left transition-all hover:border-primary hover:shadow-md ${
                             isAnnual
                               ? "border-primary bg-primary/5"
