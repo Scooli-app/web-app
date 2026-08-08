@@ -21,6 +21,7 @@ import type {
   DocumentSharedScope,
   SharedResourceStatus,
 } from "@/shared/types/document";
+import { isUsableDocumentContent } from "@/shared/utils/documentContent";
 import { fetchEntitlements } from "@/store/entitlements/entitlementsSlice";
 import { fetchUsage } from "@/store/subscription/subscriptionSlice";
 import { createAsyncThunk, createSlice, type PayloadAction } from "@reduxjs/toolkit";
@@ -553,27 +554,27 @@ const documentSlice = createSlice({
       })
       .addCase(chatWithDocument.fulfilled, (state, action) => {
         const response = action.payload;
-        // Update current document with new content
+        // A chat turn that only answers a question returns no content. Overwriting the
+        // stored document in that case wipes it, so only patch fields the server
+        // actually sent back.
+        const chatPatch = {
+          ...(response.title ? { title: response.title } : {}),
+          ...(isUsableDocumentContent(response.content)
+            ? { content: response.content }
+            : {}),
+          ...(response.sources && { sources: response.sources }),
+          ...(response.updatedAt ? { updatedAt: response.updatedAt } : {}),
+        };
+
         if (state.currentDocument?.id === response.id) {
           state.currentDocument = {
             ...state.currentDocument,
-            title: response.title,
-            content: response.content,
-            ...(response.sources && { sources: response.sources }),
-            updatedAt: response.updatedAt,
+            ...chatPatch,
           };
         }
         // Update in documents list too
         state.documents = state.documents.map((doc) =>
-          doc.id === response.id
-            ? {
-                ...doc,
-                title: response.title,
-                content: response.content,
-                ...(response.sources && { sources: response.sources }),
-                updatedAt: response.updatedAt,
-              }
-            : doc
+          doc.id === response.id ? { ...doc, ...chatPatch } : doc
         );
         state.lastChatAnswer = response.chatAnswer;
         state.isChatting = false;
