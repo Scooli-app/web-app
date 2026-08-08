@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { TUTORIAL_TOTAL_STEPS, useTutorial } from "@/contexts/TutorialContext";
 import { cn } from "@/shared/utils/utils";
-import { ArrowRight, BookOpen, CheckCircle2, Sparkles, Zap } from "lucide-react";
+import { ArrowRight, CheckCircle2 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -104,114 +104,19 @@ interface HighlightRect {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Intro card
-// ─────────────────────────────────────────────────────────────────────────────
-
-interface TutorialIntroProps {
-  onStart: () => void;
-  onSkip: () => void;
-  leaving: boolean;
-}
-
-function TutorialIntro({ onStart, onSkip, leaving }: TutorialIntroProps) {
-  return (
-    <div
-      className={cn(
-        "fixed inset-0 z-[1002] flex items-center justify-center bg-black/70 backdrop-blur-sm",
-        leaving
-          ? "animate-out fade-out-0 duration-400 fill-mode-forwards"
-          : "animate-in fade-in-0 duration-500",
-      )}
-    >
-      <div
-        className={cn(
-          "relative mx-4 w-full max-w-md rounded-3xl border border-border bg-card p-8 shadow-2xl shadow-black/40",
-          leaving
-            ? "animate-out fade-out-0 zoom-out-95 duration-350 fill-mode-forwards"
-            : "animate-in fade-in-0 zoom-in-95 duration-500",
-        )}
-        style={{ animationDelay: leaving ? "0ms" : "80ms" }}
-      >
-        <div
-          className="pointer-events-none absolute inset-0 rounded-3xl opacity-30"
-          aria-hidden="true"
-          style={{
-            background:
-              "radial-gradient(ellipse at 60% 0%, hsl(var(--primary)/0.35) 0%, transparent 70%)",
-          }}
-        />
-
-        <div className="mb-6 flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg">
-            <Sparkles className="h-6 w-6" />
-          </div>
-          <div className="flex gap-2">
-            {[BookOpen, Zap].map((Icon, i) => (
-              <div
-                key={i}
-                className="flex h-8 w-8 items-center justify-center rounded-xl border border-border bg-muted text-muted-foreground"
-              >
-                <Icon className="h-4 w-4" />
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <h2 className="mb-2 text-2xl font-bold tracking-tight text-foreground">
-          Vamos criar o teu primeiro plano de aula!
-        </h2>
-        <p className="mb-1 text-sm leading-relaxed text-muted-foreground">
-          Em menos de um minuto vais gerar um plano de aula completo com IA.
-          Vamos guiar-te passo a passo — é muito fácil.
-        </p>
-
-        <div className="my-5 space-y-2 rounded-2xl border border-border/60 bg-muted/40 p-4">
-          {[
-            "Escolhe o ano e a disciplina",
-            "Escreve o tema da aula",
-            "Seleciona um modelo e gera",
-          ].map((label, i) => (
-            <div key={i} className="flex items-center gap-3 text-sm text-foreground">
-              <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
-                {i + 1}
-              </span>
-              {label}
-            </div>
-          ))}
-        </div>
-
-        <div className="flex items-center justify-between gap-3">
-          <button
-            type="button"
-            onClick={onSkip}
-            className="text-sm text-muted-foreground underline underline-offset-2 transition-colors hover:text-foreground"
-          >
-            Saltar tutorial
-          </button>
-          <Button
-            type="button"
-            onClick={onStart}
-            className="rounded-2xl px-6 shadow-md"
-          >
-            Começar
-            <ArrowRight className="ml-1.5 h-4 w-4" />
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
 // Main overlay
+//
+// Previously showed a full-screen "intro" gate (blocking modal with a
+// "Começar" button) before the first spotlight step. Funnel data showed the
+// tutorial's skip rate concentrated right at that gate — it added a second
+// decision point immediately after onboarding, at the moment of lowest
+// committed interest. The tutorial now opens straight into spotlight step 1;
+// "Saltar tutorial" remains available on every step.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function TutorialOverlay() {
   const { isTutorialActive, currentStep, totalSteps, nextStep, exitTutorial } =
     useTutorial();
-
-  const [phase, setPhase] = useState<"intro" | "spotlight">("intro");
-  const [introLeaving, setIntroLeaving] = useState(false);
 
   const [rect, setRect] = useState<HighlightRect | null>(null);
   const [vp, setVp] = useState({ w: 0, h: 0 });
@@ -289,12 +194,8 @@ export function TutorialOverlay() {
 
   useEffect(() => {
     if (isTutorialActive) {
-      setPhase("intro");
-      setIntroLeaving(false);
       setStepCompleted(false);
     } else {
-      setPhase("intro");
-      setIntroLeaving(false);
       setStepCompleted(false);
       setRect(null);
       clearObserver();
@@ -302,17 +203,10 @@ export function TutorialOverlay() {
     }
   }, [isTutorialActive]);
 
-  // ── Intro handlers ─────────────────────────────────────────────────────────
-
-  const handleIntroStart = () => {
-    setIntroLeaving(true);
-    setTimeout(() => setPhase("spotlight"), 380);
-  };
-
   // ── Spotlight: find element + set up reactive observer ─────────────────────
 
   useEffect(() => {
-    if (!isTutorialActive || phase !== "spotlight") {
+    if (!isTutorialActive) {
       setRect(null);
       setStepCompleted(false);
       clearObserver();
@@ -433,12 +327,12 @@ export function TutorialOverlay() {
       clearObserver();
       clearAdvanceTimer();
     };
-  }, [isTutorialActive, phase, currentStep, computeRect, triggerCompletion, exitTutorial]);
+  }, [isTutorialActive, currentStep, computeRect, triggerCompletion, exitTutorial]);
 
   // ── Keep rect updated on scroll / resize ───────────────────────────────────
 
   useEffect(() => {
-    if (!isTutorialActive || phase !== "spotlight") return;
+    if (!isTutorialActive) return;
     const onScroll = () => updateRect();
     const onResize = () => {
       setVp({ w: window.innerWidth, h: window.innerHeight });
@@ -450,7 +344,7 @@ export function TutorialOverlay() {
       window.removeEventListener("scroll", onScroll, true);
       window.removeEventListener("resize", onResize);
     };
-  }, [isTutorialActive, phase, updateRect]);
+  }, [isTutorialActive, updateRect]);
 
   // ── Lower / restore the elevated element when a popup opens/closes ────────
   // elevateElement() sets z-index:1001 so it appears above the tutorial panels.
@@ -481,7 +375,7 @@ export function TutorialOverlay() {
   //     SelectTrigger[data-state="open"] which changes inside the page tree
 
   useEffect(() => {
-    if (!isTutorialActive || phase !== "spotlight") {
+    if (!isTutorialActive) {
       setIsPopupOpen(false);
       if (popupObserverRef.current) {
         popupObserverRef.current.disconnect();
@@ -519,21 +413,11 @@ export function TutorialOverlay() {
       popupObserverRef.current = null;
       setIsPopupOpen(false);
     };
-  }, [isTutorialActive, phase]);
+  }, [isTutorialActive]);
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
   if (!isTutorialActive) return null;
-
-  if (phase === "intro") {
-    return (
-      <TutorialIntro
-        leaving={introLeaving}
-        onStart={handleIntroStart}
-        onSkip={() => exitTutorial("skipped")}
-      />
-    );
-  }
 
   if (!rect) return null;
 
