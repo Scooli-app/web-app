@@ -292,7 +292,10 @@ export function OnboardingModal({
   return (
     <div
       data-onboarding-modal
-      className="fixed inset-0 z-[9999] flex flex-col bg-background"
+      // pointer-events-auto is load-bearing, not decorative: any Radix modal that
+      // slips open underneath sets `pointer-events: none` on <body>, which would
+      // otherwise leave this screen fully visible but impossible to click.
+      className="pointer-events-auto fixed inset-0 z-[9999] flex flex-col overscroll-contain bg-background"
       aria-modal="true"
       role="dialog"
       aria-label="Bem-vindo à Scooli"
@@ -307,7 +310,7 @@ export function OnboardingModal({
       </div>
 
       {/* ── Top bar ── */}
-      <header className="relative z-10 flex h-16 shrink-0 items-center justify-between px-6 sm:px-10">
+      <header className="relative z-10 flex h-14 shrink-0 items-center justify-between px-4 sm:h-16 sm:px-10">
         {/* Logo */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -348,9 +351,9 @@ export function OnboardingModal({
       {/* ── Main scrollable content ── */}
       <main
         ref={scrollRef}
-        className="relative z-10 flex-1 overflow-y-auto"
+        className="relative z-10 min-h-0 flex-1 overflow-y-auto"
       >
-        <div className="mx-auto w-full max-w-2xl px-6 py-10 sm:px-10 sm:py-14">
+        <div className="mx-auto w-full max-w-2xl px-4 py-6 sm:px-10 sm:py-14">
           {/* Step header */}
           <div
             key={`header-${animKey}`}
@@ -529,9 +532,9 @@ export function OnboardingModal({
       </main>
 
       {/* ── Bottom navigation bar ── */}
-      <footer className="relative z-10 flex h-20 shrink-0 items-center justify-between border-t border-border/60 bg-background/80 px-6 backdrop-blur-sm sm:px-10">
+      <footer className="relative z-10 flex h-16 shrink-0 items-center justify-between gap-2 border-t border-border/60 bg-background/80 px-4 pb-[env(safe-area-inset-bottom)] backdrop-blur-sm sm:h-20 sm:px-10">
         {/* Back */}
-        <div className="w-28">
+        <div className="w-24 sm:w-28">
           {step > 1 && (
             <Button
               type="button"
@@ -552,7 +555,7 @@ export function OnboardingModal({
         </span>
 
         {/* Next / Submit */}
-        <div className="flex w-28 justify-end">
+        <div className="flex w-24 justify-end sm:w-28">
           {step === 1 && acquisitionSource !== null && (
             <Button
               type="button"

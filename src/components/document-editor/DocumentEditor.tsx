@@ -7,6 +7,7 @@ import { streamDocumentContent } from "@/services/api/document.service";
 import { AUTO_SAVE_DELAY } from "@/shared/config/constants";
 import { Routes } from "@/shared/types";
 import type { RagSource } from "@/shared/types/document";
+import { isUsableDocumentContent } from "@/shared/utils/documentContent";
 import { htmlToMarkdown, markdownToHtml } from "@/shared/utils/markdown";
 import {
   chatWithDocument,
@@ -643,7 +644,9 @@ export default function DocumentEditor({
               completedVisualCountRef.current = 0;
 
               const chatAnswer = response.chatAnswer;
-              const finalContent = response.content;
+              const finalContent = isUsableDocumentContent(response.content)
+                ? response.content
+                : null;
 
               if (finalContent) {
                 setContent(finalContent);
@@ -832,7 +835,11 @@ export default function DocumentEditor({
       if (!active && count === 0 && isSuggestionsMode) {
         // All changes have been individually accepted/rejected
         setIsSuggestionsMode(false);
-        // Sync the final editor content back to state
+        // Sync the final editor content back to state.
+        // DiffExtension deliberately defers this callback past the transaction
+        // that resolved the last change — reading getHTML() any earlier returns
+        // the pre-transaction document and would persist the text the user just
+        // rejected.
         const html = editor.getHTML();
         const markdown = htmlToMarkdown(html);
         setContent(markdown);
@@ -1009,6 +1016,11 @@ export default function DocumentEditor({
         ).unwrap();
         dispatch(fetchDocumentImages(currentDocument.id));
 
+        // A question-only answer carries no document content — never treat it as an edit.
+        const editedContent = isUsableDocumentContent(response.content)
+          ? response.content
+          : null;
+
         // Add chat answer to history
         if (response.chatAnswer) {
           setChatHistory((prev) => [
@@ -1016,15 +1028,15 @@ export default function DocumentEditor({
             {
               role: "assistant" as const,
               content: response.chatAnswer,
-              hasUpdate: !!response.content,
+              hasUpdate: !!editedContent,
             },
           ]);
         }
 
         // Handle content update with diff mode
-        if (response.content && editor) {
+        if (editedContent && editor) {
           try {
-            const aiContent = response.content.trim();
+            const aiContent = editedContent.trim();
             const aiNode = markdownToNode(aiContent, editor.schema);
             // Use baseDocBefore to ensure we compare with the document BEFORE the API updated Redux
             const diffChanges = computeDiff(
@@ -1060,13 +1072,13 @@ export default function DocumentEditor({
             }
           } catch (err) {
             console.error("Error computing diff:", err);
-            setContent(response.content);
-            syncContent(response.content);
+            setContent(editedContent);
+            syncContent(editedContent);
           }
-        } else if (response.content) {
+        } else if (editedContent) {
           // No editor ref — direct update
-          setContent(response.content);
-          syncContent(response.content);
+          setContent(editedContent);
+          syncContent(editedContent);
         }
 
         // Update sources if available

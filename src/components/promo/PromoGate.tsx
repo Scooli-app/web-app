@@ -35,6 +35,12 @@ export function PromoGate() {
   const isUpgradeModalOpen = useAppSelector(
     (state) => state.ui.isUpgradeModalOpen,
   );
+  // Never open on top of the onboarding takeover: this dialog is modal, so Radix
+  // sets pointer-events:none on <body> while its content renders at z-50 — hidden
+  // behind the opaque z-9999 onboarding, which then swallows every click.
+  const isOnboardingModalOpen = useAppSelector(
+    (state) => state.ui.isOnboardingModalOpen,
+  );
   const subscription = useAppSelector(
     (state) => state.subscription.subscription,
   );
@@ -43,6 +49,7 @@ export function PromoGate() {
     if (
       isPromoModalOpen ||
       isUpgradeModalOpen ||
+      isOnboardingModalOpen ||
       !subscription ||
       subscription.planCode !== "free" ||
       !isPromoActive() ||
@@ -51,7 +58,13 @@ export function PromoGate() {
       return;
     }
     dispatch(setPromoModalOpen(true));
-  }, [dispatch, isPromoModalOpen, isUpgradeModalOpen, subscription]);
+  }, [
+    dispatch,
+    isPromoModalOpen,
+    isUpgradeModalOpen,
+    isOnboardingModalOpen,
+    subscription,
+  ]);
 
   const handleOpenChange = (open: boolean) => {
     if (!open) {
