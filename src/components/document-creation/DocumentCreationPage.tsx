@@ -27,6 +27,7 @@ import {
   WorksheetVariantSection,
 } from "./sections";
 import { TemplateSection } from "./templates";
+import { Card } from "@/components/ui/card";
 import type { DocumentTypeConfig, FormState, FormUpdateFn } from "./types";
 import { THEMES } from "@/shared/types/presentation-theme";
 import { cn } from "@/shared/utils/utils";
@@ -40,6 +41,15 @@ interface DocumentCreationPageProps {
   documentType: DocumentTypeConfig;
   userId?: string;
 }
+
+/**
+ * Strips a section's own Card chrome so it can be composed inside a shared card.
+ * `h-auto` cancels the `h-full` DurationSection sets for standalone grid use.
+ */
+// `sm:p-0` is required as well as `p-0`: tailwind-merge resolves each responsive
+// variant independently, so an unprefixed `p-0` never cancels the sections' `sm:p-6`.
+const NESTED_SECTION_CLASS =
+  "h-auto gap-0 rounded-none border-0 bg-transparent p-0 py-0 sm:p-0 shadow-none transition-none hover:shadow-none";
 
 function useDocumentForm(documentTypeId: DocumentTypeConfig["id"]) {
   const [formState, setFormState] = useState<FormState>({
@@ -365,22 +375,33 @@ export default function DocumentCreationPage({
                 onUpdate={updateForm}
               />
             </div>
-            <DurationSection
-              lessonTime={formState.lessonTime}
-              customTime={formState.customTime}
-              onUpdate={updateForm}
-            />
-          </div>
 
-          <div data-tutorial="subject">
-            <SubjectSection
-              subject={formState.subject}
-              isSpecificComponent={formState.isSpecificComponent}
-              onUpdate={updateForm}
-              availableSubjects={formState.schoolYear ? SUBJECTS_BY_GRADE[String(formState.schoolYear)] : undefined}
-              className="shadow-none border-0 p-0 hover:shadow-none transition-none"
-              disabled={!formState.schoolYear}
-            />
+            {/* Subject and duration share one card, subject on top. The tutorial
+                spotlights the [data-tutorial="subject"] wrapper, so it must stay
+                tight around the subject block rather than the whole card. */}
+            <Card className="h-full border-border p-4 shadow-sm transition-shadow hover:shadow-md sm:p-6">
+              <div className="space-y-5 sm:space-y-6">
+                <div data-tutorial="subject">
+                  <SubjectSection
+                    subject={formState.subject}
+                    isSpecificComponent={formState.isSpecificComponent}
+                    onUpdate={updateForm}
+                    availableSubjects={formState.schoolYear ? SUBJECTS_BY_GRADE[String(formState.schoolYear)] : undefined}
+                    className={NESTED_SECTION_CLASS}
+                    disabled={!formState.schoolYear}
+                  />
+                </div>
+
+                <div className="border-t border-border/60" />
+
+                <DurationSection
+                  lessonTime={formState.lessonTime}
+                  customTime={formState.customTime}
+                  onUpdate={updateForm}
+                  className={NESTED_SECTION_CLASS}
+                />
+              </div>
+            </Card>
           </div>
 
           {!isPresentation && (

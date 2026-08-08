@@ -32,6 +32,12 @@ interface DiffPluginState {
   changes: DiffChange[];
   active: boolean;
   decorations: DecorationSet;
+  /**
+   * True once any change in this suggestion set has been individually accepted
+   * or rejected. From that point the `originalContent` snapshot is stale and
+   * must not be used to restore the document wholesale.
+   */
+  hasResolvedChange: boolean;
 }
 
 const SET_CHANGES_META = "setDiffChanges";
@@ -229,6 +235,53 @@ function sliceToText(slice: import("@tiptap/pm/model").Slice): string {
 }
 
 // ---------------------------------------------------------------------------
+// Rejection
+// ---------------------------------------------------------------------------
+
+/**
+ * Undo a single change on the transaction, putting the base document's content
+ * back in place of the AI's.
+ *
+ * Restoration always goes through `tr.replace(from, to, slice)` rather than
+ * `replaceWith`/`insert` on `slice.content`. A change that starts or ends
+ * mid-paragraph yields a Slice with openStart/openEnd > 0, whose `.content` is a
+ * fragment of *whole* block nodes; inserting that fragment splits the
+ * surrounding paragraph and duplicates its structure. Passing the Slice keeps
+ * the open depths so partial-block content merges back inline.
+ *
+ * Positions are clamped against `tr.doc` (not the pre-transaction doc) so this
+ * stays correct when several rejections are batched into one transaction.
+ */
+function applyRejection(tr: Transaction, change: DiffChange): void {
+  const docSize = tr.doc.content.size;
+  const from = Math.max(0, Math.min(change.fromB, docSize));
+  const to = Math.max(from, Math.min(change.toB, docSize));
+
+  if (change.type === "insert") {
+    // Reject insertion: remove the inserted content
+    if (from < to) {
+      tr.delete(from, to);
+    }
+    return;
+  }
+
+  if (change.type === "delete") {
+    // Reject deletion: re-insert the deleted content
+    if (change.deletedSlice) {
+      tr.replace(from, from, change.deletedSlice);
+    }
+    return;
+  }
+
+  // Reject replace: swap the inserted content back for the deleted one
+  if (change.deletedSlice) {
+    tr.replace(from, to, change.deletedSlice);
+  } else if (from < to) {
+    tr.delete(from, to);
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Extension
 // ---------------------------------------------------------------------------
 
@@ -330,32 +383,7 @@ export const DiffExtension = Extension.create({
           if (!change) return false;
 
           if (dispatch) {
-            const docSize = state.doc.content.size;
-
-            if (change.type === "insert") {
-              // Reject insertion: remove the inserted content
-              const from = Math.min(change.fromB, docSize);
-              const to = Math.min(change.toB, docSize);
-              if (from < to) {
-                tr.delete(from, to);
-              }
-            } else if (change.type === "delete") {
-              // Reject deletion: re-insert the deleted content
-              if (change.deletedSlice) {
-                const pos = Math.min(change.fromB, docSize);
-                tr.insert(pos, change.deletedSlice.content);
-              }
-            } else if (change.type === "replace") {
-              // Reject replace: remove inserted content, re-insert deleted content
-              const from = Math.min(change.fromB, docSize);
-              const to = Math.min(change.toB, docSize);
-              if (change.deletedSlice) {
-                tr.replaceWith(from, to, change.deletedSlice.content);
-              } else if (from < to) {
-                tr.delete(from, to);
-              }
-            }
-
+            applyRejection(tr, change);
             tr.setMeta(REMOVE_CHANGE_META, id);
             dispatch(tr);
           }
@@ -374,7 +402,9 @@ export const DiffExtension = Extension.create({
 
       rejectAllChanges:
         () =>
-        ({ editor, tr, dispatch }) => {
+        ({ editor, state, tr, dispatch }) => {
+          const pluginState = diffPluginKey.getState(state);
+          const remaining = pluginState?.changes ?? [];
           const storage = (
             editor.storage as unknown as Record<
               string,
@@ -383,7 +413,22 @@ export const DiffExtension = Extension.create({
           ).diff;
           const originalContent = storage?.originalContent;
 
+          // Snapshot restore is only correct while the whole suggestion set is
+          // still pending. Once the user has individually accepted or rejected
+          // anything, originalContent predates those decisions and restoring it
+          // would silently throw away the changes they already accepted — so
+          // reject only what is still outstanding instead.
+          const canRestoreSnapshot =
+            !!originalContent && !pluginState?.hasResolvedChange;
+
           if (dispatch) {
+            if (!canRestoreSnapshot) {
+              // Walk backwards so each edit leaves the earlier positions intact.
+              const ordered = [...remaining].sort((a, b) => b.fromB - a.fromB);
+              for (const change of ordered) {
+                applyRejection(tr, change);
+              }
+            }
             tr.setMeta(CLEAR_META, true);
             dispatch(tr);
           }
@@ -391,7 +436,7 @@ export const DiffExtension = Extension.create({
           // Restore original content in a separate command so it uses a fresh
           // transaction built from the post-clear state, avoiding a mismatched
           // transaction on devices where React re-renders between dispatches.
-          if (originalContent) {
+          if (canRestoreSnapshot && originalContent) {
             editor.commands.setContent(originalContent, { emitUpdate: false });
           }
 
@@ -404,6 +449,27 @@ export const DiffExtension = Extension.create({
     const { storage } = this;
     const tiptapEditor = this.editor;
 
+    // onDiffStateChange must NOT run inside the plugin's apply(): at that point
+    // the new EditorState has not been installed yet, so a listener calling
+    // editor.getHTML() reads the document as it was *before* this transaction.
+    // Consumers use that HTML to persist the document, which meant rejecting the
+    // last outstanding change saved the AI text the user had just rejected.
+    // Deferring to a microtask lets the state land first; collapsing to the
+    // latest payload keeps a burst of transactions to a single notification.
+    let pendingDiffState: { active: boolean; count: number } | null = null;
+    const notifyDiffState = (active: boolean, count: number) => {
+      const alreadyScheduled = pendingDiffState !== null;
+      pendingDiffState = { active, count };
+      if (alreadyScheduled) return;
+      queueMicrotask(() => {
+        const payload = pendingDiffState;
+        pendingDiffState = null;
+        if (payload) {
+          storage.onDiffStateChange?.(payload.active, payload.count);
+        }
+      });
+    };
+
     return [
       new Plugin({
         key: diffPluginKey,
@@ -414,6 +480,7 @@ export const DiffExtension = Extension.create({
               changes: [],
               active: false,
               decorations: DecorationSet.empty,
+              hasResolvedChange: false,
             };
           },
 
@@ -426,11 +493,12 @@ export const DiffExtension = Extension.create({
             // Handle clear
             if (tr.getMeta(CLEAR_META)) {
               // Notify about state change
-              storage.onDiffStateChange?.(false, 0);
+              notifyDiffState(false, 0);
               return {
                 changes: [],
                 active: false,
                 decorations: DecorationSet.empty,
+                hasResolvedChange: false,
               };
             }
 
@@ -440,11 +508,12 @@ export const DiffExtension = Extension.create({
               | undefined;
             if (newChanges) {
               const decorations = buildDecorations(newState, newChanges);
-              storage.onDiffStateChange?.(true, newChanges.length);
+              notifyDiffState(true, newChanges.length);
               return {
                 changes: newChanges,
                 active: true,
                 decorations,
+                hasResolvedChange: false,
               };
             }
 
@@ -462,11 +531,12 @@ export const DiffExtension = Extension.create({
                 : remaining;
 
               const decorations = buildDecorations(newState, remapped);
-              storage.onDiffStateChange?.(isActive, remapped.length);
+              notifyDiffState(isActive, remapped.length);
               return {
                 changes: remapped,
                 active: isActive,
                 decorations,
+                hasResolvedChange: true,
               };
             }
 
@@ -475,6 +545,7 @@ export const DiffExtension = Extension.create({
               const remapped = remapChanges(prev.changes, tr);
               const decorations = buildDecorations(newState, remapped);
               return {
+                ...prev,
                 changes: remapped,
                 active: prev.active,
                 decorations,

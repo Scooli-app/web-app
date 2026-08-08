@@ -28,6 +28,9 @@ export function AppFeedbackSurveyGate() {
   const isUpgradeModalOpen = useSelector(
     (state: RootState) => state.ui.isUpgradeModalOpen,
   );
+  const isOnboardingModalOpen = useSelector(
+    (state: RootState) => state.ui.isOnboardingModalOpen,
+  );
   const { isLoaded: isAuthLoaded, isSignedIn } = useAuth();
   const { isLoaded: isUserLoaded, user } = useUser();
 
@@ -63,7 +66,7 @@ export function AppFeedbackSurveyGate() {
       return true;
     }
 
-    if (isRouteSuppressed || isUpgradeModalOpen) {
+    if (isRouteSuppressed || isUpgradeModalOpen || isOnboardingModalOpen) {
       return true;
     }
 
@@ -72,12 +75,19 @@ export function AppFeedbackSurveyGate() {
       return true;
     }
 
+    // The onboarding is a plain fixed div, not a Radix dialog, so the
+    // dialog-content sweep below cannot see it. Opening a modal on top of it
+    // would set pointer-events:none on <body> and lock the user out entirely.
+    if (document.querySelector("[data-onboarding-modal]")) {
+      return true;
+    }
+
     const otherOpenDialogs = Array.from(
       document.querySelectorAll<HTMLElement>('[data-slot="dialog-content"]'),
     ).some((element) => !element.hasAttribute("data-feedback-survey-modal"));
 
     return otherOpenDialogs;
-  }, [isRouteSuppressed, isUpgradeModalOpen]);
+  }, [isRouteSuppressed, isUpgradeModalOpen, isOnboardingModalOpen]);
 
   const refreshSurveyStatus = useCallback(async () => {
     if (!isAuthLoaded || !isUserLoaded || !isSignedIn || !user?.id) {

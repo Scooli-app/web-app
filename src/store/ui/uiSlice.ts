@@ -11,6 +11,14 @@ interface UIStoreState extends UIState {
   error: string | null;
   isUpgradeModalOpen: boolean;
   isPromoModalOpen: boolean;
+  /**
+   * True while the full-screen onboarding takes over the app. Other gates must
+   * not open a Radix dialog on top of it: a modal dialog sets
+   * `pointer-events: none` on <body>, and because the onboarding is a plain
+   * fixed div (not a Radix layer) that leaves it visible but completely
+   * unclickable.
+   */
+  isOnboardingModalOpen: boolean;
 }
 
 const initialState: UIStoreState = {
@@ -21,6 +29,7 @@ const initialState: UIStoreState = {
   error: null,
   isUpgradeModalOpen: false,
   isPromoModalOpen: false,
+  isOnboardingModalOpen: false,
 };
 
 const uiSlice = createSlice({
@@ -51,6 +60,9 @@ const uiSlice = createSlice({
     setPromoModalOpen(state, action: PayloadAction<boolean>) {
       state.isPromoModalOpen = action.payload;
     },
+    setOnboardingModalOpen(state, action: PayloadAction<boolean>) {
+      state.isOnboardingModalOpen = action.payload;
+    },
     toggleTheme(state) {
       if (state.theme === "light") {
         state.theme = "dark";
@@ -70,6 +82,7 @@ export const {
   setTheme,
   setUpgradeModalOpen,
   setPromoModalOpen,
+  setOnboardingModalOpen,
 } = uiSlice.actions;
 
 export default uiSlice.reducer;

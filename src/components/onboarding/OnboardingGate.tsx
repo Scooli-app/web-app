@@ -11,6 +11,7 @@ import {
 import { useAppDispatch } from "@/store/hooks";
 import { setOnboardingStatus } from "@/store/onboarding/onboardingSlice";
 import type { RootState } from "@/store/store";
+import { setOnboardingModalOpen } from "@/store/ui/uiSlice";
 import { useAuth, useUser } from "@clerk/nextjs";
 import { usePathname, useRouter } from "next/navigation";
 import posthog from "posthog-js";
@@ -75,6 +76,22 @@ export function OnboardingGate() {
     }
   }, [isRouteSuppressed, isUpgradeModalOpen, open]);
 
+  // Publish the open state so PromoGate / AppFeedbackSurveyGate hold their
+  // dialogs back. A Radix modal opening while the onboarding is up puts
+  // `pointer-events: none` on <body>, and its own content renders at z-50 —
+  // underneath the opaque z-9999 onboarding — so the user is left staring at an
+  // onboarding screen that swallows every click.
+  useEffect(() => {
+    dispatch(setOnboardingModalOpen(open));
+  }, [dispatch, open]);
+
+  useEffect(
+    () => () => {
+      dispatch(setOnboardingModalOpen(false));
+    },
+    [dispatch],
+  );
+
   useEffect(() => {
     if (!open) {
       hasTrackedViewRef.current = false;
@@ -101,6 +118,17 @@ export function OnboardingGate() {
       });
   }, [dispatch, open]);
 
+  // Brand-new users get the first-time tutorial whether they answered the
+  // onboarding questions or skipped them — skipping a survey is not a signal
+  // that the user already knows the product.
+  const startFirstTimeTutorial = useCallback(() => {
+    if (onboardingStatus?.hasDocuments) {
+      return;
+    }
+    router.push(TUTORIAL_ROUTE);
+    startTutorial("onboarding");
+  }, [onboardingStatus?.hasDocuments, router, startTutorial]);
+
   const handleSkip = useCallback(async () => {
     if (isBusy) {
       return;
@@ -112,13 +140,14 @@ export function OnboardingGate() {
       dispatch(setOnboardingStatus(nextStatus));
       setOpen(false);
       // Step-level event fired in OnboardingModal before this callback runs
+      startFirstTimeTutorial();
     } catch (error) {
       posthog.captureException(error);
       toast.error("Não foi possível ignorar o onboarding.");
     } finally {
       setIsBusy(false);
     }
-  }, [dispatch, isBusy]);
+  }, [dispatch, isBusy, startFirstTimeTutorial]);
 
   const handleSubmit = useCallback(
     async (payload: OnboardingSubmitRequest) => {
@@ -146,10 +175,7 @@ export function OnboardingGate() {
 
         // Only show the first-time tutorial for brand-new users.
         // Users who already have documents know the product — skip straight to dashboard.
-        if (!onboardingStatus?.hasDocuments) {
-          router.push(TUTORIAL_ROUTE);
-          startTutorial("onboarding");
-        }
+        startFirstTimeTutorial();
       } catch (error) {
         posthog.captureException(error);
         toast.error("Não foi possível guardar a tua resposta.");
@@ -157,7 +183,7 @@ export function OnboardingGate() {
         setIsBusy(false);
       }
     },
-    [dispatch, isBusy, onboardingStatus?.hasDocuments, router, startTutorial],
+    [dispatch, isBusy, startFirstTimeTutorial],
   );
 
   if (!isSignedIn || !user?.id || !onboardingStatus) {
