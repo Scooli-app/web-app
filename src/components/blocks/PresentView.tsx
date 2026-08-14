@@ -24,7 +24,7 @@ import { presentationToCanvas } from "@/components/document-editor-v2/canvas-lay
 import { isCanvasPresentation, type CanvasPresentation } from "@/shared/types/canvas-presentation";
 import { fetchDocument } from "@/store/documents/documentSlice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { ChevronLeft, ChevronRight, Loader2, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2, NotebookPen, X } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SlideRenderer } from "./SlideRenderer";
@@ -40,6 +40,9 @@ export function PresentView({ documentId }: Props) {
   const document = useAppSelector((s) => s.documents.currentDocument);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [hudVisible, setHudVisible] = useState(true);
+  // Speaker notes are OFF by default — this view is what the class sees on the
+  // projector. The teacher toggles them on ("N") to peek at the guidance.
+  const [notesVisible, setNotesVisible] = useState(false);
   const hudTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Fetch the document.
@@ -164,6 +167,11 @@ export function PresentView({ documentId }: Props) {
           e.preventDefault();
           last();
           break;
+        case "n":
+        case "N":
+          e.preventDefault();
+          setNotesVisible((v) => !v);
+          break;
         case "Escape":
           // Browser will release fullscreen on its own; we navigate back too.
           // Defer briefly so the fullscreen exit settles first.
@@ -203,6 +211,7 @@ export function PresentView({ documentId }: Props) {
   // Resolve current slide for either format (canvas uses the filtered visible list)
   const currentCanvasSlide = visibleCanvasSlides?.[currentIdx] ?? null;
   const currentV1Slide = parsed?.blocks[currentIdx] ?? null;
+  const currentNotes = currentCanvasSlide?.notes ?? currentV1Slide?.notes ?? null;
 
   return (
     <div
@@ -223,6 +232,30 @@ export function PresentView({ documentId }: Props) {
           <SlideRenderer slide={currentV1Slide} />
         ) : null}
       </div>
+
+      {/* Speaker notes — opt-in overlay ("N"). Anchored top-left so it never
+          covers the HUD, and scrollable for long notes. */}
+      {notesVisible && currentNotes ? (
+        <div
+          className="pointer-events-auto fixed left-4 top-4 z-10 max-h-[40vh] w-[min(28rem,45vw)] overflow-y-auto rounded-xl bg-black/85 p-4 text-sm leading-relaxed text-white/90 shadow-xl backdrop-blur-sm"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <span className="text-[0.7rem] font-semibold uppercase tracking-widest text-white/50">
+              Notas do professor
+            </span>
+            <button
+              type="button"
+              onClick={() => setNotesVisible(false)}
+              className="rounded-full p-1 text-white/60 transition-colors hover:bg-white/10 hover:text-white"
+              aria-label="Fechar notas"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+          <p className="whitespace-pre-wrap">{currentNotes}</p>
+        </div>
+      ) : null}
 
       {/* HUD: counter + controls. Shown for 5s after any mouse move, stays
           visible while the cursor is over it so teachers can click the buttons. */}
@@ -259,8 +292,27 @@ export function PresentView({ documentId }: Props) {
           </button>
         </div>
 
-        {/* Right: exit */}
+        {/* Right: notes toggle + exit */}
         <div className="pointer-events-auto flex gap-2">
+          {currentNotes ? (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setNotesVisible((v) => !v);
+              }}
+              className={`rounded-full p-2 backdrop-blur-sm transition-colors ${
+                notesVisible
+                  ? "bg-white text-black hover:bg-white/90"
+                  : "bg-white/10 text-white hover:bg-white/20"
+              }`}
+              aria-pressed={notesVisible}
+              aria-label="Notas do professor (N)"
+              title="Notas do professor (N)"
+            >
+              <NotebookPen className="h-4 w-4" />
+            </button>
+          ) : null}
           <button
             type="button"
             onClick={(e) => {

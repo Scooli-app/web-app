@@ -7,5 +7,6 @@ export { SlideCountSection, DEFAULT_SLIDE_COUNT } from "./SlideCountSection";
 export { SourcePickerSection } from "./SourcePickerSection";
 export { SubjectSection } from "./SubjectSection";
 export { TeachingMethodSection } from "./TeachingMethodSection";
+export { ThemeSection } from "./ThemeSection";
 export { TopicSection } from "./TopicSection";
 export { WorksheetVariantSection } from "./WorksheetVariantSection";

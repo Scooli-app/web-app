@@ -99,7 +99,7 @@ import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { generateSlide as generateSlideApi } from "@/services/api/document.service";
-import { applyTheme, clampCanvasSlide, presentationToCanvas, slideToCanvas } from "./canvas-layout";
+import { applyTheme, backfillImageBackendIds, clampCanvasSlide, presentationToCanvas, slideToCanvas } from "./canvas-layout";
 import { ImagePickerModal, type ImageInsertResult } from "./ImagePickerModal";
 import { ColorPickerPopover } from "./ColorPickerPopover";
 import { FormulaModal } from "./FormulaModal";
@@ -476,8 +476,11 @@ export function BlockDocumentEditor({ documentId }: Props) {
     try {
       const raw: unknown = JSON.parse(document.content);
       if (isCanvasPresentation(raw)) {
-        // Clamp any elements that drifted out-of-bounds in a previous session.
-        return { ...raw, slides: raw.slides.map(clampCanvasSlide) };
+        // Clamp any elements that drifted out-of-bounds in a previous session,
+        // and backfill imageBackendId for images saved before that field
+        // existed — otherwise "Trocar imagem" silently loses all context for
+        // every image in an already-v2 presentation, forever.
+        return { ...raw, slides: raw.slides.map(clampCanvasSlide).map(backfillImageBackendIds) };
       }
       const v1 = parsePresentationDocument(document.content);
       return presentationToCanvas(v1);
@@ -817,13 +820,24 @@ export function BlockDocumentEditor({ documentId }: Props) {
     [imageModalReplacing, applyElementPatch, insertImageElement],
   );
 
+  /** The image being replaced, when the picker modal is open in "swap" mode — gives GenerateTab the current description and routes generation through the regenerate endpoint instead of a from-scratch one. */
+  const replacingImageElement = imageModalReplacing && selectedElement?.type === "image_placeholder"
+    ? (selectedElement as CanvasImageElement)
+    : null;
+
   const handleGenerateImageFromModal = useCallback(
     async (prompt: string) => {
       if (!document?.id) return;
 
       const loadingToastId = toast.loading("A gerar imagem...");
       try {
-        const result = await generateDocumentImageApi(document.id, prompt);
+        // Editing an existing image: go through /regenerate with its backend
+        // id so the server merges this instruction with the image's current
+        // description instead of starting from a blank page — "remove the
+        // background" only means something applied to what's already there.
+        const result = replacingImageElement?.imageBackendId
+          ? await regenerateDocumentImageApi(document.id, replacingImageElement.imageBackendId, prompt)
+          : await generateDocumentImageApi(document.id, prompt);
         toast.dismiss(loadingToastId);
 
         if (!result.newUrl) {
@@ -834,7 +848,10 @@ export function BlockDocumentEditor({ documentId }: Props) {
         if (imageModalReplacing) {
           applyElementPatch({
             url: result.newUrl,
-            prompt,
+            // `alt` carries the server's merged description (original + this
+            // edit) so the NEXT edit request starts from the up-to-date text,
+            // not just this one instruction.
+            prompt: result.alt || prompt,
             imageBackendId: result.id,
           } as Partial<CanvasImageElement>);
         } else {
@@ -851,7 +868,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
         toast.error(err instanceof Error ? err.message : "Erro ao gerar imagem");
       }
     },
-    [document?.id, imageModalReplacing, applyElementPatch, insertImageElement],
+    [document?.id, imageModalReplacing, replacingImageElement, applyElementPatch, insertImageElement],
   );
 
   /** Called from the floating change-image button on the Konva canvas. */
@@ -1256,8 +1273,9 @@ export function BlockDocumentEditor({ documentId }: Props) {
             const raw: unknown = JSON.parse(response.content);
             if (isCanvasPresentation(raw)) {
               pushHistory();
-              const activeThemeId = canvasRef.current?.themeId ?? raw.themeId;
-              setCanvas(activeThemeId ? applyTheme(raw, activeThemeId) : raw);
+              const backfilled = { ...raw, slides: raw.slides.map(backfillImageBackendIds) };
+              const activeThemeId = canvasRef.current?.themeId ?? backfilled.themeId;
+              setCanvas(activeThemeId ? applyTheme(backfilled, activeThemeId) : backfilled);
               setDirty(false); // just synced from server
               canvasWasUpdated = true;
             }
@@ -1329,8 +1347,11 @@ export function BlockDocumentEditor({ documentId }: Props) {
         })
         .filter(Boolean)
         .join(" ") ?? "";
+      // Just the edit instruction/context — the backend merges this with the
+      // image's existing description itself (regenerateSingleVisual), so
+      // prepending imageEl.prompt here too would nest it twice.
       const prompt = imageEl.prompt
-        ? `${imageEl.prompt}. Contexto: ${textContent}`
+        ? `Actualiza a imagem para refletir o conteúdo actual do slide. Contexto: ${textContent}`
         : textContent || "ilustração educativa";
       let newUrl: string | null = null;
       if (imageEl.imageBackendId) {
@@ -2252,7 +2273,6 @@ export function BlockDocumentEditor({ documentId }: Props) {
             <div className="relative flex w-full flex-1 min-h-0 flex-col items-center justify-center">
               <p className="mb-1 shrink-0 text-center text-xs text-muted-foreground">
                 Slide {activeSlideIdx + 1} / {canvas.slides.length}
-                {selectedElement ? ` · ${selectedElement.type}` : ""}
                 {activeSlide.hidden ? " · oculto" : ""}
               </p>
               {/* Canvas with padding so the slide has breathing room */}
@@ -2343,6 +2363,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
         <ImagePickerModal
           open={imageModalOpen}
           documentId={document.id}
+          currentPrompt={replacingImageElement?.prompt}
           onClose={() => setImageModalOpen(false)}
           onInsert={handleImageFromModal}
           onGenerate={handleGenerateImageFromModal}

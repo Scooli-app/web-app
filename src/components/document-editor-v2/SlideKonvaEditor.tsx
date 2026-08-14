@@ -31,8 +31,24 @@ import type {
   CanvasTextElement,
 } from "@/shared/types/canvas-presentation";
 import { renderKatexToPngDataUrl } from "@/components/document-editor-v2/math-render";
-import Konva from "konva";
-import { useCallback, useEffect, useImperativeHandle, useRef, useState, forwardRef } from "react";
+import { KonvaRichText, measureRichTextHeight } from "@/components/document-editor-v2/KonvaRichText";
+import {
+  editableElementToMarkdown,
+  inlineMarkdownToEditableHtml,
+} from "@/shared/utils/inline-markdown";
+import type Konva from "konva";
+import {
+  type CSSProperties,
+  type KeyboardEvent as ReactKeyboardEvent,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  forwardRef,
+} from "react";
 import { Ellipse, Group, Image as KonvaImage, Layer, Line, Rect, Stage, Text, Transformer } from "react-konva";
 
 /* --------------------------------------------------------------------------
@@ -96,60 +112,45 @@ function gradientProps(g: CanvasGradient, W: number, H: number, OX = 0, OY = 0) 
   };
 }
 
-function getTextLikeFontStyle(el: CanvasTextElement | CanvasListElement) {
-  return el.type === "text" ? el.fontStyle : undefined;
-}
-
-function getListItemDisplayText(el: CanvasListElement, item: string, index: number) {
-  return el.type === "ordered_list" ? `${index + 1}. ${item}` : `\u2022 ${item}`;
-}
-
-function getListDisplayText(el: CanvasListElement) {
-  return el.items
-    .map((item, index) => getListItemDisplayText(el, item, index))
-    .join("\n");
-}
-
-function getTextLikeDisplayText(el: CanvasTextElement | CanvasListElement) {
-  return el.type === "text" ? el.text : getListDisplayText(el);
-}
-
-function measureWrappedTextHeightPx({
-  text,
-  widthPx,
-  fontSizePx,
-  fontFamily,
-  fontStyle,
-}: {
-  text: string;
-  widthPx: number;
-  fontSizePx: number;
-  fontFamily: string;
-  fontStyle?: string;
-}) {
-  const probe = new Konva.Text({
-    text,
-    fontSize: fontSizePx,
-    fontFamily,
-    fontStyle,
-    lineHeight: TEXT_LINE_HEIGHT,
-    width: Math.max(1, widthPx),
-    padding: 0,
-    wrap: "word",
-  });
-  return Math.max(fontSizePx * TEXT_LINE_HEIGHT, probe.height());
-}
-
+/**
+ * Per-item pixel heights, measured with the EXACT same word-wrap algorithm
+ * {@link KonvaRichText} renders with (real per-run bold/italic glyph widths,
+ * the marker's hanging indent applied to every wrapped line \u2014 not just the
+ * first). A plain single-style probe ignores both of those, undercounts how
+ * many lines a bold-heavy or long item wraps into, and the box it computes
+ * ends up too short \u2014 the next element overlaps whatever follows it.
+ */
 function measureListItemHeightsPx(el: CanvasListElement, widthPx: number, fontSizePx: number) {
   return el.items.map((item, index) =>
-    measureWrappedTextHeightPx({
-      text: getListItemDisplayText(el, item, index),
-      widthPx,
-      fontSizePx,
+    measureRichTextHeight({
+      items: [item],
+      listType: el.type,
+      listStartIndex: index,
+      width: widthPx,
+      fontSize: fontSizePx,
       fontFamily: getTextLikeFontFamily(el),
-      fontStyle: getTextLikeFontStyle(el),
+      lineHeight: TEXT_LINE_HEIGHT,
     }),
   );
+}
+
+/** Same rationale as {@link measureListItemHeightsPx}, for a "text" element or a whole list's total height. */
+function measureTextLikeHeightPx(
+  el: CanvasTextElement | CanvasListElement,
+  widthPx: number,
+  fontSizePx: number,
+) {
+  if (el.type === "text") {
+    return measureRichTextHeight({
+      text: el.text,
+      width: widthPx,
+      fontSize: fontSizePx,
+      fontFamily: getTextLikeFontFamily(el),
+      bold: el.fontStyle === "bold" || el.fontStyle === "bold italic",
+      lineHeight: TEXT_LINE_HEIGHT,
+    });
+  }
+  return measureListItemHeightsPx(el, widthPx, fontSizePx).reduce((sum, itemHeight) => sum + itemHeight, 0);
 }
 
 function getOppositeAnchorVector(activeAnchor: string, halfW: number, halfH: number) {
@@ -213,7 +214,18 @@ function useStageSize(wrapperRef: React.RefObject<HTMLDivElement | null>) {
 }
 
 /* --------------------------------------------------------------------------
- * TextEditOverlay — floating textarea positioned over the canvas element.
+ * Edit overlays — floating boxes positioned over the canvas element being
+ * edited. Three variants, chosen by EditState.kind:
+ *
+ *   - "text"  → RichTextEditOverlay  (title/paragraph: one contentEditable box)
+ *   - "list"  → RichListEditOverlay  (bullet/ordered list: contentEditable ul/ol)
+ *   - "plain" → PlainTextEditOverlay (math TeX, image prompt: raw textarea)
+ *
+ * "text" and "list" use contentEditable rather than a textarea so **bold**
+ * shows as actual bold while typing instead of literal asterisks, and support
+ * Ctrl/Cmd+B / Ctrl/Cmd+I. Lists get real bullet/number semantics from the
+ * browser's native <ul>/<ol> editing — Enter makes a new item, Backspace at
+ * the start of an item merges it into the previous one, both for free.
  * -------------------------------------------------------------------------- */
 interface EditState {
   id: string;
@@ -228,21 +240,194 @@ interface EditState {
   fontStyle?: string;
   color: string;
   align?: "left" | "center" | "right";
-  multiline: boolean;
+  kind: "text" | "list" | "plain";
+  listType?: "bullet_list" | "ordered_list";
+}
+
+const EDIT_BOX_STYLE_BASE: CSSProperties = {
+  position: "absolute",
+  background: "transparent",
+  outline: "none",
+  boxShadow: `0 0 0 2px ${T.selection}55`, // translucent focus ring
+  borderRadius: 4,
+  boxSizing: "border-box",
+  zIndex: 10,
+  lineHeight: 1.3,
+  whiteSpace: "pre-wrap",
+  wordBreak: "break-word",
+  overflowWrap: "break-word",
+};
+
+/** Ctrl+B / Cmd+B and Ctrl+I / Cmd+I → toggle inline bold/italic on the current selection. */
+function handleFormattingShortcut(e: ReactKeyboardEvent): boolean {
+  if (!(e.metaKey || e.ctrlKey)) return false;
+  const key = e.key.toLowerCase();
+  if (key === "b") {
+    e.preventDefault();
+    document.execCommand("bold");
+    return true;
+  }
+  if (key === "i") {
+    e.preventDefault();
+    document.execCommand("italic");
+    return true;
+  }
+  return false;
+}
+
+/** Places the caret at the end of `el`'s content. */
+function focusAtEnd(el: HTMLElement) {
+  el.focus();
+  const range = document.createRange();
+  range.selectNodeContents(el);
+  range.collapse(false);
+  const selection = window.getSelection();
+  selection?.removeAllRanges();
+  selection?.addRange(range);
 }
 
 /**
- * TextEditOverlay — an invisible textarea that sits exactly over the hidden
- * Konva Text node so editing feels inline.  Key improvements over the old
- * purple-tinted approach:
- *
- *   • Transparent background — slide content shows through.
- *   • Matches font weight/style so bold/italic look correct while editing.
- *   • Cursor placed at end (not select-all) on open.
- *   • Auto-resizes height as the user types.
- *   • Subtle focus ring instead of a coloured border.
+ * RichTextEditOverlay — WYSIWYG inline editing for a "text" element (title,
+ * heading, paragraph). A single contentEditable box seeded with real
+ * <strong>/<em> so **bold** looks bold immediately, not as raw asterisks.
  */
-function TextEditOverlay({
+function RichTextEditOverlay({
+  edit,
+  onCommit,
+}: {
+  edit: EditState;
+  onCommit: (id: string, value: string) => void;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  // Seeded once at mount — this box is uncontrolled from here on (matches the
+  // original textarea's approach): the browser owns all further DOM mutations
+  // until commit, so nothing here re-renders while the user types.
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- edit.value is fixed for the life of one edit session (keyed by edit.id)
+  const initialHtml = useMemo(() => inlineMarkdownToEditableHtml(edit.value), [edit.id]);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (el) focusAtEnd(el);
+  }, [edit.id]);
+
+  const commit = () => onCommit(edit.id, ref.current ? editableElementToMarkdown(ref.current) : edit.value);
+
+  return (
+    <div
+      ref={ref}
+      contentEditable
+      suppressContentEditableWarning
+      dangerouslySetInnerHTML={{ __html: initialHtml }}
+      onBlur={commit}
+      onKeyDown={(e) => {
+        if (handleFormattingShortcut(e)) return;
+        if (e.key === "Escape") { e.preventDefault(); commit(); }
+        if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); commit(); }
+      }}
+      style={{
+        ...EDIT_BOX_STYLE_BASE,
+        left: edit.x,
+        top: edit.y,
+        width: edit.width,
+        minHeight: edit.height,
+        fontSize: edit.fontSize,
+        fontFamily: edit.fontFamily ?? T.font,
+        fontWeight: edit.fontStyle?.includes("bold") ? "bold" : "normal",
+        fontStyle: edit.fontStyle?.includes("italic") ? "italic" : "normal",
+        color: edit.color,
+        caretColor: edit.color,
+        textAlign: edit.align ?? "left",
+        padding: 0,
+      }}
+    />
+  );
+}
+
+/**
+ * RichListEditOverlay — WYSIWYG inline editing for a bullet/ordered list. A
+ * real contentEditable <ul>/<ol> with one <li> per item: the browser's native
+ * list editing gives Enter → new item and Backspace-at-start → merge with the
+ * previous item for free, and each item shows real bold/italic while typing.
+ */
+function RichListEditOverlay({
+  edit,
+  onCommit,
+}: {
+  edit: EditState;
+  onCommit: (id: string, value: string) => void;
+}) {
+  const containerRef = useRef<HTMLElement | null>(null);
+  // Same uncontrolled-after-mount rationale as RichTextEditOverlay.
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- edit.value is fixed for the life of one edit session (keyed by edit.id)
+  const items = useMemo(() => edit.value.split("\n"), [edit.id]);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    // Land the caret in the last item, not the first — matches where a
+    // double-click on the list group's last line would put you.
+    const lastItem = el.lastElementChild as HTMLElement | null;
+    focusAtEnd(lastItem ?? el);
+  }, [edit.id]);
+
+  const commit = () => {
+    const el = containerRef.current;
+    if (!el) { onCommit(edit.id, edit.value); return; }
+    const liItems = Array.from(el.children).map((li) => editableElementToMarkdown(li as HTMLElement));
+    onCommit(edit.id, liItems.join("\n"));
+  };
+
+  const sharedProps = {
+    ref: (node: HTMLElement | null) => { containerRef.current = node; },
+    contentEditable: true,
+    suppressContentEditableWarning: true,
+    onBlur: commit,
+    onKeyDown: (e: ReactKeyboardEvent) => {
+      if (handleFormattingShortcut(e)) return;
+      if (e.key === "Escape") { e.preventDefault(); commit(); }
+      // Enter (new item) and Backspace-merge are native <ul>/<ol> contentEditable behaviour.
+    },
+    style: {
+      ...EDIT_BOX_STYLE_BASE,
+      left: edit.x,
+      top: edit.y,
+      width: edit.width,
+      minHeight: edit.height,
+      margin: 0,
+      padding: 0,
+      // Tailwind's Preflight resets every <ul>/<ol> site-wide to
+      // `list-style: none` — without overriding it here, this box (which
+      // isn't inside a `.tiptap` scope, the only place that reset is undone
+      // elsewhere in the app) silently has no visible bullets/numbers at all.
+      listStyleType: edit.listType === "ordered_list" ? "decimal" : "disc",
+      // "inside" keeps the marker within the box's own width (this is a
+      // left:edit.x-positioned overlay with no room to spare on the left),
+      // at the cost of not matching KonvaRichText's hanging indent exactly —
+      // an acceptable difference for a temporary edit view.
+      listStylePosition: "inside",
+      fontSize: edit.fontSize,
+      fontFamily: edit.fontFamily ?? T.font,
+      color: edit.color,
+      caretColor: edit.color,
+    } satisfies CSSProperties,
+  };
+
+  const liNodes = items.map((item, i) => (
+    <li key={i} dangerouslySetInnerHTML={{ __html: inlineMarkdownToEditableHtml(item) }} />
+  ));
+
+  return edit.listType === "ordered_list"
+    ? <ol {...sharedProps}>{liNodes}</ol>
+    : <ul {...sharedProps}>{liNodes}</ul>;
+}
+
+/**
+ * PlainTextEditOverlay — raw textarea for content that is NOT limited-markdown
+ * (math TeX source, an image generation prompt). Unchanged from before the
+ * rich-text overlays existed: showing **literal** text here is correct, not a
+ * bug, since these fields are never rendered through the markdown grammar.
+ */
+function PlainTextEditOverlay({
   edit,
   onCommit,
 }: {
@@ -251,23 +436,16 @@ function TextEditOverlay({
 }) {
   const ref = useRef<HTMLTextAreaElement>(null);
 
-  // Split Konva's combined fontStyle string into CSS fontWeight + fontStyle.
-  const isBold   = edit.fontStyle?.includes("bold")   ?? false;
-  const isItalic = edit.fontStyle?.includes("italic") ?? false;
-
-  // Focus + cursor-at-end + initial auto-size on mount / element change.
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
     el.focus();
     const len = el.value.length;
     el.setSelectionRange(len, len);
-    // Size to content immediately so the textarea matches the Konva element.
     el.style.height = "auto";
     el.style.height = `${Math.max(el.scrollHeight, edit.height)}px`;
   }, [edit.id, edit.height]);
 
-  // Grow/shrink textarea as the user types.
   const autoResize = () => {
     const el = ref.current;
     if (!el) return;
@@ -285,38 +463,23 @@ function TextEditOverlay({
       onBlur={commit}
       onKeyDown={(e) => {
         if (e.key === "Escape") { e.preventDefault(); commit(); }
-        if (e.key === "Enter" && !e.shiftKey && !edit.multiline) {
-          e.preventDefault();
-          commit();
-        }
+        if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); commit(); }
       }}
       style={{
-        position: "absolute",
+        ...EDIT_BOX_STYLE_BASE,
         left: edit.x,
         top: edit.y,
         width: edit.width,
-        height: edit.height,     // initial; overridden by autoResize
+        height: edit.height,
         fontSize: edit.fontSize,
         fontFamily: edit.fontFamily ?? T.font,
-        fontWeight: isBold ? "bold" : "normal",
-        fontStyle: isItalic ? "italic" : "normal",
         color: edit.color,
         caretColor: edit.color,
         textAlign: edit.align ?? "left",
-        lineHeight: 1.3,
-        // Invisible — looks like directly editing the canvas text.
-        background: "transparent",
         border: "none",
-        outline: "none",
-        boxShadow: `0 0 0 2px ${T.selection}55`,  // translucent focus ring
-        borderRadius: 4,
         padding: 0,
         resize: "none",
-        boxSizing: "border-box",
-        zIndex: 10,
         overflow: "hidden",
-        whiteSpace: "pre-wrap",
-        wordBreak: "break-word",
       }}
     />
   );
@@ -376,9 +539,73 @@ export const SlideKonvaEditor = forwardRef<
   const [livePos, setLivePos] = useState<{
     cx: number; cy: number; halfW: number; halfH: number; rotation: number;
   } | null>(null);
+  /**
+   * Live width/height/fontSize (fractions) for the text-like element currently
+   * being resized. Position stays imperatively Konva-driven (see
+   * applyLiveTextLikeGeometry) for pixel-perfect tracking of the drag, but
+   * content dimensions go through this state so KonvaRichText re-renders with
+   * its OWN real word-wrap on every tick — the box visibly reflows as you
+   * drag, rather than only snapping to the correct layout on release.
+   */
+  const [liveTextGeometry, setLiveTextGeometry] = useState<{
+    id: string; w: number; h: number; fontSize: number;
+  } | null>(null);
+  /**
+   * requestAnimationFrame coalescing for liveTextGeometry. A resize drag can
+   * fire many more raw Konva 'transform' ticks per second than the display
+   * can paint — each one, unthrottled, forced a full React re-render that
+   * recreates every KonvaRichText Text node for the box (word-wrap + canvas
+   * measureText + Konva reconcile). That's expensive enough to occasionally
+   * block the main thread past the next pointermove, which the browser then
+   * coalesces/drops — Konva's own drag/transform handling shares that same
+   * thread, so the box visibly stops tracking the cursor for a tick. Capping
+   * the actual re-render to once per animation frame (not once per raw tick)
+   * keeps the expensive work at the display's own pace instead of the mouse's.
+   */
+  const liveGeometryRafRef = useRef<number | null>(null);
+  const pendingLiveGeometryRef = useRef<{ id: string; w: number; h: number; fontSize: number } | null>(null);
 
-  // Clear live position whenever selection changes.
-  useEffect(() => { setLivePos(null); }, [selectedId]);
+  const cancelScheduledLiveTextGeometry = useCallback(() => {
+    if (liveGeometryRafRef.current !== null) {
+      cancelAnimationFrame(liveGeometryRafRef.current);
+      liveGeometryRafRef.current = null;
+    }
+    pendingLiveGeometryRef.current = null;
+  }, []);
+
+  const scheduleLiveTextGeometry = useCallback(
+    (next: { id: string; w: number; h: number; fontSize: number }) => {
+      pendingLiveGeometryRef.current = next;
+      if (liveGeometryRafRef.current !== null) return; // a flush is already queued for this frame
+      liveGeometryRafRef.current = requestAnimationFrame(() => {
+        liveGeometryRafRef.current = null;
+        setLiveTextGeometry(pendingLiveGeometryRef.current);
+      });
+    },
+    [],
+  );
+
+  // Unmount safety: don't let a queued rAF fire setState after teardown.
+  useEffect(() => () => cancelScheduledLiveTextGeometry(), [cancelScheduledLiveTextGeometry]);
+
+  // Clear live position/geometry whenever selection changes.
+  useEffect(() => {
+    cancelScheduledLiveTextGeometry();
+    setLivePos(null);
+    setLiveTextGeometry(null);
+  }, [selectedId, cancelScheduledLiveTextGeometry]);
+
+  // Re-sync the Transformer's outline/handles once a live-resize content
+  // re-render has actually committed — not synchronously inside the
+  // transform-tick handler, which ran BEFORE KonvaRichText's new layout
+  // existed and produced a one-frame mismatch (outline resized, text hadn't
+  // caught up yet). useLayoutEffect (not useEffect) so this runs in the same
+  // paint as the committed DOM/Konva mutation rather than one frame later.
+  useLayoutEffect(() => {
+    if (!liveTextGeometry) return;
+    trRef.current?.forceUpdate();
+    trRef.current?.getLayer()?.batchDraw();
+  }, [liveTextGeometry]);
 
   /* ── Image URL cache: url → loaded HTMLImageElement ────────────────────── */
   // We use a ref as the cache store (avoids re-renders during load) and a
@@ -523,16 +750,7 @@ export const SlideKonvaEditor = forwardRef<
     ) => {
       const widthPx = Math.max(1, widthFraction * W);
       const fontSizePx = fontSizeFraction * W;
-      const heightPx =
-        el.type === "text"
-          ? measureWrappedTextHeightPx({
-              text: getTextLikeDisplayText(el),
-              widthPx,
-              fontSizePx,
-              fontFamily: getTextLikeFontFamily(el),
-              fontStyle: getTextLikeFontStyle(el),
-            })
-          : measureListItemHeightsPx(el, widthPx, fontSizePx).reduce((sum, itemHeight) => sum + itemHeight, 0);
+      const heightPx = measureTextLikeHeightPx(el, widthPx, fontSizePx);
       return Math.max(MIN_ELEMENT_H, heightPx / H);
     },
     [W, H],
@@ -556,7 +774,6 @@ export const SlideKonvaEditor = forwardRef<
       })();
       const widthPx = nextW * W;
       const heightPx = nextH * H;
-      const fontSizePx = nextFontSize * W;
       const nextHalfW = widthPx / 2;
       const nextHalfH = heightPx / 2;
       const nextVector = getOppositeAnchorVector(activeAnchor, nextHalfW, nextHalfH);
@@ -573,36 +790,28 @@ export const SlideKonvaEditor = forwardRef<
       node.setAttr("scooliHalfW", nextHalfW);
       node.setAttr("scooliHalfH", nextHalfH);
 
-      if (el.type === "bullet_list" || el.type === "ordered_list") {
-        const group = node as Konva.Group;
-        const hitRect = group.findOne("Rect");
-        if (hitRect) {
-          hitRect.width(widthPx);
-          hitRect.height(heightPx);
-        }
-
-        let nextY = 0;
-        const itemHeights = measureListItemHeightsPx(el, widthPx, fontSizePx);
-        group.find("Text").forEach((textNode, index) => {
-          const listTextNode = textNode as Konva.Text;
-          const itemHeight = itemHeights[index] ?? fontSizePx * TEXT_LINE_HEIGHT;
-          textNode.x(0);
-          textNode.y(nextY);
-          listTextNode.width(widthPx);
-          listTextNode.height(itemHeight);
-          listTextNode.fontSize(fontSizePx);
-          listTextNode.lineHeight(TEXT_LINE_HEIGHT);
-          nextY += itemHeight;
-        });
-      } else {
-        const textNode = node as Konva.Text;
-        textNode.width(widthPx);
-        textNode.height(heightPx);
-        textNode.fontSize(fontSizePx);
-        textNode.lineHeight(TEXT_LINE_HEIGHT);
+      // Position/pivot (above) stays imperative — Konva owns it moment to
+      // moment so dragging feels perfectly attached to the cursor, and
+      // react-konva's prop diffing leaves it alone since el.x/el.y/el.w/el.h
+      // in the committed `elements` state haven't changed yet.
+      //
+      // Content dimensions go through React state instead: "text" and list
+      // elements render as a Group wrapping a hit Rect plus one or more
+      // KonvaRichText instances (each itself a Group of Text runs whose count
+      // varies with how bold segments wrap), so there's no single node to
+      // imperatively resize/reflow by hand the way one plain Konva.Text could
+      // be. Pushing the live width/height/fontSize into state instead makes
+      // KonvaRichText re-render with its OWN real layout() on every tick —
+      // genuine live reflow, not just a resizing outline with static text.
+      const group = node as Konva.Group;
+      const hitRect = group.findOne("Rect");
+      if (hitRect) {
+        hitRect.width(widthPx);
+        hitRect.height(heightPx);
       }
+      scheduleLiveTextGeometry({ id: el.id, w: nextW, h: nextH, fontSize: nextFontSize });
     },
-    [W, H],
+    [W, H, scheduleLiveTextGeometry],
   );
 
   const getTextTransformMetrics = useCallback(
@@ -757,10 +966,20 @@ export const SlideKonvaEditor = forwardRef<
           applyLiveTextLikeGeometry(node, el, activeAnchor, metrics.newW, liveH, metrics.newFontSize);
           node.scaleX(1);
           node.scaleY(1);
-          // We mutated the node's size/offset mid-transform; without this the
-          // Konva Transformer keeps drawing its own (stale) drag rectangle,
-          // which looks like a second box overlapping the element. forceUpdate
-          // re-syncs the handles/border to the node's actual current bounds.
+          // This forceUpdate() is NOT cosmetic — removing it (as a previous
+          // pass here did, to stop the outline visually leading the throttled
+          // content by a frame) broke the Transformer's own math. The
+          // Transformer computes each tick's scale as a delta against the
+          // anchor/size it captured internally; once we reset scale to 1 and
+          // move the offset out from under it, that internal reference goes
+          // stale until forceUpdate() tells it to recapture the node's actual
+          // current bounds. Skip this and the NEXT tick's scale is computed
+          // against a stale reference, compounding tick over tick — which is
+          // exactly "flickers through huge/correct/small sizes and lags
+          // behind the cursor". Must run synchronously, same tick, before the
+          // next native pointer event — an effect (necessarily deferred to
+          // after React commits) is too late to prevent the next tick's math
+          // from already having gone wrong.
           trRef.current?.forceUpdate();
           node.getLayer()?.batchDraw();
         }
@@ -800,6 +1019,10 @@ export const SlideKonvaEditor = forwardRef<
     (id: string, node: Konva.Node) => {
       setGuides({ vLines: [], hLines: [] });
       setLivePos(null);
+      // Cancel first: a queued rAF flush landing AFTER this would resurrect a
+      // stale liveTextGeometry and override the final committed render below.
+      cancelScheduledLiveTextGeometry();
+      setLiveTextGeometry(null);
       const el = elements.find((e) => e.id === id);
       if (!el) return;
       const activeAnchor = trRef.current?.getActiveAnchor();
@@ -878,23 +1101,18 @@ export const SlideKonvaEditor = forwardRef<
         rotation: node.rotation(),
       });
     },
-    [W, H, OX, OY, elements, getFittedTextLikeHeight, getTextTransformMetrics, updateElement],
+    [W, H, OX, OY, cancelScheduledLiveTextGeometry, elements, getFittedTextLikeHeight, getTextTransformMetrics, updateElement],
   );
 
   const startEdit = useCallback(
-    (
-      id: string,
-      node: Konva.Node,
-      value: string,
-      multiline = false,
-    ) => {
+    (id: string, node: Konva.Node, value: string) => {
       const el = elements.find((e) => e.id === id);
       if (!el) return;
+      const isList = el.type === "bullet_list" || el.type === "ordered_list";
       const absPos = node.getAbsolutePosition();
       const fs =
         el.type === "text" ? (el as CanvasTextElement).fontSize * W
-        : el.type === "bullet_list" || el.type === "ordered_list"
-          ? (el as CanvasListElement).fontSize * W
+        : isList ? (el as CanvasListElement).fontSize * W
         : el.type === "math" ? (el as CanvasMathElement).fontSize * W
         : FS_BASE * W;
       const color =
@@ -907,6 +1125,10 @@ export const SlideKonvaEditor = forwardRef<
         el.type === "text" ? (el as CanvasTextElement).fontStyle : undefined;
       const align =
         el.type === "text" ? (el as CanvasTextElement).align : undefined;
+      // "text" and lists are limited-markdown content → WYSIWYG contentEditable
+      // overlay. Math TeX and image prompts are raw strings, never rendered
+      // through the markdown grammar, so they stay a plain textarea.
+      const kind: EditState["kind"] = el.type === "text" ? "text" : isList ? "list" : "plain";
 
       // Keep selectedId pointing at the element so the parent contextual
       // toolbar stays visible.  The Transformer effect clears its handles
@@ -927,7 +1149,8 @@ export const SlideKonvaEditor = forwardRef<
         fontStyle,
         color,
         align,
-        multiline,
+        kind,
+        listType: isList ? (el as CanvasListElement).type : undefined,
       });
     },
     [elements, W, H, OX, OY],
@@ -1147,26 +1370,28 @@ export const SlideKonvaEditor = forwardRef<
               /* ── Text ────────────────────────────────────────────────── */
               if (el.type === "text") {
                 const t = el as CanvasTextElement;
+                // While this element is being live-resized, use the in-flight
+                // width/fontSize instead of the committed ones so the content
+                // below reflows on every drag tick (see liveTextGeometry).
+                const live = liveTextGeometry?.id === el.id ? liveTextGeometry : null;
+                const contentWidthPx = (live?.w ?? el.w) * W;
+                const contentFontSizePx = (live?.fontSize ?? t.fontSize) * W;
+                // Group + hit-rect rather than a bare <Text>: inline markdown
+                // needs one Konva node per styled run, so the id, the hit box
+                // and the transform attrs live on the wrapper. Same shape as the
+                // list branch below, which already goes through the Transformer
+                // code path unchanged.
                 return (
-                  <Text
+                  <Group
                     key={el.id}
                     id={el.id}
                     x={el.x * W + OX + el.w * W / 2}
                     y={el.y * H + OY + el.h * H / 2}
                     offsetX={el.w * W / 2}
                     offsetY={el.h * H / 2}
-                    rotation={el.rotation ?? 0}
-                    text={t.text}
                     width={el.w * W}
                     height={el.h * H}
-                    fontSize={t.fontSize * W}
-                    fontFamily={t.fontFamily || T.font}
-                    fontStyle={t.fontStyle}
-                    textDecoration={t.underline ? "underline" : ""}
-                    fill={t.color}
-                    align={t.align}
-                    lineHeight={TEXT_LINE_HEIGHT}
-                    wrap="word"
+                    rotation={el.rotation ?? 0}
                     visible={!isEditing}
                     scooliHalfW={el.w * W / 2}
                     scooliHalfH={el.h * H / 2}
@@ -1190,7 +1415,27 @@ export const SlideKonvaEditor = forwardRef<
                     onMouseLeave={() => {
                       if (!isDraggingRef.current) setStageCursor("default");
                     }}
-                  />
+                  >
+                    <Rect
+                      width={contentWidthPx}
+                      height={el.h * H}
+                      fill="transparent"
+                      strokeEnabled={false}
+                    />
+                    <KonvaRichText
+                      x={0}
+                      y={0}
+                      width={contentWidthPx}
+                      height={el.h * H}
+                      text={t.text}
+                      fontSize={contentFontSizePx}
+                      fontFamily={t.fontFamily || T.font}
+                      bold={t.fontStyle === "bold" || t.fontStyle === "bold italic"}
+                      fill={t.color}
+                      align={t.align}
+                      lineHeight={TEXT_LINE_HEIGHT}
+                    />
+                  </Group>
                 );
               }
 
@@ -1198,7 +1443,11 @@ export const SlideKonvaEditor = forwardRef<
               if (el.type === "bullet_list" || el.type === "ordered_list") {
                 const l = el as CanvasListElement;
                 const ordered = el.type === "ordered_list";
-                const itemHeights = measureListItemHeightsPx(l, el.w * W, l.fontSize * W);
+                // Same live-reflow override as the "text" branch above.
+                const live = liveTextGeometry?.id === el.id ? liveTextGeometry : null;
+                const contentWidthPx = (live?.w ?? el.w) * W;
+                const contentFontSizePx = (live?.fontSize ?? l.fontSize) * W;
+                const itemHeights = measureListItemHeightsPx(l, contentWidthPx, contentFontSizePx);
                 let nextY = 0;
                 const itemOffsets = itemHeights.map((itemHeight) => {
                   const offset = nextY;
@@ -1222,13 +1471,13 @@ export const SlideKonvaEditor = forwardRef<
                       e.cancelBubble = true;
                       setSelectedId(el.id);
                       const node = stageRef.current?.findOne(`#${el.id}`);
-                      if (node) startEdit(el.id, node, l.items.join("\n"), true);
+                      if (node) startEdit(el.id, node, l.items.join("\n"));
                     }}
                     onDblTap={(e: Konva.KonvaEventObject<TouchEvent>) => {
                       e.cancelBubble = true;
                       setSelectedId(el.id);
                       const node = stageRef.current?.findOne(`#${el.id}`);
-                      if (node) startEdit(el.id, node, l.items.join("\n"), true);
+                      if (node) startEdit(el.id, node, l.items.join("\n"));
                     }}
                     onMouseEnter={() => {
                       if (!isDraggingRef.current) setStageCursor("text");
@@ -1239,25 +1488,25 @@ export const SlideKonvaEditor = forwardRef<
                   >
                     {/* Hit rect gives the Group an explicit bounding box */}
                     <Rect
-                      width={el.w * W}
+                      width={contentWidthPx}
                       height={el.h * H}
                       fill="transparent"
                       strokeEnabled={false}
                     />
                     {l.items.map((item, i) => (
-                    <Text
+                      <KonvaRichText
                         key={i}
-                        text={ordered ? `${i + 1}. ${item}` : `• ${item}`}
                         x={0}
                         y={itemOffsets[i] ?? 0}
-                        width={el.w * W}
-                        height={itemHeights[i] ?? l.fontSize * W * TEXT_LINE_HEIGHT}
-                        fontSize={l.fontSize * W}
+                        width={contentWidthPx}
+                        height={itemHeights[i] ?? contentFontSizePx * TEXT_LINE_HEIGHT}
+                        items={[item]}
+                        listType={ordered ? "ordered_list" : "bullet_list"}
+                        listStartIndex={i}
+                        fontSize={contentFontSizePx}
                         fontFamily={getTextLikeFontFamily(l)}
                         fill={l.color}
                         lineHeight={TEXT_LINE_HEIGHT}
-                        wrap="word"
-                        listening={false}
                       />
                     ))}
                   </Group>
@@ -1375,20 +1624,15 @@ export const SlideKonvaEditor = forwardRef<
               /* ── Image placeholder / actual image ───────────────────── */
               if (el.type === "image_placeholder") {
                 const img = el as CanvasImageElement;
-                const dblHandlers = {
-                  onDblClick: () => {
-                    const node = stageRef.current?.findOne(`#${el.id}`);
-                    if (node) startEdit(el.id, node, img.prompt);
-                  },
-                  onDblTap: () => {
-                    const node = stageRef.current?.findOne(`#${el.id}`);
-                    if (node) startEdit(el.id, node, img.prompt);
-                  },
-                };
 
                 // If the element has a URL and it's loaded, render the real image.
                 const cached = img.url ? imgCacheRef.current[img.url] : undefined;
                 if (cached && cached !== "loading") {
+                  // No double-click handler here on purpose: once an image is
+                  // generated, double-clicking it used to reopen the raw AI
+                  // prompt as an editable text box, which read like a stray
+                  // caption on the slide. Changing the image now only happens
+                  // through the "Trocar imagem" toolbar button above.
                   return (
                     <KonvaImage
                       key={el.id}
@@ -1404,7 +1648,6 @@ export const SlideKonvaEditor = forwardRef<
                       cornerRadius={6}
                       visible={!isEditing}
                       {...dragSelectProps(el.id)}
-                      {...dblHandlers}
                       onMouseEnter={() => {
                         if (!isDraggingRef.current) setStageCursor("grab");
                       }}
@@ -1415,7 +1658,19 @@ export const SlideKonvaEditor = forwardRef<
                   );
                 }
 
-                // Fallback: placeholder box with prompt text
+                // Fallback: placeholder box with prompt text. No image exists
+                // yet, so double-click here still opens the prompt for editing —
+                // that's the only way to set/refine it before generation.
+                const dblHandlers = {
+                  onDblClick: () => {
+                    const node = stageRef.current?.findOne(`#${el.id}`);
+                    if (node) startEdit(el.id, node, img.prompt);
+                  },
+                  onDblTap: () => {
+                    const node = stageRef.current?.findOne(`#${el.id}`);
+                    if (node) startEdit(el.id, node, img.prompt);
+                  },
+                };
                 const promptFs = Math.max(10, Math.round(el.w * W * 0.035));
                 return (
                   <Group
@@ -1617,9 +1872,15 @@ export const SlideKonvaEditor = forwardRef<
           </Layer>
         </Stage>
 
-        {/* Floating textarea overlay for active text edit */}
-        {editState && (
-          <TextEditOverlay edit={editState} onCommit={commitEdit} />
+        {/* Floating WYSIWYG overlay for active text/list edit — see EditState.kind */}
+        {editState?.kind === "text" && (
+          <RichTextEditOverlay edit={editState} onCommit={commitEdit} />
+        )}
+        {editState?.kind === "list" && (
+          <RichListEditOverlay edit={editState} onCommit={commitEdit} />
+        )}
+        {editState?.kind === "plain" && (
+          <PlainTextEditOverlay edit={editState} onCommit={commitEdit} />
         )}
       </div>
     </div>

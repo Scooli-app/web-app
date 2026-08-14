@@ -15,8 +15,13 @@ import type { FormUpdateFn } from "../types";
 /** Presets shown as preset buttons. Matches typical classroom decks. */
 const SLIDE_COUNT_PRESETS = [5, 8, 10, 12, 15, 20] as const;
 
-/** Default applied when the user submits without picking one. */
-export const DEFAULT_SLIDE_COUNT = 10;
+/**
+ * Default applied when the user submits without picking one. Kept in lockstep
+ * with {@code PresentationPrompts.DEFAULT_SLIDE_COUNT} on the backend — 12 is
+ * the shortest deck that still fits the full pedagogical arc (hook, objectives,
+ * concepts, worked example, class challenge, synthesis).
+ */
+export const DEFAULT_SLIDE_COUNT = 12;
 
 interface SlideCountSectionProps {
   slideCount?: number;

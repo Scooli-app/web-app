@@ -40,6 +40,15 @@ export interface ImageInsertResult {
 interface Props {
   open: boolean;
   documentId: string;
+  /**
+   * The image being replaced's current description, when the modal is open
+   * to swap an existing image rather than insert a new one. Presence of this
+   * (not the caller's own "replacing" flag) is what switches GenerateTab into
+   * edit mode — asking "what do you want to change?" instead of "describe the
+   * image", so the request can build on what's already there ("remove the
+   * background" only means something applied to an existing description).
+   */
+  currentPrompt?: string;
   onClose: () => void;
   onInsert: (result: ImageInsertResult) => void;
   onGenerate: (prompt: string) => void;
@@ -80,13 +89,16 @@ function TabBtn({
  * Generate tab
  * -------------------------------------------------------------------------- */
 function GenerateTab({
+  currentPrompt,
   onClose,
   onGenerate,
 }: {
+  currentPrompt?: string;
   onClose: () => void;
   onGenerate: (prompt: string) => void;
 }) {
   const [prompt, setPrompt] = useState("");
+  const isEditing = Boolean(currentPrompt);
 
   const handleGenerate = () => {
     const p = prompt.trim();
@@ -97,15 +109,25 @@ function GenerateTab({
 
   return (
     <div className="flex flex-col gap-4 p-4">
+      {isEditing && (
+        <div className="rounded-lg border border-border bg-muted/30 px-3 py-2">
+          <p className="text-xs font-medium text-muted-foreground">Imagem atual</p>
+          <p className="mt-0.5 line-clamp-2 text-sm text-foreground">{currentPrompt}</p>
+        </div>
+      )}
       <div className="flex flex-col gap-1.5">
         <label className="text-sm font-medium text-foreground">
-          Descreve a imagem
+          {isEditing ? "O que queres alterar?" : "Descreve a imagem"}
         </label>
         <textarea
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
-          placeholder="Ex: uma pizza dividida em 6 partes iguais, estilo cartoon colorido para crianças"
-          rows={4}
+          placeholder={
+            isEditing
+              ? "Ex: remove o fundo, muda a cor para azul, aproxima o enquadramento"
+              : "Ex: uma pizza dividida em 6 partes iguais, estilo cartoon colorido para crianças"
+          }
+          rows={isEditing ? 3 : 4}
           autoFocus
           onKeyDown={(e) => {
             if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) handleGenerate();
@@ -113,7 +135,9 @@ function GenerateTab({
           className="w-full resize-none rounded-lg border border-border bg-muted/30 px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
         />
         <p className="text-xs text-muted-foreground">
-          Ctrl+Enter para gerar
+          {isEditing
+            ? "A descrição atual mantém-se — só o que pedires aqui é alterado. Ctrl+Enter para aplicar."
+            : "Ctrl+Enter para gerar"}
         </p>
       </div>
 
@@ -123,7 +147,7 @@ function GenerateTab({
         className="gap-2 self-end"
       >
         <Sparkles className="h-4 w-4" />
-        Gerar imagem
+        {isEditing ? "Aplicar alteração" : "Gerar imagem"}
       </Button>
     </div>
   );
@@ -262,7 +286,7 @@ function UrlTab({ onInsert }: { onInsert: (r: ImageInsertResult) => void }) {
 /* --------------------------------------------------------------------------
  * Main modal
  * -------------------------------------------------------------------------- */
-export function ImagePickerModal({ open, documentId, onClose, onInsert, onGenerate }: Props) {
+export function ImagePickerModal({ open, documentId, currentPrompt, onClose, onInsert, onGenerate }: Props) {
   const [tab, setTab] = useState<Tab>("generate");
 
   const handleInsert = (result: ImageInsertResult) => {
@@ -276,7 +300,7 @@ export function ImagePickerModal({ open, documentId, onClose, onInsert, onGenera
         <DialogHeader className="px-4 pb-0 pt-4">
           <DialogTitle className="flex items-center gap-2 text-base">
             <ImageIcon className="h-4 w-4 text-primary" />
-            Adicionar imagem
+            {currentPrompt ? "Trocar imagem" : "Adicionar imagem"}
           </DialogTitle>
         </DialogHeader>
 
@@ -303,7 +327,7 @@ export function ImagePickerModal({ open, documentId, onClose, onInsert, onGenera
 
         <div className="min-h-[220px]">
           {tab === "generate" && (
-            <GenerateTab onClose={onClose} onGenerate={onGenerate} />
+            <GenerateTab currentPrompt={currentPrompt} onClose={onClose} onGenerate={onGenerate} />
           )}
           {tab === "upload" && (
             <UploadTab documentId={documentId} onInsert={handleInsert} />

@@ -105,6 +105,12 @@ export interface CanvasSlide {
   elements: CanvasElement[];
   /** Hidden slides are dimmed in the sidebar and skipped in presentation mode. */
   hidden?: boolean;
+  /**
+   * Speaker notes carried over from {@link SlideBlock.notes}. Not rendered on
+   * the canvas — surfaced in the presenter view and preserved across the
+   * v1 <-> v2 round-trip so the generated teaching guidance survives an edit.
+   */
+  notes?: string;
 }
 
 export interface CanvasPresentation {

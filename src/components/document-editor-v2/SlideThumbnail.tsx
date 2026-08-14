@@ -18,8 +18,9 @@ import type {
   CanvasSlide,
   CanvasTextElement,
 } from "@/shared/types/canvas-presentation";
+import { KonvaRichText } from "@/components/document-editor-v2/KonvaRichText";
 import { useEffect, useRef, useState } from "react";
-import { Ellipse, Image as KonvaImage, Layer, Line, Rect, Stage, Text } from "react-konva";
+import { Ellipse, Image as KonvaImage, Layer, Line, Rect, Stage } from "react-konva";
 
 const THUMB_W = 160;
 const THUMB_H = 90; // 16:9
@@ -107,52 +108,38 @@ export function SlideThumbnail({ slide, index, isActive, onClick, w = THUMB_W, h
             if (el.type === "text") {
               const t = el as CanvasTextElement;
               return (
-                <Text
+                <KonvaRichText
                   key={el.id}
-                  x={el.x * w + el.w * w / 2}
-                  y={el.y * h + el.h * h / 2}
-                  offsetX={el.w * w / 2}
-                  offsetY={el.h * h / 2}
-                  rotation={el.rotation ?? 0}
+                  x={el.x * w}
+                  y={el.y * h}
                   width={el.w * w}
                   height={el.h * h}
+                  rotation={el.rotation ?? 0}
                   text={t.text}
                   fontSize={Math.max(5, Math.round(t.fontSize * w))}
                   fontFamily={t.fontFamily || "Inter, system-ui, sans-serif"}
-                  fontStyle={t.fontStyle}
-                  textDecoration={t.underline ? "underline" : ""}
+                  bold={t.fontStyle === "bold" || t.fontStyle === "bold italic"}
                   fill={t.color}
                   align={t.align}
-                  wrap="word"
-                  ellipsis
-                  listening={false}
                 />
               );
             }
 
             if (el.type === "bullet_list" || el.type === "ordered_list") {
               const l = el as CanvasListElement;
-              const text = l.items
-                .map((item, i) =>
-                  el.type === "ordered_list" ? `${i + 1}. ${item}` : `• ${item}`,
-                )
-                .join("\n");
               return (
-                <Text
+                <KonvaRichText
                   key={el.id}
-                  x={el.x * w + el.w * w / 2}
-                  y={el.y * h + el.h * h / 2}
-                  offsetX={el.w * w / 2}
-                  offsetY={el.h * h / 2}
-                  rotation={el.rotation ?? 0}
+                  x={el.x * w}
+                  y={el.y * h}
                   width={el.w * w}
                   height={el.h * h}
-                  text={text}
+                  rotation={el.rotation ?? 0}
+                  items={l.items}
+                  listType={el.type}
                   fontSize={Math.max(4, Math.round(el.fontSize * w))}
+                  fontFamily="Inter, system-ui, sans-serif"
                   fill={l.color}
-                  wrap="word"
-                  ellipsis
-                  listening={false}
                 />
               );
             }

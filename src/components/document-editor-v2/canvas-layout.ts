@@ -26,6 +26,22 @@ import { getThemeById } from "@/shared/types/presentation-theme";
 
 const BG_DEFAULT = "#16171e";
 
+/**
+ * The backend never embeds the DocumentImage row's UUID directly in the
+ * persisted BlockDocument JSON (`image.id` is the SLIDE's own blockId, e.g.
+ * "s3-img") — only the stable URL carries it, as its last path segment
+ * (`.../images/{imageId}`, see DocumentImageService#stableImageUrl). Without
+ * extracting it here, every image element converted from a freshly generated
+ * deck has no `imageBackendId`, so "Trocar imagem" can never route to the
+ * regenerate endpoint for it — it falls back to generating a brand-new image
+ * from just the edit instruction, with none of the original description.
+ */
+const IMAGE_ID_FROM_URL = /\/images\/([0-9a-fA-F-]{36})(?:[/?#]|$)/;
+
+function extractImageBackendId(url: string | undefined): string | undefined {
+  return url ? IMAGE_ID_FROM_URL.exec(url)?.[1] : undefined;
+}
+
 const PX = 0.04;
 const PY = 0.071;
 
@@ -262,6 +278,7 @@ export function slideToCanvas(slide: SlideBlock): CanvasSlide {
         h: bodyH,
         prompt: slide.image.alt,
         url: slide.image.url,
+        imageBackendId: extractImageBackendId(slide.image.url),
       } as CanvasImageElement);
     }
 
@@ -307,6 +324,7 @@ export function slideToCanvas(slide: SlideBlock): CanvasSlide {
         h: 1,
         prompt: slide.image.alt,
         url: slide.image.url,
+        imageBackendId: extractImageBackendId(slide.image.url),
       } as CanvasImageElement);
     }
 
@@ -340,7 +358,7 @@ export function slideToCanvas(slide: SlideBlock): CanvasSlide {
     }
   }
 
-  return { id: slide.id, layout, background: bg, elements };
+  return { id: slide.id, layout, background: bg, elements, notes: slide.notes };
 }
 
 export function canvasToSlide(cs: CanvasSlide, slideIdx: number): SlideBlock {
@@ -393,7 +411,7 @@ export function canvasToSlide(cs: CanvasSlide, slideIdx: number): SlideBlock {
           prompt: imageEl.prompt,
         }
       : undefined,
-    notes: undefined,
+    notes: cs.notes,
   };
 }
 
@@ -422,6 +440,31 @@ export function clampCanvasSlide(cs: CanvasSlide): CanvasSlide {
       }
 
       return { ...el, x, y, w, h };
+    }),
+  };
+}
+
+/**
+ * Fills in `imageBackendId` for an image element that has a stable image URL
+ * but is missing it — the id "Trocar imagem" needs to call the
+ * regenerate-with-context endpoint (see BlockDocumentEditor.tsx) instead of
+ * silently falling back to a from-scratch generation with none of the
+ * original description.
+ *
+ * `extractImageBackendId` (used inside slideToCanvas) only runs when
+ * converting a v1 layout document to v2 canvas — a presentation ALREADY
+ * saved in v2 format (e.g. because it was opened in the canvas editor before
+ * this field started being captured) skips that conversion entirely on every
+ * later load, so without also backfilling here at load time, those decks
+ * would carry the gap forward indefinitely.
+ */
+export function backfillImageBackendIds(cs: CanvasSlide): CanvasSlide {
+  return {
+    ...cs,
+    elements: cs.elements.map((el): CanvasElement => {
+      if (el.type !== "image_placeholder" || el.imageBackendId) return el;
+      const extracted = extractImageBackendId(el.url);
+      return extracted ? { ...el, imageBackendId: extracted } : el;
     }),
   };
 }
@@ -472,6 +515,10 @@ export function applyTheme(cp: CanvasPresentation, themeId: string): CanvasPrese
     themeId,
     slides: cp.slides.map((slide) => {
       const isCover = slide.layout === "title";
+      // `full-image` puts its text directly on the artwork behind a dark scrim,
+      // so it keeps the white it was built with. Applying `theme.titleColor`
+      // there paints a near-black title onto a photo on every light theme.
+      const textOverImage = slide.layout === "full-image";
       const decoSource = isCover
         ? (theme.coverDecorations ?? theme.decorations)
         : theme.decorations;
@@ -481,8 +528,9 @@ export function applyTheme(cp: CanvasPresentation, themeId: string): CanvasPrese
         .filter((el) => !(el.type === "shape" && (el as CanvasShapeElement).isDecoration))
         .map((el): CanvasElement => {
           if (el.type === "text") {
-            const color =
-              el.role === "title"
+            const color = textOverImage
+              ? el.color
+              : el.role === "title"
                 ? theme.titleColor
                 : el.role === "subtitle"
                   ? theme.mutedColor

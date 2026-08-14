@@ -21,7 +21,8 @@ import type {
   CanvasTextElement,
 } from "@/shared/types/canvas-presentation";
 import { renderKatexToPngDataUrl } from "@/components/document-editor-v2/math-render";
-import { useEffect, useRef, useState } from "react";
+import { KonvaRichText } from "@/components/document-editor-v2/KonvaRichText";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { Ellipse, Image as KonvaImage, Layer, Line, Rect, Stage, Text } from "react-konva";
 
 interface Props {
@@ -33,6 +34,53 @@ const SHAPE_STROKE = "#6753FF";
 const SHAPE_STROKE_WIDTH = 0.004;
 const MATH_COLOR = "#ffffff";
 const TEXT_LINE_HEIGHT = 1.3;
+/** Neutral 50%-grey wash — reads as "loading" on both light and dark themes. */
+const PLACEHOLDER_TINT = "rgba(128, 128, 128, 0.18)";
+/** Fraction of slide height covered by the full-image title scrim. */
+const SCRIM_HEIGHT = 0.45;
+
+/** An element covering essentially the whole slide (the `full-image` layout). */
+function isFullBleed(el: { w: number; h: number }): boolean {
+  return el.w >= 0.99 && el.h >= 0.99;
+}
+
+/**
+ * Aspect-correct draw box for an image inside `boxW × boxH`.
+ *
+ * `cover` (full-bleed backdrops) crops the source to the box aspect so the
+ * image fills the slide without distortion. `contain` (side images) shrinks to
+ * fit and lets the slide background show around it — which is what makes a
+ * transparent-background illustration sit on the slide instead of on a card.
+ *
+ * Either way the image is never stretched, which the previous fixed
+ * width/height did on every non-16:9 source.
+ */
+function fitImage(
+  image: HTMLImageElement,
+  boxW: number,
+  boxH: number,
+  cover: boolean,
+): { width: number; height: number; crop?: { x: number; y: number; width: number; height: number } } {
+  const natW = image.naturalWidth || image.width;
+  const natH = image.naturalHeight || image.height;
+  if (!natW || !natH) return { width: boxW, height: boxH };
+
+  if (!cover) {
+    const scale = Math.min(boxW / natW, boxH / natH);
+    return { width: natW * scale, height: natH * scale };
+  }
+
+  // Cover: keep the box size, crop the overflowing axis from the centre.
+  const boxAspect = boxW / boxH;
+  const natAspect = natW / natH;
+  const cropW = natAspect > boxAspect ? natH * boxAspect : natW;
+  const cropH = natAspect > boxAspect ? natH : natW / boxAspect;
+  return {
+    width: boxW,
+    height: boxH,
+    crop: { x: (natW - cropW) / 2, y: (natH - cropH) / 2, width: cropW, height: cropH },
+  };
+}
 
 function gradientProps(g: CanvasGradient, W: number, H: number) {
   const rad = (g.angle * Math.PI) / 180;
@@ -150,15 +198,13 @@ export function CanvasSlideView({ slide }: Props) {
             if (el.type === "text") {
               const t = el as CanvasTextElement;
               return (
-                <Text
+                <KonvaRichText
                   key={el.id}
-                  x={el.x * W + el.w * W / 2}
-                  y={el.y * H + el.h * H / 2}
-                  offsetX={el.w * W / 2}
-                  offsetY={el.h * H / 2}
-                  rotation={el.rotation ?? 0}
+                  x={el.x * W}
+                  y={el.y * H}
                   width={el.w * W}
                   height={el.h * H}
+                  rotation={el.rotation ?? 0}
                   text={t.text}
                   fontSize={Math.round(t.fontSize * W)}
                   fontFamily={
@@ -166,14 +212,10 @@ export function CanvasSlideView({ slide }: Props) {
                       ? t.fontFamily
                       : "Lexend, Inter, system-ui, sans-serif"
                   }
-                  fontStyle={t.fontStyle}
-                  textDecoration={t.underline ? "underline" : ""}
+                  bold={t.fontStyle === "bold" || t.fontStyle === "bold italic"}
                   fill={t.color}
                   align={t.align}
                   lineHeight={TEXT_LINE_HEIGHT}
-                  wrap="word"
-                  ellipsis={false}
-                  listening={false}
                 />
               );
             }
@@ -181,29 +223,20 @@ export function CanvasSlideView({ slide }: Props) {
             /* ---- bullet / ordered list ---- */
             if (el.type === "bullet_list" || el.type === "ordered_list") {
               const l = el as CanvasListElement;
-              const text = l.items
-                .map((item, i) =>
-                  el.type === "ordered_list" ? `${i + 1}. ${item}` : `• ${item}`,
-                )
-                .join("\n");
               return (
-                <Text
+                <KonvaRichText
                   key={el.id}
-                  x={el.x * W + el.w * W / 2}
-                  y={el.y * H + el.h * H / 2}
-                  offsetX={el.w * W / 2}
-                  offsetY={el.h * H / 2}
-                  rotation={el.rotation ?? 0}
+                  x={el.x * W}
+                  y={el.y * H}
                   width={el.w * W}
                   height={el.h * H}
-                  text={text}
+                  rotation={el.rotation ?? 0}
+                  items={l.items}
+                  listType={el.type}
                   fontSize={Math.round(el.fontSize * W)}
                   fontFamily="Lato, Inter, system-ui, sans-serif"
                   fill={l.color}
                   lineHeight={TEXT_LINE_HEIGHT}
-                  wrap="word"
-                  ellipsis={false}
-                  listening={false}
                 />
               );
             }
@@ -261,36 +294,68 @@ export function CanvasSlideView({ slide }: Props) {
             if (el.type === "image_placeholder") {
               const img = el as CanvasImageElement;
               const cached = img.url ? imgCacheRef.current[img.url] : undefined;
+              const boxX = el.x * W;
+              const boxY = el.y * H;
+              const boxW = el.w * W;
+              const boxH = el.h * H;
+
               if (cached && cached !== "loading") {
+                const fullBleed = isFullBleed(el);
+                const fit = fitImage(cached, boxW, boxH, fullBleed);
                 return (
-                  <KonvaImage
-                    key={el.id}
-                    image={cached}
-                    x={el.x * W + el.w * W / 2}
-                    y={el.y * H + el.h * H / 2}
-                    offsetX={el.w * W / 2}
-                    offsetY={el.h * H / 2}
-                    rotation={el.rotation ?? 0}
-                    width={el.w * W}
-                    height={el.h * H}
-                    cornerRadius={4}
-                    listening={false}
-                  />
+                  <Fragment key={el.id}>
+                    <KonvaImage
+                      image={cached}
+                      x={boxX + boxW / 2}
+                      y={boxY + boxH / 2}
+                      offsetX={fit.width / 2}
+                      offsetY={fit.height / 2}
+                      rotation={el.rotation ?? 0}
+                      width={fit.width}
+                      height={fit.height}
+                      crop={fit.crop}
+                      listening={false}
+                    />
+                    {/* Scrim: the full-image layout drops its title straight onto
+                        the artwork, which is unreadable over a busy illustration.
+                        A bottom-up gradient guarantees contrast whatever the
+                        image turns out to look like. Drawn here (between the
+                        image and the text elements) because element order is
+                        paint order. */}
+                    {fullBleed ? (
+                      <Rect
+                        x={0}
+                        y={H * (1 - SCRIM_HEIGHT)}
+                        width={W}
+                        height={H * SCRIM_HEIGHT}
+                        fillLinearGradientStartPoint={{ x: 0, y: 0 }}
+                        fillLinearGradientEndPoint={{ x: 0, y: H * SCRIM_HEIGHT }}
+                        fillLinearGradientColorStops={[
+                          0, "rgba(0,0,0,0)",
+                          0.45, "rgba(0,0,0,0.55)",
+                          1, "rgba(0,0,0,0.85)",
+                        ]}
+                        listening={false}
+                      />
+                    ) : null}
+                  </Fragment>
                 );
               }
-              /* Placeholder while loading or no URL */
+              /* Placeholder while loading or no URL. Tinted from the slide's own
+                 background rather than a hardcoded slate, so it doesn't flash a
+                 dark block on light themes (and vice versa). */
               return (
                 <Rect
                   key={el.id}
-                  x={el.x * W + el.w * W / 2}
-                  y={el.y * H + el.h * H / 2}
-                  offsetX={el.w * W / 2}
-                  offsetY={el.h * H / 2}
+                  x={boxX + boxW / 2}
+                  y={boxY + boxH / 2}
+                  offsetX={boxW / 2}
+                  offsetY={boxH / 2}
                   rotation={el.rotation ?? 0}
-                  width={el.w * W}
-                  height={el.h * H}
-                  fill="#2a2a3a"
-                  cornerRadius={4}
+                  width={boxW}
+                  height={boxH}
+                  fill={PLACEHOLDER_TINT}
+                  cornerRadius={isFullBleed(el) ? 0 : 4}
                   listening={false}
                 />
               );

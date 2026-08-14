@@ -1,5 +1,7 @@
 /**
- * Tiny limited-Markdown parser for inline text fields on the JSON block model.
+ * React renderer for the limited-Markdown inline text fields on the JSON block
+ * model. The tokenizer itself lives in `@/shared/utils/inline-markdown` because
+ * the Konva canvas renderer needs the same grammar with flat output.
  *
  * Decision #2 in PRESENTATIONS_NOTES.md: inline text fields are strings, NOT
  * structured rich-text nodes. We parse a small allowed subset at render time:
@@ -19,108 +21,10 @@
  */
 "use client";
 
+import { tokenize, type Token } from "@/shared/utils/inline-markdown";
 import katex from "katex";
 import "katex/dist/katex.min.css";
 import { Fragment, type ReactNode } from "react";
-
-/** Inline markdown tokens recognised by the parser. */
-type Token =
-  | { type: "text"; value: string }
-  | { type: "bold"; children: Token[] }
-  | { type: "italic"; children: Token[] }
-  | { type: "code"; value: string }
-  | { type: "link"; label: string; href: string }
-  | { type: "math"; tex: string };
-
-/**
- * Tokenise inline-formatted text. Recursive only for bold/italic which can
- * nest in each other; everything else is a leaf.
- */
-function tokenize(input: string): Token[] {
-  const tokens: Token[] = [];
-  let buf = "";
-  let i = 0;
-
-  const flushBuf = () => {
-    if (buf.length > 0) {
-      tokens.push({ type: "text", value: buf });
-      buf = "";
-    }
-  };
-
-  while (i < input.length) {
-    const c = input[i];
-    const next = input[i + 1];
-
-    // **bold** — must come before *italic* so the longer match wins.
-    if (c === "*" && next === "*") {
-      const end = input.indexOf("**", i + 2);
-      if (end !== -1) {
-        flushBuf();
-        tokens.push({ type: "bold", children: tokenize(input.slice(i + 2, end)) });
-        i = end + 2;
-        continue;
-      }
-    }
-
-    // *italic*
-    if (c === "*") {
-      const end = input.indexOf("*", i + 1);
-      if (end !== -1) {
-        flushBuf();
-        tokens.push({ type: "italic", children: tokenize(input.slice(i + 1, end)) });
-        i = end + 1;
-        continue;
-      }
-    }
-
-    // `code`
-    if (c === "`") {
-      const end = input.indexOf("`", i + 1);
-      if (end !== -1) {
-        flushBuf();
-        tokens.push({ type: "code", value: input.slice(i + 1, end) });
-        i = end + 1;
-        continue;
-      }
-    }
-
-    // [label](url)
-    if (c === "[") {
-      const close = input.indexOf("]", i + 1);
-      if (close !== -1 && input[close + 1] === "(") {
-        const closeParen = input.indexOf(")", close + 2);
-        if (closeParen !== -1) {
-          flushBuf();
-          tokens.push({
-            type: "link",
-            label: input.slice(i + 1, close),
-            href: input.slice(close + 2, closeParen),
-          });
-          i = closeParen + 1;
-          continue;
-        }
-      }
-    }
-
-    // $math$ — KaTeX inline. Skips when there's no closing $.
-    if (c === "$") {
-      const end = input.indexOf("$", i + 1);
-      if (end !== -1) {
-        flushBuf();
-        tokens.push({ type: "math", tex: input.slice(i + 1, end) });
-        i = end + 1;
-        continue;
-      }
-    }
-
-    buf += c;
-    i += 1;
-  }
-
-  flushBuf();
-  return tokens;
-}
 
 function renderTokens(tokens: Token[]): ReactNode[] {
   return tokens.map((token, idx) => {
