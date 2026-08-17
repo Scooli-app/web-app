@@ -260,7 +260,7 @@ export function CalendarDashboardWidget() {
           <Button asChild size="sm" className="mt-3">
             <Link href={Routes.CALENDAR_NEW}>
               <Plus className="mr-1 h-3 w-3" />
-              Criar plano letivo
+              Criar turma
             </Link>
           </Button>
         </div>
