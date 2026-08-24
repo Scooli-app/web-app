@@ -16,6 +16,9 @@ import type { Document } from "@/shared/types/document";
 /** Alias of the single source of truth in timetable.service.ts, re-exported so existing imports of SlotType from this module keep working. */
 export type SlotType = LessonSlotType;
 
+/** A period's type, with "AUTO" meaning "let the exercise/review cadence decide" — the client-side counterpart of a null/omitted RecurringSlot.slotType. */
+export type SlotTypeOrAuto = SlotType | "AUTO";
+
 export interface PreviewSlot {
   id: string;
   date: string; // ISO
@@ -26,11 +29,15 @@ export interface PreviewSlot {
 
 export type DayKey = "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun";
 
+export interface PeriodConfig {
+  durationMinutes: number;
+  type: SlotTypeOrAuto;
+}
+
 export interface DaySchedule {
   enabled: boolean;
-  periods: number;
-  /** Minutes per lesson block on this day. Defaults to 50 when omitted (e.g. plans written before this field existed). */
-  durationMinutes?: number;
+  /** One config per weekly period that day — order is the day's period order. */
+  periods: PeriodConfig[];
 }
 
 /** Canonical weekly-schedule shape, shared by both creation wizards and persisted verbatim into metadata.additionalDetails.weekSchedule. */
@@ -38,14 +45,16 @@ export type WeekSchedule = Record<DayKey, DaySchedule>;
 
 export const DAY_ORDER: DayKey[] = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
 
+const DEFAULT_PERIOD: PeriodConfig = { durationMinutes: 50, type: "AUTO" };
+
 export const DEFAULT_WEEK_SCHEDULE: WeekSchedule = {
-  mon: { enabled: true, periods: 1 },
-  tue: { enabled: false, periods: 1 },
-  wed: { enabled: true, periods: 1 },
-  thu: { enabled: false, periods: 1 },
-  fri: { enabled: true, periods: 1 },
-  sat: { enabled: false, periods: 1 },
-  sun: { enabled: false, periods: 1 },
+  mon: { enabled: true, periods: [{ ...DEFAULT_PERIOD }] },
+  tue: { enabled: false, periods: [{ ...DEFAULT_PERIOD }] },
+  wed: { enabled: true, periods: [{ ...DEFAULT_PERIOD }] },
+  thu: { enabled: false, periods: [{ ...DEFAULT_PERIOD }] },
+  fri: { enabled: true, periods: [{ ...DEFAULT_PERIOD }] },
+  sat: { enabled: false, periods: [{ ...DEFAULT_PERIOD }] },
+  sun: { enabled: false, periods: [{ ...DEFAULT_PERIOD }] },
 };
 
 const DAY_KEY_TO_ISO: Record<DayKey, number> = {
@@ -56,37 +65,51 @@ const ISO_TO_DAY_KEY: Record<number, DayKey> = {
   1: "mon", 2: "tue", 3: "wed", 4: "thu", 5: "fri", 6: "sat", 7: "sun",
 };
 
-/** Converts a WeekSchedule into backend RecurringSlot[] (dropping disabled/empty days). */
+/** Converts a WeekSchedule into backend RecurringSlot[] — one entry per weekly period (dropping disabled/empty days). */
 export function weekScheduleToRecurringSlots(schedule: Partial<WeekSchedule>): RecurringSlot[] {
-  return (Object.entries(schedule) as [DayKey, DaySchedule | undefined][])
-    .filter((entry): entry is [DayKey, DaySchedule] => !!entry[1]?.enabled && (entry[1]?.periods ?? 0) > 0)
-    .map(([key, v]) => ({
-      dayOfWeek: DAY_KEY_TO_ISO[key],
-      slotsPerDay: v.periods,
-      durationMinutes: v.durationMinutes ?? 50,
-    }))
-    .sort((a, b) => a.dayOfWeek - b.dayOfWeek);
+  const result: RecurringSlot[] = [];
+  for (const [key, day] of Object.entries(schedule) as [DayKey, DaySchedule | undefined][]) {
+    if (!day?.enabled || !day.periods?.length) continue;
+    day.periods.forEach((p, position) => {
+      result.push({
+        dayOfWeek: DAY_KEY_TO_ISO[key],
+        position,
+        durationMinutes: p.durationMinutes ?? 50,
+        slotType: p.type && p.type !== "AUTO" ? p.type : undefined,
+      });
+    });
+  }
+  return result.sort((a, b) => a.dayOfWeek - b.dayOfWeek || a.position - b.position);
 }
 
 /** Converts backend RecurringSlot[] into a full WeekSchedule (all 7 days present, disabled by default). */
 export function recurringSlotsToWeekSchedule(slots: RecurringSlot[]): WeekSchedule {
-  const schedule: WeekSchedule = { ...DEFAULT_WEEK_SCHEDULE };
-  for (const key of DAY_ORDER) schedule[key] = { enabled: false, periods: 1 };
+  const schedule: WeekSchedule = {} as WeekSchedule;
+  for (const key of DAY_ORDER) schedule[key] = { enabled: false, periods: [{ ...DEFAULT_PERIOD }] };
+
+  const byDay = new Map<DayKey, RecurringSlot[]>();
   for (const slot of slots) {
     const key = ISO_TO_DAY_KEY[slot.dayOfWeek];
-    if (key) {
-      schedule[key] = {
-        enabled: true,
-        periods: slot.slotsPerDay ?? 1,
-        durationMinutes: slot.durationMinutes ?? 50,
-      };
-    }
+    if (!key) continue;
+    const existing = byDay.get(key);
+    if (existing) existing.push(slot);
+    else byDay.set(key, [slot]);
+  }
+  for (const [key, daySlots] of byDay) {
+    daySlots.sort((a, b) => a.position - b.position);
+    schedule[key] = {
+      enabled: true,
+      periods: daySlots.map((s) => ({
+        durationMinutes: s.durationMinutes ?? 50,
+        type: s.slotType ?? "AUTO",
+      })),
+    };
   }
   return schedule;
 }
 
 export function weekScheduleLessonsPerWeek(schedule: WeekSchedule): number {
-  return Object.values(schedule).reduce((sum, d) => sum + (d.enabled ? d.periods : 0), 0);
+  return Object.values(schedule).reduce((sum, d) => sum + (d.enabled ? d.periods.length : 0), 0);
 }
 
 export interface CurriculumPlanDetails {
@@ -99,12 +122,40 @@ export interface CurriculumPlanDetails {
   weekSchedule?: Partial<WeekSchedule>;
 }
 
+/** Upconverts a single day's legacy `{ periods: number, durationMinutes? }` shape into the current `{ periods: PeriodConfig[] }` shape. Already-current days pass through unchanged. */
+function upconvertLegacyDaySchedule(raw: unknown): DaySchedule | undefined {
+  if (!raw || typeof raw !== "object") return undefined;
+  const day = raw as { enabled?: boolean; periods?: unknown; durationMinutes?: unknown };
+  if (Array.isArray(day.periods)) return { enabled: !!day.enabled, periods: day.periods as PeriodConfig[] };
+  if (typeof day.periods === "number") {
+    const legacyDuration = typeof day.durationMinutes === "number" ? day.durationMinutes : 50;
+    return {
+      enabled: !!day.enabled,
+      periods: Array.from({ length: day.periods }, () => ({ durationMinutes: legacyDuration, type: "AUTO" as const })),
+    };
+  }
+  return { enabled: !!day.enabled, periods: [] };
+}
+
+/** Upconverts a plan's stored weekSchedule JSON, tolerating the pre-per-period shape written by older plans. */
+function upconvertWeekSchedule(raw: unknown): Partial<WeekSchedule> | undefined {
+  if (!raw || typeof raw !== "object") return undefined;
+  const result: Partial<WeekSchedule> = {};
+  for (const key of DAY_ORDER) {
+    const converted = upconvertLegacyDaySchedule((raw as Record<string, unknown>)[key]);
+    if (converted) result[key] = converted;
+  }
+  return result;
+}
+
 /** Parses the JSON string stored in metadata.additionalDetails (written by curriculum-plan/novo). */
 export function parsePlanDetails(plan: Document): CurriculumPlanDetails {
   const meta = plan.metadata as Record<string, unknown> | null;
   if (typeof meta?.additionalDetails === "string") {
     try {
-      return JSON.parse(meta.additionalDetails) as CurriculumPlanDetails;
+      const parsed = JSON.parse(meta.additionalDetails) as CurriculumPlanDetails;
+      if (parsed.weekSchedule) parsed.weekSchedule = upconvertWeekSchedule(parsed.weekSchedule);
+      return parsed;
     } catch {
       return {};
     }
@@ -141,7 +192,7 @@ export function isPlanCalendarReady(details: CurriculumPlanDetails): boolean {
   return !!details.periodStart && !!details.periodEnd && planRecurringSlots(details).length > 0;
 }
 
-/** Expands a period + weekly recurring schedule into per-date preview slots, auto-marking Portuguese public holidays. */
+/** Expands a period + weekly recurring schedule into per-date preview slots, auto-marking Portuguese public holidays and honoring any pinned per-period slotType. */
 export function expandSlotsLocally(
   periodStart: string,
   periodEnd: string,
@@ -149,10 +200,13 @@ export function expandSlotsLocally(
 ): PreviewSlot[] {
   if (!periodStart || !periodEnd || recurringSlots.length === 0) return [];
 
-  const dayMap = new Map<number, RecurringSlot>();
+  const dayMap = new Map<number, RecurringSlot[]>();
   for (const rs of recurringSlots) {
-    dayMap.set(rs.dayOfWeek, rs);
+    const existing = dayMap.get(rs.dayOfWeek);
+    if (existing) existing.push(rs);
+    else dayMap.set(rs.dayOfWeek, [rs]);
   }
+  for (const configs of dayMap.values()) configs.sort((a, b) => a.position - b.position);
 
   const startYear = parseInt(periodStart.slice(0, 4), 10);
   const endYear = parseInt(periodEnd.slice(0, 4), 10);
@@ -165,21 +219,20 @@ export function expandSlotsLocally(
 
   while (current <= end) {
     const isoDow = current.getDay() === 0 ? 7 : current.getDay();
-    const rs = dayMap.get(isoDow);
-    if (rs) {
-      const count = rs.slotsPerDay ?? 1;
+    const dayConfigs = dayMap.get(isoDow);
+    if (dayConfigs) {
       // Use local date components — toISOString() converts to UTC, shifting dates for UTC+ timezones
       const dateStr = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, "0")}-${String(current.getDate()).padStart(2, "0")}`;
       const isHoliday = holidays.has(dateStr);
-      for (let s = 0; s < count; s++) {
+      dayConfigs.forEach((rs, i) => {
         slots.push({
-          id: `preview-${dateStr}-${s}`,
+          id: `preview-${dateStr}-${i}`,
           date: dateStr,
-          slotType: isHoliday ? "HOLIDAY" : "LESSON",
+          slotType: isHoliday ? "HOLIDAY" : rs.slotType ?? "LESSON",
           sequenceNumber: seq++,
           durationMinutes: rs.durationMinutes ?? 50,
         });
-      }
+      });
     }
     current.setDate(current.getDate() + 1);
   }
@@ -219,24 +272,58 @@ export function suggestReviewsBeforeAssessments(
   return next;
 }
 
-/** Client-side mirror of the EXERCISE half of TimetableService.applyExerciseAndReviewCadence. */
-export function applyExerciseCadence(slots: PreviewSlot[]): PreviewSlot[] {
+/**
+ * Client-side mirror of the per-day thinning pass in TimetableService.applyExerciseAndReviewCadence:
+ * on a day with more than one LESSON slot left, only the chronologically-first stays
+ * LESSON — the rest become EXERCISE. `slots` must already be in date order.
+ */
+export function thinMultiLessonDays(slots: PreviewSlot[]): PreviewSlot[] {
   const next = slots.map((s) => ({ ...s }));
-  let streak = 0;
+  const seenDates = new Set<string>();
   for (const slot of next) {
     if (slot.slotType !== "LESSON") continue;
-    streak++;
-    if (streak === EXERCISE_EVERY_N_LESSONS) {
+    if (seenDates.has(slot.date)) {
       slot.slotType = "EXERCISE";
-      streak = 0;
+    } else {
+      seenDates.add(slot.date);
     }
   }
   return next;
 }
 
-/** Full auto-cadence (REVIEW pass first, then EXERCISE), for the wizard's initial preview. */
+/**
+ * Client-side mirror of the practice-cadence pass in TimetableService.applyExerciseAndReviewCadence:
+ * every Nth remaining LESSON slot becomes a practice slot, alternating EXERCISE/REVIEW so revisions
+ * show up periodically — not only right before an assessment. Skipped (streak still resets) when
+ * that date already has a pinned EXERCISE/REVIEW/ASSESSMENT slot, so a multi-period day never ends
+ * up with two practice slots back-to-back.
+ */
+export function applyPracticeCadence(slots: PreviewSlot[]): PreviewSlot[] {
+  const next = slots.map((s) => ({ ...s }));
+  const datesAlreadyCovered = new Set<string>();
+  for (const slot of next) {
+    if (slot.slotType === "EXERCISE" || slot.slotType === "REVIEW" || slot.slotType === "ASSESSMENT") {
+      datesAlreadyCovered.add(slot.date);
+    }
+  }
+  let streak = 0;
+  let practiceCount = 0;
+  for (const slot of next) {
+    if (slot.slotType !== "LESSON") continue;
+    streak++;
+    if (streak === EXERCISE_EVERY_N_LESSONS) {
+      streak = 0;
+      if (datesAlreadyCovered.has(slot.date)) continue;
+      practiceCount++;
+      slot.slotType = practiceCount % 2 === 1 ? "EXERCISE" : "REVIEW";
+    }
+  }
+  return next;
+}
+
+/** Full auto-cadence (REVIEW-before-assessment, then per-day thinning, then the alternating practice cadence), for the wizard's initial preview. */
 export function applyExerciseAndReviewCadence(slots: PreviewSlot[]): PreviewSlot[] {
-  return applyExerciseCadence(suggestReviewsBeforeAssessments(slots));
+  return applyPracticeCadence(thinMultiLessonDays(suggestReviewsBeforeAssessments(slots)));
 }
 
 export function buildPlanAutoTitle(plan: Document): string {

@@ -501,7 +501,6 @@ function StepDetails({
         schedule={schedule}
         onChange={onScheduleChange}
         maxPeriodsPerDay={5}
-        showDuration
       />
     </div>
   );

@@ -395,7 +395,7 @@ export default function CurriculumPlanNewPage() {
                 </p>
               </div>
 
-              <WeekSchedulePicker schedule={schedule} onChange={setSchedule} showDuration />
+              <WeekSchedulePicker schedule={schedule} onChange={setSchedule} />
 
               {weeks > 0 && lpw > 0 && (
                 <div className="rounded-lg bg-muted px-4 py-3 text-sm">

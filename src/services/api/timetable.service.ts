@@ -6,8 +6,10 @@ import apiClient from "./client";
 
 export interface RecurringSlot {
   dayOfWeek: number; // 1=Mon..7=Sun (ISO)
-  slotsPerDay?: number;
+  position: number;  // 0-indexed within the day
   durationMinutes?: number;
+  /** Pins this weekly slot to a fixed type; omitted = eligible for the auto-cadence. */
+  slotType?: LessonSlotType;
 }
 
 export interface CreateTimetableParams {
