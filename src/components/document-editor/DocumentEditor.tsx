@@ -45,6 +45,7 @@ import { computeDiff, markdownToNode } from "../editor/utils/diffEngine";
 import RichTextEditor from "../ui/rich-text-editor";
 import AIChatPanel from "./AIChatPanel";
 import DocumentTitle from "./DocumentTitle";
+import CreateCalendarFromPlanButton from "./CreateCalendarFromPlanButton";
 import DownloadButton from "./DownloadButton";
 import ShareButton from "./ShareButton";
 
@@ -1270,6 +1271,9 @@ export default function DocumentEditor({
                             Upgrade
                           </span>
                         </Link>
+                      )}
+                      {activeDocument?.documentType === "curriculumPlan" && !isGenerating && content && (
+                        <CreateCalendarFromPlanButton plan={activeDocument} />
                       )}
                       <ShareButton
                         title={resolvedTitle || defaultTitle}

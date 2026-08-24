@@ -126,6 +126,8 @@ export function SlotDialog({
     (slot.status === "pending" || slot.status === "failed") && !isSlotGenerating;
   const isCompleted = slot.status === "completed";
   const isAssessment = slot.slotType === "ASSESSMENT";
+  const isExercise = slot.slotType === "EXERCISE";
+  const isReview = slot.slotType === "REVIEW";
   const isHoliday = slot.slotType === "HOLIDAY";
 
   const handleTitleSave = () => {
@@ -166,6 +168,16 @@ export function SlotDialog({
               {isAssessment && (
                 <Badge variant="outline" className="text-xs text-amber-600 border-amber-300">
                   Avaliação
+                </Badge>
+              )}
+              {isExercise && (
+                <Badge variant="outline" className="text-xs text-sky-600 border-sky-300">
+                  Exercícios
+                </Badge>
+              )}
+              {isReview && (
+                <Badge variant="outline" className="text-xs text-violet-600 border-violet-300">
+                  Revisão
                 </Badge>
               )}
             </div>
@@ -224,6 +236,8 @@ export function SlotDialog({
                     <SelectItem value="LESSON">Aula</SelectItem>
                     <SelectItem value="ASSESSMENT">Avaliação</SelectItem>
                     <SelectItem value="HOLIDAY">Feriado</SelectItem>
+                    <SelectItem value="EXERCISE">Exercícios</SelectItem>
+                    <SelectItem value="REVIEW">Revisão</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -245,7 +259,7 @@ export function SlotDialog({
                     <p className="text-sm italic text-muted-foreground/60">
                       {isSlotGenerating
                         ? "A processar…"
-                        : "Gera os tópicos do plano letivo para ver os objetivos de aprendizagem."}
+                        : "Gera os tópicos da turma para ver os objetivos de aprendizagem."}
                     </p>
                   )}
                 </div>

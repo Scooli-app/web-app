@@ -51,7 +51,7 @@ export default function CalendarMonthPage() {
 
   const [monthStart, setMonthStart] = useState<Date>(() => getMonthStart());
   const [slotsByDate, setSlotsByDate] = useState<Map<string, Array<{ timetable: Timetable; slot: LessonSlot }>>>(new Map());
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!enabled) {
@@ -79,7 +79,11 @@ export default function CalendarMonthPage() {
   );
 
   const load = useCallback(async () => {
-    if (activeTimetables.length === 0) { setSlotsByDate(new Map()); return; }
+    if (activeTimetables.length === 0) {
+      setSlotsByDate(new Map());
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const map = new Map<string, Array<{ timetable: Timetable; slot: LessonSlot }>>();
@@ -185,13 +189,13 @@ export default function CalendarMonthPage() {
             <Button variant="outline" size="sm" asChild className="h-8">
               <Link href={Routes.CALENDAR_SEQUENCES}>
                 <CalendarDays className="mr-1 h-3.5 w-3.5" />
-                Planos letivos
+                Turmas
               </Link>
             </Button>
             <Button variant="outline" size="sm" asChild className="h-8">
               <Link href={Routes.CALENDAR_NEW}>
                 <Plus className="mr-1 h-3.5 w-3.5" />
-                Novo plano letivo
+                Nova turma
               </Link>
             </Button>
           </div>
@@ -200,8 +204,9 @@ export default function CalendarMonthPage() {
 
       {/* Month grid */}
       <div className="mx-auto w-full max-w-[1400px] px-4 pb-8 pt-4">
-        {(loading || timetablesLoading) && activeTimetables.length === 0 ? (
-          // Full grid skeleton while data loads on first render
+        {timetablesLoading || (loading && slotsByDate.size === 0) ? (
+          // Full grid skeleton on first load (before any lesson data has arrived).
+          // Subsequent month navigation reuses the lighter per-day skeleton below instead.
           <div className="overflow-hidden rounded-lg border border-border">
             <div className="grid grid-cols-7 divide-x divide-border border-b bg-muted/20">
               {["Seg","Ter","Qua","Qui","Sex","Sáb","Dom"].map((d) => (
@@ -232,14 +237,14 @@ export default function CalendarMonthPage() {
         ) : activeTimetables.length === 0 && !timetablesLoading ? (
           <div className="py-20 text-center">
             <CalendarDays className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-            <p className="text-lg font-medium">Nenhum plano letivo</p>
+            <p className="text-lg font-medium">Nenhuma turma</p>
             <p className="mt-1 text-sm text-muted-foreground">
-              Cria o teu primeiro plano letivo para começar a planificar.
+              Cria a tua primeira turma para começar a planificar.
             </p>
             <Button asChild className="mt-5">
               <Link href={Routes.CALENDAR_NEW}>
                 <Plus className="mr-2 h-4 w-4" />
-                Criar plano letivo
+                Criar turma
               </Link>
             </Button>
           </div>

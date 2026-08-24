@@ -838,13 +838,13 @@ function CalendarPageInner() {
                 <DropdownMenuItem asChild>
                   <Link href={Routes.CALENDAR_SEQUENCES} className="flex items-center gap-2">
                     <CalendarDays className="h-4 w-4" />
-                    Planos letivos
+                    Turmas
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link href={Routes.CALENDAR_NEW} className="flex items-center gap-2">
                     <Plus className="h-4 w-4" />
-                    Novo plano letivo
+                    Nova turma
                   </Link>
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -901,14 +901,14 @@ function CalendarPageInner() {
             <Button variant="outline" size="sm" asChild className="h-8">
               <Link href={Routes.CALENDAR_SEQUENCES}>
                 <CalendarDays className="mr-1 h-3.5 w-3.5" />
-                Planos letivos
+                Turmas
               </Link>
             </Button>
 
             <Button variant="outline" size="sm" asChild className="h-8">
               <Link href={Routes.CALENDAR_NEW}>
                 <Plus className="mr-1 h-3.5 w-3.5" />
-                Novo plano letivo
+                Nova turma
               </Link>
             </Button>
 
@@ -975,14 +975,14 @@ function CalendarPageInner() {
         ) : activeTimetables.length === 0 ? (
           <div className="py-20 text-center">
             <CalendarDays className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-            <p className="text-lg font-medium">Nenhum plano letivo</p>
+            <p className="text-lg font-medium">Nenhuma turma</p>
             <p className="mt-1 text-sm text-muted-foreground">
-              Cria o teu primeiro plano letivo para começar a planificar.
+              Cria a tua primeira turma para começar a planificar.
             </p>
             <Button asChild className="mt-5">
               <Link href={Routes.CALENDAR_NEW}>
                 <Plus className="mr-2 h-4 w-4" />
-                Criar plano letivo
+                Criar turma
               </Link>
             </Button>
           </div>
