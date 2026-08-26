@@ -317,6 +317,37 @@ function normalizeMultipleChoiceOptions(markdown: string): string {
 }
 
 /**
+ * Rejoin a GFM table that got split by one or more stray blank lines between two
+ * table-row lines (e.g. between the header separator and the first data row).
+ * A blank line ends a GFM table, so left alone this turns the rows after the gap
+ * into plain paragraphs with literal, unrendered pipe characters.
+ */
+function joinSplitMarkdownTables(markdown: string): string {
+  const isTableRow = (s: string) => {
+    const t = s.trim();
+    return t.startsWith("|") && t.endsWith("|");
+  };
+
+  const lines = markdown.split("\n");
+  const out: string[] = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (line.trim() === "" && isTableRow(out[out.length - 1] ?? "")) {
+      let j = i;
+      while (j < lines.length && lines[j].trim() === "") j++;
+      if (j < lines.length && isTableRow(lines[j])) {
+        // Drop this blank line — it sits inside a table and would otherwise split it.
+        continue;
+      }
+    }
+    out.push(line);
+  }
+
+  return out.join("\n");
+}
+
+/**
  * Convert markdown to HTML using showdown.js
  * Optimized for TipTap rich text editor
  */
@@ -337,7 +368,9 @@ export function markdownToHtml(markdown: string): string {
     // Clean input markdown
     const cleanMarkdown = escapeAnswerBlanks(
       normalizeMultipleChoiceOptions(
-        normalizeEducationalListFormatting(mathProtected.content)
+        normalizeEducationalListFormatting(
+          joinSplitMarkdownTables(mathProtected.content)
+        )
       )
     )
       // Remove any leaked internal image placeholder tokens from older buggy serializations.
@@ -398,6 +431,14 @@ export function markdownToHtml(markdown: string): string {
  * showdown's makeMarkdown() can omit the separator when the source HTML uses
  * <tbody>-only structure; without it, makeHtml() won't recognise the table
  * and renders the pipe characters as plain text on the next reload.
+ *
+ * Only the row that STARTS a table block (i.e. the header — the previous line
+ * is not itself a table row) can be missing its separator. A naive "insert
+ * between any two consecutive non-separator table rows" check would also fire
+ * between ordinary data rows, injecting a bogus "|---|---|" row into the
+ * middle of the table body on every save — and since that row no longer sits
+ * right after the header, it renders as a literal "---" data row instead of
+ * being treated as structural, compounding with every re-open.
  */
 function ensureMarkdownTableSeparators(md: string): string {
   const lines = md.split("\n");
@@ -406,11 +447,13 @@ function ensureMarkdownTableSeparators(md: string): string {
   const isSeparatorRow = (s: string) => /^\|[\s|:|-]+\|$/.test(s.trim());
 
   for (let i = 0; i < lines.length; i++) {
-    out.push(lines[i]);
+    const line = lines[i];
+    out.push(line);
+    const prev = lines[i - 1] ?? "";
     const next = lines[i + 1] ?? "";
-    // If this is a non-separator table row and the next line is also a table row but NOT a separator → insert one.
-    if (isTableRow(lines[i]) && !isSeparatorRow(lines[i]) && isTableRow(next) && !isSeparatorRow(next)) {
-      const cols = lines[i].split("|").length - 2;
+    const isHeaderRow = isTableRow(line) && !isSeparatorRow(line) && !isTableRow(prev);
+    if (isHeaderRow && !isSeparatorRow(next)) {
+      const cols = line.split("|").length - 2;
       out.push(`|${Array(Math.max(cols, 1)).fill(" --- ").join("|")}|`);
     }
   }
