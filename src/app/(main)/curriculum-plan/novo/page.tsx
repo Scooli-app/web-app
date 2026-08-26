@@ -7,7 +7,9 @@ import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -15,7 +17,13 @@ import { Stepper } from "@/components/ui/stepper";
 import { GenerationProgress } from "@/components/document-creation/GenerationProgress";
 import { WizardShell } from "@/components/document-creation/WizardShell";
 import { WeekSchedulePicker } from "@/components/document-creation/WeekSchedulePicker";
-import { SUBJECTS } from "@/components/document-creation/constants";
+import {
+  SUBJECTS,
+  GRADE_GROUPS,
+  SUBJECTS_BY_GRADE,
+  getSubjectsForGrade,
+  groupSubjectsByCategory,
+} from "@/components/document-creation/constants";
 import {
   createDocument,
   setPendingInitialPrompt,
@@ -30,6 +38,7 @@ import {
 import {
   DEFAULT_WEEK_SCHEDULE,
   weekScheduleLessonsPerWeek,
+  weeksBetweenIso,
   type WeekSchedule,
 } from "@/lib/timetable/planToTimetable";
 import { Routes, type CurriculumPlanningType } from "@/shared/types";
@@ -41,8 +50,6 @@ import { useSelector } from "react-redux";
 import { toast } from "sonner";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-
-const SCHOOL_YEARS = Array.from({ length: 12 }, (_, i) => i + 1);
 
 const STEPS = [
   { id: "period", label: "Período", icon: CalendarDays },
@@ -65,14 +72,6 @@ function toISO(d: Date): string {
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function weeksBetween(startISO: string, endISO: string): number {
-  const start = new Date(startISO);
-  const end = new Date(endISO);
-  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return 0;
-  const ms = end.getTime() - start.getTime();
-  return Math.max(0, Math.round(ms / (1000 * 60 * 60 * 24 * 7)));
-}
 
 function formatDatePT(iso: string): string {
   if (!iso) return "—";
@@ -119,8 +118,8 @@ export default function CurriculumPlanNewPage() {
   const [planningType, setPlanningType] = useState<CurriculumPlanningType>("trimester");
   const [periodStart, setPeriodStart] = useState<Date | undefined>(undefined);
   const [periodEnd, setPeriodEnd] = useState<Date | undefined>(undefined);
-  const [subjectValue, setSubjectValue] = useState("");
-  const [schoolYear, setSchoolYear] = useState(5);
+  const [subjectId, setSubjectId] = useState("");
+  const [gradeLevel, setGradeLevel] = useState("5");
   const [schedule, setSchedule] = useState<WeekSchedule>(DEFAULT_WEEK_SCHEDULE);
   const [submitting, setSubmitting] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
@@ -134,13 +133,29 @@ export default function CurriculumPlanNewPage() {
   const lpw = useMemo(() => weekScheduleLessonsPerWeek(schedule), [schedule]);
   const periodStartISO = useMemo(() => (periodStart ? toISO(periodStart) : ""), [periodStart]);
   const periodEndISO = useMemo(() => (periodEnd ? toISO(periodEnd) : ""), [periodEnd]);
-  const weeks = useMemo(() => weeksBetween(periodStartISO, periodEndISO), [periodStartISO, periodEndISO]);
+  const weeks = useMemo(() => weeksBetweenIso(periodStartISO, periodEndISO), [periodStartISO, periodEndISO]);
   const totalLessons = lpw * weeks;
 
-  const subjectLabel = useMemo(
-    () => SUBJECTS.find((s) => s.value === subjectValue)?.label ?? "",
-    [subjectValue]
+  const selectedSubject = useMemo(
+    () => SUBJECTS.find((s) => s.id === subjectId),
+    [subjectId]
   );
+  const subjectLabel = selectedSubject?.label ?? "";
+  // Backend expects the canonical English value, not the internal id used for selection.
+  const subjectValue = selectedSubject?.value ?? "";
+  const schoolYear = Number(gradeLevel) || 0;
+
+  const groupedSubjects = useMemo(
+    () => groupSubjectsByCategory(getSubjectsForGrade(gradeLevel)),
+    [gradeLevel]
+  );
+
+  function handleGradeLevelChange(grade: string) {
+    setGradeLevel(grade);
+    // Reset subject if it isn't offered for the newly selected grade
+    const ids = SUBJECTS_BY_GRADE[grade] ?? [];
+    if (subjectId && !ids.includes(subjectId)) setSubjectId("");
+  }
 
   function applyPreset(preset: SchoolPeriodPreset) {
     setPeriodStart(new Date(`${preset.start}T00:00:00`));
@@ -150,7 +165,7 @@ export default function CurriculumPlanNewPage() {
 
   // step validation
   const step1Valid = !!periodStart && !!periodEnd && periodEnd > periodStart;
-  const step2Valid = !!subjectValue;
+  const step2Valid = !!subjectId && !!gradeLevel;
   const step3Valid = lpw > 0;
 
   function goNext() {
@@ -347,40 +362,55 @@ export default function CurriculumPlanNewPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="subject">Disciplina</Label>
-                <Select value={subjectValue} onValueChange={setSubjectValue}>
-                  <SelectTrigger id="subject" className="h-12 text-base">
-                    <SelectValue placeholder="Seleciona a disciplina" />
+                <Label htmlFor="schoolYear">Ano de escolaridade *</Label>
+                <Select value={gradeLevel} onValueChange={handleGradeLevelChange}>
+                  <SelectTrigger id="schoolYear" className="h-12 text-base">
+                    <SelectValue placeholder="Seleciona o ano" />
                   </SelectTrigger>
                   <SelectContent>
-                    {SUBJECTS.map((s) => (
-                      <SelectItem key={s.id} value={s.value}>
-                        {s.label}
-                      </SelectItem>
+                    {GRADE_GROUPS.map((group) => (
+                      <SelectGroup key={group.label}>
+                        <SelectLabel className="text-xs font-bold text-primary border-b border-border/50 mb-1">
+                          {group.label}
+                        </SelectLabel>
+                        {group.grades.map((g) => (
+                          <SelectItem key={g.id} value={g.id}>
+                            {g.label}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="schoolYear">Ano de escolaridade</Label>
-                <div className="grid grid-cols-4 gap-2 sm:grid-cols-6">
-                  {SCHOOL_YEARS.map((y) => (
-                    <button
-                      key={y}
-                      type="button"
-                      onClick={() => setSchoolYear(y)}
-                      className={cn(
-                        "rounded-lg border py-3 text-sm font-medium transition-colors",
-                        schoolYear === y
-                          ? "border-primary bg-primary text-primary-foreground"
-                          : "border-border hover:border-primary hover:text-primary"
-                      )}
-                    >
-                      {y}.º
-                    </button>
-                  ))}
-                </div>
+                <Label htmlFor="subject">Disciplina *</Label>
+                <Select value={subjectId} onValueChange={setSubjectId} disabled={!gradeLevel}>
+                  <SelectTrigger id="subject" className="h-12 text-base">
+                    <SelectValue
+                      placeholder={
+                        gradeLevel
+                          ? "Seleciona a disciplina"
+                          : "Seleciona primeiro o ano de escolaridade"
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-[380px]">
+                    {groupedSubjects.map(({ category, subjects }) => (
+                      <SelectGroup key={category}>
+                        <SelectLabel className="text-xs font-bold text-primary border-b border-border/50 mb-1">
+                          {category}
+                        </SelectLabel>
+                        {subjects.map((s) => (
+                          <SelectItem key={s.id} value={s.id}>
+                            {s.label}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           )}

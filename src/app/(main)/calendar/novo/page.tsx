@@ -27,7 +27,10 @@ import {
   SUBJECTS,
   GRADE_GROUPS,
   SUBJECTS_BY_GRADE,
+  TIMETABLE_COLORS,
   translateSubject,
+  getSubjectsForGrade,
+  groupSubjectsByCategory,
 } from "@/components/document-creation/constants";
 import { selectIsHorarioPlanosEnabled } from "@/store/features/selectors";
 import { createTimetable, generateTopics } from "@/store/timetable/timetableSlice";
@@ -46,6 +49,7 @@ import {
   suggestReviewsBeforeAssessments,
   weekScheduleLessonsPerWeek,
   weekScheduleToRecurringSlots,
+  weeksBetweenIso,
   type PreviewSlot,
   type SlotType,
   type WeekSchedule,
@@ -361,41 +365,24 @@ interface StepDetailsProps {
   gradeLevel: string;
   classLabel: string;
   title: string;
+  color: string;
   schedule: WeekSchedule;
+  periodStart: string;
+  periodEnd: string;
   onFieldChange: (field: string, value: string) => void;
   onScheduleChange: (schedule: WeekSchedule) => void;
+  onColorChange: (color: string) => void;
 }
-
-/** Subject IDs available for the chosen grade, or all subjects if no grade yet. */
-function useAvailableSubjects(gradeLevel: string) {
-  const ids = gradeLevel ? (SUBJECTS_BY_GRADE[gradeLevel] ?? []) : SUBJECTS.map((s) => s.id);
-  return SUBJECTS.filter((s) => ids.includes(s.id));
-}
-
-const SUBJECT_CATEGORY_ORDER = [
-  "Disciplinas Gerais",
-  "Ciências",
-  "Ciências Sociais e Humanas",
-  "Línguas",
-  "Artes",
-  "Literatura",
-  "Educação Física",
-  "Tecnologia",
-  "Cidadania",
-  "Religião",
-];
 
 function StepDetails({
-  subject, gradeLevel, classLabel, title,
-  schedule, onFieldChange, onScheduleChange,
+  subject, gradeLevel, classLabel, title, color,
+  schedule, periodStart, periodEnd, onFieldChange, onScheduleChange, onColorChange,
 }: StepDetailsProps) {
 
-  const availableSubjects = useAvailableSubjects(gradeLevel);
-  const groupedSubjects = availableSubjects.reduce<Record<string, typeof SUBJECTS>>((acc, s) => {
-    if (!acc[s.category]) acc[s.category] = [];
-    acc[s.category].push(s);
-    return acc;
-  }, {});
+  const groupedSubjects = groupSubjectsByCategory(getSubjectsForGrade(gradeLevel));
+  const lpw = weekScheduleLessonsPerWeek(schedule);
+  const weeks = weeksBetweenIso(periodStart, periodEnd);
+  const totalLessons = lpw * weeks;
 
   const handleGradeChange = (grade: string) => {
     onFieldChange("gradeLevel", grade);
@@ -466,34 +453,50 @@ function StepDetails({
             />
           </SelectTrigger>
           <SelectContent className="max-h-[380px]">
-            {SUBJECT_CATEGORY_ORDER.map((cat) => {
-              const subs = groupedSubjects[cat];
-              if (!subs?.length) return null;
-              return (
-                <SelectGroup key={cat}>
-                  <SelectLabel className="text-xs font-bold text-primary border-b border-border/50 mb-1">
-                    {cat}
-                  </SelectLabel>
-                  {subs.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>
-                      {s.label}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              );
-            })}
+            {groupedSubjects.map(({ category, subjects }) => (
+              <SelectGroup key={category}>
+                <SelectLabel className="text-xs font-bold text-primary border-b border-border/50 mb-1">
+                  {category}
+                </SelectLabel>
+                {subjects.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>
+                    {s.label}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            ))}
           </SelectContent>
         </Select>
       </div>
 
-      {/* Title */}
-      <div className="space-y-1.5">
-        <Label>Nome da turma</Label>
-        <Input
-          placeholder="Auto-preenchido"
-          value={title}
-          onChange={(e) => onFieldChange("title", e.target.value)}
-        />
+      {/* Title + color */}
+      <div className="grid grid-cols-[1fr_auto] gap-3">
+        <div className="space-y-1.5">
+          <Label>Nome da turma</Label>
+          <Input
+            placeholder="Auto-preenchido"
+            value={title}
+            onChange={(e) => onFieldChange("title", e.target.value)}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label>Cor</Label>
+          <div className="flex flex-wrap gap-1.5 pt-2.5">
+            {TIMETABLE_COLORS.map((c) => (
+              <button
+                key={c}
+                type="button"
+                onClick={() => onColorChange(c)}
+                className={cn(
+                  "h-6 w-6 rounded-full border-2 transition-transform hover:scale-110",
+                  color === c ? "border-foreground scale-110" : "border-transparent"
+                )}
+                style={{ backgroundColor: c }}
+                aria-label={c}
+              />
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* Weekly schedule */}
@@ -502,6 +505,13 @@ function StepDetails({
         onChange={onScheduleChange}
         maxPeriodsPerDay={5}
       />
+
+      {weeks > 0 && lpw > 0 && (
+        <div className="rounded-lg bg-muted px-4 py-3 text-sm">
+          <span className="font-medium">{totalLessons} aulas</span> estimadas
+          {" "}({weeks} sem. × {lpw} aulas/sem.)
+        </div>
+      )}
     </div>
   );
 }
@@ -705,6 +715,8 @@ function CalendarNewPageContent() {
   const [gradeLevel, setGradeLevel] = useState("");
   const [classLabel, setClassLabel] = useState("");
   const [title, setTitle] = useState("");
+  const [titleTouched, setTitleTouched] = useState(false);
+  const [color, setColor] = useState<string>(TIMETABLE_COLORS[0]);
   const [periodStart, setPeriodStart] = useState("");
   const [periodEnd, setPeriodEnd] = useState("");
   const [schoolYearLabel, setSchoolYearLabel] = useState(() => {
@@ -735,9 +747,12 @@ function CalendarNewPageContent() {
       .join(" ");
   }, [subject, gradeLevel, classLabel]);
 
+  // Keeps following ano/turma/disciplina changes until the user edits the field directly —
+  // comparing against the previous autoTitle would freeze the moment any one of those fields
+  // changed and the title had already caught up with the earlier autoTitle.
   useEffect(() => {
-    if (!title || title === autoTitle) setTitle(autoTitle);
-  }, [autoTitle, title]);
+    if (!titleTouched) setTitle(autoTitle);
+  }, [autoTitle, titleTouched]);
 
   useEffect(() => {
     if (!enabled) router.replace(AppRoutes.DASHBOARD);
@@ -821,6 +836,7 @@ function CalendarNewPageContent() {
         subject: subjectValue,
         gradeLevel: Number(gradeLevel),
         classLabel: classLabel || undefined,
+        color,
         periodStart,
         periodEnd,
         schoolYearLabel: schoolYearLabel || undefined,
@@ -928,14 +944,18 @@ function CalendarNewPageContent() {
                 gradeLevel={gradeLevel}
                 classLabel={classLabel}
                 title={title}
+                color={color}
                 schedule={schedule}
+                periodStart={periodStart}
+                periodEnd={periodEnd}
                 onFieldChange={(field, value) => {
                   if (field === "subject") setSubject(value);
                   else if (field === "gradeLevel") setGradeLevel(value);
                   else if (field === "classLabel") setClassLabel(value);
-                  else if (field === "title") setTitle(value);
+                  else if (field === "title") { setTitle(value); setTitleTouched(true); }
                 }}
                 onScheduleChange={setSchedule}
+                onColorChange={setColor}
               />
             )}
             {step === "rever_datas" && (

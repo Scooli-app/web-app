@@ -429,6 +429,12 @@ export const GRADE_GROUPS = [
   },
 ] as const;
 
+/** Shared palette for turma/timetable color-coding — used by both the creation wizard and the edit dialog. */
+export const TIMETABLE_COLORS = [
+  "#7F77DD", "#2BB5A0", "#E27060", "#4A90D9",
+  "#F5A623", "#5CB85C", "#E91E8C", "#9E9E9E",
+] as const;
+
 export const LESSON_TIMES = [
   { id: "30", label: "30 min", value: 30 },
   { id: "45", label: "45 min", value: 45 },
@@ -789,6 +795,37 @@ export const SUBJECTS_BY_GRADE: Record<string, Subject["id"][]> = {
 /** Translates an English backend subject value to its Portuguese display label. */
 export function translateSubject(englishValue: string): string {
   return SUBJECTS.find((s) => s.value === englishValue)?.label ?? englishValue;
+}
+
+/** Display order for subject categories in grouped dropdowns. */
+export const SUBJECT_CATEGORY_ORDER = [
+  "Disciplinas Gerais",
+  "Ciências",
+  "Ciências Sociais e Humanas",
+  "Línguas",
+  "Artes",
+  "Literatura",
+  "Educação Física",
+  "Tecnologia",
+  "Cidadania",
+  "Religião",
+];
+
+/** Subjects available for the given grade level (SUBJECTS_BY_GRADE id, e.g. "5"), or all subjects if no grade is chosen yet. */
+export function getSubjectsForGrade(gradeLevel: string): Subject[] {
+  const ids = gradeLevel ? (SUBJECTS_BY_GRADE[gradeLevel] ?? []) : SUBJECTS.map((s) => s.id);
+  return SUBJECTS.filter((s) => ids.includes(s.id));
+}
+
+/** Groups subjects by category, in SUBJECT_CATEGORY_ORDER order, dropping empty categories. */
+export function groupSubjectsByCategory(subjects: Subject[]): { category: string; subjects: Subject[] }[] {
+  const byCategory = subjects.reduce<Record<string, Subject[]>>((acc, s) => {
+    (acc[s.category] ??= []).push(s);
+    return acc;
+  }, {});
+  return SUBJECT_CATEGORY_ORDER
+    .map((category) => ({ category, subjects: byCategory[category] ?? [] }))
+    .filter((g) => g.subjects.length > 0);
 }
 
 export const AMBIGUOUS_COMPONENTS_SUBJECTS = [

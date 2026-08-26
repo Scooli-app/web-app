@@ -306,6 +306,7 @@ export function CalendarDashboardWidget() {
                         {dateLabel}
                       </span>
                       {" · "}
+                      {lesson.timetable.gradeLevel ? `${lesson.timetable.gradeLevel}.º ` : ""}
                       {translateSubject(lesson.timetable.subject)}
                       {lesson.timetable.classLabel ? ` · ${lesson.timetable.classLabel}` : ""}
                     </p>

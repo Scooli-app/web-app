@@ -232,6 +232,7 @@ function LessonCard({
               className="mt-0.5 truncate text-[11px] font-medium"
               style={{ color }}
             >
+              {timetable.gradeLevel ? `${timetable.gradeLevel}.º ` : ""}
               {translateSubject(timetable.subject)}
               {timetable.classLabel ? ` · ${timetable.classLabel}` : ""}
             </p>
@@ -958,6 +959,7 @@ function CalendarPageInner() {
                       className="h-1.5 w-1.5 shrink-0 rounded-full"
                       style={{ backgroundColor: t.color || "#7F77DD" }}
                     />
+                    {t.gradeLevel ? `${t.gradeLevel}.º ` : ""}
                     {translateSubject(t.subject)}
                     {t.classLabel ? ` · ${t.classLabel}` : ""}
                   </button>
