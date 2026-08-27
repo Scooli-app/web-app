@@ -48,7 +48,8 @@ export type TeachingLevel =
   | "1ST_CYCLE"
   | "2ND_CYCLE"
   | "3RD_CYCLE"
-  | "SECONDARY";
+  | "SECONDARY"
+  | "PROFESSIONAL";
 
 export const ACQUISITION_SOURCE_LABELS: Record<AcquisitionSource, string> = {
   SEARCH_ENGINE: "Google, Bing ou outro motor de busca",
@@ -84,6 +85,7 @@ export const TEACHING_LEVEL_LABELS: Record<TeachingLevel, string> = {
   "2ND_CYCLE": "2.º ciclo",
   "3RD_CYCLE": "3.º ciclo",
   SECONDARY: "Secundário",
+  PROFESSIONAL: "Ensino profissional",
 };
 
 export interface OnboardingStatusResponse {
