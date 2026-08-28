@@ -815,7 +815,7 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
               className,
             )}
           >
-            <div className="flex h-full w-full min-w-0 flex-col items-center overflow-x-hidden p-3 sm:p-4 md:p-6">
+            <div className="flex h-full w-full min-w-0 flex-col items-center p-3 sm:p-4 md:p-6">
               {children}
             </div>
           </main>
