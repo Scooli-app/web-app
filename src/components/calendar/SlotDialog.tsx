@@ -158,6 +158,7 @@ export function SlotDialog({
                 style={{ backgroundColor: color }}
               >
                 <span className="h-1.5 w-1.5 rounded-full bg-white/70" />
+                {slot.timetable.gradeLevel ? `${slot.timetable.gradeLevel}.º ` : ""}
                 {translateSubject(slot.timetable.subject)}
                 {slot.timetable.classLabel ? ` · ${slot.timetable.classLabel}` : ""}
               </span>

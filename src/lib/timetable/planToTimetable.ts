@@ -112,6 +112,15 @@ export function weekScheduleLessonsPerWeek(schedule: WeekSchedule): number {
   return Object.values(schedule).reduce((sum, d) => sum + (d.enabled ? d.periods.length : 0), 0);
 }
 
+/** Whole weeks between two ISO dates — shared by both creation wizards for the "N aulas estimadas" preview. */
+export function weeksBetweenIso(startISO: string, endISO: string): number {
+  const start = new Date(startISO);
+  const end = new Date(endISO);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return 0;
+  const ms = end.getTime() - start.getTime();
+  return Math.max(0, Math.round(ms / (1000 * 60 * 60 * 24 * 7)));
+}
+
 export interface CurriculumPlanDetails {
   planningType?: string;
   periodStart?: string;

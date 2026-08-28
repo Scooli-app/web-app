@@ -18,7 +18,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-import { translateSubject } from "@/components/document-creation/constants";
+import { translateSubject, TIMETABLE_COLORS } from "@/components/document-creation/constants";
 import { Routes, type Document } from "@/shared/types";
 import { selectIsHorarioPlanosEnabled } from "@/store/features/selectors";
 import { fetchTimetables, deleteTimetable, updateTimetable } from "@/store/timetable/timetableSlice";
@@ -123,11 +123,6 @@ interface EditDialogProps {
   onSave: (data: { title: string; classLabel: string; color: string; linkedCurriculumPlan: string | null }) => void;
   onCancel: () => void;
 }
-
-const TIMETABLE_COLORS = [
-  "#7F77DD", "#2BB5A0", "#E27060", "#4A90D9",
-  "#F5A623", "#5CB85C", "#E91E8C", "#9E9E9E",
-];
 
 function EditDialog({ timetable, isSaving, onSave, onCancel }: EditDialogProps) {
   const [title, setTitle] = useState("");
