@@ -59,6 +59,44 @@ const SUBJECTS_BY_LABEL_LENGTH = [...SUBJECTS].sort(
 );
 
 /**
+ * High-confidence topical cues that imply a subject even when the subject
+ * itself is never named — e.g. "Os Lusíadas" clearly means Português. Curated
+ * to well-known curriculum topics, not exhaustive: this is a fallback for
+ * when the exact-label match above finds nothing, not a replacement for it.
+ */
+const SUBJECT_TOPIC_KEYWORDS: { subjectId: string; keywords: string[] }[] = [
+  {
+    subjectId: "portugues",
+    keywords: [
+      "lusiadas", "camoes", "fernando pessoa", "eca de queiros", "eca de queiroz",
+      "jose saramago", "sophia de mello breyner", "gil vicente",
+      "cesario verde", "almeida garrett", "auto da barca", "memorial do convento",
+      "mensagem", "os maias", "frei luis de sousa",
+    ],
+  },
+  {
+    subjectId: "historia",
+    keywords: [
+      "revolucao francesa", "segunda guerra mundial", "primeira guerra mundial",
+      "revolucao industrial", "descobrimentos", "estado novo", "25 de abril",
+      "guerra fria", "idade media", "renascimento",
+    ],
+  },
+  {
+    subjectId: "ciencias_naturais",
+    keywords: ["fotossintese", "sistema solar", "ciclo da agua", "ecossistema"],
+  },
+  {
+    subjectId: "matematica",
+    keywords: ["fracoes", "equacoes", "trigonometria", "numeros primos"],
+  },
+  {
+    subjectId: "geografia",
+    keywords: ["placas tectonicas", "uniao europeia"],
+  },
+];
+
+/**
  * Best-effort extraction of document type, school year and subject from a
  * teacher's free-text request (e.g. "plano de aula sobre frações para o 3.º ano").
  *
@@ -98,6 +136,17 @@ export function parseQuickCreate(input: string): QuickCreateParse {
     if (indexOfKeyword(norm, normalize(subject.label)) !== -1) {
       subjectId = subject.id;
       break;
+    }
+  }
+
+  // Fallback: no subject named outright, but a well-known topic implies one
+  // (e.g. "Camões" implies Português) — see SUBJECT_TOPIC_KEYWORDS above.
+  if (!subjectId) {
+    for (const { subjectId: sid, keywords } of SUBJECT_TOPIC_KEYWORDS) {
+      if (keywords.some((keyword) => indexOfKeyword(norm, keyword) !== -1)) {
+        subjectId = sid;
+        break;
+      }
     }
   }
 

@@ -6,8 +6,10 @@ import apiClient from "./client";
 
 export interface RecurringSlot {
   dayOfWeek: number; // 1=Mon..7=Sun (ISO)
-  slotsPerDay?: number;
+  position: number;  // 0-indexed within the day
   durationMinutes?: number;
+  /** Pins this weekly slot to a fixed type; omitted = eligible for the auto-cadence. */
+  slotType?: LessonSlotType;
 }
 
 export interface CreateTimetableParams {
@@ -24,6 +26,8 @@ export interface CreateTimetableParams {
   recurringSlots?: RecurringSlot[];
   holidays?: string[];     // ISO dates — HOLIDAY / skipped
   assessmentDates?: string[]; // ISO dates — ASSESSMENT slots
+  exerciseDates?: string[]; // ISO dates — EXERCISE slots (explicit, overrides auto-cadence)
+  reviewDates?: string[];   // ISO dates — REVIEW slots (explicit, overrides auto-cadence)
 }
 
 export interface UpdateTimetableParams {
@@ -51,7 +55,7 @@ export interface Timetable {
 }
 
 export type LessonSlotStatus = "pending" | "generating" | "completed" | "failed" | "skipped";
-export type LessonSlotType = "LESSON" | "ASSESSMENT" | "HOLIDAY";
+export type LessonSlotType = "LESSON" | "ASSESSMENT" | "HOLIDAY" | "EXERCISE" | "REVIEW";
 
 export interface LessonSlot {
   id: string;
@@ -107,6 +111,13 @@ export async function createTimetable(params: CreateTimetableParams): Promise<Ti
 
 export async function listTimetables(): Promise<Timetable[]> {
   const response = await apiClient.get<Timetable[]>("/timetable");
+  return response.data;
+}
+
+export async function getTimetablesByLinkedPlan(planId: string): Promise<Timetable[]> {
+  const response = await apiClient.get<Timetable[]>("/timetable", {
+    params: { linkedCurriculumPlan: planId },
+  });
   return response.data;
 }
 

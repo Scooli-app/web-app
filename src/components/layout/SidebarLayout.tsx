@@ -135,7 +135,7 @@ const CALENDAR_NAV_ITEM: NavItem = {
   title: "Calendário",
   href: Routes.CALENDAR,
   icon: CalendarRange,
-  description: "Planos letivos e geração automática",
+  description: "Turmas e geração automática",
 };
 
 const CONTENT_CREATION: NavItem[] = [
@@ -815,7 +815,7 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
               className,
             )}
           >
-            <div className="flex h-full w-full min-w-0 flex-col items-center overflow-x-hidden p-3 sm:p-4 md:p-6">
+            <div className="flex h-full w-full min-w-0 flex-col items-center p-3 sm:p-4 md:p-6">
               {children}
             </div>
           </main>

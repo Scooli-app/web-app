@@ -18,7 +18,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-import { translateSubject } from "@/components/document-creation/constants";
+import { translateSubject, TIMETABLE_COLORS } from "@/components/document-creation/constants";
 import { Routes, type Document } from "@/shared/types";
 import { selectIsHorarioPlanosEnabled } from "@/store/features/selectors";
 import { fetchTimetables, deleteTimetable, updateTimetable } from "@/store/timetable/timetableSlice";
@@ -57,14 +57,14 @@ function DeleteDialog({ timetable, isDeleting, onConfirm, onCancel }: DeleteDial
               <AlertTriangle className="h-6 w-6" />
             </div>
             <div>
-              <DialogTitle>Eliminar plano letivo?</DialogTitle>
+              <DialogTitle>Eliminar turma?</DialogTitle>
               <DialogDescription className="mt-1">
                 Tens a certeza que queres eliminar{" "}
                 <span className="font-medium text-foreground">
                   &quot;{timetable?.title}&quot;
                 </span>
                 ? Escolhe se pretendes manter ou eliminar os documentos gerados
-                associados a este plano letivo.
+                associados a esta turma.
               </DialogDescription>
             </div>
           </div>
@@ -77,7 +77,7 @@ function DeleteDialog({ timetable, isDeleting, onConfirm, onCancel }: DeleteDial
             className="w-full justify-start text-left h-auto py-3 px-4"
           >
             <div className="flex flex-col items-start">
-              <span className="font-medium">Eliminar apenas o plano letivo</span>
+              <span className="font-medium">Eliminar apenas a turma</span>
               <span className="text-xs text-muted-foreground font-normal">
                 Os documentos gerados são mantidos
               </span>
@@ -95,7 +95,7 @@ function DeleteDialog({ timetable, isDeleting, onConfirm, onCancel }: DeleteDial
               <Trash2 className="mr-2 h-4 w-4 shrink-0" />
             )}
             <div className="flex flex-col items-start">
-              <span className="font-medium">Eliminar plano letivo e documentos</span>
+              <span className="font-medium">Eliminar turma e documentos</span>
               <span className="text-xs text-red-200 font-normal">
                 Todos os documentos associados serão apagados
               </span>
@@ -123,11 +123,6 @@ interface EditDialogProps {
   onSave: (data: { title: string; classLabel: string; color: string; linkedCurriculumPlan: string | null }) => void;
   onCancel: () => void;
 }
-
-const TIMETABLE_COLORS = [
-  "#7F77DD", "#2BB5A0", "#E27060", "#4A90D9",
-  "#F5A623", "#5CB85C", "#E91E8C", "#9E9E9E",
-];
 
 function EditDialog({ timetable, isSaving, onSave, onCancel }: EditDialogProps) {
   const [title, setTitle] = useState("");
@@ -164,7 +159,7 @@ function EditDialog({ timetable, isSaving, onSave, onCancel }: EditDialogProps) 
     <Dialog open={!!timetable} onOpenChange={(open) => !open && onCancel()}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Editar plano letivo</DialogTitle>
+          <DialogTitle>Editar turma</DialogTitle>
           <DialogDescription>Altera o nome, turma, cor ou planificação ligada.</DialogDescription>
         </DialogHeader>
 
@@ -327,7 +322,7 @@ function SequenceCard({ timetable, onDelete, onEdit }: SequenceCardProps) {
             e.preventDefault();
             onEdit(timetable);
           }}
-          title="Editar plano letivo"
+          title="Editar turma"
         >
           <Edit2 className="h-4 w-4" />
         </Button>
@@ -422,16 +417,16 @@ export default function SequenciasPage() {
             </Link>
           </Button>
           <div>
-            <h1 className="text-xl font-semibold">Planos letivos</h1>
+            <h1 className="text-xl font-semibold">Turmas</h1>
             <p className="text-sm text-muted-foreground">
-              Todos os teus planos letivos
+              Todas as tuas turmas
             </p>
           </div>
         </div>
         <Button asChild size="sm">
           <Link href={Routes.CALENDAR_NEW}>
             <Plus className="mr-1.5 h-4 w-4" />
-            Novo plano letivo
+            Nova turma
           </Link>
         </Button>
       </div>
@@ -444,15 +439,15 @@ export default function SequenciasPage() {
         <div className="flex flex-col items-center justify-center gap-4 rounded-lg border border-dashed border-border py-20 text-center">
           <CalendarDays className="h-12 w-12 text-muted-foreground" />
           <div>
-            <p className="font-medium text-foreground">Nenhum plano letivo</p>
+            <p className="font-medium text-foreground">Nenhuma turma</p>
             <p className="mt-1 text-sm text-muted-foreground">
-              Cria o teu primeiro plano letivo para começar a planificar.
+              Cria a tua primeira turma para começar a planificar.
             </p>
           </div>
           <Button asChild>
             <Link href={Routes.CALENDAR_NEW}>
               <Plus className="mr-2 h-4 w-4" />
-              Criar plano letivo
+              Criar turma
             </Link>
           </Button>
         </div>
