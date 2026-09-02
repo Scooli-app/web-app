@@ -11,16 +11,20 @@ export function isPromoActive(): boolean {
 }
 
 export const PROMO_PLAN_CODES = {
-  monthly: "pro_monthly_promo",
-  annual: "pro_annual_promo",
+  monthly: "pro_monthly_promo_rega2026",
+  annual: "pro_annual_promo_rega2026",
 } as const;
 
 // Used to tag analytics events with a boolean instead of forcing every
 // downstream chart/insight to do a "plan_code contains _promo" filter.
+// Also matches the retired August promo codes so historical/grandfathered
+// promo subscribers are still tagged correctly.
 export function isPromoPlanCode(planCode: string | null | undefined): boolean {
   return (
     planCode === PROMO_PLAN_CODES.monthly ||
-    planCode === PROMO_PLAN_CODES.annual
+    planCode === PROMO_PLAN_CODES.annual ||
+    planCode === "pro_monthly_promo" ||
+    planCode === "pro_annual_promo"
   );
 }
 
@@ -31,14 +35,14 @@ export const PROMO_PLANS: SubscriptionPlan[] = [
   {
     planCode: PROMO_PLAN_CODES.monthly,
     name: "Scooli Pro Mensal",
-    priceCents: 299,
+    priceCents: 499,
     currency: "EUR",
     interval: "month",
   },
   {
     planCode: PROMO_PLAN_CODES.annual,
     name: "Scooli Pro Anual",
-    priceCents: 2870,
+    priceCents: 4790,
     currency: "EUR",
     interval: "year",
   },
