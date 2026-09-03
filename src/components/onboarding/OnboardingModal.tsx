@@ -144,6 +144,7 @@ const teachingLevelOptions: { value: TeachingLevel; label: string }[] = [
   { value: "2ND_CYCLE", label: TEACHING_LEVEL_LABELS["2ND_CYCLE"] },
   { value: "3RD_CYCLE", label: TEACHING_LEVEL_LABELS["3RD_CYCLE"] },
   { value: "SECONDARY", label: TEACHING_LEVEL_LABELS.SECONDARY },
+  { value: "PROFESSIONAL", label: TEACHING_LEVEL_LABELS.PROFESSIONAL },
 ];
 
 const goalOptions: { value: OnboardingGoal; label: string; emoji: string }[] = [

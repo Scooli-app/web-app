@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { TeachingProfileCard } from "@/components/teaching-profile/TeachingProfileCard";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   createPortalSession,
@@ -346,6 +347,9 @@ function SettingsContent() {
             Gerir Conta
           </Button>
         </div>
+
+        {/* Teaching Profile Card */}
+        <TeachingProfileCard />
 
         {/* Subscription & Generations Card */}
         <div className="bg-card p-4 sm:p-6 md:p-8 rounded-2xl shadow-md border border-border">
