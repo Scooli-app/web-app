@@ -1,5 +1,6 @@
 "use client";
 
+import { BillingNifCard } from "@/components/billing/BillingNifCard";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -596,6 +597,8 @@ function SettingsContent() {
             </>
           )}
         </div>
+
+        <BillingNifCard />
 
         {/* App Preferences Card */}
         <div className="bg-card p-4 sm:p-6 md:p-8 rounded-2xl shadow-md border border-border">
