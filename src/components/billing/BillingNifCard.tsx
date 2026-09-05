@@ -34,7 +34,8 @@ export function BillingNifCard() {
         setSavedNif(user.nif ?? "");
       })
       .catch(() => {
-        if (!cancelled) toast.error("Não foi possível carregar os dados de faturação.");
+        if (!cancelled)
+          toast.error("Não foi possível carregar os dados de faturação.");
       })
       .finally(() => {
         if (!cancelled) setIsLoading(false);
@@ -114,9 +115,11 @@ export function BillingNifCard() {
                 setError(null);
               }}
             />
-            <p id="nif-hint" className="text-sm text-muted-foreground">
-              {error ?? "Opcional. Sem NIF, a fatura sai como consumidor final."}
-            </p>
+            {error ?? (
+              <p id="nif-hint" className="text-sm text-red-500">
+                {error}
+              </p>
+            )}
           </div>
 
           <Button
