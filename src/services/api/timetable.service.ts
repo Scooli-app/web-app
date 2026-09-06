@@ -3,6 +3,7 @@
  */
 
 import apiClient from "./client";
+import { featureFeedbackTrigger } from "@/store/featureFeedbackTrigger";
 
 export interface RecurringSlot {
   dayOfWeek: number; // 1=Mon..7=Sun (ISO)
@@ -236,7 +237,10 @@ async function streamTimetableEndpoint(
         case "chunk": callbacks.onChunk?.(evt.data); break;
         case "title": callbacks.onTitle?.(evt.data); break;
         case "documentId": callbacks.onDocumentId?.(evt.data); break;
-        case "done": callbacks.onDone?.(evt.data); break;
+        case "done":
+          callbacks.onDone?.(evt.data);
+          featureFeedbackTrigger.notifyCompletion(); // a lesson plan / week batch just finished
+          break;
         case "error": callbacks.onError?.(evt.data); break;
         case "slot_start": callbacks.onSlotStart?.(evt.data); break;
         case "slot_done": callbacks.onSlotDone?.(evt.data); break;

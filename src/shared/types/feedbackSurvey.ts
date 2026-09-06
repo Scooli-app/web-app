@@ -1,4 +1,6 @@
 export const APP_FEEDBACK_SURVEY_PROMPT_KEY = "app_feedback_v1" as const;
+/** Feedback about the Planificações + Turmas features — emoji + free text, no tags. */
+export const FEATURES_FEEDBACK_PROMPT_KEY = "features_feedback_v1" as const;
 
 export enum FeedbackSurveyStatus {
   PENDING = "PENDING",
@@ -71,6 +73,7 @@ export interface FeedbackSurveyPromptRequest {
 export interface FeedbackSurveySubmitRequest {
   promptKey: string;
   sentiment: FeedbackSurveySentiment;
-  selectedTags: FeedbackSurveyTag[];
+  /** Optional — feature feedback (emoji + free text) submits none. */
+  selectedTags?: FeedbackSurveyTag[];
   comment?: string;
 }

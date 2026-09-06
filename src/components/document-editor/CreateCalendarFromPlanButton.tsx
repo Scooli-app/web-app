@@ -15,6 +15,7 @@ import {
   buildCreateTimetableParamsFromPlan,
   buildPlanAutoTitle,
 } from "@/lib/timetable/planToTimetable";
+import { GenerationProgress } from "@/components/document-creation/GenerationProgress";
 import { getTimetablesByLinkedPlan } from "@/services/api/timetable.service";
 import { Routes } from "@/shared/types/routes";
 import type { Document } from "@/shared/types/document";
@@ -31,6 +32,15 @@ interface CreateCalendarFromPlanButtonProps {
   disabled?: boolean;
   className?: string;
 }
+
+// Mirrors the calendar/novo wizard's loading copy — createTimetable + generateTopics
+// together take up to a minute, and the tiny button spinner gave no feedback.
+const CREATION_STEPS = [
+  "A mapear competências curriculares",
+  "A organizar conteúdos e sequência pedagógica",
+  "A definir avaliações e critérios",
+  "Revisão pedagógica final",
+] as const;
 
 /**
  * One-click "Criar turma" for a finished term-plan (Planificação) document.
@@ -50,6 +60,7 @@ export default function CreateCalendarFromPlanButton({
   const [existingTimetableId, setExistingTimetableId] = useState<string | null>(null);
   const [checking, setChecking] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
+  const [creationStep, setCreationStep] = useState(0);
   const [isNameDialogOpen, setIsNameDialogOpen] = useState(false);
   const [name, setName] = useState("");
   const [classLabel, setClassLabel] = useState("");
@@ -105,6 +116,13 @@ export default function CreateCalendarFromPlanButton({
 
     setIsNameDialogOpen(false);
     setIsCreating(true);
+    setCreationStep(0);
+    // No progress events from createTimetable/generateTopics — advance the
+    // indicator on a timer so the ~1-min wait isn't a blank spinner.
+    const stepTimer = setInterval(
+      () => setCreationStep((s) => Math.min(s + 1, CREATION_STEPS.length - 1)),
+      12_000,
+    );
     posthog.capture("calendar_created_from_plan_one_click", {
       document_id: plan.id,
       subject: plan.subject,
@@ -119,6 +137,7 @@ export default function CreateCalendarFromPlanButton({
       })
     );
     if (!createTimetable.fulfilled.match(result)) {
+      clearInterval(stepTimer);
       toast.error(
         typeof result.payload === "string"
           ? result.payload
@@ -134,6 +153,8 @@ export default function CreateCalendarFromPlanButton({
       // on arrival — matches the calendar/novo wizard's own loading-step behavior.
       await dispatch(generateTopics(timetableId));
     } finally {
+      clearInterval(stepTimer);
+      setCreationStep(CREATION_STEPS.length - 1);
       router.push(`${Routes.CALENDAR}/${timetableId}`);
     }
   };
@@ -154,6 +175,17 @@ export default function CreateCalendarFromPlanButton({
         )}
         <span className="hidden sm:inline">{isCreating ? "A criar..." : "Criar turma"}</span>
       </Button>
+
+      {isCreating && (
+        <div className="fixed inset-0 z-[130] flex items-center justify-center bg-background/95 backdrop-blur-sm">
+          <GenerationProgress
+            title="A criar a tua turma…"
+            subtitle="A Scooli está a gerar os tópicos e a distribuição pedagógica. Pode demorar até um minuto."
+            steps={CREATION_STEPS}
+            currentStep={creationStep}
+          />
+        </div>
+      )}
 
       <Dialog open={isNameDialogOpen} onOpenChange={setIsNameDialogOpen}>
         <DialogContent className="max-w-sm">

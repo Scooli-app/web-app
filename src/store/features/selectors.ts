@@ -17,6 +17,13 @@ const selectEnabledFeatureFlags = createSelector(
       .map(([feature]) => feature as FeatureFlag))
 );
 
+/** True once GET /features has resolved at least once (fulfilled or rejected).
+ *  Feature-flag route guards must wait for this before deciding to redirect. */
+export const selectFeaturesLoaded = createSelector(
+  [selectFeaturesState],
+  (featuresState) => featuresState.loaded
+);
+
 
 
 
