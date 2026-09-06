@@ -4,25 +4,18 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { selectIsCurriculumPlanEnabled } from "@/store/features/selectors";
+import { useFeatureAccess } from "@/components/feature/useFeatureAccess";
+import { FeatureUnavailable } from "@/components/feature/FeatureUnavailable";
 import { Routes, type Document } from "@/shared/types";
 import { getDocuments } from "@/services/api/document.service";
 import { CalendarDays, ChevronRight, Loader2, Sparkles, Upload } from "lucide-react";
 import { translateSubject } from "@/components/document-creation/constants";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useSelector } from "react-redux";
 
 export default function CurriculumPlanLandingPage() {
-  const enabled = useSelector(selectIsCurriculumPlanEnabled);
-  const router = useRouter();
+  const { loaded: featuresLoaded, enabled } = useFeatureAccess(selectIsCurriculumPlanEnabled);
   const [plans, setPlans] = useState<Document[]>([]);
   const [plansLoading, setPlansLoading] = useState(true);
-
-  useEffect(() => {
-    if (!enabled) {
-      router.replace(Routes.DASHBOARD);
-    }
-  }, [enabled, router]);
 
   useEffect(() => {
     if (!enabled) return;
@@ -33,7 +26,14 @@ export default function CurriculumPlanLandingPage() {
       .finally(() => setPlansLoading(false));
   }, [enabled]);
 
-  if (!enabled) return null;
+  if (!featuresLoaded) return null;
+  if (!enabled)
+    return (
+      <FeatureUnavailable
+        title="As Planificações"
+        description="Gera planificações curriculares completas alinhadas com as Aprendizagens Essenciais. Disponível nos planos pagos."
+      />
+    );
 
   return (
     <div className="mx-auto w-full max-w-4xl space-y-6 px-4 py-8">
