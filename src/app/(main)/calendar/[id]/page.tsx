@@ -3,6 +3,8 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { selectIsHorarioPlanosEnabled } from "@/store/features/selectors";
+import { useFeatureAccess } from "@/components/feature/useFeatureAccess";
+import { FeatureUnavailable } from "@/components/feature/FeatureUnavailable";
 import {
   fetchTimetable,
   fetchLessons,
@@ -35,7 +37,7 @@ import { SlotDialog } from "@/components/calendar/SlotDialog";
 import type { SlotWithTimetable } from "@/shared/types/calendar";
 import { toIso, getWeekStart, addDays, formatWeekLabel } from "@/shared/utils/calendar";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSelector } from "react-redux";
 import { useAuth } from "@clerk/nextjs";
@@ -123,11 +125,10 @@ function SlotCard({ slot, color, subject, classLabel, onOpen }: SlotCardProps) {
 export default function CalendarViewPage() {
   const params = useParams();
   const id = params.id as string;
-  const enabled = useSelector(selectIsHorarioPlanosEnabled);
+  const { loaded: featuresLoaded, enabled } = useFeatureAccess(selectIsHorarioPlanosEnabled);
   const { currentTimetable, slots, isSlotsLoading } =
     useSelector((state: RootState) => state.timetable);
   const dispatch = useAppDispatch();
-  const router = useRouter();
   const { getToken } = useAuth();
 
   const [weekStart, setWeekStart] = useState<Date>(() => getWeekStart(new Date()));
@@ -138,10 +139,10 @@ export default function CalendarViewPage() {
   const streamRef = useRef("");
 
   useEffect(() => {
-    if (!enabled) { router.replace(Routes.DASHBOARD); return; }
+    if (!enabled) return; // gated users get the FeatureUnavailable screen below
     dispatch(fetchTimetable(id));
     dispatch(fetchLessons({ timetableId: id }));
-  }, [enabled, id, dispatch, router]);
+  }, [enabled, id, dispatch]);
 
   // Keep selectedSlot in sync with store (status updates from SSE)
   useEffect(() => {
@@ -305,7 +306,14 @@ export default function CalendarViewPage() {
   const timetableSubject = currentTimetable?.subject ?? "";
   const timetableClassLabel = currentTimetable?.classLabel ?? "";
 
-  if (!enabled) return null;
+  if (!featuresLoaded) return null;
+  if (!enabled)
+    return (
+      <FeatureUnavailable
+        title="As Turmas"
+        description="Cria o horário semanal de uma turma, gera a sequência de tópicos e os planos de aula. Disponível nos planos pagos."
+      />
+    );
 
   return (
     <div className="mx-auto w-full max-w-5xl space-y-4 px-4 py-6">
