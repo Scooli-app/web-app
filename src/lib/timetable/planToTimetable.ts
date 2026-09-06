@@ -196,9 +196,25 @@ export function inferSchoolYearLabel(details: CurriculumPlanDetails): string {
   return "";
 }
 
-/** A plan can drive one-click calendar creation only if it has dates AND a weekly schedule. */
-export function isPlanCalendarReady(details: CurriculumPlanDetails): boolean {
-  return !!details.periodStart && !!details.periodEnd && planRecurringSlots(details).length > 0;
+/** Parses a plan's grade level to a positive integer, or null when absent/invalid. */
+export function parsePlanGradeLevel(plan: Document): number | null {
+  const raw = typeof plan.gradeLevel === "string" ? plan.gradeLevel.trim() : plan.gradeLevel;
+  const n = Number(raw);
+  return Number.isInteger(n) && n >= 1 && n <= 12 ? n : null;
+}
+
+/**
+ * A plan can drive one-click calendar creation only if it has dates, a weekly
+ * schedule AND a usable grade level. Without the grade check the caller used to
+ * fall through to `gradeLevel: 0` and silently create a "0.º ano" turma.
+ */
+export function isPlanCalendarReady(plan: Document, details: CurriculumPlanDetails): boolean {
+  return (
+    !!details.periodStart &&
+    !!details.periodEnd &&
+    planRecurringSlots(details).length > 0 &&
+    parsePlanGradeLevel(plan) !== null
+  );
 }
 
 /** Expands a period + weekly recurring schedule into per-date preview slots, auto-marking Portuguese public holidays and honoring any pinned per-period slotType. */
@@ -350,7 +366,10 @@ export function buildPlanAutoTitle(plan: Document): string {
  */
 export function buildCreateTimetableParamsFromPlan(plan: Document): CreateTimetableParams | null {
   const details = parsePlanDetails(plan);
-  if (!isPlanCalendarReady(details)) return null;
+  if (!isPlanCalendarReady(plan, details)) return null;
+
+  const gradeLevel = parsePlanGradeLevel(plan);
+  if (gradeLevel === null) return null; // never invent a "0.º ano" turma — send the user to the wizard
 
   const recurringSlots = planRecurringSlots(details);
   const previewSlots = expandSlotsLocally(details.periodStart as string, details.periodEnd as string, recurringSlots);
@@ -362,7 +381,7 @@ export function buildCreateTimetableParamsFromPlan(plan: Document): CreateTimeta
   return {
     title: buildPlanAutoTitle(plan),
     subject: subjectValue,
-    gradeLevel: plan.gradeLevel ? Number(plan.gradeLevel) : 0,
+    gradeLevel,
     periodStart: details.periodStart as string,
     periodEnd: details.periodEnd as string,
     schoolYearLabel: inferSchoolYearLabel(details) || undefined,
