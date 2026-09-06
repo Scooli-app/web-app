@@ -38,9 +38,12 @@ export interface AdminFeedbackSurveyOverview {
 }
 
 export const adminFeedbackSurveyService = {
-  getOverview: async (): Promise<AdminFeedbackSurveyOverview> => {
+  getOverview: async (
+    promptKey?: string,
+  ): Promise<AdminFeedbackSurveyOverview> => {
     const response = await apiClient.get<AdminFeedbackSurveyOverview>(
       "/admin/feedback-surveys",
+      promptKey ? { params: { promptKey } } : undefined,
     );
     return response.data;
   },
