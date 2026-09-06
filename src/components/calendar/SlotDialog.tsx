@@ -335,15 +335,18 @@ export function SlotDialog({
 
             {/* Linked curriculum plan */}
             {slot.timetable.linkedCurriculumPlan && (
-              <a
-                href={`/curriculum-plan/${slot.timetable.linkedCurriculumPlan}`}
+              <button
+                type="button"
+                onClick={() => {
+                  const planId = slot.timetable.linkedCurriculumPlan;
+                  onClose();
+                  router.push(`${Routes.CURRICULUM_PLAN}/${planId}`);
+                }}
                 className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
-                target="_blank"
-                rel="noreferrer"
               >
                 <ExternalLink className="h-3 w-3" />
                 Ver planificação ligada
-              </a>
+              </button>
             )}
 
             {/* Custom generation instruction */}
