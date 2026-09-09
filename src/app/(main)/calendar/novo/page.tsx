@@ -33,6 +33,8 @@ import {
   groupSubjectsByCategory,
 } from "@/components/document-creation/constants";
 import { selectIsHorarioPlanosEnabled } from "@/store/features/selectors";
+import { useFeatureAccess } from "@/components/feature/useFeatureAccess";
+import { FeatureUnavailable } from "@/components/feature/FeatureUnavailable";
 import { createTimetable, generateTopics } from "@/store/timetable/timetableSlice";
 import { useAppDispatch } from "@/store/hooks";
 import type { RootState } from "@/store/store";
@@ -382,7 +384,11 @@ function StepDetails({
   const groupedSubjects = groupSubjectsByCategory(getSubjectsForGrade(gradeLevel));
   const lpw = weekScheduleLessonsPerWeek(schedule);
   const weeks = weeksBetweenIso(periodStart, periodEnd);
-  const totalLessons = lpw * weeks;
+  // Real expanded slot count (respects the actual calendar), not weeks × lpw.
+  const totalLessons =
+    periodStart && periodEnd && lpw > 0
+      ? expandSlotsLocally(periodStart, periodEnd, weekScheduleToRecurringSlots(schedule)).length
+      : 0;
 
   const handleGradeChange = (grade: string) => {
     onFieldChange("gradeLevel", grade);
@@ -506,10 +512,10 @@ function StepDetails({
         maxPeriodsPerDay={5}
       />
 
-      {weeks > 0 && lpw > 0 && (
+      {totalLessons > 0 && (
         <div className="rounded-lg bg-muted px-4 py-3 text-sm">
-          <span className="font-medium">{totalLessons} aulas</span> estimadas
-          {" "}({weeks} sem. × {lpw} aulas/sem.)
+          <span className="font-medium">{totalLessons} aulas</span>
+          {" "}(~{weeks} semanas × {lpw} aulas/sem., já sem fins-de-semana e feriados)
         </div>
       )}
     </div>
@@ -701,7 +707,7 @@ function StepReverDatas({ slots, onSlotsChange }: StepReverDatasProps) {
 // ─────────────────────── Main page ────────────────────────────────────────────
 
 function CalendarNewPageContent() {
-  const enabled = useSelector(selectIsHorarioPlanosEnabled);
+  const { loaded: featuresLoaded, enabled } = useFeatureAccess(selectIsHorarioPlanosEnabled);
   const isSubmitting = useSelector((state: RootState) => state.timetable.isLoading);
   const dispatch = useAppDispatch();
   const router = useRouter();
@@ -754,9 +760,6 @@ function CalendarNewPageContent() {
     if (!titleTouched) setTitle(autoTitle);
   }, [autoTitle, titleTouched]);
 
-  useEffect(() => {
-    if (!enabled) router.replace(AppRoutes.DASHBOARD);
-  }, [enabled, router]);
 
   const handlePlanSelect = (plan: Document) => {
     setSelectedPlan(plan);
@@ -796,7 +799,14 @@ function CalendarNewPageContent() {
       .catch(() => toast.error("Não foi possível carregar a planificação."));
   }, [searchParams]);
 
-  if (!enabled) return null;
+  if (!featuresLoaded) return null;
+  if (!enabled)
+    return (
+      <FeatureUnavailable
+        title="As Turmas"
+        description="Cria o horário semanal de uma turma, gera a sequência de tópicos e os planos de aula. Disponível nos planos pagos."
+      />
+    );
 
   // ── Handlers ──────────────────────────────────────────────────────────────
 

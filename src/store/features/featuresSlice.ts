@@ -19,12 +19,17 @@ export const fetchFeatureFlags = createAsyncThunk(
 interface FeaturesState {
   flags: Partial<Record<FeatureFlag, boolean>>;
   loading: boolean;
+  /** True once the first fetch has resolved (fulfilled OR rejected). Lets guards
+   *  distinguish "flag is off" from "flags not fetched yet" and avoid a redirect
+   *  race on hard navigation / refresh. */
+  loaded: boolean;
   error: string | null;
 }
 
 const initialState: FeaturesState = {
   flags: {},
   loading: false,
+  loaded: false,
   error: null,
 };
 
@@ -36,6 +41,7 @@ const featuresSlice = createSlice({
     resetFeaturesState(state) {
       state.flags = {};
       state.loading = false;
+      state.loaded = false;
       state.error = null;
     },
   },
@@ -47,6 +53,7 @@ const featuresSlice = createSlice({
       })
       .addCase(fetchFeatureFlags.fulfilled, (state, action) => {
         state.loading = false;
+        state.loaded = true;
         state.flags = action.payload.reduce(
           (acc, flag) => {
             acc[flag] = true;
@@ -57,6 +64,7 @@ const featuresSlice = createSlice({
       })
       .addCase(fetchFeatureFlags.rejected, (state, action) => {
         state.loading = false;
+        state.loaded = true;
         state.error = action.payload as string;
         // Default all flags to false on error (fail safe)
         state.flags = {};

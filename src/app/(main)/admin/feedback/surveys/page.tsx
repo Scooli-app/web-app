@@ -15,6 +15,8 @@ import { ResponsiveDataView } from "@/components/ui/responsive-data-view";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { adminFeedbackSurveyService, type AdminFeedbackSurveyOverview } from "@/services/api/admin-feedback-survey.service";
 import {
+  APP_FEEDBACK_SURVEY_PROMPT_KEY,
+  FEATURES_FEEDBACK_PROMPT_KEY,
   FEEDBACK_SURVEY_SENTIMENT_LABELS,
   FEEDBACK_SURVEY_STATUS_LABELS,
   FEEDBACK_SURVEY_TAG_LABELS,
@@ -188,6 +190,9 @@ export default function AdminFeedbackSurveyPage() {
   const [loading, setLoading] = useState(true);
   const [sortField, setSortField] = useState<SurveySortField>("date");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
+  const [promptKey, setPromptKey] = useState<string>(
+    APP_FEEDBACK_SURVEY_PROMPT_KEY,
+  );
 
   const handleSort = (field: SurveySortField) => {
     if (sortField === field) {
@@ -202,14 +207,14 @@ export default function AdminFeedbackSurveyPage() {
     setLoading(true);
 
     try {
-      const data = await adminFeedbackSurveyService.getOverview();
+      const data = await adminFeedbackSurveyService.getOverview(promptKey);
       setOverview(data);
     } catch {
       toast.error("Erro ao carregar respostas do survey.");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [promptKey]);
 
   useEffect(() => {
     loadOverview();
@@ -391,6 +396,28 @@ export default function AdminFeedbackSurveyPage() {
           icon={<BarChart3 className="h-6 w-6 text-primary" />}
           actions={
             <>
+              <div className="flex rounded-lg border border-border p-0.5">
+                {[
+                  { key: APP_FEEDBACK_SURVEY_PROMPT_KEY, label: "App" },
+                  {
+                    key: FEATURES_FEEDBACK_PROMPT_KEY,
+                    label: "Planificações e Turmas",
+                  },
+                ].map((opt) => (
+                  <button
+                    key={opt.key}
+                    type="button"
+                    onClick={() => setPromptKey(opt.key)}
+                    className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+                      promptKey === opt.key
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
               <Button
                 variant="outline"
                 size="sm"

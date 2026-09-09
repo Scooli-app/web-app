@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
 import Link from "next/link";
 
@@ -21,6 +20,8 @@ import { Label } from "@/components/ui/label";
 import { translateSubject, TIMETABLE_COLORS } from "@/components/document-creation/constants";
 import { Routes, type Document } from "@/shared/types";
 import { selectIsHorarioPlanosEnabled } from "@/store/features/selectors";
+import { useFeatureAccess } from "@/components/feature/useFeatureAccess";
+import { FeatureUnavailable } from "@/components/feature/FeatureUnavailable";
 import { fetchTimetables, deleteTimetable, updateTimetable } from "@/store/timetable/timetableSlice";
 import { useAppDispatch } from "@/store/hooks";
 import type { RootState } from "@/store/store";
@@ -350,10 +351,9 @@ function SequenceCard({ timetable, onDelete, onEdit }: SequenceCardProps) {
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function SequenciasPage() {
-  const enabled = useSelector(selectIsHorarioPlanosEnabled);
+  const { loaded: featuresLoaded, enabled } = useFeatureAccess(selectIsHorarioPlanosEnabled);
   const { timetables, isLoading } = useSelector((state: RootState) => state.timetable);
   const dispatch = useAppDispatch();
-  const router = useRouter();
 
   const [pendingDelete, setPendingDelete] = useState<Timetable | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -361,12 +361,9 @@ export default function SequenciasPage() {
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    if (!enabled) {
-      router.replace(Routes.DASHBOARD);
-      return;
-    }
+    if (!enabled) return; // gated users get the FeatureUnavailable screen below
     dispatch(fetchTimetables());
-  }, [enabled, dispatch, router]);
+  }, [enabled, dispatch]);
 
   const handleDeleteConfirm = async (deleteDocuments: boolean) => {
     if (!pendingDelete) return;
@@ -405,7 +402,14 @@ export default function SequenciasPage() {
     }
   };
 
-  if (!enabled) return null;
+  if (!featuresLoaded) return null;
+  if (!enabled)
+    return (
+      <FeatureUnavailable
+        title="As Turmas"
+        description="Cria o horário semanal de uma turma, gera a sequência de tópicos e os planos de aula. Disponível nos planos pagos."
+      />
+    );
 
   return (
     <div className="mx-auto w-full max-w-3xl space-y-6 px-4 py-6">

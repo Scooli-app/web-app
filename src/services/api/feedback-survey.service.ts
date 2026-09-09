@@ -6,9 +6,13 @@ import type {
 import apiClient from "./client";
 
 export const feedbackSurveyService = {
-  getStatus: async (): Promise<FeedbackSurveyStatusResponse> => {
-    const response =
-      await apiClient.get<FeedbackSurveyStatusResponse>("/feedback-survey/status");
+  getStatus: async (
+    promptKey?: string,
+  ): Promise<FeedbackSurveyStatusResponse> => {
+    const response = await apiClient.get<FeedbackSurveyStatusResponse>(
+      "/feedback-survey/status",
+      promptKey ? { params: { promptKey } } : undefined,
+    );
     return response.data;
   },
 

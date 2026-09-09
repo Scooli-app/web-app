@@ -29,6 +29,8 @@ import {
   setPendingInitialPrompt,
 } from "@/store/documents/documentSlice";
 import { selectIsCurriculumPlanEnabled } from "@/store/features/selectors";
+import { useFeatureAccess } from "@/components/feature/useFeatureAccess";
+import { FeatureUnavailable } from "@/components/feature/FeatureUnavailable";
 import { useAppDispatch } from "@/store/hooks";
 import {
   buildSchoolPeriodPresets,
@@ -37,16 +39,17 @@ import {
 } from "@/lib/periodPresets";
 import {
   DEFAULT_WEEK_SCHEDULE,
+  expandSlotsLocally,
   weekScheduleLessonsPerWeek,
+  weekScheduleToRecurringSlots,
   weeksBetweenIso,
   type WeekSchedule,
 } from "@/lib/timetable/planToTimetable";
-import { Routes, type CurriculumPlanningType } from "@/shared/types";
+import { type CurriculumPlanningType } from "@/shared/types";
 import { cn } from "@/shared/utils/utils";
 import { ChevronLeft, ChevronRight, CalendarDays, BookOpen, Settings2, CheckCircle2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
-import { useSelector } from "react-redux";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -110,7 +113,7 @@ function buildPrompt(p: {
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function CurriculumPlanNewPage() {
-  const enabled = useSelector(selectIsCurriculumPlanEnabled);
+  const { loaded: featuresLoaded, enabled } = useFeatureAccess(selectIsCurriculumPlanEnabled);
   const router = useRouter();
   const dispatch = useAppDispatch();
 
@@ -126,15 +129,18 @@ export default function CurriculumPlanNewPage() {
 
   const PRESETS = useMemo(() => buildSchoolPeriodPresets(), []);
 
-  useEffect(() => {
-    if (!enabled) router.replace(Routes.DASHBOARD);
-  }, [enabled, router]);
-
   const lpw = useMemo(() => weekScheduleLessonsPerWeek(schedule), [schedule]);
   const periodStartISO = useMemo(() => (periodStart ? toISO(periodStart) : ""), [periodStart]);
   const periodEndISO = useMemo(() => (periodEnd ? toISO(periodEnd) : ""), [periodEnd]);
   const weeks = useMemo(() => weeksBetweenIso(periodStartISO, periodEndISO), [periodStartISO, periodEndISO]);
-  const totalLessons = lpw * weeks;
+  // Real expanded slot count (respects the actual calendar), not weeks × lpw.
+  const totalLessons = useMemo(
+    () =>
+      periodStartISO && periodEndISO && lpw > 0
+        ? expandSlotsLocally(periodStartISO, periodEndISO, weekScheduleToRecurringSlots(schedule)).length
+        : 0,
+    [periodStartISO, periodEndISO, lpw, schedule],
+  );
 
   const selectedSubject = useMemo(
     () => SUBJECTS.find((s) => s.id === subjectId),
@@ -229,7 +235,14 @@ export default function CurriculumPlanNewPage() {
     }
   }
 
-  if (!enabled) return null;
+  if (!featuresLoaded) return null;
+  if (!enabled)
+    return (
+      <FeatureUnavailable
+        title="As Planificações"
+        description="Gera planificações curriculares completas alinhadas com as Aprendizagens Essenciais. Disponível nos planos pagos."
+      />
+    );
 
   if (step === "loading") {
     return (
@@ -427,10 +440,10 @@ export default function CurriculumPlanNewPage() {
 
               <WeekSchedulePicker schedule={schedule} onChange={setSchedule} />
 
-              {weeks > 0 && lpw > 0 && (
+              {totalLessons > 0 && (
                 <div className="rounded-lg bg-muted px-4 py-3 text-sm">
-                  <span className="font-medium">{totalLessons} aulas</span> estimadas
-                  {" "}({weeks} sem. × {lpw} aulas/sem.)
+                  <span className="font-medium">{totalLessons} aulas</span>
+                  {" "}(~{weeks} semanas × {lpw} aulas/sem., já sem fins-de-semana e feriados)
                 </div>
               )}
             </div>

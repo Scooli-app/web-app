@@ -62,6 +62,8 @@ interface DocumentEditorProps {
   generateMessage?: string;
   chatTitle?: string;
   chatPlaceholder?: string;
+  /** Called after any AI generation/edit stream for this document completes. */
+  onGenerationComplete?: () => void;
 }
 
 const GENERATION_STEPS = [
@@ -211,6 +213,7 @@ export default function DocumentEditor({
   loadingMessage = "A carregar documento...",
   chatTitle = "Assistente de IA",
   chatPlaceholder = "Faça uma pergunta ou peça ajuda...",
+  onGenerationComplete,
 }: DocumentEditorProps) {
   const router = useRouter();
   const dispatch = useAppDispatch();
@@ -273,6 +276,9 @@ export default function DocumentEditor({
   const latestContentRef = useRef(content);
   const accumulatedTitleRef = useRef("");
   const editorRef = useRef<Editor | null>(null);
+  // Kept in a ref so the (large) stream effect doesn't need it in its deps.
+  const onGenerationCompleteRef = useRef(onGenerationComplete);
+  onGenerationCompleteRef.current = onGenerationComplete;
   const isChatInProgressRef = useRef(false);
   const pendingVisualCountRef = useRef(0);
   const completedVisualCountRef = useRef(0);
@@ -736,6 +742,7 @@ export default function DocumentEditor({
               dispatch(setGeneratingImages(false));
               dispatch(fetchUsage());
               dispatch(fetchEntitlements());
+              onGenerationCompleteRef.current?.();
 
               if (expectedVisualCount > 0) {
                 const pollImages = async (attempt: number) => {

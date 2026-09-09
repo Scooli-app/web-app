@@ -2,6 +2,7 @@
 
 import { AssistantProvider } from "@/components/assistant";
 import { AppFeedbackSurveyGate } from "@/components/feedback-survey/AppFeedbackSurveyGate";
+import { FeatureFeedbackGate } from "@/components/feature-feedback/FeatureFeedbackGate";
 import { OnboardingGate } from "@/components/onboarding/OnboardingGate";
 import { PromoGate } from "@/components/promo/PromoGate";
 import { PromoNavCta } from "@/components/promo/PromoNavCta";
@@ -744,6 +745,7 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
           onOpenChange={handleUpgradeModalChange}
         />
         <AppFeedbackSurveyGate />
+        <FeatureFeedbackGate />
         <OnboardingGate />
         <PromoGate />
         <TutorialOverlay />

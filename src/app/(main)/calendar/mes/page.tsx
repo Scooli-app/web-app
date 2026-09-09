@@ -8,6 +8,8 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Routes } from "@/shared/types";
 import { selectIsHorarioPlanosEnabled } from "@/store/features/selectors";
+import { useFeatureAccess } from "@/components/feature/useFeatureAccess";
+import { FeatureUnavailable } from "@/components/feature/FeatureUnavailable";
 import { fetchTimetables } from "@/store/timetable/timetableSlice";
 import { useAppDispatch } from "@/store/hooks";
 import type { RootState } from "@/store/store";
@@ -42,7 +44,7 @@ interface DayInfo {
 }
 
 export default function CalendarMonthPage() {
-  const enabled = useSelector(selectIsHorarioPlanosEnabled);
+  const { loaded: featuresLoaded, enabled } = useFeatureAccess(selectIsHorarioPlanosEnabled);
   const { timetables, isLoading: timetablesLoading } = useSelector(
     (state: RootState) => state.timetable,
   );
@@ -54,12 +56,9 @@ export default function CalendarMonthPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!enabled) {
-      router.replace(Routes.DASHBOARD);
-      return;
-    }
+    if (!enabled) return; // gated users get the FeatureUnavailable screen below
     dispatch(fetchTimetables());
-  }, [enabled, dispatch, router]);
+  }, [enabled, dispatch]);
 
   // Compute the 5–6 week-starts that cover this month
   const weekStarts = useMemo<string[]>(() => {
@@ -148,7 +147,14 @@ export default function CalendarMonthPage() {
     router.push(`${Routes.CALENDAR}?week=${weekStart}`);
   };
 
-  if (!enabled) return null;
+  if (!featuresLoaded) return null;
+  if (!enabled)
+    return (
+      <FeatureUnavailable
+        title="As Turmas"
+        description="Cria o horário semanal de uma turma, gera a sequência de tópicos e os planos de aula. Disponível nos planos pagos."
+      />
+    );
 
   return (
     <div className="flex w-full flex-col">

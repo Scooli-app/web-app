@@ -1,18 +1,18 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { Routes } from "@/shared/types";
 import { PROMO_PLAN_CODES } from "@/shared/utils/promo";
 import { ArrowRight, PartyPopper, Sparkles, Tag } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef } from "react";
 import posthog from "posthog-js";
+import { useEffect, useRef } from "react";
 
 interface PromoOfferModalProps {
   open: boolean;
@@ -56,12 +56,12 @@ export function PromoOfferModal({ open, onOpenChange }: PromoOfferModalProps) {
           </div>
 
           <DialogTitle className="text-2xl font-bold text-foreground mb-1">
-            Oferta limitada
+            Regresso às Aulas 2026
           </DialogTitle>
 
           <DialogDescription className="text-muted-foreground">
-            Scooli Pro por apenas 2,99€/mês nos primeiros 30 dias - e fica com
-            este preço para sempre.
+            Scooli Pro por apenas 4,99€/mês se ativar durante a promoção - fica
+            com este preço para sempre.
           </DialogDescription>
         </div>
 
@@ -100,14 +100,14 @@ export function PromoOfferModal({ open, onOpenChange }: PromoOfferModalProps) {
             onClick={() => goToCheckout(PROMO_PLAN_CODES.monthly)}
             className="w-full h-12 rounded-xl font-bold shadow-md transition-all flex items-center justify-center gap-2 group"
           >
-            Ativar por 2,99€/mês
+            Ativar por 4,99€/mês
             <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
           </Button>
           <button
             onClick={() => goToCheckout(PROMO_PLAN_CODES.annual)}
             className="w-full mt-3 text-sm text-primary hover:text-primary/80 transition-colors py-1 font-medium"
           >
-            Prefiro o anual por 28,70€
+            Prefiro o anual por 47,90€
           </button>
           <button
             onClick={() => handleDismiss(false)}

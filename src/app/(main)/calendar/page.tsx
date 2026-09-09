@@ -2,7 +2,7 @@
 
 import { useAuth } from "@clerk/nextjs";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import {
   Suspense,
   useCallback,
@@ -24,6 +24,8 @@ import {
 import { translateSubject } from "@/components/document-creation/constants";
 import { Routes } from "@/shared/types";
 import { selectIsHorarioPlanosEnabled } from "@/store/features/selectors";
+import { useFeatureAccess } from "@/components/feature/useFeatureAccess";
+import { FeatureUnavailable } from "@/components/feature/FeatureUnavailable";
 import { generationStore } from "@/store/generationStore";
 import { useAppDispatch } from "@/store/hooks";
 import type { RootState } from "@/store/store";
@@ -270,12 +272,11 @@ export default function CalendarPage() {
 }
 
 function CalendarPageInner() {
-  const enabled = useSelector(selectIsHorarioPlanosEnabled);
+  const { loaded: featuresLoaded, enabled } = useFeatureAccess(selectIsHorarioPlanosEnabled);
   const { timetables, isLoading: isLoadingTimetables } = useSelector(
     (state: RootState) => state.timetable,
   );
   const dispatch = useAppDispatch();
-  const router = useRouter();
   const { getToken } = useAuth();
 
   const searchParams = useSearchParams();
@@ -326,14 +327,11 @@ function CalendarPageInner() {
   const [dragOverDay, setDragOverDay] = useState<string | null>(null);
   const [previewGenerating, setPreviewGenerating] = useState(false);
 
-  // Feature gate
+  // Feature gate — gated users get the FeatureUnavailable screen below, not a redirect.
   useEffect(() => {
-    if (!enabled) {
-      router.replace(Routes.DASHBOARD);
-      return;
-    }
+    if (!enabled) return;
     dispatch(fetchTimetables());
-  }, [enabled, dispatch, router]);
+  }, [enabled, dispatch]);
 
   // Stable key — only changes when timetable IDs actually change (not on every Redux render)
   const weekIso = toIso(weekStart);
@@ -792,7 +790,14 @@ function CalendarPageInner() {
   const today = toIso(new Date());
   const activeTimetables = timetables.filter((t) => t.status === "active");
 
-  if (!enabled) return null;
+  if (!featuresLoaded) return null;
+  if (!enabled)
+    return (
+      <FeatureUnavailable
+        title="As Turmas"
+        description="Cria o horário semanal de uma turma, gera a sequência de tópicos e os planos de aula. Disponível nos planos pagos."
+      />
+    );
 
   return (
     <div className="flex w-full flex-col">

@@ -3,6 +3,7 @@
 import { Suspense, use } from "react";
 import dynamic from "next/dynamic";
 import { Loader2 } from "lucide-react";
+import { featureFeedbackTrigger } from "@/store/featureFeedbackTrigger";
 
 function EditorLoading() {
   return (
@@ -41,6 +42,7 @@ export default function CurriculumPlanEditorPage({
         generateMessage="Gerar planificação"
         chatTitle="Assistente de Planificações"
         chatPlaceholder="Pergunta algo ou pede para modificar a planificação..."
+        onGenerationComplete={() => featureFeedbackTrigger.notifyCompletion()}
       />
     </Suspense>
   );

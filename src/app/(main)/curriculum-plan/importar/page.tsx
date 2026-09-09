@@ -15,12 +15,13 @@ import { SUBJECTS } from "@/components/document-creation/constants";
 import apiClient from "@/services/api/client";
 import { getUploadUrl, waitForDocument } from "@/services/api/document.service";
 import { selectIsCurriculumPlanEnabled } from "@/store/features/selectors";
-import { Routes, type CurriculumPlanningType } from "@/shared/types";
+import { useFeatureAccess } from "@/components/feature/useFeatureAccess";
+import { FeatureUnavailable } from "@/components/feature/FeatureUnavailable";
+import { type CurriculumPlanningType } from "@/shared/types";
 import { cn } from "@/shared/utils/utils";
 import { CheckCircle2, Circle, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
-import { useSelector } from "react-redux";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 const PLANNING_TYPES: { value: CurriculumPlanningType; label: string }[] = [
@@ -100,7 +101,7 @@ function detectContentType(filename: string): string {
 }
 
 export default function CurriculumPlanImportPage() {
-  const enabled = useSelector(selectIsCurriculumPlanEnabled);
+  const { loaded: featuresLoaded, enabled } = useFeatureAccess(selectIsCurriculumPlanEnabled);
   const router = useRouter();
 
   const [file, setFile] = useState<File | null>(null);
@@ -112,10 +113,6 @@ export default function CurriculumPlanImportPage() {
   const [periodEnd, setPeriodEnd] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [steps, setSteps] = useState<ImportStep[]>(INITIAL_STEPS);
-
-  useEffect(() => {
-    if (!enabled) router.replace(Routes.DASHBOARD);
-  }, [enabled, router]);
 
   const detectedFormat = useMemo(() => (file ? detectFormat(file.name) : ""), [file]);
 
@@ -197,7 +194,14 @@ export default function CurriculumPlanImportPage() {
     }
   }
 
-  if (!enabled) return null;
+  if (!featuresLoaded) return null;
+  if (!enabled)
+    return (
+      <FeatureUnavailable
+        title="As Planificações"
+        description="Importa uma planificação existente (DOCX/PDF) e a Scooli normaliza-a. Disponível nos planos pagos."
+      />
+    );
 
   return (
     <div className="mx-auto w-full max-w-2xl space-y-6 px-4 py-8">
