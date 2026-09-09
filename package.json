@@ -8,8 +8,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "updateEmails": "npm run updateEmails:pt-PT",
-    "updateEmails:pt-PT": "npx mjml ../chalkboard/services/src/main/resources/emails/mjml/pt-PT/*.mjml -o ../chalkboard/services/src/main/resources/emails/html/pt-PT/",
+    "updateEmails": "npm run updateEmails:pt-PT && npm run updateEmails:en",
+    "updateEmails:pt-PT": "npx mjml --config.allowIncludes true --config.includePath ../chalkboard/services/src/main/resources/emails/mjml ../chalkboard/services/src/main/resources/emails/mjml/pt-PT/*.mjml -o ../chalkboard/services/src/main/resources/emails/html/pt-PT/",
+    "updateEmails:en": "npx mjml --config.allowIncludes true --config.includePath ../chalkboard/services/src/main/resources/emails/mjml ../chalkboard/services/src/main/resources/emails/mjml/en/*.mjml -o ../chalkboard/services/src/main/resources/emails/html/en/",
     "stripe:mock": "stripe listen --forward-to http://localhost:8080/webhooks/stripe",
     "stripe": "stripe listen --forward-to http://localhost:8080/webhooks/stripe",
     "knip": "knip"
