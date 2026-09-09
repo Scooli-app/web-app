@@ -21,26 +21,26 @@ export const teachingProfileService = {
   },
 
   /**
-   * O catálogo de nível 4 são 161 cursos, pelo que a pesquisa do servidor
-   * devolve tudo de uma vez com `q` vazio e o cliente filtra localmente. Evita
-   * uma chamada por tecla.
+   * The level-4 catalogue is 161 courses, so the server search returns
+   * everything at once with an empty `q` and the client filters locally. Avoids
+   * one request per keystroke.
    */
   searchQualifications: async (
     term = "",
-    nivel = 4,
+    level = 4,
     limit = 200
   ): Promise<Qualification[]> => {
     const response = await apiClient.get<Qualification[]>(
       "/teaching-profile/qualifications",
-      { params: { q: term, nivel, limit } }
+      { params: { q: term, level, limit } }
     );
     return response.data;
   },
 
-  getUnits: async (qualificationCodigo: string): Promise<VocationalUnit[]> => {
+  getUnits: async (qualificationCode: string): Promise<VocationalUnit[]> => {
     const response = await apiClient.get<VocationalUnit[]>(
       `/teaching-profile/qualifications/${encodeURIComponent(
-        qualificationCodigo
+        qualificationCode
       )}/units`
     );
     return response.data;

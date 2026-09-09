@@ -1,33 +1,33 @@
 /**
- * Perfil de ensino — o contexto curricular do professor.
+ * Teaching profile — the teacher's curriculum context.
  *
- * Distinto de `onboarding.ts`: o inquérito de onboarding é analytics, saltável
- * e respondido uma vez. Isto é configuração funcional, editável nas Definições,
- * e determina o currículo usado nas gerações.
+ * Distinct from `onboarding.ts`: the onboarding survey is analytics, skippable
+ * and answered once. This is functional configuration, editable from Settings,
+ * and it determines the curriculum used for every generation.
  */
 
-export type EducationType = "regular" | "profissional";
+export type EducationType = "regular" | "vocational";
 
 /**
- * `subject` nas componentes sociocultural e científica, onde o Catálogo
- * Nacional de Qualificações publica disciplinas com código próprio.
- * `unit` na componente tecnológica, onde o catálogo publica apenas unidades de
- * competência — a disciplina é uma construção da escola e não existe em fonte
- * nacional.
+ * `subject` in the sociocultural and scientific components, where the National
+ * Qualifications Catalogue publishes subjects with their own codes.
+ * `unit` in the technological component, where the catalogue publishes only
+ * competence units — the subject there is a school's own grouping and exists
+ * in no national source.
  */
 export type TeachingItemKind = "subject" | "unit";
 
 export type TrainingComponent =
   | "sociocultural"
-  | "cientifica"
-  | "tecnologica";
+  | "scientific"
+  | "technological";
 
 export type IngestionStatus = "pending" | "running" | "indexed" | "failed";
 
 export const TRAINING_COMPONENT_LABELS: Record<TrainingComponent, string> = {
   sociocultural: "Sociocultural",
-  cientifica: "Científica",
-  tecnologica: "Tecnológica",
+  scientific: "Científica",
+  technological: "Tecnológica",
 };
 
 export const INGESTION_STATUS_LABELS: Record<IngestionStatus, string> = {
@@ -38,30 +38,30 @@ export const INGESTION_STATUS_LABELS: Record<IngestionStatus, string> = {
 };
 
 export interface Qualification {
-  codigo: string;
-  qualVersaoId: number | null;
-  designacao: string;
-  nivel: number | null;
+  code: string;
+  versionId: number | null;
+  title: string;
+  level: number | null;
   cnaefCode: string | null;
   cnaefLabel: string | null;
-  /** `RA` = referencial novo com unidades de competência; `PP` = antigo, com UFCD. */
-  conceito: string | null;
+  /** `RA` = new referential with competence units; `PP` = older, with UFCD. */
+  referentialFormat: string | null;
 }
 
 export interface VocationalUnit {
-  codigo: string;
-  designacao: string;
-  ordem: number | null;
+  code: string;
+  title: string;
+  position: number | null;
 }
 
 export interface TeachingCourseState {
-  codigo: string;
-  designacao: string;
+  code: string;
+  title: string;
   ingestionStatus: IngestionStatus;
 }
 
 export interface TeachingItem {
-  qualificationCodigo: string;
+  qualificationCode: string;
   kind: TeachingItemKind;
   code: string;
   label: string;

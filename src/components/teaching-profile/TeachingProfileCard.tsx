@@ -20,7 +20,7 @@ import { Check, GraduationCap, Loader2, Search, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
-/** Remove acentos para pesquisar como o backend e o ETL normalizam. */
+/** Strip accents so search matches how the backend and ETL normalise. */
 function normalize(value: string): string {
   return value
     .normalize("NFKD")
@@ -30,19 +30,19 @@ function normalize(value: string): string {
 }
 
 /**
- * Agrupa unidades por prefixo comum antes do primeiro travessão.
+ * Group units by the common prefix before the first dash.
  *
- * Nos referenciais, uma disciplina aparece como várias unidades com o mesmo
- * prefixo — "Programação em C/C++ - ciclos e decisões", "… - funções e
- * estruturas". A mediana é 25 unidades por curso mas o máximo é 114, e uma
- * lista plana desse tamanho é hostil. Isto recupera boa parte do agrupamento
- * por disciplina sem depender do plano curricular da escola.
+ * In referentials a subject shows up as several units sharing a prefix —
+ * "Programação em C/C++ - ciclos e decisões", "… - funções e estruturas". The
+ * median is 25 units per course but the maximum is 114, and a flat list that
+ * long is hostile. This recovers much of the subject grouping without needing
+ * the school's own curriculum plan.
  */
 function groupUnits(units: VocationalUnit[]): Array<{ prefix: string; units: VocationalUnit[] }> {
   const groups = new Map<string, VocationalUnit[]>();
   for (const unit of units) {
-    const separator = unit.designacao.indexOf(" - ");
-    const prefix = separator > 8 ? unit.designacao.slice(0, separator) : "";
+    const separator = unit.title.indexOf(" - ");
+    const prefix = separator > 8 ? unit.title.slice(0, separator) : "";
     const bucket = groups.get(prefix);
     if (bucket) {
       bucket.push(unit);
@@ -50,7 +50,7 @@ function groupUnits(units: VocationalUnit[]): Array<{ prefix: string; units: Voc
       groups.set(prefix, [unit]);
     }
   }
-  // Prefixos com uma só unidade não são um grupo — voltam para a lista solta.
+  // A prefix with a single unit is not a group — those go back to the loose list.
   const loose: VocationalUnit[] = [];
   const real: Array<{ prefix: string; units: VocationalUnit[] }> = [];
   for (const [prefix, bucket] of groups) {
@@ -92,7 +92,7 @@ export function TeachingProfileCard() {
   const [isSaving, setIsSaving] = useState(false);
   const [catalogError, setCatalogError] = useState<string | null>(null);
 
-  const isProfissional = profile.educationType === "profissional";
+  const isVocational = profile.educationType === "vocational";
 
   useEffect(() => {
     let cancelled = false;
@@ -111,10 +111,10 @@ export function TeachingProfileCard() {
     };
   }, []);
 
-  // O catálogo de nível 4 são 161 cursos: carrega-se uma vez e filtra-se
-  // localmente, para a pesquisa responder sem ida ao servidor por tecla.
+  // The level-4 catalogue is 161 courses: load it once and filter locally so
+  // search responds without a round trip per keystroke.
   useEffect(() => {
-    if (!isProfissional || catalog.length > 0 || catalogError) return;
+    if (!isVocational || catalog.length > 0 || catalogError) return;
     let cancelled = false;
     (async () => {
       try {
@@ -131,14 +131,14 @@ export function TeachingProfileCard() {
     return () => {
       cancelled = true;
     };
-  }, [isProfissional, catalog.length, catalogError]);
+  }, [isVocational, catalog.length, catalogError]);
 
   const loadUnits = useCallback(
-    async (codigo: string) => {
-      if (unitsByCourse[codigo]) return;
+    async (code: string) => {
+      if (unitsByCourse[code]) return;
       try {
-        const units = await teachingProfileService.getUnits(codigo);
-        setUnitsByCourse((current) => ({ ...current, [codigo]: units }));
+        const units = await teachingProfileService.getUnits(code);
+        setUnitsByCourse((current) => ({ ...current, [code]: units }));
       } catch {
         toast.error("Não foi possível obter as unidades deste curso.");
       }
@@ -147,7 +147,7 @@ export function TeachingProfileCard() {
   );
 
   useEffect(() => {
-    profile.courses.forEach((codigo) => void loadUnits(codigo));
+    profile.courses.forEach((code) => void loadUnits(code));
   }, [profile.courses, loadUnits]);
 
   const filtered = useMemo(() => {
@@ -156,56 +156,56 @@ export function TeachingProfileCard() {
     return catalog
       .filter(
         (q) =>
-          normalize(q.designacao).includes(key) ||
-          normalize(q.codigo).includes(key) ||
+          normalize(q.title).includes(key) ||
+          normalize(q.code).includes(key) ||
           normalize(q.cnaefLabel ?? "").includes(key)
       )
       .slice(0, 8);
   }, [catalog, term]);
 
-  const statusFor = (codigo: string): IngestionStatus =>
-    profile.courseStates.find((c) => c.codigo === codigo)?.ingestionStatus ?? "pending";
+  const statusFor = (code: string): IngestionStatus =>
+    profile.courseStates.find((c) => c.code === code)?.ingestionStatus ?? "pending";
 
-  const designacaoFor = (codigo: string): string =>
-    profile.courseStates.find((c) => c.codigo === codigo)?.designacao ??
-    catalog.find((q) => q.codigo === codigo)?.designacao ??
-    codigo;
+  const titleFor = (code: string): string =>
+    profile.courseStates.find((c) => c.code === code)?.title ??
+    catalog.find((q) => q.code === code)?.title ??
+    code;
 
   const setEducationType = (educationType: EducationType) =>
     setProfile((current) => ({ ...current, educationType }));
 
-  const addCourse = (codigo: string) => {
-    if (profile.courses.includes(codigo)) return;
-    setProfile((current) => ({ ...current, courses: [...current.courses, codigo] }));
+  const addCourse = (code: string) => {
+    if (profile.courses.includes(code)) return;
+    setProfile((current) => ({ ...current, courses: [...current.courses, code] }));
     setTerm("");
-    void loadUnits(codigo);
+    void loadUnits(code);
   };
 
-  const removeCourse = (codigo: string) =>
+  const removeCourse = (code: string) =>
     setProfile((current) => ({
       ...current,
-      courses: current.courses.filter((c) => c !== codigo),
-      items: current.items.filter((i) => i.qualificationCodigo !== codigo),
+      courses: current.courses.filter((c) => c !== code),
+      items: current.items.filter((i) => i.qualificationCode !== code),
     }));
 
-  const toggleUnit = (codigo: string, unit: VocationalUnit) => {
+  const toggleUnit = (courseCode: string, unit: VocationalUnit) => {
     const exists = profile.items.some(
-      (i) => i.qualificationCodigo === codigo && i.code === unit.codigo
+      (i) => i.qualificationCode === courseCode && i.code === unit.code
     );
     setProfile((current) => ({
       ...current,
       items: exists
         ? current.items.filter(
-            (i) => !(i.qualificationCodigo === codigo && i.code === unit.codigo)
+            (i) => !(i.qualificationCode === courseCode && i.code === unit.code)
           )
         : [
             ...current.items,
             {
-              qualificationCodigo: codigo,
+              qualificationCode: courseCode,
               kind: "unit",
-              code: unit.codigo,
-              label: unit.designacao,
-              trainingComponent: "tecnologica",
+              code: unit.code,
+              label: unit.title,
+              trainingComponent: "technological",
             } satisfies TeachingItem,
           ],
     }));
@@ -251,7 +251,7 @@ export function TeachingProfileCard() {
         {(
           [
             ["regular", "Ensino regular"],
-            ["profissional", "Ensino profissional"],
+            ["vocational", "Ensino profissional"],
           ] as Array<[EducationType, string]>
         ).map(([value, label]) => (
           <button
@@ -274,7 +274,7 @@ export function TeachingProfileCard() {
         ))}
       </div>
 
-      {!isProfissional ? (
+      {!isVocational ? (
         <p className="text-sm text-muted-foreground">
           No ensino regular continuas a escolher disciplina e ano em cada
           documento.
@@ -314,17 +314,17 @@ export function TeachingProfileCard() {
                 ) : (
                   filtered.map((qualification) => (
                     <button
-                      key={qualification.codigo}
+                      key={qualification.code}
                       type="button"
-                      onClick={() => addCourse(qualification.codigo)}
-                      disabled={profile.courses.includes(qualification.codigo)}
+                      onClick={() => addCourse(qualification.code)}
+                      disabled={profile.courses.includes(qualification.code)}
                       className="w-full text-left px-3 py-2.5 hover:bg-accent disabled:opacity-40 border-b border-border last:border-0"
                     >
                       <span className="block text-sm text-foreground">
-                        {qualification.designacao}
+                        {qualification.title}
                       </span>
                       <span className="block text-xs text-muted-foreground font-mono">
-                        {qualification.codigo} · {qualification.cnaefLabel}
+                        {qualification.code} · {qualification.cnaefLabel}
                       </span>
                     </button>
                   ))
@@ -338,28 +338,28 @@ export function TeachingProfileCard() {
               Ainda não escolheste nenhum curso.
             </p>
           ) : (
-            profile.courses.map((codigo) => {
-              const units = unitsByCourse[codigo];
+            profile.courses.map((code) => {
+              const units = unitsByCourse[code];
               const selected = new Set(
                 profile.items
-                  .filter((i) => i.qualificationCodigo === codigo)
+                  .filter((i) => i.qualificationCode === code)
                   .map((i) => i.code)
               );
               return (
-                <div key={codigo} className="border border-border rounded-xl p-4">
+                <div key={code} className="border border-border rounded-xl p-4">
                   <div className="flex items-start justify-between gap-3 mb-3">
                     <div className="min-w-0">
                       <p className="font-medium text-foreground">
-                        {designacaoFor(codigo)}
+                        {titleFor(code)}
                       </p>
-                      <p className="text-xs text-muted-foreground font-mono">{codigo}</p>
+                      <p className="text-xs text-muted-foreground font-mono">{code}</p>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <StatusBadge status={statusFor(codigo)} />
+                      <StatusBadge status={statusFor(code)} />
                       <button
                         type="button"
-                        onClick={() => removeCourse(codigo)}
-                        aria-label={`Remover ${designacaoFor(codigo)}`}
+                        onClick={() => removeCourse(code)}
+                        aria-label={`Remover ${titleFor(code)}`}
                         className="text-muted-foreground hover:text-destructive p-1"
                       >
                         <X className="w-4 h-4" />
@@ -378,7 +378,7 @@ export function TeachingProfileCard() {
                   ) : (
                     <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
                       {groupUnits(units).map((group, index) => (
-                        <div key={group.prefix || `soltas-${index}`}>
+                        <div key={group.prefix || `loose-${index}`}>
                           {group.prefix && (
                             <p className="text-xs font-medium text-muted-foreground mb-1">
                               {group.prefix}
@@ -387,18 +387,18 @@ export function TeachingProfileCard() {
                           <div className="space-y-1.5">
                             {group.units.map((unit) => (
                               <label
-                                key={unit.codigo}
+                                key={unit.code}
                                 className="flex items-start gap-2.5 text-sm cursor-pointer"
                               >
                                 <Checkbox
-                                  checked={selected.has(unit.codigo)}
-                                  onCheckedChange={() => toggleUnit(codigo, unit)}
+                                  checked={selected.has(unit.code)}
+                                  onCheckedChange={() => toggleUnit(code, unit)}
                                   className="mt-0.5"
                                 />
                                 <span className="text-foreground">
-                                  {unit.designacao}
+                                  {unit.title}
                                   <span className="text-muted-foreground font-mono text-xs ml-1.5">
-                                    {unit.codigo}
+                                    {unit.code}
                                   </span>
                                 </span>
                               </label>
