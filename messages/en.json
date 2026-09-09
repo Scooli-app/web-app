@@ -1,0 +1,209 @@
+{
+  "common": {
+    "selectDate": "Pick a date"
+  },
+  "language": {
+    "interface": {
+      "title": "Interface language",
+      "description": "The language Scooli speaks to you in.",
+      "followBrowser": "Browser",
+      "followBrowserHint": "Following your browser",
+      "options": {
+        "pt-PT": "Português",
+        "en": "English",
+        "system": "Browser"
+      }
+    },
+    "content": {
+      "title": "Language of your materials",
+      "description": "The language Scooli writes the documents it generates in.",
+      "sameAsInterface": "Same as interface",
+      "sameAsInterfaceHint": "Same as the interface language",
+      "curriculumNote": "The curriculum stays Portuguese. Only the language the materials are written in changes — handy if you teach English.",
+      "options": {
+        "pt-PT": "Português",
+        "en": "English",
+        "interface": "Same as interface"
+      }
+    },
+    "saveError": "We couldn't save your language preference."
+  },
+  "nav": {
+    "groups": {
+      "navigation": "Navigation",
+      "contentCreation": "Create content",
+      "system": "System",
+      "school": "School",
+      "admin": "Administration"
+    },
+    "items": {
+      "dashboard": {
+        "title": "Dashboard",
+        "description": "An overview of your activity"
+      },
+      "documents": {
+        "title": "My documents",
+        "description": "Manage your documents"
+      },
+      "community": {
+        "title": "Community library",
+        "description": "Share and discover resources"
+      },
+      "sources": {
+        "title": "My sources",
+        "description": "Manage the material Scooli generates from"
+      },
+      "calendar": {
+        "title": "Calendar",
+        "description": "Classes and automatic generation"
+      },
+      "curriculumPlan": {
+        "title": "Curriculum plans",
+        "description": "Term-long curriculum planning"
+      },
+      "lessonPlan": {
+        "title": "Lesson plans",
+        "description": "Create and edit lesson plans"
+      },
+      "test": {
+        "title": "Tests",
+        "description": "Create and edit tests"
+      },
+      "quiz": {
+        "title": "Quizzes",
+        "description": "Create and edit quizzes"
+      },
+      "worksheet": {
+        "title": "Worksheets",
+        "description": "Create and edit worksheets"
+      },
+      "presentation": {
+        "title": "Presentations",
+        "description": "Create and edit presentations"
+      },
+      "support": {
+        "title": "Support and feedback",
+        "description": "Send feedback and report problems"
+      },
+      "settings": {
+        "title": "Settings",
+        "description": "Manage your account"
+      },
+      "recommendSchool": {
+        "title": "Recommend your school",
+        "description": "Suggest Scooli to your school's leadership"
+      },
+      "admin": {
+        "title": "Admin console",
+        "description": "Manage the platform"
+      },
+      "school": {
+        "title": "School dashboard",
+        "description": "Manage your school, seats and usage"
+      },
+      "schoolMembers": {
+        "title": "Members",
+        "description": "See your school's members and seats"
+      }
+    }
+  },
+  "enums": {
+    "acquisitionSource": {
+      "SEARCH_ENGINE": "Google, Bing or another search engine",
+      "FACEBOOK": "Facebook",
+      "INSTAGRAM": "Instagram",
+      "LINKEDIN": "LinkedIn",
+      "COLLEAGUE_FRIEND": "A colleague, friend or family member",
+      "EDUCATION_SUMMIT": "Education Summit",
+      "AI_ASSISTANT": "ChatGPT, Gemini or another AI assistant",
+      "OTHER": "Somewhere else"
+    },
+    "subjectArea": {
+      "MATH": "Maths",
+      "PORTUGUESE": "Portuguese",
+      "NATURAL_SCIENCES": "Natural Sciences",
+      "PHYSICS_CHEMISTRY": "Physics and Chemistry",
+      "HISTORY": "History",
+      "GEOGRAPHY": "Geography",
+      "ENGLISH": "English",
+      "FRENCH": "French",
+      "SPANISH": "Spanish",
+      "PHYSICAL_EDUCATION": "Physical Education",
+      "VISUAL_ARTS": "Visual Arts",
+      "MUSIC": "Music",
+      "ICT": "ICT / Computing",
+      "PHILOSOPHY": "Philosophy",
+      "OTHER": "Another subject"
+    },
+    "teachingLevel": {
+      "1ST_CYCLE": "1st cycle (years 1–4)",
+      "2ND_CYCLE": "2nd cycle (years 5–6)",
+      "3RD_CYCLE": "3rd cycle (years 7–9)",
+      "SECONDARY": "Secondary (years 10–12)"
+    },
+    "onboardingGoal": {
+      "FASTER_DOCUMENTS": "Put materials together faster",
+      "AI_ASSISTANCE": "Have AI help with the work",
+      "SAVE_TIME_TESTS": "Spend less time on tests and worksheets",
+      "REDUCE_REPETITIVE_WORK": "Cut down on repetitive work",
+      "DISCOVER_COMMUNITY": "Find resources other teachers have shared",
+      "CURIOSITY": "Curiosity, or a colleague recommended it"
+    }
+  },
+  "onboarding": {
+    "dialogLabel": "Welcome to Scooli",
+    "stepIndicator": "Step {step} of {total}",
+    "skip": "Skip",
+    "back": "Back",
+    "next": "Next",
+    "saving": "Saving...",
+    "finish": "Get started",
+    "steps": {
+      "1": {
+        "eyebrow": "Welcome to Scooli 👋",
+        "title": "How did you find us?",
+        "description": "It helps us understand where teachers come across Scooli."
+      },
+      "2": {
+        "eyebrow": "Your profile",
+        "title": "Tell us about yourself",
+        "description": "Optional — it helps us tailor Scooli to your teaching."
+      },
+      "3": {
+        "eyebrow": "Your goals",
+        "title": "What brings you to Scooli?",
+        "description": "Pick everything that applies. You can choose more than one."
+      }
+    },
+    "acquisitionOtherPlaceholder": "Tell us where you found us... (optional)",
+    "teachingLevelTitle": "What you teach",
+    "subjectAreaTitle": "Subjects you teach",
+    "subjectAreaOtherPlaceholder": "Which subject do you teach? (optional)",
+    "contentLanguageTitle": "In which language should Scooli write your materials?",
+    "contentLanguageHint": "The curriculum stays Portuguese — only the language of the materials changes. You can switch this any time in Settings."
+  },
+  "settings": {
+    "title": "Settings",
+    "subtitle": "Manage your account, subscription and preferences.",
+    "preferences": {
+      "title": "Preferences",
+      "theme": {
+        "title": "Theme",
+        "light": "Light",
+        "dark": "Dark",
+        "system": "System",
+        "lightHint": "Light mode",
+        "darkHint": "Dark mode",
+        "systemHint": "Match my system"
+      },
+      "notifications": {
+        "title": "Notifications",
+        "productTitle": "Product news and updates",
+        "productDescription": "Emails about new features",
+        "communityTitle": "Community activity",
+        "communityDescription": "Notifications when someone interacts with your resources",
+        "comingSoon": "Coming soon"
+      }
+    }
+  }
+}

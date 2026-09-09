@@ -1,0 +1,209 @@
+{
+  "common": {
+    "selectDate": "Seleciona uma data"
+  },
+  "language": {
+    "interface": {
+      "title": "Idioma da interface",
+      "description": "A língua em que a Scooli te fala.",
+      "followBrowser": "Navegador",
+      "followBrowserHint": "A seguir o teu navegador",
+      "options": {
+        "pt-PT": "Português",
+        "en": "English",
+        "system": "Navegador"
+      }
+    },
+    "content": {
+      "title": "Idioma dos materiais",
+      "description": "A língua em que a Scooli escreve os documentos que gera.",
+      "sameAsInterface": "Igual à interface",
+      "sameAsInterfaceHint": "Igual ao idioma da interface",
+      "curriculumNote": "O currículo continua a ser o português. Só muda a língua em que os materiais são escritos — útil para quem ensina Inglês.",
+      "options": {
+        "pt-PT": "Português",
+        "en": "English",
+        "interface": "Igual à interface"
+      }
+    },
+    "saveError": "Não foi possível guardar a preferência de idioma."
+  },
+  "nav": {
+    "groups": {
+      "navigation": "Navegação",
+      "contentCreation": "Criação de Conteúdo",
+      "system": "Sistema",
+      "school": "Escola",
+      "admin": "Administração"
+    },
+    "items": {
+      "dashboard": {
+        "title": "Dashboard",
+        "description": "Visão geral da sua atividade"
+      },
+      "documents": {
+        "title": "Os meus documentos",
+        "description": "Gerir os seus documentos"
+      },
+      "community": {
+        "title": "Biblioteca comunitária",
+        "description": "Partilhar e descobrir recursos"
+      },
+      "sources": {
+        "title": "As minhas fontes",
+        "description": "Gerir fontes de conteúdo para geração"
+      },
+      "calendar": {
+        "title": "Calendário",
+        "description": "Turmas e geração automática"
+      },
+      "curriculumPlan": {
+        "title": "Planificações",
+        "description": "Planificações curriculares de período"
+      },
+      "lessonPlan": {
+        "title": "Planos de Aula",
+        "description": "Criar e editar planos de aula"
+      },
+      "test": {
+        "title": "Testes",
+        "description": "Criar e editar testes"
+      },
+      "quiz": {
+        "title": "Quizzes",
+        "description": "Criar e editar quizzes"
+      },
+      "worksheet": {
+        "title": "Fichas de Trabalho",
+        "description": "Criar e editar fichas de trabalho"
+      },
+      "presentation": {
+        "title": "Apresentações",
+        "description": "Criar e editar apresentações"
+      },
+      "support": {
+        "title": "Apoio e sugestões",
+        "description": "Enviar feedback e reportar erros"
+      },
+      "settings": {
+        "title": "Definições",
+        "description": "Configurar a sua conta"
+      },
+      "recommendSchool": {
+        "title": "Recomendar escola",
+        "description": "Sugerir a Scooli à direção da sua escola"
+      },
+      "admin": {
+        "title": "Consola Admin",
+        "description": "Gerir plataforma"
+      },
+      "school": {
+        "title": "Dashboard Escola",
+        "description": "Gerir escola, lugares e utilização"
+      },
+      "schoolMembers": {
+        "title": "Membros",
+        "description": "Ver membros e lugares da escola"
+      }
+    }
+  },
+  "enums": {
+    "acquisitionSource": {
+      "SEARCH_ENGINE": "Google, Bing ou outro motor de busca",
+      "FACEBOOK": "Facebook",
+      "INSTAGRAM": "Instagram",
+      "LINKEDIN": "LinkedIn",
+      "COLLEAGUE_FRIEND": "Colega, familiar ou amigo",
+      "EDUCATION_SUMMIT": "Education Summit",
+      "AI_ASSISTANT": "ChatGPT, Gemini, ou outro assistente de IA",
+      "OTHER": "Outro"
+    },
+    "subjectArea": {
+      "MATH": "Matemática",
+      "PORTUGUESE": "Português",
+      "NATURAL_SCIENCES": "Ciências Naturais",
+      "PHYSICS_CHEMISTRY": "Físico-Química",
+      "HISTORY": "História",
+      "GEOGRAPHY": "Geografia",
+      "ENGLISH": "Inglês",
+      "FRENCH": "Francês",
+      "SPANISH": "Espanhol",
+      "PHYSICAL_EDUCATION": "Educação Física",
+      "VISUAL_ARTS": "Artes Visuais",
+      "MUSIC": "Música",
+      "ICT": "TIC / Informática",
+      "PHILOSOPHY": "Filosofia",
+      "OTHER": "Outro"
+    },
+    "teachingLevel": {
+      "1ST_CYCLE": "1.º ciclo",
+      "2ND_CYCLE": "2.º ciclo",
+      "3RD_CYCLE": "3.º ciclo",
+      "SECONDARY": "Secundário"
+    },
+    "onboardingGoal": {
+      "FASTER_DOCUMENTS": "Criar materiais mais rápido",
+      "AI_ASSISTANCE": "Usar IA para me ajudar",
+      "SAVE_TIME_TESTS": "Poupar tempo com testes e fichas",
+      "REDUCE_REPETITIVE_WORK": "Reduzir trabalho repetitivo",
+      "DISCOVER_COMMUNITY": "Descobrir recursos partilhados por colegas",
+      "CURIOSITY": "Curiosidade / recomendação de colega"
+    }
+  },
+  "onboarding": {
+    "dialogLabel": "Bem-vindo à Scooli",
+    "stepIndicator": "Passo {step} de {total}",
+    "skip": "Saltar",
+    "back": "Voltar",
+    "next": "Próximo",
+    "saving": "A guardar...",
+    "finish": "Começar",
+    "steps": {
+      "1": {
+        "eyebrow": "Bem-vindo à Scooli 👋",
+        "title": "Como nos encontraste?",
+        "description": "Ajuda-nos a perceber onde os professores nos descobrem."
+      },
+      "2": {
+        "eyebrow": "O teu perfil",
+        "title": "Conta-nos sobre ti",
+        "description": "Opcional — ajuda-nos a personalizar a tua experiência."
+      },
+      "3": {
+        "eyebrow": "Os teus objetivos",
+        "title": "O que procuras na Scooli?",
+        "description": "Seleciona tudo o que se aplica. Podes escolher várias opções."
+      }
+    },
+    "acquisitionOtherPlaceholder": "Conta-nos onde nos encontraste... (opcional)",
+    "teachingLevelTitle": "Nível de ensino",
+    "subjectAreaTitle": "Disciplinas que ensinas",
+    "subjectAreaOtherPlaceholder": "Qual é a tua disciplina? (opcional)",
+    "contentLanguageTitle": "Em que idioma queres que a Scooli escreva os teus materiais?",
+    "contentLanguageHint": "O currículo continua a ser o português — muda apenas a língua dos materiais. Podes alterar isto a qualquer momento nas Definições."
+  },
+  "settings": {
+    "title": "Definições",
+    "subtitle": "Gere a tua conta, subscrição e preferências.",
+    "preferences": {
+      "title": "Preferências",
+      "theme": {
+        "title": "Tema",
+        "light": "Claro",
+        "dark": "Escuro",
+        "system": "Sistema",
+        "lightHint": "Modo claro",
+        "darkHint": "Modo escuro",
+        "systemHint": "Detetar automaticamente"
+      },
+      "notifications": {
+        "title": "Notificações",
+        "productTitle": "Novidades e atualizações",
+        "productDescription": "Receber emails sobre novas funcionalidades",
+        "communityTitle": "Atividade na comunidade",
+        "communityDescription": "Notificações sobre interações com os seus recursos",
+        "comingSoon": "Em breve disponível"
+      }
+    }
+  }
+}
