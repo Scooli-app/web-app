@@ -9,6 +9,7 @@ import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { selectIsContextPipelineV2Enabled } from "@/store/features/selectors";
 import { fetchSources } from "@/store/sources/sourcesSlice";
 import { AlertCircle, Check, ExternalLink, Library, Loader2, Scale, Upload } from "lucide-react";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { FormUpdateFn } from "../types";
@@ -30,6 +31,7 @@ export function SourcePickerSection({
   schoolYear,
   onUpdate,
 }: SourcePickerSectionProps) {
+  const t = useTranslations("documentCreation.sourcePicker");
   const dispatch = useAppDispatch();
   const { sources, loading } = useAppSelector((state) => state.sources);
   const isContextPipelineV2Enabled = useAppSelector(selectIsContextPipelineV2Enabled);
@@ -107,13 +109,13 @@ export function SourcePickerSection({
             </div>
             <div>
               <h2 className="text-base sm:text-lg font-semibold text-foreground">
-                Fontes de Contexto{" "}
+                {t("title")}{" "}
                 <span className="text-xs sm:text-sm font-normal text-muted-foreground">
-                  (Opcional)
+                  {t("optional")}
                 </span>
               </h2>
               <p className="text-xs sm:text-sm text-muted-foreground">
-                Escolha quais recursos usar na geração
+                {t("description")}
               </p>
             </div>
           </div>
@@ -122,7 +124,7 @@ export function SourcePickerSection({
             className="flex items-center gap-1.5 text-xs text-primary hover:underline underline-offset-2 shrink-0"
           >
             <Upload className="w-3.5 h-3.5" />
-            Gerir fontes
+            {t("manageSources")}
           </Link>
         </div>
 
@@ -144,9 +146,9 @@ export function SourcePickerSection({
             {includeAe && <Check className="w-2.5 h-2.5 text-primary-foreground" />}
           </div>
           <span className="text-sm font-medium flex-1">
-            Incluir Aprendizagens Essenciais (AE)
+            {t("includeAe")}
             <span className="ml-1.5 text-xs font-normal text-muted-foreground">
-              Recomendado
+              {t("recommended")}
             </span>
           </span>
         </div>
@@ -155,14 +157,14 @@ export function SourcePickerSection({
         {isContextPipelineV2Enabled && regulatoryLoading ? (
           <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
             <Loader2 className="w-4 h-4 animate-spin" />
-            A carregar documentos regulatórios...
+            {t("loadingRegulatory")}
           </div>
         ) : isContextPipelineV2Enabled && regulatorySources.length > 0 ? (
           <div className="space-y-2">
             <div className="flex items-center gap-1.5">
               <Scale className="w-3.5 h-3.5 text-muted-foreground" />
               <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
-                Documentos Regulatórios ({regulatorySources.length})
+                {t("regulatoryDocuments", { count: regulatorySources.length })}
               </p>
             </div>
             <div className="space-y-1">
@@ -203,14 +205,14 @@ export function SourcePickerSection({
                             rel="noopener noreferrer"
                             onClick={(e) => e.stopPropagation()}
                             className="text-primary hover:text-primary/80 shrink-0"
-                            aria-label={`Abrir ${source.name} numa nova janela`}
+                            aria-label={t("openInNewWindow", { name: source.name })}
                           >
                             <ExternalLink className="w-3 h-3" />
                           </a>
                         )}
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        {source.chunkCount} excertos
+                        {t("excerpts", { count: source.chunkCount })}
                       </p>
                     </div>
                   </div>
@@ -224,26 +226,26 @@ export function SourcePickerSection({
         {loading ? (
           <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
             <Loader2 className="w-4 h-4 animate-spin" />
-            A carregar fontes...
+            {t("loadingSources")}
           </div>
         ) : indexedSources.length === 0 ? (
           <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>
-              Sem fontes indexadas.{" "}
+              {t("noIndexedSourcesPrefix")}{" "}
               <Link
                 href={Routes.SOURCES}
                 className="text-primary underline underline-offset-2"
               >
-                Carregar documentos
+                {t("uploadDocuments")}
               </Link>{" "}
-              para enriquecer a geração.
+              {t("noIndexedSourcesSuffix")}
             </span>
           </div>
         ) : (
           <div className="space-y-2">
             <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
-              As minhas fontes ({indexedSources.length})
+              {t("mySources", { count: indexedSources.length })}
             </p>
             <div className="space-y-1 max-h-48 overflow-y-auto pr-1">
               {indexedSources.map((source) => {
@@ -276,9 +278,9 @@ export function SourcePickerSection({
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{source.name}</p>
                       <p className="text-xs text-muted-foreground">
-                        {source.chunkCount} excertos
+                        {t("excerpts", { count: source.chunkCount })}
                         {source.subject && ` · ${source.subject}`}
-                        {source.schoolYear && ` · ${source.schoolYear}º ano`}
+                        {source.schoolYear && ` · ${source.schoolYear}${t("schoolYearSuffix")}`}
                       </p>
                     </div>
                     <span className="text-xs text-muted-foreground shrink-0 uppercase">

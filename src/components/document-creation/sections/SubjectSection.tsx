@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/shared/utils/utils";
 import { BookOpen, Check } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { AMBIGUOUS_COMPONENTS_SUBJECTS, SUBJECTS } from "../constants";
 import type { FormUpdateFn } from "../types";
 
@@ -30,6 +31,8 @@ export function SubjectSection({
   className,
   disabled,
 }: SubjectSectionProps) {
+  const t = useTranslations("documentCreation.subject");
+
   // Filter subjects based on availableSubjects prop if provided
   const visibleSubjects = availableSubjects
     ? SUBJECTS.filter((s) => availableSubjects.includes(s.id))
@@ -76,7 +79,7 @@ export function SubjectSection({
               <BookOpen className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
             </div>
             <h2 className="text-base sm:text-lg font-semibold text-foreground">
-              Disciplina <span className="text-destructive">*</span>
+              {t("title")} <span className="text-destructive">*</span>
             </h2>
           </div>
 
@@ -93,7 +96,7 @@ export function SubjectSection({
                 )}
               >
                 {!isSpecificComponent && <Check className="w-3 h-3" />}
-                Formação Geral
+                {t("generalTraining")}
               </button>
               <button
                 type="button"
@@ -106,7 +109,7 @@ export function SubjectSection({
                 )}
               >
                 {isSpecificComponent && <Check className="w-3 h-3" />}
-                Formação Específica
+                {t("specificTraining")}
               </button>
             </div>
           )}
@@ -119,13 +122,13 @@ export function SubjectSection({
         >
           <SelectTrigger
             className="h-11 sm:h-12 px-4 text-sm sm:text-base bg-background border-border rounded-xl"
-            aria-label="Selecionar disciplina"
+            aria-label={t("selectAriaLabel")}
           >
             <SelectValue
               placeholder={
                 disabled
-                  ? "Selecione primeiro o ano de escolaridade..."
-                  : "Selecione uma disciplina..."
+                  ? t("placeholderDisabled")
+                  : t("placeholder")
               }
             />
           </SelectTrigger>

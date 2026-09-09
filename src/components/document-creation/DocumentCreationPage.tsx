@@ -11,6 +11,7 @@ import {
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { selectIsPro } from "@/store/subscription/selectors";
 import { FeatureFlag } from "@/shared/types/featureFlags";
+import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AMBIGUOUS_COMPONENTS_SUBJECTS, SUBJECTS, SUBJECTS_BY_GRADE } from "./constants";
@@ -112,6 +113,8 @@ export default function DocumentCreationPage({
   userId: _userId = "",
 }: DocumentCreationPageProps) {
   const router = useRouter();
+  const t = useTranslations("documentCreation");
+  const tEnums = useTranslations("enums");
   const dispatch = useAppDispatch();
   const isProUser = useAppSelector(selectIsPro);
   const isEntitlementLoading = useAppSelector(selectEntitlementLoading);
@@ -194,7 +197,7 @@ export default function DocumentCreationPage({
             id: "mock-sub",
             type: "text",
             x: 0.10, y: 0.46, w: 0.80, h: 0.12,
-            text: "Apresentação",
+            text: tEnums("documentType.presentation"),
             fontSize: 0.026,
             fontStyle: "normal",
             color: "#ffffff",
@@ -210,7 +213,7 @@ export default function DocumentCreationPage({
       };
       return applyTheme(mockCanvas, theme.id).slides[0] ?? bareSlide;
     });
-  }, []);
+  }, [tEnums]);
 
   const showTeachingMethodSection = documentType.id === "lessonPlan";
   const showWorksheetVariantSection = documentType.id === "worksheet";
@@ -229,27 +232,27 @@ export default function DocumentCreationPage({
     if (isLoading) return;
 
     if (!isPresentation && !formState.templateId) {
-      setError("Por favor, selecione um modelo de documento");
+      setError(t("errors.selectTemplate"));
       return;
     }
 
     if (showWorksheetVariantSection && !formState.worksheetVariant) {
-      setError("Por favor, selecione o objetivo principal da ficha");
+      setError(t("errors.selectWorksheetVariant"));
       return;
     }
 
     if (!formState.topic.trim()) {
-      setError("Por favor, introduza o tema da aula");
+      setError(t("errors.enterTopic"));
       return;
     }
 
     if (!formState.subject) {
-      setError("Por favor, selecione uma disciplina");
+      setError(t("errors.selectSubject"));
       return;
     }
 
     if (!formState.schoolYear) {
-      setError("Por favor, selecione o ano de escolaridade");
+      setError(t("errors.selectSchoolYear"));
       return;
     }
 
@@ -318,7 +321,7 @@ export default function DocumentCreationPage({
       } else {
         const errorMessage =
           (resultAction.payload as string) ||
-          "Ocorreu um erro ao criar o documento.";
+          t("errors.createFailed");
         posthog.capture("document_creation_failed", {
           document_type: documentType.id,
           error_message: errorMessage,
@@ -330,8 +333,8 @@ export default function DocumentCreationPage({
       console.error("Failed to create document:", error);
       const errorMessage =
         error instanceof Error
-          ? `Erro ao criar o documento: ${error.message}`
-          : "Erro ao criar o documento.";
+          ? t("errors.createFailedWithMessage", { message: error.message })
+          : t("errors.createFailedGeneric");
       posthog.capture("document_creation_failed", {
         document_type: documentType.id,
         error_message: errorMessage,
@@ -356,7 +359,7 @@ export default function DocumentCreationPage({
           <div data-tutorial="topic">
             <TopicSection
               topic={formState.topic}
-              placeholder={documentType.placeholder}
+              placeholder={t(`types.${documentType.id}.placeholder`)}
               onUpdate={updateForm}
             />
           </div>
@@ -416,7 +419,7 @@ export default function DocumentCreationPage({
 
           {isPresentation && (
             <div className="rounded-xl border bg-card p-4 shadow-sm">
-              <p className="text-sm font-medium mb-3">Tema visual</p>
+              <p className="text-sm font-medium mb-3">{t("presentationTheme.title")}</p>
               <div className={cn("flex flex-wrap gap-2")}>
                 {themedCoverSlides.map((slide, i) => {
                   const theme = THEMES[i];
@@ -437,7 +440,7 @@ export default function DocumentCreationPage({
                 })}
               </div>
               <p className="text-xs text-muted-foreground mt-2">
-                {THEMES.find((t) => t.id === (formState.themeId ?? "clean"))?.name ?? "Branco"}
+                {THEMES.find((theme) => theme.id === (formState.themeId ?? "clean"))?.name ?? t("presentationTheme.defaultName")}
               </p>
             </div>
           )}

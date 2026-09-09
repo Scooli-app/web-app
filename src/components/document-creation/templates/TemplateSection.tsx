@@ -12,6 +12,7 @@ import {
   Search,
   Sparkles,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { TemplateBrowserModal } from "./TemplateBrowserModal";
 import { TemplateEmptyState } from "./TemplateEmptyState";
@@ -29,6 +30,8 @@ export function TemplateSection({
   onTemplateSelect,
   requireExplicitSelection = false,
 }: TemplateSectionProps) {
+  const t = useTranslations("documentCreation.template");
+  const tBadge = useTranslations("documentCreation.templateBadge");
   const [templates, setTemplates] = useState<DocumentTemplate[]>([]);
   const [selectedTemplate, setSelectedTemplate] =
     useState<DocumentTemplate | null>(null);
@@ -137,7 +140,7 @@ export function TemplateSection({
               <Layers className="h-4 w-4 text-primary sm:h-5 sm:w-5" />
             </div>
             <h2 className="text-base font-semibold text-foreground sm:text-lg">
-              Modelo de Documento <span className="text-destructive">*</span>
+              {t("title")} <span className="text-destructive">*</span>
             </h2>
           </div>
           <div className="h-24 rounded-xl bg-muted animate-pulse" />
@@ -179,7 +182,7 @@ export function TemplateSection({
                   Modelo de Documento <span className="text-destructive">*</span>
                 </h2>
                 <p className="text-xs text-muted-foreground sm:text-sm">
-                  Escolha a estrutura do seu documento
+                  {t("description")}
                 </p>
               </div>
             </div>
@@ -189,10 +192,10 @@ export function TemplateSection({
               size="sm"
               onClick={() => setIsModalOpen(true)}
               className="hidden items-center gap-2 rounded-xl border-border text-foreground hover:border-primary hover:bg-accent sm:flex"
-              aria-label="Procurar modelos"
+              aria-label={t("searchAriaLabel")}
             >
               <Search className="h-4 w-4" />
-              Procurar
+              {t("search")}
             </Button>
           </div>
 
@@ -208,8 +211,8 @@ export function TemplateSection({
             )}
             aria-label={
               selectedTemplate
-                ? `Modelo selecionado: ${selectedTemplate.name}. Clique para alterar.`
-                : "Selecionar modelo de documento"
+                ? t("selectedAriaLabel", { name: selectedTemplate.name })
+                : t("selectAriaLabel")
             }
           >
             {selectedTemplate ? (
@@ -225,16 +228,16 @@ export function TemplateSection({
                     {selectedTemplate.isSystem ? (
                       <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-primary to-primary/70 px-2 py-0.5 text-[10px] font-medium text-primary-foreground sm:text-xs">
                         <Sparkles className="h-2.5 w-2.5" />
-                        Scooli
+                        {tBadge("scooli")}
                       </span>
                     ) : (
                       <span className="inline-flex rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground sm:text-xs">
-                        Personalizado
+                        {tBadge("custom")}
                       </span>
                     )}
                     {selectedTemplate.isDefault && (
                       <span className="inline-flex rounded-full bg-emerald-500 px-2 py-0.5 text-[10px] font-medium text-white sm:text-xs">
-                        Padrão
+                        {tBadge("default")}
                       </span>
                     )}
                   </div>
@@ -242,9 +245,9 @@ export function TemplateSection({
                     {selectedTemplate.description}
                   </p>
                   <div className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
-                    <span>{selectedTemplate.sections.length} secções</span>
+                    <span>{t("sectionsCount", { count: selectedTemplate.sections.length })}</span>
                     <ChevronRight className="h-3 w-3" />
-                    <span className="font-medium text-primary">Clique para alterar</span>
+                    <span className="font-medium text-primary">{t("changeCta")}</span>
                   </div>
                 </div>
               </div>
@@ -255,13 +258,13 @@ export function TemplateSection({
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-semibold text-foreground sm:text-base">
-                    Selecionar modelo
+                    {t("selectTemplate")}
                   </p>
                   <p className="mt-1 text-xs leading-relaxed text-muted-foreground sm:text-sm">
-                    Escolha explicitamente o modelo que melhor se adapta a esta ficha.
+                    {t("selectTemplateDescription")}
                   </p>
                   <div className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-primary">
-                    <span>Ver modelos disponíveis</span>
+                    <span>{t("viewAvailable")}</span>
                     <ChevronRight className="h-3 w-3" />
                   </div>
                 </div>
@@ -274,10 +277,10 @@ export function TemplateSection({
             variant="outline"
             onClick={() => setIsModalOpen(true)}
             className="h-11 w-full items-center justify-center gap-2 rounded-xl border-border text-foreground hover:border-primary hover:bg-accent sm:hidden"
-            aria-label="Procurar modelos"
+            aria-label={t("searchAriaLabel")}
           >
             <Search className="h-4 w-4" />
-            Procurar outros modelos
+            {t("searchOthers")}
           </Button>
         </div>
       </Card>

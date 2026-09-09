@@ -148,6 +148,334 @@
       "REDUCE_REPETITIVE_WORK": "Reduzir trabalho repetitivo",
       "DISCOVER_COMMUNITY": "Descobrir recursos partilhados por colegas",
       "CURIOSITY": "Curiosidade / recomendação de colega"
+    },
+    "documentType": {
+      "lessonPlan": "Plano de Aula",
+      "worksheet": "Ficha de Trabalho",
+      "test": "Teste",
+      "quiz": "Quiz",
+      "presentation": "Apresentação",
+      "curriculumPlan": "Planificação"
+    }
+  },
+  "documentCreation": {
+    "createPrefix": "Criar",
+    "creatingDocumentLong": "A criar documento...",
+    "creatingDocumentShort": "A criar...",
+    "aiDisclaimer": "A IA pode cometer erros. Revê sempre o conteúdo.",
+    "requiredFields": "Campos obrigatórios",
+    "types": {
+      "lessonPlan": {
+        "description": "Descreva o que pretende ensinar e o Scooli irá gerar um plano de aula completo",
+        "placeholder": "Ex: Plano de aula sobre frações para o 3.º ano, incluindo atividades práticas e avaliação"
+      },
+      "quiz": {
+        "description": "Descreva o que pretende avaliar e o Scooli irá gerar um quiz interativo",
+        "placeholder": "Ex: Quiz sobre história de Portugal para o 2.º ciclo, com 15 questões de escolha múltipla"
+      },
+      "test": {
+        "description": "Descreva o que pretende avaliar e o Scooli irá gerar um teste completo",
+        "placeholder": "Ex: Teste sobre frações para o 3.º ano, com 10 questões de escolha múltipla e 2 problemas"
+      },
+      "worksheet": {
+        "description": "Descreva a finalidade da ficha e o Scooli irá gerar uma ficha de trabalho pronta a usar",
+        "placeholder": "Ex: Ficha de trabalho sobre frações para o 3.º ano, com instruções claras, tarefas adequadas ao objetivo e fecho final"
+      },
+      "presentation": {
+        "description": "Descreva o tema da apresentação e o Scooli irá gerar slides interativos",
+        "placeholder": "Ex: Apresentação sobre o sistema solar para o 4.º ano, com 10 slides ilustrados"
+      }
+    },
+    "errors": {
+      "selectTemplate": "Por favor, selecione um modelo de documento",
+      "selectWorksheetVariant": "Por favor, selecione o objetivo principal da ficha",
+      "enterTopic": "Por favor, introduza o tema da aula",
+      "selectSubject": "Por favor, selecione uma disciplina",
+      "selectSchoolYear": "Por favor, selecione o ano de escolaridade",
+      "createFailed": "Ocorreu um erro ao criar o documento.",
+      "createFailedWithMessage": "Erro ao criar o documento: {message}",
+      "createFailedGeneric": "Erro ao criar o documento."
+    },
+    "topic": {
+      "title": "Tema da Aula",
+      "description": "Descreva o tema que pretende abordar",
+      "ariaLabel": "Tema da aula"
+    },
+    "grade": {
+      "title": "Ano de Escolaridade",
+      "selectAriaLabel": "Selecionar {grade}"
+    },
+    "subject": {
+      "title": "Disciplina",
+      "generalTraining": "Formação Geral",
+      "specificTraining": "Formação Específica",
+      "selectAriaLabel": "Selecionar disciplina",
+      "placeholderDisabled": "Selecione primeiro o ano de escolaridade...",
+      "placeholder": "Selecione uma disciplina..."
+    },
+    "duration": {
+      "title": "Duração da Aula",
+      "optional": "(Opcional)",
+      "other": "Outro",
+      "selectAriaLabel": "Selecionar {label}",
+      "currentAriaLabel": "Duração: {minutes} min",
+      "customAriaLabel": "Duração personalizada",
+      "cancelAriaLabel": "Cancelar",
+      "confirmAriaLabel": "Confirmar",
+      "otherAriaLabel": "Selecionar outra duração"
+    },
+    "additionalDetails": {
+      "title": "Detalhes Adicionais",
+      "optional": "(Opcional)",
+      "description": "Adicione informações extras para personalizar o conteúdo",
+      "placeholder": "Ex: Incluir atividade de grupo, usar exemplos do dia-a-dia, focar em alunos com dificuldades...",
+      "ariaLabel": "Detalhes adicionais"
+    },
+    "teachingMethod": {
+      "title": "Metodologia de Ensino",
+      "optional": "(Opcional)",
+      "description": "Escolha a abordagem pedagógica preferida",
+      "selectAriaLabel": "Selecionar {label}"
+    },
+    "teachingMethods": {
+      "active": {
+        "label": "Aprendizagem ativa",
+        "description": "Os alunos participam ativamente em atividades práticas e projetos colaborativos."
+      },
+      "lecture": {
+        "label": "Aula expositiva",
+        "description": "O professor apresenta o conteúdo diretamente enquanto os alunos absorvem e tomam notas."
+      },
+      "practical": {
+        "label": "Aprendizagem prática",
+        "description": "Mostra como o conteúdo se aplica a profissões reais, preparando os alunos para desafios do mercado."
+      },
+      "socialEmotional": {
+        "label": "Aprendizagem socioemocional",
+        "description": "Combina conteúdo académico com competências socioemocionais como empatia e trabalho em equipa."
+      },
+      "interactive": {
+        "label": "Aprendizagem interativa",
+        "description": "Integra recursos digitais e interatividade, conectando o conteúdo à realidade dos alunos."
+      }
+    },
+    "worksheetVariant": {
+      "title": "Objetivo da Ficha",
+      "description": "Escolha a finalidade principal da ficha de trabalho"
+    },
+    "worksheetVariants": {
+      "practice": {
+        "label": "Treinar e consolidar",
+        "description": "Ficha com exercícios progressivos para praticar e reforçar aprendizagens."
+      },
+      "diagnostic": {
+        "label": "Diagnosticar conhecimentos",
+        "description": "Ajuda a perceber o ponto de partida, lacunas e erros frequentes antes do tema."
+      },
+      "formative": {
+        "label": "Acompanhar aprendizagem",
+        "description": "Apoia monitorização, autoavaliação e próximos passos ao longo do trabalho."
+      },
+      "exploration": {
+        "label": "Introduzir novo conteúdo",
+        "description": "Usa estímulos e perguntas guiadas para explorar ideias antes da prática formal."
+      }
+    },
+    "sourcePicker": {
+      "title": "Fontes de Contexto",
+      "optional": "(Opcional)",
+      "description": "Escolha quais recursos usar na geração",
+      "manageSources": "Gerir fontes",
+      "includeAe": "Incluir Aprendizagens Essenciais (AE)",
+      "recommended": "Recomendado",
+      "loadingRegulatory": "A carregar documentos regulatórios...",
+      "regulatoryDocuments": "Documentos Regulatórios ({count})",
+      "loadingSources": "A carregar fontes...",
+      "noIndexedSourcesPrefix": "Sem fontes indexadas.",
+      "uploadDocuments": "Carregar documentos",
+      "noIndexedSourcesSuffix": "para enriquecer a geração.",
+      "mySources": "As minhas fontes ({count})",
+      "excerpts": "{count} excertos",
+      "schoolYearSuffix": "º ano",
+      "openInNewWindow": "Abrir {name} numa nova janela"
+    },
+    "slideCount": {
+      "title": "Número de slides",
+      "optional": "(Opcional)",
+      "hint": "Sem escolha, geramos {count} slides. Mínimo 5, máximo 20.",
+      "generateAriaLabel": "Gerar {count} slides"
+    },
+    "presentationTheme": {
+      "title": "Tema visual",
+      "defaultName": "Branco"
+    },
+    "template": {
+      "title": "Modelo de Documento",
+      "description": "Escolha a estrutura do seu documento",
+      "search": "Procurar",
+      "searchAriaLabel": "Procurar modelos",
+      "searchOthers": "Procurar outros modelos",
+      "selectTemplate": "Selecionar modelo",
+      "selectTemplateDescription": "Escolha explicitamente o modelo que melhor se adapta a esta ficha.",
+      "viewAvailable": "Ver modelos disponíveis",
+      "changeCta": "Clique para alterar",
+      "sectionsCount": "{count} secções",
+      "selectAriaLabel": "Selecionar modelo de documento",
+      "selectedAriaLabel": "Modelo selecionado: {name}. Clique para alterar."
+    },
+    "templateBadge": {
+      "scooli": "Scooli",
+      "custom": "Personalizado",
+      "default": "Padrão"
+    },
+    "templateEmptyState": {
+      "title": "Nenhum modelo disponível",
+      "description": "Crie o seu primeiro modelo para definir a estrutura dos seus documentos",
+      "create": "Criar Modelo"
+    },
+    "templateCard": {
+      "editAriaLabel": "Editar modelo",
+      "selectAriaLabel": "Selecionar modelo: {name}"
+    },
+    "templateBrowserModal": {
+      "breadcrumb": "Modelos",
+      "setDefault": "Definir Padrao",
+      "settingDefault": "A definir...",
+      "setDefaultAriaLabel": "Definir como padrao",
+      "editAriaLabel": "Editar modelo",
+      "edit": "Editar",
+      "defaultLabel": "Padrao",
+      "sectionsCount": "Seccoes ({count})",
+      "viewOtherTemplates": "Ver outros modelos",
+      "useThisTemplate": "Usar este modelo",
+      "chooseTemplate": "Escolher Modelo",
+      "modelsAvailable": "{typeLabel} - {count} modelos disponiveis",
+      "importDocument": "Importar documento",
+      "importDocumentAriaLabel": "Criar modelo a partir de documento",
+      "importDocumentProAriaLabel": "Importar documento (funcionalidade Pro)",
+      "pro": "Pro",
+      "createModel": "Criar Modelo",
+      "createModelAriaLabel": "Criar novo modelo",
+      "noTemplatesTitle": "Sem modelos disponiveis",
+      "noTemplatesDescription": "Crie o seu primeiro modelo personalizado para comecar"
+    },
+    "templatePlaceholders": {
+      "lessonPlan": {
+        "name": "Ex: Aula Expositiva com Debate",
+        "description": "Descreva quando usar este modelo de plano de aula..."
+      },
+      "quiz": {
+        "name": "Ex: Quiz Rápido de Revisão",
+        "description": "Descreva quando usar este modelo de quiz..."
+      },
+      "test": {
+        "name": "Ex: Teste com Grupos de Dificuldade",
+        "description": "Descreva quando usar este modelo de teste..."
+      },
+      "worksheet": {
+        "name": "Ex: Ficha por Etapas",
+        "description": "Descreva a estrutura da ficha e quando este modelo faz mais sentido..."
+      },
+      "presentation": {
+        "name": "Ex: Apresentação Interativa com Atividades",
+        "description": "Descreva quando usar este modelo de apresentação..."
+      },
+      "curriculumPlan": {
+        "name": "Ex: Planificação Trimestral por Domínios",
+        "description": "Descreva quando usar este modelo de planificacao (anual, semestral, trimestral)..."
+      }
+    },
+    "templateCreator": {
+      "backAriaLabel": "Voltar",
+      "editTitle": "Editar Modelo",
+      "createTitle": "Criar Novo Modelo",
+      "editDescription": "Atualize a estrutura do seu modelo",
+      "createDescription": "Defina a estrutura do seu modelo personalizado",
+      "nameLabel": "Nome do Modelo",
+      "descriptionLabel": "Descrição",
+      "optional": "(Opcional)",
+      "sectionsTitle": "Secções do Modelo",
+      "sectionsHint": "Arraste para reordenar as secções",
+      "addAriaLabel": "Adicionar seccao",
+      "add": "Adicionar",
+      "validationError": "Preencha o nome do modelo e o titulo de todas as seccoes",
+      "saveError": "Ocorreu um erro ao guardar o modelo. Tente novamente.",
+      "createError": "Ocorreu um erro ao criar o modelo. Tente novamente.",
+      "cancel": "Cancelar",
+      "saving": "A guardar...",
+      "creating": "A criar...",
+      "saveChanges": "Guardar Alteracoes",
+      "createTemplate": "Criar Modelo"
+    },
+    "sortableSection": {
+      "dragAriaLabel": "Arrastar para reordenar",
+      "deleteAriaLabel": "Eliminar seccao",
+      "titlePlaceholder": "Título da secção",
+      "titleAriaLabel": "Título da secção",
+      "descriptionPlaceholder": "Instruções para a IA: o que incluir nesta secção...",
+      "descriptionAriaLabel": "Instruções para a secção"
+    },
+    "templateFromDocument": {
+      "back": "Voltar",
+      "title": "Criar Modelo a partir de Documento",
+      "description": "A IA vai analisar o documento e gerar a estrutura do modelo.",
+      "errorUnsupportedType": "Apenas ficheiros PDF e DOCX são suportados.",
+      "errorFileTooLarge": "O tamanho máximo do ficheiro é 10MB.",
+      "errorGeneric": "Ocorreu um erro ao criar o modelo. Tente novamente.",
+      "clickOrDrag": "Clique ou arraste o ficheiro",
+      "fileTypeHint": "PDF ou DOCX · Máx. 10MB",
+      "analyzing": "A analisar o documento...",
+      "analyzingDescription": "A IA está a gerar a estrutura do modelo. Pode demorar alguns segundos.",
+      "nameLabel": "Nome do Modelo",
+      "namePlaceholder": "Ex: Plano de Aula — Frações",
+      "warningText": "Imagens e formatação complexa poderão não ser preservadas. Documentos digitalizados sem texto legível serão rejeitados.",
+      "cancel": "Cancelar",
+      "processing": "A processar...",
+      "createTemplate": "Criar Modelo"
+    },
+    "weekSchedule": {
+      "description": "Seleciona os dias e o número de tempos letivos por dia.",
+      "lessonsPerWeek": "{count, plural, one {# aula/semana} other {# aulas/semana}}",
+      "addPeriod": "tempo"
+    },
+    "weekScheduleTypeOptions": {
+      "auto": "Automático",
+      "lesson": "Aula",
+      "exercise": "Exercícios",
+      "review": "Revisão",
+      "assessment": "Avaliação"
+    },
+    "days": {
+      "mon": { "label": "Segunda", "short": "Seg" },
+      "tue": { "label": "Terça", "short": "Ter" },
+      "wed": { "label": "Quarta", "short": "Qua" },
+      "thu": { "label": "Quinta", "short": "Qui" },
+      "fri": { "label": "Sexta", "short": "Sex" },
+      "sat": { "label": "Sábado", "short": "Sáb" },
+      "sun": { "label": "Domingo", "short": "Dom" }
+    }
+  },
+  "dashboard": {
+    "welcomeTitle": "Bem-vindo à Scooli!",
+    "welcomeDescription": "Aqui está o que pode fazer hoje na Scooli.",
+    "createDocument": "Criar documento",
+    "quickCreate": {
+      "heading": "O que vais ensinar?",
+      "placeholder": "Ex: \"Plano de aula sobre frações para o 3.º ano\" ou apenas \"frações\"",
+      "inputAriaLabel": "Descreve o que queres criar",
+      "submit": "Criar com IA",
+      "examplesLabel": "Exemplos:",
+      "examples": {
+        "lessonPlanFotossintese": "Plano: A fotossíntese · 3.º ano",
+        "testFracoes": "Teste: Frações · 5.º ano",
+        "quizDescobrimentos": "Quiz: Os Descobrimentos · 5.º ano"
+      }
+    },
+    "recentDocuments": {
+      "heading": "Continuar onde ficaste",
+      "viewAll": "Ver todos",
+      "emptyTitle": "Ainda não tens documentos.",
+      "emptyDescription": "Cria o teu primeiro plano de aula, teste ou quiz e ele aparece aqui para continuares onde ficaste."
     }
   },
   "onboarding": {

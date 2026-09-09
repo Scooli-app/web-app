@@ -27,6 +27,7 @@ import { fetchEntitlements } from "@/store/entitlements/entitlementsSlice";
 import { fetchSubscription, fetchUsage } from "@/store/subscription/subscriptionSlice";
 import { isPromoPlanCode } from "@/shared/utils/promo";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useDispatch } from "react-redux";
 import posthog from "posthog-js";
@@ -35,24 +36,25 @@ import type { AppDispatch } from "@/store/store";
 
 interface DocTypeAction {
   id: string;
-  label: string;
   route: string;
   icon: LucideIcon;
   gate?: "worksheet" | "presentation" | "curriculumPlan";
 }
 
 const DOC_TYPE_ACTIONS: DocTypeAction[] = [
-  { id: "lessonPlan",     label: "Plano de Aula",     route: Routes.LESSON_PLAN,     icon: FileText },
-  { id: "test",          label: "Teste",              route: Routes.TEST,            icon: NotebookPen },
-  { id: "worksheet",     label: "Ficha de Trabalho",  route: Routes.WORKSHEET,       icon: ScrollText,  gate: "worksheet" },
-  { id: "quiz",          label: "Quiz",               route: Routes.QUIZ,            icon: HelpCircle },
-  { id: "presentation",  label: "Apresentação",       route: Routes.PRESENTATION,    icon: MonitorPlay, gate: "presentation" },
-  { id: "curriculumPlan",label: "Planificação",       route: Routes.CURRICULUM_PLAN, icon: GanttChart,  gate: "curriculumPlan" },
+  { id: "lessonPlan",      route: Routes.LESSON_PLAN,     icon: FileText },
+  { id: "test",            route: Routes.TEST,            icon: NotebookPen },
+  { id: "worksheet",       route: Routes.WORKSHEET,       icon: ScrollText,  gate: "worksheet" },
+  { id: "quiz",            route: Routes.QUIZ,            icon: HelpCircle },
+  { id: "presentation",    route: Routes.PRESENTATION,    icon: MonitorPlay, gate: "presentation" },
+  { id: "curriculumPlan",  route: Routes.CURRICULUM_PLAN, icon: GanttChart,  gate: "curriculumPlan" },
 ];
 
 function DashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const t = useTranslations("dashboard");
+  const tEnums = useTranslations("enums");
   const [showPaymentSuccess, setShowPaymentSuccess] = useState(false);
   const isWorksheetCreationEnabled = useAppSelector(selectIsWorksheetCreationEnabled);
   const isPresentationCreationEnabled = useAppSelector(selectIsPresentationCreationEnabled);
@@ -115,8 +117,8 @@ function DashboardContent() {
       />
 
       <PageHeader
-        title="Bem-vindo à Scooli!"
-        description="Aqui está o que pode fazer hoje na Scooli."
+        title={t("welcomeTitle")}
+        description={t("welcomeDescription")}
       />
 
       <div className="flex min-h-0 flex-1 flex-col gap-3 sm:gap-4">
@@ -135,7 +137,7 @@ function DashboardContent() {
           {/* Doc-type grid */}
           <div className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5 md:min-h-0 md:flex-1 md:overflow-y-auto">
             <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Criar documento
+              {t("createDocument")}
             </p>
             <div className="grid grid-cols-2 gap-1.5">
               {visibleActions.map((action) => {
@@ -154,7 +156,7 @@ function DashboardContent() {
                       <Icon className="h-3.5 w-3.5" />
                     </div>
                     <span className="text-sm font-medium leading-tight text-foreground">
-                      {action.label}
+                      {tEnums(`documentType.${action.id}`)}
                     </span>
                   </button>
                 );

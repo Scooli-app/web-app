@@ -14,18 +14,10 @@ import {
   ScrollText,
   type LucideIcon,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import posthog from "posthog-js";
 import { useEffect, useState } from "react";
-
-const TYPE_LABELS: Record<Document["documentType"], string> = {
-  lessonPlan: "Plano de Aula",
-  worksheet: "Ficha de Trabalho",
-  test: "Teste",
-  quiz: "Quiz",
-  presentation: "Apresentação",
-  curriculumPlan: "Planificação",
-};
 
 const TYPE_ICONS: Record<Document["documentType"], LucideIcon> = {
   lessonPlan: FileText,
@@ -53,6 +45,8 @@ const dateFormatter = new Intl.DateTimeFormat("pt-PT", {
 const RECENT_LIMIT = 5;
 
 export function RecentDocumentsCard({ className }: { className?: string }) {
+  const t = useTranslations("dashboard.recentDocuments");
+  const tEnums = useTranslations("enums");
   const { isLoaded: isAuthLoaded, isSignedIn } = useAuth();
   const isAuthReady = isAuthLoaded && Boolean(isSignedIn);
 
@@ -90,14 +84,14 @@ export function RecentDocumentsCard({ className }: { className?: string }) {
     <div className={cn("rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5", className)}>
       <div className="mb-3 flex items-center justify-between gap-2">
         <h2 className="text-base font-semibold text-foreground">
-          Continuar onde ficaste
+          {t("heading")}
         </h2>
         {documents !== null && documents.length > 0 && (
           <Link
             href={Routes.DOCUMENTS}
             className="shrink-0 text-sm font-medium text-primary hover:underline"
           >
-            Ver todos
+            {t("viewAll")}
           </Link>
         )}
       </div>
@@ -113,12 +107,11 @@ export function RecentDocumentsCard({ className }: { className?: string }) {
           <div className="flex items-center space-x-3">
             <div className="h-2 w-2 rounded-full bg-primary" />
             <span className="text-foreground">
-              Ainda não tens documentos.
+              {t("emptyTitle")}
             </span>
           </div>
           <p className="pl-5 text-sm text-muted-foreground">
-            Cria o teu primeiro plano de aula, teste ou quiz e ele aparece
-            aqui para continuares onde ficaste.
+            {t("emptyDescription")}
           </p>
         </div>
       ) : (
@@ -146,8 +139,7 @@ export function RecentDocumentsCard({ className }: { className?: string }) {
                       {document.title}
                     </p>
                     <p className="truncate text-xs text-muted-foreground">
-                      {TYPE_LABELS[document.documentType] ??
-                        document.documentType}
+                      {tEnums(`documentType.${document.documentType}`)}
                       {" · "}
                       {dateFormatter.format(new Date(document.updatedAt))}
                     </p>

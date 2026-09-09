@@ -3,6 +3,7 @@
 import type { DocumentTemplate } from "@/shared/types";
 import { cn } from "@/shared/utils/utils";
 import { Check, FileText, Pencil, Sparkles } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 interface TemplateCardProps {
   template: DocumentTemplate;
@@ -17,6 +18,9 @@ export function TemplateCard({
   onSelect,
   onEdit,
 }: TemplateCardProps) {
+  const t = useTranslations("documentCreation.templateCard");
+  const tBadge = useTranslations("documentCreation.templateBadge");
+
   const handleEditClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     onEdit?.(template);
@@ -34,7 +38,7 @@ export function TemplateCard({
           : "border-border bg-card hover:border-muted-foreground/30",
       )}
       aria-pressed={isSelected}
-      aria-label={`Selecionar modelo: ${template.name}`}
+      aria-label={t("selectAriaLabel", { name: template.name })}
     >
       <div className="absolute right-3 top-3 flex items-center gap-2">
         {!template.isSystem && onEdit && (
@@ -51,7 +55,7 @@ export function TemplateCard({
               "opacity-100 hover:bg-background hover:text-primary sm:opacity-0 sm:group-hover:opacity-100",
               "focus-visible:ring-ring/50 focus-visible:ring-[3px]",
             )}
-            aria-label="Editar modelo"
+            aria-label={t("editAriaLabel")}
           >
             <Pencil className="h-4 w-4" />
           </div>
@@ -90,16 +94,16 @@ export function TemplateCard({
             {template.isSystem ? (
               <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-primary to-primary/70 px-2 py-0.5 text-[10px] font-medium text-primary-foreground">
                 <Sparkles className="h-2.5 w-2.5" />
-                Scooli
+                {tBadge("scooli")}
               </span>
             ) : (
               <span className="inline-flex rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-                Personalizado
+                {tBadge("custom")}
               </span>
             )}
             {template.isDefault && (
               <span className="inline-flex rounded-full bg-emerald-500 px-2 py-0.5 text-[10px] font-medium text-white">
-                Padrao
+                {tBadge("default")}
               </span>
             )}
           </div>

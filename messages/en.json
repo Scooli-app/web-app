@@ -148,6 +148,334 @@
       "REDUCE_REPETITIVE_WORK": "Cut down on repetitive work",
       "DISCOVER_COMMUNITY": "Find resources other teachers have shared",
       "CURIOSITY": "Curiosity, or a colleague recommended it"
+    },
+    "documentType": {
+      "lessonPlan": "Lesson Plan",
+      "worksheet": "Worksheet",
+      "test": "Test",
+      "quiz": "Quiz",
+      "presentation": "Presentation",
+      "curriculumPlan": "Curriculum Plan"
+    }
+  },
+  "documentCreation": {
+    "createPrefix": "Create",
+    "creatingDocumentLong": "Creating document...",
+    "creatingDocumentShort": "Creating...",
+    "aiDisclaimer": "AI can make mistakes. Always review the content.",
+    "requiredFields": "Required fields",
+    "types": {
+      "lessonPlan": {
+        "description": "Describe what you want to teach and Scooli will generate a complete lesson plan",
+        "placeholder": "E.g. Lesson plan about fractions for 3rd grade, including hands-on activities and assessment"
+      },
+      "quiz": {
+        "description": "Describe what you want to assess and Scooli will generate an interactive quiz",
+        "placeholder": "E.g. Quiz about the history of Portugal for the 2nd cycle, with 15 multiple-choice questions"
+      },
+      "test": {
+        "description": "Describe what you want to assess and Scooli will generate a complete test",
+        "placeholder": "E.g. Test about fractions for 3rd grade, with 10 multiple-choice questions and 2 problems"
+      },
+      "worksheet": {
+        "description": "Describe the worksheet's purpose and Scooli will generate a ready-to-use worksheet",
+        "placeholder": "E.g. Worksheet about fractions for 3rd grade, with clear instructions, tasks suited to the goal and a closing activity"
+      },
+      "presentation": {
+        "description": "Describe the presentation's topic and Scooli will generate interactive slides",
+        "placeholder": "E.g. Presentation about the solar system for 4th grade, with 10 illustrated slides"
+      }
+    },
+    "errors": {
+      "selectTemplate": "Please select a document template",
+      "selectWorksheetVariant": "Please select the worksheet's main goal",
+      "enterTopic": "Please enter the lesson topic",
+      "selectSubject": "Please select a subject",
+      "selectSchoolYear": "Please select the school year",
+      "createFailed": "Something went wrong while creating the document.",
+      "createFailedWithMessage": "Error creating the document: {message}",
+      "createFailedGeneric": "Error creating the document."
+    },
+    "topic": {
+      "title": "Lesson Topic",
+      "description": "Describe the topic you want to cover",
+      "ariaLabel": "Lesson topic"
+    },
+    "grade": {
+      "title": "School Year",
+      "selectAriaLabel": "Select {grade}"
+    },
+    "subject": {
+      "title": "Subject",
+      "generalTraining": "General Track",
+      "specificTraining": "Specific Track",
+      "selectAriaLabel": "Select subject",
+      "placeholderDisabled": "Select the school year first...",
+      "placeholder": "Select a subject..."
+    },
+    "duration": {
+      "title": "Lesson Duration",
+      "optional": "(Optional)",
+      "other": "Other",
+      "selectAriaLabel": "Select {label}",
+      "currentAriaLabel": "Duration: {minutes} min",
+      "customAriaLabel": "Custom duration",
+      "cancelAriaLabel": "Cancel",
+      "confirmAriaLabel": "Confirm",
+      "otherAriaLabel": "Select another duration"
+    },
+    "additionalDetails": {
+      "title": "Additional Details",
+      "optional": "(Optional)",
+      "description": "Add extra information to tailor the content",
+      "placeholder": "E.g. Include a group activity, use everyday examples, focus on students with difficulties...",
+      "ariaLabel": "Additional details"
+    },
+    "teachingMethod": {
+      "title": "Teaching Method",
+      "optional": "(Optional)",
+      "description": "Choose the preferred pedagogical approach",
+      "selectAriaLabel": "Select {label}"
+    },
+    "teachingMethods": {
+      "active": {
+        "label": "Active learning",
+        "description": "Students take an active part in hands-on activities and collaborative projects."
+      },
+      "lecture": {
+        "label": "Lecture-style teaching",
+        "description": "The teacher presents the content directly while students take it in and take notes."
+      },
+      "practical": {
+        "label": "Practical learning",
+        "description": "Shows how the content applies to real professions, preparing students for real-world challenges."
+      },
+      "socialEmotional": {
+        "label": "Social-emotional learning",
+        "description": "Combines academic content with social-emotional skills such as empathy and teamwork."
+      },
+      "interactive": {
+        "label": "Interactive learning",
+        "description": "Brings in digital resources and interactivity, connecting the content to students' everyday lives."
+      }
+    },
+    "worksheetVariant": {
+      "title": "Worksheet Goal",
+      "description": "Choose the worksheet's main purpose"
+    },
+    "worksheetVariants": {
+      "practice": {
+        "label": "Practice and consolidate",
+        "description": "A worksheet with progressive exercises to practice and reinforce learning."
+      },
+      "diagnostic": {
+        "label": "Diagnose knowledge",
+        "description": "Helps identify the starting point, gaps and common mistakes before the topic."
+      },
+      "formative": {
+        "label": "Track learning",
+        "description": "Supports monitoring, self-assessment and next steps throughout the work."
+      },
+      "exploration": {
+        "label": "Introduce new content",
+        "description": "Uses prompts and guided questions to explore ideas before formal practice."
+      }
+    },
+    "sourcePicker": {
+      "title": "Context Sources",
+      "optional": "(Optional)",
+      "description": "Choose which resources to use for generation",
+      "manageSources": "Manage sources",
+      "includeAe": "Include Aprendizagens Essenciais (AE)",
+      "recommended": "Recommended",
+      "loadingRegulatory": "Loading regulatory documents...",
+      "regulatoryDocuments": "Regulatory Documents ({count})",
+      "loadingSources": "Loading sources...",
+      "noIndexedSourcesPrefix": "No indexed sources.",
+      "uploadDocuments": "Upload documents",
+      "noIndexedSourcesSuffix": "to enrich the generation.",
+      "mySources": "My sources ({count})",
+      "excerpts": "{count} excerpts",
+      "schoolYearSuffix": "th grade",
+      "openInNewWindow": "Open {name} in a new window"
+    },
+    "slideCount": {
+      "title": "Number of slides",
+      "optional": "(Optional)",
+      "hint": "Without a choice, we generate {count} slides. Minimum 5, maximum 20.",
+      "generateAriaLabel": "Generate {count} slides"
+    },
+    "presentationTheme": {
+      "title": "Visual theme",
+      "defaultName": "Blank"
+    },
+    "template": {
+      "title": "Document Template",
+      "description": "Choose the structure of your document",
+      "search": "Browse",
+      "searchAriaLabel": "Browse templates",
+      "searchOthers": "Browse other templates",
+      "selectTemplate": "Select template",
+      "selectTemplateDescription": "Explicitly choose the template that best fits this document.",
+      "viewAvailable": "View available templates",
+      "changeCta": "Click to change",
+      "sectionsCount": "{count} sections",
+      "selectAriaLabel": "Select document template",
+      "selectedAriaLabel": "Selected template: {name}. Click to change."
+    },
+    "templateBadge": {
+      "scooli": "Scooli",
+      "custom": "Custom",
+      "default": "Default"
+    },
+    "templateEmptyState": {
+      "title": "No templates available",
+      "description": "Create your first template to define the structure of your documents",
+      "create": "Create Template"
+    },
+    "templateCard": {
+      "editAriaLabel": "Edit template",
+      "selectAriaLabel": "Select template: {name}"
+    },
+    "templateBrowserModal": {
+      "breadcrumb": "Templates",
+      "setDefault": "Set as Default",
+      "settingDefault": "Setting...",
+      "setDefaultAriaLabel": "Set as default",
+      "editAriaLabel": "Edit template",
+      "edit": "Edit",
+      "defaultLabel": "Default",
+      "sectionsCount": "Sections ({count})",
+      "viewOtherTemplates": "View other templates",
+      "useThisTemplate": "Use this template",
+      "chooseTemplate": "Choose Template",
+      "modelsAvailable": "{typeLabel} - {count} templates available",
+      "importDocument": "Import document",
+      "importDocumentAriaLabel": "Create template from document",
+      "importDocumentProAriaLabel": "Import document (Pro feature)",
+      "pro": "Pro",
+      "createModel": "Create Template",
+      "createModelAriaLabel": "Create new template",
+      "noTemplatesTitle": "No templates available",
+      "noTemplatesDescription": "Create your first custom template to get started"
+    },
+    "templatePlaceholders": {
+      "lessonPlan": {
+        "name": "E.g. Lecture with Debate",
+        "description": "Describe when to use this lesson plan template..."
+      },
+      "quiz": {
+        "name": "E.g. Quick Review Quiz",
+        "description": "Describe when to use this quiz template..."
+      },
+      "test": {
+        "name": "E.g. Test with Difficulty Groups",
+        "description": "Describe when to use this test template..."
+      },
+      "worksheet": {
+        "name": "E.g. Step-by-Step Worksheet",
+        "description": "Describe the worksheet's structure and when this template makes most sense..."
+      },
+      "presentation": {
+        "name": "E.g. Interactive Presentation with Activities",
+        "description": "Describe when to use this presentation template..."
+      },
+      "curriculumPlan": {
+        "name": "E.g. Quarterly Plan by Domains",
+        "description": "Describe when to use this curriculum plan template (yearly, half-yearly, quarterly)..."
+      }
+    },
+    "templateCreator": {
+      "backAriaLabel": "Back",
+      "editTitle": "Edit Template",
+      "createTitle": "Create New Template",
+      "editDescription": "Update the structure of your template",
+      "createDescription": "Define the structure of your custom template",
+      "nameLabel": "Template Name",
+      "descriptionLabel": "Description",
+      "optional": "(Optional)",
+      "sectionsTitle": "Template Sections",
+      "sectionsHint": "Drag to reorder the sections",
+      "addAriaLabel": "Add section",
+      "add": "Add",
+      "validationError": "Fill in the template name and the title of every section",
+      "saveError": "Something went wrong saving the template. Please try again.",
+      "createError": "Something went wrong creating the template. Please try again.",
+      "cancel": "Cancel",
+      "saving": "Saving...",
+      "creating": "Creating...",
+      "saveChanges": "Save Changes",
+      "createTemplate": "Create Template"
+    },
+    "sortableSection": {
+      "dragAriaLabel": "Drag to reorder",
+      "deleteAriaLabel": "Delete section",
+      "titlePlaceholder": "Section title",
+      "titleAriaLabel": "Section title",
+      "descriptionPlaceholder": "Instructions for the AI: what to include in this section...",
+      "descriptionAriaLabel": "Instructions for the section"
+    },
+    "templateFromDocument": {
+      "back": "Back",
+      "title": "Create Template from Document",
+      "description": "The AI will analyze the document and generate the template's structure.",
+      "errorUnsupportedType": "Only PDF and DOCX files are supported.",
+      "errorFileTooLarge": "The maximum file size is 10MB.",
+      "errorGeneric": "Something went wrong creating the template. Please try again.",
+      "clickOrDrag": "Click or drag the file",
+      "fileTypeHint": "PDF or DOCX · Max. 10MB",
+      "analyzing": "Analyzing the document...",
+      "analyzingDescription": "The AI is generating the template's structure. This can take a few seconds.",
+      "nameLabel": "Template Name",
+      "namePlaceholder": "E.g. Lesson Plan — Fractions",
+      "warningText": "Images and complex formatting may not be preserved. Scanned documents without legible text will be rejected.",
+      "cancel": "Cancel",
+      "processing": "Processing...",
+      "createTemplate": "Create Template"
+    },
+    "weekSchedule": {
+      "description": "Choose the days and the number of periods per day.",
+      "lessonsPerWeek": "{count, plural, one {# lesson/week} other {# lessons/week}}",
+      "addPeriod": "period"
+    },
+    "weekScheduleTypeOptions": {
+      "auto": "Automatic",
+      "lesson": "Lesson",
+      "exercise": "Exercises",
+      "review": "Review",
+      "assessment": "Assessment"
+    },
+    "days": {
+      "mon": { "label": "Monday", "short": "Mon" },
+      "tue": { "label": "Tuesday", "short": "Tue" },
+      "wed": { "label": "Wednesday", "short": "Wed" },
+      "thu": { "label": "Thursday", "short": "Thu" },
+      "fri": { "label": "Friday", "short": "Fri" },
+      "sat": { "label": "Saturday", "short": "Sat" },
+      "sun": { "label": "Sunday", "short": "Sun" }
+    }
+  },
+  "dashboard": {
+    "welcomeTitle": "Welcome to Scooli!",
+    "welcomeDescription": "Here's what you can do in Scooli today.",
+    "createDocument": "Create a document",
+    "quickCreate": {
+      "heading": "What are you teaching?",
+      "placeholder": "E.g. \"Lesson plan about fractions for 3rd grade\" or just \"fractions\"",
+      "inputAriaLabel": "Describe what you want to create",
+      "submit": "Create with AI",
+      "examplesLabel": "Examples:",
+      "examples": {
+        "lessonPlanFotossintese": "Plan: Photosynthesis · 3rd grade",
+        "testFracoes": "Test: Fractions · 5th grade",
+        "quizDescobrimentos": "Quiz: The Portuguese Discoveries · 5th grade"
+      }
+    },
+    "recentDocuments": {
+      "heading": "Pick up where you left off",
+      "viewAll": "View all",
+      "emptyTitle": "You don't have any documents yet.",
+      "emptyDescription": "Create your first lesson plan, test or quiz and it will show up here so you can pick up where you left off."
     }
   },
   "onboarding": {
