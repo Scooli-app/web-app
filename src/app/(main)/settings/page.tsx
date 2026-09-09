@@ -1,6 +1,7 @@
 "use client";
 
 import { BillingNifCard } from "@/components/billing/BillingNifCard";
+import { LanguagePreferences } from "@/components/settings/LanguagePreferences";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -40,6 +41,7 @@ import {
   Sun,
   User,
 } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
@@ -95,17 +97,26 @@ function getStatusBadge(
   }
 }
 
-function formatPrice(priceCents: number, currency = "EUR"): string {
-  return new Intl.NumberFormat("pt-PT", {
+// The currency stays EUR whatever the interface language; only the way the
+// amount is written changes ("6,99 €" vs "€6.99").
+function formatPrice(
+  locale: string,
+  priceCents: number,
+  currency = "EUR",
+): string {
+  return new Intl.NumberFormat(locale, {
     style: "currency",
     currency,
   }).format(priceCents / 100);
 }
 
-function calculateMonthlyEquivalent(plan: SubscriptionPlan): string | null {
+function calculateMonthlyEquivalent(
+  locale: string,
+  plan: SubscriptionPlan,
+): string | null {
   if (plan.interval !== "year") return null;
   const monthlyPrice = plan.priceCents / 12;
-  return formatPrice(monthlyPrice, plan.currency);
+  return formatPrice(locale, monthlyPrice, plan.currency);
 }
 
 function calculateSavingsPercent(
@@ -119,9 +130,9 @@ function calculateSavingsPercent(
   return `${Math.round((savings / yearlyFromMonthly) * 100)}%`;
 }
 
-function formatDate(dateString: string): string {
+function formatDate(locale: string, dateString: string): string {
   const date = new Date(dateString);
-  return date.toLocaleDateString("pt-PT", {
+  return date.toLocaleDateString(locale, {
     day: "numeric",
     month: "long",
     year: "numeric",
@@ -155,6 +166,8 @@ function SettingsContent() {
   const dispatch = useDispatch<AppDispatch>();
   const { user, isLoaded: isUserLoaded } = useUser();
   const { openUserProfile } = useClerk();
+  const t = useTranslations("settings");
+  const locale = useLocale();
   const theme = useSelector((state: RootState) => state.ui.theme);
   const entitlement = useSelector(selectCurrentEntitlement);
   const isEntitlementLoading = useSelector(selectEntitlementLoading);
@@ -294,11 +307,9 @@ function SettingsContent() {
       {/* Page Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-foreground mb-2 sm:text-4xl">
-          Definições
+          {t("title")}
         </h1>
-        <p className="text-lg text-muted-foreground">
-          Gere a tua conta, subscrição e preferências.
-        </p>
+        <p className="text-lg text-muted-foreground">{t("subtitle")}</p>
       </div>
 
       <div className="space-y-6">
@@ -464,7 +475,7 @@ function SettingsContent() {
                     {upgradeOptionPlans.map((plan) => {
                       const isAnnual = plan.interval === "year";
                       const monthlyEquivalent =
-                        calculateMonthlyEquivalent(plan);
+                        calculateMonthlyEquivalent(locale, plan);
                       const savingsPercent = isAnnual
                         ? calculateSavingsPercent(
                             upgradeOptionPlans.find(
@@ -514,7 +525,7 @@ function SettingsContent() {
                             <span className="text-lg font-bold text-foreground">
                               {isAnnual && monthlyEquivalent
                                 ? monthlyEquivalent
-                                : formatPrice(plan.priceCents, plan.currency)}
+                                : formatPrice(locale, plan.priceCents, plan.currency)}
                             </span>
                             <span className="text-sm text-muted-foreground">
                               /mês
@@ -523,7 +534,7 @@ function SettingsContent() {
                           {isAnnual && (
                             <p className="text-xs text-muted-foreground mt-1">
                               Pago anualmente{" "}
-                              {formatPrice(plan.priceCents, plan.currency)}
+                              {formatPrice(locale, plan.priceCents, plan.currency)}
                               {savingsPercent
                                 ? ` · poupe ${savingsPercent}`
                                 : ""}
@@ -572,8 +583,8 @@ function SettingsContent() {
               {subscription && (
                 <p className="text-sm text-muted-foreground mb-6">
                   {subscription.cancelAtPeriodEnd
-                    ? `Acesso até ${formatDate(subscription.currentPeriodEnd)}`
-                    : `Renova a ${formatDate(subscription.currentPeriodEnd)}`}
+                    ? `Acesso até ${formatDate(locale, subscription.currentPeriodEnd)}`
+                    : `Renova a ${formatDate(locale, subscription.currentPeriodEnd)}`}
                 </p>
               )}
 
@@ -607,7 +618,7 @@ function SettingsContent() {
               <Settings className="w-5 h-5 text-primary" />
             </div>
             <h2 className="text-xl font-semibold text-foreground">
-              Preferências
+              {t("preferences.title")}
             </h2>
           </div>
 
@@ -623,13 +634,15 @@ function SettingsContent() {
                   <Monitor className="w-5 h-5 text-primary" />
                 )}
                 <div>
-                  <p className="font-medium text-foreground">Tema</p>
+                  <p className="font-medium text-foreground">
+                    {t("preferences.theme.title")}
+                  </p>
                   <p className="text-sm text-muted-foreground">
                     {theme === "light"
-                      ? "Modo claro"
+                      ? t("preferences.theme.lightHint")
                       : theme === "dark"
-                        ? "Modo escuro"
-                        : "Detetar automaticamente"}
+                        ? t("preferences.theme.darkHint")
+                        : t("preferences.theme.systemHint")}
                   </p>
                 </div>
               </div>
@@ -644,7 +657,7 @@ function SettingsContent() {
                   }`}
                 >
                   <Sun className="w-4 h-4" />
-                  <span className="hidden sm:inline">Claro</span>
+                  <span className="hidden sm:inline">{t("preferences.theme.light")}</span>
                   {theme === "light" && (
                     <Check className="w-4 h-4 hidden sm:block" />
                   )}
@@ -659,7 +672,7 @@ function SettingsContent() {
                   }`}
                 >
                   <Moon className="w-4 h-4" />
-                  <span className="hidden sm:inline">Escuro</span>
+                  <span className="hidden sm:inline">{t("preferences.theme.dark")}</span>
                   {theme === "dark" && (
                     <Check className="w-4 h-4 hidden sm:block" />
                   )}
@@ -674,7 +687,7 @@ function SettingsContent() {
                   }`}
                 >
                   <Monitor className="w-4 h-4" />
-                  <span className="hidden sm:inline">Sistema</span>
+                  <span className="hidden sm:inline">{t("preferences.theme.system")}</span>
                   {theme === "system" && (
                     <Check className="w-4 h-4 hidden sm:block" />
                   )}
@@ -682,19 +695,21 @@ function SettingsContent() {
               </div>
             </div>
 
+            <LanguagePreferences />
+
             {/* Notifications (placeholder - disabled) */}
             <div className="space-y-4">
               <p className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-                Notificações
+                {t("preferences.notifications.title")}
               </p>
               <div className="flex items-start gap-3 opacity-50">
                 <Checkbox disabled checked={false} className="mt-0.5" />
                 <div>
                   <p className="text-sm font-medium text-foreground">
-                    Novidades e atualizações
+                    {t("preferences.notifications.productTitle")}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Receber emails sobre novas funcionalidades
+                    {t("preferences.notifications.productDescription")}
                   </p>
                 </div>
               </div>
@@ -702,15 +717,15 @@ function SettingsContent() {
                 <Checkbox disabled checked={false} className="mt-0.5" />
                 <div>
                   <p className="text-sm font-medium text-foreground">
-                    Atividade na comunidade
+                    {t("preferences.notifications.communityTitle")}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Notificações sobre interações com os seus recursos
+                    {t("preferences.notifications.communityDescription")}
                   </p>
                 </div>
               </div>
               <p className="text-xs text-muted-foreground italic">
-                Em breve disponível
+                {t("preferences.notifications.comingSoon")}
               </p>
             </div>
           </div>

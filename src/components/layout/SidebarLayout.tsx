@@ -90,6 +90,7 @@ import {
   Users,
   type LucideIcon,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -103,132 +104,119 @@ interface SidebarLayoutProps {
 }
 
 interface NavItem {
-  title: string;
+  /**
+   * Key under `nav.items` in the message bundles. The title and description are
+   * looked up from it at render time — these arrays are module-level constants
+   * and cannot call `useTranslations` themselves.
+   */
+  key: string;
   href: string;
   icon: LucideIcon;
-  description: string;
   external?: boolean;
 }
 
 const NAVIGATION: NavItem[] = [
   {
-    title: "Dashboard",
+    key: "dashboard",
     href: Routes.DASHBOARD,
     icon: Home,
-    description: "Visão geral da sua atividade",
   },
   {
-    title: "Os meus documentos",
+    key: "documents",
     href: Routes.DOCUMENTS,
     icon: FileText,
-    description: "Gerir os seus documentos",
   },
   {
-    title: "Biblioteca comunitária",
+    key: "community",
     href: Routes.COMMUNITY,
     icon: FolderArchiveIcon,
-    description: "Partilhar e descobrir recursos",
   },
 ];
 
 // Calendário is a nav-level item (after "As minhas fontes") — added conditionally in SidebarNavigationContent
 const CALENDAR_NAV_ITEM: NavItem = {
-  title: "Calendário",
+  key: "calendar",
   href: Routes.CALENDAR,
   icon: CalendarRange,
-  description: "Turmas e geração automática",
 };
 
 const CONTENT_CREATION: NavItem[] = [
   {
-    title: "Planificações",
+    key: "curriculumPlan",
     href: Routes.CURRICULUM_PLAN,
     icon: GanttChart,
-    description: "Planificações curriculares de período",
   },
   {
-    title: "Planos de Aula",
+    key: "lessonPlan",
     href: Routes.LESSON_PLAN,
     icon: BookOpen,
-    description: "Criar e editar planos de aula",
   },
   {
-    title: "Testes",
+    key: "test",
     href: Routes.TEST,
     icon: FileCheck,
-    description: "Criar e editar testes",
   },
   {
-    title: "Quizzes",
+    key: "quiz",
     href: Routes.QUIZ,
     icon: HelpCircle,
-    description: "Criar e editar quizzes",
   },
   {
-    title: "Fichas de Trabalho",
+    key: "worksheet",
     href: Routes.WORKSHEET,
     icon: ClipboardList,
-    description: "Criar e editar fichas de trabalho",
   },
   {
-    title: "Apresentações",
+    key: "presentation",
     href: Routes.PRESENTATION,
     icon: Presentation,
-    description: "Criar e editar apresentações",
   },
 ];
 
 const SECONDARY_NAVIGATION: NavItem[] = [
   {
-    title: "Apoio e sugestões",
+    key: "support",
     href: Routes.SUPPORT,
     icon: MessageSquare,
-    description: "Enviar feedback e reportar erros",
   },
   {
-    title: "Definições",
+    key: "settings",
     href: Routes.SETTINGS,
     icon: Settings,
-    description: "Configurar a sua conta",
   },
   {
-    title: "Recomendar escola",
+    key: "recommendSchool",
     href: `${MARKETING_SITE_URL}/recomendar-instituicao`,
     icon: Building2,
-    description: "Sugerir a Scooli à direção da sua escola",
     external: true,
   },
 ];
 
 const ADMIN_NAVIGATION: NavItem[] = [
   {
-    title: "Consola Admin",
+    key: "admin",
     href: Routes.ADMIN,
     icon: Shield,
-    description: "Gerir plataforma",
   },
 ];
 
 const SCHOOL_NAVIGATION: NavItem[] = [
   {
-    title: "Dashboard Escola",
+    key: "school",
     href: Routes.SCHOOL,
     icon: Building2,
-    description: "Gerir escola, lugares e utilização",
   },
   {
-    title: "Membros",
+    key: "schoolMembers",
     href: Routes.SCHOOL_MEMBERS,
     icon: Users,
-    description: "Ver membros e lugares da escola",
   },
 ];
 
 const SOURCES_NAV_ITEM: NavItem = {
-  title: "As minhas fontes",
+  key: "sources",
   href: Routes.SOURCES,
   icon: Library,
-  description: "Gerir fontes de conteúdo para geração",
 };
 
 const NavMenuItem = memo(function NavMenuItem({
@@ -242,6 +230,7 @@ const NavMenuItem = memo(function NavMenuItem({
   onClick?: () => void;
   badge?: React.ReactNode;
 }) {
+  const t = useTranslations("nav");
   const Icon = item.icon;
 
   return (
@@ -262,7 +251,7 @@ const NavMenuItem = memo(function NavMenuItem({
           )}
         >
           <Icon className="h-4 w-4" />
-          <span className="flex-1 truncate">{item.title}</span>
+          <span className="flex-1 truncate">{t(`items.${item.key}.title`)}</span>
           {badge}
         </SidebarMenuButton>
       </Link>
@@ -277,6 +266,7 @@ const ExternalNavMenuItem = memo(function ExternalNavMenuItem({
   item: NavItem;
   onClick?: () => void;
 }) {
+  const t = useTranslations("nav");
   const Icon = item.icon;
 
   return (
@@ -290,7 +280,7 @@ const ExternalNavMenuItem = memo(function ExternalNavMenuItem({
       >
         <SidebarMenuButton className="h-10 px-4 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground">
           <Icon className="h-4 w-4 shrink-0" />
-          <span className="flex-1">{item.title}</span>
+          <span className="flex-1">{t(`items.${item.key}.title`)}</span>
           <ExternalLink className="h-3 w-3 shrink-0 text-muted-foreground" />
         </SidebarMenuButton>
       </a>
@@ -303,6 +293,7 @@ const DisabledNavMenuItem = memo(function DisabledNavMenuItem({
 }: {
   item: NavItem;
 }) {
+  const t = useTranslations("nav");
   const Icon = item.icon;
 
   return (
@@ -314,7 +305,7 @@ const DisabledNavMenuItem = memo(function DisabledNavMenuItem({
         <Icon className="mt-0.5 h-4 w-4 shrink-0" />
         <div className="min-w-0 flex-1 space-y-1">
           <p className="whitespace-normal break-words text-left leading-tight">
-            {item.title}
+            {t(`items.${item.key}.title`)}
           </p>
           <div className="inline-flex items-center gap-1 rounded-full border border-border bg-muted px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide whitespace-nowrap text-muted-foreground">
             <Clock className="h-2.5 w-2.5 shrink-0" />
@@ -493,6 +484,7 @@ const SidebarNavigationContent = memo(function SidebarNavigationContent({
   pathname: string;
   onItemClick?: () => void;
 }) {
+  const t = useTranslations("nav");
   const router = useRouter();
   const { isAdmin } = useAdmin();
   const features = useSelector((state: RootState) => state.features.flags);
@@ -541,7 +533,7 @@ const SidebarNavigationContent = memo(function SidebarNavigationContent({
       </SidebarHeader>
       <SidebarContent className="py-4">
         <NavGroup
-          label="Navegação"
+          label={t("groups.navigation")}
           items={navigationItems}
           pathname={pathname}
           onItemClick={onItemClick}
@@ -551,7 +543,7 @@ const SidebarNavigationContent = memo(function SidebarNavigationContent({
         <Separator className="my-4" />
 
         <NavGroup
-          label="Criação de Conteúdo"
+          label={t("groups.contentCreation")}
           items={contentCreationItems}
           pathname={pathname}
           onItemClick={onItemClick}
@@ -561,7 +553,7 @@ const SidebarNavigationContent = memo(function SidebarNavigationContent({
         <Separator className="my-4" />
 
         <NavGroup
-          label="Sistema"
+          label={t("groups.system")}
           items={SECONDARY_NAVIGATION}
           pathname={pathname}
           onItemClick={onItemClick}
@@ -575,7 +567,7 @@ const SidebarNavigationContent = memo(function SidebarNavigationContent({
           <>
             <Separator className="my-4" />
             <NavGroup
-              label={workspace?.organization?.name ?? "Escola"}
+              label={workspace?.organization?.name ?? t("groups.school")}
               items={SCHOOL_NAVIGATION}
               pathname={pathname}
               onItemClick={onItemClick}
@@ -587,7 +579,7 @@ const SidebarNavigationContent = memo(function SidebarNavigationContent({
           <>
             <Separator className="my-4" />
             <NavGroup
-              label="Administração"
+              label={t("groups.admin")}
               items={ADMIN_NAVIGATION}
               pathname={pathname}
               onItemClick={onItemClick}
