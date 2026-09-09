@@ -3,9 +3,13 @@ import ClerkThemeProvider from "@/components/providers/ClerkThemeProvider";
 import StoreProvider from "@/components/providers/StoreProvider";
 import ThemeProvider from "@/components/providers/ThemeProvider";
 import { Toaster } from "@/components/ui/sonner";
+import { ClerkLocaleStamp } from "@/components/providers/ClerkLocaleStamp";
+import LocaleProvider from "@/components/providers/LocaleProvider";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import type { Metadata } from "next";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale } from "next-intl/server";
 import { Lato, Lexend, Merriweather, Montserrat, Nunito, Playfair_Display, Poppins, Raleway } from "next/font/google";
 import "./globals.css";
 import "katex/dist/katex.min.css";
@@ -57,13 +61,17 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  // Resolved from the NEXT_LOCALE cookie in src/i18n/request.ts. Falls back to
+  // pt-PT, so a visitor with no cookie sees exactly what they see today.
+  const locale = await getLocale();
+
   return (
-    <html lang="pt" className={`${lexend.variable} ${poppins.variable} ${montserrat.variable} ${raleway.variable} ${lato.variable} ${merriweather.variable} ${nunito.variable} ${playfair.variable}`} suppressHydrationWarning>
+    <html lang={locale} className={`${lexend.variable} ${poppins.variable} ${montserrat.variable} ${raleway.variable} ${lato.variable} ${merriweather.variable} ${nunito.variable} ${playfair.variable}`} suppressHydrationWarning>
       <head>
         <link
           rel="preconnect"
@@ -77,16 +85,21 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
       <body className={`${lexend.className} antialiased`} suppressHydrationWarning>
-        <StoreProvider>
-          <ThemeProvider>
-            <ClerkThemeProvider>
-              <AuthProvider>
-                {children}
-                <Toaster position="bottom-right" />
-              </AuthProvider>
-            </ClerkThemeProvider>
-          </ThemeProvider>
-        </StoreProvider>
+        <NextIntlClientProvider>
+          <StoreProvider>
+            <ThemeProvider>
+              <ClerkThemeProvider>
+                <AuthProvider>
+                  <LocaleProvider>
+                    <ClerkLocaleStamp />
+                    {children}
+                    <Toaster position="bottom-right" />
+                  </LocaleProvider>
+                </AuthProvider>
+              </ClerkThemeProvider>
+            </ThemeProvider>
+          </StoreProvider>
+        </NextIntlClientProvider>
         <SpeedInsights />
         <Analytics />
       </body>

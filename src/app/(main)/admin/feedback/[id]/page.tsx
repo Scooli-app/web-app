@@ -1,5 +1,6 @@
 "use client";
 
+import { useDateFnsLocale } from "@/i18n/dateFns";
 import { FeedbackStatusBadge } from "@/components/admin/feedback/FeedbackStatusBadge";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { Button } from "@/components/ui/button";
@@ -27,7 +28,6 @@ import {
 } from "@/store/admin-feedback/adminFeedbackSlice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { format } from "date-fns";
-import { pt } from "date-fns/locale";
 import {
   ArrowLeft,
   Bug,
@@ -60,6 +60,7 @@ type TimelineItem =
     };
 
 export default function AdminFeedbackDetailArgsPage() {
+  const dateFnsLocale = useDateFnsLocale();
   const params = useParams();
   const router = useRouter();
   const dispatch = useAppDispatch();
@@ -429,7 +430,7 @@ export default function AdminFeedbackDetailArgsPage() {
                             {format(
                               new Date(item.createdAt),
                               "dd MMM yyyy HH:mm",
-                              { locale: pt },
+                              { locale: dateFnsLocale },
                             )}
                           </span>
                         </div>
@@ -526,7 +527,7 @@ export default function AdminFeedbackDetailArgsPage() {
                     <span className="text-muted-foreground">Criado em:</span>
                     <span className="font-medium">
                       {format(new Date(detail.createdAt), "dd MMM yyyy", {
-                        locale: pt,
+                        locale: dateFnsLocale,
                       })}
                     </span>
                   </div>
@@ -535,7 +536,7 @@ export default function AdminFeedbackDetailArgsPage() {
                       <span className="text-muted-foreground">Atualizado:</span>
                       <span className="font-medium">
                         {format(new Date(detail.updatedAt), "dd MMM yyyy", {
-                          locale: pt,
+                          locale: dateFnsLocale,
                         })}
                       </span>
                     </div>
