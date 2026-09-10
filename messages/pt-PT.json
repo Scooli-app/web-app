@@ -1623,5 +1623,373 @@
   "appMeta": {
     "title": "Scooli - Plataforma AI para Professores",
     "description": "Crie conteúdo educacional de qualidade em segundos com inteligência artificial."
+  },
+  "timetable": {
+    "status": {
+      "pending": "Pendente",
+      "generating": "A gerar",
+      "completed": "Gerado",
+      "failed": "Falhou",
+      "skipped": "Ignorado"
+    },
+    "slotType": {
+      "lesson": "Aula",
+      "assessment": "Avaliação",
+      "exercise": "Exercícios",
+      "review": "Revisão",
+      "holiday": "Feriado"
+    },
+    "gradeYear": "{grade}.º ano",
+    "gradeShort": "{grade}.º",
+    "autoTitleFallback": "Nova Turma"
+  },
+  "calendar": {
+    "shared": {
+      "pageTitle": "Calendário",
+      "featureTitle": "As Turmas",
+      "featureDescription": "Cria o horário semanal de uma turma, gera a sequência de tópicos e os planos de aula. Disponível nos planos pagos.",
+      "classesLink": "Turmas",
+      "newClassLink": "Nova turma",
+      "createClass": "Criar turma",
+      "emptyTitle": "Nenhuma turma",
+      "emptyDescription": "Cria a tua primeira turma para começar a planificar.",
+      "viewWeek": "Semana",
+      "viewWeekShort": "Sem",
+      "viewMonth": "Mês",
+      "today": "Hoje",
+      "tomorrow": "Amanhã",
+      "noTopic": "Sem tópico",
+      "holidayNoLesson": "Feriado / Sem aula",
+      "classInline": "Turma {label}",
+      "minutesSuffix": "{count} min",
+      "generateWeek": "Gerar semana ({count})"
+    },
+    "week": {
+      "generate": "Gerar ({count})",
+      "moveUp": "Mover para cima",
+      "moveDown": "Mover para baixo",
+      "durationCompact": "{count}m"
+    },
+    "detail": {
+      "loading": "A carregar...",
+      "noTopicDefined": "Sem tópico definido",
+      "generationFailed": "Falhou a geração",
+      "noLessonsThisWeek": "Sem aulas programadas para esta semana.",
+      "noLessonsYet": "Ainda não tens aulas criadas para esta turma.",
+      "navigateOtherWeek": "Navega para outra semana."
+    },
+    "month": {
+      "lessonsCount": "{count, plural, one {# aula} other {# aulas}}",
+      "completedCount": "{count, plural, one {# gerada} other {# geradas}}",
+      "pendingCount": "{count, plural, one {# pendente} other {# pendentes}}"
+    },
+    "classesList": {
+      "header": {
+        "title": "Turmas",
+        "subtitle": "Todas as tuas turmas"
+      },
+      "deleteDialog": {
+        "title": "Eliminar turma?",
+        "description": "Tens a certeza que queres eliminar <strong>\"{title}\"</strong>? Escolhe se pretendes manter ou eliminar os documentos gerados associados a esta turma.",
+        "deleteOnlyTitle": "Eliminar apenas a turma",
+        "deleteOnlySubtitle": "Os documentos gerados são mantidos",
+        "deleteWithDocsTitle": "Eliminar turma e documentos",
+        "deleteWithDocsSubtitle": "Todos os documentos associados serão apagados",
+        "cancel": "Cancelar"
+      },
+      "editDialog": {
+        "title": "Editar turma",
+        "description": "Altera o nome, turma, cor ou planificação ligada.",
+        "nameLabel": "Nome",
+        "classLabel": "Turma",
+        "classPlaceholder": "Ex: A",
+        "colorLabel": "Cor",
+        "linkedPlanLabel": "Planificação ligada",
+        "loadingPlans": "A carregar…",
+        "none": "Nenhuma",
+        "cancel": "Cancelar",
+        "save": "Guardar"
+      },
+      "card": {
+        "active": "Ativa",
+        "inactive": "Inativa",
+        "editTitle": "Editar turma"
+      }
+    },
+    "slotDialog": {
+      "typeLabel": "Tipo:",
+      "objectivesTitle": "Objetivos de Aprendizagem",
+      "objectivesProcessing": "A processar…",
+      "objectivesEmpty": "Gera os tópicos da turma para ver os objetivos de aprendizagem.",
+      "documentsTitle": "Documentos gerados",
+      "loadingDocuments": "A carregar documentos…",
+      "noDocuments": "Nenhum documento encontrado.",
+      "viewLinkedPlan": "Ver planificação ligada",
+      "additionalInstructionLabel": "Instrução adicional (opcional)",
+      "additionalInstructionPlaceholder": "Ex: inclui atividade prática em grupo",
+      "generateLessonPlan": "Gerar plano de aula",
+      "generating": "A gerar…",
+      "openLessonPlan": "Abrir plano de aula",
+      "regenerate": "Regenerar",
+      "confirmSkipWarning": "Esta ação não pode ser desfeita.",
+      "confirm": "Confirmar",
+      "cancel": "Cancelar",
+      "skip": "Ignorar",
+      "editTopicTitle": "Clica para editar o tópico",
+      "topicPlaceholderEmpty": "Sem tópico — clica para editar",
+      "lessonNumber": "Aula {number}"
+    },
+    "dashboardWidget": {
+      "title": "Próximas aulas",
+      "viewCalendar": "Ver calendário",
+      "noUpcoming": "Não tens aulas próximas.",
+      "generate": "Gerar",
+      "generating": "A gerar…",
+      "open": "Abrir"
+    },
+    "novo": {
+      "stepIndicator": {
+        "plan": "Planificação",
+        "period": "Período",
+        "details": "Detalhes",
+        "review": "Rever"
+      },
+      "loadingSteps": [
+        "A mapear competências curriculares",
+        "A organizar conteúdos e sequência pedagógica",
+        "A definir avaliações e critérios",
+        "Revisão pedagógica final"
+      ],
+      "chooseMode": {
+        "title": "Como queres criar a turma?",
+        "subtitle": "Escolhe o método que melhor se adapta ao teu fluxo de trabalho.",
+        "fromPlanTitle": "A partir de uma planificação",
+        "recommended": "Recomendado",
+        "fromPlanDescription": "A Scooli lê a tua planificação e preenche tudo — período, tópicos e AEs. Só revês as datas.",
+        "customTitle": "Do zero",
+        "customDescription": "Define o período e disciplina. A Scooli gera os tópicos a partir das AEs do ano."
+      },
+      "selectPlan": {
+        "title": "Escolhe uma planificação",
+        "subtitle": "A Scooli extrai o período, disciplina e tópicos automaticamente.",
+        "searchPlaceholder": "Pesquisar planificações...",
+        "noneYet": "Ainda não tens planificações criadas.",
+        "noneFound": "Nenhuma planificação encontrada."
+      },
+      "period": {
+        "title": "Período letivo",
+        "subtitle": "Define as datas de início e fim da turma.",
+        "presetsLabel": "Atalhos",
+        "startLabel": "Início *",
+        "startPlaceholder": "Seleciona a data de início",
+        "endLabel": "Fim *",
+        "endPlaceholder": "Seleciona a data de fim",
+        "schoolYearLabel": "Ano letivo",
+        "schoolYearPlaceholder": "Ex: 2025/2026"
+      },
+      "details": {
+        "title": "Detalhes da turma",
+        "subtitle": "Disciplina, ano e horário semanal.",
+        "gradeLabel": "Ano de escolaridade *",
+        "gradePlaceholder": "Seleciona o ano",
+        "classLabel": "Turma",
+        "classPlaceholder": "Ex: A",
+        "subjectLabel": "Disciplina *",
+        "subjectPlaceholder": "Seleciona a disciplina",
+        "subjectPlaceholderNoGrade": "Seleciona primeiro o ano de escolaridade",
+        "nameLabel": "Nome da turma",
+        "namePlaceholder": "Auto-preenchido",
+        "colorLabel": "Cor",
+        "lessonsSummary": "{count} aulas (~{weeks} semanas × {lpw} aulas/sem., já sem fins-de-semana e feriados)"
+      },
+      "reviewDates": {
+        "title": "Rever datas",
+        "subtitle": "Ajusta os tipos de slot e remove datas desnecessárias.",
+        "total": "Total:",
+        "lessons": "Aulas:",
+        "assessments": "Avaliações:",
+        "exercises": "Exercícios:",
+        "reviews": "Revisões:",
+        "holidays": "Feriados:",
+        "deselect": "Desselecionar ({count})",
+        "selectAll": "Selecionar tudo",
+        "markAs": "Marcar como:",
+        "remove": "Remover",
+        "emptyLine1": "Não há aulas geradas para este período com o horário definido.",
+        "emptyLine2": "Volta atrás e confirma as datas e os dias de aula."
+      },
+      "nav": {
+        "cancel": "Cancelar",
+        "previous": "Anterior",
+        "next": "Seguinte",
+        "createClass": "Criar turma ({count, plural, one {# aula} other {# aulas}})"
+      },
+      "header": {
+        "title": "Nova turma",
+        "subtitle": "Define o período, disciplina e horário semanal.",
+        "loadingTitle": "Nova Turma"
+      },
+      "generating": {
+        "title": "A criar a tua turma…",
+        "subtitle": "A Scooli está a gerar os tópicos e a distribuição pedagógica."
+      }
+    },
+    "periods": {
+      "term1": "1.º Período",
+      "term2": "2.º Período",
+      "term3": "3.º Período",
+      "semester1": "1.º Semestre",
+      "semester2": "2.º Semestre",
+      "schoolYear": "Ano letivo {range}"
+    }
+  },
+  "errors": {
+    "calendar": {
+      "loadPlan": "Não foi possível carregar a planificação.",
+      "createFailed": "Não foi possível criar a turma."
+    },
+    "timetable": {
+      "load": "Não foi possível carregar os horários.",
+      "loadOne": "Horário não encontrado.",
+      "create": "Não foi possível criar o horário.",
+      "update": "Não foi possível atualizar o horário.",
+      "delete": "Não foi possível eliminar o horário.",
+      "fetchLessons": "Não foi possível carregar as aulas.",
+      "updateLesson": "Não foi possível atualizar a aula.",
+      "skipLesson": "Não foi possível ignorar a aula.",
+      "generateTopics": "Não foi possível gerar os tópicos."
+    },
+    "curriculumPlan": {
+      "createFailed": "Não foi possível criar a planificação.",
+      "uploadFailed": "Falha ao enviar o ficheiro para o armazenamento.",
+      "importFailed": "Não foi possível importar a planificação."
+    }
+  },
+  "curriculumPlan": {
+    "shared": {
+      "featureTitle": "As Planificações",
+      "featureDescription": "Gera planificações curriculares completas alinhadas com as Aprendizagens Essenciais. Disponível nos planos pagos.",
+      "planningType": {
+        "annual": "Anual",
+        "semester": "Semestral",
+        "trimester": "Trimestral",
+        "custom": "Personalizado"
+      }
+    },
+    "novo": {
+      "steps": {
+        "period": "Período",
+        "class": "Turma",
+        "schedule": "Horário",
+        "review": "Resumo"
+      },
+      "loadingSteps": [
+        "A analisar as Aprendizagens Essenciais",
+        "A estruturar as secções da planificação",
+        "A definir a calendarização por unidades",
+        "Revisão pedagógica final"
+      ],
+      "header": {
+        "title": "Nova planificação",
+        "subtitle": "A IA gera as 7 secções canónicas. Pode editar tudo depois."
+      },
+      "period": {
+        "title": "Período letivo",
+        "subtitle": "Escolhe um predefinido ou define manualmente as datas.",
+        "startLabel": "Data de início",
+        "startPlaceholder": "Início do período",
+        "endLabel": "Data de fim",
+        "endPlaceholder": "Fim do período",
+        "summary": "<strong>{weeks, plural, one {# semana} other {# semanas}}</strong> de <strong>{start}</strong> a <strong>{end}</strong>",
+        "planningTypeLabel": "Tipo de período"
+      },
+      "class": {
+        "title": "Detalhes da turma",
+        "subtitle": "Indica a disciplina e o ano de escolaridade.",
+        "gradeLabel": "Ano de escolaridade *",
+        "gradePlaceholder": "Seleciona o ano",
+        "subjectLabel": "Disciplina *",
+        "subjectPlaceholder": "Seleciona a disciplina",
+        "subjectPlaceholderNoGrade": "Seleciona primeiro o ano de escolaridade"
+      },
+      "schedule": {
+        "title": "Horário semanal",
+        "subtitle": "Define quantas aulas tens por dia. O total será usado para estimar a duração.",
+        "lessonsSummary": "{count} aulas (~{weeks} semanas × {lpw} aulas/sem., já sem fins-de-semana e feriados)"
+      },
+      "review": {
+        "title": "Resumo",
+        "subtitle": "Confirma os dados antes de gerar a planificação.",
+        "period": "Período",
+        "type": "Tipo",
+        "subject": "Disciplina",
+        "grade": "Ano",
+        "lessonsPerWeek": "Aulas / semana",
+        "totalEstimate": "Total estimado",
+        "totalLessons": "{count} aulas",
+        "aiNotice": "A IA irá gerar as <strong>7 secções canónicas</strong>: Identificação, Perfil do Aluno, Aprendizagens Essenciais, Calendarização, Desenvolvimento por Unidades, Avaliação e Articulação Curricular."
+      },
+      "generating": {
+        "title": "A gerar a tua planificação…",
+        "subtitle": "A Scooli está a estruturar as 7 secções canónicas."
+      },
+      "nav": {
+        "cancel": "Cancelar",
+        "previous": "Anterior",
+        "next": "Seguinte",
+        "generating": "A gerar...",
+        "generate": "Gerar planificação"
+      }
+    },
+    "importar": {
+      "steps": {
+        "upload": "A enviar ficheiro",
+        "import": "A iniciar importação",
+        "normalize": "A normalizar com IA",
+        "done": "Concluído"
+      },
+      "unsupportedFormat": "Formato não suportado. Usa DOCX, XLSX, PDF ou TXT.",
+      "header": {
+        "title": "Importar planificação existente",
+        "subtitle": "Aceita DOCX, XLSX, PDF e TXT. O Scooli normaliza o conteúdo para o formato canónico de 7 secções."
+      },
+      "importing": {
+        "title": "A importar a tua planificação…",
+        "subtitle": "Isto pode demorar até um minuto."
+      },
+      "form": {
+        "title": "Ficheiro e metadados",
+        "fileLabel": "Ficheiro",
+        "titleLabel": "Título da planificação",
+        "titlePlaceholder": "Ex: Planificação Trimestral Matemática 5.º ano",
+        "subjectLabel": "Disciplina",
+        "subjectPlaceholder": "Seleciona",
+        "schoolYearLabel": "Ano de escolaridade",
+        "planningTypeLabel": "Tipo de período",
+        "periodStartLabel": "Início (opcional)",
+        "periodEndLabel": "Fim (opcional)",
+        "cancel": "Cancelar",
+        "submit": "Importar"
+      },
+      "featureDescription": "Importa uma planificação existente (DOCX/PDF) e a Scooli normaliza-a. Disponível nos planos pagos."
+    },
+    "list": {
+      "header": {
+        "title": "Planificações",
+        "subtitle": "Cria ou importa uma planificação curricular para um período letivo completo."
+      },
+      "generateCard": {
+        "title": "Gerar com IA",
+        "description": "A IA produz uma grelha estruturada em 7 secções, alinhada com as Aprendizagens Essenciais e calibrada ao período escolhido (anual / semestral / trimestral).",
+        "cta": "Começar"
+      },
+      "importCard": {
+        "title": "Importar existente",
+        "description": "Já tens uma planificação em DOCX, XLSX, PDF ou TXT? O Scooli normaliza-a para o mesmo formato canónico, pronta a editar e ligar a futuros planos de aula.",
+        "cta": "Importar"
+      },
+      "existingTitle": "As tuas planificações",
+      "empty": "Ainda não tens planificações. Cria ou importa a primeira acima."
+    }
   }
 }

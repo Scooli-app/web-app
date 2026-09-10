@@ -1,4 +1,19 @@
 /** Shared date/calendar utilities used across calendar pages and components. */
+import type { Locale } from "@/i18n/locales";
+
+/**
+ * BCP-47 tag to feed `Intl.DateTimeFormat` for each interface locale. `en-GB`
+ * rather than `en` — day/month order and abbreviations should stay European,
+ * matching the `enGB` choice in `src/i18n/dateFns.ts`.
+ */
+const INTL_LOCALE_BY_LOCALE: Record<Locale, string> = {
+  "pt-PT": "pt-PT",
+  en: "en-GB",
+};
+
+export function toIntlLocale(locale: Locale): string {
+  return INTL_LOCALE_BY_LOCALE[locale] ?? "pt-PT";
+}
 
 /**
  * Format a Date as YYYY-MM-DD using local timezone components.
@@ -25,10 +40,10 @@ export function getWeekStart(date: Date = new Date()): Date {
   return d;
 }
 
-export function formatWeekLabel(weekStart: Date): string {
+export function formatWeekLabel(weekStart: Date, locale: Locale): string {
   const end = addDays(weekStart, 6);
   const fmt = (d: Date) =>
-    d.toLocaleDateString("pt-PT", { day: "numeric", month: "short" });
+    d.toLocaleDateString(toIntlLocale(locale), { day: "numeric", month: "short" });
   return `${fmt(weekStart)} – ${fmt(end)}`;
 }
 
@@ -42,5 +57,13 @@ export function hexToRgb(hex: string): { r: number; g: number; b: number } | nul
   };
 }
 
-/** Mon–Sun abbreviated day labels in Portuguese. */
-export const DAY_LABELS = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"] as const;
+/**
+ * Mon–Sun abbreviated day labels for the given interface locale. Built from a
+ * known Monday (2024-01-01) via `Intl.DateTimeFormat` rather than hard-coded
+ * strings, so it follows the interface language automatically.
+ */
+export function getDayLabels(locale: Locale): string[] {
+  const fmt = new Intl.DateTimeFormat(toIntlLocale(locale), { weekday: "short" });
+  const monday = new Date(2024, 0, 1); // a known Monday
+  return Array.from({ length: 7 }, (_, i) => fmt.format(addDays(monday, i)));
+}

@@ -16,6 +16,7 @@ import {
   type UpdateTimetableParams,
 } from "@/services/api/timetable.service";
 import { createAsyncThunk, createSlice, type PayloadAction } from "@reduxjs/toolkit";
+import { translate } from "@/i18n/translate";
 
 interface TimetableState {
   timetables: Timetable[];
@@ -43,7 +44,7 @@ export const fetchTimetables = createAsyncThunk(
     try {
       return await listTimetablesService();
     } catch (_error) {
-      return rejectWithValue("Não foi possível carregar os horários.");
+      return rejectWithValue(translate("errors.timetable.load"));
     }
   }
 );
@@ -54,7 +55,7 @@ export const fetchTimetable = createAsyncThunk(
     try {
       return await getTimetableService(id);
     } catch (_error) {
-      return rejectWithValue("Horário não encontrado.");
+      return rejectWithValue(translate("errors.timetable.loadOne"));
     }
   }
 );
@@ -65,7 +66,7 @@ export const createTimetable = createAsyncThunk(
     try {
       return await createTimetableService(params);
     } catch (_error) {
-      return rejectWithValue("Não foi possível criar o horário.");
+      return rejectWithValue(translate("errors.timetable.create"));
     }
   }
 );
@@ -76,7 +77,7 @@ export const updateTimetable = createAsyncThunk(
     try {
       return await updateTimetableService(id, params);
     } catch (_error) {
-      return rejectWithValue("Não foi possível atualizar o horário.");
+      return rejectWithValue(translate("errors.timetable.update"));
     }
   }
 );
@@ -88,7 +89,7 @@ export const deleteTimetable = createAsyncThunk(
       await deleteTimetableService(id, deleteDocuments);
       return id;
     } catch (_error) {
-      return rejectWithValue("Não foi possível eliminar o horário.");
+      return rejectWithValue(translate("errors.timetable.delete"));
     }
   }
 );
@@ -99,7 +100,7 @@ export const fetchLessons = createAsyncThunk(
     try {
       return await listLessonsService(timetableId, weekStart);
     } catch (_error) {
-      return rejectWithValue("Não foi possível carregar as aulas.");
+      return rejectWithValue(translate("errors.timetable.fetchLessons"));
     }
   }
 );
@@ -113,7 +114,7 @@ export const updateLesson = createAsyncThunk(
     try {
       return await updateLessonService(timetableId, lessonId, params);
     } catch (_error) {
-      return rejectWithValue("Não foi possível atualizar a aula.");
+      return rejectWithValue(translate("errors.timetable.updateLesson"));
     }
   }
 );
@@ -124,7 +125,7 @@ export const skipLesson = createAsyncThunk(
     try {
       return await skipLessonService(timetableId, lessonId);
     } catch (_error) {
-      return rejectWithValue("Não foi possível ignorar a aula.");
+      return rejectWithValue(translate("errors.timetable.skipLesson"));
     }
   }
 );
@@ -135,7 +136,7 @@ export const generateTopics = createAsyncThunk(
     try {
       return await generateTopicsService(timetableId);
     } catch (_error) {
-      return rejectWithValue("Não foi possível gerar os tópicos.");
+      return rejectWithValue(translate("errors.timetable.generateTopics"));
     }
   }
 );
