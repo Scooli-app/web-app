@@ -1619,5 +1619,9 @@
       "title": "Apoio e Sugestões",
       "description": "A sua opinião é fundamental para nós. Envie sugestões de melhoria ou reporte erros que encontrou na plataforma."
     }
+  },
+  "appMeta": {
+    "title": "Scooli - Plataforma AI para Professores",
+    "description": "Crie conteúdo educacional de qualidade em segundos com inteligência artificial."
   }
 }

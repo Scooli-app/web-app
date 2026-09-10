@@ -9,7 +9,8 @@ import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import type { Metadata } from "next";
 import { NextIntlClientProvider } from "next-intl";
-import { getLocale } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
+import { TranslatorBridge } from "@/i18n/TranslatorBridge";
 import { Lato, Lexend, Merriweather, Montserrat, Nunito, Playfair_Display, Poppins, Raleway } from "next/font/google";
 import "./globals.css";
 import "katex/dist/katex.min.css";
@@ -43,23 +44,25 @@ const merriweather = Merriweather({ variable: "--font-merriweather", subsets: ["
 const nunito = Nunito({ variable: "--font-nunito", subsets: ["latin"], weight: ["300", "400", "500", "600", "700"] });
 const playfair = Playfair_Display({ variable: "--font-playfair", subsets: ["latin"], weight: ["400", "500", "600", "700"] });
 
-export const metadata: Metadata = {
-  title: "Scooli - Plataforma AI para Professores",
-  description:
-    "Crie conteúdo educacional de qualidade em segundos com inteligência artificial.",
-  icons: {
-    icon: [
-      { url: "/favicon.ico", type: "image/x-icon" },
-      { url: "/favicon-96x96.png", sizes: "96x96", type: "image/png" },
-      { url: "/favicon.svg", type: "image/svg+xml" },
-    ],
-    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
-  },
-  manifest: "/site.webmanifest",
-  appleWebApp: {
-    title: "Scooli",
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("appMeta");
+  return {
+    title: t("title"),
+    description: t("description"),
+    icons: {
+      icon: [
+        { url: "/favicon.ico", type: "image/x-icon" },
+        { url: "/favicon-96x96.png", sizes: "96x96", type: "image/png" },
+        { url: "/favicon.svg", type: "image/svg+xml" },
+      ],
+      apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
+    },
+    manifest: "/site.webmanifest",
+    appleWebApp: {
+      title: "Scooli",
+    },
+  };
+}
 
 export default async function RootLayout({
   children,
@@ -86,6 +89,7 @@ export default async function RootLayout({
       </head>
       <body className={`${lexend.className} antialiased`} suppressHydrationWarning>
         <NextIntlClientProvider>
+          <TranslatorBridge />
           <StoreProvider>
             <ThemeProvider>
               <ClerkThemeProvider>

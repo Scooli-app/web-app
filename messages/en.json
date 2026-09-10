@@ -1619,5 +1619,9 @@
       "title": "Support and Suggestions",
       "description": "Your feedback matters to us. Send suggestions for improvement or report bugs you found on the platform."
     }
+  },
+  "appMeta": {
+    "title": "Scooli - AI Platform for Teachers",
+    "description": "Create high-quality teaching materials in seconds with artificial intelligence."
   }
 }
