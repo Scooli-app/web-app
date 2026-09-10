@@ -309,7 +309,7 @@ const DisabledNavMenuItem = memo(function DisabledNavMenuItem({
           </p>
           <div className="inline-flex items-center gap-1 rounded-full border border-border bg-muted px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide whitespace-nowrap text-muted-foreground">
             <Clock className="h-2.5 w-2.5 shrink-0" />
-            Em breve
+            {t("comingSoon")}
           </div>
         </div>
       </SidebarMenuButton>
@@ -322,6 +322,7 @@ const TutorialNavMenuItem = memo(function TutorialNavMenuItem({
 }: {
   onClick?: () => void;
 }) {
+  const t = useTranslations("nav");
   const router = useRouter();
   const { startTutorial } = useTutorial();
 
@@ -338,7 +339,7 @@ const TutorialNavMenuItem = memo(function TutorialNavMenuItem({
         className="h-10 px-4 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
       >
         <GraduationCap className="h-4 w-4" />
-        <span className="flex-1 truncate">Ver tutorial</span>
+        <span className="flex-1 truncate">{t("viewTutorial")}</span>
       </SidebarMenuButton>
     </SidebarMenuItem>
   );
@@ -397,13 +398,14 @@ const SidebarProfileCard = memo(function SidebarProfileCard({
 }: {
   onClick?: () => void;
 }) {
+  const t = useTranslations("nav");
   const { user } = useUser();
   const { openUserProfile, signOut } = useClerk();
   const [isSigningOut, setIsSigningOut] = useState(false);
 
   if (!user) return null;
 
-  const displayName = user.fullName || user.firstName || "Utilizador";
+  const displayName = user.fullName || user.firstName || t("profile.userFallback");
   const email = user.primaryEmailAddress?.emailAddress || "";
   const fallbackInitial = displayName.charAt(0).toUpperCase();
 
@@ -432,7 +434,7 @@ const SidebarProfileCard = memo(function SidebarProfileCard({
         type="button"
         onClick={handleClick}
         className="block w-full rounded-xl transition hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-        aria-label="Abrir perfil"
+        aria-label={t("profile.openProfile")}
       >
         <div className="flex items-center gap-3">
           {user.imageUrl ? (
@@ -454,7 +456,7 @@ const SidebarProfileCard = memo(function SidebarProfileCard({
             </p>
             <p className="truncate text-xs text-muted-foreground">{email}</p>
             <p className="mt-1 text-xs font-medium text-primary">
-              Gerir perfil
+              {t("profile.manageProfile")}
             </p>
           </div>
         </div>
@@ -471,7 +473,7 @@ const SidebarProfileCard = memo(function SidebarProfileCard({
         className="h-9 w-full justify-start px-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
       >
         <LogOut className="mr-2 h-4 w-4" />
-        {isSigningOut ? "A terminar sessão..." : "Terminar sessão"}
+        {isSigningOut ? t("profile.signingOut") : t("profile.signOut")}
       </Button>
     </div>
   );
@@ -620,6 +622,7 @@ const SidebarMobileContent = memo(function SidebarMobileContent({
 });
 
 function GenerationsIndicator() {
+  const t = useTranslations("nav");
   const { isSignedIn } = useAuth();
 
   const usage = useSelector(selectEntitlementUsage);
@@ -634,8 +637,8 @@ function GenerationsIndicator() {
         href={Routes.SETTINGS}
         title={
           accessSource === "organization" || accessSource === "both"
-            ? "Acesso Pro através da organização"
-            : "Acesso Pro"
+            ? t("generations.proAccessOrg")
+            : t("generations.proAccess")
         }
         className={cn(
           "flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors",
@@ -659,7 +662,7 @@ function GenerationsIndicator() {
           className="bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-sm transition-all hover:scale-105 hover:from-amber-600 hover:to-orange-700 active:scale-95"
         >
           <Sparkles className="mr-1.5 h-4 w-4" />
-          Atualizar para Pro
+          {t("generations.upgradeToPro")}
         </Button>
       </Link>
     );
@@ -677,13 +680,15 @@ function GenerationsIndicator() {
     >
       <Sparkles className="h-4 w-4" />
       <span>
-        {usage.remaining} {usage.remaining === 1 ? "crédito" : "créditos"}
+        {t("generations.credits", { count: usage.remaining })}
       </span>
     </Link>
   );
 }
 
 export function SidebarLayout({ children, className }: SidebarLayoutProps) {
+  const t = useTranslations("nav");
+  const tCommon = useTranslations("common.sidebar");
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const dispatch = useAppDispatch();
@@ -757,7 +762,7 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
                       className="h-9 w-9 px-0 text-base hover:bg-accent hover:text-primary md:hidden"
                     >
                       <Menu className="h-6 w-6" />
-                      <span className="sr-only">Alternar barra lateral</span>
+                      <span className="sr-only">{tCommon("toggle")}</span>
                     </Button>
                   </SheetTrigger>
                   <SheetContent
@@ -765,7 +770,7 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
                     className="w-[min(92vw,22rem)] border-r p-0"
                   >
                     <SheetTitle className="sr-only">
-                      Navegação Scooli
+                      {t("mobileNavTitle")}
                     </SheetTitle>
                     <ScrollArea className="h-full py-3">
                       {mobileSidebarContent}
@@ -783,7 +788,7 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
                       variant="secondary"
                       className="hidden h-8 rounded border border-dashed border-primary/20 bg-primary/10 px-3 text-[11px] font-semibold uppercase tracking-wide text-primary sm:inline-flex"
                     >
-                      Acesso antecipado
+                      {t("earlyAccess")}
                     </Badge>
                     <GenerationsIndicator />
                   </div>
@@ -795,7 +800,7 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
                       variant="default"
                       className="bg-primary hover:bg-primary/90"
                     >
-                      Entrar
+                      {t("signIn")}
                     </Button>
                   </SignInButton>
                 </SignedOut>

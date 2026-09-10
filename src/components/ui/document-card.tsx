@@ -22,6 +22,7 @@ import {
   User,
   type LucideIcon,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { memo, useCallback, useMemo } from "react";
 
@@ -32,15 +33,6 @@ interface DocumentCardProps {
   onDelete?: (documentId: string) => void;
   selectionMode?: boolean;
 }
-
-const DOCUMENT_TYPE_LABELS: Record<Document["documentType"], string> = {
-  lessonPlan: "Plano de Aula",
-  worksheet: "Ficha de Trabalho",
-  test: "Teste",
-  quiz: "Quiz",
-  presentation: "Apresentação",
-  curriculumPlan: "Planificação",
-};
 
 const DOCUMENT_TYPE_COLORS: Record<Document["documentType"], string> = {
   lessonPlan: "bg-primary text-primary-foreground",
@@ -83,9 +75,9 @@ function formatDate(dateString: string) {
   return dateFormatter.format(new Date(dateString));
 }
 
-function getContentPreview(content: string) {
+function getContentPreview(content: string, noContentText: string, presentationFallback: string) {
   if (!content) {
-    return "Sem conteúdo disponível";
+    return noContentText;
   }
 
   // Handle JSON presentation content (v1 or v2)
@@ -101,7 +93,7 @@ function getContentPreview(content: string) {
             .slice(0, 4)
             .map((s) => s.elements?.find((e) => e.type === "text" && e.role === "title")?.text ?? "")
             .filter(Boolean);
-          return titles.length > 0 ? titles.join(" · ") : "Apresentação";
+          return titles.length > 0 ? titles.join(" · ") : presentationFallback;
         }
         // v1 layout format — extract slide titles
         type V1Block = { title?: string };
@@ -110,7 +102,7 @@ function getContentPreview(content: string) {
           .slice(0, 4)
           .map((b) => b.title ?? "")
           .filter(Boolean);
-        return titles.length > 0 ? titles.join(" · ") : "Apresentação";
+        return titles.length > 0 ? titles.join(" · ") : presentationFallback;
       }
     } catch {
       // fall through to markdown processing
@@ -142,6 +134,8 @@ function DocumentCardComponent({
   onDelete,
   selectionMode = false,
 }: DocumentCardProps) {
+  const t = useTranslations("documents.card");
+  const tEnums = useTranslations("enums");
   const workspace = useAppSelector(selectWorkspaceContext);
   const organizationName = workspace?.organization?.name ?? null;
 
@@ -162,8 +156,8 @@ function DocumentCardComponent({
   );
 
   const typeLabel = useMemo(
-    () => DOCUMENT_TYPE_LABELS[document.documentType] || document.documentType,
-    [document.documentType]
+    () => tEnums(`documentType.${document.documentType}`) || document.documentType,
+    [document.documentType, tEnums]
   );
   const typeColor = useMemo(
     () =>
@@ -177,7 +171,12 @@ function DocumentCardComponent({
   );
   const documentRoute = useMemo(() => getDocumentRoute(document), [document]);
   const createdDate = useMemo(() => formatDate(document.createdAt), [document.createdAt]);
-  const contentPreview = useMemo(() => getContentPreview(document.content), [document.content]);
+  const noContentText = t("noContent");
+  const presentationFallback = tEnums("documentType.presentation");
+  const contentPreview = useMemo(
+    () => getContentPreview(document.content, noContentText, presentationFallback),
+    [document.content, noContentText, presentationFallback]
+  );
 
   // Derive which scope chips to render. `sharedScopes` is the source of truth
   // (backend-populated), but we fall back to `sharedResourceId` so documents
@@ -199,7 +198,7 @@ function DocumentCardComponent({
 
   const orgChipLabel = organizationName
     ? organizationName
-    : "Escola";
+    : t("schoolFallback");
 
   const cardContent = (
     <>
@@ -226,25 +225,25 @@ function DocumentCardComponent({
             </Badge>
             {document.originalFormat && (
               <Badge
-                title={`Importado de ${document.originalFormat.toUpperCase()}`}
+                title={t("importedFrom", { format: document.originalFormat.toUpperCase() })}
                 className="shrink-0 whitespace-nowrap border border-violet-400/40 bg-violet-400/10 px-2 py-1 text-xs font-medium text-violet-700 dark:text-violet-300"
               >
                 <Upload className="mr-1 h-3 w-3" />
-                Importado
+                {t("imported")}
               </Badge>
             )}
             {sharedScopes.has("community") && (
               <Badge
-                title="Partilhado na biblioteca comunitaria"
+                title={t("sharedCommunityTitle")}
                 className="shrink-0 whitespace-nowrap border border-teal-500/30 bg-teal-500/15 px-2 py-1 text-xs font-medium text-teal-700 dark:text-teal-400"
               >
                 <Globe2 className="mr-1 h-3 w-3" />
-                Comunidade
+                {t("community")}
               </Badge>
             )}
             {sharedScopes.has("organization") && (
               <Badge
-                title={`Partilhado na biblioteca de ${orgChipLabel}`}
+                title={t("sharedOrgTitle", { org: orgChipLabel })}
                 className="shrink-0 max-w-[10rem] whitespace-nowrap border border-amber-400/40 bg-amber-400/15 px-2 py-1 text-xs font-medium text-amber-700 dark:text-amber-300"
               >
                 <Building2 className="mr-1 h-3 w-3" />
@@ -273,7 +272,7 @@ function DocumentCardComponent({
             {document.gradeLevel && (
               <div className="flex items-center text-xs text-muted-foreground">
                 <User className="mr-2 h-3 w-3 shrink-0" />
-                <span>{document.gradeLevel}.º ano</span>
+                <span>{t("gradeYear", { grade: document.gradeLevel })}</span>
               </div>
             )}
           </div>
@@ -281,7 +280,7 @@ function DocumentCardComponent({
 
         <div className="mt-auto flex items-center justify-between gap-2 border-t border-border pt-3">
           <p className="truncate text-xs text-muted-foreground">
-            Criado em {createdDate}
+            {t("createdOn", { date: createdDate })}
           </p>
           {!selectionMode && (
             <Button

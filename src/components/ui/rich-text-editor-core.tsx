@@ -18,6 +18,7 @@ import {
   type Editor,
 } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
+import { useTranslations } from "next-intl";
 import {
   ArrowDownToLine,
   ArrowLeftToLine,
@@ -76,6 +77,7 @@ const MenuBar = memo(function MenuBar({
   onUploadImage?: () => void;
   isImageUploading?: boolean;
 }) {
+  const t = useTranslations("editor.richTextEditor");
   const editorState = useEditorState({
     editor,
     selector: (ctx) => ({
@@ -188,7 +190,7 @@ const MenuBar = memo(function MenuBar({
           onClick={handleBold}
           disabled={!editorState.canBold}
           className={`p-2 rounded hover:bg-accent transition-colors ${editorState.isBold ? "bg-primary text-primary-foreground" : "text-foreground"}`}
-          title="Negrito"
+          title={t("bold")}
           type="button"
         >
           <strong>B</strong>
@@ -197,7 +199,7 @@ const MenuBar = memo(function MenuBar({
           onClick={handleItalic}
           disabled={!editorState.canItalic}
           className={`p-2 rounded hover:bg-accent transition-colors ${editorState.isItalic ? "bg-primary text-primary-foreground" : "text-foreground"}`}
-          title="Itálico"
+          title={t("italic")}
           type="button"
         >
           <em>I</em>
@@ -205,7 +207,7 @@ const MenuBar = memo(function MenuBar({
         <button
           onClick={handleH1}
           className={`p-2 rounded hover:bg-accent transition-colors ${editorState.isHeading1 ? "bg-primary text-primary-foreground" : "text-foreground"}`}
-          title="Título 1"
+          title={t("heading1")}
           type="button"
         >
           H1
@@ -213,7 +215,7 @@ const MenuBar = memo(function MenuBar({
         <button
           onClick={handleH2}
           className={`p-2 rounded hover:bg-accent transition-colors ${editorState.isHeading2 ? "bg-primary text-primary-foreground" : "text-foreground"}`}
-          title="Título 2"
+          title={t("heading2")}
           type="button"
         >
           H2
@@ -221,7 +223,7 @@ const MenuBar = memo(function MenuBar({
         <button
           onClick={handleH3}
           className={`p-2 rounded hover:bg-accent transition-colors ${editorState.isHeading3 ? "bg-primary text-primary-foreground" : "text-foreground"}`}
-          title="Título 3"
+          title={t("heading3")}
           type="button"
         >
           H3
@@ -229,7 +231,7 @@ const MenuBar = memo(function MenuBar({
         <button
           onClick={handleBullet}
           className={`p-2 rounded hover:bg-accent transition-colors ${editorState.isBulletList ? "bg-primary text-primary-foreground" : "text-foreground"}`}
-          title="Lista"
+          title={t("bulletList")}
           type="button"
         >
           •
@@ -237,7 +239,7 @@ const MenuBar = memo(function MenuBar({
         <button
           onClick={handleOrdered}
           className={`p-2 rounded hover:bg-accent transition-colors ${editorState.isOrderedList ? "bg-primary text-primary-foreground" : "text-foreground"}`}
-          title="Lista Numerada"
+          title={t("orderedList")}
           type="button"
         >
           1.
@@ -245,7 +247,7 @@ const MenuBar = memo(function MenuBar({
         <button
           onClick={handleHighlight}
           className={`p-2 rounded hover:bg-accent transition-colors ${editorState.isHighlight ? "bg-primary text-primary-foreground" : "text-foreground"}`}
-          title="Destacar"
+          title={t("highlight")}
           type="button"
         >
           <span className="bg-yellow-200 dark:bg-yellow-600 px-1 text-foreground">
@@ -255,7 +257,7 @@ const MenuBar = memo(function MenuBar({
         <button
           onClick={handleBlockquote}
           className={`p-2 rounded hover:bg-accent transition-colors ${editorState.isBlockquote ? "bg-primary text-primary-foreground" : "text-foreground"}`}
-          title="Citação"
+          title={t("blockquote")}
           type="button"
         >
           &ldquo;
@@ -263,7 +265,7 @@ const MenuBar = memo(function MenuBar({
         <button
           onClick={handleCodeBlock}
           className={`p-2 rounded hover:bg-accent transition-colors ${editorState.isCodeBlock ? "bg-primary text-primary-foreground" : "text-foreground"}`}
-          title="Bloco de Código"
+          title={t("codeBlock")}
           type="button"
         >
           {"<>"}
@@ -271,7 +273,7 @@ const MenuBar = memo(function MenuBar({
         <button
           onClick={handleInsertMath}
           className={`p-2 rounded hover:bg-accent transition-colors ${editorState.isMath ? "bg-primary text-primary-foreground" : "text-foreground"}`}
-          title="Inserir fórmula matemática"
+          title={t("insertMath")}
           type="button"
         >
           Σ
@@ -279,7 +281,7 @@ const MenuBar = memo(function MenuBar({
         <button
           onClick={handleInsertTable}
           className="p-2 rounded hover:bg-accent transition-colors text-foreground"
-          title="Inserir tabela (clique direito na tabela para editar)"
+          title={t("insertTable")}
           type="button"
         >
           <Table2 className="h-4 w-4" />
@@ -289,7 +291,7 @@ const MenuBar = memo(function MenuBar({
             onClick={handleUploadImage}
             disabled={isImageUploading}
             className={`p-2 rounded hover:bg-accent transition-colors ${isImageUploading ? "text-muted-foreground opacity-70" : "text-foreground"}`}
-            title={isImageUploading ? "A carregar imagem..." : "Carregar imagem"}
+            title={isImageUploading ? t("uploadingImage") : t("uploadImage")}
             type="button"
           >
             {isImageUploading ? (
@@ -320,6 +322,7 @@ export function TipTapEditorCore({
   onImageUpload,
   isImageUploading = false,
 }: TipTapEditorCoreProps) {
+  const t = useTranslations("editor.richTextEditor");
   const autosaveTimer = useRef<NodeJS.Timeout | null>(null);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const isInternalChangeRef = useRef(false);
@@ -542,7 +545,7 @@ export function TipTapEditorCore({
     return (
       <div className="border border-border rounded-xl bg-card w-full">
         <div className="p-4 min-h-[600px] flex items-center justify-center">
-          <div className="text-muted-foreground">A carregar editor...</div>
+          <div className="text-muted-foreground">{t("loadingEditor")}</div>
         </div>
       </div>
     );
@@ -554,15 +557,15 @@ export function TipTapEditorCore({
     | { label: string; icon: React.ElementType; run: () => void; destructive?: boolean };
 
   const tableCtxActions: CtxAction[] = [
-    { label: "Inserir linha acima",       icon: ArrowUpToLine,    run: () => editor.chain().focus().addRowBefore().run() },
-    { label: "Inserir linha abaixo",      icon: ArrowDownToLine,  run: () => editor.chain().focus().addRowAfter().run() },
-    { label: "Eliminar linha",            icon: Rows2,            run: () => editor.chain().focus().deleteRow().run() },
+    { label: t("insertRowAbove"),   icon: ArrowUpToLine,    run: () => editor.chain().focus().addRowBefore().run() },
+    { label: t("insertRowBelow"),   icon: ArrowDownToLine,  run: () => editor.chain().focus().addRowAfter().run() },
+    { label: t("deleteRow"),        icon: Rows2,            run: () => editor.chain().focus().deleteRow().run() },
     { divider: true },
-    { label: "Inserir coluna à esquerda", icon: ArrowLeftToLine,  run: () => editor.chain().focus().addColumnBefore().run() },
-    { label: "Inserir coluna à direita",  icon: ArrowRightToLine, run: () => editor.chain().focus().addColumnAfter().run() },
-    { label: "Eliminar coluna",           icon: Columns2,         run: () => editor.chain().focus().deleteColumn().run() },
+    { label: t("insertColumnLeft"), icon: ArrowLeftToLine,  run: () => editor.chain().focus().addColumnBefore().run() },
+    { label: t("insertColumnRight"),icon: ArrowRightToLine, run: () => editor.chain().focus().addColumnAfter().run() },
+    { label: t("deleteColumn"),     icon: Columns2,         run: () => editor.chain().focus().deleteColumn().run() },
     { divider: true },
-    { label: "Eliminar tabela",           icon: Trash2,           run: () => editor.chain().focus().deleteTable().run(), destructive: true },
+    { label: t("deleteTable"),      icon: Trash2,           run: () => editor.chain().focus().deleteTable().run(), destructive: true },
   ];
 
   return (
@@ -573,7 +576,7 @@ export function TipTapEditorCore({
           style={{ left: mathEdit.x, top: mathEdit.y + 6 }}
         >
           <p className="mb-2 text-xs font-medium text-muted-foreground">
-            Editar fórmula
+            {t("editFormula")}
           </p>
           <textarea
             autoFocus
@@ -589,14 +592,14 @@ export function TipTapEditorCore({
               onClick={() => setMathEdit(null)}
               className="rounded px-2 py-1 text-xs text-muted-foreground hover:bg-accent"
             >
-              Cancelar
+              {t("cancel")}
             </button>
             <button
               type="button"
               onClick={handleMathSave}
               className="rounded bg-primary px-2 py-1 text-xs text-primary-foreground hover:bg-primary/90"
             >
-              Guardar
+              {t("save")}
             </button>
           </div>
         </div>

@@ -15,6 +15,7 @@ import type { Document } from "@/shared/types";
 import { UploadDocumentModal } from "@/components/modals/upload-document-modal";
 import { useAuth } from "@clerk/nextjs";
 import { CheckSquare, Loader2, Search, Square, Trash2, UploadCloud, X } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useInView } from "react-intersection-observer";
 import { Button } from "./button";
@@ -38,6 +39,7 @@ function useDebouncedValue<T>(value: T, delay: number): T {
 }
 
 export function DocumentsGallery() {
+  const t = useTranslations("documents.gallery");
   const { isLoaded: isAuthLoaded, isSignedIn } = useAuth();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
@@ -207,18 +209,18 @@ export function DocumentsGallery() {
   const getDeleteDialogContent = useMemo(() => {
     if (pendingDeleteId) {
       return {
-        title: "Eliminar documento",
-        description: "Tem a certeza de que quer eliminar este documento? Esta ação não pode ser desfeita.",
+        title: t("deleteDialog.singleTitle"),
+        description: t("deleteDialog.singleDescription"),
       };
     }
     return {
-      title: "Eliminar documentos",
+      title: t("deleteDialog.multipleTitle"),
       description:
         selectedDocuments.size === 1
-          ? "Tem a certeza de que quer eliminar este documento? Esta ação não pode ser desfeita."
-          : `Tem a certeza de que quer eliminar ${selectedDocuments.size} documentos? Esta ação não pode ser desfeita.`,
+          ? t("deleteDialog.singleDescription")
+          : t("deleteDialog.multipleDescription", { count: selectedDocuments.size }),
     };
-  }, [pendingDeleteId, selectedDocuments.size]);
+  }, [pendingDeleteId, selectedDocuments.size, t]);
 
   const handleExitSelectionMode = useCallback(() => {
     setSelectionMode(false);
@@ -310,7 +312,7 @@ export function DocumentsGallery() {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
           <div>
             <h2 className="text-xl font-semibold text-foreground sm:text-2xl">
-              Os Meus Documentos
+              {t("heading")}
             </h2>
           </div>
 
@@ -325,7 +327,7 @@ export function DocumentsGallery() {
                 className="flex flex-shrink-0"
               >
                 <UploadCloud className="w-4 h-4 mr-2" />
-                <span>Importar</span>
+                <span>{t("import")}</span>
               </Button>
             )}
 
@@ -346,20 +348,18 @@ export function DocumentsGallery() {
                   )}
                   <span className="font-medium">
                     {selectionInfo.isAllSelected
-                      ? "Desselecionar tudo"
-                      : "Selecionar tudo"}
+                      ? t("deselectAll")
+                      : t("selectAll")}
                   </span>
                 </Button>
                 {selectionInfo.count > 0 && (
                   <div className="flex flex-wrap items-center gap-2">
                     <div className="flex items-center gap-1">
                       <span className="text-sm font-medium text-primary">
-                        {selectionInfo.count} selecionado
-                        {selectionInfo.count !== 1 ? "s" : ""}
+                        {t("selectedCount", { count: selectionInfo.count })}
                       </span>
                       <span className="text-xs text-muted-foreground">
-                        ({selectionInfo.visibleCount} visível
-                        {selectionInfo.visibleCount !== 1 ? "is" : ""})
+                        {t("visibleCount", { count: selectionInfo.visibleCount })}
                       </span>
                     </div>
                     <Button
@@ -370,7 +370,7 @@ export function DocumentsGallery() {
                       className="bg-destructive/10 border-destructive/20 text-destructive hover:bg-destructive/20"
                     >
                       <Trash2 className="w-4 h-4 mr-1" />
-                      {deleting ? "A eliminar..." : "Eliminar"}
+                      {deleting ? t("deleting") : t("delete")}
                     </Button>
                   </div>
                 )}
@@ -390,7 +390,7 @@ export function DocumentsGallery() {
                 <div className="relative flex-1 sm:flex-initial">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                   <Input
-                    placeholder="Pesquisar documentos..."
+                    placeholder={t("searchPlaceholder")}
                     value={searchQuery}
                     onChange={handleSearchChange}
                     className="pl-10 w-full sm:w-64"
@@ -402,7 +402,7 @@ export function DocumentsGallery() {
                   onClick={handleEnterSelectionMode}
                   className="flex-shrink-0"
                 >
-                  Selecionar
+                  {t("select")}
                 </Button>
               </div>
             )}
@@ -428,7 +428,7 @@ export function DocumentsGallery() {
           <div className="flex items-center justify-center py-12">
             <div className="flex items-center space-x-2">
               <Loader2 className="w-5 h-5 animate-spin text-primary" />
-              <span className="text-muted-foreground">A carregar documentos...</span>
+              <span className="text-muted-foreground">{t("loadingDocuments")}</span>
             </div>
           </div>
         ) : filteredDocuments.length === 0 ? (
@@ -465,7 +465,7 @@ export function DocumentsGallery() {
                   <div className="flex items-center space-x-2">
                     <Loader2 className="w-5 h-5 animate-spin text-primary" />
                     <span className="text-muted-foreground">
-                      A carregar mais documentos...
+                      {t("loadingMore")}
                     </span>
                   </div>
                 )}
@@ -481,8 +481,8 @@ export function DocumentsGallery() {
         onConfirm={confirmDelete}
         title={getDeleteDialogContent.title}
         description={getDeleteDialogContent.description}
-        confirmLabel="Eliminar"
-        cancelLabel="Cancelar"
+        confirmLabel={t("deleteDialog.confirm")}
+        cancelLabel={t("deleteDialog.cancel")}
         variant="danger"
       />
 

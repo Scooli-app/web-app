@@ -1,6 +1,26 @@
 {
   "common": {
-    "selectDate": "Seleciona uma data"
+    "selectDate": "Seleciona uma data",
+    "confirmationDialog": {
+      "defaultTitle": "Tem a certeza?",
+      "defaultDescription": "Esta ação não pode ser desfeita.",
+      "confirm": "Confirmar",
+      "cancel": "Cancelar"
+    },
+    "unsavedChangesDialog": {
+      "title": "Alterações não guardadas",
+      "description": "Tem alterações que ainda não foram guardadas. Tem a certeza que pretende sair? As alterações serão perdidas.",
+      "confirm": "Sair sem guardar",
+      "cancel": "Continuar a editar"
+    },
+    "generationCostHint": {
+      "label": "Consome 1 crédito"
+    },
+    "sidebar": {
+      "title": "Barra lateral",
+      "mobileDescription": "Apresenta a barra lateral em dispositivos móveis.",
+      "toggle": "Alternar barra lateral"
+    }
   },
   "language": {
     "interface": {
@@ -105,7 +125,25 @@
         "title": "Membros",
         "description": "Ver membros e lugares da escola"
       }
-    }
+    },
+    "comingSoon": "Em breve",
+    "viewTutorial": "Ver tutorial",
+    "profile": {
+      "userFallback": "Utilizador",
+      "openProfile": "Abrir perfil",
+      "manageProfile": "Gerir perfil",
+      "signOut": "Terminar sessão",
+      "signingOut": "A terminar sessão..."
+    },
+    "generations": {
+      "proAccessOrg": "Acesso Pro através da organização",
+      "proAccess": "Acesso Pro",
+      "upgradeToPro": "Atualizar para Pro",
+      "credits": "{count, plural, one {# crédito} other {# créditos}}"
+    },
+    "mobileNavTitle": "Navegação Scooli",
+    "earlyAccess": "Acesso antecipado",
+    "signIn": "Entrar"
   },
   "enums": {
     "acquisitionSource": {
@@ -529,7 +567,11 @@
     "subjectAreaTitle": "Disciplinas que ensinas",
     "subjectAreaOtherPlaceholder": "Qual é a tua disciplina? (opcional)",
     "contentLanguageTitle": "Em que idioma queres que a Scooli escreva os teus materiais?",
-    "contentLanguageHint": "O currículo continua a ser o português — muda apenas a língua dos materiais. Podes alterar isto a qualquer momento nas Definições."
+    "contentLanguageHint": "O currículo continua a ser o português — muda apenas a língua dos materiais. Podes alterar isto a qualquer momento nas Definições.",
+    "errors": {
+      "skipFailed": "Não foi possível ignorar o onboarding.",
+      "saveFailed": "Não foi possível guardar a tua resposta."
+    }
   },
   "settings": {
     "title": "Definições",
@@ -929,6 +971,33 @@
       "urlLabel": "URL da imagem",
       "urlPlaceholder": "https://...",
       "insertImage": "Inserir imagem"
+    },
+    "richTextEditor": {
+      "bold": "Negrito",
+      "italic": "Itálico",
+      "heading1": "Título 1",
+      "heading2": "Título 2",
+      "heading3": "Título 3",
+      "bulletList": "Lista",
+      "orderedList": "Lista Numerada",
+      "highlight": "Destacar",
+      "blockquote": "Citação",
+      "codeBlock": "Bloco de Código",
+      "insertMath": "Inserir fórmula matemática",
+      "insertTable": "Inserir tabela (clique direito na tabela para editar)",
+      "uploadingImage": "A carregar imagem...",
+      "uploadImage": "Carregar imagem",
+      "loadingEditor": "A carregar editor...",
+      "editFormula": "Editar fórmula",
+      "cancel": "Cancelar",
+      "save": "Guardar",
+      "insertRowAbove": "Inserir linha acima",
+      "insertRowBelow": "Inserir linha abaixo",
+      "deleteRow": "Eliminar linha",
+      "insertColumnLeft": "Inserir coluna à esquerda",
+      "insertColumnRight": "Inserir coluna à direita",
+      "deleteColumn": "Eliminar coluna",
+      "deleteTable": "Eliminar tabela"
     }
   },
   "blocks": {
@@ -1064,7 +1133,7 @@
     "resourceGrid": {
       "emptyTitle": "Nenhum recurso encontrado",
       "emptyDescription": "Tente ajustar os filtros ou seja o primeiro a partilhar recursos desta categoria!",
-      "showingCount": "Mostrando {shown} de {total} recursos",
+      "showingCount": "Mostrando <b>{shown}</b> de <b>{total}</b> recursos",
       "previous": "Anterior",
       "next": "Próximo"
     },
@@ -1258,6 +1327,278 @@
     "featureGate": {
       "submitSuccess": "Obrigado pelo feedback!",
       "submitError": "Não foi possível enviar o feedback. Tenta mais tarde."
+    }
+  },
+  "documents": {
+    "card": {
+      "noContent": "Sem conteúdo disponível",
+      "schoolFallback": "Escola",
+      "importedFrom": "Importado de {format}",
+      "imported": "Importado",
+      "sharedCommunityTitle": "Partilhado na biblioteca comunitaria",
+      "community": "Comunidade",
+      "sharedOrgTitle": "Partilhado na biblioteca de {org}",
+      "gradeYear": "{grade}.º ano",
+      "createdOn": "Criado em {date}"
+    },
+    "filters": {
+      "types": {
+        "all": "Todos",
+        "lessonPlan": "Planos de Aula",
+        "worksheet": "Fichas de Trabalho",
+        "test": "Testes",
+        "quiz": "Quizzes",
+        "presentation": "Apresentações",
+        "curriculumPlan": "Planificações"
+      },
+      "subjectPlaceholder": "Disciplina",
+      "allSubjects": "Todas as disciplinas",
+      "gradePlaceholder": "Ano",
+      "allGrades": "Todos os anos",
+      "gradeOption": "{grade}.º ano",
+      "originPlaceholder": "Origem",
+      "origin": {
+        "all": "Qualquer origem",
+        "ai": "Gerado por IA",
+        "imported": "Importado"
+      }
+    },
+    "emptyState": {
+      "genericDocuments": "documentos",
+      "noSearchResults": {
+        "title": "Nenhum resultado encontrado",
+        "description": "Não encontrámos documentos para \"{query}\". Tente usar termos diferentes ou verifique a ortografia."
+      },
+      "noFilterResults": {
+        "title": "Sem {type}",
+        "description": "Ainda não tem {type}. Que tal criar o primeiro?"
+      },
+      "noDocuments": {
+        "title": "Comece a criar!",
+        "description": "A sua biblioteca de documentos está vazia. Deixe a IA ajudá-lo a criar materiais de ensino em segundos."
+      },
+      "createAction": "Criar {type}",
+      "chooseType": "Escolha um tipo de documento para começar",
+      "searchHint": "Tente procurar por outra palavra-chave, pelo tema ou pelo tipo de documento.",
+      "quickActionDescriptions": {
+        "lessonPlan": "Estruture as suas aulas",
+        "worksheet": "Prepare treino e consolidação",
+        "presentation": "Crie slides interativos",
+        "quiz": "Avalie conhecimentos",
+        "test": "Crie avaliações formais"
+      }
+    },
+    "gallery": {
+      "heading": "Os Meus Documentos",
+      "import": "Importar",
+      "selectAll": "Selecionar tudo",
+      "deselectAll": "Desselecionar tudo",
+      "selectedCount": "{count, plural, one {# selecionado} other {# selecionados}}",
+      "visibleCount": "({count, plural, one {# visível} other {# visívelis}})",
+      "deleting": "A eliminar...",
+      "delete": "Eliminar",
+      "searchPlaceholder": "Pesquisar documentos...",
+      "select": "Selecionar",
+      "loadingDocuments": "A carregar documentos...",
+      "loadingMore": "A carregar mais documentos...",
+      "deleteDialog": {
+        "singleTitle": "Eliminar documento",
+        "multipleTitle": "Eliminar documentos",
+        "singleDescription": "Tem a certeza de que quer eliminar este documento? Esta ação não pode ser desfeita.",
+        "multipleDescription": "Tem a certeza de que quer eliminar {count} documentos? Esta ação não pode ser desfeita.",
+        "confirm": "Eliminar",
+        "cancel": "Cancelar"
+      }
+    }
+  },
+  "billing": {
+    "paymentSuccessModal": {
+      "title": "Bem-vindo ao Scooli Pro! 🎉",
+      "subtitle": "A sua subscrição foi ativada com sucesso",
+      "unlockedLabel": "O que desbloqueou",
+      "unlimitedGenerations": {
+        "title": "Gerações ilimitadas",
+        "description": "Crie sem limites"
+      },
+      "customTemplates": {
+        "title": "Modelos personalizados",
+        "description": "Crie os seus próprios modelos"
+      },
+      "prioritySupport": {
+        "title": "Suporte prioritário",
+        "description": "Resposta em menos de 24h"
+      },
+      "cta": "Começar a Criar"
+    },
+    "upgradePlanModal": {
+      "title": "Limite do Plano Grátis Atingido",
+      "description": "Chegou ao limite de créditos do seu plano gratuito.",
+      "unlockLabel": "Desbloqueie o Pro para continuar",
+      "unlimitedGenerations": {
+        "title": "Gerações Ilimitadas",
+        "description": "Nunca pare de criar conteúdos"
+      },
+      "advancedCustomization": {
+        "title": "Personalização Avançada",
+        "description": "Aceda a todos os modelos disponíveis"
+      },
+      "premiumFeatures": {
+        "title": "Funcionalidades Premium",
+        "description": "Exportação e ferramentas exclusivas"
+      },
+      "cta": "Ver planos Pro",
+      "maybeLater": "Talvez mais tarde"
+    }
+  },
+  "sources": {
+    "list": {
+      "defaultTitle": "Fontes Curriculares Consultadas",
+      "emptyTitle": "Nenhuma fonte consultada",
+      "emptyDescription": "As fontes curriculares aparecerão aqui após gerar conteúdo",
+      "documentFallback": "Documento",
+      "chunkCount": "{count, plural, one {# excerto consultado} other {# excertos consultados}}",
+      "documentCount": "{count, plural, one {# documento} other {# documentos}}",
+      "excerptCount": "{count, plural, one {# excerto} other {# excertos}}"
+    }
+  },
+  "modals": {
+    "uploadDocument": {
+      "title": "Importar Documento",
+      "description": "Faça upload de um PDF ou DOCX. A IA irá converter e estruturar o conteúdo.",
+      "dropzone": {
+        "dragText": "Clique ou arraste o ficheiro",
+        "hint": "PDF ou DOCX · Máx. 10MB"
+      },
+      "warningText": "Imagens e formatação complexa poderão não ser preservadas. Documentos digitalizados sem texto legível serão rejeitados.",
+      "titleLabel": "Título do Documento",
+      "titlePlaceholder": "Ex: Ficha de Frações",
+      "convertToLabel": "Converter para",
+      "selectPlaceholder": "Selecione...",
+      "schoolYearLabel": "Ano Escolar",
+      "worksheetGoalLabel": "Objetivo da ficha",
+      "subjectLabel": "Disciplina",
+      "selectYearFirstPlaceholder": "Selecione primeiro o ano...",
+      "usageIntentLabel": "Como usar este recurso",
+      "usageIntent": {
+        "referenceTitle": "Apenas neste documento",
+        "referenceDescription": "Usa o ficheiro como referencia para a importacao atual.",
+        "standingTitle": "Guardar nas minhas fontes",
+        "standingDescription": "Indexa o ficheiro para futuras geracoes de conteudo."
+      },
+      "worksheetVariantOptions": {
+        "practice": "Treinar e consolidar",
+        "diagnostic": "Diagnosticar conhecimentos",
+        "formative": "Acompanhar aprendizagem",
+        "exploration": "Introduzir novo conteúdo"
+      },
+      "errorInvalidType": "Apenas ficheiros PDF e DOCX são suportados.",
+      "errorFileTooLarge": "O tamanho máximo do ficheiro é 10MB.",
+      "errorSelectFile": "Por favor, selecione um ficheiro.",
+      "errorFillRequired": "Por favor, preencha todos os campos obrigatórios.",
+      "errorSelectWorksheetGoal": "Por favor, selecione o objetivo principal da ficha.",
+      "errorUploadFailed": "Falha ao carregar o ficheiro para o armazenamento.",
+      "toastLoading": "A fazer upload, pode demorar um pouco...",
+      "toastSuccess": "Upload concluído! A atualizar galeria...",
+      "toastError": "Ocorreu um erro ao importar o documento. Tente novamente.",
+      "cancel": "Cancelar",
+      "importing": "A Importar...",
+      "importAndConvert": "Importar e Converter"
+    }
+  },
+  "promo": {
+    "navCta": {
+      "label": "Pro por 4,99€/mês",
+      "close": "Fechar"
+    },
+    "offerModal": {
+      "title": "Regresso às Aulas 2026",
+      "description": "Scooli Pro por apenas 4,99€/mês se ativar durante a promoção - fica com este preço para sempre.",
+      "unlimitedGenerations": {
+        "title": "Gerações ilimitadas",
+        "description": "Acesso a todas as funcionalidades Pro"
+      },
+      "lockedPrice": {
+        "title": "Preço bloqueado para sempre",
+        "description": "Sem aumentos depois da promoção terminar"
+      },
+      "activateCta": "Ativar por 4,99€/mês",
+      "annualOption": "Prefiro o anual por 47,90€",
+      "maybeLater": "Talvez mais tarde"
+    }
+  },
+  "tutorial": {
+    "steps": {
+      "grade": {
+        "title": "Ano de escolaridade",
+        "description": "Clica no ano de escolaridade dos teus alunos.",
+        "hint": "Seleciona um ano para avançar automaticamente"
+      },
+      "subject": {
+        "title": "Disciplina",
+        "description": "Abre o dropdown e escolhe a disciplina que ensinas.",
+        "hint": "Seleciona uma disciplina para avançar automaticamente"
+      },
+      "topic": {
+        "title": "Tema da aula",
+        "description": "Escreve o tema que queres ensinar. Ex: 'A fotossíntese' ou 'Frações'.",
+        "hint": "Clica em Próximo quando estiveres pronto"
+      },
+      "template": {
+        "title": "Modelo do plano",
+        "description": "Um modelo foi selecionado automaticamente. Podes clicar para explorar outros.",
+        "hint": "Clica em Próximo para continuar"
+      },
+      "generate": {
+        "title": "Gerar o plano de aula! 🎉",
+        "description": "Tudo pronto! Clica em 'Criar Plano de Aula' para gerar o teu primeiro plano de aula com IA.",
+        "hint": "Clica no botão para criar o teu plano de aula"
+      }
+    },
+    "completing": "Ótimo! A avançar…",
+    "skip": "Saltar tutorial",
+    "next": "Próximo"
+  },
+  "documentEditorPages": {
+    "lessonPlan": {
+      "loading": "A carregar plano de aula...",
+      "defaultTitle": "Novo Plano de Aula",
+      "generateMessage": "Gerar plano de aula",
+      "chatTitle": "Assistente de Planos",
+      "chatPlaceholder": "Pergunta algo ou pede para modificar o plano..."
+    },
+    "worksheet": {
+      "loading": "A carregar ficha de trabalho...",
+      "defaultTitle": "Nova Ficha de Trabalho",
+      "generateMessage": "Gerar ficha de trabalho",
+      "chatTitle": "Assistente de Fichas",
+      "chatPlaceholder": "Pergunta algo ou pede para modificar a ficha..."
+    },
+    "test": {
+      "loading": "A carregar teste...",
+      "defaultTitle": "Novo Teste",
+      "generateMessage": "Gerar teste",
+      "chatTitle": "Assistente de Testes",
+      "chatPlaceholder": "Pergunta algo ou pede para modificar o teste..."
+    },
+    "quiz": {
+      "loading": "A carregar quiz...",
+      "defaultTitle": "Novo Quiz",
+      "generateMessage": "Gerar quiz",
+      "chatTitle": "Assistente de Quizzes",
+      "chatPlaceholder": "Pergunta algo ou pede para modificar o quiz..."
+    },
+    "curriculumPlan": {
+      "loading": "A carregar planificação...",
+      "defaultTitle": "Nova Planificação",
+      "generateMessage": "Gerar planificação",
+      "chatTitle": "Assistente de Planificações",
+      "chatPlaceholder": "Pergunta algo ou pede para modificar a planificação..."
+    }
+  },
+  "support": {
+    "page": {
+      "title": "Apoio e Sugestões",
+      "description": "A sua opinião é fundamental para nós. Envie sugestões de melhoria ou reporte erros que encontrou na plataforma."
     }
   }
 }

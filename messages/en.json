@@ -1,6 +1,26 @@
 {
   "common": {
-    "selectDate": "Pick a date"
+    "selectDate": "Pick a date",
+    "confirmationDialog": {
+      "defaultTitle": "Are you sure?",
+      "defaultDescription": "This action cannot be undone.",
+      "confirm": "Confirm",
+      "cancel": "Cancel"
+    },
+    "unsavedChangesDialog": {
+      "title": "Unsaved changes",
+      "description": "You have changes that haven't been saved yet. Are you sure you want to leave? Your changes will be lost.",
+      "confirm": "Leave without saving",
+      "cancel": "Continue editing"
+    },
+    "generationCostHint": {
+      "label": "Uses 1 credit"
+    },
+    "sidebar": {
+      "title": "Sidebar",
+      "mobileDescription": "Shows the sidebar on mobile devices.",
+      "toggle": "Toggle sidebar"
+    }
   },
   "language": {
     "interface": {
@@ -105,7 +125,25 @@
         "title": "Members",
         "description": "See your school's members and seats"
       }
-    }
+    },
+    "comingSoon": "Coming soon",
+    "viewTutorial": "View tutorial",
+    "profile": {
+      "userFallback": "User",
+      "openProfile": "Open profile",
+      "manageProfile": "Manage profile",
+      "signOut": "Sign out",
+      "signingOut": "Signing out..."
+    },
+    "generations": {
+      "proAccessOrg": "Pro access through your organization",
+      "proAccess": "Pro access",
+      "upgradeToPro": "Upgrade to Pro",
+      "credits": "{count, plural, one {# credit} other {# credits}}"
+    },
+    "mobileNavTitle": "Scooli Navigation",
+    "earlyAccess": "Early access",
+    "signIn": "Sign in"
   },
   "enums": {
     "acquisitionSource": {
@@ -529,7 +567,11 @@
     "subjectAreaTitle": "Subjects you teach",
     "subjectAreaOtherPlaceholder": "Which subject do you teach? (optional)",
     "contentLanguageTitle": "In which language should Scooli write your materials?",
-    "contentLanguageHint": "The curriculum stays Portuguese — only the language of the materials changes. You can switch this any time in Settings."
+    "contentLanguageHint": "The curriculum stays Portuguese — only the language of the materials changes. You can switch this any time in Settings.",
+    "errors": {
+      "skipFailed": "Could not skip onboarding.",
+      "saveFailed": "Could not save your answer."
+    }
   },
   "settings": {
     "title": "Settings",
@@ -929,6 +971,33 @@
       "urlLabel": "Image URL",
       "urlPlaceholder": "https://...",
       "insertImage": "Insert image"
+    },
+    "richTextEditor": {
+      "bold": "Bold",
+      "italic": "Italic",
+      "heading1": "Heading 1",
+      "heading2": "Heading 2",
+      "heading3": "Heading 3",
+      "bulletList": "List",
+      "orderedList": "Numbered List",
+      "highlight": "Highlight",
+      "blockquote": "Quote",
+      "codeBlock": "Code Block",
+      "insertMath": "Insert math formula",
+      "insertTable": "Insert table (right-click the table to edit)",
+      "uploadingImage": "Uploading image...",
+      "uploadImage": "Upload image",
+      "loadingEditor": "Loading editor...",
+      "editFormula": "Edit formula",
+      "cancel": "Cancel",
+      "save": "Save",
+      "insertRowAbove": "Insert row above",
+      "insertRowBelow": "Insert row below",
+      "deleteRow": "Delete row",
+      "insertColumnLeft": "Insert column left",
+      "insertColumnRight": "Insert column right",
+      "deleteColumn": "Delete column",
+      "deleteTable": "Delete table"
     }
   },
   "blocks": {
@@ -1064,7 +1133,7 @@
     "resourceGrid": {
       "emptyTitle": "No resources found",
       "emptyDescription": "Try adjusting the filters or be the first to share resources in this category!",
-      "showingCount": "Showing {shown} of {total} resources",
+      "showingCount": "Showing <b>{shown}</b> of <b>{total}</b> resources",
       "previous": "Previous",
       "next": "Next"
     },
@@ -1258,6 +1327,278 @@
     "featureGate": {
       "submitSuccess": "Thanks for the feedback!",
       "submitError": "We couldn't submit the feedback. Try again later."
+    }
+  },
+  "documents": {
+    "card": {
+      "noContent": "No content available",
+      "schoolFallback": "School",
+      "importedFrom": "Imported from {format}",
+      "imported": "Imported",
+      "sharedCommunityTitle": "Shared to the community library",
+      "community": "Community",
+      "sharedOrgTitle": "Shared to {org}'s library",
+      "gradeYear": "Year {grade}",
+      "createdOn": "Created on {date}"
+    },
+    "filters": {
+      "types": {
+        "all": "All",
+        "lessonPlan": "Lesson Plans",
+        "worksheet": "Worksheets",
+        "test": "Tests",
+        "quiz": "Quizzes",
+        "presentation": "Presentations",
+        "curriculumPlan": "Curriculum Plans"
+      },
+      "subjectPlaceholder": "Subject",
+      "allSubjects": "All subjects",
+      "gradePlaceholder": "Year",
+      "allGrades": "All years",
+      "gradeOption": "Year {grade}",
+      "originPlaceholder": "Origin",
+      "origin": {
+        "all": "Any origin",
+        "ai": "AI generated",
+        "imported": "Imported"
+      }
+    },
+    "emptyState": {
+      "genericDocuments": "documents",
+      "noSearchResults": {
+        "title": "No results found",
+        "description": "We couldn't find any documents for \"{query}\". Try different terms or check your spelling."
+      },
+      "noFilterResults": {
+        "title": "No {type}",
+        "description": "You don't have any {type} yet. How about creating the first one?"
+      },
+      "noDocuments": {
+        "title": "Start creating!",
+        "description": "Your document library is empty. Let AI help you create teaching materials in seconds."
+      },
+      "createAction": "Create {type}",
+      "chooseType": "Choose a document type to get started",
+      "searchHint": "Try searching with another keyword, the topic, or the document type.",
+      "quickActionDescriptions": {
+        "lessonPlan": "Structure your classes",
+        "worksheet": "Prepare practice and reinforcement",
+        "presentation": "Create interactive slides",
+        "quiz": "Assess knowledge",
+        "test": "Create formal assessments"
+      }
+    },
+    "gallery": {
+      "heading": "My Documents",
+      "import": "Import",
+      "selectAll": "Select all",
+      "deselectAll": "Deselect all",
+      "selectedCount": "{count, plural, one {# selected} other {# selected}}",
+      "visibleCount": "({count, plural, one {# visible} other {# visible}})",
+      "deleting": "Deleting...",
+      "delete": "Delete",
+      "searchPlaceholder": "Search documents...",
+      "select": "Select",
+      "loadingDocuments": "Loading documents...",
+      "loadingMore": "Loading more documents...",
+      "deleteDialog": {
+        "singleTitle": "Delete document",
+        "multipleTitle": "Delete documents",
+        "singleDescription": "Are you sure you want to delete this document? This action cannot be undone.",
+        "multipleDescription": "Are you sure you want to delete {count} documents? This action cannot be undone.",
+        "confirm": "Delete",
+        "cancel": "Cancel"
+      }
+    }
+  },
+  "billing": {
+    "paymentSuccessModal": {
+      "title": "Welcome to Scooli Pro! 🎉",
+      "subtitle": "Your subscription has been activated successfully",
+      "unlockedLabel": "What you've unlocked",
+      "unlimitedGenerations": {
+        "title": "Unlimited generations",
+        "description": "Create without limits"
+      },
+      "customTemplates": {
+        "title": "Custom templates",
+        "description": "Create your own templates"
+      },
+      "prioritySupport": {
+        "title": "Priority support",
+        "description": "Response in under 24h"
+      },
+      "cta": "Start Creating"
+    },
+    "upgradePlanModal": {
+      "title": "Free Plan Limit Reached",
+      "description": "You've reached the credit limit of your free plan.",
+      "unlockLabel": "Unlock Pro to continue",
+      "unlimitedGenerations": {
+        "title": "Unlimited Generations",
+        "description": "Never stop creating content"
+      },
+      "advancedCustomization": {
+        "title": "Advanced Customization",
+        "description": "Access all available templates"
+      },
+      "premiumFeatures": {
+        "title": "Premium Features",
+        "description": "Export and exclusive tools"
+      },
+      "cta": "View Pro plans",
+      "maybeLater": "Maybe later"
+    }
+  },
+  "sources": {
+    "list": {
+      "defaultTitle": "Curriculum Sources Consulted",
+      "emptyTitle": "No sources consulted",
+      "emptyDescription": "Curriculum sources will appear here after generating content",
+      "documentFallback": "Document",
+      "chunkCount": "{count, plural, one {# excerpt consulted} other {# excerpts consulted}}",
+      "documentCount": "{count, plural, one {# document} other {# documents}}",
+      "excerptCount": "{count, plural, one {# excerpt} other {# excerpts}}"
+    }
+  },
+  "modals": {
+    "uploadDocument": {
+      "title": "Import Document",
+      "description": "Upload a PDF or DOCX. AI will convert and structure the content.",
+      "dropzone": {
+        "dragText": "Click or drag the file",
+        "hint": "PDF or DOCX · Max. 10MB"
+      },
+      "warningText": "Images and complex formatting may not be preserved. Scanned documents without legible text will be rejected.",
+      "titleLabel": "Document Title",
+      "titlePlaceholder": "E.g.: Fractions Worksheet",
+      "convertToLabel": "Convert to",
+      "selectPlaceholder": "Select...",
+      "schoolYearLabel": "School Year",
+      "worksheetGoalLabel": "Worksheet goal",
+      "subjectLabel": "Subject",
+      "selectYearFirstPlaceholder": "Select the year first...",
+      "usageIntentLabel": "How to use this resource",
+      "usageIntent": {
+        "referenceTitle": "Only in this document",
+        "referenceDescription": "Uses the file as a reference for the current import.",
+        "standingTitle": "Save to my sources",
+        "standingDescription": "Indexes the file for future content generation."
+      },
+      "worksheetVariantOptions": {
+        "practice": "Practice and reinforce",
+        "diagnostic": "Assess knowledge",
+        "formative": "Track learning",
+        "exploration": "Introduce new content"
+      },
+      "errorInvalidType": "Only PDF and DOCX files are supported.",
+      "errorFileTooLarge": "The maximum file size is 10MB.",
+      "errorSelectFile": "Please select a file.",
+      "errorFillRequired": "Please fill in all required fields.",
+      "errorSelectWorksheetGoal": "Please select the main goal of the worksheet.",
+      "errorUploadFailed": "Failed to upload the file to storage.",
+      "toastLoading": "Uploading, this might take a moment...",
+      "toastSuccess": "Upload complete! Refreshing gallery...",
+      "toastError": "There was an error importing the document. Please try again.",
+      "cancel": "Cancel",
+      "importing": "Importing...",
+      "importAndConvert": "Import and Convert"
+    }
+  },
+  "promo": {
+    "navCta": {
+      "label": "Pro for €4.99/mo",
+      "close": "Close"
+    },
+    "offerModal": {
+      "title": "Back to School 2026",
+      "description": "Scooli Pro for just €4.99/month if you activate during the promotion — keep this price forever.",
+      "unlimitedGenerations": {
+        "title": "Unlimited generations",
+        "description": "Access to all Pro features"
+      },
+      "lockedPrice": {
+        "title": "Price locked forever",
+        "description": "No increases after the promotion ends"
+      },
+      "activateCta": "Activate for €4.99/mo",
+      "annualOption": "I'd rather pay annually for €47.90",
+      "maybeLater": "Maybe later"
+    }
+  },
+  "tutorial": {
+    "steps": {
+      "grade": {
+        "title": "School year",
+        "description": "Click on your students' school year.",
+        "hint": "Select a year to move on automatically"
+      },
+      "subject": {
+        "title": "Subject",
+        "description": "Open the dropdown and choose the subject you teach.",
+        "hint": "Select a subject to move on automatically"
+      },
+      "topic": {
+        "title": "Lesson topic",
+        "description": "Write the topic you want to teach. E.g.: 'Photosynthesis' or 'Fractions'.",
+        "hint": "Click Next when you're ready"
+      },
+      "template": {
+        "title": "Plan template",
+        "description": "A template was selected automatically. You can click to explore others.",
+        "hint": "Click Next to continue"
+      },
+      "generate": {
+        "title": "Generate the lesson plan! 🎉",
+        "description": "All set! Click 'Create Lesson Plan' to generate your first lesson plan with AI.",
+        "hint": "Click the button to create your lesson plan"
+      }
+    },
+    "completing": "Great! Moving on…",
+    "skip": "Skip tutorial",
+    "next": "Next"
+  },
+  "documentEditorPages": {
+    "lessonPlan": {
+      "loading": "Loading lesson plan...",
+      "defaultTitle": "New Lesson Plan",
+      "generateMessage": "Generate lesson plan",
+      "chatTitle": "Plan Assistant",
+      "chatPlaceholder": "Ask something or request changes to the plan..."
+    },
+    "worksheet": {
+      "loading": "Loading worksheet...",
+      "defaultTitle": "New Worksheet",
+      "generateMessage": "Generate worksheet",
+      "chatTitle": "Worksheet Assistant",
+      "chatPlaceholder": "Ask something or request changes to the worksheet..."
+    },
+    "test": {
+      "loading": "Loading test...",
+      "defaultTitle": "New Test",
+      "generateMessage": "Generate test",
+      "chatTitle": "Test Assistant",
+      "chatPlaceholder": "Ask something or request changes to the test..."
+    },
+    "quiz": {
+      "loading": "Loading quiz...",
+      "defaultTitle": "New Quiz",
+      "generateMessage": "Generate quiz",
+      "chatTitle": "Quiz Assistant",
+      "chatPlaceholder": "Ask something or request changes to the quiz..."
+    },
+    "curriculumPlan": {
+      "loading": "Loading curriculum plan...",
+      "defaultTitle": "New Curriculum Plan",
+      "generateMessage": "Generate curriculum plan",
+      "chatTitle": "Curriculum Plan Assistant",
+      "chatPlaceholder": "Ask something or request changes to the curriculum plan..."
+    }
+  },
+  "support": {
+    "page": {
+      "title": "Support and Suggestions",
+      "description": "Your feedback matters to us. Send suggestions for improvement or report bugs you found on the platform."
     }
   }
 }

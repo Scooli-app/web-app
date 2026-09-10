@@ -96,9 +96,10 @@ export function ResourceGrid({
       {pagination.totalPages > 1 && (
         <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-center text-sm text-muted-foreground sm:text-left">
-            {t("showingCount", {
+            {t.rich("showingCount", {
               shown: resources.length,
               total: pagination.totalCount,
+              b: (chunks) => <span className="font-medium text-foreground">{chunks}</span>,
             })}
           </p>
 
