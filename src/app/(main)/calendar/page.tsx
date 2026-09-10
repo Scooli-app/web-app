@@ -59,7 +59,9 @@ import { SLOT_STATUS_CONFIG } from "@/shared/constants/lessonSlotStatus";
 import { SlotDialog } from "@/components/calendar/SlotDialog";
 import { SlotSkeleton } from "@/components/calendar/SlotSkeleton";
 import type { SlotWithTimetable, DayMap } from "@/shared/types/calendar";
-import { toIso, addDays, getWeekStart, formatWeekLabel, hexToRgb, DAY_LABELS } from "@/shared/utils/calendar";
+import { toIso, addDays, getWeekStart, formatWeekLabel, hexToRgb, getDayLabels } from "@/shared/utils/calendar";
+import { useLocale, useTranslations } from "next-intl";
+import { isSupportedLocale, defaultLocale } from "@/i18n/locales";
 
 // ─────────────────────── Local helpers ───────────────────────────────────────
 
@@ -72,9 +74,11 @@ const STATUS_CONFIG = SLOT_STATUS_CONFIG;
 function CalendarGridSkeleton({
   weekDays,
   today,
+  dayLabels,
 }: {
   weekDays: Date[];
   today: string;
+  dayLabels: string[];
 }) {
   return (
     <div className="overflow-x-auto rounded-lg border border-border w-full">
@@ -94,7 +98,7 @@ function CalendarGridSkeleton({
                     isToday ? "text-primary" : "text-muted-foreground"
                   }`}
                 >
-                  {DAY_LABELS[i]}
+                  {dayLabels[i]}
                 </p>
                 <div className="mt-0.5 flex justify-center">
                   <span
@@ -146,6 +150,8 @@ function LessonCard({
   onCardDrop,
   highlightPending = false,
 }: LessonCardProps) {
+  const t = useTranslations("calendar");
+  const tTimetable = useTranslations("timetable");
   const { timetable } = slot;
   const color = timetable.color || "#7F77DD";
   const cfg = STATUS_CONFIG[slot.status];
@@ -224,10 +230,10 @@ function LessonCard({
               }`}
             >
               {isHoliday
-                ? "Feriado"
+                ? tTimetable("slotType.holiday")
                 : isAssessment
-                  ? `📋 ${slot.topicTitle || "Avaliação"}`
-                  : slot.topicTitle || "Sem tópico"}
+                  ? `📋 ${slot.topicTitle || tTimetable("slotType.assessment")}`
+                  : slot.topicTitle || t("shared.noTopic")}
             </p>
           </div>
           {!isHoliday && (
@@ -235,7 +241,7 @@ function LessonCard({
               className="mt-0.5 truncate text-[11px] font-medium"
               style={{ color }}
             >
-              {timetable.gradeLevel ? `${timetable.gradeLevel}.º ` : ""}
+              {timetable.gradeLevel ? `${tTimetable("gradeShort", { grade: timetable.gradeLevel })} ` : ""}
               {translateSubject(timetable.subject)}
               {timetable.classLabel ? ` · ${timetable.classLabel}` : ""}
             </p>
@@ -246,11 +252,11 @@ function LessonCard({
                 className={`h-1.5 w-1.5 shrink-0 rounded-full ${cfg.dotCls}`}
               />
               <span className="text-[10px] text-muted-foreground">
-                {cfg.label}
+                {tTimetable(`status.${slot.status}`)}
               </span>
               {slot.durationMinutes > 0 && (
                 <span className="text-[10px] text-muted-foreground/60 ml-1">
-                  · {slot.durationMinutes}m
+                  · {t("week.durationCompact", { count: slot.durationMinutes })}
                 </span>
               )}
             </div>
@@ -273,6 +279,11 @@ export default function CalendarPage() {
 }
 
 function CalendarPageInner() {
+  const t = useTranslations("calendar");
+  const tTimetable = useTranslations("timetable");
+  const rawLocale = useLocale();
+  const locale = isSupportedLocale(rawLocale) ? rawLocale : defaultLocale;
+  const dayLabels = useMemo(() => getDayLabels(locale), [locale]);
   const { loaded: featuresLoaded, enabled } = useFeatureAccess(selectIsHorarioPlanosEnabled);
   const { timetables, isLoading: isLoadingTimetables } = useSelector(
     (state: RootState) => state.timetable,
@@ -795,8 +806,8 @@ function CalendarPageInner() {
   if (!enabled)
     return (
       <FeatureUnavailable
-        title="As Turmas"
-        description="Cria o horário semanal de uma turma, gera a sequência de tópicos e os planos de aula. Disponível nos planos pagos."
+        title={t("shared.featureTitle")}
+        description={t("shared.featureDescription")}
       />
     );
 
@@ -811,13 +822,13 @@ function CalendarPageInner() {
             {/* View toggle */}
             <div className="flex shrink-0 items-center rounded-md border border-border overflow-hidden">
               <span className="px-2.5 py-1 text-xs font-medium bg-primary text-primary-foreground">
-                Sem
+                {t("shared.viewWeekShort")}
               </span>
               <Link
                 href={Routes.CALENDAR_MONTH}
                 className="px-2.5 py-1 text-xs font-medium text-muted-foreground hover:bg-muted transition-colors"
               >
-                Mês
+                {t("shared.viewMonth")}
               </Link>
             </div>
 
@@ -829,7 +840,7 @@ function CalendarPageInner() {
               onClick={goToday}
               className="flex-1 min-w-0 truncate text-center text-sm font-medium text-foreground"
             >
-              {formatWeekLabel(weekStart)}
+              {formatWeekLabel(weekStart, locale)}
             </button>
             <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={nextWeek}>
               <ArrowRight className="h-3.5 w-3.5" />
@@ -845,13 +856,13 @@ function CalendarPageInner() {
                 <DropdownMenuItem asChild>
                   <Link href={Routes.CALENDAR_SEQUENCES} className="flex items-center gap-2">
                     <CalendarDays className="h-4 w-4" />
-                    Turmas
+                    {t("shared.classesLink")}
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link href={Routes.CALENDAR_NEW} className="flex items-center gap-2">
                     <Plus className="h-4 w-4" />
-                    Nova turma
+                    {t("shared.newClassLink")}
                   </Link>
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -870,7 +881,7 @@ function CalendarPageInner() {
                 ) : (
                   <Sparkles className="h-3 w-3" />
                 )}
-                Gerar ({pendingThisWeek})
+                {t("week.generate", { count: pendingThisWeek })}
               </Button>
                 <AiDisclaimer variant="compact" />
               </div>
@@ -879,22 +890,22 @@ function CalendarPageInner() {
 
           {/* ── Desktop header: full layout ── */}
           <div className="hidden md:flex items-center gap-2">
-            <h1 className="mr-2 text-lg font-semibold">Calendário</h1>
+            <h1 className="mr-2 text-lg font-semibold">{t("shared.pageTitle")}</h1>
 
             <div className="flex items-center rounded-lg border border-border overflow-hidden">
               <span className="px-3 py-1 text-xs font-medium bg-primary text-primary-foreground">
-                Semana
+                {t("shared.viewWeek")}
               </span>
               <Link
                 href={Routes.CALENDAR_MONTH}
                 className="px-3 py-1 text-xs font-medium text-muted-foreground hover:bg-muted transition-colors"
               >
-                Mês
+                {t("shared.viewMonth")}
               </Link>
             </div>
 
             <Button variant="outline" size="sm" onClick={goToday} className="h-8">
-              Hoje
+              {t("shared.today")}
             </Button>
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={prevWeek}>
               <ArrowLeft className="h-4 w-4" />
@@ -903,7 +914,7 @@ function CalendarPageInner() {
               <ArrowRight className="h-4 w-4" />
             </Button>
             <span className="min-w-[160px] text-sm font-medium text-foreground">
-              {formatWeekLabel(weekStart)}
+              {formatWeekLabel(weekStart, locale)}
             </span>
 
             <div className="flex-1" />
@@ -911,14 +922,14 @@ function CalendarPageInner() {
             <Button variant="outline" size="sm" asChild className="h-8">
               <Link href={Routes.CALENDAR_SEQUENCES}>
                 <CalendarDays className="mr-1 h-3.5 w-3.5" />
-                Turmas
+                {t("shared.classesLink")}
               </Link>
             </Button>
 
             <Button variant="outline" size="sm" asChild className="h-8">
               <Link href={Routes.CALENDAR_NEW}>
                 <Plus className="mr-1 h-3.5 w-3.5" />
-                Nova turma
+                {t("shared.newClassLink")}
               </Link>
             </Button>
 
@@ -937,7 +948,7 @@ function CalendarPageInner() {
                 ) : (
                   <Sparkles className="mr-1 h-3.5 w-3.5" />
                 )}
-                Gerar semana ({pendingThisWeek})
+                {t("shared.generateWeek", { count: pendingThisWeek })}
               </Button>
                 <AiDisclaimer variant="compact" />
               </div>
@@ -953,27 +964,27 @@ function CalendarPageInner() {
                 <div className="h-7 w-24 animate-pulse rounded-full bg-muted" />
               </>
             ) : (
-              activeTimetables.map((t) => {
-                const isActive = filterIds.size === 0 || filterIds.has(t.id);
+              activeTimetables.map((tt) => {
+                const isActive = filterIds.size === 0 || filterIds.has(tt.id);
                 return (
                   <button
-                    key={t.id}
+                    key={tt.id}
                     type="button"
-                    onClick={() => toggleFilter(t.id)}
+                    onClick={() => toggleFilter(tt.id)}
                     className={`flex h-7 items-center gap-1.5 rounded-full border px-2.5 text-xs font-medium transition-all ${
                       isActive
                         ? "border-transparent text-white shadow-sm"
                         : "border-border bg-transparent text-muted-foreground/50 hover:text-muted-foreground hover:border-border/80"
                     }`}
-                    style={isActive ? { backgroundColor: t.color || "#7F77DD" } : {}}
+                    style={isActive ? { backgroundColor: tt.color || "#7F77DD" } : {}}
                   >
                     <span
                       className="h-1.5 w-1.5 shrink-0 rounded-full"
-                      style={{ backgroundColor: t.color || "#7F77DD" }}
+                      style={{ backgroundColor: tt.color || "#7F77DD" }}
                     />
-                    {t.gradeLevel ? `${t.gradeLevel}.º ` : ""}
-                    {translateSubject(t.subject)}
-                    {t.classLabel ? ` · ${t.classLabel}` : ""}
+                    {tt.gradeLevel ? `${tTimetable("gradeShort", { grade: tt.gradeLevel })} ` : ""}
+                    {translateSubject(tt.subject)}
+                    {tt.classLabel ? ` · ${tt.classLabel}` : ""}
                   </button>
                 );
               })
@@ -985,18 +996,18 @@ function CalendarPageInner() {
       {/* ── Calendar grid ─────────────────────────────────────────────── */}
       <div className="mx-auto w-full max-w-[1400px] px-4 pb-8 pt-4">
         {isLoadingTimetables && timetables.length === 0 ? (
-          <CalendarGridSkeleton weekDays={weekDays} today={today} />
+          <CalendarGridSkeleton weekDays={weekDays} today={today} dayLabels={dayLabels} />
         ) : activeTimetables.length === 0 ? (
           <div className="py-20 text-center">
             <CalendarDays className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-            <p className="text-lg font-medium">Nenhuma turma</p>
+            <p className="text-lg font-medium">{t("shared.emptyTitle")}</p>
             <p className="mt-1 text-sm text-muted-foreground">
-              Cria a tua primeira turma para começar a planificar.
+              {t("shared.emptyDescription")}
             </p>
             <Button asChild className="mt-5">
               <Link href={Routes.CALENDAR_NEW}>
                 <Plus className="mr-2 h-4 w-4" />
-                Criar turma
+                {t("shared.createClass")}
               </Link>
             </Button>
           </div>
@@ -1027,7 +1038,7 @@ function CalendarPageInner() {
                       <span
                         className={`text-xs font-semibold uppercase tracking-wider ${isToday ? "text-primary" : "text-muted-foreground"}`}
                       >
-                        {DAY_LABELS[i]}
+                        {dayLabels[i]}
                       </span>
                       <span
                         className={`flex h-6 w-6 items-center justify-center rounded-full text-sm font-bold ${isToday ? "bg-primary text-primary-foreground" : "text-foreground"}`}
@@ -1036,7 +1047,7 @@ function CalendarPageInner() {
                       </span>
                       {isToday && (
                         <span className="text-xs font-medium text-primary">
-                          Hoje
+                          {t("shared.today")}
                         </span>
                       )}
                     </div>
@@ -1045,8 +1056,8 @@ function CalendarPageInner() {
                       {isSlotsLoading
                         ? activeTimetables
                             .slice(0, 2)
-                            .map((t) => (
-                              <SlotSkeleton key={t.id} color={t.color} />
+                            .map((tt) => (
+                              <SlotSkeleton key={tt.id} color={tt.color} />
                             ))
                         : daySlots.map((slot, slotIdx) => (
                             <div key={slot.id} className="flex items-stretch gap-1">
@@ -1059,7 +1070,7 @@ function CalendarPageInner() {
                                     if (prev) void handleMobileSwap(slot, prev);
                                   }}
                                   className="flex-1 flex items-center justify-center rounded px-1 text-muted-foreground hover:bg-muted active:bg-muted disabled:opacity-20"
-                                  aria-label="Mover para cima"
+                                  aria-label={t("week.moveUp")}
                                 >
                                   <ChevronUp className="h-4 w-4" />
                                 </button>
@@ -1071,7 +1082,7 @@ function CalendarPageInner() {
                                     if (next) void handleMobileSwap(slot, next);
                                   }}
                                   className="flex-1 flex items-center justify-center rounded px-1 text-muted-foreground hover:bg-muted active:bg-muted disabled:opacity-20"
-                                  aria-label="Mover para baixo"
+                                  aria-label={t("week.moveDown")}
                                 >
                                   <ChevronDown className="h-4 w-4" />
                                 </button>
@@ -1109,7 +1120,7 @@ function CalendarPageInner() {
                         <p
                           className={`text-xs font-semibold uppercase tracking-wider ${isToday ? "text-primary" : "text-muted-foreground"}`}
                         >
-                          {DAY_LABELS[i]}
+                          {dayLabels[i]}
                         </p>
                         <div className="mt-0.5 flex justify-center">
                           <span

@@ -12,6 +12,7 @@ import type {
 } from "@/services/api/timetable.service";
 import { getPortugueseHolidays } from "@/shared/constants/portugueseHolidays";
 import type { Document } from "@/shared/types/document";
+import { translate } from "@/i18n/translate";
 
 /** Alias of the single source of truth in timetable.service.ts, re-exported so existing imports of SlotType from this module keep working. */
 export type SlotType = LessonSlotType;
@@ -355,7 +356,7 @@ export function buildPlanAutoTitle(plan: Document): string {
   const subjectId = resolvePlanSubjectId(plan);
   const label = SUBJECTS.find((s) => s.id === subjectId)?.label ?? plan.subject ?? "";
   const grade = plan.gradeLevel ? `${plan.gradeLevel}.º` : "";
-  return [grade, label].filter(Boolean).join(" ") || "Nova Turma";
+  return [grade, label].filter(Boolean).join(" ") || translate("timetable.autoTitleFallback");
 }
 
 /**

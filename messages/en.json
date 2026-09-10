@@ -2329,6 +2329,26 @@
     },
     "download": {
       "docxProOnly": "DOCX export is only available to Scooli Pro users"
+    },
+    "calendar": {
+      "loadPlan": "Couldn't load the curriculum plan.",
+      "createFailed": "Couldn't create the class."
+    },
+    "timetable": {
+      "load": "Couldn't load the timetables.",
+      "loadOne": "Timetable not found.",
+      "create": "Couldn't create the timetable.",
+      "update": "Couldn't update the timetable.",
+      "delete": "Couldn't delete the timetable.",
+      "fetchLessons": "Couldn't load the lessons.",
+      "updateLesson": "Couldn't update the lesson.",
+      "skipLesson": "Couldn't skip the lesson.",
+      "generateTopics": "Couldn't generate the topics."
+    },
+    "curriculumPlan": {
+      "createFailed": "Couldn't create the curriculum plan.",
+      "uploadFailed": "Failed to upload the file to storage.",
+      "importFailed": "Couldn't import the curriculum plan."
     }
   },
   "ui": {
@@ -2340,6 +2360,352 @@
       "light": "Light",
       "dark": "Dark",
       "system": "System"
+    }
+  },
+  "timetable": {
+    "status": {
+      "pending": "Pending",
+      "generating": "Generating",
+      "completed": "Generated",
+      "failed": "Failed",
+      "skipped": "Skipped"
+    },
+    "slotType": {
+      "lesson": "Lesson",
+      "assessment": "Assessment",
+      "exercise": "Exercises",
+      "review": "Review",
+      "holiday": "Holiday"
+    },
+    "gradeYear": "Year {grade}",
+    "gradeShort": "Y{grade}",
+    "autoTitleFallback": "New Class"
+  },
+  "calendar": {
+    "shared": {
+      "pageTitle": "Calendar",
+      "featureTitle": "Classes",
+      "featureDescription": "Build a class's weekly timetable, generate its topic sequence and lesson plans. Available on paid plans.",
+      "classesLink": "Classes",
+      "newClassLink": "New class",
+      "createClass": "Create class",
+      "emptyTitle": "No classes",
+      "emptyDescription": "Create your first class to start planning.",
+      "viewWeek": "Week",
+      "viewWeekShort": "Wk",
+      "viewMonth": "Month",
+      "today": "Today",
+      "tomorrow": "Tomorrow",
+      "noTopic": "No topic",
+      "holidayNoLesson": "Holiday / No lesson",
+      "classInline": "Class {label}",
+      "minutesSuffix": "{count} min",
+      "generateWeek": "Generate week ({count})"
+    },
+    "week": {
+      "generate": "Generate ({count})",
+      "moveUp": "Move up",
+      "moveDown": "Move down",
+      "durationCompact": "{count}m"
+    },
+    "detail": {
+      "loading": "Loading...",
+      "noTopicDefined": "No topic defined",
+      "generationFailed": "Generation failed",
+      "noLessonsThisWeek": "No lessons scheduled for this week.",
+      "noLessonsYet": "You don't have any lessons for this class yet.",
+      "navigateOtherWeek": "Go to another week."
+    },
+    "month": {
+      "lessonsCount": "{count, plural, one {# lesson} other {# lessons}}",
+      "completedCount": "{count, plural, one {# generated} other {# generated}}",
+      "pendingCount": "{count, plural, one {# pending} other {# pending}}"
+    },
+    "classesList": {
+      "header": {
+        "title": "Classes",
+        "subtitle": "All your classes"
+      },
+      "deleteDialog": {
+        "title": "Delete class?",
+        "description": "Are you sure you want to delete <strong>\"{title}\"</strong>? Choose whether to keep or delete the documents generated for this class.",
+        "deleteOnlyTitle": "Delete class only",
+        "deleteOnlySubtitle": "Generated documents are kept",
+        "deleteWithDocsTitle": "Delete class and documents",
+        "deleteWithDocsSubtitle": "All associated documents will be deleted",
+        "cancel": "Cancel"
+      },
+      "editDialog": {
+        "title": "Edit class",
+        "description": "Change the name, class, colour or linked plan.",
+        "nameLabel": "Name",
+        "classLabel": "Class",
+        "classPlaceholder": "e.g. A",
+        "colorLabel": "Colour",
+        "linkedPlanLabel": "Linked plan",
+        "loadingPlans": "Loading…",
+        "none": "None",
+        "cancel": "Cancel",
+        "save": "Save"
+      },
+      "card": {
+        "active": "Active",
+        "inactive": "Inactive",
+        "editTitle": "Edit class"
+      }
+    },
+    "slotDialog": {
+      "typeLabel": "Type:",
+      "objectivesTitle": "Learning Objectives",
+      "objectivesProcessing": "Processing…",
+      "objectivesEmpty": "Generate the class's topics to see the learning objectives.",
+      "documentsTitle": "Generated documents",
+      "loadingDocuments": "Loading documents…",
+      "noDocuments": "No documents found.",
+      "viewLinkedPlan": "View linked plan",
+      "additionalInstructionLabel": "Additional instruction (optional)",
+      "additionalInstructionPlaceholder": "E.g. include a group practical activity",
+      "generateLessonPlan": "Generate lesson plan",
+      "generating": "Generating…",
+      "openLessonPlan": "Open lesson plan",
+      "regenerate": "Regenerate",
+      "confirmSkipWarning": "This action cannot be undone.",
+      "confirm": "Confirm",
+      "cancel": "Cancel",
+      "skip": "Skip",
+      "editTopicTitle": "Click to edit the topic",
+      "topicPlaceholderEmpty": "No topic — click to edit",
+      "lessonNumber": "Lesson {number}"
+    },
+    "dashboardWidget": {
+      "title": "Upcoming lessons",
+      "viewCalendar": "View calendar",
+      "noUpcoming": "You have no upcoming lessons.",
+      "generate": "Generate",
+      "generating": "Generating…",
+      "open": "Open"
+    },
+    "novo": {
+      "stepIndicator": {
+        "plan": "Plan",
+        "period": "Period",
+        "details": "Details",
+        "review": "Review"
+      },
+      "loadingSteps": [
+        "Mapping curriculum competencies",
+        "Organising content and pedagogical sequence",
+        "Defining assessments and criteria",
+        "Final pedagogical review"
+      ],
+      "chooseMode": {
+        "title": "How do you want to create the class?",
+        "subtitle": "Choose the method that best fits your workflow.",
+        "fromPlanTitle": "From a curriculum plan",
+        "recommended": "Recommended",
+        "fromPlanDescription": "Scooli reads your curriculum plan and fills in everything — period, topics and AEs. You just review the dates.",
+        "customTitle": "From scratch",
+        "customDescription": "Set the period and subject. Scooli generates the topics from the year's AEs."
+      },
+      "selectPlan": {
+        "title": "Choose a curriculum plan",
+        "subtitle": "Scooli extracts the period, subject and topics automatically.",
+        "searchPlaceholder": "Search curriculum plans...",
+        "noneYet": "You don't have any curriculum plans yet.",
+        "noneFound": "No curriculum plan found."
+      },
+      "period": {
+        "title": "School period",
+        "subtitle": "Set the class's start and end dates.",
+        "presetsLabel": "Shortcuts",
+        "startLabel": "Start *",
+        "startPlaceholder": "Select the start date",
+        "endLabel": "End *",
+        "endPlaceholder": "Select the end date",
+        "schoolYearLabel": "School year",
+        "schoolYearPlaceholder": "E.g. 2025/2026"
+      },
+      "details": {
+        "title": "Class details",
+        "subtitle": "Subject, year and weekly timetable.",
+        "gradeLabel": "Year *",
+        "gradePlaceholder": "Select the year",
+        "classLabel": "Class",
+        "classPlaceholder": "E.g. A",
+        "subjectLabel": "Subject *",
+        "subjectPlaceholder": "Select the subject",
+        "subjectPlaceholderNoGrade": "Select the year first",
+        "nameLabel": "Class name",
+        "namePlaceholder": "Auto-filled",
+        "colorLabel": "Colour",
+        "lessonsSummary": "{count} lessons (~{weeks} weeks × {lpw} lessons/week, already excluding weekends and holidays)"
+      },
+      "reviewDates": {
+        "title": "Review dates",
+        "subtitle": "Adjust slot types and remove unnecessary dates.",
+        "total": "Total:",
+        "lessons": "Lessons:",
+        "assessments": "Assessments:",
+        "exercises": "Exercises:",
+        "reviews": "Reviews:",
+        "holidays": "Holidays:",
+        "deselect": "Deselect ({count})",
+        "selectAll": "Select all",
+        "markAs": "Mark as:",
+        "remove": "Remove",
+        "emptyLine1": "No lessons were generated for this period with the current schedule.",
+        "emptyLine2": "Go back and confirm the dates and class days."
+      },
+      "nav": {
+        "cancel": "Cancel",
+        "previous": "Previous",
+        "next": "Next",
+        "createClass": "Create class ({count, plural, one {# lesson} other {# lessons}})"
+      },
+      "header": {
+        "title": "New class",
+        "subtitle": "Set the period, subject and weekly timetable.",
+        "loadingTitle": "New Class"
+      },
+      "generating": {
+        "title": "Creating your class…",
+        "subtitle": "Scooli is generating the topics and pedagogical distribution."
+      }
+    },
+    "periods": {
+      "term1": "Term 1",
+      "term2": "Term 2",
+      "term3": "Term 3",
+      "semester1": "Semester 1",
+      "semester2": "Semester 2",
+      "schoolYear": "School year {range}"
+    }
+  },
+  "curriculumPlan": {
+    "shared": {
+      "featureTitle": "Curriculum Plans",
+      "featureDescription": "Generate complete curriculum plans aligned with the Aprendizagens Essenciais. Available on paid plans.",
+      "planningType": {
+        "annual": "Annual",
+        "semester": "Semester",
+        "trimester": "Term",
+        "custom": "Custom"
+      }
+    },
+    "novo": {
+      "steps": {
+        "period": "Period",
+        "class": "Class",
+        "schedule": "Schedule",
+        "review": "Summary"
+      },
+      "loadingSteps": [
+        "Analysing the Aprendizagens Essenciais",
+        "Structuring the plan's sections",
+        "Setting the schedule by unit",
+        "Final pedagogical review"
+      ],
+      "header": {
+        "title": "New curriculum plan",
+        "subtitle": "The AI generates the 7 canonical sections. You can edit everything afterwards."
+      },
+      "period": {
+        "title": "School period",
+        "subtitle": "Choose a preset or set the dates manually.",
+        "startLabel": "Start date",
+        "startPlaceholder": "Start of period",
+        "endLabel": "End date",
+        "endPlaceholder": "End of period",
+        "summary": "<strong>{weeks, plural, one {# week} other {# weeks}}</strong> from <strong>{start}</strong> to <strong>{end}</strong>",
+        "planningTypeLabel": "Period type"
+      },
+      "class": {
+        "title": "Class details",
+        "subtitle": "State the subject and year.",
+        "gradeLabel": "Year *",
+        "gradePlaceholder": "Select the year",
+        "subjectLabel": "Subject *",
+        "subjectPlaceholder": "Select the subject",
+        "subjectPlaceholderNoGrade": "Select the year first"
+      },
+      "schedule": {
+        "title": "Weekly schedule",
+        "subtitle": "Set how many lessons you have per day. The total will be used to estimate the duration.",
+        "lessonsSummary": "{count} lessons (~{weeks} weeks × {lpw} lessons/week, already excluding weekends and holidays)"
+      },
+      "review": {
+        "title": "Summary",
+        "subtitle": "Confirm the details before generating the plan.",
+        "period": "Period",
+        "type": "Type",
+        "subject": "Subject",
+        "grade": "Year",
+        "lessonsPerWeek": "Lessons / week",
+        "totalEstimate": "Total estimate",
+        "totalLessons": "{count} lessons",
+        "aiNotice": "The AI will generate the <strong>7 canonical sections</strong>: Identification, Student Profile, Aprendizagens Essenciais, Scheduling, Development by Unit, Assessment and Curricular Integration."
+      },
+      "generating": {
+        "title": "Generating your curriculum plan…",
+        "subtitle": "Scooli is structuring the 7 canonical sections."
+      },
+      "nav": {
+        "cancel": "Cancel",
+        "previous": "Previous",
+        "next": "Next",
+        "generating": "Generating...",
+        "generate": "Generate curriculum plan"
+      }
+    },
+    "importar": {
+      "steps": {
+        "upload": "Uploading file",
+        "import": "Starting import",
+        "normalize": "Normalising with AI",
+        "done": "Done"
+      },
+      "unsupportedFormat": "Unsupported format. Use DOCX, XLSX, PDF or TXT.",
+      "header": {
+        "title": "Import existing curriculum plan",
+        "subtitle": "Accepts DOCX, XLSX, PDF and TXT. Scooli normalises the content into the canonical 7-section format."
+      },
+      "importing": {
+        "title": "Importing your curriculum plan…",
+        "subtitle": "This can take up to a minute."
+      },
+      "form": {
+        "title": "File and metadata",
+        "fileLabel": "File",
+        "titleLabel": "Curriculum plan title",
+        "titlePlaceholder": "E.g. Term Curriculum Plan, Maths, Year 5",
+        "subjectLabel": "Subject",
+        "subjectPlaceholder": "Select",
+        "schoolYearLabel": "Year",
+        "planningTypeLabel": "Period type",
+        "periodStartLabel": "Start (optional)",
+        "periodEndLabel": "End (optional)",
+        "cancel": "Cancel",
+        "submit": "Import"
+      },
+      "featureDescription": "Import an existing curriculum plan (DOCX/PDF) and Scooli will normalise it. Available on paid plans."
+    },
+    "list": {
+      "header": {
+        "title": "Curriculum Plans",
+        "subtitle": "Create or import a curriculum plan for a full school period."
+      },
+      "generateCard": {
+        "title": "Generate with AI",
+        "description": "The AI produces a grid structured into 7 sections, aligned with the Aprendizagens Essenciais and calibrated to the chosen period (annual / semester / term).",
+        "cta": "Get started"
+      },
+      "importCard": {
+        "title": "Import existing",
+        "description": "Already have a curriculum plan in DOCX, XLSX, PDF or TXT? Scooli normalises it into the same canonical format, ready to edit and link to future lesson plans.",
+        "cta": "Import"
+      },
+      "existingTitle": "Your curriculum plans",
+      "empty": "You don't have any curriculum plans yet. Create or import the first one above."
     }
   }
 }
