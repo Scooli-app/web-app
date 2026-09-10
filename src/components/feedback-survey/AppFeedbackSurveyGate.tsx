@@ -14,6 +14,7 @@ import type { CurrentUserProfile } from "@/shared/types/user";
 import type { RootState } from "@/store/store";
 import { differenceInCalendarDays } from "date-fns";
 import { useAuth, useUser } from "@clerk/nextjs";
+import { useTranslations } from "next-intl";
 import { usePathname } from "next/navigation";
 import posthog from "posthog-js";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -24,6 +25,7 @@ const STATUS_STALE_MS = 5 * 60 * 1000;
 const OPEN_DELAY_MS = 1200;
 
 export function AppFeedbackSurveyGate() {
+  const t = useTranslations("feedback.survey");
   const pathname = usePathname();
   const isUpgradeModalOpen = useSelector(
     (state: RootState) => state.ui.isUpgradeModalOpen,
@@ -253,11 +255,11 @@ export function AppFeedbackSurveyGate() {
       if (!(error instanceof UpgradeLimitError)) {
         posthog.captureException(error);
       }
-      toast.error("Não foi possível adiar o pedido de feedback.");
+      toast.error(t("snoozeError"));
     } finally {
       setIsBusy(false);
     }
-  }, [getDaysSinceSignup, isBusy, surveyStatus?.promptKey]);
+  }, [getDaysSinceSignup, isBusy, surveyStatus?.promptKey, t]);
 
   const handleSubmit = useCallback(
     async (payload: FeedbackSurveySubmitRequest) => {
@@ -290,17 +292,17 @@ export function AppFeedbackSurveyGate() {
           selectedTags: payload.selectedTags,
         });
 
-        toast.success("Obrigado pelo teu feedback.");
+        toast.success(t("thankYou"));
       } catch (error) {
         if (!(error instanceof UpgradeLimitError)) {
           posthog.captureException(error);
         }
-        toast.error("Não foi possível enviar o feedback.");
+        toast.error(t("submitError"));
       } finally {
         setIsBusy(false);
       }
     },
-    [getDaysSinceSignup, isBusy, surveyStatus?.shownCount],
+    [getDaysSinceSignup, isBusy, surveyStatus?.shownCount, t],
   );
 
   if (!isSignedIn || !user?.id || !surveyStatus) {

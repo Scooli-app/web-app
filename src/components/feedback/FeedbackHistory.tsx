@@ -18,6 +18,7 @@ import {
   Shield,
   XCircle,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 
 interface FeedbackHistoryProps {
@@ -25,6 +26,7 @@ interface FeedbackHistoryProps {
 }
 
 export function FeedbackHistory({ refreshTrigger }: FeedbackHistoryProps) {
+  const t = useTranslations("feedback.history");
   const [feedbackList, setFeedbackList] = useState<Feedback[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -38,14 +40,14 @@ export function FeedbackHistory({ refreshTrigger }: FeedbackHistoryProps) {
         setFeedbackList(data);
       } catch (err) {
         console.error("Failed to fetch feedback:", err);
-        setError("Não foi possível carregar o histórico.");
+        setError(t("loadError"));
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchFeedback();
-  }, [refreshTrigger]);
+  }, [refreshTrigger, t]);
 
   const getStatusBadge = (status: FeedbackStatus) => {
     switch (status) {
@@ -55,7 +57,7 @@ export function FeedbackHistory({ refreshTrigger }: FeedbackHistoryProps) {
             variant="secondary"
             className="bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 border-0"
           >
-            <Clock className="w-3 h-3 mr-1" /> Enviado
+            <Clock className="w-3 h-3 mr-1" /> {t("statusSubmitted")}
           </Badge>
         );
       case FeedbackStatus.IN_REVIEW:
@@ -64,7 +66,7 @@ export function FeedbackHistory({ refreshTrigger }: FeedbackHistoryProps) {
             variant="secondary"
             className="bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 border-0"
           >
-            <Loader2 className="w-3 h-3 mr-1 animate-spin" /> Em Análise
+            <Loader2 className="w-3 h-3 mr-1 animate-spin" /> {t("statusInReview")}
           </Badge>
         );
       case FeedbackStatus.IN_DEVELOPMENT:
@@ -73,7 +75,7 @@ export function FeedbackHistory({ refreshTrigger }: FeedbackHistoryProps) {
             variant="secondary"
             className="bg-indigo-500/10 text-indigo-500 hover:bg-indigo-500/20 border-0"
           >
-            <CircleDashed className="w-3 h-3 mr-1" /> Em Desenvolvimento
+            <CircleDashed className="w-3 h-3 mr-1" /> {t("statusInDevelopment")}
           </Badge>
         );
       case FeedbackStatus.RESOLVED:
@@ -82,7 +84,7 @@ export function FeedbackHistory({ refreshTrigger }: FeedbackHistoryProps) {
             variant="secondary"
             className="bg-green-500/10 text-green-500 hover:bg-green-500/20 border-0"
           >
-            <CheckCircle2 className="w-3 h-3 mr-1" /> Resolvido
+            <CheckCircle2 className="w-3 h-3 mr-1" /> {t("statusResolved")}
           </Badge>
         );
       case FeedbackStatus.REJECTED:
@@ -91,7 +93,7 @@ export function FeedbackHistory({ refreshTrigger }: FeedbackHistoryProps) {
             variant="secondary"
             className="bg-red-500/10 text-red-500 hover:bg-red-500/20 border-0"
           >
-            <XCircle className="w-3 h-3 mr-1" /> Rejeitado
+            <XCircle className="w-3 h-3 mr-1" /> {t("statusRejected")}
           </Badge>
         );
       default:
@@ -117,7 +119,7 @@ export function FeedbackHistory({ refreshTrigger }: FeedbackHistoryProps) {
   return (
     <Card className="mt-8 border-none shadow-none bg-transparent p-0">
       <CardHeader className="px-0 pt-0">
-        <CardTitle className="text-lg">O meu histórico</CardTitle>
+        <CardTitle className="text-lg">{t("heading")}</CardTitle>
       </CardHeader>
       <CardContent className="px-0">
         {isLoading ? (
@@ -145,7 +147,7 @@ export function FeedbackHistory({ refreshTrigger }: FeedbackHistoryProps) {
           </div>
         ) : feedbackList.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground border border-dashed border-white/10 rounded-xl">
-            Ainda não enviou nenhum feedback.
+            {t("emptyState")}
           </div>
         ) : (
           <div className="space-y-4">
@@ -208,7 +210,7 @@ export function FeedbackHistory({ refreshTrigger }: FeedbackHistoryProps) {
                                 <Shield className="h-3 w-3 text-primary" />
                               </div>
                               <span className="font-semibold text-primary text-xs uppercase tracking-wider">
-                                Resposta da equipa
+                                {t("teamResponseLabel")}
                               </span>
                               <span className="text-[10px] text-muted-foreground/60">
                                 •

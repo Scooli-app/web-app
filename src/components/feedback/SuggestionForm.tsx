@@ -6,8 +6,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { feedbackService } from "@/services/api/feedback.service";
 import { FeedbackType } from "@/shared/types/feedback";
 import { FileText, Loader2, Upload, X } from "lucide-react";
+import { useTranslations } from "next-intl";
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import posthog from "posthog-js";
 
@@ -17,6 +18,7 @@ interface SuggestionFormProps {
 }
 
 export function SuggestionForm({ onSuccess, onCancel }: SuggestionFormProps) {
+  const t = useTranslations("feedback.suggestionForm");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("");
@@ -33,15 +35,15 @@ export function SuggestionForm({ onSuccess, onCancel }: SuggestionFormProps) {
     }
   };
 
-  const addFiles = (newFiles: File[]) => {
+  const addFiles = useCallback((newFiles: File[]) => {
     // Validate files (images only, < 5MB)
     const validFiles = newFiles.filter((file) => {
       if (!file.type.startsWith("image/")) {
-        toast.error(`${file.name} não é uma imagem válida.`);
+        toast.error(t("invalidImage", { name: file.name }));
         return false;
       }
       if (file.size > 5 * 1024 * 1024) {
-        toast.error(`${file.name} excede o limite de 5MB.`);
+        toast.error(t("tooLarge", { name: file.name }));
         return false;
       }
       return true;
@@ -52,7 +54,7 @@ export function SuggestionForm({ onSuccess, onCancel }: SuggestionFormProps) {
     // Create previews
     const newPreviews = validFiles.map((file) => URL.createObjectURL(file));
     setPreviews((prev) => [...prev, ...newPreviews]);
-  };
+  }, [t]);
 
   const removeFile = (index: number) => {
     setFiles((prev) => prev.filter((_, i) => i !== index));
@@ -74,7 +76,7 @@ export function SuggestionForm({ onSuccess, onCancel }: SuggestionFormProps) {
 
     window.addEventListener("paste", handlePaste);
     return () => window.removeEventListener("paste", handlePaste);
-  }, []);
+  }, [addFiles]);
 
   // Handle drag and drop
   const handleDragOver = (e: React.DragEvent) => {
@@ -115,7 +117,7 @@ export function SuggestionForm({ onSuccess, onCancel }: SuggestionFormProps) {
           });
         } catch (error) {
           console.error("Failed to upload file:", file.name, error);
-          toast.error(`Falha ao enviar o ficheiro ${file.name}`);
+          toast.error(t("uploadFailed", { name: file.name }));
         }
       }
 
@@ -129,7 +131,7 @@ export function SuggestionForm({ onSuccess, onCancel }: SuggestionFormProps) {
       });
 
       posthog.capture("feedback_suggestion_submitted", { category });
-      toast.success("Sugestão enviada com sucesso!");
+      toast.success(t("submitSuccess"));
       onSuccess();
     } catch (error) {
       if (uploadedFilePaths.length > 0) {
@@ -141,7 +143,7 @@ export function SuggestionForm({ onSuccess, onCancel }: SuggestionFormProps) {
       }
       posthog.captureException(error);
       console.error("Failed to submit suggestion:", error);
-      toast.error("Ocorreu um erro ao enviar a sugestão.");
+      toast.error(t("submitError"));
     } finally {
       setIsSubmitting(false);
     }
@@ -151,27 +153,27 @@ export function SuggestionForm({ onSuccess, onCancel }: SuggestionFormProps) {
     <form onSubmit={handleSubmit} className="space-y-5 p-6 pt-0">
       <div className="space-y-2">
         <Label htmlFor="category">
-          Categoria <span className="text-red-500">*</span>
+          {t("categoryLabel")} <span className="text-red-500">*</span>
         </Label>
         <Select value={category} onValueChange={setCategory}>
           <SelectTrigger className="border-white/10 bg-muted/50">
-            <SelectValue placeholder="Selecione uma categoria" />
+            <SelectValue placeholder={t("categoryPlaceholder")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="Nova Funcionalidade">Nova Funcionalidade</SelectItem>
-            <SelectItem value="Melhoria">Melhoria</SelectItem>
-            <SelectItem value="Outro">Outro</SelectItem>
+            <SelectItem value="Nova Funcionalidade">{t("categoryFeature")}</SelectItem>
+            <SelectItem value="Melhoria">{t("categoryImprovement")}</SelectItem>
+            <SelectItem value="Outro">{t("categoryOther")}</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
       <div className="space-y-2">
         <Label htmlFor="title">
-          Título da ideia <span className="text-red-500">*</span>
+          {t("titleLabel")} <span className="text-red-500">*</span>
         </Label>
         <Input
           id="title"
-          placeholder="Ex: Adicionar modo escuro"
+          placeholder={t("titlePlaceholder")}
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           className="border-white/10 bg-muted/50"
@@ -180,11 +182,11 @@ export function SuggestionForm({ onSuccess, onCancel }: SuggestionFormProps) {
 
       <div className="space-y-2">
         <Label htmlFor="description">
-          Descrição <span className="text-red-500">*</span>
+          {t("descriptionLabel")} <span className="text-red-500">*</span>
         </Label>
         <Textarea
           id="description"
-          placeholder="Descreva a sua sugestão..."
+          placeholder={t("descriptionPlaceholder")}
           className="min-h-[100px] border-white/10 bg-muted/50"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
@@ -192,7 +194,7 @@ export function SuggestionForm({ onSuccess, onCancel }: SuggestionFormProps) {
       </div>
 
       <div className="space-y-2">
-        <Label>Anexos (Imagens, capturas de ecrã)</Label>
+        <Label>{t("attachmentsLabel")}</Label>
         <div
           className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 mt-1 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-muted/50 transition-colors"
           onDragOver={handleDragOver}
@@ -201,10 +203,10 @@ export function SuggestionForm({ onSuccess, onCancel }: SuggestionFormProps) {
         >
           <Upload className="h-8 w-8 text-muted-foreground mb-2" />
           <p className="text-sm text-muted-foreground">
-            Arraste ficheiros ou clique para selecionar.
+            {t("dropHint")}
           </p>
           <p className="text-xs text-muted-foreground mt-1">
-            Também pode colar imagens da área de transferência (Ctrl+V).
+            {t("pasteHint")}
           </p>
           <input
             ref={fileInputRef}
@@ -253,14 +255,14 @@ export function SuggestionForm({ onSuccess, onCancel }: SuggestionFormProps) {
       </div>
 
       <div className="flex flex-col gap-4 pt-2">
-        <p className="text-xs text-muted-foreground"><span className="text-red-500">*</span> Campos obrigatórios</p>
+        <p className="text-xs text-muted-foreground"><span className="text-red-500">*</span> {t("requiredFieldsNote")}</p>
         <div className="flex justify-end gap-2">
           <Button type="button" variant="outline" onClick={onCancel}>
-            Cancelar
+            {t("cancel")}
           </Button>
           <Button type="submit" disabled={isSubmitting || !isValid}>
             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Enviar Sugestão
+            {t("submit")}
           </Button>
         </div>
       </div>
