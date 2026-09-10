@@ -1050,6 +1050,9 @@
           "message": "Como posso criar um plano de aula na Scooli?"
         }
       ]
+    },
+    "button": {
+      "openLabel": "Abrir Assistente Scooli"
     }
   },
   "community": {
@@ -1122,7 +1125,8 @@
         "quiz": "Quiz",
         "worksheet": "Ficha de Trabalho",
         "presentation": "Apresentação",
-        "activity": "Atividade"
+        "activity": "Atividade",
+        "curriculumPlan": "Plano Curricular"
       },
       "preview": "Pré-visualizar",
       "saved": "Guardado",
@@ -1215,6 +1219,50 @@
       "shareOrgSuccess": "Recurso partilhado com a biblioteca da escola.",
       "shareCommunitySuccess": "Recurso submetido para revisão! Receberá notificação em 24-48h.",
       "shareError": "Erro ao partilhar recurso"
+    },
+    "filters": {
+      "searchPlaceholder": "Pesquisar recursos...",
+      "searchButton": "Pesquisar",
+      "clear": "Limpar",
+      "gradePlaceholder": "Ano escolar",
+      "allGrades": "Todos os anos",
+      "subjectPlaceholder": "Disciplina",
+      "allSubjects": "Todas as disciplinas",
+      "typePlaceholder": "Tipo",
+      "allTypes": "Todos os tipos",
+      "sortPopular": "Mais Reutilizados",
+      "sortRecent": "Mais Recentes",
+      "gradeOption": "{n}.º ano"
+    },
+    "dashboardPage": {
+      "title": "Dashboard do Contribuidor",
+      "description": "Acompanhe o impacto dos seus recursos na comunidade",
+      "backToLibrary": "Voltar à Biblioteca"
+    },
+    "contributorDashboard": {
+      "status": {
+        "pending": "Em revisão",
+        "approved": "Publicado",
+        "rejected": "Recusado",
+        "changesRequested": "Revisão pedida"
+      },
+      "emptyTitle": "Ainda não partilhou recursos",
+      "emptyDescription": "Comece a partilhar os seus recursos educacionais para ver as estatísticas aqui.",
+      "stats": {
+        "shared": "Recursos Partilhados",
+        "totalReuses": "Total de Reutilizações",
+        "approved": "Aprovados",
+        "avgReuses": "Média Reutilizações"
+      },
+      "pendingHeading": "Em Revisão",
+      "topResourcesHeading": "Os Seus Recursos Mais Populares",
+      "publishedHeading": "Publicados",
+      "attentionHeading": "Requerem a sua atenção",
+      "reuseCountLabel": "reutilizações",
+      "moderatorFeedback": "Feedback do moderador:",
+      "impactTitle": "Impacto na Comunidade",
+      "impactDescription": "Os seus recursos já ajudaram <b>{count}</b> professores!",
+      "impactSubtitle": "Continue a partilhar para ampliar o seu impacto na educação portuguesa."
     }
   },
   "feedback": {
@@ -1478,6 +1526,40 @@
       "chunkCount": "{count, plural, one {# excerto consultado} other {# excertos consultados}}",
       "documentCount": "{count, plural, one {# documento} other {# documentos}}",
       "excerptCount": "{count, plural, one {# excerto} other {# excertos}}"
+    },
+    "page": {
+      "title": "As Minhas Fontes",
+      "description": "Carregue documentos (PDF, DOCX) para enriquecer a geração de conteúdo com o seu próprio contexto curricular.",
+      "addSource": "Adicionar Fonte",
+      "dropzoneEmpty": "Clique ou arraste um ficheiro",
+      "dropzoneHint": "PDF ou DOCX",
+      "namePlaceholder": "Nome da fonte *",
+      "uploading": "A carregar...",
+      "upload": "Carregar",
+      "loadedSources": "Fontes carregadas",
+      "processingBadge": "A processar...",
+      "loadingSources": "A carregar fontes...",
+      "emptyState": "Ainda não tem fontes carregadas.",
+      "confirm": "Confirmar",
+      "cancel": "Cancelar",
+      "deleteAriaLabel": "Eliminar fonte",
+      "proNote": "As fontes ficam disponíveis apenas para os seus créditos. O conteúdo é processado e indexado automaticamente em segundo plano.",
+      "strippedBackMatterTooltip": "Excluímos {size} de {heading} antes de processar.",
+      "strippedSectionOmitted": "Secção {heading} omitida",
+      "sectionFallback": "final",
+      "backMatterFallback": "back-matter"
+    },
+    "status": {
+      "uploaded": "A processar",
+      "parsing": "A ler ficheiro",
+      "chunking": "A segmentar",
+      "embedding": "A indexar",
+      "indexed": "Indexado",
+      "failed": "Falhou"
+    },
+    "toast": {
+      "ready": "Fonte \"{name}\" pronta a usar.",
+      "failed": "Falha ao processar \"{name}\"{detail}."
     }
   },
   "modals": {
@@ -1623,5 +1705,64 @@
   "appMeta": {
     "title": "Scooli - Plataforma AI para Professores",
     "description": "Crie conteúdo educacional de qualidade em segundos com inteligência artificial."
+  },
+  "ui": {
+    "close": "Fechar"
+  },
+  "layout": {
+    "themeToggle": {
+      "srLabel": "Alterar tema",
+      "light": "Claro",
+      "dark": "Escuro",
+      "system": "Sistema"
+    }
+  },
+  "errors": {
+    "api": {
+      "invalidResponse": "O servidor devolveu uma resposta inválida. Verifique a configuração de NEXT_PUBLIC_BASE_API_URL.",
+      "usageLimitExceeded": "Limite de utilização excedido",
+      "htmlResponse": "O endpoint da API devolveu HTML em vez de JSON (Estado: {status}). Verifique se NEXT_PUBLIC_BASE_API_URL está correto e se o endpoint existe.",
+      "genericError": "Ocorreu um erro",
+      "httpError": "Erro HTTP {status}",
+      "networkError": "Erro de rede. Verifique a sua ligação."
+    },
+    "community": {
+      "fetchReusedResourceIds": "Não foi possível carregar os IDs de recursos reutilizados",
+      "fetchResources": "Não foi possível carregar os recursos",
+      "fetchResource": "Não foi possível carregar o recurso",
+      "fetchMyResources": "Não foi possível carregar os seus recursos",
+      "fetchContributorStats": "Não foi possível carregar as estatísticas",
+      "submitResource": "Não foi possível partilhar o recurso",
+      "unshareDocument": "Não foi possível deixar de partilhar o recurso",
+      "reuseResource": "Não foi possível reutilizar o recurso"
+    },
+    "sources": {
+      "fetchSources": "Não foi possível carregar as fontes",
+      "uploadSource": "Não foi possível fazer o upload da fonte",
+      "deleteSource": "Não foi possível eliminar a fonte",
+      "refreshSource": "Não foi possível atualizar a fonte",
+      "ingestionError": "Erro de ingestão",
+      "streamConnectionError": "Erro de ligação ao stream"
+    },
+    "assistant": {
+      "sessionExpired": "Sessão expirada. Por favor, faça login novamente.",
+      "creditLimitReached": "Limite de créditos atingido. Atualize para o plano Pro para continuar.",
+      "serverError": "Erro no servidor: {status}",
+      "connectionError": "Erro de ligação. Tente novamente."
+    },
+    "moderation": {
+      "fetchQueue": "Não foi possível carregar a fila de moderação",
+      "processAction": "Não foi possível processar a ação de moderação"
+    },
+    "health": {
+      "checkFailed": "Falha na verificação de saúde",
+      "status": {
+        "healthy": "Saudável",
+        "unhealthy": "Instável",
+        "degraded": "Degradado",
+        "unknown": "Desconhecido",
+        "error": "Erro"
+      }
+    }
   }
 }
