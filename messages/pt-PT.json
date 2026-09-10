@@ -596,6 +596,49 @@
         "communityDescription": "Notificações sobre interações com os seus recursos",
         "comingSoon": "Em breve disponível"
       }
+    },
+    "common": {
+      "retry": "Tentar novamente",
+      "loading": "A carregar...",
+      "fallbackUser": "Utilizador"
+    },
+    "statusBadge": {
+      "trialPeriod": "Período de Teste",
+      "cancelsAtPeriodEnd": "Cancela no fim do período",
+      "active": "Ativo",
+      "paymentPending": "Pagamento Pendente",
+      "canceled": "Cancelado"
+    },
+    "accessLabel": {
+      "free": "Plano gratuito",
+      "proViaOrganization": "Pro (via organização)",
+      "proPersonalAndOrganization": "Pro (pessoal e organização)",
+      "scooliPro": "Scooli Pro"
+    },
+    "profileCard": {
+      "title": "Perfil e Conta",
+      "manageAccount": "Gerir Conta"
+    },
+    "subscriptionCard": {
+      "title": "Subscrição e Gerações",
+      "yourPlan": "O teu plano",
+      "orgAccessTitle": "Tens acesso Pro através da tua organização.",
+      "orgAccessDescription": "O teu acesso é gerido pela escola — não precisas de uma subscrição pessoal.",
+      "remainingGenerations": "Gerações restantes",
+      "remainingOfLimit": "{remaining} de {limit}",
+      "creditsExhausted": "Esgotou os seus créditos gratuitos. Atualize para o plano Pro para continuar a criar.",
+      "creditsLow": "Restam poucos créditos. Considere atualizar para o plano Pro.",
+      "upgradeToPro": "Atualizar para Pro",
+      "savingsBadge": "Poupa {percent}",
+      "annualBadge": "Anual",
+      "popularBadge": "Mais Popular",
+      "perMonth": "/mês",
+      "paidAnnually": "Pago anualmente {price}",
+      "paidAnnuallyWithSavings": "Pago anualmente {price} · poupe {percent}",
+      "accessUntil": "Acesso até {date}",
+      "renewsOn": "Renova a {date}",
+      "manageSubscription": "Gerir Subscrição",
+      "opening": "A abrir..."
     }
   },
   "editor": {
@@ -1467,6 +1510,31 @@
       },
       "cta": "Ver planos Pro",
       "maybeLater": "Talvez mais tarde"
+    },
+    "plans": {
+      "proMonthly": {
+        "name": "Scooli Pro Mensal",
+        "description": "Acesso ilimitado a todas as funcionalidades",
+        "badge": "Mais Popular"
+      },
+      "proAnnual": {
+        "name": "Scooli Pro Anual",
+        "description": "20% de desconto no plano anual",
+        "badge": "Melhor Valor"
+      },
+      "free": {
+        "name": "Plano Gratuito",
+        "description": "20 créditos por mês"
+      }
+    },
+    "nifCard": {
+      "title": "Dados de faturação",
+      "label": "NIF",
+      "placeholder": "123456789",
+      "save": "Guardar",
+      "saving": "A guardar...",
+      "removedSuccess": "NIF removido. As próximas faturas saem como consumidor final.",
+      "savedSuccess": "NIF guardado. Será usado nas próximas faturas."
     }
   },
   "sources": {
@@ -1623,5 +1691,308 @@
   "appMeta": {
     "title": "Scooli - Plataforma AI para Professores",
     "description": "Crie conteúdo educacional de qualidade em segundos com inteligência artificial."
+  },
+  "school": {
+    "common": {
+      "retry": "Tentar novamente",
+      "fallbackName": "Escola",
+      "notSet": "Por definir",
+      "unnamedUser": "Utilizador"
+    },
+    "roles": {
+      "director": "Diretor",
+      "school_admin": "Administrador escolar",
+      "teacher": "Professor"
+    },
+    "subscriptionStatus": {
+      "active": "Ativa",
+      "canceled": "Cancelada",
+      "draft": "Rascunho",
+      "expired": "Expirada",
+      "past_due": "Em atraso",
+      "trialing": "Em avaliação"
+    },
+    "memberStatus": {
+      "active": "Ativo",
+      "invited": "Convidado",
+      "removed": "Removido",
+      "suspended": "Suspenso"
+    },
+    "dashboard": {
+      "description": "Visão operacional da organização, utilização da equipa e atividade recente.",
+      "loadError": "Não foi possível carregar o dashboard da escola",
+      "stats": {
+        "activeSeats": "Lugares ativos",
+        "availableSeats": "Lugares disponíveis",
+        "activeTeachers": "Professores ativos",
+        "aiRequestsThisMonth": "Pedidos à IA este mês",
+        "totalDocuments": "Documentos da escola",
+        "sharedResources": "Biblioteca interna"
+      },
+      "planCard": {
+        "title": "Plano e contrato",
+        "plan": "Plano",
+        "status": "Estado",
+        "seatLimit": "Limite de lugares",
+        "renewal": "Renovação",
+        "manualFallback": "Manual"
+      },
+      "usageCard": {
+        "title": "Resumo de utilização",
+        "pendingInvites": "Convites pendentes",
+        "suspendedSeats": "Lugares suspensos",
+        "documentsCreatedThisMonth": "Documentos criados este mês",
+        "internalShares": "Partilhas internas"
+      },
+      "activityCard": {
+        "title": "Atividade dos últimos 14 dias",
+        "description": "Pedidos à IA concluídos com sucesso pela escola nos últimos catorze dias.",
+        "requestsThisMonthBadge": "{count, plural, one {# pedido} other {# pedidos}} este mês",
+        "tooltip": "{day}: {count, plural, one {# pedido} other {# pedidos}}",
+        "empty": "Ainda não existe atividade suficiente para desenhar o gráfico."
+      },
+      "documentTypesCard": {
+        "title": "Tipos de documento",
+        "empty": "Ainda não existem documentos suficientes para mostrar a distribuição por tipo."
+      },
+      "activeUsersCard": {
+        "title": "Utilizadores mais ativos",
+        "noEmail": "Sem email",
+        "lastActive": "Última atividade: {date}",
+        "aiRequestsBadge": "{count, plural, one {# pedido à IA} other {# pedidos à IA}}",
+        "documentsThisMonthBadge": "{count, plural, one {# documento no mês} other {# documentos no mês}}",
+        "totalDocumentsBadge": "{count, plural, one {# documento total} other {# documentos totais}}",
+        "empty": "Ainda não há atividade suficiente para destacar utilizadores."
+      }
+    },
+    "members": {
+      "title": "Membros da escola",
+      "description": "Acompanhe a atividade, os papéis e a participação da equipa em {organizationName}.",
+      "fallbackOrganization": "esta organização",
+      "stats": {
+        "total": "Total de membros",
+        "active": "Membros ativos",
+        "aiActivity": "Com atividade de IA",
+        "internalShares": "Partilhas internas"
+      },
+      "listTitle": "Membros",
+      "loading": "A carregar membros...",
+      "empty": "Ainda não existem membros sincronizados para esta escola.",
+      "unnamedMember": "Utilizador sem nome",
+      "noEmail": "Sem email disponível",
+      "joinedAndLastActive": "Entrou em: {joinedDate} · Última atividade: {lastActiveDate}",
+      "aiRequestsLabel": "Pedidos à IA",
+      "aiRequestsCount": "{count, plural, one {# pedido} other {# pedidos}}",
+      "documentsLabel": "Documentos",
+      "documentsCount": "{count, plural, one {# documento} other {# documentos}}",
+      "createdThisMonth": "{count, plural, one {# criado este mês} other {# criados este mês}}",
+      "statusLabel": "Estado",
+      "internalSharesCount": "{count, plural, one {# partilha interna} other {# partilhas internas}}"
+    },
+    "settings": {
+      "title": "Definições da escola",
+      "description": "Resumo inicial do workspace organizacional.",
+      "loadError": "Não foi possível carregar as definições da escola",
+      "currentRole": "Role atual:",
+      "contractStatus": "Estado do contrato:"
+    },
+    "usage": {
+      "title": "Utilização da escola",
+      "description": "Vista inicial da utilização agregada da organização.",
+      "loadError": "Não foi possível carregar a utilização da escola",
+      "generationsThisMonth": "Gerações deste mês"
+    }
+  },
+  "checkout": {
+    "common": {
+      "retry": "Tentar novamente",
+      "back": "Voltar"
+    },
+    "loading": {
+      "generic": "A carregar...",
+      "plans": "A carregar planos...",
+      "checkoutPage": "A carregar checkout..."
+    },
+    "errors": {
+      "network": {
+        "message": "Sem ligação à internet",
+        "details": "Verifique a sua ligação e tente novamente."
+      },
+      "server": {
+        "message": "Serviço temporariamente indisponível",
+        "details": "Os nossos servidores estão a ter dificuldades. Tente novamente em alguns minutos."
+      },
+      "sessionExpired": {
+        "message": "Sessão expirada",
+        "details": "Por favor, faça login novamente para continuar."
+      },
+      "invalidPlan": "Plano inválido",
+      "genericValidation": "Erro de validação",
+      "payment": "Erro no processamento de pagamento",
+      "unknownCheckout": "Não foi possível iniciar o pagamento",
+      "unknownGeneric": "Ocorreu um erro inesperado",
+      "closeAriaLabel": "Fechar erro"
+    },
+    "support": {
+      "persistPrompt": "O problema persiste?",
+      "contact": "Contactar suporte"
+    },
+    "autoCheckout": {
+      "title": "A preparar o seu pagamento...",
+      "description": "Será redirecionado para o Stripe em segundos."
+    },
+    "header": {
+      "title": "Escolha o seu plano",
+      "description": "Desbloqueie todo o potencial do Scooli e crie conteúdo educacional sem limites."
+    },
+    "planBadge": {
+      "popular": "Mais Popular",
+      "bestValue": "Melhor Valor"
+    },
+    "savingsPerYear": "Poupe {amount}/ano",
+    "perMonth": "/mês",
+    "paidAnnually": "Pago anualmente {price}",
+    "paidAnnuallyWithSavings": "Pago anualmente {price} · poupe {percent}",
+    "selectedPlanLabel": "Plano selecionado",
+    "selectedPlanSummary": "{planName} — {price}/{interval}",
+    "intervalMonth": "mês",
+    "intervalYear": "ano",
+    "checkoutButton": {
+      "processing": "A processar...",
+      "cta": "Continuar para Pagamento"
+    },
+    "trust": {
+      "securePayment": "Pagamento seguro via Stripe",
+      "cancelAnytime": "Cancele a qualquer momento",
+      "instantAccess": "Acesso instantâneo"
+    },
+    "cancel": {
+      "title": "Lamentamos vê-lo partir...",
+      "description": "O processo de pagamento foi cancelado e não foi efetuada nenhuma cobrança.",
+      "whatYoureLosingTitle": "O que está a perder:",
+      "unlimitedGenerations": {
+        "title": "Gerações ilimitadas",
+        "description": "Crie quantos documentos precisar, sem limites"
+      },
+      "saveTime": {
+        "title": "Poupe horas de trabalho",
+        "description": "Professores Pro poupam em média 5h por semana"
+      },
+      "cancelAnytime": {
+        "title": "Cancele a qualquer momento",
+        "description": "Sem compromisso, pode cancelar quando quiser"
+      },
+      "tryProCta": "Quero experimentar o Pro",
+      "continueFree": "Continuar com o plano gratuito",
+      "helpTitle": "Teve algum problema?",
+      "helpDescription": "Se encontrou alguma dificuldade durante o pagamento ou tem dúvidas sobre os planos, estamos aqui para ajudar."
+    },
+    "footer": {
+      "rights": "© {year} Scooli. Todos os direitos reservados.",
+      "terms": "Termos de Serviço",
+      "privacy": "Política de Privacidade"
+    }
+  },
+  "invitation": {
+    "roles": {
+      "member": "membro",
+      "admin": "administrador"
+    },
+    "loading": {
+      "title": "A preparar o teu convite",
+      "description": "Estamos a carregar os detalhes do convite.",
+      "confirmingAccount": "Estamos a confirmar o estado da tua conta."
+    },
+    "invalid": {
+      "title": "Convite inválido",
+      "description": "Este link não contém informação suficiente para concluir o convite.",
+      "openAuthCta": "Abrir autenticação"
+    },
+    "signIn": {
+      "badge": "Convite de organização",
+      "title": "Entrar em {organizationName}",
+      "description": "Vais entrar como {roleLabel}. Depois de iniciares sessão ou criares conta, o convite será aceite automaticamente.",
+      "emailLabel": "Email do convite",
+      "emailFallback": "Usa o email com que recebeste o convite"
+    },
+    "mismatch": {
+      "title": "Esta conta não corresponde ao convite",
+      "description": "O convite foi enviado para <strong>{invitedEmail}</strong>, mas neste momento estás autenticado como <strong>{currentUserEmail}</strong>.",
+      "signOut": "Terminar sessão",
+      "goToDashboard": "Ir para o dashboard"
+    },
+    "error": {
+      "title": "Não foi possível concluir o convite",
+      "notFound": "Não encontrámos um convite pendente para esta conta. Se já aceitaste o convite, podes abrir o dashboard. Caso contrário, confirma que entraste com o email certo.",
+      "acceptFailed": "Não foi possível aceitar o convite agora. Tenta novamente dentro de instantes.",
+      "openDashboard": "Abrir dashboard",
+      "switchAccount": "Trocar de conta"
+    },
+    "accepted": {
+      "title": "Convite aceite",
+      "description": "Já estás a entrar em {organizationName}."
+    },
+    "accepting": {
+      "title": "A aceitar o convite",
+      "description": "Estamos a concluir o teu acesso a {organizationName}.",
+      "syncing": "A sincronizar organização"
+    },
+    "fallbackOrganizationName": "a sua organização"
+  },
+  "reengagement": {
+    "reasons": {
+      "confusing": "Achei confuso",
+      "quality": "O resultado não foi útil",
+      "noTime": "Ainda não tive tempo",
+      "other": "Outra razão"
+    },
+    "loading": "Um momento",
+    "invalidLink": {
+      "title": "Esta ligação não é válida",
+      "description": "Pode ter expirado ou estar incompleta. Se quiser, pode entrar na plataforma diretamente."
+    },
+    "openApp": "Abrir a Scooli",
+    "done": {
+      "title": "Obrigado pelo retorno",
+      "description": "Registámos: <strong>{reason}</strong>. Isto ajuda-nos mesmo a melhorar a Scooli."
+    },
+    "confirm": {
+      "title": "Confirmar motivo",
+      "description": "Vamos registar este motivo para a sua conta:",
+      "error": "Não foi possível registar agora. Tente novamente.",
+      "confirmCta": "Sim, confirmar",
+      "notThisCta": "Não é isto — abrir a Scooli"
+    }
+  },
+  "featureGate": {
+    "heading": "{title} — funcionalidade Pro",
+    "defaultDescription": "Esta funcionalidade está disponível nos planos pagos. Atualiza o teu plano para começar a usá-la.",
+    "upgradeCta": "Atualizar plano"
+  },
+  "errors": {
+    "subscription": {
+      "fetchFailed": "Não foi possível carregar a subscrição",
+      "fetchUsageFailed": "Não foi possível carregar as estatísticas de utilização",
+      "fetchSettingsDataFailed": "Não foi possível carregar os dados da subscrição.",
+      "portalUnavailable": "Não foi possível abrir o portal de pagamentos. Tente novamente."
+    },
+    "entitlements": {
+      "fetchFailed": "Não foi possível carregar os acessos da conta"
+    },
+    "workspace": {
+      "fetchContextFailed": "Não foi possível carregar o contexto de workspace",
+      "fetchDashboardFailed": "Não foi possível carregar o dashboard da escola",
+      "fetchMembersFailed": "Não foi possível carregar os membros da escola"
+    },
+    "onboarding": {
+      "fetchStatusFailed": "Não foi possível carregar o estado de onboarding"
+    },
+    "features": {
+      "fetchFlagsFailed": "Não foi possível carregar as flags de funcionalidades"
+    },
+    "billing": {
+      "nifLoadFailed": "Não foi possível carregar os dados de faturação.",
+      "nifSaveFailed": "Não foi possível guardar o NIF."
+    }
   }
 }
