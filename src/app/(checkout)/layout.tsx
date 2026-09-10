@@ -1,11 +1,14 @@
+import { getTranslations } from "next-intl/server";
 import Image from "next/image";
 import Link from "next/link";
 
-export default function CheckoutLayout({
+export default async function CheckoutLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const t = await getTranslations("checkout.footer");
+
   return (
     <div className="min-h-dvh bg-gradient-to-br from-accent via-background to-muted dark:from-background dark:via-background dark:to-muted/30">
       {/* Simple header with logo */}
@@ -30,7 +33,7 @@ export default function CheckoutLayout({
       <footer className="border-t border-border bg-background/50 mt-auto">
         <div className="max-w-5xl mx-auto px-4 py-5 sm:px-6 sm:py-6">
           <div className="flex flex-col items-center justify-between gap-3 text-center text-sm text-muted-foreground md:flex-row md:text-left">
-            <p>© {new Date().getFullYear()} Scooli. Todos os direitos reservados.</p>
+            <p>{t("rights", { year: new Date().getFullYear() })}</p>
             <div className="flex items-center gap-6">
               <a
                 href="https://scooli.app/terms"
@@ -38,7 +41,7 @@ export default function CheckoutLayout({
                 rel="noopener noreferrer"
                 className="hover:text-foreground transition-colors"
               >
-                Termos de Serviço
+                {t("terms")}
               </a>
               <a
                 href="https://scooli.app/privacy"
@@ -46,7 +49,7 @@ export default function CheckoutLayout({
                 rel="noopener noreferrer"
                 className="hover:text-foreground transition-colors"
               >
-                Política de Privacidade
+                {t("privacy")}
               </a>
             </div>
           </div>
