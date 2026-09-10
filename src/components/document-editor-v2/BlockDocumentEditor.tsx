@@ -1,4 +1,3 @@
-import { AiDisclaimer } from "@/components/ui/ai-disclaimer";
 /**
  * BlockDocumentEditor — PowerPoint-style canvas presentation editor.
  *
@@ -28,6 +27,7 @@ import { AiDisclaimer } from "@/components/ui/ai-disclaimer";
 "use client";
 
 import AIChatPanel from "@/components/document-editor/AIChatPanel";
+import { AiDisclaimer } from "@/components/ui/ai-disclaimer";
 import { GenerationProgress } from "@/components/blocks/GenerationProgress";
 import { Button } from "@/components/ui/button";
 import {
