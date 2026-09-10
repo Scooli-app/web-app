@@ -1917,7 +1917,7 @@
     },
     "mismatch": {
       "title": "This account doesn't match the invitation",
-      "description": "The invitation was sent to {invitedEmail}, but you're currently signed in as {currentUserEmail}.",
+      "description": "The invitation was sent to <strong>{invitedEmail}</strong>, but you are currently signed in as <strong>{currentUserEmail}</strong>.",
       "signOut": "Sign out",
       "goToDashboard": "Go to dashboard"
     },
@@ -1936,7 +1936,8 @@
       "title": "Accepting invitation",
       "description": "We're finishing setting up your access to {organizationName}.",
       "syncing": "Syncing organisation"
-    }
+    },
+    "fallbackOrganizationName": "your organisation"
   },
   "reengagement": {
     "reasons": {
@@ -1953,7 +1954,7 @@
     "openApp": "Open Scooli",
     "done": {
       "title": "Thanks for the feedback",
-      "description": "We've recorded: {reason}. This really helps us improve Scooli."
+      "description": "We've recorded: <strong>{reason}</strong>. This really helps us improve Scooli."
     },
     "confirm": {
       "title": "Confirm reason",

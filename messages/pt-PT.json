@@ -1917,7 +1917,7 @@
     },
     "mismatch": {
       "title": "Esta conta não corresponde ao convite",
-      "description": "O convite foi enviado para {invitedEmail}, mas neste momento estás autenticado como {currentUserEmail}.",
+      "description": "O convite foi enviado para <strong>{invitedEmail}</strong>, mas neste momento estás autenticado como <strong>{currentUserEmail}</strong>.",
       "signOut": "Terminar sessão",
       "goToDashboard": "Ir para o dashboard"
     },
@@ -1936,7 +1936,8 @@
       "title": "A aceitar o convite",
       "description": "Estamos a concluir o teu acesso a {organizationName}.",
       "syncing": "A sincronizar organização"
-    }
+    },
+    "fallbackOrganizationName": "a sua organização"
   },
   "reengagement": {
     "reasons": {
@@ -1953,7 +1954,7 @@
     "openApp": "Abrir a Scooli",
     "done": {
       "title": "Obrigado pelo retorno",
-      "description": "Registámos: {reason}. Isto ajuda-nos mesmo a melhorar a Scooli."
+      "description": "Registámos: <strong>{reason}</strong>. Isto ajuda-nos mesmo a melhorar a Scooli."
     },
     "confirm": {
       "title": "Confirmar motivo",
