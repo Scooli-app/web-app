@@ -16,7 +16,8 @@ import { useState } from "react";
 interface QuickStartExample {
   id: string;
   labelKey: string;
-  parse: QuickCreateParse;
+  /** Topic text comes from `documentCreation.quickStart.<id>.topic` — resolved at render time, not here. */
+  parse: Omit<QuickCreateParse, "topic">;
 }
 
 const QUICK_START_EXAMPLES: QuickStartExample[] = [
@@ -25,7 +26,6 @@ const QUICK_START_EXAMPLES: QuickStartExample[] = [
     labelKey: "lessonPlanFotossintese",
     parse: {
       documentType: "lessonPlan",
-      topic: "A fotossíntese e a importância das plantas",
       schoolYear: 3,
       subjectId: "estudo_meio",
     },
@@ -35,7 +35,6 @@ const QUICK_START_EXAMPLES: QuickStartExample[] = [
     labelKey: "testFracoes",
     parse: {
       documentType: "test",
-      topic: "Frações: comparação, ordenação e operações",
       schoolYear: 5,
       subjectId: "matematica",
     },
@@ -45,7 +44,6 @@ const QUICK_START_EXAMPLES: QuickStartExample[] = [
     labelKey: "quizDescobrimentos",
     parse: {
       documentType: "quiz",
-      topic: "Os Descobrimentos Portugueses",
       schoolYear: 5,
       subjectId: "hgp",
     },
@@ -61,6 +59,7 @@ export function QuickCreateCard({
 }: QuickCreateCardProps) {
   const router = useRouter();
   const t = useTranslations("dashboard.quickCreate");
+  const tQuickStart = useTranslations("documentCreation.quickStart");
   const [text, setText] = useState("");
 
   const handleSubmit = (event: React.FormEvent) => {
@@ -86,11 +85,15 @@ export function QuickCreateCard({
   };
 
   const handleExampleClick = (example: QuickStartExample) => {
+    const parse: QuickCreateParse = {
+      ...example.parse,
+      topic: tQuickStart(`${example.id}.topic`),
+    };
     posthog.capture("dashboard_quick_start_clicked", {
       example_id: example.id,
-      document_type: example.parse.documentType,
+      document_type: parse.documentType,
     });
-    router.push(buildQuickCreateUrl(example.parse));
+    router.push(buildQuickCreateUrl(parse));
   };
 
   return (

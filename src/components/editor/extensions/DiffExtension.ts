@@ -12,6 +12,7 @@
  */
 
 import { Extension } from "@tiptap/core";
+import { translate } from "@/i18n/translate";
 import { DOMSerializer } from "@tiptap/pm/model";
 import {
   Plugin,
@@ -135,7 +136,7 @@ function createDeleteWidget(
 
       const label = document.createElement("div");
       label.className = "diff-delete-label";
-      label.textContent = "🗑 Conteúdo removido";
+      label.textContent = translate("editor.diffExtension.contentRemoved");
 
       const preview = document.createElement("div");
       preview.className = "diff-delete-content";
@@ -190,7 +191,7 @@ function createActionWidget(
     const acceptBtn = document.createElement("button");
     acceptBtn.className = "diff-action-btn diff-action-accept";
     acceptBtn.textContent = "✓";
-    acceptBtn.title = "Aceitar alteração";
+    acceptBtn.title = translate("editor.diffExtension.acceptChange");
     acceptBtn.type = "button";
     acceptBtn.setAttribute("data-action", "accept");
     acceptBtn.setAttribute("data-change-id", changeId);
@@ -198,7 +199,7 @@ function createActionWidget(
     const rejectBtn = document.createElement("button");
     rejectBtn.className = "diff-action-btn diff-action-reject";
     rejectBtn.textContent = "✗";
-    rejectBtn.title = "Rejeitar alteração";
+    rejectBtn.title = translate("editor.diffExtension.rejectChange");
     rejectBtn.type = "button";
     rejectBtn.setAttribute("data-action", "reject");
     rejectBtn.setAttribute("data-change-id", changeId);

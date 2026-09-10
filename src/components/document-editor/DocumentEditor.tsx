@@ -9,6 +9,7 @@ import { Routes } from "@/shared/types";
 import type { RagSource } from "@/shared/types/document";
 import { isUsableDocumentContent } from "@/shared/utils/documentContent";
 import { htmlToMarkdown, markdownToHtml } from "@/shared/utils/markdown";
+import { translate } from "@/i18n/translate";
 import {
   chatWithDocument,
   clearLastChatAnswer,
@@ -187,7 +188,7 @@ function repairLeakedImageSegmentTokens(
     if (!image) {
       return "";
     }
-    const safeAlt = (image.alt || "Imagem").replace(/\]/g, "\\]");
+    const safeAlt = (image.alt || translate("editor.documentEditor.imageFallbackAlt")).replace(/\]/g, "\\]");
     return `![${safeAlt}]({{DOCUMENT_IMAGE:${image.id}}})`;
   });
 }
@@ -427,7 +428,7 @@ export default function DocumentEditor({
         } else {
           const fallbackMarkdown =
             result.markdown ||
-            `![${result.image.alt || "Imagem"}](${stableToken})`;
+            `![${result.image.alt || t("imageFallbackAlt")}](${stableToken})`;
           const previousContent = latestContentRef.current;
           const nextContent = previousContent
             ? `${previousContent}\n\n${fallbackMarkdown}`

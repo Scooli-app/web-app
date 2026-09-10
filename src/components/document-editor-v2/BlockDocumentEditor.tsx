@@ -60,6 +60,7 @@ import {
   type CanvasTextElement,
 } from "@/shared/types/canvas-presentation";
 import { getThemeById } from "@/shared/types/presentation-theme";
+import { translate } from "@/i18n/translate";
 import { Routes } from "@/shared/types";
 import { fetchDocument, updateDocument, chatWithDocument } from "@/store/documents/documentSlice";
 import { regenerateDocumentImage as regenerateDocumentImageApi, generateDocumentImage as generateDocumentImageApi } from "@/services/api/document-images.service";
@@ -171,7 +172,8 @@ function toggleItalic(s: FontStyle): FontStyle {
 
 /** Fonts available in the slide editor. CSS variable names match next/font variables in layout.tsx */
 const FONT_OPTIONS = [
-  { label: "Padrão",      value: "",                    cssVar: "var(--font-lexend-variable, sans-serif)" },
+  // label is unused for this row — the render below shows t("fontDefault") when value === "".
+  { label: "",            value: "",                    cssVar: "var(--font-lexend-variable, sans-serif)" },
   { label: "Poppins",     value: "Poppins",             cssVar: "var(--font-poppins, sans-serif)" },
   { label: "Montserrat",  value: "Montserrat",          cssVar: "var(--font-montserrat, sans-serif)" },
   { label: "Raleway",     value: "Raleway",             cssVar: "var(--font-raleway, sans-serif)" },
@@ -301,7 +303,7 @@ function makeNewSlide(themeId?: string): CanvasSlide {
     id: `${id}-title`,
     type: "text",
     x: 0.04, y: 0.071, w: 0.92, h: 0.17,
-    text: "Novo Slide",
+    text: translate("editor.blockEditor.newSlideTitle"),
     fontSize: 0.036,
     fontStyle: "bold",
     color: theme.titleColor,

@@ -17,6 +17,7 @@ import {
 import {
   THEMES,
   themeToCssGradient,
+  translateThemeName,
   type PresentationTheme,
 } from "@/shared/types/presentation-theme";
 import { Palette } from "lucide-react";
@@ -93,7 +94,7 @@ function ThemeSwatch({
     <button
       type="button"
       onClick={onSelect}
-      title={theme.name}
+      title={translateThemeName(theme.id)}
       className={`flex flex-col overflow-hidden rounded-lg transition-all outline-none ${
         isActive
           ? "ring-2 ring-primary ring-offset-2 ring-offset-background scale-[1.03]"
@@ -148,7 +149,7 @@ function ThemeSwatch({
       {/* Label row */}
       <div className="bg-card flex items-center justify-between px-2 py-1 gap-1">
         <span className="text-[10px] font-semibold text-card-foreground truncate">
-          {theme.name}
+          {translateThemeName(theme.id)}
         </span>
         <span className="text-[8px] text-muted-foreground truncate shrink-0">
           {fontLabel}

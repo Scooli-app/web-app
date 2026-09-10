@@ -513,6 +513,132 @@
         "label": "Sunday",
         "short": "Sun"
       }
+    },
+    "options": {
+      "subjects": {
+        "matematica": "Mathematics",
+        "matematica_a": "Mathematics A",
+        "matematica_b": "Mathematics B",
+        "macs": "Mathematics Applied to Social Sciences",
+        "portugues": "Portuguese",
+        "ingles": "English",
+        "ingles_cont": "English Continuation",
+        "estudo_meio": "Environmental Studies",
+        "ciencias_naturais": "Natural Sciences",
+        "fq_a": "Physics and Chemistry A",
+        "fq": "Physical Chemistry",
+        "biologia": "Biology",
+        "bg": "Biology and Geology",
+        "geologia": "Geology",
+        "quimica": "Chemistry",
+        "fisica": "Physics",
+        "historia": "History",
+        "historia_a": "History A",
+        "historia_b": "History B",
+        "hgp": "History and Geography of Portugal",
+        "hca": "History of Culture and Arts",
+        "hcd": "History, Cultures and Democracy",
+        "geografia": "Geography",
+        "geografia_a": "Geography A",
+        "geografia_c": "Geography C",
+        "filosofia": "Philosophy",
+        "filosofia_a": "Philosophy A",
+        "psicologia_b": "Psychology B",
+        "sociologia": "Sociology",
+        "economia_a": "Economics A",
+        "economia_c": "Economics C",
+        "antropologia": "Anthropology",
+        "ciencia_politica": "Political Science",
+        "direito": "Law",
+        "frances": "French",
+        "frances_cont": "French Continuation",
+        "frances_inic": "French Initiation",
+        "alemao": "German",
+        "alemao_cont": "German Continuation",
+        "alemao_inic": "German Initiation",
+        "espanhol": "Spanish",
+        "espanhol_cont": "Spanish Continuation",
+        "espanhol_inic": "Spanish Initiation",
+        "latim_a": "Latin A",
+        "latim_b": "Latin B",
+        "grego": "Greek",
+        "plnm_a1": "Portuguese as a Non-Native Language (PLNM) - A1",
+        "plnm_a2": "Portuguese as a Non-Native Language (PLNM) - A2",
+        "plnm_b1": "Portuguese as a Non-Native Language (PLNM) - B1",
+        "artes_visuais": "Visual Arts",
+        "expressao_dramatica_teatro": "Drama and Theater Expression",
+        "danca": "Dance",
+        "musica": "Music",
+        "educacao_visual": "Visual Arts",
+        "educacao_musical": "Music Education",
+        "educacao_tecnologica": "Technology Education",
+        "desenho_a": "Drawing A",
+        "gd_a": "Descriptive Geometry A",
+        "oficina_artes": "Arts Workshop",
+        "oficina_design": "Design Workshop",
+        "oficina_multimedia_b": "Multimedia Workshop B",
+        "teatro": "Theater",
+        "materiais_tecnologias": "Materials and Technologies",
+        "literatura_portuguesa": "Portuguese Literature",
+        "classicos_literatura": "Literary Classics",
+        "literaturas_lp": "Portuguese-Language Literatures",
+        "educacao_fisica": "Physical Education",
+        "tic": "ICT",
+        "aplicacoes_informatica_b": "Computer Applications B",
+        "cidadania": "Citizenship and Development",
+        "emrc": "Catholic Moral and Religious Education",
+        "emre": "Evangelical Moral and Religious Education"
+      },
+      "subjectCategories": {
+        "general": "General Subjects",
+        "sciences": "Sciences",
+        "socialSciences": "Social Sciences and Humanities",
+        "languages": "Languages",
+        "arts": "Arts",
+        "literature": "Literature",
+        "physicalEducation": "Physical Education",
+        "technology": "Technology",
+        "citizenship": "Citizenship",
+        "religion": "Religious Education"
+      },
+      "gradeGroups": {
+        "cycle1": "1st Cycle",
+        "cycle2": "2nd Cycle",
+        "cycle3": "3rd Cycle",
+        "secondary": "Secondary"
+      },
+      "gradeLabel": "Year {grade}",
+      "presentationThemes": {
+        "dark": "Noir",
+        "aurora": "Aurora",
+        "midnight": "Nebula",
+        "rose": "Crimson",
+        "white": "Pearl",
+        "pastel": "Floral",
+        "warm": "Linen",
+        "sky": "Glacial",
+        "ocean": "Abyssal",
+        "forest": "Emerald",
+        "sunset": "Volcano",
+        "academic": "Academic",
+        "classroom": "Classroom",
+        "science": "Science",
+        "clean": "Blank",
+        "rainbow": "Rainbow",
+        "meadow": "Meadow",
+        "galaxy": "Galaxy"
+      }
+    },
+    "quickStart": {
+      "lesson_plan_fotossintese": {
+        "topic": "Photosynthesis and why plants matter"
+      },
+      "test_fracoes": {
+        "topic": "Fractions: comparing, ordering and operations"
+      },
+      "quiz_descobrimentos": {
+        "topic": "The Portuguese Discoveries"
+      }
     }
   },
   "dashboard": {
@@ -772,7 +898,8 @@
       "saved": "Saved",
       "chatErrorGeneric": "Something went wrong processing your message. Please try again later.",
       "streamStartError": "Error starting the stream",
-      "imageTokenRepairWarning": "We detected and fixed internal image references in the document."
+      "imageTokenRepairWarning": "We detected and fixed internal image references in the document.",
+      "imageFallbackAlt": "Image"
     },
     "documentTitle": {
       "placeholder": "Document title...",
@@ -902,7 +1029,8 @@
       "noSlideSelected": "No slide selected",
       "simplifyPrompt": "Simplify this slide text (reply only with the simplified text, no intro): \"{text}\"?",
       "expandPrompt": "Expand this slide text with more detail (reply only with the expanded text, no intro): \"{text}\"?",
-      "improveListPrompt": "Improve these list items for a presentation (reply only with the improved items, one per line, no intro): {items}?"
+      "improveListPrompt": "Improve these list items for a presentation (reply only with the improved items, one per line, no intro): {items}?",
+      "newSlideTitle": "New Slide"
     },
     "slideKonvaEditor": {
       "changeImage": "Change image",
@@ -998,6 +1126,51 @@
       "insertColumnRight": "Insert column right",
       "deleteColumn": "Delete column",
       "deleteTable": "Delete table"
+    },
+    "diffExtension": {
+      "contentRemoved": "🗑 Content removed",
+      "acceptChange": "Accept change",
+      "rejectChange": "Reject change"
+    },
+    "diffToolbar": {
+      "suggestionsModeBadge": "✨ Suggestions Mode",
+      "changeCount": "{count, plural, one {# change} other {# changes}}",
+      "acceptAll": "✓ Accept all",
+      "rejectAll": "✗ Reject all",
+      "exit": "✕ Exit"
+    },
+    "imageBlock": {
+      "deleteSuccess": "Image removed successfully",
+      "deleteFailedRestored": "Error removing the image. The image was restored.",
+      "deletedToast": "Image removed.",
+      "deletedToastDescription": "You can undo this action for a few seconds.",
+      "undo": "Undo",
+      "restoredToast": "Image restored.",
+      "userUploadNoRegen": "Images you upload can't be regenerated.",
+      "proOnly": "Image generation is only available on the Pro plan",
+      "regeneratingToast": "Generating a new version of the image...",
+      "regenerateFailed": "Error regenerating the image",
+      "generateFailed": "Failed to generate the image.",
+      "tryAgain": "Try again",
+      "remove": "Remove",
+      "unavailable": "Image unavailable.",
+      "unavailableDescription": "This image was removed or hasn't synced yet.",
+      "regenerate": "Regenerate",
+      "generatingTitle": "Generating image",
+      "deleteTitle": "Delete image",
+      "preparing": "Preparing the document image...",
+      "decreaseTitle": "Decrease image size",
+      "increaseTitle": "Increase image size",
+      "regenerateTitle": "Regenerate image"
+    },
+    "downloadButton": {
+      "exporting": "Exporting…",
+      "export": "Export",
+      "generatingPdf": "Generating PDF…",
+      "exportPdf": "Export as PDF",
+      "generatingWord": "Generating Word…",
+      "exportWord": "Export as Word",
+      "exportWordPro": "Export Word (Pro)"
     }
   },
   "blocks": {
@@ -1428,6 +1601,11 @@
         "confirm": "Delete",
         "cancel": "Cancel"
       }
+    },
+    "export": {
+      "exercisePlaceholder": "[Interactive exercise ({kind}) — visible only in the app]",
+      "imagePlaceholder": "[Image: {alt}]",
+      "illustrationFallback": "Illustration"
     }
   },
   "billing": {
@@ -1623,5 +1801,37 @@
   "appMeta": {
     "title": "Scooli - AI Platform for Teachers",
     "description": "Create high-quality teaching materials in seconds with artificial intelligence."
+  },
+  "errors": {
+    "generation": {
+      "authTokenMissing": "Authentication error: token unavailable",
+      "clientError": "Client error: {status}",
+      "serverError": "Server error: {status}",
+      "imageFailedGeneric": "Failed to generate image",
+      "unknownError": "Unknown error",
+      "connectionError": "Connection error"
+    },
+    "documents": {
+      "fetchFailed": "We couldn't load the documents",
+      "notFound": "Document not found",
+      "typeAndPromptRequired": "The document type and prompt are required",
+      "subjectAndYearRequired": "The subject and school year are required",
+      "createFailed": "We couldn't create the document",
+      "updateFailed": "We couldn't update the document",
+      "chatFailed": "We couldn't send the chat message",
+      "processingFormatFailed": "Error processing the file format.",
+      "importServerError": "Server error while importing the document. ({status})",
+      "importTimeout": "Timed out waiting for the document to finish formatting."
+    },
+    "templates": {
+      "loadFailed": "We couldn't load the templates (HTTP {status})",
+      "createFailed": "We couldn't create the template (HTTP {status})",
+      "updateFailed": "We couldn't update the template (HTTP {status})",
+      "setDefaultFailed": "We couldn't set the default template (HTTP {status})",
+      "createFromDocumentFailed": "We couldn't create the template from the document (HTTP {status})"
+    },
+    "download": {
+      "docxProOnly": "DOCX export is only available to Scooli Pro users"
+    }
   }
 }

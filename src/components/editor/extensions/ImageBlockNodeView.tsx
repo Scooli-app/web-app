@@ -4,6 +4,7 @@ import { Loader2, Minus, Plus, RefreshCcw, Trash2 } from "lucide-react";
 import { useAppDispatch, useAppSelector, selectEditorState } from "@/store/hooks";
 import { deleteDocumentImage, regenerateDocumentImage } from "@/store/documents/documentSlice";
 import { selectIsPro } from "@/store/subscription/selectors";
+import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useState } from "react";
 import posthog from "posthog-js";
 import { UpgradeLimitError } from "@/services/api/client";
@@ -80,6 +81,7 @@ function hasImageReferenceInDocument(
 }
 
 export default function ImageBlockNodeView({ node, deleteNode, editor, getPos, updateAttributes }: NodeViewProps) {
+  const t = useTranslations("editor.imageBlock");
   const dispatch = useAppDispatch();
   const { currentDocument, images, isGeneratingImages } = useAppSelector(selectEditorState);
   const isPremium = useAppSelector(selectIsPro);
@@ -179,22 +181,22 @@ export default function ImageBlockNodeView({ node, deleteNode, editor, getPos, u
           deleteDocumentImage({ documentId: currentDocument.id, imageId }),
         ).unwrap();
         posthog.capture("document_image_deleted", imageEventProps);
-        toast.success("Imagem removida com sucesso");
+        toast.success(t("deleteSuccess"));
       } catch (error) {
         posthog.capture("document_image_delete_failed", imageEventProps);
         if (!(error instanceof UpgradeLimitError)) {
           posthog.captureException(error);
         }
         restoreNode();
-        toast.error("Erro ao remover a imagem. A imagem foi restaurada.");
+        toast.error(t("deleteFailedRestored"));
       }
     }, DELETE_UNDO_WINDOW_MS);
 
-    const toastId = toast("Imagem removida.", {
-      description: "Pode refazer esta ação durante alguns segundos.",
+    const toastId = toast(t("deletedToast"), {
+      description: t("deletedToastDescription"),
       duration: DELETE_UNDO_WINDOW_MS + 1200,
       action: {
-        label: "Refazer",
+        label: t("undo"),
         onClick: () => {
           const pendingDeletion = pendingImageDeletions.get(key);
           if (!pendingDeletion) {
@@ -205,7 +207,7 @@ export default function ImageBlockNodeView({ node, deleteNode, editor, getPos, u
           pendingImageDeletions.delete(key);
           pendingDeletion.restore();
           posthog.capture("document_image_delete_undone", imageEventProps);
-          toast.success("Imagem restaurada.");
+          toast.success(t("restoredToast"));
         },
       },
     });
@@ -215,15 +217,15 @@ export default function ImageBlockNodeView({ node, deleteNode, editor, getPos, u
       restore: restoreNode,
       dismissToast: () => toast.dismiss(toastId),
     });
-  }, [currentDocument, imageEventProps, imageId, node, getPos, editor, placeholderToken, deleteNode, dispatch]);
+  }, [currentDocument, imageEventProps, imageId, node, getPos, editor, placeholderToken, deleteNode, dispatch, t]);
 
   const handleRegenerate = useCallback(async () => {
     if (isUserUploadedImage) {
-      toast.error("Imagens carregadas pelo utilizador não suportam regeneração.");
+      toast.error(t("userUploadNoRegen"));
       return;
     }
     if (!isPremium) {
-      toast.error("A geracao de imagens esta disponivel apenas no plano Pro");
+      toast.error(t("proOnly"));
       return;
     }
     if (!currentDocument || !imageId || isCurrentImageGenerating) return;
@@ -231,15 +233,15 @@ export default function ImageBlockNodeView({ node, deleteNode, editor, getPos, u
     try {
       await dispatch(regenerateDocumentImage({ documentId: currentDocument.id, imageId })).unwrap();
       posthog.capture("document_image_regenerated", imageEventProps);
-      toast.success("A gerar nova versao da imagem...");
+      toast.success(t("regeneratingToast"));
     } catch (error) {
       posthog.capture("document_image_regeneration_failed", imageEventProps);
       if (!(error instanceof UpgradeLimitError)) {
         posthog.captureException(error);
       }
-      toast.error("Erro ao regenerar a imagem");
+      toast.error(t("regenerateFailed"));
     }
-  }, [currentDocument, imageEventProps, imageId, dispatch, isCurrentImageGenerating, isPremium, isUserUploadedImage]);
+  }, [currentDocument, imageEventProps, imageId, dispatch, isCurrentImageGenerating, isPremium, isUserUploadedImage, t]);
 
   const handleResize = useCallback(
     (delta: number) => {
@@ -264,7 +266,7 @@ export default function ImageBlockNodeView({ node, deleteNode, editor, getPos, u
     return (
       <NodeViewWrapper className="my-6">
         <div className="relative flex min-h-[220px] w-full flex-col items-center justify-center rounded-xl border border-destructive bg-destructive/10 p-8">
-          <p className="mb-3 font-medium text-destructive">Falha ao gerar a imagem.</p>
+          <p className="mb-3 font-medium text-destructive">{t("generateFailed")}</p>
           {failureMessage && (
             <p className="mb-4 max-w-xl text-center text-sm text-destructive/90">{failureMessage}</p>
           )}
@@ -275,7 +277,7 @@ export default function ImageBlockNodeView({ node, deleteNode, editor, getPos, u
                 className="flex items-center gap-2 rounded-md border border-border bg-background px-4 py-2 text-sm shadow-sm transition-colors hover:bg-muted"
                 type="button"
               >
-                <RefreshCcw className="h-4 w-4" /> Tentar novamente
+                <RefreshCcw className="h-4 w-4" /> {t("tryAgain")}
               </button>
             )}
             <button
@@ -283,7 +285,7 @@ export default function ImageBlockNodeView({ node, deleteNode, editor, getPos, u
               className="flex items-center gap-2 rounded-md bg-destructive px-4 py-2 text-sm text-destructive-foreground shadow-sm transition-colors hover:bg-destructive/90"
               type="button"
             >
-              <Trash2 className="h-4 w-4" /> Remover
+              <Trash2 className="h-4 w-4" /> {t("remove")}
             </button>
           </div>
           {canRegenerate && <AiDisclaimer className="mt-3" />}
@@ -296,9 +298,9 @@ export default function ImageBlockNodeView({ node, deleteNode, editor, getPos, u
     return (
       <NodeViewWrapper className="my-6">
         <div className="relative flex min-h-[220px] w-full flex-col items-center justify-center rounded-xl border border-border bg-muted/20 p-8">
-          <p className="mb-2 font-medium text-foreground">Imagem indisponível.</p>
+          <p className="mb-2 font-medium text-foreground">{t("unavailable")}</p>
           <p className="mb-4 max-w-xl text-center text-sm text-muted-foreground">
-            Esta imagem foi removida ou ainda não está sincronizada.
+            {t("unavailableDescription")}
           </p>
           <div className="flex gap-3">
             {canRegenerate && (
@@ -307,7 +309,7 @@ export default function ImageBlockNodeView({ node, deleteNode, editor, getPos, u
                 className="flex items-center gap-2 rounded-md border border-border bg-background px-4 py-2 text-sm shadow-sm transition-colors hover:bg-muted"
                 type="button"
               >
-                <RefreshCcw className="h-4 w-4" /> Regenerar
+                <RefreshCcw className="h-4 w-4" /> {t("regenerate")}
               </button>
             )}
             <button
@@ -315,7 +317,7 @@ export default function ImageBlockNodeView({ node, deleteNode, editor, getPos, u
               className="flex items-center gap-2 rounded-md bg-destructive px-4 py-2 text-sm text-destructive-foreground shadow-sm transition-colors hover:bg-destructive/90"
               type="button"
             >
-              <Trash2 className="h-4 w-4" /> Remover
+              <Trash2 className="h-4 w-4" /> {t("remove")}
             </button>
           </div>
           {canRegenerate && <AiDisclaimer className="mt-3" />}
@@ -335,7 +337,7 @@ export default function ImageBlockNodeView({ node, deleteNode, editor, getPos, u
                   onClick={handleRegenerate}
                   disabled
                   className="rounded-md border border-border bg-background p-2 text-muted-foreground opacity-70"
-                  title="A gerar imagem"
+                  title={t("generatingTitle")}
                   type="button"
                 >
                   <RefreshCcw className="h-4 w-4" />
@@ -344,7 +346,7 @@ export default function ImageBlockNodeView({ node, deleteNode, editor, getPos, u
               <button
                 onClick={handleDelete}
                 className="rounded-md border border-border bg-background p-2 text-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-                title="Eliminar imagem"
+                title={t("deleteTitle")}
                 type="button"
               >
                 <Trash2 className="h-4 w-4" />
@@ -353,7 +355,7 @@ export default function ImageBlockNodeView({ node, deleteNode, editor, getPos, u
           )}
           <Loader2 className="mb-4 h-10 w-10 animate-spin text-primary" />
           <p className="text-center font-medium text-foreground">
-            A preparar a imagem do documento...
+            {t("preparing")}
           </p>
           <div className="mt-4 h-2 w-48 overflow-hidden rounded-full bg-muted/70">
             <div className="h-full w-2/3 rounded-full bg-primary animate-pulse" />
@@ -390,7 +392,7 @@ export default function ImageBlockNodeView({ node, deleteNode, editor, getPos, u
             onClick={() => handleResize(-IMAGE_RESIZE_STEP_PERCENT)}
             disabled={imageWidth <= MIN_IMAGE_WIDTH_PERCENT}
             className="rounded-md border border-border bg-background p-2 text-foreground transition-colors hover:bg-muted disabled:opacity-50"
-            title="Diminuir imagem"
+            title={t("decreaseTitle")}
             type="button"
           >
             <Minus className="h-4 w-4" />
@@ -399,7 +401,7 @@ export default function ImageBlockNodeView({ node, deleteNode, editor, getPos, u
             onClick={() => handleResize(IMAGE_RESIZE_STEP_PERCENT)}
             disabled={imageWidth >= MAX_IMAGE_WIDTH_PERCENT}
             className="rounded-md border border-border bg-background p-2 text-foreground transition-colors hover:bg-muted disabled:opacity-50"
-            title="Aumentar imagem"
+            title={t("increaseTitle")}
             type="button"
           >
             <Plus className="h-4 w-4" />
@@ -410,7 +412,7 @@ export default function ImageBlockNodeView({ node, deleteNode, editor, getPos, u
               onClick={handleRegenerate}
               disabled={isCurrentImageGenerating}
               className="rounded-md border border-border bg-background p-2 text-foreground transition-colors hover:bg-muted hover:text-primary disabled:opacity-50"
-              title="Regenerar imagem"
+              title={t("regenerateTitle")}
               type="button"
             >
               <RefreshCcw className={cn("h-4 w-4", isCurrentImageGenerating ? "animate-spin" : "")} />
@@ -419,7 +421,7 @@ export default function ImageBlockNodeView({ node, deleteNode, editor, getPos, u
           <button
             onClick={handleDelete}
             className="rounded-md border border-border bg-background p-2 text-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-            title="Eliminar imagem"
+            title={t("deleteTitle")}
             type="button"
           >
             <Trash2 className="h-4 w-4" />
