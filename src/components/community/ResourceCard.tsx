@@ -13,6 +13,7 @@ import {
   type SharedResource,
 } from "@/services/api/community.service";
 import { BookOpen, Eye, RotateCcw, TrendingUp, Users } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 interface ResourceCardProps {
   resource: SharedResource;
@@ -38,16 +39,11 @@ function getGradeLabel(value: string): string {
 }
 
 /** Map resource type key → human readable label */
-const RESOURCE_TYPE_LABELS: Record<string, string> = {
-  lessonPlan: "Plano de Aula",
-  test: "Teste",
-  quiz: "Quiz",
-  worksheet: "Ficha de Trabalho",
-  presentation: "Apresentação",
-  activity: "Atividade",
-};
-function getResourceTypeLabel(value: string): string {
-  return RESOURCE_TYPE_LABELS[value] ?? value;
+function getResourceTypeLabel(
+  value: string,
+  labels: Record<string, string>,
+): string {
+  return labels[value] ?? value;
 }
 
 /** Deterministic color per resource type for the accent strip */
@@ -70,9 +66,11 @@ export function ResourceCard({
   isAlreadyReused = false,
   className = "",
 }: ResourceCardProps) {
+  const t = useTranslations("community.resourceCard");
+  const resourceTypeLabels = t.raw("resourceTypes") as Record<string, string>;
   const subjectLabel = getSubjectLabel(resource.subject);
   const gradeLabel = getGradeLabel(resource.grade);
-  const typeLabel = getResourceTypeLabel(resource.resourceType);
+  const typeLabel = getResourceTypeLabel(resource.resourceType, resourceTypeLabels);
   const gradient = getTypeGradient(resource.resourceType);
 
   return (
@@ -138,7 +136,7 @@ export function ResourceCard({
             className="flex-1 h-8 text-xs"
           >
             <Eye className="w-3.5 h-3.5 mr-1.5" />
-            Pré-visualizar
+            {t("preview")}
           </Button>
           <Button
             onClick={() => onReuse?.(resource.id)}
@@ -150,7 +148,7 @@ export function ResourceCard({
             <RotateCcw
               className={`w-3.5 h-3.5 mr-1.5 ${isReusing ? "animate-spin" : ""}`}
             />
-            {isAlreadyReused ? "Guardado" : isReusing ? "A guardar..." : "Usar"}
+            {isAlreadyReused ? t("saved") : isReusing ? t("saving") : t("use")}
           </Button>
         </div>
       </div>
