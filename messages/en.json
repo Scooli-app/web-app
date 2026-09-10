@@ -1093,6 +1093,9 @@
           "message": "How can I create a lesson plan in Scooli?"
         }
       ]
+    },
+    "button": {
+      "openLabel": "Open Scooli Assistant"
     }
   },
   "community": {
@@ -1165,7 +1168,8 @@
         "quiz": "Quiz",
         "worksheet": "Worksheet",
         "presentation": "Presentation",
-        "activity": "Activity"
+        "activity": "Activity",
+        "curriculumPlan": "Curriculum Plan"
       },
       "preview": "Preview",
       "saved": "Saved",
@@ -1258,6 +1262,50 @@
       "shareOrgSuccess": "Resource shared with your school library.",
       "shareCommunitySuccess": "Resource submitted for review — you'll be notified within 24–48 hours.",
       "shareError": "Couldn't share this resource"
+    },
+    "filters": {
+      "searchPlaceholder": "Search resources...",
+      "searchButton": "Search",
+      "clear": "Clear",
+      "gradePlaceholder": "Year",
+      "allGrades": "All years",
+      "subjectPlaceholder": "Subject",
+      "allSubjects": "All subjects",
+      "typePlaceholder": "Type",
+      "allTypes": "All types",
+      "sortPopular": "Most reused",
+      "sortRecent": "Most recent",
+      "gradeOption": "Year {n}"
+    },
+    "dashboardPage": {
+      "title": "Contributor Dashboard",
+      "description": "Track your resources' impact in the community",
+      "backToLibrary": "Back to Library"
+    },
+    "contributorDashboard": {
+      "status": {
+        "pending": "Under review",
+        "approved": "Published",
+        "rejected": "Rejected",
+        "changesRequested": "Changes requested"
+      },
+      "emptyTitle": "You haven't shared any resources yet",
+      "emptyDescription": "Start sharing your teaching resources to see your stats here.",
+      "stats": {
+        "shared": "Resources Shared",
+        "totalReuses": "Total Reuses",
+        "approved": "Approved",
+        "avgReuses": "Average Reuses"
+      },
+      "pendingHeading": "Under Review",
+      "topResourcesHeading": "Your Most Popular Resources",
+      "publishedHeading": "Published",
+      "attentionHeading": "Need your attention",
+      "reuseCountLabel": "reuses",
+      "moderatorFeedback": "Moderator feedback:",
+      "impactTitle": "Community Impact",
+      "impactDescription": "Your resources have already helped <b>{count}</b> teachers!",
+      "impactSubtitle": "Keep sharing to grow your impact on Portuguese education."
     }
   },
   "feedback": {
@@ -1546,6 +1594,40 @@
       "chunkCount": "{count, plural, one {# excerpt consulted} other {# excerpts consulted}}",
       "documentCount": "{count, plural, one {# document} other {# documents}}",
       "excerptCount": "{count, plural, one {# excerpt} other {# excerpts}}"
+    },
+    "page": {
+      "title": "My Sources",
+      "description": "Upload documents (PDF, DOCX) to enrich content generation with your own curriculum context.",
+      "addSource": "Add Source",
+      "dropzoneEmpty": "Click or drag a file",
+      "dropzoneHint": "PDF or DOCX",
+      "namePlaceholder": "Source name *",
+      "uploading": "Uploading...",
+      "upload": "Upload",
+      "loadedSources": "Loaded sources",
+      "processingBadge": "Processing...",
+      "loadingSources": "Loading sources...",
+      "emptyState": "You don't have any sources uploaded yet.",
+      "confirm": "Confirm",
+      "cancel": "Cancel",
+      "deleteAriaLabel": "Delete source",
+      "proNote": "Sources are only available for your own credits. Content is processed and indexed automatically in the background.",
+      "strippedBackMatterTooltip": "We removed {size} from {heading} before processing.",
+      "strippedSectionOmitted": "{heading} section omitted",
+      "sectionFallback": "final",
+      "backMatterFallback": "back matter"
+    },
+    "status": {
+      "uploaded": "Processing",
+      "parsing": "Reading file",
+      "chunking": "Chunking",
+      "embedding": "Indexing",
+      "indexed": "Indexed",
+      "failed": "Failed"
+    },
+    "toast": {
+      "ready": "Source \"{name}\" ready to use.",
+      "failed": "Failed to process \"{name}\"{detail}."
     }
   },
   "modals": {
@@ -1993,6 +2075,63 @@
     "billing": {
       "nifLoadFailed": "We couldn't load the billing details.",
       "nifSaveFailed": "We couldn't save the Tax ID."
+    },
+    "api": {
+      "invalidResponse": "The server returned an invalid response. Check your NEXT_PUBLIC_BASE_API_URL configuration.",
+      "usageLimitExceeded": "Usage limit exceeded",
+      "htmlResponse": "The API endpoint returned HTML instead of JSON (Status: {status}). Check that NEXT_PUBLIC_BASE_API_URL is correct and the endpoint exists.",
+      "genericError": "An error occurred",
+      "httpError": "HTTP error {status}",
+      "networkError": "Network error. Check your connection."
+    },
+    "community": {
+      "fetchReusedResourceIds": "Couldn't load the reused resource IDs",
+      "fetchResources": "Couldn't load the resources",
+      "fetchResource": "Couldn't load the resource",
+      "fetchMyResources": "Couldn't load your resources",
+      "fetchContributorStats": "Couldn't load the stats",
+      "submitResource": "Couldn't share the resource",
+      "unshareDocument": "Couldn't stop sharing the resource",
+      "reuseResource": "Couldn't reuse the resource"
+    },
+    "sources": {
+      "fetchSources": "Couldn't load the sources",
+      "uploadSource": "Couldn't upload the source",
+      "deleteSource": "Couldn't delete the source",
+      "refreshSource": "Couldn't refresh the source",
+      "ingestionError": "Ingestion error",
+      "streamConnectionError": "Stream connection error"
+    },
+    "assistant": {
+      "sessionExpired": "Session expired. Please sign in again.",
+      "creditLimitReached": "Credit limit reached. Upgrade to the Pro plan to continue.",
+      "serverError": "Server error: {status}",
+      "connectionError": "Connection error. Please try again."
+    },
+    "moderation": {
+      "fetchQueue": "Couldn't load the moderation queue",
+      "processAction": "Couldn't process the moderation action"
+    },
+    "health": {
+      "checkFailed": "Health check failed",
+      "status": {
+        "healthy": "Healthy",
+        "unhealthy": "Unhealthy",
+        "degraded": "Degraded",
+        "unknown": "Unknown",
+        "error": "Error"
+      }
+    }
+  },
+  "ui": {
+    "close": "Close"
+  },
+  "layout": {
+    "themeToggle": {
+      "srLabel": "Change theme",
+      "light": "Light",
+      "dark": "Dark",
+      "system": "System"
     }
   }
 }

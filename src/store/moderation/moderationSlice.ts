@@ -9,6 +9,7 @@ import {
     processModerationAction,
     type ModerationActionRequest,
 } from "@/services/api/moderation.service";
+import { translate } from "@/i18n/translate";
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 
 // ============================================================================
@@ -67,7 +68,7 @@ export const fetchModerationQueue = createAsyncThunk(
       return await getModerationQueue(page, size);
     } catch (error) {
       return rejectWithValue(
-        error instanceof Error ? error.message : "Não foi possível carregar a fila de moderação"
+        error instanceof Error ? error.message : translate("errors.moderation.fetchQueue")
       );
     }
   }
@@ -84,7 +85,7 @@ export const processModeration = createAsyncThunk(
       return { result, resourceId: request.resourceId };
     } catch (error) {
       return rejectWithValue(
-        error instanceof Error ? error.message : "Não foi possível processar a ação de moderação"
+        error instanceof Error ? error.message : translate("errors.moderation.processAction")
       );
     }
   }

@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { cn } from "@/shared/utils/utils";
 import { Bot, Loader2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 interface AssistantButtonProps {
   /** Callback when button is clicked */
@@ -25,6 +26,7 @@ export function AssistantButton({
   hasUnread = false,
   className,
 }: AssistantButtonProps) {
+  const t = useTranslations("assistant.button");
   return (
     <Button
       onClick={onClick}
@@ -36,7 +38,7 @@ export function AssistantButton({
         className
       )}
       size="icon"
-      aria-label="Abrir Assistente Scooli"
+      aria-label={t("openLabel")}
     >
       {isProcessing ? (
         <Loader2 className="h-6 w-6 animate-spin" />

@@ -138,6 +138,8 @@ export function ShareResourceModal({
   documentId,
 }: ShareResourceModalProps) {
   const t = useTranslations("community.shareModal");
+  const tResourceTypes = useTranslations("community.resourceCard.resourceTypes");
+  const tFilters = useTranslations("community.filters");
   const defaultDestination: ShareDestination = allowOrganizationScope
     ? "both"
     : libraryScope;
@@ -408,7 +410,7 @@ export function ShareResourceModal({
                   <SelectContent>
                     {GRADE_OPTIONS.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
-                        {option.label}
+                        {tFilters("gradeOption", { n: option.value })}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -462,7 +464,7 @@ export function ShareResourceModal({
                   <SelectContent>
                     {RESOURCE_TYPE_OPTIONS.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
-                        {option.label}
+                        {tResourceTypes(`${option.value}`)}
                       </SelectItem>
                     ))}
                   </SelectContent>
