@@ -4,6 +4,10 @@ import {
   GRADE_GROUPS,
   SUBJECTS,
   SUBJECTS_BY_GRADE,
+  translateGradeGroupLabel,
+  translateGradeLabel,
+  translateSubjectCategory,
+  translateSubjectLabel,
 } from "@/components/document-creation/constants";
 import { documentTypes } from "@/components/document-creation/documentTypes";
 import { Button } from "@/components/ui/button";
@@ -403,7 +407,7 @@ export function UploadDocumentModal({
                     {GRADE_GROUPS.map((group) => (
                       <SelectGroup key={group.label}>
                         <SelectLabel className="mb-1 border-b border-border/50 bg-background px-2 py-2 text-xs font-bold text-primary">
-                          {group.label}
+                          {translateGradeGroupLabel(group.groupId)}
                         </SelectLabel>
                         {group.grades.map((grade) => (
                           <SelectItem
@@ -411,7 +415,7 @@ export function UploadDocumentModal({
                             value={grade.id}
                             className="cursor-pointer rounded-md py-2 pl-4 pr-3 text-sm focus:bg-accent focus:text-primary"
                           >
-                            {grade.label}
+                            {translateGradeLabel(grade.id)}
                           </SelectItem>
                         ))}
                       </SelectGroup>
@@ -479,7 +483,7 @@ export function UploadDocumentModal({
                       return categories.map((category) => (
                         <SelectGroup key={category}>
                           <SelectLabel className="mb-1 border-b border-border/50 bg-background px-2 py-2 text-xs font-bold text-primary">
-                            {category}
+                            {translateSubjectCategory(category)}
                           </SelectLabel>
                           {validSubjects
                             .filter((item) => item.category === category)
@@ -489,7 +493,7 @@ export function UploadDocumentModal({
                                 value={item.id}
                                 className="cursor-pointer rounded-md py-2 pl-4 pr-3 text-sm focus:bg-accent focus:text-primary"
                               >
-                                {item.label}
+                                {translateSubjectLabel(item.id)}
                               </SelectItem>
                             ))}
                         </SelectGroup>

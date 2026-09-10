@@ -8,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { SUBJECTS } from "@/components/document-creation/constants";
+import { SUBJECTS, translateSubjectLabel } from "@/components/document-creation/constants";
 import type { Document } from "@/shared/types";
 import {
   selectIsCurriculumPlanEnabled,
@@ -179,7 +179,7 @@ export function DocumentFilters({
             <SelectItem value="__all__">{t("allSubjects")}</SelectItem>
             {SUBJECTS.map((s) => (
               <SelectItem key={s.id} value={s.value}>
-                {s.label}
+                {translateSubjectLabel(s.id)}
               </SelectItem>
             ))}
           </SelectContent>
