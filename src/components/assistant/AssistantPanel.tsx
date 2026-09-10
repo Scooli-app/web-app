@@ -10,8 +10,9 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/shared/utils/utils";
 import { Minus, RefreshCw } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useEffect, useRef } from "react";
-import { EmptyState, WELCOME_MESSAGE } from "./EmptyState";
+import { EmptyState } from "./EmptyState";
 
 interface Message {
   role: "user" | "assistant";
@@ -61,6 +62,8 @@ export function AssistantPanel({
   showGenerationHint = false,
   className,
 }: AssistantPanelProps) {
+  const t = useTranslations("assistant.panel");
+  const tEmpty = useTranslations("assistant.emptyState");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isEmpty = messages.length === 0;
 
@@ -87,11 +90,11 @@ export function AssistantPanel({
       <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/30">
         <div className="flex items-center gap-2">
           <span className="font-semibold text-foreground">
-            Assistente Scooli
+            {t("title")}
           </span>
           <span className="flex items-center gap-1 text-xs text-muted-foreground">
             <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-            Online
+            {t("online")}
           </span>
         </div>
 
@@ -114,7 +117,7 @@ export function AssistantPanel({
                   <RefreshCw className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Nova conversa</TooltipContent>
+              <TooltipContent>{t("newConversation")}</TooltipContent>
             </Tooltip>
 
             <Tooltip>
@@ -128,7 +131,7 @@ export function AssistantPanel({
                   <Minus className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Minimizar conversa</TooltipContent>
+              <TooltipContent>{t("minimize")}</TooltipContent>
             </Tooltip>
           </TooltipProvider>
         </div>
@@ -153,7 +156,7 @@ export function AssistantPanel({
         ) : (
           <>
             {/* Welcome message as first assistant message */}
-            <ChatMessage role="assistant" content={WELCOME_MESSAGE} />
+            <ChatMessage role="assistant" content={tEmpty("welcomeMessage")} />
 
             {/* Conversation messages */}
             {messages.map((message, index) => (
@@ -191,10 +194,10 @@ export function AssistantPanel({
           onSubmit={onSubmit}
           disabled={isProcessing}
           showGenerationHint={showGenerationHint}
-          placeholder="Escreva uma mensagem..."
+          placeholder={t("inputPlaceholder")}
         />
         <p className="mt-2 text-center text-[11px] leading-4 text-muted-foreground/70">
-          A IA pode cometer erros. Revê sempre o conteúdo.
+          {t("aiDisclaimer")}
         </p>
       </div>
     </div>
