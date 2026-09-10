@@ -29,7 +29,11 @@ import {
   GRADE_GROUPS,
   SUBJECTS_BY_GRADE,
   TIMETABLE_COLORS,
+  translateGradeGroupLabel,
+  translateGradeLabel,
   translateSubject,
+  translateSubjectCategory,
+  translateSubjectLabel,
   getSubjectsForGrade,
   groupSubjectsByCategory,
 } from "@/components/document-creation/constants";
@@ -420,11 +424,11 @@ function StepDetails({
               {GRADE_GROUPS.map((group) => (
                 <SelectGroup key={group.label}>
                   <SelectLabel className="text-xs font-bold text-primary border-b border-border/50 mb-1">
-                    {group.label}
+                    {translateGradeGroupLabel(group.groupId)}
                   </SelectLabel>
                   {group.grades.map((g) => (
                     <SelectItem key={g.id} value={g.id}>
-                      {g.label}
+                      {translateGradeLabel(g.id)}
                     </SelectItem>
                   ))}
                 </SelectGroup>
@@ -463,11 +467,11 @@ function StepDetails({
             {groupedSubjects.map(({ category, subjects }) => (
               <SelectGroup key={category}>
                 <SelectLabel className="text-xs font-bold text-primary border-b border-border/50 mb-1">
-                  {category}
+                  {translateSubjectCategory(category)}
                 </SelectLabel>
                 {subjects.map((s) => (
                   <SelectItem key={s.id} value={s.id}>
-                    {s.label}
+                    {translateSubjectLabel(s.id)}
                   </SelectItem>
                 ))}
               </SelectGroup>
@@ -753,9 +757,12 @@ function CalendarNewPageContent() {
       s.slotType === "REVIEW"
   ).length;
 
-  // Auto-generate title using the Portuguese display label (not the internal id/English value)
+  // Auto-generate title from the subject name in the interface language (not the
+  // internal id or the English backend value). It becomes the saved class name.
   const autoTitle = useMemo(() => {
-    const subjectLabel = SUBJECTS.find((s) => s.id === subject)?.label ?? subject;
+    const subjectLabel = SUBJECTS.some((s) => s.id === subject)
+      ? translateSubjectLabel(subject)
+      : subject;
     if (!subjectLabel) return "";
     return [gradeLevel ? tTimetable("gradeShort", { grade: gradeLevel }) : "", classLabel, subjectLabel]
       .filter(Boolean)

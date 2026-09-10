@@ -24,6 +24,10 @@ import {
   SUBJECTS_BY_GRADE,
   getSubjectsForGrade,
   groupSubjectsByCategory,
+  translateGradeGroupLabel,
+  translateGradeLabel,
+  translateSubjectCategory,
+  translateSubjectLabel,
 } from "@/components/document-creation/constants";
 import {
   createDocument,
@@ -398,11 +402,11 @@ export default function CurriculumPlanNewPage() {
                     {GRADE_GROUPS.map((group) => (
                       <SelectGroup key={group.label}>
                         <SelectLabel className="text-xs font-bold text-primary border-b border-border/50 mb-1">
-                          {group.label}
+                          {translateGradeGroupLabel(group.groupId)}
                         </SelectLabel>
                         {group.grades.map((g) => (
                           <SelectItem key={g.id} value={g.id}>
-                            {g.label}
+                            {translateGradeLabel(g.id)}
                           </SelectItem>
                         ))}
                       </SelectGroup>
@@ -427,11 +431,11 @@ export default function CurriculumPlanNewPage() {
                     {groupedSubjects.map(({ category, subjects }) => (
                       <SelectGroup key={category}>
                         <SelectLabel className="text-xs font-bold text-primary border-b border-border/50 mb-1">
-                          {category}
+                          {translateSubjectCategory(category)}
                         </SelectLabel>
                         {subjects.map((s) => (
                           <SelectItem key={s.id} value={s.id}>
-                            {s.label}
+                            {translateSubjectLabel(s.id)}
                           </SelectItem>
                         ))}
                       </SelectGroup>
@@ -485,7 +489,9 @@ export default function CurriculumPlanNewPage() {
                 </div>
                 <div className="flex items-center justify-between px-4 py-3">
                   <span className="text-sm text-muted-foreground">{t("review.subject")}</span>
-                  <span className="text-sm font-medium">{subjectLabel || "—"}</span>
+                  <span className="text-sm font-medium">
+                    {selectedSubject ? translateSubjectLabel(selectedSubject.id) : "—"}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between px-4 py-3">
                   <span className="text-sm text-muted-foreground">{t("review.grade")}</span>

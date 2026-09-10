@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { SUBJECTS } from "@/components/document-creation/constants";
+import { SUBJECTS, translateSubjectLabel } from "@/components/document-creation/constants";
 import apiClient from "@/services/api/client";
 import { getUploadUrl, waitForDocument } from "@/services/api/document.service";
 import { selectIsCurriculumPlanEnabled } from "@/store/features/selectors";
@@ -275,7 +275,7 @@ export default function CurriculumPlanImportPage() {
                   <SelectContent>
                     {SUBJECTS.map((s) => (
                       <SelectItem key={s.id} value={s.value}>
-                        {s.label}
+                        {translateSubjectLabel(s.id)}
                       </SelectItem>
                     ))}
                   </SelectContent>
