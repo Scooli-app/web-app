@@ -30,7 +30,7 @@ import {
 import { TemplateSection } from "./templates";
 import { Card } from "@/components/ui/card";
 import type { DocumentTypeConfig, FormState, FormUpdateFn } from "./types";
-import { THEMES } from "@/shared/types/presentation-theme";
+import { THEMES, translateThemeName } from "@/shared/types/presentation-theme";
 import { cn } from "@/shared/utils/utils";
 import type { CanvasPresentation, CanvasSlide } from "@/shared/types/canvas-presentation";
 import { applyTheme } from "@/components/document-editor-v2/canvas-layout";
@@ -186,7 +186,7 @@ export default function DocumentCreationPage({
             id: "mock-title",
             type: "text",
             x: 0.10, y: 0.20, w: 0.80, h: 0.22,
-            text: theme.name,
+            text: translateThemeName(theme.id),
             fontSize: 0.052,
             fontStyle: "bold",
             color: "#ffffff",
@@ -440,7 +440,9 @@ export default function DocumentCreationPage({
                 })}
               </div>
               <p className="text-xs text-muted-foreground mt-2">
-                {THEMES.find((theme) => theme.id === (formState.themeId ?? "clean"))?.name ?? t("presentationTheme.defaultName")}
+                {THEMES.find((theme) => theme.id === (formState.themeId ?? "clean"))
+                  ? translateThemeName(formState.themeId ?? "clean")
+                  : t("presentationTheme.defaultName")}
               </p>
             </div>
           )}

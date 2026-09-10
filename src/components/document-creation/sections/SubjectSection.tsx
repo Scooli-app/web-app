@@ -11,7 +11,12 @@ import {
 import { cn } from "@/shared/utils/utils";
 import { BookOpen, Check } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { AMBIGUOUS_COMPONENTS_SUBJECTS, SUBJECTS } from "../constants";
+import {
+  AMBIGUOUS_COMPONENTS_SUBJECTS,
+  SUBJECTS,
+  translateSubjectCategory,
+  translateSubjectLabel,
+} from "../constants";
 import type { FormUpdateFn } from "../types";
 
 interface SubjectSectionProps {
@@ -140,7 +145,7 @@ export function SubjectSection({
               return (
                 <SelectGroup key={category}>
                   <SelectLabel className="bg-background px-2 py-2 text-sm font-bold text-primary border-b border-border/50 rounded-lg mb-1">
-                    {category}
+                    {translateSubjectCategory(category)}
                   </SelectLabel>
                   {categorySubjects.map((subjectOption) => (
                     <SelectItem
@@ -148,7 +153,7 @@ export function SubjectSection({
                       value={subjectOption.id}
                       className="py-2.5 px-3 text-sm cursor-pointer rounded-lg focus:bg-accent focus:text-primary pl-4"
                     >
-                      {subjectOption.label}
+                      {translateSubjectLabel(subjectOption.id)}
                     </SelectItem>
                   ))}
                 </SelectGroup>
@@ -159,7 +164,7 @@ export function SubjectSection({
               .map((category) => (
                 <SelectGroup key={category}>
                   <SelectLabel className="bg-background px-2 py-2 text-sm font-bold text-primary border-b border-border/50 mb-1">
-                    {category}
+                    {translateSubjectCategory(category)}
                   </SelectLabel>
                   {groupedSubjects[category].map((subjectOption) => (
                     <SelectItem
@@ -167,7 +172,7 @@ export function SubjectSection({
                       value={subjectOption.id}
                       className="py-2.5 px-3 text-sm cursor-pointer rounded-lg focus:bg-accent focus:text-primary pl-4"
                     >
-                      {subjectOption.label}
+                      {translateSubjectLabel(subjectOption.id)}
                     </SelectItem>
                   ))}
                 </SelectGroup>

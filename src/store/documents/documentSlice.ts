@@ -22,6 +22,7 @@ import type {
   SharedResourceStatus,
 } from "@/shared/types/document";
 import { isUsableDocumentContent } from "@/shared/utils/documentContent";
+import { translate } from "@/i18n/translate";
 import { fetchEntitlements } from "@/store/entitlements/entitlementsSlice";
 import { fetchUsage } from "@/store/subscription/subscriptionSlice";
 import { createAsyncThunk, createSlice, type PayloadAction } from "@reduxjs/toolkit";
@@ -179,7 +180,7 @@ const fetchDocuments = createAsyncThunk(
       };
     } catch (error) {
       return rejectWithValue(
-        error instanceof Error ? error.message : "Não foi possível carregar os documentos"
+        error instanceof Error ? error.message : translate("errors.documents.fetchFailed")
       );
     }
   }
@@ -193,7 +194,7 @@ export const fetchDocument = createAsyncThunk(
       return document;
     } catch (error) {
       return rejectWithValue(
-        error instanceof Error ? error.message : "Documento não encontrado"
+        error instanceof Error ? error.message : translate("errors.documents.notFound")
       );
     }
   },
@@ -216,19 +217,19 @@ export const createDocument = createAsyncThunk(
   async (params: CreateDocumentParams, { rejectWithValue }) => {
     try {
       if (!params.documentType || !params.prompt) {
-        return rejectWithValue("O tipo de documento e o prompt são obrigatórios");
+        return rejectWithValue(translate("errors.documents.typeAndPromptRequired"));
       }
 
       if (!params.subject || !params.schoolYear) {
-        return rejectWithValue("A disciplina e o ano escolar são obrigatórios");
+        return rejectWithValue(translate("errors.documents.subjectAndYearRequired"));
       }
 
       const document = await createDocumentService(params);
-            
+
       return document;
     } catch (error) {
       return rejectWithValue(
-        error instanceof Error ? error.message : "Não foi possível criar o documento"
+        error instanceof Error ? error.message : translate("errors.documents.createFailed")
       );
     }
   }
@@ -247,7 +248,7 @@ export const updateDocument = createAsyncThunk(
       } satisfies UpdateDocumentResult;
     } catch (error) {
       return rejectWithValue(
-        error instanceof Error ? error.message : "Não foi possível atualizar o documento"
+        error instanceof Error ? error.message : translate("errors.documents.updateFailed")
       );
     }
   }
@@ -268,7 +269,7 @@ export const chatWithDocument = createAsyncThunk(
       return response;
     } catch (error) {
       return rejectWithValue(
-        error instanceof Error ? error.message : "Não foi possível enviar a mensagem ao chat"
+        error instanceof Error ? error.message : translate("errors.documents.chatFailed")
       );
     }
   }

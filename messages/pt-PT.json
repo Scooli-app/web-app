@@ -513,6 +513,132 @@
         "label": "Domingo",
         "short": "Dom"
       }
+    },
+    "options": {
+      "subjects": {
+        "matematica": "Matemática",
+        "matematica_a": "Matemática A",
+        "matematica_b": "Matemática B",
+        "macs": "MACS",
+        "portugues": "Português",
+        "ingles": "Inglês",
+        "ingles_cont": "Inglês Continuação",
+        "estudo_meio": "Estudo do Meio",
+        "ciencias_naturais": "Ciências Naturais",
+        "fq_a": "Física e Química A",
+        "fq": "Físico-Química",
+        "biologia": "Biologia",
+        "bg": "Biologia e Geologia",
+        "geologia": "Geologia",
+        "quimica": "Química",
+        "fisica": "Física",
+        "historia": "História",
+        "historia_a": "História A",
+        "historia_b": "História B",
+        "hgp": "História e Geografia de Portugal",
+        "hca": "História da Cultura e das Artes",
+        "hcd": "História, Culturas e Democracia",
+        "geografia": "Geografia",
+        "geografia_a": "Geografia A",
+        "geografia_c": "Geografia C",
+        "filosofia": "Filosofia",
+        "filosofia_a": "Filosofia A",
+        "psicologia_b": "Psicologia B",
+        "sociologia": "Sociologia",
+        "economia_a": "Economia A",
+        "economia_c": "Economia C",
+        "antropologia": "Antropologia",
+        "ciencia_politica": "Ciência Política",
+        "direito": "Direito",
+        "frances": "Francês",
+        "frances_cont": "Francês Continuação",
+        "frances_inic": "Francês Iniciação",
+        "alemao": "Alemão",
+        "alemao_cont": "Alemão Continuação",
+        "alemao_inic": "Alemão Iniciação",
+        "espanhol": "Espanhol",
+        "espanhol_cont": "Espanhol Continuação",
+        "espanhol_inic": "Espanhol Iniciação",
+        "latim_a": "Latim A",
+        "latim_b": "Latim B",
+        "grego": "Grego",
+        "plnm_a1": "Português Língua Não Materna (PLNM) - Nível A1",
+        "plnm_a2": "Português Língua Não Materna (PLNM) - Nível A2",
+        "plnm_b1": "Português Língua Não Materna (PLNM) - Nível B1",
+        "artes_visuais": "Artes Visuais",
+        "expressao_dramatica_teatro": "Expressão Dramática/Teatro",
+        "danca": "Dança",
+        "musica": "Música",
+        "educacao_visual": "Educação Visual",
+        "educacao_musical": "Educação Musical",
+        "educacao_tecnologica": "Educação Tecnológica",
+        "desenho_a": "Desenho A",
+        "gd_a": "Geometria Descritiva A",
+        "oficina_artes": "Oficina de Artes",
+        "oficina_design": "Oficina de Design",
+        "oficina_multimedia_b": "Oficina de Multimédia B",
+        "teatro": "Teatro",
+        "materiais_tecnologias": "Materiais e Tecnologias",
+        "literatura_portuguesa": "Literatura Portuguesa",
+        "classicos_literatura": "Clássicos da Literatura",
+        "literaturas_lp": "Literaturas de Língua Portuguesa",
+        "educacao_fisica": "Educação Física",
+        "tic": "TIC",
+        "aplicacoes_informatica_b": "Aplicações Informáticas B",
+        "cidadania": "Cidadania e Desenvolvimento",
+        "emrc": "Educação Moral e Religiosa Católica",
+        "emre": "Educação Moral e Religiosa Evangélica"
+      },
+      "subjectCategories": {
+        "general": "Disciplinas Gerais",
+        "sciences": "Ciências",
+        "socialSciences": "Ciências Sociais e Humanas",
+        "languages": "Línguas",
+        "arts": "Artes",
+        "literature": "Literatura",
+        "physicalEducation": "Educação Física",
+        "technology": "Tecnologia",
+        "citizenship": "Cidadania",
+        "religion": "Religião"
+      },
+      "gradeGroups": {
+        "cycle1": "1º Ciclo",
+        "cycle2": "2º Ciclo",
+        "cycle3": "3º Ciclo",
+        "secondary": "Secundário"
+      },
+      "gradeLabel": "{grade}.º ano",
+      "presentationThemes": {
+        "dark": "Noir",
+        "aurora": "Aurora",
+        "midnight": "Nebula",
+        "rose": "Carmim",
+        "white": "Pearl",
+        "pastel": "Floral",
+        "warm": "Linho",
+        "sky": "Glacial",
+        "ocean": "Abissal",
+        "forest": "Esmeralda",
+        "sunset": "Vulcão",
+        "academic": "Académico",
+        "classroom": "Escola",
+        "science": "Ciências",
+        "clean": "Branco",
+        "rainbow": "Arco-Íris",
+        "meadow": "Prado",
+        "galaxy": "Galáxia"
+      }
+    },
+    "quickStart": {
+      "lesson_plan_fotossintese": {
+        "topic": "A fotossíntese e a importância das plantas"
+      },
+      "test_fracoes": {
+        "topic": "Frações: comparação, ordenação e operações"
+      },
+      "quiz_descobrimentos": {
+        "topic": "Os Descobrimentos Portugueses"
+      }
     }
   },
   "dashboard": {
@@ -815,7 +941,8 @@
       "saved": "Guardado",
       "chatErrorGeneric": "Erro ao processar a sua mensagem. Tente novamente mais tarde.",
       "streamStartError": "Erro ao iniciar streaming",
-      "imageTokenRepairWarning": "Detetámos e corrigimos referências internas de imagem no documento."
+      "imageTokenRepairWarning": "Detetámos e corrigimos referências internas de imagem no documento.",
+      "imageFallbackAlt": "Imagem"
     },
     "documentTitle": {
       "placeholder": "Título do documento...",
@@ -945,7 +1072,8 @@
       "noSlideSelected": "Nenhum slide selecionado",
       "simplifyPrompt": "Simplifica este texto de slide (responde só com o texto simplificado, sem introdução): \"{text}\"?",
       "expandPrompt": "Expande este texto de slide com mais detalhes (responde só com o texto expandido, sem introdução): \"{text}\"?",
-      "improveListPrompt": "Melhora estes itens de lista para apresentação (responde só com os itens melhorados, um por linha, sem introdução): {items}?"
+      "improveListPrompt": "Melhora estes itens de lista para apresentação (responde só com os itens melhorados, um por linha, sem introdução): {items}?",
+      "newSlideTitle": "Novo Slide"
     },
     "slideKonvaEditor": {
       "changeImage": "Trocar imagem",
@@ -1041,6 +1169,51 @@
       "insertColumnRight": "Inserir coluna à direita",
       "deleteColumn": "Eliminar coluna",
       "deleteTable": "Eliminar tabela"
+    },
+    "diffExtension": {
+      "contentRemoved": "🗑 Conteúdo removido",
+      "acceptChange": "Aceitar alteração",
+      "rejectChange": "Rejeitar alteração"
+    },
+    "diffToolbar": {
+      "suggestionsModeBadge": "✨ Modo Sugestões",
+      "changeCount": "{count, plural, one {# alteração} other {# alterações}}",
+      "acceptAll": "✓ Aceitar todas",
+      "rejectAll": "✗ Rejeitar todas",
+      "exit": "✕ Sair"
+    },
+    "imageBlock": {
+      "deleteSuccess": "Imagem removida com sucesso",
+      "deleteFailedRestored": "Erro ao remover a imagem. A imagem foi restaurada.",
+      "deletedToast": "Imagem removida.",
+      "deletedToastDescription": "Pode refazer esta ação durante alguns segundos.",
+      "undo": "Refazer",
+      "restoredToast": "Imagem restaurada.",
+      "userUploadNoRegen": "Imagens carregadas pelo utilizador não suportam regeneração.",
+      "proOnly": "A geração de imagens está disponível apenas no plano Pro",
+      "regeneratingToast": "A gerar nova versão da imagem...",
+      "regenerateFailed": "Erro ao regenerar a imagem",
+      "generateFailed": "Falha ao gerar a imagem.",
+      "tryAgain": "Tentar novamente",
+      "remove": "Remover",
+      "unavailable": "Imagem indisponível.",
+      "unavailableDescription": "Esta imagem foi removida ou ainda não está sincronizada.",
+      "regenerate": "Regenerar",
+      "generatingTitle": "A gerar imagem",
+      "deleteTitle": "Eliminar imagem",
+      "preparing": "A preparar a imagem do documento...",
+      "decreaseTitle": "Diminuir imagem",
+      "increaseTitle": "Aumentar imagem",
+      "regenerateTitle": "Regenerar imagem"
+    },
+    "downloadButton": {
+      "exporting": "A exportar…",
+      "export": "Exportar",
+      "generatingPdf": "A gerar PDF…",
+      "exportPdf": "Exportar como PDF",
+      "generatingWord": "A gerar Word…",
+      "exportWord": "Exportar como Word",
+      "exportWordPro": "Exportar Word (Pro)"
     }
   },
   "blocks": {
@@ -1519,6 +1692,11 @@
         "confirm": "Eliminar",
         "cancel": "Cancelar"
       }
+    },
+    "export": {
+      "exercisePlaceholder": "[Exercício interativo ({kind}) — visível apenas na aplicação]",
+      "imagePlaceholder": "[Imagem: {alt}]",
+      "illustrationFallback": "Ilustração"
     }
   },
   "billing": {
@@ -2121,6 +2299,36 @@
         "unknown": "Desconhecido",
         "error": "Erro"
       }
+    },
+    "generation": {
+      "authTokenMissing": "Erro de autenticação: token não disponível",
+      "clientError": "Erro do cliente: {status}",
+      "serverError": "Erro do servidor: {status}",
+      "imageFailedGeneric": "Falha ao gerar imagem",
+      "unknownError": "Erro desconhecido",
+      "connectionError": "Erro de ligação"
+    },
+    "documents": {
+      "fetchFailed": "Não foi possível carregar os documentos",
+      "notFound": "Documento não encontrado",
+      "typeAndPromptRequired": "O tipo de documento e o prompt são obrigatórios",
+      "subjectAndYearRequired": "A disciplina e o ano escolar são obrigatórios",
+      "createFailed": "Não foi possível criar o documento",
+      "updateFailed": "Não foi possível atualizar o documento",
+      "chatFailed": "Não foi possível enviar a mensagem ao chat",
+      "processingFormatFailed": "Erro ao processar o formato do ficheiro.",
+      "importServerError": "Erro de servidor ao importar o documento. ({status})",
+      "importTimeout": "Tempo limite excedido a aguardar pela formatação do documento."
+    },
+    "templates": {
+      "loadFailed": "Não foi possível carregar os modelos (HTTP {status})",
+      "createFailed": "Não foi possível criar o modelo (HTTP {status})",
+      "updateFailed": "Não foi possível atualizar o modelo (HTTP {status})",
+      "setDefaultFailed": "Não foi possível definir o modelo padrão (HTTP {status})",
+      "createFromDocumentFailed": "Não foi possível criar o modelo a partir do documento (HTTP {status})"
+    },
+    "download": {
+      "docxProOnly": "Exportação DOCX disponível apenas para utilizadores Scooli Pro"
     }
   },
   "ui": {
