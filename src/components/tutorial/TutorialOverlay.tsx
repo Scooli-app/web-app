@@ -51,9 +51,9 @@ const STEPS: TutorialStep[] = [
     isCompleted: (el) => {
       const trigger = el.querySelector<HTMLElement>('[role="combobox"]');
       if (!trigger) return false;
-      // NOTE: intentionally still matches the Portuguese placeholder text —
-      // see the module-level comment above about locale-fragile selectors.
-      return !(trigger.textContent ?? "").includes("Selecione");
+      // Radix sets `data-placeholder` on the trigger while no value is chosen.
+      // Matching the placeholder text instead would only work in Portuguese.
+      return !trigger.hasAttribute("data-placeholder");
     },
   },
   {
@@ -69,7 +69,9 @@ const STEPS: TutorialStep[] = [
     key: "template",
     watchMode: "mutation",
     isCompleted: (el) =>
-      !!el.querySelector('[aria-label*="Modelo selecionado"]'),
+      // Set by TemplateSection; the button's aria-label is translated, so it
+      // cannot be used as a selector.
+      !!el.querySelector("[data-template-selected]"),
     manualAdvance: true,
   },
   {

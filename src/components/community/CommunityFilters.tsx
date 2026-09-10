@@ -5,6 +5,7 @@
 
 "use client";
 
+import { translateSubject } from "@/components/document-creation/constants";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -139,7 +140,7 @@ export function CommunityFilters({
             <SelectItem value="all">{t("allSubjects")}</SelectItem>
             {SUBJECT_OPTIONS.map((option) => (
               <SelectItem key={option.value} value={option.value}>
-                {option.label}
+                {translateSubject(option.value)}
               </SelectItem>
             ))}
           </SelectContent>

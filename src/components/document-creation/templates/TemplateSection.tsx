@@ -214,6 +214,8 @@ export function TemplateSection({
                 ? t("selectedAriaLabel", { name: selectedTemplate.name })
                 : t("selectAriaLabel")
             }
+            // Locale-independent hook for the onboarding tutorial.
+            data-template-selected={selectedTemplate ? "" : undefined}
           >
             {selectedTemplate ? (
               <div className="flex items-start gap-3">

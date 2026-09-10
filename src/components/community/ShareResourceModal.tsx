@@ -13,6 +13,7 @@
 
 "use client";
 
+import { translateSubject } from "@/components/document-creation/constants";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -436,7 +437,7 @@ export function ShareResourceModal({
                   <SelectContent>
                     {SUBJECT_OPTIONS.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
-                        {option.label}
+                        {translateSubject(option.value)}
                       </SelectItem>
                     ))}
                   </SelectContent>
