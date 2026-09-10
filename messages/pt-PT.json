@@ -446,13 +446,34 @@
       "assessment": "Avaliação"
     },
     "days": {
-      "mon": { "label": "Segunda", "short": "Seg" },
-      "tue": { "label": "Terça", "short": "Ter" },
-      "wed": { "label": "Quarta", "short": "Qua" },
-      "thu": { "label": "Quinta", "short": "Qui" },
-      "fri": { "label": "Sexta", "short": "Sex" },
-      "sat": { "label": "Sábado", "short": "Sáb" },
-      "sun": { "label": "Domingo", "short": "Dom" }
+      "mon": {
+        "label": "Segunda",
+        "short": "Seg"
+      },
+      "tue": {
+        "label": "Terça",
+        "short": "Ter"
+      },
+      "wed": {
+        "label": "Quarta",
+        "short": "Qua"
+      },
+      "thu": {
+        "label": "Quinta",
+        "short": "Qui"
+      },
+      "fri": {
+        "label": "Sexta",
+        "short": "Sex"
+      },
+      "sat": {
+        "label": "Sábado",
+        "short": "Sáb"
+      },
+      "sun": {
+        "label": "Domingo",
+        "short": "Dom"
+      }
     }
   },
   "dashboard": {
@@ -532,6 +553,711 @@
         "communityDescription": "Notificações sobre interações com os seus recursos",
         "comingSoon": "Em breve disponível"
       }
+    }
+  },
+  "editor": {
+    "aiChatPanel": {
+      "tabConversation": "Conversa",
+      "tabSources": "Fontes",
+      "sourcesTooltip": "Este documento foi gerado sem recurso a fontes externas.",
+      "emptyStateHeading": "Como posso ajudar hoje?",
+      "documentRefined": "Documento Refinado",
+      "imageRegenYes": "Sim, regenerar",
+      "imageRegenNo": "Não",
+      "aiDisclaimer": "A IA pode cometer erros. Revê sempre o conteúdo.",
+      "nudgeReady": "Documento pronto! Usa o Assistente para refinar ou adaptar o conteúdo.",
+      "nudgeClose": "Fechar",
+      "nudgeMobileTap": "Toca para melhorar o documento com IA!",
+      "defaultPlaceholder": "Faça uma pergunta ou peça ajuda...",
+      "defaultTitle": "Assistente de IA",
+      "suggestions": {
+        "lessonPlan": [
+          {
+            "label": "Melhora a estrutura ✏️",
+            "message": "Melhora a estrutura e organização da aula."
+          },
+          {
+            "label": "Adiciona atividades práticas 🎯",
+            "message": "Adiciona atividades práticas e interativas à aula."
+          },
+          {
+            "label": "Simplifica a linguagem 🔤",
+            "message": "Simplifica a linguagem para ser mais acessível aos alunos."
+          },
+          {
+            "label": "Adiciona critérios de avaliação 📋",
+            "message": "Adiciona critérios de avaliação detalhados."
+          }
+        ],
+        "quiz": [
+          {
+            "label": "Adiciona mais perguntas ➕",
+            "message": "Adiciona mais 5 perguntas ao quiz."
+          },
+          {
+            "label": "Aumenta a dificuldade 🎯",
+            "message": "Aumenta o nível de dificuldade das perguntas."
+          },
+          {
+            "label": "Explica as respostas 💡",
+            "message": "Adiciona uma explicação para cada resposta correta."
+          },
+          {
+            "label": "Varia os tipos de perguntas 🔄",
+            "message": "Varia os tipos de perguntas com verdadeiro/falso e resposta curta."
+          }
+        ],
+        "test": [
+          {
+            "label": "Adiciona mais exercícios ➕",
+            "message": "Adiciona mais exercícios ao teste."
+          },
+          {
+            "label": "Aumenta a dificuldade 🎯",
+            "message": "Aumenta o nível de dificuldade das questões."
+          },
+          {
+            "label": "Adiciona cotações 📊",
+            "message": "Adiciona cotações a cada questão do teste."
+          },
+          {
+            "label": "Melhora as instruções 📋",
+            "message": "Melhora as instruções de cada secção do teste."
+          }
+        ],
+        "worksheet": [
+          {
+            "label": "Adiciona mais exercícios ➕",
+            "message": "Adiciona mais exercícios à ficha de trabalho."
+          },
+          {
+            "label": "Simplifica as instruções 🔤",
+            "message": "Simplifica as instruções para serem mais claras."
+          },
+          {
+            "label": "Adiciona exemplos resolvidos 💡",
+            "message": "Adiciona exemplos resolvidos antes dos exercícios."
+          },
+          {
+            "label": "Melhora a conclusão 📝",
+            "message": "Melhora a secção de conclusão da ficha."
+          }
+        ],
+        "presentation": [
+          {
+            "label": "Adiciona mais slides ➕",
+            "message": "Adiciona mais slides à apresentação."
+          },
+          {
+            "label": "Melhora o slide de título ✏️",
+            "message": "Melhora o slide de título e introdução."
+          },
+          {
+            "label": "Adiciona notas do apresentador 📋",
+            "message": "Adiciona notas do apresentador a cada slide."
+          },
+          {
+            "label": "Simplifica o conteúdo 🔤",
+            "message": "Simplifica o conteúdo dos slides para ser mais visual e direto."
+          }
+        ],
+        "default": [
+          {
+            "label": "Melhora a introdução ✏️",
+            "message": "Melhora a introdução do documento."
+          },
+          {
+            "label": "Adiciona mais exemplos 📚",
+            "message": "Adiciona mais exemplos práticos ao documento."
+          },
+          {
+            "label": "Simplifica a linguagem 🔤",
+            "message": "Simplifica a linguagem para ser mais acessível."
+          },
+          {
+            "label": "Adiciona uma conclusão 📝",
+            "message": "Adiciona ou melhora a conclusão do documento."
+          }
+        ]
+      }
+    },
+    "calendarButton": {
+      "steps": [
+        "A mapear competências curriculares",
+        "A organizar conteúdos e sequência pedagógica",
+        "A definir avaliações e critérios",
+        "Revisão pedagógica final"
+      ],
+      "viewClass": "Ver turma",
+      "creating": "A criar...",
+      "createClass": "Criar turma",
+      "createFailed": "Não foi possível criar a turma.",
+      "generationTitle": "A criar a tua turma…",
+      "generationSubtitle": "A Scooli está a gerar os tópicos e a distribuição pedagógica. Pode demorar até um minuto.",
+      "dialogTitle": "Criar turma a partir desta planificação",
+      "dialogDescription": "Confirma o nome — útil se já tiveres outra turma com a mesma disciplina e ano.",
+      "nameLabel": "Nome",
+      "classLabel": "Turma (opcional)",
+      "classPlaceholder": "Ex: A",
+      "cancel": "Cancelar"
+    },
+    "documentEditor": {
+      "stepPreparingLabel": "Preparar",
+      "stepPreparingDescription": "A analisar o currículo e preparar o contexto",
+      "stepGeneratingLabel": "Rascunho",
+      "stepGeneratingDescription": "A gerar o documento com IA",
+      "stepReviewingLabel": "Revisão",
+      "stepReviewingDescription": "A avaliar a qualidade do documento",
+      "stepRevisedLabel": "Melhorias",
+      "stepRevisedDescription": "A aplicar melhorias ao documento",
+      "defaultTitle": "Novo Documento",
+      "loadingMessage": "A carregar documento...",
+      "importedSuccess": "Documento importado com sucesso. Pode agora editar ou melhorar com IA.",
+      "authError": "Erro de autenticação",
+      "imageUnavailable": "Documento indisponível para upload de imagem.",
+      "invalidImageFile": "Selecione um ficheiro de imagem válido.",
+      "imageTooLarge": "A imagem excede o limite de 10MB.",
+      "imageUploadFailed": "Não foi possível carregar a imagem.",
+      "imageAdded": "Imagem adicionada ao documento.",
+      "imageGenDelayError": "A geração de imagens terminou com falhas ou atrasos no stream.",
+      "documentNotFound": "Documento não encontrado",
+      "backToDocuments": "Voltar aos documentos",
+      "editorHeading": "Editor",
+      "proImagesLabel": "Imagens Pro",
+      "upgrade": "Upgrade",
+      "proTooltip": "Requer Scooli Pro: faz upgrade para gerar imagens automáticas",
+      "saving": "A guardar...",
+      "saved": "Guardado",
+      "chatErrorGeneric": "Erro ao processar a sua mensagem. Tente novamente mais tarde.",
+      "streamStartError": "Erro ao iniciar streaming",
+      "imageTokenRepairWarning": "Detetámos e corrigimos referências internas de imagem no documento."
+    },
+    "documentTitle": {
+      "placeholder": "Título do documento...",
+      "defaultTitle": "Documento",
+      "saving": "A guardar...",
+      "saved": "Guardado"
+    },
+    "shareButton": {
+      "needTitleContent": "Documento deve ter título e conteúdo para ser partilhado",
+      "publishedToCommunity": "Recurso publicado na biblioteca comunitária!",
+      "submittedForReview": "Recurso submetido para revisão! Receberá notificação em 24-48h.",
+      "shareErrorGeneric": "Erro ao partilhar recurso",
+      "unshareIdentifyError": "Nao foi possivel identificar o documento.",
+      "unshared": "Recurso removido das bibliotecas.",
+      "unshareErrorGeneric": "Nao foi possivel deixar de partilhar o recurso.",
+      "manageShareAriaLabel": "Gerir partilha - {status}",
+      "statusPending": "Em revisao",
+      "statusPublished": "Publicado",
+      "changeDestination": "Alterar destino",
+      "stopSharing": "Deixar de partilhar",
+      "unshareDialogTitle": "Deixar de partilhar este recurso?",
+      "unshareDialogDescription": "O recurso sera removido das bibliotecas onde foi partilhado. Pode voltar a partilhar mais tarde.",
+      "removing": "A remover...",
+      "sharing": "A partilhar...",
+      "share": "Partilhar"
+    },
+    "blockEditor": {
+      "fontDefault": "Padrão",
+      "loadingPresentation": "A carregar apresentação...",
+      "generatingImage": "A gerar imagem...",
+      "imageProcessingRetry": "A imagem ficou em processamento. Tenta novamente.",
+      "imageGenerated": "Imagem gerada com sucesso!",
+      "imageGenError": "Erro ao gerar imagem",
+      "generatingSlide": "A gerar slide...",
+      "slideGenerated": "Slide gerado com sucesso!",
+      "slideGenError": "Erro ao gerar slide",
+      "untitledSlide": "Sem título",
+      "slideUpdated": "Slide atualizado! ✓",
+      "imageRegenOffer": "🖼️ O contexto visual do slide mudou. Queres que regenere a imagem para corresponder ao novo conteúdo?",
+      "chatError": "Erro na conversa com IA.",
+      "noImageToRegen": "Não encontrei uma imagem neste slide para regenerar.",
+      "defaultImagePrompt": "ilustração educativa",
+      "imageRegenerated": "Imagem regenerada com sucesso!",
+      "imageProcessing": "A imagem está a ser processada. Atualiza a página em breve.",
+      "imageRegenError": "Erro ao regenerar a imagem.",
+      "pptxExportError": "Erro ao exportar PPTX.",
+      "pptxExported": "PPTX exportado",
+      "pdfExportError": "Erro ao exportar PDF.",
+      "pdfExported": "PDF exportado",
+      "documentNotFound": "Documento não encontrado.",
+      "generationFailedTitle": "A geração falhou",
+      "generationFailedSubtitle": "Tenta criar a apresentação outra vez.",
+      "loadFailedTitle": "Não foi possível carregar a apresentação",
+      "loadFailedSubtitle": "O conteúdo não está em formato válido. Recarrega a página ou cria a apresentação novamente.",
+      "savingIndicator": "A guardar…",
+      "savedIndicator": "Guardado ✓",
+      "unsavedIndicator": "Por guardar",
+      "undoTooltip": "Desfazer (Ctrl+Z)",
+      "redoTooltip": "Refazer (Ctrl+Y)",
+      "addTextTooltip": "Adicionar caixa de texto",
+      "addTextLabel": "Texto",
+      "addImageTooltip": "Adicionar imagem",
+      "addImageLabel": "Imagem",
+      "addShapeTooltip": "Adicionar forma",
+      "shapesLabel": "Formas",
+      "shapeRect": "Retângulo",
+      "shapeEllipse": "Círculo",
+      "shapeLine": "Linha",
+      "addFormulaTooltip": "Adicionar fórmula",
+      "formulaLabel": "Fórmula",
+      "exportLabel": "Exportar",
+      "exportPptx": "Exportar como PPTX",
+      "exportPdf": "Exportar como PDF",
+      "present": "Apresentar",
+      "boldTooltip": "Negrito (B)",
+      "italicTooltip": "Itálico (I)",
+      "underlineTooltip": "Sublinhado (U)",
+      "alignLeftTooltip": "Alinhar à esquerda",
+      "alignCenterTooltip": "Centrar",
+      "alignRightTooltip": "Alinhar à direita",
+      "decreaseSizeTooltip": "Diminuir tamanho",
+      "increaseSizeTooltip": "Aumentar tamanho",
+      "fontFamilyTooltip": "Tipo de letra",
+      "textColorTooltip": "Cor do texto",
+      "simplifyTooltip": "Pede à IA para simplificar este texto",
+      "simplifyLabel": "Simplificar",
+      "expandTooltip": "Pede à IA para expandir este texto",
+      "expandLabel": "Expandir",
+      "improveListTooltip": "Pede à IA para melhorar esta lista",
+      "improveListLabel": "Melhorar lista",
+      "fillLabel": "Preenchimento:",
+      "fillTooltip": "Cor de preenchimento",
+      "strokeLabel": "Contorno:",
+      "strokeTooltip": "Cor do contorno",
+      "thicknessLabel": "Espessura:",
+      "decreaseThicknessTooltip": "Diminuir espessura",
+      "increaseThicknessTooltip": "Aumentar espessura",
+      "changeImage": "Trocar imagem",
+      "delete": "Apagar",
+      "backgroundLabel": "Fundo:",
+      "slideBackgroundTooltip": "Cor de fundo do slide",
+      "applyBgToAllTooltip": "Aplicar esta cor de fundo a todos os slides",
+      "applyToAll": "Aplicar a todos",
+      "addSlide": "+ Slide",
+      "blankSlide": "Slide em branco",
+      "generateWithAI": "Gerar com IA",
+      "slideCounter": "Slide {current} / {total}",
+      "hiddenSuffix": " · oculto",
+      "zoomOutTooltip": "Diminuir zoom",
+      "zoomInTooltip": "Aumentar zoom",
+      "resetZoomTooltip": "Repor zoom",
+      "zoomTitle": "Zoom",
+      "chatPlaceholder": "Pede ajuda para melhorar a apresentação...",
+      "generateSlideDialogTitle": "Gerar com IA",
+      "generateSlideDialogDescription": "Indica um tema opcional. Se deixares em branco, a IA continua a apresentação de forma lógica.",
+      "slideTopicPlaceholder": "Tema do slide",
+      "cancel": "Cancelar",
+      "generateSlideSubmit": "Gerar slide",
+      "generatingSlideButton": "A gerar...",
+      "slideActionsTooltip": "Ações do slide",
+      "duplicate": "Duplicar",
+      "showInPresentation": "Mostrar na apresentação",
+      "hideFromPresentation": "Ocultar da apresentação",
+      "moveUp": "Mover para cima",
+      "moveDown": "Mover para baixo",
+      "deleteSlide": "Eliminar slide",
+      "noSlideSelected": "Nenhum slide selecionado",
+      "simplifyPrompt": "Simplifica este texto de slide (responde só com o texto simplificado, sem introdução): \"{text}\"?",
+      "expandPrompt": "Expande este texto de slide com mais detalhes (responde só com o texto expandido, sem introdução): \"{text}\"?",
+      "improveListPrompt": "Melhora estes itens de lista para apresentação (responde só com os itens melhorados, um por linha, sem introdução): {items}?"
+    },
+    "slideKonvaEditor": {
+      "changeImage": "Trocar imagem",
+      "deleteElement": "Apagar elemento",
+      "newTextDefault": "Novo texto",
+      "loadingImage": "A carregar imagem…",
+      "doubleClickToEditDescription": "Duplo-clique para editar descrição"
+    },
+    "slideEditorView": {
+      "removeItem": "Remover item",
+      "itemPlaceholder": "Item {number}",
+      "addItem": "Adicionar item",
+      "imageDescriptionPlaceholder": "Descrição da imagem a gerar",
+      "removeBlock": "Remover bloco",
+      "paragraphPlaceholder": "Parágrafo",
+      "titlePlaceholder": "Título",
+      "subtitlePlaceholder": "Subtítulo (opcional)",
+      "conclusionTitlePlaceholder": "Título da conclusão",
+      "conclusionLabel": "Conclusão"
+    },
+    "slideThumbnail": {
+      "slideAriaLabel": "Slide {number}"
+    },
+    "themePicker": {
+      "themeButtonLabel": "Tema",
+      "chooseThemeTitle": "Escolher tema"
+    },
+    "formulaModal": {
+      "groupFractions": "Frações, potências e índices",
+      "groupRoots": "Raízes",
+      "groupTrigLogs": "Trig e logs",
+      "groupBigOperators": "Operadores grandes",
+      "groupBarsVectors": "Barras e vetores",
+      "groupRelations": "Relações",
+      "groupOperators": "Operadores",
+      "groupGreek": "Grego",
+      "groupSetsLogic": "Conjuntos e lógica",
+      "groupNumberSets": "Conjuntos numéricos",
+      "editTitle": "Editar fórmula",
+      "addTitle": "Adicionar fórmula",
+      "latexModeLabel": "Modo LaTeX",
+      "latexModeHint": "Ativa para escrever LaTeX puro. Desativa para entrada mais simples.",
+      "formulaLabel": "Fórmula",
+      "formulaPlaceholderSimple": "Ex.: sin(x) + πr^2",
+      "formulaHint": "Usa a paleta para inserir símbolos no cursor e confirma quando a pré-visualização estiver correta.",
+      "previewLabel": "Pré-visualização",
+      "paletteLabel": "Paleta de símbolos",
+      "paletteHint": "Cada botão insere LaTeX diretamente no campo acima.",
+      "cancel": "Cancelar",
+      "save": "Guardar",
+      "add": "Adicionar"
+    },
+    "imagePickerModal": {
+      "dialogTitle": "Adicionar imagem",
+      "tabGenerate": "Gerar com IA",
+      "tabUpload": "Carregar",
+      "tabUrl": "Por URL",
+      "describeImageLabel": "Descreve a imagem",
+      "generatePlaceholder": "Ex: uma pizza dividida em 6 partes iguais, estilo cartoon colorido para crianças",
+      "generateHint": "Ctrl+Enter para gerar",
+      "generateButton": "Gerar imagem",
+      "uploadingFile": "A carregar {name}…",
+      "uploadHint": "Clica ou arrasta uma imagem",
+      "uploadFormats": "PNG, JPG, WEBP até 10 MB",
+      "uploadError": "Erro ao carregar imagem",
+      "urlLabel": "URL da imagem",
+      "urlPlaceholder": "https://...",
+      "insertImage": "Inserir imagem"
+    }
+  },
+  "blocks": {
+    "imageGenerating": "Imagem em geração",
+    "conclusionLabel": "Conclusão",
+    "presentView": {
+      "prevSlideAriaLabel": "Slide anterior",
+      "nextSlideAriaLabel": "Próximo slide",
+      "exitAriaLabel": "Sair da apresentação"
+    },
+    "generationProgress": {
+      "title": "A criar a tua apresentação…",
+      "subtitle": "Demora cerca de 30 a 60 segundos.",
+      "stepPreparingLabel": "A preparar",
+      "stepPreparingCaption": "A consultar o currículo e a montar o contexto.",
+      "stepGeneratingLabel": "A gerar",
+      "stepGeneratingCaption": "A IA está a escrever os teus slides.",
+      "stepReviewingLabel": "A rever",
+      "stepReviewingCaption": "A validar a estrutura e a qualidade do resultado.",
+      "imagesLabel": "Imagens"
+    }
+  },
+  "assistant": {
+    "panel": {
+      "title": "Assistente Scooli",
+      "online": "Online",
+      "newConversation": "Nova conversa",
+      "minimize": "Minimizar conversa",
+      "inputPlaceholder": "Escreva uma mensagem...",
+      "aiDisclaimer": "A IA pode cometer erros. Revê sempre o conteúdo."
+    },
+    "emptyState": {
+      "title": "Assistente Scooli",
+      "description": "Estou aqui para te ajudar com ideias, dúvidas pedagógicas e orientação sobre a aplicação.",
+      "welcomeMessage": "Olá! 👋 Sou o Assistente Scooli.\n\nPosso ajudar-te com:\n- **Ideias** para atividades e aulas\n- **Dúvidas** sobre pedagogia e currículo\n- **Orientação** sobre como usar a Scooli\n\nEm que posso ajudar hoje?",
+      "quickActions": [
+        {
+          "label": "Ideias de atividades ✨",
+          "message": "Podes dar-me ideias de atividades para a minha aula?"
+        },
+        {
+          "label": "Sugestões para uma aula 📚",
+          "message": "Preciso de sugestões para planear uma aula."
+        },
+        {
+          "label": "Dúvidas sobre currículo ❓",
+          "message": "Tenho dúvidas sobre o currículo português."
+        },
+        {
+          "label": "Como criar um documento 📝",
+          "message": "Como posso criar um plano de aula na Scooli?"
+        }
+      ]
+    }
+  },
+  "community": {
+    "upgradePrompt": {
+      "title": "Biblioteca Comunitária",
+      "subtitle": "Partilhe e descubra recursos educacionais criados pela comunidade",
+      "lockedFeatureTitle": "Funcionalidade Pro",
+      "lockedFeatureDescription": "Aceda à Biblioteca Comunitária com uma subscrição Pro",
+      "upgradeButton": "Atualizar para Pro",
+      "reuseBenefitsTitle": "Para Professores que Reutilizam",
+      "reuseBenefits": [
+        "✅ Pesquisa por ano, disciplina e tipo de recurso",
+        "✅ Recursos alinhados com Aprendizagens Essenciais",
+        "✅ Reutilização instantânea com adaptação por IA",
+        "✅ Validação por pares (contadores de reutilização)",
+        "✅ Poupança de tempo: 20 minutos em vez de 60+"
+      ],
+      "shareBenefitsTitle": "Para Professores que Partilham",
+      "shareBenefits": [
+        "✅ Reconhecimento profissional visível",
+        "✅ Métricas de impacto: quantos reutilizaram",
+        "✅ Painel pessoal com estatísticas",
+        "✅ Ajudar outros professores e construir rede"
+      ],
+      "testimonialsTitle": "Experiências dos Professores",
+      "testimonial1Name": "Mariana, 2º ciclo",
+      "testimonial1Quote": "Finalmente encontro recursos alinhados com as Aprendizagens Essenciais. Poupo 2 horas todos os domingos!",
+      "testimonial2Name": "Ricardo, 3º ciclo",
+      "testimonial2Quote": "Ver que 47 professores reutilizaram os meus materiais dá-me reconhecimento profissional real.",
+      "ctaButton": "Começar com o Plano Pro",
+      "ctaSubtitle": "Aceda à Biblioteca Comunitária e transforme a sua preparação de aulas"
+    },
+    "moderationQueue": {
+      "reviewButton": "Rever",
+      "contributorPrefix": "Contribuidor: {name}",
+      "columnTitle": "Título",
+      "columnContributor": "Contribuidor",
+      "columnCurriculum": "Currículo",
+      "columnDate": "Data",
+      "columnActions": "Ações",
+      "emptyTitle": "Fila de moderação vazia",
+      "emptyDescription": "Não há recursos pendentes para revisão.",
+      "approved": "Recurso aprovado com sucesso!",
+      "rejected": "Recurso rejeitado",
+      "changesRequested": "Solicitadas alterações ao contribuidor",
+      "processError": "Erro ao processar moderação",
+      "heading": "Fila de Moderação",
+      "pendingCount": "{count} recursos pendentes",
+      "refresh": "Atualizar",
+      "reviewDialogTitle": "Rever Recurso",
+      "reviewDialogDescription": "Analise o recurso para conformidade curricular e qualidade pedagógica",
+      "infoHeading": "Informações",
+      "titleLabel": "Título:",
+      "contributorLabel": "Contribuidor:",
+      "submittedLabel": "Submetido:",
+      "curriculumHeading": "Currículo",
+      "descriptionHeading": "Descrição",
+      "contentHeading": "Conteúdo",
+      "feedbackHeading": "Feedback (Opcional)",
+      "feedbackPlaceholder": "Feedback para o contribuidor sobre o recurso...",
+      "requestChanges": "Solicitar Alterações",
+      "reject": "Rejeitar",
+      "approve": "Aprovar",
+      "processing": "Processando..."
+    },
+    "resourceCard": {
+      "resourceTypes": {
+        "lessonPlan": "Plano de Aula",
+        "test": "Teste",
+        "quiz": "Quiz",
+        "worksheet": "Ficha de Trabalho",
+        "presentation": "Apresentação",
+        "activity": "Atividade"
+      },
+      "preview": "Pré-visualizar",
+      "saved": "Guardado",
+      "saving": "A guardar...",
+      "use": "Usar"
+    },
+    "resourceGrid": {
+      "emptyTitle": "Nenhum recurso encontrado",
+      "emptyDescription": "Tente ajustar os filtros ou seja o primeiro a partilhar recursos desta categoria!",
+      "showingCount": "Mostrando {shown} de {total} recursos",
+      "previous": "Anterior",
+      "next": "Próximo"
+    },
+    "shareModal": {
+      "orgLibraryLabel": "Biblioteca de {name}",
+      "schoolLibraryLabel": "Biblioteca da escola",
+      "destinationAll": "Todas",
+      "destinationAllHint": "Partilhar com a comunidade e com a escola ao mesmo tempo.",
+      "destinationCommunity": "Biblioteca comunitaria",
+      "destinationCommunityHint": "Visivel para todos os professores na Scooli apos revisao.",
+      "destinationOrgHint": "So os colegas da escola vao ver este recurso.",
+      "cancel": "Cancelar",
+      "whereToShareTitle": "Onde quer partilhar?",
+      "whereToShareDescription": "Escolha o destino deste recurso. Pode partilhar com toda a comunidade, so com a escola, ou com ambas.",
+      "shareWithOrgTitle": "Partilhar com {name}",
+      "shareAllTitle": "Partilhar em todas as bibliotecas",
+      "shareCommunityTitle": "Partilhar com a Comunidade",
+      "shareWithOrgDescription": "Este recurso ficara disponivel para os membros de {name}.",
+      "shareAllDescription": "O recurso sera publicado na biblioteca da escola e submetido para revisao na biblioteca comunitaria.",
+      "shareCommunityDescription": "Partilhe o seu recurso educacional com outros professores portugueses. O recurso sera revisto antes da publicacao.",
+      "schoolFallback": "a escola",
+      "titleLabel": "Titulo",
+      "titlePlaceholder": "Ex: Revisao - Funcoes - 9 ano",
+      "titleRequired": "Titulo e obrigatorio",
+      "descriptionLabel": "Descricao",
+      "optional": "(opcional)",
+      "descriptionPlaceholder": "Breve descricao do recurso e como pode ser usado...",
+      "gradeLabel": "Ano escolar",
+      "gradeRequired": "Ano e obrigatorio",
+      "gradePlaceholder": "Selecionar ano",
+      "subjectLabel": "Disciplina",
+      "subjectRequired": "Disciplina e obrigatoria",
+      "subjectPlaceholder": "Selecionar disciplina",
+      "typeLabel": "Tipo",
+      "typeRequired": "Tipo de recurso e obrigatorio",
+      "typePlaceholder": "Selecionar tipo",
+      "contentRequired": "Conteudo e obrigatorio",
+      "orgLibraryHeading": "Biblioteca da escola",
+      "combinedShareHeading": "Partilha combinada",
+      "reviewProcessHeading": "Processo de revisao",
+      "orgBullets": [
+        "• O recurso fica disponivel imediatamente para a organizacao ativa",
+        "• So membros da escola vao conseguir ver e reutilizar",
+        "• Pode continuar a partilhar outro recurso na biblioteca comunitaria depois"
+      ],
+      "bothBullets": [
+        "• Fica disponivel imediatamente para os membros da escola",
+        "• Na comunidade, sera revisto pela equipa Scooli em 24-48h antes de publicar",
+        "• Recebe notificacao quando a versao publica for aprovada"
+      ],
+      "communityBullets": [
+        "• O recurso sera revisto pela nossa equipa em 24-48 horas",
+        "• Verificamos alinhamento com as AEs e qualidade pedagogica",
+        "• Recebera notificacao quando for aprovado",
+        "• Recursos aprovados podem ser reutilizados e adaptados por outros professores"
+      ],
+      "back": "Voltar",
+      "submitting": "A partilhar...",
+      "submitOrg": "Partilhar na escola",
+      "submitAll": "Partilhar em todas",
+      "submitCommunity": "Partilhar recurso",
+      "schoolFallbackPossessive": "a sua escola"
+    }
+  },
+  "feedback": {
+    "bugReport": {
+      "invalidImage": "{name} não é uma imagem válida.",
+      "tooLarge": "{name} excede o limite de 5MB.",
+      "uploadFailed": "Falha ao enviar o ficheiro {name}",
+      "submitSuccess": "Erro reportado com sucesso!",
+      "submitError": "Ocorreu um erro ao reportar o erro.",
+      "bugTypeLabel": "Tipo de erro",
+      "selectPlaceholder": "Selecione...",
+      "bugTypeUiVisual": "UI / Visual",
+      "bugTypePerformance": "Desempenho",
+      "bugTypeFunctionality": "Funcionalidade",
+      "bugTypeAuth": "Autenticação",
+      "bugTypeOther": "Outro",
+      "severityLabel": "Gravidade",
+      "severityLow": "Baixa",
+      "severityMedium": "Média",
+      "severityHigh": "Alta",
+      "severityCritical": "Crítica",
+      "titleLabel": "Título do erro",
+      "titlePlaceholder": "Ex: Botão de login não funciona",
+      "descriptionLabel": "O que aconteceu?",
+      "descriptionPlaceholder": "Descreva o erro em detalhe...",
+      "stepsLabel": "Passo a passo para reproduzir (Opcional)",
+      "stepsPlaceholder": "1. Aceder à página X\n2. Clicar no botão Y...",
+      "attachmentsLabel": "Anexos (capturas de ecrã)",
+      "dropHint": "Arraste capturas de ecrã ou clique para selecionar.",
+      "pasteHint": "Também pode colar imagens (Ctrl+V).",
+      "requiredFieldsNote": "* Campos obrigatórios",
+      "cancel": "Cancelar",
+      "submit": "Reportar Erro"
+    },
+    "suggestionForm": {
+      "invalidImage": "{name} não é uma imagem válida.",
+      "tooLarge": "{name} excede o limite de 5MB.",
+      "uploadFailed": "Falha ao enviar o ficheiro {name}",
+      "submitSuccess": "Sugestão enviada com sucesso!",
+      "submitError": "Ocorreu um erro ao enviar a sugestão.",
+      "categoryLabel": "Categoria",
+      "categoryPlaceholder": "Selecione uma categoria",
+      "categoryFeature": "Nova Funcionalidade",
+      "categoryImprovement": "Melhoria",
+      "categoryOther": "Outro",
+      "titleLabel": "Título da ideia",
+      "titlePlaceholder": "Ex: Adicionar modo escuro",
+      "descriptionLabel": "Descrição",
+      "descriptionPlaceholder": "Descreva a sua sugestão...",
+      "attachmentsLabel": "Anexos (Imagens, capturas de ecrã)",
+      "dropHint": "Arraste ficheiros ou clique para selecionar.",
+      "pasteHint": "Também pode colar imagens da área de transferência (Ctrl+V).",
+      "requiredFieldsNote": "Campos obrigatórios",
+      "cancel": "Cancelar",
+      "submit": "Enviar Sugestão"
+    },
+    "actionCards": {
+      "suggestionTitle": "Tem uma ideia?",
+      "suggestionDescription": "Compartilhe as suas sugestões para novas funcionalidades ou melhorias.",
+      "suggestionCta": "Enviar sugestão →",
+      "bugTitle": "Encontrou um erro?",
+      "bugDescription": "Reporte problemas técnicos ou erros que encontrou na plataforma.",
+      "bugCta": "Reportar erro →",
+      "suggestionModalTitle": "Enviar Sugestão",
+      "suggestionModalDescription": "Partilhe connosco as suas ideias para melhorar a plataforma.",
+      "bugModalTitle": "Reportar Erro",
+      "bugModalDescription": "Ajude-nos a corrigir erros fornecendo detalhes sobre o problema."
+    },
+    "history": {
+      "loadError": "Não foi possível carregar o histórico.",
+      "statusSubmitted": "Enviado",
+      "statusInReview": "Em Análise",
+      "statusInDevelopment": "Em Desenvolvimento",
+      "statusResolved": "Resolvido",
+      "statusRejected": "Rejeitado",
+      "heading": "O meu histórico",
+      "emptyState": "Ainda não enviou nenhum feedback.",
+      "teamResponseLabel": "Resposta da equipa"
+    },
+    "survey": {
+      "snoozeError": "Não foi possível adiar o pedido de feedback.",
+      "thankYou": "Obrigado pelo teu feedback.",
+      "submitError": "Não foi possível enviar o feedback.",
+      "sentimentVeryUseful": "Muito útil",
+      "sentimentVeryUsefulHint": "Está mesmo a ajudar-me no dia a dia.",
+      "sentimentUsefulCanImprove": "Útil, mas pode melhorar",
+      "sentimentUsefulCanImproveHint": "Já traz valor, mas ainda há margem para evoluir.",
+      "sentimentNotSure": "Ainda não percebi bem",
+      "sentimentNotSureHint": "Ainda estou a tentar encaixar a Scooli no meu fluxo.",
+      "sentimentFrustrating": "Está a ser frustrante",
+      "sentimentFrustratingHint": "Há obstáculos a impedir-me de aproveitar a plataforma.",
+      "tagSavesTime": "Poupa-me tempo",
+      "tagGoodContentQuality": "Os conteúdos são bons",
+      "tagEasyToUse": "É simples de usar",
+      "tagEasyToEdit": "Consigo editar facilmente",
+      "tagHasNeededDocTypes": "Tem os tipos de documento que preciso",
+      "tagQualityNotEnough": "Os resultados ainda não têm qualidade suficiente",
+      "tagPlatformConfusing": "A plataforma é confusa",
+      "tagTooSlow": "Está lenta",
+      "tagFoundBugs": "Encontrei erros",
+      "tagMissingFeatures": "Faltam funcionalidades",
+      "back": "Voltar",
+      "quickBadge": "Leva menos de 20 segundos",
+      "step1Title": "Como tem sido a tua experiência com a Scooli?",
+      "step2TitlePositive": "O que mais te tem ajudado?",
+      "step2TitleImprovement": "O que mais te está a bloquear?",
+      "step1Description": "A tua resposta ajuda-nos a perceber rapidamente o que está a funcionar e o que precisa de atenção.",
+      "step2DescriptionPositive": "Escolhe até 2 opções. Queremos perceber o que já está a gerar valor real.",
+      "step2DescriptionImprovement": "Escolhe até 2 opções. Queremos ir direto aos maiores pontos de fricção.",
+      "selectedCount": "Selecionadas: {count}/2",
+      "quickAnswer": "Resposta rápida",
+      "commentLabel": "Se quiser, diga-nos numa frase o que faria mais diferença.",
+      "commentPlaceholder": "Opcional",
+      "maybeLater": "Talvez mais tarde",
+      "sending": "A enviar...",
+      "sendFeedback": "Enviar feedback"
+    },
+    "featureCard": {
+      "ariaLabel": "Feedback sobre as Planificações e Turmas",
+      "dismissAriaLabel": "Agora não",
+      "prompt": "Como está a correr com as Planificações e as Turmas?",
+      "emojiFrustrating": "Podia ser melhor",
+      "emojiOk": "Está bem",
+      "emojiLove": "Adoro",
+      "commentPlaceholder": "Conta-nos mais (opcional) — o que ajudou, o que faltou…",
+      "dismiss": "Agora não",
+      "send": "Enviar"
+    },
+    "featureGate": {
+      "submitSuccess": "Obrigado pelo feedback!",
+      "submitError": "Não foi possível enviar o feedback. Tenta mais tarde."
     }
   }
 }

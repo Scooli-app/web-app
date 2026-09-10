@@ -94,6 +94,7 @@ import {
   Underline,
   Undo2,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -390,11 +391,12 @@ function makeMathElement(tex: string): CanvasMathElement {
 }
 
 function PresentationEditorLoadingState() {
+  const t = useTranslations("editor.blockEditor");
   return (
     <div className="flex min-h-[400px] w-full items-center justify-center">
       <div className="flex items-center gap-2">
         <Loader2 className="h-6 w-6 animate-spin text-primary" />
-        <span className="text-lg text-muted-foreground">A carregar apresentação...</span>
+        <span className="text-lg text-muted-foreground">{t("loadingPresentation")}</span>
       </div>
     </div>
   );
@@ -427,6 +429,8 @@ function getPresentSlideIndex(slides: CanvasSlide[], activeSlideId: string | nul
  * Component
  * -------------------------------------------------------------------------- */
 export function BlockDocumentEditor({ documentId }: Props) {
+  const t = useTranslations("editor.blockEditor");
+  const tChat = useTranslations("editor.aiChatPanel");
   const dispatch = useAppDispatch();
   const rawDocument = useAppSelector((s) => s.documents.currentDocument);
   const document = rawDocument?.id === documentId ? rawDocument : null;
@@ -821,13 +825,13 @@ export function BlockDocumentEditor({ documentId }: Props) {
     async (prompt: string) => {
       if (!document?.id) return;
 
-      const loadingToastId = toast.loading("A gerar imagem...");
+      const loadingToastId = toast.loading(t("generatingImage"));
       try {
         const result = await generateDocumentImageApi(document.id, prompt);
         toast.dismiss(loadingToastId);
 
         if (!result.newUrl) {
-          toast.error("A imagem ficou em processamento. Tenta novamente.");
+          toast.error(t("imageProcessingRetry"));
           return;
         }
 
@@ -845,13 +849,13 @@ export function BlockDocumentEditor({ documentId }: Props) {
           });
         }
 
-        toast.success("Imagem gerada com sucesso!");
+        toast.success(t("imageGenerated"));
       } catch (err) {
         toast.dismiss(loadingToastId);
-        toast.error(err instanceof Error ? err.message : "Erro ao gerar imagem");
+        toast.error(err instanceof Error ? err.message : t("imageGenError"));
       }
     },
-    [document?.id, imageModalReplacing, applyElementPatch, insertImageElement],
+    [document?.id, imageModalReplacing, applyElementPatch, insertImageElement, t],
   );
 
   /** Called from the floating change-image button on the Konva canvas. */
@@ -998,7 +1002,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
     if (!document?.id || !canvas) return;
 
     setIsGeneratingSlide(true);
-    const loadingToastId = toast.loading("A gerar slide...");
+    const loadingToastId = toast.loading(t("generatingSlide"));
 
     try {
       const response = await generateSlideApi(
@@ -1018,14 +1022,14 @@ export function BlockDocumentEditor({ documentId }: Props) {
       setGenerateSlideDialogOpen(false);
       setGenerateSlideTopic("");
       toast.dismiss(loadingToastId);
-      toast.success("Slide gerado com sucesso!");
+      toast.success(t("slideGenerated"));
     } catch (err) {
       toast.dismiss(loadingToastId);
-      toast.error(err instanceof Error ? err.message : "Erro ao gerar slide");
+      toast.error(err instanceof Error ? err.message : t("slideGenError"));
     } finally {
       setIsGeneratingSlide(false);
     }
-  }, [activeSlideId, canvas, document?.id, generateSlideTopic, insertGeneratedSlide]);
+  }, [activeSlideId, canvas, document?.id, generateSlideTopic, insertGeneratedSlide, t]);
 
   const deleteSlide = useCallback(
     (slideId: string) => {
@@ -1189,7 +1193,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
         if (slide && activeIdx !== -1) {
           const slideTitle = (slide.elements.find(
             (el) => el.type === "text" && (el as CanvasTextElement).role === "title",
-          ) as CanvasTextElement | undefined)?.text ?? "Sem título";
+          ) as CanvasTextElement | undefined)?.text ?? t("untitledSlide");
           const elemSummary = slide.elements
             .map((el) => {
               if (el.type === "text") return `[texto] "${(el as CanvasTextElement).text}"`;
@@ -1270,7 +1274,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
             ...prev,
             {
               role: "assistant",
-              content: response.chatAnswer ?? (canvasWasUpdated ? "Slide atualizado! ✓" : ""),
+              content: response.chatAnswer ?? (canvasWasUpdated ? t("slideUpdated") : ""),
             },
           ]);
         }
@@ -1280,19 +1284,19 @@ export function BlockDocumentEditor({ documentId }: Props) {
             ...prev,
             {
               role: "assistant",
-              content: "🖼️ O contexto visual do slide mudou. Queres que regenere a imagem para corresponder ao novo conteúdo?",
+              content: t("imageRegenOffer"),
               imageRegenOffer: true,
             },
           ]);
         }
       } catch (err) {
-        const msg = err instanceof Error ? err.message : "Erro na conversa com IA.";
+        const msg = err instanceof Error ? err.message : t("chatError");
         setChatError(msg);
       } finally {
         setIsChatting(false);
       }
     },
-    [dispatch, document?.id, pushHistory, canvas, activeSlideId],
+    [dispatch, document?.id, pushHistory, canvas, activeSlideId, t],
   );
 
   /** Marks all pending image-regen offers as resolved in chat history */
@@ -1316,7 +1320,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
       (el): el is CanvasImageElement => el.type === "image_placeholder"
     ) as CanvasImageElement | undefined;
     if (!imageEl) {
-      toast.error("Não encontrei uma imagem neste slide para regenerar.");
+      toast.error(t("noImageToRegen"));
       return;
     }
     try {
@@ -1331,7 +1335,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
         .join(" ") ?? "";
       const prompt = imageEl.prompt
         ? `${imageEl.prompt}. Contexto: ${textContent}`
-        : textContent || "ilustração educativa";
+        : textContent || t("defaultImagePrompt");
       let newUrl: string | null = null;
       if (imageEl.imageBackendId) {
         const result = await regenerateDocumentImageApi(document.id, imageEl.imageBackendId, prompt);
@@ -1354,14 +1358,14 @@ export function BlockDocumentEditor({ documentId }: Props) {
           };
         });
         setDirty(true);
-        toast.success("Imagem regenerada com sucesso!");
+        toast.success(t("imageRegenerated"));
       } else {
-        toast.info("A imagem está a ser processada. Atualiza a página em breve.");
+        toast.info(t("imageProcessing"));
       }
     } catch {
-      toast.error("Erro ao regenerar a imagem.");
+      toast.error(t("imageRegenError"));
     }
-  }, [resolveImageRegenOffers, document?.id, canvas, activeSlideId]);
+  }, [resolveImageRegenOffers, document?.id, canvas, activeSlideId, t]);
 
   /**
    * Fire a preset AI prompt for the selected element.
@@ -1532,10 +1536,10 @@ export function BlockDocumentEditor({ documentId }: Props) {
       const fileName = (document.title || "apresentacao")
         .replace(/[^a-z0-9À-ÿ\s\-]/gi, "").trim().replace(/\s+/g, "_");
       await pptx.writeFile({ fileName: `${fileName}.pptx` });
-      toast.success("PPTX exportado");
+      toast.success(t("pptxExported"));
     } catch (err) {
       console.error("PPTX export error:", err);
-      toast.error("Erro ao exportar PPTX.");
+      toast.error(t("pptxExportError"));
     } finally {
       setExporting(false);
     }
@@ -1711,10 +1715,10 @@ export function BlockDocumentEditor({ documentId }: Props) {
       a.click();
       window.document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      toast.success("PDF exportado");
+      toast.success(t("pdfExported"));
     } catch (err) {
       console.error("PDF export error:", err);
-      toast.error("Erro ao exportar PDF.");
+      toast.error(t("pdfExportError"));
     } finally {
       setExporting(false);
     }
@@ -1728,7 +1732,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
   if (!document) {
     return (
       <div className="flex h-[60vh] items-center justify-center text-muted-foreground">
-        Documento não encontrado.
+        {t("documentNotFound")}
       </div>
     );
   }
@@ -1744,8 +1748,8 @@ export function BlockDocumentEditor({ documentId }: Props) {
   if (document.status === "failed") {
     return (
       <div className="mx-auto max-w-md p-8 text-center">
-        <h2 className="text-lg font-semibold text-foreground">A geração falhou</h2>
-        <p className="mt-2 text-sm text-muted-foreground">Tenta criar a apresentação outra vez.</p>
+        <h2 className="text-lg font-semibold text-foreground">{t("generationFailedTitle")}</h2>
+        <p className="mt-2 text-sm text-muted-foreground">{t("generationFailedSubtitle")}</p>
       </div>
     );
   }
@@ -1756,10 +1760,10 @@ export function BlockDocumentEditor({ documentId }: Props) {
     return (
       <div className="mx-auto max-w-md p-8 text-center">
         <h2 className="text-lg font-semibold text-foreground">
-          Não foi possível carregar a apresentação
+          {t("loadFailedTitle")}
         </h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          O conteúdo não está em formato válido. Recarrega a página ou cria a apresentação novamente.
+          {t("loadFailedSubtitle")}
         </p>
       </div>
     );
@@ -1775,17 +1779,17 @@ export function BlockDocumentEditor({ documentId }: Props) {
           <p className="truncate text-sm font-semibold text-foreground">{document.title}</p>
           <p className="text-[10px] text-muted-foreground">
             {canvas.slides.length} slide{canvas.slides.length !== 1 ? "s" : ""}
-            {saveStatus === "saving" && " · A guardar…"}
-            {saveStatus === "saved" && " · Guardado ✓"}
-            {saveStatus === "idle" && dirty && " · Por guardar"}
+            {saveStatus === "saving" && ` · ${t("savingIndicator")}`}
+            {saveStatus === "saved" && ` · ${t("savedIndicator")}`}
+            {saveStatus === "idle" && dirty && ` · ${t("unsavedIndicator")}`}
           </p>
         </div>
 
         {/* Undo / Redo */}
-        <Button variant="ghost" size="icon" className="h-8 w-8" disabled={!canUndo} onClick={undo} title="Desfazer (Ctrl+Z)">
+        <Button variant="ghost" size="icon" className="h-8 w-8" disabled={!canUndo} onClick={undo} title={t("undoTooltip")}>
           <Undo2 className="h-4 w-4" />
         </Button>
-        <Button variant="ghost" size="icon" className="h-8 w-8" disabled={!canRedo} onClick={redo} title="Refazer (Ctrl+Y)">
+        <Button variant="ghost" size="icon" className="h-8 w-8" disabled={!canRedo} onClick={redo} title={t("redoTooltip")}>
           <Redo2 className="h-4 w-4" />
         </Button>
 
@@ -1798,10 +1802,10 @@ export function BlockDocumentEditor({ documentId }: Props) {
           className="h-8 gap-1.5"
           onClick={() => editorRef.current?.addText()}
           disabled={!activeSlide}
-          title="Adicionar caixa de texto"
+          title={t("addTextTooltip")}
         >
           <Plus className="h-3.5 w-3.5" />
-          Texto
+          {t("addTextLabel")}
         </Button>
 
         {/* Add image — opens the image picker modal */}
@@ -1810,11 +1814,11 @@ export function BlockDocumentEditor({ documentId }: Props) {
           size="sm"
           className="h-8 gap-1.5"
           disabled={!activeSlide}
-          title="Adicionar imagem"
+          title={t("addImageTooltip")}
           onClick={() => { setImageModalReplacing(false); setImageModalOpen(true); }}
         >
           <ImageIcon className="h-3.5 w-3.5" />
-          Imagem
+          {t("addImageLabel")}
         </Button>
 
         <DropdownMenu>
@@ -1824,25 +1828,25 @@ export function BlockDocumentEditor({ documentId }: Props) {
               size="sm"
               className="h-8 gap-1.5"
               disabled={!activeSlide}
-              title="Adicionar forma"
+              title={t("addShapeTooltip")}
             >
               <Shapes className="h-3.5 w-3.5" />
-              Formas
+              {t("shapesLabel")}
               <ChevronDown className="h-3 w-3 opacity-70" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-40">
             <DropdownMenuItem onClick={() => insertShapeElement("rect")} className="cursor-pointer gap-2">
               <Square className="h-4 w-4" />
-              Retângulo
+              {t("shapeRect")}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => insertShapeElement("ellipse")} className="cursor-pointer gap-2">
               <Circle className="h-4 w-4" />
-              Círculo
+              {t("shapeEllipse")}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => insertShapeElement("line")} className="cursor-pointer gap-2">
               <Minus className="h-4 w-4" />
-              Linha
+              {t("shapeLine")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -1853,11 +1857,11 @@ export function BlockDocumentEditor({ documentId }: Props) {
           size="sm"
           className="h-8 gap-1.5"
           disabled={!activeSlide}
-          title="Adicionar fórmula"
+          title={t("addFormulaTooltip")}
           onClick={() => { setEditingMathId(null); setFormulaModalOpen(true); }}
         >
           <Sigma className="h-3.5 w-3.5" />
-          Fórmula
+          {t("formulaLabel")}
         </Button>
 
         <div className="h-5 w-px bg-border" />
@@ -1872,7 +1876,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
                 {exporting
                   ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
                   : <Download className="h-3.5 w-3.5" />}
-                Exportar
+                {t("exportLabel")}
                 <ChevronDown className="h-3 w-3 opacity-70" />
               </Button>
             </DropdownMenuTrigger>
@@ -1883,7 +1887,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
                 className="cursor-pointer gap-2"
               >
                 <FileText className="h-4 w-4 text-blue-500" />
-                Exportar como PPTX
+                {t("exportPptx")}
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={handleExportPDF}
@@ -1891,7 +1895,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
                 className="cursor-pointer gap-2"
               >
                 <FileText className="h-4 w-4 text-red-500" />
-                Exportar como PDF
+                {t("exportPdf")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -1899,7 +1903,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
           <Link href={`${Routes.PRESENTATION_EDITOR.replace(":id", documentId)}/present?slide=${presentSlideIndex}`}>
             <Button variant="default" size="sm" className="h-8">
               <Play className="mr-1.5 h-3.5 w-3.5" />
-              Apresentar
+              {t("present")}
             </Button>
           </Link>
         </div>
@@ -1916,21 +1920,21 @@ export function BlockDocumentEditor({ documentId }: Props) {
             <>
               <Button
                 variant={selectedTextEl.fontStyle.includes("bold") ? "secondary" : "ghost"}
-                size="sm" className="h-7 w-7 p-0" title="Negrito (B)"
+                size="sm" className="h-7 w-7 p-0" title={t("boldTooltip")}
                 onClick={() => applyElementPatch({ fontStyle: toggleBold(selectedTextEl.fontStyle) })}
               >
                 <Bold className="h-3.5 w-3.5" />
               </Button>
               <Button
                 variant={selectedTextEl.fontStyle.includes("italic") ? "secondary" : "ghost"}
-                size="sm" className="h-7 w-7 p-0" title="Itálico (I)"
+                size="sm" className="h-7 w-7 p-0" title={t("italicTooltip")}
                 onClick={() => applyElementPatch({ fontStyle: toggleItalic(selectedTextEl.fontStyle) })}
               >
                 <Italic className="h-3.5 w-3.5" />
               </Button>
               <Button
                 variant={selectedTextEl.underline ? "secondary" : "ghost"}
-                size="sm" className="h-7 w-7 p-0" title="Sublinhado (U)"
+                size="sm" className="h-7 w-7 p-0" title={t("underlineTooltip")}
                 onClick={() => applyElementPatch({ underline: !selectedTextEl.underline })}
               >
                 <Underline className="h-3.5 w-3.5" />
@@ -1945,7 +1949,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
                     key={align}
                     variant={selectedTextEl.align === align ? "secondary" : "ghost"}
                     size="sm" className="h-7 w-7 p-0"
-                    title={align === "left" ? "Alinhar à esquerda" : align === "center" ? "Centrar" : "Alinhar à direita"}
+                    title={align === "left" ? t("alignLeftTooltip") : align === "center" ? t("alignCenterTooltip") : t("alignRightTooltip")}
                     onClick={() => applyElementPatch({ align })}
                   >
                     <Icon className="h-3.5 w-3.5" />
@@ -1956,12 +1960,12 @@ export function BlockDocumentEditor({ documentId }: Props) {
               <div className="mx-1 h-5 w-px bg-border" />
 
               {/* Font size */}
-              <Button variant="ghost" size="sm" className="h-7 w-7 p-0 font-bold" title="Diminuir tamanho"
+              <Button variant="ghost" size="sm" className="h-7 w-7 p-0 font-bold" title={t("decreaseSizeTooltip")}
                 onClick={() => applyElementPatch({ fontSize: Math.max(0.012, selectedTextEl.fontSize - 0.004) })}>−</Button>
               <span className="w-6 select-none text-center text-xs tabular-nums text-muted-foreground">
                 {Math.round(selectedTextEl.fontSize * 900)}
               </span>
-              <Button variant="ghost" size="sm" className="h-7 w-7 p-0 font-bold" title="Aumentar tamanho"
+              <Button variant="ghost" size="sm" className="h-7 w-7 p-0 font-bold" title={t("increaseSizeTooltip")}
                 onClick={() => applyElementPatch({ fontSize: Math.min(0.10, selectedTextEl.fontSize + 0.004) })}>+</Button>
 
               <div className="mx-1 h-5 w-px bg-border" />
@@ -1971,12 +1975,12 @@ export function BlockDocumentEditor({ documentId }: Props) {
                 className="h-7 rounded border border-border bg-background px-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
                 value={selectedTextEl.fontFamily ?? ""}
                 onChange={(e) => applyElementPatch({ fontFamily: e.target.value || undefined })}
-                title="Tipo de letra"
+                title={t("fontFamilyTooltip")}
                 style={{ fontFamily: selectedTextEl.fontFamily || "inherit", maxWidth: 110 }}
               >
                 {FONT_OPTIONS.map(({ label, value }) => (
                   <option key={value} value={value} style={{ fontFamily: value || "inherit" }}>
-                    {label}
+                    {value === "" ? t("fontDefault") : label}
                   </option>
                 ))}
               </select>
@@ -1989,7 +1993,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
                 onChange={(color) => applyElementPatch({ color })}
               >
                 <button
-                  title="Cor do texto"
+                  title={t("textColorTooltip")}
                   className="flex h-7 w-7 flex-col items-center justify-center rounded hover:bg-muted"
                 >
                   <span className="text-xs font-bold leading-none text-foreground">A</span>
@@ -2005,19 +2009,19 @@ export function BlockDocumentEditor({ documentId }: Props) {
               {/* AI quick-actions */}
               <Button
                 variant="ghost" size="sm" className="h-7 gap-1 text-xs text-primary"
-                title="Pede à IA para simplificar este texto"
-                onClick={() => sendAIAction(`Simplifica este texto de slide (responde só com o texto simplificado, sem introdução): "${selectedTextEl.text}"?`)}
+                title={t("simplifyTooltip")}
+                onClick={() => sendAIAction(t("simplifyPrompt", { text: selectedTextEl.text }))}
               >
                 <Sparkles className="h-3 w-3" />
-                Simplificar
+                {t("simplifyLabel")}
               </Button>
               <Button
                 variant="ghost" size="sm" className="h-7 gap-1 text-xs text-primary"
-                title="Pede à IA para expandir este texto"
-                onClick={() => sendAIAction(`Expande este texto de slide com mais detalhes (responde só com o texto expandido, sem introdução): "${selectedTextEl.text}"?`)}
+                title={t("expandTooltip")}
+                onClick={() => sendAIAction(t("expandPrompt", { text: selectedTextEl.text }))}
               >
                 <Sparkles className="h-3 w-3" />
-                Expandir
+                {t("expandLabel")}
               </Button>
             </>
           )}
@@ -2025,12 +2029,12 @@ export function BlockDocumentEditor({ documentId }: Props) {
           {/* LIST formatting */}
           {selectedListEl && (
             <>
-              <Button variant="ghost" size="sm" className="h-7 w-7 p-0 font-bold" title="Diminuir tamanho"
+              <Button variant="ghost" size="sm" className="h-7 w-7 p-0 font-bold" title={t("decreaseSizeTooltip")}
                 onClick={() => applyElementPatch({ fontSize: Math.max(0.012, selectedListEl.fontSize - 0.004) })}>−</Button>
               <span className="w-6 select-none text-center text-xs tabular-nums text-muted-foreground">
                 {Math.round(selectedListEl.fontSize * 900)}
               </span>
-              <Button variant="ghost" size="sm" className="h-7 w-7 p-0 font-bold" title="Aumentar tamanho"
+              <Button variant="ghost" size="sm" className="h-7 w-7 p-0 font-bold" title={t("increaseSizeTooltip")}
                 onClick={() => applyElementPatch({ fontSize: Math.min(0.10, selectedListEl.fontSize + 0.004) })}>+</Button>
 
               <div className="mx-1 h-5 w-px bg-border" />
@@ -2041,7 +2045,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
                 onChange={(color) => applyElementPatch({ color })}
               >
                 <button
-                  title="Cor do texto"
+                  title={t("textColorTooltip")}
                   className="flex h-7 w-7 flex-col items-center justify-center rounded hover:bg-muted"
                 >
                   <span className="text-xs font-bold leading-none text-foreground">A</span>
@@ -2053,24 +2057,24 @@ export function BlockDocumentEditor({ documentId }: Props) {
 
               <Button
                 variant="ghost" size="sm" className="h-7 gap-1 text-xs text-primary"
-                title="Pede à IA para melhorar esta lista"
-                onClick={() => sendAIAction(`Melhora estes itens de lista para apresentação (responde só com os itens melhorados, um por linha, sem introdução): ${selectedListEl.items.join(" | ")}?`)}
+                title={t("improveListTooltip")}
+                onClick={() => sendAIAction(t("improveListPrompt", { items: selectedListEl.items.join(" | ") }))}
               >
                 <Sparkles className="h-3 w-3" />
-                Melhorar lista
+                {t("improveListLabel")}
               </Button>
             </>
           )}
 
           {selectedShapeEl && (
             <>
-              <span className="text-xs text-muted-foreground">Preenchimento:</span>
+              <span className="text-xs text-muted-foreground">{t("fillLabel")}</span>
               <ColorPickerPopover
                 color={selectedShapeEl.fill || DEFAULT_SHAPE_FILL}
                 onChange={(fill) => applyElementPatch({ fill } as Partial<CanvasShapeElement>)}
               >
                 <button
-                  title="Cor de preenchimento"
+                  title={t("fillTooltip")}
                   className="flex h-7 w-9 items-center justify-center rounded border border-border hover:bg-muted"
                 >
                   <span
@@ -2082,13 +2086,13 @@ export function BlockDocumentEditor({ documentId }: Props) {
 
               <div className="mx-1 h-5 w-px bg-border" />
 
-              <span className="text-xs text-muted-foreground">Contorno:</span>
+              <span className="text-xs text-muted-foreground">{t("strokeLabel")}</span>
               <ColorPickerPopover
                 color={selectedShapeEl.stroke || DEFAULT_SHAPE_STROKE}
                 onChange={(stroke) => applyElementPatch({ stroke } as Partial<CanvasShapeElement>)}
               >
                 <button
-                  title="Cor do contorno"
+                  title={t("strokeTooltip")}
                   className="flex h-7 w-9 items-center justify-center rounded border border-border hover:bg-muted"
                 >
                   <span
@@ -2100,12 +2104,12 @@ export function BlockDocumentEditor({ documentId }: Props) {
 
               <div className="mx-1 h-5 w-px bg-border" />
 
-              <span className="text-xs text-muted-foreground">Espessura:</span>
+              <span className="text-xs text-muted-foreground">{t("thicknessLabel")}</span>
               <Button
                 variant="ghost"
                 size="sm"
                 className="h-7 w-7 p-0 font-bold"
-                title="Diminuir espessura"
+                title={t("decreaseThicknessTooltip")}
                 onClick={() =>
                   applyElementPatch({
                     strokeWidth: Math.max(0.001, (selectedShapeEl.strokeWidth ?? DEFAULT_SHAPE_STROKE_WIDTH) - 0.001),
@@ -2121,7 +2125,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
                 variant="ghost"
                 size="sm"
                 className="h-7 w-7 p-0 font-bold"
-                title="Aumentar espessura"
+                title={t("increaseThicknessTooltip")}
                 onClick={() =>
                   applyElementPatch({
                     strokeWidth: Math.min(0.05, (selectedShapeEl.strokeWidth ?? DEFAULT_SHAPE_STROKE_WIDTH) + 0.001),
@@ -2139,11 +2143,11 @@ export function BlockDocumentEditor({ documentId }: Props) {
               variant="ghost"
               size="sm"
               className="h-7 gap-1.5 text-xs"
-              title="Trocar imagem"
+              title={t("changeImage")}
               onClick={() => { setImageModalReplacing(true); setImageModalOpen(true); }}
             >
               <ImageIcon className="h-3.5 w-3.5" />
-              Trocar imagem
+              {t("changeImage")}
             </Button>
           )}
 
@@ -2158,7 +2162,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
               }}
             >
               <Trash2 className="h-3 w-3" />
-              Apagar
+              {t("delete")}
             </Button>
           </div>
         </>
@@ -2167,13 +2171,13 @@ export function BlockDocumentEditor({ documentId }: Props) {
       {/* Per-slide background picker — shown when nothing is selected */}
       {!selectedElement && activeSlide && (
         <>
-          <span className="text-xs text-muted-foreground">Fundo:</span>
+          <span className="text-xs text-muted-foreground">{t("backgroundLabel")}</span>
           <ColorPickerPopover
             color={activeSlide.background}
             onChange={patchSlideBackground}
           >
             <button
-              title="Cor de fundo do slide"
+              title={t("slideBackgroundTooltip")}
               className="flex h-7 w-9 items-center justify-center rounded border border-border hover:bg-muted"
             >
               <span
@@ -2184,10 +2188,10 @@ export function BlockDocumentEditor({ documentId }: Props) {
           </ColorPickerPopover>
           <Button
             variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground"
-            title="Aplicar esta cor de fundo a todos os slides"
+            title={t("applyBgToAllTooltip")}
             onClick={() => applyBgToAll(activeSlide.background)}
           >
-            Aplicar a todos
+            {t("applyToAll")}
           </Button>
         </>
       )}
@@ -2221,7 +2225,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
             <DropdownMenu open={addSlideMenuOpen} onOpenChange={setAddSlideMenuOpen}>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" className="w-full border-dashed text-xs">
-                  + Slide
+                  {t("addSlide")}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="center" className="w-48">
@@ -2231,7 +2235,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
                     addSlide();
                   }}
                 >
-                  Slide em branco
+                  {t("blankSlide")}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onSelect={() => {
@@ -2239,7 +2243,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
                     setGenerateSlideDialogOpen(true);
                   }}
                 >
-                  Gerar com IA
+                  {t("generateWithAI")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -2251,9 +2255,9 @@ export function BlockDocumentEditor({ documentId }: Props) {
           {activeSlide ? (
             <div className="relative flex w-full flex-1 min-h-0 flex-col items-center justify-center">
               <p className="mb-1 shrink-0 text-center text-xs text-muted-foreground">
-                Slide {activeSlideIdx + 1} / {canvas.slides.length}
+                {t("slideCounter", { current: activeSlideIdx + 1, total: canvas.slides.length })}
                 {selectedElement ? ` · ${selectedElement.type}` : ""}
-                {activeSlide.hidden ? " · oculto" : ""}
+                {activeSlide.hidden ? t("hiddenSuffix") : ""}
               </p>
               {/* Canvas with padding so the slide has breathing room */}
               <div className="flex w-full flex-1 min-h-0 items-center justify-center overflow-hidden p-4">
@@ -2282,7 +2286,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
               <div className="absolute bottom-3 right-3 flex items-center gap-1 rounded-lg border border-border bg-background/90 px-2 py-1 shadow-sm backdrop-blur-sm">
                 <button
                   type="button"
-                  title="Diminuir zoom"
+                  title={t("zoomOutTooltip")}
                   onClick={() => setZoom((z) => Math.max(ZOOM_MIN, parseFloat((z - 0.1).toFixed(2))))}
                   className="flex h-5 w-5 items-center justify-center rounded hover:bg-muted text-muted-foreground"
                 >
@@ -2296,11 +2300,11 @@ export function BlockDocumentEditor({ documentId }: Props) {
                   value={Math.round(zoom * 100)}
                   onChange={(e) => setZoom(parseFloat((Number(e.target.value) / 100).toFixed(2)))}
                   className="w-20 accent-primary cursor-pointer"
-                  title="Zoom"
+                  title={t("zoomTitle")}
                 />
                 <button
                   type="button"
-                  title="Aumentar zoom"
+                  title={t("zoomInTooltip")}
                   onClick={() => setZoom((z) => Math.min(ZOOM_MAX, parseFloat((z + 0.1).toFixed(2))))}
                   className="flex h-5 w-5 items-center justify-center rounded hover:bg-muted text-muted-foreground"
                 >
@@ -2309,7 +2313,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
                 <button
                   type="button"
                   onClick={() => setZoom(1.0)}
-                  title="Repor zoom"
+                  title={t("resetZoomTooltip")}
                   className="min-w-[2.5rem] text-center text-[11px] tabular-nums text-muted-foreground hover:text-foreground"
                 >
                   {Math.round(zoom * 100)}%
@@ -2317,7 +2321,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
               </div>
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">Nenhum slide selecionado</p>
+            <p className="text-sm text-muted-foreground">{t("noSlideSelected")}</p>
           )}
         </main>
 
@@ -2328,8 +2332,8 @@ export function BlockDocumentEditor({ documentId }: Props) {
             chatHistory={chatHistory}
             isStreaming={isChatting}
             error={chatError}
-            placeholder="Pede ajuda para melhorar a apresentação..."
-            title="Assistente de IA"
+            placeholder={t("chatPlaceholder")}
+            title={tChat("defaultTitle")}
             showGenerationHint={!isEntitlementLoading && !isPremium}
             sources={sources}
             onImageRegen={handleImageRegen}
@@ -2376,16 +2380,16 @@ export function BlockDocumentEditor({ documentId }: Props) {
       >
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Gerar com IA</DialogTitle>
+            <DialogTitle>{t("generateSlideDialogTitle")}</DialogTitle>
             <DialogDescription>
-              Indica um tema opcional. Se deixares em branco, a IA continua a apresentação de forma lógica.
+              {t("generateSlideDialogDescription")}
             </DialogDescription>
           </DialogHeader>
           <div className="px-6">
             <Input
               value={generateSlideTopic}
               onChange={(event) => setGenerateSlideTopic(event.target.value)}
-              placeholder="Tema do slide"
+              placeholder={t("slideTopicPlaceholder")}
               disabled={isGeneratingSlide}
             />
           </div>
@@ -2398,10 +2402,10 @@ export function BlockDocumentEditor({ documentId }: Props) {
               }}
               disabled={isGeneratingSlide}
             >
-              Cancelar
+              {t("cancel")}
             </Button>
             <Button onClick={() => void handleGenerateSlide()} disabled={isGeneratingSlide}>
-              {isGeneratingSlide ? "A gerar..." : "Gerar slide"}
+              {isGeneratingSlide ? t("generatingSlideButton") : t("generateSlideSubmit")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -2432,6 +2436,7 @@ function SlideItem({
   slide, index, isActive, isFirst, isLast, isOnly,
   onClick, onMoveUp, onMoveDown, onDelete, onDuplicate, onToggleHide,
 }: SlideItemProps) {
+  const t = useTranslations("editor.blockEditor");
   return (
     <div className="group relative cursor-pointer" onClick={onClick}>
       <SlideThumbnail slide={slide} index={index} isActive={isActive} onClick={onClick} />
@@ -2443,7 +2448,7 @@ function SlideItem({
             type="button"
             onClick={(e) => e.stopPropagation()}
             className="absolute right-1 top-1 rounded bg-black/50 p-0.5 text-white opacity-0 transition-opacity hover:bg-black/80 group-hover:opacity-100"
-            title="Ações do slide"
+            title={t("slideActionsTooltip")}
           >
             <MoreHorizontal className="h-3 w-3" />
           </button>
@@ -2451,26 +2456,26 @@ function SlideItem({
         <DropdownMenuContent side="right" align="start" className="w-44">
           <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDuplicate(); }}>
             <Copy className="mr-2 h-3.5 w-3.5" />
-            Duplicar
+            {t("duplicate")}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onToggleHide(); }}>
             {slide.hidden
-              ? <><Eye className="mr-2 h-3.5 w-3.5" />Mostrar na apresentação</>
-              : <><EyeOff className="mr-2 h-3.5 w-3.5" />Ocultar da apresentação</>}
+              ? <><Eye className="mr-2 h-3.5 w-3.5" />{t("showInPresentation")}</>
+              : <><EyeOff className="mr-2 h-3.5 w-3.5" />{t("hideFromPresentation")}</>}
           </DropdownMenuItem>
           <DropdownMenuItem
             disabled={isFirst}
             onClick={(e) => { e.stopPropagation(); onMoveUp(); }}
           >
             <ChevronUp className="mr-2 h-3.5 w-3.5" />
-            Mover para cima
+            {t("moveUp")}
           </DropdownMenuItem>
           <DropdownMenuItem
             disabled={isLast}
             onClick={(e) => { e.stopPropagation(); onMoveDown(); }}
           >
             <ChevronDown className="mr-2 h-3.5 w-3.5" />
-            Mover para baixo
+            {t("moveDown")}
           </DropdownMenuItem>
           {!isOnly && (
             <DropdownMenuItem
@@ -2478,7 +2483,7 @@ function SlideItem({
               className="text-destructive focus:text-destructive"
             >
               <Trash2 className="mr-2 h-3.5 w-3.5" />
-              Eliminar slide
+              {t("deleteSlide")}
             </DropdownMenuItem>
           )}
         </DropdownMenuContent>

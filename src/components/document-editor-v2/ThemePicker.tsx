@@ -20,6 +20,7 @@ import {
   type PresentationTheme,
 } from "@/shared/types/presentation-theme";
 import { Palette } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 
 interface Props {
@@ -28,6 +29,7 @@ interface Props {
 }
 
 export function ThemePicker({ currentThemeId, onSelect }: Props) {
+  const t = useTranslations("editor.themePicker");
   const [open, setOpen] = useState(false);
 
   const handleSelect = (themeId: string) => {
@@ -39,13 +41,13 @@ export function ThemePicker({ currentThemeId, onSelect }: Props) {
     <>
       <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
         <Palette className="mr-2 h-4 w-4" />
-        Tema
+        {t("themeButtonLabel")}
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-[640px]">
           <DialogHeader>
-            <DialogTitle>Escolher tema</DialogTitle>
+            <DialogTitle>{t("chooseThemeTitle")}</DialogTitle>
           </DialogHeader>
 
           <div className="grid grid-cols-4 gap-3 p-1 pb-2">

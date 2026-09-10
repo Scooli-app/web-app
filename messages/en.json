@@ -446,13 +446,34 @@
       "assessment": "Assessment"
     },
     "days": {
-      "mon": { "label": "Monday", "short": "Mon" },
-      "tue": { "label": "Tuesday", "short": "Tue" },
-      "wed": { "label": "Wednesday", "short": "Wed" },
-      "thu": { "label": "Thursday", "short": "Thu" },
-      "fri": { "label": "Friday", "short": "Fri" },
-      "sat": { "label": "Saturday", "short": "Sat" },
-      "sun": { "label": "Sunday", "short": "Sun" }
+      "mon": {
+        "label": "Monday",
+        "short": "Mon"
+      },
+      "tue": {
+        "label": "Tuesday",
+        "short": "Tue"
+      },
+      "wed": {
+        "label": "Wednesday",
+        "short": "Wed"
+      },
+      "thu": {
+        "label": "Thursday",
+        "short": "Thu"
+      },
+      "fri": {
+        "label": "Friday",
+        "short": "Fri"
+      },
+      "sat": {
+        "label": "Saturday",
+        "short": "Sat"
+      },
+      "sun": {
+        "label": "Sunday",
+        "short": "Sun"
+      }
     }
   },
   "dashboard": {
@@ -532,6 +553,711 @@
         "communityDescription": "Notifications when someone interacts with your resources",
         "comingSoon": "Coming soon"
       }
+    }
+  },
+  "editor": {
+    "aiChatPanel": {
+      "tabConversation": "Chat",
+      "tabSources": "Sources",
+      "sourcesTooltip": "This document was generated without using external sources.",
+      "emptyStateHeading": "How can I help today?",
+      "documentRefined": "Document Refined",
+      "imageRegenYes": "Yes, regenerate",
+      "imageRegenNo": "No",
+      "aiDisclaimer": "AI can make mistakes. Always review the content.",
+      "nudgeReady": "Document ready! Use the Assistant to refine or adapt the content.",
+      "nudgeClose": "Close",
+      "nudgeMobileTap": "Tap to improve the document with AI!",
+      "defaultPlaceholder": "Ask a question or ask for help...",
+      "defaultTitle": "AI Assistant",
+      "suggestions": {
+        "lessonPlan": [
+          {
+            "label": "Improve the structure ✏️",
+            "message": "Improve the structure and organization of the lesson."
+          },
+          {
+            "label": "Add hands-on activities 🎯",
+            "message": "Add hands-on, interactive activities to the lesson."
+          },
+          {
+            "label": "Simplify the language 🔤",
+            "message": "Simplify the language to make it more accessible to students."
+          },
+          {
+            "label": "Add assessment criteria 📋",
+            "message": "Add detailed assessment criteria."
+          }
+        ],
+        "quiz": [
+          {
+            "label": "Add more questions ➕",
+            "message": "Add 5 more questions to the quiz."
+          },
+          {
+            "label": "Increase the difficulty 🎯",
+            "message": "Increase the difficulty level of the questions."
+          },
+          {
+            "label": "Explain the answers 💡",
+            "message": "Add an explanation for each correct answer."
+          },
+          {
+            "label": "Vary the question types 🔄",
+            "message": "Vary the question types with true/false and short answer."
+          }
+        ],
+        "test": [
+          {
+            "label": "Add more exercises ➕",
+            "message": "Add more exercises to the test."
+          },
+          {
+            "label": "Increase the difficulty 🎯",
+            "message": "Increase the difficulty level of the questions."
+          },
+          {
+            "label": "Add point values 📊",
+            "message": "Add point values to each question in the test."
+          },
+          {
+            "label": "Improve the instructions 📋",
+            "message": "Improve the instructions for each section of the test."
+          }
+        ],
+        "worksheet": [
+          {
+            "label": "Add more exercises ➕",
+            "message": "Add more exercises to the worksheet."
+          },
+          {
+            "label": "Simplify the instructions 🔤",
+            "message": "Simplify the instructions to make them clearer."
+          },
+          {
+            "label": "Add worked examples 💡",
+            "message": "Add worked examples before the exercises."
+          },
+          {
+            "label": "Improve the conclusion 📝",
+            "message": "Improve the worksheet's closing section."
+          }
+        ],
+        "presentation": [
+          {
+            "label": "Add more slides ➕",
+            "message": "Add more slides to the presentation."
+          },
+          {
+            "label": "Improve the title slide ✏️",
+            "message": "Improve the title and introduction slide."
+          },
+          {
+            "label": "Add presenter notes 📋",
+            "message": "Add presenter notes to each slide."
+          },
+          {
+            "label": "Simplify the content 🔤",
+            "message": "Simplify the slide content to be more visual and direct."
+          }
+        ],
+        "default": [
+          {
+            "label": "Improve the introduction ✏️",
+            "message": "Improve the document's introduction."
+          },
+          {
+            "label": "Add more examples 📚",
+            "message": "Add more practical examples to the document."
+          },
+          {
+            "label": "Simplify the language 🔤",
+            "message": "Simplify the language to make it more accessible."
+          },
+          {
+            "label": "Add a conclusion 📝",
+            "message": "Add or improve the document's conclusion."
+          }
+        ]
+      }
+    },
+    "calendarButton": {
+      "steps": [
+        "Mapping curriculum competencies",
+        "Organizing content and pedagogical sequence",
+        "Setting assessments and criteria",
+        "Final pedagogical review"
+      ],
+      "viewClass": "View class",
+      "creating": "Creating...",
+      "createClass": "Create class",
+      "createFailed": "We couldn't create the class.",
+      "generationTitle": "Creating your class…",
+      "generationSubtitle": "Scooli is generating the topics and the pedagogical distribution. This can take up to a minute.",
+      "dialogTitle": "Create a class from this curriculum plan",
+      "dialogDescription": "Confirm the name — useful if you already have another class with the same subject and year.",
+      "nameLabel": "Name",
+      "classLabel": "Class (optional)",
+      "classPlaceholder": "E.g. A",
+      "cancel": "Cancel"
+    },
+    "documentEditor": {
+      "stepPreparingLabel": "Prepare",
+      "stepPreparingDescription": "Analyzing the curriculum and preparing the context",
+      "stepGeneratingLabel": "Draft",
+      "stepGeneratingDescription": "Generating the document with AI",
+      "stepReviewingLabel": "Review",
+      "stepReviewingDescription": "Evaluating the quality of the document",
+      "stepRevisedLabel": "Improvements",
+      "stepRevisedDescription": "Applying improvements to the document",
+      "defaultTitle": "New Document",
+      "loadingMessage": "Loading document...",
+      "importedSuccess": "Document imported successfully. You can now edit it or improve it with AI.",
+      "authError": "Authentication error",
+      "imageUnavailable": "Document unavailable for image upload.",
+      "invalidImageFile": "Select a valid image file.",
+      "imageTooLarge": "The image exceeds the 10MB limit.",
+      "imageUploadFailed": "We couldn't upload the image.",
+      "imageAdded": "Image added to the document.",
+      "imageGenDelayError": "Image generation finished with failures or delays in the stream.",
+      "documentNotFound": "Document not found",
+      "backToDocuments": "Back to documents",
+      "editorHeading": "Editor",
+      "proImagesLabel": "Pro Images",
+      "upgrade": "Upgrade",
+      "proTooltip": "Requires Scooli Pro: upgrade to generate automatic images",
+      "saving": "Saving...",
+      "saved": "Saved",
+      "chatErrorGeneric": "Something went wrong processing your message. Please try again later.",
+      "streamStartError": "Error starting the stream",
+      "imageTokenRepairWarning": "We detected and fixed internal image references in the document."
+    },
+    "documentTitle": {
+      "placeholder": "Document title...",
+      "defaultTitle": "Document",
+      "saving": "Saving...",
+      "saved": "Saved"
+    },
+    "shareButton": {
+      "needTitleContent": "The document must have a title and content to be shared",
+      "publishedToCommunity": "Resource published to the community library!",
+      "submittedForReview": "Resource submitted for review! You'll be notified within 24-48h.",
+      "shareErrorGeneric": "Error sharing resource",
+      "unshareIdentifyError": "We couldn't identify the document.",
+      "unshared": "Resource removed from the libraries.",
+      "unshareErrorGeneric": "We couldn't stop sharing the resource.",
+      "manageShareAriaLabel": "Manage sharing - {status}",
+      "statusPending": "Under review",
+      "statusPublished": "Published",
+      "changeDestination": "Change destination",
+      "stopSharing": "Stop sharing",
+      "unshareDialogTitle": "Stop sharing this resource?",
+      "unshareDialogDescription": "The resource will be removed from the libraries where it was shared. You can share it again later.",
+      "removing": "Removing...",
+      "sharing": "Sharing...",
+      "share": "Share"
+    },
+    "blockEditor": {
+      "fontDefault": "Default",
+      "loadingPresentation": "Loading presentation...",
+      "generatingImage": "Generating image...",
+      "imageProcessingRetry": "The image is still processing. Please try again.",
+      "imageGenerated": "Image generated successfully!",
+      "imageGenError": "Error generating image",
+      "generatingSlide": "Generating slide...",
+      "slideGenerated": "Slide generated successfully!",
+      "slideGenError": "Error generating slide",
+      "untitledSlide": "Untitled",
+      "slideUpdated": "Slide updated! ✓",
+      "imageRegenOffer": "🖼️ The slide's visual context changed. Want me to regenerate the image to match the new content?",
+      "chatError": "Error in the conversation with AI.",
+      "noImageToRegen": "I couldn't find an image on this slide to regenerate.",
+      "defaultImagePrompt": "educational illustration",
+      "imageRegenerated": "Image regenerated successfully!",
+      "imageProcessing": "The image is being processed. Refresh the page shortly.",
+      "imageRegenError": "Error regenerating the image.",
+      "pptxExportError": "Error exporting PPTX.",
+      "pptxExported": "PPTX exported",
+      "pdfExportError": "Error exporting PDF.",
+      "pdfExported": "PDF exported",
+      "documentNotFound": "Document not found.",
+      "generationFailedTitle": "Generation failed",
+      "generationFailedSubtitle": "Try creating the presentation again.",
+      "loadFailedTitle": "We couldn't load the presentation",
+      "loadFailedSubtitle": "The content isn't in a valid format. Reload the page or create the presentation again.",
+      "savingIndicator": "Saving…",
+      "savedIndicator": "Saved ✓",
+      "unsavedIndicator": "Unsaved",
+      "undoTooltip": "Undo (Ctrl+Z)",
+      "redoTooltip": "Redo (Ctrl+Y)",
+      "addTextTooltip": "Add text box",
+      "addTextLabel": "Text",
+      "addImageTooltip": "Add image",
+      "addImageLabel": "Image",
+      "addShapeTooltip": "Add shape",
+      "shapesLabel": "Shapes",
+      "shapeRect": "Rectangle",
+      "shapeEllipse": "Circle",
+      "shapeLine": "Line",
+      "addFormulaTooltip": "Add formula",
+      "formulaLabel": "Formula",
+      "exportLabel": "Export",
+      "exportPptx": "Export as PPTX",
+      "exportPdf": "Export as PDF",
+      "present": "Present",
+      "boldTooltip": "Bold (B)",
+      "italicTooltip": "Italic (I)",
+      "underlineTooltip": "Underline (U)",
+      "alignLeftTooltip": "Align left",
+      "alignCenterTooltip": "Center",
+      "alignRightTooltip": "Align right",
+      "decreaseSizeTooltip": "Decrease size",
+      "increaseSizeTooltip": "Increase size",
+      "fontFamilyTooltip": "Font",
+      "textColorTooltip": "Text color",
+      "simplifyTooltip": "Ask AI to simplify this text",
+      "simplifyLabel": "Simplify",
+      "expandTooltip": "Ask AI to expand this text",
+      "expandLabel": "Expand",
+      "improveListTooltip": "Ask AI to improve this list",
+      "improveListLabel": "Improve list",
+      "fillLabel": "Fill:",
+      "fillTooltip": "Fill color",
+      "strokeLabel": "Outline:",
+      "strokeTooltip": "Outline color",
+      "thicknessLabel": "Thickness:",
+      "decreaseThicknessTooltip": "Decrease thickness",
+      "increaseThicknessTooltip": "Increase thickness",
+      "changeImage": "Change image",
+      "delete": "Delete",
+      "backgroundLabel": "Background:",
+      "slideBackgroundTooltip": "Slide background color",
+      "applyBgToAllTooltip": "Apply this background color to all slides",
+      "applyToAll": "Apply to all",
+      "addSlide": "+ Slide",
+      "blankSlide": "Blank slide",
+      "generateWithAI": "Generate with AI",
+      "slideCounter": "Slide {current} / {total}",
+      "hiddenSuffix": " · hidden",
+      "zoomOutTooltip": "Zoom out",
+      "zoomInTooltip": "Zoom in",
+      "resetZoomTooltip": "Reset zoom",
+      "zoomTitle": "Zoom",
+      "chatPlaceholder": "Ask for help improving the presentation...",
+      "generateSlideDialogTitle": "Generate with AI",
+      "generateSlideDialogDescription": "Enter an optional topic. If you leave it blank, the AI continues the presentation logically.",
+      "slideTopicPlaceholder": "Slide topic",
+      "cancel": "Cancel",
+      "generateSlideSubmit": "Generate slide",
+      "generatingSlideButton": "Generating...",
+      "slideActionsTooltip": "Slide actions",
+      "duplicate": "Duplicate",
+      "showInPresentation": "Show in presentation",
+      "hideFromPresentation": "Hide from presentation",
+      "moveUp": "Move up",
+      "moveDown": "Move down",
+      "deleteSlide": "Delete slide",
+      "noSlideSelected": "No slide selected",
+      "simplifyPrompt": "Simplify this slide text (reply only with the simplified text, no intro): \"{text}\"?",
+      "expandPrompt": "Expand this slide text with more detail (reply only with the expanded text, no intro): \"{text}\"?",
+      "improveListPrompt": "Improve these list items for a presentation (reply only with the improved items, one per line, no intro): {items}?"
+    },
+    "slideKonvaEditor": {
+      "changeImage": "Change image",
+      "deleteElement": "Delete element",
+      "newTextDefault": "New text",
+      "loadingImage": "Loading image…",
+      "doubleClickToEditDescription": "Double-click to edit description"
+    },
+    "slideEditorView": {
+      "removeItem": "Remove item",
+      "itemPlaceholder": "Item {number}",
+      "addItem": "Add item",
+      "imageDescriptionPlaceholder": "Description of the image to generate",
+      "removeBlock": "Remove block",
+      "paragraphPlaceholder": "Paragraph",
+      "titlePlaceholder": "Title",
+      "subtitlePlaceholder": "Subtitle (optional)",
+      "conclusionTitlePlaceholder": "Conclusion title",
+      "conclusionLabel": "Conclusion"
+    },
+    "slideThumbnail": {
+      "slideAriaLabel": "Slide {number}"
+    },
+    "themePicker": {
+      "themeButtonLabel": "Theme",
+      "chooseThemeTitle": "Choose a theme"
+    },
+    "formulaModal": {
+      "groupFractions": "Fractions, powers and indices",
+      "groupRoots": "Roots",
+      "groupTrigLogs": "Trig and logs",
+      "groupBigOperators": "Big operators",
+      "groupBarsVectors": "Bars and vectors",
+      "groupRelations": "Relations",
+      "groupOperators": "Operators",
+      "groupGreek": "Greek",
+      "groupSetsLogic": "Sets and logic",
+      "groupNumberSets": "Number sets",
+      "editTitle": "Edit formula",
+      "addTitle": "Add formula",
+      "latexModeLabel": "LaTeX mode",
+      "latexModeHint": "Turn on to write plain LaTeX. Turn off for a simpler input.",
+      "formulaLabel": "Formula",
+      "formulaPlaceholderSimple": "E.g.: sin(x) + πr^2",
+      "formulaHint": "Use the palette to insert symbols at the cursor and confirm once the preview looks right.",
+      "previewLabel": "Preview",
+      "paletteLabel": "Symbol palette",
+      "paletteHint": "Each button inserts LaTeX directly into the field above.",
+      "cancel": "Cancel",
+      "save": "Save",
+      "add": "Add"
+    },
+    "imagePickerModal": {
+      "dialogTitle": "Add image",
+      "tabGenerate": "Generate with AI",
+      "tabUpload": "Upload",
+      "tabUrl": "By URL",
+      "describeImageLabel": "Describe the image",
+      "generatePlaceholder": "E.g. a pizza cut into 6 equal slices, colorful cartoon style for kids",
+      "generateHint": "Ctrl+Enter to generate",
+      "generateButton": "Generate image",
+      "uploadingFile": "Uploading {name}…",
+      "uploadHint": "Click or drag an image",
+      "uploadFormats": "PNG, JPG, WEBP up to 10 MB",
+      "uploadError": "Error uploading image",
+      "urlLabel": "Image URL",
+      "urlPlaceholder": "https://...",
+      "insertImage": "Insert image"
+    }
+  },
+  "blocks": {
+    "imageGenerating": "Image generating",
+    "conclusionLabel": "Conclusion",
+    "presentView": {
+      "prevSlideAriaLabel": "Previous slide",
+      "nextSlideAriaLabel": "Next slide",
+      "exitAriaLabel": "Exit presentation"
+    },
+    "generationProgress": {
+      "title": "Creating your presentation…",
+      "subtitle": "This takes about 30 to 60 seconds.",
+      "stepPreparingLabel": "Preparing",
+      "stepPreparingCaption": "Consulting the curriculum and putting the context together.",
+      "stepGeneratingLabel": "Generating",
+      "stepGeneratingCaption": "The AI is writing your slides.",
+      "stepReviewingLabel": "Reviewing",
+      "stepReviewingCaption": "Checking the structure and quality of the result.",
+      "imagesLabel": "Images"
+    }
+  },
+  "assistant": {
+    "panel": {
+      "title": "Scooli Assistant",
+      "online": "Online",
+      "newConversation": "New conversation",
+      "minimize": "Minimize conversation",
+      "inputPlaceholder": "Write a message...",
+      "aiDisclaimer": "AI can make mistakes. Always review the content."
+    },
+    "emptyState": {
+      "title": "Scooli Assistant",
+      "description": "I'm here to help you with ideas, teaching questions and guidance on using the app.",
+      "welcomeMessage": "Hi! 👋 I'm the Scooli Assistant.\n\nI can help you with:\n- **Ideas** for activities and lessons\n- **Questions** about teaching and the curriculum\n- **Guidance** on using Scooli\n\nWhat can I help with today?",
+      "quickActions": [
+        {
+          "label": "Activity ideas ✨",
+          "message": "Can you give me ideas for activities for my lesson?"
+        },
+        {
+          "label": "Suggestions for a lesson 📚",
+          "message": "I need suggestions for planning a lesson."
+        },
+        {
+          "label": "Curriculum questions ❓",
+          "message": "I have questions about the Portuguese curriculum."
+        },
+        {
+          "label": "How to create a document 📝",
+          "message": "How can I create a lesson plan in Scooli?"
+        }
+      ]
+    }
+  },
+  "community": {
+    "upgradePrompt": {
+      "title": "Community Library",
+      "subtitle": "Share and discover educational resources created by the community",
+      "lockedFeatureTitle": "Pro Feature",
+      "lockedFeatureDescription": "Access the Community Library with a Pro subscription",
+      "upgradeButton": "Upgrade to Pro",
+      "reuseBenefitsTitle": "For Teachers Who Reuse",
+      "reuseBenefits": [
+        "✅ Search by grade, subject and resource type",
+        "✅ Resources aligned with Aprendizagens Essenciais",
+        "✅ Instant reuse with AI adaptation",
+        "✅ Peer validation (reuse counters)",
+        "✅ Time savings: 20 minutes instead of 60+"
+      ],
+      "shareBenefitsTitle": "For Teachers Who Share",
+      "shareBenefits": [
+        "✅ Visible professional recognition",
+        "✅ Impact metrics: how many reused it",
+        "✅ Personal dashboard with statistics",
+        "✅ Help other teachers and build a network"
+      ],
+      "testimonialsTitle": "Teacher Experiences",
+      "testimonial1Name": "Mariana, 2nd cycle",
+      "testimonial1Quote": "I finally find resources aligned with Aprendizagens Essenciais. I save 2 hours every Sunday!",
+      "testimonial2Name": "Ricardo, 3rd cycle",
+      "testimonial2Quote": "Seeing that 47 teachers reused my materials gives me real professional recognition.",
+      "ctaButton": "Get started with the Pro Plan",
+      "ctaSubtitle": "Access the Community Library and transform your lesson preparation"
+    },
+    "moderationQueue": {
+      "reviewButton": "Review",
+      "contributorPrefix": "Contributor: {name}",
+      "columnTitle": "Title",
+      "columnContributor": "Contributor",
+      "columnCurriculum": "Curriculum",
+      "columnDate": "Date",
+      "columnActions": "Actions",
+      "emptyTitle": "Moderation queue is empty",
+      "emptyDescription": "There are no resources pending review.",
+      "approved": "Resource approved successfully!",
+      "rejected": "Resource rejected",
+      "changesRequested": "Changes requested from the contributor",
+      "processError": "Error processing moderation",
+      "heading": "Moderation Queue",
+      "pendingCount": "{count} resources pending",
+      "refresh": "Refresh",
+      "reviewDialogTitle": "Review Resource",
+      "reviewDialogDescription": "Review the resource for curriculum compliance and pedagogical quality",
+      "infoHeading": "Information",
+      "titleLabel": "Title:",
+      "contributorLabel": "Contributor:",
+      "submittedLabel": "Submitted:",
+      "curriculumHeading": "Curriculum",
+      "descriptionHeading": "Description",
+      "contentHeading": "Content",
+      "feedbackHeading": "Feedback (Optional)",
+      "feedbackPlaceholder": "Feedback for the contributor about the resource...",
+      "requestChanges": "Request Changes",
+      "reject": "Reject",
+      "approve": "Approve",
+      "processing": "Processing..."
+    },
+    "resourceCard": {
+      "resourceTypes": {
+        "lessonPlan": "Lesson Plan",
+        "test": "Test",
+        "quiz": "Quiz",
+        "worksheet": "Worksheet",
+        "presentation": "Presentation",
+        "activity": "Activity"
+      },
+      "preview": "Preview",
+      "saved": "Saved",
+      "saving": "Saving...",
+      "use": "Use"
+    },
+    "resourceGrid": {
+      "emptyTitle": "No resources found",
+      "emptyDescription": "Try adjusting the filters or be the first to share resources in this category!",
+      "showingCount": "Showing {shown} of {total} resources",
+      "previous": "Previous",
+      "next": "Next"
+    },
+    "shareModal": {
+      "orgLibraryLabel": "{name} library",
+      "schoolLibraryLabel": "School library",
+      "destinationAll": "All",
+      "destinationAllHint": "Share with the community and the school at the same time.",
+      "destinationCommunity": "Community library",
+      "destinationCommunityHint": "Visible to every teacher on Scooli after review.",
+      "destinationOrgHint": "Only your school colleagues will see this resource.",
+      "cancel": "Cancel",
+      "whereToShareTitle": "Where would you like to share?",
+      "whereToShareDescription": "Choose this resource's destination. You can share with the whole community, just the school, or both.",
+      "shareWithOrgTitle": "Share with {name}",
+      "shareAllTitle": "Share to all libraries",
+      "shareCommunityTitle": "Share with the Community",
+      "shareWithOrgDescription": "This resource will be available to {name}'s members.",
+      "shareAllDescription": "The resource will be published to the school library and submitted for review in the community library.",
+      "shareCommunityDescription": "Share your educational resource with other Portuguese teachers. The resource will be reviewed before publishing.",
+      "schoolFallback": "the school",
+      "titleLabel": "Title",
+      "titlePlaceholder": "E.g. Review - Functions - 9th grade",
+      "titleRequired": "Title is required",
+      "descriptionLabel": "Description",
+      "optional": "(optional)",
+      "descriptionPlaceholder": "Brief description of the resource and how it can be used...",
+      "gradeLabel": "School year",
+      "gradeRequired": "Year is required",
+      "gradePlaceholder": "Select year",
+      "subjectLabel": "Subject",
+      "subjectRequired": "Subject is required",
+      "subjectPlaceholder": "Select subject",
+      "typeLabel": "Type",
+      "typeRequired": "Resource type is required",
+      "typePlaceholder": "Select type",
+      "contentRequired": "Content is required",
+      "orgLibraryHeading": "School library",
+      "combinedShareHeading": "Combined sharing",
+      "reviewProcessHeading": "Review process",
+      "orgBullets": [
+        "• The resource is available immediately to the active organization",
+        "• Only school members will be able to see and reuse it",
+        "• You can still share another resource to the community library afterwards"
+      ],
+      "bothBullets": [
+        "• Available immediately to the school's members",
+        "• In the community, it will be reviewed by the Scooli team within 24-48h before publishing",
+        "• You'll get notified once the public version is approved"
+      ],
+      "communityBullets": [
+        "• The resource will be reviewed by our team within 24-48 hours",
+        "• We check alignment with the AEs and pedagogical quality",
+        "• You'll get notified once it's approved",
+        "• Approved resources can be reused and adapted by other teachers"
+      ],
+      "back": "Back",
+      "submitting": "Sharing...",
+      "submitOrg": "Share to school",
+      "submitAll": "Share to all",
+      "submitCommunity": "Share resource",
+      "schoolFallbackPossessive": "your school"
+    }
+  },
+  "feedback": {
+    "bugReport": {
+      "invalidImage": "{name} is not a valid image.",
+      "tooLarge": "{name} exceeds the 5MB limit.",
+      "uploadFailed": "Failed to upload file {name}",
+      "submitSuccess": "Bug reported successfully!",
+      "submitError": "Something went wrong reporting the bug.",
+      "bugTypeLabel": "Bug type",
+      "selectPlaceholder": "Select...",
+      "bugTypeUiVisual": "UI / Visual",
+      "bugTypePerformance": "Performance",
+      "bugTypeFunctionality": "Functionality",
+      "bugTypeAuth": "Authentication",
+      "bugTypeOther": "Other",
+      "severityLabel": "Severity",
+      "severityLow": "Low",
+      "severityMedium": "Medium",
+      "severityHigh": "High",
+      "severityCritical": "Critical",
+      "titleLabel": "Bug title",
+      "titlePlaceholder": "E.g. Login button doesn't work",
+      "descriptionLabel": "What happened?",
+      "descriptionPlaceholder": "Describe the bug in detail...",
+      "stepsLabel": "Steps to reproduce (Optional)",
+      "stepsPlaceholder": "1. Go to page X\n2. Click button Y...",
+      "attachmentsLabel": "Attachments (screenshots)",
+      "dropHint": "Drag screenshots or click to select.",
+      "pasteHint": "You can also paste images (Ctrl+V).",
+      "requiredFieldsNote": "* Required fields",
+      "cancel": "Cancel",
+      "submit": "Report Bug"
+    },
+    "suggestionForm": {
+      "invalidImage": "{name} is not a valid image.",
+      "tooLarge": "{name} exceeds the 5MB limit.",
+      "uploadFailed": "Failed to upload file {name}",
+      "submitSuccess": "Suggestion sent successfully!",
+      "submitError": "Something went wrong sending the suggestion.",
+      "categoryLabel": "Category",
+      "categoryPlaceholder": "Select a category",
+      "categoryFeature": "New Feature",
+      "categoryImprovement": "Improvement",
+      "categoryOther": "Other",
+      "titleLabel": "Idea title",
+      "titlePlaceholder": "E.g. Add dark mode",
+      "descriptionLabel": "Description",
+      "descriptionPlaceholder": "Describe your suggestion...",
+      "attachmentsLabel": "Attachments (Images, screenshots)",
+      "dropHint": "Drag files or click to select.",
+      "pasteHint": "You can also paste images from the clipboard (Ctrl+V).",
+      "requiredFieldsNote": "Required fields",
+      "cancel": "Cancel",
+      "submit": "Send Suggestion"
+    },
+    "actionCards": {
+      "suggestionTitle": "Have an idea?",
+      "suggestionDescription": "Share your suggestions for new features or improvements.",
+      "suggestionCta": "Send suggestion →",
+      "bugTitle": "Found a bug?",
+      "bugDescription": "Report technical issues or bugs you found on the platform.",
+      "bugCta": "Report bug →",
+      "suggestionModalTitle": "Send Suggestion",
+      "suggestionModalDescription": "Share your ideas with us to improve the platform.",
+      "bugModalTitle": "Report Bug",
+      "bugModalDescription": "Help us fix bugs by providing details about the issue."
+    },
+    "history": {
+      "loadError": "We couldn't load your history.",
+      "statusSubmitted": "Submitted",
+      "statusInReview": "In Review",
+      "statusInDevelopment": "In Development",
+      "statusResolved": "Resolved",
+      "statusRejected": "Rejected",
+      "heading": "My history",
+      "emptyState": "You haven't sent any feedback yet.",
+      "teamResponseLabel": "Team response"
+    },
+    "survey": {
+      "snoozeError": "We couldn't snooze the feedback request.",
+      "thankYou": "Thanks for your feedback.",
+      "submitError": "We couldn't submit the feedback.",
+      "sentimentVeryUseful": "Very useful",
+      "sentimentVeryUsefulHint": "It's really helping me day to day.",
+      "sentimentUsefulCanImprove": "Useful, but can improve",
+      "sentimentUsefulCanImproveHint": "It already brings value, but there's still room to grow.",
+      "sentimentNotSure": "Not sure yet",
+      "sentimentNotSureHint": "I'm still trying to fit Scooli into my workflow.",
+      "sentimentFrustrating": "It's frustrating",
+      "sentimentFrustratingHint": "There are obstacles keeping me from making the most of the platform.",
+      "tagSavesTime": "Saves me time",
+      "tagGoodContentQuality": "The content is good",
+      "tagEasyToUse": "It's simple to use",
+      "tagEasyToEdit": "I can edit it easily",
+      "tagHasNeededDocTypes": "It has the document types I need",
+      "tagQualityNotEnough": "The results aren't good enough quality yet",
+      "tagPlatformConfusing": "The platform is confusing",
+      "tagTooSlow": "It's slow",
+      "tagFoundBugs": "I found bugs",
+      "tagMissingFeatures": "Features are missing",
+      "back": "Back",
+      "quickBadge": "Takes less than 20 seconds",
+      "step1Title": "How has your experience with Scooli been?",
+      "step2TitlePositive": "What's helped you the most?",
+      "step2TitleImprovement": "What's holding you back the most?",
+      "step1Description": "Your answer helps us quickly understand what's working and what needs attention.",
+      "step2DescriptionPositive": "Choose up to 2 options. We want to understand what's already generating real value.",
+      "step2DescriptionImprovement": "Choose up to 2 options. We want to go straight to the biggest friction points.",
+      "selectedCount": "Selected: {count}/2",
+      "quickAnswer": "Quick answer",
+      "commentLabel": "If you'd like, tell us in a sentence what would make the biggest difference.",
+      "commentPlaceholder": "Optional",
+      "maybeLater": "Maybe later",
+      "sending": "Sending...",
+      "sendFeedback": "Send feedback"
+    },
+    "featureCard": {
+      "ariaLabel": "Feedback about Curriculum Plans and Classes",
+      "dismissAriaLabel": "Not now",
+      "prompt": "How's it going with Curriculum Plans and Classes?",
+      "emojiFrustrating": "Could be better",
+      "emojiOk": "It's okay",
+      "emojiLove": "Love it",
+      "commentPlaceholder": "Tell us more (optional) — what helped, what was missing…",
+      "dismiss": "Not now",
+      "send": "Send"
+    },
+    "featureGate": {
+      "submitSuccess": "Thanks for the feedback!",
+      "submitError": "We couldn't submit the feedback. Try again later."
     }
   }
 }

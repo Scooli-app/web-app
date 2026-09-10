@@ -22,6 +22,7 @@ import type { Document } from "@/shared/types/document";
 import { useAppDispatch } from "@/store/hooks";
 import { createTimetable, generateTopics } from "@/store/timetable/timetableSlice";
 import { CalendarPlus, Loader2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -32,15 +33,6 @@ interface CreateCalendarFromPlanButtonProps {
   disabled?: boolean;
   className?: string;
 }
-
-// Mirrors the calendar/novo wizard's loading copy — createTimetable + generateTopics
-// together take up to a minute, and the tiny button spinner gave no feedback.
-const CREATION_STEPS = [
-  "A mapear competências curriculares",
-  "A organizar conteúdos e sequência pedagógica",
-  "A definir avaliações e critérios",
-  "Revisão pedagógica final",
-] as const;
 
 /**
  * One-click "Criar turma" for a finished term-plan (Planificação) document.
@@ -55,6 +47,8 @@ export default function CreateCalendarFromPlanButton({
   disabled = false,
   className = "",
 }: CreateCalendarFromPlanButtonProps) {
+  const t = useTranslations("editor.calendarButton");
+  const CREATION_STEPS = t.raw("steps") as string[];
   const dispatch = useAppDispatch();
   const router = useRouter();
   const [existingTimetableId, setExistingTimetableId] = useState<string | null>(null);
@@ -93,7 +87,7 @@ export default function CreateCalendarFromPlanButton({
         className={`flex items-center gap-2 ${className}`}
       >
         <CalendarPlus className="h-4 w-4" />
-        <span className="hidden sm:inline">Ver turma</span>
+        <span className="hidden sm:inline">{t("viewClass")}</span>
       </Button>
     );
   }
@@ -141,7 +135,7 @@ export default function CreateCalendarFromPlanButton({
       toast.error(
         typeof result.payload === "string"
           ? result.payload
-          : "Não foi possível criar a turma."
+          : t("createFailed")
       );
       setIsCreating(false);
       return;
@@ -173,14 +167,14 @@ export default function CreateCalendarFromPlanButton({
         ) : (
           <CalendarPlus className="h-4 w-4" />
         )}
-        <span className="hidden sm:inline">{isCreating ? "A criar..." : "Criar turma"}</span>
+        <span className="hidden sm:inline">{isCreating ? t("creating") : t("createClass")}</span>
       </Button>
 
       {isCreating && (
         <div className="fixed inset-0 z-[130] flex items-center justify-center bg-background/95 backdrop-blur-sm">
           <GenerationProgress
-            title="A criar a tua turma…"
-            subtitle="A Scooli está a gerar os tópicos e a distribuição pedagógica. Pode demorar até um minuto."
+            title={t("generationTitle")}
+            subtitle={t("generationSubtitle")}
             steps={CREATION_STEPS}
             currentStep={creationStep}
           />
@@ -190,15 +184,15 @@ export default function CreateCalendarFromPlanButton({
       <Dialog open={isNameDialogOpen} onOpenChange={setIsNameDialogOpen}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>Criar turma a partir desta planificação</DialogTitle>
+            <DialogTitle>{t("dialogTitle")}</DialogTitle>
             <DialogDescription>
-              Confirma o nome — útil se já tiveres outra turma com a mesma disciplina e ano.
+              {t("dialogDescription")}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <Label>Nome</Label>
+              <Label>{t("nameLabel")}</Label>
               <Input
                 autoFocus
                 value={name}
@@ -207,9 +201,9 @@ export default function CreateCalendarFromPlanButton({
               />
             </div>
             <div className="space-y-1.5">
-              <Label>Turma (opcional)</Label>
+              <Label>{t("classLabel")}</Label>
               <Input
-                placeholder="Ex: A"
+                placeholder={t("classPlaceholder")}
                 value={classLabel}
                 onChange={(e) => setClassLabel(e.target.value)}
               />
@@ -218,10 +212,10 @@ export default function CreateCalendarFromPlanButton({
 
           <DialogFooter className="pt-2">
             <Button variant="ghost" onClick={() => setIsNameDialogOpen(false)}>
-              Cancelar
+              {t("cancel")}
             </Button>
             <Button onClick={handleCreate} disabled={!name.trim()}>
-              Criar turma
+              {t("createClass")}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -36,6 +36,7 @@ import {
   Share2,
   Trash2,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { memo, useCallback, useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { toast } from "sonner";
@@ -80,6 +81,7 @@ function ShareButtonComponent({
   sharedStatus,
   className = "",
 }: ShareButtonProps) {
+  const t = useTranslations("editor.shareButton");
   const dispatch = useAppDispatch();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
@@ -108,11 +110,11 @@ function ShareButtonComponent({
 
   const openShareModal = useCallback(() => {
     if (!title || !content) {
-      toast.error("Documento deve ter título e conteúdo para ser partilhado");
+      toast.error(t("needTitleContent"));
       return;
     }
     setIsModalOpen(true);
-  }, [title, content]);
+  }, [title, content, t]);
 
   const handleShareSubmit = useCallback(
     async (request: ShareResourceRequest) => {
@@ -140,27 +142,27 @@ function ShareButtonComponent({
           document_id: documentId,
         });
         if (result.status === "APPROVED") {
-          toast.success("Recurso publicado na biblioteca comunitária!");
+          toast.success(t("publishedToCommunity"));
         } else {
-          toast.success("Recurso submetido para revisão! Receberá notificação em 24-48h.");
+          toast.success(t("submittedForReview"));
         }
       } catch (error) {
         if (!(error instanceof UpgradeLimitError)) {
           posthog.captureException(error);
         }
         toast.error(
-          error instanceof Error ? error.message : "Erro ao partilhar recurso"
+          error instanceof Error ? error.message : t("shareErrorGeneric")
         );
       } finally {
         setIsSharing(false);
       }
     },
-    [dispatch, resourceType, grade, subject, documentId]
+    [dispatch, resourceType, grade, subject, documentId, t]
   );
 
   const handleUnshareConfirm = useCallback(async () => {
     if (!documentId) {
-      toast.error("Nao foi possivel identificar o documento.");
+      toast.error(t("unshareIdentifyError"));
       setIsUnshareConfirmOpen(false);
       return;
     }
@@ -181,7 +183,7 @@ function ShareButtonComponent({
         resource_type: resourceType,
         document_id: documentId,
       });
-      toast.success("Recurso removido das bibliotecas.");
+      toast.success(t("unshared"));
     } catch (error) {
       if (!(error instanceof UpgradeLimitError)) {
         posthog.captureException(error);
@@ -189,13 +191,13 @@ function ShareButtonComponent({
       toast.error(
         error instanceof Error
           ? error.message
-          : "Nao foi possivel deixar de partilhar o recurso."
+          : t("unshareErrorGeneric")
       );
     } finally {
       setIsUnsharing(false);
       setIsUnshareConfirmOpen(false);
     }
-  }, [dispatch, documentId, resourceType]);
+  }, [dispatch, documentId, resourceType, t]);
 
   // If community library feature is disabled, hide the button entirely
   if (!isCommunityEnabled) {
@@ -232,9 +234,9 @@ function ShareButtonComponent({
         }
       }}
       onConfirm={handleUnshareConfirm}
-      title="Deixar de partilhar este recurso?"
-      description="O recurso sera removido das bibliotecas onde foi partilhado. Pode voltar a partilhar mais tarde."
-      confirmLabel={isUnsharing ? "A remover..." : "Deixar de partilhar"}
+      title={t("unshareDialogTitle")}
+      description={t("unshareDialogDescription")}
+      confirmLabel={isUnsharing ? t("removing") : t("stopSharing")}
       variant="danger"
     />
   );
@@ -246,7 +248,7 @@ function ShareButtonComponent({
     ) : (
       <CheckCircle2 className="h-4 w-4" />
     );
-    const statusLabel = isPending ? "Em revisao" : "Publicado";
+    const statusLabel = isPending ? t("statusPending") : t("statusPublished");
     const statusClasses = isPending
       ? "text-amber-700 border-amber-300 bg-amber-50 hover:bg-amber-100 hover:text-amber-800 dark:bg-amber-950/30 dark:border-amber-800 dark:text-amber-400 dark:hover:bg-amber-950/50"
       : "text-green-700 border-green-300 bg-green-50 hover:bg-green-100 hover:text-green-800 dark:bg-green-950/30 dark:border-green-800 dark:text-green-400 dark:hover:bg-green-950/50";
@@ -260,7 +262,7 @@ function ShareButtonComponent({
               size="sm"
               disabled={isUnsharing}
               className={`flex items-center gap-2 ${statusClasses} ${className}`}
-              aria-label={`Gerir partilha - ${statusLabel}`}
+              aria-label={t("manageShareAriaLabel", { status: statusLabel })}
             >
               {statusIcon}
               <span className="hidden sm:inline">{statusLabel}</span>
@@ -281,7 +283,7 @@ function ShareButtonComponent({
               className="gap-2"
             >
               <Pencil className="h-4 w-4" />
-              <span>Alterar destino</span>
+              <span>{t("changeDestination")}</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
@@ -293,7 +295,7 @@ function ShareButtonComponent({
               className="gap-2 text-destructive focus:text-destructive"
             >
               <Trash2 className="h-4 w-4" />
-              <span>Deixar de partilhar</span>
+              <span>{t("stopSharing")}</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -318,7 +320,7 @@ function ShareButtonComponent({
       >
         <Share2 className="h-4 w-4" />
         <span className="hidden sm:inline">
-          {isSharing ? "A partilhar..." : "Partilhar"}
+          {isSharing ? t("sharing") : t("share")}
         </span>
       </Button>
 

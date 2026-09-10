@@ -18,6 +18,7 @@ import type {
   CanvasSlide,
   CanvasTextElement,
 } from "@/shared/types/canvas-presentation";
+import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 import { Ellipse, Image as KonvaImage, Layer, Line, Rect, Stage, Text } from "react-konva";
 
@@ -55,6 +56,7 @@ interface Props {
 }
 
 export function SlideThumbnail({ slide, index, isActive, onClick, w = THUMB_W, h = THUMB_H, showIndex = true, ringOffset = "ring-offset-sidebar" }: Props) {
+  const t = useTranslations("editor.slideThumbnail");
   /* Image cache: url → loaded HTMLImageElement | "loading" */
   const imgCacheRef = useRef<Record<string, HTMLImageElement | "loading">>({});
   const [, setImgRevision] = useState(0);
@@ -81,7 +83,7 @@ export function SlideThumbnail({ slide, index, isActive, onClick, w = THUMB_W, h
     <button
       type="button"
       onClick={onClick}
-      aria-label={`Slide ${index + 1}`}
+      aria-label={t("slideAriaLabel", { number: index + 1 })}
       className={`group relative overflow-hidden rounded transition-all outline-none ${
         isActive
           ? `ring-2 ring-primary ring-offset-2 ${ringOffset}`
