@@ -63,6 +63,7 @@ export function UploadDocumentModal({
   onClose,
 }: UploadDocumentModalProps) {
   const t = useTranslations("modals.uploadDocument");
+  const tEnums = useTranslations("enums");
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState("");
   const [documentType, setDocumentType] = useState<DocumentType | "">("");
@@ -379,7 +380,7 @@ export function UploadDocumentModal({
                   <SelectContent>
                     {availableDocumentTypes.map((type) => (
                       <SelectItem key={type.id} value={type.id}>
-                        {type.title}
+                        {tEnums(`documentType.${type.id}`)}
                       </SelectItem>
                     ))}
                   </SelectContent>
