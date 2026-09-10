@@ -1,4 +1,5 @@
 "use client";
+import { AiDisclaimer } from "@/components/ui/ai-disclaimer";
 
 import { ChatInput, ChatMessage, TypingIndicator } from "@/components/chat";
 import { Button } from "@/components/ui/button";
@@ -196,9 +197,7 @@ export function AssistantPanel({
           showGenerationHint={showGenerationHint}
           placeholder={t("inputPlaceholder")}
         />
-        <p className="mt-2 text-center text-[11px] leading-4 text-muted-foreground/70">
-          {t("aiDisclaimer")}
-        </p>
+        <AiDisclaimer className="mt-2" />
       </div>
     </div>
   );

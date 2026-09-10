@@ -1,4 +1,5 @@
 "use client";
+import { AiDisclaimer } from "@/components/ui/ai-disclaimer";
 
 import { useAuth } from "@clerk/nextjs";
 import Link from "next/link";
@@ -857,6 +858,7 @@ function CalendarPageInner() {
             </DropdownMenu>
 
             {pendingThisWeek > 0 && (
+              <div className="flex shrink-0 flex-col items-end gap-0.5">
               <Button
                 size="sm"
                 className="h-7 shrink-0 gap-1 px-2 text-xs"
@@ -870,6 +872,8 @@ function CalendarPageInner() {
                 )}
                 Gerar ({pendingThisWeek})
               </Button>
+                <AiDisclaimer variant="compact" />
+              </div>
             )}
           </div>
 
@@ -919,6 +923,7 @@ function CalendarPageInner() {
             </Button>
 
             {pendingThisWeek > 0 && (
+              <div className="flex flex-col items-end gap-0.5">
               <Button
                 size="sm"
                 className="h-8"
@@ -934,6 +939,8 @@ function CalendarPageInner() {
                 )}
                 Gerar semana ({pendingThisWeek})
               </Button>
+                <AiDisclaimer variant="compact" />
+              </div>
             )}
           </div>
 

@@ -1,4 +1,5 @@
 "use client";
+import { AiDisclaimer } from "@/components/ui/ai-disclaimer";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -341,6 +342,7 @@ export default function CalendarViewPage() {
         </div>
 
         {pendingThisWeek > 0 && (
+          <div className="flex flex-col items-end gap-0.5">
           <Button
             size="sm"
             onClick={handleGenerateWeek}
@@ -353,6 +355,8 @@ export default function CalendarViewPage() {
             )}
             Gerar semana ({pendingThisWeek})
           </Button>
+            <AiDisclaimer variant="compact" />
+          </div>
         )}
       </div>
 

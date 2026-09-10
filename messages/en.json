@@ -20,7 +20,9 @@
       "title": "Sidebar",
       "mobileDescription": "Shows the sidebar on mobile devices.",
       "toggle": "Toggle sidebar"
-    }
+    },
+    "aiDisclaimer": "AI can make mistakes. Always review the content.",
+    "aiDisclaimerShort": "AI can make mistakes."
   },
   "language": {
     "interface": {
@@ -200,7 +202,6 @@
     "createPrefix": "Create",
     "creatingDocumentLong": "Creating document...",
     "creatingDocumentShort": "Creating...",
-    "aiDisclaimer": "AI can make mistakes. Always review the content.",
     "requiredFields": "Required fields",
     "types": {
       "lessonPlan": {
@@ -606,7 +607,6 @@
       "documentRefined": "Document Refined",
       "imageRegenYes": "Yes, regenerate",
       "imageRegenNo": "No",
-      "aiDisclaimer": "AI can make mistakes. Always review the content.",
       "nudgeReady": "Document ready! Use the Assistant to refine or adapt the content.",
       "nudgeClose": "Close",
       "nudgeMobileTap": "Tap to improve the document with AI!",
@@ -1026,8 +1026,7 @@
       "online": "Online",
       "newConversation": "New conversation",
       "minimize": "Minimize conversation",
-      "inputPlaceholder": "Write a message...",
-      "aiDisclaimer": "AI can make mistakes. Always review the content."
+      "inputPlaceholder": "Write a message..."
     },
     "emptyState": {
       "title": "Scooli Assistant",
@@ -1196,6 +1195,26 @@
       "submitAll": "Share to all",
       "submitCommunity": "Share resource",
       "schoolFallbackPossessive": "your school"
+    },
+    "page": {
+      "title": "Community Library",
+      "description": "Discover and share teaching resources created by teachers in Portugal",
+      "myDashboard": "My dashboard",
+      "share": "Share",
+      "createNew": "Create new",
+      "generalLibrary": "General library",
+      "schoolLibraryFallback": "School library",
+      "resourcesAvailable": "resources available",
+      "internalShares": "Internal shares from {org}",
+      "schoolFallback": "your school",
+      "teacherCommunity": "A community of teachers in Portugal",
+      "alignedResources": "Resources aligned with the Aprendizagens Essenciais",
+      "reuseSuccess": "Added to your documents",
+      "reuseError": "Couldn't reuse this resource",
+      "previewComingSoon": "Preview coming soon",
+      "shareOrgSuccess": "Resource shared with your school library.",
+      "shareCommunitySuccess": "Resource submitted for review — you'll be notified within 24–48 hours.",
+      "shareError": "Couldn't share this resource"
     }
   },
   "feedback": {

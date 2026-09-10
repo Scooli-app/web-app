@@ -1,4 +1,5 @@
 "use client";
+import { AiDisclaimer } from "@/components/ui/ai-disclaimer";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -289,7 +290,8 @@ function ChatContent({
                     </div>
                   )}
                   {message.imageRegenOffer && !message.imageRegenResolved && onImageRegen && (
-                    <div className="mt-2 pt-2 border-t border-border/30 flex gap-2">
+                    <div className="mt-2 pt-2 border-t border-border/30">
+                      <div className="flex gap-2">
                       <button
                         onClick={onImageRegen}
                         className="px-3 py-1 rounded-lg text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
@@ -302,6 +304,8 @@ function ChatContent({
                       >
                         {t("imageRegenNo")}
                       </button>
+                    </div>
+                    <AiDisclaimer variant="compact" className="mt-1.5 text-left" />
                     </div>
                   )}
                 </div>
@@ -364,14 +368,7 @@ function ChatContent({
                 )}
               </Button>
             </form>
-            <p
-              className={cn(
-                "text-center text-[11px] leading-4 text-muted-foreground/70",
-                isDesktop ? "mb-4" : "mb-2",
-              )}
-            >
-              {t("aiDisclaimer")}
-            </p>
+            <AiDisclaimer className={isDesktop ? "mb-4" : "mb-2"} />
           </>
         ) : (
           <div className="flex-1 min-h-0 pb-6 animate-in fade-in slide-in-from-right-4 duration-300">

@@ -1,4 +1,5 @@
 "use client";
+import { AiDisclaimer } from "@/components/ui/ai-disclaimer";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -343,6 +344,7 @@ export default function CurriculumPlanImportPage() {
                 Importar
               </Button>
             </div>
+            <AiDisclaimer className="text-right" />
           </CardContent>
         </Card>
       )}

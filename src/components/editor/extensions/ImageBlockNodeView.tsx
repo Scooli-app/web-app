@@ -1,3 +1,4 @@
+import { AiDisclaimer } from "@/components/ui/ai-disclaimer";
 import { NodeViewWrapper, type NodeViewProps } from "@tiptap/react";
 import { Loader2, Minus, Plus, RefreshCcw, Trash2 } from "lucide-react";
 import { useAppDispatch, useAppSelector, selectEditorState } from "@/store/hooks";
@@ -285,6 +286,7 @@ export default function ImageBlockNodeView({ node, deleteNode, editor, getPos, u
               <Trash2 className="h-4 w-4" /> Remover
             </button>
           </div>
+          {canRegenerate && <AiDisclaimer className="mt-3" />}
         </div>
       </NodeViewWrapper>
     );
@@ -316,6 +318,7 @@ export default function ImageBlockNodeView({ node, deleteNode, editor, getPos, u
               <Trash2 className="h-4 w-4" /> Remover
             </button>
           </div>
+          {canRegenerate && <AiDisclaimer className="mt-3" />}
         </div>
       </NodeViewWrapper>
     );
@@ -401,6 +404,7 @@ export default function ImageBlockNodeView({ node, deleteNode, editor, getPos, u
           >
             <Plus className="h-4 w-4" />
           </button>
+          {canRegenerate && <AiDisclaimer variant="compact" className="self-center" />}
           {canRegenerate && (
             <button
               onClick={handleRegenerate}

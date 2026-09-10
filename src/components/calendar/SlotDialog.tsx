@@ -1,4 +1,5 @@
 "use client";
+import { AiDisclaimer } from "@/components/ui/ai-disclaimer";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -369,6 +370,7 @@ export function SlotDialog({
         {/* Footer actions */}
         {!isHoliday && (
           <DialogFooter className="border-t bg-muted/30 px-6 py-4 gap-2">
+            {(canGenerate || isCompleted) && <AiDisclaimer className="sm:mr-auto sm:self-center sm:text-left" />}
             {canGenerate && (
               <Button
                 onClick={() => onGenerate(slot, customMessage || undefined)}

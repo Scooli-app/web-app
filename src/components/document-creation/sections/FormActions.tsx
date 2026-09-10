@@ -1,4 +1,5 @@
-﻿import { Button } from "@/components/ui/button";
+﻿import { AiDisclaimer } from "@/components/ui/ai-disclaimer";
+import { Button } from "@/components/ui/button";
 import { GenerationCostHint } from "@/components/ui/generation-cost-hint";
 import { Loader2, Sparkles } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -59,9 +60,7 @@ export function FormActions({
             </>
           )}
         </Button>
-        <p className="text-center text-[11px] leading-4 text-muted-foreground/70">
-          {t("aiDisclaimer")}
-        </p>
+        <AiDisclaimer />
         <p className="text-center text-xs sm:text-sm text-muted-foreground">
           <span className="text-destructive">*</span> {t("requiredFields")}
         </p>

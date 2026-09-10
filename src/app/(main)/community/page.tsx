@@ -41,12 +41,14 @@ import {
   selectWorkspaceContext,
 } from "@/store/workspace/selectors";
 import { BarChart3, Plus, Users } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import posthog from "posthog-js";
 
 function CommunityLibraryPage() {
+  const t = useTranslations("community.page");
   const dispatch = useAppDispatch();
   const router = useRouter();
 
@@ -108,17 +110,17 @@ function CommunityLibraryPage() {
     try {
       await dispatch(reuseSharedResource({ resourceId })).unwrap();
       posthog.capture("community_resource_reused", { resource_id: resourceId });
-      toast.success("Adicionado aos seus documentos com sucesso");
+      toast.success(t("reuseSuccess"));
     } catch (error) {
       posthog.captureException(error);
       toast.error(
-        error instanceof Error ? error.message : "Erro ao reutilizar recurso",
+        error instanceof Error ? error.message : t("reuseError"),
       );
     }
   };
 
   const handlePreview = (_resourceId: string) => {
-    toast.info("Pre-visualizacao em breve disponivel");
+    toast.info(t("previewComingSoon"));
   };
 
   const handleShareResource = async (request: ShareResourceRequest) => {
@@ -127,12 +129,12 @@ function CommunityLibraryPage() {
       setIsShareModalOpen(false);
       toast.success(
         activeScope === "organization"
-          ? "Recurso partilhado com a biblioteca da escola."
-          : "Recurso submetido para revisao! Recebera notificacao em 24-48h.",
+          ? t("shareOrgSuccess")
+          : t("shareCommunitySuccess"),
       );
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Erro ao partilhar recurso",
+        error instanceof Error ? error.message : t("shareError"),
       );
     }
   };
@@ -146,7 +148,7 @@ function CommunityLibraryPage() {
         className="w-full sm:w-auto"
       >
         <BarChart3 className="mr-2 h-4 w-4" />
-        Meu Dashboard
+        {t("myDashboard")}
       </Button>
       <Button
         onClick={() => setIsShareModalOpen(true)}
@@ -155,7 +157,7 @@ function CommunityLibraryPage() {
         className="w-full sm:w-auto"
       >
         <Users className="mr-2 h-4 w-4" />
-        Partilhar
+        {t("share")}
       </Button>
       <Button
         onClick={() => router.push("/lesson-plan")}
@@ -163,7 +165,7 @@ function CommunityLibraryPage() {
         className="w-full sm:w-auto"
       >
         <Plus className="mr-2 h-4 w-4" />
-        Criar Novo
+        {t("createNew")}
       </Button>
     </>
   );
@@ -172,8 +174,8 @@ function CommunityLibraryPage() {
     <PageContainer size="7xl" contentClassName="py-1 sm:py-2">
       <div className="space-y-5 sm:space-y-6">
         <PageHeader
-          title="Biblioteca Comunitária"
-          description="Descubra e partilhe recursos educacionais criados por professores portugueses"
+          title={t("title")}
+          description={t("description")}
           icon={<Users className="h-6 w-6 text-primary" />}
           actions={headerActions}
         />
@@ -184,7 +186,7 @@ function CommunityLibraryPage() {
             size="sm"
             onClick={() => handleScopeChange("community")}
           >
-            Biblioteca geral
+            {t("generalLibrary")}
           </Button>
           {hasAccessibleOrganization ? (
             <Button
@@ -192,7 +194,7 @@ function CommunityLibraryPage() {
               size="sm"
               onClick={() => handleScopeChange("organization")}
             >
-              {workspace?.organization?.name ?? "Biblioteca da escola"}
+              {workspace?.organization?.name ?? t("schoolLibraryFallback")}
             </Button>
           ) : null}
         </div>
@@ -202,14 +204,14 @@ function CommunityLibraryPage() {
             <span className="font-medium text-foreground">
               {totalLibraryCount !== null ? totalLibraryCount : "--"}
             </span>{" "}
-            recursos disponiveis
+            {t("resourcesAvailable")}
           </span>
           <span>
             {activeScope === "organization"
-              ? `Partilhas internas de ${workspace?.organization?.name ?? "escola"}`
-              : "Comunidade de professores portugueses"}
+              ? t("internalShares", { org: workspace?.organization?.name ?? t("schoolFallback") })
+              : t("teacherCommunity")}
           </span>
-          <span>Recursos alinhados com as AEs</span>
+          <span>{t("alignedResources")}</span>
         </div>
 
         <CommunityFiltersComponent

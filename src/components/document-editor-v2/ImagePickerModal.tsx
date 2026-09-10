@@ -1,4 +1,5 @@
 "use client";
+import { AiDisclaimer } from "@/components/ui/ai-disclaimer";
 
 /**
  * ImagePickerModal â€” modal for adding an image to a slide.
@@ -119,6 +120,7 @@ function GenerateTab({
         </p>
       </div>
 
+      <div className="flex flex-col items-end gap-1.5">
       <Button
         onClick={handleGenerate}
         disabled={!prompt.trim()}
@@ -127,6 +129,8 @@ function GenerateTab({
         <Sparkles className="h-4 w-4" />
         {t("generateButton")}
       </Button>
+        <AiDisclaimer className="text-right" />
+      </div>
     </div>
   );
 }

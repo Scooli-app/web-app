@@ -1,4 +1,5 @@
 "use client";
+import { AiDisclaimer } from "@/components/ui/ai-disclaimer";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -1023,6 +1024,7 @@ function CalendarNewPageContent() {
           )}
 
           {step === "rever_datas" && (
+            <div className="flex flex-col items-end gap-1">
             <Button
               onClick={handleCreate}
               disabled={isSubmitting || actionableSlots === 0}
@@ -1035,6 +1037,8 @@ function CalendarNewPageContent() {
               )}
               Criar turma ({actionableSlots} aula{actionableSlots !== 1 ? "s" : ""})
             </Button>
+              <AiDisclaimer className="text-right" />
+            </div>
           )}
         </div>
       )}

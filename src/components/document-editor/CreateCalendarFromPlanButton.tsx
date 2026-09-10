@@ -1,4 +1,5 @@
 "use client";
+import { AiDisclaimer } from "@/components/ui/ai-disclaimer";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -211,6 +212,7 @@ export default function CreateCalendarFromPlanButton({
           </div>
 
           <DialogFooter className="pt-2">
+            <AiDisclaimer className="sm:mr-auto sm:self-center sm:text-left" />
             <Button variant="ghost" onClick={() => setIsNameDialogOpen(false)}>
               {t("cancel")}
             </Button>

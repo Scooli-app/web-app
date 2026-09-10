@@ -1,4 +1,5 @@
 "use client";
+import { AiDisclaimer } from "@/components/ui/ai-disclaimer";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -519,6 +520,7 @@ export default function CurriculumPlanNewPage() {
             <ChevronRight className="h-4 w-4" />
           </Button>
         ) : (
+          <div className="flex flex-col items-end gap-1">
           <Button
             onClick={handleSubmit}
             disabled={!step1Valid || !step2Valid || !step3Valid || submitting}
@@ -527,6 +529,8 @@ export default function CurriculumPlanNewPage() {
             {submitting ? "A gerar..." : "Gerar planificação"}
             {!submitting && <ChevronRight className="h-4 w-4" />}
           </Button>
+            <AiDisclaimer className="text-right" />
+          </div>
         )}
       </div>
     </WizardShell>

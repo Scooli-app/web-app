@@ -1,4 +1,5 @@
 "use client";
+import { AiDisclaimer } from "@/components/ui/ai-disclaimer";
 
 /**
  * CalendarDashboardWidget
@@ -321,6 +322,7 @@ export function CalendarDashboardWidget() {
                       </Badge>
                     )}
                     {(lesson.status === "pending" || lesson.status === "failed") && (
+                      <div className="flex flex-col items-end gap-0.5">
                       <Button
                         size="sm"
                         variant="outline"
@@ -335,6 +337,8 @@ export function CalendarDashboardWidget() {
                         )}
                         Gerar
                       </Button>
+                        <AiDisclaimer variant="compact" />
+                      </div>
                     )}
                     {lesson.status === "generating" && (
                       <Button

@@ -20,7 +20,9 @@
       "title": "Barra lateral",
       "mobileDescription": "Apresenta a barra lateral em dispositivos móveis.",
       "toggle": "Alternar barra lateral"
-    }
+    },
+    "aiDisclaimer": "A IA pode cometer erros. Revê sempre o conteúdo.",
+    "aiDisclaimerShort": "A IA pode cometer erros."
   },
   "language": {
     "interface": {
@@ -200,7 +202,6 @@
     "createPrefix": "Criar",
     "creatingDocumentLong": "A criar documento...",
     "creatingDocumentShort": "A criar...",
-    "aiDisclaimer": "A IA pode cometer erros. Revê sempre o conteúdo.",
     "requiredFields": "Campos obrigatórios",
     "types": {
       "lessonPlan": {
@@ -377,24 +378,24 @@
     },
     "templateBrowserModal": {
       "breadcrumb": "Modelos",
-      "setDefault": "Definir Padrao",
+      "setDefault": "Definir Padrão",
       "settingDefault": "A definir...",
-      "setDefaultAriaLabel": "Definir como padrao",
+      "setDefaultAriaLabel": "Definir como padrão",
       "editAriaLabel": "Editar modelo",
       "edit": "Editar",
-      "defaultLabel": "Padrao",
-      "sectionsCount": "Seccoes ({count})",
+      "defaultLabel": "Padrão",
+      "sectionsCount": "Secções ({count})",
       "viewOtherTemplates": "Ver outros modelos",
       "useThisTemplate": "Usar este modelo",
       "chooseTemplate": "Escolher Modelo",
-      "modelsAvailable": "{typeLabel} - {count} modelos disponiveis",
+      "modelsAvailable": "{typeLabel} - {count} modelos disponíveis",
       "importDocument": "Importar documento",
       "importDocumentAriaLabel": "Criar modelo a partir de documento",
       "importDocumentProAriaLabel": "Importar documento (funcionalidade Pro)",
       "pro": "Pro",
       "createModel": "Criar Modelo",
       "createModelAriaLabel": "Criar novo modelo",
-      "noTemplatesTitle": "Sem modelos disponiveis",
+      "noTemplatesTitle": "Sem modelos disponíveis",
       "noTemplatesDescription": "Crie o seu primeiro modelo personalizado para comecar"
     },
     "templatePlaceholders": {
@@ -420,7 +421,7 @@
       },
       "curriculumPlan": {
         "name": "Ex: Planificação Trimestral por Domínios",
-        "description": "Descreva quando usar este modelo de planificacao (anual, semestral, trimestral)..."
+        "description": "Descreva quando usar este modelo de planificação (anual, semestral, trimestral)..."
       }
     },
     "templateCreator": {
@@ -434,20 +435,20 @@
       "optional": "(Opcional)",
       "sectionsTitle": "Secções do Modelo",
       "sectionsHint": "Arraste para reordenar as secções",
-      "addAriaLabel": "Adicionar seccao",
+      "addAriaLabel": "Adicionar secção",
       "add": "Adicionar",
-      "validationError": "Preencha o nome do modelo e o titulo de todas as seccoes",
+      "validationError": "Preencha o nome do modelo e o título de todas as secções",
       "saveError": "Ocorreu um erro ao guardar o modelo. Tente novamente.",
       "createError": "Ocorreu um erro ao criar o modelo. Tente novamente.",
       "cancel": "Cancelar",
       "saving": "A guardar...",
       "creating": "A criar...",
-      "saveChanges": "Guardar Alteracoes",
+      "saveChanges": "Guardar Alterações",
       "createTemplate": "Criar Modelo"
     },
     "sortableSection": {
       "dragAriaLabel": "Arrastar para reordenar",
-      "deleteAriaLabel": "Eliminar seccao",
+      "deleteAriaLabel": "Eliminar secção",
       "titlePlaceholder": "Título da secção",
       "titleAriaLabel": "Título da secção",
       "descriptionPlaceholder": "Instruções para a IA: o que incluir nesta secção...",
@@ -606,7 +607,6 @@
       "documentRefined": "Documento Refinado",
       "imageRegenYes": "Sim, regenerar",
       "imageRegenNo": "Não",
-      "aiDisclaimer": "A IA pode cometer erros. Revê sempre o conteúdo.",
       "nudgeReady": "Documento pronto! Usa o Assistente para refinar ou adaptar o conteúdo.",
       "nudgeClose": "Fechar",
       "nudgeMobileTap": "Toca para melhorar o documento com IA!",
@@ -785,16 +785,16 @@
       "publishedToCommunity": "Recurso publicado na biblioteca comunitária!",
       "submittedForReview": "Recurso submetido para revisão! Receberá notificação em 24-48h.",
       "shareErrorGeneric": "Erro ao partilhar recurso",
-      "unshareIdentifyError": "Nao foi possivel identificar o documento.",
+      "unshareIdentifyError": "Não foi possível identificar o documento.",
       "unshared": "Recurso removido das bibliotecas.",
-      "unshareErrorGeneric": "Nao foi possivel deixar de partilhar o recurso.",
+      "unshareErrorGeneric": "Não foi possível deixar de partilhar o recurso.",
       "manageShareAriaLabel": "Gerir partilha - {status}",
-      "statusPending": "Em revisao",
+      "statusPending": "Em revisão",
       "statusPublished": "Publicado",
       "changeDestination": "Alterar destino",
       "stopSharing": "Deixar de partilhar",
       "unshareDialogTitle": "Deixar de partilhar este recurso?",
-      "unshareDialogDescription": "O recurso sera removido das bibliotecas onde foi partilhado. Pode voltar a partilhar mais tarde.",
+      "unshareDialogDescription": "O recurso será removido das bibliotecas onde foi partilhado. Pode voltar a partilhar mais tarde.",
       "removing": "A remover...",
       "sharing": "A partilhar...",
       "share": "Partilhar"
@@ -1026,8 +1026,7 @@
       "online": "Online",
       "newConversation": "Nova conversa",
       "minimize": "Minimizar conversa",
-      "inputPlaceholder": "Escreva uma mensagem...",
-      "aiDisclaimer": "A IA pode cometer erros. Revê sempre o conteúdo."
+      "inputPlaceholder": "Escreva uma mensagem..."
     },
     "emptyState": {
       "title": "Assistente Scooli",
@@ -1142,8 +1141,8 @@
       "schoolLibraryLabel": "Biblioteca da escola",
       "destinationAll": "Todas",
       "destinationAllHint": "Partilhar com a comunidade e com a escola ao mesmo tempo.",
-      "destinationCommunity": "Biblioteca comunitaria",
-      "destinationCommunityHint": "Visivel para todos os professores na Scooli apos revisao.",
+      "destinationCommunity": "Biblioteca comunitária",
+      "destinationCommunityHint": "Visível para todos os professores na Scooli após revisão.",
       "destinationOrgHint": "So os colegas da escola vao ver este recurso.",
       "cancel": "Cancelar",
       "whereToShareTitle": "Onde quer partilhar?",
@@ -1151,43 +1150,43 @@
       "shareWithOrgTitle": "Partilhar com {name}",
       "shareAllTitle": "Partilhar em todas as bibliotecas",
       "shareCommunityTitle": "Partilhar com a Comunidade",
-      "shareWithOrgDescription": "Este recurso ficara disponivel para os membros de {name}.",
-      "shareAllDescription": "O recurso sera publicado na biblioteca da escola e submetido para revisao na biblioteca comunitaria.",
-      "shareCommunityDescription": "Partilhe o seu recurso educacional com outros professores portugueses. O recurso sera revisto antes da publicacao.",
+      "shareWithOrgDescription": "Este recurso ficará disponível para os membros de {name}.",
+      "shareAllDescription": "O recurso será publicado na biblioteca da escola e submetido para revisão na biblioteca comunitária.",
+      "shareCommunityDescription": "Partilhe o seu recurso educacional com outros professores portugueses. O recurso será revisto antes da publicação.",
       "schoolFallback": "a escola",
-      "titleLabel": "Titulo",
-      "titlePlaceholder": "Ex: Revisao - Funcoes - 9 ano",
-      "titleRequired": "Titulo e obrigatorio",
-      "descriptionLabel": "Descricao",
+      "titleLabel": "Título",
+      "titlePlaceholder": "Ex: Revisão - Funções - 9.º ano",
+      "titleRequired": "Título é obrigatório",
+      "descriptionLabel": "Descrição",
       "optional": "(opcional)",
-      "descriptionPlaceholder": "Breve descricao do recurso e como pode ser usado...",
+      "descriptionPlaceholder": "Breve descrição do recurso e como pode ser usado...",
       "gradeLabel": "Ano escolar",
-      "gradeRequired": "Ano e obrigatorio",
+      "gradeRequired": "Ano é obrigatório",
       "gradePlaceholder": "Selecionar ano",
       "subjectLabel": "Disciplina",
-      "subjectRequired": "Disciplina e obrigatoria",
+      "subjectRequired": "Disciplina é obrigatória",
       "subjectPlaceholder": "Selecionar disciplina",
       "typeLabel": "Tipo",
-      "typeRequired": "Tipo de recurso e obrigatorio",
+      "typeRequired": "Tipo de recurso é obrigatório",
       "typePlaceholder": "Selecionar tipo",
-      "contentRequired": "Conteudo e obrigatorio",
+      "contentRequired": "Conteúdo é obrigatório",
       "orgLibraryHeading": "Biblioteca da escola",
       "combinedShareHeading": "Partilha combinada",
-      "reviewProcessHeading": "Processo de revisao",
+      "reviewProcessHeading": "Processo de revisão",
       "orgBullets": [
-        "• O recurso fica disponivel imediatamente para a organizacao ativa",
+        "• O recurso fica disponível imediatamente para a organização ativa",
         "• So membros da escola vao conseguir ver e reutilizar",
-        "• Pode continuar a partilhar outro recurso na biblioteca comunitaria depois"
+        "• Pode continuar a partilhar outro recurso na biblioteca comunitária depois"
       ],
       "bothBullets": [
-        "• Fica disponivel imediatamente para os membros da escola",
-        "• Na comunidade, sera revisto pela equipa Scooli em 24-48h antes de publicar",
-        "• Recebe notificacao quando a versao publica for aprovada"
+        "• Fica disponível imediatamente para os membros da escola",
+        "• Na comunidade, será revisto pela equipa Scooli em 24-48h antes de publicar",
+        "• Recebe notificação quando a versão pública for aprovada"
       ],
       "communityBullets": [
-        "• O recurso sera revisto pela nossa equipa em 24-48 horas",
-        "• Verificamos alinhamento com as AEs e qualidade pedagogica",
-        "• Recebera notificacao quando for aprovado",
+        "• O recurso será revisto pela nossa equipa em 24-48 horas",
+        "• Verificamos alinhamento com as AEs e qualidade pedagógica",
+        "• Receberá notificação quando for aprovado",
         "• Recursos aprovados podem ser reutilizados e adaptados por outros professores"
       ],
       "back": "Voltar",
@@ -1196,6 +1195,26 @@
       "submitAll": "Partilhar em todas",
       "submitCommunity": "Partilhar recurso",
       "schoolFallbackPossessive": "a sua escola"
+    },
+    "page": {
+      "title": "Biblioteca Comunitária",
+      "description": "Descubra e partilhe recursos educacionais criados por professores portugueses",
+      "myDashboard": "Meu Dashboard",
+      "share": "Partilhar",
+      "createNew": "Criar Novo",
+      "generalLibrary": "Biblioteca geral",
+      "schoolLibraryFallback": "Biblioteca da escola",
+      "resourcesAvailable": "recursos disponíveis",
+      "internalShares": "Partilhas internas de {org}",
+      "schoolFallback": "escola",
+      "teacherCommunity": "Comunidade de professores portugueses",
+      "alignedResources": "Recursos alinhados com as AEs",
+      "reuseSuccess": "Adicionado aos seus documentos com sucesso",
+      "reuseError": "Erro ao reutilizar recurso",
+      "previewComingSoon": "Pré-visualização em breve disponível",
+      "shareOrgSuccess": "Recurso partilhado com a biblioteca da escola.",
+      "shareCommunitySuccess": "Recurso submetido para revisão! Receberá notificação em 24-48h.",
+      "shareError": "Erro ao partilhar recurso"
     }
   },
   "feedback": {
@@ -1254,7 +1273,7 @@
     },
     "actionCards": {
       "suggestionTitle": "Tem uma ideia?",
-      "suggestionDescription": "Compartilhe as suas sugestões para novas funcionalidades ou melhorias.",
+      "suggestionDescription": "Partilhe as suas sugestões para novas funcionalidades ou melhorias.",
       "suggestionCta": "Enviar sugestão →",
       "bugTitle": "Encontrou um erro?",
       "bugDescription": "Reporte problemas técnicos ou erros que encontrou na plataforma.",
@@ -1335,7 +1354,7 @@
       "schoolFallback": "Escola",
       "importedFrom": "Importado de {format}",
       "imported": "Importado",
-      "sharedCommunityTitle": "Partilhado na biblioteca comunitaria",
+      "sharedCommunityTitle": "Partilhado na biblioteca comunitária",
       "community": "Comunidade",
       "sharedOrgTitle": "Partilhado na biblioteca de {org}",
       "gradeYear": "{grade}.º ano",
@@ -1481,9 +1500,9 @@
       "usageIntentLabel": "Como usar este recurso",
       "usageIntent": {
         "referenceTitle": "Apenas neste documento",
-        "referenceDescription": "Usa o ficheiro como referencia para a importacao atual.",
+        "referenceDescription": "Usa o ficheiro como referência para a importação atual.",
         "standingTitle": "Guardar nas minhas fontes",
-        "standingDescription": "Indexa o ficheiro para futuras geracoes de conteudo."
+        "standingDescription": "Indexa o ficheiro para futuras gerações de conteúdo."
       },
       "worksheetVariantOptions": {
         "practice": "Treinar e consolidar",

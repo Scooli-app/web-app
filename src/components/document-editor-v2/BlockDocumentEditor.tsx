@@ -1,3 +1,4 @@
+import { AiDisclaimer } from "@/components/ui/ai-disclaimer";
 /**
  * BlockDocumentEditor — PowerPoint-style canvas presentation editor.
  *
@@ -2394,6 +2395,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
             />
           </div>
           <DialogFooter>
+            <AiDisclaimer className="sm:mr-auto sm:self-center sm:text-left" />
             <Button
               variant="outline"
               onClick={() => {
