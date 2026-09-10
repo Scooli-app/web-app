@@ -316,7 +316,7 @@ export function CalendarDashboardWidget() {
                         {dateLabel}
                       </span>
                       {" · "}
-                      {lesson.timetable.gradeLevel ? tTimetable("gradeShort", { grade: lesson.timetable.gradeLevel }) + " " : ""}
+                      {lesson.timetable.gradeLevel ? `${tTimetable("gradeShort", { grade: lesson.timetable.gradeLevel })} ` : ""}
                       {translateSubject(lesson.timetable.subject)}
                       {lesson.timetable.classLabel ? ` · ${lesson.timetable.classLabel}` : ""}
                     </p>

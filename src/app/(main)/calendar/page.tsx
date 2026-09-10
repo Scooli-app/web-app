@@ -241,7 +241,7 @@ function LessonCard({
               className="mt-0.5 truncate text-[11px] font-medium"
               style={{ color }}
             >
-              {timetable.gradeLevel ? tTimetable("gradeShort", { grade: timetable.gradeLevel }) + " " : ""}
+              {timetable.gradeLevel ? `${tTimetable("gradeShort", { grade: timetable.gradeLevel })} ` : ""}
               {translateSubject(timetable.subject)}
               {timetable.classLabel ? ` · ${timetable.classLabel}` : ""}
             </p>
@@ -982,7 +982,7 @@ function CalendarPageInner() {
                       className="h-1.5 w-1.5 shrink-0 rounded-full"
                       style={{ backgroundColor: tt.color || "#7F77DD" }}
                     />
-                    {tt.gradeLevel ? tTimetable("gradeShort", { grade: tt.gradeLevel }) + " " : ""}
+                    {tt.gradeLevel ? `${tTimetable("gradeShort", { grade: tt.gradeLevel })} ` : ""}
                     {translateSubject(tt.subject)}
                     {tt.classLabel ? ` · ${tt.classLabel}` : ""}
                   </button>
