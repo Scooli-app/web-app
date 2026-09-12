@@ -177,8 +177,16 @@ export async function listLessonDocuments(
 
 // ─── TOPIC GENERATION ─────────────────────────────────────────────────
 
-export async function generateTopics(timetableId: string): Promise<{ updated: number }> {
-  const response = await apiClient.post<{ updated: number }>(`/timetable/${timetableId}/generate-topics`);
+export async function generateTopics(
+  timetableId: string,
+  contentLanguage?: string
+): Promise<{ updated: number }> {
+  const query = contentLanguage
+    ? `?contentLanguage=${encodeURIComponent(contentLanguage)}`
+    : "";
+  const response = await apiClient.post<{ updated: number }>(
+    `/timetable/${timetableId}/generate-topics${query}`
+  );
   return response.data;
 }
 

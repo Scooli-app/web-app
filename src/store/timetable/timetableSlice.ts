@@ -1,4 +1,11 @@
 import { dashboardCache, CACHE_KEYS } from "@/lib/dashboardCache";
+import { detectBrowserLocale } from "@/i18n/locales";
+import {
+  resolveContentLanguage,
+  resolveInterfaceLocale,
+  type ContentLanguagePreference,
+  type InterfaceLocalePreference,
+} from "@/i18n/preferences";
 import {
   createTimetable as createTimetableService,
   deleteTimetable as deleteTimetableService,
@@ -132,9 +139,22 @@ export const skipLesson = createAsyncThunk(
 
 export const generateTopics = createAsyncThunk(
   "timetable/generateTopics",
-  async (timetableId: string, { rejectWithValue }) => {
+  async (timetableId: string, { getState, rejectWithValue }) => {
     try {
-      return await generateTopicsService(timetableId);
+      // Same reasoning as documentSlice's createDocument: "follow the browser" is never
+      // persisted server-side, so the backend cannot know it without being told explicitly.
+      const ui = (
+        getState() as {
+          ui: {
+            interfaceLocale: InterfaceLocalePreference;
+            contentLanguage: ContentLanguagePreference;
+          };
+        }
+      ).ui;
+      const interfaceLocale = resolveInterfaceLocale(ui.interfaceLocale, detectBrowserLocale());
+      const contentLanguage = resolveContentLanguage(ui.contentLanguage, interfaceLocale);
+
+      return await generateTopicsService(timetableId, contentLanguage);
     } catch (_error) {
       return rejectWithValue(translate("errors.timetable.generateTopics"));
     }
