@@ -1,8 +1,6 @@
 import { dashboardCache, CACHE_KEYS } from "@/lib/dashboardCache";
-import { detectBrowserLocale } from "@/i18n/locales";
+import { resolveEffectiveContentLanguage } from "@/i18n/clientLocale";
 import {
-  resolveContentLanguage,
-  resolveInterfaceLocale,
   type ContentLanguagePreference,
   type InterfaceLocalePreference,
 } from "@/i18n/preferences";
@@ -235,6 +233,10 @@ export const createDocument = createAsyncThunk(
       // that preference is deliberately never persisted (see LocaleResolver), so
       // the client resolves it and sends it explicitly on the one request that
       // actually needs it, unless the caller already supplied an override.
+      // resolveEffectiveContentLanguage applies the same "has this teacher ever
+      // expressed a preference" gate LocaleProvider uses — an account that never
+      // touched the setting must stay on the default, not pick up whatever the
+      // browser happens to report.
       const ui = (
         getState() as {
           ui: {
@@ -243,9 +245,9 @@ export const createDocument = createAsyncThunk(
           };
         }
       ).ui;
-      const interfaceLocale = resolveInterfaceLocale(ui.interfaceLocale, detectBrowserLocale());
       const contentLanguage =
-        params.contentLanguage ?? resolveContentLanguage(ui.contentLanguage, interfaceLocale);
+        params.contentLanguage ??
+        resolveEffectiveContentLanguage(ui.contentLanguage, ui.interfaceLocale);
 
       const document = await createDocumentService({ ...params, contentLanguage });
 

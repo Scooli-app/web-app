@@ -2,6 +2,8 @@ import {
   LOCALE_COOKIE_MAX_AGE,
   LOCALE_COOKIE_NAME,
   LOCALE_QUERY_PARAM,
+  defaultLocale,
+  detectBrowserLocale,
   isSupportedLocale,
   matchLocale,
   type Locale,
@@ -9,6 +11,8 @@ import {
 import {
   isContentLanguagePreference,
   isInterfaceLocalePreference,
+  resolveContentLanguage,
+  resolveInterfaceLocale,
   type ContentLanguagePreference,
   type InterfaceLocalePreference,
 } from "./preferences";
@@ -47,6 +51,34 @@ export function readStoredContentPreference(): ContentLanguagePreference | null 
   } catch {
     return null;
   }
+}
+
+/**
+ * The interface locale a browser-side action should actually use — the same
+ * "has this teacher ever expressed a preference" gate `LocaleProvider` applies
+ * before it will trust `navigator.language`, extracted so anything resolving a
+ * locale outside of React (a thunk, a service call) applies it identically.
+ * Skipping this gate and calling `resolveInterfaceLocale` directly is the bug:
+ * an account that never touched the setting must stay on `defaultLocale`, not
+ * silently pick up whatever language the browser happens to report.
+ */
+export function resolveEffectiveInterfaceLocale(
+  preference: InterfaceLocalePreference,
+): Locale {
+  const hasExpressedPreference = readStoredInterfacePreference() !== null;
+  if (!hasExpressedPreference) return defaultLocale;
+  return resolveInterfaceLocale(preference, detectBrowserLocale());
+}
+
+/** Same gate as {@link resolveEffectiveInterfaceLocale}, for the content-language preference used by AI generation requests. */
+export function resolveEffectiveContentLanguage(
+  contentPreference: ContentLanguagePreference,
+  interfacePreference: InterfaceLocalePreference,
+): Locale {
+  return resolveContentLanguage(
+    contentPreference,
+    resolveEffectiveInterfaceLocale(interfacePreference),
+  );
 }
 
 export function writeStoredInterfacePreference(

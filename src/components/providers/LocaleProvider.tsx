@@ -3,15 +3,15 @@
 import {
   readStoredContentPreference,
   readStoredInterfacePreference,
+  resolveEffectiveInterfaceLocale,
   writeLocaleCookie,
   writeStoredContentPreference,
   writeStoredInterfacePreference,
 } from "@/i18n/clientLocale";
-import { defaultLocale, detectBrowserLocale, type Locale } from "@/i18n/locales";
+import { type Locale } from "@/i18n/locales";
 import {
   contentPreferenceFromApi,
   interfacePreferenceFromApi,
-  resolveInterfaceLocale,
 } from "@/i18n/preferences";
 import { userService } from "@/services/api/user.service";
 import { useAppDispatch } from "@/store/hooks";
@@ -44,6 +44,11 @@ import { useSelector } from "react-redux";
  * reading `navigator.language` for the existing user base would flip thousands
  * of Portuguese interfaces to English overnight. An account that has never
  * expressed a preference stays on pt-PT and looks identical to today.
+ *
+ * That gate lives in `resolveEffectiveInterfaceLocale` (`@/i18n/clientLocale`),
+ * not inline here, so anything else that needs "the locale to actually use
+ * right now" — a generation request's `contentLanguage`, say — applies the
+ * exact same rule instead of re-deriving it and getting it wrong.
  */
 export default function LocaleProvider({
   children,
@@ -127,10 +132,7 @@ export default function LocaleProvider({
     // the onboarding both write there, and localStorage is the one place all of
     // them agree on.
     const hasExpressedPreference = readStoredInterfacePreference() !== null;
-
-    const effective = hasExpressedPreference
-      ? resolveInterfaceLocale(interfacePreference, detectBrowserLocale())
-      : defaultLocale;
+    const effective = resolveEffectiveInterfaceLocale(interfacePreference);
 
     if (hasExpressedPreference) {
       writeLocaleCookie(effective);

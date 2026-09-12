@@ -1,8 +1,6 @@
 import { dashboardCache, CACHE_KEYS } from "@/lib/dashboardCache";
-import { detectBrowserLocale } from "@/i18n/locales";
+import { resolveEffectiveContentLanguage } from "@/i18n/clientLocale";
 import {
-  resolveContentLanguage,
-  resolveInterfaceLocale,
   type ContentLanguagePreference,
   type InterfaceLocalePreference,
 } from "@/i18n/preferences";
@@ -143,6 +141,9 @@ export const generateTopics = createAsyncThunk(
     try {
       // Same reasoning as documentSlice's createDocument: "follow the browser" is never
       // persisted server-side, so the backend cannot know it without being told explicitly.
+      // resolveEffectiveContentLanguage applies the same "has this teacher ever expressed
+      // a preference" gate LocaleProvider uses, so an account that never touched the
+      // setting stays on the default instead of picking up the browser's language.
       const ui = (
         getState() as {
           ui: {
@@ -151,8 +152,7 @@ export const generateTopics = createAsyncThunk(
           };
         }
       ).ui;
-      const interfaceLocale = resolveInterfaceLocale(ui.interfaceLocale, detectBrowserLocale());
-      const contentLanguage = resolveContentLanguage(ui.contentLanguage, interfaceLocale);
+      const contentLanguage = resolveEffectiveContentLanguage(ui.contentLanguage, ui.interfaceLocale);
 
       return await generateTopicsService(timetableId, contentLanguage);
     } catch (_error) {
