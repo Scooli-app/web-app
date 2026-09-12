@@ -4,6 +4,10 @@ import {
   GRADE_GROUPS,
   SUBJECTS,
   SUBJECTS_BY_GRADE,
+  translateGradeGroupLabel,
+  translateGradeLabel,
+  translateSubjectCategory,
+  translateSubjectLabel,
 } from "@/components/document-creation/constants";
 import { documentTypes } from "@/components/document-creation/documentTypes";
 import { Button } from "@/components/ui/button";
@@ -34,6 +38,7 @@ import { cn } from "@/shared/utils/utils";
 import { selectIsWorksheetCreationEnabled } from "@/store/features/selectors";
 import { useAppSelector } from "@/store/hooks";
 import { AlertCircle, FilePlus, Loader2, UploadCloud, X } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -48,20 +53,21 @@ const ALLOWED_TYPES = [
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 ];
 
-const WORKSHEET_VARIANT_OPTIONS: Array<{
+const WORKSHEET_VARIANT_KEYS: Array<{
   value: Exclude<WorksheetVariant, "assessment">;
-  label: string;
 }> = [
-  { value: "practice", label: "Treinar e consolidar" },
-  { value: "diagnostic", label: "Diagnosticar conhecimentos" },
-  { value: "formative", label: "Acompanhar aprendizagem" },
-  { value: "exploration", label: "Introduzir novo conteúdo" },
+  { value: "practice" },
+  { value: "diagnostic" },
+  { value: "formative" },
+  { value: "exploration" },
 ];
 
 export function UploadDocumentModal({
   isOpen,
   onClose,
 }: UploadDocumentModalProps) {
+  const t = useTranslations("modals.uploadDocument");
+  const tEnums = useTranslations("enums");
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState("");
   const [documentType, setDocumentType] = useState<DocumentType | "">("");
@@ -128,13 +134,13 @@ export function UploadDocumentModal({
     }
 
     if (!ALLOWED_TYPES.includes(selectedFile.type)) {
-      setError("Apenas ficheiros PDF e DOCX são suportados.");
+      setError(t("errorInvalidType"));
       setFile(null);
       return;
     }
 
     if (selectedFile.size > MAX_FILE_SIZE) {
-      setError("O tamanho máximo do ficheiro é 10MB.");
+      setError(t("errorFileTooLarge"));
       setFile(null);
       return;
     }
@@ -161,12 +167,12 @@ export function UploadDocumentModal({
     }
 
     if (!ALLOWED_TYPES.includes(droppedFile.type)) {
-      setError("Apenas ficheiros PDF e DOCX são suportados.");
+      setError(t("errorInvalidType"));
       return;
     }
 
     if (droppedFile.size > MAX_FILE_SIZE) {
-      setError("O tamanho máximo do ficheiro é 10MB.");
+      setError(t("errorFileTooLarge"));
       return;
     }
 
@@ -180,17 +186,17 @@ export function UploadDocumentModal({
     event.preventDefault();
 
     if (!file) {
-      setError("Por favor, selecione um ficheiro.");
+      setError(t("errorSelectFile"));
       return;
     }
 
     if (!title || !documentType || !schoolYear || !subject) {
-      setError("Por favor, preencha todos os campos obrigatórios.");
+      setError(t("errorFillRequired"));
       return;
     }
 
     if (documentType === "worksheet" && !worksheetVariant) {
-      setError("Por favor, selecione o objetivo principal da ficha.");
+      setError(t("errorSelectWorksheetGoal"));
       return;
     }
 
@@ -215,7 +221,7 @@ export function UploadDocumentModal({
         });
 
         if (!uploadResponse.ok) {
-          throw new Error("Falha ao carregar o ficheiro para o armazenamento.");
+          throw new Error(t("errorUploadFailed"));
         }
 
         const { id } = await importDocument({
@@ -237,11 +243,9 @@ export function UploadDocumentModal({
           window.location.reload();
         }),
         {
-          loading: "A fazer upload, pode demorar um pouco...",
-          success: "Upload concluído! A atualizar galeria...",
-          error: (err: Error) =>
-            err.message ||
-            "Ocorreu um erro ao importar o documento. Tente novamente.",
+          loading: t("toastLoading"),
+          success: t("toastSuccess"),
+          error: (err: Error) => err.message || t("toastError"),
         }
       );
 
@@ -270,12 +274,11 @@ export function UploadDocumentModal({
               <UploadCloud className="h-5 w-5 text-primary" />
             </div>
             <DialogTitle className="text-lg font-semibold text-foreground">
-              Importar Documento
+              {t("title")}
             </DialogTitle>
           </div>
           <DialogDescription className="ml-12 text-sm text-muted-foreground">
-            Faça upload de um PDF ou DOCX. A IA irá converter e estruturar o
-            conteúdo.
+            {t("description")}
           </DialogDescription>
         </div>
 
@@ -329,10 +332,10 @@ export function UploadDocumentModal({
                 <div className="flex flex-col items-center gap-1.5 text-center">
                   <UploadCloud className="h-7 w-7 text-muted-foreground" />
                   <p className="text-sm font-medium text-foreground">
-                    Clique ou arraste o ficheiro
+                    {t("dropzone.dragText")}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    PDF ou DOCX · Máx. 10MB
+                    {t("dropzone.hint")}
                   </p>
                 </div>
               )}
@@ -348,20 +351,19 @@ export function UploadDocumentModal({
             <div className="flex items-start gap-2 rounded-lg border border-border/50 bg-muted/60 p-3">
               <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
               <p className="text-xs text-muted-foreground">
-                Imagens e formatação complexa poderão não ser preservadas.
-                Documentos digitalizados sem texto legível serão rejeitados.
+                {t("warningText")}
               </p>
             </div>
 
             <div className="space-y-1.5">
               <Label htmlFor="title" className="text-sm">
-                Título do Documento
+                {t("titleLabel")}
               </Label>
               <Input
                 id="title"
                 value={title}
                 onChange={(event) => setTitle(event.target.value)}
-                placeholder="Ex: Ficha de Frações"
+                placeholder={t("titlePlaceholder")}
                 disabled={isUploading}
               />
             </div>
@@ -369,7 +371,7 @@ export function UploadDocumentModal({
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label htmlFor="docType" className="text-sm">
-                  Converter para
+                  {t("convertToLabel")}
                 </Label>
                 <Select
                   value={documentType}
@@ -377,12 +379,12 @@ export function UploadDocumentModal({
                   disabled={isUploading}
                 >
                   <SelectTrigger id="docType">
-                    <SelectValue placeholder="Selecione..." />
+                    <SelectValue placeholder={t("selectPlaceholder")} />
                   </SelectTrigger>
                   <SelectContent>
                     {availableDocumentTypes.map((type) => (
                       <SelectItem key={type.id} value={type.id}>
-                        {type.title}
+                        {tEnums(`documentType.${type.id}`)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -391,7 +393,7 @@ export function UploadDocumentModal({
 
               <div className="space-y-1.5">
                 <Label htmlFor="schoolYear" className="text-sm">
-                  Ano Escolar
+                  {t("schoolYearLabel")}
                 </Label>
                 <Select
                   value={schoolYear}
@@ -399,13 +401,13 @@ export function UploadDocumentModal({
                   disabled={isUploading}
                 >
                   <SelectTrigger id="schoolYear" className="h-10">
-                    <SelectValue placeholder="Selecione..." />
+                    <SelectValue placeholder={t("selectPlaceholder")} />
                   </SelectTrigger>
                   <SelectContent className="max-h-[300px]">
                     {GRADE_GROUPS.map((group) => (
                       <SelectGroup key={group.label}>
                         <SelectLabel className="mb-1 border-b border-border/50 bg-background px-2 py-2 text-xs font-bold text-primary">
-                          {group.label}
+                          {translateGradeGroupLabel(group.groupId)}
                         </SelectLabel>
                         {group.grades.map((grade) => (
                           <SelectItem
@@ -413,7 +415,7 @@ export function UploadDocumentModal({
                             value={grade.id}
                             className="cursor-pointer rounded-md py-2 pl-4 pr-3 text-sm focus:bg-accent focus:text-primary"
                           >
-                            {grade.label}
+                            {translateGradeLabel(grade.id)}
                           </SelectItem>
                         ))}
                       </SelectGroup>
@@ -426,7 +428,7 @@ export function UploadDocumentModal({
             {documentType === "worksheet" && (
               <div className="space-y-1.5">
                 <Label htmlFor="worksheetVariant" className="text-sm">
-                  Objetivo da ficha
+                  {t("worksheetGoalLabel")}
                 </Label>
                 <Select
                   value={worksheetVariant}
@@ -436,12 +438,12 @@ export function UploadDocumentModal({
                   disabled={isUploading}
                 >
                   <SelectTrigger id="worksheetVariant" className="h-10">
-                    <SelectValue placeholder="Selecione..." />
+                    <SelectValue placeholder={t("selectPlaceholder")} />
                   </SelectTrigger>
                   <SelectContent>
-                    {WORKSHEET_VARIANT_OPTIONS.map((option) => (
+                    {WORKSHEET_VARIANT_KEYS.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
-                        {option.label}
+                        {t(`worksheetVariantOptions.${option.value}`)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -451,7 +453,7 @@ export function UploadDocumentModal({
 
             <div className="space-y-1.5">
               <Label htmlFor="subject" className="text-sm">
-                Disciplina
+                {t("subjectLabel")}
               </Label>
               <Select
                 value={subject}
@@ -462,8 +464,8 @@ export function UploadDocumentModal({
                   <SelectValue
                     placeholder={
                       !schoolYear
-                        ? "Selecione primeiro o ano..."
-                        : "Selecione..."
+                        ? t("selectYearFirstPlaceholder")
+                        : t("selectPlaceholder")
                     }
                   />
                 </SelectTrigger>
@@ -481,7 +483,7 @@ export function UploadDocumentModal({
                       return categories.map((category) => (
                         <SelectGroup key={category}>
                           <SelectLabel className="mb-1 border-b border-border/50 bg-background px-2 py-2 text-xs font-bold text-primary">
-                            {category}
+                            {translateSubjectCategory(category)}
                           </SelectLabel>
                           {validSubjects
                             .filter((item) => item.category === category)
@@ -491,7 +493,7 @@ export function UploadDocumentModal({
                                 value={item.id}
                                 className="cursor-pointer rounded-md py-2 pl-4 pr-3 text-sm focus:bg-accent focus:text-primary"
                               >
-                                {item.label}
+                                {translateSubjectLabel(item.id)}
                               </SelectItem>
                             ))}
                         </SelectGroup>
@@ -503,7 +505,7 @@ export function UploadDocumentModal({
 
             {/* Usage intent — SCOOL-108 */}
             <div className="space-y-2">
-              <Label className="text-sm">Como usar este recurso</Label>
+              <Label className="text-sm">{t("usageIntentLabel")}</Label>
               <div className="grid gap-2 sm:grid-cols-2">
                 <label className="flex cursor-pointer items-start gap-2 rounded-md border border-border p-3 text-sm">
                   <input
@@ -516,9 +518,9 @@ export function UploadDocumentModal({
                     disabled={isUploading}
                   />
                   <span>
-                    <span className="font-medium">Apenas neste documento</span>
+                    <span className="font-medium">{t("usageIntent.referenceTitle")}</span>
                     <span className="mt-0.5 block text-xs text-muted-foreground">
-                      Usa o ficheiro como referencia para a importacao atual.
+                      {t("usageIntent.referenceDescription")}
                     </span>
                   </span>
                 </label>
@@ -533,9 +535,9 @@ export function UploadDocumentModal({
                     disabled={isUploading}
                   />
                   <span>
-                    <span className="font-medium">Guardar nas minhas fontes</span>
+                    <span className="font-medium">{t("usageIntent.standingTitle")}</span>
                     <span className="mt-0.5 block text-xs text-muted-foreground">
-                      Indexa o ficheiro para futuras geracoes de conteudo.
+                      {t("usageIntent.standingDescription")}
                     </span>
                   </span>
                 </label>
@@ -550,18 +552,18 @@ export function UploadDocumentModal({
               onClick={onClose}
               disabled={isUploading}
             >
-              Cancelar
+              {t("cancel")}
             </Button>
             <Button type="submit" disabled={!isFormValid || isUploading}>
               {isUploading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  A Importar...
+                  {t("importing")}
                 </>
               ) : (
                 <>
                   <UploadCloud className="mr-2 h-4 w-4" />
-                  Importar e Converter
+                  {t("importAndConvert")}
                 </>
               )}
             </Button>

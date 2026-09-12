@@ -1,6 +1,7 @@
 "use client";
 
 import { BillingNifCard } from "@/components/billing/BillingNifCard";
+import { LanguagePreferences } from "@/components/settings/LanguagePreferences";
 import { Button } from "@/components/ui/button";
 import { TeachingProfileCard } from "@/components/teaching-profile/TeachingProfileCard";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -11,7 +12,7 @@ import {
   getUsageStats,
 } from "@/services/api";
 import {
-  PLAN_DISPLAY_INFO,
+  getPlanDisplayInfo,
   type CurrentSubscription,
   type SubscriptionPlan,
   type SubscriptionStatus,
@@ -41,6 +42,7 @@ import {
   Sun,
   User,
 } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
@@ -50,12 +52,13 @@ import posthog from "posthog-js";
 function getStatusBadge(
   status: SubscriptionStatus,
   cancelAtPeriodEnd: boolean,
-  planCode?: string,
+  planCode: string | undefined,
+  t: ReturnType<typeof useTranslations>,
 ) {
-  // Free plan always shows "Período de Teste" badge
+  // Free plan always shows the trial-period badge
   if (planCode === "free") {
     return {
-      label: "Período de Teste",
+      label: t("statusBadge.trialPeriod"),
       className:
         "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
     };
@@ -63,7 +66,7 @@ function getStatusBadge(
 
   if (cancelAtPeriodEnd) {
     return {
-      label: "Cancela no fim do período",
+      label: t("statusBadge.cancelsAtPeriodEnd"),
       className:
         "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
     };
@@ -73,19 +76,19 @@ function getStatusBadge(
     case "active":
     case "trialing":
       return {
-        label: "Ativo",
+        label: t("statusBadge.active"),
         className:
           "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
       };
     case "past_due":
       return {
-        label: "Pagamento Pendente",
+        label: t("statusBadge.paymentPending"),
         className:
           "bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400",
       };
     case "canceled":
       return {
-        label: "Cancelado",
+        label: t("statusBadge.canceled"),
         className: "bg-secondary text-muted-foreground",
       };
     default:
@@ -96,17 +99,26 @@ function getStatusBadge(
   }
 }
 
-function formatPrice(priceCents: number, currency = "EUR"): string {
-  return new Intl.NumberFormat("pt-PT", {
+// The currency stays EUR whatever the interface language; only the way the
+// amount is written changes ("6,99 €" vs "€6.99").
+function formatPrice(
+  locale: string,
+  priceCents: number,
+  currency = "EUR",
+): string {
+  return new Intl.NumberFormat(locale, {
     style: "currency",
     currency,
   }).format(priceCents / 100);
 }
 
-function calculateMonthlyEquivalent(plan: SubscriptionPlan): string | null {
+function calculateMonthlyEquivalent(
+  locale: string,
+  plan: SubscriptionPlan,
+): string | null {
   if (plan.interval !== "year") return null;
   const monthlyPrice = plan.priceCents / 12;
-  return formatPrice(monthlyPrice, plan.currency);
+  return formatPrice(locale, monthlyPrice, plan.currency);
 }
 
 function calculateSavingsPercent(
@@ -120,9 +132,9 @@ function calculateSavingsPercent(
   return `${Math.round((savings / yearlyFromMonthly) * 100)}%`;
 }
 
-function formatDate(dateString: string): string {
+function formatDate(locale: string, dateString: string): string {
   const date = new Date(dateString);
-  return date.toLocaleDateString("pt-PT", {
+  return date.toLocaleDateString(locale, {
     day: "numeric",
     month: "long",
     year: "numeric",
@@ -130,24 +142,25 @@ function formatDate(dateString: string): string {
 }
 
 function getLocalizedPlanName(plan: SubscriptionPlan): string {
-  return PLAN_DISPLAY_INFO[plan.planCode]?.name ?? plan.name;
+  return getPlanDisplayInfo(plan.planCode)?.name ?? plan.name;
 }
 
 function getEffectiveAccessDisplayLabel(
   source: string | undefined,
   isPro: boolean,
+  t: ReturnType<typeof useTranslations>,
 ): string {
   if (!isPro) {
-    return "Plano gratuito";
+    return t("accessLabel.free");
   }
 
   switch (source) {
     case "organization":
-      return "Pro (via organização)";
+      return t("accessLabel.proViaOrganization");
     case "both":
-      return "Pro (pessoal e organização)";
+      return t("accessLabel.proPersonalAndOrganization");
     default:
-      return "Scooli Pro";
+      return t("accessLabel.scooliPro");
   }
 }
 
@@ -156,6 +169,9 @@ function SettingsContent() {
   const dispatch = useDispatch<AppDispatch>();
   const { user, isLoaded: isUserLoaded } = useUser();
   const { openUserProfile } = useClerk();
+  const t = useTranslations("settings");
+  const tSubscriptionErrors = useTranslations("errors.subscription");
+  const locale = useLocale();
   const theme = useSelector((state: RootState) => state.ui.theme);
   const entitlement = useSelector(selectCurrentEntitlement);
   const isEntitlementLoading = useSelector(selectEntitlementLoading);
@@ -191,10 +207,11 @@ function SettingsContent() {
       setPlans(paidPlans);
     } catch (err) {
       console.error("[Settings] Fetch error:", err);
-      setError("Não foi possível carregar os dados da subscrição.");
+      setError(tSubscriptionErrors("fetchSettingsDataFailed"));
     } finally {
       setIsLoadingData(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -214,9 +231,7 @@ function SettingsContent() {
         throw new Error("Não foi possível obter a ligação do portal");
       }
     } catch {
-      setError(
-        "Não foi possível abrir o portal de pagamentos. Tente novamente.",
-      );
+      setError(tSubscriptionErrors("portalUnavailable"));
       setIsLoadingPortal(false);
     }
   };
@@ -243,6 +258,7 @@ function SettingsContent() {
   const effectiveAccessLabel = getEffectiveAccessDisplayLabel(
     entitlement?.source,
     effectiveIsPro,
+    t,
   );
   const effectiveUsageBadge = effectiveIsPro
     ? "∞"
@@ -272,19 +288,20 @@ function SettingsContent() {
   }, [showPersonalUpgradeOptions, promoActive]);
 
   const planInfo = subscription
-    ? PLAN_DISPLAY_INFO[subscription.planCode] || {
+    ? getPlanDisplayInfo(subscription.planCode) ?? {
         name: subscription.planName,
         description: "",
       }
-    : PLAN_DISPLAY_INFO.free;
+    : (getPlanDisplayInfo("free") as { name: string; description: string });
 
   const statusBadge = subscription
     ? getStatusBadge(
         subscription.status,
         subscription.cancelAtPeriodEnd,
         subscription.planCode,
+        t,
       )
-    : getStatusBadge("free", false, "free");
+    : getStatusBadge("free", false, "free", t);
 
   if (!isUserLoaded) {
     return <SettingsSkeleton />;
@@ -295,11 +312,9 @@ function SettingsContent() {
       {/* Page Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-foreground mb-2 sm:text-4xl">
-          Definições
+          {t("title")}
         </h1>
-        <p className="text-lg text-muted-foreground">
-          Gere a tua conta, subscrição e preferências.
-        </p>
+        <p className="text-lg text-muted-foreground">{t("subtitle")}</p>
       </div>
 
       <div className="space-y-6">
@@ -310,7 +325,7 @@ function SettingsContent() {
               <User className="w-5 h-5 text-primary" />
             </div>
             <h2 className="text-xl font-semibold text-foreground">
-              Perfil e Conta
+              {t("profileCard.title")}
             </h2>
           </div>
 
@@ -333,7 +348,7 @@ function SettingsContent() {
             )}
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-foreground truncate">
-                {user?.fullName || "Utilizador"}
+                {user?.fullName || t("common.fallbackUser")}
               </p>
               <p className="text-sm text-muted-foreground truncate">
                 {user?.primaryEmailAddress?.emailAddress || ""}
@@ -345,7 +360,7 @@ function SettingsContent() {
             onClick={handleManageAccount}
             className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground px-5 py-3 rounded-xl font-medium"
           >
-            Gerir Conta
+            {t("profileCard.manageAccount")}
           </Button>
         </div>
 
@@ -359,7 +374,7 @@ function SettingsContent() {
               <CreditCard className="w-5 h-5 text-primary" />
             </div>
             <h2 className="text-xl font-semibold text-foreground">
-              Subscrição e Gerações
+              {t("subscriptionCard.title")}
             </h2>
           </div>
 
@@ -376,7 +391,7 @@ function SettingsContent() {
                 onClick={fetchData}
                 className="bg-destructive hover:bg-destructive/90 text-white px-4 py-2 rounded-xl font-medium"
               >
-                Tentar novamente
+                {t("common.retry")}
               </Button>
             </div>
           ) : isFreeUser ? (
@@ -385,11 +400,11 @@ function SettingsContent() {
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <p className="text-sm font-medium text-foreground">
-                      O teu plano
+                      {t("subscriptionCard.yourPlan")}
                     </p>
                     <p className="text-sm text-muted-foreground">
                       {isEntitlementLoading
-                        ? "A carregar..."
+                        ? t("common.loading")
                         : effectiveAccessLabel}
                     </p>
                   </div>
@@ -418,10 +433,13 @@ function SettingsContent() {
                 <div className="mb-6">
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-sm font-medium text-foreground">
-                      Gerações restantes
+                      {t("subscriptionCard.remainingGenerations")}
                     </span>
                     <span className="text-sm text-muted-foreground">
-                      {usage.remaining} de {usage.limit}
+                      {t("subscriptionCard.remainingOfLimit", {
+                        remaining: usage.remaining,
+                        limit: usage.limit,
+                      })}
                     </span>
                   </div>
                   <div className="h-3 bg-muted rounded-full overflow-hidden">
@@ -432,14 +450,12 @@ function SettingsContent() {
                   </div>
                   {usage.remaining === 0 ? (
                     <p className="text-xs text-destructive font-semibold mt-2 animate-pulse">
-                      Esgotou os seus créditos gratuitos. Atualize para o plano
-                      Pro para continuar a criar.
+                      {t("subscriptionCard.creditsExhausted")}
                     </p>
                   ) : usage.limit > 0 &&
                     usage.remaining / usage.limit <= 0.2 ? (
                     <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
-                      Restam poucos créditos. Considere atualizar para o plano
-                      Pro.
+                      {t("subscriptionCard.creditsLow")}
                     </p>
                   ) : null}
                 </div>
@@ -448,11 +464,10 @@ function SettingsContent() {
               {hasOrganizationBackedAccess && (
                 <div className="mb-6 rounded-xl border border-emerald-200 bg-emerald-50/70 p-4 dark:border-emerald-900/40 dark:bg-emerald-950/20">
                   <p className="text-sm font-medium text-emerald-800 dark:text-emerald-300">
-                    Tens acesso Pro através da tua organização.
+                    {t("subscriptionCard.orgAccessTitle")}
                   </p>
                   <p className="mt-1 text-sm text-emerald-700/90 dark:text-emerald-200/90">
-                    O teu acesso é gerido pela escola — não precisas de uma
-                    subscrição pessoal.
+                    {t("subscriptionCard.orgAccessDescription")}
                   </p>
                 </div>
               )}
@@ -462,13 +477,13 @@ function SettingsContent() {
                 (promoActive || plans.length > 0) && (
                 <div className="space-y-3">
                   <p className="text-sm font-medium text-muted-foreground">
-                    Atualizar para Pro
+                    {t("subscriptionCard.upgradeToPro")}
                   </p>
                   <div className="grid gap-3 sm:grid-cols-2">
                     {upgradeOptionPlans.map((plan) => {
                       const isAnnual = plan.interval === "year";
                       const monthlyEquivalent =
-                        calculateMonthlyEquivalent(plan);
+                        calculateMonthlyEquivalent(locale, plan);
                       const savingsPercent = isAnnual
                         ? calculateSavingsPercent(
                             upgradeOptionPlans.find(
@@ -503,9 +518,9 @@ function SettingsContent() {
                             >
                               {isAnnual
                                 ? savingsPercent
-                                  ? `Poupa ${savingsPercent}`
-                                  : "Anual"
-                                : "Mais Popular"}
+                                  ? t("subscriptionCard.savingsBadge", { percent: savingsPercent })
+                                  : t("subscriptionCard.annualBadge")
+                                : t("subscriptionCard.popularBadge")}
                             </span>
                           )}
                           <div className="flex items-center gap-2 mb-1">
@@ -518,19 +533,22 @@ function SettingsContent() {
                             <span className="text-lg font-bold text-foreground">
                               {isAnnual && monthlyEquivalent
                                 ? monthlyEquivalent
-                                : formatPrice(plan.priceCents, plan.currency)}
+                                : formatPrice(locale, plan.priceCents, plan.currency)}
                             </span>
                             <span className="text-sm text-muted-foreground">
-                              /mês
+                              {t("subscriptionCard.perMonth")}
                             </span>
                           </div>
                           {isAnnual && (
                             <p className="text-xs text-muted-foreground mt-1">
-                              Pago anualmente{" "}
-                              {formatPrice(plan.priceCents, plan.currency)}
                               {savingsPercent
-                                ? ` · poupe ${savingsPercent}`
-                                : ""}
+                                ? t("subscriptionCard.paidAnnuallyWithSavings", {
+                                    price: formatPrice(locale, plan.priceCents, plan.currency),
+                                    percent: savingsPercent,
+                                  })
+                                : t("subscriptionCard.paidAnnually", {
+                                    price: formatPrice(locale, plan.priceCents, plan.currency),
+                                  })}
                             </p>
                           )}
                         </button>
@@ -546,11 +564,11 @@ function SettingsContent() {
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <p className="text-sm font-medium text-foreground">
-                      O teu plano
+                      {t("subscriptionCard.yourPlan")}
                     </p>
                     <p className="text-sm text-muted-foreground">
                       {isEntitlementLoading
-                        ? "A carregar..."
+                        ? t("common.loading")
                         : effectiveAccessLabel}
                     </p>
                   </div>
@@ -576,8 +594,12 @@ function SettingsContent() {
               {subscription && (
                 <p className="text-sm text-muted-foreground mb-6">
                   {subscription.cancelAtPeriodEnd
-                    ? `Acesso até ${formatDate(subscription.currentPeriodEnd)}`
-                    : `Renova a ${formatDate(subscription.currentPeriodEnd)}`}
+                    ? t("subscriptionCard.accessUntil", {
+                        date: formatDate(locale, subscription.currentPeriodEnd),
+                      })
+                    : t("subscriptionCard.renewsOn", {
+                        date: formatDate(locale, subscription.currentPeriodEnd),
+                      })}
                 </p>
               )}
 
@@ -589,11 +611,11 @@ function SettingsContent() {
               >
                 {isLoadingPortal ? (
                   <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />A abrir...
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />{t("subscriptionCard.opening")}
                   </>
                 ) : (
                   <>
-                    Gerir Subscrição
+                    {t("subscriptionCard.manageSubscription")}
                     <ExternalLink className="w-4 h-4 ml-2" />
                   </>
                 )}
@@ -611,7 +633,7 @@ function SettingsContent() {
               <Settings className="w-5 h-5 text-primary" />
             </div>
             <h2 className="text-xl font-semibold text-foreground">
-              Preferências
+              {t("preferences.title")}
             </h2>
           </div>
 
@@ -627,13 +649,15 @@ function SettingsContent() {
                   <Monitor className="w-5 h-5 text-primary" />
                 )}
                 <div>
-                  <p className="font-medium text-foreground">Tema</p>
+                  <p className="font-medium text-foreground">
+                    {t("preferences.theme.title")}
+                  </p>
                   <p className="text-sm text-muted-foreground">
                     {theme === "light"
-                      ? "Modo claro"
+                      ? t("preferences.theme.lightHint")
                       : theme === "dark"
-                        ? "Modo escuro"
-                        : "Detetar automaticamente"}
+                        ? t("preferences.theme.darkHint")
+                        : t("preferences.theme.systemHint")}
                   </p>
                 </div>
               </div>
@@ -648,7 +672,7 @@ function SettingsContent() {
                   }`}
                 >
                   <Sun className="w-4 h-4" />
-                  <span className="hidden sm:inline">Claro</span>
+                  <span className="hidden sm:inline">{t("preferences.theme.light")}</span>
                   {theme === "light" && (
                     <Check className="w-4 h-4 hidden sm:block" />
                   )}
@@ -663,7 +687,7 @@ function SettingsContent() {
                   }`}
                 >
                   <Moon className="w-4 h-4" />
-                  <span className="hidden sm:inline">Escuro</span>
+                  <span className="hidden sm:inline">{t("preferences.theme.dark")}</span>
                   {theme === "dark" && (
                     <Check className="w-4 h-4 hidden sm:block" />
                   )}
@@ -678,7 +702,7 @@ function SettingsContent() {
                   }`}
                 >
                   <Monitor className="w-4 h-4" />
-                  <span className="hidden sm:inline">Sistema</span>
+                  <span className="hidden sm:inline">{t("preferences.theme.system")}</span>
                   {theme === "system" && (
                     <Check className="w-4 h-4 hidden sm:block" />
                   )}
@@ -686,19 +710,21 @@ function SettingsContent() {
               </div>
             </div>
 
+            <LanguagePreferences />
+
             {/* Notifications (placeholder - disabled) */}
             <div className="space-y-4">
               <p className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-                Notificações
+                {t("preferences.notifications.title")}
               </p>
               <div className="flex items-start gap-3 opacity-50">
                 <Checkbox disabled checked={false} className="mt-0.5" />
                 <div>
                   <p className="text-sm font-medium text-foreground">
-                    Novidades e atualizações
+                    {t("preferences.notifications.productTitle")}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Receber emails sobre novas funcionalidades
+                    {t("preferences.notifications.productDescription")}
                   </p>
                 </div>
               </div>
@@ -706,15 +732,15 @@ function SettingsContent() {
                 <Checkbox disabled checked={false} className="mt-0.5" />
                 <div>
                   <p className="text-sm font-medium text-foreground">
-                    Atividade na comunidade
+                    {t("preferences.notifications.communityTitle")}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Notificações sobre interações com os seus recursos
+                    {t("preferences.notifications.communityDescription")}
                   </p>
                 </div>
               </div>
               <p className="text-xs text-muted-foreground italic">
-                Em breve disponível
+                {t("preferences.notifications.comingSoon")}
               </p>
             </div>
           </div>

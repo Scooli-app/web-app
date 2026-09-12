@@ -10,6 +10,7 @@
 import { Card } from "@/components/ui/card";
 import { cn } from "@/shared/utils/utils";
 import { Presentation } from "lucide-react";
+import { useTranslations } from "next-intl";
 import type { FormUpdateFn } from "../types";
 
 /** Presets shown as preset buttons. Matches typical classroom decks. */
@@ -29,6 +30,8 @@ export function SlideCountSection({
   onUpdate,
   className,
 }: SlideCountSectionProps) {
+  const t = useTranslations("documentCreation.slideCount");
+
   // Treat the default (10) as "not yet explicitly chosen" for visual feedback —
   // no preset is highlighted until the user clicks something.
   const selected = slideCount;
@@ -46,14 +49,14 @@ export function SlideCountSection({
             <Presentation className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
           </div>
           <h2 className="text-base sm:text-lg font-semibold text-foreground">
-            Número de slides{" "}
+            {t("title")}{" "}
             <span className="text-xs sm:text-sm font-normal text-muted-foreground">
-              (Opcional)
+              {t("optional")}
             </span>
           </h2>
         </div>
         <p className="text-xs sm:text-sm text-muted-foreground">
-          Sem escolha, geramos {DEFAULT_SLIDE_COUNT} slides. Mínimo 5, máximo 20.
+          {t("hint", { count: DEFAULT_SLIDE_COUNT })}
         </p>
         <div className="flex flex-wrap gap-1.5 sm:gap-2">
           {SLIDE_COUNT_PRESETS.map((count) => (
@@ -71,7 +74,7 @@ export function SlideCountSection({
                   : "bg-card text-foreground border-border hover:border-primary hover:bg-accent",
               )}
               aria-pressed={selected === count}
-              aria-label={`Gerar ${count} slides`}
+              aria-label={t("generateAriaLabel", { count })}
             >
               <span>📊</span>
               <span>{count} slides</span>

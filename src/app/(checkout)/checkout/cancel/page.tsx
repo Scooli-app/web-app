@@ -10,10 +10,12 @@ import {
   Shield,
   Clock,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 
 export default function CheckoutCancelPage() {
   const router = useRouter();
+  const t = useTranslations("checkout.cancel");
 
   return (
     <div className="min-h-[80vh] flex items-center justify-center px-4 py-8 sm:px-6 sm:py-12">
@@ -25,18 +27,17 @@ export default function CheckoutCancelPage() {
           </div>
 
           <h1 className="mb-3 text-2xl font-bold text-foreground sm:text-3xl">
-            Lamentamos vê-lo partir...
+            {t("title")}
           </h1>
           <p className="text-base text-muted-foreground sm:text-lg">
-            O processo de pagamento foi cancelado e não foi efetuada nenhuma
-            cobrança.
+            {t("description")}
           </p>
         </div>
 
         {/* Value proposition reminder */}
         <div className="mb-6 rounded-2xl border border-border bg-card p-4 shadow-md sm:p-6">
           <h2 className="text-lg font-semibold text-foreground mb-4">
-            O que está a perder:
+            {t("whatYoureLosingTitle")}
           </h2>
           <ul className="space-y-3">
             <li className="flex items-start gap-3">
@@ -45,10 +46,10 @@ export default function CheckoutCancelPage() {
               </div>
               <div>
                 <span className="text-foreground font-medium">
-                  Gerações ilimitadas
+                  {t("unlimitedGenerations.title")}
                 </span>
                 <p className="text-sm text-muted-foreground">
-                  Crie quantos documentos precisar, sem limites
+                  {t("unlimitedGenerations.description")}
                 </p>
               </div>
             </li>
@@ -58,10 +59,10 @@ export default function CheckoutCancelPage() {
               </div>
               <div>
                 <span className="text-foreground font-medium">
-                  Poupe horas de trabalho
+                  {t("saveTime.title")}
                 </span>
                 <p className="text-sm text-muted-foreground">
-                  Professores Pro poupam em média 5h por semana
+                  {t("saveTime.description")}
                 </p>
               </div>
             </li>
@@ -71,10 +72,10 @@ export default function CheckoutCancelPage() {
               </div>
               <div>
                 <span className="text-foreground font-medium">
-                  Cancele a qualquer momento
+                  {t("cancelAnytime.title")}
                 </span>
                 <p className="text-sm text-muted-foreground">
-                  Sem compromisso, pode cancelar quando quiser
+                  {t("cancelAnytime.description")}
                 </p>
               </div>
             </li>
@@ -87,7 +88,7 @@ export default function CheckoutCancelPage() {
             onClick={() => router.push("/checkout")}
             className="w-full bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-4 rounded-xl font-semibold text-lg transition-colors flex items-center justify-center gap-2"
           >
-            Quero experimentar o Pro
+            {t("tryProCta")}
           </button>
 
           <Link
@@ -95,7 +96,7 @@ export default function CheckoutCancelPage() {
             className="w-full border border-border text-foreground bg-background hover:bg-accent px-6 py-4 rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
           >
             <ArrowLeft className="w-4 h-4" />
-            Continuar com o plano gratuito
+            {t("continueFree")}
           </Link>
         </div>
 
@@ -105,11 +106,10 @@ export default function CheckoutCancelPage() {
             <HelpCircle className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
             <div>
               <h3 className="text-foreground font-medium mb-1">
-                Teve algum problema?
+                {t("helpTitle")}
               </h3>
               <p className="text-sm text-muted-foreground mb-2">
-                Se encontrou alguma dificuldade durante o pagamento ou tem
-                dúvidas sobre os planos, estamos aqui para ajudar.
+                {t("helpDescription")}
               </p>
               <a
                 href="mailto:suporte@scooli.app"

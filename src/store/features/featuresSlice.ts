@@ -1,3 +1,4 @@
+import { translate } from "@/i18n/translate";
 import { getFeatureFlags } from "@/services/api/features.service";
 import { type FeatureFlag } from "@/shared/types/featureFlags";
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
@@ -11,7 +12,7 @@ export const fetchFeatureFlags = createAsyncThunk(
     try {
       return await getFeatureFlags();
     } catch {
-      return rejectWithValue("Não foi possível carregar as flags de funcionalidades");
+      return rejectWithValue(translate("errors.features.fetchFlagsFailed"));
     }
   }
 );

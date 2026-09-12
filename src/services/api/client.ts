@@ -11,6 +11,7 @@ export class UpgradeLimitError extends Error {
 }
 
 import { setUpgradeModalOpen } from "@/store/ui/uiSlice";
+import { translate } from "@/i18n/translate";
 import type { UnknownAction } from "@reduxjs/toolkit";
 import axios, { type AxiosError, type AxiosInstance } from "axios";
 
@@ -98,9 +99,7 @@ apiClient.interceptors.response.use(
     const contentType = response.headers["content-type"]?.toString();
     if (contentType && !contentType.includes("application/json")) {
       console.error("A API devolveu resposta não JSON:", contentType);
-      throw new Error(
-        "O servidor devolveu uma resposta inválida. Verifique a configuração de NEXT_PUBLIC_BASE_API_URL."
-      );
+      throw new Error(translate("errors.api.invalidResponse"));
     }
     return response;
   },
@@ -115,7 +114,7 @@ apiClient.interceptors.response.use(
         typeof error.response.data === "string"
           ? error.response.data
           : (error.response.data as { message?: string })?.message ||
-            "Limite de utilização excedido";
+            translate("errors.api.usageLimitExceeded");
       return Promise.reject(new UpgradeLimitError(limitMessage));
     }
 
@@ -126,14 +125,12 @@ apiClient.interceptors.response.use(
       if (contentType && contentType.includes("text/html")) {
         const status = error.response.status;
         return Promise.reject(
-          new Error(
-            `O endpoint da API devolveu HTML em vez de JSON (Estado: ${status}). Verifique se NEXT_PUBLIC_BASE_API_URL está correto e se o endpoint existe.`
-          )
+          new Error(translate("errors.api.htmlResponse", { status }))
         );
       }
 
       // Try to extract error message from response
-      let message = "Ocorreu um erro";
+      let message = translate("errors.api.genericError");
       if (typeof error.response.data === "string") {
         message = error.response.data;
       } else if (
@@ -146,16 +143,16 @@ apiClient.interceptors.response.use(
           (error.response.data as { message?: string; error?: string })
             ?.error ||
           error.message ||
-          `Erro HTTP ${error.response.status}`;
+          translate("errors.api.httpError", { status: error.response.status });
       } else {
-        message = `Erro HTTP ${error.response.status}`;
+        message = translate("errors.api.httpError", { status: error.response.status });
       }
 
       return Promise.reject(new Error(message));
     }
     if (error.request) {
       return Promise.reject(
-        new Error("Erro de rede. Verifique a sua ligação.")
+        new Error(translate("errors.api.networkError"))
       );
     }
     return Promise.reject(error);

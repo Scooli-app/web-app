@@ -2,6 +2,7 @@ import { Card } from "@/components/ui/card";
 import type { TeachingMethod } from "@/shared/types";
 import { cn } from "@/shared/utils/utils";
 import { Brain, Check } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { TEACHING_METHODS } from "../constants";
 import type { FormUpdateFn } from "../types";
 
@@ -14,6 +15,9 @@ export function TeachingMethodSection({
   teachingMethod,
   onUpdate,
 }: TeachingMethodSectionProps) {
+  const t = useTranslations("documentCreation.teachingMethod");
+  const tMethods = useTranslations("documentCreation.teachingMethods");
+
   return (
     <Card className="p-4 sm:p-6 md:p-8 border-border shadow-sm hover:shadow-md transition-shadow">
       <div className="space-y-3 sm:space-y-4">
@@ -23,13 +27,13 @@ export function TeachingMethodSection({
           </div>
           <div className="min-w-0">
             <h2 className="text-base sm:text-lg font-semibold text-foreground">
-              Metodologia de Ensino{" "}
+              {t("title")}{" "}
               <span className="text-xs sm:text-sm font-normal text-muted-foreground">
-                (Opcional)
+                {t("optional")}
               </span>
             </h2>
             <p className="text-xs sm:text-sm text-muted-foreground">
-              Escolha a abordagem pedagógica preferida
+              {t("description")}
             </p>
           </div>
         </div>
@@ -57,7 +61,7 @@ export function TeachingMethodSection({
                     : "bg-card border-border hover:border-muted-foreground/30 hover:bg-muted/50"
                 )}
                 aria-pressed={isSelected}
-                aria-label={`Selecionar ${method.label}`}
+                aria-label={t("selectAriaLabel", { label: tMethods(`${method.id}.label`) })}
               >
                 {isSelected && (
                   <div className="absolute top-2 right-2">
@@ -86,7 +90,7 @@ export function TeachingMethodSection({
                       isSelected ? "text-foreground" : "text-foreground"
                     )}
                   >
-                    {method.label}
+                    {tMethods(`${method.id}.label`)}
                   </h3>
                   <p
                     className={cn(
@@ -94,7 +98,7 @@ export function TeachingMethodSection({
                       isSelected ? "text-foreground/80" : "text-muted-foreground"
                     )}
                   >
-                    {method.description}
+                    {tMethods(`${method.id}.description`)}
                   </p>
                 </div>
               </button>

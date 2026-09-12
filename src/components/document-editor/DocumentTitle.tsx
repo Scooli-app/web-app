@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { StreamingText } from "@/components/ui/streaming-text";
 import { MAX_LENGTHS } from "@/shared/config/constants";
 import { Edit3, Save } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 
 interface DocumentTitleProps {
@@ -18,9 +19,11 @@ export default function DocumentTitle({
   title,
   onSave,
   isSaving,
-  defaultTitle = "Documento",
+  defaultTitle,
   isStreaming = false,
 }: DocumentTitleProps) {
+  const t = useTranslations("editor.documentTitle");
+  const resolvedDefaultTitle = defaultTitle ?? t("defaultTitle");
   const [isEditing, setIsEditing] = useState(false);
   const [editingTitle, setEditingTitle] = useState(title);
   const [showSaved, setShowSaved] = useState(false);
@@ -106,7 +109,7 @@ export default function DocumentTitle({
               onBlur={handleTitleBlur}
               maxLength={MAX_LENGTHS.DOCUMENT_TITLE}
               className="h-12 w-full rounded-lg border-2 border-primary bg-background px-3 py-2 text-xl font-bold text-foreground sm:h-14 sm:px-4 sm:text-3xl"
-              placeholder="Título do documento..."
+              placeholder={t("placeholder")}
             />
             <div className="mt-1 text-right text-xs text-muted-foreground">
               {editingTitle.length}/{MAX_LENGTHS.DOCUMENT_TITLE}
@@ -117,7 +120,7 @@ export default function DocumentTitle({
       ) : (
         <div className="flex w-full flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
           <StreamingText
-            text={title || defaultTitle}
+            text={title || resolvedDefaultTitle}
             isStreaming={isStreaming}
             as="h1"
             className="cursor-pointer break-words text-2xl font-bold text-foreground transition-colors hover:text-primary sm:text-3xl"
@@ -128,12 +131,12 @@ export default function DocumentTitle({
             {isSaving ? (
               <div className="flex items-center text-muted-foreground/70 animate-pulse">
                 <Save className="mr-1.5 h-3.5 w-3.5" />
-                <span className="text-xs font-medium">A guardar...</span>
+                <span className="text-xs font-medium">{t("saving")}</span>
               </div>
             ) : showSaved ? (
               <div className="flex items-center text-primary/70 animate-in fade-in duration-500">
                 <Save className="mr-1.5 h-3.5 w-3.5" />
-                <span className="text-xs font-medium">Guardado</span>
+                <span className="text-xs font-medium">{t("saved")}</span>
               </div>
             ) : null}
           </div>

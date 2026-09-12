@@ -2,20 +2,21 @@
 
 import { useState } from "react";
 import { Loader2, X } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/shared/utils/utils";
 import { FeedbackSurveySentiment } from "@/shared/types/feedbackSurvey";
 
 const COMMENT_MAX = 3000;
 
-const EMOJIS: Array<{
+const EMOJI_KEYS: Array<{
   value: FeedbackSurveySentiment;
   emoji: string;
-  label: string;
+  labelKey: string;
 }> = [
-  { value: FeedbackSurveySentiment.FRUSTRATING, emoji: "😕", label: "Podia ser melhor" },
-  { value: FeedbackSurveySentiment.USEFUL_BUT_CAN_IMPROVE, emoji: "🙂", label: "Está bem" },
-  { value: FeedbackSurveySentiment.VERY_USEFUL, emoji: "😍", label: "Adoro" },
+  { value: FeedbackSurveySentiment.FRUSTRATING, emoji: "😕", labelKey: "emojiFrustrating" },
+  { value: FeedbackSurveySentiment.USEFUL_BUT_CAN_IMPROVE, emoji: "🙂", labelKey: "emojiOk" },
+  { value: FeedbackSurveySentiment.VERY_USEFUL, emoji: "😍", labelKey: "emojiLove" },
 ];
 
 interface FeatureFeedbackCardProps {
@@ -33,6 +34,7 @@ export function FeatureFeedbackCard({
   onDismiss,
   onSubmit,
 }: FeatureFeedbackCardProps) {
+  const t = useTranslations("feedback.featureCard");
   const [sentiment, setSentiment] = useState<FeedbackSurveySentiment | null>(null);
   const [comment, setComment] = useState("");
 
@@ -46,7 +48,7 @@ export function FeatureFeedbackCard({
   return (
     <div
       role="dialog"
-      aria-label="Feedback sobre as Planificações e Turmas"
+      aria-label={t("ariaLabel")}
       className={cn(
         "fixed bottom-4 right-4 z-[110] w-[calc(100vw-2rem)] max-w-sm",
         "rounded-2xl border border-border bg-card p-4 shadow-xl shadow-black/10",
@@ -57,18 +59,18 @@ export function FeatureFeedbackCard({
         type="button"
         onClick={onDismiss}
         disabled={isBusy}
-        aria-label="Agora não"
+        aria-label={t("dismissAriaLabel")}
         className="absolute right-2.5 top-2.5 rounded-lg p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
       >
         <X className="h-4 w-4" />
       </button>
 
       <p className="pr-6 text-sm font-semibold text-foreground">
-        Como está a correr com as Planificações e as Turmas?
+        {t("prompt")}
       </p>
 
       <div className="mt-3 flex gap-2">
-        {EMOJIS.map((option) => {
+        {EMOJI_KEYS.map((option) => {
           const selected = sentiment === option.value;
           return (
             <button
@@ -76,7 +78,7 @@ export function FeatureFeedbackCard({
               type="button"
               disabled={isBusy}
               onClick={() => setSentiment(option.value)}
-              title={option.label}
+              title={t(option.labelKey as "emojiFrustrating" | "emojiOk" | "emojiLove")}
               aria-pressed={selected}
               className={cn(
                 "flex flex-1 flex-col items-center gap-1 rounded-xl border px-2 py-2.5 text-xs transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50",
@@ -93,7 +95,7 @@ export function FeatureFeedbackCard({
               >
                 {option.emoji}
               </span>
-              <span className="text-muted-foreground">{option.label}</span>
+              <span className="text-muted-foreground">{t(option.labelKey as "emojiFrustrating" | "emojiOk" | "emojiLove")}</span>
             </button>
           );
         })}
@@ -108,7 +110,7 @@ export function FeatureFeedbackCard({
             setComment(e.target.value);
             autoGrow(e.currentTarget);
           }}
-          placeholder="Conta-nos mais (opcional) — o que ajudou, o que faltou…"
+          placeholder={t("commentPlaceholder")}
           className="placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 min-h-[96px] w-full resize-none rounded-xl border border-border bg-muted/40 px-3 py-2 text-sm outline-none transition-[color,box-shadow] focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50"
         />
         {comment.length > COMMENT_MAX * 0.8 && (
@@ -127,7 +129,7 @@ export function FeatureFeedbackCard({
           onClick={onDismiss}
           className="text-muted-foreground"
         >
-          Agora não
+          {t("dismiss")}
         </Button>
         <Button
           type="button"
@@ -139,7 +141,7 @@ export function FeatureFeedbackCard({
           }
         >
           {isBusy ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
-          Enviar
+          {t("send")}
         </Button>
       </div>
     </div>

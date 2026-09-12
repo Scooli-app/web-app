@@ -1,4 +1,5 @@
 "use client";
+import { AiDisclaimer } from "@/components/ui/ai-disclaimer";
 
 /**
  * CalendarDashboardWidget
@@ -35,6 +36,9 @@ import { useAppDispatch } from "@/store/hooks";
 import { fetchTimetables } from "@/store/timetable/timetableSlice";
 import { generationStore } from "@/store/generationStore";
 import { SLOT_STATUS_CONFIG } from "@/shared/constants/lessonSlotStatus";
+import { useLocale, useTranslations } from "next-intl";
+import { isSupportedLocale, defaultLocale, type Locale } from "@/i18n/locales";
+import { toIntlLocale } from "@/shared/utils/calendar";
 
 interface UpcomingLesson extends LessonSlot {
   timetable: Timetable;
@@ -63,32 +67,38 @@ function isUpcoming(slot: LessonSlot): boolean {
   );
 }
 
-/** Human-friendly label: "Hoje", "Amanhã", or "Seg, 2 jun". */
-function relativeDate(slotDate: string): string {
+/** Human-friendly label: "Today", "Tomorrow", or "Mon, 2 Jun" (locale-aware). */
+function relativeDate(slotDate: string, locale: Locale, tShared: (key: string) => string): string {
   const today = localIsoDate();
-  if (slotDate === today) return "Hoje";
+  if (slotDate === today) return tShared("today");
 
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
-  if (slotDate === localIsoDate(tomorrow)) return "Amanhã";
+  if (slotDate === localIsoDate(tomorrow)) return tShared("tomorrow");
 
   // Parse as local midnight to avoid UTC-shift
-  return new Date(`${slotDate}T00:00:00`).toLocaleDateString("pt-PT", {
+  return new Date(`${slotDate}T00:00:00`).toLocaleDateString(toIntlLocale(locale), {
     weekday: "short",
     day: "numeric",
     month: "short",
   });
 }
 
-// Map shared config to the local cls alias used by this widget
+// Map shared config to the local cls alias used by this widget — no label,
+// resolved separately via `useTranslations("timetable")` at render time.
 const STATUS_CFG = Object.fromEntries(
   Object.entries(SLOT_STATUS_CONFIG).map(([k, v]) => [
     k,
-    { label: v.label, cls: v.badgeCls, icon: v.icon },
+    { cls: v.badgeCls, icon: v.icon },
   ])
-) as Record<LessonSlot["status"], { label: string; cls: string; icon: React.ReactNode }>;
+) as Record<LessonSlot["status"], { cls: string; icon: React.ReactNode }>;
 
 export function CalendarDashboardWidget() {
+  const t = useTranslations("calendar.dashboardWidget");
+  const tShared = useTranslations("calendar.shared");
+  const tTimetable = useTranslations("timetable");
+  const rawLocale = useLocale();
+  const locale = isSupportedLocale(rawLocale) ? rawLocale : defaultLocale;
   const router = useRouter();
   const { getToken } = useAuth();
   const dispatch = useAppDispatch();
@@ -224,12 +234,12 @@ export function CalendarDashboardWidget() {
         <div className="flex items-center gap-2">
           <Clock className="h-5 w-5 text-primary" />
           <h2 className="text-xl font-semibold text-foreground sm:text-2xl">
-            Próximas aulas
+            {t("title")}
           </h2>
         </div>
         <Button variant="ghost" size="sm" asChild className="text-primary">
           <Link href={Routes.CALENDAR}>
-            Ver calendário <ArrowRight className="ml-1 h-3 w-3" />
+            {t("viewCalendar")} <ArrowRight className="ml-1 h-3 w-3" />
           </Link>
         </Button>
       </div>
@@ -255,12 +265,12 @@ export function CalendarDashboardWidget() {
       ) : upcoming.length === 0 ? (
         <div className="py-6 text-center">
           <p className="text-sm text-muted-foreground">
-            Não tens aulas próximas.
+            {t("noUpcoming")}
           </p>
           <Button asChild size="sm" className="mt-3">
             <Link href={Routes.CALENDAR_NEW}>
               <Plus className="mr-1 h-3 w-3" />
-              Criar turma
+              {tShared("createClass")}
             </Link>
           </Button>
         </div>
@@ -268,7 +278,7 @@ export function CalendarDashboardWidget() {
         <div className="max-h-40 space-y-2.5 overflow-y-auto">
           {upcoming.map((lesson) => {
             const cfg = STATUS_CFG[lesson.status];
-            const dateLabel = relativeDate(lesson.slotDate);
+            const dateLabel = relativeDate(lesson.slotDate, locale, tShared);
             const isToday = lesson.slotDate === localIsoDate();
             return (
               <div
@@ -299,14 +309,14 @@ export function CalendarDashboardWidget() {
                   {/* Text info: full-width row on mobile, grows inline on sm+ */}
                   <div className="min-w-0 basis-full sm:basis-0 sm:flex-1">
                     <p className="truncate text-sm font-medium">
-                      {lesson.topicTitle || "Sem tópico"}
+                      {lesson.topicTitle || tShared("noTopic")}
                     </p>
                     <p className="text-xs text-muted-foreground">
                       <span className={isToday ? "font-semibold text-primary" : ""}>
                         {dateLabel}
                       </span>
                       {" · "}
-                      {lesson.timetable.gradeLevel ? `${lesson.timetable.gradeLevel}.º ` : ""}
+                      {lesson.timetable.gradeLevel ? `${tTimetable("gradeShort", { grade: lesson.timetable.gradeLevel })} ` : ""}
                       {translateSubject(lesson.timetable.subject)}
                       {lesson.timetable.classLabel ? ` · ${lesson.timetable.classLabel}` : ""}
                     </p>
@@ -317,10 +327,11 @@ export function CalendarDashboardWidget() {
                     {lesson.status !== "generating" && (
                       <Badge className={`gap-1 border text-xs ${cfg.cls}`}>
                         {cfg.icon}
-                        {cfg.label}
+                        {tTimetable(`status.${lesson.status}`)}
                       </Badge>
                     )}
                     {(lesson.status === "pending" || lesson.status === "failed") && (
+                      <div className="flex flex-col items-end gap-0.5">
                       <Button
                         size="sm"
                         variant="outline"
@@ -333,8 +344,10 @@ export function CalendarDashboardWidget() {
                         ) : (
                           <Sparkles className="mr-1 h-3 w-3" />
                         )}
-                        Gerar
+                        {t("generate")}
                       </Button>
+                        <AiDisclaimer variant="compact" />
+                      </div>
                     )}
                     {lesson.status === "generating" && (
                       <Button
@@ -345,7 +358,7 @@ export function CalendarDashboardWidget() {
                         onClick={(e) => e.stopPropagation()}
                       >
                         <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                        A gerar…
+                        {t("generating")}
                       </Button>
                     )}
                     {lesson.status === "completed" && (
@@ -359,7 +372,7 @@ export function CalendarDashboardWidget() {
                         {openingSlot === lesson.id ? (
                           <Loader2 className="mr-1 h-3 w-3 animate-spin" />
                         ) : null}
-                        Abrir
+                        {t("open")}
                       </Button>
                     )}
                   </div>

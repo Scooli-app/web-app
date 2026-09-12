@@ -5,13 +5,13 @@ import type {
     WorksheetVariant,
 } from "@/shared/types";
 
+// title/description/placeholder come from the `documentCreation.types.<id>` and
+// `enums.documentType.<id>` catalogue keys (see FormHeader.tsx, FormActions.tsx,
+// DocumentCreationPage.tsx) — not stored here, so they aren't duplicated and frozen
+// at module load.
 export interface DocumentTypeConfig {
   id: DocumentType;
-  title: string;
-  description: string;
-  placeholder: string;
   redirectPath: string;
-  generateTitlePrefix: string;
 }
 
 export interface FormState {

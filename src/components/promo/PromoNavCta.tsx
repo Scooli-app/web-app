@@ -4,6 +4,7 @@ import { Routes } from "@/shared/types";
 import { PROMO_PLAN_CODES, isPromoActive } from "@/shared/utils/promo";
 import { useAppSelector } from "@/store/hooks";
 import { X, Zap } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import posthog from "posthog-js";
 import { useEffect, useRef, useState } from "react";
@@ -31,6 +32,7 @@ function markDismissed(): void {
 // only reveals itself after mount to avoid an SSR/hydration mismatch, since
 // the dismissed flag lives in localStorage (unavailable during SSR).
 export function PromoNavCta() {
+  const t = useTranslations("promo.navCta");
   const router = useRouter();
   const subscription = useAppSelector(
     (state) => state.subscription.subscription,
@@ -75,12 +77,12 @@ export function PromoNavCta() {
         className="flex items-center gap-1.5 whitespace-nowrap text-xs font-semibold text-primary hover:text-primary/80"
       >
         <Zap className="h-3.5 w-3.5" />
-        Pro por 4,99€/mês
+        {t("label")}
       </button>
       <button
         type="button"
         onClick={handleDismiss}
-        aria-label="Fechar"
+        aria-label={t("close")}
         className="rounded-full p-1 text-primary/60 transition-colors hover:bg-primary/10 hover:text-primary"
       >
         <X className="h-3.5 w-3.5" />

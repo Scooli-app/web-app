@@ -1,7 +1,8 @@
 import { Card } from "@/components/ui/card";
 import { cn } from "@/shared/utils/utils";
 import { GraduationCap } from "lucide-react";
-import { GRADE_GROUPS } from "../constants";
+import { useTranslations } from "next-intl";
+import { GRADE_GROUPS, translateGradeGroupLabel, translateGradeLabel } from "../constants";
 import type { FormUpdateFn } from "../types";
 
 interface GradeSectionProps {
@@ -11,6 +12,8 @@ interface GradeSectionProps {
 }
 
 export function GradeSection({ schoolYear, onUpdate, className }: GradeSectionProps) {
+  const t = useTranslations("documentCreation.grade");
+
   return (
     <Card className={cn("p-4 sm:p-6 border-border shadow-sm hover:shadow-md transition-shadow", className)}>
       <div className="space-y-3 sm:space-y-4">
@@ -19,19 +22,20 @@ export function GradeSection({ schoolYear, onUpdate, className }: GradeSectionPr
             <GraduationCap className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
           </div>
           <h2 className="text-base sm:text-lg font-semibold text-foreground">
-            Ano de Escolaridade <span className="text-destructive">*</span>
+            {t("title")} <span className="text-destructive">*</span>
           </h2>
         </div>
         <div className="space-y-2.5 sm:space-y-3">
           {GRADE_GROUPS.map((group) => (
-            <div key={group.label}>
+            <div key={group.groupId}>
               <p className="text-[10px] sm:text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1.5 sm:mb-2">
-                {group.label}
+                {translateGradeGroupLabel(group.groupId)}
               </p>
               <div className="flex flex-wrap gap-1.5 sm:gap-2">
                 {group.grades.map((grade) => {
                   const gradeValue = parseInt(grade.id);
                   const isSelected = schoolYear === gradeValue;
+                  const gradeLabel = translateGradeLabel(grade.id);
                   return (
                     <button
                       key={grade.id}
@@ -47,9 +51,9 @@ export function GradeSection({ schoolYear, onUpdate, className }: GradeSectionPr
                           : "bg-card text-foreground border-border hover:border-primary hover:bg-accent"
                       )}
                       aria-pressed={isSelected}
-                      aria-label={`Selecionar ${grade.label}`}
+                      aria-label={t("selectAriaLabel", { grade: gradeLabel })}
                     >
-                      {grade.label}
+                      {gradeLabel}
                     </button>
                   );
                 })}

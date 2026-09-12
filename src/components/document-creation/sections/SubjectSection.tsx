@@ -10,7 +10,13 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/shared/utils/utils";
 import { BookOpen, Check } from "lucide-react";
-import { AMBIGUOUS_COMPONENTS_SUBJECTS, SUBJECTS } from "../constants";
+import { useTranslations } from "next-intl";
+import {
+  AMBIGUOUS_COMPONENTS_SUBJECTS,
+  SUBJECTS,
+  translateSubjectCategory,
+  translateSubjectLabel,
+} from "../constants";
 import type { FormUpdateFn } from "../types";
 
 interface SubjectSectionProps {
@@ -30,6 +36,8 @@ export function SubjectSection({
   className,
   disabled,
 }: SubjectSectionProps) {
+  const t = useTranslations("documentCreation.subject");
+
   // Filter subjects based on availableSubjects prop if provided
   const visibleSubjects = availableSubjects
     ? SUBJECTS.filter((s) => availableSubjects.includes(s.id))
@@ -76,7 +84,7 @@ export function SubjectSection({
               <BookOpen className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
             </div>
             <h2 className="text-base sm:text-lg font-semibold text-foreground">
-              Disciplina <span className="text-destructive">*</span>
+              {t("title")} <span className="text-destructive">*</span>
             </h2>
           </div>
 
@@ -93,7 +101,7 @@ export function SubjectSection({
                 )}
               >
                 {!isSpecificComponent && <Check className="w-3 h-3" />}
-                Formação Geral
+                {t("generalTraining")}
               </button>
               <button
                 type="button"
@@ -106,7 +114,7 @@ export function SubjectSection({
                 )}
               >
                 {isSpecificComponent && <Check className="w-3 h-3" />}
-                Formação Específica
+                {t("specificTraining")}
               </button>
             </div>
           )}
@@ -119,13 +127,13 @@ export function SubjectSection({
         >
           <SelectTrigger
             className="h-11 sm:h-12 px-4 text-sm sm:text-base bg-background border-border rounded-xl"
-            aria-label="Selecionar disciplina"
+            aria-label={t("selectAriaLabel")}
           >
             <SelectValue
               placeholder={
                 disabled
-                  ? "Selecione primeiro o ano de escolaridade..."
-                  : "Selecione uma disciplina..."
+                  ? t("placeholderDisabled")
+                  : t("placeholder")
               }
             />
           </SelectTrigger>
@@ -137,7 +145,7 @@ export function SubjectSection({
               return (
                 <SelectGroup key={category}>
                   <SelectLabel className="bg-background px-2 py-2 text-sm font-bold text-primary border-b border-border/50 rounded-lg mb-1">
-                    {category}
+                    {translateSubjectCategory(category)}
                   </SelectLabel>
                   {categorySubjects.map((subjectOption) => (
                     <SelectItem
@@ -145,7 +153,7 @@ export function SubjectSection({
                       value={subjectOption.id}
                       className="py-2.5 px-3 text-sm cursor-pointer rounded-lg focus:bg-accent focus:text-primary pl-4"
                     >
-                      {subjectOption.label}
+                      {translateSubjectLabel(subjectOption.id)}
                     </SelectItem>
                   ))}
                 </SelectGroup>
@@ -156,7 +164,7 @@ export function SubjectSection({
               .map((category) => (
                 <SelectGroup key={category}>
                   <SelectLabel className="bg-background px-2 py-2 text-sm font-bold text-primary border-b border-border/50 mb-1">
-                    {category}
+                    {translateSubjectCategory(category)}
                   </SelectLabel>
                   {groupedSubjects[category].map((subjectOption) => (
                     <SelectItem
@@ -164,7 +172,7 @@ export function SubjectSection({
                       value={subjectOption.id}
                       className="py-2.5 px-3 text-sm cursor-pointer rounded-lg focus:bg-accent focus:text-primary pl-4"
                     >
-                      {subjectOption.label}
+                      {translateSubjectLabel(subjectOption.id)}
                     </SelectItem>
                   ))}
                 </SelectGroup>

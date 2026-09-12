@@ -1,4 +1,5 @@
 "use client";
+import { AiDisclaimer } from "@/components/ui/ai-disclaimer";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -28,7 +29,11 @@ import {
   GRADE_GROUPS,
   SUBJECTS_BY_GRADE,
   TIMETABLE_COLORS,
+  translateGradeGroupLabel,
+  translateGradeLabel,
   translateSubject,
+  translateSubjectCategory,
+  translateSubjectLabel,
   getSubjectsForGrade,
   groupSubjectsByCategory,
 } from "@/components/document-creation/constants";
@@ -75,6 +80,9 @@ import {
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSelector } from "react-redux";
+import { useLocale, useTranslations } from "next-intl";
+import { isSupportedLocale, defaultLocale, type Locale } from "@/i18n/locales";
+import { toIntlLocale } from "@/shared/utils/calendar";
 
 // ─────────────────────── Types ────────────────────────────────────────────────
 
@@ -88,29 +96,18 @@ type WizardStep =
 
 // ─────────────────────── Step metadata ────────────────────────────────────────
 
-const STEP_INDICATOR = [
-  { id: "mode_a_select_plan", label: "Planificação", icon: BookOpen },
-  { id: "mode_b_period",      label: "Período",       icon: CalendarDays },
-  { id: "mode_b_details",     label: "Detalhes",      icon: Settings2 },
-  { id: "rever_datas",        label: "Rever",         icon: ListChecks },
+const STEP_INDICATOR_ICONS = [
+  { id: "mode_a_select_plan", icon: BookOpen },
+  { id: "mode_b_period",      icon: CalendarDays },
+  { id: "mode_b_details",     icon: Settings2 },
+  { id: "rever_datas",        icon: ListChecks },
 ] as const;
 
-const STEP_INDICATOR_CUSTOM = [
-  { id: "mode_b_period",  label: "Período",  icon: CalendarDays },
-  { id: "mode_b_details", label: "Detalhes", icon: Settings2 },
-  { id: "rever_datas",    label: "Rever",    icon: ListChecks },
+const STEP_INDICATOR_CUSTOM_ICONS = [
+  { id: "mode_b_period",  icon: CalendarDays },
+  { id: "mode_b_details", icon: Settings2 },
+  { id: "rever_datas",    icon: ListChecks },
 ] as const;
-
-// ─────────────────────── Constants ────────────────────────────────────────────
-
-const LOADING_STEPS = [
-  "A mapear competências curriculares",
-  "A organizar conteúdos e sequência pedagógica",
-  "A definir avaliações e critérios",
-  "Revisão pedagógica final",
-];
-
-const PERIOD_PRESETS = buildSchoolPeriodPresets();
 
 // ─────────────────────── Slot expansion util ──────────────────────────────────
 
@@ -125,15 +122,15 @@ function groupByMonth(slots: PreviewSlot[]): { month: string; slots: PreviewSlot
   return Array.from(map.entries()).map(([month, s]) => ({ month, slots: s }));
 }
 
-function formatMonthLabel(ym: string): string {
+function formatMonthLabel(ym: string, locale: Locale): string {
   const [year, month] = ym.split("-");
   return new Date(Number(year), Number(month) - 1, 1)
-    .toLocaleDateString("pt-PT", { month: "long", year: "numeric" });
+    .toLocaleDateString(toIntlLocale(locale), { month: "long", year: "numeric" });
 }
 
-function formatDayLabel(iso: string): string {
+function formatDayLabel(iso: string, locale: Locale): string {
   return new Date(`${iso}T00:00:00`)
-    .toLocaleDateString("pt-PT", { weekday: "short", day: "numeric", month: "short" });
+    .toLocaleDateString(toIntlLocale(locale), { weekday: "short", day: "numeric", month: "short" });
 }
 
 function isoToDate(iso: string): Date | undefined {
@@ -150,12 +147,13 @@ function dateToIso(d: Date | undefined): string {
 // ─────────────────────── Step: Choose mode ────────────────────────────────────
 
 function StepChooseMode({ onSelect }: { onSelect: (mode: "from_plan" | "custom") => void }) {
+  const t = useTranslations("calendar.novo");
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold">Como queres criar a turma?</h2>
+        <h2 className="text-xl font-semibold">{t("chooseMode.title")}</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Escolhe o método que melhor se adapta ao teu fluxo de trabalho.
+          {t("chooseMode.subtitle")}
         </p>
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
@@ -166,13 +164,13 @@ function StepChooseMode({ onSelect }: { onSelect: (mode: "from_plan" | "custom")
           <CardHeader className="pb-3">
             <div className="flex items-center gap-2">
               <CalendarDays className="h-5 w-5 text-primary" />
-              <CardTitle className="text-base">A partir de uma planificação</CardTitle>
+              <CardTitle className="text-base">{t("chooseMode.fromPlanTitle")}</CardTitle>
             </div>
-            <Badge className="w-fit text-xs" variant="secondary">Recomendado</Badge>
+            <Badge className="w-fit text-xs" variant="secondary">{t("chooseMode.recommended")}</Badge>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">
-              A Scooli lê a tua planificação e preenche tudo — período, tópicos e AEs. Só revês as datas.
+              {t("chooseMode.fromPlanDescription")}
             </p>
           </CardContent>
         </Card>
@@ -183,12 +181,12 @@ function StepChooseMode({ onSelect }: { onSelect: (mode: "from_plan" | "custom")
           <CardHeader className="pb-3">
             <div className="flex items-center gap-2">
               <BookOpen className="h-5 w-5 text-primary" />
-              <CardTitle className="text-base">Do zero</CardTitle>
+              <CardTitle className="text-base">{t("chooseMode.customTitle")}</CardTitle>
             </div>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">
-              Define o período e disciplina. A Scooli gera os tópicos a partir das AEs do ano.
+              {t("chooseMode.customDescription")}
             </p>
           </CardContent>
         </Card>
@@ -204,6 +202,8 @@ function StepSelectPlan({
 }: {
   onSelect: (plan: Document) => void;
 }) {
+  const t = useTranslations("calendar.novo");
+  const tTimetable = useTranslations("timetable");
   const [plans, setPlans] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -226,13 +226,13 @@ function StepSelectPlan({
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-lg font-semibold">Escolhe uma planificação</h2>
+        <h2 className="text-lg font-semibold">{t("selectPlan.title")}</h2>
         <p className="text-sm text-muted-foreground">
-          A Scooli extrai o período, disciplina e tópicos automaticamente.
+          {t("selectPlan.subtitle")}
         </p>
       </div>
       <Input
-        placeholder="Pesquisar planificações..."
+        placeholder={t("selectPlan.searchPlaceholder")}
         value={search}
         onChange={(e) => setSearch(e.target.value)}
       />
@@ -243,8 +243,8 @@ function StepSelectPlan({
       ) : filtered.length === 0 ? (
         <div className="py-8 text-center text-sm text-muted-foreground">
           {plans.length === 0
-            ? "Ainda não tens planificações criadas."
-            : "Nenhuma planificação encontrada."}
+            ? t("selectPlan.noneYet")
+            : t("selectPlan.noneFound")}
         </div>
       ) : (
         <div className="max-h-[420px] space-y-2 overflow-y-auto pr-1">
@@ -260,7 +260,7 @@ function StepSelectPlan({
                   <p className="truncate text-sm font-medium">{plan.title}</p>
                   {(plan.subject ?? plan.gradeLevel) && (
                     <p className="text-xs text-muted-foreground">
-                      {[plan.subject ? translateSubject(plan.subject) : null, plan.gradeLevel ? `${plan.gradeLevel}.º ano` : null]
+                      {[plan.subject ? translateSubject(plan.subject) : null, plan.gradeLevel ? tTimetable("gradeYear", { grade: plan.gradeLevel }) : null]
                         .filter(Boolean)
                         .join(" · ")}
                     </p>
@@ -286,21 +286,25 @@ interface StepPeriodProps {
 }
 
 function StepPeriod({ periodStart, periodEnd, schoolYearLabel, onChange }: StepPeriodProps) {
+  const t = useTranslations("calendar.novo");
+  const rawLocale = useLocale();
+  const locale = isSupportedLocale(rawLocale) ? rawLocale : defaultLocale;
+  const periodPresets = buildSchoolPeriodPresets();
 
   return (
     <div className="space-y-5">
       <div>
-        <h2 className="text-lg font-semibold">Período letivo</h2>
-        <p className="text-sm text-muted-foreground">Define as datas de início e fim da turma.</p>
+        <h2 className="text-lg font-semibold">{t("period.title")}</h2>
+        <p className="text-sm text-muted-foreground">{t("period.subtitle")}</p>
       </div>
 
       {/* Presets */}
       <div className="space-y-2">
         <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          Atalhos
+          {t("period.presetsLabel")}
         </Label>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-          {PERIOD_PRESETS.map((p) => {
+          {periodPresets.map((p) => {
             const isActive = periodStart === p.start && periodEnd === p.end;
             return (
               <button
@@ -318,7 +322,7 @@ function StepPeriod({ periodStart, periodEnd, schoolYearLabel, onChange }: StepP
                   {p.label}
                 </span>
                 <span className="text-[11px] text-muted-foreground">
-                  {formatPresetRange(p.start, p.end)}
+                  {formatPresetRange(p.start, p.end, locale)}
                 </span>
               </button>
             );
@@ -329,29 +333,29 @@ function StepPeriod({ periodStart, periodEnd, schoolYearLabel, onChange }: StepP
       {/* Date pickers */}
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1.5">
-          <Label>Início *</Label>
+          <Label>{t("period.startLabel")}</Label>
           <DatePicker
             value={isoToDate(periodStart)}
             onChange={(d) => onChange(dateToIso(d), periodEnd, schoolYearLabel)}
-            placeholder="Seleciona a data de início"
+            placeholder={t("period.startPlaceholder")}
             toDate={isoToDate(periodEnd)}
           />
         </div>
         <div className="space-y-1.5">
-          <Label>Fim *</Label>
+          <Label>{t("period.endLabel")}</Label>
           <DatePicker
             value={isoToDate(periodEnd)}
             onChange={(d) => onChange(periodStart, dateToIso(d), schoolYearLabel)}
-            placeholder="Seleciona a data de fim"
+            placeholder={t("period.endPlaceholder")}
             fromDate={isoToDate(periodStart)}
           />
         </div>
       </div>
 
       <div className="space-y-1.5">
-        <Label>Ano letivo</Label>
+        <Label>{t("period.schoolYearLabel")}</Label>
         <Input
-          placeholder="Ex: 2025/2026"
+          placeholder={t("period.schoolYearPlaceholder")}
           value={schoolYearLabel}
           onChange={(e) => onChange(periodStart, periodEnd, e.target.value)}
         />
@@ -380,6 +384,7 @@ function StepDetails({
   subject, gradeLevel, classLabel, title, color,
   schedule, periodStart, periodEnd, onFieldChange, onScheduleChange, onColorChange,
 }: StepDetailsProps) {
+  const t = useTranslations("calendar.novo");
 
   const groupedSubjects = groupSubjectsByCategory(getSubjectsForGrade(gradeLevel));
   const lpw = weekScheduleLessonsPerWeek(schedule);
@@ -403,27 +408,27 @@ function StepDetails({
   return (
     <div className="space-y-5">
       <div>
-        <h2 className="text-lg font-semibold">Detalhes da turma</h2>
-        <p className="text-sm text-muted-foreground">Disciplina, ano e horário semanal.</p>
+        <h2 className="text-lg font-semibold">{t("details.title")}</h2>
+        <p className="text-sm text-muted-foreground">{t("details.subtitle")}</p>
       </div>
 
       {/* Grade + class */}
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1.5">
-          <Label>Ano de escolaridade *</Label>
+          <Label>{t("details.gradeLabel")}</Label>
           <Select value={gradeLevel} onValueChange={handleGradeChange}>
             <SelectTrigger>
-              <SelectValue placeholder="Seleciona o ano" />
+              <SelectValue placeholder={t("details.gradePlaceholder")} />
             </SelectTrigger>
             <SelectContent>
               {GRADE_GROUPS.map((group) => (
                 <SelectGroup key={group.label}>
                   <SelectLabel className="text-xs font-bold text-primary border-b border-border/50 mb-1">
-                    {group.label}
+                    {translateGradeGroupLabel(group.groupId)}
                   </SelectLabel>
                   {group.grades.map((g) => (
                     <SelectItem key={g.id} value={g.id}>
-                      {g.label}
+                      {translateGradeLabel(g.id)}
                     </SelectItem>
                   ))}
                 </SelectGroup>
@@ -432,9 +437,9 @@ function StepDetails({
           </Select>
         </div>
         <div className="space-y-1.5">
-          <Label>Turma</Label>
+          <Label>{t("details.classLabel")}</Label>
           <Input
-            placeholder="Ex: A"
+            placeholder={t("details.classPlaceholder")}
             value={classLabel}
             onChange={(e) => onFieldChange("classLabel", e.target.value)}
           />
@@ -443,7 +448,7 @@ function StepDetails({
 
       {/* Subject — filtered by grade, grouped by category */}
       <div className="space-y-1.5">
-        <Label>Disciplina *</Label>
+        <Label>{t("details.subjectLabel")}</Label>
         <Select
           value={subject}
           onValueChange={(v) => onFieldChange("subject", v)}
@@ -453,8 +458,8 @@ function StepDetails({
             <SelectValue
               placeholder={
                 gradeLevel
-                  ? "Seleciona a disciplina"
-                  : "Seleciona primeiro o ano de escolaridade"
+                  ? t("details.subjectPlaceholder")
+                  : t("details.subjectPlaceholderNoGrade")
               }
             />
           </SelectTrigger>
@@ -462,11 +467,11 @@ function StepDetails({
             {groupedSubjects.map(({ category, subjects }) => (
               <SelectGroup key={category}>
                 <SelectLabel className="text-xs font-bold text-primary border-b border-border/50 mb-1">
-                  {category}
+                  {translateSubjectCategory(category)}
                 </SelectLabel>
                 {subjects.map((s) => (
                   <SelectItem key={s.id} value={s.id}>
-                    {s.label}
+                    {translateSubjectLabel(s.id)}
                   </SelectItem>
                 ))}
               </SelectGroup>
@@ -478,15 +483,15 @@ function StepDetails({
       {/* Title + color */}
       <div className="grid grid-cols-[1fr_auto] gap-3">
         <div className="space-y-1.5">
-          <Label>Nome da turma</Label>
+          <Label>{t("details.nameLabel")}</Label>
           <Input
-            placeholder="Auto-preenchido"
+            placeholder={t("details.namePlaceholder")}
             value={title}
             onChange={(e) => onFieldChange("title", e.target.value)}
           />
         </div>
         <div className="space-y-1.5">
-          <Label>Cor</Label>
+          <Label>{t("details.colorLabel")}</Label>
           <div className="flex flex-wrap gap-1.5 pt-2.5">
             {TIMETABLE_COLORS.map((c) => (
               <button
@@ -514,8 +519,7 @@ function StepDetails({
 
       {totalLessons > 0 && (
         <div className="rounded-lg bg-muted px-4 py-3 text-sm">
-          <span className="font-medium">{totalLessons} aulas</span>
-          {" "}(~{weeks} semanas × {lpw} aulas/sem., já sem fins-de-semana e feriados)
+          {t("details.lessonsSummary", { count: totalLessons, weeks, lpw })}
         </div>
       )}
     </div>
@@ -530,6 +534,10 @@ interface StepReverDatasProps {
 }
 
 function StepReverDatas({ slots, onSlotsChange }: StepReverDatasProps) {
+  const t = useTranslations("calendar.novo");
+  const tTimetable = useTranslations("timetable");
+  const rawLocale = useLocale();
+  const locale = isSupportedLocale(rawLocale) ? rawLocale : defaultLocale;
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
   const changeType = (id: string, type: SlotType) => {
@@ -577,25 +585,25 @@ function StepReverDatas({ slots, onSlotsChange }: StepReverDatasProps) {
   return (
     <div className="space-y-5">
       <div>
-        <h2 className="text-lg font-semibold">Rever datas</h2>
+        <h2 className="text-lg font-semibold">{t("reviewDates.title")}</h2>
         <p className="text-sm text-muted-foreground">
-          Ajusta os tipos de slot e remove datas desnecessárias.
+          {t("reviewDates.subtitle")}
         </p>
       </div>
 
       {/* Summary bar */}
       <div className="flex flex-wrap gap-x-4 gap-y-1 rounded-lg border bg-muted/40 px-4 py-3 text-sm">
-        <span>Total: <strong>{slots.length}</strong></span>
+        <span>{t("reviewDates.total")} <strong>{slots.length}</strong></span>
         <span className="text-muted-foreground">·</span>
-        <span>Aulas: <strong>{lessons}</strong></span>
+        <span>{t("reviewDates.lessons")} <strong>{lessons}</strong></span>
         <span className="text-muted-foreground">·</span>
-        <span>Avaliações: <strong>{assessments}</strong></span>
+        <span>{t("reviewDates.assessments")} <strong>{assessments}</strong></span>
         <span className="text-muted-foreground">·</span>
-        <span>Exercícios: <strong>{exercises}</strong></span>
+        <span>{t("reviewDates.exercises")} <strong>{exercises}</strong></span>
         <span className="text-muted-foreground">·</span>
-        <span>Revisões: <strong>{reviews}</strong></span>
+        <span>{t("reviewDates.reviews")} <strong>{reviews}</strong></span>
         <span className="text-muted-foreground">·</span>
-        <span>Feriados: <strong>{holidays}</strong></span>
+        <span>{t("reviewDates.holidays")} <strong>{holidays}</strong></span>
       </div>
 
       {/* Bulk actions bar */}
@@ -607,16 +615,16 @@ function StepReverDatas({ slots, onSlotsChange }: StepReverDatasProps) {
           className="h-7 text-xs"
           onClick={hasSelection ? clearSelection : selectAll}
         >
-          {hasSelection ? `Desselecionar (${selected.size})` : "Selecionar tudo"}
+          {hasSelection ? t("reviewDates.deselect", { count: selected.size }) : t("reviewDates.selectAll")}
         </Button>
         {hasSelection && (
           <>
-            <span className="text-xs text-muted-foreground">Marcar como:</span>
-            <Button type="button" size="sm" variant="outline" className="h-7 text-xs" onClick={() => applyBulkType("LESSON")}>Aula</Button>
-            <Button type="button" size="sm" variant="outline" className="h-7 text-xs" onClick={() => applyBulkType("ASSESSMENT")}>Avaliação</Button>
-            <Button type="button" size="sm" variant="outline" className="h-7 text-xs" onClick={() => applyBulkType("EXERCISE")}>Exercícios</Button>
-            <Button type="button" size="sm" variant="outline" className="h-7 text-xs" onClick={() => applyBulkType("REVIEW")}>Revisão</Button>
-            <Button type="button" size="sm" variant="outline" className="h-7 text-xs" onClick={() => applyBulkType("HOLIDAY")}>Feriado</Button>
+            <span className="text-xs text-muted-foreground">{t("reviewDates.markAs")}</span>
+            <Button type="button" size="sm" variant="outline" className="h-7 text-xs" onClick={() => applyBulkType("LESSON")}>{tTimetable("slotType.lesson")}</Button>
+            <Button type="button" size="sm" variant="outline" className="h-7 text-xs" onClick={() => applyBulkType("ASSESSMENT")}>{tTimetable("slotType.assessment")}</Button>
+            <Button type="button" size="sm" variant="outline" className="h-7 text-xs" onClick={() => applyBulkType("EXERCISE")}>{tTimetable("slotType.exercise")}</Button>
+            <Button type="button" size="sm" variant="outline" className="h-7 text-xs" onClick={() => applyBulkType("REVIEW")}>{tTimetable("slotType.review")}</Button>
+            <Button type="button" size="sm" variant="outline" className="h-7 text-xs" onClick={() => applyBulkType("HOLIDAY")}>{tTimetable("slotType.holiday")}</Button>
             <Button
               type="button"
               size="sm"
@@ -625,7 +633,7 @@ function StepReverDatas({ slots, onSlotsChange }: StepReverDatasProps) {
               onClick={removeBulk}
             >
               <Trash2 className="mr-1 h-3 w-3" />
-              Remover
+              {t("reviewDates.remove")}
             </Button>
           </>
         )}
@@ -633,16 +641,16 @@ function StepReverDatas({ slots, onSlotsChange }: StepReverDatasProps) {
 
       {slots.length === 0 ? (
         <div className="py-8 text-center text-sm text-muted-foreground">
-          Não há aulas geradas para este período com o horário definido.
+          {t("reviewDates.emptyLine1")}
           <br />
-          Volta atrás e confirma as datas e os dias de aula.
+          {t("reviewDates.emptyLine2")}
         </div>
       ) : (
         <div className="max-h-[440px] space-y-4 overflow-y-auto pr-1">
           {grouped.map(({ month, slots: monthSlots }) => (
             <div key={month}>
               <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                {formatMonthLabel(month)}
+                {formatMonthLabel(month, locale)}
               </p>
               <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
                 {monthSlots.map((slot) => (
@@ -669,7 +677,7 @@ function StepReverDatas({ slots, onSlotsChange }: StepReverDatasProps) {
                       className="h-3.5 w-3.5 shrink-0 accent-primary"
                     />
                     <span className="min-w-0 flex-1 text-xs font-medium">
-                      {formatDayLabel(slot.date)}
+                      {formatDayLabel(slot.date, locale)}
                     </span>
                     <Select
                       value={slot.slotType}
@@ -679,11 +687,11 @@ function StepReverDatas({ slots, onSlotsChange }: StepReverDatasProps) {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="LESSON">Aula</SelectItem>
-                        <SelectItem value="ASSESSMENT">Avaliação</SelectItem>
-                        <SelectItem value="EXERCISE">Exercícios</SelectItem>
-                        <SelectItem value="REVIEW">Revisão</SelectItem>
-                        <SelectItem value="HOLIDAY">Feriado</SelectItem>
+                        <SelectItem value="LESSON">{tTimetable("slotType.lesson")}</SelectItem>
+                        <SelectItem value="ASSESSMENT">{tTimetable("slotType.assessment")}</SelectItem>
+                        <SelectItem value="EXERCISE">{tTimetable("slotType.exercise")}</SelectItem>
+                        <SelectItem value="REVIEW">{tTimetable("slotType.review")}</SelectItem>
+                        <SelectItem value="HOLIDAY">{tTimetable("slotType.holiday")}</SelectItem>
                       </SelectContent>
                     </Select>
                     <button
@@ -707,6 +715,11 @@ function StepReverDatas({ slots, onSlotsChange }: StepReverDatasProps) {
 // ─────────────────────── Main page ────────────────────────────────────────────
 
 function CalendarNewPageContent() {
+  const t = useTranslations("calendar.novo");
+  const tShared = useTranslations("calendar.shared");
+  const tTimetable = useTranslations("timetable");
+  const tErrors = useTranslations("errors.calendar");
+  const LOADING_STEPS = t.raw("loadingSteps") as string[];
   const { loaded: featuresLoaded, enabled } = useFeatureAccess(selectIsHorarioPlanosEnabled);
   const isSubmitting = useSelector((state: RootState) => state.timetable.isLoading);
   const dispatch = useAppDispatch();
@@ -744,14 +757,17 @@ function CalendarNewPageContent() {
       s.slotType === "REVIEW"
   ).length;
 
-  // Auto-generate title using the Portuguese display label (not the internal id/English value)
+  // Auto-generate title from the subject name in the interface language (not the
+  // internal id or the English backend value). It becomes the saved class name.
   const autoTitle = useMemo(() => {
-    const subjectLabel = SUBJECTS.find((s) => s.id === subject)?.label ?? subject;
+    const subjectLabel = SUBJECTS.some((s) => s.id === subject)
+      ? translateSubjectLabel(subject)
+      : subject;
     if (!subjectLabel) return "";
-    return [gradeLevel ? `${gradeLevel}.º` : "", classLabel, subjectLabel]
+    return [gradeLevel ? tTimetable("gradeShort", { grade: gradeLevel }) : "", classLabel, subjectLabel]
       .filter(Boolean)
       .join(" ");
-  }, [subject, gradeLevel, classLabel]);
+  }, [subject, gradeLevel, classLabel, tTimetable]);
 
   // Keeps following ano/turma/disciplina changes until the user edits the field directly —
   // comparing against the previous autoTitle would freeze the moment any one of those fields
@@ -796,15 +812,15 @@ function CalendarNewPageContent() {
     setCreationMode("from_plan");
     getDocument(planId)
       .then((plan) => handlePlanSelect(plan))
-      .catch(() => toast.error("Não foi possível carregar a planificação."));
-  }, [searchParams]);
+      .catch(() => toast.error(tErrors("loadPlan")));
+  }, [searchParams, tErrors]);
 
   if (!featuresLoaded) return null;
   if (!enabled)
     return (
       <FeatureUnavailable
-        title="As Turmas"
-        description="Cria o horário semanal de uma turma, gera a sequência de tópicos e os planos de aula. Disponível nos planos pagos."
+        title={tShared("featureTitle")}
+        description={tShared("featureDescription")}
       />
     );
 
@@ -842,7 +858,7 @@ function CalendarNewPageContent() {
 
     const result = await dispatch(
       createTimetable({
-        title: title || autoTitle || "Nova Turma",
+        title: title || autoTitle || tTimetable("autoTitleFallback"),
         subject: subjectValue,
         gradeLevel: Number(gradeLevel),
         classLabel: classLabel || undefined,
@@ -864,7 +880,7 @@ function CalendarNewPageContent() {
       toast.error(
         typeof result.payload === "string"
           ? result.payload
-          : "Não foi possível criar a turma."
+          : tErrors("createFailed")
       );
       return;
     }
@@ -882,6 +898,21 @@ function CalendarNewPageContent() {
   };
 
   // ── Step indicator config ─────────────────────────────────────────────────
+
+  const stepIndicatorLabels: Record<string, string> = {
+    mode_a_select_plan: t("stepIndicator.plan"),
+    mode_b_period: t("stepIndicator.period"),
+    mode_b_details: t("stepIndicator.details"),
+    rever_datas: t("stepIndicator.review"),
+  };
+  const STEP_INDICATOR = STEP_INDICATOR_ICONS.map((s) => ({
+    ...s,
+    label: stepIndicatorLabels[s.id],
+  }));
+  const STEP_INDICATOR_CUSTOM = STEP_INDICATOR_CUSTOM_ICONS.map((s) => ({
+    ...s,
+    label: stepIndicatorLabels[s.id],
+  }));
 
   const indicatorSteps =
     creationMode === "from_plan" ? STEP_INDICATOR : STEP_INDICATOR_CUSTOM;
@@ -905,9 +936,9 @@ function CalendarNewPageContent() {
       {/* ── Header ──────────────────────────────────────────────── */}
       {step !== "loading" && (
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Nova turma</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{t("header.title")}</h1>
           <p className="text-muted-foreground">
-            Define o período, disciplina e horário semanal.
+            {t("header.subtitle")}
           </p>
         </div>
       )}
@@ -915,7 +946,7 @@ function CalendarNewPageContent() {
       {step === "loading" && (
         <div className="flex items-center gap-2">
           <Clock className="h-5 w-5 text-primary" />
-          <span className="text-xl font-semibold">Nova Turma</span>
+          <span className="text-xl font-semibold">{t("header.loadingTitle")}</span>
         </div>
       )}
 
@@ -980,8 +1011,8 @@ function CalendarNewPageContent() {
 
       {step === "loading" && (
         <GenerationProgress
-          title="A criar a tua turma…"
-          subtitle="A Scooli está a gerar os tópicos e a distribuição pedagógica."
+          title={t("generating.title")}
+          subtitle={t("generating.subtitle")}
           steps={LOADING_STEPS}
           currentStep={loadingStep}
         />
@@ -997,7 +1028,7 @@ function CalendarNewPageContent() {
             className="gap-2"
           >
             <ChevronLeft className="h-4 w-4" />
-            {step === "choose_mode" ? "Cancelar" : "Anterior"}
+            {step === "choose_mode" ? t("nav.cancel") : t("nav.previous")}
           </Button>
 
           {step === "mode_b_period" && (
@@ -1006,7 +1037,7 @@ function CalendarNewPageContent() {
               disabled={!periodCanProceed}
               className="gap-2"
             >
-              Seguinte
+              {t("nav.next")}
               <ChevronRight className="h-4 w-4" />
             </Button>
           )}
@@ -1017,12 +1048,13 @@ function CalendarNewPageContent() {
               disabled={!detailsCanProceed}
               className="gap-2"
             >
-              Seguinte
+              {t("nav.next")}
               <ChevronRight className="h-4 w-4" />
             </Button>
           )}
 
           {step === "rever_datas" && (
+            <div className="flex flex-col items-end gap-1">
             <Button
               onClick={handleCreate}
               disabled={isSubmitting || actionableSlots === 0}
@@ -1033,8 +1065,10 @@ function CalendarNewPageContent() {
               ) : (
                 <Sparkles className="h-4 w-4" />
               )}
-              Criar turma ({actionableSlots} aula{actionableSlots !== 1 ? "s" : ""})
+              {t("nav.createClass", { count: actionableSlots })}
             </Button>
+              <AiDisclaimer className="text-right" />
+            </div>
           )}
         </div>
       )}

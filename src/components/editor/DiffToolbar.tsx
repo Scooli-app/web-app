@@ -1,6 +1,7 @@
 "use client";
 
 import type { Editor } from "@tiptap/react";
+import { useTranslations } from "next-intl";
 import { memo } from "react";
 import { getDiffState } from "./extensions/DiffExtension";
 import posthog from "posthog-js";
@@ -18,6 +19,7 @@ export const DiffToolbar = memo(function DiffToolbar({
   editor,
   onExitDiffMode,
 }: DiffToolbarProps) {
+  const t = useTranslations("editor.diffToolbar");
   const diffState = getDiffState(editor.state);
   const changesCount = diffState?.changes.length ?? 0;
 
@@ -45,10 +47,10 @@ export const DiffToolbar = memo(function DiffToolbar({
     <div className="diff-toolbar">
       <div className="diff-toolbar-info">
         <span className="diff-toolbar-badge">
-          ✨ Modo Sugestões
+          {t("suggestionsModeBadge")}
         </span>
         <span className="diff-toolbar-count">
-          {changesCount} {changesCount === 1 ? "alteração" : "alterações"}
+          {t("changeCount", { count: changesCount })}
         </span>
       </div>
       <div className="diff-toolbar-actions">
@@ -57,21 +59,21 @@ export const DiffToolbar = memo(function DiffToolbar({
           className="diff-toolbar-btn diff-toolbar-btn-accept"
           type="button"
         >
-          ✓ Aceitar todas
+          {t("acceptAll")}
         </button>
         <button
           onClick={handleRejectAll}
           className="diff-toolbar-btn diff-toolbar-btn-reject"
           type="button"
         >
-          ✗ Rejeitar todas
+          {t("rejectAll")}
         </button>
         <button
           onClick={handleExit}
           className="diff-toolbar-btn diff-toolbar-btn-exit"
           type="button"
         >
-          ✕ Sair
+          {t("exit")}
         </button>
       </div>
     </div>

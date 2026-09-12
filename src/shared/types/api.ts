@@ -21,6 +21,13 @@ export interface CreateDocumentParams {
   prompt: string;
   subject: string;
   schoolYear: number;
+  /**
+   * BCP-47 tag ("en", "pt-PT") for this generation only, overriding the stored
+   * content-language preference. Set automatically by the `createDocument` thunk
+   * from the teacher's resolved interface/content-language preference — pass it
+   * explicitly only when calling `document.service.ts` directly, bypassing Redux.
+   */
+  contentLanguage?: string;
   duration?: number;
   teachingMethod?: TeachingMethod;
   additionalDetails?: string;

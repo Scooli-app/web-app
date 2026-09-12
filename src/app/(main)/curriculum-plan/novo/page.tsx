@@ -1,4 +1,5 @@
 "use client";
+import { AiDisclaimer } from "@/components/ui/ai-disclaimer";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -23,6 +24,10 @@ import {
   SUBJECTS_BY_GRADE,
   getSubjectsForGrade,
   groupSubjectsByCategory,
+  translateGradeGroupLabel,
+  translateGradeLabel,
+  translateSubjectCategory,
+  translateSubjectLabel,
 } from "@/components/document-creation/constants";
 import {
   createDocument,
@@ -47,28 +52,19 @@ import {
 } from "@/lib/timetable/planToTimetable";
 import { type CurriculumPlanningType } from "@/shared/types";
 import { cn } from "@/shared/utils/utils";
+import { toIntlLocale } from "@/shared/utils/calendar";
+import { isSupportedLocale, defaultLocale, type Locale } from "@/i18n/locales";
 import { ChevronLeft, ChevronRight, CalendarDays, BookOpen, Settings2, CheckCircle2 } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const STEPS = [
-  { id: "period", label: "Período", icon: CalendarDays },
-  { id: "class", label: "Turma", icon: BookOpen },
-  { id: "schedule", label: "Horário", icon: Settings2 },
-  { id: "review", label: "Resumo", icon: CheckCircle2 },
-] as const;
+const STEP_IDS = ["period", "class", "schedule", "review"] as const;
 
-type StepId = (typeof STEPS)[number]["id"] | "loading";
-
-const LOADING_STEPS = [
-  "A analisar as Aprendizagens Essenciais",
-  "A estruturar as secções da planificação",
-  "A definir a calendarização por unidades",
-  "Revisão pedagógica final",
-];
+type StepId = (typeof STEP_IDS)[number] | "loading";
 
 function toISO(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -76,13 +72,21 @@ function toISO(d: Date): string {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function formatDatePT(iso: string): string {
+function formatDate(iso: string, locale: Locale): string {
   if (!iso) return "—";
-  const [y, m, d] = iso.split("-");
-  return `${d}/${m}/${y}`;
+  return new Date(`${iso}T00:00:00`).toLocaleDateString(toIntlLocale(locale), {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
 }
 
-function planningTypeLabel(t: CurriculumPlanningType): string {
+/**
+ * Portuguese label for the generation prompt sent to the AI — kept fixed
+ * regardless of interface locale, like the rest of `buildPrompt`'s domain
+ * vocabulary (see the "Aprendizagens Essenciais" convention).
+ */
+function planningTypeLabelPT(t: CurriculumPlanningType): string {
   const map: Record<CurriculumPlanningType, string> = {
     annual: "Anual",
     semester: "Semestral",
@@ -92,6 +96,21 @@ function planningTypeLabel(t: CurriculumPlanningType): string {
   return map[t];
 }
 
+const PLANNING_TYPE_LABEL_EN: Record<CurriculumPlanningType, string> = {
+  annual: "Annual",
+  semester: "Semester",
+  trimester: "Term",
+  custom: "Custom",
+};
+
+/**
+ * The prompt sent to the AI is written in the interface language: the teacher
+ * is the one who would read it back (in errors, history, a future "edit the
+ * request" feature), so it should read like something they wrote, not a fixed
+ * Portuguese template. The subject name and "Aprendizagens Essenciais" are the
+ * exception — curriculum vocabulary, translated by the model itself the same
+ * way the retrieved AE context is (see EnglishPromptLanguage).
+ */
 function buildPrompt(p: {
   planningType: CurriculumPlanningType;
   subjectLabel: string;
@@ -100,9 +119,19 @@ function buildPrompt(p: {
   periodEnd: string;
   lessonsPerWeek: number;
   totalLessons: number;
+  locale: Locale;
 }) {
+  if (p.locale === "en") {
+    return (
+      `${PLANNING_TYPE_LABEL_EN[p.planningType]} curriculum plan for ${p.subjectLabel}, Year ${p.schoolYear}, ` +
+      `from ${p.periodStart} to ${p.periodEnd}, with about ${p.lessonsPerWeek} lessons per week ` +
+      `(${p.totalLessons} lessons total, estimated). ` +
+      "Generate the 7 canonical sections (Identification, Pupil Profile, Aprendizagens Essenciais, " +
+      "Schedule, Development by Unit, Assessment, Curricular Alignment)."
+    );
+  }
   return (
-    `Planificação ${planningTypeLabel(p.planningType).toLowerCase()} de ${p.subjectLabel} para o ` +
+    `Planificação ${planningTypeLabelPT(p.planningType).toLowerCase()} de ${p.subjectLabel} para o ` +
     `${p.schoolYear}.º ano, de ${p.periodStart} a ${p.periodEnd}, com cerca de ` +
     `${p.lessonsPerWeek} aulas por semana (${p.totalLessons} aulas totais estimadas). ` +
     "Gera as 7 secções canónicas (Identificação, Perfil do Aluno, AEs, Calendarização, " +
@@ -113,6 +142,19 @@ function buildPrompt(p: {
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function CurriculumPlanNewPage() {
+  const t = useTranslations("curriculumPlan.novo");
+  const tShared = useTranslations("curriculumPlan.shared");
+  const tTimetable = useTranslations("timetable");
+  const tErrors = useTranslations("errors.curriculumPlan");
+  const rawLocale = useLocale();
+  const locale = isSupportedLocale(rawLocale) ? rawLocale : defaultLocale;
+  const LOADING_STEPS = t.raw("loadingSteps") as string[];
+  const STEPS = [
+    { id: "period" as const, label: t("steps.period"), icon: CalendarDays },
+    { id: "class" as const, label: t("steps.class"), icon: BookOpen },
+    { id: "schedule" as const, label: t("steps.schedule"), icon: Settings2 },
+    { id: "review" as const, label: t("steps.review"), icon: CheckCircle2 },
+  ];
   const { loaded: featuresLoaded, enabled } = useFeatureAccess(selectIsCurriculumPlanEnabled);
   const router = useRouter();
   const dispatch = useAppDispatch();
@@ -146,7 +188,13 @@ export default function CurriculumPlanNewPage() {
     () => SUBJECTS.find((s) => s.id === subjectId),
     [subjectId]
   );
-  const subjectLabel = selectedSubject?.label ?? "";
+  // The review step shows the translated name; the AI prompt uses whichever
+  // name matches the language the prompt itself is written in (see buildPrompt).
+  const subjectLabel = selectedSubject
+    ? locale === "en"
+      ? translateSubjectLabel(selectedSubject.id)
+      : selectedSubject.label
+    : "";
   // Backend expects the canonical English value, not the internal id used for selection.
   const subjectValue = selectedSubject?.value ?? "";
   const schoolYear = Number(gradeLevel) || 0;
@@ -175,13 +223,13 @@ export default function CurriculumPlanNewPage() {
   const step3Valid = lpw > 0;
 
   function goNext() {
-    const order: StepId[] = ["period", "class", "schedule", "review"];
+    const order: StepId[] = [...STEP_IDS];
     const idx = order.indexOf(step);
     if (idx < order.length - 1) setStep(order[idx + 1]);
   }
 
   function goBack() {
-    const order: StepId[] = ["period", "class", "schedule", "review"];
+    const order: StepId[] = [...STEP_IDS];
     const idx = order.indexOf(step);
     if (idx > 0) setStep(order[idx - 1]);
     else router.back();
@@ -201,6 +249,7 @@ export default function CurriculumPlanNewPage() {
       periodEnd: periodEndISO,
       lessonsPerWeek: lpw,
       totalLessons,
+      locale,
     });
 
     try {
@@ -228,7 +277,7 @@ export default function CurriculumPlanNewPage() {
       router.push(`/curriculum-plan/${result.id}`);
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : "Não foi possível criar a planificação.";
+        err instanceof Error ? err.message : tErrors("createFailed");
       toast.error(message);
       setSubmitting(false);
       setStep("review");
@@ -239,8 +288,8 @@ export default function CurriculumPlanNewPage() {
   if (!enabled)
     return (
       <FeatureUnavailable
-        title="As Planificações"
-        description="Gera planificações curriculares completas alinhadas com as Aprendizagens Essenciais. Disponível nos planos pagos."
+        title={tShared("featureTitle")}
+        description={tShared("featureDescription")}
       />
     );
 
@@ -248,8 +297,8 @@ export default function CurriculumPlanNewPage() {
     return (
       <WizardShell>
         <GenerationProgress
-          title="A gerar a tua planificação…"
-          subtitle="A Scooli está a estruturar as 7 secções canónicas."
+          title={t("generating.title")}
+          subtitle={t("generating.subtitle")}
           steps={LOADING_STEPS}
           currentStep={loadingStep}
         />
@@ -261,9 +310,9 @@ export default function CurriculumPlanNewPage() {
     <WizardShell>
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Nova planificação</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">{t("header.title")}</h1>
         <p className="text-muted-foreground">
-          A IA gera as 7 secções canónicas. Pode editar tudo depois.
+          {t("header.subtitle")}
         </p>
       </div>
 
@@ -278,9 +327,9 @@ export default function CurriculumPlanNewPage() {
           {step === "period" && (
             <div className="space-y-6">
               <div>
-                <h2 className="text-lg font-semibold">Período letivo</h2>
+                <h2 className="text-lg font-semibold">{t("period.title")}</h2>
                 <p className="text-sm text-muted-foreground">
-                  Escolhe um predefinido ou define manualmente as datas.
+                  {t("period.subtitle")}
                 </p>
               </div>
 
@@ -304,7 +353,7 @@ export default function CurriculumPlanNewPage() {
                         {preset.label}
                       </span>
                       <span className="text-[11px] text-muted-foreground">
-                        {formatPresetRange(preset.start, preset.end)}
+                        {formatPresetRange(preset.start, preset.end, locale)}
                       </span>
                     </button>
                   );
@@ -313,20 +362,20 @@ export default function CurriculumPlanNewPage() {
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Data de início</Label>
+                  <Label>{t("period.startLabel")}</Label>
                   <DatePicker
                     value={periodStart}
                     onChange={setPeriodStart}
-                    placeholder="Início do período"
+                    placeholder={t("period.startPlaceholder")}
                     toDate={periodEnd}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Data de fim</Label>
+                  <Label>{t("period.endLabel")}</Label>
                   <DatePicker
                     value={periodEnd}
                     onChange={setPeriodEnd}
-                    placeholder="Fim do período"
+                    placeholder={t("period.endPlaceholder")}
                     fromDate={periodStart}
                   />
                 </div>
@@ -334,18 +383,19 @@ export default function CurriculumPlanNewPage() {
 
               {step1Valid && (
                 <div className="rounded-lg bg-muted px-4 py-3 text-sm">
-                  <span className="font-medium">{weeks} semana{weeks !== 1 ? "s" : ""}</span>
-                  {" "}de{" "}
-                  <span className="font-medium">{formatDatePT(periodStartISO)}</span>
-                  {" "}a{" "}
-                  <span className="font-medium">{formatDatePT(periodEndISO)}</span>
+                  {t.rich("period.summary", {
+                    weeks,
+                    start: formatDate(periodStartISO, locale),
+                    end: formatDate(periodEndISO, locale),
+                    strong: (chunks) => <span className="font-medium">{chunks}</span>,
+                  })}
                   {" · "}
-                  <span className="text-muted-foreground capitalize">{planningTypeLabel(planningType)}</span>
+                  <span className="text-muted-foreground capitalize">{tShared(`planningType.${planningType}`)}</span>
                 </div>
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="planningType">Tipo de período</Label>
+                <Label htmlFor="planningType">{t("period.planningTypeLabel")}</Label>
                 <Select
                   value={planningType}
                   onValueChange={(v) => setPlanningType(v as CurriculumPlanningType)}
@@ -354,10 +404,10 @@ export default function CurriculumPlanNewPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="annual">Anual</SelectItem>
-                    <SelectItem value="semester">Semestral</SelectItem>
-                    <SelectItem value="trimester">Trimestral</SelectItem>
-                    <SelectItem value="custom">Personalizado</SelectItem>
+                    <SelectItem value="annual">{tShared("planningType.annual")}</SelectItem>
+                    <SelectItem value="semester">{tShared("planningType.semester")}</SelectItem>
+                    <SelectItem value="trimester">{tShared("planningType.trimester")}</SelectItem>
+                    <SelectItem value="custom">{tShared("planningType.custom")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -368,27 +418,27 @@ export default function CurriculumPlanNewPage() {
           {step === "class" && (
             <div className="space-y-6">
               <div>
-                <h2 className="text-lg font-semibold">Detalhes da turma</h2>
+                <h2 className="text-lg font-semibold">{t("class.title")}</h2>
                 <p className="text-sm text-muted-foreground">
-                  Indica a disciplina e o ano de escolaridade.
+                  {t("class.subtitle")}
                 </p>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="schoolYear">Ano de escolaridade *</Label>
+                <Label htmlFor="schoolYear">{t("class.gradeLabel")}</Label>
                 <Select value={gradeLevel} onValueChange={handleGradeLevelChange}>
                   <SelectTrigger id="schoolYear" className="h-12 text-base">
-                    <SelectValue placeholder="Seleciona o ano" />
+                    <SelectValue placeholder={t("class.gradePlaceholder")} />
                   </SelectTrigger>
                   <SelectContent>
                     {GRADE_GROUPS.map((group) => (
                       <SelectGroup key={group.label}>
                         <SelectLabel className="text-xs font-bold text-primary border-b border-border/50 mb-1">
-                          {group.label}
+                          {translateGradeGroupLabel(group.groupId)}
                         </SelectLabel>
                         {group.grades.map((g) => (
                           <SelectItem key={g.id} value={g.id}>
-                            {g.label}
+                            {translateGradeLabel(g.id)}
                           </SelectItem>
                         ))}
                       </SelectGroup>
@@ -398,14 +448,14 @@ export default function CurriculumPlanNewPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="subject">Disciplina *</Label>
+                <Label htmlFor="subject">{t("class.subjectLabel")}</Label>
                 <Select value={subjectId} onValueChange={setSubjectId} disabled={!gradeLevel}>
                   <SelectTrigger id="subject" className="h-12 text-base">
                     <SelectValue
                       placeholder={
                         gradeLevel
-                          ? "Seleciona a disciplina"
-                          : "Seleciona primeiro o ano de escolaridade"
+                          ? t("class.subjectPlaceholder")
+                          : t("class.subjectPlaceholderNoGrade")
                       }
                     />
                   </SelectTrigger>
@@ -413,11 +463,11 @@ export default function CurriculumPlanNewPage() {
                     {groupedSubjects.map(({ category, subjects }) => (
                       <SelectGroup key={category}>
                         <SelectLabel className="text-xs font-bold text-primary border-b border-border/50 mb-1">
-                          {category}
+                          {translateSubjectCategory(category)}
                         </SelectLabel>
                         {subjects.map((s) => (
                           <SelectItem key={s.id} value={s.id}>
-                            {s.label}
+                            {translateSubjectLabel(s.id)}
                           </SelectItem>
                         ))}
                       </SelectGroup>
@@ -432,9 +482,9 @@ export default function CurriculumPlanNewPage() {
           {step === "schedule" && (
             <div className="space-y-6">
               <div>
-                <h2 className="text-lg font-semibold">Horário semanal</h2>
+                <h2 className="text-lg font-semibold">{t("schedule.title")}</h2>
                 <p className="text-sm text-muted-foreground">
-                  Define quantas aulas tens por dia. O total será usado para estimar a duração.
+                  {t("schedule.subtitle")}
                 </p>
               </div>
 
@@ -442,8 +492,7 @@ export default function CurriculumPlanNewPage() {
 
               {totalLessons > 0 && (
                 <div className="rounded-lg bg-muted px-4 py-3 text-sm">
-                  <span className="font-medium">{totalLessons} aulas</span>
-                  {" "}(~{weeks} semanas × {lpw} aulas/sem., já sem fins-de-semana e feriados)
+                  {t("schedule.lessonsSummary", { count: totalLessons, weeks, lpw })}
                 </div>
               )}
             </div>
@@ -453,45 +502,45 @@ export default function CurriculumPlanNewPage() {
           {step === "review" && (
             <div className="space-y-6">
               <div>
-                <h2 className="text-lg font-semibold">Resumo</h2>
+                <h2 className="text-lg font-semibold">{t("review.title")}</h2>
                 <p className="text-sm text-muted-foreground">
-                  Confirma os dados antes de gerar a planificação.
+                  {t("review.subtitle")}
                 </p>
               </div>
 
               <div className="divide-y rounded-lg border">
                 <div className="flex items-center justify-between px-4 py-3">
-                  <span className="text-sm text-muted-foreground">Período</span>
+                  <span className="text-sm text-muted-foreground">{t("review.period")}</span>
                   <span className="text-sm font-medium">
-                    {formatDatePT(periodStartISO)} – {formatDatePT(periodEndISO)}
+                    {formatDate(periodStartISO, locale)} – {formatDate(periodEndISO, locale)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between px-4 py-3">
-                  <span className="text-sm text-muted-foreground">Tipo</span>
-                  <span className="text-sm font-medium">{planningTypeLabel(planningType)}</span>
+                  <span className="text-sm text-muted-foreground">{t("review.type")}</span>
+                  <span className="text-sm font-medium">{tShared(`planningType.${planningType}`)}</span>
                 </div>
                 <div className="flex items-center justify-between px-4 py-3">
-                  <span className="text-sm text-muted-foreground">Disciplina</span>
-                  <span className="text-sm font-medium">{subjectLabel || "—"}</span>
+                  <span className="text-sm text-muted-foreground">{t("review.subject")}</span>
+                  <span className="text-sm font-medium">
+                    {selectedSubject ? translateSubjectLabel(selectedSubject.id) : "—"}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between px-4 py-3">
-                  <span className="text-sm text-muted-foreground">Ano</span>
-                  <span className="text-sm font-medium">{schoolYear}.º ano</span>
+                  <span className="text-sm text-muted-foreground">{t("review.grade")}</span>
+                  <span className="text-sm font-medium">{tTimetable("gradeYear", { grade: schoolYear })}</span>
                 </div>
                 <div className="flex items-center justify-between px-4 py-3">
-                  <span className="text-sm text-muted-foreground">Aulas / semana</span>
+                  <span className="text-sm text-muted-foreground">{t("review.lessonsPerWeek")}</span>
                   <span className="text-sm font-medium">{lpw}</span>
                 </div>
                 <div className="flex items-center justify-between px-4 py-3">
-                  <span className="text-sm text-muted-foreground">Total estimado</span>
-                  <span className="text-sm font-semibold text-primary">{totalLessons} aulas</span>
+                  <span className="text-sm text-muted-foreground">{t("review.totalEstimate")}</span>
+                  <span className="text-sm font-semibold text-primary">{t("review.totalLessons", { count: totalLessons })}</span>
                 </div>
               </div>
 
               <div className="rounded-lg border border-primary/20 bg-primary/5 px-4 py-3 text-sm text-muted-foreground">
-                A IA irá gerar as <strong>7 secções canónicas</strong>: Identificação, Perfil do Aluno,
-                Aprendizagens Essenciais, Calendarização, Desenvolvimento por Unidades, Avaliação e
-                Articulação Curricular.
+                {t.rich("review.aiNotice", { strong: (chunks) => <strong>{chunks}</strong> })}
               </div>
             </div>
           )}
@@ -502,7 +551,7 @@ export default function CurriculumPlanNewPage() {
       <div className="flex items-center justify-between">
         <Button variant="outline" onClick={goBack} className="gap-2">
           <ChevronLeft className="h-4 w-4" />
-          {step === "period" ? "Cancelar" : "Anterior"}
+          {step === "period" ? t("nav.cancel") : t("nav.previous")}
         </Button>
 
         {step !== "review" ? (
@@ -515,18 +564,21 @@ export default function CurriculumPlanNewPage() {
             }
             className="gap-2"
           >
-            Seguinte
+            {t("nav.next")}
             <ChevronRight className="h-4 w-4" />
           </Button>
         ) : (
+          <div className="flex flex-col items-end gap-1">
           <Button
             onClick={handleSubmit}
             disabled={!step1Valid || !step2Valid || !step3Valid || submitting}
             className="gap-2"
           >
-            {submitting ? "A gerar..." : "Gerar planificação"}
+            {submitting ? t("nav.generating") : t("nav.generate")}
             {!submitting && <ChevronRight className="h-4 w-4" />}
           </Button>
+            <AiDisclaimer className="text-right" />
+          </div>
         )}
       </div>
     </WizardShell>

@@ -1,3 +1,4 @@
+import { translate } from "@/i18n/translate";
 import {
   getCurrentOrganizationDashboard,
   getCurrentOrganizationMembers,
@@ -16,7 +17,7 @@ export const fetchWorkspace = createAsyncThunk(
     try {
       return await getCurrentWorkspace();
     } catch {
-      return rejectWithValue("Não foi possível carregar o contexto de workspace");
+      return rejectWithValue(translate("errors.workspace.fetchContextFailed"));
     }
   }
 );
@@ -27,7 +28,7 @@ export const fetchOrganizationDashboard = createAsyncThunk(
     try {
       return await getCurrentOrganizationDashboard();
     } catch {
-      return rejectWithValue("Não foi possível carregar o dashboard da escola");
+      return rejectWithValue(translate("errors.workspace.fetchDashboardFailed"));
     }
   }
 );
@@ -38,7 +39,7 @@ export const fetchOrganizationMembers = createAsyncThunk(
     try {
       return await getCurrentOrganizationMembers();
     } catch {
-      return rejectWithValue("Não foi possível carregar os membros da escola");
+      return rejectWithValue(translate("errors.workspace.fetchMembersFailed"));
     }
   }
 );

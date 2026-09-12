@@ -1,4 +1,5 @@
 "use client";
+import { AiDisclaimer } from "@/components/ui/ai-disclaimer";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -35,12 +36,14 @@ import { SLOT_STATUS_CONFIG } from "@/shared/constants/lessonSlotStatus";
 import { translateSubject } from "@/components/document-creation/constants";
 import { SlotDialog } from "@/components/calendar/SlotDialog";
 import type { SlotWithTimetable } from "@/shared/types/calendar";
-import { toIso, getWeekStart, addDays, formatWeekLabel } from "@/shared/utils/calendar";
+import { toIso, getWeekStart, addDays, formatWeekLabel, toIntlLocale } from "@/shared/utils/calendar";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSelector } from "react-redux";
 import { useAuth } from "@clerk/nextjs";
+import { useLocale, useTranslations } from "next-intl";
+import { isSupportedLocale, defaultLocale } from "@/i18n/locales";
 
 // ─────────────────────── Types / helpers ─────────────────────────────────────
 
@@ -59,6 +62,10 @@ interface SlotCardProps {
 }
 
 function SlotCard({ slot, color, subject, classLabel, onOpen }: SlotCardProps) {
+  const t = useTranslations("calendar");
+  const tTimetable = useTranslations("timetable");
+  const rawLocale = useLocale();
+  const locale = isSupportedLocale(rawLocale) ? rawLocale : defaultLocale;
   const isHoliday = slot.slotType === "HOLIDAY";
   const isFailed = slot.status === "failed";
   const cfg = STATUS_CONFIG[slot.status];
@@ -89,30 +96,30 @@ function SlotCard({ slot, color, subject, classLabel, onOpen }: SlotCardProps) {
         </span>
         <div className="min-w-0 flex-1">
           <p className={`truncate text-sm font-medium ${isHoliday ? "line-through text-muted-foreground" : ""}`}>
-            {isHoliday ? "Feriado / Sem aula" : slot.topicTitle || "Sem tópico definido"}
+            {isHoliday ? t("shared.holidayNoLesson") : slot.topicTitle || t("detail.noTopicDefined")}
           </p>
           <p className="text-xs text-muted-foreground">
-            {new Date(`${slot.slotDate}T00:00:00`).toLocaleDateString("pt-PT", {
+            {new Date(`${slot.slotDate}T00:00:00`).toLocaleDateString(toIntlLocale(locale), {
               weekday: "long",
               day: "numeric",
               month: "long",
             })}
-            {" · "}{slot.durationMinutes} min
+            {" · "}{t("shared.minutesSuffix", { count: slot.durationMinutes })}
           </p>
           <p className="text-xs text-muted-foreground/70">
-            {subject}{classLabel ? ` · Turma ${classLabel}` : ""}
+            {subject}{classLabel ? ` · ${t("shared.classInline", { label: classLabel })}` : ""}
           </p>
           {isFailed && (
             <p className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400 mt-0.5">
               <AlertTriangle className="h-3 w-3" />
-              Falhou a geração
+              {t("detail.generationFailed")}
             </p>
           )}
         </div>
         {!isHoliday && (
           <Badge className={`shrink-0 gap-1 border text-xs ${cfg.badgeCls}`}>
             {cfg.icon}
-            {cfg.label}
+            {tTimetable(`status.${slot.status}`)}
           </Badge>
         )}
       </div>
@@ -123,6 +130,10 @@ function SlotCard({ slot, color, subject, classLabel, onOpen }: SlotCardProps) {
 // ─────────────────────── Main page ───────────────────────────────────────────
 
 export default function CalendarViewPage() {
+  const t = useTranslations("calendar");
+  const tTimetable = useTranslations("timetable");
+  const rawLocale = useLocale();
+  const locale = isSupportedLocale(rawLocale) ? rawLocale : defaultLocale;
   const params = useParams();
   const id = params.id as string;
   const { loaded: featuresLoaded, enabled } = useFeatureAccess(selectIsHorarioPlanosEnabled);
@@ -310,8 +321,8 @@ export default function CalendarViewPage() {
   if (!enabled)
     return (
       <FeatureUnavailable
-        title="As Turmas"
-        description="Cria o horário semanal de uma turma, gera a sequência de tópicos e os planos de aula. Disponível nos planos pagos."
+        title={t("shared.featureTitle")}
+        description={t("shared.featureDescription")}
       />
     );
 
@@ -329,18 +340,19 @@ export default function CalendarViewPage() {
           />
           <div>
             <h1 className="font-semibold leading-tight">
-              {currentTimetable?.title ?? "A carregar..."}
+              {currentTimetable?.title ?? t("detail.loading")}
             </h1>
             {currentTimetable && (
               <p className="text-sm text-muted-foreground">
-                {translateSubject(currentTimetable.subject)} · {currentTimetable.gradeLevel}.º ano
-                {currentTimetable.classLabel ? ` · Turma ${currentTimetable.classLabel}` : ""}
+                {translateSubject(currentTimetable.subject)} · {tTimetable("gradeYear", { grade: currentTimetable.gradeLevel })}
+                {currentTimetable.classLabel ? ` · ${t("shared.classInline", { label: currentTimetable.classLabel })}` : ""}
               </p>
             )}
           </div>
         </div>
 
         {pendingThisWeek > 0 && (
+          <div className="flex flex-col items-end gap-0.5">
           <Button
             size="sm"
             onClick={handleGenerateWeek}
@@ -351,8 +363,10 @@ export default function CalendarViewPage() {
             ) : (
               <Sparkles className="mr-1 h-3 w-3" />
             )}
-            Gerar semana ({pendingThisWeek})
+            {t("shared.generateWeek", { count: pendingThisWeek })}
           </Button>
+            <AiDisclaimer variant="compact" />
+          </div>
         )}
       </div>
 
@@ -366,7 +380,7 @@ export default function CalendarViewPage() {
           onClick={() => setWeekStart(getWeekStart(new Date()))}
           className="text-sm font-medium hover:text-primary"
         >
-          {formatWeekLabel(weekStart)}
+          {formatWeekLabel(weekStart, locale)}
         </button>
         <Button variant="ghost" size="icon" onClick={nextWeek}>
           <ArrowRight className="h-4 w-4" />
@@ -381,11 +395,11 @@ export default function CalendarViewPage() {
       ) : currentWeekSlots.length === 0 ? (
         <div className="py-12 text-center text-muted-foreground">
           <CalendarDays className="mx-auto mb-3 h-10 w-10" />
-          <p>Sem aulas programadas para esta semana.</p>
+          <p>{t("detail.noLessonsThisWeek")}</p>
           <p className="mt-1 text-sm">
             {slots.length === 0
-              ? "Ainda não tens aulas criadas para esta turma."
-              : "Navega para outra semana."}
+              ? t("detail.noLessonsYet")
+              : t("detail.navigateOtherWeek")}
           </p>
         </div>
       ) : (

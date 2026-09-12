@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { Routes } from "@/shared/types";
 import { AlertCircle, ArrowRight, Crown, Infinity, Sparkles } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import posthog from "posthog-js";
@@ -22,6 +23,7 @@ export function UpgradePlanModal({
   open,
   onOpenChange,
 }: UpgradePlanModalProps) {
+  const t = useTranslations("billing.upgradePlanModal");
   const router = useRouter();
 
   useEffect(() => {
@@ -46,27 +48,27 @@ export function UpgradePlanModal({
           </div>
 
           <DialogTitle className="text-2xl font-bold text-foreground mb-1">
-            Limite do Plano Grátis Atingido
+            {t("title")}
           </DialogTitle>
-          
+
           <DialogDescription className="text-muted-foreground">
-            Chegou ao limite de créditos do seu plano gratuito.
+            {t("description")}
           </DialogDescription>
         </div>
 
         {/* Benefits List */}
         <div className="space-y-3 p-6 pr-14">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
-            Desbloqueie o Pro para continuar
+            {t("unlockLabel")}
           </p>
-          
+
           <div className="flex items-center gap-4 p-3 bg-muted/50 rounded-xl border border-border/50">
             <div className="w-10 h-10 bg-emerald-500 dark:bg-emerald-600 rounded-lg flex items-center justify-center flex-shrink-0 shadow-sm">
               <Infinity className="w-5 h-5 text-white" />
             </div>
             <div>
-              <p className="font-semibold text-sm text-foreground">Gerações Ilimitadas</p>
-              <p className="text-xs text-muted-foreground">Nunca pare de criar conteúdos</p>
+              <p className="font-semibold text-sm text-foreground">{t("unlimitedGenerations.title")}</p>
+              <p className="text-xs text-muted-foreground">{t("unlimitedGenerations.description")}</p>
             </div>
           </div>
 
@@ -75,8 +77,8 @@ export function UpgradePlanModal({
               <Sparkles className="w-5 h-5 text-primary-foreground" />
             </div>
             <div>
-              <p className="font-semibold text-sm text-foreground">Personalização Avançada</p>
-              <p className="text-xs text-muted-foreground">Aceda a todos os modelos disponíveis</p>
+              <p className="font-semibold text-sm text-foreground">{t("advancedCustomization.title")}</p>
+              <p className="text-xs text-muted-foreground">{t("advancedCustomization.description")}</p>
             </div>
           </div>
 
@@ -85,8 +87,8 @@ export function UpgradePlanModal({
               <Crown className="w-5 h-5 text-white" />
             </div>
             <div>
-              <p className="font-semibold text-sm text-foreground">Funcionalidades Premium</p>
-              <p className="text-xs text-muted-foreground">Exportação e ferramentas exclusivas</p>
+              <p className="font-semibold text-sm text-foreground">{t("premiumFeatures.title")}</p>
+              <p className="text-xs text-muted-foreground">{t("premiumFeatures.description")}</p>
             </div>
           </div>
         </div>
@@ -97,14 +99,14 @@ export function UpgradePlanModal({
             onClick={handleUpgrade}
             className="w-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white h-12 rounded-xl font-bold shadow-md transition-all flex items-center justify-center gap-2 group"
           >
-            Ver planos Pro
+            {t("cta")}
             <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
           </Button>
-          <button 
+          <button
             onClick={() => onOpenChange(false)}
             className="w-full mt-3 text-sm text-muted-foreground hover:text-foreground transition-colors py-1"
           >
-            Talvez mais tarde
+            {t("maybeLater")}
           </button>
         </div>
       </DialogContent>

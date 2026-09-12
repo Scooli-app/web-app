@@ -14,6 +14,7 @@ import {
   UploadCloud,
   X,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useRef, useState } from "react";
 
 interface TemplateFromDocumentCreatorProps {
@@ -33,6 +34,7 @@ export function TemplateFromDocumentCreator({
   onBack,
   onTemplateSaved,
 }: TemplateFromDocumentCreatorProps) {
+  const t = useTranslations("documentCreation.templateFromDocument");
   const [file, setFile] = useState<File | null>(null);
   const [name, setName] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
@@ -42,11 +44,11 @@ export function TemplateFromDocumentCreator({
   const validateAndSetFile = (selectedFile: File) => {
     setError(null);
     if (!ALLOWED_TYPES.includes(selectedFile.type)) {
-      setError("Apenas ficheiros PDF e DOCX são suportados.");
+      setError(t("errorUnsupportedType"));
       return;
     }
     if (selectedFile.size > MAX_FILE_SIZE) {
-      setError("O tamanho máximo do ficheiro é 10MB.");
+      setError(t("errorFileTooLarge"));
       return;
     }
     setFile(selectedFile);
@@ -91,7 +93,7 @@ export function TemplateFromDocumentCreator({
       setError(
         err instanceof Error
           ? err.message
-          : "Ocorreu um erro ao criar o modelo. Tente novamente."
+          : t("errorGeneric")
       );
     } finally {
       setIsProcessing(false);
@@ -110,7 +112,7 @@ export function TemplateFromDocumentCreator({
           className="mb-3 flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-primary disabled:pointer-events-none disabled:opacity-50"
         >
           <ArrowLeft className="h-4 w-4" />
-          Voltar
+          {t("back")}
         </button>
         <div className="flex items-center gap-3">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10">
@@ -118,10 +120,10 @@ export function TemplateFromDocumentCreator({
           </div>
           <div>
             <h2 className="text-base font-semibold text-foreground sm:text-lg">
-              Criar Modelo a partir de Documento
+              {t("title")}
             </h2>
             <p className="text-xs text-muted-foreground sm:text-sm">
-              A IA vai analisar o documento e gerar a estrutura do modelo.
+              {t("description")}
             </p>
           </div>
         </div>
@@ -180,10 +182,10 @@ export function TemplateFromDocumentCreator({
               <div className="flex flex-col items-center gap-1.5 text-center">
                 <UploadCloud className="h-7 w-7 text-muted-foreground" />
                 <p className="text-sm font-medium text-foreground">
-                  Clique ou arraste o ficheiro
+                  {t("clickOrDrag")}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  PDF ou DOCX · Máx. 10MB
+                  {t("fileTypeHint")}
                 </p>
               </div>
             )}
@@ -201,11 +203,10 @@ export function TemplateFromDocumentCreator({
               <Loader2 className="h-5 w-5 shrink-0 animate-spin text-primary" />
               <div>
                 <p className="text-sm font-medium text-foreground">
-                  A analisar o documento...
+                  {t("analyzing")}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  A IA está a gerar a estrutura do modelo. Pode demorar alguns
-                  segundos.
+                  {t("analyzingDescription")}
                 </p>
               </div>
             </div>
@@ -213,13 +214,13 @@ export function TemplateFromDocumentCreator({
 
           <div className="space-y-1.5">
             <Label htmlFor="template-from-doc-name" className="text-sm">
-              Nome do Modelo
+              {t("nameLabel")}
             </Label>
             <Input
               id="template-from-doc-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Ex: Plano de Aula — Frações"
+              placeholder={t("namePlaceholder")}
               disabled={isProcessing}
             />
           </div>
@@ -227,8 +228,7 @@ export function TemplateFromDocumentCreator({
           <div className="flex items-start gap-2 rounded-lg border border-border/50 bg-muted/60 p-3">
             <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
             <p className="text-xs text-muted-foreground">
-              Imagens e formatação complexa poderão não ser preservadas.
-              Documentos digitalizados sem texto legível serão rejeitados.
+              {t("warningText")}
             </p>
           </div>
         </div>
@@ -242,7 +242,7 @@ export function TemplateFromDocumentCreator({
               disabled={isProcessing}
               className="h-11 rounded-xl border-border text-secondary-foreground hover:border-primary hover:bg-accent sm:flex-1"
             >
-              Cancelar
+              {t("cancel")}
             </Button>
             <Button
               type="submit"
@@ -252,12 +252,12 @@ export function TemplateFromDocumentCreator({
               {isProcessing ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  A processar...
+                  {t("processing")}
                 </>
               ) : (
                 <>
                   <UploadCloud className="mr-2 h-4 w-4" />
-                  Criar Modelo
+                  {t("createTemplate")}
                 </>
               )}
             </Button>

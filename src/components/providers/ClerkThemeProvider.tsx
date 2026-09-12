@@ -1,11 +1,23 @@
 "use client";
 
+import type { Locale } from "@/i18n/locales";
 import type { RootState } from "@/store/store";
-import { ptPT } from "@clerk/localizations";
+import { enUS, ptPT } from "@clerk/localizations";
 import { ClerkProvider } from "@clerk/nextjs";
 import { dark } from "@clerk/themes";
+import { useLocale } from "next-intl";
 import { useMemo } from "react";
 import { useSelector } from "react-redux";
+
+/**
+ * Clerk ships its own translations; we only have to hand it the right bundle.
+ * Keyed by our locale registry so a new language fails to compile here rather
+ * than silently rendering Clerk's screens in Portuguese.
+ */
+const CLERK_LOCALIZATIONS: Record<Locale, typeof ptPT> = {
+  "pt-PT": ptPT,
+  en: enUS,
+};
 
 function getSystemTheme(): "light" | "dark" {
   if (typeof window === "undefined") return "light";
@@ -18,6 +30,8 @@ export default function ClerkThemeProvider({
   children: React.ReactNode;
 }) {
   const theme = useSelector((state: RootState) => state.ui.theme);
+  const locale = useLocale() as Locale;
+  const localization = CLERK_LOCALIZATIONS[locale] ?? ptPT;
 
   const appearance = useMemo(() => {
     const effectiveTheme = theme === "system" ? getSystemTheme() : theme;
@@ -78,7 +92,7 @@ export default function ClerkThemeProvider({
   return (
     <ClerkProvider
       appearance={appearance}
-      localization={ptPT}
+      localization={localization}
       signInUrl="/sign-in"
       signUpUrl="/sign-up"
       afterSignInUrl="/"

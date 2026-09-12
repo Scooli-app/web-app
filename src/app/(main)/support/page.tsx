@@ -4,9 +4,11 @@ import { PageContainer } from "@/components/layout/PageContainer";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { FeedbackActionCards } from "@/components/feedback/FeedbackActionCards";
 import { FeedbackHistory } from "@/components/feedback/FeedbackHistory";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 
 export default function SupportPage() {
+  const t = useTranslations("support.page");
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const handleFeedbackSubmitted = () => {
@@ -18,8 +20,8 @@ export default function SupportPage() {
       <div className="space-y-6 sm:space-y-8">
         <PageHeader
           className="text-center sm:text-left"
-          title="Apoio e Sugestões"
-          description="A sua opinião é fundamental para nós. Envie sugestões de melhoria ou reporte erros que encontrou na plataforma."
+          title={t("title")}
+          description={t("description")}
         />
 
         <FeedbackActionCards onFeedbackSubmitted={handleFeedbackSubmitted} />
