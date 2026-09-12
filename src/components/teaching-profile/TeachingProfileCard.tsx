@@ -120,10 +120,18 @@ export function TeachingProfileCard() {
       try {
         const results = await teachingProfileService.searchQualifications("", 4, 200);
         if (!cancelled) setCatalog(results);
-      } catch {
+      } catch (error) {
+        // apiClient's response interceptor already extracts the backend's real
+        // error message (or a specific "wrong API URL" / "network error" one) —
+        // surface that instead of guessing a single fixed cause. A silent guess
+        // here is actively harmful: it looks identical whether the catalogue is
+        // genuinely unsynced, the wrong backend is being hit, or the request
+        // never left the browser, so a real failure is undiagnosable from the UI.
         if (!cancelled) {
           setCatalogError(
-            "O catálogo de cursos ainda não foi sincronizado. Fala com a equipa."
+            error instanceof Error
+              ? error.message
+              : "Não foi possível carregar o catálogo de cursos."
           );
         }
       }
