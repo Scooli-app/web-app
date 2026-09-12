@@ -179,7 +179,8 @@
       "1ST_CYCLE": "1.º ciclo",
       "2ND_CYCLE": "2.º ciclo",
       "3RD_CYCLE": "3.º ciclo",
-      "SECONDARY": "Secundário"
+      "SECONDARY": "Secundário",
+      "PROFESSIONAL": "Ensino profissional"
     },
     "onboardingGoal": {
       "FASTER_DOCUMENTS": "Criar materiais mais rápido",

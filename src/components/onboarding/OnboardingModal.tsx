@@ -132,6 +132,7 @@ const teachingLevelOptions: TeachingLevel[] = [
   "2ND_CYCLE",
   "3RD_CYCLE",
   "SECONDARY",
+  "PROFESSIONAL",
 ];
 
 const goalOptions: { value: OnboardingGoal; emoji: string }[] = [

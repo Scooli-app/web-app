@@ -179,7 +179,8 @@
       "1ST_CYCLE": "1st cycle (years 1–4)",
       "2ND_CYCLE": "2nd cycle (years 5–6)",
       "3RD_CYCLE": "3rd cycle (years 7–9)",
-      "SECONDARY": "Secondary (years 10–12)"
+      "SECONDARY": "Secondary (years 10–12)",
+      "PROFESSIONAL": "Vocational (years 10–12)"
     },
     "onboardingGoal": {
       "FASTER_DOCUMENTS": "Put materials together faster",
