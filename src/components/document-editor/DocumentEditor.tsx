@@ -1013,11 +1013,25 @@ export default function DocumentEditor({
       isChatInProgressRef.current = true;
       skipNextEditorKeyBumpRef.current = true;
 
+      // Keep any image nodes in "pending" state for the duration of the request
+      // instead of racing past ImageBlockNodeView's 5s hydration timeout and
+      // flashing "unavailable" while the freshly generated images are still
+      // being fetched below.
+      dispatch(setGeneratingImages(true));
+
       try {
         const response = await dispatch(
           chatWithDocument({ id: currentDocument.id, message: userMessage }),
         ).unwrap();
-        dispatch(fetchDocumentImages(currentDocument.id));
+        // Await the refreshed image list so any images the new content
+        // references are already in the store by the time that content is
+        // rendered — otherwise ImageBlockNodeView can find no match yet and
+        // fall back to "unavailable" until the page is manually reloaded.
+        try {
+          await dispatch(fetchDocumentImages(currentDocument.id)).unwrap();
+        } catch {
+          // Non-fatal — ImageBlockNodeView still has its own hydration wait.
+        }
 
         // A question-only answer carries no document content — never treat it as an edit.
         const editedContent = isUsableDocumentContent(response.content)
@@ -1090,7 +1104,15 @@ export default function DocumentEditor({
         }
       } catch {
         setError(t("chatErrorGeneric"));
+        // The backend runs text + image generation synchronously in one
+        // request, which can outlast a client-side network hiccup or proxy
+        // timeout. Resync from the server so a transient client error here
+        // doesn't leave the editor stuck on stale content when the backend
+        // actually finished and persisted the edit.
+        dispatch(fetchDocument(currentDocument.id));
+        dispatch(fetchDocumentImages(currentDocument.id));
       } finally {
+        dispatch(setGeneratingImages(false));
         isChatInProgressRef.current = false;
         skipNextEditorKeyBumpRef.current = false;
       }
