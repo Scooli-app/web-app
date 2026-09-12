@@ -1,4 +1,11 @@
 import { dashboardCache, CACHE_KEYS } from "@/lib/dashboardCache";
+import { detectBrowserLocale } from "@/i18n/locales";
+import {
+  resolveContentLanguage,
+  resolveInterfaceLocale,
+  type ContentLanguagePreference,
+  type InterfaceLocalePreference,
+} from "@/i18n/preferences";
 import {
   chatWithDocument as chatWithDocumentService,
   createDocument as createDocumentService,
@@ -214,7 +221,7 @@ export const fetchDocument = createAsyncThunk(
 
 export const createDocument = createAsyncThunk(
   "documents/createDocument",
-  async (params: CreateDocumentParams, { rejectWithValue }) => {
+  async (params: CreateDocumentParams, { getState, rejectWithValue }) => {
     try {
       if (!params.documentType || !params.prompt) {
         return rejectWithValue(translate("errors.documents.typeAndPromptRequired"));
@@ -224,7 +231,23 @@ export const createDocument = createAsyncThunk(
         return rejectWithValue(translate("errors.documents.subjectAndYearRequired"));
       }
 
-      const document = await createDocumentService(params);
+      // The backend has no way to know "follow the browser" resolved to English:
+      // that preference is deliberately never persisted (see LocaleResolver), so
+      // the client resolves it and sends it explicitly on the one request that
+      // actually needs it, unless the caller already supplied an override.
+      const ui = (
+        getState() as {
+          ui: {
+            interfaceLocale: InterfaceLocalePreference;
+            contentLanguage: ContentLanguagePreference;
+          };
+        }
+      ).ui;
+      const interfaceLocale = resolveInterfaceLocale(ui.interfaceLocale, detectBrowserLocale());
+      const contentLanguage =
+        params.contentLanguage ?? resolveContentLanguage(ui.contentLanguage, interfaceLocale);
+
+      const document = await createDocumentService({ ...params, contentLanguage });
 
       return document;
     } catch (error) {
