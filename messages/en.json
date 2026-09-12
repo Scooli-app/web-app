@@ -607,7 +607,7 @@
         "cycle3": "3rd Cycle",
         "secondary": "Secondary"
       },
-      "gradeLabel": "Year {grade}",
+      "gradeLabel": "{grade, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} grade",
       "presentationThemes": {
         "dark": "Noir",
         "aurora": "Aurora",
@@ -1448,7 +1448,7 @@
       "allTypes": "All types",
       "sortPopular": "Most reused",
       "sortRecent": "Most recent",
-      "gradeOption": "Year {n}"
+      "gradeOption": "{n, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} grade"
     },
     "dashboardPage": {
       "title": "Contributor Dashboard",
@@ -1621,7 +1621,7 @@
       "sharedCommunityTitle": "Shared to the community library",
       "community": "Community",
       "sharedOrgTitle": "Shared to {org}'s library",
-      "gradeYear": "Year {grade}",
+      "gradeYear": "{grade, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} grade",
       "createdOn": "Created on {date}"
     },
     "filters": {
@@ -1638,7 +1638,7 @@
       "allSubjects": "All subjects",
       "gradePlaceholder": "Year",
       "allGrades": "All years",
-      "gradeOption": "Year {grade}",
+      "gradeOption": "{grade, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} grade",
       "originPlaceholder": "Origin",
       "origin": {
         "all": "Any origin",
@@ -2377,8 +2377,8 @@
       "review": "Review",
       "holiday": "Holiday"
     },
-    "gradeYear": "Year {grade}",
-    "gradeShort": "Y{grade}",
+    "gradeYear": "{grade, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} grade",
+    "gradeShort": "{grade, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}",
     "autoTitleFallback": "New Class"
   },
   "calendar": {
@@ -2677,7 +2677,7 @@
         "title": "File and metadata",
         "fileLabel": "File",
         "titleLabel": "Curriculum plan title",
-        "titlePlaceholder": "E.g. Term Curriculum Plan, Maths, Year 5",
+        "titlePlaceholder": "E.g. Term Curriculum Plan, Maths, 5th grade",
         "subjectLabel": "Subject",
         "subjectPlaceholder": "Select",
         "schoolYearLabel": "Year",
