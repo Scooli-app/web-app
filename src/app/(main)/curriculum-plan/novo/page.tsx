@@ -96,6 +96,21 @@ function planningTypeLabelPT(t: CurriculumPlanningType): string {
   return map[t];
 }
 
+const PLANNING_TYPE_LABEL_EN: Record<CurriculumPlanningType, string> = {
+  annual: "Annual",
+  semester: "Semester",
+  trimester: "Term",
+  custom: "Custom",
+};
+
+/**
+ * The prompt sent to the AI is written in the interface language: the teacher
+ * is the one who would read it back (in errors, history, a future "edit the
+ * request" feature), so it should read like something they wrote, not a fixed
+ * Portuguese template. The subject name and "Aprendizagens Essenciais" are the
+ * exception — curriculum vocabulary, translated by the model itself the same
+ * way the retrieved AE context is (see EnglishPromptLanguage).
+ */
 function buildPrompt(p: {
   planningType: CurriculumPlanningType;
   subjectLabel: string;
@@ -104,7 +119,17 @@ function buildPrompt(p: {
   periodEnd: string;
   lessonsPerWeek: number;
   totalLessons: number;
+  locale: Locale;
 }) {
+  if (p.locale === "en") {
+    return (
+      `${PLANNING_TYPE_LABEL_EN[p.planningType]} curriculum plan for ${p.subjectLabel}, Year ${p.schoolYear}, ` +
+      `from ${p.periodStart} to ${p.periodEnd}, with about ${p.lessonsPerWeek} lessons per week ` +
+      `(${p.totalLessons} lessons total, estimated). ` +
+      "Generate the 7 canonical sections (Identification, Pupil Profile, Aprendizagens Essenciais, " +
+      "Schedule, Development by Unit, Assessment, Curricular Alignment)."
+    );
+  }
   return (
     `Planificação ${planningTypeLabelPT(p.planningType).toLowerCase()} de ${p.subjectLabel} para o ` +
     `${p.schoolYear}.º ano, de ${p.periodStart} a ${p.periodEnd}, com cerca de ` +
@@ -163,7 +188,13 @@ export default function CurriculumPlanNewPage() {
     () => SUBJECTS.find((s) => s.id === subjectId),
     [subjectId]
   );
-  const subjectLabel = selectedSubject?.label ?? "";
+  // The review step shows the translated name; the AI prompt uses whichever
+  // name matches the language the prompt itself is written in (see buildPrompt).
+  const subjectLabel = selectedSubject
+    ? locale === "en"
+      ? translateSubjectLabel(selectedSubject.id)
+      : selectedSubject.label
+    : "";
   // Backend expects the canonical English value, not the internal id used for selection.
   const subjectValue = selectedSubject?.value ?? "";
   const schoolYear = Number(gradeLevel) || 0;
@@ -218,6 +249,7 @@ export default function CurriculumPlanNewPage() {
       periodEnd: periodEndISO,
       lessonsPerWeek: lpw,
       totalLessons,
+      locale,
     });
 
     try {
