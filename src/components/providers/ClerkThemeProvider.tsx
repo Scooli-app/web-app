@@ -10,12 +10,85 @@ import { useMemo } from "react";
 import { useSelector } from "react-redux";
 
 /**
+ * Clerk's own `pt-PT` pack mixes in Brazilian Portuguese ("Registre-se",
+ * "Entrando...") and leaves several strings entirely untranslated in
+ * English — verified against @clerk/localizations directly, not assumed.
+ * These are the ones that sit on screens Scooli actually shows (sign-in,
+ * sign-up, the account modal opened via `useClerk().openUserProfile()`);
+ * organization-management strings are left alone since Scooli doesn't
+ * render Clerk's built-in org UI. Patched here rather than upstream since
+ * there's no fork of the package to carry a source-level fix.
+ */
+// Non-null: these sections are always populated on the real ptPT bundle —
+// only Clerk's type marks them optional, for locales that might omit them.
+const baseSignIn = ptPT.signIn!;
+const baseSignUp = ptPT.signUp!;
+const baseUserProfile = ptPT.userProfile!;
+
+const PT_PT_CORRECTIONS: Partial<typeof ptPT> = {
+  signIn: {
+    ...baseSignIn,
+    start: {
+      ...baseSignIn.start,
+      actionLink: "Registar-se",
+    },
+    emailLink: {
+      ...baseSignIn.emailLink,
+      loading: {
+        ...baseSignIn.emailLink?.loading,
+        title: "A entrar...",
+      },
+    },
+    passwordPwned: {
+      ...baseSignIn.passwordPwned,
+      title:
+        "Esta palavra-passe foi comprometida numa violação de dados. Escolha outra por motivos de segurança.",
+    },
+    resetPassword: {
+      ...baseSignIn.resetPassword,
+      requiredMessage: "Por motivos de segurança, é necessário repor a palavra-passe.",
+    },
+  },
+  signUp: {
+    ...baseSignUp,
+    emailLink: {
+      ...baseSignUp.emailLink,
+      title: "Verifique o seu e-mail",
+      loading: {
+        ...baseSignUp.emailLink?.loading,
+        title: "A entrar...",
+      },
+    },
+  },
+  userProfile: {
+    ...baseUserProfile,
+    navbar: {
+      ...baseUserProfile.navbar,
+      account: "Perfil",
+      description: "Faça a gestão dos dados da sua conta.",
+      security: "Segurança",
+      title: "Conta",
+    },
+    passwordPage: {
+      ...baseUserProfile.passwordPage,
+      checkboxInfoText__signOutOfOtherSessions:
+        "Recomendamos terminar sessão em todos os outros dispositivos que possam ter usado a palavra-passe anterior.",
+    },
+    phoneNumberPage: {
+      ...baseUserProfile.phoneNumberPage,
+      verifySubtitle: "Insira o código de verificação enviado para {{identifier}}",
+      verifyTitle: "Verificar número de telemóvel",
+    },
+  },
+};
+
+/**
  * Clerk ships its own translations; we only have to hand it the right bundle.
  * Keyed by our locale registry so a new language fails to compile here rather
  * than silently rendering Clerk's screens in Portuguese.
  */
 const CLERK_LOCALIZATIONS: Record<Locale, typeof ptPT> = {
-  "pt-PT": ptPT,
+  "pt-PT": { ...ptPT, ...PT_PT_CORRECTIONS },
   en: enUS,
 };
 
