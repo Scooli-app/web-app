@@ -746,6 +746,33 @@
       "title": "Perfil e Conta",
       "manageAccount": "Gerir Conta"
     },
+    "teachingProfileCard": {
+      "title": "O Meu Ensino",
+      "subtitle": "Define uma vez o que lecionas. A Scooli passa a usar o currículo certo sem te voltar a perguntar em cada documento.",
+      "typeGroupLabel": "Tipo de ensino",
+      "regular": "Ensino regular",
+      "vocational": "Ensino profissional",
+      "regularNote": "No ensino regular continuas a escolher disciplina e ano em cada documento.",
+      "coursesLabel": "Os teus cursos",
+      "coursesSearchPlaceholder": "Procura por nome, código ou área — ex.: software, 481",
+      "noCoursesFound": "Nenhum curso encontrado. As escolas às vezes usam nomes diferentes do catálogo — procura por uma palavra só.",
+      "noCoursesYet": "Ainda não escolheste nenhum curso.",
+      "removeCourse": "Remover {course}",
+      "unitsInstruction": "Marca as unidades que lecionas. Na componente tecnológica o catálogo nacional não define disciplinas — são as escolas que agrupam estas unidades.",
+      "saving": "A guardar…",
+      "save": "Guardar",
+      "loadError": "Não foi possível carregar o teu perfil de ensino.",
+      "catalogError": "Não foi possível carregar o catálogo de cursos.",
+      "unitsError": "Não foi possível obter as unidades deste curso.",
+      "saveSuccess": "Perfil de ensino guardado.",
+      "saveError": "Não foi possível guardar. Tenta novamente.",
+      "status": {
+        "pending": "Em fila",
+        "running": "A preparar",
+        "indexed": "Pronto",
+        "failed": "Falhou"
+      }
+    },
     "subscriptionCard": {
       "title": "Subscrição e Gerações",
       "yourPlan": "O teu plano",

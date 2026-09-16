@@ -734,22 +734,49 @@
       "cancelsAtPeriodEnd": "Cancels at period end",
       "active": "Active",
       "paymentPending": "Payment Pending",
-      "canceled": "Cancelled"
+      "canceled": "Canceled"
     },
     "accessLabel": {
       "free": "Free plan",
-      "proViaOrganization": "Pro (via organisation)",
-      "proPersonalAndOrganization": "Pro (personal and organisation)",
+      "proViaOrganization": "Pro (via organization)",
+      "proPersonalAndOrganization": "Pro (personal and organization)",
       "scooliPro": "Scooli Pro"
     },
     "profileCard": {
       "title": "Profile and Account",
       "manageAccount": "Manage Account"
     },
+    "teachingProfileCard": {
+      "title": "My Teaching",
+      "subtitle": "Set what you teach once. Scooli will use the right curriculum without asking again on every document.",
+      "typeGroupLabel": "Teaching type",
+      "regular": "Regular education",
+      "vocational": "Vocational education",
+      "regularNote": "In regular education you still pick the subject and year on every document.",
+      "coursesLabel": "Your courses",
+      "coursesSearchPlaceholder": "Search by name, code or area — e.g. software, 481",
+      "noCoursesFound": "No course found. Schools sometimes use different names than the catalogue — try a single word.",
+      "noCoursesYet": "You haven't picked any courses yet.",
+      "removeCourse": "Remove {course}",
+      "unitsInstruction": "Mark the units you teach. In the technological component the national catalogue doesn't define subjects — schools group these units themselves.",
+      "saving": "Saving…",
+      "save": "Save",
+      "loadError": "We couldn't load your teaching profile.",
+      "catalogError": "We couldn't load the course catalogue.",
+      "unitsError": "We couldn't load this course's units.",
+      "saveSuccess": "Teaching profile saved.",
+      "saveError": "We couldn't save. Try again.",
+      "status": {
+        "pending": "Queued",
+        "running": "Preparing",
+        "indexed": "Ready",
+        "failed": "Failed"
+      }
+    },
     "subscriptionCard": {
       "title": "Subscription and Generations",
       "yourPlan": "Your plan",
-      "orgAccessTitle": "You have Pro access through your organisation.",
+      "orgAccessTitle": "You have Pro access through your organization.",
       "orgAccessDescription": "Your access is managed by the school — you don't need a personal subscription.",
       "remainingGenerations": "Remaining generations",
       "remainingOfLimit": "{remaining} of {limit}",
@@ -1967,11 +1994,11 @@
     },
     "subscriptionStatus": {
       "active": "Active",
-      "canceled": "Cancelled",
+      "canceled": "Canceled",
       "draft": "Draft",
       "expired": "Expired",
       "past_due": "Past due",
-      "trialing": "Trialling"
+      "trialing": "Trialing"
     },
     "memberStatus": {
       "active": "Active",
@@ -1980,7 +2007,7 @@
       "suspended": "Suspended"
     },
     "dashboard": {
-      "description": "An operational view of the organisation, team usage and recent activity.",
+      "description": "An operational view of the organization, team usage and recent activity.",
       "loadError": "We couldn't load the school dashboard",
       "stats": {
         "activeSeats": "Active seats",
@@ -2029,7 +2056,7 @@
     "members": {
       "title": "School members",
       "description": "Track the team's activity, roles and participation in {organizationName}.",
-      "fallbackOrganization": "this organisation",
+      "fallbackOrganization": "this organization",
       "stats": {
         "total": "Total members",
         "active": "Active members",
@@ -2052,14 +2079,14 @@
     },
     "settings": {
       "title": "School settings",
-      "description": "Initial overview of the organisation workspace.",
+      "description": "Initial overview of the organization workspace.",
       "loadError": "We couldn't load the school settings",
       "currentRole": "Current role:",
       "contractStatus": "Contract status:"
     },
     "usage": {
       "title": "School usage",
-      "description": "Initial view of the organisation's aggregated usage.",
+      "description": "Initial view of the organization's aggregated usage.",
       "loadError": "We couldn't load the school usage",
       "generationsThisMonth": "Generations this month"
     }
@@ -2129,7 +2156,7 @@
     },
     "cancel": {
       "title": "Sorry to see you go...",
-      "description": "The payment process was cancelled and you have not been charged.",
+      "description": "The payment process was canceled and you have not been charged.",
       "whatYoureLosingTitle": "What you're missing out on:",
       "unlimitedGenerations": {
         "title": "Unlimited generations",
@@ -2170,7 +2197,7 @@
       "openAuthCta": "Open sign in"
     },
     "signIn": {
-      "badge": "Organisation invitation",
+      "badge": "Organization invitation",
       "title": "Join {organizationName}",
       "description": "You'll join as {roleLabel}. Once you sign in or create an account, the invitation will be accepted automatically.",
       "emailLabel": "Invitation email",
@@ -2196,9 +2223,9 @@
     "accepting": {
       "title": "Accepting invitation",
       "description": "We're finishing setting up your access to {organizationName}.",
-      "syncing": "Syncing organisation"
+      "syncing": "Syncing organization"
     },
-    "fallbackOrganizationName": "your organisation"
+    "fallbackOrganizationName": "your organization"
   },
   "reengagement": {
     "reasons": {
@@ -2438,11 +2465,11 @@
       },
       "editDialog": {
         "title": "Edit class",
-        "description": "Change the name, class, colour or linked plan.",
+        "description": "Change the name, class, color or linked plan.",
         "nameLabel": "Name",
         "classLabel": "Class",
         "classPlaceholder": "e.g. A",
-        "colorLabel": "Colour",
+        "colorLabel": "Color",
         "linkedPlanLabel": "Linked plan",
         "loadingPlans": "Loading…",
         "none": "None",
@@ -2495,7 +2522,7 @@
       },
       "loadingSteps": [
         "Mapping curriculum competencies",
-        "Organising content and pedagogical sequence",
+        "Organizing content and pedagogical sequence",
         "Defining assessments and criteria",
         "Final pedagogical review"
       ],
@@ -2538,7 +2565,7 @@
         "subjectPlaceholderNoGrade": "Select the year first",
         "nameLabel": "Class name",
         "namePlaceholder": "Auto-filled",
-        "colorLabel": "Colour",
+        "colorLabel": "Color",
         "lessonsSummary": "{count} lessons (~{weeks} weeks × {lpw} lessons/week, already excluding weekends and holidays)"
       },
       "reviewDates": {
