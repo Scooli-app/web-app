@@ -71,7 +71,9 @@ export function SourceIngestionTracker() {
     for (const id of Array.from(prev.keys())) {
       if (!liveIds.has(id)) prev.delete(id);
     }
-  }, [sources]);
+    // `t` changes with the locale. Re-running is harmless: statuses are already
+    // recorded in the ref, so an unchanged list of sources toasts nothing.
+  }, [sources, t]);
 
   // Poll pending sources while any exist. The list of pending IDs is captured
   // when the effect runs; if it changes (new uploads, completions) the effect

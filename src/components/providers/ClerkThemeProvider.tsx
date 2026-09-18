@@ -19,11 +19,13 @@ import { useSelector } from "react-redux";
  * render Clerk's built-in org UI. Patched here rather than upstream since
  * there's no fork of the package to carry a source-level fix.
  */
-// Non-null: these sections are always populated on the real ptPT bundle —
-// only Clerk's type marks them optional, for locales that might omit them.
-const baseSignIn = ptPT.signIn!;
-const baseSignUp = ptPT.signUp!;
-const baseUserProfile = ptPT.userProfile!;
+// These sections are always populated on the real ptPT bundle — only Clerk's
+// type marks them optional, for locales that might omit them. The empty
+// fallback is never taken; it exists to satisfy the type without an assertion.
+const baseSignIn: NonNullable<typeof ptPT.signIn> = ptPT.signIn ?? {};
+const baseSignUp: NonNullable<typeof ptPT.signUp> = ptPT.signUp ?? {};
+const baseUserProfile: NonNullable<typeof ptPT.userProfile> =
+  ptPT.userProfile ?? {};
 
 const PT_PT_CORRECTIONS: Partial<typeof ptPT> = {
   signIn: {
