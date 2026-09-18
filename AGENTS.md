@@ -413,8 +413,8 @@ Important config files:
 8. Upload modal uses hard reload after successful import.
 - `UploadDocumentModal` eventually calls `window.location.reload()` instead of state-first refresh.
 
-9. `updateEmails` npm script is repository-coupled.
-- Delegates to chalkboard's own `make emails` (the canonical MJML build, version-pinned there) via `cd ../chalkboard`, so it assumes chalkboard is checked out as a sibling directory and requires `make` on PATH — it will fail if either assumption doesn't hold.
+9. `updateEmails` npm script path is repository-coupled.
+- Script points to `chalkboard/services/...` path and may fail if working directory layout changes.
 
 ## When Adding Features
 
