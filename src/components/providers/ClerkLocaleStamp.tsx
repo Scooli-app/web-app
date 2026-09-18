@@ -1,63 +1,69 @@
 "use client";
 
-import { isSupportedLocale, type Locale } from "@/i18n/locales";
+import { stampClerkLocale } from "@/i18n/clerkLocale";
+import { isSupportedLocale } from "@/i18n/locales";
 import { useUser } from "@clerk/nextjs";
-import { useLocale } from "next-intl";
 import { useEffect, useRef } from "react";
 
 /**
- * Keeps Clerk's `public_metadata.locale` in step with the language the teacher
- * is actually using.
+ * Carries the language chosen at sign-up over to Clerk's `public_metadata.locale`,
+ * once, as soon as a session exists.
  *
- * The backend's Clerk webhook reads that field to decide what language to send
- * verification codes, magic links and organization invitations in. Nothing else
- * writes it, so without this every piece of Clerk transactional mail stays
- * Portuguese no matter what the account says.
+ * `LocaleAwareSignUp` can only set `unsafeMetadata` — a user that does not exist
+ * yet has no `publicMetadata` to write — and the backend's Clerk webhook prefers
+ * `public_metadata.locale` for every email after the first. This is the hop
+ * between the two.
  *
- * It runs on every authenticated page rather than only after sign-up, because
- * the value has to follow later changes too — a teacher who switches to English
- * in Settings should get English invitations from then on. The write is skipped
- * whenever the stamp already matches, so the steady state costs nothing.
+ * It deliberately does *not* keep `public_metadata.locale` in step with what the
+ * page renders. An earlier version did, and it had two costs: every existing
+ * user has no stamp yet, so each one made two Clerk Backend API calls on their
+ * first page view after deploy, all bunched together; and rendering follows a
+ * per-browser cookie, so one account open in two browsers overwrote the stamp
+ * back and forth. Later changes are stamped where they are made instead —
+ * `useLocalePreferences.changeInterfacePreference` — so a write always
+ * corresponds to something the teacher chose.
+ *
+ * Existing accounts carry no `unsafeMetadata.locale`, so for them this effect
+ * returns immediately and makes no request at all.
  */
 export function ClerkLocaleStamp() {
   const { isLoaded, isSignedIn, user } = useUser();
-  const locale = useLocale() as Locale;
 
   // Guards against a second POST while the first is still in flight, and against
-  // re-posting a value this session already wrote.
+  // repeating one that already landed.
   const inFlightRef = useRef(false);
-  const lastStampedRef = useRef<string | null>(null);
+  const doneRef = useRef(false);
 
   useEffect(() => {
     if (!isLoaded || !isSignedIn || !user) return;
-    if (!isSupportedLocale(locale)) return;
+    if (doneRef.current || inFlightRef.current) return;
 
-    const current = user.publicMetadata?.locale;
-    if (current === locale || lastStampedRef.current === locale) return;
-    if (inFlightRef.current) return;
+    // Already stamped — at an earlier sign-in, or by an explicit language change.
+    // Never overwritten from here.
+    if (user.publicMetadata?.locale) return;
+
+    const signUpLocale = user.unsafeMetadata?.locale;
+    if (!isSupportedLocale(signUpLocale)) return;
 
     inFlightRef.current = true;
     void (async () => {
       try {
-        const response = await fetch("/api/clerk/locale", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ locale }),
-        });
-        if (response.ok) {
-          lastStampedRef.current = locale;
-          // Pull the fresh publicMetadata into the Clerk client so the effect
-          // does not fire again on the next render.
+        // `ifUnset` is enforced by the server too: this component's copy of the
+        // user can be stale, and must not win over a choice made a moment ago.
+        if (await stampClerkLocale(signUpLocale, { ifUnset: true })) {
+          doneRef.current = true;
+          // Pull the fresh publicMetadata into the Clerk client so the guard
+          // above sees it on the next render.
           await user.reload();
         }
       } catch {
         // Transactional email language is not worth interrupting the app for.
-        // The next navigation retries.
+        // A later navigation retries.
       } finally {
         inFlightRef.current = false;
       }
     })();
-  }, [isLoaded, isSignedIn, locale, user]);
+  }, [isLoaded, isSignedIn, user]);
 
   return null;
 }

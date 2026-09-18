@@ -1,6 +1,8 @@
 "use client";
 
+import { stampClerkLocale } from "@/i18n/clerkLocale";
 import {
+  resolveEffectiveInterfaceLocale,
   writeStoredContentPreference,
   writeStoredInterfacePreference,
 } from "@/i18n/clientLocale";
@@ -67,6 +69,12 @@ export function useLocalePreferences(): UseLocalePreferencesResult {
       await userService.updateLocalePreferences({
         preferredLocale: interfacePreferenceToApi(preference),
       });
+      // Clerk sends its own mail (verification codes, magic links, invitations)
+      // and reads its own copy of the language. Stamped here, where the teacher
+      // made the choice, rather than from whatever a page happens to render —
+      // see ClerkLocaleStamp. Storage was written above, so the "expressed a
+      // preference" gate resolves "follow my browser" the way LocaleProvider will.
+      await stampClerkLocale(resolveEffectiveInterfaceLocale(preference));
     },
     [dispatch],
   );

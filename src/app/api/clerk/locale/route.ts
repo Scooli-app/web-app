@@ -25,9 +25,14 @@ export async function POST(request: NextRequest) {
   }
 
   let locale: unknown;
+  let ifUnset = false;
   try {
-    const body = (await request.json()) as { locale?: unknown };
+    const body = (await request.json()) as {
+      locale?: unknown;
+      ifUnset?: unknown;
+    };
     locale = body?.locale;
+    ifUnset = body?.ifUnset === true;
   } catch {
     return NextResponse.json({ error: "Malformed body" }, { status: 400 });
   }
@@ -45,6 +50,17 @@ export async function POST(request: NextRequest) {
 
     if (user.publicMetadata?.locale === locale) {
       return NextResponse.json({ locale, updated: false });
+    }
+
+    // `ifUnset` lets a caller say "only if nobody has chosen yet". It is decided
+    // here, against what Clerk holds now, because the caller's own copy of the
+    // user can be stale — the sign-up copy must not overwrite a language the
+    // teacher picked a moment ago in Settings.
+    if (ifUnset && user.publicMetadata?.locale) {
+      return NextResponse.json({
+        locale: user.publicMetadata.locale,
+        updated: false,
+      });
     }
 
     // Spread the existing metadata rather than replacing it: `role: "admin"` also
