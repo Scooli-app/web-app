@@ -54,7 +54,7 @@ export interface TeachingCourseState {
 }
 
 export interface TeachingItem {
-  qualificationCode: string;
+  qualificationCode: string | null;
   kind: TeachingItemKind;
   code: string;
   label: string;

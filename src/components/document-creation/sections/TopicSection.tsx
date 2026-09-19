@@ -8,9 +8,15 @@ interface TopicSectionProps {
   topic: string;
   placeholder: string;
   onUpdate: FormUpdateFn;
+  suggestions?: Array<{ key: string; label: string }>;
 }
 
-export function TopicSection({ topic, placeholder, onUpdate }: TopicSectionProps) {
+export function TopicSection({
+  topic,
+  placeholder,
+  onUpdate,
+  suggestions = [],
+}: TopicSectionProps) {
   const t = useTranslations("documentCreation.topic");
 
   return (
@@ -36,6 +42,26 @@ export function TopicSection({ topic, placeholder, onUpdate }: TopicSectionProps
           className="w-full h-11 sm:h-12 px-3 sm:px-4 text-sm sm:text-base bg-muted border-border rounded-xl placeholder:text-muted-foreground"
           aria-label={t("ariaLabel")}
         />
+        {suggestions.length > 0 && (
+          <div aria-label={t("suggestionsLabel")} role="group">
+            <p className="mb-2 text-xs font-medium text-muted-foreground">
+              {t("suggestionsLabel")}
+            </p>
+            <div className="flex max-h-32 flex-wrap gap-2 overflow-y-auto">
+              {suggestions.map((suggestion) => (
+                <button
+                  key={suggestion.key}
+                  type="button"
+                  onClick={() => onUpdate("topic", suggestion.label)}
+                  className="rounded-full border border-border bg-background px-3 py-1.5 text-xs text-foreground transition-colors hover:border-primary hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  aria-label={t("useSuggestion", { suggestion: suggestion.label })}
+                >
+                  {suggestion.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </Card>
   );
