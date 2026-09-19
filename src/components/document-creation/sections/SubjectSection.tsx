@@ -24,6 +24,7 @@ interface SubjectSectionProps {
   isSpecificComponent?: boolean;
   onUpdate: FormUpdateFn;
   availableSubjects?: string[];
+  preferredSubjectIds?: string[];
   className?: string;
   disabled?: boolean;
 }
@@ -33,6 +34,7 @@ export function SubjectSection({
   isSpecificComponent,
   onUpdate,
   availableSubjects,
+  preferredSubjectIds = [],
   className,
   disabled,
 }: SubjectSectionProps) {
@@ -42,9 +44,15 @@ export function SubjectSection({
   const visibleSubjects = availableSubjects
     ? SUBJECTS.filter((s) => availableSubjects.includes(s.id))
     : SUBJECTS;
+  const visibleSubjectIds = new Set(visibleSubjects.map((item) => item.id));
+  const preferredIds = new Set(
+    preferredSubjectIds.filter((id) => visibleSubjectIds.has(id))
+  );
+  const preferredSubjects = visibleSubjects.filter((item) => preferredIds.has(item.id));
+  const remainingSubjects = visibleSubjects.filter((item) => !preferredIds.has(item.id));
 
   // Group subjects by category
-  const groupedSubjects = visibleSubjects.reduce((acc, subject) => {
+  const groupedSubjects = remainingSubjects.reduce((acc, subject) => {
     const category = subject.category;
     if (!acc[category]) {
       acc[category] = [];
@@ -138,6 +146,22 @@ export function SubjectSection({
             />
           </SelectTrigger>
           <SelectContent className="rounded-xl border-border max-h-[400px]">
+            {preferredSubjects.length > 0 && (
+              <SelectGroup>
+                <SelectLabel className="bg-background px-2 py-2 text-sm font-bold text-primary border-b border-border/50 rounded-lg mb-1">
+                  {t("yourSubjects")}
+                </SelectLabel>
+                {preferredSubjects.map((subjectOption) => (
+                  <SelectItem
+                    key={`preferred-${subjectOption.id}`}
+                    value={subjectOption.id}
+                    className="py-2.5 px-3 text-sm cursor-pointer rounded-lg focus:bg-accent focus:text-primary pl-4"
+                  >
+                    {translateSubjectLabel(subjectOption.id)}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            )}
             {categoryOrder.map((category) => {
               const categorySubjects = groupedSubjects[category];
               if (!categorySubjects?.length) return null;
