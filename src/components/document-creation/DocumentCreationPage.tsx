@@ -10,7 +10,10 @@ import {
 } from "@/store/documents/documentSlice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { selectIsPro } from "@/store/subscription/selectors";
-import { FeatureFlag } from "@/shared/types/featureFlags";
+import {
+  FeatureFlag,
+  isTeacherProfileFeatureEnabled,
+} from "@/shared/types/featureFlags";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -132,6 +135,9 @@ export default function DocumentCreationPage({
   const isUserSourcesEnabled = useAppSelector(
     (state) => state.features.flags[FeatureFlag.USER_SOURCES] === true
   );
+  const isTeacherProfileEnabled = useAppSelector((state) =>
+    isTeacherProfileFeatureEnabled(state.features.flags),
+  );
   const [isLoading, setIsLoading] = useState(false);
   const [teachingProfile, setTeachingProfile] = useState<TeachingProfile | null>(null);
 
@@ -139,6 +145,11 @@ export default function DocumentCreationPage({
     useDocumentForm(documentType.id);
 
   useEffect(() => {
+    if (!isTeacherProfileEnabled) {
+      setTeachingProfile(null);
+      return;
+    }
+
     let cancelled = false;
     teachingProfileService
       .get()
@@ -153,7 +164,7 @@ export default function DocumentCreationPage({
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [isTeacherProfileEnabled]);
 
   const availableSubjectIds = useMemo(
     () =>

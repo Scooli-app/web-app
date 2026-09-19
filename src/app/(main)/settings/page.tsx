@@ -18,6 +18,7 @@ import {
   type SubscriptionStatus,
   type UsageStats,
 } from "@/shared/types/subscription";
+import { isTeacherProfileFeatureEnabled } from "@/shared/types/featureFlags";
 import {
   PROMO_PLANS,
   isPromoActive,
@@ -173,6 +174,9 @@ function SettingsContent() {
   const tSubscriptionErrors = useTranslations("errors.subscription");
   const locale = useLocale();
   const theme = useSelector((state: RootState) => state.ui.theme);
+  const isTeacherProfileEnabled = useSelector((state: RootState) =>
+    isTeacherProfileFeatureEnabled(state.features.flags),
+  );
   const entitlement = useSelector(selectCurrentEntitlement);
   const isEntitlementLoading = useSelector(selectEntitlementLoading);
 
@@ -365,7 +369,7 @@ function SettingsContent() {
         </div>
 
         {/* Teaching Profile Card */}
-        <TeachingProfileCard />
+        {isTeacherProfileEnabled && <TeachingProfileCard />}
 
         {/* Subscription & Generations Card */}
         <div className="bg-card p-4 sm:p-6 md:p-8 rounded-2xl shadow-md border border-border">
