@@ -3,6 +3,7 @@ import type { TeachingProfile } from "@/shared/types/teaching-profile";
 import {
   buildRegularTeachingItems,
   getPreferredRegularSubjectIds,
+  getPreferredSchoolYears,
   getTeachingProfileSuggestions,
 } from "./teaching-profile-preferences";
 
@@ -10,6 +11,7 @@ const profile = (overrides: Partial<TeachingProfile> = {}): TeachingProfile => (
   educationType: "regular",
   courses: [],
   courseStates: [],
+  schoolYears: [],
   items: [],
   ...overrides,
 });
@@ -56,7 +58,7 @@ describe("getPreferredRegularSubjectIds", () => {
     expect(result).toEqual(["ingles"]);
   });
 
-  it("ignores stale regular items when the profile is vocational", () => {
+  it("keeps regular subjects available alongside vocational selections", () => {
     expect(
       getPreferredRegularSubjectIds(
         profile({
@@ -65,7 +67,13 @@ describe("getPreferredRegularSubjectIds", () => {
         }),
         ["ingles"]
       )
-    ).toEqual([]);
+    ).toEqual(["ingles"]);
+  });
+});
+
+describe("getPreferredSchoolYears", () => {
+  it("returns valid saved years in creation-form order", () => {
+    expect(getPreferredSchoolYears(profile({ schoolYears: [0, 5, 3, 13] }), [1, 2, 3, 4, 5])).toEqual([3, 5]);
   });
 });
 
@@ -89,12 +97,14 @@ describe("getTeachingProfileSuggestions", () => {
     ]);
   });
 
-  it("returns unique vocational subject and unit labels", () => {
+  it("returns unique regular and vocational labels together", () => {
     expect(
       getTeachingProfileSuggestions(
         profile({
           educationType: "vocational",
+          courses: ["course"],
           items: [
+            { qualificationCode: null, kind: "subject", code: "matematica", label: "Mathematics", trainingComponent: null },
             { qualificationCode: "course", kind: "subject", code: "s1", label: "Communication", trainingComponent: "sociocultural" },
             { qualificationCode: "course", kind: "unit", code: "u1", label: "Web Development", trainingComponent: "technological" },
             { qualificationCode: "course", kind: "unit", code: "u2", label: "Web Development", trainingComponent: "technological" },
@@ -103,8 +113,10 @@ describe("getTeachingProfileSuggestions", () => {
         })
       )
     ).toEqual([
+      { key: "regular:matematica", label: "Mathematics", regularSubjectId: "matematica" },
       { key: "course:subject:s1", label: "Communication" },
       { key: "course:unit:u1", label: "Web Development" },
+      { key: "regular:ingles", label: "English", regularSubjectId: "ingles" },
     ]);
   });
 });

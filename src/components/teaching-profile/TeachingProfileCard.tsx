@@ -6,7 +6,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { teachingProfileService } from "@/services/api/teaching-profile.service";
 import {
+  GRADE_GROUPS,
   SUBJECTS,
+  translateGradeGroupLabel,
+  translateGradeLabel,
   translateSubjectCategory,
   translateSubjectLabel,
 } from "@/components/document-creation/constants";
@@ -192,6 +195,11 @@ export function TeachingProfileCard() {
     [profile.items]
   );
 
+  const selectedSchoolYears = useMemo(
+    () => new Set(profile.schoolYears.filter((year) => year >= 1 && year <= 12)),
+    [profile.schoolYears]
+  );
+
   const regularSubjectGroups = useMemo(() => {
     const key = normalize(term);
     const matching = SUBJECTS.filter(
@@ -258,6 +266,47 @@ export function TeachingProfileCard() {
     }));
   };
 
+  const toggleAllUnits = (courseCode: string, units: VocationalUnit[]) => {
+    const unitCodes = new Set(units.map((unit) => unit.code));
+    const selectedCount = profile.items.filter(
+      (item) => item.qualificationCode === courseCode && unitCodes.has(item.code)
+    ).length;
+    const shouldSelectAll = selectedCount < units.length;
+
+    setProfile((current) => ({
+      ...current,
+      items: [
+        ...current.items.filter(
+          (item) => !(item.qualificationCode === courseCode && unitCodes.has(item.code))
+        ),
+        ...(shouldSelectAll
+          ? units.map((unit) => ({
+              qualificationCode: courseCode,
+              kind: "unit" as const,
+              code: unit.code,
+              label: unit.title,
+              trainingComponent: "technological" as const,
+            }))
+          : []),
+      ],
+    }));
+  };
+
+  const toggleSchoolYear = (schoolYear: number) => {
+    setProfile((current) => {
+      const selected = new Set(current.schoolYears);
+      if (selected.has(schoolYear)) {
+        selected.delete(schoolYear);
+      } else {
+        selected.add(schoolYear);
+      }
+      return {
+        ...current,
+        schoolYears: Array.from(selected).sort((a, b) => a - b),
+      };
+    });
+  };
+
   const toggleRegularSubject = (subjectId: string) => {
     setProfile((current) => {
       const selectedIds = current.items
@@ -280,17 +329,12 @@ export function TeachingProfileCard() {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      const profileToSave: TeachingProfile = isVocational
-        ? {
-            ...profile,
-            items: profile.items.filter((item) => item.qualificationCode !== null),
-          }
-        : {
-            ...profile,
-            courses: [],
-            courseStates: [],
-            items: buildRegularTeachingItems([...selectedRegularSubjectIds]),
-          };
+      const vocationalItems = profile.items.filter((item) => item.qualificationCode !== null);
+      const profileToSave: TeachingProfile = {
+        ...profile,
+        schoolYears: Array.from(selectedSchoolYears).sort((a, b) => a - b),
+        items: [...buildRegularTeachingItems([...selectedRegularSubjectIds]), ...vocationalItems],
+      };
       const saved = await teachingProfileService.save(profileToSave);
       setProfile(saved);
       toast.success(t("saveSuccess"));
@@ -360,6 +404,41 @@ export function TeachingProfileCard() {
             {label}
           </button>
         ))}
+      </div>
+
+      <div className="mb-6 rounded-xl border border-border p-4">
+        <p className="mb-3 text-sm font-medium text-foreground">{t("schoolYearsLabel")}</p>
+        <div className="space-y-3">
+          {GRADE_GROUPS.map((group) => (
+            <div key={group.groupId}>
+              <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                {translateGradeGroupLabel(group.groupId)}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {group.grades.map((grade) => {
+                  const year = Number(grade.id);
+                  const selected = selectedSchoolYears.has(year);
+                  return (
+                    <button
+                      key={grade.id}
+                      type="button"
+                      onClick={() => toggleSchoolYear(year)}
+                      aria-pressed={selected}
+                      className={cn(
+                        "rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors",
+                        selected
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "border-border bg-card text-foreground hover:bg-accent"
+                      )}
+                    >
+                      {translateGradeLabel(grade.id)}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       {!isVocational ? (
@@ -516,7 +595,17 @@ export function TeachingProfileCard() {
                   {!units ? (
                     <div className="h-4 bg-muted rounded w-40 animate-pulse" />
                   ) : (
-                    <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
+                    <>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="mb-3"
+                        onClick={() => toggleAllUnits(code, units)}
+                      >
+                        {selected.size === units.length ? t("deselectAllUnits") : t("selectAllUnits")}
+                      </Button>
+                      <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
                       {groupUnits(units).map((group, index) => (
                         <div key={group.prefix || `loose-${index}`}>
                           {group.prefix && (
@@ -546,7 +635,8 @@ export function TeachingProfileCard() {
                           </div>
                         </div>
                       ))}
-                    </div>
+                      </div>
+                    </>
                   )}
                 </div>
               );

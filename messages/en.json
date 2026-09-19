@@ -245,7 +245,8 @@
     },
     "grade": {
       "title": "School Year",
-      "selectAriaLabel": "Select {grade}"
+      "selectAriaLabel": "Select {grade}",
+      "myYearBadge": "mine"
     },
     "subject": {
       "title": "Subject",
@@ -254,7 +255,7 @@
       "selectAriaLabel": "Select subject",
       "placeholderDisabled": "Select the school year first...",
       "placeholder": "Select a subject...",
-      "yourSubjects": "Your subjects"
+      "yourSubjects": "My subjects"
     },
     "duration": {
       "title": "Lesson Duration",
@@ -755,6 +756,7 @@
       "typeGroupLabel": "Teaching type",
       "regular": "Regular education",
       "vocational": "Vocational education",
+      "schoolYearsLabel": "Years you teach",
       "subjectsLabel": "Subjects you teach",
       "subjectsSearchPlaceholder": "Search subjects",
       "subjectsListLabel": "Available subjects",
@@ -766,7 +768,9 @@
       "noCoursesFound": "No course found. Schools sometimes use different names than the catalogue — try a single word.",
       "noCoursesYet": "You haven't picked any courses yet.",
       "removeCourse": "Remove {course}",
-      "unitsInstruction": "Mark the units you teach. In the technological component the national catalogue doesn't define subjects — schools group these units themselves.",
+      "selectAllUnits": "Select all UCs",
+      "deselectAllUnits": "Remove all UCs",
+      "unitsInstruction": "Select the units you teach. In the technological component the national catalogue does not define school subjects — schools group these units locally.",
       "saving": "Saving…",
       "save": "Save",
       "loadError": "We couldn't load your teaching profile.",
