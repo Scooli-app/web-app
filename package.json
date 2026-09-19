@@ -8,7 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "updateEmails": "npx mjml chalkboard/services/src/main/resources/emails/mjml/*.mjml -o chalkboard/services/src/main/resources/emails/html/",
+    "updateEmails": "cd ../chalkboard && make emails",
     "stripe:mock": "stripe listen --forward-to http://localhost:8080/webhooks/stripe",
     "stripe": "stripe listen --forward-to http://localhost:8080/webhooks/stripe",
     "knip": "knip"
