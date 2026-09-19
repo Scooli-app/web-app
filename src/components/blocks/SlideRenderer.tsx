@@ -16,6 +16,7 @@
 
 import type { SlideBlock, SlideLayout } from "@/shared/types/blocks";
 import { cn } from "@/shared/utils/utils";
+import { useTranslations } from "next-intl";
 import { BlockRenderer, SlideImageRenderer } from "./BlockRenderer";
 import { InlineText } from "./inline-text";
 
@@ -186,11 +187,12 @@ function FullImageLayout({ slide }: { slide: SlideBlock }) {
  * knows the deck is wrapping up.
  */
 function ConclusionLayout({ slide }: { slide: SlideBlock }) {
+  const t = useTranslations("blocks");
   return (
     <SlideFrame className="flex flex-col gap-[3%] bg-accent/30">
       <div className="flex items-baseline gap-3">
         <span className="text-[1.4cqw] uppercase tracking-widest text-primary">
-          Conclusão
+          {t("conclusionLabel")}
         </span>
       </div>
       <h2 className="text-[3.5cqw] font-bold text-foreground">

@@ -1,10 +1,18 @@
+import { translate } from "@/i18n/translate";
 import { TeachingMethod } from "@/shared/types";
 import { BookOpen, Heart, Monitor, Users, Zap } from "lucide-react";
 
 interface SubjectConfig {
   id: string;
-  label: string; // Portuguese display name
+  /**
+   * Portuguese canonical name. Curriculum vocabulary is always Portuguese, so
+   * this is what the quick-create free-text matcher (quickCreate.ts) searches
+   * for — it is never rendered directly. For the localized display label use
+   * `translateSubjectLabel(id)` / `translateSubject(value)`.
+   */
+  label: string;
   value: string; // English backend value
+  /** Portuguese category grouping key — see `translateSubjectCategory`. */
   category: string;
 }
 
@@ -396,6 +404,7 @@ export const SUBJECTS: SubjectConfig[] = [
 
 export const GRADE_GROUPS = [
   {
+    groupId: "cycle1",
     label: "1º Ciclo",
     grades: [
       { id: "1", label: "1º ano" },
@@ -405,6 +414,7 @@ export const GRADE_GROUPS = [
     ],
   },
   {
+    groupId: "cycle2",
     label: "2º Ciclo",
     grades: [
       { id: "5", label: "5º ano" },
@@ -412,6 +422,7 @@ export const GRADE_GROUPS = [
     ],
   },
   {
+    groupId: "cycle3",
     label: "3º Ciclo",
     grades: [
       { id: "7", label: "7º ano" },
@@ -420,6 +431,7 @@ export const GRADE_GROUPS = [
     ],
   },
   {
+    groupId: "secondary",
     label: "Secundário",
     grades: [
       { id: "10", label: "10º ano" },
@@ -428,6 +440,16 @@ export const GRADE_GROUPS = [
     ],
   },
 ] as const;
+
+/** Localized display label for a grade-group header (e.g. "1º Ciclo" / "1st Cycle"). */
+export function translateGradeGroupLabel(groupId: string): string {
+  return translate(`documentCreation.options.gradeGroups.${groupId}`);
+}
+
+/** Localized display label for a single grade (e.g. "5.º ano" / "Year 5"), keyed by its numeric id. */
+export function translateGradeLabel(gradeId: string): string {
+  return translate("documentCreation.options.gradeLabel", { grade: gradeId });
+}
 
 /** Shared palette for turma/timetable color-coding — used by both the creation wizard and the edit dialog. */
 export const TIMETABLE_COLORS = [
@@ -442,12 +464,12 @@ export const LESSON_TIMES = [
   { id: "90", label: "90 min", value: 90 },
 ] as const;
 
+// Display label/description for each method live in the `documentCreation.teachingMethods.<id>`
+// catalogue keys (see TeachingMethodSection.tsx) — kept out of this data so they aren't
+// duplicated and frozen at module load.
 export const TEACHING_METHODS = [
   {
     id: TeachingMethod.ACTIVE,
-    label: "Aprendizagem ativa",
-    description:
-      "Os alunos participam ativamente em atividades práticas e projetos colaborativos.",
     icon: Users,
     color: "from-blue-500 to-cyan-400",
     bgColor: "bg-blue-50",
@@ -456,9 +478,6 @@ export const TEACHING_METHODS = [
   },
   {
     id: TeachingMethod.LECTURE,
-    label: "Aula expositiva",
-    description:
-      "O professor apresenta o conteúdo diretamente enquanto os alunos absorvem e tomam notas.",
     icon: BookOpen,
     color: "from-purple-500 to-violet-400",
     bgColor: "bg-purple-50",
@@ -467,9 +486,6 @@ export const TEACHING_METHODS = [
   },
   {
     id: TeachingMethod.PRACTICAL,
-    label: "Aprendizagem prática",
-    description:
-      "Mostra como o conteúdo se aplica a profissões reais, preparando os alunos para desafios do mercado.",
     icon: Zap,
     color: "from-amber-500 to-orange-400",
     bgColor: "bg-amber-50",
@@ -478,9 +494,6 @@ export const TEACHING_METHODS = [
   },
   {
     id: TeachingMethod.SOCIAL_EMOTIONAL,
-    label: "Aprendizagem socioemocional",
-    description:
-      "Combina conteúdo académico com competências socioemocionais como empatia e trabalho em equipa.",
     icon: Heart,
     color: "from-rose-500 to-pink-400",
     bgColor: "bg-rose-50",
@@ -489,9 +502,6 @@ export const TEACHING_METHODS = [
   },
   {
     id: TeachingMethod.INTERACTIVE,
-    label: "Aprendizagem interativa",
-    description:
-      "Integra recursos digitais e interatividade, conectando o conteúdo à realidade dos alunos.",
     icon: Monitor,
     color: "from-emerald-500 to-teal-400",
     bgColor: "bg-emerald-50",
@@ -792,9 +802,35 @@ export const SUBJECTS_BY_GRADE: Record<string, Subject["id"][]> = {
   ],
 };
 
-/** Translates an English backend subject value to its Portuguese display label. */
+/** Translates an English backend subject value to its localized display label. */
 export function translateSubject(englishValue: string): string {
-  return SUBJECTS.find((s) => s.value === englishValue)?.label ?? englishValue;
+  const subject = SUBJECTS.find((s) => s.value === englishValue);
+  return subject ? translateSubjectLabel(subject.id) : englishValue;
+}
+
+/** Localized display label for a subject, keyed by its stable id. */
+export function translateSubjectLabel(id: string): string {
+  return translate(`documentCreation.options.subjects.${id}`);
+}
+
+/** Maps a subject's Portuguese `category` grouping key to a stable slug used for translation. */
+const SUBJECT_CATEGORY_SLUGS: Record<string, string> = {
+  "Disciplinas Gerais": "general",
+  "Ciências": "sciences",
+  "Ciências Sociais e Humanas": "socialSciences",
+  "Línguas": "languages",
+  "Artes": "arts",
+  "Literatura": "literature",
+  "Educação Física": "physicalEducation",
+  "Tecnologia": "technology",
+  "Cidadania": "citizenship",
+  "Religião": "religion",
+};
+
+/** Localized display label for a subject category (the `category` field on `SUBJECTS`). */
+export function translateSubjectCategory(category: string): string {
+  const slug = SUBJECT_CATEGORY_SLUGS[category];
+  return slug ? translate(`documentCreation.options.subjectCategories.${slug}`) : category;
 }
 
 /** Display order for subject categories in grouped dropdowns. */

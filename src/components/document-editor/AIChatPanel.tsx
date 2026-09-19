@@ -1,4 +1,5 @@
 "use client";
+import { AiDisclaimer } from "@/components/ui/ai-disclaimer";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -21,6 +22,7 @@ import {
 import type { RagSource } from "@/shared/types/document";
 import { cn } from "@/shared/utils/utils";
 import { FileText, Loader2, MessageCircle, Send, Sparkles, X } from "lucide-react";
+import { useTranslations } from "next-intl";
 import posthog from "posthog-js";
 import { useEffect, useRef, useState } from "react";
 
@@ -33,46 +35,6 @@ interface SuggestionChip {
   message: string;
 }
 
-const SUGGESTION_CHIPS: Record<string, SuggestionChip[]> = {
-  lessonPlan: [
-    { label: "Melhora a estrutura ✏️", message: "Melhora a estrutura e organização da aula." },
-    { label: "Adiciona atividades práticas 🎯", message: "Adiciona atividades práticas e interativas à aula." },
-    { label: "Simplifica a linguagem 🔤", message: "Simplifica a linguagem para ser mais acessível aos alunos." },
-    { label: "Adiciona critérios de avaliação 📋", message: "Adiciona critérios de avaliação detalhados." },
-  ],
-  quiz: [
-    { label: "Adiciona mais perguntas ➕", message: "Adiciona mais 5 perguntas ao quiz." },
-    { label: "Aumenta a dificuldade 🎯", message: "Aumenta o nível de dificuldade das perguntas." },
-    { label: "Explica as respostas 💡", message: "Adiciona uma explicação para cada resposta correta." },
-    { label: "Varia os tipos de perguntas 🔄", message: "Varia os tipos de perguntas com verdadeiro/falso e resposta curta." },
-  ],
-  test: [
-    { label: "Adiciona mais exercícios ➕", message: "Adiciona mais exercícios ao teste." },
-    { label: "Aumenta a dificuldade 🎯", message: "Aumenta o nível de dificuldade das questões." },
-    { label: "Adiciona cotações 📊", message: "Adiciona cotações a cada questão do teste." },
-    { label: "Melhora as instruções 📋", message: "Melhora as instruções de cada secção do teste." },
-  ],
-  worksheet: [
-    { label: "Adiciona mais exercícios ➕", message: "Adiciona mais exercícios à ficha de trabalho." },
-    { label: "Simplifica as instruções 🔤", message: "Simplifica as instruções para serem mais claras." },
-    { label: "Adiciona exemplos resolvidos 💡", message: "Adiciona exemplos resolvidos antes dos exercícios." },
-    { label: "Melhora a conclusão 📝", message: "Melhora a secção de conclusão da ficha." },
-  ],
-  presentation: [
-    { label: "Adiciona mais slides ➕", message: "Adiciona mais slides à apresentação." },
-    { label: "Melhora o slide de título ✏️", message: "Melhora o slide de título e introdução." },
-    { label: "Adiciona notas do apresentador 📋", message: "Adiciona notas do apresentador a cada slide." },
-    { label: "Simplifica o conteúdo 🔤", message: "Simplifica o conteúdo dos slides para ser mais visual e direto." },
-  ],
-};
-
-const DEFAULT_SUGGESTIONS: SuggestionChip[] = [
-  { label: "Melhora a introdução ✏️", message: "Melhora a introdução do documento." },
-  { label: "Adiciona mais exemplos 📚", message: "Adiciona mais exemplos práticos ao documento." },
-  { label: "Simplifica a linguagem 🔤", message: "Simplifica a linguagem para ser mais acessível." },
-  { label: "Adiciona uma conclusão 📝", message: "Adiciona ou melhora a conclusão do documento." },
-];
-
 function SuggestionChips({
   documentType,
   onChipClick,
@@ -82,9 +44,11 @@ function SuggestionChips({
   onChipClick: (chip: SuggestionChip) => void;
   disabled?: boolean;
 }) {
+  const t = useTranslations("editor.aiChatPanel");
+  const suggestionsByType = t.raw("suggestions") as Record<string, SuggestionChip[]>;
   const chips = documentType
-    ? (SUGGESTION_CHIPS[documentType] ?? DEFAULT_SUGGESTIONS)
-    : DEFAULT_SUGGESTIONS;
+    ? (suggestionsByType[documentType] ?? suggestionsByType.default)
+    : suggestionsByType.default;
 
   return (
     <div className="grid grid-cols-2 gap-1.5 mb-3">
@@ -146,6 +110,7 @@ function Tabs({
   onTabChange: (tab: "assistant" | "sources") => void;
   hasSources?: boolean;
 }) {
+  const t = useTranslations("editor.aiChatPanel");
   return (
     <div className="flex p-1 bg-muted/50 rounded-xl mb-4">
       <button
@@ -163,7 +128,7 @@ function Tabs({
             activeTab === "assistant" ? "text-primary" : "",
           )}
         />
-        Conversa
+        {t("tabConversation")}
       </button>
       <TooltipProvider>
         <Tooltip>
@@ -195,13 +160,13 @@ function Tabs({
                     activeTab === "sources" ? "text-primary" : "",
                   )}
                 />
-                Fontes
+                {t("tabSources")}
               </button>
             </div>
           </TooltipTrigger>
           {!hasSources && (
             <TooltipContent>
-              <p>Este documento foi gerado sem recurso a fontes externas.</p>
+              <p>{t("sourcesTooltip")}</p>
             </TooltipContent>
           )}
         </Tooltip>
@@ -250,6 +215,7 @@ function ChatContent({
   nudge?: boolean;
   onNudgeDismiss?: () => void;
 }) {
+  const t = useTranslations("editor.aiChatPanel");
   const isDesktop = variant === "desktop";
   const isInputLocked = isStreaming;
   const [activeTab, setActiveTab] = useState<"assistant" | "sources">(
@@ -270,13 +236,13 @@ function ChatContent({
           <div className="flex items-start gap-3 rounded-xl border border-primary/20 bg-primary/10 px-4 py-3">
             <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
             <p className="flex-1 text-sm font-medium leading-snug text-foreground">
-              Documento pronto! Usa o Assistente para refinar ou adaptar o conteúdo.
+              {t("nudgeReady")}
             </p>
             <button
               type="button"
               onClick={onNudgeDismiss}
               className="shrink-0 rounded-md p-0.5 text-muted-foreground transition-colors hover:text-foreground"
-              aria-label="Fechar"
+              aria-label={t("nudgeClose")}
             >
               <X className="h-3.5 w-3.5" />
             </button>
@@ -303,7 +269,7 @@ function ChatContent({
               {chatHistory.length === 0 && (
                 <div className="h-full flex flex-col items-center justify-center opacity-50 space-y-2">
                   <Sparkles className="w-8 h-8 text-primary/40" />
-                  <p className="text-sm font-medium">Como posso ajudar hoje?</p>
+                  <p className="text-sm font-medium">{t("emptyStateHeading")}</p>
                 </div>
               )}
               {chatHistory.map((message, index) => (
@@ -320,23 +286,26 @@ function ChatContent({
                   {message.hasUpdate && (
                     <div className="mt-2 pt-2 border-t border-border/30 flex items-center gap-1.5 text-[10px] font-semibold text-primary uppercase tracking-wider">
                       <Sparkles className="w-3 h-3" />
-                      Documento Refinado
+                      {t("documentRefined")}
                     </div>
                   )}
                   {message.imageRegenOffer && !message.imageRegenResolved && onImageRegen && (
-                    <div className="mt-2 pt-2 border-t border-border/30 flex gap-2">
+                    <div className="mt-2 pt-2 border-t border-border/30">
+                      <div className="flex gap-2">
                       <button
                         onClick={onImageRegen}
                         className="px-3 py-1 rounded-lg text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
                       >
-                        Sim, regenerar
+                        {t("imageRegenYes")}
                       </button>
                       <button
                         onClick={onDismissImageRegen}
                         className="px-3 py-1 rounded-lg text-xs font-medium bg-muted text-muted-foreground hover:bg-muted/70 transition-colors"
                       >
-                        Não
+                        {t("imageRegenNo")}
                       </button>
+                    </div>
+                    <AiDisclaimer variant="compact" className="mt-1.5 text-left" />
                     </div>
                   )}
                 </div>
@@ -399,14 +368,7 @@ function ChatContent({
                 )}
               </Button>
             </form>
-            <p
-              className={cn(
-                "text-center text-[11px] leading-4 text-muted-foreground/70",
-                isDesktop ? "mb-4" : "mb-2",
-              )}
-            >
-              A IA pode cometer erros. Revê sempre o conteúdo.
-            </p>
+            <AiDisclaimer className={isDesktop ? "mb-4" : "mb-2"} />
           </>
         ) : (
           <div className="flex-1 min-h-0 pb-6 animate-in fade-in slide-in-from-right-4 duration-300">
@@ -428,8 +390,8 @@ export default function AIChatPanel({
   chatHistory,
   isStreaming = false,
   error,
-  placeholder = "Faça uma pergunta ou peça ajuda...",
-  title = "Assistente de IA",
+  placeholder,
+  title,
   sources = [],
   showGenerationHint = false,
   onImageRegen,
@@ -439,6 +401,9 @@ export default function AIChatPanel({
   nudge = false,
   onNudgeDismiss,
 }: AIChatPanelProps) {
+  const t = useTranslations("editor.aiChatPanel");
+  const resolvedPlaceholder = placeholder ?? t("defaultPlaceholder");
+  const resolvedTitle = title ?? t("defaultTitle");
   const [chatMessage, setChatMessage] = useState("");
   const [lockedMessage, setLockedMessage] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
@@ -523,8 +488,8 @@ export default function AIChatPanel({
           chatHistory={chatHistory}
           isStreaming={isStreaming}
           error={error}
-          placeholder={placeholder}
-          title={title}
+          placeholder={resolvedPlaceholder}
+          title={resolvedTitle}
           chatMessage={lockedInputValue}
           setChatMessage={setChatMessage}
           handleSubmit={handleSubmit}
@@ -551,7 +516,7 @@ export default function AIChatPanel({
               <div className="flex items-start gap-2">
                 <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
                 <p className="text-xs font-medium leading-snug text-background">
-                  Toca para melhorar o documento com IA!
+                  {t("nudgeMobileTap")}
                 </p>
                 <button type="button" onClick={onNudgeDismiss} className="shrink-0 text-background/50 hover:text-background transition-colors">
                   <X className="h-3 w-3" />
@@ -582,7 +547,7 @@ export default function AIChatPanel({
           >
             <SheetHeader className="px-6 py-6 border-b border-border/50 bg-muted/20">
               <SheetTitle className="text-xl font-bold text-foreground tracking-tight">
-                {title}
+                {resolvedTitle}
               </SheetTitle>
             </SheetHeader>
             <div className="flex-1 overflow-hidden">
@@ -590,8 +555,8 @@ export default function AIChatPanel({
                 chatHistory={chatHistory}
                 isStreaming={isStreaming}
                 error={error}
-                placeholder={placeholder}
-                title={title}
+                placeholder={resolvedPlaceholder}
+                title={resolvedTitle}
                 chatMessage={lockedInputValue}
                 setChatMessage={setChatMessage}
                 handleSubmit={handleSubmit}

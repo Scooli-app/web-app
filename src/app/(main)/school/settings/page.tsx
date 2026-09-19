@@ -12,6 +12,7 @@ import {
 } from "@/store/workspace/selectors";
 import { fetchOrganizationDashboard } from "@/store/workspace/workspaceSlice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { useTranslations } from "next-intl";
 import { useEffect } from "react";
 
 export default function SchoolSettingsPage() {
@@ -20,6 +21,7 @@ export default function SchoolSettingsPage() {
   const dashboard = useAppSelector(selectWorkspaceDashboard);
   const loading = useAppSelector(selectWorkspaceLoading);
   const error = useAppSelector(selectWorkspaceError);
+  const t = useTranslations("school");
 
   useEffect(() => {
     void dispatch(fetchOrganizationDashboard());
@@ -28,14 +30,14 @@ export default function SchoolSettingsPage() {
   return (
     <PageContainer size="xl" contentClassName="py-4 sm:py-8">
       <PageHeader
-        title="Definições da escola"
-        description="Resumo inicial do workspace organizacional."
+        title={t("settings.title")}
+        description={t("settings.description")}
       />
 
       {error && !loading && !dashboard ? (
         <Card>
           <CardHeader>
-            <CardTitle>Não foi possível carregar as definições da escola</CardTitle>
+            <CardTitle>{t("settings.loadError")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground">{error}</p>
@@ -43,24 +45,24 @@ export default function SchoolSettingsPage() {
               variant="outline"
               onClick={() => void dispatch(fetchOrganizationDashboard())}
             >
-              Tentar novamente
+              {t("common.retry")}
             </Button>
           </CardContent>
         </Card>
       ) : (
         <Card>
           <CardHeader>
-            <CardTitle>{workspace?.organization?.name ?? "Escola"}</CardTitle>
+            <CardTitle>{workspace?.organization?.name ?? t("common.fallbackName")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 text-sm text-muted-foreground">
             <p>
-              Role atual:{" "}
+              {t("settings.currentRole")}{" "}
               <span className="font-medium text-foreground">
                 {workspace?.organization?.role ?? "teacher"}
               </span>
             </p>
             <p>
-              Estado do contrato:{" "}
+              {t("settings.contractStatus")}{" "}
               <span className="font-medium text-foreground">
                 {dashboard?.subscriptionStatus ?? "draft"}
               </span>

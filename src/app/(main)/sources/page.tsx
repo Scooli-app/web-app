@@ -18,28 +18,17 @@ import {
   Trash2,
   Upload,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-function statusLabel(status: string): string {
-  switch (status) {
-    case "uploaded":
-      return "A processar";
-    case "parsing":
-      return "A ler ficheiro";
-    case "chunking":
-      return "A segmentar";
-    case "embedding":
-      return "A indexar";
-    case "indexed":
-      return "Indexado";
-    case "failed":
-      return "Falhou";
-    default:
-      return status;
-  }
+const KNOWN_STATUSES = ["uploaded", "parsing", "chunking", "embedding", "indexed", "failed"];
+
+/** `t` must be bound to the "sources.status" namespace. */
+function statusLabel(status: string, t: ReturnType<typeof useTranslations>): string {
+  return KNOWN_STATUSES.includes(status) ? t(`${status}`) : status;
 }
 
-function StatusBadge({ status }: { status: string }) {
+function StatusBadge({ status, t }: { status: string; t: ReturnType<typeof useTranslations> }) {
   const isPending = !["indexed", "failed"].includes(status);
   return (
     <span
@@ -56,7 +45,7 @@ function StatusBadge({ status }: { status: string }) {
       {status === "indexed" && <CheckCircle2 className="w-3 h-3" />}
       {status === "failed" && <AlertCircle className="w-3 h-3" />}
       {isPending && <Loader2 className="w-3 h-3 animate-spin" />}
-      {statusLabel(status)}
+      {statusLabel(status, t)}
     </span>
   );
 }
@@ -68,6 +57,9 @@ function formatSize(bytes: number): string {
 }
 
 export default function SourcesPage() {
+  const t = useTranslations("sources.page");
+  const tStatus = useTranslations("sources.status");
+  const tList = useTranslations("sources.list");
   const dispatch = useAppDispatch();
   const { sources, loading, uploading, uploadError } = useAppSelector(
     (state) => state.sources,
@@ -126,16 +118,15 @@ export default function SourcesPage() {
     <div className="w-full max-w-3xl space-y-8 py-4">
       {/* Page header */}
       <div>
-        <h1 className="text-2xl font-bold text-foreground">As Minhas Fontes</h1>
+        <h1 className="text-2xl font-bold text-foreground">{t("title")}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Carregue documentos (PDF, DOCX) para enriquecer a geração de conteúdo
-          com o seu próprio contexto curricular.
+          {t("description")}
         </p>
       </div>
 
       {/* Upload card */}
       <Card className="p-6 space-y-4">
-        <h2 className="text-base font-semibold">Adicionar Fonte</h2>
+        <h2 className="text-base font-semibold">{t("addSource")}</h2>
 
         {/* Drop zone */}
         <div
@@ -151,10 +142,10 @@ export default function SourcesPage() {
           <Upload className="w-8 h-8 text-muted-foreground" />
           <div>
             <p className="text-sm font-medium">
-              {file ? file.name : "Clique ou arraste um ficheiro"}
+              {file ? file.name : t("dropzoneEmpty")}
             </p>
             <p className="text-xs text-muted-foreground">
-              {file ? formatSize(file.size) : "PDF ou DOCX"}
+              {file ? formatSize(file.size) : t("dropzoneHint")}
             </p>
           </div>
           <input
@@ -171,7 +162,7 @@ export default function SourcesPage() {
           <div className="flex gap-3">
             <input
               type="text"
-              placeholder="Nome da fonte *"
+              placeholder={t("namePlaceholder")}
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="flex-1 rounded-lg border border-border bg-muted px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
@@ -187,7 +178,7 @@ export default function SourcesPage() {
               ) : (
                 <Upload className="w-4 h-4" />
               )}
-              {uploading ? "A carregar..." : "Carregar"}
+              {uploading ? t("uploading") : t("upload")}
             </button>
           </div>
         )}
@@ -204,7 +195,7 @@ export default function SourcesPage() {
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-base font-semibold">
-            Fontes carregadas
+            {t("loadedSources")}
             {sources.length > 0 && (
               <span className="ml-2 text-sm font-normal text-muted-foreground">
                 ({sources.length})
@@ -213,14 +204,14 @@ export default function SourcesPage() {
           </h2>
           {sources.some((s) => !["indexed", "failed"].includes(s.status)) && (
             <span className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400">
-              <Clock className="w-3.5 h-3.5" />A processar...
+              <Clock className="w-3.5 h-3.5" />{t("processingBadge")}
             </span>
           )}
         </div>
 
         {loading && sources.length === 0 && (
           <div className="flex items-center gap-2 py-8 text-sm text-muted-foreground">
-            <Loader2 className="w-4 h-4 animate-spin" />A carregar fontes...
+            <Loader2 className="w-4 h-4 animate-spin" />{t("loadingSources")}
           </div>
         )}
 
@@ -228,7 +219,7 @@ export default function SourcesPage() {
           <Card className="flex flex-col items-center gap-3 p-10 text-center">
             <FileText className="w-10 h-10 text-muted-foreground" />
             <p className="text-sm text-muted-foreground">
-              Ainda nao tem fontes carregadas.
+              {t("emptyState")}
             </p>
           </Card>
         )}
@@ -243,18 +234,25 @@ export default function SourcesPage() {
                   <p className="mt-0.5 text-xs text-muted-foreground">
                     {formatSize(source.fileSizeBytes)}
                     {source.chunkCount > 0 &&
-                      ` · ${source.chunkCount} excertos`}
+                      ` · ${tList("excerptCount", { count: source.chunkCount })}`}
                     {` · ${source.fileKind.toUpperCase()}`}
                   </p>
                   {source.strippedBackMatter &&
                     source.strippedBackMatter.charsRemoved > 0 && (
                       <p
                         className="mt-1 text-xs text-muted-foreground"
-                        title={`Excluímos ${formatSize(source.strippedBackMatter.charsRemoved)} de ${source.strippedBackMatter.matchedHeading ?? "back-matter"} antes de processar.`}
+                        title={t("strippedBackMatterTooltip", {
+                          size: formatSize(source.strippedBackMatter.charsRemoved),
+                          heading:
+                            source.strippedBackMatter.matchedHeading ??
+                            t("backMatterFallback"),
+                        })}
                       >
-                        Secção{" "}
-                        {source.strippedBackMatter.matchedHeading ?? "final"}{" "}
-                        omitida
+                        {t("strippedSectionOmitted", {
+                          heading:
+                            source.strippedBackMatter.matchedHeading ??
+                            t("sectionFallback"),
+                        })}
                       </p>
                     )}
                   {source.status === "failed" && source.lastError && (
@@ -266,7 +264,7 @@ export default function SourcesPage() {
               </div>
 
               <div className="flex shrink-0 items-center gap-2">
-                <StatusBadge status={source.status} />
+                <StatusBadge status={source.status} t={tStatus} />
 
                 {deleteConfirmId === source.id ? (
                   <div className="flex gap-1">
@@ -275,20 +273,20 @@ export default function SourcesPage() {
                       onClick={() => void handleDelete(source.id)}
                       className="rounded px-2 py-1 text-xs font-medium text-destructive ring-1 ring-destructive transition-colors hover:bg-destructive hover:text-destructive-foreground"
                     >
-                      Confirmar
+                      {t("confirm")}
                     </button>
                     <button
                       type="button"
                       onClick={() => setDeleteConfirmId(null)}
                       className="rounded px-2 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted"
                     >
-                      Cancelar
+                      {t("cancel")}
                     </button>
                   </div>
                 ) : (
                   <button
                     type="button"
-                    aria-label="Eliminar fonte"
+                    aria-label={t("deleteAriaLabel")}
                     onClick={() => setDeleteConfirmId(source.id)}
                     className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-destructive"
                   >
@@ -303,8 +301,7 @@ export default function SourcesPage() {
 
       {/* Pro info note */}
       <p className="text-xs text-muted-foreground">
-        As fontes ficam disponíveis apenas para os seus créditos. O conteúdo é
-        processado e indexado automaticamente em segundo plano.
+        {t("proNote")}
       </p>
     </div>
   );

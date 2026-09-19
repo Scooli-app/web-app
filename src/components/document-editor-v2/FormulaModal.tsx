@@ -13,6 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import katex from "katex";
 import { Sigma } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 interface Props {
@@ -24,7 +25,7 @@ interface Props {
 }
 
 interface SymbolGroup {
-  title: string;
+  titleKey: string;
   items: Array<{
     label: string;
     insert: string;
@@ -33,7 +34,7 @@ interface SymbolGroup {
 
 const SYMBOL_GROUPS: SymbolGroup[] = [
   {
-    title: "Frações, potências e índices",
+    titleKey: "groupFractions",
     items: [
       { label: "a^2", insert: "a^2" },
       { label: "a_x", insert: "a_x" },
@@ -42,14 +43,14 @@ const SYMBOL_GROUPS: SymbolGroup[] = [
     ],
   },
   {
-    title: "Raízes",
+    titleKey: "groupRoots",
     items: [
       { label: "\\sqrt{x}", insert: "\\sqrt{x}" },
       { label: "\\sqrt[3]{x}", insert: "\\sqrt[3]{x}" },
     ],
   },
   {
-    title: "Trig e logs",
+    titleKey: "groupTrigLogs",
     items: [
       { label: "\\sin(x)", insert: "\\sin(x)" },
       { label: "\\cos(x)", insert: "\\cos(x)" },
@@ -61,7 +62,7 @@ const SYMBOL_GROUPS: SymbolGroup[] = [
     ],
   },
   {
-    title: "Operadores grandes",
+    titleKey: "groupBigOperators",
     items: [
       { label: "\\sum_{i=1}^{n}", insert: "\\sum_{i=1}^{n}" },
       { label: "\\lim_{x \\to a}", insert: "\\lim_{x \\to a}" },
@@ -69,7 +70,7 @@ const SYMBOL_GROUPS: SymbolGroup[] = [
     ],
   },
   {
-    title: "Barras e vetores",
+    titleKey: "groupBarsVectors",
     items: [
       { label: "\\bar{x}", insert: "\\bar{x}" },
       { label: "\\hat{x}", insert: "\\hat{x}" },
@@ -77,7 +78,7 @@ const SYMBOL_GROUPS: SymbolGroup[] = [
     ],
   },
   {
-    title: "Relações",
+    titleKey: "groupRelations",
     items: [
       { label: "=", insert: "=" },
       { label: "\\neq", insert: "\\neq" },
@@ -92,7 +93,7 @@ const SYMBOL_GROUPS: SymbolGroup[] = [
     ],
   },
   {
-    title: "Operadores",
+    titleKey: "groupOperators",
     items: [
       { label: "+", insert: "+" },
       { label: "-", insert: "-" },
@@ -103,7 +104,7 @@ const SYMBOL_GROUPS: SymbolGroup[] = [
     ],
   },
   {
-    title: "Grego",
+    titleKey: "groupGreek",
     items: [
       { label: "\\pi", insert: "\\pi" },
       { label: "\\alpha", insert: "\\alpha" },
@@ -118,7 +119,7 @@ const SYMBOL_GROUPS: SymbolGroup[] = [
     ],
   },
   {
-    title: "Conjuntos e lógica",
+    titleKey: "groupSetsLogic",
     items: [
       { label: "\\in", insert: "\\in" },
       { label: "\\notin", insert: "\\notin" },
@@ -134,7 +135,7 @@ const SYMBOL_GROUPS: SymbolGroup[] = [
     ],
   },
   {
-    title: "Conjuntos numéricos",
+    titleKey: "groupNumberSets",
     items: [
       { label: "\\mathbb{N}", insert: "\\mathbb{N}" },
       { label: "\\mathbb{Z}", insert: "\\mathbb{Z}" },
@@ -200,6 +201,7 @@ function toLatex(raw: string, latexMode: boolean) {
 }
 
 export function FormulaModal({ open, onClose, onInsert, initialTex }: Props) {
+  const t = useTranslations("editor.formulaModal");
   const isEditing = typeof initialTex === "string" && initialTex.trim().length > 0;
   const [latexMode, setLatexMode] = useState(true);
   const [value, setValue] = useState("\\frac{a}{b}");
@@ -248,7 +250,7 @@ export function FormulaModal({ open, onClose, onInsert, initialTex }: Props) {
         <DialogHeader className="border-b border-border px-6 py-4">
           <DialogTitle className="flex items-center gap-2 text-base">
             <Sigma className="h-4 w-4 text-primary" />
-            {isEditing ? "Editar fórmula" : "Adicionar fórmula"}
+            {isEditing ? t("editTitle") : t("addTitle")}
           </DialogTitle>
         </DialogHeader>
 
@@ -256,31 +258,31 @@ export function FormulaModal({ open, onClose, onInsert, initialTex }: Props) {
           <div className="flex flex-col gap-4 border-b border-border p-6 lg:border-b-0 lg:border-r">
             <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-muted/30 px-4 py-3">
               <div>
-                <p className="text-sm font-medium text-foreground">Modo LaTeX</p>
+                <p className="text-sm font-medium text-foreground">{t("latexModeLabel")}</p>
                 <p className="text-xs text-muted-foreground">
-                  Ativa para escrever LaTeX puro. Desativa para entrada mais simples.
+                  {t("latexModeHint")}
                 </p>
               </div>
               <Switch checked={latexMode} onCheckedChange={setLatexMode} />
             </div>
 
             <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium text-foreground">Fórmula</label>
+              <label className="text-sm font-medium text-foreground">{t("formulaLabel")}</label>
               <Textarea
                 ref={inputRef}
                 value={value}
                 onChange={(event) => setValue(event.target.value)}
-                placeholder={latexMode ? "\\frac{a}{b}" : "Ex.: sin(x) + πr^2"}
+                placeholder={latexMode ? "\\frac{a}{b}" : t("formulaPlaceholderSimple")}
                 className="min-h-[120px] font-mono text-sm"
                 autoFocus
               />
               <p className="text-xs text-muted-foreground">
-                Usa a paleta para inserir símbolos no cursor e confirma quando a pré-visualização estiver correta.
+                {t("formulaHint")}
               </p>
             </div>
 
             <div className="rounded-xl border border-border bg-muted/20 p-4">
-              <p className="mb-3 text-sm font-medium text-foreground">Pré-visualização</p>
+              <p className="mb-3 text-sm font-medium text-foreground">{t("previewLabel")}</p>
               <div
                 className="flex min-h-[144px] items-center justify-center rounded-lg border border-dashed border-border bg-background px-4 py-6 text-foreground"
                 dangerouslySetInnerHTML={{ __html: renderKatexHtml(previewTex || "\\,", true) }}
@@ -290,22 +292,23 @@ export function FormulaModal({ open, onClose, onInsert, initialTex }: Props) {
 
           <div className="flex min-h-[520px] flex-col">
             <div className="border-b border-border px-6 py-4">
-              <p className="text-sm font-medium text-foreground">Paleta de símbolos</p>
+              <p className="text-sm font-medium text-foreground">{t("paletteLabel")}</p>
               <p className="text-xs text-muted-foreground">
-                Cada botão insere LaTeX diretamente no campo acima.
+                {t("paletteHint")}
               </p>
             </div>
             <ScrollArea className="h-[520px] px-6 py-4">
               <div className="space-y-5 pr-3">
                 {SYMBOL_GROUPS.map((group) => (
-                  <section key={group.title} className="space-y-2">
+                  <section key={group.titleKey} className="space-y-2">
                     <h3 className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                      {group.title}
+                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                      {t(group.titleKey as any)}
                     </h3>
                     <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                       {group.items.map((item) => (
                         <button
-                          key={`${group.title}-${item.insert}`}
+                          key={`${group.titleKey}-${item.insert}`}
                           type="button"
                           onClick={() => insertAtCursor(item.insert)}
                           className="flex h-12 items-center justify-center rounded-lg border border-border bg-background px-3 text-sm text-foreground transition-colors hover:border-primary/50 hover:bg-muted/40"
@@ -323,10 +326,10 @@ export function FormulaModal({ open, onClose, onInsert, initialTex }: Props) {
 
         <DialogFooter className="border-t border-border px-6 py-4">
           <Button variant="outline" onClick={onClose}>
-            Cancelar
+            {t("cancel")}
           </Button>
           <Button onClick={handleInsert} disabled={!previewTex.trim()}>
-            {isEditing ? "Guardar" : "Adicionar"}
+            {isEditing ? t("save") : t("add")}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -1,6 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { cn } from "@/shared/utils/utils";
 import { Compass, Pencil, Search, TrendingUp } from "lucide-react";
+import { useTranslations } from "next-intl";
 import type { WorksheetVariant } from "@/shared/types";
 
 interface WorksheetVariantSectionProps {
@@ -10,44 +11,21 @@ interface WorksheetVariantSectionProps {
 
 const VARIANT_OPTIONS: Array<{
   value: Exclude<WorksheetVariant, "assessment">;
-  label: string;
-  description: string;
   icon: typeof Pencil;
 }> = [
-  {
-    value: "practice",
-    label: "Treinar e consolidar",
-    description:
-      "Ficha com exercícios progressivos para praticar e reforçar aprendizagens.",
-    icon: Pencil,
-  },
-  {
-    value: "diagnostic",
-    label: "Diagnosticar conhecimentos",
-    description:
-      "Ajuda a perceber o ponto de partida, lacunas e erros frequentes antes do tema.",
-    icon: Search,
-  },
-  {
-    value: "formative",
-    label: "Acompanhar aprendizagem",
-    description:
-      "Apoia monitorização, autoavaliação e próximos passos ao longo do trabalho.",
-    icon: TrendingUp,
-  },
-  {
-    value: "exploration",
-    label: "Introduzir novo conteúdo",
-    description:
-      "Usa estímulos e perguntas guiadas para explorar ideias antes da prática formal.",
-    icon: Compass,
-  },
+  { value: "practice", icon: Pencil },
+  { value: "diagnostic", icon: Search },
+  { value: "formative", icon: TrendingUp },
+  { value: "exploration", icon: Compass },
 ];
 
 export function WorksheetVariantSection({
   worksheetVariant,
   onVariantChange,
 }: WorksheetVariantSectionProps) {
+  const t = useTranslations("documentCreation.worksheetVariant");
+  const tVariants = useTranslations("documentCreation.worksheetVariants");
+
   return (
     <Card className="border-border p-4 shadow-sm transition-shadow hover:shadow-md sm:p-6 md:p-8">
       <div className="space-y-4">
@@ -57,10 +35,10 @@ export function WorksheetVariantSection({
           </div>
           <div className="min-w-0">
             <h2 className="text-base font-semibold text-foreground sm:text-lg">
-              Objetivo da Ficha <span className="text-destructive">*</span>
+              {t("title")} <span className="text-destructive">*</span>
             </h2>
             <p className="text-xs text-muted-foreground sm:text-sm">
-              Escolha a finalidade principal da ficha de trabalho
+              {t("description")}
             </p>
           </div>
         </div>
@@ -97,10 +75,10 @@ export function WorksheetVariantSection({
                   </div>
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-foreground sm:text-base">
-                      {option.label}
+                      {tVariants(`${option.value}.label`)}
                     </p>
                     <p className="mt-1 text-xs leading-relaxed text-muted-foreground sm:text-sm">
-                      {option.description}
+                      {tVariants(`${option.value}.description`)}
                     </p>
                   </div>
                 </div>

@@ -12,6 +12,7 @@ import {
 import { fetchOrganizationDashboard } from "@/store/workspace/workspaceSlice";
 import { ChartColumn } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { useTranslations } from "next-intl";
 import { useEffect } from "react";
 
 export default function SchoolUsagePage() {
@@ -19,6 +20,7 @@ export default function SchoolUsagePage() {
   const dashboard = useAppSelector(selectWorkspaceDashboard);
   const loading = useAppSelector(selectWorkspaceLoading);
   const error = useAppSelector(selectWorkspaceError);
+  const t = useTranslations("school");
 
   useEffect(() => {
     void dispatch(fetchOrganizationDashboard());
@@ -27,14 +29,14 @@ export default function SchoolUsagePage() {
   return (
     <PageContainer size="xl" contentClassName="py-4 sm:py-8">
       <PageHeader
-        title="Utilização da escola"
-        description="Vista inicial da utilização agregada da organização."
+        title={t("usage.title")}
+        description={t("usage.description")}
       />
 
       {error && !loading && !dashboard ? (
         <Card>
           <CardHeader>
-            <CardTitle>Não foi possível carregar a utilização da escola</CardTitle>
+            <CardTitle>{t("usage.loadError")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground">{error}</p>
@@ -42,7 +44,7 @@ export default function SchoolUsagePage() {
               variant="outline"
               onClick={() => void dispatch(fetchOrganizationDashboard())}
             >
-              Tentar novamente
+              {t("common.retry")}
             </Button>
           </CardContent>
         </Card>
@@ -51,7 +53,7 @@ export default function SchoolUsagePage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <ChartColumn className="h-4 w-4 text-primary" />
-              Gerações deste mês
+              {t("usage.generationsThisMonth")}
             </CardTitle>
           </CardHeader>
           <CardContent>

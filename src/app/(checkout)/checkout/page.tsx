@@ -5,7 +5,7 @@ import {
   getSubscriptionPlans,
 } from "@/services/api/subscription.service";
 import {
-  PLAN_DISPLAY_INFO,
+  getPlanDisplayInfo,
   type SubscriptionPlan,
 } from "@/shared/types/subscription";
 import {
@@ -27,6 +27,7 @@ import {
   XCircle,
   Zap,
 } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import { useRouter, useSearchParams } from "next/navigation";
 import posthog from "posthog-js";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
@@ -39,9 +40,12 @@ interface CheckoutError {
   details?: string;
 }
 
+type Translator = ReturnType<typeof useTranslations>;
+
 function parseError(
   err: unknown,
   context: "plans" | "checkout",
+  t: Translator,
 ): CheckoutError {
   const message = err instanceof Error ? err.message : String(err);
   const lowerMessage = message.toLowerCase();
@@ -56,8 +60,8 @@ function parseError(
   ) {
     return {
       type: "network",
-      message: "Sem ligação à internet",
-      details: "Verifique a sua ligação e tente novamente.",
+      message: t("errors.network.message"),
+      details: t("errors.network.details"),
     };
   }
 
@@ -70,9 +74,8 @@ function parseError(
   ) {
     return {
       type: "server",
-      message: "Serviço temporariamente indisponível",
-      details:
-        "Os nossos servidores estão a ter dificuldades. Tente novamente em alguns minutos.",
+      message: t("errors.server.message"),
+      details: t("errors.server.details"),
     };
   }
 
@@ -85,8 +88,8 @@ function parseError(
   ) {
     return {
       type: "validation",
-      message: "Sessão expirada",
-      details: "Por favor, faça login novamente para continuar.",
+      message: t("errors.sessionExpired.message"),
+      details: t("errors.sessionExpired.details"),
     };
   }
 
@@ -98,7 +101,7 @@ function parseError(
   ) {
     return {
       type: "validation",
-      message: context === "checkout" ? "Plano inválido" : "Erro de validação",
+      message: context === "checkout" ? t("errors.invalidPlan") : t("errors.genericValidation"),
       details: message,
     };
   }
@@ -111,7 +114,7 @@ function parseError(
   ) {
     return {
       type: "checkout",
-      message: "Erro no processamento de pagamento",
+      message: t("errors.payment"),
       details: message,
     };
   }
@@ -121,8 +124,8 @@ function parseError(
     type: "unknown",
     message:
       context === "checkout"
-        ? "Não foi possível iniciar o pagamento"
-        : "Ocorreu um erro inesperado",
+        ? t("errors.unknownCheckout")
+        : t("errors.unknownGeneric"),
     details: message,
   };
 }
@@ -145,11 +148,13 @@ function ErrorCard({
   onRetry,
   onGoBack,
   showSupport = false,
+  t,
 }: {
   error: CheckoutError;
   onRetry: () => void;
   onGoBack?: () => void;
   showSupport?: boolean;
+  t: Translator;
 }) {
   return (
     <div className="bg-card p-5 sm:p-8 rounded-2xl shadow-md border border-border text-center max-w-md mx-auto">
@@ -171,7 +176,7 @@ function ErrorCard({
           className="w-full bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-3 rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
         >
           <RefreshCw className="w-4 h-4" />
-          Tentar novamente
+          {t("common.retry")}
         </button>
 
         {onGoBack && (
@@ -179,7 +184,7 @@ function ErrorCard({
             onClick={onGoBack}
             className="w-full border border-border text-foreground bg-background hover:bg-accent px-6 py-3 rounded-xl font-medium transition-colors"
           >
-            Voltar
+            {t("common.back")}
           </button>
         )}
       </div>
@@ -187,14 +192,14 @@ function ErrorCard({
       {showSupport && (
         <div className="mt-6 pt-6 border-t border-border">
           <p className="text-sm text-muted-foreground mb-2">
-            O problema persiste?
+            {t("support.persistPrompt")}
           </p>
           <a
             href="mailto:suporte@scooli.app"
             className="inline-flex items-center gap-2 text-primary hover:text-primary/80 font-medium text-sm transition-colors"
           >
             <MessageCircle className="w-4 h-4" />
-            Contactar suporte
+            {t("support.contact")}
           </a>
         </div>
       )}
@@ -205,9 +210,11 @@ function ErrorCard({
 function InlineError({
   error,
   onDismiss,
+  t,
 }: {
   error: CheckoutError;
   onDismiss: () => void;
+  t: Translator;
 }) {
   return (
     <div className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-xl">
@@ -224,7 +231,7 @@ function InlineError({
         <button
           onClick={onDismiss}
           className="text-destructive hover:text-destructive/70 transition-colors"
-          aria-label="Fechar erro"
+          aria-label={t("errors.closeAriaLabel")}
         >
           <XCircle className="w-5 h-5" />
         </button>
@@ -233,9 +240,9 @@ function InlineError({
   );
 }
 
-function formatPrice(priceCents: number, currency?: string): string {
+function formatPrice(locale: string, priceCents: number, currency?: string): string {
   const price = priceCents / 100;
-  const formatter = new Intl.NumberFormat("pt-PT", {
+  const formatter = new Intl.NumberFormat(locale, {
     style: "currency",
     currency: (currency || "EUR").toUpperCase(),
     minimumFractionDigits: 2,
@@ -244,15 +251,15 @@ function formatPrice(priceCents: number, currency?: string): string {
 }
 
 function getLocalizedPlanName(plan: SubscriptionPlan): string {
-  return PLAN_DISPLAY_INFO[plan.planCode]?.name ?? plan.name;
+  return getPlanDisplayInfo(plan.planCode)?.name ?? plan.name;
 }
 
-function getPlanBadge(plan: SubscriptionPlan): string | null {
+function getPlanBadge(plan: SubscriptionPlan, t: Translator): string | null {
   if (plan.popular) {
-    return "Mais Popular";
+    return t("planBadge.popular");
   }
   if (plan.interval === "year") {
-    return "Melhor Valor";
+    return t("planBadge.bestValue");
   }
   return null;
 }
@@ -260,6 +267,8 @@ function getPlanBadge(plan: SubscriptionPlan): string | null {
 function calculateSavings(
   monthlyPlan: SubscriptionPlan | undefined,
   annualPlan: SubscriptionPlan,
+  locale: string,
+  t: Translator,
 ): string | null {
   if (!monthlyPlan) {
     return null;
@@ -269,16 +278,16 @@ function calculateSavings(
   if (savings <= 0) {
     return null;
   }
-  const savingsFormatted = formatPrice(savings, annualPlan.currency);
-  return `Poupe ${savingsFormatted}/ano`;
+  const savingsFormatted = formatPrice(locale, savings, annualPlan.currency);
+  return t("savingsPerYear", { amount: savingsFormatted });
 }
 
-function calculateMonthlyEquivalent(plan: SubscriptionPlan): string | null {
+function calculateMonthlyEquivalent(plan: SubscriptionPlan, locale: string): string | null {
   if (plan.interval !== "year") {
     return null;
   }
   const monthlyPrice = plan.priceCents / 12;
-  return formatPrice(monthlyPrice, plan.currency);
+  return formatPrice(locale, monthlyPrice, plan.currency);
 }
 
 function calculateSavingsPercent(
@@ -300,6 +309,8 @@ function CheckoutContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { isSignedIn, isLoaded } = useAuth();
+  const t = useTranslations("checkout");
+  const locale = useLocale();
 
   const planParam = searchParams.get("plan");
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
@@ -356,7 +367,7 @@ function CheckoutContent() {
 
       window.location.href = response.url;
     } catch (err) {
-      const parsedError = parseError(err, "checkout");
+      const parsedError = parseError(err, "checkout", t);
       posthog.capture("checkout_error", {
         plan_code: planCode,
         error_type: parsedError.type,
@@ -367,6 +378,7 @@ function CheckoutContent() {
       setError(parsedError);
       setIsCheckingOut(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchPlans = useCallback(async () => {
@@ -421,11 +433,12 @@ function CheckoutContent() {
         setSelectedPlanCode(displayPlans[0].planCode);
       }
     } catch (err) {
-      const parsedError = parseError(err, "plans");
+      const parsedError = parseError(err, "plans", t);
       setError(parsedError);
     } finally {
       setIsLoadingPlans(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [planParam, selectedPlanCode, initiateCheckout]);
 
   const handleRetry = useCallback(() => {
@@ -461,7 +474,7 @@ function CheckoutContent() {
       <div className="min-h-dvh flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          <p className="text-muted-foreground">A carregar...</p>
+          <p className="text-muted-foreground">{t("loading.generic")}</p>
         </div>
       </div>
     );
@@ -474,10 +487,10 @@ function CheckoutContent() {
         <div className="flex flex-col items-center gap-4 text-center px-6">
           <Loader2 className="w-10 h-10 animate-spin text-primary" />
           <h2 className="text-xl font-semibold text-foreground">
-            A preparar o seu pagamento...
+            {t("autoCheckout.title")}
           </h2>
           <p className="text-muted-foreground">
-            Será redirecionado para o Stripe em segundos.
+            {t("autoCheckout.description")}
           </p>
         </div>
       </div>
@@ -494,7 +507,7 @@ function CheckoutContent() {
             className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-10"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>Voltar</span>
+            <span>{t("common.back")}</span>
           </button>
 
           <ErrorCard
@@ -502,6 +515,7 @@ function CheckoutContent() {
             onRetry={handleRetry}
             onGoBack={() => router.back()}
             showSupport={retryCount >= 2}
+            t={t}
           />
         </div>
       </div>
@@ -521,7 +535,7 @@ function CheckoutContent() {
             className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-6"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>Voltar</span>
+            <span>{t("common.back")}</span>
           </button>
 
           <div className="flex items-center gap-3 mb-4">
@@ -529,12 +543,11 @@ function CheckoutContent() {
               <Sparkles className="w-5 h-5 text-primary-foreground" />
             </div>
             <h1 className="text-3xl font-bold text-foreground sm:text-4xl">
-              Escolha o seu plano
+              {t("header.title")}
             </h1>
           </div>
           <p className="text-lg text-muted-foreground">
-            Desbloqueie todo o potencial do Scooli e crie conteúdo educacional
-            sem limites.
+            {t("header.description")}
           </p>
         </div>
 
@@ -542,7 +555,7 @@ function CheckoutContent() {
         {isLoadingPlans && (
           <div className="flex flex-col items-center justify-center py-20">
             <Loader2 className="w-10 h-10 animate-spin text-primary mb-4" />
-            <p className="text-muted-foreground">A carregar planos...</p>
+            <p className="text-muted-foreground">{t("loading.plans")}</p>
           </div>
         )}
 
@@ -551,17 +564,17 @@ function CheckoutContent() {
           <>
             {/* Inline error for validation issues (invalid plan param) */}
             {error && error.type === "validation" && (
-              <InlineError error={error} onDismiss={clearError} />
+              <InlineError error={error} onDismiss={clearError} t={t} />
             )}
 
             <div className="grid md:grid-cols-2 gap-6 mb-10">
               {plans.map((plan) => {
-                const badge = getPlanBadge(plan);
+                const badge = getPlanBadge(plan, t);
                 const savings =
                   plan.interval === "year"
-                    ? calculateSavings(monthlyPlan, plan)
+                    ? calculateSavings(monthlyPlan, plan, locale, t)
                     : null;
-                const monthlyEquivalent = calculateMonthlyEquivalent(plan);
+                const monthlyEquivalent = calculateMonthlyEquivalent(plan, locale);
                 const savingsPercent =
                   plan.interval === "year"
                     ? calculateSavingsPercent(monthlyPlan, plan)
@@ -625,15 +638,20 @@ function CheckoutContent() {
                         <span className="text-3xl font-bold text-foreground sm:text-4xl">
                           {plan.interval === "year" && monthlyEquivalent
                             ? monthlyEquivalent
-                            : formatPrice(plan.priceCents, plan.currency)}
+                            : formatPrice(locale, plan.priceCents, plan.currency)}
                         </span>
-                        <span className="text-muted-foreground">/mês</span>
+                        <span className="text-muted-foreground">{t("perMonth")}</span>
                       </div>
                       {plan.interval === "year" && (
                         <p className="text-sm text-muted-foreground mt-1">
-                          Pago anualmente{" "}
-                          {formatPrice(plan.priceCents, plan.currency)}
-                          {savingsPercent ? ` · poupe ${savingsPercent}` : ""}
+                          {savingsPercent
+                            ? t("paidAnnuallyWithSavings", {
+                                price: formatPrice(locale, plan.priceCents, plan.currency),
+                                percent: savingsPercent,
+                              })
+                            : t("paidAnnually", {
+                                price: formatPrice(locale, plan.priceCents, plan.currency),
+                              })}
                         </p>
                       )}
                     </div>
@@ -668,7 +686,7 @@ function CheckoutContent() {
             <div className="bg-card p-5 sm:p-8 rounded-2xl shadow-md border border-border">
               {/* Checkout error */}
               {error && error.type !== "validation" && (
-                <InlineError error={error} onDismiss={clearError} />
+                <InlineError error={error} onDismiss={clearError} t={t} />
               )}
 
               <div className="flex flex-col gap-4 sm:gap-6 md:flex-row md:items-center md:justify-between">
@@ -676,15 +694,17 @@ function CheckoutContent() {
                   {selectedPlan && (
                     <>
                       <p className="text-muted-foreground text-sm mb-1">
-                        Plano selecionado
+                        {t("selectedPlanLabel")}
                       </p>
                       <p className="text-xl font-semibold text-foreground">
-                        {getLocalizedPlanName(selectedPlan)} —{" "}
-                        {formatPrice(
-                          selectedPlan.priceCents,
-                          selectedPlan.currency,
-                        )}
-                        /{selectedPlan.interval === "month" ? "mês" : "ano"}
+                        {t("selectedPlanSummary", {
+                          planName: getLocalizedPlanName(selectedPlan),
+                          price: formatPrice(locale, selectedPlan.priceCents, selectedPlan.currency),
+                          interval:
+                            selectedPlan.interval === "month"
+                              ? t("intervalMonth")
+                              : t("intervalYear"),
+                        })}
                       </p>
                     </>
                   )}
@@ -697,12 +717,12 @@ function CheckoutContent() {
                 >
                   {isCheckingOut ? (
                     <>
-                      <Loader2 className="w-5 h-5 animate-spin" />A processar...
+                      <Loader2 className="w-5 h-5 animate-spin" />{t("checkoutButton.processing")}
                     </>
                   ) : (
                     <>
                       <Zap className="w-5 h-5" />
-                      Continuar para Pagamento
+                      {t("checkoutButton.cta")}
                     </>
                   )}
                 </button>
@@ -712,15 +732,15 @@ function CheckoutContent() {
               <div className="mt-8 pt-6 border-t border-border flex flex-wrap items-center justify-center gap-6 text-sm text-muted-foreground">
                 <div className="flex items-center gap-2">
                   <Shield className="w-4 h-4" />
-                  <span>Pagamento seguro via Stripe</span>
+                  <span>{t("trust.securePayment")}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Check className="w-4 h-4" />
-                  <span>Cancele a qualquer momento</span>
+                  <span>{t("trust.cancelAnytime")}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Sparkles className="w-4 h-4" />
-                  <span>Acesso instantâneo</span>
+                  <span>{t("trust.instantAccess")}</span>
                 </div>
               </div>
             </div>

@@ -3,14 +3,16 @@
 import { Suspense, use } from "react";
 import dynamic from "next/dynamic";
 import { Loader2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 // Loading component
 function EditorLoading() {
+  const t = useTranslations("documentEditorPages.lessonPlan");
   return (
     <div className="flex items-center justify-center min-h-[400px] w-full">
       <div className="flex items-center space-x-2">
         <Loader2 className="w-6 h-6 animate-spin text-[#6753FF]" />
-        <span className="text-lg text-[#6C6F80]">A carregar plano de aula...</span>
+        <span className="text-lg text-[#6C6F80]">{t("loading")}</span>
       </div>
     </div>
   );
@@ -32,17 +34,18 @@ interface LessonPlanEditorPageProps {
 export default function LessonPlanEditorPage({
   params,
 }: LessonPlanEditorPageProps) {
+  const t = useTranslations("documentEditorPages.lessonPlan");
   const { id } = use(params);
 
   return (
     <Suspense fallback={<EditorLoading />}>
       <DocumentEditor
         documentId={id}
-        defaultTitle="Novo Plano de Aula"
-        loadingMessage="A carregar plano de aula..."
-        generateMessage="Gerar plano de aula"
-        chatTitle="Assistente de Planos"
-        chatPlaceholder="Pergunta algo ou pede para modificar o plano..."
+        defaultTitle={t("defaultTitle")}
+        loadingMessage={t("loading")}
+        generateMessage={t("generateMessage")}
+        chatTitle={t("chatTitle")}
+        chatPlaceholder={t("chatPlaceholder")}
       />
     </Suspense>
   );

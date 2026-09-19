@@ -21,6 +21,7 @@ import {
   type ShareResourceRequest,
   type SharedResource,
 } from "@/services/api/community.service";
+import { translate } from "@/i18n/translate";
 import { createAsyncThunk, createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
 // ============================================================================
@@ -120,7 +121,7 @@ export const fetchReusedResourceIds = createAsyncThunk(
       return await getReusedResourceIds();
     } catch (error) {
       return rejectWithValue(
-        error instanceof Error ? error.message : "Não foi possível carregar os IDs de recursos reutilizados"
+        error instanceof Error ? error.message : translate("errors.community.fetchReusedResourceIds")
       );
     }
   }
@@ -146,7 +147,7 @@ export const fetchResources = createAsyncThunk(
       return response;
     } catch (error) {
       return rejectWithValue(
-        error instanceof Error ? error.message : "Não foi possível carregar os recursos"
+        error instanceof Error ? error.message : translate("errors.community.fetchResources")
       );
     }
   }
@@ -162,7 +163,7 @@ const fetchResource = createAsyncThunk(
       return await getResource(resourceId);
     } catch (error) {
       return rejectWithValue(
-        error instanceof Error ? error.message : "Não foi possível carregar o recurso"
+        error instanceof Error ? error.message : translate("errors.community.fetchResource")
       );
     }
   }
@@ -178,7 +179,7 @@ export const fetchMyResources = createAsyncThunk(
       return await getMyResources();
     } catch (error) {
       return rejectWithValue(
-        error instanceof Error ? error.message : "Não foi possível carregar os seus recursos"
+        error instanceof Error ? error.message : translate("errors.community.fetchMyResources")
       );
     }
   }
@@ -194,7 +195,7 @@ export const fetchContributorStats = createAsyncThunk(
       return await getContributorStats();
     } catch (error) {
       return rejectWithValue(
-        error instanceof Error ? error.message : "Não foi possível carregar as estatísticas"
+        error instanceof Error ? error.message : translate("errors.community.fetchContributorStats")
       );
     }
   }
@@ -210,7 +211,7 @@ export const submitResource = createAsyncThunk(
       return await shareResource(request);
     } catch (error) {
       return rejectWithValue(
-        error instanceof Error ? error.message : "Não foi possível partilhar o recurso"
+        error instanceof Error ? error.message : translate("errors.community.submitResource")
       );
     }
   }
@@ -230,7 +231,7 @@ export const unshareDocumentResource = createAsyncThunk(
       return rejectWithValue(
         error instanceof Error
           ? error.message
-          : "Nao foi possivel deixar de partilhar o recurso",
+          : translate("errors.community.unshareDocument"),
       );
     }
   },
@@ -249,7 +250,7 @@ export const reuseSharedResource = createAsyncThunk(
       return await reuseResource(resourceId, adaptationNotes);
     } catch (error) {
       return rejectWithValue(
-        error instanceof Error ? error.message : "Não foi possível reutilizar o recurso"
+        error instanceof Error ? error.message : translate("errors.community.reuseResource")
       );
     }
   }

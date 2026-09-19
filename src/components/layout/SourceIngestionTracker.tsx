@@ -3,6 +3,7 @@
 import { FeatureFlag } from "@/shared/types/featureFlags";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { fetchSources, refreshSource } from "@/store/sources/sourcesSlice";
+import { useTranslations } from "next-intl";
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 
@@ -26,6 +27,7 @@ const PENDING_STATUSES = new Set([
 ]);
 
 export function SourceIngestionTracker() {
+  const t = useTranslations("sources.toast");
   const dispatch = useAppDispatch();
   const isUserSourcesEnabled = useAppSelector(
     (state) => state.features.flags[FeatureFlag.USER_SOURCES] === true,
@@ -56,10 +58,10 @@ export function SourceIngestionTracker() {
       const after = source.status;
       if (before !== undefined && before !== after) {
         if (after === "indexed") {
-          toast.success(`Fonte "${source.name}" pronta a usar.`);
+          toast.success(t("ready", { name: source.name }));
         } else if (after === "failed") {
           const detail = source.lastError ? ` (${source.lastError})` : "";
-          toast.error(`Falha ao processar "${source.name}"${detail}.`);
+          toast.error(t("failed", { name: source.name, detail }));
         }
       }
       prev.set(source.id, after);
@@ -69,7 +71,9 @@ export function SourceIngestionTracker() {
     for (const id of Array.from(prev.keys())) {
       if (!liveIds.has(id)) prev.delete(id);
     }
-  }, [sources]);
+    // `t` changes with the locale. Re-running is harmless: statuses are already
+    // recorded in the ref, so an unchanged list of sources toasts nothing.
+  }, [sources, t]);
 
   // Poll pending sources while any exist. The list of pending IDs is captured
   // when the effect runs; if it changes (new uploads, completions) the effect

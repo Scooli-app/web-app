@@ -27,6 +27,7 @@ import {
   Star,
   UploadCloud,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { TemplateCard } from "./TemplateCard";
@@ -57,6 +58,9 @@ export function TemplateBrowserModal({
   onSetDefault,
 }: TemplateBrowserModalProps) {
   const router = useRouter();
+  const t = useTranslations("documentCreation.templateBrowserModal");
+  const tBadge = useTranslations("documentCreation.templateBadge");
+  const tNav = useTranslations("nav");
   const isProUser = useAppSelector(selectIsPro);
   const isTemplateFromDocumentEnabled = useAppSelector(
     selectIsTemplateFromDocumentEnabled
@@ -161,17 +165,8 @@ export function TemplateBrowserModal({
     setView("browse");
   };
 
-  const getDocumentTypeLabel = (type: DocumentType): string => {
-    const labels: Record<DocumentType, string> = {
-      lessonPlan: "Planos de Aula",
-      quiz: "Quizzes",
-      test: "Testes",
-      worksheet: "Fichas de Trabalho",
-      presentation: "Apresentações",
-      curriculumPlan: "Planificações",
-    };
-    return labels[type];
-  };
+  const getDocumentTypeLabel = (type: DocumentType): string =>
+    tNav(`items.${type}.title`);
 
   const handleSetDefault = async (template: DocumentTemplate) => {
     if (template.isDefault || isSettingDefault) {
@@ -227,7 +222,7 @@ export function TemplateBrowserModal({
                     onClick={handleBackToBrowse}
                     className="transition-colors hover:text-primary"
                   >
-                    Modelos
+                    {t("breadcrumb")}
                   </button>
                   <ChevronRight className="h-4 w-4" />
                   <span className="font-medium text-foreground">
@@ -246,16 +241,16 @@ export function TemplateBrowserModal({
                         {previewTemplate.isSystem ? (
                           <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-primary to-primary/70 px-2 py-0.5 text-xs font-medium text-primary-foreground">
                             <Sparkles className="h-2.5 w-2.5" />
-                            Scooli
+                            {tBadge("scooli")}
                           </span>
                         ) : (
                           <span className="inline-flex rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
-                            Personalizado
+                            {tBadge("custom")}
                           </span>
                         )}
                         {previewTemplate.isDefault && (
                           <span className="inline-flex rounded-full bg-emerald-500 px-2 py-0.5 text-xs font-medium text-white">
-                            Padrao
+                            {tBadge("default")}
                           </span>
                         )}
                       </DialogTitle>
@@ -274,7 +269,7 @@ export function TemplateBrowserModal({
                         onClick={() => handleSetDefault(previewTemplate)}
                         disabled={isSettingDefault}
                         className="h-9 flex-1 items-center gap-1.5 rounded-lg border-border text-secondary-foreground hover:border-emerald-500 hover:bg-emerald-50 hover:text-emerald-700 dark:hover:bg-emerald-950/30 dark:hover:text-emerald-400 sm:h-8 sm:flex-none"
-                        aria-label="Definir como padrao"
+                        aria-label={t("setDefaultAriaLabel")}
                       >
                         {isSettingDefault ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
@@ -282,7 +277,7 @@ export function TemplateBrowserModal({
                           <Star className="h-4 w-4" />
                         )}
                         <span>
-                          {isSettingDefault ? "A definir..." : "Definir Padrao"}
+                          {isSettingDefault ? t("settingDefault") : t("setDefault")}
                         </span>
                       </Button>
                     )}
@@ -290,7 +285,7 @@ export function TemplateBrowserModal({
                     {previewTemplate.isDefault && (
                       <div className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg bg-emerald-50 px-3 text-sm font-medium text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 sm:h-8 sm:flex-none">
                         <Check className="h-4 w-4" />
-                        <span>Padrao</span>
+                        <span>{t("defaultLabel")}</span>
                       </div>
                     )}
 
@@ -301,10 +296,10 @@ export function TemplateBrowserModal({
                         size="sm"
                         onClick={() => handleEditTemplate(previewTemplate)}
                         className="h-9 flex-1 items-center gap-1.5 rounded-lg border-border text-secondary-foreground hover:border-primary hover:bg-accent sm:h-8 sm:flex-none"
-                        aria-label="Editar modelo"
+                        aria-label={t("editAriaLabel")}
                       >
                         <Pencil className="h-4 w-4" />
-                        <span>Editar</span>
+                        <span>{t("edit")}</span>
                       </Button>
                     )}
                   </div>
@@ -314,7 +309,7 @@ export function TemplateBrowserModal({
               <div className="min-h-0 flex-1 overflow-y-auto px-4 pr-12 sm:px-6 sm:pr-14">
                 <div className="space-y-3 pb-4 pt-0.5">
                   <h3 className="text-sm font-medium text-foreground">
-                    Seccoes ({previewTemplate.sections.length})
+                    {t("sectionsCount", { count: previewTemplate.sections.length })}
                   </h3>
                   <div className="space-y-2">
                     {previewTemplate.sections
@@ -349,14 +344,14 @@ export function TemplateBrowserModal({
                     onClick={handleBackToBrowse}
                     className="h-11 rounded-xl border-border text-secondary-foreground hover:border-primary hover:bg-accent sm:flex-1"
                   >
-                    Ver outros modelos
+                    {t("viewOtherTemplates")}
                   </Button>
                   <Button
                     type="button"
                     onClick={handleConfirmSelection}
                     className="h-11 rounded-xl bg-primary text-primary-foreground shadow-md shadow-primary/20 hover:bg-primary/90 sm:flex-1"
                   >
-                    Usar este modelo
+                    {t("useThisTemplate")}
                   </Button>
                 </div>
               </div>
@@ -370,10 +365,12 @@ export function TemplateBrowserModal({
                       <Layers className="h-5 w-5 text-primary" />
                     </div>
                     <div className="min-w-0">
-                      <DialogTitle>Escolher Modelo</DialogTitle>
+                      <DialogTitle>{t("chooseTemplate")}</DialogTitle>
                       <DialogDescription className="line-clamp-2 sm:line-clamp-none">
-                        {getDocumentTypeLabel(documentType)} -{" "}
-                        {templates.length} modelos disponiveis
+                        {t("modelsAvailable", {
+                          typeLabel: getDocumentTypeLabel(documentType),
+                          count: templates.length,
+                        })}
                       </DialogDescription>
                     </div>
                   </div>
@@ -386,10 +383,10 @@ export function TemplateBrowserModal({
                           size="sm"
                           onClick={() => setView("from-document")}
                           className="h-9 w-full items-center gap-1.5 rounded-lg border-border text-secondary-foreground hover:border-primary hover:bg-accent sm:h-8 sm:w-auto"
-                          aria-label="Criar modelo a partir de documento"
+                          aria-label={t("importDocumentAriaLabel")}
                         >
                           <UploadCloud className="h-4 w-4" />
-                          <span>Importar documento</span>
+                          <span>{t("importDocument")}</span>
                         </Button>
                       ) : (
                         <Button
@@ -397,12 +394,12 @@ export function TemplateBrowserModal({
                           size="sm"
                           onClick={() => router.push(Routes.CHECKOUT)}
                           className="h-9 w-full items-center gap-1.5 rounded-lg border border-amber-300/60 bg-gradient-to-r from-amber-50 to-yellow-50 text-amber-800 hover:from-amber-100 hover:to-yellow-100 dark:border-amber-700/60 dark:from-amber-950/40 dark:to-yellow-950/40 dark:text-amber-300 sm:h-8 sm:w-auto"
-                          aria-label="Importar documento (funcionalidade Pro)"
+                          aria-label={t("importDocumentProAriaLabel")}
                         >
                           <Crown className="h-4 w-4 text-amber-500 dark:text-amber-300" />
-                          <span>Importar documento</span>
+                          <span>{t("importDocument")}</span>
                           <span className="ml-1 rounded-full border border-amber-400/60 bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700 dark:border-amber-500/40 dark:bg-amber-900/40 dark:text-amber-200">
-                            Pro
+                            {t("pro")}
                           </span>
                         </Button>
                       ))}
@@ -412,10 +409,10 @@ export function TemplateBrowserModal({
                       size="sm"
                       onClick={() => setView("create")}
                       className="h-9 w-full items-center gap-1.5 rounded-lg border-border text-secondary-foreground hover:border-primary hover:bg-accent sm:h-8 sm:w-auto"
-                      aria-label="Criar novo modelo"
+                      aria-label={t("createModelAriaLabel")}
                     >
                       <Plus className="h-4 w-4" />
-                      <span>Criar Modelo</span>
+                      <span>{t("createModel")}</span>
                     </Button>
                   </div>
                 </div>
@@ -439,10 +436,10 @@ export function TemplateBrowserModal({
                         <FileText className="h-8 w-8 text-muted-foreground" />
                       </div>
                       <h3 className="mb-1 text-lg font-semibold text-foreground">
-                        Sem modelos disponiveis
+                        {t("noTemplatesTitle")}
                       </h3>
                       <p className="mb-4 max-w-xs text-sm text-muted-foreground">
-                        Crie o seu primeiro modelo personalizado para comecar
+                        {t("noTemplatesDescription")}
                       </p>
                       <Button
                         type="button"
@@ -450,7 +447,7 @@ export function TemplateBrowserModal({
                         className="rounded-xl bg-primary text-primary-foreground hover:bg-primary/90"
                       >
                         <Plus className="mr-2 h-4 w-4" />
-                        Criar Modelo
+                        {t("createModel")}
                       </Button>
                     </div>
                   )}

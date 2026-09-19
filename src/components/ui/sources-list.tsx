@@ -8,6 +8,7 @@ import {
   ExternalLink,
   FileText,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "./card";
 
@@ -70,6 +71,7 @@ function DocumentGroupCard({
   expandedKey: string | null;
   onChunkToggle: (key: string) => void;
 }) {
+  const t = useTranslations("sources.list");
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -102,10 +104,7 @@ function DocumentGroupCard({
             </p>
           )}
           <p className="mt-0.5 text-[11px] text-muted-foreground">
-            {group.chunks.length}{" "}
-            {group.chunks.length === 1
-              ? "excerto consultado"
-              : "excertos consultados"}
+            {t("chunkCount", { count: group.chunks.length })}
           </p>
         </div>
         <div className="shrink-0 self-center text-muted-foreground">
@@ -139,8 +138,10 @@ function DocumentGroupCard({
 
 export function SourcesList({
   sources,
-  title = "Fontes Curriculares Consultadas",
+  title,
 }: SourcesListProps) {
+  const t = useTranslations("sources.list");
+  const resolvedTitle = title ?? t("defaultTitle");
   const [expandedKey, setExpandedKey] = useState<string | null>(null);
 
   // Dedupe by chunkId (keep first), then group by documentName preserving first-seen order.
@@ -152,7 +153,7 @@ export function SourcesList({
       if (s.chunkId && seenChunkIds.has(s.chunkId)) continue;
       if (s.chunkId) seenChunkIds.add(s.chunkId);
 
-      const key = s.documentName?.trim() || "Documento";
+      const key = s.documentName?.trim() || t("documentFallback");
       let group = groupMap.get(key);
       if (!group) {
         group = { documentName: key, url: s.url, chunks: [] };
@@ -167,7 +168,7 @@ export function SourcesList({
     const arr = Array.from(groupMap.values());
     const total = arr.reduce((sum, g) => sum + g.chunks.length, 0);
     return { groups: arr, totalChunks: total };
-  }, [sources]);
+  }, [sources, t]);
 
   if (totalChunks === 0) {
     return (
@@ -176,10 +177,10 @@ export function SourcesList({
           <FileText className="w-6 h-6 text-muted-foreground" />
         </div>
         <p className="text-sm font-medium text-muted-foreground">
-          Nenhuma fonte consultada
+          {t("emptyTitle")}
         </p>
         <p className="text-xs text-muted-foreground/60 mt-1">
-          As fontes curriculares aparecerão aqui após gerar conteúdo
+          {t("emptyDescription")}
         </p>
       </div>
     );
@@ -191,13 +192,13 @@ export function SourcesList({
         <div className="flex items-center gap-2">
           <FileText className="w-5 h-5 text-primary shrink-0" />
           <CardTitle className="text-base font-semibold text-foreground leading-tight">
-            {title}
+            {resolvedTitle}
           </CardTitle>
         </div>
         <p className="mt-1 text-xs text-muted-foreground">
-          {groups.length} {groups.length === 1 ? "documento" : "documentos"}
+          {t("documentCount", { count: groups.length })}
           {" · "}
-          {totalChunks} {totalChunks === 1 ? "excerto" : "excertos"}
+          {t("excerptCount", { count: totalChunks })}
         </p>
       </CardHeader>
       <CardContent className="px-0 pb-0 space-y-2.5 flex-1 min-h-0 overflow-y-auto">

@@ -11,6 +11,7 @@
 import katex from "katex";
 import "katex/dist/katex.min.css";
 import { Loader2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import type {
   ContentBlock,
   ImageBlock,
@@ -101,12 +102,13 @@ export function SlideImageRenderer({ image }: { image: SlideImage }) {
 }
 
 function PlaceholderImage({ prompt }: { prompt: string }) {
+  const t = useTranslations("blocks");
   return (
     <div className="flex h-full w-full flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed border-border bg-muted/40 p-6 text-center text-muted-foreground">
       <Loader2 className="h-8 w-8 animate-spin text-primary" />
       <p className="text-xs italic line-clamp-3">{prompt}</p>
       <span className="text-[10px] uppercase tracking-wide">
-        Imagem em geração
+        {t("imageGenerating")}
       </span>
     </div>
   );

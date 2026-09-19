@@ -1,3 +1,4 @@
+import { translate } from "@/i18n/translate";
 import { getCurrentSubscription, getUsageStats } from "@/services/api";
 import type {
   CurrentSubscription,
@@ -12,7 +13,7 @@ export const fetchSubscription = createAsyncThunk(
     try {
       return await getCurrentSubscription();
     } catch {
-      return rejectWithValue("Não foi possível carregar a subscrição");
+      return rejectWithValue(translate("errors.subscription.fetchFailed"));
     }
   }
 );
@@ -23,7 +24,7 @@ export const fetchUsage = createAsyncThunk(
     try {
       return await getUsageStats();
     } catch {
-      return rejectWithValue("Não foi possível carregar as estatísticas de utilização");
+      return rejectWithValue(translate("errors.subscription.fetchUsageFailed"));
     }
   }
 );

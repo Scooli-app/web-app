@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 interface ConfirmationDialogProps {
   isOpen: boolean;
@@ -26,12 +27,18 @@ export function ConfirmationDialog({
   isOpen,
   onClose,
   onConfirm,
-  title = "Tem a certeza?",
-  description = "Esta ação não pode ser desfeita.",
-  confirmLabel = "Confirmar",
-  cancelLabel = "Cancelar",
+  title,
+  description,
+  confirmLabel,
+  cancelLabel,
   variant = "warning",
 }: ConfirmationDialogProps) {
+  const t = useTranslations("common.confirmationDialog");
+  const resolvedTitle = title ?? t("defaultTitle");
+  const resolvedDescription = description ?? t("defaultDescription");
+  const resolvedConfirmLabel = confirmLabel ?? t("confirm");
+  const resolvedCancelLabel = cancelLabel ?? t("cancel");
+
   const iconColors = {
     warning: "bg-amber-100 text-amber-600 dark:bg-amber-950/50 dark:text-amber-400",
     danger: "bg-red-100 text-red-600 dark:bg-red-950/50 dark:text-red-400",
@@ -55,9 +62,9 @@ export function ConfirmationDialog({
               <AlertTriangle className="w-6 h-6" />
             </div>
             <div>
-              <DialogTitle>{title}</DialogTitle>
+              <DialogTitle>{resolvedTitle}</DialogTitle>
               <DialogDescription className="mt-1">
-                {description}
+                {resolvedDescription}
               </DialogDescription>
             </div>
           </div>
@@ -69,14 +76,14 @@ export function ConfirmationDialog({
             onClick={onClose}
             className="flex-1 sm:flex-none h-10 border-border text-secondary-foreground hover:bg-muted rounded-xl"
           >
-            {cancelLabel}
+            {resolvedCancelLabel}
           </Button>
           <Button
             type="button"
             onClick={onConfirm}
             className={`flex-1 sm:flex-none h-10 rounded-xl ${confirmColors[variant]}`}
           >
-            {confirmLabel}
+            {resolvedConfirmLabel}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -95,15 +102,16 @@ export function UnsavedChangesDialog({
   onClose,
   onConfirm,
 }: UnsavedChangesDialogProps) {
+  const t = useTranslations("common.unsavedChangesDialog");
   return (
     <ConfirmationDialog
       isOpen={isOpen}
       onClose={onClose}
       onConfirm={onConfirm}
-      title="Alterações não guardadas"
-      description="Tem alterações que ainda não foram guardadas. Tem a certeza que pretende sair? As alterações serão perdidas."
-      confirmLabel="Sair sem guardar"
-      cancelLabel="Continuar a editar"
+      title={t("title")}
+      description={t("description")}
+      confirmLabel={t("confirm")}
+      cancelLabel={t("cancel")}
       variant="warning"
     />
   );

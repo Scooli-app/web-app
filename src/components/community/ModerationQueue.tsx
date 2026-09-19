@@ -37,6 +37,7 @@ import {
   selectPendingResources,
 } from "@/store/moderation";
 import { ArrowUpDown, Check, ChevronDown, ChevronUp, Clock, Eye, MessageSquare, X } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useState } from "react";
 
 type ModerationSortField = "title" | "contributor" | "date";
@@ -79,6 +80,7 @@ function SortableHead({
 import { toast } from "sonner";
 
 export function ModerationQueue() {
+  const t = useTranslations("community.moderationQueue");
   const dispatch = useAppDispatch();
   const pendingResources = useAppSelector(selectPendingResources);
   const pagination = useAppSelector(selectModerationPagination);
@@ -148,14 +150,14 @@ export function ModerationQueue() {
 
       toast.success(
         action === "APPROVE"
-          ? "Recurso aprovado com sucesso!"
+          ? t("approved")
           : action === "REJECT"
-            ? "Recurso rejeitado"
-            : "Solicitadas alterações ao contribuidor",
+            ? t("rejected")
+            : t("changesRequested"),
       );
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Erro ao processar moderação",
+        error instanceof Error ? error.message : t("processError"),
       );
     }
   };
@@ -181,9 +183,9 @@ export function ModerationQueue() {
     return (
       <Card className="p-8 text-center">
         <Clock className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-        <h3 className="mb-2 text-lg font-semibold">Fila de moderação vazia</h3>
+        <h3 className="mb-2 text-lg font-semibold">{t("emptyTitle")}</h3>
         <p className="text-sm text-muted-foreground">
-          Não há recursos pendentes para revisão.
+          {t("emptyDescription")}
         </p>
       </Card>
     );
@@ -212,7 +214,7 @@ export function ModerationQueue() {
                 onClick={() => handleReview(resource)}
               >
                 <Eye className="mr-1.5 h-4 w-4" />
-                Rever
+                {t("reviewButton")}
               </Button>
             </div>
           </div>
@@ -228,7 +230,7 @@ export function ModerationQueue() {
             </Badge>
           </div>
           <p className="mt-2 text-xs text-muted-foreground">
-            Contribuidor: {resource.contributorName}
+            {t("contributorPrefix", { name: resource.contributorName })}
           </p>
         </div>
       ))}
@@ -241,11 +243,11 @@ export function ModerationQueue() {
       <Table>
         <TableHeader>
           <TableRow>
-            <SortableHead field="title" label="Título" current={sortField} dir={sortDir} onSort={handleSort} />
-            <SortableHead field="contributor" label="Contribuidor" current={sortField} dir={sortDir} onSort={handleSort} />
-            <TableHead>Currículo</TableHead>
-            <SortableHead field="date" label="Data" current={sortField} dir={sortDir} onSort={handleSort} />
-            <TableHead className="text-center">Ações</TableHead>
+            <SortableHead field="title" label={t("columnTitle")} current={sortField} dir={sortDir} onSort={handleSort} />
+            <SortableHead field="contributor" label={t("columnContributor")} current={sortField} dir={sortDir} onSort={handleSort} />
+            <TableHead>{t("columnCurriculum")}</TableHead>
+            <SortableHead field="date" label={t("columnDate")} current={sortField} dir={sortDir} onSort={handleSort} />
+            <TableHead className="text-center">{t("columnActions")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -285,7 +287,7 @@ export function ModerationQueue() {
                     onClick={() => handleReview(resource)}
                   >
                     <Eye className="mr-2 h-4 w-4" />
-                    Rever
+                    {t("reviewButton")}
                   </Button>
                 </div>
               </TableCell>
@@ -303,9 +305,9 @@ export function ModerationQueue() {
         <Card className="p-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h3 className="text-lg font-semibold">Fila de Moderação</h3>
+              <h3 className="text-lg font-semibold">{t("heading")}</h3>
               <p className="text-sm text-muted-foreground">
-                {pagination.totalCount} recursos pendentes
+                {t("pendingCount", { count: pagination.totalCount })}
               </p>
             </div>
             <Button
@@ -315,7 +317,7 @@ export function ModerationQueue() {
               }
               disabled={isLoading}
             >
-              Atualizar
+              {t("refresh")}
             </Button>
           </div>
         </Card>
@@ -329,10 +331,9 @@ export function ModerationQueue() {
       <Dialog open={isReviewModalOpen} onOpenChange={setIsReviewModalOpen}>
         <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
           <DialogHeader className="pr-14">
-            <DialogTitle>Rever Recurso</DialogTitle>
+            <DialogTitle>{t("reviewDialogTitle")}</DialogTitle>
             <DialogDescription>
-              Analise o recurso para conformidade curricular e qualidade
-              pedagógica
+              {t("reviewDialogDescription")}
             </DialogDescription>
           </DialogHeader>
 
@@ -340,17 +341,17 @@ export function ModerationQueue() {
             <div className="space-y-6 pr-14">
               <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                 <div>
-                  <h4 className="mb-2 font-semibold">Informações</h4>
+                  <h4 className="mb-2 font-semibold">{t("infoHeading")}</h4>
                   <div className="space-y-2 text-sm">
                     <div>
-                      <strong>Título:</strong> {selectedResource.title}
+                      <strong>{t("titleLabel")}</strong> {selectedResource.title}
                     </div>
                     <div>
-                      <strong>Contribuidor:</strong>{" "}
+                      <strong>{t("contributorLabel")}</strong>{" "}
                       {selectedResource.contributorName}
                     </div>
                     <div>
-                      <strong>Submetido:</strong>{" "}
+                      <strong>{t("submittedLabel")}</strong>{" "}
                       {new Date(selectedResource.createdAt).toLocaleDateString(
                         "pt-PT",
                       )}
@@ -358,7 +359,7 @@ export function ModerationQueue() {
                   </div>
                 </div>
                 <div>
-                  <h4 className="mb-2 font-semibold">Currículo</h4>
+                  <h4 className="mb-2 font-semibold">{t("curriculumHeading")}</h4>
                   <div className="flex flex-wrap gap-2">
                     <Badge>{selectedResource.grade}</Badge>
                     <Badge>{selectedResource.subject}</Badge>
@@ -371,7 +372,7 @@ export function ModerationQueue() {
 
               {selectedResource.description && (
                 <div>
-                  <h4 className="mb-2 font-semibold">Descrição</h4>
+                  <h4 className="mb-2 font-semibold">{t("descriptionHeading")}</h4>
                   <p className="rounded bg-muted p-3 text-sm text-muted-foreground">
                     {selectedResource.description}
                   </p>
@@ -379,7 +380,7 @@ export function ModerationQueue() {
               )}
 
               <div>
-                <h4 className="mb-2 font-semibold">Conteúdo</h4>
+                <h4 className="mb-2 font-semibold">{t("contentHeading")}</h4>
                 <div className="max-h-80 overflow-y-auto rounded-lg border bg-muted/30 p-4">
                   <div
                     className="prose prose-sm max-w-none"
@@ -391,11 +392,11 @@ export function ModerationQueue() {
               </div>
 
               <div>
-                <h4 className="mb-2 font-semibold">Feedback (Opcional)</h4>
+                <h4 className="mb-2 font-semibold">{t("feedbackHeading")}</h4>
                 <Textarea
                   value={feedback}
                   onChange={(e) => setFeedback(e.target.value)}
-                  placeholder="Feedback para o contribuidor sobre o recurso..."
+                  placeholder={t("feedbackPlaceholder")}
                   rows={3}
                 />
               </div>
@@ -408,7 +409,7 @@ export function ModerationQueue() {
                   className="flex items-center gap-2"
                 >
                   <MessageSquare className="h-4 w-4" />
-                  Solicitar Alterações
+                  {t("requestChanges")}
                 </Button>
                 <Button
                   variant="destructive"
@@ -417,7 +418,7 @@ export function ModerationQueue() {
                   className="flex items-center gap-2"
                 >
                   <X className="h-4 w-4" />
-                  Rejeitar
+                  {t("reject")}
                 </Button>
                 <Button
                   onClick={() => handleAction("APPROVE")}
@@ -425,7 +426,7 @@ export function ModerationQueue() {
                   className="flex items-center gap-2"
                 >
                   <Check className="h-4 w-4" />
-                  {isProcessing ? "Processando..." : "Aprovar"}
+                  {isProcessing ? t("processing") : t("approve")}
                 </Button>
               </div>
             </div>

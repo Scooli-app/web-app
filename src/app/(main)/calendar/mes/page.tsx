@@ -15,7 +15,9 @@ import { useAppDispatch } from "@/store/hooks";
 import type { RootState } from "@/store/store";
 import { listLessons, type LessonSlot, type Timetable } from "@/services/api/timetable.service";
 import { ArrowLeft, ArrowRight, CalendarDays, Plus } from "lucide-react";
-import { toIso, addDays, getWeekStart as getIsoWeekStart, DAY_LABELS } from "@/shared/utils/calendar";
+import { toIso, addDays, getWeekStart as getIsoWeekStart, getDayLabels, toIntlLocale } from "@/shared/utils/calendar";
+import { useLocale, useTranslations } from "next-intl";
+import { isSupportedLocale, defaultLocale, type Locale } from "@/i18n/locales";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -27,8 +29,8 @@ function addMonths(d: Date, n: number): Date {
   return new Date(d.getFullYear(), d.getMonth() + n, 1);
 }
 
-function formatMonthHeader(d: Date): string {
-  const label = d.toLocaleDateString("pt-PT", { month: "long", year: "numeric" });
+function formatMonthHeader(d: Date, locale: Locale): string {
+  const label = d.toLocaleDateString(toIntlLocale(locale), { month: "long", year: "numeric" });
   // Capitalize only the first letter; don't use CSS capitalize (uppercases every word)
   return label.charAt(0).toUpperCase() + label.slice(1);
 }
@@ -44,6 +46,10 @@ interface DayInfo {
 }
 
 export default function CalendarMonthPage() {
+  const t = useTranslations("calendar");
+  const rawLocale = useLocale();
+  const locale = isSupportedLocale(rawLocale) ? rawLocale : defaultLocale;
+  const dayLabels = useMemo(() => getDayLabels(locale), [locale]);
   const { loaded: featuresLoaded, enabled } = useFeatureAccess(selectIsHorarioPlanosEnabled);
   const { timetables, isLoading: timetablesLoading } = useSelector(
     (state: RootState) => state.timetable,
@@ -151,8 +157,8 @@ export default function CalendarMonthPage() {
   if (!enabled)
     return (
       <FeatureUnavailable
-        title="As Turmas"
-        description="Cria o horário semanal de uma turma, gera a sequência de tópicos e os planos de aula. Disponível nos planos pagos."
+        title={t("shared.featureTitle")}
+        description={t("shared.featureDescription")}
       />
     );
 
@@ -162,7 +168,7 @@ export default function CalendarMonthPage() {
       <div className="sticky top-0 z-10 border-b bg-card/95 backdrop-blur px-4 pt-2.5 pb-2">
         <div className="mx-auto max-w-[1400px] space-y-2">
           <div className="flex items-center gap-2">
-            <h1 className="mr-2 text-lg font-semibold">Calendário</h1>
+            <h1 className="mr-2 text-lg font-semibold">{t("shared.pageTitle")}</h1>
 
             {/* View toggle */}
             <div className="flex items-center rounded-lg border border-border overflow-hidden">
@@ -170,15 +176,15 @@ export default function CalendarMonthPage() {
                 href={Routes.CALENDAR}
                 className="px-3 py-1 text-xs font-medium text-muted-foreground hover:bg-muted transition-colors"
               >
-                Semana
+                {t("shared.viewWeek")}
               </Link>
               <span className="px-3 py-1 text-xs font-medium bg-primary text-primary-foreground">
-                Mês
+                {t("shared.viewMonth")}
               </span>
             </div>
 
             <Button variant="outline" size="sm" onClick={() => setMonthStart(getMonthStart())} className="h-8">
-              Hoje
+              {t("shared.today")}
             </Button>
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setMonthStart((p) => addMonths(p, -1))}>
               <ArrowLeft className="h-4 w-4" />
@@ -187,7 +193,7 @@ export default function CalendarMonthPage() {
               <ArrowRight className="h-4 w-4" />
             </Button>
             <span className="min-w-[160px] text-sm font-medium">
-              {formatMonthHeader(monthStart)}
+              {formatMonthHeader(monthStart, locale)}
             </span>
 
             <div className="flex-1" />
@@ -195,13 +201,13 @@ export default function CalendarMonthPage() {
             <Button variant="outline" size="sm" asChild className="h-8">
               <Link href={Routes.CALENDAR_SEQUENCES}>
                 <CalendarDays className="mr-1 h-3.5 w-3.5" />
-                Turmas
+                {t("shared.classesLink")}
               </Link>
             </Button>
             <Button variant="outline" size="sm" asChild className="h-8">
               <Link href={Routes.CALENDAR_NEW}>
                 <Plus className="mr-1 h-3.5 w-3.5" />
-                Nova turma
+                {t("shared.newClassLink")}
               </Link>
             </Button>
           </div>
@@ -215,7 +221,7 @@ export default function CalendarMonthPage() {
           // Subsequent month navigation reuses the lighter per-day skeleton below instead.
           <div className="overflow-hidden rounded-lg border border-border">
             <div className="grid grid-cols-7 divide-x divide-border border-b bg-muted/20">
-              {["Seg","Ter","Qua","Qui","Sex","Sáb","Dom"].map((d) => (
+              {dayLabels.map((d) => (
                 <div key={d} className="py-2 text-center">
                   <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{d}</p>
                 </div>
@@ -243,14 +249,14 @@ export default function CalendarMonthPage() {
         ) : activeTimetables.length === 0 && !timetablesLoading ? (
           <div className="py-20 text-center">
             <CalendarDays className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-            <p className="text-lg font-medium">Nenhuma turma</p>
+            <p className="text-lg font-medium">{t("shared.emptyTitle")}</p>
             <p className="mt-1 text-sm text-muted-foreground">
-              Cria a tua primeira turma para começar a planificar.
+              {t("shared.emptyDescription")}
             </p>
             <Button asChild className="mt-5">
               <Link href={Routes.CALENDAR_NEW}>
                 <Plus className="mr-2 h-4 w-4" />
-                Criar turma
+                {t("shared.createClass")}
               </Link>
             </Button>
           </div>
@@ -258,7 +264,7 @@ export default function CalendarMonthPage() {
           <div className="overflow-hidden rounded-lg border border-border">
             {/* Day-of-week header */}
             <div className="grid grid-cols-7 divide-x divide-border border-b bg-muted/20">
-              {DAY_LABELS.map((label) => (
+              {dayLabels.map((label) => (
                 <div key={label} className="py-2 text-center">
                   <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                     {label}
@@ -331,19 +337,19 @@ export default function CalendarMonthPage() {
                             ))}
                           </div>
                           <p className="text-[11px] font-medium text-foreground">
-                            {lessonCount} aula{lessonCount !== 1 ? "s" : ""}
+                            {t("month.lessonsCount", { count: lessonCount })}
                           </p>
                           {(pendingCount > 0 || completedCount > 0) && (
                             <p className="text-[10px] text-muted-foreground">
                               {completedCount > 0 && (
                                 <span className="text-green-600 dark:text-green-400">
-                                  {completedCount} gerada{completedCount !== 1 ? "s" : ""}
+                                  {t("month.completedCount", { count: completedCount })}
                                 </span>
                               )}
                               {completedCount > 0 && pendingCount > 0 && " · "}
                               {pendingCount > 0 && (
                                 <span className="text-muted-foreground">
-                                  {pendingCount} pendente{pendingCount !== 1 ? "s" : ""}
+                                  {t("month.pendingCount", { count: pendingCount })}
                                 </span>
                               )}
                             </p>

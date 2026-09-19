@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { GenerationCostHint } from "@/components/ui/generation-cost-hint";
 import { cn } from "@/shared/utils/utils";
 import { Send } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useEffect, useRef, type ChangeEvent, type KeyboardEvent } from "react";
 
 interface ChatInputProps {
@@ -31,11 +32,13 @@ export function ChatInput({
   value,
   onChange,
   onSubmit,
-  placeholder = "Escreva uma mensagem...",
+  placeholder,
   disabled = false,
   showGenerationHint = false,
   className,
 }: ChatInputProps) {
+  const t = useTranslations("assistant.panel");
+  const resolvedPlaceholder = placeholder ?? t("inputPlaceholder");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Auto-resize textarea based on content
@@ -78,7 +81,7 @@ export function ChatInput({
         value={value}
         onChange={handleChange}
         onKeyDown={handleKeyDown}
-        placeholder={placeholder}
+        placeholder={resolvedPlaceholder}
         disabled={disabled}
         rows={1}
         className="flex-1 resize-none border-0 bg-transparent focus:outline-none focus:ring-0 px-3 py-2 text-sm min-h-10 max-h-32 placeholder:text-muted-foreground"

@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { useTranslations } from "next-intl";
 import { memo } from "react";
 
 interface RichTextEditorProps {
@@ -17,6 +18,7 @@ interface RichTextEditorProps {
 
 // Loading fallback
 function EditorSkeleton() {
+  const t = useTranslations("editor.richTextEditor");
   return (
     <div className="border border-border rounded-xl bg-card w-full">
       <div className="border-b border-border p-2 h-12 bg-muted animate-pulse rounded-t-xl flex justify-between items-center">
@@ -28,7 +30,7 @@ function EditorSkeleton() {
         <div className="w-24 h-8 bg-muted-foreground/10 rounded mr-2" />
       </div>
       <div className="flex min-h-[55dvh] items-center justify-center p-3 sm:min-h-[600px] sm:p-4">
-        <div className="text-muted-foreground">A carregar editor...</div>
+        <div className="text-muted-foreground">{t("loadingEditor")}</div>
       </div>
     </div>
   );

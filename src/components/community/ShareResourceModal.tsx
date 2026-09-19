@@ -13,6 +13,7 @@
 
 "use client";
 
+import { translateSubject } from "@/components/document-creation/constants";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -40,6 +41,7 @@ import {
 } from "@/services/api/community.service";
 import { cn } from "@/shared/utils/utils";
 import { ArrowLeft, Building2, Globe2, Share2, Sparkles } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useState } from "react";
 
 interface ShareResourceModalProps {
@@ -77,16 +79,21 @@ interface DestinationOption {
   iconClassName: string;
 }
 
-function getDestinationOptions(organizationName: string | null): DestinationOption[] {
+type ShareModalTranslate = (key: string, values?: Record<string, string | number>) => string;
+
+function getDestinationOptions(
+  organizationName: string | null,
+  t: ShareModalTranslate,
+): DestinationOption[] {
   const orgLabel = organizationName
-    ? `Biblioteca de ${organizationName}`
-    : "Biblioteca da escola";
+    ? t("orgLibraryLabel", { name: organizationName })
+    : t("schoolLibraryLabel");
 
   return [
     {
       value: "both",
-      title: "Todas",
-      hint: "Partilhar com a comunidade e com a escola ao mesmo tempo.",
+      title: t("destinationAll"),
+      hint: t("destinationAllHint"),
       icon: Sparkles,
       cardClassName:
         "border-primary/30 bg-primary/10 hover:border-primary/45 hover:bg-primary/14",
@@ -95,8 +102,8 @@ function getDestinationOptions(organizationName: string | null): DestinationOpti
     },
     {
       value: "community",
-      title: "Biblioteca comunitaria",
-      hint: "Visivel para todos os professores na Scooli apos revisao.",
+      title: t("destinationCommunity"),
+      hint: t("destinationCommunityHint"),
       icon: Globe2,
       cardClassName:
         "border-teal-500/30 bg-teal-500/10 hover:border-teal-500/45 hover:bg-teal-500/14",
@@ -106,7 +113,7 @@ function getDestinationOptions(organizationName: string | null): DestinationOpti
     {
       value: "organization",
       title: orgLabel,
-      hint: "So os colegas da escola vao ver este recurso.",
+      hint: t("destinationOrgHint"),
       icon: Building2,
       cardClassName:
         "border-amber-400/35 bg-amber-400/10 hover:border-amber-400/50 hover:bg-amber-400/14",
@@ -131,6 +138,9 @@ export function ShareResourceModal({
   organizationName = null,
   documentId,
 }: ShareResourceModalProps) {
+  const t = useTranslations("community.shareModal");
+  const tResourceTypes = useTranslations("community.resourceCard.resourceTypes");
+  const tFilters = useTranslations("community.filters");
   const defaultDestination: ShareDestination = allowOrganizationScope
     ? "both"
     : libraryScope;
@@ -150,8 +160,8 @@ export function ShareResourceModal({
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const destinationOptions = useMemo(
-    () => getDestinationOptions(organizationName),
-    [organizationName],
+    () => getDestinationOptions(organizationName, t),
+    [organizationName, t],
   );
 
   useEffect(() => {
@@ -190,19 +200,19 @@ export function ShareResourceModal({
     const newErrors: Record<string, string> = {};
 
     if (!formData.title.trim()) {
-      newErrors.title = "Titulo e obrigatorio";
+      newErrors.title = t("titleRequired");
     }
     if (!formData.grade) {
-      newErrors.grade = "Ano e obrigatorio";
+      newErrors.grade = t("gradeRequired");
     }
     if (!formData.subject) {
-      newErrors.subject = "Disciplina e obrigatoria";
+      newErrors.subject = t("subjectRequired");
     }
     if (!formData.resourceType) {
-      newErrors.resourceType = "Tipo de recurso e obrigatorio";
+      newErrors.resourceType = t("typeRequired");
     }
     if (!formData.content.trim()) {
-      newErrors.content = "Conteudo e obrigatorio";
+      newErrors.content = t("contentRequired");
     }
 
     setErrors(newErrors);
@@ -249,28 +259,28 @@ export function ShareResourceModal({
 
   const modalTitle = (() => {
     if (allowOrganizationScope && step === 1) {
-      return "Onde quer partilhar?";
+      return t("whereToShareTitle");
     }
     if (currentDestination === "organization") {
-      return `Partilhar com ${organizationName ?? "a escola"}`;
+      return t("shareWithOrgTitle", { name: organizationName ?? t("schoolFallback") });
     }
     if (currentDestination === "both") {
-      return "Partilhar em todas as bibliotecas";
+      return t("shareAllTitle");
     }
-    return "Partilhar com a Comunidade";
+    return t("shareCommunityTitle");
   })();
 
   const modalDescription = (() => {
     if (allowOrganizationScope && step === 1) {
-      return "Escolha o destino deste recurso. Pode partilhar com toda a comunidade, so com a escola, ou com ambas.";
+      return t("whereToShareDescription");
     }
     if (currentDestination === "organization") {
-      return `Este recurso ficara disponivel para os membros de ${organizationName ?? "a sua escola"}.`;
+      return t("shareWithOrgDescription", { name: organizationName ?? t("schoolFallbackPossessive") });
     }
     if (currentDestination === "both") {
-      return "O recurso sera publicado na biblioteca da escola e submetido para revisao na biblioteca comunitaria.";
+      return t("shareAllDescription");
     }
-    return "Partilhe o seu recurso educacional com outros professores portugueses. O recurso sera revisto antes da publicacao.";
+    return t("shareCommunityDescription");
   })();
 
   return (
@@ -338,7 +348,7 @@ export function ShareResourceModal({
 
             <div className="flex justify-end pt-2">
               <Button type="button" variant="ghost" onClick={handleClose} disabled={isLoading}>
-                Cancelar
+                {t("cancel")}
               </Button>
             </div>
           </div>
@@ -346,12 +356,12 @@ export function ShareResourceModal({
           <form onSubmit={handleSubmit} className="space-y-5 px-6 pb-6 pt-4 pr-14">
             <div className="space-y-1.5">
               <Label htmlFor="share-title">
-                Titulo <span className="text-destructive">*</span>
+                {t("titleLabel")} <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="share-title"
                 type="text"
-                placeholder="Ex: Revisao - Funcoes - 9 ano"
+                placeholder={t("titlePlaceholder")}
                 value={formData.title}
                 onChange={(e) =>
                   setFormData((prev) => ({ ...prev, title: e.target.value }))
@@ -365,14 +375,14 @@ export function ShareResourceModal({
 
             <div className="space-y-1.5">
               <Label htmlFor="share-description">
-                Descricao{" "}
+                {t("descriptionLabel")}{" "}
                 <span className="text-xs font-normal text-muted-foreground">
-                  (opcional)
+                  {t("optional")}
                 </span>
               </Label>
               <Textarea
                 id="share-description"
-                placeholder="Breve descricao do recurso e como pode ser usado..."
+                placeholder={t("descriptionPlaceholder")}
                 value={formData.description || ""}
                 onChange={(e) =>
                   setFormData((prev) => ({
@@ -387,7 +397,7 @@ export function ShareResourceModal({
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <div className="space-y-1.5">
                 <Label>
-                  Ano escolar <span className="text-destructive">*</span>
+                  {t("gradeLabel")} <span className="text-destructive">*</span>
                 </Label>
                 <Select
                   value={formData.grade || ""}
@@ -396,12 +406,12 @@ export function ShareResourceModal({
                   }
                 >
                   <SelectTrigger className={errors.grade ? "border-destructive" : ""}>
-                    <SelectValue placeholder="Selecionar ano" />
+                    <SelectValue placeholder={t("gradePlaceholder")} />
                   </SelectTrigger>
                   <SelectContent>
                     {GRADE_OPTIONS.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
-                        {option.label}
+                        {tFilters("gradeOption", { n: option.value })}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -413,7 +423,7 @@ export function ShareResourceModal({
 
               <div className="space-y-1.5">
                 <Label>
-                  Disciplina <span className="text-destructive">*</span>
+                  {t("subjectLabel")} <span className="text-destructive">*</span>
                 </Label>
                 <Select
                   value={formData.subject || ""}
@@ -422,12 +432,12 @@ export function ShareResourceModal({
                   }
                 >
                   <SelectTrigger className={errors.subject ? "border-destructive" : ""}>
-                    <SelectValue placeholder="Selecionar disciplina" />
+                    <SelectValue placeholder={t("subjectPlaceholder")} />
                   </SelectTrigger>
                   <SelectContent>
                     {SUBJECT_OPTIONS.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
-                        {option.label}
+                        {translateSubject(option.value)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -439,7 +449,7 @@ export function ShareResourceModal({
 
               <div className="space-y-1.5">
                 <Label>
-                  Tipo <span className="text-destructive">*</span>
+                  {t("typeLabel")} <span className="text-destructive">*</span>
                 </Label>
                 <Select
                   value={formData.resourceType || ""}
@@ -450,12 +460,12 @@ export function ShareResourceModal({
                   <SelectTrigger
                     className={errors.resourceType ? "border-destructive" : ""}
                   >
-                    <SelectValue placeholder="Selecionar tipo" />
+                    <SelectValue placeholder={t("typePlaceholder")} />
                   </SelectTrigger>
                   <SelectContent>
                     {RESOURCE_TYPE_OPTIONS.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
-                        {option.label}
+                        {tResourceTypes(`${option.value}`)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -469,29 +479,28 @@ export function ShareResourceModal({
             <div className="rounded-lg border border-border bg-muted/50 p-4 text-sm">
               <p className="mb-2 font-medium text-foreground">
                 {currentDestination === "organization"
-                  ? "Biblioteca da escola"
+                  ? t("orgLibraryHeading")
                   : currentDestination === "both"
-                    ? "Partilha combinada"
-                    : "Processo de revisao"}
+                    ? t("combinedShareHeading")
+                    : t("reviewProcessHeading")}
               </p>
               {currentDestination === "organization" ? (
                 <ul className="space-y-1 text-xs text-muted-foreground">
-                  <li>• O recurso fica disponivel imediatamente para a organizacao ativa</li>
-                  <li>• So membros da escola vao conseguir ver e reutilizar</li>
-                  <li>• Pode continuar a partilhar outro recurso na biblioteca comunitaria depois</li>
+                  {(t.raw("orgBullets") as string[]).map((bullet) => (
+                    <li key={bullet}>{bullet}</li>
+                  ))}
                 </ul>
               ) : currentDestination === "both" ? (
                 <ul className="space-y-1 text-xs text-muted-foreground">
-                  <li>• Fica disponivel imediatamente para os membros da escola</li>
-                  <li>• Na comunidade, sera revisto pela equipa Scooli em 24-48h antes de publicar</li>
-                  <li>• Recebe notificacao quando a versao publica for aprovada</li>
+                  {(t.raw("bothBullets") as string[]).map((bullet) => (
+                    <li key={bullet}>{bullet}</li>
+                  ))}
                 </ul>
               ) : (
                 <ul className="space-y-1 text-xs text-muted-foreground">
-                  <li>• O recurso sera revisto pela nossa equipa em 24-48 horas</li>
-                  <li>• Verificamos alinhamento com as AEs e qualidade pedagogica</li>
-                  <li>• Recebera notificacao quando for aprovado</li>
-                  <li>• Recursos aprovados podem ser reutilizados e adaptados por outros professores</li>
+                  {(t.raw("communityBullets") as string[]).map((bullet) => (
+                    <li key={bullet}>{bullet}</li>
+                  ))}
                 </ul>
               )}
             </div>
@@ -507,23 +516,23 @@ export function ShareResourceModal({
                     className="gap-2"
                   >
                     <ArrowLeft className="h-4 w-4" />
-                    Voltar
+                    {t("back")}
                   </Button>
                 )}
               </div>
 
               <div className="flex justify-end gap-3">
                 <Button type="button" variant="ghost" onClick={handleClose} disabled={isLoading}>
-                  Cancelar
+                  {t("cancel")}
                 </Button>
                 <Button type="submit" disabled={isLoading} className="min-w-32">
                   {isLoading
-                    ? "A partilhar..."
+                    ? t("submitting")
                     : currentDestination === "organization"
-                      ? "Partilhar na escola"
+                      ? t("submitOrg")
                       : currentDestination === "both"
-                        ? "Partilhar em todas"
-                        : "Partilhar recurso"}
+                        ? t("submitAll")
+                        : t("submitCommunity")}
                 </Button>
               </div>
             </div>

@@ -9,6 +9,7 @@ import type {
   DocumentType,
   TemplateSection,
 } from "@/shared/types";
+import { translate } from "@/i18n/translate";
 import apiClient from "./client";
 
 interface TemplateSectionResponse {
@@ -85,7 +86,7 @@ export async function getTemplates(
   });
 
   if (response.status !== 200) {
-    throw new Error(`Não foi possível carregar os modelos (HTTP ${response.status})`);
+    throw new Error(translate("errors.templates.loadFailed", { status: response.status }));
   }
 
   return response.data.map(mapResponseToTemplate);
@@ -119,7 +120,7 @@ export async function createTemplate(
   );
 
   if (response.status !== 200 && response.status !== 201) {
-    throw new Error(`Não foi possível criar o modelo (HTTP ${response.status})`);
+    throw new Error(translate("errors.templates.createFailed", { status: response.status }));
   }
 
   return mapResponseToTemplate(response.data);
@@ -156,7 +157,7 @@ export async function updateTemplate(
   );
 
   if (response.status !== 200) {
-    throw new Error(`Não foi possível atualizar o modelo (HTTP ${response.status})`);
+    throw new Error(translate("errors.templates.updateFailed", { status: response.status }));
   }
 
   return mapResponseToTemplate(response.data);
@@ -173,7 +174,7 @@ export async function setDefaultTemplate(
   );
 
   if (response.status !== 200) {
-    throw new Error(`Não foi possível definir o modelo padrão (HTTP ${response.status})`);
+    throw new Error(translate("errors.templates.setDefaultFailed", { status: response.status }));
   }
 
   return mapResponseToTemplate(response.data);
@@ -201,7 +202,7 @@ export async function createTemplateFromDocument(params: {
 
   if (response.status !== 200 && response.status !== 201) {
     throw new Error(
-      `Não foi possível criar o modelo a partir do documento (HTTP ${response.status})`
+      translate("errors.templates.createFromDocumentFailed", { status: response.status }),
     );
   }
 

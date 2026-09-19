@@ -16,8 +16,11 @@ import {
   LogOut,
   ShieldCheck,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
+
+type Translator = ReturnType<typeof useTranslations>;
 
 function normalizeEmail(email: string | null | undefined): string | null {
   if (!email) {
@@ -28,14 +31,15 @@ function normalizeEmail(email: string | null | undefined): string | null {
   return normalized || null;
 }
 
-function formatRoleLabel(role: string | null | undefined): string {
+function formatRoleLabel(role: string | null | undefined, t: Translator): string {
+  const memberLabel = t("roles.member");
   if (!role) {
-    return "membro";
+    return memberLabel;
   }
 
   const normalizedRole = role.trim().toLowerCase();
   if (!normalizedRole) {
-    return "membro";
+    return memberLabel;
   }
 
   const lastColonIndex = normalizedRole.lastIndexOf(":");
@@ -48,13 +52,15 @@ function formatRoleLabel(role: string | null | undefined): string {
     case "admin":
     case "school_admin":
     case "director":
-      return "administrador";
+      return t("roles.admin");
     default:
-      return "membro";
+      return memberLabel;
   }
 }
 
 function AcceptOrganizationInvitationFallback() {
+  const t = useTranslations("invitation");
+
   return (
     <AuthLayout>
       <div className="w-full max-w-xl rounded-3xl border border-border bg-card p-8 shadow-sm">
@@ -64,10 +70,10 @@ function AcceptOrganizationInvitationFallback() {
           </div>
           <div className="space-y-2">
             <h1 className="text-2xl font-semibold text-foreground">
-              A preparar o teu convite
+              {t("loading.title")}
             </h1>
             <p className="text-sm text-muted-foreground">
-              Estamos a carregar os detalhes do convite.
+              {t("loading.description")}
             </p>
           </div>
         </div>
@@ -82,6 +88,7 @@ function AcceptOrganizationInvitationContent() {
   const { isLoaded: isAuthLoaded, isSignedIn } = useAuth();
   const { isLoaded: isUserLoaded, user } = useUser();
   const { signOut } = useClerk();
+  const t = useTranslations("invitation");
   const {
     isLoaded: isOrganizationListLoaded,
     setActive,
@@ -100,9 +107,9 @@ function AcceptOrganizationInvitationContent() {
   const invitationId = searchParams.get("invitation_id");
   const organizationId = searchParams.get("organization_id");
   const organizationName =
-    searchParams.get("organization_name") ?? "a sua organizacao";
+    searchParams.get("organization_name") ?? t("fallbackOrganizationName");
   const invitedEmail = normalizeEmail(searchParams.get("email"));
-  const roleLabel = formatRoleLabel(searchParams.get("role"));
+  const roleLabel = formatRoleLabel(searchParams.get("role"), t);
   const currentSearch = searchParams.toString();
   const currentInvitationUrl = currentSearch
     ? `/accept-organization-invitation?${currentSearch}`
@@ -170,9 +177,7 @@ function AcceptOrganizationInvitationContent() {
 
     if (!matchingInvitation) {
       setIsAccepting(false);
-      setAcceptError(
-        "Nao encontramos um convite pendente para esta conta. Se ja aceitaste o convite, podes abrir o dashboard. Caso contrario, confirma que entraste com o email certo.",
-      );
+      setAcceptError(t("error.notFound"));
       return;
     }
 
@@ -196,11 +201,10 @@ function AcceptOrganizationInvitationContent() {
         console.error("Failed to accept organization invitation:", error);
         acceptAttemptedRef.current = false;
         setIsAccepting(false);
-        setAcceptError(
-          "Nao foi possivel aceitar o convite agora. Tenta novamente dentro de instantes.",
-        );
+        setAcceptError(t("error.acceptFailed"));
       }
     })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     hasAccepted,
     hasEmailMismatch,
@@ -225,10 +229,10 @@ function AcceptOrganizationInvitationContent() {
             </div>
             <div className="space-y-2">
               <h1 className="text-2xl font-semibold text-foreground">
-                A preparar o teu convite
+                {t("loading.title")}
               </h1>
               <p className="text-sm text-muted-foreground">
-                Estamos a confirmar o estado da tua conta.
+                {t("loading.confirmingAccount")}
               </p>
             </div>
           </div>
@@ -247,15 +251,14 @@ function AcceptOrganizationInvitationContent() {
             </div>
             <div className="space-y-2">
               <h1 className="text-2xl font-semibold text-foreground">
-                Convite invalido
+                {t("invalid.title")}
               </h1>
               <p className="text-sm text-muted-foreground">
-                Este link nao contem informacao suficiente para concluir o
-                convite.
+                {t("invalid.description")}
               </p>
             </div>
             <Button onClick={() => router.push("/sign-in")}>
-              Abrir autenticacao
+              {t("invalid.openAuthCta")}
             </Button>
           </div>
         </div>
@@ -276,25 +279,24 @@ function AcceptOrganizationInvitationContent() {
               <div className="space-y-3">
                 <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
                   <ShieldCheck className="h-3.5 w-3.5" />
-                  Convite de organizacao
+                  {t("signIn.badge")}
                 </div>
 
                 <h1 className="text-3xl font-semibold tracking-tight text-foreground">
-                  Entrar em {organizationName}
+                  {t("signIn.title", { organizationName })}
                 </h1>
 
                 <p className="text-sm leading-6 text-muted-foreground">
-                  Vais entrar como {roleLabel}. Depois de iniciares sessao ou
-                  criares conta, o convite sera aceite automaticamente.
+                  {t("signIn.description", { roleLabel })}
                 </p>
               </div>
 
               <div className="rounded-2xl border border-border/80 bg-muted/40 p-4">
                 <p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
-                  Email do convite
+                  {t("signIn.emailLabel")}
                 </p>
                 <p className="mt-2 text-sm font-medium text-foreground">
-                  {invitedEmail ?? "Usa o email com que recebeste o convite"}
+                  {invitedEmail ?? t("signIn.emailFallback")}
                 </p>
               </div>
             </div>
@@ -326,13 +328,16 @@ function AcceptOrganizationInvitationContent() {
 
             <div className="space-y-2">
               <h1 className="text-2xl font-semibold text-foreground">
-                Esta conta nao corresponde ao convite
+                {t("mismatch.title")}
               </h1>
               <p className="text-sm leading-6 text-muted-foreground">
-                O convite foi enviado para{" "}
-                <strong className="text-foreground">{invitedEmail}</strong>, mas
-                neste momento estas autenticado como{" "}
-                <strong className="text-foreground">{currentUserEmail}</strong>.
+                {t.rich("mismatch.description", {
+                  strong: (chunks) => (
+                    <strong className="text-foreground">{chunks}</strong>
+                  ),
+                  invitedEmail: invitedEmail ?? "",
+                  currentUserEmail: currentUserEmail ?? "",
+                })}
               </p>
             </div>
 
@@ -344,10 +349,10 @@ function AcceptOrganizationInvitationContent() {
                 }
               >
                 <LogOut className="h-4 w-4" />
-                Terminar sessao
+                {t("mismatch.signOut")}
               </Button>
               <Button onClick={() => router.push("/dashboard")}>
-                Ir para o dashboard
+                {t("mismatch.goToDashboard")}
               </Button>
             </div>
           </div>
@@ -367,7 +372,7 @@ function AcceptOrganizationInvitationContent() {
 
             <div className="space-y-2">
               <h1 className="text-2xl font-semibold text-foreground">
-                Nao foi possivel concluir o convite
+                {t("error.title")}
               </h1>
               <p className="text-sm leading-6 text-muted-foreground">
                 {acceptError}
@@ -376,7 +381,7 @@ function AcceptOrganizationInvitationContent() {
 
             <div className="flex flex-col justify-center gap-3 sm:flex-row">
               <Button onClick={() => router.push("/dashboard")}>
-                Abrir dashboard
+                {t("error.openDashboard")}
               </Button>
               <Button
                 variant="outline"
@@ -385,7 +390,7 @@ function AcceptOrganizationInvitationContent() {
                 }
               >
                 <LogOut className="h-4 w-4" />
-                Trocar de conta
+                {t("error.switchAccount")}
               </Button>
             </div>
           </div>
@@ -408,18 +413,18 @@ function AcceptOrganizationInvitationContent() {
 
           <div className="space-y-2">
             <h1 className="text-2xl font-semibold text-foreground">
-              {hasAccepted ? "Convite aceite" : "A aceitar o convite"}
+              {hasAccepted ? t("accepted.title") : t("accepting.title")}
             </h1>
             <p className="text-sm leading-6 text-muted-foreground">
               {hasAccepted
-                ? `Ja estas a entrar em ${organizationName}.`
-                : `Estamos a concluir o teu acesso a ${organizationName}.`}
+                ? t("accepted.description", { organizationName })
+                : t("accepting.description", { organizationName })}
             </p>
           </div>
 
           {isAccepting && !hasAccepted ? (
             <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
-              A sincronizar organizacao
+              {t("accepting.syncing")}
             </p>
           ) : null}
         </div>

@@ -10,6 +10,7 @@ import {
 import { Routes } from "@/shared/types";
 import { PROMO_PLAN_CODES } from "@/shared/utils/promo";
 import { ArrowRight, PartyPopper, Sparkles, Tag } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import posthog from "posthog-js";
 import { useEffect, useRef } from "react";
@@ -20,6 +21,7 @@ interface PromoOfferModalProps {
 }
 
 export function PromoOfferModal({ open, onOpenChange }: PromoOfferModalProps) {
+  const t = useTranslations("promo.offerModal");
   const router = useRouter();
   const convertingRef = useRef(false);
 
@@ -56,12 +58,11 @@ export function PromoOfferModal({ open, onOpenChange }: PromoOfferModalProps) {
           </div>
 
           <DialogTitle className="text-2xl font-bold text-foreground mb-1">
-            Regresso às Aulas 2026
+            {t("title")}
           </DialogTitle>
 
           <DialogDescription className="text-muted-foreground">
-            Scooli Pro por apenas 4,99€/mês se ativar durante a promoção - fica
-            com este preço para sempre.
+            {t("description")}
           </DialogDescription>
         </div>
 
@@ -72,10 +73,10 @@ export function PromoOfferModal({ open, onOpenChange }: PromoOfferModalProps) {
             </div>
             <div>
               <p className="font-semibold text-sm text-foreground">
-                Gerações ilimitadas
+                {t("unlimitedGenerations.title")}
               </p>
               <p className="text-xs text-muted-foreground">
-                Acesso a todas as funcionalidades Pro
+                {t("unlimitedGenerations.description")}
               </p>
             </div>
           </div>
@@ -86,10 +87,10 @@ export function PromoOfferModal({ open, onOpenChange }: PromoOfferModalProps) {
             </div>
             <div>
               <p className="font-semibold text-sm text-foreground">
-                Preço bloqueado para sempre
+                {t("lockedPrice.title")}
               </p>
               <p className="text-xs text-muted-foreground">
-                Sem aumentos depois da promoção terminar
+                {t("lockedPrice.description")}
               </p>
             </div>
           </div>
@@ -100,20 +101,20 @@ export function PromoOfferModal({ open, onOpenChange }: PromoOfferModalProps) {
             onClick={() => goToCheckout(PROMO_PLAN_CODES.monthly)}
             className="w-full h-12 rounded-xl font-bold shadow-md transition-all flex items-center justify-center gap-2 group"
           >
-            Ativar por 4,99€/mês
+            {t("activateCta")}
             <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
           </Button>
           <button
             onClick={() => goToCheckout(PROMO_PLAN_CODES.annual)}
             className="w-full mt-3 text-sm text-primary hover:text-primary/80 transition-colors py-1 font-medium"
           >
-            Prefiro o anual por 47,90€
+            {t("annualOption")}
           </button>
           <button
             onClick={() => handleDismiss(false)}
             className="w-full mt-1 text-sm text-muted-foreground hover:text-foreground transition-colors py-1"
           >
-            Talvez mais tarde
+            {t("maybeLater")}
           </button>
         </div>
       </DialogContent>

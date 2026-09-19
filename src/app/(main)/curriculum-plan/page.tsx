@@ -10,9 +10,17 @@ import { Routes, type Document } from "@/shared/types";
 import { getDocuments } from "@/services/api/document.service";
 import { CalendarDays, ChevronRight, Loader2, Sparkles, Upload } from "lucide-react";
 import { translateSubject } from "@/components/document-creation/constants";
+import { toIntlLocale } from "@/shared/utils/calendar";
+import { isSupportedLocale, defaultLocale } from "@/i18n/locales";
+import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 
 export default function CurriculumPlanLandingPage() {
+  const t = useTranslations("curriculumPlan.list");
+  const tShared = useTranslations("curriculumPlan.shared");
+  const tTimetable = useTranslations("timetable");
+  const rawLocale = useLocale();
+  const locale = isSupportedLocale(rawLocale) ? rawLocale : defaultLocale;
   const { loaded: featuresLoaded, enabled } = useFeatureAccess(selectIsCurriculumPlanEnabled);
   const [plans, setPlans] = useState<Document[]>([]);
   const [plansLoading, setPlansLoading] = useState(true);
@@ -30,8 +38,8 @@ export default function CurriculumPlanLandingPage() {
   if (!enabled)
     return (
       <FeatureUnavailable
-        title="As Planificações"
-        description="Gera planificações curriculares completas alinhadas com as Aprendizagens Essenciais. Disponível nos planos pagos."
+        title={tShared("featureTitle")}
+        description={tShared("featureDescription")}
       />
     );
 
@@ -41,11 +49,10 @@ export default function CurriculumPlanLandingPage() {
         <CalendarDays className="h-8 w-8 text-primary" />
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
-            Planificações
+            {t("header.title")}
           </h1>
           <p className="text-muted-foreground">
-            Cria ou importa uma planificação curricular para um período letivo
-            completo.
+            {t("header.subtitle")}
           </p>
         </div>
       </div>
@@ -55,17 +62,15 @@ export default function CurriculumPlanLandingPage() {
           <CardHeader>
             <div className="flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-primary" />
-              <CardTitle>Gerar com IA</CardTitle>
+              <CardTitle>{t("generateCard.title")}</CardTitle>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              A IA produz uma grelha estruturada em 7 secções, alinhada com as
-              Aprendizagens Essenciais e calibrada ao período escolhido
-              (anual / semestral / trimestral).
+              {t("generateCard.description")}
             </p>
             <Button asChild className="w-full">
-              <Link href={Routes.CURRICULUM_PLAN_NEW}>Começar</Link>
+              <Link href={Routes.CURRICULUM_PLAN_NEW}>{t("generateCard.cta")}</Link>
             </Button>
           </CardContent>
         </Card>
@@ -74,17 +79,15 @@ export default function CurriculumPlanLandingPage() {
           <CardHeader>
             <div className="flex items-center gap-2">
               <Upload className="h-5 w-5 text-primary" />
-              <CardTitle>Importar existente</CardTitle>
+              <CardTitle>{t("importCard.title")}</CardTitle>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Já tens uma planificação em DOCX, XLSX, PDF ou TXT? O Scooli
-              normaliza-a para o mesmo formato canónico, pronta a editar e
-              ligar a futuros planos de aula.
+              {t("importCard.description")}
             </p>
             <Button asChild variant="outline" className="w-full">
-              <Link href={Routes.CURRICULUM_PLAN_IMPORT}>Importar</Link>
+              <Link href={Routes.CURRICULUM_PLAN_IMPORT}>{t("importCard.cta")}</Link>
             </Button>
           </CardContent>
         </Card>
@@ -92,7 +95,7 @@ export default function CurriculumPlanLandingPage() {
 
       {/* Existing plans */}
       <div className="space-y-3">
-        <h2 className="text-base font-semibold">As tuas planificações</h2>
+        <h2 className="text-base font-semibold">{t("existingTitle")}</h2>
 
         {plansLoading ? (
           <div className="flex items-center justify-center py-10">
@@ -100,7 +103,7 @@ export default function CurriculumPlanLandingPage() {
           </div>
         ) : plans.length === 0 ? (
           <div className="rounded-lg border border-dashed border-border py-10 text-center text-sm text-muted-foreground">
-            Ainda não tens planificações. Cria ou importa a primeira acima.
+            {t("empty")}
           </div>
         ) : (
           <div className="space-y-2">
@@ -119,7 +122,7 @@ export default function CurriculumPlanLandingPage() {
                     <p className="text-xs text-muted-foreground">
                       {[
                         plan.subject ? translateSubject(plan.subject) : null,
-                        plan.gradeLevel ? `${plan.gradeLevel}.º ano` : null,
+                        plan.gradeLevel ? tTimetable("gradeYear", { grade: plan.gradeLevel }) : null,
                       ]
                         .filter(Boolean)
                         .join(" · ")}
@@ -127,7 +130,7 @@ export default function CurriculumPlanLandingPage() {
                   )}
                 </div>
                 <p className="shrink-0 text-xs text-muted-foreground">
-                  {new Date(plan.createdAt).toLocaleDateString("pt-PT", {
+                  {new Date(plan.createdAt).toLocaleDateString(toIntlLocale(locale), {
                     day: "numeric",
                     month: "short",
                     year: "numeric",

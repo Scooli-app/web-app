@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { userService } from "@/services/api/user.service";
 import { FileText, Loader2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -17,6 +18,8 @@ import { toast } from "sonner";
  * applies to every renewal from now on.
  */
 export function BillingNifCard() {
+  const t = useTranslations("billing.nifCard");
+  const tErrors = useTranslations("errors.billing");
   const [nif, setNif] = useState("");
   const [savedNif, setSavedNif] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -34,8 +37,7 @@ export function BillingNifCard() {
         setSavedNif(user.nif ?? "");
       })
       .catch(() => {
-        if (!cancelled)
-          toast.error("Não foi possível carregar os dados de faturação.");
+        if (!cancelled) toast.error(tErrors("nifLoadFailed"));
       })
       .finally(() => {
         if (!cancelled) setIsLoading(false);
@@ -44,6 +46,7 @@ export function BillingNifCard() {
     return () => {
       cancelled = true;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const trimmed = nif.trim();
@@ -58,15 +61,13 @@ export function BillingNifCard() {
       await userService.updateNif(trimmed === "" ? null : trimmed);
       setSavedNif(trimmed);
       toast.success(
-        trimmed === ""
-          ? "NIF removido. As próximas faturas saem como consumidor final."
-          : "NIF guardado. Será usado nas próximas faturas.",
+        trimmed === "" ? t("removedSuccess") : t("savedSuccess"),
       );
     } catch (e) {
       // The backend checks the control digit and returns the reason, so show
       // that rather than a generic failure — the person can still fix it.
       const message =
-        e instanceof Error ? e.message : "Não foi possível guardar o NIF.";
+        e instanceof Error ? e.message : tErrors("nifSaveFailed");
       setError(message);
       toast.error(message);
     } finally {
@@ -81,7 +82,7 @@ export function BillingNifCard() {
           <FileText className="w-5 h-5 text-primary" />
         </div>
         <h2 className="text-xl font-semibold text-foreground">
-          Dados de faturação
+          {t("title")}
         </h2>
       </div>
 
@@ -97,14 +98,14 @@ export function BillingNifCard() {
               htmlFor="nif"
               className="text-sm font-medium text-foreground block"
             >
-              NIF
+              {t("label")}
             </label>
             <Input
               id="nif"
               inputMode="numeric"
               autoComplete="off"
               maxLength={9}
-              placeholder="123456789"
+              placeholder={t("placeholder")}
               value={nif}
               aria-invalid={error !== null}
               aria-describedby="nif-hint"
@@ -129,10 +130,10 @@ export function BillingNifCard() {
           >
             {isSaving ? (
               <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />A guardar...
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />{t("saving")}
               </>
             ) : (
-              "Guardar"
+              t("save")
             )}
           </Button>
         </div>

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { TUTORIAL_TOTAL_STEPS, useTutorial } from "@/contexts/TutorialContext";
 import { cn } from "@/shared/utils/utils";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -17,11 +18,12 @@ type WatchMode =
 
 interface TutorialStep {
   selector: string;
-  title: string;
-  /** Action-oriented description shown in the tooltip */
-  description: string;
-  /** Short hint below the description ("Select an option to continue") */
-  hint: string;
+  /**
+   * Key under `tutorial.steps` in the message bundles. The title, description
+   * and hint are looked up from it at render time — this array is a
+   * module-level constant and cannot call `useTranslations` itself.
+   */
+  key: string;
   watchMode: WatchMode;
   /**
    * Returns true when the user has completed this step's required action.
@@ -38,29 +40,25 @@ interface TutorialStep {
 const STEPS: TutorialStep[] = [
   {
     selector: '[data-tutorial="grade"]',
-    title: "Ano de escolaridade",
-    description: "Clica no ano de escolaridade dos teus alunos.",
-    hint: "Seleciona um ano para avançar automaticamente",
+    key: "grade",
     watchMode: "mutation",
     isCompleted: (el) => !!el.querySelector('[aria-pressed="true"]'),
   },
   {
     selector: '[data-tutorial="subject"]',
-    title: "Disciplina",
-    description: "Abre o dropdown e escolhe a disciplina que ensinas.",
-    hint: "Seleciona uma disciplina para avançar automaticamente",
+    key: "subject",
     watchMode: "mutation",
     isCompleted: (el) => {
       const trigger = el.querySelector<HTMLElement>('[role="combobox"]');
       if (!trigger) return false;
-      return !(trigger.textContent ?? "").includes("Selecione");
+      // Radix sets `data-placeholder` on the trigger while no value is chosen.
+      // Matching the placeholder text instead would only work in Portuguese.
+      return !trigger.hasAttribute("data-placeholder");
     },
   },
   {
     selector: '[data-tutorial="topic"]',
-    title: "Tema da aula",
-    description: "Escreve o tema que queres ensinar. Ex: 'A fotossíntese' ou 'Frações'.",
-    hint: "Clica em Próximo quando estiveres pronto",
+    key: "topic",
     watchMode: "mutation",
     isCompleted: (el) =>
       (el.querySelector("input")?.value.trim().length ?? 0) >= 3,
@@ -68,19 +66,17 @@ const STEPS: TutorialStep[] = [
   },
   {
     selector: '[data-tutorial="template"]',
-    title: "Modelo do plano",
-    description: "Um modelo foi selecionado automaticamente. Podes clicar para explorar outros.",
-    hint: "Clica em Próximo para continuar",
+    key: "template",
     watchMode: "mutation",
     isCompleted: (el) =>
-      !!el.querySelector('[aria-label*="Modelo selecionado"]'),
+      // Set by TemplateSection; the button's aria-label is translated, so it
+      // cannot be used as a selector.
+      !!el.querySelector("[data-template-selected]"),
     manualAdvance: true,
   },
   {
     selector: '[data-tutorial="generate"]',
-    title: "Gerar o plano de aula! 🎉",
-    description: "Tudo pronto! Clica em 'Criar Plano de Aula' para gerar o teu primeiro plano de aula com IA.",
-    hint: "Clica no botão para criar o teu plano de aula",
+    key: "generate",
     watchMode: "click",
     isCompleted: () => false, // click handler drives this step
   },
@@ -115,6 +111,7 @@ interface HighlightRect {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function TutorialOverlay() {
+  const t = useTranslations("tutorial");
   const { isTutorialActive, currentStep, totalSteps, nextStep, exitTutorial } =
     useTutorial();
 
@@ -480,7 +477,7 @@ export function TutorialOverlay() {
               {currentStep + 1}
             </span>
             <span className="text-sm font-semibold text-foreground">
-              {stepDef.title}
+              {t(`steps.${stepDef.key}.title`)}
             </span>
           </div>
           <span className="shrink-0 text-xs text-muted-foreground">
@@ -490,19 +487,19 @@ export function TutorialOverlay() {
 
         {/* Description */}
         <p className="mb-2 text-sm leading-relaxed text-muted-foreground">
-          {stepDef.description}
+          {t(`steps.${stepDef.key}.description`)}
         </p>
 
         {/* Completion feedback OR action hint */}
         {stepCompleted ? (
           <div className="mb-3 flex items-center gap-1.5 text-sm font-medium text-emerald-500 animate-in fade-in-0 zoom-in-95 duration-200">
             <CheckCircle2 className="h-4 w-4" />
-            Ótimo! A avançar…
+            {t("completing")}
           </div>
         ) : (
           !showManualNext && (
             <p className="mb-3 text-xs italic text-muted-foreground/70">
-              {stepDef.hint}
+              {t(`steps.${stepDef.key}.hint`)}
             </p>
           )
         )}
@@ -514,7 +511,7 @@ export function TutorialOverlay() {
             onClick={() => exitTutorial("skipped")}
             className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
           >
-            Saltar tutorial
+            {t("skip")}
           </button>
 
           {showManualNext && !isLastStep && (
@@ -524,7 +521,7 @@ export function TutorialOverlay() {
               onClick={nextStep}
               className="rounded-xl px-4"
             >
-              Próximo
+              {t("next")}
               <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
             </Button>
           )}

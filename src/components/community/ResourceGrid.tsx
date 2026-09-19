@@ -8,6 +8,7 @@
 import { Button } from "@/components/ui/button";
 import type { SharedResource } from "@/services/api/community.service";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { ResourceCard } from "./ResourceCard";
 
 interface ResourceGridProps {
@@ -38,7 +39,8 @@ export function ResourceGrid({
   reusingResourceId,
   reusedResourceIds = []
 }: ResourceGridProps) {
-  
+  const t = useTranslations("community.resourceGrid");
+
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
@@ -66,9 +68,9 @@ export function ResourceGrid({
     return (
       <div className="flex flex-col items-center py-16 text-center">
         <div className="mb-4 text-5xl">📚</div>
-        <h3 className="mb-1 text-lg font-semibold text-foreground">Nenhum recurso encontrado</h3>
+        <h3 className="mb-1 text-lg font-semibold text-foreground">{t("emptyTitle")}</h3>
         <p className="max-w-sm text-sm text-muted-foreground">
-          Tente ajustar os filtros ou seja o primeiro a partilhar recursos desta categoria!
+          {t("emptyDescription")}
         </p>
       </div>
     );
@@ -94,9 +96,13 @@ export function ResourceGrid({
       {pagination.totalPages > 1 && (
         <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-center text-sm text-muted-foreground sm:text-left">
-            Mostrando <span className="font-medium text-foreground">{resources.length}</span> de <span className="font-medium text-foreground">{pagination.totalCount}</span> recursos
+            {t.rich("showingCount", {
+              shown: resources.length,
+              total: pagination.totalCount,
+              b: (chunks) => <span className="font-medium text-foreground">{chunks}</span>,
+            })}
           </p>
-          
+
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
@@ -105,20 +111,20 @@ export function ResourceGrid({
               disabled={pagination.page === 0}
             >
               <ChevronLeft className="w-4 h-4 mr-1" />
-              Anterior
+              {t("previous")}
             </Button>
-            
+
             <span className="text-sm text-muted-foreground px-2">
               {pagination.page + 1} / {pagination.totalPages}
             </span>
-            
+
             <Button
-              variant="outline" 
+              variant="outline"
               size="sm"
               onClick={() => onPageChange(pagination.page + 1)}
               disabled={pagination.page >= pagination.totalPages - 1}
             >
-              Próximo
+              {t("next")}
               <ChevronRight className="w-4 h-4 ml-1" />
             </Button>
           </div>

@@ -12,6 +12,7 @@ import { downloadDocument, type DownloadFormat } from "@/services/download/docum
 import { Routes } from "@/shared/types";
 import type { DocumentImage } from "@/shared/types/document";
 import { Crown, Download, FileText, Loader2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { memo, useCallback, useState } from "react";
 import posthog from "posthog-js";
@@ -31,6 +32,7 @@ function DownloadButtonComponent({
   isProUser = false,
   disabled,
 }: DownloadButtonProps) {
+  const t = useTranslations("editor.downloadButton");
   const router = useRouter();
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadFormat, setDownloadFormat] = useState<DownloadFormat | null>(null);
@@ -93,7 +95,7 @@ function DownloadButtonComponent({
             <Download className="h-4 w-4" />
           )}
           <span className="hidden sm:inline">
-            {isDownloading ? "A exportar…" : "Exportar"}
+            {isDownloading ? t("exporting") : t("export")}
           </span>
         </Button>
       </DropdownMenuTrigger>
@@ -109,7 +111,7 @@ function DownloadButtonComponent({
             <FileText className="h-4 w-4 text-red-500 dark:text-red-400" />
           )}
           <span className="whitespace-nowrap">
-            {downloadFormat === "pdf" ? "A gerar PDF…" : "Exportar como PDF"}
+            {downloadFormat === "pdf" ? t("generatingPdf") : t("exportPdf")}
           </span>
         </DropdownMenuItem>
         {isProUser ? (
@@ -124,7 +126,7 @@ function DownloadButtonComponent({
               <FileText className="h-4 w-4 text-blue-500 dark:text-blue-400" />
             )}
             <span className="whitespace-nowrap">
-              {downloadFormat === "docx" ? "A gerar Word…" : "Exportar como Word"}
+              {downloadFormat === "docx" ? t("generatingWord") : t("exportWord")}
             </span>
           </DropdownMenuItem>
         ) : (
@@ -134,7 +136,7 @@ function DownloadButtonComponent({
           >
             <span className="inline-flex items-center gap-2.5">
               <Crown className="h-4 w-4 text-amber-500 dark:text-amber-300" />
-              <span className="font-medium whitespace-nowrap">Exportar Word (Pro)</span>
+              <span className="font-medium whitespace-nowrap">{t("exportWordPro")}</span>
             </span>
             <span className="ml-auto rounded-full border border-amber-400/60 bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700 dark:border-amber-500/40 dark:bg-amber-900/40 dark:text-amber-200">
               Upgrade

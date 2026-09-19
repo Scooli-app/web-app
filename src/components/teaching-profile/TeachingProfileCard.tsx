@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input";
 import { teachingProfileService } from "@/services/api/teaching-profile.service";
 import {
   EMPTY_TEACHING_PROFILE,
-  INGESTION_STATUS_LABELS,
   type EducationType,
   type IngestionStatus,
   type Qualification,
@@ -17,6 +16,7 @@ import {
 } from "@/shared/types/teaching-profile";
 import { cn } from "@/shared/utils/utils";
 import { Check, GraduationCap, Loader2, Search, X } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -67,6 +67,7 @@ function groupUnits(units: VocationalUnit[]): Array<{ prefix: string; units: Voc
 }
 
 function StatusBadge({ status }: { status: IngestionStatus }) {
+  const t = useTranslations("settings.teachingProfileCard.status");
   const tone =
     status === "indexed"
       ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
@@ -78,12 +79,13 @@ function StatusBadge({ status }: { status: IngestionStatus }) {
       {status === "pending" || status === "running" ? (
         <Loader2 className="w-3 h-3 mr-1 animate-spin" />
       ) : null}
-      {INGESTION_STATUS_LABELS[status]}
+      {t(status)}
     </Badge>
   );
 }
 
 export function TeachingProfileCard() {
+  const t = useTranslations("settings.teachingProfileCard");
   const [profile, setProfile] = useState<TeachingProfile>(EMPTY_TEACHING_PROFILE);
   const [catalog, setCatalog] = useState<Qualification[]>([]);
   const [unitsByCourse, setUnitsByCourse] = useState<Record<string, VocationalUnit[]>>({});
@@ -101,7 +103,7 @@ export function TeachingProfileCard() {
         const loaded = await teachingProfileService.get();
         if (!cancelled) setProfile(loaded);
       } catch {
-        if (!cancelled) toast.error("Não foi possível carregar o teu perfil de ensino.");
+        if (!cancelled) toast.error(t("loadError"));
       } finally {
         if (!cancelled) setIsLoading(false);
       }
@@ -109,7 +111,7 @@ export function TeachingProfileCard() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [t]);
 
   // The level-4 catalogue is 161 courses: load it once and filter locally so
   // search responds without a round trip per keystroke.
@@ -131,7 +133,7 @@ export function TeachingProfileCard() {
           setCatalogError(
             error instanceof Error
               ? error.message
-              : "Não foi possível carregar o catálogo de cursos."
+              : t("catalogError")
           );
         }
       }
@@ -139,7 +141,7 @@ export function TeachingProfileCard() {
     return () => {
       cancelled = true;
     };
-  }, [isVocational, catalog.length, catalogError]);
+  }, [isVocational, catalog.length, catalogError, t]);
 
   const loadUnits = useCallback(
     async (code: string) => {
@@ -148,10 +150,10 @@ export function TeachingProfileCard() {
         const units = await teachingProfileService.getUnits(code);
         setUnitsByCourse((current) => ({ ...current, [code]: units }));
       } catch {
-        toast.error("Não foi possível obter as unidades deste curso.");
+        toast.error(t("unitsError"));
       }
     },
-    [unitsByCourse]
+    [unitsByCourse, t]
   );
 
   useEffect(() => {
@@ -224,9 +226,9 @@ export function TeachingProfileCard() {
     try {
       const saved = await teachingProfileService.save(profile);
       setProfile(saved);
-      toast.success("Perfil de ensino guardado.");
+      toast.success(t("saveSuccess"));
     } catch {
-      toast.error("Não foi possível guardar. Tenta novamente.");
+      toast.error(t("saveError"));
     } finally {
       setIsSaving(false);
     }
@@ -247,19 +249,18 @@ export function TeachingProfileCard() {
         <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center">
           <GraduationCap className="w-5 h-5 text-primary" />
         </div>
-        <h2 className="text-xl font-semibold text-foreground">O Meu Ensino</h2>
+        <h2 className="text-xl font-semibold text-foreground">{t("title")}</h2>
       </div>
 
       <p className="text-sm text-muted-foreground mb-5">
-        Define uma vez o que lecionas. A Scooli passa a usar o currículo certo
-        sem te voltar a perguntar em cada documento.
+        {t("subtitle")}
       </p>
 
-      <div className="flex gap-2 mb-6" role="group" aria-label="Tipo de ensino">
+      <div className="flex gap-2 mb-6" role="group" aria-label={t("typeGroupLabel")}>
         {(
           [
-            ["regular", "Ensino regular"],
-            ["vocational", "Ensino profissional"],
+            ["regular", t("regular")],
+            ["vocational", t("vocational")],
           ] as Array<[EducationType, string]>
         ).map(([value, label]) => (
           <button
@@ -284,8 +285,7 @@ export function TeachingProfileCard() {
 
       {!isVocational ? (
         <p className="text-sm text-muted-foreground">
-          No ensino regular continuas a escolher disciplina e ano em cada
-          documento.
+          {t("regularNote")}
         </p>
       ) : catalogError ? (
         <div className="p-4 bg-destructive/10 rounded-xl">
@@ -298,7 +298,7 @@ export function TeachingProfileCard() {
               htmlFor="course-search"
               className="text-sm font-medium text-foreground mb-2 block"
             >
-              Os teus cursos
+              {t("coursesLabel")}
             </label>
             <div className="relative">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -306,7 +306,7 @@ export function TeachingProfileCard() {
                 id="course-search"
                 value={term}
                 onChange={(event) => setTerm(event.target.value)}
-                placeholder="Procura por nome, código ou área — ex.: software, 481"
+                placeholder={t("coursesSearchPlaceholder")}
                 className="pl-9"
                 autoComplete="off"
               />
@@ -316,8 +316,7 @@ export function TeachingProfileCard() {
               <div className="mt-2 border border-border rounded-xl overflow-hidden">
                 {filtered.length === 0 ? (
                   <p className="p-3 text-sm text-muted-foreground">
-                    Nenhum curso encontrado. As escolas às vezes usam nomes
-                    diferentes do catálogo — procura por uma palavra só.
+                    {t("noCoursesFound")}
                   </p>
                 ) : (
                   filtered.map((qualification) => (
@@ -343,7 +342,7 @@ export function TeachingProfileCard() {
 
           {profile.courses.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              Ainda não escolheste nenhum curso.
+              {t("noCoursesYet")}
             </p>
           ) : (
             profile.courses.map((code) => {
@@ -367,7 +366,7 @@ export function TeachingProfileCard() {
                       <button
                         type="button"
                         onClick={() => removeCourse(code)}
-                        aria-label={`Remover ${titleFor(code)}`}
+                        aria-label={t("removeCourse", { course: titleFor(code) })}
                         className="text-muted-foreground hover:text-destructive p-1"
                       >
                         <X className="w-4 h-4" />
@@ -376,9 +375,7 @@ export function TeachingProfileCard() {
                   </div>
 
                   <p className="text-xs text-muted-foreground mb-2">
-                    Marca as unidades que lecionas. Na componente tecnológica o
-                    catálogo nacional não define disciplinas — são as escolas que
-                    agrupam estas unidades.
+                    {t("unitsInstruction")}
                   </p>
 
                   {!units ? (
@@ -426,7 +423,7 @@ export function TeachingProfileCard() {
             disabled={isSaving}
             className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground px-5 py-3 rounded-xl font-medium"
           >
-            {isSaving ? "A guardar…" : "Guardar"}
+            {isSaving ? t("saving") : t("save")}
           </Button>
         </div>
       )}

@@ -1,3 +1,9 @@
+import {
+  DEFAULT_CONTENT_LANGUAGE_PREFERENCE,
+  DEFAULT_INTERFACE_LOCALE_PREFERENCE,
+  type ContentLanguagePreference,
+  type InterfaceLocalePreference,
+} from "@/i18n/preferences";
 import type { UIState } from "@/shared/types";
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
@@ -5,6 +11,18 @@ export type ThemeMode = "light" | "dark" | "system";
 
 interface UIStoreState extends UIState {
   theme: ThemeMode;
+  /**
+   * UI language. Mirrors `theme`: a three-state preference whose third state
+   * ("system") defers to the browser rather than naming a language. Persisted as
+   * the user's nullable `preferred_locale`, where null means exactly that.
+   */
+  interfaceLocale: InterfaceLocalePreference;
+  /**
+   * Language of AI-generated documents. Independent of `interfaceLocale` — a
+   * Portuguese teacher of English wants a Portuguese UI and English worksheets —
+   * with "interface" (persisted as null) meaning "follow the UI language".
+   */
+  contentLanguage: ContentLanguagePreference;
   sidebarCollapsed: boolean;
   sidebarOpen: boolean;
   loading: boolean;
@@ -23,6 +41,8 @@ interface UIStoreState extends UIState {
 
 const initialState: UIStoreState = {
   theme: "system",
+  interfaceLocale: DEFAULT_INTERFACE_LOCALE_PREFERENCE,
+  contentLanguage: DEFAULT_CONTENT_LANGUAGE_PREFERENCE,
   sidebarCollapsed: false,
   sidebarOpen: false,
   loading: false,
@@ -75,11 +95,19 @@ const uiSlice = createSlice({
     setTheme(state, action: PayloadAction<ThemeMode>) {
       state.theme = action.payload;
     },
+    setInterfaceLocale(state, action: PayloadAction<InterfaceLocalePreference>) {
+      state.interfaceLocale = action.payload;
+    },
+    setContentLanguage(state, action: PayloadAction<ContentLanguagePreference>) {
+      state.contentLanguage = action.payload;
+    },
   },
 });
 
 export const {
   setTheme,
+  setInterfaceLocale,
+  setContentLanguage,
   setUpgradeModalOpen,
   setPromoModalOpen,
   setOnboardingModalOpen,

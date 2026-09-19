@@ -30,13 +30,6 @@ export const TRAINING_COMPONENT_LABELS: Record<TrainingComponent, string> = {
   technological: "Tecnológica",
 };
 
-export const INGESTION_STATUS_LABELS: Record<IngestionStatus, string> = {
-  pending: "Em fila",
-  running: "A preparar",
-  indexed: "Pronto",
-  failed: "Falhou",
-};
-
 export interface Qualification {
   code: string;
   versionId: number | null;

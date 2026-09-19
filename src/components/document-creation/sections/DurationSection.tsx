@@ -2,6 +2,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/shared/utils/utils";
 import { Check, Clock, Pencil, X } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useRef, useState } from "react";
 import { LESSON_TIMES } from "../constants";
 import type { FormUpdateFn } from "../types";
@@ -19,6 +20,7 @@ export function DurationSection({
   onUpdate,
   className,
 }: DurationSectionProps) {
+  const t = useTranslations("documentCreation.duration");
   const [isEditingCustomTime, setIsEditingCustomTime] = useState(false);
   const customTimeInputRef = useRef<HTMLInputElement>(null);
 
@@ -69,9 +71,9 @@ export function DurationSection({
             <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
           </div>
           <h2 className="text-base sm:text-lg font-semibold text-foreground">
-            Duração da Aula{" "}
+            {t("title")}{" "}
             <span className="text-xs sm:text-sm font-normal text-muted-foreground">
-              (Opcional)
+              {t("optional")}
             </span>
           </h2>
         </div>
@@ -89,7 +91,7 @@ export function DurationSection({
                   : "bg-card text-foreground border-border hover:border-primary hover:bg-accent"
               )}
               aria-pressed={lessonTime === time.value}
-              aria-label={`Selecionar ${time.label}`}
+              aria-label={t("selectAriaLabel", { label: time.label })}
             >
               <span>⏱️</span>
               <span>{time.label}</span>
@@ -101,7 +103,7 @@ export function DurationSection({
               type="button"
               onClick={handleCustomTimeClick}
               className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium transition-all border bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] group"
-              aria-label={`Duração: ${lessonTime} min`}
+              aria-label={t("currentAriaLabel", { minutes: lessonTime })}
             >
               <span>⏱️</span>
               <span>{lessonTime} min</span>
@@ -126,7 +128,7 @@ export function DurationSection({
                   }}
                   placeholder="75"
                   className="h-9 w-16 sm:w-20 px-2 sm:px-3 py-2 text-sm bg-muted border-primary rounded-xl placeholder:text-muted-foreground"
-                  aria-label="Duração personalizada"
+                  aria-label={t("customAriaLabel")}
                   autoFocus
                 />
                 <span className="ml-1.5 sm:ml-2 text-xs sm:text-sm text-muted-foreground">
@@ -138,7 +140,7 @@ export function DurationSection({
                 onMouseDown={(e) => e.preventDefault()} // Prevent blur from firing before click
                 onClick={handleCancelCustomTime}
                 className="p-1.5 sm:p-2 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                aria-label="Cancelar"
+                aria-label={t("cancelAriaLabel")}
               >
                 <X className="w-4 h-4" />
               </button>
@@ -148,7 +150,7 @@ export function DurationSection({
                 onMouseDown={(e) => e.preventDefault()} // Prevent blur
                 onClick={handleConfirmCustomTime}
                 className="p-1.5 sm:p-2 rounded-lg text-muted-foreground hover:text-primary hover:bg-accent transition-colors"
-                aria-label="Confirmar"
+                aria-label={t("confirmAriaLabel")}
               >
                 <Check className="w-4 h-4" />
               </button>
@@ -166,10 +168,10 @@ export function DurationSection({
                 "border hover:scale-[1.02] active:scale-[0.98]",
                 "bg-card text-foreground border-border hover:border-primary hover:bg-accent"
               )}
-              aria-label="Selecionar outra duração"
+              aria-label={t("otherAriaLabel")}
             >
               <span>⏱️</span>
-              <span>Outro</span>
+              <span>{t("other")}</span>
             </button>
           )}
         </div>

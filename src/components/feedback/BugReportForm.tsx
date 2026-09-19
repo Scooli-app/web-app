@@ -6,8 +6,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { feedbackService } from "@/services/api/feedback.service";
 import { BugSeverity, FeedbackType } from "@/shared/types/feedback";
 import { FileText, Loader2, Upload, X } from "lucide-react";
+import { useTranslations } from "next-intl";
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import posthog from "posthog-js";
 
@@ -17,6 +18,7 @@ interface BugReportFormProps {
 }
 
 export function BugReportForm({ onSuccess, onCancel }: BugReportFormProps) {
+  const t = useTranslations("feedback.bugReport");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [title, setTitle] = useState("");
   const [bugType, setBugType] = useState("");
@@ -35,15 +37,15 @@ export function BugReportForm({ onSuccess, onCancel }: BugReportFormProps) {
     }
   };
 
-  const addFiles = (newFiles: File[]) => {
+  const addFiles = useCallback((newFiles: File[]) => {
     // Validate files (images only, < 5MB)
     const validFiles = newFiles.filter((file) => {
       if (!file.type.startsWith("image/")) {
-        toast.error(`${file.name} não é uma imagem válida.`);
+        toast.error(t("invalidImage", { name: file.name }));
         return false;
       }
       if (file.size > 5 * 1024 * 1024) {
-        toast.error(`${file.name} excede o limite de 5MB.`);
+        toast.error(t("tooLarge", { name: file.name }));
         return false;
       }
       return true;
@@ -54,7 +56,7 @@ export function BugReportForm({ onSuccess, onCancel }: BugReportFormProps) {
     // Create previews
     const newPreviews = validFiles.map((file) => URL.createObjectURL(file));
     setPreviews((prev) => [...prev, ...newPreviews]);
-  };
+  }, [t]);
 
   const removeFile = (index: number) => {
     setFiles((prev) => prev.filter((_, i) => i !== index));
@@ -76,7 +78,7 @@ export function BugReportForm({ onSuccess, onCancel }: BugReportFormProps) {
 
     window.addEventListener("paste", handlePaste);
     return () => window.removeEventListener("paste", handlePaste);
-  }, []);
+  }, [addFiles]);
 
   // Handle drag and drop
   const handleDragOver = (e: React.DragEvent) => {
@@ -117,7 +119,7 @@ export function BugReportForm({ onSuccess, onCancel }: BugReportFormProps) {
           });
         } catch (error) {
           console.error("Failed to upload file:", file.name, error);
-          toast.error(`Falha ao enviar o ficheiro ${file.name}`);
+          toast.error(t("uploadFailed", { name: file.name }));
         }
       }
 
@@ -133,7 +135,7 @@ export function BugReportForm({ onSuccess, onCancel }: BugReportFormProps) {
       });
 
       posthog.capture("feedback_bug_report_submitted", { bug_type: bugType, severity });
-      toast.success("Erro reportado com sucesso!");
+      toast.success(t("submitSuccess"));
       onSuccess();
     } catch (error) {
       if (uploadedFilePaths.length > 0) {
@@ -145,7 +147,7 @@ export function BugReportForm({ onSuccess, onCancel }: BugReportFormProps) {
       }
       posthog.captureException(error);
       console.error("Failed to report bug:", error);
-      toast.error("Ocorreu um erro ao reportar o erro.");
+      toast.error(t("submitError"));
     } finally {
       setIsSubmitting(false);
     }
@@ -156,35 +158,35 @@ export function BugReportForm({ onSuccess, onCancel }: BugReportFormProps) {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="bugType">
-            Tipo de erro <span className="text-red-500">*</span>
+            {t("bugTypeLabel")} <span className="text-red-500">*</span>
           </Label>
           <Select value={bugType} onValueChange={setBugType}>
             <SelectTrigger className="border-white/10 bg-muted/50">
-              <SelectValue placeholder="Selecione..." />
+              <SelectValue placeholder={t("selectPlaceholder")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="UI/Visual">UI / Visual</SelectItem>
-              <SelectItem value="Desempenho">Desempenho</SelectItem>
-              <SelectItem value="Funcionalidade">Funcionalidade</SelectItem>
-              <SelectItem value="Autenticação">Autenticação</SelectItem>
-              <SelectItem value="Outro">Outro</SelectItem>
+              <SelectItem value="UI/Visual">{t("bugTypeUiVisual")}</SelectItem>
+              <SelectItem value="Desempenho">{t("bugTypePerformance")}</SelectItem>
+              <SelectItem value="Funcionalidade">{t("bugTypeFunctionality")}</SelectItem>
+              <SelectItem value="Autenticação">{t("bugTypeAuth")}</SelectItem>
+              <SelectItem value="Outro">{t("bugTypeOther")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
-        
+
         <div className="space-y-2">
           <Label htmlFor="severity">
-            Gravidade <span className="text-red-500">*</span>
+            {t("severityLabel")} <span className="text-red-500">*</span>
           </Label>
           <Select value={severity} onValueChange={(val) => setSeverity(val as BugSeverity)}>
             <SelectTrigger className="border-white/10 bg-muted/50">
-              <SelectValue placeholder="Selecione..." />
+              <SelectValue placeholder={t("selectPlaceholder")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value={BugSeverity.LOW}>Baixa</SelectItem>
-              <SelectItem value={BugSeverity.MEDIUM}>Média</SelectItem>
-              <SelectItem value={BugSeverity.HIGH}>Alta</SelectItem>
-              <SelectItem value={BugSeverity.CRITICAL}>Crítica</SelectItem>
+              <SelectItem value={BugSeverity.LOW}>{t("severityLow")}</SelectItem>
+              <SelectItem value={BugSeverity.MEDIUM}>{t("severityMedium")}</SelectItem>
+              <SelectItem value={BugSeverity.HIGH}>{t("severityHigh")}</SelectItem>
+              <SelectItem value={BugSeverity.CRITICAL}>{t("severityCritical")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -192,11 +194,11 @@ export function BugReportForm({ onSuccess, onCancel }: BugReportFormProps) {
 
       <div className="space-y-2">
         <Label htmlFor="title">
-          Título do erro <span className="text-red-500">*</span>
+          {t("titleLabel")} <span className="text-red-500">*</span>
         </Label>
         <Input
           id="title"
-          placeholder="Ex: Botão de login não funciona"
+          placeholder={t("titlePlaceholder")}
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           className="border-white/10 bg-muted/50"
@@ -205,11 +207,11 @@ export function BugReportForm({ onSuccess, onCancel }: BugReportFormProps) {
 
       <div className="space-y-2">
         <Label htmlFor="description">
-          O que aconteceu? <span className="text-red-500">*</span>
+          {t("descriptionLabel")} <span className="text-red-500">*</span>
         </Label>
         <Textarea
           id="description"
-          placeholder="Descreva o erro em detalhe..."
+          placeholder={t("descriptionPlaceholder")}
           className="min-h-[100px] border-white/10 bg-muted/50"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
@@ -217,10 +219,10 @@ export function BugReportForm({ onSuccess, onCancel }: BugReportFormProps) {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="reproductionSteps">Passo a passo para reproduzir (Opcional)</Label>
+        <Label htmlFor="reproductionSteps">{t("stepsLabel")}</Label>
         <Textarea
           id="reproductionSteps"
-          placeholder="1. Aceder à página X&#10;2. Clicar no botão Y..."
+          placeholder={t("stepsPlaceholder")}
           className="min-h-[80px] border-white/10 bg-muted/50"
           value={reproductionSteps}
           onChange={(e) => setReproductionSteps(e.target.value)}
@@ -228,7 +230,7 @@ export function BugReportForm({ onSuccess, onCancel }: BugReportFormProps) {
       </div>
 
       <div className="space-y-2">
-        <Label>Anexos (capturas de ecrã)</Label>
+        <Label>{t("attachmentsLabel")}</Label>
         <div
           className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-muted/50 transition-colors"
           onDragOver={handleDragOver}
@@ -237,10 +239,10 @@ export function BugReportForm({ onSuccess, onCancel }: BugReportFormProps) {
         >
           <Upload className="h-8 w-8 text-muted-foreground mb-2" />
           <p className="text-sm text-muted-foreground">
-            Arraste capturas de ecrã ou clique para selecionar.
+            {t("dropHint")}
           </p>
           <p className="text-xs text-muted-foreground mt-1">
-            Também pode colar imagens (Ctrl+V).
+            {t("pasteHint")}
           </p>
           <input
             ref={fileInputRef}
@@ -289,14 +291,14 @@ export function BugReportForm({ onSuccess, onCancel }: BugReportFormProps) {
       </div>
 
       <div className="flex flex-col gap-4 pt-2">
-        <p className="text-xs text-muted-foreground">* Campos obrigatórios</p>
+        <p className="text-xs text-muted-foreground">{t("requiredFieldsNote")}</p>
         <div className="flex justify-end gap-2">
           <Button type="button" variant="outline" onClick={onCancel}>
-            Cancelar
+            {t("cancel")}
           </Button>
           <Button type="submit" disabled={isSubmitting || !isValid}>
             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Reportar Erro
+            {t("submit")}
           </Button>
         </div>
       </div>

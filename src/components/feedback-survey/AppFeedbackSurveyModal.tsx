@@ -26,6 +26,7 @@ import {
   Sparkles,
   ThumbsUp,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useState } from "react";
 
 interface AppFeedbackSurveyModalProps {
@@ -37,8 +38,8 @@ interface AppFeedbackSurveyModalProps {
 
 type SentimentOption = {
   value: FeedbackSurveySentiment;
-  label: string;
-  hint: string;
+  labelKey: string;
+  hintKey: string;
   icon: typeof HeartHandshake;
   cardClassName: string;
   iconClassName: string;
@@ -46,14 +47,14 @@ type SentimentOption = {
 
 type TagOption = {
   value: FeedbackSurveyTag;
-  label: string;
+  labelKey: string;
 };
 
 const sentimentOptions: SentimentOption[] = [
   {
     value: FeedbackSurveySentiment.VERY_USEFUL,
-    label: "Muito útil",
-    hint: "Está mesmo a ajudar-me no dia a dia.",
+    labelKey: "sentimentVeryUseful",
+    hintKey: "sentimentVeryUsefulHint",
     icon: HeartHandshake,
     cardClassName:
       "border-emerald-500/30 bg-emerald-500/12 hover:border-emerald-500/45 hover:bg-emerald-500/18",
@@ -62,8 +63,8 @@ const sentimentOptions: SentimentOption[] = [
   },
   {
     value: FeedbackSurveySentiment.USEFUL_BUT_CAN_IMPROVE,
-    label: "Útil, mas pode melhorar",
-    hint: "Já traz valor, mas ainda há margem para evoluir.",
+    labelKey: "sentimentUsefulCanImprove",
+    hintKey: "sentimentUsefulCanImproveHint",
     icon: ThumbsUp,
     cardClassName:
       "border-lime-400/26 bg-lime-400/8 hover:border-lime-400/40 hover:bg-lime-400/12",
@@ -72,8 +73,8 @@ const sentimentOptions: SentimentOption[] = [
   },
   {
     value: FeedbackSurveySentiment.NOT_SURE_YET,
-    label: "Ainda não percebi bem",
-    hint: "Ainda estou a tentar encaixar a Scooli no meu fluxo.",
+    labelKey: "sentimentNotSure",
+    hintKey: "sentimentNotSureHint",
     icon: Lightbulb,
     cardClassName:
       "border-amber-400/25 bg-amber-400/10 hover:border-amber-400/40 hover:bg-amber-400/14",
@@ -82,8 +83,8 @@ const sentimentOptions: SentimentOption[] = [
   },
   {
     value: FeedbackSurveySentiment.FRUSTRATING,
-    label: "Está a ser frustrante",
-    hint: "Há obstáculos a impedir-me de aproveitar a plataforma.",
+    labelKey: "sentimentFrustrating",
+    hintKey: "sentimentFrustratingHint",
     icon: Frown,
     cardClassName:
       "border-red-500/25 bg-red-500/10 hover:border-red-500/40 hover:bg-red-500/14",
@@ -93,25 +94,25 @@ const sentimentOptions: SentimentOption[] = [
 ];
 
 const positiveTagOptions: TagOption[] = [
-  { value: "saves_time", label: "Poupa-me tempo" },
-  { value: "good_content_quality", label: "Os conteúdos são bons" },
-  { value: "easy_to_use", label: "É simples de usar" },
-  { value: "easy_to_edit", label: "Consigo editar facilmente" },
+  { value: "saves_time", labelKey: "tagSavesTime" },
+  { value: "good_content_quality", labelKey: "tagGoodContentQuality" },
+  { value: "easy_to_use", labelKey: "tagEasyToUse" },
+  { value: "easy_to_edit", labelKey: "tagEasyToEdit" },
   {
     value: "has_needed_document_types",
-    label: "Tem os tipos de documento que preciso",
+    labelKey: "tagHasNeededDocTypes",
   },
 ];
 
 const improvementTagOptions: TagOption[] = [
   {
     value: "quality_not_good_enough",
-    label: "Os resultados ainda não têm qualidade suficiente",
+    labelKey: "tagQualityNotEnough",
   },
-  { value: "platform_confusing", label: "A plataforma é confusa" },
-  { value: "too_slow", label: "Está lenta" },
-  { value: "found_bugs", label: "Encontrei erros" },
-  { value: "missing_features", label: "Faltam funcionalidades" },
+  { value: "platform_confusing", labelKey: "tagPlatformConfusing" },
+  { value: "too_slow", labelKey: "tagTooSlow" },
+  { value: "found_bugs", labelKey: "tagFoundBugs" },
+  { value: "missing_features", labelKey: "tagMissingFeatures" },
 ];
 
 export function AppFeedbackSurveyModal({
@@ -120,6 +121,7 @@ export function AppFeedbackSurveyModal({
   onMaybeLater,
   onSubmit,
 }: AppFeedbackSurveyModalProps) {
+  const t = useTranslations("feedback.survey");
   const [step, setStep] = useState<1 | 2>(1);
   const [sentiment, setSentiment] = useState<FeedbackSurveySentiment | null>(
     null,
@@ -207,12 +209,12 @@ export function AppFeedbackSurveyModal({
                 className="rounded-xl border-border bg-background"
               >
                 <ArrowLeft className="h-4 w-4" />
-                Voltar
+                {t("back")}
               </Button>
             ) : (
               <div className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                 <Clock3 className="h-3.5 w-3.5" />
-                Leva menos de 20 segundos
+                {t("quickBadge")}
               </div>
             )}
             <div className="text-sm font-semibold text-muted-foreground">
@@ -245,18 +247,18 @@ export function AppFeedbackSurveyModal({
 
             <DialogTitle className="text-2xl font-semibold tracking-tight text-foreground">
               {step === 1
-                ? "Como tem sido a tua experiência com a Scooli?"
+                ? t("step1Title")
                 : isPositivePath
-                  ? "O que mais te tem ajudado?"
-                  : "O que mais te está a bloquear?"}
+                  ? t("step2TitlePositive")
+                  : t("step2TitleImprovement")}
             </DialogTitle>
 
             <DialogDescription className="max-w-lg text-sm leading-6 text-muted-foreground">
               {step === 1
-                ? "A tua resposta ajuda-nos a perceber rapidamente o que está a funcionar e o que precisa de atenção."
+                ? t("step1Description")
                 : isPositivePath
-                  ? "Escolhe até 2 opções. Queremos perceber o que já está a gerar valor real."
-                  : "Escolhe até 2 opções. Queremos ir direto aos maiores pontos de fricção."}
+                  ? t("step2DescriptionPositive")
+                  : t("step2DescriptionImprovement")}
             </DialogDescription>
           </div>
         </div>
@@ -286,9 +288,11 @@ export function AppFeedbackSurveyModal({
                       <Icon className="h-5 w-5" />
                     </div>
                     <div className="min-w-0">
-                      <div className="text-base font-semibold">{option.label}</div>
+                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                      <div className="text-base font-semibold">{t(option.labelKey as any)}</div>
                       <div className="mt-1 text-sm leading-5 text-muted-foreground">
-                        {option.hint}
+                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                        {t(option.hintKey as any)}
                       </div>
                     </div>
                   </button>
@@ -299,10 +303,10 @@ export function AppFeedbackSurveyModal({
             <div className="space-y-5">
               <div className="flex flex-wrap gap-2 text-xs font-medium text-muted-foreground">
                 <span className="rounded-full border border-border bg-muted/70 px-3 py-1">
-                  Selecionadas: {selectedTags.length}/2
+                  {t("selectedCount", { count: selectedTags.length })}
                 </span>
                 <span className="rounded-full border border-border bg-muted/70 px-3 py-1">
-                  Resposta rápida
+                  {t("quickAnswer")}
                 </span>
               </div>
 
@@ -325,7 +329,8 @@ export function AppFeedbackSurveyModal({
                           : "border-border bg-muted/60 text-foreground hover:border-primary/20 hover:bg-accent/70",
                       )}
                     >
-                      {option.label}
+                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                      {t(option.labelKey as any)}
                     </button>
                   );
                 })}
@@ -336,13 +341,13 @@ export function AppFeedbackSurveyModal({
                   htmlFor="feedback-survey-comment"
                   className="text-sm font-medium text-foreground"
                 >
-                  Se quiser, diga-nos numa frase o que faria mais diferença.
+                  {t("commentLabel")}
                 </label>
                 <Textarea
                   id="feedback-survey-comment"
                   value={comment}
                   onChange={(event) => setComment(event.target.value)}
-                  placeholder="Opcional"
+                  placeholder={t("commentPlaceholder")}
                   className="min-h-[110px] rounded-2xl border-border bg-muted/50 px-4 py-3 text-foreground placeholder:text-muted-foreground"
                   disabled={isBusy}
                 />
@@ -359,7 +364,7 @@ export function AppFeedbackSurveyModal({
             disabled={isBusy}
             className="rounded-xl text-muted-foreground hover:bg-accent hover:text-accent-foreground"
           >
-            Talvez mais tarde
+            {t("maybeLater")}
           </Button>
 
           {step === 2 && (
@@ -372,10 +377,10 @@ export function AppFeedbackSurveyModal({
               {isBusy ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  A enviar...
+                  {t("sending")}
                 </>
               ) : (
-                "Enviar feedback"
+                t("sendFeedback")
               )}
             </Button>
           )}

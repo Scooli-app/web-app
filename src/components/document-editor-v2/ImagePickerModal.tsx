@@ -1,4 +1,5 @@
 "use client";
+import { AiDisclaimer } from "@/components/ui/ai-disclaimer";
 
 /**
  * ImagePickerModal â€” modal for adding an image to a slide.
@@ -22,6 +23,7 @@ import {
 import { uploadDocumentImage } from "@/services/api";
 import { cn } from "@/shared/utils/utils";
 import { Image as ImageIcon, Link2, Loader2, Sparkles, Upload } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useCallback, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -86,6 +88,7 @@ function GenerateTab({
   onClose: () => void;
   onGenerate: (prompt: string) => void;
 }) {
+  const t = useTranslations("editor.imagePickerModal");
   const [prompt, setPrompt] = useState("");
 
   const handleGenerate = () => {
@@ -99,12 +102,12 @@ function GenerateTab({
     <div className="flex flex-col gap-4 p-4">
       <div className="flex flex-col gap-1.5">
         <label className="text-sm font-medium text-foreground">
-          Descreve a imagem
+          {t("describeImageLabel")}
         </label>
         <textarea
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
-          placeholder="Ex: uma pizza dividida em 6 partes iguais, estilo cartoon colorido para crianças"
+          placeholder={t("generatePlaceholder")}
           rows={4}
           autoFocus
           onKeyDown={(e) => {
@@ -113,18 +116,21 @@ function GenerateTab({
           className="w-full resize-none rounded-lg border border-border bg-muted/30 px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
         />
         <p className="text-xs text-muted-foreground">
-          Ctrl+Enter para gerar
+          {t("generateHint")}
         </p>
       </div>
 
+      <div className="flex flex-col items-end gap-1.5">
       <Button
         onClick={handleGenerate}
         disabled={!prompt.trim()}
         className="gap-2 self-end"
       >
         <Sparkles className="h-4 w-4" />
-        Gerar imagem
+        {t("generateButton")}
       </Button>
+        <AiDisclaimer className="text-right" />
+      </div>
     </div>
   );
 }
@@ -139,6 +145,7 @@ function UploadTab({
   documentId: string;
   onInsert: (r: ImageInsertResult) => void;
 }) {
+  const t = useTranslations("editor.imagePickerModal");
   const [loading, setLoading] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -153,15 +160,15 @@ function UploadTab({
         if (result.image?.url) {
           onInsert({ url: result.image.url, prompt: file.name, backendId: result.image.id });
         } else {
-          toast.error("Erro ao carregar imagem");
+          toast.error(t("uploadError"));
         }
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Erro ao carregar imagem");
+        toast.error(err instanceof Error ? err.message : t("uploadError"));
         setLoading(false);
         setSelectedFile(null);
       }
     },
-    [documentId, onInsert],
+    [documentId, onInsert, t],
   );
 
   return (
@@ -200,16 +207,16 @@ function UploadTab({
         {loading ? (
           <>
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <span className="text-sm">A carregar {selectedFile?.name}â€¦</span>
+            <span className="text-sm">{t("uploadingFile", { name: selectedFile?.name ?? "" })}</span>
           </>
         ) : (
           <>
             <Upload className="h-8 w-8" />
             <div className="text-center">
               <p className="text-sm font-medium">
-                Clica ou arrasta uma imagem
+                {t("uploadHint")}
               </p>
-              <p className="mt-0.5 text-xs">PNG, JPG, WEBP até 10 MB</p>
+              <p className="mt-0.5 text-xs">{t("uploadFormats")}</p>
             </div>
           </>
         )}
@@ -222,6 +229,7 @@ function UploadTab({
  * URL tab
  * -------------------------------------------------------------------------- */
 function UrlTab({ onInsert }: { onInsert: (r: ImageInsertResult) => void }) {
+  const t = useTranslations("editor.imagePickerModal");
   const [url, setUrl] = useState("");
 
   const handleInsert = () => {
@@ -234,7 +242,7 @@ function UrlTab({ onInsert }: { onInsert: (r: ImageInsertResult) => void }) {
     <div className="flex flex-col gap-4 p-4">
       <div className="flex flex-col gap-1.5">
         <label className="text-sm font-medium text-foreground">
-          URL da imagem
+          {t("urlLabel")}
         </label>
         <input
           type="url"
@@ -242,7 +250,7 @@ function UrlTab({ onInsert }: { onInsert: (r: ImageInsertResult) => void }) {
           autoFocus
           onChange={(e) => setUrl(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter") handleInsert(); }}
-          placeholder="https://..."
+          placeholder={t("urlPlaceholder")}
           className="w-full rounded-lg border border-border bg-muted/30 px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
         />
       </div>
@@ -253,7 +261,7 @@ function UrlTab({ onInsert }: { onInsert: (r: ImageInsertResult) => void }) {
         className="gap-2 self-end"
       >
         <Link2 className="h-4 w-4" />
-        Inserir imagem
+        {t("insertImage")}
       </Button>
     </div>
   );
@@ -263,6 +271,7 @@ function UrlTab({ onInsert }: { onInsert: (r: ImageInsertResult) => void }) {
  * Main modal
  * -------------------------------------------------------------------------- */
 export function ImagePickerModal({ open, documentId, onClose, onInsert, onGenerate }: Props) {
+  const t = useTranslations("editor.imagePickerModal");
   const [tab, setTab] = useState<Tab>("generate");
 
   const handleInsert = (result: ImageInsertResult) => {
@@ -276,7 +285,7 @@ export function ImagePickerModal({ open, documentId, onClose, onInsert, onGenera
         <DialogHeader className="px-4 pb-0 pt-4">
           <DialogTitle className="flex items-center gap-2 text-base">
             <ImageIcon className="h-4 w-4 text-primary" />
-            Adicionar imagem
+            {t("dialogTitle")}
           </DialogTitle>
         </DialogHeader>
 
@@ -285,19 +294,19 @@ export function ImagePickerModal({ open, documentId, onClose, onInsert, onGenera
             active={tab === "generate"}
             onClick={() => setTab("generate")}
             icon={Sparkles}
-            label="Gerar com IA"
+            label={t("tabGenerate")}
           />
           <TabBtn
             active={tab === "upload"}
             onClick={() => setTab("upload")}
             icon={Upload}
-            label="Carregar"
+            label={t("tabUpload")}
           />
           <TabBtn
             active={tab === "url"}
             onClick={() => setTab("url")}
             icon={Link2}
-            label="Por URL"
+            label={t("tabUrl")}
           />
         </div>
 

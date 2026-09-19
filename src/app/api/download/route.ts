@@ -19,6 +19,7 @@ import {
   WidthType,
 } from "docx";
 import katex from "katex";
+import { getTranslations } from "next-intl/server";
 import { cookies } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
 import { readFile } from "node:fs/promises";
@@ -1447,7 +1448,10 @@ function parseTableLines(
   };
 }
 
-function parseMarkdownToBlocks(content: string): ExportBlock[] {
+function parseMarkdownToBlocks(
+  content: string,
+  exercisePlaceholder: (kind: string) => string,
+): ExportBlock[] {
   const blocks: ExportBlock[] = [];
   const lines = normalizeExportContent(content).split("\n");
   let inCodeBlock = false;
@@ -1474,7 +1478,7 @@ function parseMarkdownToBlocks(content: string): ExportBlock[] {
           const exerciseKind = codeBlockType.slice(9);
           blocks.push({
             type: "paragraph",
-            text: `[Exercício interativo (${exerciseKind}) — visível apenas na aplicação]`,
+            text: exercisePlaceholder(exerciseKind),
           });
         } else {
           blocks.push({ type: "code", text: blockContent });
@@ -1921,7 +1925,10 @@ async function generateDocx(
   content: string,
   images?: DownloadImagePayload[],
 ): Promise<Buffer> {
-  const blocks = parseMarkdownToBlocks(content);
+  const t = await getTranslations("documents.export");
+  const blocks = parseMarkdownToBlocks(content, (kind) =>
+    t("exercisePlaceholder", { kind }),
+  );
   const imageLookup = buildImageLookup(images);
   const children: (Paragraph | Table)[] = [];
 
@@ -1961,7 +1968,7 @@ async function generateDocx(
           new Paragraph({
             children: [
               new TextRun({
-                text: `[Imagem: ${block.alt || "Ilustracao"}]`,
+                text: t("imagePlaceholder", { alt: block.alt || t("illustrationFallback") }),
                 italics: true,
                 size: 20,
                 color: "6C6F80",
@@ -2604,11 +2611,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     if (format === "docx") {
       if (!isProUser) {
+        const t = await getTranslations("errors.download");
         return NextResponse.json(
-          {
-            error:
-              "Exportacao DOCX disponivel apenas para utilizadores Scooli Pro",
-          },
+          { error: t("docxProOnly") },
           { status: 403 },
         );
       }

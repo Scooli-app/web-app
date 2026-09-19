@@ -6,6 +6,7 @@ import { cn } from "@/shared/utils/utils";
 import { GripVertical, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { useTranslations } from "next-intl";
 
 export interface SectionItem {
   id: string;
@@ -26,6 +27,7 @@ export function SortableSection({
   onDelete,
   canDelete,
 }: SortableSectionProps) {
+  const t = useTranslations("documentCreation.sortableSection");
   const {
     attributes,
     listeners,
@@ -59,7 +61,7 @@ export function SortableSection({
           )}
           {...attributes}
           {...listeners}
-          aria-label="Arrastar para reordenar"
+          aria-label={t("dragAriaLabel")}
         >
           <GripVertical className="h-5 w-5" />
         </button>
@@ -75,7 +77,7 @@ export function SortableSection({
               ? "text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
               : "cursor-not-allowed text-muted-foreground/30",
           )}
-          aria-label="Eliminar seccao"
+          aria-label={t("deleteAriaLabel")}
         >
           <Trash2 className="h-4 w-4" />
         </button>
@@ -91,7 +93,7 @@ export function SortableSection({
           )}
           {...attributes}
           {...listeners}
-          aria-label="Arrastar para reordenar"
+          aria-label={t("dragAriaLabel")}
         >
           <GripVertical className="h-5 w-5" />
         </button>
@@ -100,17 +102,17 @@ export function SortableSection({
           <Input
             value={section.title}
             onChange={(e) => onUpdate(section.id, "title", e.target.value)}
-            placeholder="Título da secção"
+            placeholder={t("titlePlaceholder")}
             className="h-10 rounded-lg border-input bg-input px-3 text-sm font-medium placeholder:text-muted-foreground"
-            aria-label="Título da secção"
+            aria-label={t("titleAriaLabel")}
           />
           <Textarea
             value={section.description}
             onChange={(e) => onUpdate(section.id, "description", e.target.value)}
-            placeholder="Instruções para a IA: o que incluir nesta secção..."
+            placeholder={t("descriptionPlaceholder")}
             rows={2}
             className="min-h-0 rounded-lg border-input bg-input px-3 py-2 text-sm placeholder:text-muted-foreground"
-            aria-label="Instruções para a secção"
+            aria-label={t("descriptionAriaLabel")}
           />
         </div>
 
@@ -125,7 +127,7 @@ export function SortableSection({
               ? "text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
               : "cursor-not-allowed text-muted-foreground/30",
           )}
-          aria-label="Eliminar seccao"
+          aria-label={t("deleteAriaLabel")}
         >
           <Trash2 className="h-4 w-4" />
         </button>

@@ -32,6 +32,7 @@ import type {
 } from "@/shared/types/canvas-presentation";
 import { renderKatexToPngDataUrl } from "@/components/document-editor-v2/math-render";
 import Konva from "konva";
+import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useImperativeHandle, useRef, useState, forwardRef } from "react";
 import { Ellipse, Group, Image as KonvaImage, Layer, Line, Rect, Stage, Text, Transformer } from "react-konva";
 
@@ -345,6 +346,7 @@ export const SlideKonvaEditor = forwardRef<
     onEditMath?: (elementId: string) => void;
   }
 >(function SlideKonvaEditor({ slide, onChange, onSelectionChange, onChangeImage, onEditMath }, ref) {
+  const t = useTranslations("editor.slideKonvaEditor");
   /** Fills the available parent space — measured to compute stage size. */
   const wrapperRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<Konva.Stage | null>(null);
@@ -978,7 +980,7 @@ export const SlideKonvaEditor = forwardRef<
       y: 0.40,
       w: 0.80,
       h: 0.12,
-      text: "Novo texto",
+      text: t("newTextDefault"),
       fontSize: FS_BASE,
       fontStyle: "normal",
       color: T.text,
@@ -986,7 +988,7 @@ export const SlideKonvaEditor = forwardRef<
     };
     onChange([...elements, newEl]);
     setSelectedId(newId);
-  }, [elements, onChange]);
+  }, [elements, onChange, t]);
 
   /* ── Remove selected element ──────────────────────────────────────────── */
   const removeSelected = useCallback(() => {
@@ -1093,7 +1095,7 @@ export const SlideKonvaEditor = forwardRef<
               {isImg && onChangeImage && (
                 <button
                   type="button"
-                  title="Trocar imagem"
+                  title={t("changeImage")}
                   className={`${btnBase} text-foreground hover:bg-muted`}
                   onClick={(e) => { e.stopPropagation(); onChangeImage(selectedId); }}
                 >
@@ -1106,7 +1108,7 @@ export const SlideKonvaEditor = forwardRef<
               {/* Delete */}
               <button
                 type="button"
-                title="Apagar elemento"
+                title={t("deleteElement")}
                 className={`${btnBase} text-destructive hover:bg-destructive hover:text-white`}
                 onClick={(e) => { e.stopPropagation(); removeSelected(); }}
               >
@@ -1457,7 +1459,7 @@ export const SlideKonvaEditor = forwardRef<
                       listening={false}
                     />
                     <Text
-                      text={img.url && cached === "loading" ? "A carregar imagem…" : (img.prompt || "Duplo-clique para editar descrição")}
+                      text={img.url && cached === "loading" ? t("loadingImage") : (img.prompt || t("doubleClickToEditDescription"))}
                       x={el.w * W * 0.08}
                       y={el.h * H * 0.55}
                       width={el.w * W * 0.84}

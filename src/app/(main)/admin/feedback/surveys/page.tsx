@@ -1,5 +1,6 @@
 "use client";
 
+import { useDateFnsLocale } from "@/i18n/dateFns";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/badge";
@@ -26,7 +27,6 @@ import {
 } from "@/shared/types/feedbackSurvey";
 import { cn } from "@/shared/utils/utils";
 import { format } from "date-fns";
-import { pt } from "date-fns/locale";
 import {
   ArrowLeft,
   ArrowUpDown,
@@ -183,6 +183,7 @@ function SortableHead({
 }
 
 export default function AdminFeedbackSurveyPage() {
+  const dateFnsLocale = useDateFnsLocale();
   const router = useRouter();
   const [overview, setOverview] = useState<AdminFeedbackSurveyOverview | null>(
     null,
@@ -284,7 +285,7 @@ export default function AdminFeedbackSurveyPage() {
                 </div>
                 <span className="shrink-0 text-xs text-muted-foreground">
                   {format(new Date(response.createdAt), "dd MMM yyyy", {
-                    locale: pt,
+                    locale: dateFnsLocale,
                   })}
                 </span>
               </div>
@@ -375,7 +376,7 @@ export default function AdminFeedbackSurveyPage() {
                   </TableCell>
                   <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
                     {format(new Date(response.createdAt), "dd MMM yyyy HH:mm", {
-                      locale: pt,
+                      locale: dateFnsLocale,
                     })}
                   </TableCell>
                 </TableRow>
