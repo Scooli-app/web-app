@@ -47,6 +47,7 @@ import { teachingProfileService } from "@/services/api/teaching-profile.service"
 import type { TeachingProfile } from "@/shared/types/teaching-profile";
 import {
   getPreferredRegularSubjectIds,
+  getPreferredSchoolYears,
   getTeachingProfileSuggestions,
 } from "./teaching-profile-preferences";
 
@@ -176,6 +177,10 @@ export default function DocumentCreationPage({
   const preferredSubjectIds = useMemo(
     () => getPreferredRegularSubjectIds(teachingProfile, availableSubjectIds),
     [teachingProfile, availableSubjectIds]
+  );
+  const preferredSchoolYears = useMemo(
+    () => getPreferredSchoolYears(teachingProfile, Array.from({ length: 12 }, (_, index) => index + 1)),
+    [teachingProfile]
   );
   const topicSuggestions = useMemo(
     () =>
@@ -439,6 +444,7 @@ export default function DocumentCreationPage({
               <GradeSection
                 schoolYear={formState.schoolYear}
                 onUpdate={updateForm}
+                preferredSchoolYears={preferredSchoolYears}
               />
             </div>
 

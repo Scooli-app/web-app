@@ -245,7 +245,8 @@
     },
     "grade": {
       "title": "Ano de Escolaridade",
-      "selectAriaLabel": "Selecionar {grade}"
+      "selectAriaLabel": "Selecionar {grade}",
+      "myYearBadge": "meu"
     },
     "subject": {
       "title": "Disciplina",
@@ -254,7 +255,7 @@
       "selectAriaLabel": "Selecionar disciplina",
       "placeholderDisabled": "Selecione primeiro o ano de escolaridade...",
       "placeholder": "Selecione uma disciplina...",
-      "yourSubjects": "As tuas disciplinas"
+      "yourSubjects": "As minhas disciplinas"
     },
     "duration": {
       "title": "Duração da Aula",
@@ -755,6 +756,7 @@
       "typeGroupLabel": "Tipo de ensino",
       "regular": "Ensino regular",
       "vocational": "Ensino profissional",
+      "schoolYearsLabel": "Anos que lecionas",
       "subjectsLabel": "Disciplinas que lecionas",
       "subjectsSearchPlaceholder": "Procurar disciplinas",
       "subjectsListLabel": "Disciplinas disponíveis",
@@ -766,6 +768,8 @@
       "noCoursesFound": "Nenhum curso encontrado. As escolas às vezes usam nomes diferentes do catálogo — procura por uma palavra só.",
       "noCoursesYet": "Ainda não escolheste nenhum curso.",
       "removeCourse": "Remover {course}",
+      "selectAllUnits": "Selecionar todas as UC",
+      "deselectAllUnits": "Remover todas as UC",
       "unitsInstruction": "Marca as unidades que lecionas. Na componente tecnológica o catálogo nacional não define disciplinas — são as escolas que agrupam estas unidades.",
       "saving": "A guardar…",
       "save": "Guardar",

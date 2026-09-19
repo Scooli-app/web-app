@@ -65,6 +65,7 @@ export interface TeachingProfile {
   educationType: EducationType;
   courses: string[];
   courseStates: TeachingCourseState[];
+  schoolYears: number[];
   items: TeachingItem[];
 }
 
@@ -72,5 +73,6 @@ export const EMPTY_TEACHING_PROFILE: TeachingProfile = {
   educationType: "regular",
   courses: [],
   courseStates: [],
+  schoolYears: [],
   items: [],
 };

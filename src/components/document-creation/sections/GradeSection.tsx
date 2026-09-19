@@ -8,11 +8,13 @@ import type { FormUpdateFn } from "../types";
 interface GradeSectionProps {
   schoolYear: number;
   onUpdate: FormUpdateFn;
+  preferredSchoolYears?: number[];
   className?: string;
 }
 
-export function GradeSection({ schoolYear, onUpdate, className }: GradeSectionProps) {
+export function GradeSection({ schoolYear, onUpdate, preferredSchoolYears = [], className }: GradeSectionProps) {
   const t = useTranslations("documentCreation.grade");
+  const preferred = new Set(preferredSchoolYears);
 
   return (
     <Card className={cn("p-4 sm:p-6 border-border shadow-sm hover:shadow-md transition-shadow", className)}>
@@ -35,6 +37,7 @@ export function GradeSection({ schoolYear, onUpdate, className }: GradeSectionPr
                 {group.grades.map((grade) => {
                   const gradeValue = parseInt(grade.id);
                   const isSelected = schoolYear === gradeValue;
+                  const isPreferred = preferred.has(gradeValue);
                   const gradeLabel = translateGradeLabel(grade.id);
                   return (
                     <button
@@ -48,12 +51,17 @@ export function GradeSection({ schoolYear, onUpdate, className }: GradeSectionPr
                         "border hover:scale-[1.02] active:scale-[0.98]",
                         isSelected
                           ? "bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20"
+                          : isPreferred
+                            ? "bg-primary/10 text-primary border-primary/40 hover:border-primary hover:bg-primary/15"
                           : "bg-card text-foreground border-border hover:border-primary hover:bg-accent"
                       )}
                       aria-pressed={isSelected}
                       aria-label={t("selectAriaLabel", { grade: gradeLabel })}
                     >
                       {gradeLabel}
+                      {isPreferred && !isSelected ? (
+                        <span className="ml-1 text-[10px] font-semibold">{t("myYearBadge")}</span>
+                      ) : null}
                     </button>
                   );
                 })}

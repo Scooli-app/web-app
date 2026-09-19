@@ -31,7 +31,7 @@ export function getPreferredRegularSubjectIds(
   profile: TeachingProfile | null,
   availableSubjectIds: string[]
 ): string[] {
-  if (profile?.educationType !== "regular") return [];
+  if (!profile) return [];
 
   const available = new Set(availableSubjectIds);
   const preferred = new Set(
@@ -48,30 +48,40 @@ export function getPreferredRegularSubjectIds(
   return availableSubjectIds.filter((id) => preferred.has(id) && available.has(id));
 }
 
+export function getPreferredSchoolYears(
+  profile: TeachingProfile | null,
+  availableYears: number[]
+): number[] {
+  if (!profile) return [];
+  const selected = new Set(
+    profile.schoolYears.filter((year) => Number.isInteger(year) && year >= 1 && year <= 12)
+  );
+  return availableYears.filter((year) => selected.has(year));
+}
+
 export function getTeachingProfileSuggestions(
   profile: TeachingProfile | null
 ): TeachingProfileSuggestion[] {
   if (!profile) return [];
+  const selectedCourses = new Set(profile.courses);
 
-  const suggestions = profile.educationType === "regular"
-    ? profile.items.flatMap((item) => {
-        if (item.kind !== "subject" || item.qualificationCode !== null) return [];
-        const subject = subjectsById.get(item.code);
-        return subject
-          ? [{
-              key: `regular:${subject.id}`,
-              label: subject.value,
-              regularSubjectId: subject.id,
-            }]
-          : [];
-      })
-    : profile.items.flatMap((item) => {
-        if (item.qualificationCode === null || !item.label.trim()) return [];
-        return [{
-          key: `${item.qualificationCode}:${item.kind}:${item.code}`,
-          label: item.label.trim(),
-        }];
-      });
+  const suggestions = profile.items.flatMap((item) => {
+    if (item.kind === "subject" && item.qualificationCode === null) {
+      const subject = subjectsById.get(item.code);
+      return subject
+        ? [{
+            key: `regular:${subject.id}`,
+            label: subject.value,
+            regularSubjectId: subject.id,
+          }]
+        : [];
+    }
+    if (item.qualificationCode === null || !selectedCourses.has(item.qualificationCode) || !item.label.trim()) return [];
+    return [{
+      key: `${item.qualificationCode}:${item.kind}:${item.code}`,
+      label: item.label.trim(),
+    }];
+  });
 
   return suggestions.filter(
     (suggestion, index) =>
