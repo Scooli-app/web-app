@@ -246,7 +246,10 @@
     "grade": {
       "title": "Ano de Escolaridade",
       "selectAriaLabel": "Selecionar {grade}",
-      "myYearBadge": "meu"
+      "myYearBadge": "meu",
+      "myYearsGroupLabel": "Os meus anos",
+      "showOtherYears": "Ver outros anos",
+      "hideOtherYears": "Ocultar outros anos"
     },
     "subject": {
       "title": "Disciplina",
@@ -255,7 +258,14 @@
       "selectAriaLabel": "Selecionar disciplina",
       "placeholderDisabled": "Selecione primeiro o ano de escolaridade...",
       "placeholder": "Selecione uma disciplina...",
-      "yourSubjects": "As minhas disciplinas"
+      "yourSubjects": "As minhas disciplinas",
+      "modeGroupLabel": "Tipo de ensino",
+      "modeRegular": "Ensino regular",
+      "modeVocational": "Ensino profissional",
+      "coursePlaceholder": "Selecione o curso...",
+      "courseSelectAriaLabel": "Selecionar curso",
+      "unitPlaceholder": "Selecione a UC...",
+      "unitSelectAriaLabel": "Selecionar unidade de competência"
     },
     "duration": {
       "title": "Duração da Aula",

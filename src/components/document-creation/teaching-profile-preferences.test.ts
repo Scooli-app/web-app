@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 import type { TeachingProfile } from "@/shared/types/teaching-profile";
 import {
   buildRegularTeachingItems,
+  getDefaultSchoolYear,
   getPreferredRegularSubjectIds,
   getPreferredSchoolYears,
+  getVocationalCourseOptions,
   getTeachingProfileSuggestions,
 } from "./teaching-profile-preferences";
 
@@ -74,6 +76,54 @@ describe("getPreferredRegularSubjectIds", () => {
 describe("getPreferredSchoolYears", () => {
   it("returns valid saved years in creation-form order", () => {
     expect(getPreferredSchoolYears(profile({ schoolYears: [0, 5, 3, 13] }), [1, 2, 3, 4, 5])).toEqual([3, 5]);
+  });
+});
+
+describe("getDefaultSchoolYear", () => {
+  it("returns the lowest preferred year", () => {
+    expect(getDefaultSchoolYear([7, 3, 5])).toBe(3);
+  });
+
+  it("returns null when there are no preferred years", () => {
+    expect(getDefaultSchoolYear([])).toBeNull();
+  });
+});
+
+describe("getVocationalCourseOptions", () => {
+  it("groups saved vocational items by selected course, ignoring unselected courses", () => {
+    const result = getVocationalCourseOptions(
+      profile({
+        educationType: "vocational",
+        courses: ["COURSE-A"],
+        courseStates: [
+          { code: "COURSE-A", title: "Técnico de Informática", ingestionStatus: "indexed" },
+        ],
+        items: [
+          { qualificationCode: "COURSE-A", kind: "unit", code: "UC01", label: "Programação Web", trainingComponent: "technological" },
+          { qualificationCode: "COURSE-A", kind: "subject", code: "S1", label: "Comunicação", trainingComponent: "sociocultural" },
+          { qualificationCode: "COURSE-B", kind: "unit", code: "UC99", label: "Curso removido", trainingComponent: "technological" },
+        ],
+      })
+    );
+
+    expect(result).toEqual([
+      {
+        code: "COURSE-A",
+        title: "Técnico de Informática",
+        units: [
+          { code: "UC01", label: "Programação Web" },
+          { code: "S1", label: "Comunicação" },
+        ],
+      },
+    ]);
+  });
+
+  it("returns an empty list for a profile with no vocational selections", () => {
+    expect(getVocationalCourseOptions(profile())).toEqual([]);
+  });
+
+  it("returns an empty list for a null profile", () => {
+    expect(getVocationalCourseOptions(null)).toEqual([]);
   });
 });
 

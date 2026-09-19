@@ -17,6 +17,7 @@ import {
   translateSubjectCategory,
   translateSubjectLabel,
 } from "../constants";
+import type { VocationalCourseOption } from "../teaching-profile-preferences";
 import type { FormUpdateFn } from "../types";
 
 interface SubjectSectionProps {
@@ -25,6 +26,10 @@ interface SubjectSectionProps {
   onUpdate: FormUpdateFn;
   availableSubjects?: string[];
   preferredSubjectIds?: string[];
+  /** Saved Ensino Profissional courses/UCs, when the teacher has any. */
+  vocationalCourses?: VocationalCourseOption[];
+  subjectMode?: "regular" | "vocational";
+  vocationalCourseCode?: string;
   className?: string;
   disabled?: boolean;
 }
@@ -35,10 +40,17 @@ export function SubjectSection({
   onUpdate,
   availableSubjects,
   preferredSubjectIds = [],
+  vocationalCourses = [],
+  subjectMode = "regular",
+  vocationalCourseCode,
   className,
   disabled,
 }: SubjectSectionProps) {
   const t = useTranslations("documentCreation.subject");
+  const isVocationalMode = subjectMode === "vocational" && vocationalCourses.length > 0;
+  const selectedCourse =
+    vocationalCourses.find((course) => course.code === vocationalCourseCode) ??
+    vocationalCourses[0];
 
   // Filter subjects based on availableSubjects prop if provided
   const visibleSubjects = availableSubjects
@@ -78,6 +90,24 @@ export function SubjectSection({
 
   const isAmbiguous = subject && AMBIGUOUS_COMPONENTS_SUBJECTS.includes(subject);
 
+  const handleModeChange = (mode: "regular" | "vocational") => {
+    onUpdate("subjectMode", mode);
+    onUpdate("subject", "");
+    onUpdate("vocationalCourseCode", mode === "vocational" ? selectedCourse?.code : undefined);
+    if (mode === "vocational") {
+      onUpdate("isSpecificComponent", false);
+    }
+  };
+
+  const handleCourseChange = (courseCode: string) => {
+    onUpdate("vocationalCourseCode", courseCode);
+    onUpdate("subject", "");
+  };
+
+  const handleUnitChange = (unitLabel: string) => {
+    onUpdate("subject", unitLabel);
+  };
+
   return (
     <Card
       className={cn(
@@ -96,7 +126,7 @@ export function SubjectSection({
             </h2>
           </div>
 
-          {isAmbiguous && !disabled && (
+          {isAmbiguous && !isVocationalMode && !disabled && (
             <div className="flex items-center bg-muted p-1 rounded-lg self-start sm:self-center">
               <button
                 type="button"
@@ -128,6 +158,94 @@ export function SubjectSection({
           )}
         </div>
 
+        {vocationalCourses.length > 0 && !disabled && (
+          <div
+            className="flex items-center bg-muted p-1 rounded-lg w-fit"
+            role="group"
+            aria-label={t("modeGroupLabel")}
+          >
+            <button
+              type="button"
+              onClick={() => handleModeChange("regular")}
+              aria-pressed={!isVocationalMode}
+              className={cn(
+                "px-3 py-1.5 text-xs font-medium rounded-md transition-all flex items-center gap-1.5",
+                !isVocationalMode
+                  ? "bg-background text-primary shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              {!isVocationalMode && <Check className="w-3 h-3" />}
+              {t("modeRegular")}
+            </button>
+            <button
+              type="button"
+              onClick={() => handleModeChange("vocational")}
+              aria-pressed={isVocationalMode}
+              className={cn(
+                "px-3 py-1.5 text-xs font-medium rounded-md transition-all flex items-center gap-1.5",
+                isVocationalMode
+                  ? "bg-background text-primary shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              {isVocationalMode && <Check className="w-3 h-3" />}
+              {t("modeVocational")}
+            </button>
+          </div>
+        )}
+
+        {isVocationalMode ? (
+          <div className="space-y-3">
+            <Select
+              value={selectedCourse?.code ?? ""}
+              onValueChange={handleCourseChange}
+              disabled={disabled}
+            >
+              <SelectTrigger
+                className="h-11 sm:h-12 px-4 text-sm sm:text-base bg-background border-border rounded-xl"
+                aria-label={t("courseSelectAriaLabel")}
+              >
+                <SelectValue placeholder={t("coursePlaceholder")} />
+              </SelectTrigger>
+              <SelectContent className="rounded-xl border-border max-h-[400px]">
+                {vocationalCourses.map((course) => (
+                  <SelectItem
+                    key={course.code}
+                    value={course.code}
+                    className="py-2.5 px-3 text-sm cursor-pointer rounded-lg focus:bg-accent focus:text-primary"
+                  >
+                    {course.title}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={subject}
+              onValueChange={handleUnitChange}
+              disabled={disabled || !selectedCourse}
+            >
+              <SelectTrigger
+                className="h-11 sm:h-12 px-4 text-sm sm:text-base bg-background border-border rounded-xl"
+                aria-label={t("unitSelectAriaLabel")}
+              >
+                <SelectValue placeholder={t("unitPlaceholder")} />
+              </SelectTrigger>
+              <SelectContent className="rounded-xl border-border max-h-[400px]">
+                {selectedCourse?.units.map((unit) => (
+                  <SelectItem
+                    key={unit.code}
+                    value={unit.label}
+                    className="py-2.5 px-3 text-sm cursor-pointer rounded-lg focus:bg-accent focus:text-primary"
+                  >
+                    {unit.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        ) : (
         <Select
           value={subject}
           onValueChange={(value) => onUpdate("subject", value)}
@@ -203,6 +321,7 @@ export function SubjectSection({
               ))}
           </SelectContent>
         </Select>
+        )}
       </div>
     </Card>
   );

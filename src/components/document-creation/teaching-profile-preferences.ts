@@ -59,6 +59,41 @@ export function getPreferredSchoolYears(
   return availableYears.filter((year) => selected.has(year));
 }
 
+/**
+ * The school year to default the creation form to, when the teacher has
+ * saved one or more taught years and hasn't picked one yet. Lowest year
+ * first, since that best matches "ano de escolaridade" ordering.
+ */
+export function getDefaultSchoolYear(preferredSchoolYears: number[]): number | null {
+  if (preferredSchoolYears.length === 0) return null;
+  return Math.min(...preferredSchoolYears);
+}
+
+export interface VocationalCourseOption {
+  code: string;
+  title: string;
+  units: { code: string; label: string }[];
+}
+
+/**
+ * Vocational courses/UCs saved on the profile, scoped to currently selected
+ * courses — mirrors the "select ensino profissional" creation-form flow.
+ */
+export function getVocationalCourseOptions(
+  profile: TeachingProfile | null
+): VocationalCourseOption[] {
+  if (!profile) return [];
+  const titleByCode = new Map(profile.courseStates.map((state) => [state.code, state.title]));
+
+  return profile.courses.flatMap((code) => {
+    const units = profile.items
+      .filter((item) => item.qualificationCode === code && item.label.trim())
+      .map((item) => ({ code: item.code, label: item.label.trim() }));
+    if (units.length === 0) return [];
+    return [{ code, title: titleByCode.get(code) ?? code, units }];
+  });
+}
+
 export function getTeachingProfileSuggestions(
   profile: TeachingProfile | null
 ): TeachingProfileSuggestion[] {
