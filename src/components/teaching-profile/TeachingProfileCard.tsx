@@ -6,6 +6,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { teachingProfileService } from "@/services/api/teaching-profile.service";
 import {
+  SUBJECTS,
+  translateSubjectCategory,
+  translateSubjectLabel,
+} from "@/components/document-creation/constants";
+import { buildRegularTeachingItems } from "@/components/document-creation/teaching-profile-preferences";
+import {
   EMPTY_TEACHING_PROFILE,
   type EducationType,
   type IngestionStatus,
@@ -91,27 +97,29 @@ export function TeachingProfileCard() {
   const [unitsByCourse, setUnitsByCourse] = useState<Record<string, VocationalUnit[]>>({});
   const [term, setTerm] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [profileLoadFailed, setProfileLoadFailed] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [catalogError, setCatalogError] = useState<string | null>(null);
 
   const isVocational = profile.educationType === "vocational";
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const loaded = await teachingProfileService.get();
-        if (!cancelled) setProfile(loaded);
-      } catch {
-        if (!cancelled) toast.error(t("loadError"));
-      } finally {
-        if (!cancelled) setIsLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
+  const loadProfile = useCallback(async () => {
+    setIsLoading(true);
+    setProfileLoadFailed(false);
+    try {
+      const loaded = await teachingProfileService.get();
+      setProfile(loaded);
+    } catch {
+      setProfileLoadFailed(true);
+      toast.error(t("loadError"));
+    } finally {
+      setIsLoading(false);
+    }
   }, [t]);
+
+  useEffect(() => {
+    void loadProfile();
+  }, [loadProfile]);
 
   // The level-4 catalogue is 161 courses: load it once and filter locally so
   // search responds without a round trip per keystroke.
@@ -157,8 +165,9 @@ export function TeachingProfileCard() {
   );
 
   useEffect(() => {
+    if (!isVocational) return;
     profile.courses.forEach((code) => void loadUnits(code));
-  }, [profile.courses, loadUnits]);
+  }, [isVocational, profile.courses, loadUnits]);
 
   const filtered = useMemo(() => {
     const key = normalize(term);
@@ -173,6 +182,32 @@ export function TeachingProfileCard() {
       .slice(0, 8);
   }, [catalog, term]);
 
+  const selectedRegularSubjectIds = useMemo(
+    () =>
+      new Set(
+        profile.items
+          .filter((item) => item.kind === "subject" && item.qualificationCode === null)
+          .map((item) => item.code)
+      ),
+    [profile.items]
+  );
+
+  const regularSubjectGroups = useMemo(() => {
+    const key = normalize(term);
+    const matching = SUBJECTS.filter(
+      (subject) =>
+        !key ||
+        normalize(subject.label).includes(key) ||
+        normalize(subject.value).includes(key) ||
+        normalize(subject.category).includes(key)
+    );
+
+    return matching.reduce<Record<string, typeof SUBJECTS>>((groups, subject) => {
+      (groups[subject.category] ??= []).push(subject);
+      return groups;
+    }, {});
+  }, [term]);
+
   const statusFor = (code: string): IngestionStatus =>
     profile.courseStates.find((c) => c.code === code)?.ingestionStatus ?? "pending";
 
@@ -181,8 +216,10 @@ export function TeachingProfileCard() {
     catalog.find((q) => q.code === code)?.title ??
     code;
 
-  const setEducationType = (educationType: EducationType) =>
+  const setEducationType = (educationType: EducationType) => {
+    setTerm("");
     setProfile((current) => ({ ...current, educationType }));
+  };
 
   const addCourse = (code: string) => {
     if (profile.courses.includes(code)) return;
@@ -221,10 +258,40 @@ export function TeachingProfileCard() {
     }));
   };
 
+  const toggleRegularSubject = (subjectId: string) => {
+    setProfile((current) => {
+      const selectedIds = current.items
+        .filter((item) => item.kind === "subject" && item.qualificationCode === null)
+        .map((item) => item.code);
+      const nextIds = selectedIds.includes(subjectId)
+        ? selectedIds.filter((id) => id !== subjectId)
+        : [...selectedIds, subjectId];
+
+      return {
+        ...current,
+        items: [
+          ...current.items.filter((item) => item.qualificationCode !== null),
+          ...buildRegularTeachingItems(nextIds),
+        ],
+      };
+    });
+  };
+
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      const saved = await teachingProfileService.save(profile);
+      const profileToSave: TeachingProfile = isVocational
+        ? {
+            ...profile,
+            items: profile.items.filter((item) => item.qualificationCode !== null),
+          }
+        : {
+            ...profile,
+            courses: [],
+            courseStates: [],
+            items: buildRegularTeachingItems([...selectedRegularSubjectIds]),
+          };
+      const saved = await teachingProfileService.save(profileToSave);
       setProfile(saved);
       toast.success(t("saveSuccess"));
     } catch {
@@ -256,6 +323,18 @@ export function TeachingProfileCard() {
         {t("subtitle")}
       </p>
 
+      {profileLoadFailed && (
+        <div
+          role="alert"
+          className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-destructive/10 p-4"
+        >
+          <p className="text-sm text-destructive">{t("loadError")}</p>
+          <Button type="button" variant="outline" onClick={() => void loadProfile()}>
+            {t("retryLoad")}
+          </Button>
+        </div>
+      )}
+
       <div className="flex gap-2 mb-6" role="group" aria-label={t("typeGroupLabel")}>
         {(
           [
@@ -284,9 +363,65 @@ export function TeachingProfileCard() {
       </div>
 
       {!isVocational ? (
-        <p className="text-sm text-muted-foreground">
-          {t("regularNote")}
-        </p>
+        <div className="space-y-4">
+          <div>
+            <label
+              htmlFor="subject-search"
+              className="text-sm font-medium text-foreground mb-2 block"
+            >
+              {t("subjectsLabel")}
+            </label>
+            <div className="relative">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                id="subject-search"
+                value={term}
+                onChange={(event) => setTerm(event.target.value)}
+                placeholder={t("subjectsSearchPlaceholder")}
+                className="pl-9"
+                autoComplete="off"
+              />
+            </div>
+          </div>
+
+          <div
+            className="max-h-80 space-y-4 overflow-y-auto rounded-xl border border-border p-3"
+            aria-label={t("subjectsListLabel")}
+            role="group"
+          >
+            {Object.entries(regularSubjectGroups).length === 0 ? (
+              <p className="text-sm text-muted-foreground">{t("noSubjectsFound")}</p>
+            ) : (
+              Object.entries(regularSubjectGroups).map(([category, subjects]) => (
+                <fieldset key={category}>
+                  <legend className="mb-2 text-xs font-semibold text-muted-foreground">
+                    {translateSubjectCategory(category)}
+                  </legend>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {subjects.map((subject) => (
+                      <label
+                        key={subject.id}
+                        className="flex cursor-pointer items-start gap-2.5 rounded-lg p-1.5 text-sm hover:bg-accent"
+                      >
+                        <Checkbox
+                          checked={selectedRegularSubjectIds.has(subject.id)}
+                          onCheckedChange={() => toggleRegularSubject(subject.id)}
+                          className="mt-0.5"
+                        />
+                        <span className="text-foreground">
+                          {translateSubjectLabel(subject.id)}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
+              ))
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {t("subjectsSelected", { count: selectedRegularSubjectIds.size })}
+          </p>
+        </div>
       ) : catalogError ? (
         <div className="p-4 bg-destructive/10 rounded-xl">
           <p className="text-destructive text-sm">{catalogError}</p>
@@ -418,15 +553,16 @@ export function TeachingProfileCard() {
             })
           )}
 
-          <Button
-            onClick={handleSave}
-            disabled={isSaving}
-            className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground px-5 py-3 rounded-xl font-medium"
-          >
-            {isSaving ? t("saving") : t("save")}
-          </Button>
         </div>
       )}
+
+      <Button
+        onClick={handleSave}
+        disabled={isSaving || profileLoadFailed}
+        className="mt-6 w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground px-5 py-3 rounded-xl font-medium"
+      >
+        {isSaving ? t("saving") : t("save")}
+      </Button>
     </div>
   );
 }

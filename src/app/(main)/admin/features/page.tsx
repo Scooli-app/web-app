@@ -101,6 +101,12 @@ const FEATURE_FLAG_METADATA: Record<
       "Controla a criação e importação de planificações curriculares de período. Disponível nos planos Pro e Institucional.",
     order: 45,
   },
+  [FeatureFlagKey.TEACHER_PROFILE]: {
+    name: "Perfil de Professor",
+    description:
+      "Controla o perfil de ensino, o catálogo profissional e as sugestões durante a criação de recursos.",
+    order: 50,
+  },
 };
 
 const applyFlagMetadata = (flag: AdminFeatureFlag): AdminFeatureFlag => {

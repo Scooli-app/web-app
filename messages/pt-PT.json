@@ -239,7 +239,9 @@
     "topic": {
       "title": "Tema da Aula",
       "description": "Descreva o tema que pretende abordar",
-      "ariaLabel": "Tema da aula"
+      "ariaLabel": "Tema da aula",
+      "suggestionsLabel": "Sugestões do teu perfil de ensino",
+      "useSuggestion": "Usar {suggestion} como tema"
     },
     "grade": {
       "title": "Ano de Escolaridade",
@@ -251,7 +253,8 @@
       "specificTraining": "Formação Específica",
       "selectAriaLabel": "Selecionar disciplina",
       "placeholderDisabled": "Selecione primeiro o ano de escolaridade...",
-      "placeholder": "Selecione uma disciplina..."
+      "placeholder": "Selecione uma disciplina...",
+      "yourSubjects": "As tuas disciplinas"
     },
     "duration": {
       "title": "Duração da Aula",
@@ -752,7 +755,12 @@
       "typeGroupLabel": "Tipo de ensino",
       "regular": "Ensino regular",
       "vocational": "Ensino profissional",
-      "regularNote": "No ensino regular continuas a escolher disciplina e ano em cada documento.",
+      "subjectsLabel": "Disciplinas que lecionas",
+      "subjectsSearchPlaceholder": "Procurar disciplinas",
+      "subjectsListLabel": "Disciplinas disponíveis",
+      "noSubjectsFound": "Nenhuma disciplina encontrada.",
+      "subjectsSelected": "{count, plural, =0 {Nenhuma disciplina selecionada} one {# disciplina selecionada} other {# disciplinas selecionadas}}",
+      "retryLoad": "Tentar novamente",
       "coursesLabel": "Os teus cursos",
       "coursesSearchPlaceholder": "Procura por nome, código ou área — ex.: software, 481",
       "noCoursesFound": "Nenhum curso encontrado. As escolas às vezes usam nomes diferentes do catálogo — procura por uma palavra só.",

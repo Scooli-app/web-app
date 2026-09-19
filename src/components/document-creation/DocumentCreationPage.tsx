@@ -10,11 +10,19 @@ import {
 } from "@/store/documents/documentSlice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { selectIsPro } from "@/store/subscription/selectors";
-import { FeatureFlag } from "@/shared/types/featureFlags";
+import {
+  FeatureFlag,
+  isTeacherProfileFeatureEnabled,
+} from "@/shared/types/featureFlags";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AMBIGUOUS_COMPONENTS_SUBJECTS, SUBJECTS, SUBJECTS_BY_GRADE } from "./constants";
+import {
+  AMBIGUOUS_COMPONENTS_SUBJECTS,
+  SUBJECTS,
+  SUBJECTS_BY_GRADE,
+  translateSubjectLabel,
+} from "./constants";
 import {
   AdditionalDetailsSection,
   DurationSection,
@@ -35,6 +43,12 @@ import { cn } from "@/shared/utils/utils";
 import type { CanvasPresentation, CanvasSlide } from "@/shared/types/canvas-presentation";
 import { applyTheme } from "@/components/document-editor-v2/canvas-layout";
 import { SlideThumbnail } from "@/components/document-editor-v2/SlideThumbnail";
+import { teachingProfileService } from "@/services/api/teaching-profile.service";
+import type { TeachingProfile } from "@/shared/types/teaching-profile";
+import {
+  getPreferredRegularSubjectIds,
+  getTeachingProfileSuggestions,
+} from "./teaching-profile-preferences";
 
 
 
@@ -121,10 +135,58 @@ export default function DocumentCreationPage({
   const isUserSourcesEnabled = useAppSelector(
     (state) => state.features.flags[FeatureFlag.USER_SOURCES] === true
   );
+  const isTeacherProfileEnabled = useAppSelector((state) =>
+    isTeacherProfileFeatureEnabled(state.features.flags),
+  );
   const [isLoading, setIsLoading] = useState(false);
+  const [teachingProfile, setTeachingProfile] = useState<TeachingProfile | null>(null);
 
   const { formState, error, setError, updateForm, isFormValid, handleTemplateSelect } =
     useDocumentForm(documentType.id);
+
+  useEffect(() => {
+    if (!isTeacherProfileEnabled) {
+      setTeachingProfile(null);
+      return;
+    }
+
+    let cancelled = false;
+    teachingProfileService
+      .get()
+      .then((profile) => {
+        if (!cancelled) setTeachingProfile(profile);
+      })
+      .catch(() => {
+        // Preferences are an enhancement: creation keeps the complete catalogue
+        // and remains fully usable when the profile API is unavailable.
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isTeacherProfileEnabled]);
+
+  const availableSubjectIds = useMemo(
+    () =>
+      formState.schoolYear
+        ? SUBJECTS_BY_GRADE[String(formState.schoolYear)] ?? []
+        : SUBJECTS.map((subject) => subject.id),
+    [formState.schoolYear]
+  );
+  const preferredSubjectIds = useMemo(
+    () => getPreferredRegularSubjectIds(teachingProfile, availableSubjectIds),
+    [teachingProfile, availableSubjectIds]
+  );
+  const topicSuggestions = useMemo(
+    () =>
+      getTeachingProfileSuggestions(teachingProfile).map((suggestion) => ({
+        key: suggestion.key,
+        label: suggestion.regularSubjectId
+          ? translateSubjectLabel(suggestion.regularSubjectId)
+          : suggestion.label,
+      })),
+    [teachingProfile]
+  );
 
   // Prefill from quick-create query params (?topic=&year=&subject=) set by the
   // dashboard prompt box and quick-start examples. Reads window.location instead
@@ -361,6 +423,7 @@ export default function DocumentCreationPage({
               topic={formState.topic}
               placeholder={t(`types.${documentType.id}.placeholder`)}
               onUpdate={updateForm}
+              suggestions={topicSuggestions}
             />
           </div>
 
@@ -390,6 +453,7 @@ export default function DocumentCreationPage({
                     isSpecificComponent={formState.isSpecificComponent}
                     onUpdate={updateForm}
                     availableSubjects={formState.schoolYear ? SUBJECTS_BY_GRADE[String(formState.schoolYear)] : undefined}
+                    preferredSubjectIds={preferredSubjectIds}
                     className={NESTED_SECTION_CLASS}
                     disabled={!formState.schoolYear}
                   />

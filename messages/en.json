@@ -239,7 +239,9 @@
     "topic": {
       "title": "Lesson Topic",
       "description": "Describe the topic you want to cover",
-      "ariaLabel": "Lesson topic"
+      "ariaLabel": "Lesson topic",
+      "suggestionsLabel": "Suggestions from your teaching profile",
+      "useSuggestion": "Use {suggestion} as the topic"
     },
     "grade": {
       "title": "School Year",
@@ -251,7 +253,8 @@
       "specificTraining": "Specific Track",
       "selectAriaLabel": "Select subject",
       "placeholderDisabled": "Select the school year first...",
-      "placeholder": "Select a subject..."
+      "placeholder": "Select a subject...",
+      "yourSubjects": "Your subjects"
     },
     "duration": {
       "title": "Lesson Duration",
@@ -752,7 +755,12 @@
       "typeGroupLabel": "Teaching type",
       "regular": "Regular education",
       "vocational": "Vocational education",
-      "regularNote": "In regular education you still pick the subject and year on every document.",
+      "subjectsLabel": "Subjects you teach",
+      "subjectsSearchPlaceholder": "Search subjects",
+      "subjectsListLabel": "Available subjects",
+      "noSubjectsFound": "No subjects found.",
+      "subjectsSelected": "{count, plural, =0 {No subjects selected} one {# subject selected} other {# subjects selected}}",
+      "retryLoad": "Try again",
       "coursesLabel": "Your courses",
       "coursesSearchPlaceholder": "Search by name, code or area — e.g. software, 481",
       "noCoursesFound": "No course found. Schools sometimes use different names than the catalogue — try a single word.",
