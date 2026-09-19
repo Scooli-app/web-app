@@ -16,7 +16,7 @@ import {
 } from "@/shared/types/featureFlags";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AMBIGUOUS_COMPONENTS_SUBJECTS,
   SUBJECTS,
@@ -46,8 +46,10 @@ import { SlideThumbnail } from "@/components/document-editor-v2/SlideThumbnail";
 import { teachingProfileService } from "@/services/api/teaching-profile.service";
 import type { TeachingProfile } from "@/shared/types/teaching-profile";
 import {
+  getDefaultSchoolYear,
   getPreferredRegularSubjectIds,
   getPreferredSchoolYears,
+  getVocationalCourseOptions,
   getTeachingProfileSuggestions,
 } from "./teaching-profile-preferences";
 
@@ -182,6 +184,10 @@ export default function DocumentCreationPage({
     () => getPreferredSchoolYears(teachingProfile, Array.from({ length: 12 }, (_, index) => index + 1)),
     [teachingProfile]
   );
+  const vocationalCourseOptions = useMemo(
+    () => getVocationalCourseOptions(teachingProfile),
+    [teachingProfile]
+  );
   const topicSuggestions = useMemo(
     () =>
       getTeachingProfileSuggestions(teachingProfile).map((suggestion) => ({
@@ -197,6 +203,7 @@ export default function DocumentCreationPage({
   // dashboard prompt box and quick-start examples. Reads window.location instead
   // of useSearchParams() to avoid requiring a Suspense boundary on every
   // creation page. Invalid or missing values are simply left for the form.
+  const yearFromUrlRef = useRef(false);
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const topic = params.get("topic");
@@ -211,6 +218,7 @@ export default function DocumentCreationPage({
     const year = yearRaw ? Number(yearRaw) : Number.NaN;
     const hasValidYear = Number.isInteger(year) && year >= 1 && year <= 12;
     if (hasValidYear) {
+      yearFromUrlRef.current = true;
       updateForm("schoolYear", year);
     }
 
@@ -222,6 +230,20 @@ export default function DocumentCreationPage({
       }
     }
   }, [updateForm]);
+
+  // Default "ano de escolaridade" to the teacher's saved school year (lowest
+  // first) once their profile has loaded, unless the URL already set one or
+  // the teacher has already picked a year themselves.
+  const hasAppliedDefaultYearRef = useRef(false);
+  useEffect(() => {
+    if (hasAppliedDefaultYearRef.current) return;
+    if (yearFromUrlRef.current) return;
+    if (formState.schoolYear) return;
+    const defaultYear = getDefaultSchoolYear(preferredSchoolYears);
+    if (defaultYear === null) return;
+    hasAppliedDefaultYearRef.current = true;
+    updateForm("schoolYear", defaultYear);
+  }, [preferredSchoolYears, formState.schoolYear, updateForm]);
 
   // Reset subject if it's not available for the selected school year
   useEffect(() => {
@@ -460,6 +482,9 @@ export default function DocumentCreationPage({
                     onUpdate={updateForm}
                     availableSubjects={formState.schoolYear ? SUBJECTS_BY_GRADE[String(formState.schoolYear)] : undefined}
                     preferredSubjectIds={preferredSubjectIds}
+                    vocationalCourses={vocationalCourseOptions}
+                    subjectMode={formState.subjectMode}
+                    vocationalCourseCode={formState.vocationalCourseCode}
                     className={NESTED_SECTION_CLASS}
                     disabled={!formState.schoolYear}
                   />

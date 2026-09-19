@@ -1,7 +1,10 @@
+"use client";
+
 import { Card } from "@/components/ui/card";
 import { cn } from "@/shared/utils/utils";
-import { GraduationCap } from "lucide-react";
+import { ChevronDown, ChevronUp, GraduationCap } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { useState } from "react";
 import { GRADE_GROUPS, translateGradeGroupLabel, translateGradeLabel } from "../constants";
 import type { FormUpdateFn } from "../types";
 
@@ -15,6 +18,44 @@ interface GradeSectionProps {
 export function GradeSection({ schoolYear, onUpdate, preferredSchoolYears = [], className }: GradeSectionProps) {
   const t = useTranslations("documentCreation.grade");
   const preferred = new Set(preferredSchoolYears);
+  const hasPreferredYears = preferred.size > 0;
+  // Currently selected year always stays visible even if it's not a "my
+  // years" pick — never hide the teacher's active choice behind a toggle.
+  const [showAllYears, setShowAllYears] = useState(!hasPreferredYears);
+
+  type Grade = { id: string; label: string };
+
+  const allGrades: Grade[] = GRADE_GROUPS.flatMap((group) => group.grades as readonly Grade[]);
+
+  const renderGrade = (grade: Grade) => {
+    const gradeValue = parseInt(grade.id);
+    const isSelected = schoolYear === gradeValue;
+    const isPreferred = preferred.has(gradeValue);
+    const gradeLabel = translateGradeLabel(grade.id);
+    return (
+      <button
+        key={grade.id}
+        type="button"
+        onClick={() => onUpdate("schoolYear", isSelected ? 0 : gradeValue)}
+        className={cn(
+          "px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-md sm:rounded-lg text-xs sm:text-sm font-medium transition-all",
+          "border hover:scale-[1.02] active:scale-[0.98]",
+          isSelected
+            ? "bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20"
+            : isPreferred
+              ? "bg-primary/10 text-primary border-primary/40 hover:border-primary hover:bg-primary/15"
+              : "bg-card text-foreground border-border hover:border-primary hover:bg-accent"
+        )}
+        aria-pressed={isSelected}
+        aria-label={t("selectAriaLabel", { grade: gradeLabel })}
+      >
+        {gradeLabel}
+        {isPreferred && !isSelected ? (
+          <span className="ml-1 text-[10px] font-semibold">{t("myYearBadge")}</span>
+        ) : null}
+      </button>
+    );
+  };
 
   return (
     <Card className={cn("p-4 sm:p-6 border-border shadow-sm hover:shadow-md transition-shadow", className)}>
@@ -27,48 +68,55 @@ export function GradeSection({ schoolYear, onUpdate, preferredSchoolYears = [], 
             {t("title")} <span className="text-destructive">*</span>
           </h2>
         </div>
-        <div className="space-y-2.5 sm:space-y-3">
-          {GRADE_GROUPS.map((group) => (
-            <div key={group.groupId}>
-              <p className="text-[10px] sm:text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1.5 sm:mb-2">
-                {translateGradeGroupLabel(group.groupId)}
-              </p>
-              <div className="flex flex-wrap gap-1.5 sm:gap-2">
-                {group.grades.map((grade) => {
-                  const gradeValue = parseInt(grade.id);
-                  const isSelected = schoolYear === gradeValue;
-                  const isPreferred = preferred.has(gradeValue);
-                  const gradeLabel = translateGradeLabel(grade.id);
-                  return (
-                    <button
-                      key={grade.id}
-                      type="button"
-                      onClick={() =>
-                        onUpdate("schoolYear", isSelected ? 0 : gradeValue)
-                      }
-                      className={cn(
-                        "px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-md sm:rounded-lg text-xs sm:text-sm font-medium transition-all",
-                        "border hover:scale-[1.02] active:scale-[0.98]",
-                        isSelected
-                          ? "bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20"
-                          : isPreferred
-                            ? "bg-primary/10 text-primary border-primary/40 hover:border-primary hover:bg-primary/15"
-                          : "bg-card text-foreground border-border hover:border-primary hover:bg-accent"
-                      )}
-                      aria-pressed={isSelected}
-                      aria-label={t("selectAriaLabel", { grade: gradeLabel })}
-                    >
-                      {gradeLabel}
-                      {isPreferred && !isSelected ? (
-                        <span className="ml-1 text-[10px] font-semibold">{t("myYearBadge")}</span>
-                      ) : null}
-                    </button>
-                  );
-                })}
-              </div>
+
+        {hasPreferredYears && (
+          <div>
+            <p className="text-[10px] sm:text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1.5 sm:mb-2">
+              {t("myYearsGroupLabel")}
+            </p>
+            <div className="flex flex-wrap gap-1.5 sm:gap-2">
+              {allGrades.filter(
+                (grade) => preferred.has(parseInt(grade.id))
+              ).map(renderGrade)}
             </div>
-          ))}
-        </div>
+          </div>
+        )}
+
+        {hasPreferredYears && !showAllYears && (
+          <button
+            type="button"
+            onClick={() => setShowAllYears(true)}
+            className="flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground"
+          >
+            <ChevronDown className="w-3.5 h-3.5" />
+            {t("showOtherYears")}
+          </button>
+        )}
+
+        {(showAllYears || !hasPreferredYears) && (
+          <div className="space-y-2.5 sm:space-y-3">
+            {hasPreferredYears && (
+              <button
+                type="button"
+                onClick={() => setShowAllYears(false)}
+                className="flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground"
+              >
+                <ChevronUp className="w-3.5 h-3.5" />
+                {t("hideOtherYears")}
+              </button>
+            )}
+            {GRADE_GROUPS.map((group) => (
+              <div key={group.groupId}>
+                <p className="text-[10px] sm:text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1.5 sm:mb-2">
+                  {translateGradeGroupLabel(group.groupId)}
+                </p>
+                <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                  {group.grades.map(renderGrade)}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </Card>
   );

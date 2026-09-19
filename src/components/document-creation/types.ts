@@ -18,6 +18,16 @@ export interface FormState {
   topic: string;
   subject: string;
   isSpecificComponent?: boolean;
+  /**
+   * "vocational" when the subject was picked from the teacher's saved
+   * Ensino Profissional course/UC selections instead of the regular
+   * subject catalogue. Only reachable when `teacher_profile` is enabled
+   * and the teacher has saved vocational units. Purely a UI concern —
+   * `subject` still carries the plain text sent to the backend.
+   */
+  subjectMode?: "regular" | "vocational";
+  /** Selected course code while in vocational subject mode (UI only). */
+  vocationalCourseCode?: string;
   schoolYear: number;
   lessonTime?: number;
   customTime?: number;

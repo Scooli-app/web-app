@@ -246,7 +246,10 @@
     "grade": {
       "title": "School Year",
       "selectAriaLabel": "Select {grade}",
-      "myYearBadge": "mine"
+      "myYearBadge": "mine",
+      "myYearsGroupLabel": "My years",
+      "showOtherYears": "Show other years",
+      "hideOtherYears": "Hide other years"
     },
     "subject": {
       "title": "Subject",
@@ -255,7 +258,14 @@
       "selectAriaLabel": "Select subject",
       "placeholderDisabled": "Select the school year first...",
       "placeholder": "Select a subject...",
-      "yourSubjects": "My subjects"
+      "yourSubjects": "My subjects",
+      "modeGroupLabel": "Teaching type",
+      "modeRegular": "Regular education",
+      "modeVocational": "Vocational education",
+      "coursePlaceholder": "Select the course...",
+      "courseSelectAriaLabel": "Select course",
+      "unitPlaceholder": "Select the competence unit...",
+      "unitSelectAriaLabel": "Select competence unit"
     },
     "duration": {
       "title": "Lesson Duration",
