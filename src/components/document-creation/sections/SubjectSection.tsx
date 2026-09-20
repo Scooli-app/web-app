@@ -9,8 +9,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/shared/utils/utils";
-import { BookOpen, Check } from "lucide-react";
+import { BookOpen, Check, ChevronDown, ChevronUp } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { useState } from "react";
 import {
   AMBIGUOUS_COMPONENTS_SUBJECTS,
   SUBJECTS,
@@ -51,6 +52,7 @@ export function SubjectSection({
   const selectedCourse =
     vocationalCourses.find((course) => course.code === vocationalCourseCode) ??
     vocationalCourses[0];
+  const [showAllSubjects, setShowAllSubjects] = useState(false);
 
   // Filter subjects based on availableSubjects prop if provided
   const visibleSubjects = availableSubjects
@@ -62,6 +64,7 @@ export function SubjectSection({
   );
   const preferredSubjects = visibleSubjects.filter((item) => preferredIds.has(item.id));
   const remainingSubjects = visibleSubjects.filter((item) => !preferredIds.has(item.id));
+  const hasPreferredSubjects = preferredSubjects.length > 0;
 
   // Group subjects by category
   const groupedSubjects = remainingSubjects.reduce((acc, subject) => {
@@ -195,6 +198,55 @@ export function SubjectSection({
           </div>
         )}
 
+        {!isVocationalMode && preferredSubjects.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-[10px] sm:text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              {t("yourSubjects")}
+            </p>
+            <div className="flex flex-wrap gap-1.5 sm:gap-2">
+              {preferredSubjects.map((subjectOption) => {
+                const isSelected = subject === subjectOption.id;
+                return (
+                  <button
+                    key={subjectOption.id}
+                    type="button"
+                    disabled={disabled}
+                    onClick={() => onUpdate("subject", isSelected ? "" : subjectOption.id)}
+                    className={cn(
+                      "px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-md sm:rounded-lg text-xs sm:text-sm font-medium transition-all",
+                      "border hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none",
+                      isSelected
+                        ? "bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20"
+                        : "bg-primary/10 text-primary border-primary/40 hover:border-primary hover:bg-primary/15"
+                    )}
+                    aria-pressed={isSelected}
+                  >
+                    {translateSubjectLabel(subjectOption.id)}
+                  </button>
+                );
+              })}
+              <button
+                type="button"
+                disabled={disabled}
+                onClick={() => setShowAllSubjects((current) => !current)}
+                className={cn(
+                  "px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-md sm:rounded-lg text-xs sm:text-sm font-medium transition-all",
+                  "border border-dashed border-border text-muted-foreground hover:border-primary hover:text-primary",
+                  "flex items-center gap-1 disabled:opacity-50 disabled:pointer-events-none"
+                )}
+                aria-expanded={showAllSubjects}
+              >
+                {showAllSubjects ? (
+                  <ChevronUp className="w-3.5 h-3.5" />
+                ) : (
+                  <ChevronDown className="w-3.5 h-3.5" />
+                )}
+                {t("showAllSubjects")}
+              </button>
+            </div>
+          </div>
+        )}
+
         {isVocationalMode ? (
           <div className="space-y-3">
             <Select
@@ -246,81 +298,67 @@ export function SubjectSection({
             </Select>
           </div>
         ) : (
-        <Select
-          value={subject}
-          onValueChange={(value) => onUpdate("subject", value)}
-          disabled={disabled}
-        >
-          <SelectTrigger
-            className="h-11 sm:h-12 px-4 text-sm sm:text-base bg-background border-border rounded-xl"
-            aria-label={t("selectAriaLabel")}
-          >
-            <SelectValue
-              placeholder={
-                disabled
-                  ? t("placeholderDisabled")
-                  : t("placeholder")
-              }
-            />
-          </SelectTrigger>
-          <SelectContent className="rounded-xl border-border max-h-[400px]">
-            {preferredSubjects.length > 0 && (
-              <SelectGroup>
-                <SelectLabel className="bg-background px-2 py-2 text-sm font-bold text-primary border-b border-border/50 rounded-lg mb-1">
-                  {t("yourSubjects")}
-                </SelectLabel>
-                {preferredSubjects.map((subjectOption) => (
-                  <SelectItem
-                    key={`preferred-${subjectOption.id}`}
-                    value={subjectOption.id}
-                    className="py-2.5 px-3 text-sm cursor-pointer rounded-lg focus:bg-accent focus:text-primary pl-4"
-                  >
-                    {translateSubjectLabel(subjectOption.id)}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            )}
-            {categoryOrder.map((category) => {
-              const categorySubjects = groupedSubjects[category];
-              if (!categorySubjects?.length) return null;
+          (!hasPreferredSubjects || showAllSubjects || (subject && !preferredIds.has(subject))) && (
+            <Select
+              value={subject}
+              onValueChange={(value) => onUpdate("subject", value)}
+              disabled={disabled}
+            >
+              <SelectTrigger
+                className="h-11 sm:h-12 px-4 text-sm sm:text-base bg-background border-border rounded-xl"
+                aria-label={t("selectAriaLabel")}
+              >
+                <SelectValue
+                  placeholder={
+                    disabled
+                      ? t("placeholderDisabled")
+                      : t("placeholder")
+                  }
+                />
+              </SelectTrigger>
+              <SelectContent className="rounded-xl border-border max-h-[400px]">
+                {categoryOrder.map((category) => {
+                  const categorySubjects = groupedSubjects[category];
+                  if (!categorySubjects?.length) return null;
 
-              return (
-                <SelectGroup key={category}>
-                  <SelectLabel className="bg-background px-2 py-2 text-sm font-bold text-primary border-b border-border/50 rounded-lg mb-1">
-                    {translateSubjectCategory(category)}
-                  </SelectLabel>
-                  {categorySubjects.map((subjectOption) => (
-                    <SelectItem
-                      key={subjectOption.id}
-                      value={subjectOption.id}
-                      className="py-2.5 px-3 text-sm cursor-pointer rounded-lg focus:bg-accent focus:text-primary pl-4"
-                    >
-                      {translateSubjectLabel(subjectOption.id)}
-                    </SelectItem>
+                  return (
+                    <SelectGroup key={category}>
+                      <SelectLabel className="bg-background px-2 py-2 text-sm font-bold text-primary border-b border-border/50 rounded-lg mb-1">
+                        {translateSubjectCategory(category)}
+                      </SelectLabel>
+                      {categorySubjects.map((subjectOption) => (
+                        <SelectItem
+                          key={subjectOption.id}
+                          value={subjectOption.id}
+                          className="py-2.5 px-3 text-sm cursor-pointer rounded-lg focus:bg-accent focus:text-primary pl-4"
+                        >
+                          {translateSubjectLabel(subjectOption.id)}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  );
+                })}
+                {Object.keys(groupedSubjects)
+                  .filter((c) => !categoryOrder.includes(c))
+                  .map((category) => (
+                    <SelectGroup key={category}>
+                      <SelectLabel className="bg-background px-2 py-2 text-sm font-bold text-primary border-b border-border/50 mb-1">
+                        {translateSubjectCategory(category)}
+                      </SelectLabel>
+                      {groupedSubjects[category].map((subjectOption) => (
+                        <SelectItem
+                          key={subjectOption.id}
+                          value={subjectOption.id}
+                          className="py-2.5 px-3 text-sm cursor-pointer rounded-lg focus:bg-accent focus:text-primary pl-4"
+                        >
+                          {translateSubjectLabel(subjectOption.id)}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
                   ))}
-                </SelectGroup>
-              );
-            })}
-            {Object.keys(groupedSubjects)
-              .filter((c) => !categoryOrder.includes(c))
-              .map((category) => (
-                <SelectGroup key={category}>
-                  <SelectLabel className="bg-background px-2 py-2 text-sm font-bold text-primary border-b border-border/50 mb-1">
-                    {translateSubjectCategory(category)}
-                  </SelectLabel>
-                  {groupedSubjects[category].map((subjectOption) => (
-                    <SelectItem
-                      key={subjectOption.id}
-                      value={subjectOption.id}
-                      className="py-2.5 px-3 text-sm cursor-pointer rounded-lg focus:bg-accent focus:text-primary pl-4"
-                    >
-                      {translateSubjectLabel(subjectOption.id)}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              ))}
-          </SelectContent>
-        </Select>
+              </SelectContent>
+            </Select>
+          )
         )}
       </div>
     </Card>

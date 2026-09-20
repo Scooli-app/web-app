@@ -50,9 +50,6 @@ export function GradeSection({ schoolYear, onUpdate, preferredSchoolYears = [], 
         aria-label={t("selectAriaLabel", { grade: gradeLabel })}
       >
         {gradeLabel}
-        {isPreferred && !isSelected ? (
-          <span className="ml-1 text-[10px] font-semibold">{t("myYearBadge")}</span>
-        ) : null}
       </button>
     );
   };
