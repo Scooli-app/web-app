@@ -15,6 +15,7 @@ export const teachingProfileService = {
     const response = await apiClient.put<TeachingProfile>("/teaching-profile", {
       educationType: profile.educationType,
       courses: profile.courses,
+      schoolYears: profile.schoolYears,
       items: profile.items,
     });
     return response.data;
