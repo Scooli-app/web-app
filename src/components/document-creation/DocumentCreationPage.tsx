@@ -245,15 +245,19 @@ export default function DocumentCreationPage({
     updateForm("schoolYear", defaultYear);
   }, [preferredSchoolYears, formState.schoolYear, updateForm]);
 
-  // Reset subject if it's not available for the selected school year
+  // Reset subject if it's not available for the selected school year.
+  // Skipped in vocational mode: UC labels are never part of the regular
+  // subject catalogue, so this would otherwise clear a UC right after
+  // it's picked (see SubjectSection's vocational course/UC pickers).
   useEffect(() => {
+    if (formState.subjectMode === "vocational") return;
     if (formState.schoolYear && formState.subject) {
       const validSubjects = SUBJECTS_BY_GRADE[String(formState.schoolYear)];
       if (validSubjects && !validSubjects.includes(formState.subject)) {
         updateForm("subject", "");
       }
     }
-  }, [formState.schoolYear, formState.subject, updateForm]);
+  }, [formState.schoolYear, formState.subject, formState.subjectMode, updateForm]);
 
   // Reset component type when subject changes
   useEffect(() => {
