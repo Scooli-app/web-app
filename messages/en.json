@@ -246,7 +246,6 @@
     "grade": {
       "title": "School Year",
       "selectAriaLabel": "Select {grade}",
-      "myYearBadge": "mine",
       "myYearsGroupLabel": "My years",
       "showOtherYears": "Show other years",
       "hideOtherYears": "Hide other years"
@@ -259,6 +258,7 @@
       "placeholderDisabled": "Select the school year first...",
       "placeholder": "Select a subject...",
       "yourSubjects": "My subjects",
+      "showAllSubjects": "Show all",
       "modeGroupLabel": "Teaching type",
       "modeRegular": "Regular education",
       "modeVocational": "Vocational education",

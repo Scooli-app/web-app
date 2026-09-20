@@ -246,7 +246,6 @@
     "grade": {
       "title": "Ano de Escolaridade",
       "selectAriaLabel": "Selecionar {grade}",
-      "myYearBadge": "meu",
       "myYearsGroupLabel": "Os meus anos",
       "showOtherYears": "Ver outros anos",
       "hideOtherYears": "Ocultar outros anos"
@@ -259,6 +258,7 @@
       "placeholderDisabled": "Selecione primeiro o ano de escolaridade...",
       "placeholder": "Selecione uma disciplina...",
       "yourSubjects": "As minhas disciplinas",
+      "showAllSubjects": "Ver todas",
       "modeGroupLabel": "Tipo de ensino",
       "modeRegular": "Ensino regular",
       "modeVocational": "Ensino profissional",
