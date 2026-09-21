@@ -43,19 +43,21 @@ export function DatePicker({
           variant="outline"
           disabled={disabled}
           className={cn(
-            "w-full justify-start text-left font-normal",
+            "w-full min-w-0 justify-start text-left font-normal",
             !value && "text-muted-foreground",
             className
           )}
         >
-          <CalendarIcon className="mr-2 h-4 w-4" />
-          {value
-            ? format.dateTime(value, {
-                day: "numeric",
-                month: "long",
-                year: "numeric",
-              })
-            : (placeholder ?? t("selectDate"))}
+          <CalendarIcon className="mr-2 h-4 w-4 shrink-0" />
+          <span className="truncate">
+            {value
+              ? format.dateTime(value, {
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
+                })
+              : (placeholder ?? t("selectDate"))}
+          </span>
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">

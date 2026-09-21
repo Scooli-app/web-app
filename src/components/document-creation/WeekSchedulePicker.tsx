@@ -92,7 +92,7 @@ export function WeekSchedulePicker({
         </Badge>
       </div>
 
-      <div className="grid gap-2">
+      <div className="grid min-w-0 gap-2">
         {DAY_ORDER.map((key) => {
           const day = schedule[key];
           const label = tDays(`${key}.label`);
@@ -101,7 +101,7 @@ export function WeekSchedulePicker({
             <div
               key={key}
               className={cn(
-                "space-y-2 rounded-lg border px-4 py-3 transition-colors",
+                "min-w-0 space-y-2 rounded-lg border px-4 py-3 transition-colors",
                 day.enabled
                   ? "border-primary/40 bg-primary/5"
                   : "border-border bg-background opacity-60"
@@ -129,15 +129,15 @@ export function WeekSchedulePicker({
               </div>
 
               {day.enabled && (
-                <div className="space-y-1.5 pl-8">
+                <div className="min-w-0 space-y-1.5 pl-8">
                   {day.periods.map((period, index) => (
-                    <div key={index} className="flex items-center gap-2">
+                    <div key={index} className="flex min-w-0 items-center gap-2">
                       <span className="w-4 shrink-0 text-xs text-muted-foreground">{index + 1}.</span>
                       <Select
                         value={period.type}
                         onValueChange={(v) => setPeriodType(key, index, v as SlotTypeOrAuto)}
                       >
-                        <SelectTrigger className="h-8 flex-1">
+                        <SelectTrigger className="h-8 min-w-0 flex-1">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>

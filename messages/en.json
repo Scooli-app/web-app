@@ -943,18 +943,10 @@
       }
     },
     "calendarButton": {
-      "steps": [
-        "Mapping curriculum competencies",
-        "Organizing content and pedagogical sequence",
-        "Setting assessments and criteria",
-        "Final pedagogical review"
-      ],
       "viewClass": "View class",
       "creating": "Creating...",
       "createClass": "Create class",
       "createFailed": "We couldn't create the class.",
-      "generationTitle": "Creating your class…",
-      "generationSubtitle": "Scooli is generating the topics and the pedagogical distribution. This can take up to a minute.",
       "dialogTitle": "Create a class from this curriculum plan",
       "dialogDescription": "Confirm the name — useful if you already have another class with the same subject and year.",
       "nameLabel": "Name",
@@ -2542,12 +2534,6 @@
         "details": "Details",
         "review": "Review"
       },
-      "loadingSteps": [
-        "Mapping curriculum competencies",
-        "Organizing content and pedagogical sequence",
-        "Defining assessments and criteria",
-        "Final pedagogical review"
-      ],
       "chooseMode": {
         "title": "How do you want to create the class?",
         "subtitle": "Choose the method that best fits your workflow.",
@@ -2614,12 +2600,7 @@
       },
       "header": {
         "title": "New class",
-        "subtitle": "Set the period, subject and weekly timetable.",
-        "loadingTitle": "New Class"
-      },
-      "generating": {
-        "title": "Creating your class…",
-        "subtitle": "Scooli is generating the topics and pedagogical distribution."
+        "subtitle": "Set the period, subject and weekly timetable."
       }
     },
     "periods": {
