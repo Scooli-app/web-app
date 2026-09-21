@@ -228,7 +228,7 @@ export default function SourcesPage() {
           <Card className="flex flex-col items-center gap-3 p-10 text-center">
             <FileText className="w-10 h-10 text-muted-foreground" />
             <p className="text-sm text-muted-foreground">
-              Ainda nao tem fontes carregadas.
+              Ainda não tem fontes carregadas.
             </p>
           </Card>
         )}

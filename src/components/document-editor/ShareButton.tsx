@@ -160,7 +160,7 @@ function ShareButtonComponent({
 
   const handleUnshareConfirm = useCallback(async () => {
     if (!documentId) {
-      toast.error("Nao foi possivel identificar o documento.");
+      toast.error("Não foi possível identificar o documento.");
       setIsUnshareConfirmOpen(false);
       return;
     }
@@ -189,7 +189,7 @@ function ShareButtonComponent({
       toast.error(
         error instanceof Error
           ? error.message
-          : "Nao foi possivel deixar de partilhar o recurso."
+          : "Não foi possível deixar de partilhar o recurso."
       );
     } finally {
       setIsUnsharing(false);
@@ -246,7 +246,7 @@ function ShareButtonComponent({
     ) : (
       <CheckCircle2 className="h-4 w-4" />
     );
-    const statusLabel = isPending ? "Em revisao" : "Publicado";
+    const statusLabel = isPending ? "Em revisão" : "Publicado";
     const statusClasses = isPending
       ? "text-amber-700 border-amber-300 bg-amber-50 hover:bg-amber-100 hover:text-amber-800 dark:bg-amber-950/30 dark:border-amber-800 dark:text-amber-400 dark:hover:bg-amber-950/50"
       : "text-green-700 border-green-300 bg-green-50 hover:bg-green-100 hover:text-green-800 dark:bg-green-950/30 dark:border-green-800 dark:text-green-400 dark:hover:bg-green-950/50";

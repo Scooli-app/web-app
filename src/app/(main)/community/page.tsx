@@ -118,7 +118,7 @@ function CommunityLibraryPage() {
   };
 
   const handlePreview = (_resourceId: string) => {
-    toast.info("Pre-visualizacao em breve disponivel");
+    toast.info("Pré-visualização em breve disponível");
   };
 
   const handleShareResource = async (request: ShareResourceRequest) => {
@@ -128,7 +128,7 @@ function CommunityLibraryPage() {
       toast.success(
         activeScope === "organization"
           ? "Recurso partilhado com a biblioteca da escola."
-          : "Recurso submetido para revisao! Recebera notificacao em 24-48h.",
+          : "Recurso submetido para revisão! Receberá notificação em 24-48h.",
       );
     } catch (error) {
       toast.error(

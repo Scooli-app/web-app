@@ -100,7 +100,7 @@ function AcceptOrganizationInvitationContent() {
   const invitationId = searchParams.get("invitation_id");
   const organizationId = searchParams.get("organization_id");
   const organizationName =
-    searchParams.get("organization_name") ?? "a sua organizacao";
+    searchParams.get("organization_name") ?? "a sua organização";
   const invitedEmail = normalizeEmail(searchParams.get("email"));
   const roleLabel = formatRoleLabel(searchParams.get("role"));
   const currentSearch = searchParams.toString();
@@ -171,7 +171,7 @@ function AcceptOrganizationInvitationContent() {
     if (!matchingInvitation) {
       setIsAccepting(false);
       setAcceptError(
-        "Nao encontramos um convite pendente para esta conta. Se ja aceitaste o convite, podes abrir o dashboard. Caso contrario, confirma que entraste com o email certo.",
+        "Não encontramos um convite pendente para esta conta. Se já aceitaste o convite, podes abrir o dashboard. Caso contrário, confirma que entraste com o email certo.",
       );
       return;
     }
@@ -197,7 +197,7 @@ function AcceptOrganizationInvitationContent() {
         acceptAttemptedRef.current = false;
         setIsAccepting(false);
         setAcceptError(
-          "Nao foi possivel aceitar o convite agora. Tenta novamente dentro de instantes.",
+          "Não foi possível aceitar o convite agora. Tenta novamente dentro de instantes.",
         );
       }
     })();
@@ -247,10 +247,10 @@ function AcceptOrganizationInvitationContent() {
             </div>
             <div className="space-y-2">
               <h1 className="text-2xl font-semibold text-foreground">
-                Convite invalido
+                Convite inválido
               </h1>
               <p className="text-sm text-muted-foreground">
-                Este link nao contem informacao suficiente para concluir o
+                Este link não contém informação suficiente para concluir o
                 convite.
               </p>
             </div>
@@ -276,7 +276,7 @@ function AcceptOrganizationInvitationContent() {
               <div className="space-y-3">
                 <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
                   <ShieldCheck className="h-3.5 w-3.5" />
-                  Convite de organizacao
+                  Convite de organização
                 </div>
 
                 <h1 className="text-3xl font-semibold tracking-tight text-foreground">
@@ -284,8 +284,8 @@ function AcceptOrganizationInvitationContent() {
                 </h1>
 
                 <p className="text-sm leading-6 text-muted-foreground">
-                  Vais entrar como {roleLabel}. Depois de iniciares sessao ou
-                  criares conta, o convite sera aceite automaticamente.
+                  Vais entrar como {roleLabel}. Depois de iniciares sessão ou
+                  criares conta, o convite será aceite automaticamente.
                 </p>
               </div>
 
@@ -326,7 +326,7 @@ function AcceptOrganizationInvitationContent() {
 
             <div className="space-y-2">
               <h1 className="text-2xl font-semibold text-foreground">
-                Esta conta nao corresponde ao convite
+                Esta conta não corresponde ao convite
               </h1>
               <p className="text-sm leading-6 text-muted-foreground">
                 O convite foi enviado para{" "}
@@ -344,7 +344,7 @@ function AcceptOrganizationInvitationContent() {
                 }
               >
                 <LogOut className="h-4 w-4" />
-                Terminar sessao
+                Terminar sessão
               </Button>
               <Button onClick={() => router.push("/dashboard")}>
                 Ir para o dashboard
@@ -367,7 +367,7 @@ function AcceptOrganizationInvitationContent() {
 
             <div className="space-y-2">
               <h1 className="text-2xl font-semibold text-foreground">
-                Nao foi possivel concluir o convite
+                Não foi possível concluir o convite
               </h1>
               <p className="text-sm leading-6 text-muted-foreground">
                 {acceptError}
@@ -419,7 +419,7 @@ function AcceptOrganizationInvitationContent() {
 
           {isAccepting && !hasAccepted ? (
             <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
-              A sincronizar organizacao
+              A sincronizar organização
             </p>
           ) : null}
         </div>

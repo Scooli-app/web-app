@@ -230,7 +230,7 @@ export const unshareDocumentResource = createAsyncThunk(
       return rejectWithValue(
         error instanceof Error
           ? error.message
-          : "Nao foi possivel deixar de partilhar o recurso",
+          : "Não foi possível deixar de partilhar o recurso",
       );
     }
   },

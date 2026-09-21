@@ -4,7 +4,7 @@
  * Modal form for sharing AI-generated content with the community or school library.
  *
  * When the user belongs to an organization, the modal renders a two-step flow:
- *   Step 1 — destination picker (Todas / Biblioteca comunitaria / Biblioteca de <org>)
+ *   Step 1 — destination picker (Todas / Biblioteca comunitária / Biblioteca de <org>)
  *   Step 2 — the existing form (title, grade, subject, etc.)
  *
  * When the user does NOT belong to an organization the modal renders the
@@ -95,8 +95,8 @@ function getDestinationOptions(organizationName: string | null): DestinationOpti
     },
     {
       value: "community",
-      title: "Biblioteca comunitaria",
-      hint: "Visivel para todos os professores na Scooli apos revisao.",
+      title: "Biblioteca comunitária",
+      hint: "Visível para todos os professores na Scooli após revisão.",
       icon: Globe2,
       cardClassName:
         "border-teal-500/30 bg-teal-500/10 hover:border-teal-500/45 hover:bg-teal-500/14",
@@ -106,7 +106,7 @@ function getDestinationOptions(organizationName: string | null): DestinationOpti
     {
       value: "organization",
       title: orgLabel,
-      hint: "So os colegas da escola vao ver este recurso.",
+      hint: "Só os colegas da escola vão ver este recurso.",
       icon: Building2,
       cardClassName:
         "border-amber-400/35 bg-amber-400/10 hover:border-amber-400/50 hover:bg-amber-400/14",
@@ -190,19 +190,19 @@ export function ShareResourceModal({
     const newErrors: Record<string, string> = {};
 
     if (!formData.title.trim()) {
-      newErrors.title = "Titulo e obrigatorio";
+      newErrors.title = "Título é obrigatório";
     }
     if (!formData.grade) {
-      newErrors.grade = "Ano e obrigatorio";
+      newErrors.grade = "Ano é obrigatório";
     }
     if (!formData.subject) {
-      newErrors.subject = "Disciplina e obrigatoria";
+      newErrors.subject = "Disciplina é obrigatória";
     }
     if (!formData.resourceType) {
-      newErrors.resourceType = "Tipo de recurso e obrigatorio";
+      newErrors.resourceType = "Tipo de recurso é obrigatório";
     }
     if (!formData.content.trim()) {
-      newErrors.content = "Conteudo e obrigatorio";
+      newErrors.content = "Conteúdo é obrigatório";
     }
 
     setErrors(newErrors);
@@ -262,15 +262,15 @@ export function ShareResourceModal({
 
   const modalDescription = (() => {
     if (allowOrganizationScope && step === 1) {
-      return "Escolha o destino deste recurso. Pode partilhar com toda a comunidade, so com a escola, ou com ambas.";
+      return "Escolha o destino deste recurso. Pode partilhar com toda a comunidade, só com a escola, ou com ambas.";
     }
     if (currentDestination === "organization") {
-      return `Este recurso ficara disponivel para os membros de ${organizationName ?? "a sua escola"}.`;
+      return `Este recurso ficará disponível para os membros de ${organizationName ?? "a sua escola"}.`;
     }
     if (currentDestination === "both") {
-      return "O recurso sera publicado na biblioteca da escola e submetido para revisao na biblioteca comunitaria.";
+      return "O recurso será publicado na biblioteca da escola e submetido para revisão na biblioteca comunitária.";
     }
-    return "Partilhe o seu recurso educacional com outros professores portugueses. O recurso sera revisto antes da publicacao.";
+    return "Partilhe o seu recurso educacional com outros professores portugueses. O recurso será revisto antes da publicação.";
   })();
 
   return (
@@ -346,12 +346,12 @@ export function ShareResourceModal({
           <form onSubmit={handleSubmit} className="space-y-5 px-6 pb-6 pt-4 pr-14">
             <div className="space-y-1.5">
               <Label htmlFor="share-title">
-                Titulo <span className="text-destructive">*</span>
+                Título <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="share-title"
                 type="text"
-                placeholder="Ex: Revisao - Funcoes - 9 ano"
+                placeholder="Ex: Revisão - Funções - 9 ano"
                 value={formData.title}
                 onChange={(e) =>
                   setFormData((prev) => ({ ...prev, title: e.target.value }))
@@ -365,14 +365,14 @@ export function ShareResourceModal({
 
             <div className="space-y-1.5">
               <Label htmlFor="share-description">
-                Descricao{" "}
+                Descrição{" "}
                 <span className="text-xs font-normal text-muted-foreground">
                   (opcional)
                 </span>
               </Label>
               <Textarea
                 id="share-description"
-                placeholder="Breve descricao do recurso e como pode ser usado..."
+                placeholder="Breve descrição do recurso e como pode ser usado..."
                 value={formData.description || ""}
                 onChange={(e) =>
                   setFormData((prev) => ({
@@ -472,25 +472,25 @@ export function ShareResourceModal({
                   ? "Biblioteca da escola"
                   : currentDestination === "both"
                     ? "Partilha combinada"
-                    : "Processo de revisao"}
+                    : "Processo de revisão"}
               </p>
               {currentDestination === "organization" ? (
                 <ul className="space-y-1 text-xs text-muted-foreground">
-                  <li>• O recurso fica disponivel imediatamente para a organizacao ativa</li>
-                  <li>• So membros da escola vao conseguir ver e reutilizar</li>
-                  <li>• Pode continuar a partilhar outro recurso na biblioteca comunitaria depois</li>
+                  <li>• O recurso fica disponível imediatamente para a organização ativa</li>
+                  <li>• Só membros da escola vão conseguir ver e reutilizar</li>
+                  <li>• Pode continuar a partilhar outro recurso na biblioteca comunitária depois</li>
                 </ul>
               ) : currentDestination === "both" ? (
                 <ul className="space-y-1 text-xs text-muted-foreground">
-                  <li>• Fica disponivel imediatamente para os membros da escola</li>
-                  <li>• Na comunidade, sera revisto pela equipa Scooli em 24-48h antes de publicar</li>
-                  <li>• Recebe notificacao quando a versao publica for aprovada</li>
+                  <li>• Fica disponível imediatamente para os membros da escola</li>
+                  <li>• Na comunidade, será revisto pela equipa Scooli em 24-48h antes de publicar</li>
+                  <li>• Recebe notificação quando a versão pública for aprovada</li>
                 </ul>
               ) : (
                 <ul className="space-y-1 text-xs text-muted-foreground">
-                  <li>• O recurso sera revisto pela nossa equipa em 24-48 horas</li>
-                  <li>• Verificamos alinhamento com as AEs e qualidade pedagogica</li>
-                  <li>• Recebera notificacao quando for aprovado</li>
+                  <li>• O recurso será revisto pela nossa equipa em 24-48 horas</li>
+                  <li>• Verificamos alinhamento com as AEs e qualidade pedagógica</li>
+                  <li>• Receberá notificação quando for aprovado</li>
                   <li>• Recursos aprovados podem ser reutilizados e adaptados por outros professores</li>
                 </ul>
               )}

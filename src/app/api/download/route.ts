@@ -2607,7 +2607,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         return NextResponse.json(
           {
             error:
-              "Exportacao DOCX disponivel apenas para utilizadores Scooli Pro",
+              "Exportação DOCX disponível apenas para utilizadores Scooli Pro",
           },
           { status: 403 },
         );
