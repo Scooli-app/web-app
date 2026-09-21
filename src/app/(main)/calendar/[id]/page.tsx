@@ -3,7 +3,7 @@ import { AiDisclaimer } from "@/components/ui/ai-disclaimer";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { selectIsHorarioPlanosEnabled } from "@/store/features/selectors";
+import { selectIsClassStateEnabled, selectIsHorarioPlanosEnabled } from "@/store/features/selectors";
 import { useFeatureAccess } from "@/components/feature/useFeatureAccess";
 import { FeatureUnavailable } from "@/components/feature/FeatureUnavailable";
 import {
@@ -33,6 +33,7 @@ import {
 } from "lucide-react";
 
 import { SLOT_STATUS_CONFIG } from "@/shared/constants/lessonSlotStatus";
+import { getLessonSlotStatusTranslationKey } from "@/shared/constants/lessonSlotStatusLabel";
 import { translateSubject } from "@/components/document-creation/constants";
 import { SlotDialog } from "@/components/calendar/SlotDialog";
 import type { SlotWithTimetable } from "@/shared/types/calendar";
@@ -64,6 +65,7 @@ interface SlotCardProps {
 function SlotCard({ slot, color, subject, classLabel, onOpen }: SlotCardProps) {
   const t = useTranslations("calendar");
   const tTimetable = useTranslations("timetable");
+  const classStateEnabled = useSelector(selectIsClassStateEnabled);
   const rawLocale = useLocale();
   const locale = isSupportedLocale(rawLocale) ? rawLocale : defaultLocale;
   const isHoliday = slot.slotType === "HOLIDAY";
@@ -119,7 +121,7 @@ function SlotCard({ slot, color, subject, classLabel, onOpen }: SlotCardProps) {
         {!isHoliday && (
           <Badge className={`shrink-0 gap-1 border text-xs ${cfg.badgeCls}`}>
             {cfg.icon}
-            {tTimetable(`status.${slot.status}`)}
+            {tTimetable(getLessonSlotStatusTranslationKey(slot.status, classStateEnabled))}
           </Badge>
         )}
       </div>

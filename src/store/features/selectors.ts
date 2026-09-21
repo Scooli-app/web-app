@@ -60,6 +60,11 @@ export const selectIsHorarioPlanosEnabled = createSelector(
   (enabledFeatures) => enabledFeatures.includes(FeatureFlag.HORARIO_PLANOS_ENABLED)
 );
 
+export const selectIsClassStateEnabled = createSelector(
+  [selectEnabledFeatureFlags],
+  (enabledFeatures) => enabledFeatures.includes(FeatureFlag.CLASS_STATE)
+);
+
 
 
 

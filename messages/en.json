@@ -2420,6 +2420,13 @@
       "failed": "Failed",
       "skipped": "Skipped"
     },
+    "generationStatus": {
+      "pending": "Lesson plan not generated",
+      "generating": "Generating lesson plan",
+      "completed": "Lesson plan generated",
+      "failed": "Lesson plan generation failed",
+      "skipped": "Lesson plan not requested"
+    },
     "slotType": {
       "lesson": "Lesson",
       "assessment": "Assessment",
@@ -2523,6 +2530,7 @@
       "confirm": "Confirm",
       "cancel": "Cancel",
       "skip": "Skip",
+      "skipGeneration": "Don't generate a lesson plan",
       "editTopicTitle": "Click to edit the topic",
       "topicPlaceholderEmpty": "No topic — click to edit",
       "lessonNumber": "Lesson {number}"

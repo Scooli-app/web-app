@@ -27,6 +27,9 @@ import { Separator } from "@/components/ui/separator";
 
 import { Routes } from "@/shared/types";
 import { SLOT_STATUS_CONFIG } from "@/shared/constants/lessonSlotStatus";
+import { getLessonSlotStatusTranslationKey } from "@/shared/constants/lessonSlotStatusLabel";
+import { selectIsClassStateEnabled } from "@/store/features/selectors";
+import { useAppSelector } from "@/store/hooks";
 import { translateSubject } from "@/components/document-creation/constants";
 import type { SlotWithTimetable } from "@/shared/types/calendar";
 import {
@@ -90,6 +93,7 @@ export function SlotDialog({
   const t = useTranslations("calendar.slotDialog");
   const tShared = useTranslations("calendar.shared");
   const tTimetable = useTranslations("timetable");
+  const classStateEnabled = useAppSelector(selectIsClassStateEnabled);
   const rawLocale = useLocale();
   const locale = isSupportedLocale(rawLocale) ? rawLocale : defaultLocale;
   const router = useRouter();
@@ -173,7 +177,7 @@ export function SlotDialog({
               </span>
               <Badge className={`gap-1 border text-xs ${cfg.badgeCls}`}>
                 {cfg.icon}
-                {tTimetable(`status.${slot.status}`)}
+                {tTimetable(getLessonSlotStatusTranslationKey(slot.status, classStateEnabled))}
               </Badge>
               {isAssessment && (
                 <Badge variant="outline" className="text-xs text-amber-600 border-amber-300">
@@ -450,7 +454,7 @@ export function SlotDialog({
                   onClick={() => setConfirmingSkip(true)}
                 >
                   <SkipForward className="mr-1.5 h-4 w-4" />
-                  {t("skip")}
+                  {classStateEnabled ? t("skipGeneration") : t("skip")}
                 </Button>
               )
             )}
