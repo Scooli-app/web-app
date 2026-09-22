@@ -2527,6 +2527,23 @@
       "topicPlaceholderEmpty": "No topic — click to edit",
       "lessonNumber": "Lesson {number}"
     },
+    "classState": {
+      "title": "Class record",
+      "unconfirmedHint": "We assume it went as planned until you tell us otherwise.",
+      "asPlanned": "As planned",
+      "partial": "Partially held",
+      "notHeld": "Didn't happen",
+      "undo": "Undo",
+      "savedAsPlanned": "Lesson confirmed as planned.",
+      "staleRevision": "The record changed elsewhere. It's been refreshed — try again.",
+      "saveFailed": "Couldn't save. Please try again.",
+      "partialNotePlaceholder": "Where did you stop? (optional)",
+      "notHeldNotePlaceholder": "Why didn't it happen? (optional)",
+      "skipNote": "No note",
+      "saveNote": "Save note",
+      "loadFailed": "Couldn't load the class record.",
+      "retry": "Try again"
+    },
     "dashboardWidget": {
       "title": "Upcoming lessons",
       "viewCalendar": "View calendar",
