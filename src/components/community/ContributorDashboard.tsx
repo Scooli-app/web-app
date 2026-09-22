@@ -43,7 +43,7 @@ const STATUS_CONFIG: Record<
   }
 > = {
   PENDING: {
-    label: "Em revisao",
+    label: "Em revisão",
     icon: <Clock className="h-4 w-4 text-amber-500" />,
     badgeClass:
       "border-amber-200 bg-amber-100 text-amber-700 dark:border-amber-800 dark:bg-amber-900/40 dark:text-amber-300",
@@ -126,11 +126,11 @@ export function ContributorDashboard() {
           <Share2 className="h-7 w-7 text-muted-foreground" />
         </div>
         <h3 className="mb-1 text-lg font-semibold">
-          Ainda nao partilhou recursos
+          Ainda não partilhou recursos
         </h3>
         <p className="text-sm text-muted-foreground">
           Comece a partilhar os seus recursos educacionais para ver as
-          estatisticas aqui.
+          estatísticas aqui.
         </p>
       </Card>
     );
@@ -233,7 +233,7 @@ export function ContributorDashboard() {
                     </p>
                   </div>
                   <Badge className="max-w-full self-start whitespace-normal break-words border border-amber-200 bg-amber-100 px-2 py-0.5 text-left text-xs text-amber-700 dark:border-amber-800 dark:bg-amber-900/40 dark:text-amber-300 sm:self-auto sm:text-center">
-                    Em revisao
+                    Em revisão
                   </Badge>
                 </div>
               </div>
@@ -383,7 +383,7 @@ export function ContributorDashboard() {
               professores!
             </p>
             <p className="break-words text-xs text-amber-700 dark:text-amber-400">
-              Continue a partilhar para ampliar o seu impacto na educacao
+              Continue a partilhar para ampliar o seu impacto na educação
               portuguesa.
             </p>
           </div>

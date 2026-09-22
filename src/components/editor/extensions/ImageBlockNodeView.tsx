@@ -222,7 +222,7 @@ export default function ImageBlockNodeView({ node, deleteNode, editor, getPos, u
       return;
     }
     if (!isPremium) {
-      toast.error("A geracao de imagens esta disponivel apenas no plano Pro");
+      toast.error("A geração de imagens está disponível apenas no plano Pro");
       return;
     }
     if (!currentDocument || !imageId || isCurrentImageGenerating) return;

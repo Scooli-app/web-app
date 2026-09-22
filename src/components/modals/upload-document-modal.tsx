@@ -535,7 +535,7 @@ export function UploadDocumentModal({
                   <span>
                     <span className="font-medium">Guardar nas minhas fontes</span>
                     <span className="mt-0.5 block text-xs text-muted-foreground">
-                      Indexa o ficheiro para futuras geracoes de conteudo.
+                      Indexa o ficheiro para futuras gerações de conteúdo.
                     </span>
                   </span>
                 </label>

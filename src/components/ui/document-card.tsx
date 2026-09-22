@@ -235,7 +235,7 @@ function DocumentCardComponent({
             )}
             {sharedScopes.has("community") && (
               <Badge
-                title="Partilhado na biblioteca comunitaria"
+                title="Partilhado na biblioteca comunitária"
                 className="shrink-0 whitespace-nowrap border border-teal-500/30 bg-teal-500/15 px-2 py-1 text-xs font-medium text-teal-700 dark:text-teal-400"
               >
                 <Globe2 className="mr-1 h-3 w-3" />
