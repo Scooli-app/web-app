@@ -30,6 +30,7 @@ import { SLOT_STATUS_CONFIG } from "@/shared/constants/lessonSlotStatus";
 import { getLessonSlotStatusTranslationKey } from "@/shared/constants/lessonSlotStatusLabel";
 import { selectIsClassStateEnabled } from "@/store/features/selectors";
 import { useAppSelector } from "@/store/hooks";
+import { ClassStateSection } from "@/components/calendar/ClassStateSection";
 import { translateSubject } from "@/components/document-creation/constants";
 import type { SlotWithTimetable } from "@/shared/types/calendar";
 import {
@@ -277,6 +278,18 @@ export function SlotDialog({
                     </p>
                   )}
                 </div>
+              </>
+            )}
+
+            {/* Class State — one-tap lesson closeout (Feature 2, flagged) */}
+            {!isHoliday && classStateEnabled && (
+              <>
+                <Separator />
+                <ClassStateSection
+                  timetableId={slot.timetable.id}
+                  lessonId={slot.id}
+                  isPast={new Date(`${slot.slotDate}T00:00:00`) < new Date(new Date().toDateString())}
+                />
               </>
             )}
 

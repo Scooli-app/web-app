@@ -2527,6 +2527,23 @@
       "topicPlaceholderEmpty": "Sem tópico — clica para editar",
       "lessonNumber": "Aula {number}"
     },
+    "classState": {
+      "title": "Registo da aula",
+      "unconfirmedHint": "Assumimos que decorreu como planeado até nos dizeres o contrário.",
+      "asPlanned": "Como planeado",
+      "partial": "Ficou a meio",
+      "notHeld": "Não aconteceu",
+      "undo": "Desfazer",
+      "savedAsPlanned": "Aula confirmada como planeada.",
+      "staleRevision": "O registo foi alterado noutro local. Foi atualizado — tenta novamente.",
+      "saveFailed": "Não foi possível guardar. Tenta novamente.",
+      "partialNotePlaceholder": "Onde ficaste? (opcional)",
+      "notHeldNotePlaceholder": "Porque não aconteceu? (opcional)",
+      "skipNote": "Sem nota",
+      "saveNote": "Guardar nota",
+      "loadFailed": "Não foi possível carregar o registo da aula.",
+      "retry": "Tentar novamente"
+    },
     "dashboardWidget": {
       "title": "Próximas aulas",
       "viewCalendar": "Ver calendário",
