@@ -943,18 +943,10 @@
       }
     },
     "calendarButton": {
-      "steps": [
-        "A mapear competências curriculares",
-        "A organizar conteúdos e sequência pedagógica",
-        "A definir avaliações e critérios",
-        "Revisão pedagógica final"
-      ],
       "viewClass": "Ver turma",
       "creating": "A criar...",
       "createClass": "Criar turma",
       "createFailed": "Não foi possível criar a turma.",
-      "generationTitle": "A criar a tua turma…",
-      "generationSubtitle": "A Scooli está a gerar os tópicos e a distribuição pedagógica. Pode demorar até um minuto.",
       "dialogTitle": "Criar turma a partir desta planificação",
       "dialogDescription": "Confirma o nome — útil se já tiveres outra turma com a mesma disciplina e ano.",
       "nameLabel": "Nome",
@@ -2542,12 +2534,6 @@
         "details": "Detalhes",
         "review": "Rever"
       },
-      "loadingSteps": [
-        "A mapear competências curriculares",
-        "A organizar conteúdos e sequência pedagógica",
-        "A definir avaliações e critérios",
-        "Revisão pedagógica final"
-      ],
       "chooseMode": {
         "title": "Como queres criar a turma?",
         "subtitle": "Escolhe o método que melhor se adapta ao teu fluxo de trabalho.",
@@ -2614,12 +2600,7 @@
       },
       "header": {
         "title": "Nova turma",
-        "subtitle": "Define o período, disciplina e horário semanal.",
-        "loadingTitle": "Nova Turma"
-      },
-      "generating": {
-        "title": "A criar a tua turma…",
-        "subtitle": "A Scooli está a gerar os tópicos e a distribuição pedagógica."
+        "subtitle": "Define o período, disciplina e horário semanal."
       }
     },
     "periods": {

@@ -155,6 +155,30 @@ export default function CalendarViewPage() {
     dispatch(fetchLessons({ timetableId: id }));
   }, [enabled, id, dispatch]);
 
+  // Lazily poll for topic titles while the background generate-topics call is
+  // still running (e.g. right after wizard/one-click creation of a full-year
+  // class navigates here immediately instead of blocking on it). Stops once
+  // every eligible slot has a title, or after a bounded number of attempts so
+  // a genuinely stuck/failed generation doesn't poll forever.
+  const pendingTopics = useMemo(
+    () => slots.some((s) => s.slotType !== "HOLIDAY" && !s.topicTitle),
+    [slots]
+  );
+  const pollAttemptsRef = useRef(0);
+  useEffect(() => {
+    if (!enabled || isSlotsLoading || !pendingTopics) {
+      pollAttemptsRef.current = 0;
+      return;
+    }
+    const MAX_ATTEMPTS = 15;
+    const interval = setInterval(() => {
+      pollAttemptsRef.current += 1;
+      dispatch(fetchLessons({ timetableId: id }));
+      if (pollAttemptsRef.current >= MAX_ATTEMPTS) clearInterval(interval);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [enabled, isSlotsLoading, pendingTopics, id, dispatch]);
+
   // Keep selectedSlot in sync with store (status updates from SSE)
   useEffect(() => {
     if (!selectedSlot) return;
