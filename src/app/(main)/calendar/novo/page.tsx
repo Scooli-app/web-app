@@ -5,7 +5,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Stepper } from "@/components/ui/stepper";
-import { GenerationProgress } from "@/components/document-creation/GenerationProgress";
 import { WizardShell } from "@/components/document-creation/WizardShell";
 import {
   buildSchoolPeriodPresets,
@@ -69,7 +68,6 @@ import {
   CalendarDays,
   ChevronLeft,
   ChevronRight,
-  Clock,
   ListChecks,
   Loader2,
   Settings2,
@@ -91,8 +89,7 @@ type WizardStep =
   | "mode_a_select_plan"
   | "mode_b_period"
   | "mode_b_details"
-  | "rever_datas"
-  | "loading";
+  | "rever_datas";
 
 // ─────────────────────── Step metadata ────────────────────────────────────────
 
@@ -331,8 +328,8 @@ function StepPeriod({ periodStart, periodEnd, schoolYearLabel, onChange }: StepP
       </div>
 
       {/* Date pickers */}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-1.5">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="min-w-0 space-y-1.5">
           <Label>{t("period.startLabel")}</Label>
           <DatePicker
             value={isoToDate(periodStart)}
@@ -341,7 +338,7 @@ function StepPeriod({ periodStart, periodEnd, schoolYearLabel, onChange }: StepP
             toDate={isoToDate(periodEnd)}
           />
         </div>
-        <div className="space-y-1.5">
+        <div className="min-w-0 space-y-1.5">
           <Label>{t("period.endLabel")}</Label>
           <DatePicker
             value={isoToDate(periodEnd)}
@@ -719,7 +716,6 @@ function CalendarNewPageContent() {
   const tShared = useTranslations("calendar.shared");
   const tTimetable = useTranslations("timetable");
   const tErrors = useTranslations("errors.calendar");
-  const LOADING_STEPS = t.raw("loadingSteps") as string[];
   const { loaded: featuresLoaded, enabled } = useFeatureAccess(selectIsHorarioPlanosEnabled);
   const isSubmitting = useSelector((state: RootState) => state.timetable.isCreating);
   const dispatch = useAppDispatch();
@@ -744,7 +740,6 @@ function CalendarNewPageContent() {
   });
   const [schedule, setSchedule] = useState<WeekSchedule>(DEFAULT_WEEK_SCHEDULE);
   const [previewSlots, setPreviewSlots] = useState<PreviewSlot[]>([]);
-  const [loadingStep, setLoadingStep] = useState(0);
 
   // Step validity (computed in parent so bottom nav can disable buttons)
   const periodCanProceed = !!periodStart && !!periodEnd && periodStart <= periodEnd;
@@ -886,15 +881,13 @@ function CalendarNewPageContent() {
     }
 
     const timetableId = result.payload.id;
-    setStep("loading");
-    setLoadingStep(0);
-
-    try {
-      await dispatch(generateTopics(timetableId));
-    } finally {
-      setLoadingStep(LOADING_STEPS.length - 1);
-      router.push(AppRoutes.CALENDAR);
-    }
+    // Navigate immediately — topic generation for a full year (150+ slots) can take
+    // well over a minute and previously blocked the wizard behind a full-screen
+    // "loading" step. The class already exists with placeholder slots; titles are
+    // generated in the background and lazily populate on the calendar view (which
+    // polls while any are still missing) instead of forcing the teacher to wait here.
+    router.push(`${AppRoutes.CALENDAR}/${timetableId}`);
+    void dispatch(generateTopics(timetableId));
   };
 
   // ── Step indicator config ─────────────────────────────────────────────────
@@ -929,26 +922,17 @@ function CalendarNewPageContent() {
     if (prev) setStep(prev);
   };
 
-  const showIndicator = step !== "choose_mode" && step !== "loading";
+  const showIndicator = step !== "choose_mode";
 
   return (
     <WizardShell>
       {/* ── Header ──────────────────────────────────────────────── */}
-      {step !== "loading" && (
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">{t("header.title")}</h1>
-          <p className="text-muted-foreground">
-            {t("header.subtitle")}
-          </p>
-        </div>
-      )}
-
-      {step === "loading" && (
-        <div className="flex items-center gap-2">
-          <Clock className="h-5 w-5 text-primary" />
-          <span className="text-xl font-semibold">{t("header.loadingTitle")}</span>
-        </div>
-      )}
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight">{t("header.title")}</h1>
+        <p className="text-muted-foreground">
+          {t("header.subtitle")}
+        </p>
+      </div>
 
       {/* ── Step indicator ──────────────────────────────────────── */}
       {showIndicator && (
@@ -1009,29 +993,19 @@ function CalendarNewPageContent() {
         </Card>
       )}
 
-      {step === "loading" && (
-        <GenerationProgress
-          title={t("generating.title")}
-          subtitle={t("generating.subtitle")}
-          steps={LOADING_STEPS}
-          currentStep={loadingStep}
-        />
-      )}
-
       {/* ── Navigation ──────────────────────────────────────────── */}
-      {step !== "loading" && (
-        <div className="flex items-center justify-between">
-          <Button
-            variant="outline"
-            onClick={step === "choose_mode" ? () => router.back() : handleBack}
-            disabled={isSubmitting}
-            className="gap-2"
-          >
-            <ChevronLeft className="h-4 w-4" />
-            {step === "choose_mode" ? t("nav.cancel") : t("nav.previous")}
-          </Button>
+      <div className="flex items-center justify-between">
+        <Button
+          variant="outline"
+          onClick={step === "choose_mode" ? () => router.back() : handleBack}
+          disabled={isSubmitting}
+          className="gap-2"
+        >
+          <ChevronLeft className="h-4 w-4" />
+          {step === "choose_mode" ? t("nav.cancel") : t("nav.previous")}
+        </Button>
 
-          {step === "mode_b_period" && (
+        {step === "mode_b_period" && (
             <Button
               onClick={() => setStep("mode_b_details")}
               disabled={!periodCanProceed}
@@ -1070,8 +1044,7 @@ function CalendarNewPageContent() {
               <AiDisclaimer className="text-right" />
             </div>
           )}
-        </div>
-      )}
+      </div>
     </WizardShell>
   );
 }

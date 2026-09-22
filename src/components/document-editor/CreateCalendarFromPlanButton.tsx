@@ -16,7 +16,6 @@ import {
   buildCreateTimetableParamsFromPlan,
   buildPlanAutoTitle,
 } from "@/lib/timetable/planToTimetable";
-import { GenerationProgress } from "@/components/document-creation/GenerationProgress";
 import { getTimetablesByLinkedPlan } from "@/services/api/timetable.service";
 import { Routes } from "@/shared/types/routes";
 import type { Document } from "@/shared/types/document";
@@ -49,13 +48,11 @@ export default function CreateCalendarFromPlanButton({
   className = "",
 }: CreateCalendarFromPlanButtonProps) {
   const t = useTranslations("editor.calendarButton");
-  const CREATION_STEPS = t.raw("steps") as string[];
   const dispatch = useAppDispatch();
   const router = useRouter();
   const [existingTimetableId, setExistingTimetableId] = useState<string | null>(null);
   const [checking, setChecking] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
-  const [creationStep, setCreationStep] = useState(0);
   const [isNameDialogOpen, setIsNameDialogOpen] = useState(false);
   const [name, setName] = useState("");
   const [classLabel, setClassLabel] = useState("");
@@ -111,13 +108,6 @@ export default function CreateCalendarFromPlanButton({
 
     setIsNameDialogOpen(false);
     setIsCreating(true);
-    setCreationStep(0);
-    // No progress events from createTimetable/generateTopics — advance the
-    // indicator on a timer so the ~1-min wait isn't a blank spinner.
-    const stepTimer = setInterval(
-      () => setCreationStep((s) => Math.min(s + 1, CREATION_STEPS.length - 1)),
-      12_000,
-    );
     posthog.capture("calendar_created_from_plan_one_click", {
       document_id: plan.id,
       subject: plan.subject,
@@ -132,7 +122,6 @@ export default function CreateCalendarFromPlanButton({
       })
     );
     if (!createTimetable.fulfilled.match(result)) {
-      clearInterval(stepTimer);
       toast.error(
         typeof result.payload === "string"
           ? result.payload
@@ -142,16 +131,12 @@ export default function CreateCalendarFromPlanButton({
       return;
     }
 
+    // Navigate immediately instead of blocking on topic generation — a full-year
+    // class can have 150+ slots, which can take well over a minute to title.
+    // The class page lazily polls for topics in the background.
     const timetableId = result.payload.id;
-    try {
-      // Wait for topics so the calendar doesn't show "Sem tópico" placeholders
-      // on arrival — matches the calendar/novo wizard's own loading-step behavior.
-      await dispatch(generateTopics(timetableId));
-    } finally {
-      clearInterval(stepTimer);
-      setCreationStep(CREATION_STEPS.length - 1);
-      router.push(`${Routes.CALENDAR}/${timetableId}`);
-    }
+    router.push(`${Routes.CALENDAR}/${timetableId}`);
+    void dispatch(generateTopics(timetableId));
   };
 
   return (
@@ -170,17 +155,6 @@ export default function CreateCalendarFromPlanButton({
         )}
         <span className="hidden sm:inline">{isCreating ? t("creating") : t("createClass")}</span>
       </Button>
-
-      {isCreating && (
-        <div className="fixed inset-0 z-[130] flex items-center justify-center bg-background/95 backdrop-blur-sm">
-          <GenerationProgress
-            title={t("generationTitle")}
-            subtitle={t("generationSubtitle")}
-            steps={CREATION_STEPS}
-            currentStep={creationStep}
-          />
-        </div>
-      )}
 
       <Dialog open={isNameDialogOpen} onOpenChange={setIsNameDialogOpen}>
         <DialogContent className="max-w-sm">
