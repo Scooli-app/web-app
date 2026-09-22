@@ -65,8 +65,11 @@ export interface LessonSlot {
   slotType: LessonSlotType;
   sequenceNumber: number;
   topicTitle: string;
+  /** Curriculum outcome identifiers assigned by topic generation. */
+  aeIds: string[];
   description: string;
   durationMinutes: number;
+  /** Document-generation lifecycle only; this is not the classroom outcome. */
   status: LessonSlotStatus;
   errorMessage: string;
 }

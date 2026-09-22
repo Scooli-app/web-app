@@ -24,7 +24,7 @@ import {
 
 import { translateSubject } from "@/components/document-creation/constants";
 import { Routes } from "@/shared/types";
-import { selectIsHorarioPlanosEnabled } from "@/store/features/selectors";
+import { selectIsClassStateEnabled, selectIsHorarioPlanosEnabled } from "@/store/features/selectors";
 import { useFeatureAccess } from "@/components/feature/useFeatureAccess";
 import { FeatureUnavailable } from "@/components/feature/FeatureUnavailable";
 import { generationStore } from "@/store/generationStore";
@@ -56,6 +56,7 @@ import {
 } from "lucide-react";
 
 import { SLOT_STATUS_CONFIG } from "@/shared/constants/lessonSlotStatus";
+import { getLessonSlotStatusTranslationKey } from "@/shared/constants/lessonSlotStatusLabel";
 import { SlotDialog } from "@/components/calendar/SlotDialog";
 import { SlotSkeleton } from "@/components/calendar/SlotSkeleton";
 import type { SlotWithTimetable, DayMap } from "@/shared/types/calendar";
@@ -152,6 +153,7 @@ function LessonCard({
 }: LessonCardProps) {
   const t = useTranslations("calendar");
   const tTimetable = useTranslations("timetable");
+  const classStateEnabled = useSelector(selectIsClassStateEnabled);
   const { timetable } = slot;
   const color = timetable.color || "#7F77DD";
   const cfg = STATUS_CONFIG[slot.status];
@@ -252,7 +254,7 @@ function LessonCard({
                 className={`h-1.5 w-1.5 shrink-0 rounded-full ${cfg.dotCls}`}
               />
               <span className="text-[10px] text-muted-foreground">
-                {tTimetable(`status.${slot.status}`)}
+                {tTimetable(getLessonSlotStatusTranslationKey(slot.status, classStateEnabled))}
               </span>
               {slot.durationMinutes > 0 && (
                 <span className="text-[10px] text-muted-foreground/60 ml-1">

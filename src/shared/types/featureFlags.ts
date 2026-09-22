@@ -41,10 +41,19 @@ export enum FeatureFlag {
 
   /** Controls the teacher profile, vocational catalogue, and creation suggestions. */
   TEACHER_PROFILE = "teacher_profile",
+
+  /** Controls the Class State foundation and all teacher-facing Class State UI. */
+  CLASS_STATE = "class_state",
 }
 
 export function isTeacherProfileFeatureEnabled(
   flags: Partial<Record<FeatureFlag, boolean>>,
 ): boolean {
   return flags[FeatureFlag.TEACHER_PROFILE] === true;
+}
+
+export function isClassStateFeatureEnabled(
+  flags: Partial<Record<FeatureFlag, boolean>>,
+): boolean {
+  return flags[FeatureFlag.CLASS_STATE] === true;
 }

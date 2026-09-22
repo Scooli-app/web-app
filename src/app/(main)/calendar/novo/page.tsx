@@ -717,7 +717,7 @@ function CalendarNewPageContent() {
   const tTimetable = useTranslations("timetable");
   const tErrors = useTranslations("errors.calendar");
   const { loaded: featuresLoaded, enabled } = useFeatureAccess(selectIsHorarioPlanosEnabled);
-  const isSubmitting = useSelector((state: RootState) => state.timetable.isLoading);
+  const isSubmitting = useSelector((state: RootState) => state.timetable.isCreating);
   const dispatch = useAppDispatch();
   const router = useRouter();
 

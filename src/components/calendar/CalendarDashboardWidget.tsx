@@ -32,7 +32,9 @@ import Link from "next/link";
 import { useCallback, useEffect, useSyncExternalStore, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
-import { useAppDispatch } from "@/store/hooks";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { selectIsClassStateEnabled } from "@/store/features/selectors";
+import { getLessonSlotStatusTranslationKey } from "@/shared/constants/lessonSlotStatusLabel";
 import { fetchTimetables } from "@/store/timetable/timetableSlice";
 import { generationStore } from "@/store/generationStore";
 import { SLOT_STATUS_CONFIG } from "@/shared/constants/lessonSlotStatus";
@@ -97,6 +99,7 @@ export function CalendarDashboardWidget() {
   const t = useTranslations("calendar.dashboardWidget");
   const tShared = useTranslations("calendar.shared");
   const tTimetable = useTranslations("timetable");
+  const classStateEnabled = useAppSelector(selectIsClassStateEnabled);
   const rawLocale = useLocale();
   const locale = isSupportedLocale(rawLocale) ? rawLocale : defaultLocale;
   const router = useRouter();
@@ -327,7 +330,7 @@ export function CalendarDashboardWidget() {
                     {lesson.status !== "generating" && (
                       <Badge className={`gap-1 border text-xs ${cfg.cls}`}>
                         {cfg.icon}
-                        {tTimetable(`status.${lesson.status}`)}
+                        {tTimetable(getLessonSlotStatusTranslationKey(lesson.status, classStateEnabled))}
                       </Badge>
                     )}
                     {(lesson.status === "pending" || lesson.status === "failed") && (

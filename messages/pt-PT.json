@@ -2412,6 +2412,13 @@
       "failed": "Falhou",
       "skipped": "Ignorado"
     },
+    "generationStatus": {
+      "pending": "Plano por gerar",
+      "generating": "Plano a gerar",
+      "completed": "Plano gerado",
+      "failed": "Falha ao gerar plano",
+      "skipped": "Plano não gerado"
+    },
     "slotType": {
       "lesson": "Aula",
       "assessment": "Avaliação",
@@ -2515,6 +2522,7 @@
       "confirm": "Confirmar",
       "cancel": "Cancelar",
       "skip": "Ignorar",
+      "skipGeneration": "Não gerar plano",
       "editTopicTitle": "Clica para editar o tópico",
       "topicPlaceholderEmpty": "Sem tópico — clica para editar",
       "lessonNumber": "Aula {number}"

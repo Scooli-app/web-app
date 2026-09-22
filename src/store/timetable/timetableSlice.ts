@@ -28,6 +28,7 @@ interface TimetableState {
   currentTimetable: Timetable | null;
   slots: LessonSlot[];
   isLoading: boolean;
+  isCreating: boolean;
   isSlotsLoading: boolean;
   isGeneratingTopics: boolean;
   error: string | null;
@@ -38,6 +39,7 @@ const initialState: TimetableState = {
   currentTimetable: null,
   slots: [],
   isLoading: true,
+  isCreating: false,
   isSlotsLoading: false,
   isGeneratingTopics: false,
   error: null,
@@ -209,10 +211,18 @@ const timetableSlice = createSlice({
         state.error = action.payload as string;
       })
       // createTimetable
+      .addCase(createTimetable.pending, (state) => {
+        state.isCreating = true;
+      })
       .addCase(createTimetable.fulfilled, (state, action) => {
+        state.isCreating = false;
         state.timetables.unshift(action.payload);
         state.currentTimetable = action.payload;
         dashboardCache.invalidate(CACHE_KEYS.UPCOMING_LESSONS);
+      })
+      .addCase(createTimetable.rejected, (state, action) => {
+        state.isCreating = false;
+        state.error = action.payload as string;
       })
       // updateTimetable
       .addCase(updateTimetable.fulfilled, (state, action) => {
