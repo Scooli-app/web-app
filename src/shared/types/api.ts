@@ -34,6 +34,22 @@ export interface CreateDocumentParams {
   templateId?: string;
   isSpecificComponent?: boolean;
   worksheetVariant?: WorksheetVariant;
+  /**
+   * Qualification/course code for the vocational (Ensino Profissional) course
+   * the selected UC belongs to, e.g. "481RA116". Sent together with
+   * `vocationalUnitCode` so the backend can deterministically look up the
+   * UC's real curriculum content instead of relying on `subject`, which only
+   * carries the UC's display label and never matches how vocational content
+   * is ingested/keyed server-side. Omitted outside vocational subject mode.
+   */
+  vocationalCourseCode?: string;
+  /**
+   * Code of the specific competence unit (UC) selected within the vocational
+   * course above (the code preceding the em-dash in the UC label). Paired
+   * with `vocationalCourseCode` for deterministic backend lookup. Omitted
+   * outside vocational subject mode.
+   */
+  vocationalUnitCode?: string;
   /** Explicit user/org source IDs to include in RAG retrieval. */
   sourceIds?: string[];
   /** Whether to include Aprendizagens Essenciais corpus (default true). */

@@ -18,7 +18,7 @@ import {
   translateSubjectCategory,
   translateSubjectLabel,
 } from "../constants";
-import type { VocationalCourseOption } from "../teaching-profile-preferences";
+import { findVocationalUnitCode, type VocationalCourseOption } from "../teaching-profile-preferences";
 import type { FormUpdateFn } from "../types";
 
 interface SubjectSectionProps {
@@ -97,6 +97,7 @@ export function SubjectSection({
     onUpdate("subjectMode", mode);
     onUpdate("subject", "");
     onUpdate("vocationalCourseCode", mode === "vocational" ? selectedCourse?.code : undefined);
+    onUpdate("vocationalUnitCode", undefined);
     if (mode === "vocational") {
       onUpdate("isSpecificComponent", false);
     }
@@ -105,10 +106,15 @@ export function SubjectSection({
   const handleCourseChange = (courseCode: string) => {
     onUpdate("vocationalCourseCode", courseCode);
     onUpdate("subject", "");
+    onUpdate("vocationalUnitCode", undefined);
   };
 
   const handleUnitChange = (unitLabel: string) => {
     onUpdate("subject", unitLabel);
+    onUpdate(
+      "vocationalUnitCode",
+      selectedCourse ? findVocationalUnitCode(selectedCourse.units, unitLabel) : undefined
+    );
   };
 
   return (

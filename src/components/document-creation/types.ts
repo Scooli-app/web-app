@@ -28,6 +28,14 @@ export interface FormState {
   subjectMode?: "regular" | "vocational";
   /** Selected course code while in vocational subject mode (UI only). */
   vocationalCourseCode?: string;
+  /**
+   * Code of the selected competence unit (UC) while in vocational subject
+   * mode. Sent alongside `vocationalCourseCode` on document creation so the
+   * backend can deterministically look up the UC's real curriculum content
+   * instead of relying on `subject` (which carries the UC's display label
+   * and never matches how vocational content is ingested/keyed server-side).
+   */
+  vocationalUnitCode?: string;
   schoolYear: number;
   lessonTime?: number;
   customTime?: number;

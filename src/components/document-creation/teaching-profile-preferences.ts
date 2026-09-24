@@ -76,6 +76,19 @@ export interface VocationalCourseOption {
 }
 
 /**
+ * Resolves a UC's code from the label picked in the unit `<Select>`. The
+ * picker's `SelectItem` values are labels (kept as-is for display/back-compat
+ * with `subject`), so this is how the create-document flow recovers the code
+ * the backend needs for deterministic UC content lookup.
+ */
+export function findVocationalUnitCode(
+  units: { code: string; label: string }[],
+  unitLabel: string
+): string | undefined {
+  return units.find((unit) => unit.label === unitLabel)?.code;
+}
+
+/**
  * Vocational courses/UCs saved on the profile, scoped to currently selected
  * courses — mirrors the "select ensino profissional" creation-form flow.
  */

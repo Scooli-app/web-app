@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { TeachingProfile } from "@/shared/types/teaching-profile";
 import {
   buildRegularTeachingItems,
+  findVocationalUnitCode,
   getDefaultSchoolYear,
   getPreferredRegularSubjectIds,
   getPreferredSchoolYears,
@@ -168,5 +169,24 @@ describe("getTeachingProfileSuggestions", () => {
       { key: "course:unit:u1", label: "Web Development" },
       { key: "regular:ingles", label: "English", regularSubjectId: "ingles" },
     ]);
+  });
+});
+
+describe("findVocationalUnitCode", () => {
+  const units = [
+    { code: "UC01", label: "Programação Web" },
+    { code: "UC02", label: "Desenvolver algoritmos" },
+  ];
+
+  it("returns the code of the unit matching the given label", () => {
+    expect(findVocationalUnitCode(units, "Desenvolver algoritmos")).toBe("UC02");
+  });
+
+  it("returns undefined when no unit matches the label", () => {
+    expect(findVocationalUnitCode(units, "Unknown unit")).toBeUndefined();
+  });
+
+  it("returns undefined for an empty units list", () => {
+    expect(findVocationalUnitCode([], "Desenvolver algoritmos")).toBeUndefined();
   });
 });
