@@ -50,6 +50,15 @@ export interface CreateDocumentParams {
    * outside vocational subject mode.
    */
   vocationalUnitCode?: string;
+  /**
+   * Display name of the sociocultural/científica component subject selected
+   * within the vocational course above (e.g. "Economia", "Psicologia e
+   * Sociologia"), for content grounded in that subject instead of a UC.
+   * Mutually exclusive with `vocationalUnitCode` — the two identify content
+   * from different curriculum components and are never both set. Omitted
+   * outside vocational subject mode.
+   */
+  vocationalSchoolSubjectName?: string;
   /** Explicit user/org source IDs to include in RAG retrieval. */
   sourceIds?: string[];
   /** Whether to include Aprendizagens Essenciais corpus (default true). */

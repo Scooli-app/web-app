@@ -375,6 +375,7 @@ export default function DocumentCreationPage({
           worksheetVariant: formState.worksheetVariant,
           vocationalCourseCode: formState.vocationalCourseCode || undefined,
           vocationalUnitCode: formState.vocationalUnitCode || undefined,
+          vocationalSchoolSubjectName: formState.vocationalSchoolSubjectName || undefined,
           ...(isUserSourcesEnabled && {
             sourceIds: formState.sourceIds ?? [],
             includeAe: formState.includeAe ?? true,

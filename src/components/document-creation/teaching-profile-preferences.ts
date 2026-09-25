@@ -89,6 +89,21 @@ export function findVocationalUnitCode(
 }
 
 /**
+ * Resolves a school subject's code from the label picked in the
+ * sociocultural/científica `<Select>` — mirrors `findVocationalUnitCode`
+ * exactly, just against the school-subjects list instead of units. Used to
+ * tell whether a selected label belongs to the school-subject list (vs. a
+ * competence unit) in the merged vocational picker, since both share one
+ * `<Select>` keyed by display label.
+ */
+export function findVocationalSchoolSubjectCode(
+  subjects: { subjectCode: string; subjectName: string }[],
+  subjectLabel: string
+): string | undefined {
+  return subjects.find((subject) => subject.subjectName === subjectLabel)?.subjectCode;
+}
+
+/**
  * Vocational courses/UCs saved on the profile, scoped to currently selected
  * courses — mirrors the "select ensino profissional" creation-form flow.
  */

@@ -47,6 +47,29 @@ export interface VocationalUnit {
   position: number | null;
 }
 
+/**
+ * A sociocultural/científica-component subject from the National
+ * Qualifications Catalogue for a given course (e.g. "Economia",
+ * "Psicologia e Sociologia"), as returned by
+ * `GET /teaching-profile/qualifications/{code}/subjects`.
+ *
+ * `component` intentionally uses the Portuguese "cientifica" spelling (no
+ * diacritic) to match the backend endpoint's wire contract exactly, unlike
+ * `TrainingComponent.scientific` used elsewhere for saved profile items.
+ */
+export interface VocationalSchoolSubject {
+  subjectCode: string;
+  subjectName: string;
+  component: "sociocultural" | "cientifica";
+  hours: number | null;
+  /**
+   * Groups variants under one umbrella (e.g. several foreign-language
+   * options under "Língua Estrangeira"). Null when the subject has no
+   * sibling variants.
+   */
+  groupLabel: string | null;
+}
+
 export interface TeachingCourseState {
   code: string;
   title: string;

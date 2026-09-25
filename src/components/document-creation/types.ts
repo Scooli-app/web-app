@@ -36,6 +36,15 @@ export interface FormState {
    * and never matches how vocational content is ingested/keyed server-side).
    */
   vocationalUnitCode?: string;
+  /**
+   * Display name of the selected sociocultural/científica component subject
+   * (e.g. "Economia", "Psicologia e Sociologia") while in vocational subject
+   * mode. Mutually exclusive with `vocationalUnitCode` — the backend
+   * document-create contract accepts either a UC code or a school-subject
+   * name, never both, since they identify content from different curriculum
+   * components.
+   */
+  vocationalSchoolSubjectName?: string;
   schoolYear: number;
   lessonTime?: number;
   customTime?: number;
