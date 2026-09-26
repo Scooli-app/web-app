@@ -29,6 +29,10 @@ export interface CreateTimetableParams {
   assessmentDates?: string[]; // ISO dates — ASSESSMENT slots
   exerciseDates?: string[]; // ISO dates — EXERCISE slots (explicit, overrides auto-cadence)
   reviewDates?: string[];   // ISO dates — REVIEW slots (explicit, overrides auto-cadence)
+  /** AE top-level domains the teacher marked as already taught — see getTopicDomains(). */
+  alreadyCoveredDomains?: string[];
+  /** Free-text catch-all for already-taught content not on the structured domain list. */
+  alreadyCoveredNotes?: string;
 }
 
 export interface UpdateTimetableParams {
@@ -136,6 +140,20 @@ export async function deleteTimetable(id: string, deleteDocuments?: boolean): Pr
   await apiClient.delete(`/timetable/${id}`, {
     params: deleteDocuments ? { deleteDocuments: true } : undefined,
   });
+}
+
+/**
+ * Ordered AE content domains for a subject/school year, used to build the
+ * "o que já foi dado" checklist in the turma wizard. Ordered by document/page
+ * order (see backend SourceChunkRepository.findContentDomainsOrdered) — NOT
+ * alphabetical — and excludes cross-cutting "capacidades" domains, which
+ * aren't a block of content a teacher finishes.
+ */
+export async function getTopicDomains(subject: string, gradeLevel?: number): Promise<string[]> {
+  const response = await apiClient.get<{ domains: string[] }>("/timetable/topic-domains", {
+    params: { subject, gradeLevel },
+  });
+  return response.data.domains;
 }
 
 // ─── LESSON SLOTS ─────────────────────────────────────────────────────
