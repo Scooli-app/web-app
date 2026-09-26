@@ -2576,6 +2576,15 @@
         "colorLabel": "Cor",
         "lessonsSummary": "{count} aulas (~{weeks} semanas × {lpw} aulas/sem., já sem fins-de-semana e feriados)"
       },
+      "alreadyCovered": {
+        "title": "Já foi dada matéria a esta turma?",
+        "subtitle": "Opcional — útil se esta turma não está a começar do zero (ex.: já lecionaste este ano ou a turma vem de outro professor).",
+        "summary": "{count, plural, =0 {Notas adicionadas} one {# domínio já dado} other {# domínios já dados}}",
+        "domainsLabel": "Marca os domínios já dados (ordem do programa)",
+        "markUpToHere": "até aqui",
+        "notesLabel": "Algo mais que já tenha sido dado e não esteja na lista?",
+        "notesPlaceholder": "Ex.: já vimos frações equivalentes mas não decimais…"
+      },
       "reviewDates": {
         "title": "Rever datas",
         "subtitle": "Ajusta os tipos de slot e remove datas desnecessárias.",

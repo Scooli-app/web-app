@@ -15,7 +15,10 @@ import { Label } from "@/components/ui/label";
 import {
   buildCreateTimetableParamsFromPlan,
   buildPlanAutoTitle,
+  parsePlanGradeLevel,
+  resolvePlanSubjectId,
 } from "@/lib/timetable/planToTimetable";
+import { AlreadyCoveredSection } from "@/components/document-creation/AlreadyCoveredSection";
 import { getTimetablesByLinkedPlan } from "@/services/api/timetable.service";
 import { Routes } from "@/shared/types/routes";
 import type { Document } from "@/shared/types/document";
@@ -56,6 +59,8 @@ export default function CreateCalendarFromPlanButton({
   const [isNameDialogOpen, setIsNameDialogOpen] = useState(false);
   const [name, setName] = useState("");
   const [classLabel, setClassLabel] = useState("");
+  const [alreadyCoveredDomains, setAlreadyCoveredDomains] = useState<string[]>([]);
+  const [alreadyCoveredNotes, setAlreadyCoveredNotes] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -99,6 +104,8 @@ export default function CreateCalendarFromPlanButton({
     }
     setName(buildPlanAutoTitle(plan));
     setClassLabel("");
+    setAlreadyCoveredDomains([]);
+    setAlreadyCoveredNotes("");
     setIsNameDialogOpen(true);
   };
 
@@ -119,6 +126,8 @@ export default function CreateCalendarFromPlanButton({
         ...params,
         title: name.trim() || params.title,
         classLabel: classLabel.trim() || undefined,
+        alreadyCoveredDomains: alreadyCoveredDomains.length > 0 ? alreadyCoveredDomains : undefined,
+        alreadyCoveredNotes: alreadyCoveredNotes.trim() || undefined,
       })
     );
     if (!createTimetable.fulfilled.match(result)) {
@@ -183,6 +192,15 @@ export default function CreateCalendarFromPlanButton({
                 onChange={(e) => setClassLabel(e.target.value)}
               />
             </div>
+
+            <AlreadyCoveredSection
+              subject={resolvePlanSubjectId(plan)}
+              gradeLevel={String(parsePlanGradeLevel(plan) ?? "")}
+              selectedDomains={alreadyCoveredDomains}
+              notes={alreadyCoveredNotes}
+              onDomainsChange={setAlreadyCoveredDomains}
+              onNotesChange={setAlreadyCoveredNotes}
+            />
           </div>
 
           <DialogFooter className="pt-2">

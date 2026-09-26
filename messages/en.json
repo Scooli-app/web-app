@@ -2576,6 +2576,15 @@
         "colorLabel": "Color",
         "lessonsSummary": "{count} lessons (~{weeks} weeks × {lpw} lessons/week, already excluding weekends and holidays)"
       },
+      "alreadyCovered": {
+        "title": "Has this class already covered any content?",
+        "subtitle": "Optional — useful if this class isn't starting from scratch (e.g. you already taught this year, or you're taking over from another teacher).",
+        "summary": "{count, plural, =0 {Notes added} one {# domain already covered} other {# domains already covered}}",
+        "domainsLabel": "Mark the domains already covered (programme order)",
+        "markUpToHere": "up to here",
+        "notesLabel": "Anything else already covered that isn't on the list?",
+        "notesPlaceholder": "E.g. we've covered equivalent fractions but not decimals yet…"
+      },
       "reviewDates": {
         "title": "Review dates",
         "subtitle": "Adjust slot types and remove unnecessary dates.",
