@@ -265,7 +265,14 @@
       "coursePlaceholder": "Selecione o curso...",
       "courseSelectAriaLabel": "Selecionar curso",
       "unitPlaceholder": "Selecione a UC...",
-      "unitSelectAriaLabel": "Selecionar unidade de competência"
+      "unitSelectAriaLabel": "Selecionar unidade de competência",
+      "vocationalComponentPlaceholder": "Selecione a disciplina ou a UC...",
+      "vocationalComponentSelectAriaLabel": "Selecionar disciplina da componente curricular ou unidade de competência",
+      "componentSociocultural": "Componente Sociocultural",
+      "componentCientifica": "Componente Científica",
+      "componentTecnica": "Componente Técnica",
+      "schoolSubjectsLoading": "A carregar disciplinas...",
+      "schoolSubjectsError": "Não foi possível obter as disciplinas deste curso."
     },
     "duration": {
       "title": "Duração da Aula",

@@ -1,6 +1,7 @@
 import type {
   Qualification,
   TeachingProfile,
+  VocationalSchoolSubject,
   VocationalUnit,
 } from "@/shared/types/teaching-profile";
 import apiClient from "./client";
@@ -43,6 +44,23 @@ export const teachingProfileService = {
       `/teaching-profile/qualifications/${encodeURIComponent(
         qualificationCode
       )}/units`
+    );
+    return response.data;
+  },
+
+  /**
+   * Sociocultural/científica component subjects for a course (e.g.
+   * "Economia", "Psicologia e Sociologia") — mirrors `getUnits` exactly,
+   * just for the other two curriculum components instead of the
+   * tecnológica/UC one.
+   */
+  fetchSchoolSubjects: async (
+    qualificationCode: string
+  ): Promise<VocationalSchoolSubject[]> => {
+    const response = await apiClient.get<VocationalSchoolSubject[]>(
+      `/teaching-profile/qualifications/${encodeURIComponent(
+        qualificationCode
+      )}/subjects`
     );
     return response.data;
   },

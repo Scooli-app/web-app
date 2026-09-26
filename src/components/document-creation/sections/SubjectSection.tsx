@@ -8,17 +8,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { teachingProfileService } from "@/services/api/teaching-profile.service";
+import type { VocationalSchoolSubject } from "@/shared/types/teaching-profile";
 import { cn } from "@/shared/utils/utils";
 import { BookOpen, Check, ChevronDown, ChevronUp } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   AMBIGUOUS_COMPONENTS_SUBJECTS,
   SUBJECTS,
   translateSubjectCategory,
   translateSubjectLabel,
 } from "../constants";
-import type { VocationalCourseOption } from "../teaching-profile-preferences";
+import {
+  findVocationalSchoolSubjectCode,
+  findVocationalUnitCode,
+  type VocationalCourseOption,
+} from "../teaching-profile-preferences";
 import type { FormUpdateFn } from "../types";
 
 interface SubjectSectionProps {
@@ -53,6 +59,47 @@ export function SubjectSection({
     vocationalCourses.find((course) => course.code === vocationalCourseCode) ??
     vocationalCourses[0];
   const [showAllSubjects, setShowAllSubjects] = useState(false);
+
+  // Sociocultural/científica component subjects (e.g. "Economia", "Psicologia
+  // e Sociologia") for the selected course, fetched alongside the existing
+  // Componente Técnica (UC) list already carried in `vocationalCourses`.
+  // Cached per course code so switching back and forth doesn't refetch.
+  const [schoolSubjectsByCourse, setSchoolSubjectsByCourse] = useState<
+    Record<string, VocationalSchoolSubject[]>
+  >({});
+  const [isLoadingSchoolSubjects, setIsLoadingSchoolSubjects] = useState(false);
+  const [schoolSubjectsError, setSchoolSubjectsError] = useState<string | null>(null);
+
+  const loadSchoolSubjects = useCallback(
+    async (courseCode: string) => {
+      if (schoolSubjectsByCourse[courseCode]) return;
+      setIsLoadingSchoolSubjects(true);
+      setSchoolSubjectsError(null);
+      try {
+        const subjects = await teachingProfileService.fetchSchoolSubjects(courseCode);
+        setSchoolSubjectsByCourse((current) => ({ ...current, [courseCode]: subjects }));
+      } catch {
+        setSchoolSubjectsError(t("schoolSubjectsError"));
+      } finally {
+        setIsLoadingSchoolSubjects(false);
+      }
+    },
+    [schoolSubjectsByCourse, t]
+  );
+
+  useEffect(() => {
+    if (!isVocationalMode || !selectedCourse) return;
+    void loadSchoolSubjects(selectedCourse.code);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isVocationalMode, selectedCourse?.code]);
+
+  const schoolSubjects = selectedCourse
+    ? schoolSubjectsByCourse[selectedCourse.code] ?? []
+    : [];
+  const socioculturalSubjects = schoolSubjects.filter(
+    (item) => item.component === "sociocultural"
+  );
+  const cientificaSubjects = schoolSubjects.filter((item) => item.component === "cientifica");
 
   // Filter subjects based on availableSubjects prop if provided
   const visibleSubjects = availableSubjects
@@ -97,6 +144,8 @@ export function SubjectSection({
     onUpdate("subjectMode", mode);
     onUpdate("subject", "");
     onUpdate("vocationalCourseCode", mode === "vocational" ? selectedCourse?.code : undefined);
+    onUpdate("vocationalUnitCode", undefined);
+    onUpdate("vocationalSchoolSubjectName", undefined);
     if (mode === "vocational") {
       onUpdate("isSpecificComponent", false);
     }
@@ -105,10 +154,70 @@ export function SubjectSection({
   const handleCourseChange = (courseCode: string) => {
     onUpdate("vocationalCourseCode", courseCode);
     onUpdate("subject", "");
+    onUpdate("vocationalUnitCode", undefined);
+    onUpdate("vocationalSchoolSubjectName", undefined);
   };
 
   const handleUnitChange = (unitLabel: string) => {
     onUpdate("subject", unitLabel);
+    onUpdate(
+      "vocationalUnitCode",
+      selectedCourse ? findVocationalUnitCode(selectedCourse.units, unitLabel) : undefined
+    );
+    onUpdate("vocationalSchoolSubjectName", undefined);
+  };
+
+  const handleSchoolSubjectChange = (subjectName: string) => {
+    onUpdate("subject", subjectName);
+    onUpdate("vocationalSchoolSubjectName", subjectName);
+    onUpdate("vocationalUnitCode", undefined);
+  };
+
+  /**
+   * The three vocational groups (sociocultural, científica, técnica) share
+   * one `<Select>`, so the value picked has to be routed to whichever
+   * `handle*Change` owns it. Values are display text (matching the existing
+   * UC picker's label-as-value convention), so a school subject is
+   * identified by membership in the fetched school-subjects list; anything
+   * else is treated as a competence-unit label.
+   */
+  const handleVocationalSelectChange = (value: string) => {
+    const schoolSubjectCode = findVocationalSchoolSubjectCode(
+      schoolSubjects.map((item) => ({ subjectCode: item.subjectCode, subjectName: item.subjectName })),
+      value
+    );
+    if (schoolSubjectCode !== undefined) {
+      handleSchoolSubjectChange(value);
+    } else {
+      handleUnitChange(value);
+    }
+  };
+
+  /**
+   * Groups a component's subjects by `groupLabel` for nested display (e.g.
+   * several foreign-language options under one "Língua Estrangeira"
+   * umbrella). Subjects without a `groupLabel` render individually — never
+   * collapsed into a group of their own.
+   */
+  const groupSchoolSubjectsByLabel = (
+    subjects: VocationalSchoolSubject[]
+  ): Array<{ groupLabel: string | null; subjects: VocationalSchoolSubject[] }> => {
+    const grouped: Array<{ groupLabel: string | null; subjects: VocationalSchoolSubject[] }> = [];
+    const groupIndexByLabel = new Map<string, number>();
+    for (const item of subjects) {
+      if (!item.groupLabel) {
+        grouped.push({ groupLabel: null, subjects: [item] });
+        continue;
+      }
+      const existingIndex = groupIndexByLabel.get(item.groupLabel);
+      if (existingIndex === undefined) {
+        groupIndexByLabel.set(item.groupLabel, grouped.length);
+        grouped.push({ groupLabel: item.groupLabel, subjects: [item] });
+      } else {
+        grouped[existingIndex].subjects.push(item);
+      }
+    }
+    return grouped;
   };
 
   return (
@@ -273,27 +382,116 @@ export function SubjectSection({
               </SelectContent>
             </Select>
 
+            {schoolSubjectsError && (
+              <p className="text-xs text-destructive">{schoolSubjectsError}</p>
+            )}
+
             <Select
               value={subject}
-              onValueChange={handleUnitChange}
-              disabled={disabled || !selectedCourse}
+              onValueChange={handleVocationalSelectChange}
+              disabled={disabled || !selectedCourse || isLoadingSchoolSubjects}
             >
               <SelectTrigger
                 className="h-11 sm:h-12 px-4 text-sm sm:text-base bg-background border-border rounded-xl"
-                aria-label={t("unitSelectAriaLabel")}
+                aria-label={t("vocationalComponentSelectAriaLabel")}
               >
-                <SelectValue placeholder={t("unitPlaceholder")} />
+                <SelectValue
+                  placeholder={
+                    isLoadingSchoolSubjects
+                      ? t("schoolSubjectsLoading")
+                      : t("vocationalComponentPlaceholder")
+                  }
+                />
               </SelectTrigger>
               <SelectContent className="rounded-xl border-border max-h-[400px]">
-                {selectedCourse?.units.map((unit) => (
-                  <SelectItem
-                    key={unit.code}
-                    value={unit.label}
-                    className="py-2.5 px-3 text-sm cursor-pointer rounded-lg focus:bg-accent focus:text-primary"
-                  >
-                    {unit.label}
-                  </SelectItem>
-                ))}
+                {socioculturalSubjects.length > 0 && (
+                  <SelectGroup>
+                    <SelectLabel className="bg-background px-2 py-2 text-sm font-bold text-primary border-b border-border/50 rounded-lg mb-1">
+                      {t("componentSociocultural")}
+                    </SelectLabel>
+                    {groupSchoolSubjectsByLabel(socioculturalSubjects).map((entry) =>
+                      entry.groupLabel ? (
+                        <SelectGroup key={entry.groupLabel}>
+                          <SelectLabel className="px-3 py-1.5 text-xs font-semibold text-muted-foreground">
+                            {entry.groupLabel}
+                          </SelectLabel>
+                          {entry.subjects.map((subjectOption) => (
+                            <SelectItem
+                              key={subjectOption.subjectCode}
+                              value={subjectOption.subjectName}
+                              className="py-2.5 px-3 text-sm cursor-pointer rounded-lg focus:bg-accent focus:text-primary pl-6"
+                            >
+                              {subjectOption.subjectName}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      ) : (
+                        entry.subjects.map((subjectOption) => (
+                          <SelectItem
+                            key={subjectOption.subjectCode}
+                            value={subjectOption.subjectName}
+                            className="py-2.5 px-3 text-sm cursor-pointer rounded-lg focus:bg-accent focus:text-primary pl-4"
+                          >
+                            {subjectOption.subjectName}
+                          </SelectItem>
+                        ))
+                      )
+                    )}
+                  </SelectGroup>
+                )}
+
+                {cientificaSubjects.length > 0 && (
+                  <SelectGroup>
+                    <SelectLabel className="bg-background px-2 py-2 text-sm font-bold text-primary border-b border-border/50 rounded-lg mb-1">
+                      {t("componentCientifica")}
+                    </SelectLabel>
+                    {groupSchoolSubjectsByLabel(cientificaSubjects).map((entry) =>
+                      entry.groupLabel ? (
+                        <SelectGroup key={entry.groupLabel}>
+                          <SelectLabel className="px-3 py-1.5 text-xs font-semibold text-muted-foreground">
+                            {entry.groupLabel}
+                          </SelectLabel>
+                          {entry.subjects.map((subjectOption) => (
+                            <SelectItem
+                              key={subjectOption.subjectCode}
+                              value={subjectOption.subjectName}
+                              className="py-2.5 px-3 text-sm cursor-pointer rounded-lg focus:bg-accent focus:text-primary pl-6"
+                            >
+                              {subjectOption.subjectName}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      ) : (
+                        entry.subjects.map((subjectOption) => (
+                          <SelectItem
+                            key={subjectOption.subjectCode}
+                            value={subjectOption.subjectName}
+                            className="py-2.5 px-3 text-sm cursor-pointer rounded-lg focus:bg-accent focus:text-primary pl-4"
+                          >
+                            {subjectOption.subjectName}
+                          </SelectItem>
+                        ))
+                      )
+                    )}
+                  </SelectGroup>
+                )}
+
+                {(selectedCourse?.units.length ?? 0) > 0 && (
+                  <SelectGroup>
+                    <SelectLabel className="bg-background px-2 py-2 text-sm font-bold text-primary border-b border-border/50 rounded-lg mb-1">
+                      {t("componentTecnica")}
+                    </SelectLabel>
+                    {selectedCourse?.units.map((unit) => (
+                      <SelectItem
+                        key={unit.code}
+                        value={unit.label}
+                        className="py-2.5 px-3 text-sm cursor-pointer rounded-lg focus:bg-accent focus:text-primary pl-4"
+                      >
+                        {unit.label}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                )}
               </SelectContent>
             </Select>
           </div>

@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import type { TeachingProfile } from "@/shared/types/teaching-profile";
 import {
   buildRegularTeachingItems,
+  findVocationalSchoolSubjectCode,
+  findVocationalUnitCode,
   getDefaultSchoolYear,
   getPreferredRegularSubjectIds,
   getPreferredSchoolYears,
@@ -168,5 +170,43 @@ describe("getTeachingProfileSuggestions", () => {
       { key: "course:unit:u1", label: "Web Development" },
       { key: "regular:ingles", label: "English", regularSubjectId: "ingles" },
     ]);
+  });
+});
+
+describe("findVocationalUnitCode", () => {
+  const units = [
+    { code: "UC01", label: "Programação Web" },
+    { code: "UC02", label: "Desenvolver algoritmos" },
+  ];
+
+  it("returns the code of the unit matching the given label", () => {
+    expect(findVocationalUnitCode(units, "Desenvolver algoritmos")).toBe("UC02");
+  });
+
+  it("returns undefined when no unit matches the label", () => {
+    expect(findVocationalUnitCode(units, "Unknown unit")).toBeUndefined();
+  });
+
+  it("returns undefined for an empty units list", () => {
+    expect(findVocationalUnitCode([], "Desenvolver algoritmos")).toBeUndefined();
+  });
+});
+
+describe("findVocationalSchoolSubjectCode", () => {
+  const subjects = [
+    { subjectCode: "ECO10", subjectName: "Economia" },
+    { subjectCode: "PSI11", subjectName: "Psicologia e Sociologia" },
+  ];
+
+  it("returns the code of the subject matching the given name", () => {
+    expect(findVocationalSchoolSubjectCode(subjects, "Psicologia e Sociologia")).toBe("PSI11");
+  });
+
+  it("returns undefined when no subject matches the name", () => {
+    expect(findVocationalSchoolSubjectCode(subjects, "Unknown subject")).toBeUndefined();
+  });
+
+  it("returns undefined for an empty subjects list", () => {
+    expect(findVocationalSchoolSubjectCode([], "Economia")).toBeUndefined();
   });
 });

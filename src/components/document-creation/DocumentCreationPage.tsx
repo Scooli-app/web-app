@@ -373,6 +373,9 @@ export default function DocumentCreationPage({
           templateId: formState.templateId,
           isSpecificComponent: formState.isSpecificComponent,
           worksheetVariant: formState.worksheetVariant,
+          vocationalCourseCode: formState.vocationalCourseCode || undefined,
+          vocationalUnitCode: formState.vocationalUnitCode || undefined,
+          vocationalSchoolSubjectName: formState.vocationalSchoolSubjectName || undefined,
           ...(isUserSourcesEnabled && {
             sourceIds: formState.sourceIds ?? [],
             includeAe: formState.includeAe ?? true,

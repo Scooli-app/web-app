@@ -45,3 +45,35 @@ describe("teachingProfileService.save", () => {
     );
   });
 });
+
+describe("teachingProfileService.fetchSchoolSubjects", () => {
+  it("calls the subjects endpoint with the encoded qualification code", async () => {
+    const subjects = [
+      {
+        subjectCode: "ECO10",
+        subjectName: "Economia",
+        component: "cientifica" as const,
+        hours: 200,
+        groupLabel: null,
+      },
+    ];
+    get.mockResolvedValue({ data: subjects });
+
+    const result = await teachingProfileService.fetchSchoolSubjects("481RA116");
+
+    expect(get).toHaveBeenCalledWith(
+      "/teaching-profile/qualifications/481RA116/subjects"
+    );
+    expect(result).toEqual(subjects);
+  });
+
+  it("URL-encodes qualification codes with special characters", async () => {
+    get.mockResolvedValue({ data: [] });
+
+    await teachingProfileService.fetchSchoolSubjects("481/RA 116");
+
+    expect(get).toHaveBeenCalledWith(
+      "/teaching-profile/qualifications/481%2FRA%20116/subjects"
+    );
+  });
+});

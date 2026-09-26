@@ -265,7 +265,14 @@
       "coursePlaceholder": "Select the course...",
       "courseSelectAriaLabel": "Select course",
       "unitPlaceholder": "Select the competence unit...",
-      "unitSelectAriaLabel": "Select competence unit"
+      "unitSelectAriaLabel": "Select competence unit",
+      "vocationalComponentPlaceholder": "Select the subject or competence unit...",
+      "vocationalComponentSelectAriaLabel": "Select curriculum component subject or competence unit",
+      "componentSociocultural": "Sociocultural Component",
+      "componentCientifica": "Scientific Component",
+      "componentTecnica": "Technical Component",
+      "schoolSubjectsLoading": "Loading subjects...",
+      "schoolSubjectsError": "Could not load this course's subjects."
     },
     "duration": {
       "title": "Lesson Duration",
