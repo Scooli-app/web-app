@@ -2,13 +2,12 @@ import { describe, expect, it } from "vitest";
 import type { TeachingProfile } from "@/shared/types/teaching-profile";
 import {
   buildRegularTeachingItems,
-  findVocationalSchoolSubjectCode,
-  findVocationalUnitCode,
   getDefaultSchoolYear,
+  getDefaultTeachingMode,
+  getDefaultVocationalSchoolYear,
   getPreferredRegularSubjectIds,
   getPreferredSchoolYears,
   getVocationalCourseOptions,
-  getTeachingProfileSuggestions,
 } from "./teaching-profile-preferences";
 
 const profile = (overrides: Partial<TeachingProfile> = {}): TeachingProfile => ({
@@ -91,8 +90,19 @@ describe("getDefaultSchoolYear", () => {
   });
 });
 
+describe("getDefaultVocationalSchoolYear", () => {
+  it("returns the lowest saved secondary year", () => {
+    expect(getDefaultVocationalSchoolYear([7, 12, 11])).toBe(11);
+  });
+
+  it("falls back to the course's first year when no secondary year is saved", () => {
+    expect(getDefaultVocationalSchoolYear([5, 7])).toBe(10);
+    expect(getDefaultVocationalSchoolYear([])).toBe(10);
+  });
+});
+
 describe("getVocationalCourseOptions", () => {
-  it("groups saved vocational items by selected course, ignoring unselected courses", () => {
+  it("lists each saved course with its picked UCs, ignoring unselected courses", () => {
     const result = getVocationalCourseOptions(
       profile({
         educationType: "vocational",
@@ -102,7 +112,8 @@ describe("getVocationalCourseOptions", () => {
         ],
         items: [
           { qualificationCode: "COURSE-A", kind: "unit", code: "UC01", label: "Programação Web", trainingComponent: "technological" },
-          { qualificationCode: "COURSE-A", kind: "subject", code: "S1", label: "Comunicação", trainingComponent: "sociocultural" },
+          { qualificationCode: "COURSE-A", kind: "subject", code: "S1", label: "Português", trainingComponent: "sociocultural" },
+          { qualificationCode: "COURSE-A", kind: "subject", code: "S2", label: "Matemática", trainingComponent: "scientific" },
           { qualificationCode: "COURSE-B", kind: "unit", code: "UC99", label: "Curso removido", trainingComponent: "technological" },
         ],
       })
@@ -112,12 +123,17 @@ describe("getVocationalCourseOptions", () => {
       {
         code: "COURSE-A",
         title: "Técnico de Informática",
-        units: [
-          { code: "UC01", label: "Programação Web" },
-          { code: "S1", label: "Comunicação" },
-        ],
+        units: [{ code: "UC01", label: "Programação Web" }],
       },
     ]);
+  });
+
+  it("keeps a saved course with no UC picked, so its full catalogue stays reachable", () => {
+    expect(
+      getVocationalCourseOptions(
+        profile({ educationType: "vocational", courses: ["COURSE-A"], courseStates: [] })
+      )
+    ).toEqual([{ code: "COURSE-A", title: "COURSE-A", units: [] }]);
   });
 
   it("returns an empty list for a profile with no vocational selections", () => {
@@ -129,84 +145,32 @@ describe("getVocationalCourseOptions", () => {
   });
 });
 
-describe("getTeachingProfileSuggestions", () => {
-  it("uses regular catalogue labels and excludes invalid stale items", () => {
+describe("getDefaultTeachingMode", () => {
+  it("starts vocational-only teachers in vocational mode", () => {
     expect(
-      getTeachingProfileSuggestions(
+      getDefaultTeachingMode(profile({ courses: ["COURSE-A"], schoolYears: [10, 11] }))
+    ).toBe("vocational");
+  });
+
+  it("stays regular for teachers who also teach regular subjects", () => {
+    expect(
+      getDefaultTeachingMode(
         profile({
-          items: [
-            { qualificationCode: null, kind: "subject", code: "matematica", label: "Wrong stale label", trainingComponent: null },
-            { qualificationCode: "course", kind: "unit", code: "u1", label: "Stale unit", trainingComponent: "technological" },
-          ],
+          courses: ["COURSE-A"],
+          items: [{ qualificationCode: null, kind: "subject", code: "ingles", label: "English", trainingComponent: null }],
         })
       )
-    ).toEqual([
-      {
-        key: "regular:matematica",
-        label: "Mathematics",
-        regularSubjectId: "matematica",
-      },
-    ]);
+    ).toBe("regular");
   });
 
-  it("returns unique regular and vocational labels together", () => {
-    expect(
-      getTeachingProfileSuggestions(
-        profile({
-          educationType: "vocational",
-          courses: ["course"],
-          items: [
-            { qualificationCode: null, kind: "subject", code: "matematica", label: "Mathematics", trainingComponent: null },
-            { qualificationCode: "course", kind: "subject", code: "s1", label: "Communication", trainingComponent: "sociocultural" },
-            { qualificationCode: "course", kind: "unit", code: "u1", label: "Web Development", trainingComponent: "technological" },
-            { qualificationCode: "course", kind: "unit", code: "u2", label: "Web Development", trainingComponent: "technological" },
-            { qualificationCode: null, kind: "subject", code: "ingles", label: "Stale regular", trainingComponent: null },
-          ],
-        })
-      )
-    ).toEqual([
-      { key: "regular:matematica", label: "Mathematics", regularSubjectId: "matematica" },
-      { key: "course:subject:s1", label: "Communication" },
-      { key: "course:unit:u1", label: "Web Development" },
-      { key: "regular:ingles", label: "English", regularSubjectId: "ingles" },
-    ]);
-  });
-});
-
-describe("findVocationalUnitCode", () => {
-  const units = [
-    { code: "UC01", label: "Programação Web" },
-    { code: "UC02", label: "Desenvolver algoritmos" },
-  ];
-
-  it("returns the code of the unit matching the given label", () => {
-    expect(findVocationalUnitCode(units, "Desenvolver algoritmos")).toBe("UC02");
+  it("stays regular for teachers with basic-education years", () => {
+    expect(getDefaultTeachingMode(profile({ courses: ["COURSE-A"], schoolYears: [9, 10] }))).toBe(
+      "regular"
+    );
   });
 
-  it("returns undefined when no unit matches the label", () => {
-    expect(findVocationalUnitCode(units, "Unknown unit")).toBeUndefined();
-  });
-
-  it("returns undefined for an empty units list", () => {
-    expect(findVocationalUnitCode([], "Desenvolver algoritmos")).toBeUndefined();
-  });
-});
-
-describe("findVocationalSchoolSubjectCode", () => {
-  const subjects = [
-    { subjectCode: "ECO10", subjectName: "Economia" },
-    { subjectCode: "PSI11", subjectName: "Psicologia e Sociologia" },
-  ];
-
-  it("returns the code of the subject matching the given name", () => {
-    expect(findVocationalSchoolSubjectCode(subjects, "Psicologia e Sociologia")).toBe("PSI11");
-  });
-
-  it("returns undefined when no subject matches the name", () => {
-    expect(findVocationalSchoolSubjectCode(subjects, "Unknown subject")).toBeUndefined();
-  });
-
-  it("returns undefined for an empty subjects list", () => {
-    expect(findVocationalSchoolSubjectCode([], "Economia")).toBeUndefined();
+  it("stays regular without courses or a profile", () => {
+    expect(getDefaultTeachingMode(profile({ educationType: "vocational" }))).toBe("regular");
+    expect(getDefaultTeachingMode(null)).toBe("regular");
   });
 });

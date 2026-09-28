@@ -21,14 +21,13 @@ import {
   AMBIGUOUS_COMPONENTS_SUBJECTS,
   SUBJECTS,
   SUBJECTS_BY_GRADE,
-  translateSubjectLabel,
 } from "./constants";
 import {
   AdditionalDetailsSection,
+  ClassSection,
   DurationSection,
   FormActions,
   FormHeader,
-  GradeSection,
   SourcePickerSection,
   SubjectSection,
   TeachingMethodSection,
@@ -44,13 +43,15 @@ import type { CanvasPresentation, CanvasSlide } from "@/shared/types/canvas-pres
 import { applyTheme } from "@/components/document-editor-v2/canvas-layout";
 import { SlideThumbnail } from "@/components/document-editor-v2/SlideThumbnail";
 import { teachingProfileService } from "@/services/api/teaching-profile.service";
-import type { TeachingProfile } from "@/shared/types/teaching-profile";
+import type { EducationType, TeachingProfile } from "@/shared/types/teaching-profile";
 import {
   getDefaultSchoolYear,
+  getDefaultTeachingMode,
+  getDefaultVocationalSchoolYear,
   getPreferredRegularSubjectIds,
   getPreferredSchoolYears,
   getVocationalCourseOptions,
-  getTeachingProfileSuggestions,
+  VOCATIONAL_SCHOOL_YEARS,
 } from "./teaching-profile-preferences";
 
 
@@ -188,22 +189,20 @@ export default function DocumentCreationPage({
     () => getVocationalCourseOptions(teachingProfile),
     [teachingProfile]
   );
-  const topicSuggestions = useMemo(
-    () =>
-      getTeachingProfileSuggestions(teachingProfile).map((suggestion) => ({
-        key: suggestion.key,
-        label: suggestion.regularSubjectId
-          ? translateSubjectLabel(suggestion.regularSubjectId)
-          : suggestion.label,
-      })),
-    [teachingProfile]
-  );
+  const teachingMode: EducationType =
+    formState.subjectMode === "vocational" && vocationalCourseOptions.length > 0
+      ? "vocational"
+      : "regular";
+  const selectedVocationalCourse =
+    vocationalCourseOptions.find((course) => course.code === formState.vocationalCourseCode) ??
+    vocationalCourseOptions[0];
 
   // Prefill from quick-create query params (?topic=&year=&subject=) set by the
   // dashboard prompt box and quick-start examples. Reads window.location instead
   // of useSearchParams() to avoid requiring a Suspense boundary on every
   // creation page. Invalid or missing values are simply left for the form.
   const yearFromUrlRef = useRef(false);
+  const subjectFromUrlRef = useRef(false);
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const topic = params.get("topic");
@@ -226,24 +225,86 @@ export default function DocumentCreationPage({
       const validForYear =
         !hasValidYear || SUBJECTS_BY_GRADE[String(year)]?.includes(subjectId);
       if (validForYear) {
+        subjectFromUrlRef.current = true;
         updateForm("subject", subjectId);
       }
     }
   }, [updateForm]);
 
-  // Default "ano de escolaridade" to the teacher's saved school year (lowest
-  // first) once their profile has loaded, unless the URL already set one or
-  // the teacher has already picked a year themselves.
-  const hasAppliedDefaultYearRef = useRef(false);
+  // Once the profile has loaded, open the form where the teacher works: a
+  // cursos-profissionais-only profile starts in vocational mode on its first
+  // course, and the year defaults to the lowest saved one. A year or subject
+  // from the URL, or one the teacher already picked, always wins.
+  const hasAppliedProfileDefaultsRef = useRef(false);
   useEffect(() => {
-    if (hasAppliedDefaultYearRef.current) return;
-    if (yearFromUrlRef.current) return;
-    if (formState.schoolYear) return;
-    const defaultYear = getDefaultSchoolYear(preferredSchoolYears);
-    if (defaultYear === null) return;
-    hasAppliedDefaultYearRef.current = true;
-    updateForm("schoolYear", defaultYear);
-  }, [preferredSchoolYears, formState.schoolYear, updateForm]);
+    if (hasAppliedProfileDefaultsRef.current || !teachingProfile) return;
+    hasAppliedProfileDefaultsRef.current = true;
+
+    const fromUrl = yearFromUrlRef.current || subjectFromUrlRef.current;
+    const startInVocational =
+      !fromUrl &&
+      !formState.subject &&
+      vocationalCourseOptions.length > 0 &&
+      getDefaultTeachingMode(teachingProfile) === "vocational";
+    if (startInVocational) {
+      updateForm("subjectMode", "vocational");
+      updateForm("vocationalCourseCode", vocationalCourseOptions[0].code);
+    }
+
+    if (yearFromUrlRef.current || formState.schoolYear) return;
+    const defaultYear = startInVocational
+      ? getDefaultVocationalSchoolYear(preferredSchoolYears)
+      : getDefaultSchoolYear(preferredSchoolYears);
+    if (defaultYear !== null) updateForm("schoolYear", defaultYear);
+  }, [
+    teachingProfile,
+    vocationalCourseOptions,
+    preferredSchoolYears,
+    formState.subject,
+    formState.schoolYear,
+    updateForm,
+  ]);
+
+  const clearSubjectChoice = useCallback(() => {
+    updateForm("subject", "");
+    updateForm("vocationalUnitCode", undefined);
+    updateForm("vocationalSchoolSubjectName", undefined);
+    updateForm("isSpecificComponent", false);
+  }, [updateForm]);
+
+  const handleTeachingModeChange = useCallback(
+    (mode: EducationType) => {
+      if (mode === teachingMode) return;
+      clearSubjectChoice();
+      updateForm("subjectMode", mode);
+      if (mode === "vocational") {
+        updateForm("vocationalCourseCode", selectedVocationalCourse?.code);
+        // Cursos profissionais only run 10.º–12.º; keep the year when it fits.
+        if (!(VOCATIONAL_SCHOOL_YEARS as readonly number[]).includes(formState.schoolYear)) {
+          updateForm("schoolYear", getDefaultVocationalSchoolYear(preferredSchoolYears));
+        }
+      } else {
+        updateForm("vocationalCourseCode", undefined);
+      }
+    },
+    [
+      teachingMode,
+      clearSubjectChoice,
+      updateForm,
+      selectedVocationalCourse,
+      formState.schoolYear,
+      preferredSchoolYears,
+    ]
+  );
+
+  const handleVocationalCourseChange = useCallback(
+    (courseCode: string) => {
+      if (courseCode === selectedVocationalCourse?.code) return;
+      clearSubjectChoice();
+      updateForm("vocationalCourseCode", courseCode);
+    },
+    [selectedVocationalCourse, clearSubjectChoice, updateForm]
+  );
 
   // Reset subject if it's not available for the selected school year.
   // Skipped in vocational mode: UC labels are never part of the regular
@@ -392,6 +453,7 @@ export default function DocumentCreationPage({
 
         posthog.capture("document_created", {
           document_type: documentType.id,
+          teaching_mode: teachingMode,
           subject: formState.subject,
           school_year: formState.schoolYear,
           template_id: formState.templateId,
@@ -457,7 +519,6 @@ export default function DocumentCreationPage({
               topic={formState.topic}
               placeholder={t(`types.${documentType.id}.placeholder`)}
               onUpdate={updateForm}
-              suggestions={topicSuggestions}
             />
           </div>
 
@@ -470,10 +531,17 @@ export default function DocumentCreationPage({
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6">
             <div data-tutorial="grade">
-              <GradeSection
+              <ClassSection
+                mode={teachingMode}
+                onModeChange={handleTeachingModeChange}
                 schoolYear={formState.schoolYear}
-                onUpdate={updateForm}
                 preferredSchoolYears={preferredSchoolYears}
+                onUpdate={updateForm}
+                vocationalCourses={vocationalCourseOptions}
+                vocationalCourseCode={selectedVocationalCourse?.code}
+                onCourseChange={handleVocationalCourseChange}
+                showVocationalHint={teachingProfile !== null && vocationalCourseOptions.length === 0}
+                className="h-full"
               />
             </div>
 
@@ -489,9 +557,10 @@ export default function DocumentCreationPage({
                     onUpdate={updateForm}
                     availableSubjects={formState.schoolYear ? SUBJECTS_BY_GRADE[String(formState.schoolYear)] : undefined}
                     preferredSubjectIds={preferredSubjectIds}
-                    vocationalCourses={vocationalCourseOptions}
-                    subjectMode={formState.subjectMode}
-                    vocationalCourseCode={formState.vocationalCourseCode}
+                    mode={teachingMode}
+                    vocationalCourse={selectedVocationalCourse}
+                    vocationalUnitCode={formState.vocationalUnitCode}
+                    vocationalSchoolSubjectName={formState.vocationalSchoolSubjectName}
                     className={NESTED_SECTION_CLASS}
                     disabled={!formState.schoolYear}
                   />

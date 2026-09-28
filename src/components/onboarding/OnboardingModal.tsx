@@ -1,8 +1,14 @@
 "use client";
 
+import { mergeVocationalSelection } from "@/components/teaching-profile/teaching-profile-draft";
+import { VocationalCoursesEditor } from "@/components/teaching-profile/VocationalCoursesEditor";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useLocalePreferences } from "@/hooks/useLocalePreferences";
+import { teachingProfileService } from "@/services/api/teaching-profile.service";
+import { isTeacherProfileFeatureEnabled } from "@/shared/types/featureFlags";
+import type { TeachingItem, TeachingProfile } from "@/shared/types/teaching-profile";
+import { useAppSelector } from "@/store/hooks";
 import { LOCALE_LABELS, locales } from "@/i18n/locales";
 import {
   SAME_AS_INTERFACE,
@@ -33,6 +39,7 @@ import {
 import { useTranslations } from "next-intl";
 import posthog from "posthog-js";
 import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 
 interface OnboardingModalProps {
   open: boolean;
@@ -155,7 +162,19 @@ const contentLanguageOptions: ContentLanguagePreference[] = [
   ...locales,
 ];
 
-const TOTAL_STEPS = 3;
+/**
+ * "vocational" only appears for teachers who pick Ensino profissional: it asks
+ * which UCs they will teach and saves them to their teaching profile.
+ */
+type StepId = "source" | "teaching" | "vocational" | "goals";
+
+/** Message key under `onboarding.steps` for each step's heading. */
+const STEP_MESSAGE_KEY: Record<StepId, string> = {
+  source: "1",
+  teaching: "2",
+  vocational: "vocational",
+  goals: "3",
+};
 
 export function OnboardingModal({
   open,
@@ -167,8 +186,11 @@ export function OnboardingModal({
   const tEnum = useTranslations("enums");
   const tLanguage = useTranslations("language");
   const { contentPreference, changeContentPreference } = useLocalePreferences();
+  const isTeacherProfileEnabled = useAppSelector((state) =>
+    isTeacherProfileFeatureEnabled(state.features.flags),
+  );
 
-  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [stepId, setStepId] = useState<StepId>("source");
   const [direction, setDirection] = useState<"forward" | "backward">("forward");
   const [animKey, setAnimKey] = useState(0);
 
@@ -179,12 +201,31 @@ export function OnboardingModal({
   const [subjectAreaOther, setSubjectAreaOther] = useState("");
   const [teachingLevels, setTeachingLevels] = useState<TeachingLevel[]>([]);
   const [goals, setGoals] = useState<OnboardingGoal[]>([]);
+  const [vocationalCourses, setVocationalCourses] = useState<string[]>([]);
+  const [vocationalItems, setVocationalItems] = useState<TeachingItem[]>([]);
 
   const scrollRef = useRef<HTMLDivElement>(null);
+  // The profile as it was before onboarding touched it, so re-saving after the
+  // teacher changes their mind replaces the onboarding picks instead of
+  // accumulating them.
+  const baselineProfileRef = useRef<TeachingProfile | null>(null);
+  const lastSavedSelectionRef = useRef("");
+
+  const showVocationalStep =
+    isTeacherProfileEnabled && teachingLevels.includes("PROFESSIONAL");
+  const steps: StepId[] = [
+    "source",
+    "teaching",
+    ...(showVocationalStep ? (["vocational"] as const) : []),
+    "goals",
+  ];
+  const stepIndex = Math.max(steps.indexOf(stepId), 0);
+  const step = stepIndex + 1;
+  const totalSteps = steps.length;
 
   useEffect(() => {
     if (!open) {
-      setStep(1);
+      setStepId("source");
       setDirection("forward");
       setAnimKey(0);
       setAcquisitionSource(null);
@@ -193,6 +234,10 @@ export function OnboardingModal({
       setSubjectAreaOther("");
       setTeachingLevels([]);
       setGoals([]);
+      setVocationalCourses([]);
+      setVocationalItems([]);
+      baselineProfileRef.current = null;
+      lastSavedSelectionRef.current = "";
     }
   }, [open]);
 
@@ -201,32 +246,64 @@ export function OnboardingModal({
     if (scrollRef.current) {
       scrollRef.current.scrollTop = 0;
     }
-  }, [step]);
+  }, [stepId]);
 
   // Track step views
   useEffect(() => {
     if (!open) return;
-    posthog.capture("onboarding_step_viewed", { step });
-  }, [open, step]);
+    posthog.capture("onboarding_step_viewed", { step, step_id: stepId });
+  }, [open, step, stepId]);
 
-  const goTo = (next: 1 | 2 | 3, dir: "forward" | "backward") => {
+  /**
+   * Saves the courses and UCs picked in the vocational step to the teaching
+   * profile, merged into whatever the teacher already had. Runs in the
+   * background so the teacher is never kept waiting, and is a no-op when
+   * nothing changed since the last save.
+   */
+  const saveVocationalSelection = async () => {
+    if (!showVocationalStep || vocationalCourses.length === 0) return;
+    const selection = JSON.stringify({ courses: vocationalCourses, items: vocationalItems });
+    if (selection === lastSavedSelectionRef.current) return;
+    lastSavedSelectionRef.current = selection;
+    try {
+      baselineProfileRef.current ??= await teachingProfileService.get();
+      await teachingProfileService.save(
+        mergeVocationalSelection(baselineProfileRef.current, vocationalCourses, vocationalItems),
+      );
+      posthog.capture("onboarding_vocational_units_saved", {
+        courses: vocationalCourses.length,
+        units: vocationalItems.length,
+      });
+    } catch (error) {
+      lastSavedSelectionRef.current = "";
+      posthog.captureException(error);
+      toast.error(t("errors.vocationalSaveFailed"));
+    }
+  };
+
+  const goTo = (next: StepId, dir: "forward" | "backward") => {
     if (dir === "forward") {
-      posthog.capture("onboarding_step_completed", { step });
+      posthog.capture("onboarding_step_completed", { step, step_id: stepId });
+      if (stepId === "vocational") void saveVocationalSelection();
     }
     setDirection(dir);
     setAnimKey((k) => k + 1);
-    setStep(next);
+    setStepId(next);
   };
 
+  const goForward = () => goTo(steps[Math.min(stepIndex + 1, steps.length - 1)], "forward");
+  const goBack = () => goTo(steps[Math.max(stepIndex - 1, 0)], "backward");
+
   const handleSkipWithTracking = () => {
-    posthog.capture("onboarding_skipped", { step });
+    posthog.capture("onboarding_skipped", { step, step_id: stepId });
+    void saveVocationalSelection();
     void onSkip();
   };
 
   const handleSelectSource = (value: AcquisitionSource) => {
     setAcquisitionSource(value);
     if (value !== "OTHER") {
-      goTo(2, "forward");
+      goTo("teaching", "forward");
     }
   };
 
@@ -262,6 +339,7 @@ export function OnboardingModal({
 
   const handleSubmit = async () => {
     if (!acquisitionSource || isBusy) return;
+    void saveVocationalSelection();
     await onSubmit({
       promptKey: ONBOARDING_PROMPT_KEY,
       acquisitionSource,
@@ -318,8 +396,8 @@ export function OnboardingModal({
         />
 
         {/* Step dots */}
-        <div className="flex items-center gap-2" aria-label={t("stepIndicator", { step, total: TOTAL_STEPS })}>
-          {Array.from({ length: TOTAL_STEPS }, (_, i) => (
+        <div className="flex items-center gap-2" aria-label={t("stepIndicator", { step, total: totalSteps })}>
+          {Array.from({ length: totalSteps }, (_, i) => (
             <div
               key={i}
               className={cn(
@@ -357,13 +435,13 @@ export function OnboardingModal({
             className={cn("mb-8", slideInClass)}
           >
             <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-primary/80">
-              {t(`steps.${step}.eyebrow`)}
+              {t(`steps.${STEP_MESSAGE_KEY[stepId]}.eyebrow`)}
             </p>
             <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-              {t(`steps.${step}.title`)}
+              {t(`steps.${STEP_MESSAGE_KEY[stepId]}.title`)}
             </h1>
             <p className="mt-2 text-base text-muted-foreground">
-              {t(`steps.${step}.description`)}
+              {t(`steps.${STEP_MESSAGE_KEY[stepId]}.description`)}
             </p>
           </div>
 
@@ -374,7 +452,7 @@ export function OnboardingModal({
             style={{ animationDelay: "40ms" }}
           >
             {/* ── Step 1: acquisition source ── */}
-            {step === 1 && (
+            {stepId === "source" && (
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                   {acquisitionOptions.map((option) => {
@@ -415,7 +493,7 @@ export function OnboardingModal({
                       placeholder={t("acquisitionOtherPlaceholder")}
                       value={acquisitionSourceOther}
                       onChange={(e) => setAcquisitionSourceOther(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && goTo(2, "forward")}
+                      onKeyDown={(e) => e.key === "Enter" && goTo("teaching", "forward")}
                       disabled={isBusy}
                       className="rounded-xl text-base"
                     />
@@ -425,7 +503,7 @@ export function OnboardingModal({
             )}
 
             {/* ── Step 2: teaching level + subjects ── */}
-            {step === 2 && (
+            {stepId === "teaching" && (
               <div className="space-y-8">
                 <div>
                   <p className="mb-3 text-sm font-semibold text-foreground">
@@ -530,8 +608,20 @@ export function OnboardingModal({
               </div>
             )}
 
-            {/* ── Step 3: goals ── */}
-            {step === 3 && (
+            {/* ── Ensino profissional only: the UCs they will teach ── */}
+            {stepId === "vocational" && (
+              <VocationalCoursesEditor
+                courses={vocationalCourses}
+                items={vocationalItems}
+                onChange={({ courses, items }) => {
+                  setVocationalCourses(courses);
+                  setVocationalItems(items);
+                }}
+              />
+            )}
+
+            {/* ── Last step: goals ── */}
+            {stepId === "goals" && (
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {goalOptions.map((option) => {
                   const isSelected = goals.includes(option.value);
@@ -571,7 +661,7 @@ export function OnboardingModal({
             <Button
               type="button"
               variant="outline"
-              onClick={() => goTo((step - 1) as 1 | 2 | 3, "backward")}
+              onClick={goBack}
               disabled={isBusy}
               className="rounded-xl border-border bg-background"
             >
@@ -583,15 +673,15 @@ export function OnboardingModal({
 
         {/* Step counter */}
         <span className="text-sm tabular-nums text-muted-foreground">
-          {step} / {TOTAL_STEPS}
+          {step} / {totalSteps}
         </span>
 
         {/* Next / Submit */}
         <div className="flex w-24 justify-end sm:w-28">
-          {step === 1 && acquisitionSource !== null && (
+          {stepId === "source" && acquisitionSource !== null && (
             <Button
               type="button"
-              onClick={() => goTo(2, "forward")}
+              onClick={goForward}
               disabled={isBusy}
               className="rounded-xl px-5 shadow-sm"
             >
@@ -600,10 +690,10 @@ export function OnboardingModal({
             </Button>
           )}
 
-          {step === 2 && (
+          {(stepId === "teaching" || stepId === "vocational") && (
             <Button
               type="button"
-              onClick={() => goTo(3, "forward")}
+              onClick={goForward}
               disabled={isBusy}
               className="rounded-xl px-5 shadow-sm"
             >
@@ -612,7 +702,7 @@ export function OnboardingModal({
             </Button>
           )}
 
-          {step === 3 && (
+          {stepId === "goals" && (
             <Button
               type="button"
               onClick={() => void handleSubmit()}
