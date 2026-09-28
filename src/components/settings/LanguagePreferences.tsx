@@ -1,6 +1,11 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   useDetectedBrowserLocale,
   useLocalePreferences,
@@ -12,17 +17,15 @@ import {
   type ContentLanguagePreference,
   type InterfaceLocalePreference,
 } from "@/i18n/preferences";
-import { cn } from "@/shared/utils/utils";
-import { Check, FileText, Globe, Languages, MonitorSmartphone } from "lucide-react";
+import { Check, ChevronDown, FileText, Languages, type LucideIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { toast } from "sonner";
 
 /**
- * The two language controls, built on the same three-button grid the theme
- * control uses. Both are three-state for the same reason the theme is: the third
- * option defers to something else rather than naming a value, and it is the
- * default.
+ * The two language controls, each a single dropdown rather than a button
+ * grid: one visible value plus a menu of the alternatives reads faster than
+ * three buttons where only one differs from the others at a time.
  */
 
 const INTERFACE_OPTIONS: InterfaceLocalePreference[] = [
@@ -37,32 +40,56 @@ const CONTENT_OPTIONS: ContentLanguagePreference[] = [
   SAME_AS_INTERFACE,
 ];
 
-function ChoiceButton({
-  isSelected,
-  onClick,
+function LanguageRow<Option extends string>({
+  icon: Icon,
+  title,
+  triggerLabel,
+  options,
+  value,
+  optionLabel,
   disabled,
-  children,
+  onChange,
 }: {
-  isSelected: boolean;
-  onClick: () => void;
-  disabled?: boolean;
-  children: React.ReactNode;
+  icon: LucideIcon;
+  title: string;
+  triggerLabel: string;
+  options: Option[];
+  value: Option;
+  optionLabel: (option: Option) => string;
+  disabled: boolean;
+  onChange: (option: Option) => void;
 }) {
   return (
-    <Button
-      onClick={onClick}
-      disabled={disabled}
-      variant="outline"
-      className={cn(
-        "flex items-center justify-center gap-2 px-3 py-2 rounded-xl",
-        isSelected
-          ? "bg-primary text-primary-foreground border-primary hover:bg-primary/90"
-          : "border-border text-foreground bg-background hover:bg-accent",
-      )}
-    >
-      {children}
-      {isSelected && <Check className="w-4 h-4 hidden sm:block" />}
-    </Button>
+    <div className="flex items-center justify-between gap-3 p-4 bg-muted rounded-xl">
+      <div className="flex items-center gap-3 min-w-0">
+        <Icon className="w-5 h-5 shrink-0 text-primary" />
+        <p className="truncate font-medium text-foreground">{title}</p>
+      </div>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            disabled={disabled}
+            className="flex shrink-0 items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent disabled:pointer-events-none disabled:opacity-50"
+          >
+            {triggerLabel}
+            <ChevronDown className="w-4 h-4 text-muted-foreground" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-48">
+          {options.map((option) => (
+            <DropdownMenuItem
+              key={option}
+              onClick={() => onChange(option)}
+              className="flex items-center justify-between"
+            >
+              <span>{optionLabel(option)}</span>
+              {option === value && <Check className="w-4 h-4 text-primary" />}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
   );
 }
 
@@ -92,84 +119,43 @@ export function LanguagePreferences() {
     }
   };
 
-  const interfaceHint =
+  const interfaceTriggerLabel =
     interfacePreference === FOLLOW_BROWSER
       ? `${t("interface.followBrowserHint")} · ${LOCALE_LABELS[detectedLocale ?? defaultLocale]}`
-      : LOCALE_LABELS[interfacePreference];
+      : t(`interface.options.${interfacePreference}`);
 
-  const contentHint =
+  const contentTriggerLabel =
     contentPreference === SAME_AS_INTERFACE
       ? `${t("content.sameAsInterfaceHint")} · ${LOCALE_LABELS[interfaceLocale]}`
-      : LOCALE_LABELS[contentPreference];
+      : t(`content.options.${contentPreference}`);
 
   return (
     <>
-      {/* Interface language */}
-      <div className="p-4 bg-muted rounded-xl">
-        <div className="flex items-center gap-3 mb-4">
-          <Languages className="w-5 h-5 text-primary" />
-          <div>
-            <p className="font-medium text-foreground">
-              {t("interface.title")}
-            </p>
-            <p className="text-sm text-muted-foreground">{interfaceHint}</p>
-          </div>
-        </div>
-        <div className="grid grid-cols-3 gap-2">
-          {INTERFACE_OPTIONS.map((option) => (
-            <ChoiceButton
-              key={option}
-              isSelected={interfacePreference === option}
-              disabled={isSaving}
-              onClick={() =>
-                void persist(() => changeInterfacePreference(option))
-              }
-            >
-              {option === FOLLOW_BROWSER ? (
-                <MonitorSmartphone className="w-4 h-4" />
-              ) : (
-                <Globe className="w-4 h-4" />
-              )}
-              <span className="hidden sm:inline">
-                {t(`interface.options.${option}`)}
-              </span>
-            </ChoiceButton>
-          ))}
-        </div>
-      </div>
+      <LanguageRow
+        icon={Languages}
+        title={t("interface.title")}
+        triggerLabel={interfaceTriggerLabel}
+        options={INTERFACE_OPTIONS}
+        value={interfacePreference}
+        optionLabel={(option) => t(`interface.options.${option}`)}
+        disabled={isSaving}
+        onChange={(option) => void persist(() => changeInterfacePreference(option))}
+      />
 
-      {/* Content language */}
-      <div className="p-4 bg-muted rounded-xl">
-        <div className="flex items-center gap-3 mb-4">
-          <FileText className="w-5 h-5 text-primary" />
-          <div>
-            <p className="font-medium text-foreground">{t("content.title")}</p>
-            <p className="text-sm text-muted-foreground">{contentHint}</p>
-          </div>
-        </div>
-        <div className="grid grid-cols-3 gap-2">
-          {CONTENT_OPTIONS.map((option) => (
-            <ChoiceButton
-              key={option}
-              isSelected={contentPreference === option}
-              disabled={isSaving}
-              onClick={() => void persist(() => changeContentPreference(option))}
-            >
-              {option === SAME_AS_INTERFACE ? (
-                <Languages className="w-4 h-4" />
-              ) : (
-                <Globe className="w-4 h-4" />
-              )}
-              <span className="hidden sm:inline">
-                {t(`content.options.${option}`)}
-              </span>
-            </ChoiceButton>
-          ))}
-        </div>
-        <p className="mt-3 text-xs text-muted-foreground">
-          {t("content.curriculumNote")}
-        </p>
-      </div>
+      <LanguageRow
+        icon={FileText}
+        title={t("content.title")}
+        triggerLabel={contentTriggerLabel}
+        options={CONTENT_OPTIONS}
+        value={contentPreference}
+        optionLabel={(option) => t(`content.options.${option}`)}
+        disabled={isSaving}
+        onChange={(option) => void persist(() => changeContentPreference(option))}
+      />
+
+      <p className="px-1 text-xs text-muted-foreground">
+        {t("content.curriculumNote")}
+      </p>
     </>
   );
 }

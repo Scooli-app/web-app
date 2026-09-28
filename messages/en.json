@@ -144,7 +144,6 @@
       "credits": "{count, plural, one {# credit} other {# credits}}"
     },
     "mobileNavTitle": "Scooli Navigation",
-    "earlyAccess": "Early access",
     "signIn": "Sign in"
   },
   "enums": {
@@ -2409,6 +2408,9 @@
       "light": "Light",
       "dark": "Dark",
       "system": "System"
+    },
+    "languageToggle": {
+      "srLabel": "Change language"
     }
   },
   "timetable": {

@@ -13,9 +13,9 @@ import {
   useTutorial,
 } from "@/contexts/TutorialContext";
 import { AppBootstrapGate } from "@/components/layout/AppBootstrapGate";
+import { LanguageToggle } from "@/components/layout/LanguageToggle";
 import { SourceIngestionTracker } from "@/components/layout/SourceIngestionTracker";
 import { SourcesPendingBadge } from "@/components/layout/SourcesPendingBadge";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
@@ -784,15 +784,10 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
                 <SignedIn>
                   <div className="flex items-center gap-2">
                     <PromoNavCta />
-                    <Badge
-                      variant="secondary"
-                      className="hidden h-8 rounded border border-dashed border-primary/20 bg-primary/10 px-3 text-[11px] font-semibold uppercase tracking-wide text-primary sm:inline-flex"
-                    >
-                      {t("earlyAccess")}
-                    </Badge>
                     <GenerationsIndicator />
                   </div>
                 </SignedIn>
+                <LanguageToggle />
                 <ThemeToggle />
                 <SignedOut>
                   <SignInButton mode="modal">
