@@ -40,8 +40,8 @@ import { selectIsHorarioPlanosEnabled } from "@/store/features/selectors";
 import { useFeatureAccess } from "@/components/feature/useFeatureAccess";
 import { FeatureUnavailable } from "@/components/feature/FeatureUnavailable";
 import { createTimetable, generateTopics } from "@/store/timetable/timetableSlice";
+import { AlreadyCoveredSection } from "@/components/document-creation/AlreadyCoveredSection";
 import { useAppDispatch } from "@/store/hooks";
-import type { RootState } from "@/store/store";
 import { Routes as AppRoutes, type Document } from "@/shared/types";
 import { getDocument, getDocuments } from "@/services/api/document.service";
 import { cn } from "@/shared/utils/utils";
@@ -77,7 +77,6 @@ import {
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
-import { useSelector } from "react-redux";
 import { useLocale, useTranslations } from "next-intl";
 import { isSupportedLocale, defaultLocale, type Locale } from "@/i18n/locales";
 import { toIntlLocale } from "@/shared/utils/calendar";
@@ -372,14 +371,20 @@ interface StepDetailsProps {
   schedule: WeekSchedule;
   periodStart: string;
   periodEnd: string;
+  alreadyCoveredDomains: string[];
+  alreadyCoveredNotes: string;
   onFieldChange: (field: string, value: string) => void;
   onScheduleChange: (schedule: WeekSchedule) => void;
   onColorChange: (color: string) => void;
+  onAlreadyCoveredDomainsChange: (domains: string[]) => void;
+  onAlreadyCoveredNotesChange: (notes: string) => void;
 }
 
 function StepDetails({
   subject, gradeLevel, classLabel, title, color,
-  schedule, periodStart, periodEnd, onFieldChange, onScheduleChange, onColorChange,
+  schedule, periodStart, periodEnd, alreadyCoveredDomains, alreadyCoveredNotes,
+  onFieldChange, onScheduleChange, onColorChange,
+  onAlreadyCoveredDomainsChange, onAlreadyCoveredNotesChange,
 }: StepDetailsProps) {
   const t = useTranslations("calendar.novo");
 
@@ -519,6 +524,15 @@ function StepDetails({
           {t("details.lessonsSummary", { count: totalLessons, weeks, lpw })}
         </div>
       )}
+
+      <AlreadyCoveredSection
+        subject={subject}
+        gradeLevel={gradeLevel}
+        selectedDomains={alreadyCoveredDomains}
+        notes={alreadyCoveredNotes}
+        onDomainsChange={onAlreadyCoveredDomainsChange}
+        onNotesChange={onAlreadyCoveredNotesChange}
+      />
     </div>
   );
 }
@@ -717,7 +731,11 @@ function CalendarNewPageContent() {
   const tTimetable = useTranslations("timetable");
   const tErrors = useTranslations("errors.calendar");
   const { loaded: featuresLoaded, enabled } = useFeatureAccess(selectIsHorarioPlanosEnabled);
-  const isSubmitting = useSelector((state: RootState) => state.timetable.isLoading);
+  // Local, not state.timetable.isLoading: that flag belongs to fetchTimetables/fetchTimetable
+  // (the classes-list pages' loading spinner) — createTimetable never touches it. Reading it
+  // here left "Criar turma" permanently disabled on a direct load of this page (isLoading
+  // defaults to true and nothing on this page ever dispatches fetchTimetables to flip it).
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const dispatch = useAppDispatch();
   const router = useRouter();
 
@@ -739,6 +757,8 @@ function CalendarNewPageContent() {
     return `${y}/${y + 1}`;
   });
   const [schedule, setSchedule] = useState<WeekSchedule>(DEFAULT_WEEK_SCHEDULE);
+  const [alreadyCoveredDomains, setAlreadyCoveredDomains] = useState<string[]>([]);
+  const [alreadyCoveredNotes, setAlreadyCoveredNotes] = useState("");
   const [previewSlots, setPreviewSlots] = useState<PreviewSlot[]>([]);
 
   // Step validity (computed in parent so bottom nav can disable buttons)
@@ -827,8 +847,10 @@ function CalendarNewPageContent() {
   };
 
   const handleGoToReverDatas = () => {
+    const subjectValue = SUBJECTS.find((s) => s.id === subject)?.value ?? subject;
     const slots = applyExerciseAndReviewCadence(
-      expandSlotsLocally(periodStart, periodEnd, weekScheduleToRecurringSlots(schedule))
+      expandSlotsLocally(periodStart, periodEnd, weekScheduleToRecurringSlots(schedule)),
+      subjectValue
     );
     setPreviewSlots(slots);
     setStep("rever_datas");
@@ -851,6 +873,7 @@ function CalendarNewPageContent() {
     // subject is stored as the SUBJECTS id — send the canonical English value to the backend
     const subjectValue = SUBJECTS.find((s) => s.id === subject)?.value ?? subject;
 
+    setIsSubmitting(true);
     const result = await dispatch(
       createTimetable({
         title: title || autoTitle || tTimetable("autoTitleFallback"),
@@ -868,10 +891,13 @@ function CalendarNewPageContent() {
         assessmentDates,
         exerciseDates,
         reviewDates,
+        alreadyCoveredDomains: alreadyCoveredDomains.length > 0 ? alreadyCoveredDomains : undefined,
+        alreadyCoveredNotes: alreadyCoveredNotes.trim() || undefined,
       })
     );
 
     if (!createTimetable.fulfilled.match(result)) {
+      setIsSubmitting(false);
       toast.error(
         typeof result.payload === "string"
           ? result.payload
@@ -973,6 +999,8 @@ function CalendarNewPageContent() {
                 schedule={schedule}
                 periodStart={periodStart}
                 periodEnd={periodEnd}
+                alreadyCoveredDomains={alreadyCoveredDomains}
+                alreadyCoveredNotes={alreadyCoveredNotes}
                 onFieldChange={(field, value) => {
                   if (field === "subject") setSubject(value);
                   else if (field === "gradeLevel") setGradeLevel(value);
@@ -981,6 +1009,8 @@ function CalendarNewPageContent() {
                 }}
                 onScheduleChange={setSchedule}
                 onColorChange={setColor}
+                onAlreadyCoveredDomainsChange={setAlreadyCoveredDomains}
+                onAlreadyCoveredNotesChange={setAlreadyCoveredNotes}
               />
             )}
             {step === "rever_datas" && (
