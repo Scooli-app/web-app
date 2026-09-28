@@ -692,12 +692,18 @@ export default function DocumentEditor({
                       storage.originalContent = editor.getHTML();
                     }
 
-                    // Replace editor content with AI content
+                    // Replace editor content with AI content and apply diff
+                    // decorations as a single atomic transaction — two separate
+                    // commands.X() dispatches here previously matched the
+                    // "mismatched transaction" pattern already fixed elsewhere
+                    // in this file for the diff accept/reject flow (see
+                    // DiffExtension.ts).
                     const aiHtml = markdownToHtml(finalContent);
-                    editor.commands.setContent(aiHtml, { emitUpdate: false });
-
-                    // Apply diff decorations
-                    editor.commands.setDiffChanges(diffChanges);
+                    editor
+                      .chain()
+                      .setContent(aiHtml, { emitUpdate: false })
+                      .setDiffChanges(diffChanges)
+                      .run();
                     setIsSuggestionsMode(true);
                   } else {
                     // No differences — just update content directly
@@ -730,7 +736,17 @@ export default function DocumentEditor({
 
               dispatch(clearStreamInfo());
               if (docId === documentId) {
-                dispatch(fetchDocument(docId));
+                // fetchDocument's fulfilled content can otherwise race with
+                // the editor mutations above and trigger an editorKey bump
+                // (remount) mid-transaction — mirrors the guard already used
+                // around chatWithDocument in handleChatSubmit below.
+                skipNextEditorKeyBumpRef.current = true;
+                dispatch(fetchDocument(docId))
+                  .unwrap()
+                  .catch(() => {})
+                  .finally(() => {
+                    skipNextEditorKeyBumpRef.current = false;
+                  });
                 dispatch(fetchDocumentImages(docId));
               }
               dispatch(setGeneratingImages(false));
@@ -805,6 +821,7 @@ export default function DocumentEditor({
     setContent,
     getToken,
     normalizePendingTitle,
+    skipNextEditorKeyBumpRef,
     t,
   ]);
 
@@ -1075,12 +1092,15 @@ export default function DocumentEditor({
                   originalHtmlBefore || editor.getHTML();
               }
 
-              // Replace editor content with AI content
+              // Replace editor content with AI content and apply diff
+              // decorations as a single atomic transaction (see matching
+              // comment in the SSE onComplete handler above).
               const aiHtml = markdownToHtml(aiContent);
-              editor.commands.setContent(aiHtml, { emitUpdate: false });
-
-              // Apply diff decorations
-              editor.commands.setDiffChanges(diffChanges);
+              editor
+                .chain()
+                .setContent(aiHtml, { emitUpdate: false })
+                .setDiffChanges(diffChanges)
+                .run();
               setIsSuggestionsMode(true);
             } else {
               // No differences — just sync normally
