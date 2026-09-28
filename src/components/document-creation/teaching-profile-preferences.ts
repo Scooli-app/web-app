@@ -1,13 +1,11 @@
-import type { TeachingItem, TeachingProfile } from "@/shared/types/teaching-profile";
+import type {
+  EducationType,
+  TeachingItem,
+  TeachingProfile,
+} from "@/shared/types/teaching-profile";
 import { SUBJECTS } from "./constants";
 
 const subjectsById = new Map(SUBJECTS.map((subject) => [subject.id, subject]));
-
-export interface TeachingProfileSuggestion {
-  key: string;
-  label: string;
-  regularSubjectId?: string;
-}
 
 export function buildRegularTeachingItems(subjectIds: string[]): TeachingItem[] {
   const seen = new Set<string>();
@@ -69,43 +67,31 @@ export function getDefaultSchoolYear(preferredSchoolYears: number[]): number | n
   return Math.min(...preferredSchoolYears);
 }
 
+/** Cursos profissionais run from the 10.º to the 12.º ano only. */
+export const VOCATIONAL_SCHOOL_YEARS = [10, 11, 12] as const;
+
+/**
+ * The year a curso profissional document defaults to: the teacher's lowest
+ * saved secondary year, else the course's first year (10.º).
+ */
+export function getDefaultVocationalSchoolYear(preferredSchoolYears: number[]): number {
+  const secondary = preferredSchoolYears.filter((year) =>
+    (VOCATIONAL_SCHOOL_YEARS as readonly number[]).includes(year)
+  );
+  return secondary.length > 0 ? Math.min(...secondary) : VOCATIONAL_SCHOOL_YEARS[0];
+}
+
 export interface VocationalCourseOption {
   code: string;
   title: string;
+  /** Competence units (UC) the teacher said they will teach in this course. */
   units: { code: string; label: string }[];
 }
 
 /**
- * Resolves a UC's code from the label picked in the unit `<Select>`. The
- * picker's `SelectItem` values are labels (kept as-is for display/back-compat
- * with `subject`), so this is how the create-document flow recovers the code
- * the backend needs for deterministic UC content lookup.
- */
-export function findVocationalUnitCode(
-  units: { code: string; label: string }[],
-  unitLabel: string
-): string | undefined {
-  return units.find((unit) => unit.label === unitLabel)?.code;
-}
-
-/**
- * Resolves a school subject's code from the label picked in the
- * sociocultural/científica `<Select>` — mirrors `findVocationalUnitCode`
- * exactly, just against the school-subjects list instead of units. Used to
- * tell whether a selected label belongs to the school-subject list (vs. a
- * competence unit) in the merged vocational picker, since both share one
- * `<Select>` keyed by display label.
- */
-export function findVocationalSchoolSubjectCode(
-  subjects: { subjectCode: string; subjectName: string }[],
-  subjectLabel: string
-): string | undefined {
-  return subjects.find((subject) => subject.subjectName === subjectLabel)?.subjectCode;
-}
-
-/**
- * Vocational courses/UCs saved on the profile, scoped to currently selected
- * courses — mirrors the "select ensino profissional" creation-form flow.
+ * Courses saved on the profile with the UCs the teacher picked in each. A
+ * course with no UC picked is still listed — the teacher teaches there, and
+ * the creation form falls back to the course's full catalogue.
  */
 export function getVocationalCourseOptions(
   profile: TeachingProfile | null
@@ -113,41 +99,24 @@ export function getVocationalCourseOptions(
   if (!profile) return [];
   const titleByCode = new Map(profile.courseStates.map((state) => [state.code, state.title]));
 
-  return profile.courses.flatMap((code) => {
-    const units = profile.items
-      .filter((item) => item.qualificationCode === code && item.label.trim())
-      .map((item) => ({ code: item.code, label: item.label.trim() }));
-    if (units.length === 0) return [];
-    return [{ code, title: titleByCode.get(code) ?? code, units }];
-  });
+  return profile.courses.map((code) => ({
+    code,
+    title: titleByCode.get(code) ?? code,
+    units: profile.items
+      .filter((item) => item.qualificationCode === code && item.kind === "unit" && item.label.trim())
+      .map((item) => ({ code: item.code, label: item.label.trim() })),
+  }));
 }
 
-export function getTeachingProfileSuggestions(
-  profile: TeachingProfile | null
-): TeachingProfileSuggestion[] {
-  if (!profile) return [];
-  const selectedCourses = new Set(profile.courses);
-
-  const suggestions = profile.items.flatMap((item) => {
-    if (item.kind === "subject" && item.qualificationCode === null) {
-      const subject = subjectsById.get(item.code);
-      return subject
-        ? [{
-            key: `regular:${subject.id}`,
-            label: subject.value,
-            regularSubjectId: subject.id,
-          }]
-        : [];
-    }
-    if (item.qualificationCode === null || !selectedCourses.has(item.qualificationCode) || !item.label.trim()) return [];
-    return [{
-      key: `${item.qualificationCode}:${item.kind}:${item.code}`,
-      label: item.label.trim(),
-    }];
-  });
-
-  return suggestions.filter(
-    (suggestion, index) =>
-      suggestions.findIndex((candidate) => candidate.label === suggestion.label) === index
-  );
+/**
+ * Which side of the creation form to open on. A teacher whose profile is only
+ * cursos profissionais starts there; anyone with regular subjects or
+ * basic-education years starts on ensino regular, as before.
+ */
+export function getDefaultTeachingMode(profile: TeachingProfile | null): EducationType {
+  if (!profile || profile.courses.length === 0) return "regular";
+  const teachesRegular =
+    profile.items.some((item) => item.qualificationCode === null) ||
+    profile.schoolYears.some((year) => year < VOCATIONAL_SCHOOL_YEARS[0]);
+  return teachesRegular ? "regular" : "vocational";
 }

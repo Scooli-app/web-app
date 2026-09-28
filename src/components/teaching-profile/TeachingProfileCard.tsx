@@ -1,342 +1,224 @@
 "use client";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
+import { ChoiceChip } from "@/components/ui/choice-chip";
 import { teachingProfileService } from "@/services/api/teaching-profile.service";
 import {
   GRADE_GROUPS,
-  SUBJECTS,
   translateGradeGroupLabel,
   translateGradeLabel,
-  translateSubjectCategory,
-  translateSubjectLabel,
 } from "@/components/document-creation/constants";
 import { buildRegularTeachingItems } from "@/components/document-creation/teaching-profile-preferences";
-import {
-  EMPTY_TEACHING_PROFILE,
-  type EducationType,
-  type IngestionStatus,
-  type Qualification,
-  type TeachingItem,
-  type TeachingProfile,
-  type VocationalUnit,
-} from "@/shared/types/teaching-profile";
+import { EMPTY_TEACHING_PROFILE, type TeachingProfile } from "@/shared/types/teaching-profile";
 import { cn } from "@/shared/utils/utils";
-import { Check, GraduationCap, Loader2, Search, X } from "lucide-react";
+import {
+  BookOpen,
+  Briefcase,
+  CalendarDays,
+  Check,
+  GraduationCap,
+  Loader2,
+  School,
+  type LucideIcon,
+} from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { toast } from "sonner";
+import { RegularSubjectsPicker } from "./RegularSubjectsPicker";
+import {
+  buildProfileForSave,
+  deriveTeachingScope,
+  profileFingerprint,
+  schoolYearsForScope,
+  TEACHING_PROFILE_ANCHOR,
+  type TeachingScope,
+} from "./teaching-profile-draft";
+import { VocationalCoursesEditor } from "./VocationalCoursesEditor";
 
-/** Strip accents so search matches how the backend and ETL normalise. */
-function normalize(value: string): string {
-  return value
-    .normalize("NFKD")
-    .replace(/\p{M}/gu, "")
-    .toLowerCase()
-    .trim();
-}
-
-/**
- * Group units by the common prefix before the first dash.
- *
- * In referentials a subject shows up as several units sharing a prefix —
- * "Programação em C/C++ - ciclos e decisões", "… - funções e estruturas". The
- * median is 25 units per course but the maximum is 114, and a flat list that
- * long is hostile. This recovers much of the subject grouping without needing
- * the school's own curriculum plan.
- */
-function groupUnits(units: VocationalUnit[]): Array<{ prefix: string; units: VocationalUnit[] }> {
-  const groups = new Map<string, VocationalUnit[]>();
-  for (const unit of units) {
-    const separator = unit.title.indexOf(" - ");
-    const prefix = separator > 8 ? unit.title.slice(0, separator) : "";
-    const bucket = groups.get(prefix);
-    if (bucket) {
-      bucket.push(unit);
-    } else {
-      groups.set(prefix, [unit]);
-    }
-  }
-  // A prefix with a single unit is not a group — those go back to the loose list.
-  const loose: VocationalUnit[] = [];
-  const real: Array<{ prefix: string; units: VocationalUnit[] }> = [];
-  for (const [prefix, bucket] of groups) {
-    if (!prefix || bucket.length < 2) {
-      loose.push(...bucket);
-    } else {
-      real.push({ prefix, units: bucket });
-    }
-  }
-  if (loose.length > 0) {
-    real.push({ prefix: "", units: loose });
-  }
-  return real;
-}
-
-function StatusBadge({ status }: { status: IngestionStatus }) {
-  const t = useTranslations("settings.teachingProfileCard.status");
-  const tone =
-    status === "indexed"
-      ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
-      : status === "failed"
-        ? "bg-destructive/10 text-destructive"
-        : "bg-muted text-muted-foreground";
+function ScopeOption({
+  checked,
+  onToggle,
+  icon: Icon,
+  title,
+  description,
+}: {
+  checked: boolean;
+  onToggle: () => void;
+  icon: LucideIcon;
+  title: string;
+  description: string;
+}) {
   return (
-    <Badge variant="secondary" className={cn("font-normal", tone)}>
-      {status === "pending" || status === "running" ? (
-        <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-      ) : null}
-      {t(status)}
-    </Badge>
+    <button
+      type="button"
+      role="checkbox"
+      aria-checked={checked}
+      onClick={onToggle}
+      className={cn(
+        "flex items-start gap-3 rounded-xl border-2 p-4 text-left transition-colors",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card",
+        checked
+          ? "border-primary bg-primary/5"
+          : "border-border bg-card hover:border-primary/50 hover:bg-accent/50"
+      )}
+    >
+      <span
+        className={cn(
+          "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-colors",
+          checked ? "bg-primary text-primary-foreground" : "bg-accent text-primary"
+        )}
+      >
+        <Icon className="h-5 w-5" aria-hidden />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block font-semibold text-foreground">{title}</span>
+        <span className="mt-0.5 block text-xs text-muted-foreground sm:text-sm">{description}</span>
+      </span>
+      <span
+        className={cn(
+          "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border-2 transition-colors",
+          checked
+            ? "border-primary bg-primary text-primary-foreground"
+            : "border-muted-foreground/40"
+        )}
+        aria-hidden
+      >
+        {checked && <Check className="h-3.5 w-3.5" />}
+      </span>
+    </button>
+  );
+}
+
+function ProfileBlock({
+  icon: Icon,
+  title,
+  description,
+  children,
+}: {
+  icon: LucideIcon;
+  title: string;
+  description?: string;
+  children: ReactNode;
+}) {
+  return (
+    <section className="space-y-4 border-t border-border pt-6">
+      <div className="flex items-start gap-3">
+        <Icon className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden />
+        <div>
+          <h3 className="font-semibold text-foreground">{title}</h3>
+          {description && <p className="mt-0.5 text-sm text-muted-foreground">{description}</p>}
+        </div>
+      </div>
+      {children}
+    </section>
   );
 }
 
 export function TeachingProfileCard() {
   const t = useTranslations("settings.teachingProfileCard");
-  const [profile, setProfile] = useState<TeachingProfile>(EMPTY_TEACHING_PROFILE);
-  const [catalog, setCatalog] = useState<Qualification[]>([]);
-  const [unitsByCourse, setUnitsByCourse] = useState<Record<string, VocationalUnit[]>>({});
-  const [term, setTerm] = useState("");
+  const [draft, setDraft] = useState<TeachingProfile>(EMPTY_TEACHING_PROFILE);
+  const [scope, setScope] = useState<TeachingScope>({ regular: true, vocational: false });
+  const [baseline, setBaseline] = useState<{
+    profile: TeachingProfile;
+    scope: TeachingScope;
+    fingerprint: string;
+  } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [profileLoadFailed, setProfileLoadFailed] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [catalogError, setCatalogError] = useState<string | null>(null);
 
-  const isVocational = profile.educationType === "vocational";
+  const applyBaseline = useCallback((profile: TeachingProfile, nextScope: TeachingScope) => {
+    setDraft(profile);
+    setScope(nextScope);
+    setBaseline({
+      profile,
+      scope: nextScope,
+      fingerprint: profileFingerprint(buildProfileForSave(profile, nextScope)),
+    });
+  }, []);
 
   const loadProfile = useCallback(async () => {
     setIsLoading(true);
     setProfileLoadFailed(false);
     try {
       const loaded = await teachingProfileService.get();
-      setProfile(loaded);
+      applyBaseline(loaded, deriveTeachingScope(loaded));
     } catch {
       setProfileLoadFailed(true);
       toast.error(t("loadError"));
     } finally {
       setIsLoading(false);
     }
-  }, [t]);
+  }, [applyBaseline, t]);
 
   useEffect(() => {
     void loadProfile();
   }, [loadProfile]);
 
-  // The level-4 catalogue is 161 courses: load it once and filter locally so
-  // search responds without a round trip per keystroke.
-  useEffect(() => {
-    if (!isVocational || catalog.length > 0 || catalogError) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const results = await teachingProfileService.searchQualifications("", 4, 200);
-        if (!cancelled) setCatalog(results);
-      } catch (error) {
-        // apiClient's response interceptor already extracts the backend's real
-        // error message (or a specific "wrong API URL" / "network error" one) —
-        // surface that instead of guessing a single fixed cause. A silent guess
-        // here is actively harmful: it looks identical whether the catalogue is
-        // genuinely unsynced, the wrong backend is being hit, or the request
-        // never left the browser, so a real failure is undiagnosable from the UI.
-        if (!cancelled) {
-          setCatalogError(
-            error instanceof Error
-              ? error.message
-              : t("catalogError")
-          );
-        }
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [isVocational, catalog.length, catalogError, t]);
-
-  const loadUnits = useCallback(
-    async (code: string) => {
-      if (unitsByCourse[code]) return;
-      try {
-        const units = await teachingProfileService.getUnits(code);
-        setUnitsByCourse((current) => ({ ...current, [code]: units }));
-      } catch {
-        toast.error(t("unitsError"));
-      }
-    },
-    [unitsByCourse, t]
-  );
+  const profileToSave = useMemo(() => buildProfileForSave(draft, scope), [draft, scope]);
+  const isDirty =
+    baseline !== null && profileFingerprint(profileToSave) !== baseline.fingerprint;
 
   useEffect(() => {
-    if (!isVocational) return;
-    profile.courses.forEach((code) => void loadUnits(code));
-  }, [isVocational, profile.courses, loadUnits]);
+    if (!isDirty) return;
+    const warn = (event: BeforeUnloadEvent) => event.preventDefault();
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [isDirty]);
 
-  const filtered = useMemo(() => {
-    const key = normalize(term);
-    if (!key) return catalog.slice(0, 8);
-    return catalog
-      .filter(
-        (q) =>
-          normalize(q.title).includes(key) ||
-          normalize(q.code).includes(key) ||
-          normalize(q.cnaefLabel ?? "").includes(key)
-      )
-      .slice(0, 8);
-  }, [catalog, term]);
+  const visibleYears = useMemo(() => new Set(schoolYearsForScope(scope)), [scope]);
+  const visibleGradeGroups = GRADE_GROUPS.map((group) => ({
+    groupId: group.groupId,
+    grades: group.grades.filter((grade) => visibleYears.has(Number(grade.id))),
+  })).filter((group) => group.grades.length > 0);
+  const selectedYears = draft.schoolYears.filter((year) => visibleYears.has(year));
 
-  const selectedRegularSubjectIds = useMemo(
-    () =>
-      new Set(
-        profile.items
-          .filter((item) => item.kind === "subject" && item.qualificationCode === null)
-          .map((item) => item.code)
-      ),
-    [profile.items]
+  const regularSubjectIds = draft.items
+    .filter((item) => item.qualificationCode === null && item.kind === "subject")
+    .map((item) => item.code);
+
+  const courseTitles = useMemo(
+    () => Object.fromEntries(draft.courseStates.map((state) => [state.code, state.title])),
+    [draft.courseStates]
   );
 
-  const selectedSchoolYears = useMemo(
-    () => new Set(profile.schoolYears.filter((year) => year >= 1 && year <= 12)),
-    [profile.schoolYears]
-  );
+  const toggleScope = (key: keyof TeachingScope) =>
+    setScope((current) => ({ ...current, [key]: !current[key] }));
 
-  const regularSubjectGroups = useMemo(() => {
-    const key = normalize(term);
-    const matching = SUBJECTS.filter(
-      (subject) =>
-        !key ||
-        normalize(subject.label).includes(key) ||
-        normalize(subject.value).includes(key) ||
-        normalize(subject.category).includes(key)
-    );
-
-    return matching.reduce<Record<string, typeof SUBJECTS>>((groups, subject) => {
-      (groups[subject.category] ??= []).push(subject);
-      return groups;
-    }, {});
-  }, [term]);
-
-  const statusFor = (code: string): IngestionStatus =>
-    profile.courseStates.find((c) => c.code === code)?.ingestionStatus ?? "pending";
-
-  const titleFor = (code: string): string =>
-    profile.courseStates.find((c) => c.code === code)?.title ??
-    catalog.find((q) => q.code === code)?.title ??
-    code;
-
-  const setEducationType = (educationType: EducationType) => {
-    setTerm("");
-    setProfile((current) => ({ ...current, educationType }));
-  };
-
-  const addCourse = (code: string) => {
-    if (profile.courses.includes(code)) return;
-    setProfile((current) => ({ ...current, courses: [...current.courses, code] }));
-    setTerm("");
-    void loadUnits(code);
-  };
-
-  const removeCourse = (code: string) =>
-    setProfile((current) => ({
+  const toggleSchoolYear = (year: number) =>
+    setDraft((current) => ({
       ...current,
-      courses: current.courses.filter((c) => c !== code),
-      items: current.items.filter((i) => i.qualificationCode !== code),
+      schoolYears: current.schoolYears.includes(year)
+        ? current.schoolYears.filter((existing) => existing !== year)
+        : [...current.schoolYears, year].sort((a, b) => a - b),
     }));
 
-  const toggleUnit = (courseCode: string, unit: VocationalUnit) => {
-    const exists = profile.items.some(
-      (i) => i.qualificationCode === courseCode && i.code === unit.code
-    );
-    setProfile((current) => ({
-      ...current,
-      items: exists
-        ? current.items.filter(
-            (i) => !(i.qualificationCode === courseCode && i.code === unit.code)
-          )
-        : [
-            ...current.items,
-            {
-              qualificationCode: courseCode,
-              kind: "unit",
-              code: unit.code,
-              label: unit.title,
-              trainingComponent: "technological",
-            } satisfies TeachingItem,
-          ],
-    }));
-  };
-
-  const toggleAllUnits = (courseCode: string, units: VocationalUnit[]) => {
-    const unitCodes = new Set(units.map((unit) => unit.code));
-    const selectedCount = profile.items.filter(
-      (item) => item.qualificationCode === courseCode && unitCodes.has(item.code)
-    ).length;
-    const shouldSelectAll = selectedCount < units.length;
-
-    setProfile((current) => ({
-      ...current,
-      items: [
-        ...current.items.filter(
-          (item) => !(item.qualificationCode === courseCode && unitCodes.has(item.code))
-        ),
-        ...(shouldSelectAll
-          ? units.map((unit) => ({
-              qualificationCode: courseCode,
-              kind: "unit" as const,
-              code: unit.code,
-              label: unit.title,
-              trainingComponent: "technological" as const,
-            }))
-          : []),
-      ],
-    }));
-  };
-
-  const toggleSchoolYear = (schoolYear: number) => {
-    setProfile((current) => {
-      const selected = new Set(current.schoolYears);
-      if (selected.has(schoolYear)) {
-        selected.delete(schoolYear);
-      } else {
-        selected.add(schoolYear);
-      }
-      return {
-        ...current,
-        schoolYears: Array.from(selected).sort((a, b) => a - b),
-      };
-    });
-  };
-
-  const toggleRegularSubject = (subjectId: string) => {
-    setProfile((current) => {
-      const selectedIds = current.items
-        .filter((item) => item.kind === "subject" && item.qualificationCode === null)
+  const toggleRegularSubject = (subjectId: string) =>
+    setDraft((current) => {
+      const selected = current.items
+        .filter((item) => item.qualificationCode === null && item.kind === "subject")
         .map((item) => item.code);
-      const nextIds = selectedIds.includes(subjectId)
-        ? selectedIds.filter((id) => id !== subjectId)
-        : [...selectedIds, subjectId];
-
+      const next = selected.includes(subjectId)
+        ? selected.filter((id) => id !== subjectId)
+        : [...selected, subjectId];
       return {
         ...current,
         items: [
+          ...buildRegularTeachingItems(next),
           ...current.items.filter((item) => item.qualificationCode !== null),
-          ...buildRegularTeachingItems(nextIds),
         ],
       };
     });
+
+  const handleDiscard = () => {
+    if (baseline) applyBaseline(baseline.profile, baseline.scope);
   };
 
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      const vocationalItems = profile.items.filter((item) => item.qualificationCode !== null);
-      const profileToSave: TeachingProfile = {
-        ...profile,
-        schoolYears: Array.from(selectedSchoolYears).sort((a, b) => a - b),
-        items: [...buildRegularTeachingItems([...selectedRegularSubjectIds]), ...vocationalItems],
-      };
       const saved = await teachingProfileService.save(profileToSave);
-      setProfile(saved);
+      applyBaseline(saved, scope);
       toast.success(t("saveSuccess"));
     } catch {
       toast.error(t("saveError"));
@@ -347,30 +229,34 @@ export function TeachingProfileCard() {
 
   if (isLoading) {
     return (
-      <div className="bg-card p-4 sm:p-6 md:p-8 rounded-2xl shadow-md border border-border">
-        <div className="h-6 bg-muted rounded-lg w-48 animate-pulse mb-4" />
-        <div className="h-4 bg-muted rounded-lg w-72 animate-pulse" />
+      <div className="rounded-2xl border border-border bg-card p-4 shadow-md sm:p-6 md:p-8">
+        <div className="mb-4 h-6 w-48 animate-pulse rounded-lg bg-muted" />
+        <div className="mb-6 h-4 w-72 animate-pulse rounded-lg bg-muted" />
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="h-20 animate-pulse rounded-xl bg-muted" />
+          <div className="h-20 animate-pulse rounded-xl bg-muted" />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-card p-4 sm:p-6 md:p-8 rounded-2xl shadow-md border border-border">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center">
-          <GraduationCap className="w-5 h-5 text-primary" />
+    <div
+      id={TEACHING_PROFILE_ANCHOR}
+      className="scroll-mt-6 rounded-2xl border border-border bg-card p-4 shadow-md sm:p-6 md:p-8"
+    >
+      <div className="mb-2 flex items-center gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent">
+          <GraduationCap className="h-5 w-5 text-primary" />
         </div>
         <h2 className="text-xl font-semibold text-foreground">{t("title")}</h2>
       </div>
-
-      <p className="text-sm text-muted-foreground mb-5">
-        {t("subtitle")}
-      </p>
+      <p className="mb-6 text-sm text-muted-foreground">{t("subtitle")}</p>
 
       {profileLoadFailed && (
         <div
           role="alert"
-          className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-destructive/10 p-4"
+          className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-destructive/10 p-4"
         >
           <p className="text-sm text-destructive">{t("loadError")}</p>
           <Button type="button" variant="outline" onClick={() => void loadProfile()}>
@@ -379,280 +265,126 @@ export function TeachingProfileCard() {
         </div>
       )}
 
-      <div className="flex gap-2 mb-6" role="group" aria-label={t("typeGroupLabel")}>
-        {(
-          [
-            ["regular", t("regular")],
-            ["vocational", t("vocational")],
-          ] as Array<[EducationType, string]>
-        ).map(([value, label]) => (
-          <button
-            key={value}
-            type="button"
-            onClick={() => setEducationType(value)}
-            aria-pressed={profile.educationType === value}
-            className={cn(
-              "px-4 py-2 rounded-xl text-sm font-medium border transition-colors",
-              profile.educationType === value
-                ? "bg-primary text-primary-foreground border-primary"
-                : "bg-card text-foreground border-border hover:bg-accent"
-            )}
-          >
-            {profile.educationType === value && (
-              <Check className="w-3.5 h-3.5 inline mr-1.5" />
-            )}
-            {label}
-          </button>
-        ))}
-      </div>
-
-      <div className="mb-6 rounded-xl border border-border p-4">
-        <p className="mb-3 text-sm font-medium text-foreground">{t("schoolYearsLabel")}</p>
-        <div className="space-y-3">
-          {GRADE_GROUPS.map((group) => (
-            <div key={group.groupId}>
-              <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                {translateGradeGroupLabel(group.groupId)}
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {group.grades.map((grade) => {
-                  const year = Number(grade.id);
-                  const selected = selectedSchoolYears.has(year);
-                  return (
-                    <button
-                      key={grade.id}
-                      type="button"
-                      onClick={() => toggleSchoolYear(year)}
-                      aria-pressed={selected}
-                      className={cn(
-                        "rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors",
-                        selected
-                          ? "border-primary bg-primary text-primary-foreground"
-                          : "border-border bg-card text-foreground hover:bg-accent"
-                      )}
-                    >
-                      {translateGradeLabel(grade.id)}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
+      <fieldset className="mb-6 space-y-3" disabled={profileLoadFailed}>
+        <legend className="mb-3">
+          <span className="block font-semibold text-foreground">{t("scopeLabel")}</span>
+          <span className="block text-sm text-muted-foreground">{t("scopeHint")}</span>
+        </legend>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <ScopeOption
+            checked={scope.regular}
+            onToggle={() => toggleScope("regular")}
+            icon={School}
+            title={t("regular")}
+            description={t("regularDescription")}
+          />
+          <ScopeOption
+            checked={scope.vocational}
+            onToggle={() => toggleScope("vocational")}
+            icon={Briefcase}
+            title={t("vocational")}
+            description={t("vocationalDescription")}
+          />
         </div>
-      </div>
+      </fieldset>
 
-      {!isVocational ? (
-        <div className="space-y-4">
-          <div>
-            <label
-              htmlFor="subject-search"
-              className="text-sm font-medium text-foreground mb-2 block"
-            >
-              {t("subjectsLabel")}
-            </label>
-            <div className="relative">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                id="subject-search"
-                value={term}
-                onChange={(event) => setTerm(event.target.value)}
-                placeholder={t("subjectsSearchPlaceholder")}
-                className="pl-9"
-                autoComplete="off"
-              />
-            </div>
-          </div>
-
-          <div
-            className="max-h-80 space-y-4 overflow-y-auto rounded-xl border border-border p-3"
-            aria-label={t("subjectsListLabel")}
-            role="group"
-          >
-            {Object.entries(regularSubjectGroups).length === 0 ? (
-              <p className="text-sm text-muted-foreground">{t("noSubjectsFound")}</p>
-            ) : (
-              Object.entries(regularSubjectGroups).map(([category, subjects]) => (
-                <fieldset key={category}>
-                  <legend className="mb-2 text-xs font-semibold text-muted-foreground">
-                    {translateSubjectCategory(category)}
-                  </legend>
-                  <div className="grid gap-2 sm:grid-cols-2">
-                    {subjects.map((subject) => (
-                      <label
-                        key={subject.id}
-                        className="flex cursor-pointer items-start gap-2.5 rounded-lg p-1.5 text-sm hover:bg-accent"
-                      >
-                        <Checkbox
-                          checked={selectedRegularSubjectIds.has(subject.id)}
-                          onCheckedChange={() => toggleRegularSubject(subject.id)}
-                          className="mt-0.5"
-                        />
-                        <span className="text-foreground">
-                          {translateSubjectLabel(subject.id)}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                </fieldset>
-              ))
-            )}
-          </div>
-          <p className="text-xs text-muted-foreground">
-            {t("subjectsSelected", { count: selectedRegularSubjectIds.size })}
-          </p>
-        </div>
-      ) : catalogError ? (
-        <div className="p-4 bg-destructive/10 rounded-xl">
-          <p className="text-destructive text-sm">{catalogError}</p>
-        </div>
+      {!scope.regular && !scope.vocational ? (
+        <p className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
+          {t("noScopeSelected")}
+        </p>
       ) : (
         <div className="space-y-6">
-          <div>
-            <label
-              htmlFor="course-search"
-              className="text-sm font-medium text-foreground mb-2 block"
-            >
-              {t("coursesLabel")}
-            </label>
-            <div className="relative">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                id="course-search"
-                value={term}
-                onChange={(event) => setTerm(event.target.value)}
-                placeholder={t("coursesSearchPlaceholder")}
-                className="pl-9"
-                autoComplete="off"
-              />
-            </div>
-
-            {term && (
-              <div className="mt-2 border border-border rounded-xl overflow-hidden">
-                {filtered.length === 0 ? (
-                  <p className="p-3 text-sm text-muted-foreground">
-                    {t("noCoursesFound")}
+          <ProfileBlock
+            icon={CalendarDays}
+            title={t("schoolYearsLabel")}
+            description={!scope.regular ? t("schoolYearsVocationalHint") : undefined}
+          >
+            <div className="space-y-3">
+              {visibleGradeGroups.map((group) => (
+                <div key={group.groupId} role="group" aria-label={translateGradeGroupLabel(group.groupId)}>
+                  <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    {translateGradeGroupLabel(group.groupId)}
                   </p>
-                ) : (
-                  filtered.map((qualification) => (
-                    <button
-                      key={qualification.code}
-                      type="button"
-                      onClick={() => addCourse(qualification.code)}
-                      disabled={profile.courses.includes(qualification.code)}
-                      className="w-full text-left px-3 py-2.5 hover:bg-accent disabled:opacity-40 border-b border-border last:border-0"
-                    >
-                      <span className="block text-sm text-foreground">
-                        {qualification.title}
-                      </span>
-                      <span className="block text-xs text-muted-foreground font-mono">
-                        {qualification.code} · {qualification.cnaefLabel}
-                      </span>
-                    </button>
-                  ))
-                )}
-              </div>
-            )}
-          </div>
-
-          {profile.courses.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              {t("noCoursesYet")}
-            </p>
-          ) : (
-            profile.courses.map((code) => {
-              const units = unitsByCourse[code];
-              const selected = new Set(
-                profile.items
-                  .filter((i) => i.qualificationCode === code)
-                  .map((i) => i.code)
-              );
-              return (
-                <div key={code} className="border border-border rounded-xl p-4">
-                  <div className="flex items-start justify-between gap-3 mb-3">
-                    <div className="min-w-0">
-                      <p className="font-medium text-foreground">
-                        {titleFor(code)}
-                      </p>
-                      <p className="text-xs text-muted-foreground font-mono">{code}</p>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <StatusBadge status={statusFor(code)} />
-                      <button
-                        type="button"
-                        onClick={() => removeCourse(code)}
-                        aria-label={t("removeCourse", { course: titleFor(code) })}
-                        className="text-muted-foreground hover:text-destructive p-1"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
+                  <div className="flex flex-wrap gap-2">
+                    {group.grades.map((grade) => {
+                      const year = Number(grade.id);
+                      return (
+                        <ChoiceChip
+                          key={grade.id}
+                          selected={selectedYears.includes(year)}
+                          showCheck
+                          onClick={() => toggleSchoolYear(year)}
+                        >
+                          {translateGradeLabel(grade.id)}
+                        </ChoiceChip>
+                      );
+                    })}
                   </div>
-
-                  <p className="text-xs text-muted-foreground mb-2">
-                    {t("unitsInstruction")}
-                  </p>
-
-                  {!units ? (
-                    <div className="h-4 bg-muted rounded w-40 animate-pulse" />
-                  ) : (
-                    <>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="mb-3"
-                        onClick={() => toggleAllUnits(code, units)}
-                      >
-                        {selected.size === units.length ? t("deselectAllUnits") : t("selectAllUnits")}
-                      </Button>
-                      <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
-                      {groupUnits(units).map((group, index) => (
-                        <div key={group.prefix || `loose-${index}`}>
-                          {group.prefix && (
-                            <p className="text-xs font-medium text-muted-foreground mb-1">
-                              {group.prefix}
-                            </p>
-                          )}
-                          <div className="space-y-1.5">
-                            {group.units.map((unit) => (
-                              <label
-                                key={unit.code}
-                                className="flex items-start gap-2.5 text-sm cursor-pointer"
-                              >
-                                <Checkbox
-                                  checked={selected.has(unit.code)}
-                                  onCheckedChange={() => toggleUnit(code, unit)}
-                                  className="mt-0.5"
-                                />
-                                <span className="text-foreground">
-                                  {unit.title}
-                                  <span className="text-muted-foreground font-mono text-xs ml-1.5">
-                                    {unit.code}
-                                  </span>
-                                </span>
-                              </label>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                      </div>
-                    </>
-                  )}
                 </div>
-              );
-            })
+              ))}
+            </div>
+          </ProfileBlock>
+
+          {scope.regular && (
+            <ProfileBlock icon={BookOpen} title={t("regularSubjectsLabel")}>
+              <RegularSubjectsPicker
+                selectedIds={regularSubjectIds}
+                schoolYears={selectedYears}
+                onToggle={toggleRegularSubject}
+              />
+            </ProfileBlock>
           )}
 
+          {scope.vocational && (
+            <ProfileBlock
+              icon={Briefcase}
+              title={t("coursesLabel")}
+              description={t("coursesDescription")}
+            >
+              <VocationalCoursesEditor
+                courses={draft.courses}
+                items={draft.items}
+                knownTitles={courseTitles}
+                onChange={({ courses, items }) =>
+                  setDraft((current) => ({ ...current, courses, items }))
+                }
+              />
+            </ProfileBlock>
+          )}
         </div>
       )}
 
-      <Button
-        onClick={handleSave}
-        disabled={isSaving || profileLoadFailed}
-        className="mt-6 w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground px-5 py-3 rounded-xl font-medium"
-      >
-        {isSaving ? t("saving") : t("save")}
-      </Button>
+      {isDirty && (
+        <div
+          role="status"
+          className="sticky bottom-4 z-10 mt-6 flex flex-col gap-3 rounded-xl border border-primary/30 bg-card/95 p-3 shadow-lg backdrop-blur supports-[backdrop-filter]:bg-card/80 sm:flex-row sm:items-center sm:justify-between sm:pl-4"
+        >
+          <p className="flex items-center gap-2 text-sm font-medium text-foreground">
+            <span className="h-2 w-2 shrink-0 rounded-full bg-primary" aria-hidden />
+            {t("unsavedChanges")}
+          </p>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={handleDiscard}
+              disabled={isSaving}
+              className="flex-1 sm:flex-none"
+            >
+              {t("discard")}
+            </Button>
+            <Button
+              type="button"
+              onClick={handleSave}
+              disabled={isSaving}
+              className="flex-1 rounded-xl sm:flex-none"
+            >
+              {isSaving && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
+              {isSaving ? t("saving") : t("save")}
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
