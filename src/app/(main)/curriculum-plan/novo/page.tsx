@@ -560,7 +560,7 @@ export default function CurriculumPlanNewPage() {
                   vocationalCourses={vocationalCourseOptions}
                   vocationalCourseCode={selectedVocationalCourse?.code}
                   onCourseChange={handleVocationalCourseChange}
-                  showVocationalHint={teachingProfile !== null && vocationalCourseOptions.length === 0}
+                  onVocationalCourseAdded={setTeachingProfile}
                   className="h-full"
                 />
                 <SubjectSection

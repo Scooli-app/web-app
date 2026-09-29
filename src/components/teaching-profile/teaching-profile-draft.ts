@@ -83,6 +83,23 @@ export function buildProfileForSave(draft: TeachingProfile, scope: TeachingScope
   };
 }
 
+/**
+ * The unified switcher's three states — mirrors ClassSection's
+ * regular/vocational SegmentedControl, plus a third state for teachers who
+ * legitimately teach both. Lives here (not in TeachingProfileCard.tsx) so it
+ * can be unit-tested without a JSX-capable test transform.
+ */
+export type ScopeMode = "regular" | "vocational" | "both";
+
+export function scopeToMode(scope: TeachingScope): ScopeMode {
+  if (scope.regular && scope.vocational) return "both";
+  return scope.vocational ? "vocational" : "regular";
+}
+
+export function modeToScope(mode: ScopeMode): TeachingScope {
+  return { regular: mode !== "vocational", vocational: mode !== "regular" };
+}
+
 /** Order-insensitive identity of the saveable part of a profile, for dirty checks. */
 export function profileFingerprint(profile: TeachingProfile): string {
   const itemKey = (item: TeachingItem) =>
