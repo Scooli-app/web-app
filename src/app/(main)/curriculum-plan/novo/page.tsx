@@ -8,9 +8,7 @@ import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
-  SelectGroup,
   SelectItem,
-  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -18,17 +16,19 @@ import { Stepper } from "@/components/ui/stepper";
 import { GenerationProgress } from "@/components/document-creation/GenerationProgress";
 import { WizardShell } from "@/components/document-creation/WizardShell";
 import { WeekSchedulePicker } from "@/components/document-creation/WeekSchedulePicker";
+import { ClassSection, SubjectSection } from "@/components/document-creation/sections";
+import type { FormState, FormUpdateFn } from "@/components/document-creation/types";
 import {
+  AMBIGUOUS_COMPONENTS_SUBJECTS,
   SUBJECTS,
-  GRADE_GROUPS,
   SUBJECTS_BY_GRADE,
-  getSubjectsForGrade,
-  groupSubjectsByCategory,
-  translateGradeGroupLabel,
-  translateGradeLabel,
-  translateSubjectCategory,
   translateSubjectLabel,
 } from "@/components/document-creation/constants";
+import {
+  getPreferredRegularSubjectIds,
+  getPreferredSchoolYears,
+  getVocationalCourseOptions,
+} from "@/components/document-creation/teaching-profile-preferences";
 import {
   createDocument,
   setPendingInitialPrompt,
@@ -36,7 +36,7 @@ import {
 import { selectIsCurriculumPlanEnabled } from "@/store/features/selectors";
 import { useFeatureAccess } from "@/components/feature/useFeatureAccess";
 import { FeatureUnavailable } from "@/components/feature/FeatureUnavailable";
-import { useAppDispatch } from "@/store/hooks";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
   buildSchoolPeriodPresets,
   formatPresetRange,
@@ -50,14 +50,17 @@ import {
   weeksBetweenIso,
   type WeekSchedule,
 } from "@/lib/timetable/planToTimetable";
+import { teachingProfileService } from "@/services/api/teaching-profile.service";
 import { type CurriculumPlanningType } from "@/shared/types";
+import type { EducationType, TeachingProfile } from "@/shared/types/teaching-profile";
+import { isTeacherProfileFeatureEnabled } from "@/shared/types/featureFlags";
 import { cn } from "@/shared/utils/utils";
 import { toIntlLocale } from "@/shared/utils/calendar";
 import { isSupportedLocale, defaultLocale, type Locale } from "@/i18n/locales";
 import { ChevronLeft, ChevronRight, CalendarDays, BookOpen, Settings2, CheckCircle2 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -158,16 +161,136 @@ export default function CurriculumPlanNewPage() {
   const { loaded: featuresLoaded, enabled } = useFeatureAccess(selectIsCurriculumPlanEnabled);
   const router = useRouter();
   const dispatch = useAppDispatch();
+  const isTeacherProfileEnabled = useAppSelector((state) =>
+    isTeacherProfileFeatureEnabled(state.features.flags),
+  );
 
   const [step, setStep] = useState<StepId>("period");
   const [planningType, setPlanningType] = useState<CurriculumPlanningType>("trimester");
   const [periodStart, setPeriodStart] = useState<Date | undefined>(undefined);
   const [periodEnd, setPeriodEnd] = useState<Date | undefined>(undefined);
-  const [subjectId, setSubjectId] = useState("");
-  const [gradeLevel, setGradeLevel] = useState("5");
+  // Class/subject state mirrors DocumentCreationPage's form shape (same field
+  // names, same SubjectSection/ClassSection wiring) so vocational mode feels
+  // identical across every creation wizard instead of a bolted-on variant.
+  const [classForm, setClassForm] = useState<
+    Pick<
+      FormState,
+      | "subject"
+      | "isSpecificComponent"
+      | "subjectMode"
+      | "vocationalCourseCode"
+      | "vocationalUnitCode"
+      | "vocationalSchoolSubjectName"
+      | "schoolYear"
+    >
+  >({ subject: "", isSpecificComponent: false, schoolYear: 5 });
   const [schedule, setSchedule] = useState<WeekSchedule>(DEFAULT_WEEK_SCHEDULE);
   const [submitting, setSubmitting] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
+  const [teachingProfile, setTeachingProfile] = useState<TeachingProfile | null>(null);
+
+  const updateClassForm: FormUpdateFn = useCallback((field, value) => {
+    setClassForm((prev) => ({ ...prev, [field]: value }));
+  }, []);
+
+  useEffect(() => {
+    if (!isTeacherProfileEnabled) {
+      setTeachingProfile(null);
+      return;
+    }
+    let cancelled = false;
+    teachingProfileService
+      .get()
+      .then((profile) => {
+        if (!cancelled) setTeachingProfile(profile);
+      })
+      .catch(() => {
+        // Preferences are an enhancement: creation keeps the complete catalogue
+        // and remains fully usable when the profile API is unavailable.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isTeacherProfileEnabled]);
+
+  const availableSubjectIds = useMemo(
+    () =>
+      classForm.schoolYear
+        ? SUBJECTS_BY_GRADE[String(classForm.schoolYear)] ?? []
+        : SUBJECTS.map((subject) => subject.id),
+    [classForm.schoolYear]
+  );
+  const preferredSubjectIds = useMemo(
+    () => getPreferredRegularSubjectIds(teachingProfile, availableSubjectIds),
+    [teachingProfile, availableSubjectIds]
+  );
+  const preferredSchoolYears = useMemo(
+    () => getPreferredSchoolYears(teachingProfile, Array.from({ length: 12 }, (_, index) => index + 1)),
+    [teachingProfile]
+  );
+  const vocationalCourseOptions = useMemo(
+    () => getVocationalCourseOptions(teachingProfile),
+    [teachingProfile]
+  );
+  const teachingMode: EducationType =
+    classForm.subjectMode === "vocational" && vocationalCourseOptions.length > 0
+      ? "vocational"
+      : "regular";
+  const selectedVocationalCourse =
+    vocationalCourseOptions.find((course) => course.code === classForm.vocationalCourseCode) ??
+    vocationalCourseOptions[0];
+
+  const clearSubjectChoice = useCallback(() => {
+    updateClassForm("subject", "");
+    updateClassForm("vocationalUnitCode", undefined);
+    updateClassForm("vocationalSchoolSubjectName", undefined);
+    updateClassForm("isSpecificComponent", false);
+  }, [updateClassForm]);
+
+  const handleTeachingModeChange = useCallback(
+    (mode: EducationType) => {
+      if (mode === teachingMode) return;
+      clearSubjectChoice();
+      updateClassForm("subjectMode", mode);
+      if (mode === "vocational") {
+        updateClassForm("vocationalCourseCode", selectedVocationalCourse?.code);
+      } else {
+        updateClassForm("vocationalCourseCode", undefined);
+      }
+    },
+    [teachingMode, clearSubjectChoice, updateClassForm, selectedVocationalCourse]
+  );
+
+  const handleVocationalCourseChange = useCallback(
+    (courseCode: string) => {
+      if (courseCode === selectedVocationalCourse?.code) return;
+      clearSubjectChoice();
+      updateClassForm("vocationalCourseCode", courseCode);
+    },
+    [selectedVocationalCourse, clearSubjectChoice, updateClassForm]
+  );
+
+  // Reset subject if it's not available for the selected school year — same
+  // guard DocumentCreationPage uses, skipped in vocational mode since UC
+  // labels never belong to the regular subject catalogue.
+  useEffect(() => {
+    if (classForm.subjectMode === "vocational") return;
+    if (classForm.schoolYear && classForm.subject) {
+      const validSubjects = SUBJECTS_BY_GRADE[String(classForm.schoolYear)];
+      if (validSubjects && !validSubjects.includes(classForm.subject)) {
+        updateClassForm("subject", "");
+      }
+    }
+  }, [classForm.schoolYear, classForm.subject, classForm.subjectMode, updateClassForm]);
+
+  // Reset component type when subject changes
+  useEffect(() => {
+    if (classForm.subject && classForm.isSpecificComponent) {
+      if (!AMBIGUOUS_COMPONENTS_SUBJECTS.includes(classForm.subject)) {
+        updateClassForm("isSpecificComponent", false);
+      }
+    }
+  }, [classForm.subject, classForm.isSpecificComponent, updateClassForm]);
 
   const PRESETS = useMemo(() => buildSchoolPeriodPresets(), []);
 
@@ -184,32 +307,27 @@ export default function CurriculumPlanNewPage() {
     [periodStartISO, periodEndISO, lpw, schedule],
   );
 
+  // In vocational mode `subject` already carries the display label chosen by
+  // SubjectSection (UC title or vocational school-subject name) — there's no
+  // catalogue entry to translate, unlike the regular AE subject list.
   const selectedSubject = useMemo(
-    () => SUBJECTS.find((s) => s.id === subjectId),
-    [subjectId]
+    () => (teachingMode === "regular" ? SUBJECTS.find((s) => s.id === classForm.subject) : undefined),
+    [teachingMode, classForm.subject]
   );
   // The review step shows the translated name; the AI prompt uses whichever
   // name matches the language the prompt itself is written in (see buildPrompt).
-  const subjectLabel = selectedSubject
-    ? locale === "en"
-      ? translateSubjectLabel(selectedSubject.id)
-      : selectedSubject.label
-    : "";
-  // Backend expects the canonical English value, not the internal id used for selection.
-  const subjectValue = selectedSubject?.value ?? "";
-  const schoolYear = Number(gradeLevel) || 0;
-
-  const groupedSubjects = useMemo(
-    () => groupSubjectsByCategory(getSubjectsForGrade(gradeLevel)),
-    [gradeLevel]
-  );
-
-  function handleGradeLevelChange(grade: string) {
-    setGradeLevel(grade);
-    // Reset subject if it isn't offered for the newly selected grade
-    const ids = SUBJECTS_BY_GRADE[grade] ?? [];
-    if (subjectId && !ids.includes(subjectId)) setSubjectId("");
-  }
+  const subjectLabel = teachingMode === "vocational"
+    ? classForm.subject
+    : selectedSubject
+      ? locale === "en"
+        ? translateSubjectLabel(selectedSubject.id)
+        : selectedSubject.label
+      : "";
+  // Backend expects the canonical English value, not the internal id used for
+  // selection — vocational subjects/UCs have no such catalogue mapping, so
+  // the display label chosen by SubjectSection is sent as-is.
+  const subjectValue = teachingMode === "vocational" ? classForm.subject : (selectedSubject?.value ?? "");
+  const schoolYear = classForm.schoolYear || 0;
 
   function applyPreset(preset: SchoolPeriodPreset) {
     setPeriodStart(new Date(`${preset.start}T00:00:00`));
@@ -219,7 +337,7 @@ export default function CurriculumPlanNewPage() {
 
   // step validation
   const step1Valid = !!periodStart && !!periodEnd && periodEnd > periodStart;
-  const step2Valid = !!subjectId && !!gradeLevel;
+  const step2Valid = !!classForm.subject && !!classForm.schoolYear;
   const step3Valid = lpw > 0;
 
   function goNext() {
@@ -261,6 +379,10 @@ export default function CurriculumPlanNewPage() {
           prompt,
           subject: subjectValue,
           schoolYear,
+          isSpecificComponent: classForm.isSpecificComponent,
+          vocationalCourseCode: classForm.vocationalCourseCode || undefined,
+          vocationalUnitCode: classForm.vocationalUnitCode || undefined,
+          vocationalSchoolSubjectName: classForm.vocationalSchoolSubjectName || undefined,
           additionalDetails: JSON.stringify({
             planningType,
             periodStart: periodStartISO,
@@ -424,56 +546,36 @@ export default function CurriculumPlanNewPage() {
                 </p>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="schoolYear">{t("class.gradeLabel")}</Label>
-                <Select value={gradeLevel} onValueChange={handleGradeLevelChange}>
-                  <SelectTrigger id="schoolYear" className="h-12 text-base">
-                    <SelectValue placeholder={t("class.gradePlaceholder")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {GRADE_GROUPS.map((group) => (
-                      <SelectGroup key={group.label}>
-                        <SelectLabel className="text-xs font-bold text-primary border-b border-border/50 mb-1">
-                          {translateGradeGroupLabel(group.groupId)}
-                        </SelectLabel>
-                        {group.grades.map((g) => (
-                          <SelectItem key={g.id} value={g.id}>
-                            {translateGradeLabel(g.id)}
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="subject">{t("class.subjectLabel")}</Label>
-                <Select value={subjectId} onValueChange={setSubjectId} disabled={!gradeLevel}>
-                  <SelectTrigger id="subject" className="h-12 text-base">
-                    <SelectValue
-                      placeholder={
-                        gradeLevel
-                          ? t("class.subjectPlaceholder")
-                          : t("class.subjectPlaceholderNoGrade")
-                      }
-                    />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-[380px]">
-                    {groupedSubjects.map(({ category, subjects }) => (
-                      <SelectGroup key={category}>
-                        <SelectLabel className="text-xs font-bold text-primary border-b border-border/50 mb-1">
-                          {translateSubjectCategory(category)}
-                        </SelectLabel>
-                        {subjects.map((s) => (
-                          <SelectItem key={s.id} value={s.id}>
-                            {translateSubjectLabel(s.id)}
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
-                    ))}
-                  </SelectContent>
-                </Select>
+              {/* Same ClassSection/SubjectSection pair the lesson-plan/test/quiz
+                  wizard uses, wired to the same field names, so vocational mode
+                  is a native part of curriculum-plan creation rather than a
+                  separate flow. */}
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6">
+                <ClassSection
+                  mode={teachingMode}
+                  onModeChange={handleTeachingModeChange}
+                  schoolYear={classForm.schoolYear}
+                  preferredSchoolYears={preferredSchoolYears}
+                  onUpdate={updateClassForm}
+                  vocationalCourses={vocationalCourseOptions}
+                  vocationalCourseCode={selectedVocationalCourse?.code}
+                  onCourseChange={handleVocationalCourseChange}
+                  showVocationalHint={teachingProfile !== null && vocationalCourseOptions.length === 0}
+                  className="h-full"
+                />
+                <SubjectSection
+                  subject={classForm.subject}
+                  isSpecificComponent={classForm.isSpecificComponent}
+                  onUpdate={updateClassForm}
+                  availableSubjects={classForm.schoolYear ? SUBJECTS_BY_GRADE[String(classForm.schoolYear)] : undefined}
+                  preferredSubjectIds={preferredSubjectIds}
+                  mode={teachingMode}
+                  vocationalCourse={selectedVocationalCourse}
+                  vocationalUnitCode={classForm.vocationalUnitCode}
+                  vocationalSchoolSubjectName={classForm.vocationalSchoolSubjectName}
+                  className="h-full"
+                  disabled={!classForm.schoolYear}
+                />
               </div>
             </div>
           )}
@@ -522,7 +624,7 @@ export default function CurriculumPlanNewPage() {
                 <div className="flex items-center justify-between px-4 py-3">
                   <span className="text-sm text-muted-foreground">{t("review.subject")}</span>
                   <span className="text-sm font-medium">
-                    {selectedSubject ? translateSubjectLabel(selectedSubject.id) : "—"}
+                    {subjectLabel || "—"}
                   </span>
                 </div>
                 <div className="flex items-center justify-between px-4 py-3">
