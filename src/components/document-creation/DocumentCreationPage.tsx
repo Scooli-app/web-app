@@ -540,7 +540,7 @@ export default function DocumentCreationPage({
                 vocationalCourses={vocationalCourseOptions}
                 vocationalCourseCode={selectedVocationalCourse?.code}
                 onCourseChange={handleVocationalCourseChange}
-                showVocationalHint={teachingProfile !== null && vocationalCourseOptions.length === 0}
+                onVocationalCourseAdded={setTeachingProfile}
                 className="h-full"
               />
             </div>

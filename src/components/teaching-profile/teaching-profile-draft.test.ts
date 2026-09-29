@@ -4,8 +4,10 @@ import {
   buildProfileForSave,
   deriveTeachingScope,
   mergeVocationalSelection,
+  modeToScope,
   profileFingerprint,
   schoolYearsForScope,
+  scopeToMode,
   setUnitItems,
   toggleUnitItem,
 } from "./teaching-profile-draft";
@@ -185,5 +187,28 @@ describe("mergeVocationalSelection", () => {
     const merged = mergeVocationalSelection(existing, ["C1"], [unitItem("C1", "U3")]);
     expect(merged.courses).toEqual(["C1"]);
     expect(merged.items.map((item) => item.code)).toEqual(["U3"]);
+  });
+});
+
+describe("scopeToMode / modeToScope", () => {
+  it("maps regular-only scope to the regular mode", () => {
+    expect(scopeToMode({ regular: true, vocational: false })).toBe("regular");
+    expect(modeToScope("regular")).toEqual({ regular: true, vocational: false });
+  });
+
+  it("maps vocational-only scope to the vocational mode", () => {
+    expect(scopeToMode({ regular: false, vocational: true })).toBe("vocational");
+    expect(modeToScope("vocational")).toEqual({ regular: false, vocational: true });
+  });
+
+  it("maps a scope with both enabled to the both mode", () => {
+    expect(scopeToMode({ regular: true, vocational: true })).toBe("both");
+    expect(modeToScope("both")).toEqual({ regular: true, vocational: true });
+  });
+
+  it("round-trips every mode through scope and back", () => {
+    (["regular", "vocational", "both"] as const).forEach((mode) => {
+      expect(scopeToMode(modeToScope(mode))).toBe(mode);
+    });
   });
 });

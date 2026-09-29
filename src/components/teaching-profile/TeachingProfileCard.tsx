@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { ChoiceChip } from "@/components/ui/choice-chip";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import { teachingProfileService } from "@/services/api/teaching-profile.service";
 import {
   GRADE_GROUPS,
@@ -10,13 +11,12 @@ import {
 } from "@/components/document-creation/constants";
 import { buildRegularTeachingItems } from "@/components/document-creation/teaching-profile-preferences";
 import { EMPTY_TEACHING_PROFILE, type TeachingProfile } from "@/shared/types/teaching-profile";
-import { cn } from "@/shared/utils/utils";
 import {
   BookOpen,
   Briefcase,
   CalendarDays,
-  Check,
   GraduationCap,
+  Layers,
   Loader2,
   School,
   type LucideIcon,
@@ -28,66 +28,15 @@ import { RegularSubjectsPicker } from "./RegularSubjectsPicker";
 import {
   buildProfileForSave,
   deriveTeachingScope,
+  modeToScope,
   profileFingerprint,
   schoolYearsForScope,
+  scopeToMode,
   TEACHING_PROFILE_ANCHOR,
+  type ScopeMode,
   type TeachingScope,
 } from "./teaching-profile-draft";
 import { VocationalCoursesEditor } from "./VocationalCoursesEditor";
-
-function ScopeOption({
-  checked,
-  onToggle,
-  icon: Icon,
-  title,
-  description,
-}: {
-  checked: boolean;
-  onToggle: () => void;
-  icon: LucideIcon;
-  title: string;
-  description: string;
-}) {
-  return (
-    <button
-      type="button"
-      role="checkbox"
-      aria-checked={checked}
-      onClick={onToggle}
-      className={cn(
-        "flex items-start gap-3 rounded-xl border-2 p-4 text-left transition-colors",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card",
-        checked
-          ? "border-primary bg-primary/5"
-          : "border-border bg-card hover:border-primary/50 hover:bg-accent/50"
-      )}
-    >
-      <span
-        className={cn(
-          "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-colors",
-          checked ? "bg-primary text-primary-foreground" : "bg-accent text-primary"
-        )}
-      >
-        <Icon className="h-5 w-5" aria-hidden />
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="block font-semibold text-foreground">{title}</span>
-        <span className="mt-0.5 block text-xs text-muted-foreground sm:text-sm">{description}</span>
-      </span>
-      <span
-        className={cn(
-          "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border-2 transition-colors",
-          checked
-            ? "border-primary bg-primary text-primary-foreground"
-            : "border-muted-foreground/40"
-        )}
-        aria-hidden
-      >
-        {checked && <Check className="h-3.5 w-3.5" />}
-      </span>
-    </button>
-  );
-}
 
 function ProfileBlock({
   icon: Icon,
@@ -182,8 +131,8 @@ export function TeachingProfileCard() {
     [draft.courseStates]
   );
 
-  const toggleScope = (key: keyof TeachingScope) =>
-    setScope((current) => ({ ...current, [key]: !current[key] }));
+  const scopeMode = scopeToMode(scope);
+  const setScopeMode = (mode: ScopeMode) => setScope(modeToScope(mode));
 
   const toggleSchoolYear = (year: number) =>
     setDraft((current) => ({
@@ -270,31 +219,20 @@ export function TeachingProfileCard() {
           <span className="block font-semibold text-foreground">{t("scopeLabel")}</span>
           <span className="block text-sm text-muted-foreground">{t("scopeHint")}</span>
         </legend>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <ScopeOption
-            checked={scope.regular}
-            onToggle={() => toggleScope("regular")}
-            icon={School}
-            title={t("regular")}
-            description={t("regularDescription")}
-          />
-          <ScopeOption
-            checked={scope.vocational}
-            onToggle={() => toggleScope("vocational")}
-            icon={Briefcase}
-            title={t("vocational")}
-            description={t("vocationalDescription")}
-          />
-        </div>
+        <SegmentedControl
+          value={scopeMode}
+          onChange={setScopeMode}
+          ariaLabel={t("modeLabel")}
+          options={[
+            { value: "regular", label: t("modeRegular"), icon: School },
+            { value: "vocational", label: t("modeVocational"), icon: Briefcase },
+            { value: "both", label: t("modeBoth"), icon: Layers },
+          ]}
+        />
       </fieldset>
 
-      {!scope.regular && !scope.vocational ? (
-        <p className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
-          {t("noScopeSelected")}
-        </p>
-      ) : (
-        <div className="space-y-6">
-          <ProfileBlock
+      <div className="space-y-6">
+        <ProfileBlock
             icon={CalendarDays}
             title={t("schoolYearsLabel")}
             description={!scope.regular ? t("schoolYearsVocationalHint") : undefined}
@@ -352,7 +290,6 @@ export function TeachingProfileCard() {
             </ProfileBlock>
           )}
         </div>
-      )}
 
       {isDirty && (
         <div
