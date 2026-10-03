@@ -261,6 +261,12 @@
       "quickAddSaving": "A guardar curso…",
       "quickAddError": "Não foi possível guardar este curso. Tenta novamente."
     },
+    "alreadyCovered": {
+      "title": "Já foi dada matéria a esta turma?",
+      "subtitle": "Opcional — útil se esta turma não está a começar do zero (ex.: já lecionaste este ano ou a turma vem de outro professor).",
+      "label": "O que já foi dado a esta turma?",
+      "placeholder": "Ex.: já vimos frações equivalentes mas não decimais…"
+    },
     "subject": {
       "title": "Disciplina",
       "titleVocational": "Disciplina ou UC",
@@ -2615,17 +2621,6 @@
         "namePlaceholder": "Auto-preenchido",
         "colorLabel": "Cor",
         "lessonsSummary": "{count} aulas (~{weeks} semanas × {lpw} aulas/sem., já sem fins-de-semana e feriados)"
-      },
-      "alreadyCovered": {
-        "title": "Já foi dada matéria a esta turma?",
-        "subtitle": "Opcional — útil se esta turma não está a começar do zero (ex.: já lecionaste este ano ou a turma vem de outro professor).",
-        "summary": "{count, plural, =0 {Notas adicionadas} one {# tópico já dado} other {# tópicos já dados}}",
-        "domainsLabel": "Marca o que já foi dado, pela ordem do programa",
-        "markUpToHere": "até aqui",
-        "notesLabel": "Algo mais que já tenha sido dado e não esteja na lista?",
-        "notesPlaceholder": "Ex.: já vimos frações equivalentes mas não decimais…",
-        "clear": "Limpar",
-        "notesOnlyLabel": "O que já foi dado a esta turma?"
       },
       "reviewDates": {
         "title": "Rever datas",

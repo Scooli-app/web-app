@@ -373,20 +373,18 @@ interface StepDetailsProps {
   schedule: WeekSchedule;
   periodStart: string;
   periodEnd: string;
-  alreadyCoveredDomains: string[];
   alreadyCoveredNotes: string;
   onFieldChange: (field: "classLabel" | "title", value: string) => void;
   onScheduleChange: (schedule: WeekSchedule) => void;
   onColorChange: (color: string) => void;
-  onAlreadyCoveredDomainsChange: (domains: string[]) => void;
   onAlreadyCoveredNotesChange: (notes: string) => void;
 }
 
 function StepDetails({
   choice, onChoiceChange, subjectPicker, classLabel, title, color,
-  schedule, periodStart, periodEnd, alreadyCoveredDomains, alreadyCoveredNotes,
+  schedule, periodStart, periodEnd, alreadyCoveredNotes,
   onFieldChange, onScheduleChange, onColorChange,
-  onAlreadyCoveredDomainsChange, onAlreadyCoveredNotesChange,
+  onAlreadyCoveredNotesChange,
 }: StepDetailsProps) {
   const t = useTranslations("calendar.novo");
 
@@ -397,7 +395,6 @@ function StepDetails({
     periodStart && periodEnd && lpw > 0
       ? expandSlotsLocally(periodStart, periodEnd, weekScheduleToRecurringSlots(schedule)).length
       : 0;
-  const isVocational = subjectPicker.teachingMode === "vocational";
 
   return (
     <div className="space-y-5">
@@ -439,13 +436,7 @@ function StepDetails({
 
       {/* Right after the subject: decides where the topics start, so it must not be missed. */}
       <AlreadyCoveredSection
-        subject={choice.subject}
-        gradeLevel={choice.schoolYear}
-        isSpecificComponent={!isVocational && !!choice.isSpecificComponent}
-        vocational={isVocational}
-        selectedDomains={alreadyCoveredDomains}
         notes={alreadyCoveredNotes}
-        onDomainsChange={onAlreadyCoveredDomainsChange}
         onNotesChange={onAlreadyCoveredNotesChange}
       />
 
@@ -723,7 +714,6 @@ function CalendarNewPageContent() {
     return `${y}/${y + 1}`;
   });
   const [schedule, setSchedule] = useState<WeekSchedule>(DEFAULT_WEEK_SCHEDULE);
-  const [alreadyCoveredDomains, setAlreadyCoveredDomains] = useState<string[]>([]);
   const [alreadyCoveredNotes, setAlreadyCoveredNotes] = useState("");
   const [previewSlots, setPreviewSlots] = useState<PreviewSlot[]>([]);
 
@@ -859,7 +849,6 @@ function CalendarNewPageContent() {
       assessmentDates,
       exerciseDates,
       reviewDates,
-      alreadyCoveredDomains: alreadyCoveredDomains.length > 0 ? alreadyCoveredDomains : undefined,
       alreadyCoveredNotes: alreadyCoveredNotes.trim() || undefined,
     });
 
@@ -980,7 +969,6 @@ function CalendarNewPageContent() {
                 schedule={schedule}
                 periodStart={periodStart}
                 periodEnd={periodEnd}
-                alreadyCoveredDomains={alreadyCoveredDomains}
                 alreadyCoveredNotes={alreadyCoveredNotes}
                 onFieldChange={(field, value) => {
                   if (field === "classLabel") setClassLabel(value);
@@ -988,7 +976,6 @@ function CalendarNewPageContent() {
                 }}
                 onScheduleChange={setSchedule}
                 onColorChange={setColor}
-                onAlreadyCoveredDomainsChange={setAlreadyCoveredDomains}
                 onAlreadyCoveredNotesChange={setAlreadyCoveredNotes}
               />
             )}

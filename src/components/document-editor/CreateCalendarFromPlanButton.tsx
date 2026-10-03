@@ -15,7 +15,6 @@ import { Label } from "@/components/ui/label";
 import {
   buildCreateTimetableParamsFromPlan,
   buildPlanAutoTitle,
-  planSubjectChoice,
 } from "@/lib/timetable/planToTimetable";
 import { AlreadyCoveredSection } from "@/components/document-creation/AlreadyCoveredSection";
 import { ClassTopicsProgress } from "@/components/calendar/ClassTopicsProgress";
@@ -61,7 +60,6 @@ export default function CreateCalendarFromPlanButton({
   const [isNameDialogOpen, setIsNameDialogOpen] = useState(false);
   const [name, setName] = useState("");
   const [classLabel, setClassLabel] = useState("");
-  const [alreadyCoveredDomains, setAlreadyCoveredDomains] = useState<string[]>([]);
   const [alreadyCoveredNotes, setAlreadyCoveredNotes] = useState("");
 
   useEffect(() => {
@@ -82,7 +80,6 @@ export default function CreateCalendarFromPlanButton({
     };
   }, [plan.id]);
 
-  const planChoice = planSubjectChoice(plan);
   const openClass = (id: string | null) => {
     if (id) router.push(`${Routes.CALENDAR}/${id}`);
   };
@@ -113,7 +110,6 @@ export default function CreateCalendarFromPlanButton({
     }
     setName(buildPlanAutoTitle(plan));
     setClassLabel("");
-    setAlreadyCoveredDomains([]);
     setAlreadyCoveredNotes("");
     setIsNameDialogOpen(true);
   };
@@ -134,7 +130,6 @@ export default function CreateCalendarFromPlanButton({
       ...params,
       title: name.trim() || params.title,
       classLabel: classLabel.trim() || undefined,
-      alreadyCoveredDomains: alreadyCoveredDomains.length > 0 ? alreadyCoveredDomains : undefined,
       alreadyCoveredNotes: alreadyCoveredNotes.trim() || undefined,
     });
     if (!result.ok) {
@@ -212,13 +207,7 @@ export default function CreateCalendarFromPlanButton({
             </div>
 
             <AlreadyCoveredSection
-              subject={planChoice.subject}
-              gradeLevel={planChoice.schoolYear}
-              isSpecificComponent={planChoice.isSpecificComponent}
-              vocational={planChoice.subjectMode === "vocational"}
-              selectedDomains={alreadyCoveredDomains}
               notes={alreadyCoveredNotes}
-              onDomainsChange={setAlreadyCoveredDomains}
               onNotesChange={setAlreadyCoveredNotes}
             />
           </div>

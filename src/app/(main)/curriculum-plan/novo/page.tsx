@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import { Stepper } from "@/components/ui/stepper";
 import { GenerationProgress } from "@/components/document-creation/GenerationProgress";
+import { AlreadyCoveredSection } from "@/components/document-creation/AlreadyCoveredSection";
 import { WizardShell } from "@/components/document-creation/WizardShell";
 import { WeekSchedulePicker } from "@/components/document-creation/WeekSchedulePicker";
 import { SUBJECTS, SUBJECTS_BY_GRADE } from "@/components/document-creation/constants";
@@ -165,6 +166,7 @@ export default function CurriculumPlanNewPage() {
   const subjectPicker = useSubjectChoice({ choice, update: updateChoice });
   const isVocational = subjectPicker.teachingMode === "vocational";
   const [schedule, setSchedule] = useState<WeekSchedule>(DEFAULT_WEEK_SCHEDULE);
+  const [alreadyCoveredNotes, setAlreadyCoveredNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
 
@@ -256,6 +258,7 @@ export default function CurriculumPlanNewPage() {
             lessonsPerWeek: lpw,
             totalLessonsEstimate: totalLessons,
             weekSchedule: schedule,
+            alreadyCoveredNotes: alreadyCoveredNotes.trim() || undefined,
           }),
           worksheetVariant: planningType as never,
         })
@@ -440,6 +443,12 @@ export default function CurriculumPlanNewPage() {
                 vocationalSchoolSubjectName={choice.vocationalSchoolSubjectName}
                 className={NESTED_SECTION_CLASS}
                 disabled={!choice.schoolYear}
+              />
+
+              {/* Decides where the plan starts, so it sits right after the subject. */}
+              <AlreadyCoveredSection
+                notes={alreadyCoveredNotes}
+                onNotesChange={setAlreadyCoveredNotes}
               />
             </div>
           )}
