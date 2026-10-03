@@ -541,6 +541,7 @@ export default function DocumentCreationPage({
                 vocationalCourseCode={selectedVocationalCourse?.code}
                 onCourseChange={handleVocationalCourseChange}
                 onVocationalCourseAdded={setTeachingProfile}
+                isVocationalFeatureEnabled={isTeacherProfileEnabled}
                 className="h-full"
               />
             </div>
