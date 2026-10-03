@@ -1,5 +1,4 @@
 "use client";
-import { AiDisclaimer } from "@/components/ui/ai-disclaimer";
 
 /**
  * CalendarDashboardWidget
@@ -111,7 +110,7 @@ export function CalendarDashboardWidget() {
   const generatingSlots = useSyncExternalStore(
     generationStore.subscribe,
     generationStore.getSnapshot,
-    () => new Set<string>(),
+    generationStore.getServerSnapshot,
   );
 
   /** Navigate to the document editor for a completed lesson. */
@@ -331,7 +330,6 @@ export function CalendarDashboardWidget() {
                       </Badge>
                     )}
                     {(lesson.status === "pending" || lesson.status === "failed") && (
-                      <div className="flex flex-col items-end gap-0.5">
                       <Button
                         size="sm"
                         variant="outline"
@@ -346,8 +344,6 @@ export function CalendarDashboardWidget() {
                         )}
                         {t("generate")}
                       </Button>
-                        <AiDisclaimer variant="compact" />
-                      </div>
                     )}
                     {lesson.status === "generating" && (
                       <Button

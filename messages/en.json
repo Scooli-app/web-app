@@ -2486,7 +2486,9 @@
       "generate": "Generate ({count})",
       "moveUp": "Move up",
       "moveDown": "Move down",
-      "durationCompact": "{count}m"
+      "durationCompact": "{count}m",
+      "emptyTitle": "No lessons this week",
+      "emptyHint": "Use the arrows to see other weeks."
     },
     "detail": {
       "loading": "Loading...",
@@ -2617,11 +2619,13 @@
       "alreadyCovered": {
         "title": "Has this class already covered any content?",
         "subtitle": "Optional — useful if this class isn't starting from scratch (e.g. you already taught this year, or you're taking over from another teacher).",
-        "summary": "{count, plural, =0 {Notes added} one {# domain already covered} other {# domains already covered}}",
-        "domainsLabel": "Mark the domains already covered (programme order)",
+        "summary": "{count, plural, =0 {Notes added} one {# topic already covered} other {# topics already covered}}",
+        "domainsLabel": "Tick what has already been covered, in programme order",
         "markUpToHere": "up to here",
         "notesLabel": "Anything else already covered that isn't on the list?",
-        "notesPlaceholder": "E.g. we've covered equivalent fractions but not decimals yet…"
+        "notesPlaceholder": "E.g. we've covered equivalent fractions but not decimals yet…",
+        "clear": "Clear",
+        "notesOnlyLabel": "What has this class already covered?"
       },
       "reviewDates": {
         "title": "Review dates",
@@ -2648,6 +2652,19 @@
       "header": {
         "title": "New class",
         "subtitle": "Set the period, subject and weekly timetable."
+      },
+      "generating": {
+        "title": "Setting up your class…",
+        "subtitle": "Scooli is choosing the topic of every lesson. This can take up to a minute — keep this page open.",
+        "steps": [
+          "Creating the class and its calendar",
+          "Generating the lesson topics",
+          "Getting the calendar ready"
+        ],
+        "failedTitle": "We couldn't generate the lesson topics",
+        "failedDescription": "The class has been created. You can try again now, or continue and set the topics yourself in the calendar.",
+        "retry": "Try again",
+        "continue": "Go to the class"
       }
     },
     "periods": {

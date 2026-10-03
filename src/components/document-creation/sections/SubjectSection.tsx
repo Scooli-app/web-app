@@ -28,7 +28,7 @@ import {
   translateSubjectLabel,
 } from "../constants";
 import type { VocationalCourseOption } from "../teaching-profile-preferences";
-import type { FormUpdateFn } from "../types";
+import type { SubjectChoiceUpdateFn } from "../useSubjectChoice";
 
 const SECTION_LABEL_CLASS =
   "mb-1.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground sm:mb-2 sm:text-xs";
@@ -108,7 +108,7 @@ const unitKey = (code: string) => `unit:${code}`;
 interface SubjectSectionProps {
   subject: string;
   isSpecificComponent?: boolean;
-  onUpdate: FormUpdateFn;
+  onUpdate: SubjectChoiceUpdateFn;
   availableSubjects?: string[];
   preferredSubjectIds?: string[];
   mode?: EducationType;

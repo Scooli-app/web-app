@@ -78,7 +78,8 @@ export function SegmentedControl<T extends string>({
             )}
           >
             {Icon && <Icon className={cn("shrink-0", size === "sm" ? "h-3.5 w-3.5" : "h-4 w-4")} aria-hidden />}
-            <span className="truncate">{option.label}</span>
+            {/* Wraps rather than truncating: on a phone "Curso profissional" lost its end. */}
+            <span className="min-w-0 text-center leading-tight">{option.label}</span>
           </button>
         );
       })}

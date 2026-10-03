@@ -2486,7 +2486,9 @@
       "generate": "Gerar ({count})",
       "moveUp": "Mover para cima",
       "moveDown": "Mover para baixo",
-      "durationCompact": "{count}m"
+      "durationCompact": "{count}m",
+      "emptyTitle": "Sem aulas nesta semana",
+      "emptyHint": "Usa as setas para ver outras semanas."
     },
     "detail": {
       "loading": "A carregar...",
@@ -2617,11 +2619,13 @@
       "alreadyCovered": {
         "title": "Já foi dada matéria a esta turma?",
         "subtitle": "Opcional — útil se esta turma não está a começar do zero (ex.: já lecionaste este ano ou a turma vem de outro professor).",
-        "summary": "{count, plural, =0 {Notas adicionadas} one {# domínio já dado} other {# domínios já dados}}",
-        "domainsLabel": "Marca os domínios já dados (ordem do programa)",
+        "summary": "{count, plural, =0 {Notas adicionadas} one {# tópico já dado} other {# tópicos já dados}}",
+        "domainsLabel": "Marca o que já foi dado, pela ordem do programa",
         "markUpToHere": "até aqui",
         "notesLabel": "Algo mais que já tenha sido dado e não esteja na lista?",
-        "notesPlaceholder": "Ex.: já vimos frações equivalentes mas não decimais…"
+        "notesPlaceholder": "Ex.: já vimos frações equivalentes mas não decimais…",
+        "clear": "Limpar",
+        "notesOnlyLabel": "O que já foi dado a esta turma?"
       },
       "reviewDates": {
         "title": "Rever datas",
@@ -2648,6 +2652,19 @@
       "header": {
         "title": "Nova turma",
         "subtitle": "Define o período, disciplina e horário semanal."
+      },
+      "generating": {
+        "title": "A preparar a tua turma…",
+        "subtitle": "A Scooli está a definir o tópico de cada aula. Pode demorar até um minuto — não feches esta página.",
+        "steps": [
+          "A criar a turma e o calendário",
+          "A gerar os tópicos das aulas",
+          "A preparar o calendário"
+        ],
+        "failedTitle": "Não foi possível gerar os tópicos das aulas",
+        "failedDescription": "A turma já foi criada. Podes tentar outra vez agora ou continuar e definir os tópicos diretamente no calendário.",
+        "retry": "Tentar novamente",
+        "continue": "Continuar para a turma"
       }
     },
     "periods": {

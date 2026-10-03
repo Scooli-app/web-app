@@ -16,19 +16,14 @@ import { Stepper } from "@/components/ui/stepper";
 import { GenerationProgress } from "@/components/document-creation/GenerationProgress";
 import { WizardShell } from "@/components/document-creation/WizardShell";
 import { WeekSchedulePicker } from "@/components/document-creation/WeekSchedulePicker";
-import { ClassSection, SubjectSection } from "@/components/document-creation/sections";
-import type { FormState, FormUpdateFn } from "@/components/document-creation/types";
+import { SUBJECTS, SUBJECTS_BY_GRADE } from "@/components/document-creation/constants";
+import { ClassSection, NESTED_SECTION_CLASS, SubjectSection } from "@/components/document-creation/sections";
 import {
-  AMBIGUOUS_COMPONENTS_SUBJECTS,
-  SUBJECTS,
-  SUBJECTS_BY_GRADE,
-  translateSubjectLabel,
-} from "@/components/document-creation/constants";
-import {
-  getPreferredRegularSubjectIds,
-  getPreferredSchoolYears,
-  getVocationalCourseOptions,
-} from "@/components/document-creation/teaching-profile-preferences";
+  subjectChoiceLabel,
+  subjectChoicePayload,
+  useSubjectChoice,
+  useSubjectChoiceState,
+} from "@/components/document-creation/useSubjectChoice";
 import {
   createDocument,
   setPendingInitialPrompt,
@@ -36,7 +31,7 @@ import {
 import { selectIsCurriculumPlanEnabled } from "@/store/features/selectors";
 import { useFeatureAccess } from "@/components/feature/useFeatureAccess";
 import { FeatureUnavailable } from "@/components/feature/FeatureUnavailable";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { useAppDispatch } from "@/store/hooks";
 import {
   buildSchoolPeriodPresets,
   formatPresetRange,
@@ -50,17 +45,14 @@ import {
   weeksBetweenIso,
   type WeekSchedule,
 } from "@/lib/timetable/planToTimetable";
-import { teachingProfileService } from "@/services/api/teaching-profile.service";
 import { type CurriculumPlanningType } from "@/shared/types";
-import type { EducationType, TeachingProfile } from "@/shared/types/teaching-profile";
-import { isTeacherProfileFeatureEnabled } from "@/shared/types/featureFlags";
 import { cn } from "@/shared/utils/utils";
 import { toIntlLocale } from "@/shared/utils/calendar";
 import { isSupportedLocale, defaultLocale, type Locale } from "@/i18n/locales";
 import { ChevronLeft, ChevronRight, CalendarDays, BookOpen, Settings2, CheckCircle2 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -149,6 +141,8 @@ export default function CurriculumPlanNewPage() {
   const tShared = useTranslations("curriculumPlan.shared");
   const tTimetable = useTranslations("timetable");
   const tErrors = useTranslations("errors.curriculumPlan");
+  const tClass = useTranslations("documentCreation.classContext");
+  const tSubject = useTranslations("documentCreation.subject");
   const rawLocale = useLocale();
   const locale = isSupportedLocale(rawLocale) ? rawLocale : defaultLocale;
   const LOADING_STEPS = t.raw("loadingSteps") as string[];
@@ -161,136 +155,18 @@ export default function CurriculumPlanNewPage() {
   const { loaded: featuresLoaded, enabled } = useFeatureAccess(selectIsCurriculumPlanEnabled);
   const router = useRouter();
   const dispatch = useAppDispatch();
-  const isTeacherProfileEnabled = useAppSelector((state) =>
-    isTeacherProfileFeatureEnabled(state.features.flags),
-  );
 
   const [step, setStep] = useState<StepId>("period");
   const [planningType, setPlanningType] = useState<CurriculumPlanningType>("trimester");
   const [periodStart, setPeriodStart] = useState<Date | undefined>(undefined);
   const [periodEnd, setPeriodEnd] = useState<Date | undefined>(undefined);
-  // Class/subject state mirrors DocumentCreationPage's form shape (same field
-  // names, same SubjectSection/ClassSection wiring) so vocational mode feels
-  // identical across every creation wizard instead of a bolted-on variant.
-  const [classForm, setClassForm] = useState<
-    Pick<
-      FormState,
-      | "subject"
-      | "isSpecificComponent"
-      | "subjectMode"
-      | "vocationalCourseCode"
-      | "vocationalUnitCode"
-      | "vocationalSchoolSubjectName"
-      | "schoolYear"
-    >
-  >({ subject: "", isSpecificComponent: false, schoolYear: 5 });
+  // Year and subject (or course and UC) — the same pickers as document creation.
+  const [choice, updateChoice] = useSubjectChoiceState();
+  const subjectPicker = useSubjectChoice({ choice, update: updateChoice });
+  const isVocational = subjectPicker.teachingMode === "vocational";
   const [schedule, setSchedule] = useState<WeekSchedule>(DEFAULT_WEEK_SCHEDULE);
   const [submitting, setSubmitting] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
-  const [teachingProfile, setTeachingProfile] = useState<TeachingProfile | null>(null);
-
-  const updateClassForm: FormUpdateFn = useCallback((field, value) => {
-    setClassForm((prev) => ({ ...prev, [field]: value }));
-  }, []);
-
-  useEffect(() => {
-    if (!isTeacherProfileEnabled) {
-      setTeachingProfile(null);
-      return;
-    }
-    let cancelled = false;
-    teachingProfileService
-      .get()
-      .then((profile) => {
-        if (!cancelled) setTeachingProfile(profile);
-      })
-      .catch(() => {
-        // Preferences are an enhancement: creation keeps the complete catalogue
-        // and remains fully usable when the profile API is unavailable.
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [isTeacherProfileEnabled]);
-
-  const availableSubjectIds = useMemo(
-    () =>
-      classForm.schoolYear
-        ? SUBJECTS_BY_GRADE[String(classForm.schoolYear)] ?? []
-        : SUBJECTS.map((subject) => subject.id),
-    [classForm.schoolYear]
-  );
-  const preferredSubjectIds = useMemo(
-    () => getPreferredRegularSubjectIds(teachingProfile, availableSubjectIds),
-    [teachingProfile, availableSubjectIds]
-  );
-  const preferredSchoolYears = useMemo(
-    () => getPreferredSchoolYears(teachingProfile, Array.from({ length: 12 }, (_, index) => index + 1)),
-    [teachingProfile]
-  );
-  const vocationalCourseOptions = useMemo(
-    () => getVocationalCourseOptions(teachingProfile),
-    [teachingProfile]
-  );
-  const teachingMode: EducationType =
-    classForm.subjectMode === "vocational" && vocationalCourseOptions.length > 0
-      ? "vocational"
-      : "regular";
-  const selectedVocationalCourse =
-    vocationalCourseOptions.find((course) => course.code === classForm.vocationalCourseCode) ??
-    vocationalCourseOptions[0];
-
-  const clearSubjectChoice = useCallback(() => {
-    updateClassForm("subject", "");
-    updateClassForm("vocationalUnitCode", undefined);
-    updateClassForm("vocationalSchoolSubjectName", undefined);
-    updateClassForm("isSpecificComponent", false);
-  }, [updateClassForm]);
-
-  const handleTeachingModeChange = useCallback(
-    (mode: EducationType) => {
-      if (mode === teachingMode) return;
-      clearSubjectChoice();
-      updateClassForm("subjectMode", mode);
-      if (mode === "vocational") {
-        updateClassForm("vocationalCourseCode", selectedVocationalCourse?.code);
-      } else {
-        updateClassForm("vocationalCourseCode", undefined);
-      }
-    },
-    [teachingMode, clearSubjectChoice, updateClassForm, selectedVocationalCourse]
-  );
-
-  const handleVocationalCourseChange = useCallback(
-    (courseCode: string) => {
-      if (courseCode === selectedVocationalCourse?.code) return;
-      clearSubjectChoice();
-      updateClassForm("vocationalCourseCode", courseCode);
-    },
-    [selectedVocationalCourse, clearSubjectChoice, updateClassForm]
-  );
-
-  // Reset subject if it's not available for the selected school year — same
-  // guard DocumentCreationPage uses, skipped in vocational mode since UC
-  // labels never belong to the regular subject catalogue.
-  useEffect(() => {
-    if (classForm.subjectMode === "vocational") return;
-    if (classForm.schoolYear && classForm.subject) {
-      const validSubjects = SUBJECTS_BY_GRADE[String(classForm.schoolYear)];
-      if (validSubjects && !validSubjects.includes(classForm.subject)) {
-        updateClassForm("subject", "");
-      }
-    }
-  }, [classForm.schoolYear, classForm.subject, classForm.subjectMode, updateClassForm]);
-
-  // Reset component type when subject changes
-  useEffect(() => {
-    if (classForm.subject && classForm.isSpecificComponent) {
-      if (!AMBIGUOUS_COMPONENTS_SUBJECTS.includes(classForm.subject)) {
-        updateClassForm("isSpecificComponent", false);
-      }
-    }
-  }, [classForm.subject, classForm.isSpecificComponent, updateClassForm]);
 
   const PRESETS = useMemo(() => buildSchoolPeriodPresets(), []);
 
@@ -307,27 +183,21 @@ export default function CurriculumPlanNewPage() {
     [periodStartISO, periodEndISO, lpw, schedule],
   );
 
-  // In vocational mode `subject` already carries the display label chosen by
-  // SubjectSection (UC title or vocational school-subject name) — there's no
-  // catalogue entry to translate, unlike the regular AE subject list.
   const selectedSubject = useMemo(
-    () => (teachingMode === "regular" ? SUBJECTS.find((s) => s.id === classForm.subject) : undefined),
-    [teachingMode, classForm.subject]
+    () => SUBJECTS.find((s) => s.id === choice.subject),
+    [choice.subject]
   );
   // The review step shows the translated name; the AI prompt uses whichever
   // name matches the language the prompt itself is written in (see buildPrompt).
-  const subjectLabel = teachingMode === "vocational"
-    ? classForm.subject
-    : selectedSubject
-      ? locale === "en"
-        ? translateSubjectLabel(selectedSubject.id)
-        : selectedSubject.label
-      : "";
-  // Backend expects the canonical English value, not the internal id used for
-  // selection — vocational subjects/UCs have no such catalogue mapping, so
-  // the display label chosen by SubjectSection is sent as-is.
-  const subjectValue = teachingMode === "vocational" ? classForm.subject : (selectedSubject?.value ?? "");
-  const schoolYear = classForm.schoolYear || 0;
+  // A UC or school-component subject is already a name.
+  const subjectLabel = selectedSubject
+    ? locale === "en"
+      ? subjectChoiceLabel(choice)
+      : selectedSubject.label
+    : choice.subject;
+  // Backend expects the canonical English value (or the UC's name) and, for a curso
+  // profissional, the course and UC — see subjectChoicePayload.
+  const { schoolYear, ...subjectFields } = subjectChoicePayload(choice);
 
   function applyPreset(preset: SchoolPeriodPreset) {
     setPeriodStart(new Date(`${preset.start}T00:00:00`));
@@ -337,7 +207,7 @@ export default function CurriculumPlanNewPage() {
 
   // step validation
   const step1Valid = !!periodStart && !!periodEnd && periodEnd > periodStart;
-  const step2Valid = !!classForm.subject && !!classForm.schoolYear;
+  const step2Valid = !!choice.subject && !!choice.schoolYear;
   const step3Valid = lpw > 0;
 
   function goNext() {
@@ -377,12 +247,8 @@ export default function CurriculumPlanNewPage() {
         createDocument({
           documentType: "curriculumPlan",
           prompt,
-          subject: subjectValue,
+          ...subjectFields,
           schoolYear,
-          isSpecificComponent: classForm.isSpecificComponent,
-          vocationalCourseCode: classForm.vocationalCourseCode || undefined,
-          vocationalUnitCode: classForm.vocationalUnitCode || undefined,
-          vocationalSchoolSubjectName: classForm.vocationalSchoolSubjectName || undefined,
           additionalDetails: JSON.stringify({
             planningType,
             periodStart: periodStartISO,
@@ -443,7 +309,7 @@ export default function CurriculumPlanNewPage() {
 
       {/* Step content */}
       <Card>
-        <CardContent className="p-6">
+        <CardContent className="p-4 sm:p-6">
 
           {/* ── Step 1: Period ── */}
           {step === "period" && (
@@ -546,38 +412,35 @@ export default function CurriculumPlanNewPage() {
                 </p>
               </div>
 
-              {/* Same ClassSection/SubjectSection pair the lesson-plan/test/quiz
-                  wizard uses, wired to the same field names, so vocational mode
-                  is a native part of curriculum-plan creation rather than a
-                  separate flow. */}
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6">
-                <ClassSection
-                  mode={teachingMode}
-                  onModeChange={handleTeachingModeChange}
-                  schoolYear={classForm.schoolYear}
-                  preferredSchoolYears={preferredSchoolYears}
-                  onUpdate={updateClassForm}
-                  vocationalCourses={vocationalCourseOptions}
-                  vocationalCourseCode={selectedVocationalCourse?.code}
-                  onCourseChange={handleVocationalCourseChange}
-                  onVocationalCourseAdded={setTeachingProfile}
-                  isVocationalFeatureEnabled={isTeacherProfileEnabled}
-                  className="h-full"
-                />
-                <SubjectSection
-                  subject={classForm.subject}
-                  isSpecificComponent={classForm.isSpecificComponent}
-                  onUpdate={updateClassForm}
-                  availableSubjects={classForm.schoolYear ? SUBJECTS_BY_GRADE[String(classForm.schoolYear)] : undefined}
-                  preferredSubjectIds={preferredSubjectIds}
-                  mode={teachingMode}
-                  vocationalCourse={selectedVocationalCourse}
-                  vocationalUnitCode={classForm.vocationalUnitCode}
-                  vocationalSchoolSubjectName={classForm.vocationalSchoolSubjectName}
-                  className="h-full"
-                  disabled={!classForm.schoolYear}
-                />
-              </div>
+              <ClassSection
+                mode={subjectPicker.teachingMode}
+                onModeChange={subjectPicker.handleTeachingModeChange}
+                schoolYear={choice.schoolYear}
+                preferredSchoolYears={subjectPicker.preferredSchoolYears}
+                onUpdate={updateChoice}
+                vocationalCourses={subjectPicker.vocationalCourseOptions}
+                vocationalCourseCode={subjectPicker.selectedVocationalCourse?.code}
+                onCourseChange={subjectPicker.handleVocationalCourseChange}
+                onVocationalCourseAdded={subjectPicker.onVocationalCourseAdded}
+                isVocationalFeatureEnabled={subjectPicker.isVocationalFeatureEnabled}
+                className={NESTED_SECTION_CLASS}
+              />
+
+              <div className="border-t border-border/60" />
+
+              <SubjectSection
+                subject={choice.subject}
+                isSpecificComponent={choice.isSpecificComponent}
+                onUpdate={updateChoice}
+                availableSubjects={choice.schoolYear ? SUBJECTS_BY_GRADE[String(choice.schoolYear)] : undefined}
+                preferredSubjectIds={subjectPicker.preferredSubjectIds}
+                mode={subjectPicker.teachingMode}
+                vocationalCourse={subjectPicker.selectedVocationalCourse}
+                vocationalUnitCode={choice.vocationalUnitCode}
+                vocationalSchoolSubjectName={choice.vocationalSchoolSubjectName}
+                className={NESTED_SECTION_CLASS}
+                disabled={!choice.schoolYear}
+              />
             </div>
           )}
 
@@ -622,10 +485,21 @@ export default function CurriculumPlanNewPage() {
                   <span className="text-sm text-muted-foreground">{t("review.type")}</span>
                   <span className="text-sm font-medium">{tShared(`planningType.${planningType}`)}</span>
                 </div>
-                <div className="flex items-center justify-between px-4 py-3">
+                {isVocational && subjectPicker.selectedVocationalCourse && (
+                  <div className="flex items-center justify-between gap-4 px-4 py-3">
+                    <span className="text-sm text-muted-foreground">{tClass("courseLabel")}</span>
+                    <span className="text-right text-sm font-medium">
+                      {subjectPicker.selectedVocationalCourse.title}
+                    </span>
+                  </div>
+                )}
+                <div className="flex items-center justify-between gap-4 px-4 py-3">
                   <span className="text-sm text-muted-foreground">{t("review.subject")}</span>
-                  <span className="text-sm font-medium">
-                    {subjectLabel || "—"}
+                  <span className="text-right text-sm font-medium">
+                    {subjectChoiceLabel(choice) || "—"}
+                    {!isVocational && choice.isSpecificComponent && (
+                      <span className="text-muted-foreground"> · {tSubject("specificTraining")}</span>
+                    )}
                   </span>
                 </div>
                 <div className="flex items-center justify-between px-4 py-3">
