@@ -161,6 +161,12 @@ interface ClassSectionProps {
    * getVocationalCourseOptions) so the new course appears immediately.
    */
   onVocationalCourseAdded: (profile: TeachingProfile) => void;
+  /** Gates the whole vocational surface (mode switch, quick-add, course/UC
+   * pickers) behind the `teacher_profile` feature flag. When false, this
+   * renders the plain pre-feature regular-year picker only — no switch, no
+   * vocational path reachable, regardless of what the caller passes for
+   * `mode`/`vocationalCourses`. */
+  isVocationalFeatureEnabled: boolean;
   className?: string;
 }
 
@@ -170,10 +176,12 @@ interface ClassSectionProps {
  * teaching up front means the subject card next to it never has to switch
  * modes under the teacher's feet.
  *
- * The Ensino regular/Curso profissional switch always renders, even for a
- * teacher with zero saved vocational courses: tapping "Curso profissional"
- * with nothing saved opens a quick-add dialog right here instead of a
- * dead-end hint pointing at Settings.
+ * The Ensino regular/Curso profissional switch always renders when the
+ * `teacher_profile` feature flag is on, even for a teacher with zero saved
+ * vocational courses: tapping "Curso profissional" with nothing saved opens a
+ * quick-add dialog right here instead of a dead-end hint pointing at
+ * Settings. When the flag is off, none of that renders — this falls back to
+ * the plain regular-year picker only.
  */
 export function ClassSection({
   mode,
@@ -185,6 +193,7 @@ export function ClassSection({
   vocationalCourseCode,
   onCourseChange,
   onVocationalCourseAdded,
+  isVocationalFeatureEnabled,
   className,
 }: ClassSectionProps) {
   const t = useTranslations("documentCreation.classContext");
@@ -216,17 +225,19 @@ export function ClassSection({
           </h2>
         </div>
 
-        <SegmentedControl
-          value={isVocational ? "vocational" : "regular"}
-          onChange={handleModeChange}
-          ariaLabel={t("modeLabel")}
-          options={[
-            { value: "regular", label: t("modeRegular"), icon: School },
-            { value: "vocational", label: t("modeVocational"), icon: Briefcase },
-          ]}
-        />
+        {isVocationalFeatureEnabled && (
+          <SegmentedControl
+            value={isVocational ? "vocational" : "regular"}
+            onChange={handleModeChange}
+            ariaLabel={t("modeLabel")}
+            options={[
+              { value: "regular", label: t("modeRegular"), icon: School },
+              { value: "vocational", label: t("modeVocational"), icon: Briefcase },
+            ]}
+          />
+        )}
 
-        {isVocational && selectedCourse ? (
+        {isVocationalFeatureEnabled && isVocational && selectedCourse ? (
           <div className="space-y-4">
             <div>
               <p className={SECTION_LABEL_CLASS}>{t("courseLabel")}</p>
@@ -275,18 +286,20 @@ export function ClassSection({
         )}
       </div>
 
-      <QuickAddVocationalCourseDialog
-        open={isQuickAddOpen}
-        onOpenChange={setIsQuickAddOpen}
-        onCourseAdded={(profile: TeachingProfile, courseCode: string) => {
-          onVocationalCourseAdded(profile);
-          onCourseChange(courseCode);
-          onModeChange("vocational");
-          if (!(VOCATIONAL_SCHOOL_YEARS as readonly number[]).includes(schoolYear)) {
-            onUpdate("schoolYear", getDefaultVocationalSchoolYear(preferredSchoolYears));
-          }
-        }}
-      />
+      {isVocationalFeatureEnabled && (
+        <QuickAddVocationalCourseDialog
+          open={isQuickAddOpen}
+          onOpenChange={setIsQuickAddOpen}
+          onCourseAdded={(profile: TeachingProfile, courseCode: string) => {
+            onVocationalCourseAdded(profile);
+            onCourseChange(courseCode);
+            onModeChange("vocational");
+            if (!(VOCATIONAL_SCHOOL_YEARS as readonly number[]).includes(schoolYear)) {
+              onUpdate("schoolYear", getDefaultVocationalSchoolYear(preferredSchoolYears));
+            }
+          }}
+        />
+      )}
     </Card>
   );
 }
