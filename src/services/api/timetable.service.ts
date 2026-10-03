@@ -29,9 +29,7 @@ export interface CreateTimetableParams {
   assessmentDates?: string[]; // ISO dates — ASSESSMENT slots
   exerciseDates?: string[]; // ISO dates — EXERCISE slots (explicit, overrides auto-cadence)
   reviewDates?: string[];   // ISO dates — REVIEW slots (explicit, overrides auto-cadence)
-  /** AE content the teacher marked as already taught — `CurriculumTopic` keys, see getCurriculumTopics(). */
-  alreadyCoveredDomains?: string[];
-  /** Free-text catch-all for already-taught content not on the structured domain list. */
+  /** What the teacher says was already taught, so the topics pick up from there (needs already_covered_enabled). */
   alreadyCoveredNotes?: string;
   /** Formação específica (true) / geral (false), for subjects the AE splits that way. */
   isSpecificComponent?: boolean;
@@ -146,38 +144,6 @@ export async function deleteTimetable(id: string, deleteDocuments?: boolean): Pr
   await apiClient.delete(`/timetable/${id}`, {
     params: deleteDocuments ? { deleteDocuments: true } : undefined,
   });
-}
-
-/** One item of the "o que já foi dado" checklist. */
-export interface CurriculumTopic {
-  /** "Domain" or "Domain > Sub-topic" — what is sent back in `alreadyCoveredDomains`. */
-  key: string;
-  /** The domain's label, for grouping. */
-  domain: string;
-  /** The item's own label (the domain's, when the AE doesn't subdivide it). */
-  label: string;
-}
-
-/**
- * The "o que já foi dado" checklist for a subject/school year: AE domains and
- * their sub-topics, in programme order (NOT alphabetical), de-duplicated across
- * source documents, without the cross-cutting "capacidades" — see backend
- * CurriculumTopics.
- */
-export async function getCurriculumTopics(
-  subject: string,
-  gradeLevel?: number,
-  isSpecificComponent?: boolean
-): Promise<CurriculumTopic[]> {
-  const response = await apiClient.get<{ topics?: CurriculumTopic[]; domains: string[] }>(
-    "/timetable/topic-domains",
-    { params: { subject, gradeLevel, isSpecificComponent } }
-  );
-  // An older backend only knows the domain-level list.
-  return (
-    response.data.topics ??
-    response.data.domains.map((domain) => ({ key: domain, domain, label: domain }))
-  );
 }
 
 // ─── LESSON SLOTS ─────────────────────────────────────────────────────
