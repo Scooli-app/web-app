@@ -1,5 +1,4 @@
 "use client";
-import { AiDisclaimer } from "@/components/ui/ai-disclaimer";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -155,11 +154,12 @@ export default function CalendarViewPage() {
     dispatch(fetchLessons({ timetableId: id }));
   }, [enabled, id, dispatch]);
 
-  // Lazily poll for topic titles while the background generate-topics call is
-  // still running (e.g. right after wizard/one-click creation of a full-year
-  // class navigates here immediately instead of blocking on it). Stops once
-  // every eligible slot has a title, or after a bounded number of attempts so
-  // a genuinely stuck/failed generation doesn't poll forever.
+  // Safety net: creation now waits for the topics before opening this page (see
+  // useCreateClassWithTopics), but a teacher can carry on after a failed
+  // generation, or open a class whose topics are still being written. Polls
+  // while titles are missing; stops once every eligible slot has a title, or
+  // after a bounded number of attempts so a genuinely stuck/failed generation
+  // doesn't poll forever.
   const pendingTopics = useMemo(
     () => slots.some((s) => s.slotType !== "HOLIDAY" && !s.topicTitle),
     [slots]
@@ -351,7 +351,7 @@ export default function CalendarViewPage() {
     );
 
   return (
-    <div className="mx-auto w-full max-w-5xl space-y-4 px-4 py-6">
+    <div className="mx-auto w-full max-w-5xl space-y-4 px-4 pb-24 pt-6 md:pb-6">
       {/* Header */}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
@@ -376,7 +376,6 @@ export default function CalendarViewPage() {
         </div>
 
         {pendingThisWeek > 0 && (
-          <div className="flex flex-col items-end gap-0.5">
           <Button
             size="sm"
             onClick={handleGenerateWeek}
@@ -389,8 +388,6 @@ export default function CalendarViewPage() {
             )}
             {t("shared.generateWeek", { count: pendingThisWeek })}
           </Button>
-            <AiDisclaimer variant="compact" />
-          </div>
         )}
       </div>
 

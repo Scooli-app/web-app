@@ -79,6 +79,10 @@ export interface Document {
   /** Non-null for imported documents (e.g. "docx", "pdf"). Null for AI-generated. */
   originalFormat?: string | null;
   isSpecificComponent: boolean;
+  /** Curso profissional the document was generated for, with a UC or a school-component subject. */
+  vocationalCourseCode?: string | null;
+  vocationalUnitCode?: string | null;
+  vocationalSchoolSubjectName?: string | null;
   rating: number;
   downloads: number;
   sharedResourceId?: string | null;

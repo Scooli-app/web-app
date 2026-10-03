@@ -15,15 +15,14 @@ import { Label } from "@/components/ui/label";
 import {
   buildCreateTimetableParamsFromPlan,
   buildPlanAutoTitle,
-  parsePlanGradeLevel,
-  resolvePlanSubjectId,
+  planSubjectChoice,
 } from "@/lib/timetable/planToTimetable";
 import { AlreadyCoveredSection } from "@/components/document-creation/AlreadyCoveredSection";
+import { ClassTopicsProgress } from "@/components/calendar/ClassTopicsProgress";
+import { useCreateClassWithTopics } from "@/components/calendar/useCreateClassWithTopics";
 import { getTimetablesByLinkedPlan } from "@/services/api/timetable.service";
 import { Routes } from "@/shared/types/routes";
 import type { Document } from "@/shared/types/document";
-import { useAppDispatch } from "@/store/hooks";
-import { createTimetable, generateTopics } from "@/store/timetable/timetableSlice";
 import { CalendarPlus, Loader2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
@@ -41,9 +40,10 @@ interface CreateCalendarFromPlanButtonProps {
  * One-click "Criar turma" for a finished term-plan (Planificação) document.
  * Confirms the turma's name (and optional class label) via a small dialog —
  * useful when a teacher already has another turma with the same subject/grade
- * — then reuses the same createTimetable → generateTopics sequence the
- * calendar/novo wizard's "from_plan" flow already uses — see
- * lib/timetable/planToTimetable.ts for the shared mapping logic.
+ * — then runs the same create → wait-for-topics sequence as the calendar/novo
+ * wizard (useCreateClassWithTopics), keeping the dialog open on its progress
+ * until the calendar is ready — see lib/timetable/planToTimetable.ts for the
+ * shared mapping logic.
  */
 export default function CreateCalendarFromPlanButton({
   plan,
@@ -51,11 +51,13 @@ export default function CreateCalendarFromPlanButton({
   className = "",
 }: CreateCalendarFromPlanButtonProps) {
   const t = useTranslations("editor.calendarButton");
-  const dispatch = useAppDispatch();
   const router = useRouter();
+  const classCreation = useCreateClassWithTopics();
+  const isCreating = classCreation.busy;
+  // From "Criar turma" until the dialog closes, it shows the progress instead of the form.
+  const showProgress = classCreation.phase !== "idle";
   const [existingTimetableId, setExistingTimetableId] = useState<string | null>(null);
   const [checking, setChecking] = useState(true);
-  const [isCreating, setIsCreating] = useState(false);
   const [isNameDialogOpen, setIsNameDialogOpen] = useState(false);
   const [name, setName] = useState("");
   const [classLabel, setClassLabel] = useState("");
@@ -80,7 +82,14 @@ export default function CreateCalendarFromPlanButton({
     };
   }, [plan.id]);
 
-  if (existingTimetableId) {
+  const planChoice = planSubjectChoice(plan);
+  const openClass = (id: string | null) => {
+    if (id) router.push(`${Routes.CALENDAR}/${id}`);
+  };
+
+  // Once created, the button becomes "Ver turma" — but not while the dialog is
+  // still showing that turma's progress.
+  if (existingTimetableId && !isCreating) {
     return (
       <Button
         variant="outline"
@@ -113,39 +122,31 @@ export default function CreateCalendarFromPlanButton({
     const params = buildCreateTimetableParamsFromPlan(plan);
     if (!params) return; // already validated in openNameDialog
 
-    setIsNameDialogOpen(false);
-    setIsCreating(true);
     posthog.capture("calendar_created_from_plan_one_click", {
       document_id: plan.id,
       subject: plan.subject,
       grade_level: plan.gradeLevel,
     });
 
-    const result = await dispatch(
-      createTimetable({
-        ...params,
-        title: name.trim() || params.title,
-        classLabel: classLabel.trim() || undefined,
-        alreadyCoveredDomains: alreadyCoveredDomains.length > 0 ? alreadyCoveredDomains : undefined,
-        alreadyCoveredNotes: alreadyCoveredNotes.trim() || undefined,
-      })
-    );
-    if (!createTimetable.fulfilled.match(result)) {
-      toast.error(
-        typeof result.payload === "string"
-          ? result.payload
-          : t("createFailed")
-      );
-      setIsCreating(false);
+    // The dialog stays open on the progress until every lesson has its topic —
+    // opening the calendar earlier showed empty lessons until a few refreshes.
+    const result = await classCreation.create({
+      ...params,
+      title: name.trim() || params.title,
+      classLabel: classLabel.trim() || undefined,
+      alreadyCoveredDomains: alreadyCoveredDomains.length > 0 ? alreadyCoveredDomains : undefined,
+      alreadyCoveredNotes: alreadyCoveredNotes.trim() || undefined,
+    });
+    if (!result.ok) {
+      toast.error(result.error ?? t("createFailed"));
       return;
     }
+    setExistingTimetableId(result.timetableId);
+    if (result.topicsReady) openClass(result.timetableId);
+  };
 
-    // Navigate immediately instead of blocking on topic generation — a full-year
-    // class can have 150+ slots, which can take well over a minute to title.
-    // The class page lazily polls for topics in the background.
-    const timetableId = result.payload.id;
-    router.push(`${Routes.CALENDAR}/${timetableId}`);
-    void dispatch(generateTopics(timetableId));
+  const retryTopics = async () => {
+    if (await classCreation.retryTopics()) openClass(classCreation.timetableId);
   };
 
   return (
@@ -165,7 +166,23 @@ export default function CreateCalendarFromPlanButton({
         <span className="hidden sm:inline">{isCreating ? t("creating") : t("createClass")}</span>
       </Button>
 
-      <Dialog open={isNameDialogOpen} onOpenChange={setIsNameDialogOpen}>
+      <Dialog
+        open={isNameDialogOpen}
+        // Can't be dismissed while the turma and its topics are being created.
+        onOpenChange={(open) => { if (!isCreating) setIsNameDialogOpen(open); }}
+      >
+        {showProgress ? (
+          <DialogContent className="max-w-md px-6" hideCloseButton={isCreating}>
+            <DialogHeader className="sr-only">
+              <DialogTitle>{t("dialogTitle")}</DialogTitle>
+            </DialogHeader>
+            <ClassTopicsProgress
+              phase={classCreation.phase}
+              onRetry={() => void retryTopics()}
+              onContinue={() => openClass(classCreation.timetableId)}
+            />
+          </DialogContent>
+        ) : (
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle>{t("dialogTitle")}</DialogTitle>
@@ -174,7 +191,8 @@ export default function CreateCalendarFromPlanButton({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
+          {/* Header and footer pad themselves (p-6); the body matches them. */}
+          <div className="space-y-4 px-6 pt-4">
             <div className="space-y-1.5">
               <Label>{t("nameLabel")}</Label>
               <Input
@@ -194,8 +212,10 @@ export default function CreateCalendarFromPlanButton({
             </div>
 
             <AlreadyCoveredSection
-              subject={resolvePlanSubjectId(plan)}
-              gradeLevel={String(parsePlanGradeLevel(plan) ?? "")}
+              subject={planChoice.subject}
+              gradeLevel={planChoice.schoolYear}
+              isSpecificComponent={planChoice.isSpecificComponent}
+              vocational={planChoice.subjectMode === "vocational"}
               selectedDomains={alreadyCoveredDomains}
               notes={alreadyCoveredNotes}
               onDomainsChange={setAlreadyCoveredDomains}
@@ -213,6 +233,7 @@ export default function CreateCalendarFromPlanButton({
             </Button>
           </DialogFooter>
         </DialogContent>
+        )}
       </Dialog>
     </>
   );

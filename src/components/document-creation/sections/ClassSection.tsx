@@ -21,7 +21,7 @@ import {
   getDefaultVocationalSchoolYear,
   type VocationalCourseOption,
 } from "../teaching-profile-preferences";
-import type { FormUpdateFn } from "../types";
+import type { SubjectChoiceUpdateFn } from "../useSubjectChoice";
 import { QuickAddVocationalCourseDialog } from "./QuickAddVocationalCourseDialog";
 
 const SECTION_LABEL_CLASS =
@@ -148,7 +148,7 @@ interface ClassSectionProps {
   onModeChange: (mode: EducationType) => void;
   schoolYear: number;
   preferredSchoolYears: number[];
-  onUpdate: FormUpdateFn;
+  onUpdate: SubjectChoiceUpdateFn;
   /** The teacher's saved cursos profissionais. May be empty — the mode switch
    * always renders regardless, so a first-time técnico teacher can reach it. */
   vocationalCourses: VocationalCourseOption[];

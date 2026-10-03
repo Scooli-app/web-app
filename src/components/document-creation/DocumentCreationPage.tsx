@@ -10,24 +10,18 @@ import {
 } from "@/store/documents/documentSlice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { selectIsPro } from "@/store/subscription/selectors";
-import {
-  FeatureFlag,
-  isTeacherProfileFeatureEnabled,
-} from "@/shared/types/featureFlags";
+import { FeatureFlag } from "@/shared/types/featureFlags";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-  AMBIGUOUS_COMPONENTS_SUBJECTS,
-  SUBJECTS,
-  SUBJECTS_BY_GRADE,
-} from "./constants";
+import { SUBJECTS, SUBJECTS_BY_GRADE } from "./constants";
 import {
   AdditionalDetailsSection,
   ClassSection,
   DurationSection,
   FormActions,
   FormHeader,
+  NESTED_SECTION_CLASS,
   SourcePickerSection,
   SubjectSection,
   TeachingMethodSection,
@@ -42,33 +36,12 @@ import { cn } from "@/shared/utils/utils";
 import type { CanvasPresentation, CanvasSlide } from "@/shared/types/canvas-presentation";
 import { applyTheme } from "@/components/document-editor-v2/canvas-layout";
 import { SlideThumbnail } from "@/components/document-editor-v2/SlideThumbnail";
-import { teachingProfileService } from "@/services/api/teaching-profile.service";
-import type { EducationType, TeachingProfile } from "@/shared/types/teaching-profile";
-import {
-  getDefaultSchoolYear,
-  getDefaultTeachingMode,
-  getDefaultVocationalSchoolYear,
-  getPreferredRegularSubjectIds,
-  getPreferredSchoolYears,
-  getVocationalCourseOptions,
-  VOCATIONAL_SCHOOL_YEARS,
-} from "./teaching-profile-preferences";
-
-
+import { useSubjectChoice } from "./useSubjectChoice";
 
 interface DocumentCreationPageProps {
   documentType: DocumentTypeConfig;
   userId?: string;
 }
-
-/**
- * Strips a section's own Card chrome so it can be composed inside a shared card.
- * `h-auto` cancels the `h-full` DurationSection sets for standalone grid use.
- */
-// `sm:p-0` is required as well as `p-0`: tailwind-merge resolves each responsive
-// variant independently, so an unprefixed `p-0` never cancels the sections' `sm:p-6`.
-const NESTED_SECTION_CLASS =
-  "h-auto gap-0 rounded-none border-0 bg-transparent p-0 py-0 sm:p-0 shadow-none transition-none hover:shadow-none";
 
 function useDocumentForm(documentTypeId: DocumentTypeConfig["id"]) {
   const [formState, setFormState] = useState<FormState>({
@@ -139,70 +112,29 @@ export default function DocumentCreationPage({
   const isUserSourcesEnabled = useAppSelector(
     (state) => state.features.flags[FeatureFlag.USER_SOURCES] === true
   );
-  const isTeacherProfileEnabled = useAppSelector((state) =>
-    isTeacherProfileFeatureEnabled(state.features.flags),
-  );
   const [isLoading, setIsLoading] = useState(false);
-  const [teachingProfile, setTeachingProfile] = useState<TeachingProfile | null>(null);
 
   const { formState, error, setError, updateForm, isFormValid, handleTemplateSelect } =
     useDocumentForm(documentType.id);
 
-  useEffect(() => {
-    if (!isTeacherProfileEnabled) {
-      setTeachingProfile(null);
-      return;
-    }
-
-    let cancelled = false;
-    teachingProfileService
-      .get()
-      .then((profile) => {
-        if (!cancelled) setTeachingProfile(profile);
-      })
-      .catch(() => {
-        // Preferences are an enhancement: creation keeps the complete catalogue
-        // and remains fully usable when the profile API is unavailable.
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [isTeacherProfileEnabled]);
-
-  const availableSubjectIds = useMemo(
-    () =>
-      formState.schoolYear
-        ? SUBJECTS_BY_GRADE[String(formState.schoolYear)] ?? []
-        : SUBJECTS.map((subject) => subject.id),
-    [formState.schoolYear]
-  );
-  const preferredSubjectIds = useMemo(
-    () => getPreferredRegularSubjectIds(teachingProfile, availableSubjectIds),
-    [teachingProfile, availableSubjectIds]
-  );
-  const preferredSchoolYears = useMemo(
-    () => getPreferredSchoolYears(teachingProfile, Array.from({ length: 12 }, (_, index) => index + 1)),
-    [teachingProfile]
-  );
-  const vocationalCourseOptions = useMemo(
-    () => getVocationalCourseOptions(teachingProfile),
-    [teachingProfile]
-  );
-  const teachingMode: EducationType =
-    formState.subjectMode === "vocational" && vocationalCourseOptions.length > 0
-      ? "vocational"
-      : "regular";
-  const selectedVocationalCourse =
-    vocationalCourseOptions.find((course) => course.code === formState.vocationalCourseCode) ??
-    vocationalCourseOptions[0];
+  // A year or subject from the URL wins over the profile defaults.
+  const prefilledRef = useRef({ year: false, subject: false });
+  const {
+    teachingMode,
+    vocationalCourseOptions,
+    selectedVocationalCourse,
+    preferredSchoolYears,
+    preferredSubjectIds,
+    handleTeachingModeChange,
+    handleVocationalCourseChange,
+    onVocationalCourseAdded,
+    isVocationalFeatureEnabled,
+  } = useSubjectChoice({ choice: formState, update: updateForm, prefilledRef });
 
   // Prefill from quick-create query params (?topic=&year=&subject=) set by the
   // dashboard prompt box and quick-start examples. Reads window.location instead
   // of useSearchParams() to avoid requiring a Suspense boundary on every
   // creation page. Invalid or missing values are simply left for the form.
-  const yearFromUrlRef = useRef(false);
-  const subjectFromUrlRef = useRef(false);
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const topic = params.get("topic");
@@ -217,7 +149,7 @@ export default function DocumentCreationPage({
     const year = yearRaw ? Number(yearRaw) : Number.NaN;
     const hasValidYear = Number.isInteger(year) && year >= 1 && year <= 12;
     if (hasValidYear) {
-      yearFromUrlRef.current = true;
+      prefilledRef.current.year = true;
       updateForm("schoolYear", year);
     }
 
@@ -225,109 +157,11 @@ export default function DocumentCreationPage({
       const validForYear =
         !hasValidYear || SUBJECTS_BY_GRADE[String(year)]?.includes(subjectId);
       if (validForYear) {
-        subjectFromUrlRef.current = true;
+        prefilledRef.current.subject = true;
         updateForm("subject", subjectId);
       }
     }
   }, [updateForm]);
-
-  // Once the profile has loaded, open the form where the teacher works: a
-  // cursos-profissionais-only profile starts in vocational mode on its first
-  // course, and the year defaults to the lowest saved one. A year or subject
-  // from the URL, or one the teacher already picked, always wins.
-  const hasAppliedProfileDefaultsRef = useRef(false);
-  useEffect(() => {
-    if (hasAppliedProfileDefaultsRef.current || !teachingProfile) return;
-    hasAppliedProfileDefaultsRef.current = true;
-
-    const fromUrl = yearFromUrlRef.current || subjectFromUrlRef.current;
-    const startInVocational =
-      !fromUrl &&
-      !formState.subject &&
-      vocationalCourseOptions.length > 0 &&
-      getDefaultTeachingMode(teachingProfile) === "vocational";
-    if (startInVocational) {
-      updateForm("subjectMode", "vocational");
-      updateForm("vocationalCourseCode", vocationalCourseOptions[0].code);
-    }
-
-    if (yearFromUrlRef.current || formState.schoolYear) return;
-    const defaultYear = startInVocational
-      ? getDefaultVocationalSchoolYear(preferredSchoolYears)
-      : getDefaultSchoolYear(preferredSchoolYears);
-    if (defaultYear !== null) updateForm("schoolYear", defaultYear);
-  }, [
-    teachingProfile,
-    vocationalCourseOptions,
-    preferredSchoolYears,
-    formState.subject,
-    formState.schoolYear,
-    updateForm,
-  ]);
-
-  const clearSubjectChoice = useCallback(() => {
-    updateForm("subject", "");
-    updateForm("vocationalUnitCode", undefined);
-    updateForm("vocationalSchoolSubjectName", undefined);
-    updateForm("isSpecificComponent", false);
-  }, [updateForm]);
-
-  const handleTeachingModeChange = useCallback(
-    (mode: EducationType) => {
-      if (mode === teachingMode) return;
-      clearSubjectChoice();
-      updateForm("subjectMode", mode);
-      if (mode === "vocational") {
-        updateForm("vocationalCourseCode", selectedVocationalCourse?.code);
-        // Cursos profissionais only run 10.º–12.º; keep the year when it fits.
-        if (!(VOCATIONAL_SCHOOL_YEARS as readonly number[]).includes(formState.schoolYear)) {
-          updateForm("schoolYear", getDefaultVocationalSchoolYear(preferredSchoolYears));
-        }
-      } else {
-        updateForm("vocationalCourseCode", undefined);
-      }
-    },
-    [
-      teachingMode,
-      clearSubjectChoice,
-      updateForm,
-      selectedVocationalCourse,
-      formState.schoolYear,
-      preferredSchoolYears,
-    ]
-  );
-
-  const handleVocationalCourseChange = useCallback(
-    (courseCode: string) => {
-      if (courseCode === selectedVocationalCourse?.code) return;
-      clearSubjectChoice();
-      updateForm("vocationalCourseCode", courseCode);
-    },
-    [selectedVocationalCourse, clearSubjectChoice, updateForm]
-  );
-
-  // Reset subject if it's not available for the selected school year.
-  // Skipped in vocational mode: UC labels are never part of the regular
-  // subject catalogue, so this would otherwise clear a UC right after
-  // it's picked (see SubjectSection's vocational course/UC pickers).
-  useEffect(() => {
-    if (formState.subjectMode === "vocational") return;
-    if (formState.schoolYear && formState.subject) {
-      const validSubjects = SUBJECTS_BY_GRADE[String(formState.schoolYear)];
-      if (validSubjects && !validSubjects.includes(formState.subject)) {
-        updateForm("subject", "");
-      }
-    }
-  }, [formState.schoolYear, formState.subject, formState.subjectMode, updateForm]);
-
-  // Reset component type when subject changes
-  useEffect(() => {
-    if (formState.subject && formState.isSpecificComponent) {
-      if (!AMBIGUOUS_COMPONENTS_SUBJECTS.includes(formState.subject)) {
-        updateForm("isSpecificComponent", false);
-      }
-    }
-  }, [formState.subject, formState.isSpecificComponent, updateForm]);
 
   const themedCoverSlides = useMemo<CanvasSlide[]>(() => {
     return THEMES.map((theme) => {
@@ -509,7 +343,8 @@ export default function DocumentCreationPage({
 
   return (
     <div className="w-full overflow-x-hidden">
-      <div className="max-w-4xl mx-auto">
+      {/* pb-20: the generate button can scroll clear of the floating assistant button. */}
+      <div className="max-w-4xl mx-auto pb-20">
         <FormHeader documentType={documentType} />
 
         <div className="space-y-4 sm:space-y-6">
@@ -540,8 +375,8 @@ export default function DocumentCreationPage({
                 vocationalCourses={vocationalCourseOptions}
                 vocationalCourseCode={selectedVocationalCourse?.code}
                 onCourseChange={handleVocationalCourseChange}
-                onVocationalCourseAdded={setTeachingProfile}
-                isVocationalFeatureEnabled={isTeacherProfileEnabled}
+                onVocationalCourseAdded={onVocationalCourseAdded}
+                isVocationalFeatureEnabled={isVocationalFeatureEnabled}
                 className="h-full"
               />
             </div>

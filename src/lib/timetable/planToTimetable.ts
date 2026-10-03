@@ -12,6 +12,7 @@ import type {
 } from "@/services/api/timetable.service";
 import { getPortugueseHolidays } from "@/shared/constants/portugueseHolidays";
 import type { Document } from "@/shared/types/document";
+import type { SubjectChoice } from "@/components/document-creation/useSubjectChoice";
 import { translate } from "@/i18n/translate";
 
 /** Alias of the single source of truth in timetable.service.ts, re-exported so existing imports of SlotType from this module keep working. */
@@ -405,6 +406,7 @@ export function buildCreateTimetableParamsFromPlan(plan: Document): CreateTimeta
 
   const subjectId = resolvePlanSubjectId(plan);
   const subjectValue = SUBJECTS.find((s) => s.id === subjectId)?.value ?? plan.subject ?? "";
+  const choice = planSubjectChoice(plan);
 
   return {
     title: buildPlanAutoTitle(plan),
@@ -418,5 +420,35 @@ export function buildCreateTimetableParamsFromPlan(plan: Document): CreateTimeta
     recurringSlots,
     holidays,
     assessmentDates: [],
+    isSpecificComponent: choice.isSpecificComponent,
+    vocationalCourseCode: choice.vocationalCourseCode,
+    vocationalUnitCode: choice.vocationalUnitCode,
+    vocationalSchoolSubjectName: choice.vocationalSchoolSubjectName,
+  };
+}
+
+/**
+ * A planificação's subject as the turma wizard's subject choice: a curso
+ * profissional plan keeps its course and UC (or school-component subject), a
+ * regular one its subject and formação geral/específica.
+ */
+export function planSubjectChoice(plan: Document): SubjectChoice {
+  const schoolYear = parsePlanGradeLevel(plan) ?? 0;
+  if (plan.vocationalCourseCode) {
+    return {
+      subject: plan.subject ?? "",
+      schoolYear,
+      isSpecificComponent: false,
+      subjectMode: "vocational",
+      vocationalCourseCode: plan.vocationalCourseCode,
+      vocationalUnitCode: plan.vocationalUnitCode ?? undefined,
+      vocationalSchoolSubjectName: plan.vocationalSchoolSubjectName ?? undefined,
+    };
+  }
+  return {
+    subject: resolvePlanSubjectId(plan),
+    schoolYear,
+    isSpecificComponent: !!plan.isSpecificComponent,
+    subjectMode: "regular",
   };
 }

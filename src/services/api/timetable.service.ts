@@ -29,10 +29,16 @@ export interface CreateTimetableParams {
   assessmentDates?: string[]; // ISO dates — ASSESSMENT slots
   exerciseDates?: string[]; // ISO dates — EXERCISE slots (explicit, overrides auto-cadence)
   reviewDates?: string[];   // ISO dates — REVIEW slots (explicit, overrides auto-cadence)
-  /** AE top-level domains the teacher marked as already taught — see getTopicDomains(). */
+  /** AE content the teacher marked as already taught — `CurriculumTopic` keys, see getCurriculumTopics(). */
   alreadyCoveredDomains?: string[];
   /** Free-text catch-all for already-taught content not on the structured domain list. */
   alreadyCoveredNotes?: string;
+  /** Formação específica (true) / geral (false), for subjects the AE splits that way. */
+  isSpecificComponent?: boolean;
+  /** Curso profissional, with either a UC code or a sociocultural/científica subject name — as on document creation. */
+  vocationalCourseCode?: string;
+  vocationalUnitCode?: string;
+  vocationalSchoolSubjectName?: string;
 }
 
 export interface UpdateTimetableParams {
@@ -142,18 +148,36 @@ export async function deleteTimetable(id: string, deleteDocuments?: boolean): Pr
   });
 }
 
+/** One item of the "o que já foi dado" checklist. */
+export interface CurriculumTopic {
+  /** "Domain" or "Domain > Sub-topic" — what is sent back in `alreadyCoveredDomains`. */
+  key: string;
+  /** The domain's label, for grouping. */
+  domain: string;
+  /** The item's own label (the domain's, when the AE doesn't subdivide it). */
+  label: string;
+}
+
 /**
- * Ordered AE content domains for a subject/school year, used to build the
- * "o que já foi dado" checklist in the turma wizard. Ordered by document/page
- * order (see backend SourceChunkRepository.findContentDomainsOrdered) — NOT
- * alphabetical — and excludes cross-cutting "capacidades" domains, which
- * aren't a block of content a teacher finishes.
+ * The "o que já foi dado" checklist for a subject/school year: AE domains and
+ * their sub-topics, in programme order (NOT alphabetical), de-duplicated across
+ * source documents, without the cross-cutting "capacidades" — see backend
+ * CurriculumTopics.
  */
-export async function getTopicDomains(subject: string, gradeLevel?: number): Promise<string[]> {
-  const response = await apiClient.get<{ domains: string[] }>("/timetable/topic-domains", {
-    params: { subject, gradeLevel },
-  });
-  return response.data.domains;
+export async function getCurriculumTopics(
+  subject: string,
+  gradeLevel?: number,
+  isSpecificComponent?: boolean
+): Promise<CurriculumTopic[]> {
+  const response = await apiClient.get<{ topics?: CurriculumTopic[]; domains: string[] }>(
+    "/timetable/topic-domains",
+    { params: { subject, gradeLevel, isSpecificComponent } }
+  );
+  // An older backend only knows the domain-level list.
+  return (
+    response.data.topics ??
+    response.data.domains.map((domain) => ({ key: domain, domain, label: domain }))
+  );
 }
 
 // ─── LESSON SLOTS ─────────────────────────────────────────────────────

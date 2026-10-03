@@ -17,31 +17,31 @@ import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
-  SelectGroup,
   SelectItem,
-  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
 import {
-  SUBJECTS,
-  GRADE_GROUPS,
   SUBJECTS_BY_GRADE,
   TIMETABLE_COLORS,
-  translateGradeGroupLabel,
-  translateGradeLabel,
   translateSubject,
-  translateSubjectCategory,
-  translateSubjectLabel,
-  getSubjectsForGrade,
-  groupSubjectsByCategory,
 } from "@/components/document-creation/constants";
 import { selectIsHorarioPlanosEnabled } from "@/store/features/selectors";
 import { useFeatureAccess } from "@/components/feature/useFeatureAccess";
 import { FeatureUnavailable } from "@/components/feature/FeatureUnavailable";
-import { createTimetable, generateTopics } from "@/store/timetable/timetableSlice";
 import { AlreadyCoveredSection } from "@/components/document-creation/AlreadyCoveredSection";
-import { useAppDispatch } from "@/store/hooks";
+import { ClassSection, NESTED_SECTION_CLASS, SubjectSection } from "@/components/document-creation/sections";
+import {
+  subjectChoiceLabel,
+  subjectChoicePayload,
+  useSubjectChoice,
+  useSubjectChoiceState,
+  type SubjectChoice,
+  type SubjectChoiceController,
+  type SubjectChoiceUpdateFn,
+} from "@/components/document-creation/useSubjectChoice";
+import { ClassTopicsProgress } from "@/components/calendar/ClassTopicsProgress";
+import { useCreateClassWithTopics } from "@/components/calendar/useCreateClassWithTopics";
 import { Routes as AppRoutes, type Document } from "@/shared/types";
 import { getDocument, getDocuments } from "@/services/api/document.service";
 import { cn } from "@/shared/utils/utils";
@@ -51,7 +51,7 @@ import {
   expandSlotsLocally,
   inferSchoolYearLabel,
   parsePlanDetails,
-  resolvePlanSubjectId,
+  planSubjectChoice,
   suggestReviewsBeforeAssessments,
   weekScheduleLessonsPerWeek,
   weekScheduleToRecurringSlots,
@@ -76,7 +76,7 @@ import {
   X,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { isSupportedLocale, defaultLocale, type Locale } from "@/i18n/locales";
 import { toIntlLocale } from "@/shared/utils/calendar";
@@ -88,7 +88,8 @@ type WizardStep =
   | "mode_a_select_plan"
   | "mode_b_period"
   | "mode_b_details"
-  | "rever_datas";
+  | "rever_datas"
+  | "generating";
 
 // ─────────────────────── Step metadata ────────────────────────────────────────
 
@@ -363,8 +364,9 @@ function StepPeriod({ periodStart, periodEnd, schoolYearLabel, onChange }: StepP
 // ─────────────────────── Step: Details ────────────────────────────────────────
 
 interface StepDetailsProps {
-  subject: string;
-  gradeLevel: string;
+  choice: SubjectChoice;
+  onChoiceChange: SubjectChoiceUpdateFn;
+  subjectPicker: SubjectChoiceController;
   classLabel: string;
   title: string;
   color: string;
@@ -373,7 +375,7 @@ interface StepDetailsProps {
   periodEnd: string;
   alreadyCoveredDomains: string[];
   alreadyCoveredNotes: string;
-  onFieldChange: (field: string, value: string) => void;
+  onFieldChange: (field: "classLabel" | "title", value: string) => void;
   onScheduleChange: (schedule: WeekSchedule) => void;
   onColorChange: (color: string) => void;
   onAlreadyCoveredDomainsChange: (domains: string[]) => void;
@@ -381,14 +383,13 @@ interface StepDetailsProps {
 }
 
 function StepDetails({
-  subject, gradeLevel, classLabel, title, color,
+  choice, onChoiceChange, subjectPicker, classLabel, title, color,
   schedule, periodStart, periodEnd, alreadyCoveredDomains, alreadyCoveredNotes,
   onFieldChange, onScheduleChange, onColorChange,
   onAlreadyCoveredDomainsChange, onAlreadyCoveredNotesChange,
 }: StepDetailsProps) {
   const t = useTranslations("calendar.novo");
 
-  const groupedSubjects = groupSubjectsByCategory(getSubjectsForGrade(gradeLevel));
   const lpw = weekScheduleLessonsPerWeek(schedule);
   const weeks = weeksBetweenIso(periodStart, periodEnd);
   // Real expanded slot count (respects the actual calendar), not weeks × lpw.
@@ -396,16 +397,7 @@ function StepDetails({
     periodStart && periodEnd && lpw > 0
       ? expandSlotsLocally(periodStart, periodEnd, weekScheduleToRecurringSlots(schedule)).length
       : 0;
-
-  const handleGradeChange = (grade: string) => {
-    onFieldChange("gradeLevel", grade);
-    // Reset subject if it's not available for the new grade
-    const ids = SUBJECTS_BY_GRADE[grade] ?? [];
-    const currentSubjectId = subject; // subject is now stored as id
-    if (currentSubjectId && !ids.includes(currentSubjectId)) {
-      onFieldChange("subject", "");
-    }
-  };
+  const isVocational = subjectPicker.teachingMode === "vocational";
 
   return (
     <div className="space-y-5">
@@ -414,30 +406,51 @@ function StepDetails({
         <p className="text-sm text-muted-foreground">{t("details.subtitle")}</p>
       </div>
 
-      {/* Grade + class */}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-1.5">
-          <Label>{t("details.gradeLabel")}</Label>
-          <Select value={gradeLevel} onValueChange={handleGradeChange}>
-            <SelectTrigger>
-              <SelectValue placeholder={t("details.gradePlaceholder")} />
-            </SelectTrigger>
-            <SelectContent>
-              {GRADE_GROUPS.map((group) => (
-                <SelectGroup key={group.label}>
-                  <SelectLabel className="text-xs font-bold text-primary border-b border-border/50 mb-1">
-                    {translateGradeGroupLabel(group.groupId)}
-                  </SelectLabel>
-                  {group.grades.map((g) => (
-                    <SelectItem key={g.id} value={g.id}>
-                      {translateGradeLabel(g.id)}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+      {/* Year (or course) and subject — the same pickers as document creation */}
+      <ClassSection
+        mode={subjectPicker.teachingMode}
+        onModeChange={subjectPicker.handleTeachingModeChange}
+        schoolYear={choice.schoolYear}
+        preferredSchoolYears={subjectPicker.preferredSchoolYears}
+        onUpdate={onChoiceChange}
+        vocationalCourses={subjectPicker.vocationalCourseOptions}
+        vocationalCourseCode={subjectPicker.selectedVocationalCourse?.code}
+        onCourseChange={subjectPicker.handleVocationalCourseChange}
+        onVocationalCourseAdded={subjectPicker.onVocationalCourseAdded}
+        isVocationalFeatureEnabled={subjectPicker.isVocationalFeatureEnabled}
+        className={NESTED_SECTION_CLASS}
+      />
+
+      <div className="border-t border-border/60" />
+
+      <SubjectSection
+        subject={choice.subject}
+        isSpecificComponent={choice.isSpecificComponent}
+        onUpdate={onChoiceChange}
+        availableSubjects={choice.schoolYear ? SUBJECTS_BY_GRADE[String(choice.schoolYear)] : undefined}
+        preferredSubjectIds={subjectPicker.preferredSubjectIds}
+        mode={subjectPicker.teachingMode}
+        vocationalCourse={subjectPicker.selectedVocationalCourse}
+        vocationalUnitCode={choice.vocationalUnitCode}
+        vocationalSchoolSubjectName={choice.vocationalSchoolSubjectName}
+        className={NESTED_SECTION_CLASS}
+        disabled={!choice.schoolYear}
+      />
+
+      {/* Right after the subject: decides where the topics start, so it must not be missed. */}
+      <AlreadyCoveredSection
+        subject={choice.subject}
+        gradeLevel={choice.schoolYear}
+        isSpecificComponent={!isVocational && !!choice.isSpecificComponent}
+        vocational={isVocational}
+        selectedDomains={alreadyCoveredDomains}
+        notes={alreadyCoveredNotes}
+        onDomainsChange={onAlreadyCoveredDomainsChange}
+        onNotesChange={onAlreadyCoveredNotesChange}
+      />
+
+      {/* Class label + title + color */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,120px)_minmax(0,1fr)_auto]">
         <div className="space-y-1.5">
           <Label>{t("details.classLabel")}</Label>
           <Input
@@ -446,44 +459,6 @@ function StepDetails({
             onChange={(e) => onFieldChange("classLabel", e.target.value)}
           />
         </div>
-      </div>
-
-      {/* Subject — filtered by grade, grouped by category */}
-      <div className="space-y-1.5">
-        <Label>{t("details.subjectLabel")}</Label>
-        <Select
-          value={subject}
-          onValueChange={(v) => onFieldChange("subject", v)}
-          disabled={!gradeLevel}
-        >
-          <SelectTrigger>
-            <SelectValue
-              placeholder={
-                gradeLevel
-                  ? t("details.subjectPlaceholder")
-                  : t("details.subjectPlaceholderNoGrade")
-              }
-            />
-          </SelectTrigger>
-          <SelectContent className="max-h-[380px]">
-            {groupedSubjects.map(({ category, subjects }) => (
-              <SelectGroup key={category}>
-                <SelectLabel className="text-xs font-bold text-primary border-b border-border/50 mb-1">
-                  {translateSubjectCategory(category)}
-                </SelectLabel>
-                {subjects.map((s) => (
-                  <SelectItem key={s.id} value={s.id}>
-                    {translateSubjectLabel(s.id)}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Title + color */}
-      <div className="grid grid-cols-[1fr_auto] gap-3">
         <div className="space-y-1.5">
           <Label>{t("details.nameLabel")}</Label>
           <Input
@@ -524,15 +499,6 @@ function StepDetails({
           {t("details.lessonsSummary", { count: totalLessons, weeks, lpw })}
         </div>
       )}
-
-      <AlreadyCoveredSection
-        subject={subject}
-        gradeLevel={gradeLevel}
-        selectedDomains={alreadyCoveredDomains}
-        notes={alreadyCoveredNotes}
-        onDomainsChange={onAlreadyCoveredDomainsChange}
-        onNotesChange={onAlreadyCoveredNotesChange}
-      />
     </div>
   );
 }
@@ -732,20 +698,20 @@ function CalendarNewPageContent() {
   const tErrors = useTranslations("errors.calendar");
   const { loaded: featuresLoaded, enabled } = useFeatureAccess(selectIsHorarioPlanosEnabled);
   // Local, not state.timetable.isLoading: that flag belongs to fetchTimetables/fetchTimetable
-  // (the classes-list pages' loading spinner) — createTimetable never touches it. Reading it
-  // here left "Criar turma" permanently disabled on a direct load of this page (isLoading
-  // defaults to true and nothing on this page ever dispatches fetchTimetables to flip it).
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const dispatch = useAppDispatch();
+  // (the classes-list pages' loading spinner) — createTimetable never touches it.
+  const classCreation = useCreateClassWithTopics();
+  const isSubmitting = classCreation.phase !== "idle";
   const router = useRouter();
 
   const [step, setStep] = useState<WizardStep>("choose_mode");
   const [creationMode, setCreationMode] = useState<"from_plan" | "custom">("custom");
   const [selectedPlan, setSelectedPlan] = useState<Document | null>(null);
 
-  // Form state
-  const [subject, setSubject] = useState("");
-  const [gradeLevel, setGradeLevel] = useState("");
+  // Form state — year and subject (or course and UC) as in document creation
+  const [choice, updateChoice, setChoice] = useSubjectChoiceState();
+  // A year/subject taken from a planificação wins over the profile defaults.
+  const prefilledRef = useRef({ year: false, subject: false });
+  const subjectPicker = useSubjectChoice({ choice, update: updateChoice, prefilledRef });
   const [classLabel, setClassLabel] = useState("");
   const [title, setTitle] = useState("");
   const [titleTouched, setTitleTouched] = useState(false);
@@ -763,7 +729,8 @@ function CalendarNewPageContent() {
 
   // Step validity (computed in parent so bottom nav can disable buttons)
   const periodCanProceed = !!periodStart && !!periodEnd && periodStart <= periodEnd;
-  const detailsCanProceed = !!subject && !!gradeLevel && weekScheduleLessonsPerWeek(schedule) > 0;
+  const detailsCanProceed =
+    !!choice.subject && !!choice.schoolYear && weekScheduleLessonsPerWeek(schedule) > 0;
   const actionableSlots = previewSlots.filter(
     (s) =>
       s.slotType === "LESSON" ||
@@ -775,14 +742,13 @@ function CalendarNewPageContent() {
   // Auto-generate title from the subject name in the interface language (not the
   // internal id or the English backend value). It becomes the saved class name.
   const autoTitle = useMemo(() => {
-    const subjectLabel = SUBJECTS.some((s) => s.id === subject)
-      ? translateSubjectLabel(subject)
-      : subject;
+    const subjectLabel = subjectChoiceLabel(choice);
     if (!subjectLabel) return "";
-    return [gradeLevel ? tTimetable("gradeShort", { grade: gradeLevel }) : "", classLabel, subjectLabel]
+    const grade = choice.schoolYear;
+    return [grade ? tTimetable("gradeShort", { grade }) : "", classLabel, subjectLabel]
       .filter(Boolean)
       .join(" ");
-  }, [subject, gradeLevel, classLabel, tTimetable]);
+  }, [choice, classLabel, tTimetable]);
 
   // Keeps following ano/turma/disciplina changes until the user edits the field directly —
   // comparing against the previous autoTitle would freeze the moment any one of those fields
@@ -792,12 +758,12 @@ function CalendarNewPageContent() {
   }, [autoTitle, titleTouched]);
 
 
-  const handlePlanSelect = (plan: Document) => {
+  const handlePlanSelect = useCallback((plan: Document) => {
     setSelectedPlan(plan);
 
-    const subjectId = resolvePlanSubjectId(plan);
-    if (subjectId) setSubject(subjectId);
-    if (plan.gradeLevel) setGradeLevel(String(plan.gradeLevel));
+    const planChoice = planSubjectChoice(plan);
+    prefilledRef.current = { year: !!planChoice.schoolYear, subject: !!planChoice.subject };
+    setChoice(planChoice);
 
     const planDetails = parsePlanDetails(plan);
     const metaPeriodStart = planDetails.periodStart ?? "";
@@ -815,7 +781,7 @@ function CalendarNewPageContent() {
 
     // Skip the period step when dates are already pre-filled from the planificação
     setStep(metaPeriodStart && metaPeriodEnd ? "mode_b_details" : "mode_b_period");
-  };
+  }, [setChoice]);
 
   // Deep-link entry point: /calendar/novo?planId=... — used by the one-click
   // "Criar plano letivo" button on an incomplete plan (e.g. imported, no
@@ -828,7 +794,7 @@ function CalendarNewPageContent() {
     getDocument(planId)
       .then((plan) => handlePlanSelect(plan))
       .catch(() => toast.error(tErrors("loadPlan")));
-  }, [searchParams, tErrors]);
+  }, [searchParams, tErrors, handlePlanSelect]);
 
   if (!featuresLoaded) return null;
   if (!enabled)
@@ -847,10 +813,9 @@ function CalendarNewPageContent() {
   };
 
   const handleGoToReverDatas = () => {
-    const subjectValue = SUBJECTS.find((s) => s.id === subject)?.value ?? subject;
     const slots = applyExerciseAndReviewCadence(
       expandSlotsLocally(periodStart, periodEnd, weekScheduleToRecurringSlots(schedule)),
-      subjectValue
+      subjectChoicePayload(choice).subject
     );
     setPreviewSlots(slots);
     setStep("rever_datas");
@@ -870,50 +835,49 @@ function CalendarNewPageContent() {
       .filter((s) => s.slotType === "REVIEW")
       .map((s) => s.date);
 
-    // subject is stored as the SUBJECTS id — send the canonical English value to the backend
-    const subjectValue = SUBJECTS.find((s) => s.id === subject)?.value ?? subject;
+    // A regular subject is stored as its SUBJECTS id — the backend gets the canonical
+    // English value; a curso profissional also gets its course and UC.
+    const { schoolYear, ...subjectFields } = subjectChoicePayload(choice);
 
-    setIsSubmitting(true);
-    const result = await dispatch(
-      createTimetable({
-        title: title || autoTitle || tTimetable("autoTitleFallback"),
-        subject: subjectValue,
-        gradeLevel: Number(gradeLevel),
-        classLabel: classLabel || undefined,
-        color,
-        periodStart,
-        periodEnd,
-        schoolYearLabel: schoolYearLabel || undefined,
-        creationMode,
-        linkedCurriculumPlan: selectedPlan?.id,
-        recurringSlots: weekScheduleToRecurringSlots(schedule),
-        holidays,
-        assessmentDates,
-        exerciseDates,
-        reviewDates,
-        alreadyCoveredDomains: alreadyCoveredDomains.length > 0 ? alreadyCoveredDomains : undefined,
-        alreadyCoveredNotes: alreadyCoveredNotes.trim() || undefined,
-      })
-    );
+    // The wizard stays on a progress screen until every lesson has its topic: opening
+    // the calendar before that showed a week of empty lessons that only filled in
+    // after a few refreshes.
+    setStep("generating");
+    const result = await classCreation.create({
+      ...subjectFields,
+      title: title || autoTitle || tTimetable("autoTitleFallback"),
+      gradeLevel: schoolYear,
+      classLabel: classLabel || undefined,
+      color,
+      periodStart,
+      periodEnd,
+      schoolYearLabel: schoolYearLabel || undefined,
+      creationMode,
+      linkedCurriculumPlan: selectedPlan?.id,
+      recurringSlots: weekScheduleToRecurringSlots(schedule),
+      holidays,
+      assessmentDates,
+      exerciseDates,
+      reviewDates,
+      alreadyCoveredDomains: alreadyCoveredDomains.length > 0 ? alreadyCoveredDomains : undefined,
+      alreadyCoveredNotes: alreadyCoveredNotes.trim() || undefined,
+    });
 
-    if (!createTimetable.fulfilled.match(result)) {
-      setIsSubmitting(false);
-      toast.error(
-        typeof result.payload === "string"
-          ? result.payload
-          : tErrors("createFailed")
-      );
+    if (!result.ok) {
+      setStep("rever_datas");
+      toast.error(result.error ?? tErrors("createFailed"));
       return;
     }
+    if (result.topicsReady) router.push(`${AppRoutes.CALENDAR}/${result.timetableId}`);
+    // Otherwise the progress screen offers a retry, or carrying on without topics.
+  };
 
-    const timetableId = result.payload.id;
-    // Navigate immediately — topic generation for a full year (150+ slots) can take
-    // well over a minute and previously blocked the wizard behind a full-screen
-    // "loading" step. The class already exists with placeholder slots; titles are
-    // generated in the background and lazily populate on the calendar view (which
-    // polls while any are still missing) instead of forcing the teacher to wait here.
-    router.push(`${AppRoutes.CALENDAR}/${timetableId}`);
-    void dispatch(generateTopics(timetableId));
+  const openCreatedClass = () => {
+    if (classCreation.timetableId) router.push(`${AppRoutes.CALENDAR}/${classCreation.timetableId}`);
+  };
+
+  const retryTopics = async () => {
+    if (await classCreation.retryTopics()) openCreatedClass();
   };
 
   // ── Step indicator config ─────────────────────────────────────────────────
@@ -948,7 +912,23 @@ function CalendarNewPageContent() {
     if (prev) setStep(prev);
   };
 
-  const showIndicator = step !== "choose_mode";
+  const showIndicator = step !== "choose_mode" && step !== "generating";
+
+  if (step === "generating") {
+    return (
+      <WizardShell>
+        <Card>
+          <CardContent className="p-4 sm:p-6">
+            <ClassTopicsProgress
+              phase={classCreation.phase}
+              onRetry={() => void retryTopics()}
+              onContinue={openCreatedClass}
+            />
+          </CardContent>
+        </Card>
+      </WizardShell>
+    );
+  }
 
   return (
     <WizardShell>
@@ -976,7 +956,7 @@ function CalendarNewPageContent() {
 
       {(step === "mode_b_period" || step === "mode_b_details" || step === "rever_datas") && (
         <Card>
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             {step === "mode_b_period" && (
               <StepPeriod
                 periodStart={periodStart}
@@ -991,8 +971,9 @@ function CalendarNewPageContent() {
             )}
             {step === "mode_b_details" && (
               <StepDetails
-                subject={subject}
-                gradeLevel={gradeLevel}
+                choice={choice}
+                onChoiceChange={updateChoice}
+                subjectPicker={subjectPicker}
                 classLabel={classLabel}
                 title={title}
                 color={color}
@@ -1002,10 +983,8 @@ function CalendarNewPageContent() {
                 alreadyCoveredDomains={alreadyCoveredDomains}
                 alreadyCoveredNotes={alreadyCoveredNotes}
                 onFieldChange={(field, value) => {
-                  if (field === "subject") setSubject(value);
-                  else if (field === "gradeLevel") setGradeLevel(value);
-                  else if (field === "classLabel") setClassLabel(value);
-                  else if (field === "title") { setTitle(value); setTitleTouched(true); }
+                  if (field === "classLabel") setClassLabel(value);
+                  else { setTitle(value); setTitleTouched(true); }
                 }}
                 onScheduleChange={setSchedule}
                 onColorChange={setColor}

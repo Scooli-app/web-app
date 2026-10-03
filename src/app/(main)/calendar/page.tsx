@@ -1,5 +1,4 @@
 "use client";
-import { AiDisclaimer } from "@/components/ui/ai-disclaimer";
 
 import { useAuth } from "@clerk/nextjs";
 import Link from "next/link";
@@ -328,7 +327,7 @@ function CalendarPageInner() {
   const globalGeneratingSlots = useSyncExternalStore(
     generationStore.subscribe,
     generationStore.getSnapshot,
-    () => new Set<string>(),
+    generationStore.getServerSnapshot,
   );
   /** Union of local + global — used everywhere a "is this slot generating?" check is needed. */
   const generatingSlots = useMemo(
@@ -869,7 +868,6 @@ function CalendarPageInner() {
             </DropdownMenu>
 
             {pendingThisWeek > 0 && (
-              <div className="flex shrink-0 flex-col items-end gap-0.5">
               <Button
                 size="sm"
                 className="h-7 shrink-0 gap-1 px-2 text-xs"
@@ -883,8 +881,6 @@ function CalendarPageInner() {
                 )}
                 {t("week.generate", { count: pendingThisWeek })}
               </Button>
-                <AiDisclaimer variant="compact" />
-              </div>
             )}
           </div>
 
@@ -934,7 +930,6 @@ function CalendarPageInner() {
             </Button>
 
             {pendingThisWeek > 0 && (
-              <div className="flex flex-col items-end gap-0.5">
               <Button
                 size="sm"
                 className="h-8"
@@ -950,8 +945,6 @@ function CalendarPageInner() {
                 )}
                 {t("shared.generateWeek", { count: pendingThisWeek })}
               </Button>
-                <AiDisclaimer variant="compact" />
-              </div>
             )}
           </div>
 
@@ -994,7 +987,8 @@ function CalendarPageInner() {
       </div>
 
       {/* ── Calendar grid ─────────────────────────────────────────────── */}
-      <div className="mx-auto w-full max-w-[1400px] px-4 pb-8 pt-4">
+      {/* pb-24 on mobile: room to scroll the last lesson clear of the floating assistant button. */}
+      <div className="mx-auto w-full max-w-[1400px] px-4 pb-24 pt-4 md:pb-8">
         {isLoadingTimetables && timetables.length === 0 ? (
           <CalendarGridSkeleton weekDays={weekDays} today={today} dayLabels={dayLabels} />
         ) : activeTimetables.length === 0 ? (
@@ -1102,6 +1096,15 @@ function CalendarPageInner() {
                   </div>
                 );
               })}
+              {/* Days without lessons are hidden above, so an empty week needs saying. */}
+              {!isSlotsLoading &&
+                weekDays.every((day) => (dayMap.get(toIso(day)) ?? []).length === 0) && (
+                  <div className="rounded-lg border border-dashed border-border px-4 py-10 text-center">
+                    <CalendarDays className="mx-auto mb-3 h-8 w-8 text-muted-foreground" aria-hidden />
+                    <p className="text-sm font-medium">{t("week.emptyTitle")}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">{t("week.emptyHint")}</p>
+                  </div>
+                )}
             </div>
 
             {/* ── Desktop: 7-column grid (hidden on mobile) ────────── */}

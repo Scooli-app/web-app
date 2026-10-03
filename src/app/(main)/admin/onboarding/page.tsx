@@ -6,12 +6,7 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-  type ChartConfig,
-} from "@/components/ui/chart";
+import { RankedBars } from "@/components/admin/RankedBars";
 import { ResponsiveDataView } from "@/components/ui/responsive-data-view";
 import {
   Table,
@@ -51,28 +46,11 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { toast } from "sonner";
 
 const percentFormatter = new Intl.NumberFormat("pt-PT", {
   maximumFractionDigits: 1,
 });
-
-const acquisitionChartConfig = {
-  count: { label: "Respostas", color: "var(--chart-1)" },
-} satisfies ChartConfig;
-
-const subjectChartConfig = {
-  count: { label: "Respostas", color: "var(--chart-2)" },
-} satisfies ChartConfig;
-
-const levelChartConfig = {
-  count: { label: "Respostas", color: "var(--chart-3)" },
-} satisfies ChartConfig;
-
-const goalsChartConfig = {
-  count: { label: "Respostas", color: "var(--chart-4)" },
-} satisfies ChartConfig;
 
 const metricCardClassName =
   "bg-card/80 backdrop-blur supports-[backdrop-filter]:bg-card/70";
@@ -521,38 +499,7 @@ export default function AdminOnboardingPage() {
                 {acquisitionData.length === 0 ? (
                   <EmptyChartState message="Ainda não existem respostas." />
                 ) : (
-                  <ChartContainer
-                    config={acquisitionChartConfig}
-                    className="aspect-auto h-[280px]"
-                  >
-                    <BarChart data={acquisitionData}>
-                      <CartesianGrid vertical={false} />
-                      <XAxis
-                        dataKey="label"
-                        tickLine={false}
-                        axisLine={false}
-                        tickMargin={10}
-                        interval={0}
-                        angle={-10}
-                        textAnchor="end"
-                        height={55}
-                      />
-                      <YAxis
-                        allowDecimals={false}
-                        tickLine={false}
-                        axisLine={false}
-                      />
-                      <ChartTooltip
-                        cursor={false}
-                        content={<ChartTooltipContent />}
-                      />
-                      <Bar
-                        dataKey="count"
-                        fill="var(--color-count)"
-                        radius={10}
-                      />
-                    </BarChart>
-                  </ChartContainer>
+                  <RankedBars items={acquisitionData} total={overview.summary.responses} color="var(--chart-1)" sortDesc />
                 )}
               </CardContent>
             </Card>
@@ -566,36 +513,7 @@ export default function AdminOnboardingPage() {
                   {subjectData.length === 0 ? (
                     <EmptyChartState message="Nenhuma disciplina registada ainda." />
                   ) : (
-                    <ChartContainer
-                      config={subjectChartConfig}
-                      className="aspect-auto h-[260px]"
-                    >
-                      <BarChart data={subjectData} layout="vertical" margin={{ left: 10 }}>
-                        <CartesianGrid horizontal={false} />
-                        <XAxis
-                          type="number"
-                          allowDecimals={false}
-                          tickLine={false}
-                          axisLine={false}
-                        />
-                        <YAxis
-                          dataKey="label"
-                          type="category"
-                          tickLine={false}
-                          axisLine={false}
-                          width={100}
-                        />
-                        <ChartTooltip
-                          cursor={false}
-                          content={<ChartTooltipContent hideLabel />}
-                        />
-                        <Bar
-                          dataKey="count"
-                          fill="var(--color-count)"
-                          radius={10}
-                        />
-                      </BarChart>
-                    </ChartContainer>
+                    <RankedBars items={subjectData} total={overview.summary.responses} color="var(--chart-2)" sortDesc />
                   )}
                 </CardContent>
               </Card>
@@ -608,34 +526,7 @@ export default function AdminOnboardingPage() {
                   {levelData.length === 0 ? (
                     <EmptyChartState message="Nenhum nível de ensino registado ainda." />
                   ) : (
-                    <ChartContainer
-                      config={levelChartConfig}
-                      className="aspect-auto h-[260px]"
-                    >
-                      <BarChart data={levelData}>
-                        <CartesianGrid vertical={false} />
-                        <XAxis
-                          dataKey="label"
-                          tickLine={false}
-                          axisLine={false}
-                          tickMargin={10}
-                        />
-                        <YAxis
-                          allowDecimals={false}
-                          tickLine={false}
-                          axisLine={false}
-                        />
-                        <ChartTooltip
-                          cursor={false}
-                          content={<ChartTooltipContent />}
-                        />
-                        <Bar
-                          dataKey="count"
-                          fill="var(--color-count)"
-                          radius={10}
-                        />
-                      </BarChart>
-                    </ChartContainer>
+                    <RankedBars items={levelData} total={overview.summary.responses} color="var(--chart-3)" sortDesc />
                   )}
                 </CardContent>
               </Card>
@@ -649,37 +540,7 @@ export default function AdminOnboardingPage() {
                 {goalsData.length === 0 ? (
                   <EmptyChartState message="Nenhum objetivo registado ainda." />
                 ) : (
-                  <ChartContainer
-                    config={goalsChartConfig}
-                    className="aspect-auto h-[280px]"
-                  >
-                    <BarChart data={goalsData} layout="vertical" margin={{ left: 10 }}>
-                      <CartesianGrid horizontal={false} />
-                      <XAxis
-                        type="number"
-                        allowDecimals={false}
-                        tickLine={false}
-                        axisLine={false}
-                      />
-                      <YAxis
-                        dataKey="label"
-                        type="category"
-                        tickLine={false}
-                        axisLine={false}
-                        width={180}
-                        tick={{ fontSize: 12 }}
-                      />
-                      <ChartTooltip
-                        cursor={false}
-                        content={<ChartTooltipContent hideLabel />}
-                      />
-                      <Bar
-                        dataKey="count"
-                        fill="var(--color-count)"
-                        radius={10}
-                      />
-                    </BarChart>
-                  </ChartContainer>
+                  <RankedBars items={goalsData} total={overview.summary.responses} color="var(--chart-4)" sortDesc />
                 )}
               </CardContent>
             </Card>
