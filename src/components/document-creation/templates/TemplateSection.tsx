@@ -179,7 +179,7 @@ export function TemplateSection({
               </div>
               <div className="min-w-0">
                 <h2 className="text-base font-semibold text-foreground sm:text-lg">
-                  Modelo de Documento <span className="text-destructive">*</span>
+                  {t("title")} <span className="text-destructive">*</span>
                 </h2>
                 <p className="text-xs text-muted-foreground sm:text-sm">
                   {t("description")}

@@ -9,6 +9,7 @@ import {
   type Locale,
 } from "./locales";
 import {
+  FOLLOW_BROWSER,
   isContentLanguagePreference,
   isInterfaceLocalePreference,
   resolveContentLanguage,
@@ -65,8 +66,13 @@ export function readStoredContentPreference(): ContentLanguagePreference | null 
 export function resolveEffectiveInterfaceLocale(
   preference: InterfaceLocalePreference,
 ): Locale {
+  // An explicit choice needs no gate — only "follow my browser" does.
+  if (preference !== FOLLOW_BROWSER) return preference;
   const hasExpressedPreference = readStoredInterfacePreference() !== null;
-  if (!hasExpressedPreference) return defaultLocale;
+  // No preference yet: use what the server rendered the interface in (the
+  // `NEXT_LOCALE` cookie, e.g. handed over from the landing page) so generated
+  // content matches the language on screen instead of silently reverting to pt-PT.
+  if (!hasExpressedPreference) return readLocaleCookie() ?? defaultLocale;
   return resolveInterfaceLocale(preference, detectBrowserLocale());
 }
 

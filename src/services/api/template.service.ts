@@ -9,6 +9,8 @@ import type {
   DocumentType,
   TemplateSection,
 } from "@/shared/types";
+import { readLocaleCookie } from "@/i18n/clientLocale";
+import { localizeSystemTemplate } from "@/i18n/systemTemplates";
 import { translate } from "@/i18n/translate";
 import apiClient from "./client";
 
@@ -54,6 +56,10 @@ interface UpdateTemplateRequest {
 }
 
 function mapResponseToTemplate(response: TemplateResponse): DocumentTemplate {
+  return localizeSystemTemplate(mapResponseToStoredTemplate(response), readLocaleCookie());
+}
+
+function mapResponseToStoredTemplate(response: TemplateResponse): DocumentTemplate {
   return {
     id: response.id,
     name: response.name,
