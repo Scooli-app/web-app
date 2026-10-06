@@ -752,10 +752,14 @@ export const SlideKonvaEditor = forwardRef<
         if (metrics) {
           liveW = metrics.newW;
           const fittedH = getFittedTextLikeHeight(el, metrics.newW, metrics.newFontSize);
-          liveH =
-            CORNER_ANCHORS.has(activeAnchor) || HORIZONTAL_SIDE_ANCHORS.has(activeAnchor)
-              ? fittedH
-              : Math.max(metrics.newH, fittedH);
+          // Corner handles change font size, so the box legitimately re-fits to
+          // the new font. Side handles (width-only or height-only drags) must
+          // never silently discard the box's current height -- only grow it
+          // when the content no longer fits, otherwise a width-only drag snaps
+          // the height down to the text's minimum and the box visibly jumps.
+          liveH = CORNER_ANCHORS.has(activeAnchor)
+            ? fittedH
+            : Math.max(metrics.newH, fittedH);
           applyLiveTextLikeGeometry(node, el, activeAnchor, metrics.newW, liveH, metrics.newFontSize);
           node.scaleX(1);
           node.scaleY(1);
@@ -835,10 +839,14 @@ export const SlideKonvaEditor = forwardRef<
 
         if (newFontSize !== null) {
           const fittedH = getFittedTextLikeHeight(el, newW, newFontSize);
-          newH =
-            activeAnchor && VERTICAL_SIDE_ANCHORS.has(activeAnchor)
-              ? Math.max(newH, fittedH)
-              : fittedH;
+          // Mirror handleTransformLive: only corner handles (which also resize
+          // the font) force an exact refit. Side handles must never shrink the
+          // box below its current size -- they only grow it if the content no
+          // longer fits, otherwise the box snaps/collapses on a width-only or
+          // height-only drag (the "resize bug" reported on SCOOL-147).
+          newH = activeAnchor && CORNER_ANCHORS.has(activeAnchor)
+            ? fittedH
+            : Math.max(newH, fittedH);
         }
       } else if (isShapeElement(el)) {
         newW = Math.max(MIN_ELEMENT_W, el.w * Math.abs(sx));
