@@ -171,82 +171,84 @@ function EditDialog({ timetable, isSaving, onSave, onCancel }: EditDialogProps) 
         </DialogHeader>
 
         {/* Read-only summary */}
-        <div className="rounded-lg border border-border bg-muted/30 px-4 py-3 text-sm text-muted-foreground space-y-0.5">
-          <p>
-            <span className="font-medium text-foreground">{translateSubject(timetable.subject)}</span>
-            {" · "}
-            {tTimetable("gradeYear", { grade: timetable.gradeLevel })}
-          </p>
-          <p>{periodLabel}</p>
-        </div>
-
-        <div className="space-y-4">
-          {/* Title */}
-          <div className="space-y-1.5">
-            <Label>{t("editDialog.nameLabel")}</Label>
-            <Input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder={timetable.title}
-            />
+        <div className="px-6 pt-4 space-y-4">
+          <div className="rounded-lg border border-border bg-muted/30 px-4 py-3 text-sm text-muted-foreground space-y-0.5">
+            <p>
+              <span className="font-medium text-foreground">{translateSubject(timetable.subject)}</span>
+              {" · "}
+              {tTimetable("gradeYear", { grade: timetable.gradeLevel })}
+            </p>
+            <p>{periodLabel}</p>
           </div>
 
-          {/* Turma + Cor in a row */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-4">
+            {/* Title */}
             <div className="space-y-1.5">
-              <Label>{t("editDialog.classLabel")}</Label>
+              <Label>{t("editDialog.nameLabel")}</Label>
               <Input
-                placeholder={t("editDialog.classPlaceholder")}
-                value={classLabel}
-                onChange={(e) => setClassLabel(e.target.value)}
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder={timetable.title}
               />
             </div>
-            <div className="space-y-1.5">
-              <Label>{t("editDialog.colorLabel")}</Label>
-              <div className="flex flex-wrap gap-1.5 pt-0.5">
-                {TIMETABLE_COLORS.map((c) => (
-                  <button
-                    key={c}
-                    type="button"
-                    onClick={() => setColor(c)}
-                    className={`h-6 w-6 rounded-full border-2 transition-transform hover:scale-110 ${
-                      color === c ? "border-foreground scale-110" : "border-transparent"
-                    }`}
-                    style={{ backgroundColor: c }}
-                    aria-label={c}
-                  />
-                ))}
+
+            {/* Turma + Cor in a row */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>{t("editDialog.classLabel")}</Label>
+                <Input
+                  placeholder={t("editDialog.classPlaceholder")}
+                  value={classLabel}
+                  onChange={(e) => setClassLabel(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>{t("editDialog.colorLabel")}</Label>
+                <div className="flex flex-wrap gap-1.5 pt-0.5">
+                  {TIMETABLE_COLORS.map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => setColor(c)}
+                      className={`h-6 w-6 rounded-full border-2 transition-transform hover:scale-110 ${
+                        color === c ? "border-foreground scale-110" : "border-transparent"
+                      }`}
+                      style={{ backgroundColor: c }}
+                      aria-label={c}
+                    />
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Planificação ligada */}
-          <div className="space-y-1.5">
-            <Label>{t("editDialog.linkedPlanLabel")}</Label>
-            {plansLoading ? (
-              <div className="flex items-center gap-2 py-1 text-xs text-muted-foreground">
-                <Loader2 className="h-3 w-3 animate-spin" />{t("editDialog.loadingPlans")}
-              </div>
-            ) : (
-              <select
-                className="h-9 w-full rounded-lg border border-input bg-background px-2 text-sm"
-                value={linkedPlanId}
-                onChange={(e) => setLinkedPlanId(e.target.value)}
-              >
-                <option value="">{t("editDialog.none")}</option>
-                {plans.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.title}
-                    {p.subject ? ` · ${translateSubject(p.subject)}` : ""}
-                    {p.gradeLevel ? ` · ${tTimetable("gradeYear", { grade: p.gradeLevel })}` : ""}
-                  </option>
-                ))}
-              </select>
-            )}
+            {/* Planificação ligada */}
+            <div className="space-y-1.5">
+              <Label>{t("editDialog.linkedPlanLabel")}</Label>
+              {plansLoading ? (
+                <div className="flex items-center gap-2 py-1 text-xs text-muted-foreground">
+                  <Loader2 className="h-3 w-3 animate-spin" />{t("editDialog.loadingPlans")}
+                </div>
+              ) : (
+                <select
+                  className="h-9 w-full rounded-lg border border-input bg-background px-2 text-sm"
+                  value={linkedPlanId}
+                  onChange={(e) => setLinkedPlanId(e.target.value)}
+                >
+                  <option value="">{t("editDialog.none")}</option>
+                  {plans.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.title}
+                      {p.subject ? ` · ${translateSubject(p.subject)}` : ""}
+                      {p.gradeLevel ? ` · ${tTimetable("gradeYear", { grade: p.gradeLevel })}` : ""}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
           </div>
         </div>
 
-        <DialogFooter className="pt-2">
+        <DialogFooter className="px-6 pb-6 pt-2">
           <Button variant="ghost" onClick={onCancel} disabled={isSaving}>
             {t("editDialog.cancel")}
           </Button>
