@@ -17,7 +17,7 @@ import type {
   VocationalUnit,
 } from "@/shared/types/teaching-profile";
 import { cn } from "@/shared/utils/utils";
-import { BookOpen, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
+import { BookOpen, ChevronDown, ChevronUp, Loader2, Users } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import {
@@ -104,6 +104,7 @@ function groupSchoolSubjectsByLabel(
 // name can never be confused.
 const subjectKey = (name: string) => `subject:${name}`;
 const unitKey = (code: string) => `unit:${code}`;
+const classKey = (id: string) => `class:${id}`;
 
 interface SubjectSectionProps {
   subject: string;
@@ -116,6 +117,8 @@ interface SubjectSectionProps {
   vocationalCourse?: VocationalCourseOption;
   vocationalUnitCode?: string;
   vocationalSchoolSubjectName?: string;
+  /** Teacher-defined vocational class (SCOOL-154) selected instead of a UC. */
+  vocationalClassId?: string;
   className?: string;
   disabled?: boolean;
 }
@@ -130,6 +133,7 @@ export function SubjectSection({
   vocationalCourse,
   vocationalUnitCode,
   vocationalSchoolSubjectName,
+  vocationalClassId,
   className,
   disabled,
 }: SubjectSectionProps) {
@@ -169,12 +173,18 @@ export function SubjectSection({
   // the course's full catalogue (school subjects included) is one click away.
   const savedUnits = vocationalCourse?.units ?? [];
   const hasSavedUnits = savedUnits.length > 0;
+  // Teacher-defined classes (SCOOL-154) group some of those UCs — shown
+  // alongside them as an alternative, coarser-grained choice.
+  const vocationalClasses = vocationalCourse?.classes ?? [];
+  const hasVocationalClasses = vocationalClasses.length > 0;
 
-  const selectedVocationalKey = vocationalUnitCode
-    ? unitKey(vocationalUnitCode)
-    : vocationalSchoolSubjectName
-      ? subjectKey(vocationalSchoolSubjectName)
-      : "";
+  const selectedVocationalKey = vocationalClassId
+    ? classKey(vocationalClassId)
+    : vocationalUnitCode
+      ? unitKey(vocationalUnitCode)
+      : vocationalSchoolSubjectName
+        ? subjectKey(vocationalSchoolSubjectName)
+        : "";
   const showVocationalSelect =
     !hasSavedUnits ||
     showAllVocational ||
@@ -187,6 +197,15 @@ export function SubjectSection({
     onUpdate("subject", isSelected ? "" : label);
     onUpdate("vocationalUnitCode", isSelected ? undefined : code);
     onUpdate("vocationalSchoolSubjectName", undefined);
+    onUpdate("vocationalClassId", undefined);
+  };
+
+  const selectClass = (id: string, name: string) => {
+    const isSelected = vocationalClassId === id;
+    onUpdate("subject", isSelected ? "" : name);
+    onUpdate("vocationalClassId", isSelected ? undefined : id);
+    onUpdate("vocationalUnitCode", undefined);
+    onUpdate("vocationalSchoolSubjectName", undefined);
   };
 
   const handleVocationalSelect = (value: string) => {
@@ -198,11 +217,13 @@ export function SubjectSection({
       onUpdate("subject", label);
       onUpdate("vocationalUnitCode", code);
       onUpdate("vocationalSchoolSubjectName", undefined);
+      onUpdate("vocationalClassId", undefined);
     } else {
       const name = value.slice("subject:".length);
       onUpdate("subject", name);
       onUpdate("vocationalSchoolSubjectName", name);
       onUpdate("vocationalUnitCode", undefined);
+      onUpdate("vocationalClassId", undefined);
     }
   };
 
@@ -254,6 +275,26 @@ export function SubjectSection({
 
     return (
       <div className="space-y-3">
+        {hasVocationalClasses && (
+          <div role="group" aria-label={t("yourClasses")}>
+            <p className={SECTION_LABEL_CLASS}>{t("yourClasses")}</p>
+            <div className="flex flex-wrap gap-1.5 sm:gap-2">
+              {vocationalClasses.map((vocClass) => (
+                <ChoiceChip
+                  key={vocClass.id}
+                  selected={selectedVocationalKey === classKey(vocClass.id)}
+                  highlighted
+                  disabled={disabled}
+                  onClick={() => selectClass(vocClass.id, vocClass.name)}
+                >
+                  <Users className="h-3 w-3 shrink-0" aria-hidden />
+                  {vocClass.name}
+                </ChoiceChip>
+              ))}
+            </div>
+          </div>
+        )}
+
         {hasSavedUnits && (
           <div role="group" aria-label={t("yourUnits")}>
             <p className={SECTION_LABEL_CLASS}>{t("yourUnits")}</p>

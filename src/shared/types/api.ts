@@ -59,6 +59,14 @@ export interface CreateDocumentParams {
    * outside vocational subject mode.
    */
   vocationalSchoolSubjectName?: string;
+  /**
+   * Id of a teacher-defined vocational class (SCOOL-154) selected instead of
+   * a single UC or school-subject, grouping several UCs the teacher already
+   * teaches together as one "turma". Mutually exclusive with
+   * `vocationalUnitCode`/`vocationalSchoolSubjectName` for the same reason
+   * those two are mutually exclusive with each other.
+   */
+  vocationalClassId?: string;
   /** Explicit user/org source IDs to include in RAG retrieval. */
   sourceIds?: string[];
   /** Whether to include Aprendizagens Essenciais corpus (default true). */

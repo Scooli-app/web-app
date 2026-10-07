@@ -1,7 +1,7 @@
 "use client";
 
 import { teachingProfileService } from "@/services/api/teaching-profile.service";
-import type { TeachingItem, VocationalUnit } from "@/shared/types/teaching-profile";
+import type { TeachingItem, VocationalClass, VocationalUnit } from "@/shared/types/teaching-profile";
 import { cn } from "@/shared/utils/utils";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -17,6 +17,19 @@ interface VocationalCoursesEditorProps {
   /** Titles already known from a saved profile, used until the catalogue loads. */
   knownTitles?: Record<string, string>;
   onChange: (next: { courses: string[]; items: TeachingItem[] }) => void;
+  /** Teacher-defined vocational classes (SCOOL-154), across all courses. Omitted in onboarding, where the profile isn't saved yet so classes can't be created. */
+  vocationalClasses?: VocationalClass[];
+  vocationalClassesStatus?: "loading" | "error" | "ready";
+  onCreateVocationalClass?: (request: {
+    qualificationCode: string;
+    name: string;
+    units: { code: string; label: string }[];
+  }) => Promise<VocationalClass>;
+  onUpdateVocationalClass?: (
+    id: string,
+    request: { qualificationCode: string; name: string; units: { code: string; label: string }[] }
+  ) => Promise<VocationalClass>;
+  onDeleteVocationalClass?: (id: string) => Promise<void>;
 }
 
 /**
@@ -28,6 +41,11 @@ export function VocationalCoursesEditor({
   items,
   knownTitles = {},
   onChange,
+  vocationalClasses = [],
+  vocationalClassesStatus = "ready",
+  onCreateVocationalClass,
+  onUpdateVocationalClass,
+  onDeleteVocationalClass,
 }: VocationalCoursesEditorProps) {
   const t = useTranslations("settings.teachingProfileCard");
   const { catalog, catalogError, term, setTerm, results } = useCourseSearch(t("catalogError"));
@@ -64,6 +82,14 @@ export function VocationalCoursesEditor({
     <div className="space-y-4">
       {courses.map((code) => {
         const units = unitsByCourse[code];
+        const selectedUnits = units === "error" ? [] : (units ?? []);
+        const savedUnits = selectedUnits
+          .filter((unit) =>
+            items.some(
+              (item) => item.qualificationCode === code && item.kind === "unit" && item.code === unit.code
+            )
+          )
+          .map((unit) => ({ code: unit.code, label: unit.title }));
         return (
           <VocationalCourseCard
             key={code}
@@ -83,6 +109,13 @@ export function VocationalCoursesEditor({
               onChange({ courses, items: setUnitItems(items, code, courseUnits, selected) })
             }
             onRemove={() => removeCourse(code)}
+            savedUnits={savedUnits}
+            qualificationCode={code}
+            vocationalClasses={vocationalClasses.filter((vocClass) => vocClass.qualificationCode === code)}
+            vocationalClassesStatus={vocationalClassesStatus}
+            onCreateVocationalClass={onCreateVocationalClass}
+            onUpdateVocationalClass={onUpdateVocationalClass}
+            onDeleteVocationalClass={onDeleteVocationalClass}
           />
         );
       })}

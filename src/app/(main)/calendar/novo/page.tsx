@@ -430,6 +430,7 @@ function StepDetails({
         vocationalCourse={subjectPicker.selectedVocationalCourse}
         vocationalUnitCode={choice.vocationalUnitCode}
         vocationalSchoolSubjectName={choice.vocationalSchoolSubjectName}
+        vocationalClassId={choice.vocationalClassId}
         className={NESTED_SECTION_CLASS}
         disabled={!choice.schoolYear}
       />

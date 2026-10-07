@@ -124,6 +124,7 @@ describe("getVocationalCourseOptions", () => {
         code: "COURSE-A",
         title: "Técnico de Informática",
         units: [{ code: "UC01", label: "Programação Web" }],
+        classes: [],
       },
     ]);
   });
@@ -133,7 +134,7 @@ describe("getVocationalCourseOptions", () => {
       getVocationalCourseOptions(
         profile({ educationType: "vocational", courses: ["COURSE-A"], courseStates: [] })
       )
-    ).toEqual([{ code: "COURSE-A", title: "COURSE-A", units: [] }]);
+    ).toEqual([{ code: "COURSE-A", title: "COURSE-A", units: [], classes: [] }]);
   });
 
   it("returns an empty list for a profile with no vocational selections", () => {
