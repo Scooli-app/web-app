@@ -1,8 +1,9 @@
 "use client";
 
 import { teachingProfileService } from "@/services/api/teaching-profile.service";
+import { vocationalClassService } from "@/services/api/vocational-class.service";
 import { isTeacherProfileFeatureEnabled } from "@/shared/types/featureFlags";
-import type { EducationType, TeachingProfile } from "@/shared/types/teaching-profile";
+import type { EducationType, TeachingProfile, VocationalClass } from "@/shared/types/teaching-profile";
 import { useAppSelector } from "@/store/hooks";
 import { useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
 import {
@@ -36,6 +37,7 @@ export type SubjectChoice = Pick<
   | "vocationalCourseCode"
   | "vocationalUnitCode"
   | "vocationalSchoolSubjectName"
+  | "vocationalClassId"
 >;
 
 // `FormState[K]` rather than `SubjectChoice[K]` (the same type) so the document
@@ -70,8 +72,14 @@ export function subjectChoicePayload(choice: SubjectChoice) {
     schoolYear: choice.schoolYear,
     isSpecificComponent: !isVocational && !!choice.isSpecificComponent,
     vocationalCourseCode: isVocational ? choice.vocationalCourseCode || undefined : undefined,
-    vocationalUnitCode: isVocational ? choice.vocationalUnitCode || undefined : undefined,
-    vocationalSchoolSubjectName: isVocational ? choice.vocationalSchoolSubjectName || undefined : undefined,
+    // A class, a UC and a school-subject name are mutually exclusive — see
+    // FormState.vocationalClassId. The UI below never sets more than one at
+    // once, but payload assembly stays defensive regardless.
+    vocationalClassId: isVocational && !choice.vocationalUnitCode && !choice.vocationalSchoolSubjectName
+      ? choice.vocationalClassId || undefined
+      : undefined,
+    vocationalUnitCode: isVocational && !choice.vocationalClassId ? choice.vocationalUnitCode || undefined : undefined,
+    vocationalSchoolSubjectName: isVocational && !choice.vocationalClassId ? choice.vocationalSchoolSubjectName || undefined : undefined,
   };
 }
 
@@ -100,10 +108,12 @@ export function useSubjectChoice({ choice, update, prefilledRef }: UseSubjectCho
     isTeacherProfileFeatureEnabled(state.features.flags),
   );
   const [teachingProfile, setTeachingProfile] = useState<TeachingProfile | null>(null);
+  const [vocationalClasses, setVocationalClasses] = useState<VocationalClass[]>([]);
 
   useEffect(() => {
     if (!isTeacherProfileEnabled) {
       setTeachingProfile(null);
+      setVocationalClasses([]);
       return;
     }
 
@@ -116,6 +126,15 @@ export function useSubjectChoice({ choice, update, prefilledRef }: UseSubjectCho
       .catch(() => {
         // Preferences are an enhancement: creation keeps the complete catalogue
         // and remains fully usable when the profile API is unavailable.
+      });
+    vocationalClassService
+      .list()
+      .then((classes) => {
+        if (!cancelled) setVocationalClasses(classes);
+      })
+      .catch(() => {
+        // Same enhancement-only fallback: a teacher with no saved classes (or
+        // a transient failure) still picks a UC/school subject as before.
       });
 
     return () => {
@@ -138,10 +157,21 @@ export function useSubjectChoice({ choice, update, prefilledRef }: UseSubjectCho
     () => getPreferredSchoolYears(teachingProfile, Array.from({ length: 12 }, (_, index) => index + 1)),
     [teachingProfile]
   );
-  const vocationalCourseOptions = useMemo(
-    () => getVocationalCourseOptions(teachingProfile),
-    [teachingProfile]
-  );
+  const vocationalCourseOptions = useMemo(() => {
+    const base = getVocationalCourseOptions(teachingProfile);
+    if (vocationalClasses.length === 0) return base;
+    return base.map((course) => ({
+      ...course,
+      classes: vocationalClasses
+        .filter((vocClass) => vocClass.qualificationCode === course.code)
+        .map((vocClass) => ({
+          id: vocClass.id ?? "",
+          name: vocClass.name,
+          unitCodes: vocClass.units.map((unit) => unit.code),
+        }))
+        .filter((vocClass) => vocClass.id),
+    }));
+  }, [teachingProfile, vocationalClasses]);
   const teachingMode: EducationType =
     choice.subjectMode === "vocational" && vocationalCourseOptions.length > 0
       ? "vocational"
@@ -190,6 +220,7 @@ export function useSubjectChoice({ choice, update, prefilledRef }: UseSubjectCho
     update("subject", "");
     update("vocationalUnitCode", undefined);
     update("vocationalSchoolSubjectName", undefined);
+    update("vocationalClassId", undefined);
     update("isSpecificComponent", false);
   }, [update]);
 
