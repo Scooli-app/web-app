@@ -94,13 +94,26 @@ import { useTranslations } from "next-intl";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { memo, useCallback, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSelector } from "react-redux";
 import { ThemeToggle } from "./ThemeToggle";
 
 interface SidebarLayoutProps {
   children: React.ReactNode;
   className?: string;
+}
+
+// SCOOL-144 — Auto-collapse the desktop sidebar while viewing/reading a single
+// document or presentation (the editor/viewer pages below), then restore
+// whatever state the user had before, once they navigate away. Matches the
+// dynamic "[id]" editor routes (and the presentation fullscreen "present"
+// sub-route) but excludes the static "novo"/"importar" curriculum-plan pages,
+// which are creation forms, not a reading/editing canvas.
+const DOCUMENT_READING_ROUTE_PATTERN =
+  /^\/(lesson-plan|test|quiz|worksheet|presentation|curriculum-plan)\/(?!novo$|importar$)[^/]+(?:\/present)?$/;
+
+function isDocumentReadingRoute(pathname: string): boolean {
+  return DOCUMENT_READING_ROUTE_PATTERN.test(pathname);
 }
 
 interface NavItem {
@@ -696,6 +709,36 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
     (state: RootState) => state.ui.isUpgradeModalOpen,
   );
 
+  // Desktop sidebar open/collapsed state, lifted out of SidebarProvider so we
+  // can drive it programmatically (see DOCUMENT_READING_ROUTE_PATTERN above).
+  const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(true);
+  const desktopSidebarOpenRef = useRef(desktopSidebarOpen);
+  const previousDesktopSidebarOpenRef = useRef(desktopSidebarOpen);
+  const autoCollapsedRef = useRef(false);
+  const isDocumentReadingPage = useMemo(
+    () => isDocumentReadingRoute(pathname),
+    [pathname],
+  );
+
+  useEffect(() => {
+    desktopSidebarOpenRef.current = desktopSidebarOpen;
+  }, [desktopSidebarOpen]);
+
+  useEffect(() => {
+    if (isDocumentReadingPage) {
+      if (!autoCollapsedRef.current) {
+        // Remember whatever the user had before entering a reading page, so
+        // we can restore it (not just force it back open) on the way out.
+        previousDesktopSidebarOpenRef.current = desktopSidebarOpenRef.current;
+        autoCollapsedRef.current = true;
+        setDesktopSidebarOpen(false);
+      }
+    } else if (autoCollapsedRef.current) {
+      autoCollapsedRef.current = false;
+      setDesktopSidebarOpen(previousDesktopSidebarOpenRef.current);
+    }
+  }, [isDocumentReadingPage]);
+
   const handleMobileItemClick = useCallback(() => {
     setOpen(false);
   }, []);
@@ -733,7 +776,7 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
 
   return (
     <TutorialProvider>
-    <SidebarProvider>
+    <SidebarProvider open={desktopSidebarOpen} onOpenChange={setDesktopSidebarOpen}>
       <div className="flex h-dvh w-full">
         <AppBootstrapGate />
         <SourceIngestionTracker />
