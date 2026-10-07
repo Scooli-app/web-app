@@ -20,7 +20,7 @@ import { TemplateEmptyState } from "./TemplateEmptyState";
 interface TemplateSectionProps {
   documentType: DocumentType;
   selectedTemplateId: string | null;
-  onTemplateSelect: (template: DocumentTemplate) => void;
+  onTemplateSelect: (template: DocumentTemplate | null) => void;
   requireExplicitSelection?: boolean;
 }
 
@@ -131,6 +131,17 @@ export function TemplateSection({
     }
   };
 
+  const handleTemplateDeleted = (template: DocumentTemplate) => {
+    setTemplates((prev) =>
+      prev.filter((currentTemplate) => currentTemplate.id !== template.id)
+    );
+
+    if (selectedTemplate?.id === template.id) {
+      setSelectedTemplate(null);
+      onTemplateSelect(null);
+    }
+  };
+
   if (isLoading) {
     return (
       <Card className="border-border p-4 shadow-sm sm:p-6">
@@ -163,6 +174,7 @@ export function TemplateSection({
           onTemplateSelect={handleTemplateSelect}
           onTemplateSaved={handleTemplateSaved}
           onSetDefault={handleSetDefault}
+          onTemplateDeleted={handleTemplateDeleted}
         />
       </>
     );
@@ -296,6 +308,7 @@ export function TemplateSection({
         onTemplateSelect={handleTemplateSelect}
         onTemplateSaved={handleTemplateSaved}
         onSetDefault={handleSetDefault}
+        onTemplateDeleted={handleTemplateDeleted}
       />
     </>
   );

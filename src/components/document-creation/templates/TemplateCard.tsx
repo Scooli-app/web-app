@@ -2,7 +2,7 @@
 
 import type { DocumentTemplate } from "@/shared/types";
 import { cn } from "@/shared/utils/utils";
-import { Check, FileText, Pencil, Sparkles } from "lucide-react";
+import { Check, FileText, Pencil, Sparkles, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 interface TemplateCardProps {
@@ -10,6 +10,7 @@ interface TemplateCardProps {
   isSelected: boolean;
   onSelect: (template: DocumentTemplate) => void;
   onEdit?: (template: DocumentTemplate) => void;
+  onDelete?: (template: DocumentTemplate) => void;
 }
 
 export function TemplateCard({
@@ -17,6 +18,7 @@ export function TemplateCard({
   isSelected,
   onSelect,
   onEdit,
+  onDelete,
 }: TemplateCardProps) {
   const t = useTranslations("documentCreation.templateCard");
   const tBadge = useTranslations("documentCreation.templateBadge");
@@ -24,6 +26,11 @@ export function TemplateCard({
   const handleEditClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     onEdit?.(template);
+  };
+
+  const handleDeleteClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onDelete?.(template);
   };
 
   return (
@@ -60,6 +67,25 @@ export function TemplateCard({
             <Pencil className="h-4 w-4" />
           </div>
         )}
+        {!template.isSystem && onDelete && (
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={handleDeleteClick}
+            onKeyDown={(e) =>
+              e.key === "Enter" &&
+              handleDeleteClick(e as unknown as React.MouseEvent)
+            }
+            className={cn(
+              "flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground transition-all",
+              "opacity-100 hover:bg-destructive/10 hover:text-destructive sm:opacity-0 sm:group-hover:opacity-100",
+              "focus-visible:ring-ring/50 focus-visible:ring-[3px]",
+            )}
+            aria-label={t("deleteAriaLabel")}
+          >
+            <Trash2 className="h-4 w-4" />
+          </div>
+        )}
         {isSelected && (
           <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary">
             <Check className="h-4 w-4 text-primary-foreground" />
@@ -81,7 +107,7 @@ export function TemplateCard({
             )}
           />
         </div>
-        <div className="min-w-0 flex-1 pr-10 sm:pr-12">
+        <div className="min-w-0 flex-1 pr-14 sm:pr-16">
           <div className="mb-1 flex flex-wrap items-center gap-2">
             <h3
               className={cn(

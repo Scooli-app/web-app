@@ -411,6 +411,7 @@
     },
     "templateCard": {
       "editAriaLabel": "Editar modelo",
+      "deleteAriaLabel": "Eliminar modelo",
       "selectAriaLabel": "Selecionar modelo: {name}"
     },
     "templateBrowserModal": {
@@ -420,6 +421,14 @@
       "setDefaultAriaLabel": "Definir como padrão",
       "editAriaLabel": "Editar modelo",
       "edit": "Editar",
+      "deleteAriaLabel": "Eliminar modelo",
+      "delete": "Eliminar",
+      "deleting": "A eliminar...",
+      "deleteConfirmTitle": "Eliminar modelo?",
+      "deleteConfirmDescription": "Tem a certeza que pretende eliminar \"{name}\"? Esta ação não pode ser desfeita.",
+      "deleteConfirmLabel": "Eliminar",
+      "deleteCancelLabel": "Cancelar",
+      "deleteError": "Não foi possível eliminar o modelo. Tente novamente.",
       "defaultLabel": "Padrão",
       "sectionsCount": "Secções ({count})",
       "viewOtherTemplates": "Ver outros modelos",

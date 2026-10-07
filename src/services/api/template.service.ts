@@ -216,6 +216,13 @@ export async function createTemplateFromDocument(params: {
 }
 
 /**
- * Delete a template
+ * Delete a custom template
  */
+export async function deleteTemplate(id: string): Promise<void> {
+  const response = await apiClient.delete(`/templates/${id}`);
+
+  if (response.status !== 200 && response.status !== 204) {
+    throw new Error(`Não foi possível eliminar o modelo (HTTP ${response.status})`);
+  }
+}
 

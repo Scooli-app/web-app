@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { UnsavedChangesDialog } from "@/components/ui/confirmation-dialog";
+import { ConfirmationDialog, UnsavedChangesDialog } from "@/components/ui/confirmation-dialog";
 import {
   Dialog,
   DialogContent,
@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Routes, type DocumentTemplate, type DocumentType } from "@/shared/types";
+import { deleteTemplate } from "@/services/api/template.service";
 import { cn } from "@/shared/utils/utils";
 import { selectIsTemplateFromDocumentEnabled } from "@/store/features/selectors";
 import { selectIsPro } from "@/store/subscription/selectors";
@@ -25,6 +26,7 @@ import {
   Plus,
   Sparkles,
   Star,
+  Trash2,
   UploadCloud,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -45,6 +47,7 @@ interface TemplateBrowserModalProps {
   onTemplateSelect: (template: DocumentTemplate) => void;
   onTemplateSaved: (template: DocumentTemplate, isUpdate: boolean) => void;
   onSetDefault: (template: DocumentTemplate) => Promise<void>;
+  onTemplateDeleted?: (template: DocumentTemplate) => void;
 }
 
 export function TemplateBrowserModal({
@@ -56,6 +59,7 @@ export function TemplateBrowserModal({
   onTemplateSelect,
   onTemplateSaved,
   onSetDefault,
+  onTemplateDeleted,
 }: TemplateBrowserModalProps) {
   const router = useRouter();
   const t = useTranslations("documentCreation.templateBrowserModal");
@@ -79,6 +83,11 @@ export function TemplateBrowserModal({
     (() => void) | null
   >(null);
   const [isSettingDefault, setIsSettingDefault] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<DocumentTemplate | null>(
+    null,
+  );
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const canAccessTemplateFromDocument = isProUser && isTemplateFromDocumentEnabled;
   const isFromDocumentViewActive =
     view === "from-document" && isTemplateFromDocumentEnabled;
@@ -89,6 +98,8 @@ export function TemplateBrowserModal({
     setEditingTemplate(null);
     setLocalSelectedId(selectedTemplateId);
     setIsCreatorDirty(false);
+    setDeleteTarget(null);
+    setDeleteError(null);
   }, [selectedTemplateId]);
 
   const handleOpenChange = (open: boolean) => {
@@ -129,6 +140,43 @@ export function TemplateBrowserModal({
     if (!template.isSystem) {
       setEditingTemplate(template);
       setView("edit");
+    }
+  };
+
+  const handleRequestDelete = (template: DocumentTemplate) => {
+    if (template.isSystem) return;
+    setDeleteError(null);
+    setDeleteTarget(template);
+  };
+
+  const handleCancelDelete = () => {
+    if (isDeleting) return;
+    setDeleteTarget(null);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
+
+    setIsDeleting(true);
+    setDeleteError(null);
+    try {
+      await deleteTemplate(deleteTarget.id);
+      onTemplateDeleted?.(deleteTarget);
+
+      if (previewTemplate?.id === deleteTarget.id) {
+        setView("browse");
+        setPreviewTemplate(null);
+      }
+      if (localSelectedId === deleteTarget.id) {
+        setLocalSelectedId(null);
+      }
+      setDeleteTarget(null);
+    } catch (err) {
+      setDeleteError(
+        err instanceof Error ? err.message : t("deleteError"),
+      );
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -190,6 +238,23 @@ export function TemplateBrowserModal({
         isOpen={showUnsavedDialog}
         onClose={handleCancelUnsavedClose}
         onConfirm={handleConfirmUnsavedClose}
+      />
+
+      <ConfirmationDialog
+        isOpen={!!deleteTarget}
+        onClose={handleCancelDelete}
+        onConfirm={() => void handleConfirmDelete()}
+        title={t("deleteConfirmTitle")}
+        description={
+          deleteTarget
+            ? `${t("deleteConfirmDescription", { name: deleteTarget.name })}${
+                deleteError ? ` ${deleteError}` : ""
+              }`
+            : undefined
+        }
+        confirmLabel={isDeleting ? t("deleting") : t("deleteConfirmLabel")}
+        cancelLabel={t("deleteCancelLabel")}
+        variant="danger"
       />
 
       <Dialog open={isOpen} onOpenChange={handleOpenChange}>
@@ -300,6 +365,19 @@ export function TemplateBrowserModal({
                       >
                         <Pencil className="h-4 w-4" />
                         <span>{t("edit")}</span>
+                      </Button>
+                    )}
+                    {!previewTemplate.isSystem && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleRequestDelete(previewTemplate)}
+                        className="h-9 flex-1 items-center gap-1.5 rounded-lg border-border text-secondary-foreground hover:border-destructive hover:bg-destructive/10 hover:text-destructive sm:h-8 sm:flex-none"
+                        aria-label={t("deleteAriaLabel")}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        <span>{t("delete")}</span>
                       </Button>
                     )}
                   </div>
@@ -427,6 +505,7 @@ export function TemplateBrowserModal({
                       isSelected={localSelectedId === template.id}
                       onSelect={handleTemplateClick}
                       onEdit={handleEditTemplate}
+                      onDelete={handleRequestDelete}
                     />
                   ))}
 
