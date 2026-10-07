@@ -422,13 +422,15 @@ export async function waitForDocument(id: string, maxAttempts = 60): Promise<voi
       if (doc.status === "completed") {
         return; // Success!
       }
-      if (doc.status === "error") {
-        // The backend saves the specific error message into the 'content' field
+      if (doc.status === "failed") {
+        // The backend saves the specific error message into the 'content' field.
+        // Backend DocumentImportService/DocumentService always persist "failed" (never
+        // "error") on import failure — see markDocumentAsError in DocumentImportService.java.
         throw new Error(doc.content || translate("errors.documents.processingFormatFailed"));
       }
       // If status is still "processing", we just catch the timeout below
     } catch (e: unknown) {
-      // If it's a custom error we threw above (like doc.status === "error"), throw it immediately to break the promise
+      // If it's a custom error we threw above (like doc.status === "failed"), throw it immediately to break the promise
       if (!axios.isAxiosError(e)) {
         throw e;
       }
