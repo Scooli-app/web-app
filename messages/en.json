@@ -288,7 +288,9 @@
       "componentCientifica": "Scientific Component",
       "componentTecnica": "Technological Component",
       "schoolSubjectsLoading": "Loading subjects...",
-      "schoolSubjectsError": "Could not load this course's subjects."
+      "schoolSubjectsError": "Could not load this course's subjects.",
+      "classRequiredHint": "Curriculum plans and calendar classes cover a whole class, not a single unit — create a class grouping the units you teach first.",
+      "classRequiredCta": "Create a class"
     },
     "duration": {
       "title": "Lesson Duration",

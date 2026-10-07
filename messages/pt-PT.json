@@ -288,7 +288,9 @@
       "componentCientifica": "Componente Científica",
       "componentTecnica": "Componente Tecnológica",
       "schoolSubjectsLoading": "A carregar disciplinas...",
-      "schoolSubjectsError": "Não foi possível obter as disciplinas deste curso."
+      "schoolSubjectsError": "Não foi possível obter as disciplinas deste curso.",
+      "classRequiredHint": "As planificações e as turmas do calendário abrangem uma turma inteira, não uma única UC — cria primeiro uma turma que agrupe as UC que lecionas.",
+      "classRequiredCta": "Criar turma"
     },
     "duration": {
       "title": "Duração da Aula",
