@@ -66,11 +66,11 @@ function useDocumentForm(documentTypeId: DocumentTypeConfig["id"]) {
     setError("");
   }, []);
 
-  const handleTemplateSelect = useCallback((template: DocumentTemplate) => {
+  const handleTemplateSelect = useCallback((template: DocumentTemplate | null) => {
     setFormState((prev) => ({
       ...prev,
-      templateId: template.id,
-      template,
+      templateId: template?.id,
+      template: template ?? undefined,
     }));
   }, []);
 

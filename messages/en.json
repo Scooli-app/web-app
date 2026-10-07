@@ -411,6 +411,7 @@
     },
     "templateCard": {
       "editAriaLabel": "Edit template",
+      "deleteAriaLabel": "Delete template",
       "selectAriaLabel": "Select template: {name}"
     },
     "templateBrowserModal": {
@@ -420,6 +421,14 @@
       "setDefaultAriaLabel": "Set as default",
       "editAriaLabel": "Edit template",
       "edit": "Edit",
+      "deleteAriaLabel": "Delete template",
+      "delete": "Delete",
+      "deleting": "Deleting...",
+      "deleteConfirmTitle": "Delete template?",
+      "deleteConfirmDescription": "Are you sure you want to delete \"{name}\"? This action cannot be undone.",
+      "deleteConfirmLabel": "Delete",
+      "deleteCancelLabel": "Cancel",
+      "deleteError": "Could not delete the template. Please try again.",
       "defaultLabel": "Default",
       "sectionsCount": "Sections ({count})",
       "viewOtherTemplates": "View other templates",
