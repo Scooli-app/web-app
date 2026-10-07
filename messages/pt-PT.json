@@ -814,6 +814,7 @@
       "addCourse": "Adicionar outro curso",
       "coursesEmpty": "Procura o curso onde dás aulas. Se lecionas em vários, adiciona-os um a um.",
       "coursesSearchPlaceholder": "Nome ou área do curso — ex.: informática, turismo",
+      "coursesSearchMinChars": "Escreve pelo menos {count} caracteres para procurar.",
       "coursesLoading": "A carregar cursos…",
       "noCoursesFound": "Nenhum curso encontrado. As escolas às vezes usam nomes diferentes do catálogo — procura por uma palavra só.",
       "courseAdded": "Adicionado",

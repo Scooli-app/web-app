@@ -814,6 +814,7 @@
       "addCourse": "Add another course",
       "coursesEmpty": "Search for the course you teach. If you teach several, add them one by one.",
       "coursesSearchPlaceholder": "Course name or area — e.g. computing, tourism",
+      "coursesSearchMinChars": "Type at least {count} characters to search.",
       "coursesLoading": "Loading courses…",
       "noCoursesFound": "No course found. Schools sometimes use different names than the catalogue — try a single word.",
       "courseAdded": "Added",
