@@ -29,6 +29,14 @@ export interface CreateTimetableParams {
   assessmentDates?: string[]; // ISO dates — ASSESSMENT slots
   exerciseDates?: string[]; // ISO dates — EXERCISE slots (explicit, overrides auto-cadence)
   reviewDates?: string[];   // ISO dates — REVIEW slots (explicit, overrides auto-cadence)
+  /** What the teacher says was already taught, so the topics pick up from there (needs already_covered_enabled). */
+  alreadyCoveredNotes?: string;
+  /** Formação específica (true) / geral (false), for subjects the AE splits that way. */
+  isSpecificComponent?: boolean;
+  /** Curso profissional, with either a UC code or a sociocultural/científica subject name — as on document creation. */
+  vocationalCourseCode?: string;
+  vocationalUnitCode?: string;
+  vocationalSchoolSubjectName?: string;
 }
 
 export interface UpdateTimetableParams {

@@ -8,27 +8,23 @@ import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
-  SelectGroup,
   SelectItem,
-  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
 import { Stepper } from "@/components/ui/stepper";
 import { GenerationProgress } from "@/components/document-creation/GenerationProgress";
+import { AlreadyCoveredSection } from "@/components/document-creation/AlreadyCoveredSection";
 import { WizardShell } from "@/components/document-creation/WizardShell";
 import { WeekSchedulePicker } from "@/components/document-creation/WeekSchedulePicker";
+import { SUBJECTS, SUBJECTS_BY_GRADE } from "@/components/document-creation/constants";
+import { ClassSection, NESTED_SECTION_CLASS, SubjectSection } from "@/components/document-creation/sections";
 import {
-  SUBJECTS,
-  GRADE_GROUPS,
-  SUBJECTS_BY_GRADE,
-  getSubjectsForGrade,
-  groupSubjectsByCategory,
-  translateGradeGroupLabel,
-  translateGradeLabel,
-  translateSubjectCategory,
-  translateSubjectLabel,
-} from "@/components/document-creation/constants";
+  subjectChoiceLabel,
+  subjectChoicePayload,
+  useSubjectChoice,
+  useSubjectChoiceState,
+} from "@/components/document-creation/useSubjectChoice";
 import {
   createDocument,
   setPendingInitialPrompt,
@@ -146,6 +142,8 @@ export default function CurriculumPlanNewPage() {
   const tShared = useTranslations("curriculumPlan.shared");
   const tTimetable = useTranslations("timetable");
   const tErrors = useTranslations("errors.curriculumPlan");
+  const tClass = useTranslations("documentCreation.classContext");
+  const tSubject = useTranslations("documentCreation.subject");
   const rawLocale = useLocale();
   const locale = isSupportedLocale(rawLocale) ? rawLocale : defaultLocale;
   const LOADING_STEPS = t.raw("loadingSteps") as string[];
@@ -163,9 +161,12 @@ export default function CurriculumPlanNewPage() {
   const [planningType, setPlanningType] = useState<CurriculumPlanningType>("trimester");
   const [periodStart, setPeriodStart] = useState<Date | undefined>(undefined);
   const [periodEnd, setPeriodEnd] = useState<Date | undefined>(undefined);
-  const [subjectId, setSubjectId] = useState("");
-  const [gradeLevel, setGradeLevel] = useState("5");
+  // Year and subject (or course and UC) — the same pickers as document creation.
+  const [choice, updateChoice] = useSubjectChoiceState();
+  const subjectPicker = useSubjectChoice({ choice, update: updateChoice });
+  const isVocational = subjectPicker.teachingMode === "vocational";
   const [schedule, setSchedule] = useState<WeekSchedule>(DEFAULT_WEEK_SCHEDULE);
+  const [alreadyCoveredNotes, setAlreadyCoveredNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
 
@@ -185,31 +186,20 @@ export default function CurriculumPlanNewPage() {
   );
 
   const selectedSubject = useMemo(
-    () => SUBJECTS.find((s) => s.id === subjectId),
-    [subjectId]
+    () => SUBJECTS.find((s) => s.id === choice.subject),
+    [choice.subject]
   );
   // The review step shows the translated name; the AI prompt uses whichever
   // name matches the language the prompt itself is written in (see buildPrompt).
+  // A UC or school-component subject is already a name.
   const subjectLabel = selectedSubject
     ? locale === "en"
-      ? translateSubjectLabel(selectedSubject.id)
+      ? subjectChoiceLabel(choice)
       : selectedSubject.label
-    : "";
-  // Backend expects the canonical English value, not the internal id used for selection.
-  const subjectValue = selectedSubject?.value ?? "";
-  const schoolYear = Number(gradeLevel) || 0;
-
-  const groupedSubjects = useMemo(
-    () => groupSubjectsByCategory(getSubjectsForGrade(gradeLevel)),
-    [gradeLevel]
-  );
-
-  function handleGradeLevelChange(grade: string) {
-    setGradeLevel(grade);
-    // Reset subject if it isn't offered for the newly selected grade
-    const ids = SUBJECTS_BY_GRADE[grade] ?? [];
-    if (subjectId && !ids.includes(subjectId)) setSubjectId("");
-  }
+    : choice.subject;
+  // Backend expects the canonical English value (or the UC's name) and, for a curso
+  // profissional, the course and UC — see subjectChoicePayload.
+  const { schoolYear, ...subjectFields } = subjectChoicePayload(choice);
 
   function applyPreset(preset: SchoolPeriodPreset) {
     setPeriodStart(new Date(`${preset.start}T00:00:00`));
@@ -219,7 +209,7 @@ export default function CurriculumPlanNewPage() {
 
   // step validation
   const step1Valid = !!periodStart && !!periodEnd && periodEnd > periodStart;
-  const step2Valid = !!subjectId && !!gradeLevel;
+  const step2Valid = !!choice.subject && !!choice.schoolYear;
   const step3Valid = lpw > 0;
 
   function goNext() {
@@ -259,7 +249,7 @@ export default function CurriculumPlanNewPage() {
         createDocument({
           documentType: "curriculumPlan",
           prompt,
-          subject: subjectValue,
+          ...subjectFields,
           schoolYear,
           additionalDetails: JSON.stringify({
             planningType,
@@ -268,6 +258,7 @@ export default function CurriculumPlanNewPage() {
             lessonsPerWeek: lpw,
             totalLessonsEstimate: totalLessons,
             weekSchedule: schedule,
+            alreadyCoveredNotes: alreadyCoveredNotes.trim() || undefined,
           }),
           worksheetVariant: planningType as never,
         })
@@ -321,7 +312,7 @@ export default function CurriculumPlanNewPage() {
 
       {/* Step content */}
       <Card>
-        <CardContent className="p-6">
+        <CardContent className="p-4 sm:p-6">
 
           {/* ── Step 1: Period ── */}
           {step === "period" && (
@@ -424,57 +415,41 @@ export default function CurriculumPlanNewPage() {
                 </p>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="schoolYear">{t("class.gradeLabel")}</Label>
-                <Select value={gradeLevel} onValueChange={handleGradeLevelChange}>
-                  <SelectTrigger id="schoolYear" className="h-12 text-base">
-                    <SelectValue placeholder={t("class.gradePlaceholder")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {GRADE_GROUPS.map((group) => (
-                      <SelectGroup key={group.label}>
-                        <SelectLabel className="text-xs font-bold text-primary border-b border-border/50 mb-1">
-                          {translateGradeGroupLabel(group.groupId)}
-                        </SelectLabel>
-                        {group.grades.map((g) => (
-                          <SelectItem key={g.id} value={g.id}>
-                            {translateGradeLabel(g.id)}
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              <ClassSection
+                mode={subjectPicker.teachingMode}
+                onModeChange={subjectPicker.handleTeachingModeChange}
+                schoolYear={choice.schoolYear}
+                preferredSchoolYears={subjectPicker.preferredSchoolYears}
+                onUpdate={updateChoice}
+                vocationalCourses={subjectPicker.vocationalCourseOptions}
+                vocationalCourseCode={subjectPicker.selectedVocationalCourse?.code}
+                onCourseChange={subjectPicker.handleVocationalCourseChange}
+                onVocationalCourseAdded={subjectPicker.onVocationalCourseAdded}
+                isVocationalFeatureEnabled={subjectPicker.isVocationalFeatureEnabled}
+                className={NESTED_SECTION_CLASS}
+              />
 
-              <div className="space-y-2">
-                <Label htmlFor="subject">{t("class.subjectLabel")}</Label>
-                <Select value={subjectId} onValueChange={setSubjectId} disabled={!gradeLevel}>
-                  <SelectTrigger id="subject" className="h-12 text-base">
-                    <SelectValue
-                      placeholder={
-                        gradeLevel
-                          ? t("class.subjectPlaceholder")
-                          : t("class.subjectPlaceholderNoGrade")
-                      }
-                    />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-[380px]">
-                    {groupedSubjects.map(({ category, subjects }) => (
-                      <SelectGroup key={category}>
-                        <SelectLabel className="text-xs font-bold text-primary border-b border-border/50 mb-1">
-                          {translateSubjectCategory(category)}
-                        </SelectLabel>
-                        {subjects.map((s) => (
-                          <SelectItem key={s.id} value={s.id}>
-                            {translateSubjectLabel(s.id)}
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              <div className="border-t border-border/60" />
+
+              <SubjectSection
+                subject={choice.subject}
+                isSpecificComponent={choice.isSpecificComponent}
+                onUpdate={updateChoice}
+                availableSubjects={choice.schoolYear ? SUBJECTS_BY_GRADE[String(choice.schoolYear)] : undefined}
+                preferredSubjectIds={subjectPicker.preferredSubjectIds}
+                mode={subjectPicker.teachingMode}
+                vocationalCourse={subjectPicker.selectedVocationalCourse}
+                vocationalUnitCode={choice.vocationalUnitCode}
+                vocationalSchoolSubjectName={choice.vocationalSchoolSubjectName}
+                className={NESTED_SECTION_CLASS}
+                disabled={!choice.schoolYear}
+              />
+
+              {/* Decides where the plan starts, so it sits right after the subject. */}
+              <AlreadyCoveredSection
+                notes={alreadyCoveredNotes}
+                onNotesChange={setAlreadyCoveredNotes}
+              />
             </div>
           )}
 
@@ -519,10 +494,21 @@ export default function CurriculumPlanNewPage() {
                   <span className="text-sm text-muted-foreground">{t("review.type")}</span>
                   <span className="text-sm font-medium">{tShared(`planningType.${planningType}`)}</span>
                 </div>
-                <div className="flex items-center justify-between px-4 py-3">
+                {isVocational && subjectPicker.selectedVocationalCourse && (
+                  <div className="flex items-center justify-between gap-4 px-4 py-3">
+                    <span className="text-sm text-muted-foreground">{tClass("courseLabel")}</span>
+                    <span className="text-right text-sm font-medium">
+                      {subjectPicker.selectedVocationalCourse.title}
+                    </span>
+                  </div>
+                )}
+                <div className="flex items-center justify-between gap-4 px-4 py-3">
                   <span className="text-sm text-muted-foreground">{t("review.subject")}</span>
-                  <span className="text-sm font-medium">
-                    {selectedSubject ? translateSubjectLabel(selectedSubject.id) : "—"}
+                  <span className="text-right text-sm font-medium">
+                    {subjectChoiceLabel(choice) || "—"}
+                    {!isVocational && choice.isSpecificComponent && (
+                      <span className="text-muted-foreground"> · {tSubject("specificTraining")}</span>
+                    )}
                   </span>
                 </div>
                 <div className="flex items-center justify-between px-4 py-3">

@@ -144,7 +144,6 @@
       "credits": "{count, plural, one {# crédito} other {# créditos}}"
     },
     "mobileNavTitle": "Navegação Scooli",
-    "earlyAccess": "Acesso antecipado",
     "signIn": "Entrar"
   },
   "enums": {
@@ -239,9 +238,7 @@
     "topic": {
       "title": "Tema da Aula",
       "description": "Descreva o tema que pretende abordar",
-      "ariaLabel": "Tema da aula",
-      "suggestionsLabel": "Sugestões do teu perfil de ensino",
-      "useSuggestion": "Usar {suggestion} como tema"
+      "ariaLabel": "Tema da aula"
     },
     "grade": {
       "title": "Ano de Escolaridade",
@@ -250,27 +247,45 @@
       "showOtherYears": "Ver outros anos",
       "hideOtherYears": "Ocultar outros anos"
     },
+    "classContext": {
+      "titleVocational": "Curso e ano",
+      "modeLabel": "Tipo de ensino",
+      "modeRegular": "Ensino regular",
+      "modeVocational": "Curso profissional",
+      "courseLabel": "Curso",
+      "coursePlaceholder": "Selecione o curso...",
+      "courseSelectAriaLabel": "Selecionar curso",
+      "yearLabel": "Ano",
+      "quickAddTitle": "Adiciona o teu curso profissional",
+      "quickAddDescription": "Procura o curso profissional onde dás aulas. Vamos guardá-lo no teu perfil de ensino e mudar este documento para esse curso.",
+      "quickAddSaving": "A guardar curso…",
+      "quickAddError": "Não foi possível guardar este curso. Tenta novamente."
+    },
+    "alreadyCovered": {
+      "title": "Já foi dada matéria a esta turma?",
+      "subtitle": "Opcional — útil se esta turma não está a começar do zero (ex.: já lecionaste este ano ou a turma vem de outro professor).",
+      "label": "O que já foi dado a esta turma?",
+      "placeholder": "Ex.: já vimos frações equivalentes mas não decimais…"
+    },
     "subject": {
       "title": "Disciplina",
+      "titleVocational": "Disciplina ou UC",
       "generalTraining": "Formação Geral",
       "specificTraining": "Formação Específica",
+      "componentLabel": "Componente de formação",
+      "componentHint": "Esta língua pode ser da formação geral ou da específica — escolhe a da tua turma.",
       "selectAriaLabel": "Selecionar disciplina",
       "placeholderDisabled": "Selecione primeiro o ano de escolaridade...",
       "placeholder": "Selecione uma disciplina...",
       "yourSubjects": "As minhas disciplinas",
       "showAllSubjects": "Ver todas",
-      "modeGroupLabel": "Tipo de ensino",
-      "modeRegular": "Ensino regular",
-      "modeVocational": "Ensino profissional",
-      "coursePlaceholder": "Selecione o curso...",
-      "courseSelectAriaLabel": "Selecionar curso",
-      "unitPlaceholder": "Selecione a UC...",
-      "unitSelectAriaLabel": "Selecionar unidade de competência",
+      "yourUnits": "As tuas UC",
+      "showAllVocational": "Ver todas as disciplinas e UC",
       "vocationalComponentPlaceholder": "Selecione a disciplina ou a UC...",
       "vocationalComponentSelectAriaLabel": "Selecionar disciplina da componente curricular ou unidade de competência",
       "componentSociocultural": "Componente Sociocultural",
       "componentCientifica": "Componente Científica",
-      "componentTecnica": "Componente Técnica",
+      "componentTecnica": "Componente Tecnológica",
       "schoolSubjectsLoading": "A carregar disciplinas...",
       "schoolSubjectsError": "Não foi possível obter as disciplinas deste curso."
     },
@@ -709,6 +724,11 @@
         "eyebrow": "Os teus objetivos",
         "title": "O que procuras na Scooli?",
         "description": "Seleciona tudo o que se aplica. Podes escolher várias opções."
+      },
+      "vocational": {
+        "eyebrow": "Ensino profissional",
+        "title": "Que UC vais lecionar?",
+        "description": "Escolhe o teu curso e as UC que vais dar. Podes mudar isto quando quiseres nas Definições."
       }
     },
     "acquisitionOtherPlaceholder": "Conta-nos onde nos encontraste... (opcional)",
@@ -719,7 +739,8 @@
     "contentLanguageHint": "O currículo continua a ser o português — muda apenas a língua dos materiais. Podes alterar isto a qualquer momento nas Definições.",
     "errors": {
       "skipFailed": "Não foi possível ignorar o onboarding.",
-      "saveFailed": "Não foi possível guardar a tua resposta."
+      "saveFailed": "Não foi possível guardar a tua resposta.",
+      "vocationalSaveFailed": "Não foi possível guardar as tuas UC. Podes escolhê-las nas Definições, em O Meu Ensino."
     }
   },
   "settings": {
@@ -769,38 +790,51 @@
     },
     "teachingProfileCard": {
       "title": "O Meu Ensino",
-      "subtitle": "Define uma vez o que lecionas. A Scooli passa a usar o currículo certo sem te voltar a perguntar em cada documento.",
-      "typeGroupLabel": "Tipo de ensino",
-      "regular": "Ensino regular",
-      "vocational": "Ensino profissional",
+      "subtitle": "Diz-nos o que lecionas. Ao criar um documento, os teus anos e disciplinas aparecem primeiro e a Scooli usa o programa certo sem te voltar a perguntar.",
+      "scopeLabel": "Onde dás aulas?",
+      "scopeHint": "Escolhe uma opção — ou Ambos se lecionas ensino regular e um curso profissional.",
+      "modeLabel": "Tipo de ensino",
+      "modeRegular": "Ensino regular",
+      "modeVocational": "Curso profissional",
+      "modeBoth": "Ambos",
       "schoolYearsLabel": "Anos que lecionas",
-      "subjectsLabel": "Disciplinas que lecionas",
-      "subjectsSearchPlaceholder": "Procurar disciplinas",
-      "subjectsListLabel": "Disciplinas disponíveis",
+      "schoolYearsVocationalHint": "Nos cursos profissionais, o 10.º, 11.º e 12.º ano correspondem ao 1.º, 2.º e 3.º ano do curso.",
+      "regularSubjectsLabel": "Disciplinas do ensino regular",
+      "yourSubjects": "As tuas disciplinas",
+      "noSubjectsYet": "Ainda não escolheste nenhuma disciplina.",
+      "removeSubject": "Remover {subject}",
+      "addSubjects": "Adicionar disciplinas",
+      "subjectsSearchPlaceholder": "Procurar disciplina",
+      "subjectsForYears": "Só aparecem as disciplinas dos anos que escolheste.",
+      "subjectsAllYears": "Escolhe os teus anos acima para ver só as disciplinas desses anos.",
       "noSubjectsFound": "Nenhuma disciplina encontrada.",
-      "subjectsSelected": "{count, plural, =0 {Nenhuma disciplina selecionada} one {# disciplina selecionada} other {# disciplinas selecionadas}}",
-      "retryLoad": "Tentar novamente",
-      "coursesLabel": "Os teus cursos",
-      "coursesSearchPlaceholder": "Procura por nome, código ou área — ex.: software, 481",
+      "coursesLabel": "Cursos profissionais",
+      "coursesDescription": "Escolhe o curso e as UC que vais lecionar.",
+      "addFirstCourse": "Adiciona o teu primeiro curso",
+      "addCourse": "Adicionar outro curso",
+      "coursesEmpty": "Procura o curso onde dás aulas. Se lecionas em vários, adiciona-os um a um.",
+      "coursesSearchPlaceholder": "Nome ou área do curso — ex.: informática, turismo",
+      "coursesLoading": "A carregar cursos…",
       "noCoursesFound": "Nenhum curso encontrado. As escolas às vezes usam nomes diferentes do catálogo — procura por uma palavra só.",
-      "noCoursesYet": "Ainda não escolheste nenhum curso.",
+      "courseAdded": "Adicionado",
       "removeCourse": "Remover {course}",
-      "selectAllUnits": "Selecionar todas as UC",
-      "deselectAllUnits": "Remover todas as UC",
-      "unitsInstruction": "Marca as unidades que lecionas. Na componente tecnológica o catálogo nacional não define disciplinas — são as escolas que agrupam estas unidades.",
+      "unitsLabel": "UC que vais lecionar",
+      "unitsSummary": "{selected, plural, =0 {Nenhuma escolhida} one {# de {total} escolhida} other {# de {total} escolhidas}}",
+      "noUnitsInCourse": "Este curso não tem UC no catálogo.",
+      "unitsSearchPlaceholder": "Procurar UC pelo nome ou código",
+      "selectAllUnits": "Selecionar todas",
+      "deselectAllUnits": "Limpar seleção",
+      "noUnitsFound": "Nenhuma UC encontrada.",
+      "unitsError": "Não foi possível obter as UC deste curso.",
+      "unsavedChanges": "Tens alterações por guardar.",
+      "discard": "Descartar",
       "saving": "A guardar…",
-      "save": "Guardar",
+      "save": "Guardar alterações",
+      "retryLoad": "Tentar novamente",
       "loadError": "Não foi possível carregar o teu perfil de ensino.",
       "catalogError": "Não foi possível carregar o catálogo de cursos.",
-      "unitsError": "Não foi possível obter as unidades deste curso.",
       "saveSuccess": "Perfil de ensino guardado.",
-      "saveError": "Não foi possível guardar. Tenta novamente.",
-      "status": {
-        "pending": "Em fila",
-        "running": "A preparar",
-        "indexed": "Pronto",
-        "failed": "Falhou"
-      }
+      "saveError": "Não foi possível guardar. Tenta novamente."
     },
     "subscriptionCard": {
       "title": "Subscrição e Gerações",
@@ -2409,6 +2443,9 @@
       "light": "Claro",
       "dark": "Escuro",
       "system": "Sistema"
+    },
+    "languageToggle": {
+      "srLabel": "Alterar idioma"
     }
   },
   "timetable": {
@@ -2455,7 +2492,9 @@
       "generate": "Gerar ({count})",
       "moveUp": "Mover para cima",
       "moveDown": "Mover para baixo",
-      "durationCompact": "{count}m"
+      "durationCompact": "{count}m",
+      "emptyTitle": "Sem aulas nesta semana",
+      "emptyHint": "Usa as setas para ver outras semanas."
     },
     "detail": {
       "loading": "A carregar...",
@@ -2608,6 +2647,19 @@
       "header": {
         "title": "Nova turma",
         "subtitle": "Define o período, disciplina e horário semanal."
+      },
+      "generating": {
+        "title": "A preparar a tua turma…",
+        "subtitle": "A Scooli está a definir o tópico de cada aula. Pode demorar até um minuto — não feches esta página.",
+        "steps": [
+          "A criar a turma e o calendário",
+          "A gerar os tópicos das aulas",
+          "A preparar o calendário"
+        ],
+        "failedTitle": "Não foi possível gerar os tópicos das aulas",
+        "failedDescription": "A turma já foi criada. Podes tentar outra vez agora ou continuar e definir os tópicos diretamente no calendário.",
+        "retry": "Tentar novamente",
+        "continue": "Continuar para a turma"
       }
     },
     "periods": {

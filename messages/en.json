@@ -144,7 +144,6 @@
       "credits": "{count, plural, one {# credit} other {# credits}}"
     },
     "mobileNavTitle": "Scooli Navigation",
-    "earlyAccess": "Early access",
     "signIn": "Sign in"
   },
   "enums": {
@@ -239,9 +238,7 @@
     "topic": {
       "title": "Lesson Topic",
       "description": "Describe the topic you want to cover",
-      "ariaLabel": "Lesson topic",
-      "suggestionsLabel": "Suggestions from your teaching profile",
-      "useSuggestion": "Use {suggestion} as the topic"
+      "ariaLabel": "Lesson topic"
     },
     "grade": {
       "title": "School Year",
@@ -250,27 +247,45 @@
       "showOtherYears": "Show other years",
       "hideOtherYears": "Hide other years"
     },
+    "classContext": {
+      "titleVocational": "Course and year",
+      "modeLabel": "Teaching type",
+      "modeRegular": "Regular education",
+      "modeVocational": "Vocational course",
+      "courseLabel": "Course",
+      "coursePlaceholder": "Select the course...",
+      "courseSelectAriaLabel": "Select course",
+      "yearLabel": "Year",
+      "quickAddTitle": "Add your vocational course",
+      "quickAddDescription": "Search for the curso profissional you teach. We'll save it to your teaching profile and switch this document to it.",
+      "quickAddSaving": "Saving course…",
+      "quickAddError": "We couldn't save this course. Try again."
+    },
+    "alreadyCovered": {
+      "title": "Has this class already covered any content?",
+      "subtitle": "Optional — useful if this class isn't starting from scratch (e.g. you already taught this year, or you're taking over from another teacher).",
+      "label": "What has this class already covered?",
+      "placeholder": "E.g. we've covered equivalent fractions but not decimals yet…"
+    },
     "subject": {
       "title": "Subject",
+      "titleVocational": "Subject or unit",
       "generalTraining": "General Track",
       "specificTraining": "Specific Track",
+      "componentLabel": "Training component",
+      "componentHint": "This language can belong to the general or the specific track — pick your class's.",
       "selectAriaLabel": "Select subject",
       "placeholderDisabled": "Select the school year first...",
       "placeholder": "Select a subject...",
       "yourSubjects": "My subjects",
       "showAllSubjects": "Show all",
-      "modeGroupLabel": "Teaching type",
-      "modeRegular": "Regular education",
-      "modeVocational": "Vocational education",
-      "coursePlaceholder": "Select the course...",
-      "courseSelectAriaLabel": "Select course",
-      "unitPlaceholder": "Select the competence unit...",
-      "unitSelectAriaLabel": "Select competence unit",
+      "yourUnits": "Your units",
+      "showAllVocational": "Show all subjects and units",
       "vocationalComponentPlaceholder": "Select the subject or competence unit...",
       "vocationalComponentSelectAriaLabel": "Select curriculum component subject or competence unit",
       "componentSociocultural": "Sociocultural Component",
       "componentCientifica": "Scientific Component",
-      "componentTecnica": "Technical Component",
+      "componentTecnica": "Technological Component",
       "schoolSubjectsLoading": "Loading subjects...",
       "schoolSubjectsError": "Could not load this course's subjects."
     },
@@ -709,6 +724,11 @@
         "eyebrow": "Your goals",
         "title": "What brings you to Scooli?",
         "description": "Pick everything that applies. You can choose more than one."
+      },
+      "vocational": {
+        "eyebrow": "Vocational teaching",
+        "title": "Which units will you teach?",
+        "description": "Pick your course and the competence units you'll teach. You can change this anytime in Settings."
       }
     },
     "acquisitionOtherPlaceholder": "Tell us where you found us... (optional)",
@@ -719,7 +739,8 @@
     "contentLanguageHint": "The curriculum stays Portuguese — only the language of the materials changes. You can switch this any time in Settings.",
     "errors": {
       "skipFailed": "Could not skip onboarding.",
-      "saveFailed": "Could not save your answer."
+      "saveFailed": "Could not save your answer.",
+      "vocationalSaveFailed": "We couldn't save your units. You can pick them in Settings, under My Teaching."
     }
   },
   "settings": {
@@ -769,38 +790,51 @@
     },
     "teachingProfileCard": {
       "title": "My Teaching",
-      "subtitle": "Set what you teach once. Scooli will use the right curriculum without asking again on every document.",
-      "typeGroupLabel": "Teaching type",
-      "regular": "Regular education",
-      "vocational": "Vocational education",
+      "subtitle": "Tell us what you teach. When you create a document, your years and subjects come first and Scooli uses the right curriculum without asking again.",
+      "scopeLabel": "Where do you teach?",
+      "scopeHint": "Pick one — or Both if you teach regular classes and a vocational course.",
+      "modeLabel": "Teaching type",
+      "modeRegular": "Regular education",
+      "modeVocational": "Vocational course",
+      "modeBoth": "Both",
       "schoolYearsLabel": "Years you teach",
-      "subjectsLabel": "Subjects you teach",
+      "schoolYearsVocationalHint": "In vocational courses, years 10, 11 and 12 are the course's 1st, 2nd and 3rd year.",
+      "regularSubjectsLabel": "Regular education subjects",
+      "yourSubjects": "Your subjects",
+      "noSubjectsYet": "You haven't picked any subjects yet.",
+      "removeSubject": "Remove {subject}",
+      "addSubjects": "Add subjects",
       "subjectsSearchPlaceholder": "Search subjects",
-      "subjectsListLabel": "Available subjects",
+      "subjectsForYears": "Only subjects for the years you picked are shown.",
+      "subjectsAllYears": "Pick your years above to only see their subjects.",
       "noSubjectsFound": "No subjects found.",
-      "subjectsSelected": "{count, plural, =0 {No subjects selected} one {# subject selected} other {# subjects selected}}",
-      "retryLoad": "Try again",
-      "coursesLabel": "Your courses",
-      "coursesSearchPlaceholder": "Search by name, code or area — e.g. software, 481",
+      "coursesLabel": "Vocational courses",
+      "coursesDescription": "Pick the course and the competence units you'll teach.",
+      "addFirstCourse": "Add your first course",
+      "addCourse": "Add another course",
+      "coursesEmpty": "Search for the course you teach. If you teach several, add them one by one.",
+      "coursesSearchPlaceholder": "Course name or area — e.g. computing, tourism",
+      "coursesLoading": "Loading courses…",
       "noCoursesFound": "No course found. Schools sometimes use different names than the catalogue — try a single word.",
-      "noCoursesYet": "You haven't picked any courses yet.",
+      "courseAdded": "Added",
       "removeCourse": "Remove {course}",
-      "selectAllUnits": "Select all UCs",
-      "deselectAllUnits": "Remove all UCs",
-      "unitsInstruction": "Select the units you teach. In the technological component the national catalogue does not define school subjects — schools group these units locally.",
+      "unitsLabel": "Units you'll teach",
+      "unitsSummary": "{selected, plural, =0 {None picked} other {# of {total} picked}}",
+      "noUnitsInCourse": "This course has no units in the catalogue.",
+      "unitsSearchPlaceholder": "Search units by name or code",
+      "selectAllUnits": "Select all",
+      "deselectAllUnits": "Clear selection",
+      "noUnitsFound": "No units found.",
+      "unitsError": "We couldn't load this course's units.",
+      "unsavedChanges": "You have unsaved changes.",
+      "discard": "Discard",
       "saving": "Saving…",
-      "save": "Save",
+      "save": "Save changes",
+      "retryLoad": "Try again",
       "loadError": "We couldn't load your teaching profile.",
       "catalogError": "We couldn't load the course catalogue.",
-      "unitsError": "We couldn't load this course's units.",
       "saveSuccess": "Teaching profile saved.",
-      "saveError": "We couldn't save. Try again.",
-      "status": {
-        "pending": "Queued",
-        "running": "Preparing",
-        "indexed": "Ready",
-        "failed": "Failed"
-      }
+      "saveError": "We couldn't save. Try again."
     },
     "subscriptionCard": {
       "title": "Subscription and Generations",
@@ -2409,6 +2443,9 @@
       "light": "Light",
       "dark": "Dark",
       "system": "System"
+    },
+    "languageToggle": {
+      "srLabel": "Change language"
     }
   },
   "timetable": {
@@ -2455,7 +2492,9 @@
       "generate": "Generate ({count})",
       "moveUp": "Move up",
       "moveDown": "Move down",
-      "durationCompact": "{count}m"
+      "durationCompact": "{count}m",
+      "emptyTitle": "No lessons this week",
+      "emptyHint": "Use the arrows to see other weeks."
     },
     "detail": {
       "loading": "Loading...",
@@ -2608,6 +2647,19 @@
       "header": {
         "title": "New class",
         "subtitle": "Set the period, subject and weekly timetable."
+      },
+      "generating": {
+        "title": "Setting up your class…",
+        "subtitle": "Scooli is choosing the topic of every lesson. This can take up to a minute — keep this page open.",
+        "steps": [
+          "Creating the class and its calendar",
+          "Generating the lesson topics",
+          "Getting the calendar ready"
+        ],
+        "failedTitle": "We couldn't generate the lesson topics",
+        "failedDescription": "The class has been created. You can try again now, or continue and set the topics yourself in the calendar.",
+        "retry": "Try again",
+        "continue": "Go to the class"
       }
     },
     "periods": {

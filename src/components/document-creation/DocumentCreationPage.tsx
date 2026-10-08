@@ -10,25 +10,18 @@ import {
 } from "@/store/documents/documentSlice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { selectIsPro } from "@/store/subscription/selectors";
-import {
-  FeatureFlag,
-  isTeacherProfileFeatureEnabled,
-} from "@/shared/types/featureFlags";
+import { FeatureFlag } from "@/shared/types/featureFlags";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-  AMBIGUOUS_COMPONENTS_SUBJECTS,
-  SUBJECTS,
-  SUBJECTS_BY_GRADE,
-  translateSubjectLabel,
-} from "./constants";
+import { SUBJECTS, SUBJECTS_BY_GRADE } from "./constants";
 import {
   AdditionalDetailsSection,
+  ClassSection,
   DurationSection,
   FormActions,
   FormHeader,
-  GradeSection,
+  NESTED_SECTION_CLASS,
   SourcePickerSection,
   SubjectSection,
   TeachingMethodSection,
@@ -43,31 +36,12 @@ import { cn } from "@/shared/utils/utils";
 import type { CanvasPresentation, CanvasSlide } from "@/shared/types/canvas-presentation";
 import { applyTheme } from "@/components/document-editor-v2/canvas-layout";
 import { SlideThumbnail } from "@/components/document-editor-v2/SlideThumbnail";
-import { teachingProfileService } from "@/services/api/teaching-profile.service";
-import type { TeachingProfile } from "@/shared/types/teaching-profile";
-import {
-  getDefaultSchoolYear,
-  getPreferredRegularSubjectIds,
-  getPreferredSchoolYears,
-  getVocationalCourseOptions,
-  getTeachingProfileSuggestions,
-} from "./teaching-profile-preferences";
-
-
+import { useSubjectChoice } from "./useSubjectChoice";
 
 interface DocumentCreationPageProps {
   documentType: DocumentTypeConfig;
   userId?: string;
 }
-
-/**
- * Strips a section's own Card chrome so it can be composed inside a shared card.
- * `h-auto` cancels the `h-full` DurationSection sets for standalone grid use.
- */
-// `sm:p-0` is required as well as `p-0`: tailwind-merge resolves each responsive
-// variant independently, so an unprefixed `p-0` never cancels the sections' `sm:p-6`.
-const NESTED_SECTION_CLASS =
-  "h-auto gap-0 rounded-none border-0 bg-transparent p-0 py-0 sm:p-0 shadow-none transition-none hover:shadow-none";
 
 function useDocumentForm(documentTypeId: DocumentTypeConfig["id"]) {
   const [formState, setFormState] = useState<FormState>({
@@ -138,72 +112,29 @@ export default function DocumentCreationPage({
   const isUserSourcesEnabled = useAppSelector(
     (state) => state.features.flags[FeatureFlag.USER_SOURCES] === true
   );
-  const isTeacherProfileEnabled = useAppSelector((state) =>
-    isTeacherProfileFeatureEnabled(state.features.flags),
-  );
   const [isLoading, setIsLoading] = useState(false);
-  const [teachingProfile, setTeachingProfile] = useState<TeachingProfile | null>(null);
 
   const { formState, error, setError, updateForm, isFormValid, handleTemplateSelect } =
     useDocumentForm(documentType.id);
 
-  useEffect(() => {
-    if (!isTeacherProfileEnabled) {
-      setTeachingProfile(null);
-      return;
-    }
-
-    let cancelled = false;
-    teachingProfileService
-      .get()
-      .then((profile) => {
-        if (!cancelled) setTeachingProfile(profile);
-      })
-      .catch(() => {
-        // Preferences are an enhancement: creation keeps the complete catalogue
-        // and remains fully usable when the profile API is unavailable.
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [isTeacherProfileEnabled]);
-
-  const availableSubjectIds = useMemo(
-    () =>
-      formState.schoolYear
-        ? SUBJECTS_BY_GRADE[String(formState.schoolYear)] ?? []
-        : SUBJECTS.map((subject) => subject.id),
-    [formState.schoolYear]
-  );
-  const preferredSubjectIds = useMemo(
-    () => getPreferredRegularSubjectIds(teachingProfile, availableSubjectIds),
-    [teachingProfile, availableSubjectIds]
-  );
-  const preferredSchoolYears = useMemo(
-    () => getPreferredSchoolYears(teachingProfile, Array.from({ length: 12 }, (_, index) => index + 1)),
-    [teachingProfile]
-  );
-  const vocationalCourseOptions = useMemo(
-    () => getVocationalCourseOptions(teachingProfile),
-    [teachingProfile]
-  );
-  const topicSuggestions = useMemo(
-    () =>
-      getTeachingProfileSuggestions(teachingProfile).map((suggestion) => ({
-        key: suggestion.key,
-        label: suggestion.regularSubjectId
-          ? translateSubjectLabel(suggestion.regularSubjectId)
-          : suggestion.label,
-      })),
-    [teachingProfile]
-  );
+  // A year or subject from the URL wins over the profile defaults.
+  const prefilledRef = useRef({ year: false, subject: false });
+  const {
+    teachingMode,
+    vocationalCourseOptions,
+    selectedVocationalCourse,
+    preferredSchoolYears,
+    preferredSubjectIds,
+    handleTeachingModeChange,
+    handleVocationalCourseChange,
+    onVocationalCourseAdded,
+    isVocationalFeatureEnabled,
+  } = useSubjectChoice({ choice: formState, update: updateForm, prefilledRef });
 
   // Prefill from quick-create query params (?topic=&year=&subject=) set by the
   // dashboard prompt box and quick-start examples. Reads window.location instead
   // of useSearchParams() to avoid requiring a Suspense boundary on every
   // creation page. Invalid or missing values are simply left for the form.
-  const yearFromUrlRef = useRef(false);
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const topic = params.get("topic");
@@ -218,7 +149,7 @@ export default function DocumentCreationPage({
     const year = yearRaw ? Number(yearRaw) : Number.NaN;
     const hasValidYear = Number.isInteger(year) && year >= 1 && year <= 12;
     if (hasValidYear) {
-      yearFromUrlRef.current = true;
+      prefilledRef.current.year = true;
       updateForm("schoolYear", year);
     }
 
@@ -226,47 +157,11 @@ export default function DocumentCreationPage({
       const validForYear =
         !hasValidYear || SUBJECTS_BY_GRADE[String(year)]?.includes(subjectId);
       if (validForYear) {
+        prefilledRef.current.subject = true;
         updateForm("subject", subjectId);
       }
     }
   }, [updateForm]);
-
-  // Default "ano de escolaridade" to the teacher's saved school year (lowest
-  // first) once their profile has loaded, unless the URL already set one or
-  // the teacher has already picked a year themselves.
-  const hasAppliedDefaultYearRef = useRef(false);
-  useEffect(() => {
-    if (hasAppliedDefaultYearRef.current) return;
-    if (yearFromUrlRef.current) return;
-    if (formState.schoolYear) return;
-    const defaultYear = getDefaultSchoolYear(preferredSchoolYears);
-    if (defaultYear === null) return;
-    hasAppliedDefaultYearRef.current = true;
-    updateForm("schoolYear", defaultYear);
-  }, [preferredSchoolYears, formState.schoolYear, updateForm]);
-
-  // Reset subject if it's not available for the selected school year.
-  // Skipped in vocational mode: UC labels are never part of the regular
-  // subject catalogue, so this would otherwise clear a UC right after
-  // it's picked (see SubjectSection's vocational course/UC pickers).
-  useEffect(() => {
-    if (formState.subjectMode === "vocational") return;
-    if (formState.schoolYear && formState.subject) {
-      const validSubjects = SUBJECTS_BY_GRADE[String(formState.schoolYear)];
-      if (validSubjects && !validSubjects.includes(formState.subject)) {
-        updateForm("subject", "");
-      }
-    }
-  }, [formState.schoolYear, formState.subject, formState.subjectMode, updateForm]);
-
-  // Reset component type when subject changes
-  useEffect(() => {
-    if (formState.subject && formState.isSpecificComponent) {
-      if (!AMBIGUOUS_COMPONENTS_SUBJECTS.includes(formState.subject)) {
-        updateForm("isSpecificComponent", false);
-      }
-    }
-  }, [formState.subject, formState.isSpecificComponent, updateForm]);
 
   const themedCoverSlides = useMemo<CanvasSlide[]>(() => {
     return THEMES.map((theme) => {
@@ -392,6 +287,7 @@ export default function DocumentCreationPage({
 
         posthog.capture("document_created", {
           document_type: documentType.id,
+          teaching_mode: teachingMode,
           subject: formState.subject,
           school_year: formState.schoolYear,
           template_id: formState.templateId,
@@ -447,7 +343,8 @@ export default function DocumentCreationPage({
 
   return (
     <div className="w-full overflow-x-hidden">
-      <div className="max-w-4xl mx-auto">
+      {/* pb-20: the generate button can scroll clear of the floating assistant button. */}
+      <div className="max-w-4xl mx-auto pb-20">
         <FormHeader documentType={documentType} />
 
         <div className="space-y-4 sm:space-y-6">
@@ -457,7 +354,6 @@ export default function DocumentCreationPage({
               topic={formState.topic}
               placeholder={t(`types.${documentType.id}.placeholder`)}
               onUpdate={updateForm}
-              suggestions={topicSuggestions}
             />
           </div>
 
@@ -470,10 +366,18 @@ export default function DocumentCreationPage({
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6">
             <div data-tutorial="grade">
-              <GradeSection
+              <ClassSection
+                mode={teachingMode}
+                onModeChange={handleTeachingModeChange}
                 schoolYear={formState.schoolYear}
-                onUpdate={updateForm}
                 preferredSchoolYears={preferredSchoolYears}
+                onUpdate={updateForm}
+                vocationalCourses={vocationalCourseOptions}
+                vocationalCourseCode={selectedVocationalCourse?.code}
+                onCourseChange={handleVocationalCourseChange}
+                onVocationalCourseAdded={onVocationalCourseAdded}
+                isVocationalFeatureEnabled={isVocationalFeatureEnabled}
+                className="h-full"
               />
             </div>
 
@@ -489,9 +393,10 @@ export default function DocumentCreationPage({
                     onUpdate={updateForm}
                     availableSubjects={formState.schoolYear ? SUBJECTS_BY_GRADE[String(formState.schoolYear)] : undefined}
                     preferredSubjectIds={preferredSubjectIds}
-                    vocationalCourses={vocationalCourseOptions}
-                    subjectMode={formState.subjectMode}
-                    vocationalCourseCode={formState.vocationalCourseCode}
+                    mode={teachingMode}
+                    vocationalCourse={selectedVocationalCourse}
+                    vocationalUnitCode={formState.vocationalUnitCode}
+                    vocationalSchoolSubjectName={formState.vocationalSchoolSubjectName}
                     className={NESTED_SECTION_CLASS}
                     disabled={!formState.schoolYear}
                   />

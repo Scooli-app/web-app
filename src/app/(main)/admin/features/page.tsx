@@ -101,6 +101,12 @@ const FEATURE_FLAG_METADATA: Record<
       "Controla a criação e importação de planificações curriculares de período. Disponível nos planos Pro e Institucional.",
     order: 45,
   },
+  [FeatureFlagKey.ALREADY_COVERED_ENABLED]: {
+    name: "Matéria já dada",
+    description:
+      "Controla o campo \"o que já foi dado\" na criação de turmas e de planificações, usado para não repetir matéria já lecionada.",
+    order: 47,
+  },
   [FeatureFlagKey.TEACHER_PROFILE]: {
     name: "Perfil de Professor",
     description:
