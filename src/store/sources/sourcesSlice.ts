@@ -1,5 +1,6 @@
 import { deleteSource, getSource, listSources, uploadSource } from "@/services/api/sources.service";
 import type { UploadSourceParams, UserSource } from "@/shared/types/sources";
+import { translate } from "@/i18n/translate";
 import { createAsyncThunk, createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
 interface SourcesState {
@@ -24,7 +25,7 @@ export const fetchSources = createAsyncThunk(
     try {
       return await listSources();
     } catch {
-      return rejectWithValue("Não foi possível carregar as fontes");
+      return rejectWithValue(translate("errors.sources.fetchSources"));
     }
   }
 );
@@ -35,7 +36,7 @@ export const uploadUserSource = createAsyncThunk(
     try {
       return await uploadSource(params);
     } catch {
-      return rejectWithValue("Não foi possível fazer o upload da fonte");
+      return rejectWithValue(translate("errors.sources.uploadSource"));
     }
   }
 );
@@ -47,7 +48,7 @@ export const deleteUserSource = createAsyncThunk(
       await deleteSource(id);
       return id;
     } catch {
-      return rejectWithValue("Não foi possível eliminar a fonte");
+      return rejectWithValue(translate("errors.sources.deleteSource"));
     }
   }
 );
@@ -58,7 +59,7 @@ export const refreshSource = createAsyncThunk(
     try {
       return await getSource(id);
     } catch {
-      return rejectWithValue("Não foi possível atualizar a fonte");
+      return rejectWithValue(translate("errors.sources.refreshSource"));
     }
   }
 );

@@ -8,13 +8,16 @@
  *   const generating = useSyncExternalStore(
  *     generationStore.subscribe,
  *     generationStore.getSnapshot,
- *     () => new Set<string>(),   // server/SSR snapshot
+ *     generationStore.getServerSnapshot,
  *   );
  */
 
 type Listener = () => void;
 
 let _snapshot = new Set<string>();
+// One shared instance: React requires getServerSnapshot to return the same value
+// every call ("The result of getServerSnapshot should be cached").
+const _serverSnapshot: ReadonlySet<string> = new Set<string>();
 const _listeners = new Set<Listener>();
 
 function _notify() {
@@ -46,6 +49,11 @@ export const generationStore = {
 
   getSnapshot() {
     return _snapshot;
+  },
+
+  /** Nothing is generating during SSR. */
+  getServerSnapshot() {
+    return _serverSnapshot as Set<string>;
   },
 
   subscribe(listener: Listener) {

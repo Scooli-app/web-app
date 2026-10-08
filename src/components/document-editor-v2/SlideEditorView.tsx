@@ -16,6 +16,7 @@
 import { cn } from "@/shared/utils/utils";
 import type { ContentBlock, SlideBlock } from "@/shared/types/blocks";
 import { Plus, Trash2, ImageIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useEffect, useRef } from "react";
 
 /* --------------------------------------------------------------------------
@@ -117,6 +118,7 @@ function EditableList({
   onChange: (items: string[]) => void;
   itemClassName?: string;
 }) {
+  const t = useTranslations("editor.slideEditorView");
   const updateItem = (i: number, v: string) => {
     const next = [...items];
     next[i] = v;
@@ -140,14 +142,14 @@ function EditableList({
             value={item}
             onChange={(v) => updateItem(i, v)}
             className={itemClassName}
-            placeholder={`Item ${i + 1}`}
+            placeholder={t("itemPlaceholder", { number: i + 1 })}
             onEnter={addItem}
           />
           {items.length > 1 ? (
             <button
               onClick={() => removeItem(i)}
               className="shrink-0 mt-[0.1em] opacity-0 group-hover/item:opacity-60 hover:!opacity-100 transition-opacity text-destructive"
-              title="Remover item"
+              title={t("removeItem")}
             >
               <Trash2 className="h-[0.9em] w-[0.9em]" />
             </button>
@@ -160,7 +162,7 @@ function EditableList({
           className="flex items-center gap-1 text-[0.8em] text-muted-foreground/50 hover:text-primary transition-colors w-fit mt-[0.1em] ml-[1.4em]"
         >
           <Plus className="h-[0.8em] w-[0.8em]" />
-          Adicionar item
+          {t("addItem")}
         </button>
       ) : null}
     </div>
@@ -235,6 +237,7 @@ function ImagePlaceholderZone({
   onChange: (prompt: string) => void;
   className?: string;
 }) {
+  const t = useTranslations("editor.slideEditorView");
   return (
     <div
       className={cn(
@@ -247,7 +250,7 @@ function ImagePlaceholderZone({
         value={prompt}
         onChange={onChange}
         className="text-[1.2cqw] text-muted-foreground text-center"
-        placeholder="Descrição da imagem a gerar"
+        placeholder={t("imageDescriptionPlaceholder")}
       />
     </div>
   );
@@ -268,13 +271,14 @@ function EditableBlock({
   onRemove: () => void;
   textSize?: string;
 }) {
+  const t = useTranslations("editor.slideEditorView");
   return (
     <div className="group/block relative">
       {/* Trash button — appears on block hover */}
       <button
         onClick={onRemove}
         className="absolute -right-1 -top-1 z-10 opacity-0 group-hover/block:opacity-60 hover:!opacity-100 transition-opacity text-destructive bg-card rounded p-0.5"
-        title="Remover bloco"
+        title={t("removeBlock")}
       >
         <Trash2 className="h-3 w-3" />
       </button>
@@ -284,7 +288,7 @@ function EditableBlock({
           value={block.text}
           onChange={(text) => onChange({ text } as Partial<ContentBlock>)}
           className={textSize}
-          placeholder="Parágrafo"
+          placeholder={t("paragraphPlaceholder")}
         />
       )}
 
@@ -297,7 +301,7 @@ function EditableBlock({
             block.level === 3 && "text-[1.9cqw] font-medium",
             block.level === 4 && "text-[1.7cqw] font-medium",
           )}
-          placeholder="Título"
+          placeholder={t("titlePlaceholder")}
         />
       )}
 
@@ -348,25 +352,27 @@ function useContentCallbacks(slide: SlideBlock, onChange: (p: Partial<SlideBlock
 }
 
 function TitleEditor({ slide, onChange }: EditorProps) {
+  const t = useTranslations("editor.slideEditorView");
   return (
     <SlideFrame className="flex flex-col items-center justify-center text-center gap-4">
       <EditableText
         value={slide.title}
         onChange={(title) => onChange({ title })}
         className="text-[4cqw] font-bold leading-tight text-foreground w-full text-center"
-        placeholder="Título"
+        placeholder={t("titlePlaceholder")}
       />
       <EditableText
         value={slide.subtitle ?? ""}
         onChange={(v) => onChange({ subtitle: v || undefined })}
         className="text-[2.2cqw] text-muted-foreground w-full text-center"
-        placeholder="Subtítulo (opcional)"
+        placeholder={t("subtitlePlaceholder")}
       />
     </SlideFrame>
   );
 }
 
 function TitleContentEditor({ slide, onChange }: EditorProps) {
+  const t = useTranslations("editor.slideEditorView");
   const { updateBlock, removeBlock } = useContentCallbacks(slide, onChange);
   return (
     <SlideFrame className="flex flex-col gap-[3%]">
@@ -374,7 +380,7 @@ function TitleContentEditor({ slide, onChange }: EditorProps) {
         value={slide.title}
         onChange={(title) => onChange({ title })}
         className="text-[3cqw] font-semibold text-foreground"
-        placeholder="Título"
+        placeholder={t("titlePlaceholder")}
       />
       <div className="flex flex-1 flex-col gap-3 overflow-hidden text-[1.7cqw]">
         {(slide.content ?? []).map((block) => (
@@ -391,6 +397,7 @@ function TitleContentEditor({ slide, onChange }: EditorProps) {
 }
 
 function ImageLeftEditor({ slide, onChange }: EditorProps) {
+  const t = useTranslations("editor.slideEditorView");
   const { updateBlock, removeBlock } = useContentCallbacks(slide, onChange);
   return (
     <SlideFrame className="flex flex-col gap-[3%]">
@@ -398,7 +405,7 @@ function ImageLeftEditor({ slide, onChange }: EditorProps) {
         value={slide.title}
         onChange={(title) => onChange({ title })}
         className="text-[3cqw] font-semibold text-foreground"
-        placeholder="Título"
+        placeholder={t("titlePlaceholder")}
       />
       <div className="grid flex-1 grid-cols-[42%_minmax(0,1fr)] gap-[3%] overflow-hidden">
         <div className="overflow-hidden">
@@ -431,6 +438,7 @@ function ImageLeftEditor({ slide, onChange }: EditorProps) {
 }
 
 function ImageRightEditor({ slide, onChange }: EditorProps) {
+  const t = useTranslations("editor.slideEditorView");
   const { updateBlock, removeBlock } = useContentCallbacks(slide, onChange);
   return (
     <SlideFrame className="flex flex-col gap-[3%]">
@@ -438,7 +446,7 @@ function ImageRightEditor({ slide, onChange }: EditorProps) {
         value={slide.title}
         onChange={(title) => onChange({ title })}
         className="text-[3cqw] font-semibold text-foreground"
-        placeholder="Título"
+        placeholder={t("titlePlaceholder")}
       />
       <div className="grid flex-1 grid-cols-[minmax(0,1fr)_42%] gap-[3%] overflow-hidden">
         <div className="flex flex-col gap-3 overflow-hidden text-[1.6cqw]">
@@ -471,6 +479,7 @@ function ImageRightEditor({ slide, onChange }: EditorProps) {
 }
 
 function TwoColumnEditor({ slide, onChange }: EditorProps) {
+  const t = useTranslations("editor.slideEditorView");
   const { updateBlock, removeBlock } = useContentCallbacks(slide, onChange);
   const content = slide.content ?? [];
   const mid = Math.ceil(content.length / 2);
@@ -482,7 +491,7 @@ function TwoColumnEditor({ slide, onChange }: EditorProps) {
         value={slide.title}
         onChange={(title) => onChange({ title })}
         className="text-[3cqw] font-semibold text-foreground"
-        placeholder="Título"
+        placeholder={t("titlePlaceholder")}
       />
       <div className="grid flex-1 grid-cols-2 gap-[4%] overflow-hidden text-[1.5cqw]">
         <div className="flex flex-col gap-3 overflow-hidden">
@@ -513,6 +522,7 @@ function TwoColumnEditor({ slide, onChange }: EditorProps) {
 }
 
 function FullImageEditor({ slide, onChange }: EditorProps) {
+  const t = useTranslations("editor.slideEditorView");
   return (
     <SlideFrame pad={false}>
       <div className="relative h-full w-full">
@@ -536,13 +546,13 @@ function FullImageEditor({ slide, onChange }: EditorProps) {
             value={slide.title}
             onChange={(title) => onChange({ title })}
             className="text-[3.5cqw] font-bold"
-            placeholder="Título"
+            placeholder={t("titlePlaceholder")}
           />
           <EditableText
             value={slide.subtitle ?? ""}
             onChange={(v) => onChange({ subtitle: v || undefined })}
             className="mt-2 text-[2cqw] opacity-90"
-            placeholder="Subtítulo (opcional)"
+            placeholder={t("subtitlePlaceholder")}
           />
         </div>
       </div>
@@ -551,17 +561,18 @@ function FullImageEditor({ slide, onChange }: EditorProps) {
 }
 
 function ConclusionEditor({ slide, onChange }: EditorProps) {
+  const t = useTranslations("editor.slideEditorView");
   const { updateBlock, removeBlock } = useContentCallbacks(slide, onChange);
   return (
     <SlideFrame className="flex flex-col gap-[3%] bg-accent/30">
       <span className="text-[1.4cqw] uppercase tracking-widest text-primary select-none">
-        Conclusão
+        {t("conclusionLabel")}
       </span>
       <EditableText
         value={slide.title}
         onChange={(title) => onChange({ title })}
         className="text-[3.5cqw] font-bold text-foreground"
-        placeholder="Título da conclusão"
+        placeholder={t("conclusionTitlePlaceholder")}
       />
       <div className="flex flex-1 flex-col gap-3 overflow-hidden text-[1.7cqw]">
         {(slide.content ?? []).map((block) => (

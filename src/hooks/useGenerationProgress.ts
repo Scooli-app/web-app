@@ -17,6 +17,7 @@
 "use client";
 
 import { useAuth } from "@clerk/nextjs";
+import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 
 export type GenerationPhase = "preparing" | "generating" | "reviewing" | "done";
@@ -44,6 +45,7 @@ export function useGenerationProgress({
   documentId,
 }: UseGenerationProgressOptions): UseGenerationProgressResult {
   const { getToken } = useAuth();
+  const t = useTranslations("errors.generation");
   const [phase, setPhase] = useState<GenerationPhase>("preparing");
   const [imageProgress, setImageProgress] = useState<ImageProgress | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -73,7 +75,7 @@ export function useGenerationProgress({
           },
           onopen: async (resp) => {
             if (resp.ok) return;
-            if (!cancelled) setError(`Erro do servidor: ${resp.status}`);
+            if (!cancelled) setError(t("serverError", { status: resp.status }));
             throw new Error(`SSE open failed: ${resp.status}`);
           },
           onmessage(event) {
@@ -142,7 +144,7 @@ export function useGenerationProgress({
                 return;
               }
               case "error": {
-                setError(String(payload.message ?? payload._raw ?? "Erro desconhecido"));
+                setError(String(payload.message ?? payload._raw ?? t("unknownError")));
                 ctrl.abort();
                 return;
               }
@@ -153,7 +155,7 @@ export function useGenerationProgress({
           },
           onerror(err) {
             // Throwing here stops automatic reconnect; we want manual control.
-            if (!cancelled) setError(err?.message ?? "Erro de ligação");
+            if (!cancelled) setError(err?.message ?? t("connectionError"));
             throw err;
           },
           openWhenHidden: true,
@@ -167,7 +169,7 @@ export function useGenerationProgress({
       cancelled = true;
       ctrl.abort();
     };
-  }, [documentId, getToken]);
+  }, [documentId, getToken, t]);
 
   return { phase, imageProgress, error, isDone };
 }

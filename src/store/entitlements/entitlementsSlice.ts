@@ -1,3 +1,4 @@
+import { translate } from "@/i18n/translate";
 import { getCurrentEntitlement } from "@/services/api";
 import type { CurrentEntitlement } from "@/shared/types/entitlement";
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
@@ -8,7 +9,7 @@ export const fetchEntitlements = createAsyncThunk(
     try {
       return await getCurrentEntitlement();
     } catch {
-      return rejectWithValue("Não foi possível carregar os acessos da conta");
+      return rejectWithValue(translate("errors.entitlements.fetchFailed"));
     }
   },
 );

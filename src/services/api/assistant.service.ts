@@ -4,6 +4,7 @@
  */
 
 import { fetchEventSource } from "@microsoft/fetch-event-source";
+import { translate } from "@/i18n/translate";
 
 export interface ChatHistoryItem {
   role: "user" | "assistant";
@@ -53,14 +54,14 @@ export async function streamChatMessage(
       async onopen(response) {
         if (!response.ok) {
           if (response.status === 401) {
-            callbacks.onError("Sessão expirada. Por favor, faça login novamente.");
+            callbacks.onError(translate("errors.assistant.sessionExpired"));
             throw new Error("Não autorizado");
           }
           if (response.status === 402) {
-            callbacks.onError("Limite de créditos atingido. Atualize para o plano Pro para continuar.");
+            callbacks.onError(translate("errors.assistant.creditLimitReached"));
             throw new Error("Pagamento necessário");
           }
-          callbacks.onError(`Erro no servidor: ${response.status}`);
+          callbacks.onError(translate("errors.assistant.serverError", { status: response.status }));
           throw new Error(`Erro no servidor: ${response.status}`);
         }
       },
@@ -92,7 +93,7 @@ export async function streamChatMessage(
 
       onerror(error) {
         console.error("[Assistant SSE] Error:", error);
-        callbacks.onError("Erro de ligação. Tente novamente.");
+        callbacks.onError(translate("errors.assistant.connectionError"));
         throw error;
       },
     });

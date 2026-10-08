@@ -1,3 +1,4 @@
+import { translate } from "@/i18n/translate";
 import { onboardingService } from "@/services/api/onboarding.service";
 import type { OnboardingStatusResponse } from "@/shared/types/onboarding";
 import { createAsyncThunk, createSlice, type PayloadAction } from "@reduxjs/toolkit";
@@ -14,7 +15,7 @@ export const fetchOnboardingStatus = createAsyncThunk(
     try {
       return await onboardingService.getStatus();
     } catch {
-      return rejectWithValue("Não foi possível carregar o estado de onboarding");
+      return rejectWithValue(translate("errors.onboarding.fetchStatusFailed"));
     }
   },
 );

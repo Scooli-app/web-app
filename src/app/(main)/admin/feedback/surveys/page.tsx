@@ -1,16 +1,12 @@
 "use client";
 
+import { useDateFnsLocale } from "@/i18n/dateFns";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-  type ChartConfig,
-} from "@/components/ui/chart";
+import { RankedBars } from "@/components/admin/RankedBars";
 import { ResponsiveDataView } from "@/components/ui/responsive-data-view";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { adminFeedbackSurveyService, type AdminFeedbackSurveyOverview } from "@/services/api/admin-feedback-survey.service";
@@ -26,7 +22,6 @@ import {
 } from "@/shared/types/feedbackSurvey";
 import { cn } from "@/shared/utils/utils";
 import { format } from "date-fns";
-import { pt } from "date-fns/locale";
 import {
   ArrowLeft,
   ArrowUpDown,
@@ -44,64 +39,24 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 type SurveySortField = "user" | "sentiment" | "date";
 type SortDir = "asc" | "desc";
-import { Bar, BarChart, CartesianGrid, Cell, XAxis, YAxis } from "recharts";
 import { toast } from "sonner";
 
 const percentFormatter = new Intl.NumberFormat("pt-PT", {
   maximumFractionDigits: 1,
 });
 
-const promptStatusChartConfig = {
-  count: {
-    label: "Utilizadores",
-    color: "var(--chart-1)",
-  },
-  [FeedbackSurveyStatus.PENDING]: {
-    label: FEEDBACK_SURVEY_STATUS_LABELS[FeedbackSurveyStatus.PENDING],
-    color: "var(--chart-3)",
-  },
-  [FeedbackSurveyStatus.SNOOZED]: {
-    label: FEEDBACK_SURVEY_STATUS_LABELS[FeedbackSurveyStatus.SNOOZED],
-    color: "var(--chart-4)",
-  },
-  [FeedbackSurveyStatus.COMPLETED]: {
-    label: FEEDBACK_SURVEY_STATUS_LABELS[FeedbackSurveyStatus.COMPLETED],
-    color: "var(--chart-2)",
-  },
-} satisfies ChartConfig;
+const PROMPT_STATUS_COLORS: Record<string, string> = {
+  [FeedbackSurveyStatus.PENDING]: "var(--chart-3)",
+  [FeedbackSurveyStatus.SNOOZED]: "var(--chart-4)",
+  [FeedbackSurveyStatus.COMPLETED]: "var(--chart-2)",
+};
 
-const sentimentChartConfig = {
-  count: {
-    label: "Respostas",
-    color: "var(--chart-1)",
-  },
-  [FeedbackSurveySentiment.VERY_USEFUL]: {
-    label: FEEDBACK_SURVEY_SENTIMENT_LABELS[FeedbackSurveySentiment.VERY_USEFUL],
-    color: "var(--chart-2)",
-  },
-  [FeedbackSurveySentiment.USEFUL_BUT_CAN_IMPROVE]: {
-    label:
-      FEEDBACK_SURVEY_SENTIMENT_LABELS[
-        FeedbackSurveySentiment.USEFUL_BUT_CAN_IMPROVE
-      ],
-    color: "var(--chart-1)",
-  },
-  [FeedbackSurveySentiment.NOT_SURE_YET]: {
-    label: FEEDBACK_SURVEY_SENTIMENT_LABELS[FeedbackSurveySentiment.NOT_SURE_YET],
-    color: "var(--chart-4)",
-  },
-  [FeedbackSurveySentiment.FRUSTRATING]: {
-    label: FEEDBACK_SURVEY_SENTIMENT_LABELS[FeedbackSurveySentiment.FRUSTRATING],
-    color: "var(--chart-5)",
-  },
-} satisfies ChartConfig;
-
-const tagChartConfig = {
-  count: {
-    label: "Menções",
-    color: "var(--chart-1)",
-  },
-} satisfies ChartConfig;
+const SENTIMENT_COLORS: Record<string, string> = {
+  [FeedbackSurveySentiment.VERY_USEFUL]: "var(--chart-2)",
+  [FeedbackSurveySentiment.USEFUL_BUT_CAN_IMPROVE]: "var(--chart-1)",
+  [FeedbackSurveySentiment.NOT_SURE_YET]: "var(--chart-4)",
+  [FeedbackSurveySentiment.FRUSTRATING]: "var(--chart-5)",
+};
 
 const metricCardClassName =
   "bg-card/80 backdrop-blur supports-[backdrop-filter]:bg-card/70";
@@ -183,6 +138,7 @@ function SortableHead({
 }
 
 export default function AdminFeedbackSurveyPage() {
+  const dateFnsLocale = useDateFnsLocale();
   const router = useRouter();
   const [overview, setOverview] = useState<AdminFeedbackSurveyOverview | null>(
     null,
@@ -224,14 +180,14 @@ export default function AdminFeedbackSurveyPage() {
     overview?.promptStatusBreakdown.map((item) => ({
       ...item,
       label: getPromptStatusLabel(item.key),
-      fill: `var(--color-${item.key})`,
+      color: PROMPT_STATUS_COLORS[item.key],
     })) ?? [];
 
   const sentimentData =
     overview?.sentimentBreakdown.map((item) => ({
       ...item,
       label: getSentimentLabel(item.key),
-      fill: `var(--color-${item.key})`,
+      color: SENTIMENT_COLORS[item.key],
     })) ?? [];
 
   const tagData =
@@ -284,7 +240,7 @@ export default function AdminFeedbackSurveyPage() {
                 </div>
                 <span className="shrink-0 text-xs text-muted-foreground">
                   {format(new Date(response.createdAt), "dd MMM yyyy", {
-                    locale: pt,
+                    locale: dateFnsLocale,
                   })}
                 </span>
               </div>
@@ -375,7 +331,7 @@ export default function AdminFeedbackSurveyPage() {
                   </TableCell>
                   <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
                     {format(new Date(response.createdAt), "dd MMM yyyy HH:mm", {
-                      locale: pt,
+                      locale: dateFnsLocale,
                     })}
                   </TableCell>
                 </TableRow>
@@ -520,30 +476,7 @@ export default function AdminFeedbackSurveyPage() {
                   {overview.summary.trackedUsers === 0 ? (
                     <EmptyChartState message="Sem utilizadores acompanhados pelo survey." />
                   ) : (
-                    <ChartContainer
-                      config={promptStatusChartConfig}
-                      className="aspect-auto h-[280px]"
-                    >
-                      <BarChart data={promptStatusData}>
-                        <CartesianGrid vertical={false} />
-                        <XAxis
-                          dataKey="label"
-                          tickLine={false}
-                          axisLine={false}
-                          tickMargin={10}
-                        />
-                        <YAxis allowDecimals={false} tickLine={false} axisLine={false} />
-                        <ChartTooltip
-                          cursor={false}
-                          content={<ChartTooltipContent />}
-                        />
-                        <Bar dataKey="count" radius={10}>
-                          {promptStatusData.map((item) => (
-                            <Cell key={item.key} fill={item.fill} />
-                          ))}
-                        </Bar>
-                      </BarChart>
-                    </ChartContainer>
+                    <RankedBars items={promptStatusData} total={overview.summary.trackedUsers} unit="utilizadores" />
                   )}
                 </CardContent>
               </Card>
@@ -556,34 +489,7 @@ export default function AdminFeedbackSurveyPage() {
                   {overview.summary.responses === 0 ? (
                     <EmptyChartState message="Sem respostas submetidas ao survey." />
                   ) : (
-                    <ChartContainer
-                      config={sentimentChartConfig}
-                      className="aspect-auto h-[280px]"
-                    >
-                      <BarChart data={sentimentData}>
-                        <CartesianGrid vertical={false} />
-                        <XAxis
-                          dataKey="label"
-                          tickLine={false}
-                          axisLine={false}
-                          tickMargin={10}
-                          interval={0}
-                          angle={-12}
-                          textAnchor="end"
-                          height={60}
-                        />
-                        <YAxis allowDecimals={false} tickLine={false} axisLine={false} />
-                        <ChartTooltip
-                          cursor={false}
-                          content={<ChartTooltipContent />}
-                        />
-                        <Bar dataKey="count" radius={10}>
-                          {sentimentData.map((item) => (
-                            <Cell key={item.key} fill={item.fill} />
-                          ))}
-                        </Bar>
-                      </BarChart>
-                    </ChartContainer>
+                    <RankedBars items={sentimentData} total={overview.summary.responses} />
                   )}
                 </CardContent>
               </Card>
@@ -597,27 +503,7 @@ export default function AdminFeedbackSurveyPage() {
                 {tagData.length === 0 ? (
                   <EmptyChartState message="Ainda não existem tags suficientes para mostrar." />
                 ) : (
-                  <ChartContainer
-                    config={tagChartConfig}
-                    className="aspect-auto h-[320px]"
-                  >
-                    <BarChart data={tagData} layout="vertical" margin={{ left: 36 }}>
-                      <CartesianGrid horizontal={false} />
-                      <XAxis type="number" allowDecimals={false} tickLine={false} axisLine={false} />
-                      <YAxis
-                        dataKey="label"
-                        type="category"
-                        tickLine={false}
-                        axisLine={false}
-                        width={170}
-                      />
-                      <ChartTooltip
-                        cursor={false}
-                        content={<ChartTooltipContent hideLabel />}
-                      />
-                      <Bar dataKey="count" fill="var(--color-count)" radius={10} />
-                    </BarChart>
-                  </ChartContainer>
+                  <RankedBars items={tagData} total={overview.summary.responses} color="var(--chart-1)" unit="menções" sortDesc />
                 )}
               </CardContent>
             </Card>

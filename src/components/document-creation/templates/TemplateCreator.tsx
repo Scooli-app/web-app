@@ -23,41 +23,10 @@ import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
 import type { DocumentTemplate, DocumentType } from "@/shared/types";
 import { cn } from "@/shared/utils/utils";
 import { ArrowLeft, Loader2, Plus, Sparkles } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useState } from "react";
 import { createTemplate, updateTemplate } from "@/services/api/template.service";
 import { SortableSection, type SectionItem } from "./SortableSection";
-
-const TEMPLATE_PLACEHOLDERS: Record<
-  DocumentType,
-  { name: string; description: string }
-> = {
-  lessonPlan: {
-    name: "Ex: Aula Expositiva com Debate",
-    description: "Descreva quando usar este modelo de plano de aula...",
-  },
-  quiz: {
-    name: "Ex: Quiz Rápido de Revisão",
-    description: "Descreva quando usar este modelo de quiz...",
-  },
-  test: {
-    name: "Ex: Teste com Grupos de Dificuldade",
-    description: "Descreva quando usar este modelo de teste...",
-  },
-  worksheet: {
-    name: "Ex: Ficha por Etapas",
-    description:
-      "Descreva a estrutura da ficha e quando este modelo faz mais sentido...",
-  },
-  presentation: {
-    name: "Ex: Apresentação Interativa com Atividades",
-    description: "Descreva quando usar este modelo de apresentação...",
-  },
-  curriculumPlan: {
-    name: "Ex: Planificação Trimestral por Domínios",
-    description:
-      "Descreva quando usar este modelo de planificacao (anual, semestral, trimestral)...",
-  },
-};
 
 interface TemplateCreatorProps {
   documentType: DocumentType;
@@ -74,6 +43,8 @@ export function TemplateCreator({
   editingTemplate,
   onDirtyStateChange,
 }: TemplateCreatorProps) {
+  const t = useTranslations("documentCreation.templateCreator");
+  const tPlaceholders = useTranslations("documentCreation.templatePlaceholders");
   const isEditing = !!editingTemplate;
 
   const [name, setName] = useState("");
@@ -196,7 +167,7 @@ export function TemplateCreator({
 
   const handleSubmit = async () => {
     if (!isFormValid()) {
-      setError("Preencha o nome do modelo e o titulo de todas as seccoes");
+      setError(t("validationError"));
       return;
     }
 
@@ -229,8 +200,8 @@ export function TemplateCreator({
       console.error("Failed to save template:", err);
       setError(
         isEditing
-          ? "Ocorreu um erro ao guardar o modelo. Tente novamente."
-          : "Ocorreu um erro ao criar o modelo. Tente novamente.",
+          ? t("saveError")
+          : t("createError"),
       );
     } finally {
       setIsLoading(false);
@@ -256,18 +227,18 @@ export function TemplateCreator({
                 "text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
                 "focus-visible:ring-ring/50 focus-visible:ring-[3px]",
               )}
-              aria-label="Voltar"
+              aria-label={t("backAriaLabel")}
             >
               <ArrowLeft className="h-5 w-5" />
             </button>
             <div className="min-w-0">
               <h2 className="text-lg font-semibold text-foreground sm:text-xl">
-                {isEditing ? "Editar Modelo" : "Criar Novo Modelo"}
+                {isEditing ? t("editTitle") : t("createTitle")}
               </h2>
               <p className="text-xs text-muted-foreground sm:text-sm">
                 {isEditing
-                  ? "Atualize a estrutura do seu modelo"
-                  : "Defina a estrutura do seu modelo personalizado"}
+                  ? t("editDescription")
+                  : t("createDescription")}
               </p>
             </div>
           </div>
@@ -281,13 +252,13 @@ export function TemplateCreator({
                   htmlFor="template-name"
                   className="mb-1.5 block text-sm font-medium text-foreground"
                 >
-                  Nome do Modelo <span className="text-destructive">*</span>
+                  {t("nameLabel")} <span className="text-destructive">*</span>
                 </label>
                 <Input
                   id="template-name"
                   value={name}
                   onChange={(e) => handleNameChange(e.target.value)}
-                  placeholder={TEMPLATE_PLACEHOLDERS[documentType].name}
+                  placeholder={tPlaceholders(`${documentType}.name`)}
                   className="h-11 rounded-xl border-input bg-input px-4 text-sm placeholder:text-muted-foreground"
                 />
               </div>
@@ -297,16 +268,16 @@ export function TemplateCreator({
                   htmlFor="template-description"
                   className="mb-1.5 block text-sm font-medium text-foreground"
                 >
-                  Descrição{" "}
+                  {t("descriptionLabel")}{" "}
                   <span className="text-xs font-normal text-muted-foreground">
-                    (Opcional)
+                    {t("optional")}
                   </span>
                 </label>
                 <Textarea
                   id="template-description"
                   value={description}
                   onChange={(e) => handleDescriptionChange(e.target.value)}
-                  placeholder={TEMPLATE_PLACEHOLDERS[documentType].description}
+                  placeholder={tPlaceholders(`${documentType}.description`)}
                   rows={2}
                   className="min-h-0 rounded-xl border-input bg-input px-4 py-3 text-sm placeholder:text-muted-foreground"
                 />
@@ -317,10 +288,10 @@ export function TemplateCreator({
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <h3 className="text-sm font-medium text-foreground">
-                    Secções do Modelo <span className="text-destructive">*</span>
+                    {t("sectionsTitle")} <span className="text-destructive">*</span>
                   </h3>
                   <p className="text-xs text-muted-foreground">
-                    Arraste para reordenar as secções
+                    {t("sectionsHint")}
                   </p>
                 </div>
                 <Button
@@ -329,10 +300,10 @@ export function TemplateCreator({
                   size="sm"
                   onClick={handleAddSection}
                   className="h-9 w-full items-center gap-1.5 rounded-lg border-border text-secondary-foreground hover:border-primary hover:bg-accent sm:h-8 sm:w-auto"
-                  aria-label="Adicionar seccao"
+                  aria-label={t("addAriaLabel")}
                 >
                   <Plus className="h-4 w-4" />
-                  <span>Adicionar</span>
+                  <span>{t("add")}</span>
                 </Button>
               </div>
 
@@ -376,7 +347,7 @@ export function TemplateCreator({
               onClick={handleBack}
               className="h-11 rounded-xl border-border text-secondary-foreground hover:border-primary hover:bg-accent sm:flex-1"
             >
-              Cancelar
+              {t("cancel")}
             </Button>
             <Button
               type="button"
@@ -387,12 +358,12 @@ export function TemplateCreator({
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {isEditing ? "A guardar..." : "A criar..."}
+                  {isEditing ? t("saving") : t("creating")}
                 </>
               ) : (
                 <>
                   <Sparkles className="mr-2 h-4 w-4" />
-                  {isEditing ? "Guardar Alteracoes" : "Criar Modelo"}
+                  {isEditing ? t("saveChanges") : t("createTemplate")}
                 </>
               )}
             </Button>

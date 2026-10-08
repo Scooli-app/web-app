@@ -12,6 +12,8 @@ import type {
 } from "@/services/api/timetable.service";
 import { getPortugueseHolidays } from "@/shared/constants/portugueseHolidays";
 import type { Document } from "@/shared/types/document";
+import type { SubjectChoice } from "@/components/document-creation/useSubjectChoice";
+import { translate } from "@/i18n/translate";
 
 /** Alias of the single source of truth in timetable.service.ts, re-exported so existing imports of SlotType from this module keep working. */
 export type SlotType = LessonSlotType;
@@ -267,6 +269,27 @@ export function expandSlotsLocally(
 const EXERCISE_EVERY_N_LESSONS = 4;
 
 /**
+ * Canonical (English, SUBJECTS[].value) subjects that need practice/exercise time more
+ * often than the default cadence — hands-on problem-solving subjects where the gap
+ * between "sees a technique" and "can apply it" matters (maths, sciences with
+ * calculation-heavy content, computing). Humanities/languages/arts stay on the
+ * default cadence — they lean more on discussion/reading than drilled practice.
+ * Keep in sync with the same set in TimetableService.java.
+ */
+const PRACTICE_HEAVY_SUBJECTS = new Set([
+  "Mathematics", "Mathematics A", "Mathematics B", "Mathematics Applied to Social Sciences",
+  "Physics", "Chemistry", "Physics and Chemistry A", "Physical Chemistry",
+  "Biology and Geology", "Geology",
+  "ICT", "Computer Applications B",
+  "Descriptive Geometry A",
+]);
+
+/** Client-side mirror of TimetableService.exerciseEveryNLessons — keep both in sync. */
+function exerciseEveryNLessons(subject?: string): number {
+  return subject && PRACTICE_HEAVY_SUBJECTS.has(subject) ? 3 : EXERCISE_EVERY_N_LESSONS;
+}
+
+/**
  * Client-side mirror of TimetableService.applyExerciseAndReviewCadence (Java) —
  * keep both in sync. Flips the LESSON slot immediately before each targeted
  * ASSESSMENT slot to REVIEW (skipping back over HOLIDAYs, stopping if a
@@ -323,8 +346,9 @@ export function thinMultiLessonDays(slots: PreviewSlot[]): PreviewSlot[] {
  * that date already has a pinned EXERCISE/REVIEW/ASSESSMENT slot, so a multi-period day never ends
  * up with two practice slots back-to-back.
  */
-export function applyPracticeCadence(slots: PreviewSlot[]): PreviewSlot[] {
+export function applyPracticeCadence(slots: PreviewSlot[], subject?: string): PreviewSlot[] {
   const next = slots.map((s) => ({ ...s }));
+  const everyN = exerciseEveryNLessons(subject);
   const datesAlreadyCovered = new Set<string>();
   for (const slot of next) {
     if (slot.slotType === "EXERCISE" || slot.slotType === "REVIEW" || slot.slotType === "ASSESSMENT") {
@@ -336,7 +360,7 @@ export function applyPracticeCadence(slots: PreviewSlot[]): PreviewSlot[] {
   for (const slot of next) {
     if (slot.slotType !== "LESSON") continue;
     streak++;
-    if (streak === EXERCISE_EVERY_N_LESSONS) {
+    if (streak === everyN) {
       streak = 0;
       if (datesAlreadyCovered.has(slot.date)) continue;
       practiceCount++;
@@ -346,16 +370,21 @@ export function applyPracticeCadence(slots: PreviewSlot[]): PreviewSlot[] {
   return next;
 }
 
-/** Full auto-cadence (REVIEW-before-assessment, then per-day thinning, then the alternating practice cadence), for the wizard's initial preview. */
-export function applyExerciseAndReviewCadence(slots: PreviewSlot[]): PreviewSlot[] {
-  return applyPracticeCadence(thinMultiLessonDays(suggestReviewsBeforeAssessments(slots)));
+/**
+ * Full auto-cadence (REVIEW-before-assessment, then per-day thinning, then the alternating
+ * practice cadence), for the wizard's initial preview. `subject` is the canonical
+ * (SUBJECTS[].value) subject — pass it so practice-heavy subjects (maths, sciences) get a
+ * tighter exercise/review cadence than discussion-driven ones (history, languages).
+ */
+export function applyExerciseAndReviewCadence(slots: PreviewSlot[], subject?: string): PreviewSlot[] {
+  return applyPracticeCadence(thinMultiLessonDays(suggestReviewsBeforeAssessments(slots)), subject);
 }
 
 export function buildPlanAutoTitle(plan: Document): string {
   const subjectId = resolvePlanSubjectId(plan);
   const label = SUBJECTS.find((s) => s.id === subjectId)?.label ?? plan.subject ?? "";
   const grade = plan.gradeLevel ? `${plan.gradeLevel}.º` : "";
-  return [grade, label].filter(Boolean).join(" ") || "Nova Turma";
+  return [grade, label].filter(Boolean).join(" ") || translate("timetable.autoTitleFallback");
 }
 
 /**
@@ -377,6 +406,7 @@ export function buildCreateTimetableParamsFromPlan(plan: Document): CreateTimeta
 
   const subjectId = resolvePlanSubjectId(plan);
   const subjectValue = SUBJECTS.find((s) => s.id === subjectId)?.value ?? plan.subject ?? "";
+  const choice = planSubjectChoice(plan);
 
   return {
     title: buildPlanAutoTitle(plan),
@@ -390,5 +420,35 @@ export function buildCreateTimetableParamsFromPlan(plan: Document): CreateTimeta
     recurringSlots,
     holidays,
     assessmentDates: [],
+    isSpecificComponent: choice.isSpecificComponent,
+    vocationalCourseCode: choice.vocationalCourseCode,
+    vocationalUnitCode: choice.vocationalUnitCode,
+    vocationalSchoolSubjectName: choice.vocationalSchoolSubjectName,
+  };
+}
+
+/**
+ * A planificação's subject as the turma wizard's subject choice: a curso
+ * profissional plan keeps its course and UC (or school-component subject), a
+ * regular one its subject and formação geral/específica.
+ */
+export function planSubjectChoice(plan: Document): SubjectChoice {
+  const schoolYear = parsePlanGradeLevel(plan) ?? 0;
+  if (plan.vocationalCourseCode) {
+    return {
+      subject: plan.subject ?? "",
+      schoolYear,
+      isSpecificComponent: false,
+      subjectMode: "vocational",
+      vocationalCourseCode: plan.vocationalCourseCode,
+      vocationalUnitCode: plan.vocationalUnitCode ?? undefined,
+      vocationalSchoolSubjectName: plan.vocationalSchoolSubjectName ?? undefined,
+    };
+  }
+  return {
+    subject: resolvePlanSubjectId(plan),
+    schoolYear,
+    isSpecificComponent: !!plan.isSpecificComponent,
+    subjectMode: "regular",
   };
 }

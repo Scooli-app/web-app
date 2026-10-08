@@ -1,5 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Bug, Lightbulb } from "lucide-react";
+import { useTranslations } from "next-intl";
 import posthog from "posthog-js";
 import { useState } from "react";
 import { BugReportForm } from "./BugReportForm";
@@ -13,6 +14,7 @@ interface FeedbackActionCardsProps {
 export function FeedbackActionCards({
   onFeedbackSubmitted,
 }: FeedbackActionCardsProps) {
+  const t = useTranslations("feedback.actionCards");
   const [suggestionOpen, setSuggestionOpen] = useState(false);
   const [bugOpen, setBugOpen] = useState(false);
 
@@ -36,14 +38,14 @@ export function FeedbackActionCards({
             <div className="rounded-full bg-yellow-100 p-2 dark:bg-yellow-900/20">
               <Lightbulb className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
             </div>
-            <CardTitle className="text-xl">Tem uma ideia?</CardTitle>
+            <CardTitle className="text-xl">{t("suggestionTitle")}</CardTitle>
           </CardHeader>
           <CardContent>
             <CardDescription className="text-base">
-              Compartilhe as suas sugestões para novas funcionalidades ou melhorias.
+              {t("suggestionDescription")}
             </CardDescription>
             <p className="mt-2 text-sm font-medium text-primary">
-              Enviar sugestão &rarr;
+              {t("suggestionCta")}
             </p>
           </CardContent>
         </Card>
@@ -59,14 +61,14 @@ export function FeedbackActionCards({
             <div className="rounded-full bg-red-100 p-2 dark:bg-red-900/20">
               <Bug className="h-6 w-6 text-red-600 dark:text-red-400" />
             </div>
-            <CardTitle className="text-xl">Encontrou um erro?</CardTitle>
+            <CardTitle className="text-xl">{t("bugTitle")}</CardTitle>
           </CardHeader>
           <CardContent>
             <CardDescription className="text-base">
-              Reporte problemas técnicos ou erros que encontrou na plataforma.
+              {t("bugDescription")}
             </CardDescription>
             <p className="mt-2 text-sm font-medium text-destructive">
-              Reportar erro &rarr;
+              {t("bugCta")}
             </p>
           </CardContent>
         </Card>
@@ -76,8 +78,8 @@ export function FeedbackActionCards({
       <FeedbackModal
         open={suggestionOpen}
         onOpenChange={setSuggestionOpen}
-        title="Enviar Sugestão"
-        description="Partilhe connosco as suas ideias para melhorar a plataforma."
+        title={t("suggestionModalTitle")}
+        description={t("suggestionModalDescription")}
       >
         <SuggestionForm
           onSuccess={handleSuccess}
@@ -88,8 +90,8 @@ export function FeedbackActionCards({
       <FeedbackModal
         open={bugOpen}
         onOpenChange={setBugOpen}
-        title="Reportar Erro"
-        description="Ajude-nos a corrigir erros fornecendo detalhes sobre o problema."
+        title={t("bugModalTitle")}
+        description={t("bugModalDescription")}
       >
         <BugReportForm
           onSuccess={handleSuccess}

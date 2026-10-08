@@ -13,6 +13,7 @@ import { setOnboardingStatus } from "@/store/onboarding/onboardingSlice";
 import type { RootState } from "@/store/store";
 import { setOnboardingModalOpen } from "@/store/ui/uiSlice";
 import { useAuth, useUser } from "@clerk/nextjs";
+import { useTranslations } from "next-intl";
 import { usePathname, useRouter } from "next/navigation";
 import posthog from "posthog-js";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -20,6 +21,7 @@ import { useSelector } from "react-redux";
 import { toast } from "sonner";
 
 export function OnboardingGate() {
+  const t = useTranslations("onboarding.errors");
   const pathname = usePathname();
   const router = useRouter();
   const dispatch = useAppDispatch();
@@ -143,11 +145,11 @@ export function OnboardingGate() {
       startFirstTimeTutorial();
     } catch (error) {
       posthog.captureException(error);
-      toast.error("Não foi possível ignorar o onboarding.");
+      toast.error(t("skipFailed"));
     } finally {
       setIsBusy(false);
     }
-  }, [dispatch, isBusy, startFirstTimeTutorial]);
+  }, [dispatch, isBusy, startFirstTimeTutorial, t]);
 
   const handleSubmit = useCallback(
     async (payload: OnboardingSubmitRequest) => {
@@ -178,12 +180,12 @@ export function OnboardingGate() {
         startFirstTimeTutorial();
       } catch (error) {
         posthog.captureException(error);
-        toast.error("Não foi possível guardar a tua resposta.");
+        toast.error(t("saveFailed"));
       } finally {
         setIsBusy(false);
       }
     },
-    [dispatch, isBusy, startFirstTimeTutorial],
+    [dispatch, isBusy, startFirstTimeTutorial, t],
   );
 
   if (!isSignedIn || !user?.id || !onboardingStatus) {

@@ -9,6 +9,7 @@ import { Routes } from "@/shared/types";
 import type { RagSource } from "@/shared/types/document";
 import { isUsableDocumentContent } from "@/shared/utils/documentContent";
 import { htmlToMarkdown, markdownToHtml } from "@/shared/utils/markdown";
+import { translate } from "@/i18n/translate";
 import {
   chatWithDocument,
   clearLastChatAnswer,
@@ -35,6 +36,7 @@ import {
 import { useAuth } from "@clerk/nextjs";
 import type { Editor } from "@tiptap/react";
 import { CheckCircle2, Crown, Loader2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import posthog from "posthog-js";
@@ -66,30 +68,7 @@ interface DocumentEditorProps {
   onGenerationComplete?: () => void;
 }
 
-const GENERATION_STEPS = [
-  {
-    key: "preparing",
-    label: "Preparar",
-    description: "A analisar o currículo e preparar o contexto",
-  },
-  {
-    key: "generating",
-    label: "Rascunho",
-    description: "A gerar o documento com IA",
-  },
-  {
-    key: "reviewing",
-    label: "Revisão",
-    description: "A avaliar a qualidade do documento",
-  },
-  {
-    key: "revised",
-    label: "Melhorias",
-    description: "A aplicar melhorias ao documento",
-  },
-] as const;
-
-type GenerationStepKey = (typeof GENERATION_STEPS)[number]["key"];
+type GenerationStepKey = "preparing" | "generating" | "reviewing" | "revised";
 
 const STEP_ORDER: GenerationStepKey[] = [
   "preparing",
@@ -99,6 +78,13 @@ const STEP_ORDER: GenerationStepKey[] = [
 ];
 
 function GenerationProgress({ streamStatus }: { streamStatus: string }) {
+  const t = useTranslations("editor.documentEditor");
+  const GENERATION_STEPS: Array<{ key: GenerationStepKey; label: string; description: string }> = [
+    { key: "preparing", label: t("stepPreparingLabel"), description: t("stepPreparingDescription") },
+    { key: "generating", label: t("stepGeneratingLabel"), description: t("stepGeneratingDescription") },
+    { key: "reviewing", label: t("stepReviewingLabel"), description: t("stepReviewingDescription") },
+    { key: "revised", label: t("stepRevisedLabel"), description: t("stepRevisedDescription") },
+  ];
   const currentIndex = STEP_ORDER.indexOf(streamStatus as GenerationStepKey);
   const activeStep =
     GENERATION_STEPS.find((s) => s.key === streamStatus) ?? GENERATION_STEPS[1];
@@ -202,19 +188,25 @@ function repairLeakedImageSegmentTokens(
     if (!image) {
       return "";
     }
-    const safeAlt = (image.alt || "Imagem").replace(/\]/g, "\\]");
+    const safeAlt = (image.alt || translate("editor.documentEditor.imageFallbackAlt")).replace(/\]/g, "\\]");
     return `![${safeAlt}]({{DOCUMENT_IMAGE:${image.id}}})`;
   });
 }
 
 export default function DocumentEditor({
   documentId,
-  defaultTitle = "Novo Documento",
-  loadingMessage = "A carregar documento...",
-  chatTitle = "Assistente de IA",
-  chatPlaceholder = "Faça uma pergunta ou peça ajuda...",
+  defaultTitle,
+  loadingMessage,
+  chatTitle,
+  chatPlaceholder,
   onGenerationComplete,
 }: DocumentEditorProps) {
+  const t = useTranslations("editor.documentEditor");
+  const tChat = useTranslations("editor.aiChatPanel");
+  const resolvedDefaultTitle = defaultTitle ?? t("defaultTitle");
+  const resolvedLoadingMessage = loadingMessage ?? t("loadingMessage");
+  const resolvedChatTitle = chatTitle ?? tChat("defaultTitle");
+  const resolvedChatPlaceholder = chatPlaceholder ?? tChat("defaultPlaceholder");
   const router = useRouter();
   const dispatch = useAppDispatch();
   const { getToken } = useAuth();
@@ -327,9 +319,10 @@ export default function DocumentEditor({
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       if (params.get("imported") === "true") {
+        const importedMessage = t("importedSuccess");
         import("sonner").then(({ toast }) => {
           toast.success(
-            "Documento importado com sucesso. Pode agora editar ou melhorar com IA.",
+            importedMessage,
             {
               duration: 8000,
             },
@@ -339,7 +332,7 @@ export default function DocumentEditor({
         router.replace(window.location.pathname, { scroll: false });
       }
     }
-  }, [router]);
+  }, [router, t]);
 
   useEffect(() => {
     dispatch(fetchSubscription());
@@ -393,7 +386,7 @@ export default function DocumentEditor({
   const handleToolbarImageUpload = useCallback(
     async (file: File) => {
       if (!currentDocument?.id || currentDocument.id !== documentId) {
-        toast.error("Documento indisponível para upload de imagem.");
+        toast.error(t("imageUnavailable"));
         return;
       }
 
@@ -406,12 +399,12 @@ export default function DocumentEditor({
       }
 
       if (!file.type.startsWith("image/")) {
-        toast.error("Selecione um ficheiro de imagem válido.");
+        toast.error(t("invalidImageFile"));
         return;
       }
 
       if (file.size > 10 * 1024 * 1024) {
-        toast.error("A imagem excede o limite de 10MB.");
+        toast.error(t("imageTooLarge"));
         return;
       }
 
@@ -435,7 +428,7 @@ export default function DocumentEditor({
         } else {
           const fallbackMarkdown =
             result.markdown ||
-            `![${result.image.alt || "Imagem"}](${stableToken})`;
+            `![${result.image.alt || t("imageFallbackAlt")}](${stableToken})`;
           const previousContent = latestContentRef.current;
           const nextContent = previousContent
             ? `${previousContent}\n\n${fallbackMarkdown}`
@@ -446,7 +439,7 @@ export default function DocumentEditor({
         }
 
         dispatch(fetchDocumentImages(currentDocument.id));
-        toast.success("Imagem adicionada ao documento.");
+        toast.success(t("imageAdded"));
       } catch (error: unknown) {
         registerImageUploadFailed(file, error);
         const apiMessage =
@@ -465,7 +458,7 @@ export default function DocumentEditor({
         const fallbackMessage =
           error instanceof Error
             ? error.message
-            : "Não foi possível carregar a imagem.";
+            : t("imageUploadFailed");
         toast.error(apiMessage || fallbackMessage);
       } finally {
         setIsImageUploading(false);
@@ -484,6 +477,7 @@ export default function DocumentEditor({
       streamInfo?.id,
       streamInfo?.status,
       setContent,
+      t,
     ],
   );
 
@@ -528,7 +522,7 @@ export default function DocumentEditor({
           }
 
           setIsStreaming(false);
-          setError("Erro de autenticação");
+          setError(t("authError"));
           dispatch(clearStreamInfo());
           return;
         }
@@ -603,7 +597,7 @@ export default function DocumentEditor({
                   finalizeStreamWithoutDone();
                   dispatch(
                     setImageError(
-                      "A geração de imagens terminou com falhas ou atrasos no stream.",
+                      t("imageGenDelayError"),
                     ),
                   );
                 }, 3000);
@@ -627,7 +621,7 @@ export default function DocumentEditor({
                   finalizeStreamWithoutDone();
                   dispatch(
                     setImageError(
-                      "A geração de imagens terminou com falhas ou atrasos no stream.",
+                      t("imageGenDelayError"),
                     ),
                   );
                 }, 3000);
@@ -698,12 +692,18 @@ export default function DocumentEditor({
                       storage.originalContent = editor.getHTML();
                     }
 
-                    // Replace editor content with AI content
+                    // Replace editor content with AI content and apply diff
+                    // decorations as a single atomic transaction — two separate
+                    // commands.X() dispatches here previously matched the
+                    // "mismatched transaction" pattern already fixed elsewhere
+                    // in this file for the diff accept/reject flow (see
+                    // DiffExtension.ts).
                     const aiHtml = markdownToHtml(finalContent);
-                    editor.commands.setContent(aiHtml, { emitUpdate: false });
-
-                    // Apply diff decorations
-                    editor.commands.setDiffChanges(diffChanges);
+                    editor
+                      .chain()
+                      .setContent(aiHtml, { emitUpdate: false })
+                      .setDiffChanges(diffChanges)
+                      .run();
                     setIsSuggestionsMode(true);
                   } else {
                     // No differences — just update content directly
@@ -736,7 +736,17 @@ export default function DocumentEditor({
 
               dispatch(clearStreamInfo());
               if (docId === documentId) {
-                dispatch(fetchDocument(docId));
+                // fetchDocument's fulfilled content can otherwise race with
+                // the editor mutations above and trigger an editorKey bump
+                // (remount) mid-transaction — mirrors the guard already used
+                // around chatWithDocument in handleChatSubmit below.
+                skipNextEditorKeyBumpRef.current = true;
+                dispatch(fetchDocument(docId))
+                  .unwrap()
+                  .catch(() => {})
+                  .finally(() => {
+                    skipNextEditorKeyBumpRef.current = false;
+                  });
                 dispatch(fetchDocumentImages(docId));
               }
               dispatch(setGeneratingImages(false));
@@ -796,7 +806,7 @@ export default function DocumentEditor({
             console.error("Failed to start streaming:", err);
             eventSourceRef.current = null;
             setIsStreaming(false);
-            setError("Erro ao iniciar streaming");
+            setError(t("streamStartError"));
             dispatch(clearStreamInfo());
             dispatch(setGeneratingImages(false));
           });
@@ -811,6 +821,8 @@ export default function DocumentEditor({
     setContent,
     getToken,
     normalizePendingTitle,
+    skipNextEditorKeyBumpRef,
+    t,
   ]);
 
   // Cleanup on unmount
@@ -985,9 +997,9 @@ export default function DocumentEditor({
     setContent(repaired);
     void handleTrackedAutosave(repaired);
     toast.warning(
-      "Detetámos e corrigimos referências internas de imagem no documento.",
+      t("imageTokenRepairWarning"),
     );
-  }, [content, handleTrackedAutosave, images, setContent]);
+  }, [content, handleTrackedAutosave, images, setContent, t]);
 
   const handleChatSubmit = useCallback(
     async (userMessage: string) => {
@@ -1018,11 +1030,25 @@ export default function DocumentEditor({
       isChatInProgressRef.current = true;
       skipNextEditorKeyBumpRef.current = true;
 
+      // Keep any image nodes in "pending" state for the duration of the request
+      // instead of racing past ImageBlockNodeView's 5s hydration timeout and
+      // flashing "unavailable" while the freshly generated images are still
+      // being fetched below.
+      dispatch(setGeneratingImages(true));
+
       try {
         const response = await dispatch(
           chatWithDocument({ id: currentDocument.id, message: userMessage }),
         ).unwrap();
-        dispatch(fetchDocumentImages(currentDocument.id));
+        // Await the refreshed image list so any images the new content
+        // references are already in the store by the time that content is
+        // rendered — otherwise ImageBlockNodeView can find no match yet and
+        // fall back to "unavailable" until the page is manually reloaded.
+        try {
+          await dispatch(fetchDocumentImages(currentDocument.id)).unwrap();
+        } catch {
+          // Non-fatal — ImageBlockNodeView still has its own hydration wait.
+        }
 
         // A question-only answer carries no document content — never treat it as an edit.
         const editedContent = isUsableDocumentContent(response.content)
@@ -1066,12 +1092,15 @@ export default function DocumentEditor({
                   originalHtmlBefore || editor.getHTML();
               }
 
-              // Replace editor content with AI content
+              // Replace editor content with AI content and apply diff
+              // decorations as a single atomic transaction (see matching
+              // comment in the SSE onComplete handler above).
               const aiHtml = markdownToHtml(aiContent);
-              editor.commands.setContent(aiHtml, { emitUpdate: false });
-
-              // Apply diff decorations
-              editor.commands.setDiffChanges(diffChanges);
+              editor
+                .chain()
+                .setContent(aiHtml, { emitUpdate: false })
+                .setDiffChanges(diffChanges)
+                .run();
               setIsSuggestionsMode(true);
             } else {
               // No differences — just sync normally
@@ -1094,8 +1123,16 @@ export default function DocumentEditor({
           setSources(response.sources);
         }
       } catch {
-        setError("Erro ao processar a sua mensagem. Tente novamente mais tarde.");
+        setError(t("chatErrorGeneric"));
+        // The backend runs text + image generation synchronously in one
+        // request, which can outlast a client-side network hiccup or proxy
+        // timeout. Resync from the server so a transient client error here
+        // doesn't leave the editor stuck on stale content when the backend
+        // actually finished and persisted the edit.
+        dispatch(fetchDocument(currentDocument.id));
+        dispatch(fetchDocumentImages(currentDocument.id));
       } finally {
+        dispatch(setGeneratingImages(false));
         isChatInProgressRef.current = false;
         skipNextEditorKeyBumpRef.current = false;
       }
@@ -1112,6 +1149,7 @@ export default function DocumentEditor({
       skipNextEditorKeyBumpRef,
       syncContent,
       setContent,
+      t,
     ],
   );
 
@@ -1157,7 +1195,7 @@ export default function DocumentEditor({
         <div className="flex items-center space-x-2">
           <Loader2 className="w-6 h-6 animate-spin text-primary" />
           <span className="text-lg text-muted-foreground">
-            {loadingMessage}
+            {resolvedLoadingMessage}
           </span>
         </div>
       </div>
@@ -1169,13 +1207,13 @@ export default function DocumentEditor({
       <div className="flex items-center justify-center min-h-[400px] w-full">
         <div className="text-center">
           <p className="text-lg text-muted-foreground mb-4">
-            Documento não encontrado
+            {t("documentNotFound")}
           </p>
           <button
             onClick={() => router.push(Routes.DOCUMENTS)}
             className="text-primary hover:underline"
           >
-            Voltar aos documentos
+            {t("backToDocuments")}
           </button>
         </div>
       </div>
@@ -1187,7 +1225,7 @@ export default function DocumentEditor({
       <div className="flex-1 flex flex-col w-full">
         <DocumentTitle
           title={resolvedTitle}
-          defaultTitle={defaultTitle}
+          defaultTitle={resolvedDefaultTitle}
           onSave={handleTitleSave}
           isSaving={isSaving}
           isStreaming={isGenerating && !!documentTitle}
@@ -1205,11 +1243,11 @@ export default function DocumentEditor({
               <>
                 <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <h2 className="text-lg font-semibold text-foreground sm:text-xl">
-                    Editor
+                    {t("editorHeading")}
                   </h2>
                   <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                     <ShareButton
-                      title={resolvedTitle || defaultTitle}
+                      title={resolvedTitle || resolvedDefaultTitle}
                       content={content}
                       disabled={isGenerating || !content}
                       documentId={documentId}
@@ -1219,7 +1257,7 @@ export default function DocumentEditor({
                       sharedStatus={activeDocument?.sharedResourceStatus}
                     />
                     <DownloadButton
-                      title={resolvedTitle || defaultTitle}
+                      title={resolvedTitle || resolvedDefaultTitle}
                       content={content}
                       images={images}
                       isProUser={isPremium}
@@ -1263,19 +1301,19 @@ export default function DocumentEditor({
                     <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
                       {showUpdateIndicator && (
                         <span className="text-sm font-medium text-primary animate-pulse flex items-center gap-1">
-                          ✨ Documento Refinado
+                          ✨ {tChat("documentRefined")}
                         </span>
                       )}
                       {!isEntitlementLoading && !isPremium && (
                         <Link
                           href={Routes.CHECKOUT}
                           className="hidden md:inline-flex items-center gap-2 rounded-full border border-amber-300/60 bg-gradient-to-r from-amber-50 to-yellow-50 px-2.5 py-1 text-[11px] font-medium text-amber-800 transition-colors hover:bg-amber-100 dark:border-amber-700/60 dark:from-amber-950/40 dark:to-yellow-950/40 dark:text-amber-300 dark:hover:bg-amber-900/30"
-                          title="Requer Scooli Pro: faz upgrade para gerar imagens automáticas"
+                          title={t("proTooltip")}
                         >
                           <Crown className="h-3.5 w-3.5 text-amber-500 dark:text-amber-300" />
-                          <span className="whitespace-nowrap">Imagens Pro</span>
+                          <span className="whitespace-nowrap">{t("proImagesLabel")}</span>
                           <span className="hidden xl:inline-flex rounded-full border border-amber-400/60 bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700 dark:border-amber-500/40 dark:bg-amber-900/40 dark:text-amber-200">
-                            Upgrade
+                            {t("upgrade")}
                           </span>
                         </Link>
                       )}
@@ -1283,7 +1321,7 @@ export default function DocumentEditor({
                         <CreateCalendarFromPlanButton plan={activeDocument} />
                       )}
                       <ShareButton
-                        title={resolvedTitle || defaultTitle}
+                        title={resolvedTitle || resolvedDefaultTitle}
                         content={content}
                         disabled={isGenerating || !content}
                         documentId={documentId}
@@ -1293,7 +1331,7 @@ export default function DocumentEditor({
                         sharedStatus={activeDocument?.sharedResourceStatus}
                       />
                       <DownloadButton
-                        title={resolvedTitle || defaultTitle}
+                        title={resolvedTitle || resolvedDefaultTitle}
                         content={content}
                         images={images}
                         isProUser={isPremium}
@@ -1312,8 +1350,8 @@ export default function DocumentEditor({
               chatHistory={chatHistory}
               isStreaming={isStreaming || isChatting}
               error={error}
-              placeholder={chatPlaceholder}
-              title={chatTitle}
+              placeholder={resolvedChatPlaceholder}
+              title={resolvedChatTitle}
               sources={sources}
               showGenerationHint={!isEntitlementLoading && !isPremium}
               documentType={activeDocument?.documentType}
@@ -1331,8 +1369,8 @@ export default function DocumentEditor({
           chatHistory={chatHistory}
           isStreaming={isStreaming || isChatting}
           error={error}
-          placeholder={chatPlaceholder}
-          title={chatTitle}
+          placeholder={resolvedChatPlaceholder}
+          title={resolvedChatTitle}
           sources={sources}
           showGenerationHint={!isEntitlementLoading && !isPremium}
           documentType={activeDocument?.documentType}

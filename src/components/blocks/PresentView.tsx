@@ -25,6 +25,7 @@ import { isCanvasPresentation, type CanvasPresentation } from "@/shared/types/ca
 import { fetchDocument } from "@/store/documents/documentSlice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { ChevronLeft, ChevronRight, Loader2, X } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SlideRenderer } from "./SlideRenderer";
@@ -34,6 +35,7 @@ interface Props {
 }
 
 export function PresentView({ documentId }: Props) {
+  const t = useTranslations("blocks.presentView");
   const router = useRouter();
   const searchParams = useSearchParams();
   const dispatch = useAppDispatch();
@@ -244,7 +246,7 @@ export function PresentView({ documentId }: Props) {
             onClick={(e) => { e.stopPropagation(); prev(); }}
             disabled={currentIdx === 0}
             className="rounded-full bg-white/10 p-2 text-white backdrop-blur-sm transition-colors hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed"
-            aria-label="Slide anterior"
+            aria-label={t("prevSlideAriaLabel")}
           >
             <ChevronLeft className="h-5 w-5" />
           </button>
@@ -253,7 +255,7 @@ export function PresentView({ documentId }: Props) {
             onClick={(e) => { e.stopPropagation(); next(); }}
             disabled={currentIdx === total - 1}
             className="rounded-full bg-white/10 p-2 text-white backdrop-blur-sm transition-colors hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed"
-            aria-label="Próximo slide"
+            aria-label={t("nextSlideAriaLabel")}
           >
             <ChevronRight className="h-5 w-5" />
           </button>
@@ -268,7 +270,7 @@ export function PresentView({ documentId }: Props) {
               exit();
             }}
             className="rounded-full bg-white/10 p-2 text-white backdrop-blur-sm transition-colors hover:bg-white/20"
-            aria-label="Sair da apresentação"
+            aria-label={t("exitAriaLabel")}
           >
             <X className="h-4 w-4" />
           </button>

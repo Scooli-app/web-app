@@ -1,4 +1,5 @@
 import type { SourceQuota, UploadSourceParams, UserSource } from "@/shared/types/sources";
+import { translate } from "@/i18n/translate";
 import apiClient from "./client";
 
 export async function listSources(): Promise<UserSource[]> {
@@ -70,7 +71,7 @@ export function subscribeToSourceIngestion(
             onDone();
             abortController.abort();
           } else if (parsed.type === "error") {
-            onError(parsed.message ?? "Erro de ingestão");
+            onError(parsed.message ?? translate("errors.sources.ingestionError"));
             abortController.abort();
           } else if (parsed.source) {
             onUpdate(parsed.source);
@@ -80,7 +81,7 @@ export function subscribeToSourceIngestion(
         }
       },
       onerror(err) {
-        onError("Erro de ligação ao stream");
+        onError(translate("errors.sources.streamConnectionError"));
         throw err;
       },
     });

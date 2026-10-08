@@ -12,6 +12,7 @@ import {
   Search,
   Sparkles,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useMemo } from "react";
 
@@ -23,57 +24,39 @@ interface DocumentsEmptyStateProps {
   filterType?: string;
 }
 
-const documentTypeLabels: Record<string, string> = {
-  lessonPlan: "Planos de Aula",
-  worksheet: "Fichas de Trabalho",
-  quiz: "Quizzes",
-  presentation: "Apresentações",
-  test: "Testes",
-};
-
 const quickActions = [
   {
     key: "lessonPlan",
-    label: "Plano de Aula",
     href: "/lesson-plan",
     icon: FileText,
-    description: "Estruture as suas aulas",
     gradient: "from-emerald-500 to-teal-600",
     bgLight: "bg-emerald-50 dark:bg-emerald-950/30",
   },
   {
     key: "worksheet",
-    label: "Ficha de Trabalho",
     href: "/worksheet",
     icon: FileText,
-    description: "Prepare treino e consolidação",
     gradient: "from-teal-500 to-cyan-600",
     bgLight: "bg-teal-50 dark:bg-teal-950/30",
   },
   {
     key: "presentation",
-    label: "Apresentação",
     href: "/presentation",
     icon: GraduationCap,
-    description: "Crie slides interativos",
     gradient: "from-blue-500 to-indigo-600",
     bgLight: "bg-blue-50 dark:bg-blue-950/30",
   },
   {
     key: "quiz",
-    label: "Quiz",
     href: "/quiz",
     icon: GraduationCap,
-    description: "Avalie conhecimentos",
     gradient: "from-amber-500 to-orange-600",
     bgLight: "bg-amber-50 dark:bg-amber-950/30",
   },
   {
     key: "test",
-    label: "Teste",
     href: "/test",
     icon: ClipboardList,
-    description: "Crie avaliações formais",
     gradient: "from-rose-500 to-pink-600",
     bgLight: "bg-rose-50 dark:bg-rose-950/30",
   },
@@ -84,6 +67,9 @@ export function DocumentsEmptyState({
   searchQuery,
   filterType,
 }: DocumentsEmptyStateProps) {
+  const t = useTranslations("documents.emptyState");
+  const tFilters = useTranslations("documents.filters");
+  const tEnums = useTranslations("enums");
   const isPresentationCreationEnabled = useAppSelector(
     selectIsPresentationCreationEnabled
   );
@@ -106,32 +92,34 @@ export function DocumentsEmptyState({
   );
 
   const content = useMemo(() => {
+    const filterLabel = filterType
+      ? tFilters(`types.${filterType}`)
+      : t("genericDocuments");
     switch (variant) {
       case "no-search-results":
         return {
           icon: Search,
-          title: "Nenhum resultado encontrado",
-          description: `Não encontrámos documentos para "${searchQuery}". Tente usar termos diferentes ou verifique a ortografia.`,
+          title: t("noSearchResults.title"),
+          description: t("noSearchResults.description", { query: searchQuery ?? "" }),
           showQuickActions: false,
         };
       case "no-filter-results":
         return {
           icon: FolderOpen,
-          title: `Sem ${documentTypeLabels[filterType || ""] || "documentos"}`,
-          description: `Ainda não tem ${(documentTypeLabels[filterType || ""] || "documentos").toLowerCase()}. Que tal criar o primeiro?`,
+          title: t("noFilterResults.title", { type: filterLabel }),
+          description: t("noFilterResults.description", { type: filterLabel.toLowerCase() }),
           showQuickActions: true,
           singleAction: filterType,
         };
       default:
         return {
           icon: null,
-          title: "Comece a criar!",
-          description:
-            "A sua biblioteca de documentos está vazia. Deixe a IA ajudá-lo a criar materiais de ensino em segundos.",
+          title: t("noDocuments.title"),
+          description: t("noDocuments.description"),
           showQuickActions: true,
         };
     }
-  }, [variant, searchQuery, filterType]);
+  }, [variant, searchQuery, filterType, t, tFilters]);
 
   const Icon = content.icon;
   const singleActionData = content.singleAction
@@ -189,14 +177,14 @@ export function DocumentsEmptyState({
                   className="rounded-xl bg-primary px-8 py-6 font-medium text-primary-foreground shadow-lg shadow-primary/20 transition-all hover:-translate-y-0.5 hover:bg-primary/90 hover:shadow-xl hover:shadow-primary/30"
                 >
                   <Plus className="mr-2 h-5 w-5" />
-                  Criar {singleActionData.label}
+                  {t("createAction", { type: tEnums(`documentType.${singleActionData.key}`) })}
                 </Button>
               </Link>
             </div>
           ) : (
             <>
               <p className="mb-4 text-center text-sm text-muted-foreground">
-                Escolha um tipo de documento para começar
+                {t("chooseType")}
               </p>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 {availableQuickActions.map((action) => {
@@ -224,11 +212,11 @@ export function DocumentsEmptyState({
                         </div>
 
                         <span className="text-center text-sm font-medium text-foreground">
-                          {action.label}
+                          {tEnums(`documentType.${action.key}`)}
                         </span>
 
                         <span className="mt-1 hidden text-center text-xs text-muted-foreground sm:block">
-                          {action.description}
+                          {t(`quickActionDescriptions.${action.key}`)}
                         </span>
                       </div>
                     </Link>
@@ -243,7 +231,7 @@ export function DocumentsEmptyState({
       {variant === "no-search-results" && (
         <div className="mt-6 max-w-md rounded-xl border border-border bg-muted/50 p-4">
           <p className="text-sm text-muted-foreground">
-            Tente procurar por outra palavra-chave, pelo tema ou pelo tipo de documento.
+            {t("searchHint")}
           </p>
         </div>
       )}

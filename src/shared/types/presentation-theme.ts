@@ -16,6 +16,8 @@
  * Decorations are exempt from clampCanvasSlide, so they safely extend beyond [0,1].
  */
 
+import { translate } from "@/i18n/translate";
+
 export interface ThemeGradient {
   /** CSS-convention angle: 0=up, 90=right, 135=down-right, 180=down. */
   angle: number;
@@ -802,6 +804,14 @@ export const THEMES: PresentationTheme[] = [
 
 export function getThemeById(id: string): PresentationTheme {
   return THEMES.find((t) => t.id === id) ?? THEMES[0];
+}
+
+/**
+ * Localized display name for a theme, keyed by its stable id. `PresentationTheme.name`
+ * itself stays the Portuguese canonical name — never rendered directly.
+ */
+export function translateThemeName(id: string): string {
+  return translate(`documentCreation.options.presentationThemes.${id}`);
 }
 
 /** Convert a ThemeGradient to a CSS linear-gradient string (for non-Konva use). */

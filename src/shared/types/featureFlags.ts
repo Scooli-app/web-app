@@ -38,4 +38,16 @@ export enum FeatureFlag {
 
   /** Controls access to Horário & Planos Letivos (Feature 2) — Pro / Institucional only. */
   HORARIO_PLANOS_ENABLED = "horario_planos_enabled",
+
+  /** Controls the "o que já foi dado" notes in turma and planificação creation. */
+  ALREADY_COVERED_ENABLED = "already_covered_enabled",
+
+  /** Controls the teacher profile, vocational catalogue, and creation suggestions. */
+  TEACHER_PROFILE = "teacher_profile",
+}
+
+export function isTeacherProfileFeatureEnabled(
+  flags: Partial<Record<FeatureFlag, boolean>>,
+): boolean {
+  return flags[FeatureFlag.TEACHER_PROFILE] === true;
 }

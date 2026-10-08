@@ -1,6 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { MessageSquare } from "lucide-react";
+import { useTranslations } from "next-intl";
 import type { FormUpdateFn } from "../types";
 
 interface TopicSectionProps {
@@ -10,6 +11,8 @@ interface TopicSectionProps {
 }
 
 export function TopicSection({ topic, placeholder, onUpdate }: TopicSectionProps) {
+  const t = useTranslations("documentCreation.topic");
+
   return (
     <Card className="p-4 sm:p-6 md:p-8 border-border shadow-sm hover:shadow-md transition-shadow">
       <div className="space-y-3 sm:space-y-4">
@@ -19,10 +22,10 @@ export function TopicSection({ topic, placeholder, onUpdate }: TopicSectionProps
           </div>
           <div className="min-w-0">
             <h2 className="text-base sm:text-lg font-semibold text-foreground">
-              Tema da Aula <span className="text-destructive">*</span>
+              {t("title")} <span className="text-destructive">*</span>
             </h2>
             <p className="text-xs sm:text-sm text-muted-foreground">
-              Descreva o tema que pretende abordar
+              {t("description")}
             </p>
           </div>
         </div>
@@ -31,7 +34,7 @@ export function TopicSection({ topic, placeholder, onUpdate }: TopicSectionProps
           onChange={(e) => onUpdate("topic", e.target.value)}
           placeholder={placeholder}
           className="w-full h-11 sm:h-12 px-3 sm:px-4 text-sm sm:text-base bg-muted border-border rounded-xl placeholder:text-muted-foreground"
-          aria-label="Tema da aula"
+          aria-label={t("ariaLabel")}
         />
       </div>
     </Card>

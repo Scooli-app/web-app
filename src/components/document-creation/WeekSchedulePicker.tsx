@@ -18,25 +18,16 @@ import {
 } from "@/lib/timetable/planToTimetable";
 import { cn } from "@/shared/utils/utils";
 import { Plus, X } from "lucide-react";
-
-const DAY_LABELS: Record<DayKey, { label: string; short: string }> = {
-  mon: { label: "Segunda", short: "Seg" },
-  tue: { label: "Terça", short: "Ter" },
-  wed: { label: "Quarta", short: "Qua" },
-  thu: { label: "Quinta", short: "Qui" },
-  fri: { label: "Sexta", short: "Sex" },
-  sat: { label: "Sábado", short: "Sáb" },
-  sun: { label: "Domingo", short: "Dom" },
-};
+import { useTranslations } from "next-intl";
 
 const DURATION_OPTIONS = [45, 50, 55, 60, 75, 90, 100, 120];
 
-const TYPE_OPTIONS: { value: SlotTypeOrAuto; label: string }[] = [
-  { value: "AUTO", label: "Automático" },
-  { value: "LESSON", label: "Aula" },
-  { value: "EXERCISE", label: "Exercícios" },
-  { value: "REVIEW", label: "Revisão" },
-  { value: "ASSESSMENT", label: "Avaliação" },
+const TYPE_OPTIONS: { value: SlotTypeOrAuto }[] = [
+  { value: "AUTO" },
+  { value: "LESSON" },
+  { value: "EXERCISE" },
+  { value: "REVIEW" },
+  { value: "ASSESSMENT" },
 ];
 
 interface WeekSchedulePickerProps {
@@ -56,6 +47,10 @@ export function WeekSchedulePicker({
   onChange,
   maxPeriodsPerDay = 10,
 }: WeekSchedulePickerProps) {
+  const t = useTranslations("documentCreation.weekSchedule");
+  const tDays = useTranslations("documentCreation.days");
+  const tType = useTranslations("documentCreation.weekScheduleTypeOptions");
+
   function toggle(key: DayKey) {
     onChange({ ...schedule, [key]: { ...schedule[key], enabled: !schedule[key].enabled } });
   }
@@ -90,29 +85,41 @@ export function WeekSchedulePicker({
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          Seleciona os dias e o número de tempos letivos por dia.
+          {t("description")}
         </p>
         <Badge variant="secondary" className="text-sm font-semibold">
-          {total} aula{total !== 1 ? "s" : ""}/semana
+          {t("lessonsPerWeek", { count: total })}
         </Badge>
       </div>
 
-      <div className="grid gap-2">
+      <div className="grid min-w-0 gap-2">
         {DAY_ORDER.map((key) => {
           const day = schedule[key];
-          const { label, short } = DAY_LABELS[key];
+          const label = tDays(`${key}.label`);
+          const short = tDays(`${key}.short`);
           return (
             <div
               key={key}
+              role="checkbox"
+              aria-checked={day.enabled}
+              tabIndex={0}
+              onClick={() => toggle(key)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  toggle(key);
+                }
+              }}
               className={cn(
-                "space-y-2 rounded-lg border px-4 py-3 transition-colors",
+                "min-w-0 cursor-pointer space-y-2 rounded-lg border px-4 py-3 transition-colors",
+                "focus-visible:outline-none focus-visible:ring-ring/50 focus-visible:ring-[3px]",
                 day.enabled
                   ? "border-primary/40 bg-primary/5"
                   : "border-border bg-background opacity-60"
               )}
             >
               <div className="flex items-center gap-3">
-                <Checkbox checked={day.enabled} onCheckedChange={() => toggle(key)} className="shrink-0" />
+                <Checkbox checked={day.enabled} tabIndex={-1} className="shrink-0 pointer-events-none" />
 
                 <span className="w-20 text-sm font-medium">
                   <span className="hidden sm:inline">{label}</span>
@@ -122,32 +129,39 @@ export function WeekSchedulePicker({
                 {day.enabled && (
                   <button
                     type="button"
-                    onClick={() => addPeriod(key)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      addPeriod(key);
+                    }}
                     disabled={day.periods.length >= maxPeriodsPerDay}
                     className="ml-auto flex items-center gap-1 rounded-md border px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted disabled:opacity-30"
                   >
                     <Plus className="h-3 w-3" />
-                    tempo
+                    {t("addPeriod")}
                   </button>
                 )}
               </div>
 
               {day.enabled && (
-                <div className="space-y-1.5 pl-8">
+                <div
+                  className="min-w-0 space-y-1.5 pl-8"
+                  onClick={(e) => e.stopPropagation()}
+                  onKeyDown={(e) => e.stopPropagation()}
+                >
                   {day.periods.map((period, index) => (
-                    <div key={index} className="flex items-center gap-2">
+                    <div key={index} className="flex min-w-0 items-center gap-2">
                       <span className="w-4 shrink-0 text-xs text-muted-foreground">{index + 1}.</span>
                       <Select
                         value={period.type}
                         onValueChange={(v) => setPeriodType(key, index, v as SlotTypeOrAuto)}
                       >
-                        <SelectTrigger className="h-8 flex-1">
+                        <SelectTrigger className="h-8 min-w-0 flex-1">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
                           {TYPE_OPTIONS.map((opt) => (
                             <SelectItem key={opt.value} value={opt.value}>
-                              {opt.label}
+                              {tType(opt.value.toLowerCase())}
                             </SelectItem>
                           ))}
                         </SelectContent>

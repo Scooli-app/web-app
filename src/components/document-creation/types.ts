@@ -5,19 +5,46 @@ import type {
     WorksheetVariant,
 } from "@/shared/types";
 
+// title/description/placeholder come from the `documentCreation.types.<id>` and
+// `enums.documentType.<id>` catalogue keys (see FormHeader.tsx, FormActions.tsx,
+// DocumentCreationPage.tsx) — not stored here, so they aren't duplicated and frozen
+// at module load.
 export interface DocumentTypeConfig {
   id: DocumentType;
-  title: string;
-  description: string;
-  placeholder: string;
   redirectPath: string;
-  generateTitlePrefix: string;
 }
 
 export interface FormState {
   topic: string;
   subject: string;
   isSpecificComponent?: boolean;
+  /**
+   * "vocational" when the subject was picked from the teacher's saved
+   * Ensino Profissional course/UC selections instead of the regular
+   * subject catalogue. Only reachable when `teacher_profile` is enabled
+   * and the teacher has saved vocational units. Purely a UI concern —
+   * `subject` still carries the plain text sent to the backend.
+   */
+  subjectMode?: "regular" | "vocational";
+  /** Selected course code while in vocational subject mode (UI only). */
+  vocationalCourseCode?: string;
+  /**
+   * Code of the selected competence unit (UC) while in vocational subject
+   * mode. Sent alongside `vocationalCourseCode` on document creation so the
+   * backend can deterministically look up the UC's real curriculum content
+   * instead of relying on `subject` (which carries the UC's display label
+   * and never matches how vocational content is ingested/keyed server-side).
+   */
+  vocationalUnitCode?: string;
+  /**
+   * Display name of the selected sociocultural/científica component subject
+   * (e.g. "Economia", "Psicologia e Sociologia") while in vocational subject
+   * mode. Mutually exclusive with `vocationalUnitCode` — the backend
+   * document-create contract accepts either a UC code or a school-subject
+   * name, never both, since they identify content from different curriculum
+   * components.
+   */
+  vocationalSchoolSubjectName?: string;
   schoolYear: number;
   lessonTime?: number;
   customTime?: number;

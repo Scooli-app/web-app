@@ -11,15 +11,17 @@ import {
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { selectIsPro } from "@/store/subscription/selectors";
 import { FeatureFlag } from "@/shared/types/featureFlags";
+import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { AMBIGUOUS_COMPONENTS_SUBJECTS, SUBJECTS, SUBJECTS_BY_GRADE } from "./constants";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { SUBJECTS, SUBJECTS_BY_GRADE } from "./constants";
 import {
   AdditionalDetailsSection,
+  ClassSection,
   DurationSection,
   FormActions,
   FormHeader,
-  GradeSection,
+  NESTED_SECTION_CLASS,
   SourcePickerSection,
   SubjectSection,
   TeachingMethodSection,
@@ -29,27 +31,17 @@ import {
 import { TemplateSection } from "./templates";
 import { Card } from "@/components/ui/card";
 import type { DocumentTypeConfig, FormState, FormUpdateFn } from "./types";
-import { THEMES } from "@/shared/types/presentation-theme";
+import { THEMES, translateThemeName } from "@/shared/types/presentation-theme";
 import { cn } from "@/shared/utils/utils";
 import type { CanvasPresentation, CanvasSlide } from "@/shared/types/canvas-presentation";
 import { applyTheme } from "@/components/document-editor-v2/canvas-layout";
 import { SlideThumbnail } from "@/components/document-editor-v2/SlideThumbnail";
-
-
+import { useSubjectChoice } from "./useSubjectChoice";
 
 interface DocumentCreationPageProps {
   documentType: DocumentTypeConfig;
   userId?: string;
 }
-
-/**
- * Strips a section's own Card chrome so it can be composed inside a shared card.
- * `h-auto` cancels the `h-full` DurationSection sets for standalone grid use.
- */
-// `sm:p-0` is required as well as `p-0`: tailwind-merge resolves each responsive
-// variant independently, so an unprefixed `p-0` never cancels the sections' `sm:p-6`.
-const NESTED_SECTION_CLASS =
-  "h-auto gap-0 rounded-none border-0 bg-transparent p-0 py-0 sm:p-0 shadow-none transition-none hover:shadow-none";
 
 function useDocumentForm(documentTypeId: DocumentTypeConfig["id"]) {
   const [formState, setFormState] = useState<FormState>({
@@ -112,6 +104,8 @@ export default function DocumentCreationPage({
   userId: _userId = "",
 }: DocumentCreationPageProps) {
   const router = useRouter();
+  const t = useTranslations("documentCreation");
+  const tEnums = useTranslations("enums");
   const dispatch = useAppDispatch();
   const isProUser = useAppSelector(selectIsPro);
   const isEntitlementLoading = useAppSelector(selectEntitlementLoading);
@@ -122,6 +116,20 @@ export default function DocumentCreationPage({
 
   const { formState, error, setError, updateForm, isFormValid, handleTemplateSelect } =
     useDocumentForm(documentType.id);
+
+  // A year or subject from the URL wins over the profile defaults.
+  const prefilledRef = useRef({ year: false, subject: false });
+  const {
+    teachingMode,
+    vocationalCourseOptions,
+    selectedVocationalCourse,
+    preferredSchoolYears,
+    preferredSubjectIds,
+    handleTeachingModeChange,
+    handleVocationalCourseChange,
+    onVocationalCourseAdded,
+    isVocationalFeatureEnabled,
+  } = useSubjectChoice({ choice: formState, update: updateForm, prefilledRef });
 
   // Prefill from quick-create query params (?topic=&year=&subject=) set by the
   // dashboard prompt box and quick-start examples. Reads window.location instead
@@ -141,6 +149,7 @@ export default function DocumentCreationPage({
     const year = yearRaw ? Number(yearRaw) : Number.NaN;
     const hasValidYear = Number.isInteger(year) && year >= 1 && year <= 12;
     if (hasValidYear) {
+      prefilledRef.current.year = true;
       updateForm("schoolYear", year);
     }
 
@@ -148,29 +157,11 @@ export default function DocumentCreationPage({
       const validForYear =
         !hasValidYear || SUBJECTS_BY_GRADE[String(year)]?.includes(subjectId);
       if (validForYear) {
+        prefilledRef.current.subject = true;
         updateForm("subject", subjectId);
       }
     }
   }, [updateForm]);
-
-  // Reset subject if it's not available for the selected school year
-  useEffect(() => {
-    if (formState.schoolYear && formState.subject) {
-      const validSubjects = SUBJECTS_BY_GRADE[String(formState.schoolYear)];
-      if (validSubjects && !validSubjects.includes(formState.subject)) {
-        updateForm("subject", "");
-      }
-    }
-  }, [formState.schoolYear, formState.subject, updateForm]);
-
-  // Reset component type when subject changes
-  useEffect(() => {
-    if (formState.subject && formState.isSpecificComponent) {
-      if (!AMBIGUOUS_COMPONENTS_SUBJECTS.includes(formState.subject)) {
-        updateForm("isSpecificComponent", false);
-      }
-    }
-  }, [formState.subject, formState.isSpecificComponent, updateForm]);
 
   const themedCoverSlides = useMemo<CanvasSlide[]>(() => {
     return THEMES.map((theme) => {
@@ -183,7 +174,7 @@ export default function DocumentCreationPage({
             id: "mock-title",
             type: "text",
             x: 0.10, y: 0.20, w: 0.80, h: 0.22,
-            text: theme.name,
+            text: translateThemeName(theme.id),
             fontSize: 0.052,
             fontStyle: "bold",
             color: "#ffffff",
@@ -194,7 +185,7 @@ export default function DocumentCreationPage({
             id: "mock-sub",
             type: "text",
             x: 0.10, y: 0.46, w: 0.80, h: 0.12,
-            text: "Apresentação",
+            text: tEnums("documentType.presentation"),
             fontSize: 0.026,
             fontStyle: "normal",
             color: "#ffffff",
@@ -210,7 +201,7 @@ export default function DocumentCreationPage({
       };
       return applyTheme(mockCanvas, theme.id).slides[0] ?? bareSlide;
     });
-  }, []);
+  }, [tEnums]);
 
   const showTeachingMethodSection = documentType.id === "lessonPlan";
   const showWorksheetVariantSection = documentType.id === "worksheet";
@@ -229,27 +220,27 @@ export default function DocumentCreationPage({
     if (isLoading) return;
 
     if (!isPresentation && !formState.templateId) {
-      setError("Por favor, selecione um modelo de documento");
+      setError(t("errors.selectTemplate"));
       return;
     }
 
     if (showWorksheetVariantSection && !formState.worksheetVariant) {
-      setError("Por favor, selecione o objetivo principal da ficha");
+      setError(t("errors.selectWorksheetVariant"));
       return;
     }
 
     if (!formState.topic.trim()) {
-      setError("Por favor, introduza o tema da aula");
+      setError(t("errors.enterTopic"));
       return;
     }
 
     if (!formState.subject) {
-      setError("Por favor, selecione uma disciplina");
+      setError(t("errors.selectSubject"));
       return;
     }
 
     if (!formState.schoolYear) {
-      setError("Por favor, selecione o ano de escolaridade");
+      setError(t("errors.selectSchoolYear"));
       return;
     }
 
@@ -277,6 +268,9 @@ export default function DocumentCreationPage({
           templateId: formState.templateId,
           isSpecificComponent: formState.isSpecificComponent,
           worksheetVariant: formState.worksheetVariant,
+          vocationalCourseCode: formState.vocationalCourseCode || undefined,
+          vocationalUnitCode: formState.vocationalUnitCode || undefined,
+          vocationalSchoolSubjectName: formState.vocationalSchoolSubjectName || undefined,
           ...(isUserSourcesEnabled && {
             sourceIds: formState.sourceIds ?? [],
             includeAe: formState.includeAe ?? true,
@@ -293,6 +287,7 @@ export default function DocumentCreationPage({
 
         posthog.capture("document_created", {
           document_type: documentType.id,
+          teaching_mode: teachingMode,
           subject: formState.subject,
           school_year: formState.schoolYear,
           template_id: formState.templateId,
@@ -318,7 +313,7 @@ export default function DocumentCreationPage({
       } else {
         const errorMessage =
           (resultAction.payload as string) ||
-          "Ocorreu um erro ao criar o documento.";
+          t("errors.createFailed");
         posthog.capture("document_creation_failed", {
           document_type: documentType.id,
           error_message: errorMessage,
@@ -330,8 +325,8 @@ export default function DocumentCreationPage({
       console.error("Failed to create document:", error);
       const errorMessage =
         error instanceof Error
-          ? `Erro ao criar o documento: ${error.message}`
-          : "Erro ao criar o documento.";
+          ? t("errors.createFailedWithMessage", { message: error.message })
+          : t("errors.createFailedGeneric");
       posthog.capture("document_creation_failed", {
         document_type: documentType.id,
         error_message: errorMessage,
@@ -348,7 +343,8 @@ export default function DocumentCreationPage({
 
   return (
     <div className="w-full overflow-x-hidden">
-      <div className="max-w-4xl mx-auto">
+      {/* pb-20: the generate button can scroll clear of the floating assistant button. */}
+      <div className="max-w-4xl mx-auto pb-20">
         <FormHeader documentType={documentType} />
 
         <div className="space-y-4 sm:space-y-6">
@@ -356,7 +352,7 @@ export default function DocumentCreationPage({
           <div data-tutorial="topic">
             <TopicSection
               topic={formState.topic}
-              placeholder={documentType.placeholder}
+              placeholder={t(`types.${documentType.id}.placeholder`)}
               onUpdate={updateForm}
             />
           </div>
@@ -370,9 +366,18 @@ export default function DocumentCreationPage({
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6">
             <div data-tutorial="grade">
-              <GradeSection
+              <ClassSection
+                mode={teachingMode}
+                onModeChange={handleTeachingModeChange}
                 schoolYear={formState.schoolYear}
+                preferredSchoolYears={preferredSchoolYears}
                 onUpdate={updateForm}
+                vocationalCourses={vocationalCourseOptions}
+                vocationalCourseCode={selectedVocationalCourse?.code}
+                onCourseChange={handleVocationalCourseChange}
+                onVocationalCourseAdded={onVocationalCourseAdded}
+                isVocationalFeatureEnabled={isVocationalFeatureEnabled}
+                className="h-full"
               />
             </div>
 
@@ -387,6 +392,11 @@ export default function DocumentCreationPage({
                     isSpecificComponent={formState.isSpecificComponent}
                     onUpdate={updateForm}
                     availableSubjects={formState.schoolYear ? SUBJECTS_BY_GRADE[String(formState.schoolYear)] : undefined}
+                    preferredSubjectIds={preferredSubjectIds}
+                    mode={teachingMode}
+                    vocationalCourse={selectedVocationalCourse}
+                    vocationalUnitCode={formState.vocationalUnitCode}
+                    vocationalSchoolSubjectName={formState.vocationalSchoolSubjectName}
                     className={NESTED_SECTION_CLASS}
                     disabled={!formState.schoolYear}
                   />
@@ -416,7 +426,7 @@ export default function DocumentCreationPage({
 
           {isPresentation && (
             <div className="rounded-xl border bg-card p-4 shadow-sm">
-              <p className="text-sm font-medium mb-3">Tema visual</p>
+              <p className="text-sm font-medium mb-3">{t("presentationTheme.title")}</p>
               <div className={cn("flex flex-wrap gap-2")}>
                 {themedCoverSlides.map((slide, i) => {
                   const theme = THEMES[i];
@@ -437,7 +447,9 @@ export default function DocumentCreationPage({
                 })}
               </div>
               <p className="text-xs text-muted-foreground mt-2">
-                {THEMES.find((t) => t.id === (formState.themeId ?? "clean"))?.name ?? "Branco"}
+                {THEMES.find((theme) => theme.id === (formState.themeId ?? "clean"))
+                  ? translateThemeName(formState.themeId ?? "clean")
+                  : t("presentationTheme.defaultName")}
               </p>
             </div>
           )}

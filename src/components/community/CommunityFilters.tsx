@@ -5,6 +5,7 @@
 
 "use client";
 
+import { translateSubject } from "@/components/document-creation/constants";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -21,6 +22,7 @@ import {
   type DiscoverResourcesParams,
 } from "@/services/api/community.service";
 import { Search, X } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 interface CommunityFiltersProps {
   filters: DiscoverResourcesParams;
@@ -34,6 +36,9 @@ export function CommunityFilters({
   onFiltersChange,
   onSearch,
 }: CommunityFiltersProps) {
+  const t = useTranslations("community.filters");
+  const tResourceTypes = useTranslations("community.resourceCard.resourceTypes");
+
   const handleFilterChange = (
     key: keyof DiscoverResourcesParams,
     value: string | undefined,
@@ -73,7 +78,7 @@ export function CommunityFilters({
           <Input
             id="community-search"
             type="text"
-            placeholder="Pesquisar recursos..."
+            placeholder={t("searchPlaceholder")}
             value={filters.search || ""}
             onChange={(e) => handleSearchChange(e.target.value)}
             className="h-10 pl-9 text-sm sm:h-9"
@@ -88,7 +93,7 @@ export function CommunityFilters({
             size="sm"
             className="h-10 flex-1 px-4 sm:h-9 sm:flex-none"
           >
-            Pesquisar
+            {t("searchButton")}
           </Button>
 
           {hasActiveFilters && (
@@ -100,7 +105,7 @@ export function CommunityFilters({
               className="h-10 px-3 sm:h-9 sm:px-2.5"
             >
               <X className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
-              <span className="ml-1 text-xs sm:hidden">Limpar</span>
+              <span className="ml-1 text-xs sm:hidden">{t("clear")}</span>
             </Button>
           )}
         </div>
@@ -112,13 +117,13 @@ export function CommunityFilters({
           onValueChange={(value) => handleFilterChange("grade", value)}
         >
           <SelectTrigger className="h-10 w-full text-sm sm:h-9 sm:text-xs">
-            <SelectValue placeholder="Ano escolar" />
+            <SelectValue placeholder={t("gradePlaceholder")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Todos os anos</SelectItem>
+            <SelectItem value="all">{t("allGrades")}</SelectItem>
             {GRADE_OPTIONS.map((option) => (
               <SelectItem key={option.value} value={option.value}>
-                {option.label}
+                {t("gradeOption", { n: option.value })}
               </SelectItem>
             ))}
           </SelectContent>
@@ -129,13 +134,13 @@ export function CommunityFilters({
           onValueChange={(value) => handleFilterChange("subject", value)}
         >
           <SelectTrigger className="h-10 w-full text-sm sm:h-9 sm:text-xs">
-            <SelectValue placeholder="Disciplina" />
+            <SelectValue placeholder={t("subjectPlaceholder")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Todas as disciplinas</SelectItem>
+            <SelectItem value="all">{t("allSubjects")}</SelectItem>
             {SUBJECT_OPTIONS.map((option) => (
               <SelectItem key={option.value} value={option.value}>
-                {option.label}
+                {translateSubject(option.value)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -146,13 +151,13 @@ export function CommunityFilters({
           onValueChange={(value) => handleFilterChange("resourceType", value)}
         >
           <SelectTrigger className="h-10 w-full text-sm sm:h-9 sm:text-xs">
-            <SelectValue placeholder="Tipo" />
+            <SelectValue placeholder={t("typePlaceholder")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Todos os tipos</SelectItem>
+            <SelectItem value="all">{t("allTypes")}</SelectItem>
             {RESOURCE_TYPE_OPTIONS.map((option) => (
               <SelectItem key={option.value} value={option.value}>
-                {option.label}
+                {tResourceTypes(`${option.value}`)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -163,8 +168,8 @@ export function CommunityFilters({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="popular">Mais Reutilizados</SelectItem>
-            <SelectItem value="recent">Mais Recentes</SelectItem>
+            <SelectItem value="popular">{t("sortPopular")}</SelectItem>
+            <SelectItem value="recent">{t("sortRecent")}</SelectItem>
           </SelectContent>
         </Select>
       </div>

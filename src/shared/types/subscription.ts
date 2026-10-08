@@ -2,6 +2,8 @@
  * Subscription and billing types
  */
 
+import { translate } from "@/i18n/translate";
+
 export interface SubscriptionPlan {
   planCode: string;
   name: string;
@@ -56,22 +58,33 @@ export interface PortalResponse {
   url: string;
 }
 
-export const PLAN_DISPLAY_INFO: Record<
-  string,
-  { name: string; description: string; badge?: string }
-> = {
-  pro_monthly: {
-    name: "Scooli Pro Mensal",
-    description: "Acesso ilimitado a todas as funcionalidades",
-    badge: "Mais Popular",
-  },
-  pro_annual: {
-    name: "Scooli Pro Anual",
-    description: "20% de desconto no plano anual",
-    badge: "Melhor Valor",
-  },
-  free: {
-    name: "Plano Gratuito",
-    description: "20 créditos por mês",
-  },
+/**
+ * Maps a plan code to the message key segment under `billing.plans.*` in the
+ * catalogues. Kept as plain data (no translated text) so this stays a safe
+ * module-level constant — the actual copy is resolved by `getPlanDisplayInfo`
+ * at the moment it's needed, never frozen at import time.
+ */
+const PLAN_MESSAGE_KEYS: Record<string, string> = {
+  pro_monthly: "proMonthly",
+  pro_annual: "proAnnual",
+  free: "free",
 };
+
+export interface PlanDisplayInfo {
+  name: string;
+  description: string;
+  badge?: string;
+}
+
+/** Resolves the localized name/description/badge for a plan code, or `undefined` for an unknown code. */
+export function getPlanDisplayInfo(planCode: string): PlanDisplayInfo | undefined {
+  const key = PLAN_MESSAGE_KEYS[planCode];
+  if (!key) {
+    return undefined;
+  }
+  return {
+    name: translate(`billing.plans.${key}.name`),
+    description: translate(`billing.plans.${key}.description`),
+    badge: key === "free" ? undefined : translate(`billing.plans.${key}.badge`),
+  };
+}
