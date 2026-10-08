@@ -347,6 +347,36 @@ function joinSplitMarkdownTables(markdown: string): string {
   return out.join("\n");
 }
 
+/** A GFM delimiter row, e.g. `| --- | :---: |`. Requires at least one dash so `| |` rows don't match. */
+const MARKDOWN_TABLE_SEPARATOR_PATTERN = /^\|(?:\s*:?-+:?\s*\|)+$/;
+
+/**
+ * Drop delimiter rows (`| --- | --- |`) that are not the second line of a table block.
+ * A GFM table has exactly one, right under the header. Any other one is a stray row that
+ * would render as a literal "---" data row (older saves injected one per row, growing on
+ * every re-open), so remove it wherever it comes from: persisted docs, AI output, imports.
+ */
+function stripStrayTableSeparators(markdown: string): string {
+  const isTableRow = (s: string) => {
+    const t = s.trim();
+    return t.startsWith("|") && t.endsWith("|");
+  };
+
+  const out: string[] = [];
+  let posInTable = 0; // 0 = not in a table, 1 = header row seen, 2+ = past the delimiter slot
+  for (const line of markdown.split("\n")) {
+    if (!isTableRow(line)) {
+      posInTable = 0;
+      out.push(line);
+      continue;
+    }
+    posInTable++;
+    if (posInTable > 2 && MARKDOWN_TABLE_SEPARATOR_PATTERN.test(line.trim())) continue;
+    out.push(line);
+  }
+  return out.join("\n");
+}
+
 /**
  * Convert markdown to HTML using showdown.js
  * Optimized for TipTap rich text editor
@@ -369,7 +399,7 @@ export function markdownToHtml(markdown: string): string {
     const cleanMarkdown = escapeAnswerBlanks(
       normalizeMultipleChoiceOptions(
         normalizeEducationalListFormatting(
-          joinSplitMarkdownTables(mathProtected.content)
+          stripStrayTableSeparators(joinSplitMarkdownTables(mathProtected.content))
         )
       )
     )
@@ -444,7 +474,7 @@ function ensureMarkdownTableSeparators(md: string): string {
   const lines = md.split("\n");
   const out: string[] = [];
   const isTableRow = (s: string) => s.trimEnd().startsWith("|") && s.trimEnd().endsWith("|");
-  const isSeparatorRow = (s: string) => /^\|[\s|:|-]+\|$/.test(s.trim());
+  const isSeparatorRow = (s: string) => MARKDOWN_TABLE_SEPARATOR_PATTERN.test(s.trim());
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
@@ -536,7 +566,12 @@ export function htmlToMarkdown(html: string): string {
     // Safety net: ensure every markdown table has a |---|---| separator row.
     // showdown's makeMarkdown() omits the separator when <thead> is missing,
     // causing makeHtml() to treat the pipes as plain text on the next load.
-    markdown = ensureMarkdownTableSeparators(markdown);
+    // The list-spacing regexes above are not line-anchored: they match the dashes of a
+    // `| --- |` row (or any hyphen / "1." in a row) and append a blank line, which splits
+    // the table and makes every following row look like a new header. Re-join first.
+    markdown = ensureMarkdownTableSeparators(
+      stripStrayTableSeparators(joinSplitMarkdownTables(markdown)),
+    );
     markdown = markdownProtected.restore(markdown);
     // Restore math as $...$ and $$...$$ markdown notation
     markdown = mathHtmlProtected.restore(markdown);
