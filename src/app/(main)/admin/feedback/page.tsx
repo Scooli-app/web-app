@@ -1,5 +1,6 @@
 "use client";
 
+import { useDateFnsLocale } from "@/i18n/dateFns";
 import { FeedbackSeverityBadge } from "@/components/admin/feedback/FeedbackSeverityBadge";
 import { FeedbackStatusBadge } from "@/components/admin/feedback/FeedbackStatusBadge";
 import { PageContainer } from "@/components/layout/PageContainer";
@@ -24,7 +25,6 @@ import {
 } from "@/store/admin-feedback/adminFeedbackSlice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { format } from "date-fns";
-import { pt } from "date-fns/locale";
 import {
   AlertCircle,
   ArrowUpDown,
@@ -144,6 +144,7 @@ function SortableHead({
 }
 
 export default function AdminFeedbackPage() {
+  const dateFnsLocale = useDateFnsLocale();
   const router = useRouter();
   const dispatch = useAppDispatch();
   const [sortField, setSortField] = useState<FeedbackSortField>("date");
@@ -281,7 +282,7 @@ export default function AdminFeedbackPage() {
                 <p className="truncate font-medium">{item.title}</p>
               </div>
               <span className="shrink-0 text-xs text-muted-foreground">
-                {format(new Date(item.createdAt), "dd MMM yyyy", { locale: pt })}
+                {format(new Date(item.createdAt), "dd MMM yyyy", { locale: dateFnsLocale })}
               </span>
             </div>
 
@@ -360,7 +361,7 @@ export default function AdminFeedbackPage() {
                   )}
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground">
-                  {format(new Date(item.createdAt), "dd MMM yyyy", { locale: pt })}
+                  {format(new Date(item.createdAt), "dd MMM yyyy", { locale: dateFnsLocale })}
                 </TableCell>
                 <TableCell className="text-right">
                   <Button

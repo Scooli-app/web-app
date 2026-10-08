@@ -1,6 +1,18 @@
+import type { Locale } from "@/i18n/locales";
 import type { CurrentUserProfile } from "@/shared/types/user";
 import { isAxiosError } from "axios";
 import apiClient from "./client";
+
+/**
+ * Both fields are nullable on purpose and null carries meaning:
+ *   - `preferredLocale: null` → follow the browser.
+ *   - `contentLanguage: null` → same as the interface language.
+ * Omitting a field leaves it untouched; sending null clears it.
+ */
+export interface UpdateLocalePreferencesRequest {
+  preferredLocale?: Locale | null;
+  contentLanguage?: Locale | null;
+}
 
 export const userService = {
   getCurrentUser: async (): Promise<CurrentUserProfile> => {
@@ -26,5 +38,15 @@ export const userService = {
       }
       throw error;
     }
+  },
+
+  /**
+   * Persists the two language preferences. Sent on the same `PUT /users/me` the
+   * NIF uses, so a partial update leaves everything else alone.
+   */
+  updateLocalePreferences: async (
+    preferences: UpdateLocalePreferencesRequest,
+  ): Promise<void> => {
+    await apiClient.put("/users/me", preferences);
   },
 };

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useSelector } from "react-redux";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
+import { useTranslations } from "next-intl";
 import posthog from "posthog-js";
 import { toast } from "sonner";
 
@@ -28,6 +29,7 @@ const MIN_COMPLETIONS = 2;
 const OPEN_DELAY_MS = 2000;
 
 export function FeatureFeedbackGate() {
+  const t = useTranslations("feedback.featureGate");
   const pathname = usePathname();
   const { isLoaded: isAuthLoaded, isSignedIn } = useAuth();
 
@@ -132,17 +134,17 @@ export function FeatureFeedbackGate() {
           has_comment: Boolean(payload.comment),
         });
         setOpen(false);
-        toast.success("Obrigado pelo feedback!");
+        toast.success(t("submitSuccess"));
       } catch (error) {
         if (!(error instanceof UpgradeLimitError)) {
           posthog.captureException(error);
         }
-        toast.error("Não foi possível enviar o feedback. Tenta mais tarde.");
+        toast.error(t("submitError"));
       } finally {
         setIsBusy(false);
       }
     },
-    [],
+    [t],
   );
 
   const handleDismiss = useCallback(async () => {

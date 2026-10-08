@@ -1,6 +1,7 @@
 "use client";
 
 import { Bot, Sparkles } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 interface EmptyStateProps {
   /** Callback when a quick action chip is clicked */
@@ -11,41 +12,18 @@ interface EmptyStateProps {
   disabled?: boolean;
 }
 
-/** Quick action suggestions for new conversations */
-const QUICK_ACTIONS = [
-  {
-    label: "Ideias de atividades ✨",
-    message: "Podes dar-me ideias de atividades para a minha aula?",
-  },
-  {
-    label: "Sugestões para uma aula 📚",
-    message: "Preciso de sugestões para planear uma aula.",
-  },
-  {
-    label: "Dúvidas sobre currículo ❓",
-    message: "Tenho dúvidas sobre o currículo português.",
-  },
-  {
-    label: "Como criar um documento 📝",
-    message: "Como posso criar um plano de aula na Scooli?",
-  },
-];
-
-/** Static welcome message (not streamed) */
-export const WELCOME_MESSAGE = `Olá! 👋 Sou o Assistente Scooli.
-
-Posso ajudar-te com:
-- **Ideias** para atividades e aulas
-- **Dúvidas** sobre pedagogia e currículo
-- **Orientação** sobre como usar a Scooli
-
-Em que posso ajudar hoje?`;
+interface QuickAction {
+  label: string;
+  message: string;
+}
 
 /**
  * Empty state component for the assistant chat.
  * Shows a welcome message and quick action chips.
  */
 export function EmptyState({ onQuickAction, onQuickActionSubmit, disabled = false }: EmptyStateProps) {
+  const t = useTranslations("assistant.emptyState");
+  const QUICK_ACTIONS = t.raw("quickActions") as QuickAction[];
   return (
     <div className="flex flex-col items-center justify-center h-full px-4 py-8 text-center animate-in fade-in duration-500">
       {/* Icon */}
@@ -58,11 +36,10 @@ export function EmptyState({ onQuickAction, onQuickActionSubmit, disabled = fals
 
       {/* Welcome text */}
       <h3 className="text-lg font-semibold text-foreground mb-2">
-        Assistente Scooli
+        {t("title")}
       </h3>
       <p className="text-sm text-muted-foreground mb-6 max-w-xs">
-        Estou aqui para te ajudar com ideias, dúvidas pedagógicas e orientação
-        sobre a aplicação.
+        {t("description")}
       </p>
 
       {/* Quick action chips */}

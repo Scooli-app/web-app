@@ -7,6 +7,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ArrowRight, CheckCircle2, Infinity, Sparkles, Zap } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 
 interface PaymentSuccessModalProps {
@@ -18,6 +19,7 @@ export function PaymentSuccessModal({
   open,
   onOpenChange,
 }: PaymentSuccessModalProps) {
+  const t = useTranslations("billing.paymentSuccessModal");
   const [showConfetti, setShowConfetti] = useState(false);
 
   useEffect(() => {
@@ -79,27 +81,27 @@ export function PaymentSuccessModal({
           </div>
 
           <DialogTitle className="text-2xl font-bold text-foreground mb-1">
-            Bem-vindo ao Scooli Pro! 🎉
+            {t("title")}
           </DialogTitle>
-          
+
           <DialogDescription className="text-muted-foreground">
-            A sua subscrição foi ativada com sucesso
+            {t("subtitle")}
           </DialogDescription>
         </div>
 
         {/* Features */}
         <div className="p-6 space-y-3">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-4">
-            O que desbloqueou
+            {t("unlockedLabel")}
           </p>
-          
+
           <div className="flex items-center gap-4 p-4 bg-muted rounded-xl">
             <div className="w-11 h-11 bg-emerald-500 dark:bg-emerald-600 rounded-xl flex items-center justify-center flex-shrink-0">
               <Infinity className="w-5 h-5 text-white" />
             </div>
             <div>
-              <p className="font-semibold text-foreground">Gerações ilimitadas</p>
-              <p className="text-sm text-muted-foreground">Crie sem limites</p>
+              <p className="font-semibold text-foreground">{t("unlimitedGenerations.title")}</p>
+              <p className="text-sm text-muted-foreground">{t("unlimitedGenerations.description")}</p>
             </div>
           </div>
 
@@ -108,8 +110,8 @@ export function PaymentSuccessModal({
               <Sparkles className="w-5 h-5 text-primary-foreground" />
             </div>
             <div>
-              <p className="font-semibold text-foreground">Modelos personalizados</p>
-              <p className="text-sm text-muted-foreground">Crie os seus próprios modelos</p>
+              <p className="font-semibold text-foreground">{t("customTemplates.title")}</p>
+              <p className="text-sm text-muted-foreground">{t("customTemplates.description")}</p>
             </div>
           </div>
 
@@ -118,8 +120,8 @@ export function PaymentSuccessModal({
               <Zap className="w-5 h-5 text-white" />
             </div>
             <div>
-              <p className="font-semibold text-foreground">Suporte prioritário</p>
-              <p className="text-sm text-muted-foreground">Resposta em menos de 24h</p>
+              <p className="font-semibold text-foreground">{t("prioritySupport.title")}</p>
+              <p className="text-sm text-muted-foreground">{t("prioritySupport.description")}</p>
             </div>
           </div>
         </div>
@@ -130,7 +132,7 @@ export function PaymentSuccessModal({
             onClick={() => onOpenChange(false)}
             className="w-full bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-3.5 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
           >
-            Começar a Criar
+            {t("cta")}
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>

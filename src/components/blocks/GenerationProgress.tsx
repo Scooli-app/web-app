@@ -8,30 +8,9 @@
 "use client";
 
 import { Check, Loader2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { cn } from "@/shared/utils/utils";
 import type { GenerationPhase, ImageProgress } from "@/hooks/useGenerationProgress";
-
-const STEPS: Array<{
-  key: Exclude<GenerationPhase, "done">;
-  label: string;
-  caption: string;
-}> = [
-  {
-    key: "preparing",
-    label: "A preparar",
-    caption: "A consultar o currículo e a montar o contexto.",
-  },
-  {
-    key: "generating",
-    label: "A gerar",
-    caption: "A IA está a escrever os teus slides.",
-  },
-  {
-    key: "reviewing",
-    label: "A rever",
-    caption: "A validar a estrutura e a qualidade do resultado.",
-  },
-];
 
 const STEP_INDEX: Record<GenerationPhase, number> = {
   preparing: 0,
@@ -49,16 +28,26 @@ export function GenerationProgress({
   imageProgress: ImageProgress | null;
   error: string | null;
 }) {
+  const t = useTranslations("blocks.generationProgress");
+  const STEPS: Array<{
+    key: Exclude<GenerationPhase, "done">;
+    label: string;
+    caption: string;
+  }> = [
+    { key: "preparing", label: t("stepPreparingLabel"), caption: t("stepPreparingCaption") },
+    { key: "generating", label: t("stepGeneratingLabel"), caption: t("stepGeneratingCaption") },
+    { key: "reviewing", label: t("stepReviewingLabel"), caption: t("stepReviewingCaption") },
+  ];
   const activeIdx = STEP_INDEX[phase];
 
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-background/80 backdrop-blur-sm">
       <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-lg sm:p-8">
         <h2 className="text-lg font-semibold text-foreground sm:text-xl">
-          A criar a tua apresentação…
+          {t("title")}
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Demora cerca de 30 a 60 segundos.
+          {t("subtitle")}
         </p>
 
         <ol className="mt-6 space-y-4">
@@ -105,7 +94,7 @@ export function GenerationProgress({
         {imageProgress && imageProgress.total > 0 ? (
           <div className="mt-6 rounded-lg border border-border bg-muted/50 p-3">
             <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span>Imagens</span>
+              <span>{t("imagesLabel")}</span>
               <span>
                 {imageProgress.completed} / {imageProgress.total}
               </span>

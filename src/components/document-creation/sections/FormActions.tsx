@@ -1,6 +1,8 @@
-﻿import { Button } from "@/components/ui/button";
+﻿import { AiDisclaimer } from "@/components/ui/ai-disclaimer";
+import { Button } from "@/components/ui/button";
 import { GenerationCostHint } from "@/components/ui/generation-cost-hint";
 import { Loader2, Sparkles } from "lucide-react";
+import { useTranslations } from "next-intl";
 import type { DocumentTypeConfig } from "../types";
 
 interface FormActionsProps {
@@ -20,6 +22,10 @@ export function FormActions({
   onSubmit,
   showGenerationHint = false,
 }: FormActionsProps) {
+  const t = useTranslations("documentCreation");
+  const tEnums = useTranslations("enums");
+  const typeLabel = tEnums(`documentType.${documentType.id}`);
+
   return (
     <>
       {error && (
@@ -33,18 +39,18 @@ export function FormActions({
           onClick={onSubmit}
           disabled={isLoading || !isFormValid}
           className="w-full h-12 sm:h-14 text-base sm:text-lg font-semibold bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl shadow-lg shadow-primary/20 transition-all hover:shadow-xl hover:shadow-primary/30 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
-          aria-label={`Criar ${documentType.title}`}
+          aria-label={`${t("createPrefix")} ${typeLabel}`}
         >
           {isLoading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 sm:h-5 sm:w-5 animate-spin" />
-              <span className="hidden sm:inline">A criar documento...</span>
-              <span className="sm:hidden">A criar...</span>
+              <span className="hidden sm:inline">{t("creatingDocumentLong")}</span>
+              <span className="sm:hidden">{t("creatingDocumentShort")}</span>
             </>
           ) : (
             <>
               <Sparkles className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
-              Criar {documentType.title}
+              {t("createPrefix")} {typeLabel}
               {showGenerationHint && (
                 <GenerationCostHint
                   compact
@@ -54,11 +60,9 @@ export function FormActions({
             </>
           )}
         </Button>
-        <p className="text-center text-[11px] leading-4 text-muted-foreground/70">
-          A IA pode cometer erros. Revê sempre o conteúdo.
-        </p>
+        <AiDisclaimer />
         <p className="text-center text-xs sm:text-sm text-muted-foreground">
-          <span className="text-destructive">*</span> Campos obrigatórios
+          <span className="text-destructive">*</span> {t("requiredFields")}
         </p>
       </div>
     </>

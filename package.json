@@ -7,8 +7,9 @@
     "serve": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
+    "test": "vitest run",
     "lint": "eslint .",
-    "updateEmails": "npx mjml chalkboard/services/src/main/resources/emails/mjml/*.mjml -o chalkboard/services/src/main/resources/emails/html/",
+    "updateEmails": "cd ../chalkboard && make emails",
     "stripe:mock": "stripe listen --forward-to http://localhost:8080/webhooks/stripe",
     "stripe": "stripe listen --forward-to http://localhost:8080/webhooks/stripe",
     "knip": "knip"
@@ -55,6 +56,7 @@
     "konva": "^10.3.0",
     "lucide-react": "^0.525.0",
     "next": "^15.3.5",
+    "next-intl": "^4.14.2",
     "pdf-lib": "^1.17.1",
     "posthog-js": "^1.376.0",
     "posthog-node": "^5.35.2",
@@ -96,6 +98,7 @@
     "postcss": "^8.5.9",
     "tailwindcss": "^4",
     "tw-animate-css": "^1.3.5",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "vitest": "^4.1.11"
   }
 }

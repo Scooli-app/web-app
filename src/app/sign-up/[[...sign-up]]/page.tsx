@@ -1,11 +1,10 @@
-import { SignUp } from "@clerk/nextjs";
 import { AuthLayout } from "@/components/auth/AuthLayout";
+import { LocaleAwareSignUp } from "@/components/auth/LocaleAwareSignUp";
 
 export default function SignUpPage() {
   return (
     <AuthLayout>
-      <SignUp />
+      <LocaleAwareSignUp />
     </AuthLayout>
   );
 }
-

@@ -8,43 +8,42 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowRight, Sparkles } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import posthog from "posthog-js";
 import { useState } from "react";
 
 interface QuickStartExample {
   id: string;
-  label: string;
-  parse: QuickCreateParse;
+  labelKey: string;
+  /** Topic text comes from `documentCreation.quickStart.<id>.topic` — resolved at render time, not here. */
+  parse: Omit<QuickCreateParse, "topic">;
 }
 
 const QUICK_START_EXAMPLES: QuickStartExample[] = [
   {
     id: "lesson_plan_fotossintese",
-    label: "Plano: A fotossíntese · 3.º ano",
+    labelKey: "lessonPlanFotossintese",
     parse: {
       documentType: "lessonPlan",
-      topic: "A fotossíntese e a importância das plantas",
       schoolYear: 3,
       subjectId: "estudo_meio",
     },
   },
   {
     id: "test_fracoes",
-    label: "Teste: Frações · 5.º ano",
+    labelKey: "testFracoes",
     parse: {
       documentType: "test",
-      topic: "Frações: comparação, ordenação e operações",
       schoolYear: 5,
       subjectId: "matematica",
     },
   },
   {
     id: "quiz_descobrimentos",
-    label: "Quiz: Os Descobrimentos · 5.º ano",
+    labelKey: "quizDescobrimentos",
     parse: {
       documentType: "quiz",
-      topic: "Os Descobrimentos Portugueses",
       schoolYear: 5,
       subjectId: "hgp",
     },
@@ -59,6 +58,8 @@ export function QuickCreateCard({
   isWorksheetCreationEnabled,
 }: QuickCreateCardProps) {
   const router = useRouter();
+  const t = useTranslations("dashboard.quickCreate");
+  const tQuickStart = useTranslations("documentCreation.quickStart");
   const [text, setText] = useState("");
 
   const handleSubmit = (event: React.FormEvent) => {
@@ -84,11 +85,15 @@ export function QuickCreateCard({
   };
 
   const handleExampleClick = (example: QuickStartExample) => {
+    const parse: QuickCreateParse = {
+      ...example.parse,
+      topic: tQuickStart(`${example.id}.topic`),
+    };
     posthog.capture("dashboard_quick_start_clicked", {
       example_id: example.id,
-      document_type: example.parse.documentType,
+      document_type: parse.documentType,
     });
-    router.push(buildQuickCreateUrl(example.parse));
+    router.push(buildQuickCreateUrl(parse));
   };
 
   return (
@@ -96,7 +101,7 @@ export function QuickCreateCard({
       <div className="mb-3 flex items-center gap-2">
         <Sparkles className="h-4 w-4 shrink-0 text-primary" />
         <h2 className="text-base font-semibold text-foreground">
-          O que vais ensinar?
+          {t("heading")}
         </h2>
       </div>
 
@@ -104,22 +109,22 @@ export function QuickCreateCard({
         <Input
           value={text}
           onChange={(event) => setText(event.target.value)}
-          placeholder='Ex: "Plano de aula sobre frações para o 3.º ano" ou apenas "frações"'
+          placeholder={t("placeholder")}
           className="h-10 w-full rounded-lg placeholder:text-xs sm:flex-1 sm:placeholder:text-sm"
-          aria-label="Descreve o que queres criar"
+          aria-label={t("inputAriaLabel")}
         />
         <Button
           type="submit"
           disabled={!text.trim()}
           className="h-10 w-full rounded-lg sm:w-auto sm:shrink-0 sm:px-4"
         >
-          Criar com IA
+          {t("submit")}
           <ArrowRight className="ml-1.5 h-4 w-4" />
         </Button>
       </form>
 
       <div className="mt-3 flex flex-wrap items-center gap-1.5">
-        <span className="text-xs text-muted-foreground">Exemplos:</span>
+        <span className="text-xs text-muted-foreground">{t("examplesLabel")}</span>
         {QUICK_START_EXAMPLES.map((example) => (
           <button
             key={example.id}
@@ -127,7 +132,7 @@ export function QuickCreateCard({
             onClick={() => handleExampleClick(example)}
             className="rounded-full border border-border bg-background px-2.5 py-1 text-xs font-medium text-foreground transition-colors hover:bg-accent"
           >
-            {example.label}
+            {t(`examples.${example.labelKey}`)}
           </button>
         ))}
       </div>

@@ -1,4 +1,5 @@
 "use client";
+import { AiDisclaimer } from "@/components/ui/ai-disclaimer";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -45,6 +46,9 @@ import {
   SkipForward,
   Sparkles,
 } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
+import { isSupportedLocale, defaultLocale } from "@/i18n/locales";
+import { toIntlLocale } from "@/shared/utils/calendar";
 
 const ROLE_ROUTE: Record<string, string> = {
   lessonPlan: Routes.LESSON_PLAN,
@@ -83,6 +87,11 @@ export function SlotDialog({
   onTypeChange,
   onTitleChange,
 }: SlotDialogProps) {
+  const t = useTranslations("calendar.slotDialog");
+  const tShared = useTranslations("calendar.shared");
+  const tTimetable = useTranslations("timetable");
+  const rawLocale = useLocale();
+  const locale = isSupportedLocale(rawLocale) ? rawLocale : defaultLocale;
   const router = useRouter();
   const [editingTitle, setEditingTitle] = useState(false);
   const [draftTitle, setDraftTitle] = useState("");
@@ -137,7 +146,7 @@ export function SlotDialog({
     setEditingTitle(false);
   };
 
-  const dateLabel = new Date(`${slot.slotDate}T00:00:00`).toLocaleDateString("pt-PT", {
+  const dateLabel = new Date(`${slot.slotDate}T00:00:00`).toLocaleDateString(toIntlLocale(locale), {
     weekday: "long",
     day: "numeric",
     month: "long",
@@ -158,27 +167,27 @@ export function SlotDialog({
                 style={{ backgroundColor: color }}
               >
                 <span className="h-1.5 w-1.5 rounded-full bg-white/70" />
-                {slot.timetable.gradeLevel ? `${slot.timetable.gradeLevel}.º ` : ""}
+                {slot.timetable.gradeLevel ? `${tTimetable("gradeShort", { grade: slot.timetable.gradeLevel })} ` : ""}
                 {translateSubject(slot.timetable.subject)}
                 {slot.timetable.classLabel ? ` · ${slot.timetable.classLabel}` : ""}
               </span>
               <Badge className={`gap-1 border text-xs ${cfg.badgeCls}`}>
                 {cfg.icon}
-                {cfg.label}
+                {tTimetable(`status.${slot.status}`)}
               </Badge>
               {isAssessment && (
                 <Badge variant="outline" className="text-xs text-amber-600 border-amber-300">
-                  Avaliação
+                  {tTimetable("slotType.assessment")}
                 </Badge>
               )}
               {isExercise && (
                 <Badge variant="outline" className="text-xs text-sky-600 border-sky-300">
-                  Exercícios
+                  {tTimetable("slotType.exercise")}
                 </Badge>
               )}
               {isReview && (
                 <Badge variant="outline" className="text-xs text-violet-600 border-violet-300">
-                  Revisão
+                  {tTimetable("slotType.review")}
                 </Badge>
               )}
             </div>
@@ -200,13 +209,13 @@ export function SlotDialog({
               <DialogTitle
                 className="group/title flex cursor-text items-start gap-1.5 text-left text-base leading-snug"
                 onClick={() => !isHoliday && setEditingTitle(true)}
-                title={isHoliday ? undefined : "Clica para editar o tópico"}
+                title={isHoliday ? undefined : t("editTopicTitle")}
               >
                 <span className="hover:underline decoration-dashed underline-offset-2">
                   {slot.topicTitle ||
                     (isHoliday
-                      ? "Feriado / Sem aula"
-                      : "Sem tópico — clica para editar")}
+                      ? tShared("holidayNoLesson")
+                      : t("topicPlaceholderEmpty"))}
                 </span>
                 {!isHoliday && (
                   <Edit2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover/title:opacity-60" />
@@ -216,8 +225,8 @@ export function SlotDialog({
 
             <DialogDescription className="mt-1 flex items-center gap-1.5 text-sm">
               <Clock className="h-3.5 w-3.5 shrink-0" />
-              Aula {slot.sequenceNumber} · {dateLabel}
-              {slot.durationMinutes > 0 && ` · ${slot.durationMinutes} min`}
+              {t("lessonNumber", { number: slot.sequenceNumber })} · {dateLabel}
+              {slot.durationMinutes > 0 && ` · ${tShared("minutesSuffix", { count: slot.durationMinutes })}`}
             </DialogDescription>
           </DialogHeader>
 
@@ -225,7 +234,7 @@ export function SlotDialog({
             {/* Slot type selector */}
             {!isHoliday && (
               <div className="flex items-center gap-2">
-                <Label className="shrink-0 text-xs text-muted-foreground">Tipo:</Label>
+                <Label className="shrink-0 text-xs text-muted-foreground">{t("typeLabel")}</Label>
                 <Select
                   value={slot.slotType}
                   onValueChange={(v) => onTypeChange(slot, v as LessonSlotType)}
@@ -234,11 +243,11 @@ export function SlotDialog({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="LESSON">Aula</SelectItem>
-                    <SelectItem value="ASSESSMENT">Avaliação</SelectItem>
-                    <SelectItem value="HOLIDAY">Feriado</SelectItem>
-                    <SelectItem value="EXERCISE">Exercícios</SelectItem>
-                    <SelectItem value="REVIEW">Revisão</SelectItem>
+                    <SelectItem value="LESSON">{tTimetable("slotType.lesson")}</SelectItem>
+                    <SelectItem value="ASSESSMENT">{tTimetable("slotType.assessment")}</SelectItem>
+                    <SelectItem value="HOLIDAY">{tTimetable("slotType.holiday")}</SelectItem>
+                    <SelectItem value="EXERCISE">{tTimetable("slotType.exercise")}</SelectItem>
+                    <SelectItem value="REVIEW">{tTimetable("slotType.review")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -250,7 +259,7 @@ export function SlotDialog({
                 <Separator />
                 <div className="space-y-1.5">
                   <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    Objetivos de Aprendizagem
+                    {t("objectivesTitle")}
                   </p>
                   {slot.description ? (
                     <p className="text-sm leading-relaxed text-foreground/80 whitespace-pre-line">
@@ -259,8 +268,8 @@ export function SlotDialog({
                   ) : (
                     <p className="text-sm italic text-muted-foreground/60">
                       {isSlotGenerating
-                        ? "A processar…"
-                        : "Gera os tópicos da turma para ver os objetivos de aprendizagem."}
+                        ? t("objectivesProcessing")
+                        : t("objectivesEmpty")}
                     </p>
                   )}
                 </div>
@@ -288,7 +297,7 @@ export function SlotDialog({
                     className="flex w-full items-center justify-between py-0.5"
                   >
                     <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      Documentos gerados
+                      {t("documentsTitle")}
                       {slotDocs.length > 0 && (
                         <span className="ml-1.5 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] text-primary">
                           {slotDocs.length}
@@ -304,11 +313,11 @@ export function SlotDialog({
                       {docsLoading ? (
                         <div className="flex items-center gap-2 py-1 text-xs text-muted-foreground">
                           <Loader2 className="h-3 w-3 animate-spin" />
-                          A carregar documentos…
+                          {t("loadingDocuments")}
                         </div>
                       ) : slotDocs.length === 0 ? (
                         <p className="py-1 text-xs text-muted-foreground">
-                          Nenhum documento encontrado.
+                          {t("noDocuments")}
                         </p>
                       ) : (
                         slotDocs.map((doc) => (
@@ -345,7 +354,7 @@ export function SlotDialog({
                 className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
               >
                 <ExternalLink className="h-3 w-3" />
-                Ver planificação ligada
+                {t("viewLinkedPlan")}
               </button>
             )}
 
@@ -353,10 +362,10 @@ export function SlotDialog({
             {(canGenerate || isCompleted) && (
               <div className="space-y-1.5">
                 <Label className="text-xs text-muted-foreground">
-                  Instrução adicional (opcional)
+                  {t("additionalInstructionLabel")}
                 </Label>
                 <Input
-                  placeholder="Ex: inclui atividade prática em grupo"
+                  placeholder={t("additionalInstructionPlaceholder")}
                   value={customMessage}
                   onChange={(e) => setCustomMessage(e.target.value)}
                   className="h-9"
@@ -369,19 +378,20 @@ export function SlotDialog({
         {/* Footer actions */}
         {!isHoliday && (
           <DialogFooter className="border-t bg-muted/30 px-6 py-4 gap-2">
+            {(canGenerate || isCompleted) && <AiDisclaimer className="sm:mr-auto sm:self-center sm:text-left" />}
             {canGenerate && (
               <Button
                 onClick={() => onGenerate(slot, customMessage || undefined)}
                 className="h-9 rounded-lg"
               >
                 <Sparkles className="mr-1.5 h-4 w-4" />
-                Gerar plano de aula
+                {t("generateLessonPlan")}
               </Button>
             )}
             {isSlotGenerating && (
               <Button disabled className="h-9 rounded-lg">
                 <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-                A gerar…
+                {t("generating")}
               </Button>
             )}
             {isCompleted && (
@@ -397,7 +407,7 @@ export function SlotDialog({
                   className="h-9 rounded-lg"
                 >
                   <FileText className="mr-1.5 h-4 w-4" />
-                  Abrir plano de aula
+                  {t("openLessonPlan")}
                 </Button>
                 <Button
                   variant="outline"
@@ -406,7 +416,7 @@ export function SlotDialog({
                   className="h-9 rounded-lg"
                 >
                   <RotateCcw className="mr-1.5 h-4 w-4" />
-                  Regenerar
+                  {t("regenerate")}
                 </Button>
               </>
             )}
@@ -414,7 +424,7 @@ export function SlotDialog({
               confirmingSkip ? (
                 <div className="ml-auto flex items-center gap-2">
                   <span className="text-xs text-muted-foreground">
-                    Esta ação não pode ser desfeita.
+                    {t("confirmSkipWarning")}
                   </span>
                   <Button
                     variant="destructive"
@@ -422,7 +432,7 @@ export function SlotDialog({
                     className="h-8 rounded-lg"
                     onClick={() => { setConfirmingSkip(false); onSkip(slot); }}
                   >
-                    Confirmar
+                    {t("confirm")}
                   </Button>
                   <Button
                     variant="ghost"
@@ -430,7 +440,7 @@ export function SlotDialog({
                     className="h-8 rounded-lg"
                     onClick={() => setConfirmingSkip(false)}
                   >
-                    Cancelar
+                    {t("cancel")}
                   </Button>
                 </div>
               ) : (
@@ -440,7 +450,7 @@ export function SlotDialog({
                   onClick={() => setConfirmingSkip(true)}
                 >
                   <SkipForward className="mr-1.5 h-4 w-4" />
-                  Ignorar
+                  {t("skip")}
                 </Button>
               )
             )}

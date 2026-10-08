@@ -8,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { SUBJECTS } from "@/components/document-creation/constants";
+import { SUBJECTS, translateSubjectLabel } from "@/components/document-creation/constants";
 import type { Document } from "@/shared/types";
 import {
   selectIsCurriculumPlanEnabled,
@@ -25,6 +25,7 @@ import {
   ScrollText,
   type LucideIcon,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 export type DocumentOriginFilter = "all" | "ai" | "imported";
 
@@ -44,7 +45,6 @@ const GRADE_OPTIONS = Array.from({ length: 12 }, (_, i) => i + 1);
 
 const typeFilterOptions: Array<{
   value: Document["documentType"] | "all";
-  label: string;
   icon: LucideIcon;
   // Tailwind classes for selected and unselected states
   selectedCls: string;
@@ -53,7 +53,6 @@ const typeFilterOptions: Array<{
 }> = [
   {
     value: "all",
-    label: "Todos",
     icon: Folder,
     selectedCls: "border-primary bg-primary text-primary-foreground shadow-sm",
     unselectedCls: "border-border bg-card text-muted-foreground hover:border-primary/60 hover:text-primary",
@@ -61,7 +60,6 @@ const typeFilterOptions: Array<{
   },
   {
     value: "lessonPlan",
-    label: "Planos de Aula",
     icon: FileText,
     selectedCls: "border-primary bg-primary text-primary-foreground shadow-sm",
     unselectedCls: "border-border bg-card text-muted-foreground hover:border-primary/60 hover:text-primary",
@@ -69,7 +67,6 @@ const typeFilterOptions: Array<{
   },
   {
     value: "worksheet",
-    label: "Fichas de Trabalho",
     icon: ScrollText,
     selectedCls: "border-teal-500 bg-teal-500 text-white shadow-sm dark:border-teal-600 dark:bg-teal-600",
     unselectedCls: "border-border bg-card text-muted-foreground hover:border-teal-400 hover:text-teal-600 dark:hover:text-teal-400",
@@ -77,7 +74,6 @@ const typeFilterOptions: Array<{
   },
   {
     value: "test",
-    label: "Testes",
     icon: NotebookPen,
     selectedCls: "border-orange-500 bg-orange-500 text-white shadow-sm dark:border-orange-600 dark:bg-orange-600",
     unselectedCls: "border-border bg-card text-muted-foreground hover:border-orange-400 hover:text-orange-600 dark:hover:text-orange-400",
@@ -85,7 +81,6 @@ const typeFilterOptions: Array<{
   },
   {
     value: "quiz",
-    label: "Quizzes",
     icon: HelpCircle,
     selectedCls: "border-amber-500 bg-amber-500 text-white shadow-sm dark:border-amber-600 dark:bg-amber-600",
     unselectedCls: "border-border bg-card text-muted-foreground hover:border-amber-400 hover:text-amber-600 dark:hover:text-amber-400",
@@ -93,7 +88,6 @@ const typeFilterOptions: Array<{
   },
   {
     value: "presentation",
-    label: "Apresentações",
     icon: MonitorPlay,
     selectedCls: "border-rose-500 bg-rose-500 text-white shadow-sm dark:border-rose-600 dark:bg-rose-600",
     unselectedCls: "border-border bg-card text-muted-foreground hover:border-rose-400 hover:text-rose-600 dark:hover:text-rose-400",
@@ -101,7 +95,6 @@ const typeFilterOptions: Array<{
   },
   {
     value: "curriculumPlan",
-    label: "Planificações",
     icon: CalendarDays,
     selectedCls: "border-indigo-500 bg-indigo-500 text-white shadow-sm dark:border-indigo-600 dark:bg-indigo-600",
     unselectedCls: "border-border bg-card text-muted-foreground hover:border-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-400",
@@ -109,11 +102,7 @@ const typeFilterOptions: Array<{
   },
 ];
 
-const originOptions: Array<{ value: DocumentOriginFilter; label: string }> = [
-  { value: "all", label: "Qualquer origem" },
-  { value: "ai", label: "Gerado por IA" },
-  { value: "imported", label: "Importado" },
-];
+const originOptions: DocumentOriginFilter[] = ["all", "ai", "imported"];
 
 export function DocumentFilters({
   selectedType,
@@ -126,6 +115,7 @@ export function DocumentFilters({
   selectedOrigin = "all",
   onOriginChange,
 }: DocumentFiltersProps) {
+  const t = useTranslations("documents.filters");
   const isPresentationCreationEnabled = useAppSelector(
     selectIsPresentationCreationEnabled
   );
@@ -162,7 +152,7 @@ export function DocumentFilters({
               className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-xl border px-3 py-2 text-xs font-medium transition-all duration-200 sm:gap-2 sm:px-4 sm:text-sm ${isSelected ? option.selectedCls : option.unselectedCls}`}
             >
               <Icon className="h-3.5 w-3.5 shrink-0" />
-              <span>{option.label}</span>
+              <span>{t(`types.${option.value}`)}</span>
               {documentCounts && (
                 <Badge
                   className={`ml-0.5 px-2 py-0 text-xs ${isSelected ? option.badgeSelectedCls : "bg-muted text-muted-foreground"}`}
@@ -183,13 +173,13 @@ export function DocumentFilters({
           onValueChange={(v) => onSubjectChange?.(v === "__all__" ? "" : v)}
         >
           <SelectTrigger className="h-8 w-auto min-w-[10rem] border-dashed text-xs">
-            <SelectValue placeholder="Disciplina" />
+            <SelectValue placeholder={t("subjectPlaceholder")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="__all__">Todas as disciplinas</SelectItem>
+            <SelectItem value="__all__">{t("allSubjects")}</SelectItem>
             {SUBJECTS.map((s) => (
               <SelectItem key={s.id} value={s.value}>
-                {s.label}
+                {translateSubjectLabel(s.id)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -201,13 +191,13 @@ export function DocumentFilters({
           onValueChange={(v) => onGradeChange?.(v === "__all__" ? "" : v)}
         >
           <SelectTrigger className="h-8 w-auto min-w-[8rem] border-dashed text-xs">
-            <SelectValue placeholder="Ano" />
+            <SelectValue placeholder={t("gradePlaceholder")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="__all__">Todos os anos</SelectItem>
+            <SelectItem value="__all__">{t("allGrades")}</SelectItem>
             {GRADE_OPTIONS.map((y) => (
               <SelectItem key={y} value={String(y)}>
-                {y}.º ano
+                {t("gradeOption", { grade: y })}
               </SelectItem>
             ))}
           </SelectContent>
@@ -219,12 +209,12 @@ export function DocumentFilters({
           onValueChange={(v) => onOriginChange?.(v as DocumentOriginFilter)}
         >
           <SelectTrigger className="h-8 w-auto min-w-[9rem] border-dashed text-xs">
-            <SelectValue placeholder="Origem" />
+            <SelectValue placeholder={t("originPlaceholder")} />
           </SelectTrigger>
           <SelectContent>
             {originOptions.map((o) => (
-              <SelectItem key={o.value} value={o.value}>
-                {o.label}
+              <SelectItem key={o} value={o}>
+                {t(`origin.${o}`)}
               </SelectItem>
             ))}
           </SelectContent>

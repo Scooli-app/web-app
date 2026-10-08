@@ -3,9 +3,14 @@ import ClerkThemeProvider from "@/components/providers/ClerkThemeProvider";
 import StoreProvider from "@/components/providers/StoreProvider";
 import ThemeProvider from "@/components/providers/ThemeProvider";
 import { Toaster } from "@/components/ui/sonner";
+import { ClerkLocaleStamp } from "@/components/providers/ClerkLocaleStamp";
+import LocaleProvider from "@/components/providers/LocaleProvider";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import type { Metadata } from "next";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale, getTranslations } from "next-intl/server";
+import { TranslatorBridge } from "@/i18n/TranslatorBridge";
 import { Lato, Lexend, Merriweather, Montserrat, Nunito, Playfair_Display, Poppins, Raleway } from "next/font/google";
 import "./globals.css";
 import "katex/dist/katex.min.css";
@@ -39,31 +44,37 @@ const merriweather = Merriweather({ variable: "--font-merriweather", subsets: ["
 const nunito = Nunito({ variable: "--font-nunito", subsets: ["latin"], weight: ["300", "400", "500", "600", "700"] });
 const playfair = Playfair_Display({ variable: "--font-playfair", subsets: ["latin"], weight: ["400", "500", "600", "700"] });
 
-export const metadata: Metadata = {
-  title: "Scooli - Plataforma AI para Professores",
-  description:
-    "Crie conteúdo educacional de qualidade em segundos com inteligência artificial.",
-  icons: {
-    icon: [
-      { url: "/favicon.ico", type: "image/x-icon" },
-      { url: "/favicon-96x96.png", sizes: "96x96", type: "image/png" },
-      { url: "/favicon.svg", type: "image/svg+xml" },
-    ],
-    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
-  },
-  manifest: "/site.webmanifest",
-  appleWebApp: {
-    title: "Scooli",
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("appMeta");
+  return {
+    title: t("title"),
+    description: t("description"),
+    icons: {
+      icon: [
+        { url: "/favicon.ico", type: "image/x-icon" },
+        { url: "/favicon-96x96.png", sizes: "96x96", type: "image/png" },
+        { url: "/favicon.svg", type: "image/svg+xml" },
+      ],
+      apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
+    },
+    manifest: "/site.webmanifest",
+    appleWebApp: {
+      title: "Scooli",
+    },
+  };
+}
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  // Resolved from the NEXT_LOCALE cookie in src/i18n/request.ts. Falls back to
+  // pt-PT, so a visitor with no cookie sees exactly what they see today.
+  const locale = await getLocale();
+
   return (
-    <html lang="pt" className={`${lexend.variable} ${poppins.variable} ${montserrat.variable} ${raleway.variable} ${lato.variable} ${merriweather.variable} ${nunito.variable} ${playfair.variable}`} suppressHydrationWarning>
+    <html lang={locale} className={`${lexend.variable} ${poppins.variable} ${montserrat.variable} ${raleway.variable} ${lato.variable} ${merriweather.variable} ${nunito.variable} ${playfair.variable}`} suppressHydrationWarning>
       <head>
         <link
           rel="preconnect"
@@ -77,16 +88,22 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
       <body className={`${lexend.className} antialiased`} suppressHydrationWarning>
-        <StoreProvider>
-          <ThemeProvider>
-            <ClerkThemeProvider>
-              <AuthProvider>
-                {children}
-                <Toaster position="bottom-right" />
-              </AuthProvider>
-            </ClerkThemeProvider>
-          </ThemeProvider>
-        </StoreProvider>
+        <NextIntlClientProvider>
+          <TranslatorBridge />
+          <StoreProvider>
+            <ThemeProvider>
+              <ClerkThemeProvider>
+                <AuthProvider>
+                  <LocaleProvider>
+                    <ClerkLocaleStamp />
+                    {children}
+                    <Toaster position="bottom-right" />
+                  </LocaleProvider>
+                </AuthProvider>
+              </ClerkThemeProvider>
+            </ThemeProvider>
+          </StoreProvider>
+        </NextIntlClientProvider>
         <SpeedInsights />
         <Analytics />
       </body>

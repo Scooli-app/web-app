@@ -38,6 +38,9 @@ import {
   Plus,
   Trash2,
 } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
+import { isSupportedLocale, defaultLocale } from "@/i18n/locales";
+import { toIntlLocale } from "@/shared/utils/calendar";
 
 // ── Delete confirmation dialog ────────────────────────────────────────────────
 
@@ -49,6 +52,7 @@ interface DeleteDialogProps {
 }
 
 function DeleteDialog({ timetable, isDeleting, onConfirm, onCancel }: DeleteDialogProps) {
+  const t = useTranslations("calendar.classesList");
   return (
     <Dialog open={!!timetable} onOpenChange={(open) => !open && onCancel()}>
       <DialogContent className="max-w-md">
@@ -58,14 +62,12 @@ function DeleteDialog({ timetable, isDeleting, onConfirm, onCancel }: DeleteDial
               <AlertTriangle className="h-6 w-6" />
             </div>
             <div>
-              <DialogTitle>Eliminar turma?</DialogTitle>
+              <DialogTitle>{t("deleteDialog.title")}</DialogTitle>
               <DialogDescription className="mt-1">
-                Tens a certeza que queres eliminar{" "}
-                <span className="font-medium text-foreground">
-                  &quot;{timetable?.title}&quot;
-                </span>
-                ? Escolhe se pretendes manter ou eliminar os documentos gerados
-                associados a esta turma.
+                {t.rich("deleteDialog.description", {
+                  title: timetable?.title ?? "",
+                  strong: (chunks) => <span className="font-medium text-foreground">{chunks}</span>,
+                })}
               </DialogDescription>
             </div>
           </div>
@@ -78,9 +80,9 @@ function DeleteDialog({ timetable, isDeleting, onConfirm, onCancel }: DeleteDial
             className="w-full justify-start text-left h-auto py-3 px-4"
           >
             <div className="flex flex-col items-start">
-              <span className="font-medium">Eliminar apenas a turma</span>
+              <span className="font-medium">{t("deleteDialog.deleteOnlyTitle")}</span>
               <span className="text-xs text-muted-foreground font-normal">
-                Os documentos gerados são mantidos
+                {t("deleteDialog.deleteOnlySubtitle")}
               </span>
             </div>
           </Button>
@@ -96,9 +98,9 @@ function DeleteDialog({ timetable, isDeleting, onConfirm, onCancel }: DeleteDial
               <Trash2 className="mr-2 h-4 w-4 shrink-0" />
             )}
             <div className="flex flex-col items-start">
-              <span className="font-medium">Eliminar turma e documentos</span>
+              <span className="font-medium">{t("deleteDialog.deleteWithDocsTitle")}</span>
               <span className="text-xs text-red-200 font-normal">
-                Todos os documentos associados serão apagados
+                {t("deleteDialog.deleteWithDocsSubtitle")}
               </span>
             </div>
           </Button>
@@ -108,7 +110,7 @@ function DeleteDialog({ timetable, isDeleting, onConfirm, onCancel }: DeleteDial
             onClick={onCancel}
             className="w-full"
           >
-            Cancelar
+            {t("deleteDialog.cancel")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -126,6 +128,10 @@ interface EditDialogProps {
 }
 
 function EditDialog({ timetable, isSaving, onSave, onCancel }: EditDialogProps) {
+  const t = useTranslations("calendar.classesList");
+  const tTimetable = useTranslations("timetable");
+  const rawLocale = useLocale();
+  const locale = isSupportedLocale(rawLocale) ? rawLocale : defaultLocale;
   const [title, setTitle] = useState("");
   const [classLabel, setClassLabel] = useState("");
   const [color, setColor] = useState("");
@@ -150,7 +156,7 @@ function EditDialog({ timetable, isSaving, onSave, onCancel }: EditDialogProps) 
 
   const periodLabel = (() => {
     const fmt = (iso: string) =>
-      new Date(`${iso}T00:00:00`).toLocaleDateString("pt-PT", {
+      new Date(`${iso}T00:00:00`).toLocaleDateString(toIntlLocale(locale), {
         day: "numeric", month: "short", year: "numeric",
       });
     return `${fmt(timetable.periodStart)} – ${fmt(timetable.periodEnd)}`;
@@ -160,89 +166,91 @@ function EditDialog({ timetable, isSaving, onSave, onCancel }: EditDialogProps) 
     <Dialog open={!!timetable} onOpenChange={(open) => !open && onCancel()}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Editar turma</DialogTitle>
-          <DialogDescription>Altera o nome, turma, cor ou planificação ligada.</DialogDescription>
+          <DialogTitle>{t("editDialog.title")}</DialogTitle>
+          <DialogDescription>{t("editDialog.description")}</DialogDescription>
         </DialogHeader>
 
         {/* Read-only summary */}
-        <div className="rounded-lg border border-border bg-muted/30 px-4 py-3 text-sm text-muted-foreground space-y-0.5">
-          <p>
-            <span className="font-medium text-foreground">{translateSubject(timetable.subject)}</span>
-            {" · "}
-            {timetable.gradeLevel}.º ano
-          </p>
-          <p>{periodLabel}</p>
-        </div>
-
-        <div className="space-y-4">
-          {/* Title */}
-          <div className="space-y-1.5">
-            <Label>Nome</Label>
-            <Input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder={timetable.title}
-            />
+        <div className="px-6 pt-4 space-y-4">
+          <div className="rounded-lg border border-border bg-muted/30 px-4 py-3 text-sm text-muted-foreground space-y-0.5">
+            <p>
+              <span className="font-medium text-foreground">{translateSubject(timetable.subject)}</span>
+              {" · "}
+              {tTimetable("gradeYear", { grade: timetable.gradeLevel })}
+            </p>
+            <p>{periodLabel}</p>
           </div>
 
-          {/* Turma + Cor in a row */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-4">
+            {/* Title */}
             <div className="space-y-1.5">
-              <Label>Turma</Label>
+              <Label>{t("editDialog.nameLabel")}</Label>
               <Input
-                placeholder="Ex: A"
-                value={classLabel}
-                onChange={(e) => setClassLabel(e.target.value)}
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder={timetable.title}
               />
             </div>
-            <div className="space-y-1.5">
-              <Label>Cor</Label>
-              <div className="flex flex-wrap gap-1.5 pt-0.5">
-                {TIMETABLE_COLORS.map((c) => (
-                  <button
-                    key={c}
-                    type="button"
-                    onClick={() => setColor(c)}
-                    className={`h-6 w-6 rounded-full border-2 transition-transform hover:scale-110 ${
-                      color === c ? "border-foreground scale-110" : "border-transparent"
-                    }`}
-                    style={{ backgroundColor: c }}
-                    aria-label={c}
-                  />
-                ))}
+
+            {/* Turma + Cor in a row */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>{t("editDialog.classLabel")}</Label>
+                <Input
+                  placeholder={t("editDialog.classPlaceholder")}
+                  value={classLabel}
+                  onChange={(e) => setClassLabel(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>{t("editDialog.colorLabel")}</Label>
+                <div className="flex flex-wrap gap-1.5 pt-0.5">
+                  {TIMETABLE_COLORS.map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => setColor(c)}
+                      className={`h-6 w-6 rounded-full border-2 transition-transform hover:scale-110 ${
+                        color === c ? "border-foreground scale-110" : "border-transparent"
+                      }`}
+                      style={{ backgroundColor: c }}
+                      aria-label={c}
+                    />
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Planificação ligada */}
-          <div className="space-y-1.5">
-            <Label>Planificação ligada</Label>
-            {plansLoading ? (
-              <div className="flex items-center gap-2 py-1 text-xs text-muted-foreground">
-                <Loader2 className="h-3 w-3 animate-spin" />A carregar…
-              </div>
-            ) : (
-              <select
-                className="h-9 w-full rounded-lg border border-input bg-background px-2 text-sm"
-                value={linkedPlanId}
-                onChange={(e) => setLinkedPlanId(e.target.value)}
-              >
-                <option value="">Nenhuma</option>
-                {plans.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.title}
-                    {p.subject ? ` · ${translateSubject(p.subject)}` : ""}
-                    {p.gradeLevel ? ` · ${p.gradeLevel}.º ano` : ""}
-                  </option>
-                ))}
-              </select>
-            )}
+            {/* Planificação ligada */}
+            <div className="space-y-1.5">
+              <Label>{t("editDialog.linkedPlanLabel")}</Label>
+              {plansLoading ? (
+                <div className="flex items-center gap-2 py-1 text-xs text-muted-foreground">
+                  <Loader2 className="h-3 w-3 animate-spin" />{t("editDialog.loadingPlans")}
+                </div>
+              ) : (
+                <select
+                  className="h-9 w-full rounded-lg border border-input bg-background px-2 text-sm"
+                  value={linkedPlanId}
+                  onChange={(e) => setLinkedPlanId(e.target.value)}
+                >
+                  <option value="">{t("editDialog.none")}</option>
+                  {plans.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.title}
+                      {p.subject ? ` · ${translateSubject(p.subject)}` : ""}
+                      {p.gradeLevel ? ` · ${tTimetable("gradeYear", { grade: p.gradeLevel })}` : ""}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
           </div>
         </div>
 
-        <DialogFooter className="pt-2">
+        <DialogFooter className="px-6 pb-6 pt-2">
           <Button variant="ghost" onClick={onCancel} disabled={isSaving}>
-            Cancelar
+            {t("editDialog.cancel")}
           </Button>
           <Button
             onClick={() =>
@@ -256,7 +264,7 @@ function EditDialog({ timetable, isSaving, onSave, onCancel }: EditDialogProps) 
             disabled={isSaving || !title.trim()}
           >
             {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Guardar
+            {t("editDialog.save")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -273,12 +281,17 @@ interface SequenceCardProps {
 }
 
 function SequenceCard({ timetable, onDelete, onEdit }: SequenceCardProps) {
+  const t = useTranslations("calendar.classesList");
+  const tShared = useTranslations("calendar.shared");
+  const tTimetable = useTranslations("timetable");
+  const rawLocale = useLocale();
+  const locale = isSupportedLocale(rawLocale) ? rawLocale : defaultLocale;
   const color = timetable.color || "#7F77DD";
   const isActive = timetable.status === "active";
 
   const periodLabel = (() => {
     const fmt = (iso: string) =>
-      new Date(`${iso}T00:00:00`).toLocaleDateString("pt-PT", {
+      new Date(`${iso}T00:00:00`).toLocaleDateString(toIntlLocale(locale), {
         day: "numeric",
         month: "short",
         year: "numeric",
@@ -303,15 +316,15 @@ function SequenceCard({ timetable, onDelete, onEdit }: SequenceCardProps) {
           </p>
           <p className="text-sm text-muted-foreground">
             {translateSubject(timetable.subject)}
-            {timetable.gradeLevel ? ` · ${timetable.gradeLevel}.º ano` : ""}
-            {timetable.classLabel ? ` · Turma ${timetable.classLabel}` : ""}
+            {timetable.gradeLevel ? ` · ${tTimetable("gradeYear", { grade: timetable.gradeLevel })}` : ""}
+            {timetable.classLabel ? ` · ${tShared("classInline", { label: timetable.classLabel })}` : ""}
           </p>
           <p className="text-xs text-muted-foreground/70">{periodLabel}</p>
         </div>
       </Link>
 
       <Badge variant={isActive ? "default" : "secondary"} className="shrink-0 text-xs">
-        {isActive ? "Ativa" : "Inativa"}
+        {isActive ? t("card.active") : t("card.inactive")}
       </Badge>
 
       <div className="flex shrink-0 items-center gap-1">
@@ -323,7 +336,7 @@ function SequenceCard({ timetable, onDelete, onEdit }: SequenceCardProps) {
             e.preventDefault();
             onEdit(timetable);
           }}
-          title="Editar turma"
+          title={t("card.editTitle")}
         >
           <Edit2 className="h-4 w-4" />
         </Button>
@@ -351,6 +364,7 @@ function SequenceCard({ timetable, onDelete, onEdit }: SequenceCardProps) {
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function SequenciasPage() {
+  const t = useTranslations("calendar");
   const { loaded: featuresLoaded, enabled } = useFeatureAccess(selectIsHorarioPlanosEnabled);
   const { timetables, isLoading } = useSelector((state: RootState) => state.timetable);
   const dispatch = useAppDispatch();
@@ -406,8 +420,8 @@ export default function SequenciasPage() {
   if (!enabled)
     return (
       <FeatureUnavailable
-        title="As Turmas"
-        description="Cria o horário semanal de uma turma, gera a sequência de tópicos e os planos de aula. Disponível nos planos pagos."
+        title={t("shared.featureTitle")}
+        description={t("shared.featureDescription")}
       />
     );
 
@@ -421,16 +435,16 @@ export default function SequenciasPage() {
             </Link>
           </Button>
           <div>
-            <h1 className="text-xl font-semibold">Turmas</h1>
+            <h1 className="text-xl font-semibold">{t("classesList.header.title")}</h1>
             <p className="text-sm text-muted-foreground">
-              Todas as tuas turmas
+              {t("classesList.header.subtitle")}
             </p>
           </div>
         </div>
         <Button asChild size="sm">
           <Link href={Routes.CALENDAR_NEW}>
             <Plus className="mr-1.5 h-4 w-4" />
-            Nova turma
+            {t("shared.newClassLink")}
           </Link>
         </Button>
       </div>
@@ -443,24 +457,24 @@ export default function SequenciasPage() {
         <div className="flex flex-col items-center justify-center gap-4 rounded-lg border border-dashed border-border py-20 text-center">
           <CalendarDays className="h-12 w-12 text-muted-foreground" />
           <div>
-            <p className="font-medium text-foreground">Nenhuma turma</p>
+            <p className="font-medium text-foreground">{t("shared.emptyTitle")}</p>
             <p className="mt-1 text-sm text-muted-foreground">
-              Cria a tua primeira turma para começar a planificar.
+              {t("shared.emptyDescription")}
             </p>
           </div>
           <Button asChild>
             <Link href={Routes.CALENDAR_NEW}>
               <Plus className="mr-2 h-4 w-4" />
-              Criar turma
+              {t("shared.createClass")}
             </Link>
           </Button>
         </div>
       ) : (
         <div className="space-y-2">
-          {timetables.map((t) => (
+          {timetables.map((tt) => (
             <SequenceCard
-              key={t.id}
-              timetable={t}
+              key={tt.id}
+              timetable={tt}
               onDelete={setPendingDelete}
               onEdit={setPendingEdit}
             />

@@ -6,6 +6,7 @@
 
 import type { BackendPaginatedResponse, ChatResponse, CreateDocumentParams, CreateDocumentStreamResponse, Document, DocumentFilters, DocumentStatsResponse, DocumentStreamCallbacks, DocumentType, GenerateSlideResponse, GetDocumentsParams, GetDocumentsResponse, StreamedResponse, StreamEvent, WorksheetVariant } from "@/shared/types";
 import type { DocumentImage, RagSource } from "@/shared/types/document";
+import { translate } from "@/i18n/translate";
 import axios, { type AxiosError } from "axios";
 import apiClient from "./client";
 
@@ -149,7 +150,7 @@ export async function streamDocumentContent(
     fetch: async (input: RequestInfo | URL, init?: RequestInit) => {
       const token = await getToken();
       if (!token) {
-        throw new Error("Erro de autenticação: token não disponível");
+        throw new Error(translate("errors.generation.authTokenMissing"));
       }
       const headers = new Headers(init?.headers);
       headers.set("Authorization", `Bearer ${token}`);
@@ -164,11 +165,13 @@ export async function streamDocumentContent(
         response.status < 500 &&
         response.status !== 429
       ) {
-        callbacks.onError?.(`Erro do cliente: ${response.status}`);
-        throw new Error(`Erro do cliente: ${response.status}`);
+        const message = translate("errors.generation.clientError", { status: response.status });
+        callbacks.onError?.(message);
+        throw new Error(message);
       } else {
-        callbacks.onError?.(`Erro do servidor: ${response.status}`);
-        throw new Error(`Erro do servidor: ${response.status}`);
+        const message = translate("errors.generation.serverError", { status: response.status });
+        callbacks.onError?.(message);
+        throw new Error(message);
       }
     },
     onmessage(event) {
@@ -223,7 +226,7 @@ export async function streamDocumentContent(
                 payload.error ||
                 payload.errorMessage ||
                 payload.message ||
-                "Falha ao gerar imagem";
+                translate("errors.generation.imageFailedGeneric");
               if (payload && typeof payload.id === "string") {
                 const imagePayload = {
                   ...payload,
@@ -421,7 +424,7 @@ export async function waitForDocument(id: string, maxAttempts = 60): Promise<voi
       }
       if (doc.status === "error") {
         // The backend saves the specific error message into the 'content' field
-        throw new Error(doc.content || "Erro ao processar o formato do ficheiro.");
+        throw new Error(doc.content || translate("errors.documents.processingFormatFailed"));
       }
       // If status is still "processing", we just catch the timeout below
     } catch (e: unknown) {
@@ -434,7 +437,9 @@ export async function waitForDocument(id: string, maxAttempts = 60): Promise<voi
       
       // If it's an Axios error that is NOT a 404, we might want to rethrow if it's a fatal 500
       if (axiosError.response?.status && axiosError.response.status >= 500) {
-        throw new Error(`Erro de servidor ao importar o documento. (${axiosError.response.status})`);
+        throw new Error(
+          translate("errors.documents.importServerError", { status: axiosError.response.status }),
+        );
       }
       
       // Otherwise (e.g., 404 or network hiccup), just wait and try again
@@ -442,5 +447,5 @@ export async function waitForDocument(id: string, maxAttempts = 60): Promise<voi
     // Wait before next attempt
     await new Promise((resolve) => setTimeout(resolve, delayMs));
   }
-  throw new Error("Tempo limite excedido a aguardar pela formatação do documento.");
+  throw new Error(translate("errors.documents.importTimeout"));
 }

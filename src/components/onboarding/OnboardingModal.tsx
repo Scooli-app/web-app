@@ -1,13 +1,21 @@
 "use client";
 
+import { mergeVocationalSelection } from "@/components/teaching-profile/teaching-profile-draft";
+import { VocationalCoursesEditor } from "@/components/teaching-profile/VocationalCoursesEditor";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useLocalePreferences } from "@/hooks/useLocalePreferences";
+import { teachingProfileService } from "@/services/api/teaching-profile.service";
+import { isTeacherProfileFeatureEnabled } from "@/shared/types/featureFlags";
+import type { TeachingItem, TeachingProfile } from "@/shared/types/teaching-profile";
+import { useAppSelector } from "@/store/hooks";
+import { LOCALE_LABELS, locales } from "@/i18n/locales";
 import {
-  ACQUISITION_SOURCE_LABELS,
-  ONBOARDING_GOAL_LABELS,
+  SAME_AS_INTERFACE,
+  type ContentLanguagePreference,
+} from "@/i18n/preferences";
+import {
   ONBOARDING_PROMPT_KEY,
-  SUBJECT_AREA_LABELS,
-  TEACHING_LEVEL_LABELS,
   type AcquisitionSource,
   type OnboardingGoal,
   type OnboardingSubmitRequest,
@@ -28,8 +36,10 @@ import {
   Sparkles,
   Users,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import posthog from "posthog-js";
 import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 
 interface OnboardingModalProps {
   open: boolean;
@@ -38,9 +48,10 @@ interface OnboardingModalProps {
   onSubmit: (payload: OnboardingSubmitRequest) => Promise<void> | void;
 }
 
+// Only the presentation lives here now; the labels come from the message
+// bundles, keyed by the enum value, so the two languages cannot drift apart.
 type AcquisitionOption = {
   value: AcquisitionSource;
-  label: string;
   icon: typeof Search;
   cardClassName: string;
   iconClassName: string;
@@ -48,72 +59,56 @@ type AcquisitionOption = {
 
 const acquisitionOptions: AcquisitionOption[] = [
   {
-    value: "SEARCH_ENGINE",
-    label: ACQUISITION_SOURCE_LABELS.SEARCH_ENGINE,
-    icon: Search,
+    value: "SEARCH_ENGINE",    icon: Search,
     cardClassName:
       "border-blue-500/30 bg-blue-500/8 hover:border-blue-500/45 hover:bg-blue-500/12",
     iconClassName:
       "border-blue-500/25 bg-blue-500/14 text-blue-700 dark:text-blue-300",
   },
   {
-    value: "FACEBOOK",
-    label: ACQUISITION_SOURCE_LABELS.FACEBOOK,
-    icon: Facebook,
+    value: "FACEBOOK",    icon: Facebook,
     cardClassName:
       "border-blue-600/30 bg-blue-600/8 hover:border-blue-600/45 hover:bg-blue-600/12",
     iconClassName:
       "border-blue-600/25 bg-blue-600/14 text-blue-800 dark:text-blue-300",
   },
   {
-    value: "INSTAGRAM",
-    label: ACQUISITION_SOURCE_LABELS.INSTAGRAM,
-    icon: Instagram,
+    value: "INSTAGRAM",    icon: Instagram,
     cardClassName:
       "border-pink-500/30 bg-pink-500/8 hover:border-pink-500/45 hover:bg-pink-500/12",
     iconClassName:
       "border-pink-500/25 bg-pink-500/14 text-pink-700 dark:text-pink-300",
   },
   {
-    value: "LINKEDIN",
-    label: ACQUISITION_SOURCE_LABELS.LINKEDIN,
-    icon: Linkedin,
+    value: "LINKEDIN",    icon: Linkedin,
     cardClassName:
       "border-sky-600/30 bg-sky-600/8 hover:border-sky-600/45 hover:bg-sky-600/12",
     iconClassName:
       "border-sky-600/25 bg-sky-600/14 text-sky-700 dark:text-sky-300",
   },
   {
-    value: "COLLEAGUE_FRIEND",
-    label: ACQUISITION_SOURCE_LABELS.COLLEAGUE_FRIEND,
-    icon: Users,
+    value: "COLLEAGUE_FRIEND",    icon: Users,
     cardClassName:
       "border-emerald-500/30 bg-emerald-500/8 hover:border-emerald-500/45 hover:bg-emerald-500/12",
     iconClassName:
       "border-emerald-500/25 bg-emerald-500/14 text-emerald-700 dark:text-emerald-300",
   },
   {
-    value: "EDUCATION_SUMMIT",
-    label: ACQUISITION_SOURCE_LABELS.EDUCATION_SUMMIT,
-    icon: GraduationCap,
+    value: "EDUCATION_SUMMIT",    icon: GraduationCap,
     cardClassName:
       "border-orange-500/30 bg-orange-500/8 hover:border-orange-500/45 hover:bg-orange-500/12",
     iconClassName:
       "border-orange-500/25 bg-orange-500/14 text-orange-700 dark:text-orange-300",
   },
   {
-    value: "AI_ASSISTANT",
-    label: ACQUISITION_SOURCE_LABELS.AI_ASSISTANT,
-    icon: Bot,
+    value: "AI_ASSISTANT",    icon: Bot,
     cardClassName:
       "border-violet-500/30 bg-violet-500/8 hover:border-violet-500/45 hover:bg-violet-500/12",
     iconClassName:
       "border-violet-500/25 bg-violet-500/14 text-violet-700 dark:text-violet-300",
   },
   {
-    value: "OTHER",
-    label: ACQUISITION_SOURCE_LABELS.OTHER,
-    icon: Sparkles,
+    value: "OTHER",    icon: Sparkles,
     cardClassName:
       "border-amber-400/28 bg-amber-400/8 hover:border-amber-400/42 hover:bg-amber-400/12",
     iconClassName:
@@ -121,59 +116,65 @@ const acquisitionOptions: AcquisitionOption[] = [
   },
 ];
 
-const subjectAreaOptions: { value: SubjectArea; label: string }[] = [
-  { value: "MATH", label: SUBJECT_AREA_LABELS.MATH },
-  { value: "PORTUGUESE", label: SUBJECT_AREA_LABELS.PORTUGUESE },
-  { value: "NATURAL_SCIENCES", label: SUBJECT_AREA_LABELS.NATURAL_SCIENCES },
-  { value: "PHYSICS_CHEMISTRY", label: SUBJECT_AREA_LABELS.PHYSICS_CHEMISTRY },
-  { value: "HISTORY", label: SUBJECT_AREA_LABELS.HISTORY },
-  { value: "GEOGRAPHY", label: SUBJECT_AREA_LABELS.GEOGRAPHY },
-  { value: "ENGLISH", label: SUBJECT_AREA_LABELS.ENGLISH },
-  { value: "FRENCH", label: SUBJECT_AREA_LABELS.FRENCH },
-  { value: "SPANISH", label: SUBJECT_AREA_LABELS.SPANISH },
-  { value: "PHYSICAL_EDUCATION", label: SUBJECT_AREA_LABELS.PHYSICAL_EDUCATION },
-  { value: "VISUAL_ARTS", label: SUBJECT_AREA_LABELS.VISUAL_ARTS },
-  { value: "MUSIC", label: SUBJECT_AREA_LABELS.MUSIC },
-  { value: "ICT", label: SUBJECT_AREA_LABELS.ICT },
-  { value: "PHILOSOPHY", label: SUBJECT_AREA_LABELS.PHILOSOPHY },
-  { value: "OTHER", label: SUBJECT_AREA_LABELS.OTHER },
+const subjectAreaOptions: SubjectArea[] = [
+  "MATH",
+  "PORTUGUESE",
+  "NATURAL_SCIENCES",
+  "PHYSICS_CHEMISTRY",
+  "HISTORY",
+  "GEOGRAPHY",
+  "ENGLISH",
+  "FRENCH",
+  "SPANISH",
+  "PHYSICAL_EDUCATION",
+  "VISUAL_ARTS",
+  "MUSIC",
+  "ICT",
+  "PHILOSOPHY",
+  "OTHER",
 ];
 
-const teachingLevelOptions: { value: TeachingLevel; label: string }[] = [
-  { value: "1ST_CYCLE", label: TEACHING_LEVEL_LABELS["1ST_CYCLE"] },
-  { value: "2ND_CYCLE", label: TEACHING_LEVEL_LABELS["2ND_CYCLE"] },
-  { value: "3RD_CYCLE", label: TEACHING_LEVEL_LABELS["3RD_CYCLE"] },
-  { value: "SECONDARY", label: TEACHING_LEVEL_LABELS.SECONDARY },
+const teachingLevelOptions: TeachingLevel[] = [
+  "1ST_CYCLE",
+  "2ND_CYCLE",
+  "3RD_CYCLE",
+  "SECONDARY",
+  "PROFESSIONAL",
 ];
 
-const goalOptions: { value: OnboardingGoal; label: string; emoji: string }[] = [
-  { value: "FASTER_DOCUMENTS", label: ONBOARDING_GOAL_LABELS.FASTER_DOCUMENTS, emoji: "⚡" },
-  { value: "AI_ASSISTANCE", label: ONBOARDING_GOAL_LABELS.AI_ASSISTANCE, emoji: "🤖" },
-  { value: "SAVE_TIME_TESTS", label: ONBOARDING_GOAL_LABELS.SAVE_TIME_TESTS, emoji: "📝" },
-  { value: "REDUCE_REPETITIVE_WORK", label: ONBOARDING_GOAL_LABELS.REDUCE_REPETITIVE_WORK, emoji: "♻️" },
-  { value: "DISCOVER_COMMUNITY", label: ONBOARDING_GOAL_LABELS.DISCOVER_COMMUNITY, emoji: "🌐" },
-  { value: "CURIOSITY", label: ONBOARDING_GOAL_LABELS.CURIOSITY, emoji: "✨" },
+const goalOptions: { value: OnboardingGoal; emoji: string }[] = [
+  { value: "FASTER_DOCUMENTS", emoji: "⚡" },
+  { value: "AI_ASSISTANCE", emoji: "🤖" },
+  { value: "SAVE_TIME_TESTS", emoji: "📝" },
+  { value: "REDUCE_REPETITIVE_WORK", emoji: "♻️" },
+  { value: "DISCOVER_COMMUNITY", emoji: "🌐" },
+  { value: "CURIOSITY", emoji: "✨" },
 ];
 
-const TOTAL_STEPS = 3;
+/**
+ * The three answers a teacher can give to the content-language question.
+ * "Same as interface" leads the list because it is the right answer for the
+ * overwhelming majority — the question exists for the teachers of English who
+ * are the exception.
+ */
+const contentLanguageOptions: ContentLanguagePreference[] = [
+  SAME_AS_INTERFACE,
+  ...locales,
+];
 
-const stepMeta = {
-  1: {
-    title: "Como nos encontraste?",
-    description: "Ajuda-nos a perceber onde os professores nos descobrem.",
-    eyebrow: "Bem-vindo à Scooli 👋",
-  },
-  2: {
-    title: "Conta-nos sobre ti",
-    description: "Opcional — ajuda-nos a personalizar a tua experiência.",
-    eyebrow: "O teu perfil",
-  },
-  3: {
-    title: "O que procuras na Scooli?",
-    description: "Seleciona tudo o que se aplica. Podes escolher várias opções.",
-    eyebrow: "Os teus objetivos",
-  },
-} as const;
+/**
+ * "vocational" only appears for teachers who pick Ensino profissional: it asks
+ * which UCs they will teach and saves them to their teaching profile.
+ */
+type StepId = "source" | "teaching" | "vocational" | "goals";
+
+/** Message key under `onboarding.steps` for each step's heading. */
+const STEP_MESSAGE_KEY: Record<StepId, string> = {
+  source: "1",
+  teaching: "2",
+  vocational: "vocational",
+  goals: "3",
+};
 
 export function OnboardingModal({
   open,
@@ -181,7 +182,15 @@ export function OnboardingModal({
   onSkip,
   onSubmit,
 }: OnboardingModalProps) {
-  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const t = useTranslations("onboarding");
+  const tEnum = useTranslations("enums");
+  const tLanguage = useTranslations("language");
+  const { contentPreference, changeContentPreference } = useLocalePreferences();
+  const isTeacherProfileEnabled = useAppSelector((state) =>
+    isTeacherProfileFeatureEnabled(state.features.flags),
+  );
+
+  const [stepId, setStepId] = useState<StepId>("source");
   const [direction, setDirection] = useState<"forward" | "backward">("forward");
   const [animKey, setAnimKey] = useState(0);
 
@@ -192,12 +201,31 @@ export function OnboardingModal({
   const [subjectAreaOther, setSubjectAreaOther] = useState("");
   const [teachingLevels, setTeachingLevels] = useState<TeachingLevel[]>([]);
   const [goals, setGoals] = useState<OnboardingGoal[]>([]);
+  const [vocationalCourses, setVocationalCourses] = useState<string[]>([]);
+  const [vocationalItems, setVocationalItems] = useState<TeachingItem[]>([]);
 
   const scrollRef = useRef<HTMLDivElement>(null);
+  // The profile as it was before onboarding touched it, so re-saving after the
+  // teacher changes their mind replaces the onboarding picks instead of
+  // accumulating them.
+  const baselineProfileRef = useRef<TeachingProfile | null>(null);
+  const lastSavedSelectionRef = useRef("");
+
+  const showVocationalStep =
+    isTeacherProfileEnabled && teachingLevels.includes("PROFESSIONAL");
+  const steps: StepId[] = [
+    "source",
+    "teaching",
+    ...(showVocationalStep ? (["vocational"] as const) : []),
+    "goals",
+  ];
+  const stepIndex = Math.max(steps.indexOf(stepId), 0);
+  const step = stepIndex + 1;
+  const totalSteps = steps.length;
 
   useEffect(() => {
     if (!open) {
-      setStep(1);
+      setStepId("source");
       setDirection("forward");
       setAnimKey(0);
       setAcquisitionSource(null);
@@ -206,6 +234,10 @@ export function OnboardingModal({
       setSubjectAreaOther("");
       setTeachingLevels([]);
       setGoals([]);
+      setVocationalCourses([]);
+      setVocationalItems([]);
+      baselineProfileRef.current = null;
+      lastSavedSelectionRef.current = "";
     }
   }, [open]);
 
@@ -214,32 +246,64 @@ export function OnboardingModal({
     if (scrollRef.current) {
       scrollRef.current.scrollTop = 0;
     }
-  }, [step]);
+  }, [stepId]);
 
   // Track step views
   useEffect(() => {
     if (!open) return;
-    posthog.capture("onboarding_step_viewed", { step });
-  }, [open, step]);
+    posthog.capture("onboarding_step_viewed", { step, step_id: stepId });
+  }, [open, step, stepId]);
 
-  const goTo = (next: 1 | 2 | 3, dir: "forward" | "backward") => {
+  /**
+   * Saves the courses and UCs picked in the vocational step to the teaching
+   * profile, merged into whatever the teacher already had. Runs in the
+   * background so the teacher is never kept waiting, and is a no-op when
+   * nothing changed since the last save.
+   */
+  const saveVocationalSelection = async () => {
+    if (!showVocationalStep || vocationalCourses.length === 0) return;
+    const selection = JSON.stringify({ courses: vocationalCourses, items: vocationalItems });
+    if (selection === lastSavedSelectionRef.current) return;
+    lastSavedSelectionRef.current = selection;
+    try {
+      baselineProfileRef.current ??= await teachingProfileService.get();
+      await teachingProfileService.save(
+        mergeVocationalSelection(baselineProfileRef.current, vocationalCourses, vocationalItems),
+      );
+      posthog.capture("onboarding_vocational_units_saved", {
+        courses: vocationalCourses.length,
+        units: vocationalItems.length,
+      });
+    } catch (error) {
+      lastSavedSelectionRef.current = "";
+      posthog.captureException(error);
+      toast.error(t("errors.vocationalSaveFailed"));
+    }
+  };
+
+  const goTo = (next: StepId, dir: "forward" | "backward") => {
     if (dir === "forward") {
-      posthog.capture("onboarding_step_completed", { step });
+      posthog.capture("onboarding_step_completed", { step, step_id: stepId });
+      if (stepId === "vocational") void saveVocationalSelection();
     }
     setDirection(dir);
     setAnimKey((k) => k + 1);
-    setStep(next);
+    setStepId(next);
   };
 
+  const goForward = () => goTo(steps[Math.min(stepIndex + 1, steps.length - 1)], "forward");
+  const goBack = () => goTo(steps[Math.max(stepIndex - 1, 0)], "backward");
+
   const handleSkipWithTracking = () => {
-    posthog.capture("onboarding_skipped", { step });
+    posthog.capture("onboarding_skipped", { step, step_id: stepId });
+    void saveVocationalSelection();
     void onSkip();
   };
 
   const handleSelectSource = (value: AcquisitionSource) => {
     setAcquisitionSource(value);
     if (value !== "OTHER") {
-      goTo(2, "forward");
+      goTo("teaching", "forward");
     }
   };
 
@@ -261,8 +325,21 @@ export function OnboardingModal({
     );
   };
 
+  // Saved as soon as it is picked rather than with the rest of the answers:
+  // it is a real account preference, not a survey response, and it must survive
+  // the teacher skipping the remaining steps.
+  const handleContentLanguageChange = (value: ContentLanguagePreference) => {
+    posthog.capture("onboarding_content_language_selected", {
+      content_language: value,
+    });
+    void changeContentPreference(value).catch((error) => {
+      posthog.captureException(error);
+    });
+  };
+
   const handleSubmit = async () => {
     if (!acquisitionSource || isBusy) return;
+    void saveVocationalSelection();
     await onSubmit({
       promptKey: ONBOARDING_PROMPT_KEY,
       acquisitionSource,
@@ -282,8 +359,6 @@ export function OnboardingModal({
 
   if (!open) return null;
 
-  const meta = stepMeta[step];
-
   const slideInClass =
     direction === "forward"
       ? "animate-in fade-in-0 slide-in-from-right-6 duration-300"
@@ -298,7 +373,7 @@ export function OnboardingModal({
       className="pointer-events-auto fixed inset-0 z-[9999] flex flex-col overscroll-contain bg-background"
       aria-modal="true"
       role="dialog"
-      aria-label="Bem-vindo à Scooli"
+      aria-label={t("dialogLabel")}
     >
       {/* Subtle background decoration */}
       <div
@@ -321,8 +396,8 @@ export function OnboardingModal({
         />
 
         {/* Step dots */}
-        <div className="flex items-center gap-2" aria-label={`Passo ${step} de ${TOTAL_STEPS}`}>
-          {Array.from({ length: TOTAL_STEPS }, (_, i) => (
+        <div className="flex items-center gap-2" aria-label={t("stepIndicator", { step, total: totalSteps })}>
+          {Array.from({ length: totalSteps }, (_, i) => (
             <div
               key={i}
               className={cn(
@@ -344,7 +419,7 @@ export function OnboardingModal({
           disabled={isBusy}
           className="text-sm text-muted-foreground transition-colors hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
         >
-          Saltar
+          {t("skip")}
         </button>
       </header>
 
@@ -360,13 +435,13 @@ export function OnboardingModal({
             className={cn("mb-8", slideInClass)}
           >
             <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-primary/80">
-              {meta.eyebrow}
+              {t(`steps.${STEP_MESSAGE_KEY[stepId]}.eyebrow`)}
             </p>
             <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-              {meta.title}
+              {t(`steps.${STEP_MESSAGE_KEY[stepId]}.title`)}
             </h1>
             <p className="mt-2 text-base text-muted-foreground">
-              {meta.description}
+              {t(`steps.${STEP_MESSAGE_KEY[stepId]}.description`)}
             </p>
           </div>
 
@@ -377,7 +452,7 @@ export function OnboardingModal({
             style={{ animationDelay: "40ms" }}
           >
             {/* ── Step 1: acquisition source ── */}
-            {step === 1 && (
+            {stepId === "source" && (
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                   {acquisitionOptions.map((option) => {
@@ -404,7 +479,7 @@ export function OnboardingModal({
                           <Icon className="h-5 w-5" />
                         </div>
                         <span className="text-xs font-medium leading-tight">
-                          {option.label}
+                          {tEnum(`acquisitionSource.${option.value}`)}
                         </span>
                       </button>
                     );
@@ -415,10 +490,10 @@ export function OnboardingModal({
                   <div className="animate-in fade-in-0 slide-in-from-bottom-2 duration-200">
                     <Input
                       autoFocus
-                      placeholder="Conta-nos onde nos encontraste... (opcional)"
+                      placeholder={t("acquisitionOtherPlaceholder")}
                       value={acquisitionSourceOther}
                       onChange={(e) => setAcquisitionSourceOther(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && goTo(2, "forward")}
+                      onKeyDown={(e) => e.key === "Enter" && goTo("teaching", "forward")}
                       disabled={isBusy}
                       className="rounded-xl text-base"
                     />
@@ -428,21 +503,21 @@ export function OnboardingModal({
             )}
 
             {/* ── Step 2: teaching level + subjects ── */}
-            {step === 2 && (
+            {stepId === "teaching" && (
               <div className="space-y-8">
                 <div>
                   <p className="mb-3 text-sm font-semibold text-foreground">
-                    Nível de ensino
+                    {t("teachingLevelTitle")}
                   </p>
                   <div className="flex flex-wrap gap-2.5">
                     {teachingLevelOptions.map((option) => {
-                      const isSelected = teachingLevels.includes(option.value);
+                      const isSelected = teachingLevels.includes(option);
                       return (
                         <button
-                          key={option.value}
+                          key={option}
                           type="button"
                           disabled={isBusy}
-                          onClick={() => toggleTeachingLevel(option.value)}
+                          onClick={() => toggleTeachingLevel(option)}
                           className={cn(
                             "rounded-2xl border px-5 py-2.5 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 disabled:cursor-not-allowed disabled:opacity-45",
                             isSelected
@@ -450,7 +525,7 @@ export function OnboardingModal({
                               : "border-border bg-muted/50 text-foreground hover:border-primary/30 hover:bg-accent/80",
                           )}
                         >
-                          {option.label}
+                          {tEnum(`teachingLevel.${option}`)}
                         </button>
                       );
                     })}
@@ -459,17 +534,17 @@ export function OnboardingModal({
 
                 <div>
                   <p className="mb-3 text-sm font-semibold text-foreground">
-                    Disciplinas que ensinas
+                    {t("subjectAreaTitle")}
                   </p>
                   <div className="flex flex-wrap gap-2.5">
                     {subjectAreaOptions.map((option) => {
-                      const isSelected = subjectAreas.includes(option.value);
+                      const isSelected = subjectAreas.includes(option);
                       return (
                         <button
-                          key={option.value}
+                          key={option}
                           type="button"
                           disabled={isBusy}
-                          onClick={() => toggleSubjectArea(option.value)}
+                          onClick={() => toggleSubjectArea(option)}
                           className={cn(
                             "rounded-2xl border px-4 py-2 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 disabled:cursor-not-allowed disabled:opacity-45",
                             isSelected
@@ -477,7 +552,7 @@ export function OnboardingModal({
                               : "border-border bg-muted/50 text-foreground hover:border-primary/30 hover:bg-accent/80",
                           )}
                         >
-                          {option.label}
+                          {tEnum(`subjectArea.${option}`)}
                         </button>
                       );
                     })}
@@ -486,7 +561,7 @@ export function OnboardingModal({
                     <div className="mt-3 animate-in fade-in-0 slide-in-from-bottom-2 duration-200">
                       <Input
                         autoFocus
-                        placeholder="Qual é a tua disciplina? (opcional)"
+                        placeholder={t("subjectAreaOtherPlaceholder")}
                         value={subjectAreaOther}
                         onChange={(e) => setSubjectAreaOther(e.target.value)}
                         disabled={isBusy}
@@ -495,11 +570,58 @@ export function OnboardingModal({
                     </div>
                   )}
                 </div>
+
+                {/* Content language — the question that surfaces the teachers
+                    of English, who want a Portuguese interface and English
+                    worksheets. */}
+                <div>
+                  <p className="mb-3 text-sm font-semibold text-foreground">
+                    {t("contentLanguageTitle")}
+                  </p>
+                  <div className="flex flex-wrap gap-2.5">
+                    {contentLanguageOptions.map((option) => {
+                      const isSelected = contentPreference === option;
+                      return (
+                        <button
+                          key={option}
+                          type="button"
+                          disabled={isBusy}
+                          onClick={() => handleContentLanguageChange(option)}
+                          className={cn(
+                            "rounded-2xl border px-5 py-2.5 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 disabled:cursor-not-allowed disabled:opacity-45",
+                            isSelected
+                              ? "border-primary bg-primary text-primary-foreground shadow-sm scale-[1.02]"
+                              : "border-border bg-muted/50 text-foreground hover:border-primary/30 hover:bg-accent/80",
+                          )}
+                        >
+                          {option === SAME_AS_INTERFACE
+                            ? tLanguage("content.sameAsInterface")
+                            : LOCALE_LABELS[option]}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className="mt-3 text-xs text-muted-foreground">
+                    {t("contentLanguageHint")}
+                  </p>
+                </div>
               </div>
             )}
 
-            {/* ── Step 3: goals ── */}
-            {step === 3 && (
+            {/* ── Ensino profissional only: the UCs they will teach ── */}
+            {stepId === "vocational" && (
+              <VocationalCoursesEditor
+                courses={vocationalCourses}
+                items={vocationalItems}
+                onChange={({ courses, items }) => {
+                  setVocationalCourses(courses);
+                  setVocationalItems(items);
+                }}
+              />
+            )}
+
+            {/* ── Last step: goals ── */}
+            {stepId === "goals" && (
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {goalOptions.map((option) => {
                   const isSelected = goals.includes(option.value);
@@ -520,7 +642,7 @@ export function OnboardingModal({
                         {option.emoji}
                       </span>
                       <span className="text-sm font-medium leading-snug text-foreground">
-                        {option.label}
+                        {tEnum(`onboardingGoal.${option.value}`)}
                       </span>
                     </button>
                   );
@@ -539,48 +661,48 @@ export function OnboardingModal({
             <Button
               type="button"
               variant="outline"
-              onClick={() => goTo((step - 1) as 1 | 2 | 3, "backward")}
+              onClick={goBack}
               disabled={isBusy}
               className="rounded-xl border-border bg-background"
             >
               <ArrowLeft className="h-4 w-4" />
-              Voltar
+              {t("back")}
             </Button>
           )}
         </div>
 
         {/* Step counter */}
         <span className="text-sm tabular-nums text-muted-foreground">
-          {step} / {TOTAL_STEPS}
+          {step} / {totalSteps}
         </span>
 
         {/* Next / Submit */}
         <div className="flex w-24 justify-end sm:w-28">
-          {step === 1 && acquisitionSource !== null && (
+          {stepId === "source" && acquisitionSource !== null && (
             <Button
               type="button"
-              onClick={() => goTo(2, "forward")}
+              onClick={goForward}
               disabled={isBusy}
               className="rounded-xl px-5 shadow-sm"
             >
-              Próximo
+              {t("next")}
               <ArrowRight className="h-4 w-4" />
             </Button>
           )}
 
-          {step === 2 && (
+          {(stepId === "teaching" || stepId === "vocational") && (
             <Button
               type="button"
-              onClick={() => goTo(3, "forward")}
+              onClick={goForward}
               disabled={isBusy}
               className="rounded-xl px-5 shadow-sm"
             >
-              Próximo
+              {t("next")}
               <ArrowRight className="h-4 w-4" />
             </Button>
           )}
 
-          {step === 3 && (
+          {stepId === "goals" && (
             <Button
               type="button"
               onClick={() => void handleSubmit()}
@@ -590,12 +712,12 @@ export function OnboardingModal({
               {isBusy ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  A guardar...
+                  {t("saving")}
                 </>
               ) : (
                 <>
                   <Sparkles className="h-4 w-4" />
-                  Começar
+                  {t("finish")}
                 </>
               )}
             </Button>

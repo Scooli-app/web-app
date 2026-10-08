@@ -8,6 +8,18 @@ export type OnboardingGoal =
   | "DISCOVER_COMMUNITY"
   | "CURIOSITY";
 
+/**
+ * ── Portuguese labels for non-localised surfaces ──
+ *
+ * The onboarding itself no longer reads these: it looks the copy up from
+ * `messages/{locale}.json` under `enums.*`, keyed by the same enum values, so
+ * the two languages stay in step.
+ *
+ * What is left using them is the internal admin console, which reads back
+ * free-form answer strings from the API and is deliberately Portuguese-only.
+ * When a label changes it has to change in both places — the message bundles are
+ * the ones teachers see.
+ */
 export const ONBOARDING_GOAL_LABELS: Record<OnboardingGoal, string> = {
   FASTER_DOCUMENTS: "Criar materiais mais rápido",
   AI_ASSISTANCE: "Usar IA para me ajudar",
@@ -48,7 +60,8 @@ export type TeachingLevel =
   | "1ST_CYCLE"
   | "2ND_CYCLE"
   | "3RD_CYCLE"
-  | "SECONDARY";
+  | "SECONDARY"
+  | "PROFESSIONAL";
 
 export const ACQUISITION_SOURCE_LABELS: Record<AcquisitionSource, string> = {
   SEARCH_ENGINE: "Google, Bing ou outro motor de busca",
@@ -84,6 +97,7 @@ export const TEACHING_LEVEL_LABELS: Record<TeachingLevel, string> = {
   "2ND_CYCLE": "2.º ciclo",
   "3RD_CYCLE": "3.º ciclo",
   SECONDARY: "Secundário",
+  PROFESSIONAL: "Ensino profissional",
 };
 
 export interface OnboardingStatusResponse {

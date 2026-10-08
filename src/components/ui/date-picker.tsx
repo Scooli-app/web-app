@@ -1,8 +1,8 @@
 "use client";
 
-import { format } from "date-fns";
-import { pt } from "date-fns/locale";
+import { useDateFnsLocale } from "@/i18n/dateFns";
 import { CalendarIcon } from "lucide-react";
+import { useFormatter, useTranslations } from "next-intl";
 import * as React from "react";
 
 import { Button } from "@/components/ui/button";
@@ -23,13 +23,18 @@ interface DatePickerProps {
 export function DatePicker({
   value,
   onChange,
-  placeholder = "Seleciona uma data",
+  placeholder,
   disabled,
   className,
   fromDate,
   toDate,
 }: DatePickerProps) {
   const [open, setOpen] = React.useState(false);
+  const t = useTranslations("common");
+  const format = useFormatter();
+  // react-day-picker still needs a date-fns locale for its own month and
+  // weekday names; the trigger label goes through Intl.
+  const dateFnsLocale = useDateFnsLocale();
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -38,13 +43,21 @@ export function DatePicker({
           variant="outline"
           disabled={disabled}
           className={cn(
-            "w-full justify-start text-left font-normal",
+            "w-full min-w-0 justify-start text-left font-normal",
             !value && "text-muted-foreground",
             className
           )}
         >
-          <CalendarIcon className="mr-2 h-4 w-4" />
-          {value ? format(value, "d 'de' MMMM 'de' yyyy", { locale: pt }) : placeholder}
+          <CalendarIcon className="mr-2 h-4 w-4 shrink-0" />
+          <span className="truncate">
+            {value
+              ? format.dateTime(value, {
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
+                })
+              : (placeholder ?? t("selectDate"))}
+          </span>
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">
@@ -62,7 +75,7 @@ export function DatePicker({
             ...(fromDate ? [{ before: fromDate }] : []),
             ...(toDate ? [{ after: toDate }] : []),
           ]}
-          locale={pt}
+          locale={dateFnsLocale}
         />
       </PopoverContent>
     </Popover>

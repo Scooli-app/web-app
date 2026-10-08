@@ -6,6 +6,7 @@
  * with real-time service health monitoring
  */
 
+import { translate } from "@/i18n/translate";
 import apiClient from "./client";
 
 export interface HealthStatus {
@@ -45,15 +46,16 @@ export const getHealth = async (): Promise<HealthResponse> => {
     console.error("Health API Error:", error);
     
     // Return fallback data for graceful degradation
+    const checkFailedMessage = translate("errors.health.checkFailed");
     return {
       success: false,
-      error: "Falha na verificação de saúde",
+      error: checkFailedMessage,
       data: {
         status: "error",
         timestamp: new Date().toISOString(),
         services: {
-          database: { status: "unknown", details: "Falha na verificação de saúde" },
-          jvm: { status: "unknown", details: "Falha na verificação de saúde" }
+          database: { status: "unknown", details: checkFailedMessage },
+          jvm: { status: "unknown", details: checkFailedMessage }
         }
       }
     };
@@ -84,17 +86,17 @@ export const getStatusColorClass = (status: string): string => {
 export const getStatusText = (status: string): string => {
   switch (status) {
     case "healthy":
-      return "Saudável";
+      return translate("errors.health.status.healthy");
     case "unhealthy":
-      return "Instável";
+      return translate("errors.health.status.unhealthy");
     case "degraded":
-      return "Degradado";
+      return translate("errors.health.status.degraded");
     case "unknown":
-      return "Desconhecido";
+      return translate("errors.health.status.unknown");
     case "error":
-      return "Erro";
+      return translate("errors.health.status.error");
     default:
-      return "Desconhecido";
+      return translate("errors.health.status.unknown");
   }
 };
 

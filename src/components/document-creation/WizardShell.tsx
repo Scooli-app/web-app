@@ -7,5 +7,7 @@ import type { ReactNode } from "react";
  * and nav bar logic as children.
  */
 export function WizardShell({ children }: { children: ReactNode }) {
-  return <div className="mx-auto w-full max-w-3xl space-y-8 px-4 py-8">{children}</div>;
+  // pb-24 leaves room to scroll the nav buttons (bottom-right) clear of the
+  // floating assistant button, which otherwise covers "Seguinte" on a phone.
+  return <div className="mx-auto w-full max-w-3xl space-y-8 px-4 pb-24 pt-8">{children}</div>;
 }

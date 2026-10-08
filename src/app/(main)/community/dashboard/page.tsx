@@ -10,9 +10,11 @@ import { PageContainer } from "@/components/layout/PageContainer";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 
 export default function ContributorDashboardPage() {
+  const t = useTranslations("community.dashboardPage");
   return (
     <PageContainer
       size="7xl"
@@ -20,13 +22,13 @@ export default function ContributorDashboardPage() {
       contentClassName="min-w-0 py-3 sm:py-6"
     >
       <PageHeader
-        title="Dashboard do Contribuidor"
-        description="Acompanhe o impacto dos seus recursos na comunidade"
+        title={t("title")}
+        description={t("description")}
         actions={
           <Link href="/community" className="w-full sm:w-auto">
             <Button variant="outline" size="sm" className="w-full sm:w-auto">
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Voltar a Biblioteca
+              {t("backToLibrary")}
             </Button>
           </Link>
         }

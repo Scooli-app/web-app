@@ -17,9 +17,11 @@ import {
 import {
   THEMES,
   themeToCssGradient,
+  translateThemeName,
   type PresentationTheme,
 } from "@/shared/types/presentation-theme";
 import { Palette } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 
 interface Props {
@@ -28,6 +30,7 @@ interface Props {
 }
 
 export function ThemePicker({ currentThemeId, onSelect }: Props) {
+  const t = useTranslations("editor.themePicker");
   const [open, setOpen] = useState(false);
 
   const handleSelect = (themeId: string) => {
@@ -39,13 +42,13 @@ export function ThemePicker({ currentThemeId, onSelect }: Props) {
     <>
       <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
         <Palette className="mr-2 h-4 w-4" />
-        Tema
+        {t("themeButtonLabel")}
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-[640px]">
           <DialogHeader>
-            <DialogTitle>Escolher tema</DialogTitle>
+            <DialogTitle>{t("chooseThemeTitle")}</DialogTitle>
           </DialogHeader>
 
           <div className="grid grid-cols-4 gap-3 p-1 pb-2">
@@ -91,7 +94,7 @@ function ThemeSwatch({
     <button
       type="button"
       onClick={onSelect}
-      title={theme.name}
+      title={translateThemeName(theme.id)}
       className={`flex flex-col overflow-hidden rounded-lg transition-all outline-none ${
         isActive
           ? "ring-2 ring-primary ring-offset-2 ring-offset-background scale-[1.03]"
@@ -146,7 +149,7 @@ function ThemeSwatch({
       {/* Label row */}
       <div className="bg-card flex items-center justify-between px-2 py-1 gap-1">
         <span className="text-[10px] font-semibold text-card-foreground truncate">
-          {theme.name}
+          {translateThemeName(theme.id)}
         </span>
         <span className="text-[8px] text-muted-foreground truncate shrink-0">
           {fontLabel}
