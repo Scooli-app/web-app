@@ -4,7 +4,7 @@
  * Modal form for sharing AI-generated content with the community or school library.
  *
  * When the user belongs to an organization, the modal renders a two-step flow:
- *   Step 1 — destination picker (Todas / Biblioteca comunitaria / Biblioteca de <org>)
+ *   Step 1 — destination picker (Todas / Biblioteca comunitária / Biblioteca de <org>)
  *   Step 2 — the existing form (title, grade, subject, etc.)
  *
  * When the user does NOT belong to an organization the modal renders the

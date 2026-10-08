@@ -1446,10 +1446,10 @@
       "destinationAllHint": "Partilhar com a comunidade e com a escola ao mesmo tempo.",
       "destinationCommunity": "Biblioteca comunitária",
       "destinationCommunityHint": "Visível para todos os professores na Scooli após revisão.",
-      "destinationOrgHint": "So os colegas da escola vao ver este recurso.",
+      "destinationOrgHint": "Só os colegas da escola vão ver este recurso.",
       "cancel": "Cancelar",
       "whereToShareTitle": "Onde quer partilhar?",
-      "whereToShareDescription": "Escolha o destino deste recurso. Pode partilhar com toda a comunidade, so com a escola, ou com ambas.",
+      "whereToShareDescription": "Escolha o destino deste recurso. Pode partilhar com toda a comunidade, só com a escola, ou com ambas.",
       "shareWithOrgTitle": "Partilhar com {name}",
       "shareAllTitle": "Partilhar em todas as bibliotecas",
       "shareCommunityTitle": "Partilhar com a Comunidade",
@@ -1478,7 +1478,7 @@
       "reviewProcessHeading": "Processo de revisão",
       "orgBullets": [
         "• O recurso fica disponível imediatamente para a organização ativa",
-        "• So membros da escola vao conseguir ver e reutilizar",
+        "• Só membros da escola vão conseguir ver e reutilizar",
         "• Pode continuar a partilhar outro recurso na biblioteca comunitária depois"
       ],
       "bothBullets": [
