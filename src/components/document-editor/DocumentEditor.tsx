@@ -188,7 +188,9 @@ function repairLeakedImageSegmentTokens(
     if (!image) {
       return "";
     }
-    const safeAlt = (image.alt || translate("editor.documentEditor.imageFallbackAlt")).replace(/\]/g, "\\]");
+    const safeAlt = (image.alt || translate("editor.documentEditor.imageFallbackAlt"))
+      .replace(/\\/g, "\\\\")
+      .replace(/\]/g, "\\]");
     return `![${safeAlt}]({{DOCUMENT_IMAGE:${image.id}}})`;
   });
 }
