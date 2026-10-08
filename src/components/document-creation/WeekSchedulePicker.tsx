@@ -108,12 +108,19 @@ export function WeekSchedulePicker({
               )}
             >
               <div className="flex items-center gap-3">
-                <Checkbox checked={day.enabled} onCheckedChange={() => toggle(key)} className="shrink-0" />
+                <button
+                  type="button"
+                  onClick={() => toggle(key)}
+                  aria-pressed={day.enabled}
+                  className="flex flex-1 items-center gap-3 rounded-sm text-left focus-visible:outline-none focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+                >
+                  <Checkbox checked={day.enabled} tabIndex={-1} className="shrink-0 pointer-events-none" />
 
-                <span className="w-20 text-sm font-medium">
-                  <span className="hidden sm:inline">{label}</span>
-                  <span className="sm:hidden">{short}</span>
-                </span>
+                  <span className="w-20 text-sm font-medium">
+                    <span className="hidden sm:inline">{label}</span>
+                    <span className="sm:hidden">{short}</span>
+                  </span>
+                </button>
 
                 {day.enabled && (
                   <button
