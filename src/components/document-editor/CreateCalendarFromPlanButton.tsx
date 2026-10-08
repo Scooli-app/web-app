@@ -178,7 +178,7 @@ export default function CreateCalendarFromPlanButton({
             />
           </DialogContent>
         ) : (
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>{t("dialogTitle")}</DialogTitle>
             <DialogDescription>
@@ -187,7 +187,7 @@ export default function CreateCalendarFromPlanButton({
           </DialogHeader>
 
           {/* Header and footer pad themselves (p-6); the body matches them. */}
-          <div className="space-y-4 px-6 pt-4">
+          <div className="space-y-5 px-6 pb-2 pt-5">
             <div className="space-y-1.5">
               <Label>{t("nameLabel")}</Label>
               <Input
@@ -212,8 +212,8 @@ export default function CreateCalendarFromPlanButton({
             />
           </div>
 
-          <DialogFooter className="pt-2">
-            <AiDisclaimer className="sm:mr-auto sm:self-center sm:text-left" />
+          <DialogFooter className="pt-4 sm:flex-wrap">
+            <AiDisclaimer className="sm:order-last sm:basis-full" />
             <Button variant="ghost" onClick={() => setIsNameDialogOpen(false)}>
               {t("cancel")}
             </Button>
