@@ -100,32 +100,39 @@ export function WeekSchedulePicker({
           return (
             <div
               key={key}
+              role="checkbox"
+              aria-checked={day.enabled}
+              tabIndex={0}
+              onClick={() => toggle(key)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  toggle(key);
+                }
+              }}
               className={cn(
-                "min-w-0 space-y-2 rounded-lg border px-4 py-3 transition-colors",
+                "min-w-0 cursor-pointer space-y-2 rounded-lg border px-4 py-3 transition-colors",
+                "focus-visible:outline-none focus-visible:ring-ring/50 focus-visible:ring-[3px]",
                 day.enabled
                   ? "border-primary/40 bg-primary/5"
                   : "border-border bg-background opacity-60"
               )}
             >
               <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => toggle(key)}
-                  aria-pressed={day.enabled}
-                  className="flex flex-1 items-center gap-3 rounded-sm text-left focus-visible:outline-none focus-visible:ring-ring/50 focus-visible:ring-[3px]"
-                >
-                  <Checkbox checked={day.enabled} tabIndex={-1} className="shrink-0 pointer-events-none" />
+                <Checkbox checked={day.enabled} tabIndex={-1} className="shrink-0 pointer-events-none" />
 
-                  <span className="w-20 text-sm font-medium">
-                    <span className="hidden sm:inline">{label}</span>
-                    <span className="sm:hidden">{short}</span>
-                  </span>
-                </button>
+                <span className="w-20 text-sm font-medium">
+                  <span className="hidden sm:inline">{label}</span>
+                  <span className="sm:hidden">{short}</span>
+                </span>
 
                 {day.enabled && (
                   <button
                     type="button"
-                    onClick={() => addPeriod(key)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      addPeriod(key);
+                    }}
                     disabled={day.periods.length >= maxPeriodsPerDay}
                     className="ml-auto flex items-center gap-1 rounded-md border px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted disabled:opacity-30"
                   >
@@ -136,7 +143,11 @@ export function WeekSchedulePicker({
               </div>
 
               {day.enabled && (
-                <div className="min-w-0 space-y-1.5 pl-8">
+                <div
+                  className="min-w-0 space-y-1.5 pl-8"
+                  onClick={(e) => e.stopPropagation()}
+                  onKeyDown={(e) => e.stopPropagation()}
+                >
                   {day.periods.map((period, index) => (
                     <div key={index} className="flex min-w-0 items-center gap-2">
                       <span className="w-4 shrink-0 text-xs text-muted-foreground">{index + 1}.</span>
