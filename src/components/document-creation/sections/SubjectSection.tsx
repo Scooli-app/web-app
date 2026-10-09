@@ -1,5 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { ChoiceChip } from "@/components/ui/choice-chip";
+import { Button } from "@/components/ui/button";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import {
   Select,
@@ -11,14 +12,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { teachingProfileService } from "@/services/api/teaching-profile.service";
+import { TEACHING_PROFILE_ANCHOR } from "@/components/teaching-profile/teaching-profile-draft";
+import { Routes } from "@/shared/types";
 import type {
   EducationType,
   VocationalSchoolSubject,
   VocationalUnit,
 } from "@/shared/types/teaching-profile";
 import { cn } from "@/shared/utils/utils";
-import { BookOpen, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
+import { AlertTriangle, ArrowRight, BookOpen, ChevronDown, ChevronUp, Loader2, Users } from "lucide-react";
 import { useTranslations } from "next-intl";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
   AMBIGUOUS_COMPONENTS_SUBJECTS,
@@ -104,6 +108,7 @@ function groupSchoolSubjectsByLabel(
 // name can never be confused.
 const subjectKey = (name: string) => `subject:${name}`;
 const unitKey = (code: string) => `unit:${code}`;
+const classKey = (id: string) => `class:${id}`;
 
 interface SubjectSectionProps {
   subject: string;
@@ -116,6 +121,20 @@ interface SubjectSectionProps {
   vocationalCourse?: VocationalCourseOption;
   vocationalUnitCode?: string;
   vocationalSchoolSubjectName?: string;
+  /** Teacher-defined vocational class (SCOOL-154) selected instead of a UC. */
+  vocationalClassId?: string;
+  /**
+   * SCOOL-157: curriculum plans and calendar classes cover a whole class's
+   * worth of lessons over a term, not one competence unit — picking a
+   * single technological-component UC for either doesn't make sense the
+   * way it does for a one-off document. When set, a technical-component
+   * teacher (one with saved UCs) must pick one of their classes instead of
+   * a raw UC; with no class yet they're guided to create one in Settings
+   * rather than being offered a UC picker that produces a plan too narrow
+   * to be useful. Sociocultural/científica subjects are unaffected — those
+   * are picked one at a time regardless.
+   */
+  requireVocationalClassForUnits?: boolean;
   className?: string;
   disabled?: boolean;
 }
@@ -130,6 +149,8 @@ export function SubjectSection({
   vocationalCourse,
   vocationalUnitCode,
   vocationalSchoolSubjectName,
+  vocationalClassId,
+  requireVocationalClassForUnits,
   className,
   disabled,
 }: SubjectSectionProps) {
@@ -169,14 +190,30 @@ export function SubjectSection({
   // the course's full catalogue (school subjects included) is one click away.
   const savedUnits = vocationalCourse?.units ?? [];
   const hasSavedUnits = savedUnits.length > 0;
+  // Teacher-defined classes (SCOOL-154) group some of those UCs — shown
+  // alongside them as an alternative, coarser-grained choice.
+  const vocationalClasses = vocationalCourse?.classes ?? [];
+  const hasVocationalClasses = vocationalClasses.length > 0;
+  // SCOOL-157: curriculum plans and calendar classes cover a whole term's
+  // worth of teaching, not one competence unit — a technical-component
+  // teacher (one with saved UCs) must pick a class instead of a raw UC here.
+  // Sociocultural/científica subjects are untouched by this: those are
+  // picked one at a time regardless of the document type.
+  const mustPickClassInsteadOfUnit = !!requireVocationalClassForUnits && hasSavedUnits;
+  // With raw UCs hidden, the catalogue select (sociocultural/científica) is
+  // the only remaining picker — treat "no chips to show" the same way the
+  // no-saved-units case already does, so it still opens by default.
+  const effectiveHasSavedUnits = hasSavedUnits && !mustPickClassInsteadOfUnit;
 
-  const selectedVocationalKey = vocationalUnitCode
-    ? unitKey(vocationalUnitCode)
-    : vocationalSchoolSubjectName
-      ? subjectKey(vocationalSchoolSubjectName)
-      : "";
+  const selectedVocationalKey = vocationalClassId
+    ? classKey(vocationalClassId)
+    : vocationalUnitCode
+      ? unitKey(vocationalUnitCode)
+      : vocationalSchoolSubjectName
+        ? subjectKey(vocationalSchoolSubjectName)
+        : "";
   const showVocationalSelect =
-    !hasSavedUnits ||
+    !effectiveHasSavedUnits ||
     showAllVocational ||
     (!!selectedVocationalKey && !savedUnits.some((unit) => unitKey(unit.code) === selectedVocationalKey));
 
@@ -186,6 +223,15 @@ export function SubjectSection({
     const isSelected = vocationalUnitCode === code;
     onUpdate("subject", isSelected ? "" : label);
     onUpdate("vocationalUnitCode", isSelected ? undefined : code);
+    onUpdate("vocationalSchoolSubjectName", undefined);
+    onUpdate("vocationalClassId", undefined);
+  };
+
+  const selectClass = (id: string, name: string) => {
+    const isSelected = vocationalClassId === id;
+    onUpdate("subject", isSelected ? "" : name);
+    onUpdate("vocationalClassId", isSelected ? undefined : id);
+    onUpdate("vocationalUnitCode", undefined);
     onUpdate("vocationalSchoolSubjectName", undefined);
   };
 
@@ -198,11 +244,13 @@ export function SubjectSection({
       onUpdate("subject", label);
       onUpdate("vocationalUnitCode", code);
       onUpdate("vocationalSchoolSubjectName", undefined);
+      onUpdate("vocationalClassId", undefined);
     } else {
       const name = value.slice("subject:".length);
       onUpdate("subject", name);
       onUpdate("vocationalSchoolSubjectName", name);
       onUpdate("vocationalUnitCode", undefined);
+      onUpdate("vocationalClassId", undefined);
     }
   };
 
@@ -254,7 +302,45 @@ export function SubjectSection({
 
     return (
       <div className="space-y-3">
-        {hasSavedUnits && (
+        {hasVocationalClasses && (
+          <div role="group" aria-label={t("yourClasses")}>
+            <p className={SECTION_LABEL_CLASS}>{t("yourClasses")}</p>
+            <div className="flex flex-wrap gap-1.5 sm:gap-2">
+              {vocationalClasses.map((vocClass) => (
+                <ChoiceChip
+                  key={vocClass.id}
+                  selected={selectedVocationalKey === classKey(vocClass.id)}
+                  highlighted
+                  disabled={disabled}
+                  onClick={() => selectClass(vocClass.id, vocClass.name)}
+                >
+                  <Users className="h-3 w-3 shrink-0" aria-hidden />
+                  {vocClass.name}
+                </ChoiceChip>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {mustPickClassInsteadOfUnit && !hasVocationalClasses && (
+          <div
+            role="alert"
+            className="flex flex-col gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-950/30 sm:flex-row sm:items-center sm:justify-between"
+          >
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" aria-hidden />
+              <p className="text-xs text-foreground sm:text-sm">{t("classRequiredHint")}</p>
+            </div>
+            <Button asChild type="button" variant="outline" size="sm" className="shrink-0 gap-1.5 bg-background">
+              <Link href={`${Routes.SETTINGS}#${TEACHING_PROFILE_ANCHOR}`}>
+                {t("classRequiredCta")}
+                <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+              </Link>
+            </Button>
+          </div>
+        )}
+
+        {effectiveHasSavedUnits && (
           <div role="group" aria-label={t("yourUnits")}>
             <p className={SECTION_LABEL_CLASS}>{t("yourUnits")}</p>
             <div className="flex flex-wrap gap-1.5 sm:gap-2">
@@ -307,7 +393,9 @@ export function SubjectSection({
                     {renderSchoolSubjectItems(scientificOptions)}
                   </SelectGroup>
                 )}
-                {unitOptions.length > 0 && (
+                {/* SCOOL-157: a technical-component teacher must group UCs into a
+                    class (above) rather than pick one here — see mustPickClassInsteadOfUnit. */}
+                {!mustPickClassInsteadOfUnit && unitOptions.length > 0 && (
                   <SelectGroup>
                     <SelectLabel className={SELECT_GROUP_LABEL_CLASS}>{t("componentTecnica")}</SelectLabel>
                     {unitOptions.map((unit) => (

@@ -86,12 +86,18 @@ export interface VocationalCourseOption {
   title: string;
   /** Competence units (UC) the teacher said they will teach in this course. */
   units: { code: string; label: string }[];
+  /** Teacher-defined classes (SCOOL-154) grouping some of those UCs together. */
+  classes: { id: string; name: string; unitCodes: string[] }[];
 }
 
 /**
  * Courses saved on the profile with the UCs the teacher picked in each. A
  * course with no UC picked is still listed — the teacher teaches there, and
  * the creation form falls back to the course's full catalogue.
+ *
+ * `classes` is empty until the caller merges in the teacher's vocational
+ * classes (a separate CRUD resource — see `vocational-class.service.ts`),
+ * which `useSubjectChoice` does once they're loaded.
  */
 export function getVocationalCourseOptions(
   profile: TeachingProfile | null
@@ -105,6 +111,7 @@ export function getVocationalCourseOptions(
     units: profile.items
       .filter((item) => item.qualificationCode === code && item.kind === "unit" && item.label.trim())
       .map((item) => ({ code: item.code, label: item.label.trim() })),
+    classes: [],
   }));
 }
 

@@ -4,13 +4,18 @@ import { Button } from "@/components/ui/button";
 import { ChoiceChip } from "@/components/ui/choice-chip";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { teachingProfileService } from "@/services/api/teaching-profile.service";
+import { vocationalClassService } from "@/services/api/vocational-class.service";
 import {
   GRADE_GROUPS,
   translateGradeGroupLabel,
   translateGradeLabel,
 } from "@/components/document-creation/constants";
 import { buildRegularTeachingItems } from "@/components/document-creation/teaching-profile-preferences";
-import { EMPTY_TEACHING_PROFILE, type TeachingProfile } from "@/shared/types/teaching-profile";
+import {
+  EMPTY_TEACHING_PROFILE,
+  type TeachingProfile,
+  type VocationalClass,
+} from "@/shared/types/teaching-profile";
 import {
   BookOpen,
   Briefcase,
@@ -75,6 +80,57 @@ export function TeachingProfileCard() {
   const [isLoading, setIsLoading] = useState(true);
   const [profileLoadFailed, setProfileLoadFailed] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Vocational classes (SCOOL-154) are their own CRUD resource, saved
+  // immediately rather than batched with the rest of the draft — so they
+  // load and persist independently of the profile's dirty/save lifecycle.
+  const [vocationalClasses, setVocationalClasses] = useState<VocationalClass[]>([]);
+  const [vocationalClassesStatus, setVocationalClassesStatus] = useState<
+    "loading" | "error" | "ready"
+  >("loading");
+
+  const loadVocationalClasses = useCallback(async () => {
+    setVocationalClassesStatus("loading");
+    try {
+      const loaded = await vocationalClassService.list();
+      setVocationalClasses(loaded);
+      setVocationalClassesStatus("ready");
+    } catch {
+      setVocationalClassesStatus("error");
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadVocationalClasses();
+  }, [loadVocationalClasses]);
+
+  const handleCreateVocationalClass = useCallback(
+    async (request: { qualificationCode: string; name: string; units: { code: string; label: string }[] }) => {
+      const created = await vocationalClassService.create(request);
+      setVocationalClasses((current) => [...current, created]);
+      return created;
+    },
+    []
+  );
+
+  const handleUpdateVocationalClass = useCallback(
+    async (
+      id: string,
+      request: { qualificationCode: string; name: string; units: { code: string; label: string }[] }
+    ) => {
+      const updated = await vocationalClassService.update(id, request);
+      setVocationalClasses((current) =>
+        current.map((vocClass) => (vocClass.id === id ? updated : vocClass))
+      );
+      return updated;
+    },
+    []
+  );
+
+  const handleDeleteVocationalClass = useCallback(async (id: string) => {
+    await vocationalClassService.remove(id);
+    setVocationalClasses((current) => current.filter((vocClass) => vocClass.id !== id));
+  }, []);
 
   const applyBaseline = useCallback((profile: TeachingProfile, nextScope: TeachingScope) => {
     setDraft(profile);
@@ -286,6 +342,11 @@ export function TeachingProfileCard() {
                 onChange={({ courses, items }) =>
                   setDraft((current) => ({ ...current, courses, items }))
                 }
+                vocationalClasses={vocationalClasses}
+                vocationalClassesStatus={vocationalClassesStatus}
+                onCreateVocationalClass={handleCreateVocationalClass}
+                onUpdateVocationalClass={handleUpdateVocationalClass}
+                onDeleteVocationalClass={handleDeleteVocationalClass}
               />
             </ProfileBlock>
           )}

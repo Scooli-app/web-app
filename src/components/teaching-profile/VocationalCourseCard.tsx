@@ -3,11 +3,12 @@
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import type { VocationalUnit } from "@/shared/types/teaching-profile";
+import type { VocationalClass, VocationalUnit } from "@/shared/types/teaching-profile";
 import { Search, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 import { normalizeSearch } from "./search";
+import { VocationalClassesSection } from "./VocationalClassesSection";
 
 /**
  * Group units by the common prefix before the first dash.
@@ -57,6 +58,23 @@ interface VocationalCourseCardProps {
   onToggleUnit: (unit: VocationalUnit) => void;
   onSetUnits: (units: VocationalUnit[], selected: boolean) => void;
   onRemove: () => void;
+  /** Qualification code for this course, needed to scope vocational classes (SCOOL-154). */
+  qualificationCode: string;
+  /** The UCs the teacher saved as taught in this course — the pool a class may be built from. */
+  savedUnits: { code: string; label: string }[];
+  /** Omitted in onboarding, where the profile isn't saved yet so classes can't be created. */
+  vocationalClasses?: VocationalClass[];
+  vocationalClassesStatus?: "loading" | "error" | "ready";
+  onCreateVocationalClass?: (request: {
+    qualificationCode: string;
+    name: string;
+    units: { code: string; label: string }[];
+  }) => Promise<VocationalClass>;
+  onUpdateVocationalClass?: (
+    id: string,
+    request: { qualificationCode: string; name: string; units: { code: string; label: string }[] }
+  ) => Promise<VocationalClass>;
+  onDeleteVocationalClass?: (id: string) => Promise<void>;
 }
 
 /** One curso profissional and the UCs the teacher will teach in it. */
@@ -69,6 +87,13 @@ export function VocationalCourseCard({
   onToggleUnit,
   onSetUnits,
   onRemove,
+  qualificationCode,
+  savedUnits,
+  vocationalClasses = [],
+  vocationalClassesStatus = "ready",
+  onCreateVocationalClass,
+  onUpdateVocationalClass,
+  onDeleteVocationalClass,
 }: VocationalCourseCardProps) {
   const t = useTranslations("settings.teachingProfileCard");
   const [unitTerm, setUnitTerm] = useState("");
@@ -184,6 +209,21 @@ export function VocationalCourseCard({
               )}
             </div>
           </>
+        )}
+      </div>
+
+      <div className="px-4 pb-4">
+        {onCreateVocationalClass && onUpdateVocationalClass && onDeleteVocationalClass && (
+          <VocationalClassesSection
+            qualificationCode={qualificationCode}
+            courseTitle={title}
+            savedUnits={savedUnits}
+            classes={vocationalClasses}
+            classesStatus={vocationalClassesStatus}
+            onCreate={onCreateVocationalClass}
+            onUpdate={onUpdateVocationalClass}
+            onDelete={onDeleteVocationalClass}
+          />
         )}
       </div>
     </article>

@@ -441,6 +441,8 @@ export default function CurriculumPlanNewPage() {
                 vocationalCourse={subjectPicker.selectedVocationalCourse}
                 vocationalUnitCode={choice.vocationalUnitCode}
                 vocationalSchoolSubjectName={choice.vocationalSchoolSubjectName}
+                vocationalClassId={choice.vocationalClassId}
+                requireVocationalClassForUnits
                 className={NESTED_SECTION_CLASS}
                 disabled={!choice.schoolYear}
               />
