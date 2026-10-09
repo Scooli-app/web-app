@@ -1818,7 +1818,7 @@
         "description": "Export and exclusive tools"
       },
       "cta": "View Pro plans",
-      "maybeLater": "Maybe later",
+      "maybeLater": "Maybe later",
       "reasons": {
         "free_class_limit": {
           "title": "You already have a class on the free plan",
