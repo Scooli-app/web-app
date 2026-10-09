@@ -13,6 +13,7 @@ import {
   useTutorial,
 } from "@/contexts/TutorialContext";
 import { AppBootstrapGate } from "@/components/layout/AppBootstrapGate";
+import { PostHogPersonSync } from "@/components/providers/PostHogPersonSync";
 import { LanguageToggle } from "@/components/layout/LanguageToggle";
 import { SourceIngestionTracker } from "@/components/layout/SourceIngestionTracker";
 import { SourcesPendingBadge } from "@/components/layout/SourcesPendingBadge";
@@ -736,6 +737,7 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
     <SidebarProvider>
       <div className="flex h-dvh w-full">
         <AppBootstrapGate />
+        <PostHogPersonSync />
         <SourceIngestionTracker />
         <UpgradePlanModal
           open={isUpgradeModalOpen}
