@@ -50,11 +50,8 @@ function DownloadButtonComponent({
       setDownloadFormat(format);
 
       try {
+        // `document_downloaded` is captured server-side by /api/download.
         await downloadDocument({ title, content, format, images });
-        posthog.capture("document_downloaded", {
-          format,
-          document_title: title,
-        });
       } catch (error) {
         console.error(`Failed to download as ${format}:`, error);
         if (!(error instanceof UpgradeLimitError)) {
