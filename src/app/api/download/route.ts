@@ -814,8 +814,14 @@ function toArrayBuffer(bytes: Uint8Array): ArrayBuffer {
   return copy.buffer;
 }
 
+/**
+ * The single source of `document_downloaded`. The browser no longer sends its
+ * own copy (it double-counted every PDF/DOCX export), so this one carries the
+ * browser session id to keep the event attached to the session replay.
+ */
 async function captureDownloadEvent(
   distinctId: string,
+  sessionId: string | null,
   format: DownloadFormat,
   title: string,
 ): Promise<void> {
@@ -828,11 +834,33 @@ async function captureDownloadEvent(
     posthog.capture({
       distinctId,
       event: "document_downloaded",
-      properties: { format, document_title: title },
+      properties: {
+        format,
+        document_title: title,
+        ...(sessionId && { $session_id: sessionId }),
+      },
     });
     await posthog.shutdown();
   } catch (error) {
     console.error("PostHog capture failed in download route:", error);
+  }
+}
+
+/**
+ * The browser's PostHog id when it sent one; otherwise the Clerk user id, which
+ * is what the app passes to `posthog.identify`, so the export still lands on the
+ * right person (e.g. when an ad blocker stops posthog-js from loading).
+ */
+async function resolveDownloadDistinctId(request: NextRequest): Promise<string> {
+  const fromHeader = request.headers.get("x-posthog-distinct-id");
+  if (fromHeader) {
+    return fromHeader;
+  }
+  try {
+    const { userId } = await auth();
+    return userId ?? "anonymous";
+  } catch {
+    return "anonymous";
   }
 }
 
@@ -2589,8 +2617,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       .replace(/\s+/g, "_")
       .substring(0, 100);
 
-    const distinctId =
-      request.headers.get("x-posthog-distinct-id") ?? "anonymous";
+    const distinctId = await resolveDownloadDistinctId(request);
+    const sessionId = request.headers.get("x-posthog-session-id");
     const isProUser = await resolveIsProUser();
 
     if (format === "pdf") {
@@ -2600,7 +2628,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         images ?? [],
         isProUser,
       );
-      await captureDownloadEvent(distinctId, "pdf", title);
+      await captureDownloadEvent(distinctId, sessionId, "pdf", title);
       return new NextResponse(new Uint8Array(pdfBuffer), {
         headers: {
           "Content-Type": "application/pdf",
@@ -2618,7 +2646,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         );
       }
       const docxBuffer = (await generateDocx(content, images)) as Buffer;
-      await captureDownloadEvent(distinctId, "docx", title);
+      await captureDownloadEvent(distinctId, sessionId, "docx", title);
       return new NextResponse(toArrayBuffer(docxBuffer), {
         headers: {
           "Content-Type":
