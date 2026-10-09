@@ -7,6 +7,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Routes } from "@/shared/types";
+import type { UpgradeReason } from "@/shared/types/plan-limits";
 import { AlertCircle, ArrowRight, Crown, Infinity, Sparkles } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
@@ -17,11 +18,14 @@ import { Button } from "./button";
 interface UpgradePlanModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Set when a free-plan limit blocked an action; shows that reason's copy. */
+  reason?: UpgradeReason | null;
 }
 
 export function UpgradePlanModal({
   open,
   onOpenChange,
+  reason,
 }: UpgradePlanModalProps) {
   const t = useTranslations("billing.upgradePlanModal");
   const router = useRouter();
@@ -48,11 +52,11 @@ export function UpgradePlanModal({
           </div>
 
           <DialogTitle className="text-2xl font-bold text-foreground mb-1">
-            {t("title")}
+            {reason ? t(`reasons.${reason}.title`) : t("title")}
           </DialogTitle>
 
           <DialogDescription className="text-muted-foreground">
-            {t("description")}
+            {reason ? t(`reasons.${reason}.description`) : t("description")}
           </DialogDescription>
         </div>
 

@@ -693,6 +693,9 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const dispatch = useAppDispatch();
+  const upgradeModalReason = useSelector(
+    (state: RootState) => state.ui.upgradeModalReason,
+  );
   const isUpgradeModalOpen = useSelector(
     (state: RootState) => state.ui.isUpgradeModalOpen,
   );
@@ -741,6 +744,7 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
         <SourceIngestionTracker />
         <UpgradePlanModal
           open={isUpgradeModalOpen}
+          reason={upgradeModalReason}
           onOpenChange={handleUpgradeModalChange}
         />
         <AppFeedbackSurveyGate />

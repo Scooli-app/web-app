@@ -1818,7 +1818,17 @@
         "description": "Exportação e ferramentas exclusivas"
       },
       "cta": "Ver planos Pro",
-      "maybeLater": "Talvez mais tarde"
+      "maybeLater": "Talvez mais tarde",
+      "reasons": {
+        "free_class_limit": {
+          "title": "Já tens uma turma no plano gratuito",
+          "description": "Atualiza para Pro para criares turmas sem limite."
+        },
+        "free_period_limit": {
+          "title": "O plano gratuito cobre 4 semanas",
+          "description": "Atualiza para Pro para planeares o ano letivo inteiro."
+        }
+      }
     },
     "plans": {
       "proMonthly": {
