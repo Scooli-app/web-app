@@ -45,6 +45,15 @@ export interface FormState {
    * components.
    */
   vocationalSchoolSubjectName?: string;
+  /**
+   * Id of the teacher-defined vocational class (SCOOL-154, a hand-picked
+   * group of UCs taught together as one "turma") selected instead of a
+   * single UC or school-subject. Mutually exclusive with
+   * `vocationalUnitCode`/`vocationalSchoolSubjectName` for the same reason:
+   * the backend resolves curriculum content from whichever one of the
+   * three identifies it.
+   */
+  vocationalClassId?: string;
   schoolYear: number;
   lessonTime?: number;
   customTime?: number;

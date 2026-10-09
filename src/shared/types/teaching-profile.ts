@@ -92,6 +92,21 @@ export interface TeachingProfile {
   items: TeachingItem[];
 }
 
+/**
+ * A teacher-defined grouping of UCs they teach together as one "turma"/class
+ * (SCOOL-154), within one curso profissional. Lets curriculum-plan creation
+ * reference the whole group instead of picking a UC at a time — see
+ * `GET/POST/PUT/DELETE /teaching-profile/vocational-classes`.
+ */
+export interface VocationalClass {
+  /** Absent on create requests; always present once saved. */
+  id?: string;
+  qualificationCode: string;
+  name: string;
+  status?: "active" | "archived";
+  units: { code: string; label: string }[];
+}
+
 export const EMPTY_TEACHING_PROFILE: TeachingProfile = {
   educationType: "regular",
   courses: [],

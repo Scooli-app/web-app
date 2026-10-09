@@ -37,6 +37,14 @@ export interface CreateTimetableParams {
   vocationalCourseCode?: string;
   vocationalUnitCode?: string;
   vocationalSchoolSubjectName?: string;
+  /**
+   * Teacher-defined vocational class (SCOOL-154) selected instead of a UC.
+   * NOTE: backend `TimetableEntity`/`TimetableService` do not yet persist
+   * this field — see SCOOL-154 PR notes. Sending it is harmless (Jackson
+   * ignores unknown properties) and keeps this type ready for when the
+   * backend calendar wiring lands, but it currently has no effect.
+   */
+  vocationalClassId?: string;
 }
 
 export interface UpdateTimetableParams {
