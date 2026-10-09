@@ -701,6 +701,111 @@
       "emptyDescription": "Create your first lesson plan, test or quiz and it will show up here so you can pick up where you left off."
     }
   },
+  "onboardingV2": {
+    "dialogLabel": "Welcome to Scooli",
+    "progress": "Step {step} of {total}",
+    "back": "Back",
+    "continue": "Continue",
+    "later": "Later",
+    "retry": "Try again",
+    "saveFailed": "We couldn't save that. Please try again.",
+    "school": {
+      "title": "Where do you teach?",
+      "subtitle": "Type the name of your school or institution.",
+      "placeholder": "School name",
+      "noSchool": "I don't teach at a school",
+      "roleLabel": "Your role",
+      "roles": {
+        "teacher": "Teacher",
+        "coordinator": "Coordinator",
+        "director": "School leader",
+        "tutor": "Tutor",
+        "other": "Other"
+      }
+    },
+    "teaching": {
+      "title": "What do you teach?",
+      "subtitle": "Pick your grades and subjects. You can change this later in Settings.",
+      "yearsLabel": "Grades",
+      "yearChip": "{year}",
+      "cycles": {
+        "c1": "Grades 1–4",
+        "c2": "5–6",
+        "c3": "7–9",
+        "c4": "10–12"
+      },
+      "subjectsLabel": "Subjects",
+      "subjectsEmpty": "Pick your grades first to see the subjects."
+    },
+    "class": {
+      "title": "Create your first class",
+      "subtitle": "Scooli builds your lesson plan from this.",
+      "subjectLabel": "Subject",
+      "yearLabel": "Grade",
+      "yearOption": "Grade {year}",
+      "labelLabel": "Class",
+      "labelPlaceholder": "e.g. 7B",
+      "daysLabel": "Which days do you teach it?",
+      "days": {
+        "mon": "Mon",
+        "tue": "Tue",
+        "wed": "Wed",
+        "thu": "Thu",
+        "fri": "Fri",
+        "sat": "Sat"
+      },
+      "lessonsCount": "{count, plural, one {# lesson} other {# lessons}}",
+      "lessonsFewer": "Fewer lessons",
+      "lessonsMore": "More lessons",
+      "period": "From {start} to {end}",
+      "capNote": "On the free plan you can plan up to 4 weeks.",
+      "capLink": "See plans",
+      "create": "Create class",
+      "createFailed": "We couldn't create the class. Please try again.",
+      "building": "Building your plan…",
+      "buildingHint": "This only takes a few seconds.",
+      "readyTitle": "The first topics of your plan",
+      "topicsFailed": "We couldn't generate the topics right now."
+    },
+    "week": {
+      "title": "Preparing your first week",
+      "subtitle": "We're writing the lesson plans for {range}.",
+      "doneTitle": "Your first week is ready",
+      "noLessons": "There are no lessons to prepare this week. You can generate the others from the calendar.",
+      "lessonFallback": "Lesson {number}",
+      "pending": "Waiting",
+      "generating": "Writing",
+      "ready": "Ready",
+      "failed": "Failed",
+      "error": "We'll finish this in the background",
+      "continueBackground": "Continue in the background",
+      "openLesson": "Open the first lesson"
+    },
+    "ritual": {
+      "title": "When do you plan your week?",
+      "subtitle": "Pick the day you like to have the coming week ready.",
+      "days": {
+        "1": "Mon",
+        "2": "Tue",
+        "3": "Wed",
+        "4": "Thu",
+        "5": "Fri",
+        "6": "Sat",
+        "7": "Sun"
+      },
+      "emailLabel": "Email me my week",
+      "emailHint": "It arrives in the evening of the day you picked. Turn it off any time.",
+      "optionalToggle": "Two quick questions (optional)",
+      "goalsTitle": "What are you looking for in Scooli?",
+      "sourceTitle": "How did you find us?",
+      "sourceOtherPlaceholder": "Tell us where (optional)",
+      "finish": "Finish"
+    },
+    "celebration": {
+      "title": "You're all set",
+      "subtitle": "Taking you to your dashboard…"
+    }
+  },
   "onboarding": {
     "dialogLabel": "Welcome to Scooli",
     "stepIndicator": "Step {step} of {total}",

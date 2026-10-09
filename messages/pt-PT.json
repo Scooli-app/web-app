@@ -701,6 +701,111 @@
       "emptyDescription": "Cria o teu primeiro plano de aula, teste ou quiz e ele aparece aqui para continuares onde ficaste."
     }
   },
+  "onboardingV2": {
+    "dialogLabel": "Bem-vindo à Scooli",
+    "progress": "Passo {step} de {total}",
+    "back": "Voltar",
+    "continue": "Continuar",
+    "later": "Mais tarde",
+    "retry": "Tentar novamente",
+    "saveFailed": "Não conseguimos guardar. Tenta outra vez.",
+    "school": {
+      "title": "Onde dás aulas?",
+      "subtitle": "Escreve o nome da tua escola ou agrupamento.",
+      "placeholder": "Nome da escola",
+      "noSchool": "Não dou aulas numa escola",
+      "roleLabel": "O teu papel",
+      "roles": {
+        "teacher": "Professor/a",
+        "coordinator": "Coordenador/a",
+        "director": "Direção",
+        "tutor": "Explicador/a",
+        "other": "Outro"
+      }
+    },
+    "teaching": {
+      "title": "O que ensinas?",
+      "subtitle": "Escolhe os anos e as disciplinas. Podes mudar isto depois nas Definições.",
+      "yearsLabel": "Anos",
+      "yearChip": "{year}.º",
+      "cycles": {
+        "c1": "1.º–4.º",
+        "c2": "5.º–6.º",
+        "c3": "7.º–9.º",
+        "c4": "10.º–12.º"
+      },
+      "subjectsLabel": "Disciplinas",
+      "subjectsEmpty": "Escolhe primeiro os anos para veres as disciplinas."
+    },
+    "class": {
+      "title": "Cria a tua primeira turma",
+      "subtitle": "Com isto, a Scooli monta o teu plano de aulas.",
+      "subjectLabel": "Disciplina",
+      "yearLabel": "Ano",
+      "yearOption": "{year}.º ano",
+      "labelLabel": "Turma",
+      "labelPlaceholder": "7.º B",
+      "daysLabel": "Em que dias tens aula?",
+      "days": {
+        "mon": "Seg",
+        "tue": "Ter",
+        "wed": "Qua",
+        "thu": "Qui",
+        "fri": "Sex",
+        "sat": "Sáb"
+      },
+      "lessonsCount": "{count, plural, one {# aula} other {# aulas}}",
+      "lessonsFewer": "Menos aulas",
+      "lessonsMore": "Mais aulas",
+      "period": "De {start} a {end}",
+      "capNote": "No plano gratuito planeias até 4 semanas.",
+      "capLink": "Ver planos",
+      "create": "Criar turma",
+      "createFailed": "Não foi possível criar a turma. Tenta outra vez.",
+      "building": "A construir o teu plano…",
+      "buildingHint": "Isto demora só uns segundos.",
+      "readyTitle": "Os primeiros temas do teu plano",
+      "topicsFailed": "Não conseguimos gerar os temas agora."
+    },
+    "week": {
+      "title": "A preparar a tua primeira semana",
+      "subtitle": "Estamos a escrever os planos das aulas de {range}.",
+      "doneTitle": "A tua primeira semana está pronta",
+      "noLessons": "Não há aulas para preparar nesta semana. Podes gerar as outras no calendário.",
+      "lessonFallback": "Aula {number}",
+      "pending": "Em espera",
+      "generating": "A escrever",
+      "ready": "Pronta",
+      "failed": "Falhou",
+      "error": "Vamos terminar isto em segundo plano",
+      "continueBackground": "Continuar em segundo plano",
+      "openLesson": "Abrir a primeira aula"
+    },
+    "ritual": {
+      "title": "Quando planeias a tua semana?",
+      "subtitle": "Escolhe o dia em que queres ter tudo pronto para a semana seguinte.",
+      "days": {
+        "1": "Seg",
+        "2": "Ter",
+        "3": "Qua",
+        "4": "Qui",
+        "5": "Sex",
+        "6": "Sáb",
+        "7": "Dom"
+      },
+      "emailLabel": "Enviar-me um email com a minha semana",
+      "emailHint": "Chega ao fim da tarde do dia que escolheste. Podes desligar quando quiseres.",
+      "optionalToggle": "Duas perguntas rápidas (opcional)",
+      "goalsTitle": "O que procuras na Scooli?",
+      "sourceTitle": "Como nos conheceste?",
+      "sourceOtherPlaceholder": "Conta-nos onde (opcional)",
+      "finish": "Concluir"
+    },
+    "celebration": {
+      "title": "Está tudo pronto",
+      "subtitle": "A levar-te para o teu painel…"
+    }
+  },
   "onboarding": {
     "dialogLabel": "Bem-vindo à Scooli",
     "stepIndicator": "Passo {step} de {total}",
