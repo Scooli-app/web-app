@@ -41,6 +41,7 @@ import { useParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSelector } from "react-redux";
 import { useAuth } from "@clerk/nextjs";
+import posthog from "posthog-js";
 import { useLocale, useTranslations } from "next-intl";
 import { isSupportedLocale, defaultLocale } from "@/i18n/locales";
 
@@ -220,6 +221,28 @@ export default function CalendarViewPage() {
     return { ...selectedSlot, timetable: currentTimetable };
   }, [selectedSlot, currentTimetable]);
 
+  // Class State analytics: a lesson slot got (or failed to get) its material.
+  const trackLessonMaterial = useCallback(
+    (
+      mode: "generate" | "regenerate",
+      slot: LessonSlot,
+      withInstructions: boolean,
+      outcome: "completed" | "failed"
+    ) => {
+      posthog.capture("class_lesson_material_generated", {
+        timetable_id: id,
+        lesson_id: slot.id,
+        slot_type: slot.slotType,
+        mode,
+        with_instructions: withInstructions,
+        outcome,
+        subject: currentTimetable?.subject ?? null,
+        grade_level: currentTimetable?.gradeLevel ?? null,
+      });
+    },
+    [id, currentTimetable?.subject, currentTimetable?.gradeLevel]
+  );
+
   const handleGenerateLesson = useCallback(
     async (slotOrWrapped: SlotWithTimetable | LessonSlot, message?: string) => {
       const slot = slotOrWrapped as LessonSlot;
@@ -240,11 +263,15 @@ export default function CalendarViewPage() {
               setStreamContent(streamRef.current);
             },
             onDone: () => {
+              trackLessonMaterial("generate", slot, Boolean(message), "completed");
               dispatch(setSlotStatus({ slotId: slot.id, status: "completed" }));
               dispatch(fetchLessons({ timetableId: id }));
               setSelectedSlot(null);
             },
-            onError: () => dispatch(setSlotStatus({ slotId: slot.id, status: "failed" })),
+            onError: () => {
+              trackLessonMaterial("generate", slot, Boolean(message), "failed");
+              dispatch(setSlotStatus({ slotId: slot.id, status: "failed" }));
+            },
           },
           getToken
         );
@@ -254,7 +281,7 @@ export default function CalendarViewPage() {
         streamRef.current = "";
       }
     },
-    [id, dispatch, getToken]
+    [id, dispatch, getToken, trackLessonMaterial]
   );
 
   const handleRegenerateLesson = useCallback(
@@ -277,11 +304,15 @@ export default function CalendarViewPage() {
               setStreamContent(streamRef.current);
             },
             onDone: () => {
+              trackLessonMaterial("regenerate", slot, Boolean(message), "completed");
               dispatch(setSlotStatus({ slotId: slot.id, status: "completed" }));
               dispatch(fetchLessons({ timetableId: id }));
               setSelectedSlot(null);
             },
-            onError: () => dispatch(setSlotStatus({ slotId: slot.id, status: "failed" })),
+            onError: () => {
+              trackLessonMaterial("regenerate", slot, Boolean(message), "failed");
+              dispatch(setSlotStatus({ slotId: slot.id, status: "failed" }));
+            },
           },
           getToken
         );
@@ -291,27 +322,44 @@ export default function CalendarViewPage() {
         streamRef.current = "";
       }
     },
-    [id, dispatch, getToken]
+    [id, dispatch, getToken, trackLessonMaterial]
   );
 
   const handleGenerateWeek = useCallback(async () => {
     setGeneratingWeek(true);
+    let slotsCompleted = 0;
+    let slotsFailed = 0;
     try {
       await generateWeekStream(
         id,
         currentWeekIso,
         {
           onSlotStart: (slotId) => dispatch(setSlotStatus({ slotId, status: "generating" })),
-          onSlotDone: (slotId) => dispatch(setSlotStatus({ slotId, status: "completed" })),
-          onSlotError: (slotId) => dispatch(setSlotStatus({ slotId, status: "failed" })),
+          onSlotDone: (slotId) => {
+            slotsCompleted += 1;
+            dispatch(setSlotStatus({ slotId, status: "completed" }));
+          },
+          onSlotError: (slotId) => {
+            slotsFailed += 1;
+            dispatch(setSlotStatus({ slotId, status: "failed" }));
+          },
           onDone: () => dispatch(fetchLessons({ timetableId: id })),
         },
         getToken
       );
     } finally {
       setGeneratingWeek(false);
+      // "Gerar semana": the clearest signal that a teacher is planning a real week in Scooli.
+      posthog.capture("class_week_generated", {
+        timetable_id: id,
+        week_start: currentWeekIso,
+        slots_completed: slotsCompleted,
+        slots_failed: slotsFailed,
+        subject: currentTimetable?.subject ?? null,
+        grade_level: currentTimetable?.gradeLevel ?? null,
+      });
     }
-  }, [id, currentWeekIso, dispatch, getToken]);
+  }, [id, currentWeekIso, dispatch, getToken, currentTimetable?.subject, currentTimetable?.gradeLevel]);
 
   const handleSkip = useCallback(
     (slotOrWrapped: SlotWithTimetable | LessonSlot) => {

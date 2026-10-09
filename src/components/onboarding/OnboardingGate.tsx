@@ -171,8 +171,13 @@ export function OnboardingGate() {
           goals: payload.goals ?? null,
         });
 
-        posthog.setPersonPropertiesForFlags({
+        // Persisted on the person (not just for flags) so every later event can
+        // be segmented by subject, level and how the teacher found Scooli.
+        posthog.setPersonProperties({
           acquisition_source: payload.acquisitionSource,
+          subject_areas: payload.subjectArea ?? null,
+          teaching_levels: payload.teachingLevel ?? null,
+          onboarding_goals: payload.goals ?? null,
         });
 
         // Only show the first-time tutorial for brand-new users.

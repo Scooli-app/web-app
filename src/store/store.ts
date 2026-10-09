@@ -1,5 +1,6 @@
 import { injectStore } from "@/services/api/client";
 import { configureStore } from "@reduxjs/toolkit";
+import { analyticsListener } from "./analyticsListener";
 import rootReducer from "./rootReducer";
 
 export const store = configureStore({
@@ -7,7 +8,7 @@ export const store = configureStore({
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: false,
-    }),
+    }).prepend(analyticsListener.middleware),
 });
 
 injectStore(store.dispatch);

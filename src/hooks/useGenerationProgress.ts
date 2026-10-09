@@ -17,6 +17,7 @@
 "use client";
 
 import { useAuth } from "@clerk/nextjs";
+import { reportUiProblem } from "@/lib/reportUiProblem";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 
@@ -144,6 +145,10 @@ export function useGenerationProgress({
                 return;
               }
               case "error": {
+                reportUiProblem("generation_error_shown", {
+                  documentId,
+                  message: String(payload.message ?? payload._raw ?? ""),
+                });
                 setError(String(payload.message ?? payload._raw ?? t("unknownError")));
                 ctrl.abort();
                 return;
@@ -155,7 +160,10 @@ export function useGenerationProgress({
           },
           onerror(err) {
             // Throwing here stops automatic reconnect; we want manual control.
-            if (!cancelled) setError(err?.message ?? t("connectionError"));
+            if (!cancelled) {
+              reportUiProblem("generation_error_shown", { documentId, message: err?.message });
+              setError(err?.message ?? t("connectionError"));
+            }
             throw err;
           },
           openWhenHidden: true,
