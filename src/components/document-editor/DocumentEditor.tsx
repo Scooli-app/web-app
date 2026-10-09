@@ -40,6 +40,7 @@ import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import posthog from "posthog-js";
+import { reportUiProblem } from "@/lib/reportUiProblem";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { DiffToolbar } from "../editor/DiffToolbar";
@@ -235,6 +236,11 @@ export default function DocumentEditor({
   } = useDocumentManager(documentId);
   const activeDocument =
     currentDocument?.id === documentId ? currentDocument : null;
+  // Read from inside the stream effect without making it a dependency (that would restart the stream).
+  const documentTypeRef = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    documentTypeRef.current = currentDocument?.documentType;
+  }, [currentDocument?.documentType]);
   const {
     getSessionId,
     registerActivity,
@@ -788,6 +794,11 @@ export default function DocumentEditor({
               }
             },
             onError: (errorMsg) => {
+              reportUiProblem("generation_error_shown", {
+                documentId,
+                documentType: documentTypeRef.current,
+                message: errorMsg,
+              });
               clearCompletionFallback();
               eventSourceRef.current = null;
               setIsStreaming(false);
@@ -806,6 +817,11 @@ export default function DocumentEditor({
           })
           .catch((err) => {
             console.error("Failed to start streaming:", err);
+            reportUiProblem("generation_stream_start_failed", {
+              documentId,
+              documentType: documentTypeRef.current,
+              message: err instanceof Error ? err.message : null,
+            });
             eventSourceRef.current = null;
             setIsStreaming(false);
             setError(t("streamStartError"));
@@ -826,6 +842,37 @@ export default function DocumentEditor({
     skipNextEditorKeyBumpRef,
     t,
   ]);
+
+  // A document that is already broken when opened: failed, or "completed" with nothing in it.
+  // Reported once per document per page load.
+  const reportedBrokenOpenRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!activeDocument || reportedBrokenOpenRef.current === activeDocument.id) {
+      return;
+    }
+    const isStreamingNow =
+      streamInfo?.id === activeDocument.id && streamInfo.status === "generating";
+    if (isStreamingNow) {
+      return;
+    }
+    if (activeDocument.status === "failed") {
+      reportedBrokenOpenRef.current = activeDocument.id;
+      reportUiProblem("document_opened_failed", {
+        documentId: activeDocument.id,
+        documentType: activeDocument.documentType,
+      });
+    } else if (
+      activeDocument.status === "completed" &&
+      activeDocument.contentFormat !== "json" &&
+      !isUsableDocumentContent(activeDocument.content)
+    ) {
+      reportedBrokenOpenRef.current = activeDocument.id;
+      reportUiProblem("document_opened_empty", {
+        documentId: activeDocument.id,
+        documentType: activeDocument.documentType,
+      });
+    }
+  }, [activeDocument, streamInfo]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -1057,6 +1104,13 @@ export default function DocumentEditor({
           ? response.content
           : null;
 
+        if (!response.chatAnswer && !editedContent) {
+          reportUiProblem("chat_empty_reply", {
+            documentId: currentDocument.id,
+            documentType: currentDocument.documentType,
+          });
+        }
+
         // Add chat answer to history
         if (response.chatAnswer) {
           setChatHistory((prev) => [
@@ -1124,7 +1178,12 @@ export default function DocumentEditor({
         if (response.sources && response.sources.length > 0) {
           setSources(response.sources);
         }
-      } catch {
+      } catch (err) {
+        reportUiProblem("chat_error_shown", {
+          documentId: currentDocument.id,
+          documentType: currentDocument.documentType,
+          message: err instanceof Error ? err.message : null,
+        });
         setError(t("chatErrorGeneric"));
         // The backend runs text + image generation synchronously in one
         // request, which can outlast a client-side network hiccup or proxy
