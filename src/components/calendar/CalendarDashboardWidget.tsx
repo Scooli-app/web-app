@@ -300,7 +300,7 @@ export function CalendarDashboardWidget() {
                   {/* Text info: full-width row on mobile, grows inline on sm+ */}
                   <div className="min-w-0 basis-full sm:basis-0 sm:flex-1">
                     <p className="truncate text-sm font-medium">
-                      {lesson.topicTitle || tShared("noTopic")}
+                      {lesson.topicTitle}
                     </p>
                     <p className="text-xs text-muted-foreground">
                       <span className={isToday ? "font-semibold text-primary" : ""}>

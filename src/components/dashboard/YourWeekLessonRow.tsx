@@ -26,7 +26,7 @@ export function YourWeekLessonRow({ lesson, locale, onCreate }: YourWeekLessonRo
     .format(new Date(`${lesson.slotDate}T00:00:00`))
     .replace(".", "")
     .slice(0, 3);
-  const topic = lesson.topicTitle || t("noTopic");
+  const topic = lesson.topicTitle;
   const href =
     lesson.status === "completed" && lesson.documentId
       ? `${Routes.LESSON_PLAN}/${lesson.documentId}`

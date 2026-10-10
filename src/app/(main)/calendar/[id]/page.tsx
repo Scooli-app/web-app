@@ -99,7 +99,7 @@ function SlotCard({ slot, color, subject, classLabel, onOpen }: SlotCardProps) {
         </span>
         <div className="min-w-0 flex-1">
           <p className={`truncate text-sm font-medium ${isHoliday ? "line-through text-muted-foreground" : ""}`}>
-            {isHoliday ? t("shared.holidayNoLesson") : slot.topicTitle || t("detail.noTopicDefined")}
+            {isHoliday ? t("shared.holidayNoLesson") : slot.topicTitle}
           </p>
           <p className="text-xs text-muted-foreground">
             {new Date(`${slot.slotDate}T00:00:00`).toLocaleDateString(toIntlLocale(locale), {

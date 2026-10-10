@@ -5,8 +5,8 @@ export function hasTopic(slot: { topicTitle?: string | null }): boolean {
 
 /**
  * Whether a slot may be listed in the UI. Lessons without a topic are never shown;
- * holidays and assessments keep their own display (they have fallback labels).
+ * holidays keep their own display. Every other slot, assessments included, needs a topic title.
  */
 export function isListableSlot(slot: { slotType?: string; topicTitle?: string | null }): boolean {
-  return slot.slotType === "HOLIDAY" || slot.slotType === "ASSESSMENT" || hasTopic(slot);
+  return slot.slotType === "HOLIDAY" || hasTopic(slot);
 }

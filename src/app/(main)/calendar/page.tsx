@@ -235,8 +235,8 @@ function LessonCard({
               {isHoliday
                 ? tTimetable("slotType.holiday")
                 : isAssessment
-                  ? `📋 ${slot.topicTitle || tTimetable("slotType.assessment")}`
-                  : slot.topicTitle || t("shared.noTopic")}
+                  ? `📋 ${slot.topicTitle}`
+                  : slot.topicTitle}
             </p>
           </div>
           {!isHoliday && (

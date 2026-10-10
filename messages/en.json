@@ -58,7 +58,6 @@
     "retryLesson": "Try again",
     "createLessonError": "We couldn't create this lesson. Please try again.",
     "prepare": "Prepare the week",
-    "noTopic": "No topic",
     "noLessons": "No lessons this week.",
     "seeNextWeek": "See next week",
     "empty": "Create your first class and Scooli prepares your week.",
@@ -2667,7 +2666,6 @@
       "viewMonth": "Month",
       "today": "Today",
       "tomorrow": "Tomorrow",
-      "noTopic": "No topic",
       "holidayNoLesson": "Holiday / No lesson",
       "classInline": "Class {label}",
       "minutesSuffix": "{count} min",
@@ -2683,7 +2681,6 @@
     },
     "detail": {
       "loading": "Loading...",
-      "noTopicDefined": "No topic defined",
       "generationFailed": "Generation failed",
       "noLessonsThisWeek": "No lessons scheduled for this week.",
       "noLessonsYet": "You don't have any lessons for this class yet.",
@@ -2747,7 +2744,6 @@
       "cancel": "Cancel",
       "skip": "Skip",
       "editTopicTitle": "Click to edit the topic",
-      "topicPlaceholderEmpty": "No topic — click to edit",
       "lessonNumber": "Lesson {number}"
     },
     "dashboardWidget": {

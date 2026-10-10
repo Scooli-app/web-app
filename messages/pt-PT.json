@@ -58,7 +58,6 @@
     "retryLesson": "Tentar de novo",
     "createLessonError": "Não foi possível criar esta aula. Tenta novamente.",
     "prepare": "Preparar a semana",
-    "noTopic": "Sem tópico",
     "noLessons": "Não tens aulas nesta semana.",
     "seeNextWeek": "Ver próxima semana",
     "empty": "Cria a tua primeira turma e a Scooli prepara a tua semana.",
@@ -2667,7 +2666,6 @@
       "viewMonth": "Mês",
       "today": "Hoje",
       "tomorrow": "Amanhã",
-      "noTopic": "Sem tópico",
       "holidayNoLesson": "Feriado / Sem aula",
       "classInline": "Turma {label}",
       "minutesSuffix": "{count} min",
@@ -2683,7 +2681,6 @@
     },
     "detail": {
       "loading": "A carregar...",
-      "noTopicDefined": "Sem tópico definido",
       "generationFailed": "Falhou a geração",
       "noLessonsThisWeek": "Sem aulas programadas para esta semana.",
       "noLessonsYet": "Ainda não tens aulas criadas para esta turma.",
@@ -2747,7 +2744,6 @@
       "cancel": "Cancelar",
       "skip": "Ignorar",
       "editTopicTitle": "Clica para editar o tópico",
-      "topicPlaceholderEmpty": "Sem tópico — clica para editar",
       "lessonNumber": "Aula {number}"
     },
     "dashboardWidget": {
