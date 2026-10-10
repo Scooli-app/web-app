@@ -180,7 +180,7 @@ export function FirstClassStep({ flow }: FirstClassStepProps) {
         creationMode: "custom",
         source: "onboarding",
       });
-      update({ timetableId: created.id });
+      update({ timetableId: created.id, skippedClass: false });
       await loadTopics(created.id);
     } catch (err) {
       // A free-plan limit already opened the upgrade modal; anything else gets an inline error.
@@ -200,6 +200,11 @@ export function FirstClassStep({ flow }: FirstClassStepProps) {
   };
 
   const handleLater = () => {
+    if (phase === "topicsFailed") {
+      // The class exists; topics can finish later, the week generation does not need them shown.
+      next();
+      return;
+    }
     posthog.capture("onboarding_v2_skipped_class");
     update({ skippedClass: true });
     goTo(5);
@@ -231,7 +236,8 @@ export function FirstClassStep({ flow }: FirstClassStepProps) {
         : phase === "topicsFailed"
           ? t("retry")
           : undefined,
-    secondaryLabel: phase === "form" ? t("later") : undefined,
+    secondaryLabel:
+      phase === "form" ? t("later") : phase === "topicsFailed" ? t("continue") : undefined,
     onContinue: handleContinue,
     onSecondary: handleLater,
   });

@@ -154,8 +154,8 @@ export function OnboardingV2Flow({
         {!celebrating && (
           <footer className="shrink-0 border-t border-border bg-background px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 sm:px-8">
             <div className="mx-auto flex w-full max-w-xl items-center justify-between gap-3">
-              <div className="min-w-[5rem]">
-                {canGoBack && !currentFooter?.hideBack && (
+              {canGoBack && !currentFooter?.hideBack && (
+                <div>
                   <Button
                     type="button"
                     variant="ghost"
@@ -166,9 +166,9 @@ export function OnboardingV2Flow({
                     <ArrowLeft aria-hidden />
                     {t("back")}
                   </Button>
-                )}
-              </div>
-              <div className="flex items-center gap-2">
+                </div>
+              )}
+              <div className="ml-auto flex min-w-0 items-center gap-2">
                 {currentFooter?.secondaryLabel && (
                   <Button
                     type="button"
@@ -182,7 +182,7 @@ export function OnboardingV2Flow({
                 )}
                 <Button
                   type="button"
-                  className="h-11 min-w-32 px-6 text-base"
+                  className="h-auto min-h-11 min-w-32 whitespace-normal px-5 py-2 text-base"
                   onClick={handleContinue}
                   disabled={!canContinue}
                 >
