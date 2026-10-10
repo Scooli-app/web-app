@@ -50,6 +50,23 @@
     },
     "saveError": "Não foi possível guardar a preferência de idioma."
   },
+  "yourWeek": {
+    "title": "A tua semana",
+    "previousWeek": "Semana anterior",
+    "nextWeek": "Semana seguinte",
+    "prepare": "Preparar a semana",
+    "noTopic": "Sem tópico",
+    "noLessons": "Não há aulas nesta semana.",
+    "empty": "Cria a tua primeira turma e a Scooli prepara a tua semana.",
+    "error": "Não conseguimos carregar a tua semana."
+  },
+  "emailUnsubscribed": {
+    "done": "Já não vais receber o email semanal.",
+    "hint": "Se mudares de ideias, podes voltar a ativá-lo nas definições.",
+    "turnOn": "Ativar nas definições",
+    "invalid": "Este link já não é válido.",
+    "openApp": "Abrir a Scooli"
+  },
   "nav": {
     "groups": {
       "navigation": "Navegação",
@@ -849,6 +866,14 @@
     }
   },
   "settings": {
+    "planning": {
+      "title": "Planeamento semanal",
+      "dayTitle": "Dia de planear a semana",
+      "dayDescription": "A partir deste dia, a Scooli mostra-te a semana seguinte.",
+      "digestTitle": "Email semanal com a minha semana",
+      "digestDescription": "Recebes um resumo da semana seguinte no dia em que planeias.",
+      "saveError": "Não conseguimos guardar a alteração."
+    },
     "title": "Definições",
     "subtitle": "Gere a tua conta, subscrição e preferências.",
     "preferences": {

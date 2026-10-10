@@ -50,6 +50,23 @@
     },
     "saveError": "We couldn't save your language preference."
   },
+  "yourWeek": {
+    "title": "Your week",
+    "previousWeek": "Previous week",
+    "nextWeek": "Next week",
+    "prepare": "Prepare the week",
+    "noTopic": "No topic",
+    "noLessons": "No lessons this week.",
+    "empty": "Create your first class and Scooli prepares your week.",
+    "error": "We couldn't load your week."
+  },
+  "emailUnsubscribed": {
+    "done": "You won't get the weekly email anymore.",
+    "hint": "If you change your mind, you can turn it back on in settings.",
+    "turnOn": "Turn it on in settings",
+    "invalid": "This link is no longer valid.",
+    "openApp": "Open Scooli"
+  },
   "nav": {
     "groups": {
       "navigation": "Navigation",
@@ -849,6 +866,14 @@
     }
   },
   "settings": {
+    "planning": {
+      "title": "Weekly planning",
+      "dayTitle": "Day to plan the week",
+      "dayDescription": "From this day on, Scooli shows you the following week.",
+      "digestTitle": "Weekly email with my week",
+      "digestDescription": "You get a summary of the coming week on the day you plan.",
+      "saveError": "We couldn't save that change."
+    },
     "title": "Settings",
     "subtitle": "Manage your account, subscription and preferences.",
     "preferences": {

@@ -5,7 +5,7 @@ import { RecentDocumentsCard } from "@/components/dashboard/RecentDocumentsCard"
 import { PageContainer } from "@/components/layout/PageContainer";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PaymentSuccessModal } from "@/components/ui/payment-success-modal";
-import { CalendarDashboardWidget } from "@/components/calendar/CalendarDashboardWidget";
+import { YourWeekCard } from "@/components/dashboard/YourWeekCard";
 import {
   selectIsWorksheetCreationEnabled,
   selectIsHorarioPlanosEnabled,
@@ -124,7 +124,7 @@ function DashboardContent() {
       <div className="flex min-h-0 flex-1 flex-col gap-3 sm:gap-4">
         {isHorarioPlanosEnabled && (
           <div className="shrink-0">
-            <CalendarDashboardWidget />
+            <YourWeekCard />
           </div>
         )}
 

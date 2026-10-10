@@ -1,0 +1,210 @@
+"use client";
+
+import { YourWeekClassBlock } from "@/components/dashboard/YourWeekClassBlock";
+import { Button } from "@/components/ui/button";
+import { useNewClassGate } from "@/hooks/usePlanLimits";
+import { meService } from "@/services/api/me.service";
+import { generateWeek } from "@/services/api/timetable.service";
+import { userService } from "@/services/api/user.service";
+import { Routes } from "@/shared/types";
+import type { MyWeek, MyWeekLesson } from "@/shared/types/my-week";
+import type { UpgradeReason } from "@/shared/types/plan-limits";
+import { addDaysIso, defaultWeekStart } from "@/shared/utils/week";
+import { useAppDispatch } from "@/store/hooks";
+import { openUpgradeModalForReason, setUpgradeModalOpen } from "@/store/ui/uiSlice";
+import { useAuth } from "@clerk/nextjs";
+import { CalendarDays, ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
+import Link from "next/link";
+import posthog from "posthog-js";
+import { useCallback, useEffect, useRef, useState } from "react";
+
+function isUpgradeReason(code: string): code is UpgradeReason {
+  return code === "free_class_limit" || code === "free_period_limit";
+}
+
+/** Dashboard card with the lessons of the week being planned, grouped by class. */
+export function YourWeekCard() {
+  const t = useTranslations("yourWeek");
+  const tShared = useTranslations("calendar.shared");
+  const locale = useLocale();
+  const dispatch = useAppDispatch();
+  const { getToken } = useAuth();
+  const newClassGate = useNewClassGate();
+
+  const [weekStart, setWeekStart] = useState<string | null>(null);
+  const [week, setWeek] = useState<MyWeek | null>(null);
+  const [failed, setFailed] = useState(false);
+  const [preparing, setPreparing] = useState<Set<string>>(new Set());
+  const viewedRef = useRef(false);
+
+  // The planning day decides which week opens first; fall back to the default (Sunday).
+  useEffect(() => {
+    let cancelled = false;
+    userService
+      .getCurrentUser()
+      .then((user) => user.planningDay)
+      .catch(() => null)
+      .then((planningDay) => {
+        if (!cancelled) setWeekStart(defaultWeekStart(planningDay));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!weekStart) return;
+    let cancelled = false;
+    setWeek(null);
+    setFailed(false);
+    meService
+      .getWeek(weekStart)
+      .then((data) => {
+        if (cancelled) return;
+        setWeek(data);
+        if (!viewedRef.current) {
+          viewedRef.current = true;
+          posthog.capture("your_week_card_viewed", {
+            lesson_count: data.classes.reduce((sum, c) => sum + c.lessons.length, 0),
+            class_count: data.classes.length,
+          });
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setFailed(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [weekStart]);
+
+  const patchLesson = useCallback((id: string, status: MyWeekLesson["status"]) => {
+    setWeek((prev) =>
+      prev && {
+        ...prev,
+        classes: prev.classes.map((c) => ({
+          ...c,
+          lessons: c.lessons.map((l) => (l.id === id ? { ...l, status } : l)),
+        })),
+      },
+    );
+  }, []);
+
+  const handlePrepare = async (timetableId: string) => {
+    if (!weekStart) return;
+    posthog.capture("your_week_prepare_clicked");
+    setPreparing((prev) => new Set(prev).add(timetableId));
+    try {
+      await generateWeek(
+        timetableId,
+        weekStart,
+        {
+          onSlotStart: (id) => patchLesson(id, "generating"),
+          onSlotDone: (id) => patchLesson(id, "completed"),
+          onSlotError: (id) => patchLesson(id, "failed"),
+          onFreeLimit: (code) => {
+            if (isUpgradeReason(code)) dispatch(openUpgradeModalForReason(code));
+          },
+          onQuotaExceeded: () => dispatch(setUpgradeModalOpen(true)),
+          onError: () => undefined,
+        },
+        getToken,
+      );
+    } catch (err) {
+      posthog.captureException(err);
+    } finally {
+      setPreparing((prev) => {
+        const next = new Set(prev);
+        next.delete(timetableId);
+        return next;
+      });
+      // Reload so finished lessons get their document link.
+      meService.getWeek(weekStart).then(setWeek).catch(() => undefined);
+    }
+  };
+
+  const format = new Intl.DateTimeFormat(locale, { day: "numeric", month: "short" });
+  const range = weekStart
+    ? `${format.format(new Date(`${weekStart}T00:00:00`))} – ${format.format(new Date(`${addDaysIso(weekStart, 6)}T00:00:00`))}`
+    : "";
+
+  const classes = week?.classes.filter((c) => c.lessons.length > 0) ?? [];
+  const hasNoClasses = week !== null && week.classes.length === 0;
+
+  return (
+    <div className="rounded-2xl border border-border bg-card p-4 shadow-md sm:p-5">
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-2">
+          <CalendarDays className="h-5 w-5 shrink-0 text-primary" aria-hidden />
+          <h2 className="truncate text-xl font-semibold text-foreground sm:text-2xl">
+            {t("title")}
+          </h2>
+          {range && <span className="shrink-0 text-sm text-muted-foreground">{range}</span>}
+        </div>
+        {weekStart && (
+          <div className="flex shrink-0 items-center">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              aria-label={t("previousWeek")}
+              onClick={() => setWeekStart(addDaysIso(weekStart, -7))}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              aria-label={t("nextWeek")}
+              onClick={() => setWeekStart(addDaysIso(weekStart, 7))}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+      </div>
+
+      {failed ? (
+        <p className="py-4 text-center text-sm text-muted-foreground">{t("error")}</p>
+      ) : !week ? (
+        <div className="space-y-2.5" aria-hidden>
+          {[0, 1].map((i) => (
+            <div key={i} className="animate-pulse rounded-xl border border-border p-3 motion-reduce:animate-none">
+              <div className="mb-3 h-3 w-1/3 rounded bg-muted" />
+              <div className="space-y-2">
+                <div className="h-3 w-4/5 rounded bg-muted/60" />
+                <div className="h-3 w-3/5 rounded bg-muted/60" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : hasNoClasses ? (
+        <div className="py-6 text-center">
+          <p className="text-sm text-muted-foreground">{t("empty")}</p>
+          <Button asChild size="sm" className="mt-3">
+            <Link href={Routes.CALENDAR_NEW} onClick={newClassGate.onClick}>
+              <Plus className="mr-1 h-3 w-3" aria-hidden />
+              {tShared("createClass")}
+            </Link>
+          </Button>
+        </div>
+      ) : classes.length === 0 ? (
+        <p className="py-4 text-center text-sm text-muted-foreground">{t("noLessons")}</p>
+      ) : (
+        <div className="max-h-72 space-y-2.5 overflow-y-auto">
+          {classes.map((klass) => (
+            <YourWeekClassBlock
+              key={`${weekStart}-${klass.timetableId}`}
+              klass={klass}
+              locale={locale}
+              preparing={preparing.has(klass.timetableId)}
+              onPrepare={() => void handlePrepare(klass.timetableId)}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
