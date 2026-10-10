@@ -32,6 +32,7 @@ import { useCallback, useEffect, useSyncExternalStore, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { useAppDispatch } from "@/store/hooks";
+import { useNewClassGate } from "@/hooks/usePlanLimits";
 import { fetchTimetables } from "@/store/timetable/timetableSlice";
 import { generationStore } from "@/store/generationStore";
 import { SLOT_STATUS_CONFIG } from "@/shared/constants/lessonSlotStatus";
@@ -101,6 +102,7 @@ export function CalendarDashboardWidget() {
   const router = useRouter();
   const { getToken } = useAuth();
   const dispatch = useAppDispatch();
+  const newClassGate = useNewClassGate();
   const [upcoming, setUpcoming] = useState<UpcomingLesson[]>([]);
   const [loading, setLoading] = useState(true);
   /** Slot ID whose document is being fetched for navigation. */
@@ -267,7 +269,7 @@ export function CalendarDashboardWidget() {
             {t("noUpcoming")}
           </p>
           <Button asChild size="sm" className="mt-3">
-            <Link href={Routes.CALENDAR_NEW}>
+            <Link href={Routes.CALENDAR_NEW} onClick={newClassGate.onClick}>
               <Plus className="mr-1 h-3 w-3" />
               {tShared("createClass")}
             </Link>

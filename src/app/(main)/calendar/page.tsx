@@ -28,6 +28,7 @@ import { useFeatureAccess } from "@/components/feature/useFeatureAccess";
 import { FeatureUnavailable } from "@/components/feature/FeatureUnavailable";
 import { generationStore } from "@/store/generationStore";
 import { useAppDispatch } from "@/store/hooks";
+import { useNewClassGate } from "@/hooks/usePlanLimits";
 import type { RootState } from "@/store/store";
 import { fetchTimetables } from "@/store/timetable/timetableSlice";
 
@@ -288,6 +289,7 @@ function CalendarPageInner() {
     (state: RootState) => state.timetable,
   );
   const dispatch = useAppDispatch();
+  const newClassGate = useNewClassGate();
   const { getToken } = useAuth();
 
   const searchParams = useSearchParams();
@@ -859,7 +861,7 @@ function CalendarPageInner() {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link href={Routes.CALENDAR_NEW} className="flex items-center gap-2">
+                  <Link href={Routes.CALENDAR_NEW} onClick={newClassGate.onClick} className="flex items-center gap-2">
                     <Plus className="h-4 w-4" />
                     {t("shared.newClassLink")}
                   </Link>
@@ -923,7 +925,7 @@ function CalendarPageInner() {
             </Button>
 
             <Button variant="outline" size="sm" asChild className="h-8">
-              <Link href={Routes.CALENDAR_NEW}>
+              <Link href={Routes.CALENDAR_NEW} onClick={newClassGate.onClick}>
                 <Plus className="mr-1 h-3.5 w-3.5" />
                 {t("shared.newClassLink")}
               </Link>
@@ -999,7 +1001,7 @@ function CalendarPageInner() {
               {t("shared.emptyDescription")}
             </p>
             <Button asChild className="mt-5">
-              <Link href={Routes.CALENDAR_NEW}>
+              <Link href={Routes.CALENDAR_NEW} onClick={newClassGate.onClick}>
                 <Plus className="mr-2 h-4 w-4" />
                 {t("shared.createClass")}
               </Link>

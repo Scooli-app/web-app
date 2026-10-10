@@ -2720,7 +2720,9 @@
         "endLabel": "Fim *",
         "endPlaceholder": "Seleciona a data de fim",
         "schoolYearLabel": "Ano letivo",
-        "schoolYearPlaceholder": "Ex: 2025/2026"
+        "schoolYearPlaceholder": "Ex: 2025/2026",
+        "freeLimitNote": "No plano gratuito podes planear até 4 semanas (até {date}).",
+        "freeLimitUpgrade": "Atualizar para Pro"
       },
       "details": {
         "title": "Detalhes da turma",

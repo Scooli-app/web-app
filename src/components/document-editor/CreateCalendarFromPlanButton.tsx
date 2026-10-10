@@ -20,6 +20,10 @@ import { AlreadyCoveredSection } from "@/components/document-creation/AlreadyCov
 import { ClassTopicsProgress } from "@/components/calendar/ClassTopicsProgress";
 import { useCreateClassWithTopics } from "@/components/calendar/useCreateClassWithTopics";
 import { getTimetablesByLinkedPlan } from "@/services/api/timetable.service";
+import { clampPeriodToFreeWindow } from "@/lib/freePlanWindow";
+import { isClassLimitReached, usePlanLimits } from "@/hooks/usePlanLimits";
+import { useAppDispatch } from "@/store/hooks";
+import { openUpgradeModalForReason } from "@/store/ui/uiSlice";
 import { Routes } from "@/shared/types/routes";
 import type { Document } from "@/shared/types/document";
 import { CalendarPlus, Loader2 } from "lucide-react";
@@ -52,6 +56,8 @@ export default function CreateCalendarFromPlanButton({
   const t = useTranslations("editor.calendarButton");
   const router = useRouter();
   const classCreation = useCreateClassWithTopics();
+  const dispatch = useAppDispatch();
+  const { limits } = usePlanLimits();
   const isCreating = classCreation.busy;
   // From "Criar turma" until the dialog closes, it shows the progress instead of the form.
   const showProgress = classCreation.phase !== "idle";
@@ -102,6 +108,10 @@ export default function CreateCalendarFromPlanButton({
   }
 
   const openNameDialog = () => {
+    if (isClassLimitReached(limits)) {
+      dispatch(openUpgradeModalForReason("free_class_limit"));
+      return;
+    }
     const params = buildCreateTimetableParamsFromPlan(plan);
     if (!params) {
       // Imported plan / no weekly schedule — deep-link into the wizard, pre-filled.
@@ -126,8 +136,13 @@ export default function CreateCalendarFromPlanButton({
 
     // The dialog stays open on the progress until every lesson has its topic —
     // opening the calendar earlier showed empty lessons until a few refreshes.
+    // Free plan: the one-click flow never asks for dates, so it fits the plan to the window.
+    const period = clampPeriodToFreeWindow(limits, params.periodStart, params.periodEnd);
     const result = await classCreation.create({
       ...params,
+      periodStart: period.start,
+      periodEnd: period.end,
+      holidays: params.holidays?.filter((d) => d >= period.start && d <= period.end),
       title: name.trim() || params.title,
       classLabel: classLabel.trim() || undefined,
       alreadyCoveredNotes: alreadyCoveredNotes.trim() || undefined,

@@ -2720,7 +2720,9 @@
         "endLabel": "End *",
         "endPlaceholder": "Select the end date",
         "schoolYearLabel": "School year",
-        "schoolYearPlaceholder": "E.g. 2025/2026"
+        "schoolYearPlaceholder": "E.g. 2025/2026",
+        "freeLimitNote": "On the free plan you can plan up to 4 weeks (until {date}).",
+        "freeLimitUpgrade": "Upgrade to Pro"
       },
       "details": {
         "title": "Class details",

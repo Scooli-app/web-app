@@ -24,6 +24,7 @@ import { useFeatureAccess } from "@/components/feature/useFeatureAccess";
 import { FeatureUnavailable } from "@/components/feature/FeatureUnavailable";
 import { fetchTimetables, deleteTimetable, updateTimetable } from "@/store/timetable/timetableSlice";
 import { useAppDispatch } from "@/store/hooks";
+import { invalidatePlanLimits, useNewClassGate } from "@/hooks/usePlanLimits";
 import type { RootState } from "@/store/store";
 import type { Timetable } from "@/services/api/timetable.service";
 import { getDocuments } from "@/services/api/document.service";
@@ -368,6 +369,7 @@ export default function SequenciasPage() {
   const { loaded: featuresLoaded, enabled } = useFeatureAccess(selectIsHorarioPlanosEnabled);
   const { timetables, isLoading } = useSelector((state: RootState) => state.timetable);
   const dispatch = useAppDispatch();
+  const newClassGate = useNewClassGate();
 
   const [pendingDelete, setPendingDelete] = useState<Timetable | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -384,6 +386,7 @@ export default function SequenciasPage() {
     setIsDeleting(true);
     try {
       await dispatch(deleteTimetable({ id: pendingDelete.id, deleteDocuments })).unwrap();
+      invalidatePlanLimits();
     } finally {
       setIsDeleting(false);
       setPendingDelete(null);
@@ -442,7 +445,7 @@ export default function SequenciasPage() {
           </div>
         </div>
         <Button asChild size="sm">
-          <Link href={Routes.CALENDAR_NEW}>
+          <Link href={Routes.CALENDAR_NEW} onClick={newClassGate.onClick}>
             <Plus className="mr-1.5 h-4 w-4" />
             {t("shared.newClassLink")}
           </Link>
@@ -463,7 +466,7 @@ export default function SequenciasPage() {
             </p>
           </div>
           <Button asChild>
-            <Link href={Routes.CALENDAR_NEW}>
+            <Link href={Routes.CALENDAR_NEW} onClick={newClassGate.onClick}>
               <Plus className="mr-2 h-4 w-4" />
               {t("shared.createClass")}
             </Link>
