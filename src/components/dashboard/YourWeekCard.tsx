@@ -175,10 +175,12 @@ export function YourWeekCard() {
       <div className="mb-3 flex items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2">
           <CalendarDays className="h-5 w-5 shrink-0 text-primary" aria-hidden />
-          <h2 className="truncate text-xl font-semibold text-foreground sm:text-2xl">
-            {t("title")}
-          </h2>
-          {range && <span className="shrink-0 text-sm text-muted-foreground">{range}</span>}
+          <div className="flex min-w-0 flex-col sm:flex-row sm:items-center sm:gap-2">
+            <h2 className="text-xl font-semibold text-foreground sm:truncate sm:text-2xl">
+              {t("title")}
+            </h2>
+            {range && <span className="shrink-0 text-sm text-muted-foreground">{range}</span>}
+          </div>
         </div>
         {weekStart && (
           <div className="flex shrink-0 items-center">

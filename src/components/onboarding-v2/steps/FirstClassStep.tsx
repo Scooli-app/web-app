@@ -17,6 +17,7 @@ import {
 } from "@/components/onboarding-v2/steps/WeekdayPicker";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { invalidatePlanLimits } from "@/hooks/usePlanLimits";
 import { resolveEffectiveContentLanguage } from "@/i18n/clientLocale";
 import {
   weekScheduleToRecurringSlots,
@@ -180,6 +181,8 @@ export function FirstClassStep({ flow }: FirstClassStepProps) {
         creationMode: "custom",
         source: "onboarding",
       });
+      // The dashboard's plan-limits cache still says 0 classes.
+      invalidatePlanLimits();
       update({ timetableId: created.id, skippedClass: false });
       await loadTopics(created.id);
     } catch (err) {
