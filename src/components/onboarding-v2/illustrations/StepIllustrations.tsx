@@ -46,7 +46,7 @@ export function IllustrationFrame({
       aria-label={label}
       aria-hidden={label ? undefined : true}
       className={cn(
-        "mx-auto h-16 w-auto max-w-full sm:h-24 [@media(max-height:700px)]:h-14 [@media(max-height:700px)]:sm:h-20",
+        "mx-auto h-14 w-auto max-w-full sm:h-20",
         className,
       )}
     >

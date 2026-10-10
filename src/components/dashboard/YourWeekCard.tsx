@@ -1,5 +1,6 @@
 "use client";
 
+import { isListableSlot } from "@/shared/utils/lessonTopic";
 import { YourWeekClassBlock } from "@/components/dashboard/YourWeekClassBlock";
 import { Button } from "@/components/ui/button";
 import { useNewClassGate, usePlanLimits } from "@/hooks/usePlanLimits";
@@ -229,7 +230,11 @@ export function YourWeekCard() {
 
   const range = weekStart ? formatWeekRange(weekStart, locale) : "";
 
-  const classes = week?.classes.filter((c) => c.lessons.length > 0) ?? [];
+  // Lessons without a topic are never shown.
+  const classes =
+    week?.classes
+      .map((c) => ({ ...c, lessons: c.lessons.filter(isListableSlot) }))
+      .filter((c) => c.lessons.length > 0) ?? [];
   const hasNoClasses = week !== null && week.classes.length === 0 && !hasClasses;
 
   return (

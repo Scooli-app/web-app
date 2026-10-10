@@ -1,5 +1,6 @@
 "use client";
 
+import { MultiSelectPopover } from "@/components/onboarding-v2/MultiSelectPopover";
 import { ChoiceChip } from "@/components/onboarding-v2/ChoiceChip";
 import { SubjectsIllustration } from "@/components/onboarding-v2/illustrations/StepIllustrations";
 import { StepHeading } from "@/components/onboarding-v2/StepHeading";
@@ -11,19 +12,12 @@ import {
   translateSubjectLabel,
 } from "@/components/document-creation/constants";
 import { buildRegularTeachingItems } from "@/components/document-creation/teaching-profile-preferences";
-import { useMotionSafe } from "@/lib/motion/useMotionSafe";
 import { onboardingV2Service } from "@/services/api/onboarding-v2.service";
-import { motion } from "motion/react";
 import posthog from "posthog-js";
 import { useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 
-const CYCLES = [
-  { id: "c1", years: [1, 2, 3, 4] },
-  { id: "c2", years: [5, 6] },
-  { id: "c3", years: [7, 8, 9] },
-  { id: "c4", years: [10, 11, 12] },
-] as const;
+const ALL_YEARS = Array.from({ length: 12 }, (_, index) => index + 1);
 
 interface TeachingStepProps {
   flow: OnboardingFlowController;
@@ -33,7 +27,6 @@ interface TeachingStepProps {
 
 export function TeachingStep({ flow, onProfileSaved }: TeachingStepProps) {
   const t = useTranslations("onboardingV2");
-  const { stagger, item } = useMotionSafe();
   const { answers, update, trackCompleted } = flow;
   const { years, subjectIds } = answers;
 
@@ -115,59 +108,44 @@ export function TeachingStep({ flow, onProfileSaved }: TeachingStepProps) {
         illustration={<SubjectsIllustration />}
       />
 
-      <div className="space-y-8">
-        <section className="space-y-4" aria-labelledby="onboarding-years">
+      <div className="space-y-4 sm:space-y-6">
+        <section className="space-y-2" aria-labelledby="onboarding-years">
           <p id="onboarding-years" className="text-sm font-medium text-foreground">
             {t("teaching.yearsLabel")}
           </p>
-          <div className="space-y-3">
-            {CYCLES.map((cycle) => (
-              <div key={cycle.id} className="space-y-2">
-                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  {t(`teaching.cycles.${cycle.id}`)}
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {cycle.years.map((year) => (
-                    <ChoiceChip
-                      key={year}
-                      selected={years.includes(year)}
-                      onClick={() => toggleYear(year)}
-                      className="min-w-14"
-                    >
-                      {t("teaching.yearChip", { year })}
-                    </ChoiceChip>
-                  ))}
-                </div>
-              </div>
+          <div className="flex flex-wrap gap-2">
+            {ALL_YEARS.map((year) => (
+              <ChoiceChip
+                key={year}
+                selected={years.includes(year)}
+                onClick={() => toggleYear(year)}
+                className="min-w-12"
+              >
+                {t("teaching.yearChip", { year })}
+              </ChoiceChip>
             ))}
           </div>
         </section>
 
-        <section className="space-y-3" aria-labelledby="onboarding-subjects">
+        <section className="space-y-2" aria-labelledby="onboarding-subjects">
           <p id="onboarding-subjects" className="text-sm font-medium text-foreground">
             {t("teaching.subjectsLabel")}
           </p>
           {availableSubjectIds.length === 0 ? (
             <p className="text-sm text-muted-foreground">{t("teaching.subjectsEmpty")}</p>
           ) : (
-            <motion.div
-              key={availableSubjectIds.join("|")}
-              variants={stagger}
-              initial="initial"
-              animate="animate"
-              className="flex flex-wrap gap-2"
-            >
-              {availableSubjectIds.map((id) => (
-                <motion.div key={id} variants={item}>
-                  <ChoiceChip
-                    selected={subjectIds.includes(id)}
-                    onClick={() => toggleSubject(id)}
-                  >
-                    {translateSubjectLabel(id)}
-                  </ChoiceChip>
-                </motion.div>
-              ))}
-            </motion.div>
+            // A popover multi-picker: dozens of subjects would not fit on one screen as chips.
+            <MultiSelectPopover
+              options={availableSubjectIds.map((id) => ({
+                id,
+                label: translateSubjectLabel(id),
+              }))}
+              values={subjectIds}
+              onToggle={toggleSubject}
+              placeholder={t("teaching.subjectsPlaceholder")}
+              countLabel={(count) => t("teaching.subjectsCount", { count })}
+              labelledBy="onboarding-subjects"
+            />
           )}
         </section>
 

@@ -11,6 +11,7 @@ import {
   type LessonSlot,
 } from "@/services/api/timetable.service";
 import { Routes } from "@/shared/types";
+import { hasTopic } from "@/shared/utils/lessonTopic";
 import type { UpgradeReason } from "@/shared/types/plan-limits";
 import { useAppDispatch } from "@/store/hooks";
 import type { RootState } from "@/store/store";
@@ -66,7 +67,7 @@ export function usePlanGeneration() {
         const week = await meService.getWeek(weekStart);
         const klass = week.classes.find((c) => c.timetableId === id);
         const lessons = (klass?.lessons ?? [])
-          .filter((l) => l.slotType !== "HOLIDAY" && l.status !== "skipped")
+          .filter((l) => l.slotType !== "HOLIDAY" && l.status !== "skipped" && hasTopic(l))
           .sort((a, b) => a.slotDate.localeCompare(b.slotDate));
         if (lessons.length === 0) {
           setWeekStatus("empty");
@@ -144,7 +145,7 @@ export function usePlanGeneration() {
         const slots = await listLessons(id);
         setTopics(
           slots
-            .filter((slot) => slot.slotType === "LESSON")
+            .filter((slot) => slot.slotType === "LESSON" && hasTopic(slot))
             .sort((a, b) => a.slotDate.localeCompare(b.slotDate))
             .slice(0, TOPICS_SHOWN),
         );

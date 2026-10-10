@@ -9,12 +9,15 @@ interface StepHeadingProps {
 
 export function StepHeading({ title, subtitle, illustration }: StepHeadingProps) {
   return (
-    <div className="mb-6 space-y-2 sm:mb-8">
-      {illustration && <div className="mb-3 sm:mb-5">{illustration}</div>}
-      <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+    <div className="mb-3 space-y-1 sm:mb-5 sm:space-y-1.5">
+      {/* Hidden on short viewports (<= 760px tall) so the step always fits without scrolling. */}
+      {illustration && (
+        <div className="mb-2 [@media(max-height:760px)]:hidden">{illustration}</div>
+      )}
+      <h1 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
         {title}
       </h1>
-      {subtitle && <p className="text-base text-muted-foreground">{subtitle}</p>}
+      {subtitle && <p className="text-sm text-muted-foreground sm:text-base">{subtitle}</p>}
     </div>
   );
 }

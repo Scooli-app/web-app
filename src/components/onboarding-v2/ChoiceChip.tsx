@@ -19,7 +19,7 @@ interface ChoiceChipProps {
   className?: string;
 }
 
-/** Large (44px) toggle chip used across the onboarding steps; pops when selected. */
+/** Compact toggle chip (40px tap height on mobile, 36px on desktop) used across the onboarding steps; pops when selected. */
 export function ChoiceChip({
   selected,
   onClick,
@@ -39,7 +39,7 @@ export function ChoiceChip({
       animate={selected && !reduce ? SELECTED_POP : AT_REST}
       transition={{ type: "spring", stiffness: 420, damping: 24 }}
       className={cn(
-        "inline-flex min-h-11 max-w-full items-center justify-center gap-1.5 rounded-xl border px-4 py-2 text-sm font-medium transition-colors",
+        "inline-flex min-h-10 max-w-full items-center justify-center gap-1.5 rounded-xl border px-3 py-1.5 text-sm sm:min-h-9 font-medium transition-colors",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
         "disabled:pointer-events-none disabled:opacity-50",
         selected

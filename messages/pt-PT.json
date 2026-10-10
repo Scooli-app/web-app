@@ -765,7 +765,9 @@
         "c4": "10.º–12.º"
       },
       "subjectsLabel": "Disciplinas",
-      "subjectsEmpty": "Escolhe primeiro os anos para veres as disciplinas."
+      "subjectsEmpty": "Escolhe primeiro os anos para veres as disciplinas.",
+      "subjectsPlaceholder": "Escolhe as disciplinas",
+      "subjectsCount": "{count, plural, one {# disciplina} other {# disciplinas}}"
     },
     "class": {
       "title": "Cria a tua primeira turma",
@@ -817,6 +819,7 @@
         "2": "A montar o guião de cada aula…",
         "3": "A afinar os últimos detalhes…"
       },
+      "moreLessons": "+{count} mais",
       "weekRange": "Semana de {range}",
       "topicsFailed": "Não conseguimos planear os temas agora.",
       "weekFailed": "Algumas aulas não ficaram prontas."
@@ -852,6 +855,9 @@
       },
       "goalsTitle": "O que procuras na Scooli?",
       "sourceTitle": "Como nos conheceste?",
+      "goalsPlaceholder": "Escolhe os objetivos",
+      "selectedCount": "{count, plural, one {# escolhido} other {# escolhidos}}",
+      "sourcePlaceholder": "Escolhe uma opção",
       "sourceOtherPlaceholder": "Conta-nos onde (opcional)",
       "finish": "Concluir"
     },

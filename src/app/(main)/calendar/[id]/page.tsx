@@ -1,5 +1,6 @@
 "use client";
 
+import { isListableSlot } from "@/shared/utils/lessonTopic";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { selectIsHorarioPlanosEnabled } from "@/store/features/selectors";
@@ -210,6 +211,7 @@ export default function CalendarViewPage() {
   const slotsByWeek: WeekMap = useMemo(() => {
     const map: WeekMap = new Map();
     for (const slot of slots) {
+      if (!isListableSlot(slot)) continue; // lessons without a topic are never shown
       const d = new Date(`${slot.slotDate}T00:00:00`);
       const ws = toIso(getWeekStart(d));
       if (!map.has(ws)) map.set(ws, []);
@@ -523,7 +525,7 @@ export default function CalendarViewPage() {
           <CalendarDays className="mx-auto mb-3 h-10 w-10" />
           <p>{t("detail.noLessonsThisWeek")}</p>
           <p className="mt-1 text-sm">
-            {slots.length === 0
+            {!slots.some(isListableSlot)
               ? t("detail.noLessonsYet")
               : t("detail.navigateOtherWeek")}
           </p>

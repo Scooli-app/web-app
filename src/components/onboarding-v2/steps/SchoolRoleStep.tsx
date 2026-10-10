@@ -69,7 +69,9 @@ export function SchoolRoleStep({ flow }: SchoolRoleStepProps) {
 
   const visibleSuggestions =
     listOpen && !noSchool
-      ? suggestions.filter((name) => name.toLowerCase() !== trimmed.toLowerCase())
+      ? suggestions
+          .filter((name) => name.toLowerCase() !== trimmed.toLowerCase())
+          .slice(0, 4)
       : [];
 
   return (
@@ -80,8 +82,8 @@ export function SchoolRoleStep({ flow }: SchoolRoleStepProps) {
         illustration={<SchoolIllustration />}
       />
 
-      <div className="space-y-6">
-        <div className="space-y-3">
+      <div className="space-y-4 sm:space-y-6">
+        <div className="space-y-2.5">
           <div className="relative">
             <Input
               value={schoolName}
@@ -96,7 +98,7 @@ export function SchoolRoleStep({ flow }: SchoolRoleStepProps) {
               maxLength={200}
               autoFocus
               aria-label={t("placeholder")}
-              className="h-12 rounded-xl px-4 text-base"
+              className="h-11 rounded-xl px-4 text-base"
             />
             {visibleSuggestions.length > 0 && (
               <motion.ul
@@ -104,7 +106,7 @@ export function SchoolRoleStep({ flow }: SchoolRoleStepProps) {
                 variants={stagger}
                 initial="initial"
                 animate="animate"
-                className="mt-2 overflow-hidden rounded-xl border border-border bg-card shadow-sm"
+                className="absolute inset-x-0 top-full z-10 mt-1 overflow-hidden rounded-xl border border-border bg-card shadow-md"
               >
                 {visibleSuggestions.map((name) => (
                   <motion.li key={name} variants={item}>
@@ -114,7 +116,7 @@ export function SchoolRoleStep({ flow }: SchoolRoleStepProps) {
                         update({ schoolName: name });
                         setListOpen(false);
                       }}
-                      className="flex min-h-11 w-full items-center px-4 py-2 text-left text-sm text-foreground transition-colors hover:bg-accent focus-visible:bg-accent focus-visible:outline-none"
+                      className="flex min-h-10 w-full items-center px-4 py-1.5 text-left text-sm text-foreground transition-colors hover:bg-accent focus-visible:bg-accent focus-visible:outline-none"
                     >
                       {name}
                     </button>
@@ -137,9 +139,9 @@ export function SchoolRoleStep({ flow }: SchoolRoleStepProps) {
           </ChoiceChip>
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-2">
           <p className="text-sm font-medium text-foreground">{t("roleLabel")}</p>
-          <div className="flex flex-wrap gap-2.5">
+          <div className="flex flex-wrap gap-2">
             {ROLES.map((value) => (
               <ChoiceChip
                 key={value}

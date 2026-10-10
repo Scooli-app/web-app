@@ -1,5 +1,6 @@
 "use client";
 
+import { isListableSlot } from "@/shared/utils/lessonTopic";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
@@ -108,6 +109,7 @@ export default function CalendarMonthPage() {
       );
       for (const { timetable, slots } of results) {
         for (const slot of slots) {
+          if (!isListableSlot(slot)) continue; // lessons without a topic are never shown
           if (!map.has(slot.slotDate)) map.set(slot.slotDate, []);
           const dayEntries = map.get(slot.slotDate);
           if (dayEntries) dayEntries.push({ timetable, slot });

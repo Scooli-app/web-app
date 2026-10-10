@@ -1,5 +1,6 @@
 "use client";
 
+import { isListableSlot } from "@/shared/utils/lessonTopic";
 import { useAuth } from "@clerk/nextjs";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -405,6 +406,7 @@ function CalendarPageInner() {
       if (filterIds.size > 0 && !filterIds.has(t.id)) continue;
       const slots = slotsByTimetable.get(t.id) ?? [];
       for (const s of slots) {
+        if (!isListableSlot(s)) continue; // lessons without a topic are never shown
         const status = generatingSlots.has(s.id) ? "generating" : s.status;
         result.push({ ...s, status, timetable: t });
       }
@@ -734,7 +736,7 @@ function CalendarPageInner() {
         active.map(async (t) => {
           const slots = slotsByTimetable.get(t.id) ?? [];
           const hasPending = slots.some(
-            (s) => s.status === "pending" && s.slotType !== "HOLIDAY",
+            (s) => s.status === "pending" && s.slotType !== "HOLIDAY" && isListableSlot(s),
           );
           if (!hasPending) return;
           const inFlight = new Set<string>();

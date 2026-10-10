@@ -17,6 +17,8 @@ type StageState = "pending" | "active" | "done" | "failed";
 
 const TOPICS_HINT_COUNT = 4;
 const WEEK_HINT_COUNT = 3;
+/** Rows shown at once: the step never scrolls, so the rest is summarised as "+N". */
+const MAX_VISIBLE_ROWS = 3;
 const TICK_MS = 500;
 const HINT_EVERY_TICKS = 7;
 const ASSUMED_TOPICS_MS = 15000;
@@ -30,8 +32,8 @@ interface StageRowProps {
 /** One line of the checklist: pending dot, spinner (always animated), check or alert. */
 function StageRow({ state, label, children }: StageRowProps) {
   return (
-    <li className="space-y-3">
-      <div className="flex min-h-11 items-center gap-3">
+    <li className="space-y-2">
+      <div className="flex min-h-9 items-center gap-3">
         <span
           className={cn(
             "flex h-7 w-7 shrink-0 items-center justify-center rounded-full border",
@@ -56,7 +58,7 @@ function StageRow({ state, label, children }: StageRowProps) {
           {label}
         </span>
       </div>
-      {children && <div className="ml-10 pb-2">{children}</div>}
+      {children && <div className="ml-10 pb-1">{children}</div>}
     </li>
   );
 }
@@ -163,7 +165,7 @@ export function FirstWeekStep({ flow }: FirstWeekStepProps) {
         illustration={<PlanIllustration progress={percent / 100} />}
       />
 
-      <div className="mb-6 space-y-2">
+      <div className="mb-3 space-y-1.5">
         <div
           role="progressbar"
           aria-valuemin={0}
@@ -180,12 +182,12 @@ export function FirstWeekStep({ flow }: FirstWeekStepProps) {
             transition={{ duration: 0.6, ease: "easeOut" }}
           />
         </div>
-        <p className="min-h-5 text-sm text-muted-foreground" role="status" aria-live="polite">
+        <p className="min-h-5 text-xs text-muted-foreground sm:text-sm" role="status" aria-live="polite">
           {hint ?? (allDone ? t("plan.allDone") : "")}
         </p>
       </div>
 
-      <ul className="space-y-1">
+      <ul className="space-y-0.5">
         <StageRow state="done" label={t("plan.stages.created")} />
 
         <StageRow
@@ -193,32 +195,33 @@ export function FirstWeekStep({ flow }: FirstWeekStepProps) {
           label={topicsState === "done" ? t("plan.stages.topicsDone") : t("plan.stages.topics")}
         >
           {topicsStatus === "failed" && (
-            <div className="space-y-3">
+            <div className="space-y-2">
               <p role="alert" className="text-sm text-destructive">
                 {t("plan.topicsFailed")}
               </p>
               <Button
                 type="button"
                 variant="outline"
-                className="h-11 rounded-xl px-5"
+                className="h-10 rounded-xl px-5"
                 onClick={generation.retryTopics}
               >
                 {t("retry")}
               </Button>
             </div>
           )}
-          {topicsStatus === "done" && topics.length > 0 && (
-            <motion.ol variants={stagger} initial="initial" animate="animate" className="space-y-2">
-              {topics.map((slot) => (
+          {/* The week's lessons replace the topic preview once they exist (no scrolling). */}
+          {topicsStatus === "done" && topics.length > 0 && rows.length === 0 && (
+            <motion.ol variants={stagger} initial="initial" animate="animate" className="space-y-1.5">
+              {topics.slice(0, MAX_VISIBLE_ROWS).map((slot) => (
                 <motion.li
                   key={slot.id}
                   variants={item}
-                  className="flex flex-col gap-0.5 rounded-xl border border-border bg-card px-4 py-2.5 sm:flex-row sm:items-baseline sm:gap-3"
+                  className="flex items-baseline gap-3 rounded-xl border border-border bg-card px-3 py-1.5"
                 >
-                  <span className="shrink-0 text-xs font-medium capitalize text-muted-foreground sm:w-24">
+                  <span className="w-20 shrink-0 text-xs font-medium capitalize text-muted-foreground sm:w-24">
                     {formatDate(slot.slotDate)}
                   </span>
-                  <span className="min-w-0 text-sm text-foreground">{slot.topicTitle}</span>
+                  <span className="min-w-0 truncate text-sm text-foreground">{slot.topicTitle}</span>
                 </motion.li>
               ))}
             </motion.ol>
@@ -237,24 +240,29 @@ export function FirstWeekStep({ flow }: FirstWeekStepProps) {
               {t("plan.weekRange", { range: formatRange() })}
             </p>
           )}
-          {rows.length > 0 && (
-            <motion.ul variants={stagger} initial="initial" animate="animate" className="space-y-2">
-              {rows.map((row, index) => (
+          {topicsStatus === "done" && rows.length > 0 && (
+            <motion.ul variants={stagger} initial="initial" animate="animate" className="space-y-1.5">
+              {rows.slice(0, MAX_VISIBLE_ROWS).map((row, index) => (
                 <motion.li key={row.id} variants={item}>
                   <WeekLessonRow row={row} position={index + 1} locale={locale} />
                 </motion.li>
               ))}
+              {rows.length > MAX_VISIBLE_ROWS && (
+                <li className="px-1 text-xs text-muted-foreground">
+                  {t("plan.moreLessons", { count: rows.length - MAX_VISIBLE_ROWS })}
+                </li>
+              )}
             </motion.ul>
           )}
           {weekStatus === "failed" && (
-            <div className="mt-3 space-y-3">
+            <div className="mt-2 space-y-2">
               <p role="alert" className="text-sm text-destructive">
                 {t("plan.weekFailed")}
               </p>
               <Button
                 type="button"
                 variant="outline"
-                className="h-11 rounded-xl px-5"
+                className="h-10 rounded-xl px-5"
                 onClick={generation.retryWeek}
               >
                 {t("retry")}
@@ -262,7 +270,7 @@ export function FirstWeekStep({ flow }: FirstWeekStepProps) {
             </div>
           )}
           {weekStatus === "done" && firstLessonHref && (
-            <Button asChild variant="outline" className="mt-3 h-11 rounded-xl px-5">
+            <Button asChild variant="outline" className="mt-2 h-10 rounded-xl px-5">
               <a href={firstLessonHref} target="_blank" rel="noopener noreferrer">
                 {t("week.openLesson")}
                 <ExternalLink aria-hidden />

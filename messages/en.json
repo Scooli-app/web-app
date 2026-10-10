@@ -765,7 +765,9 @@
         "c4": "10–12"
       },
       "subjectsLabel": "Subjects",
-      "subjectsEmpty": "Pick your grades first to see the subjects."
+      "subjectsEmpty": "Pick your grades first to see the subjects.",
+      "subjectsPlaceholder": "Choose subjects",
+      "subjectsCount": "{count, plural, one {# subject} other {# subjects}}"
     },
     "class": {
       "title": "Create your first class",
@@ -817,6 +819,7 @@
         "2": "Putting together each lesson's outline…",
         "3": "Polishing the last details…"
       },
+      "moreLessons": "+{count} more",
       "weekRange": "Week of {range}",
       "topicsFailed": "We couldn't plan the topics right now.",
       "weekFailed": "Some lessons didn't finish."
@@ -852,6 +855,9 @@
       },
       "goalsTitle": "What are you looking for in Scooli?",
       "sourceTitle": "How did you find us?",
+      "goalsPlaceholder": "Choose goals",
+      "selectedCount": "{count, plural, other {# selected}}",
+      "sourcePlaceholder": "Choose one",
       "sourceOtherPlaceholder": "Tell us where (optional)",
       "finish": "Finish"
     },

@@ -6,6 +6,7 @@
  * Spec: Feature 2, Phase 6 — only shown to Pro / Institucional users.
  */
 
+import { isListableSlot } from "@/shared/utils/lessonTopic";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -51,7 +52,8 @@ function isUpcoming(slot: LessonSlot): boolean {
   return (
     slot.slotDate >= localIsoDate() &&
     slot.slotType !== "HOLIDAY" &&
-    slot.status !== "skipped"
+    slot.status !== "skipped" &&
+    isListableSlot(slot)
   );
 }
 

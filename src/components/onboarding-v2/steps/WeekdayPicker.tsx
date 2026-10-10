@@ -24,26 +24,26 @@ export function WeekdayPicker({ value, onChange, disabled }: WeekdayPickerProps)
   const setDay = (day: DayKey, count: number) => onChange({ ...value, [day]: count });
 
   return (
-    <div className="space-y-3">
-      <div className="flex flex-wrap gap-2">
+    <div className="space-y-2">
+      <div className="grid grid-cols-6 gap-1.5 sm:gap-2">
         {CLASS_DAYS.map((day) => (
           <ChoiceChip
             key={day}
             selected={value[day] > 0}
             disabled={disabled}
             onClick={() => setDay(day, value[day] > 0 ? 0 : 1)}
-            className="min-w-16"
+            className="min-w-0 px-1"
           >
             {t(`days.${day}`)}
           </ChoiceChip>
         ))}
       </div>
 
-      <ul className="space-y-2">
+      <ul className="grid gap-1.5 sm:grid-cols-2 sm:gap-2">
         {CLASS_DAYS.filter((day) => value[day] > 0).map((day) => (
           <li
             key={day}
-            className="flex items-center justify-between rounded-xl border border-border bg-card px-4 py-2"
+            className="flex items-center justify-between rounded-xl border border-border bg-card py-0.5 pl-3 pr-1"
           >
             <span className="text-sm font-medium text-foreground">{t(`days.${day}`)}</span>
             <div className="flex items-center gap-1">
@@ -52,12 +52,12 @@ export function WeekdayPicker({ value, onChange, disabled }: WeekdayPickerProps)
                 aria-label={t("lessonsFewer")}
                 disabled={disabled || value[day] <= 1}
                 onClick={() => setDay(day, value[day] - 1)}
-                className="flex h-11 w-11 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-40"
+                className="flex h-10 w-10 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-40"
               >
                 <Minus className="h-4 w-4" aria-hidden />
               </button>
               <span
-                className="min-w-20 text-center text-sm tabular-nums text-foreground"
+                className="min-w-16 text-center text-sm tabular-nums text-foreground"
                 aria-live="polite"
               >
                 {t("lessonsCount", { count: value[day] })}
@@ -67,7 +67,7 @@ export function WeekdayPicker({ value, onChange, disabled }: WeekdayPickerProps)
                 aria-label={t("lessonsMore")}
                 disabled={disabled || value[day] >= MAX_LESSONS_PER_DAY}
                 onClick={() => setDay(day, value[day] + 1)}
-                className="flex h-11 w-11 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-40"
+                className="flex h-10 w-10 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-40"
               >
                 <Plus className="h-4 w-4" aria-hidden />
               </button>

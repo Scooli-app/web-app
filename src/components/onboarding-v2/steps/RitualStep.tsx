@@ -2,10 +2,18 @@
 
 import { RitualIllustration } from "@/components/onboarding-v2/illustrations/StepIllustrations";
 import { ChoiceChip } from "@/components/onboarding-v2/ChoiceChip";
+import { MultiSelectPopover } from "@/components/onboarding-v2/MultiSelectPopover";
 import { StepHeading } from "@/components/onboarding-v2/StepHeading";
 import type { OnboardingFlowController } from "@/components/onboarding-v2/useOnboardingV2";
 import { useStepFooter } from "@/components/onboarding-v2/useStepFooter";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { onboardingV2Service } from "@/services/api/onboarding-v2.service";
 import type { AcquisitionSource, OnboardingGoal } from "@/shared/types/onboarding";
@@ -52,7 +60,7 @@ function PlanStatus({ overall }: { overall: "working" | "done" | "failed" }) {
     <p
       role="status"
       aria-live="polite"
-      className="flex items-center gap-2 rounded-xl bg-muted px-3 py-2.5 text-sm text-foreground"
+      className="flex items-center gap-2 rounded-xl bg-muted px-3 py-1.5 text-sm text-foreground"
     >
       {overall === "working" && (
         <Loader2 className="h-4 w-4 shrink-0 animate-spin text-primary" aria-hidden />
@@ -146,82 +154,92 @@ export function RitualStep({ flow, onFinished }: RitualStepProps) {
         illustration={<RitualIllustration />}
       />
 
-      <div className="space-y-8">
+      <div className="space-y-3 sm:space-y-4">
         {hasPlan && <PlanStatus overall={generation.overall} />}
 
-        <div className="flex flex-wrap gap-2">
-          {DAYS.map((day) => (
-            <ChoiceChip
-              key={day}
-              selected={planningDay === day}
-              onClick={() => setPlanningDay(day)}
-              className="min-w-16"
-            >
-              {t(`ritual.days.${day}`)}
-            </ChoiceChip>
-          ))}
+        <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-stretch sm:gap-4">
+          <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
+            {DAYS.map((day) => (
+              <ChoiceChip
+                key={day}
+                selected={planningDay === day}
+                onClick={() => setPlanningDay(day)}
+                className="min-w-0 px-1"
+              >
+                {t(`ritual.days.${day}`)}
+              </ChoiceChip>
+            ))}
+          </div>
+
+          <label className="flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-border bg-card px-3 py-2 sm:max-w-64">
+            <span className="space-y-0.5">
+              <span className="block text-sm font-medium text-foreground">
+                {t("ritual.emailLabel")}
+              </span>
+              <span className="block text-xs leading-snug text-muted-foreground">
+                {t("ritual.emailHint")}
+              </span>
+            </span>
+            <Switch
+              checked={weeklyEmail}
+              onCheckedChange={setWeeklyEmail}
+              aria-label={t("ritual.emailLabel")}
+            />
+          </label>
         </div>
 
-        <label className="flex cursor-pointer items-start justify-between gap-4 rounded-2xl border border-border bg-card p-4">
-          <span className="space-y-1">
-            <span className="block text-sm font-medium text-foreground">
-              {t("ritual.emailLabel")}
-            </span>
-            <span className="block text-sm text-muted-foreground">
-              {t("ritual.emailHint")}
-            </span>
-          </span>
-          <Switch
-            checked={weeklyEmail}
-            onCheckedChange={setWeeklyEmail}
-            aria-label={t("ritual.emailLabel")}
-            className="mt-0.5"
-          />
-        </label>
-
-        <div className="space-y-6">
-          <div className="space-y-3">
-            <p className="flex flex-wrap items-center gap-2 text-sm font-medium text-foreground">
+        <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
+          <div className="space-y-1.5">
+            <p
+              id="onboarding-goals"
+              className="flex flex-wrap items-center gap-2 text-sm font-medium text-foreground"
+            >
               {t("ritual.goalsTitle")}
               <OptionalBadge label={t("ritual.optionalBadge")} />
             </p>
-            <div className="flex flex-wrap gap-2">
-              {GOALS.map((goal) => (
-                <ChoiceChip
-                  key={goal}
-                  selected={goals.includes(goal)}
-                  showCheck
-                  onClick={() => toggleGoal(goal)}
-                >
-                  {tEnum(`onboardingGoal.${goal}`)}
-                </ChoiceChip>
-              ))}
-            </div>
+            <MultiSelectPopover
+              options={GOALS.map((goal) => ({ id: goal, label: tEnum(`onboardingGoal.${goal}`) }))}
+              values={goals}
+              onToggle={(id) => toggleGoal(id as OnboardingGoal)}
+              placeholder={t("ritual.goalsPlaceholder")}
+              countLabel={(count) => t("ritual.selectedCount", { count })}
+              labelledBy="onboarding-goals"
+            />
           </div>
 
-          <div className="space-y-3">
-            <p className="flex flex-wrap items-center gap-2 text-sm font-medium text-foreground">
+          <div className="space-y-1.5">
+            <p
+              id="onboarding-source"
+              className="flex flex-wrap items-center gap-2 text-sm font-medium text-foreground"
+            >
               {t("ritual.sourceTitle")}
               <OptionalBadge label={t("ritual.optionalBadge")} />
             </p>
-            <div className="flex flex-wrap gap-2">
-              {SOURCES.map((value) => (
-                <ChoiceChip
-                  key={value}
-                  selected={source === value}
-                  onClick={() => setSource(source === value ? null : value)}
-                >
-                  {tEnum(`acquisitionSource.${value}`)}
-                </ChoiceChip>
-              ))}
-            </div>
+            <Select
+              value={source ?? ""}
+              onValueChange={(value) => setSource(value as AcquisitionSource)}
+            >
+              <SelectTrigger
+                aria-labelledby="onboarding-source"
+                className="h-10 rounded-xl px-3 text-base shadow-xs"
+              >
+                <SelectValue placeholder={t("ritual.sourcePlaceholder")} />
+              </SelectTrigger>
+              <SelectContent className="z-[10000]">
+                {SOURCES.map((value) => (
+                  <SelectItem key={value} value={value} className="min-h-10 text-base">
+                    {tEnum(`acquisitionSource.${value}`)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             {source === "OTHER" && (
               <Input
                 value={sourceOther}
                 onChange={(event) => setSourceOther(event.target.value)}
                 placeholder={t("ritual.sourceOtherPlaceholder")}
                 maxLength={200}
-                className="h-11 rounded-xl px-4 text-base"
+                className="h-10 rounded-xl px-3 text-base"
               />
             )}
           </div>

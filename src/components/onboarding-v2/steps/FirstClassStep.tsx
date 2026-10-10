@@ -69,7 +69,7 @@ function buildSchedule(lessons: LessonsByDay): Partial<WeekSchedule> {
   return schedule;
 }
 
-const selectTriggerClassName = "h-11 rounded-xl px-3 text-base shadow-xs";
+const selectTriggerClassName = "h-10 rounded-xl px-3 text-base shadow-xs";
 // The onboarding overlay sits at z-[9999]; the menu is portalled to <body> and must clear it.
 const selectContentClassName = "z-[10000]";
 const selectItemClassName = "min-h-11 text-base";
@@ -205,9 +205,9 @@ export function FirstClassStep({ flow }: FirstClassStepProps) {
         illustration={<ClassIllustration />}
       />
 
-      <div className="space-y-6">
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-2">
+      <div className="space-y-3 sm:space-y-4">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <div className="space-y-1.5">
             <Label htmlFor="onboarding-class-year">{t("class.yearLabel")}</Label>
             <Select value={String(year)} onValueChange={(value) => setChosenYear(Number(value))}>
               <SelectTrigger id="onboarding-class-year" className={selectTriggerClassName}>
@@ -222,7 +222,7 @@ export function FirstClassStep({ flow }: FirstClassStepProps) {
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-2">
+          <div className="order-last col-span-2 space-y-1.5 sm:order-none sm:col-span-1">
             <Label htmlFor="onboarding-class-subject">{t("class.subjectLabel")}</Label>
             <Select value={subjectId ?? ""} onValueChange={setChosenSubject}>
               <SelectTrigger id="onboarding-class-subject" className={selectTriggerClassName}>
@@ -237,27 +237,26 @@ export function FirstClassStep({ flow }: FirstClassStepProps) {
               </SelectContent>
             </Select>
           </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="onboarding-class-label">{t("class.labelLabel")}</Label>
+            <Input
+              id="onboarding-class-label"
+              value={classLabel}
+              onChange={(event) => setClassLabel(event.target.value)}
+              placeholder={t("class.labelPlaceholder")}
+              maxLength={40}
+              autoComplete="off"
+              className="h-10 rounded-xl px-3 text-base"
+            />
+          </div>
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="onboarding-class-label">{t("class.labelLabel")}</Label>
-          <Input
-            id="onboarding-class-label"
-            value={classLabel}
-            onChange={(event) => setClassLabel(event.target.value)}
-            placeholder={t("class.labelPlaceholder")}
-            maxLength={40}
-            autoComplete="off"
-            className="h-11 rounded-xl px-4 text-base"
-          />
-        </div>
-
-        <div className="space-y-3">
           <p className="text-sm font-medium text-foreground">{t("class.daysLabel")}</p>
           <WeekdayPicker value={lessons} onChange={setLessons} />
         </div>
 
-        <div className="space-y-1 text-sm text-muted-foreground">
+        <div className="space-y-0.5 text-xs text-muted-foreground sm:text-sm">
           <p>{t("class.period", { start: formatDay(periodStart), end: formatDay(periodEnd) })}</p>
           {capped && (
             <p>

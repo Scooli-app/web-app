@@ -113,7 +113,7 @@ export function OnboardingV2Flow({
         // pointer-events-auto is load-bearing: a Radix modal that opens underneath sets
         // pointer-events: none on <body>, which would leave this screen unclickable.
         className={cn(
-          "pointer-events-auto fixed inset-0 z-[9999] flex flex-col overscroll-contain bg-background",
+          "pointer-events-auto fixed inset-x-0 top-0 z-[9999] flex h-dvh flex-col overflow-hidden bg-background",
           suspended && "invisible pointer-events-none",
         )}
         aria-modal="true"
@@ -122,18 +122,19 @@ export function OnboardingV2Flow({
         aria-label={t("dialogLabel")}
         onKeyDown={handleKeyDown}
       >
-        <header className="shrink-0 space-y-4 px-4 pb-2 pt-4 sm:px-8 sm:pt-6">
+        <header className="shrink-0 space-y-3 px-4 pb-1 pt-3 sm:px-8 sm:pt-5">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/scooli.svg" alt="Scooli" className="h-7 w-auto" draggable={false} />
+          <img src="/scooli.svg" alt="Scooli" className="h-6 w-auto sm:h-7" draggable={false} />
           {!celebrating && (
-            <div className="mx-auto w-full max-w-xl">
+            <div className="mx-auto w-full max-w-2xl">
               <ProgressRail current={stepIndex + 1} total={steps.length} />
             </div>
           )}
         </header>
 
-        <main className="relative min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
-          <div className="mx-auto w-full max-w-xl px-4 py-6 sm:py-10">
+        {/* Steps never scroll: each one is sized to fit between the header and footer. */}
+        <main className="relative min-h-0 flex-1 overflow-hidden">
+          <div className="mx-auto h-full w-full max-w-2xl px-4 py-3 sm:py-6">
             {celebrating ? (
               <Celebration onDone={handleCelebrated} />
             ) : (
@@ -141,6 +142,7 @@ export function OnboardingV2Flow({
               // mode="wait") left the screen blank for seconds while step 4's
               // streaming rows were still animating. The new step enters immediately.
               <motion.div
+                className="h-full"
                 key={step}
                 custom={direction}
                 variants={stepVariants}
@@ -154,14 +156,14 @@ export function OnboardingV2Flow({
         </main>
 
         {!celebrating && (
-          <footer className="shrink-0 border-t border-border bg-background px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 sm:px-8">
-            <div className="mx-auto flex w-full max-w-xl items-center justify-between gap-3">
+          <footer className="shrink-0 border-t border-border bg-background px-4 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 sm:px-8">
+            <div className="mx-auto flex w-full max-w-2xl items-center justify-between gap-3">
               {canGoBack && !currentFooter?.hideBack && (
                 <div>
                   <Button
                     type="button"
                     variant="ghost"
-                    className="h-11"
+                    className="h-10"
                     onClick={back}
                     disabled={currentFooter?.busy}
                   >
@@ -175,7 +177,7 @@ export function OnboardingV2Flow({
                   <Button
                     type="button"
                     variant="ghost"
-                    className="h-11 px-4"
+                    className="h-10 px-4"
                     onClick={handleSecondary}
                     disabled={currentFooter.busy}
                   >
@@ -184,7 +186,7 @@ export function OnboardingV2Flow({
                 )}
                 <Button
                   type="button"
-                  className="h-auto min-h-11 min-w-32 whitespace-normal px-5 py-2 text-base"
+                  className="h-auto min-h-10 min-w-32 whitespace-normal px-5 py-2 text-base"
                   onClick={handleContinue}
                   disabled={!canContinue}
                 >

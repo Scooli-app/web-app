@@ -1,5 +1,6 @@
 "use client";
 
+import { isListableSlot } from "@/shared/utils/lessonTopic";
 import { YourWeekLessonRow } from "@/components/dashboard/YourWeekLessonRow";
 import { Button } from "@/components/ui/button";
 import { useMotionSafe } from "@/lib/motion/useMotionSafe";
@@ -28,7 +29,7 @@ export function YourWeekClassBlock({
   const { stagger, item } = useMotionSafe();
 
   const lessons: MyWeekLesson[] = klass.lessons
-    .filter((l) => l.slotType !== "HOLIDAY" && l.status !== "skipped")
+    .filter((l) => l.slotType !== "HOLIDAY" && l.status !== "skipped" && isListableSlot(l))
     .sort((a, b) => a.slotDate.localeCompare(b.slotDate));
   if (lessons.length === 0) return null;
 
