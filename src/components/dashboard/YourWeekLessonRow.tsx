@@ -20,9 +20,12 @@ export function YourWeekLessonRow({ lesson, locale, onCreate }: YourWeekLessonRo
   const tTimetable = useTranslations("timetable");
   const cfg = SLOT_STATUS_CONFIG[lesson.status];
 
-  const weekday = new Intl.DateTimeFormat(locale, { weekday: "short" }).format(
-    new Date(`${lesson.slotDate}T00:00:00`),
-  );
+  // Always 3 letters (SEG, QUA / MON, WED): pt-PT "short" weekdays are full words
+  // ("quarta-feira") that overflow the fixed column.
+  const weekday = new Intl.DateTimeFormat(locale, { weekday: "short" })
+    .format(new Date(`${lesson.slotDate}T00:00:00`))
+    .replace(".", "")
+    .slice(0, 3);
   const topic = lesson.topicTitle || t("noTopic");
   const href =
     lesson.status === "completed" && lesson.documentId
@@ -31,7 +34,7 @@ export function YourWeekLessonRow({ lesson, locale, onCreate }: YourWeekLessonRo
 
   const content = (
     <>
-      <span className="w-12 shrink-0 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+      <span className="w-10 shrink-0 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
         {weekday}
       </span>
       <span className="min-w-0 flex-1 truncate text-sm text-foreground">{topic}</span>
