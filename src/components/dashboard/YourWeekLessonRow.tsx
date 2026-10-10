@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { SLOT_STATUS_CONFIG } from "@/shared/constants/lessonSlotStatus";
 import { Routes } from "@/shared/types";
@@ -10,10 +11,11 @@ import Link from "next/link";
 interface YourWeekLessonRowProps {
   lesson: MyWeekLesson;
   locale: string;
+  onCreate: () => void;
 }
 
 /** One lesson of the week: weekday, topic and a status pill; completed lessons open their document. */
-export function YourWeekLessonRow({ lesson, locale }: YourWeekLessonRowProps) {
+export function YourWeekLessonRow({ lesson, locale, onCreate }: YourWeekLessonRowProps) {
   const t = useTranslations("yourWeek");
   const tTimetable = useTranslations("timetable");
   const cfg = SLOT_STATUS_CONFIG[lesson.status];
@@ -29,7 +31,7 @@ export function YourWeekLessonRow({ lesson, locale }: YourWeekLessonRowProps) {
 
   const content = (
     <>
-      <span className="w-16 shrink-0 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+      <span className="w-12 shrink-0 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
         {weekday}
       </span>
       <span className="min-w-0 flex-1 truncate text-sm text-foreground">{topic}</span>
@@ -40,15 +42,30 @@ export function YourWeekLessonRow({ lesson, locale }: YourWeekLessonRowProps) {
     </>
   );
 
-  const base = "flex items-center gap-3 rounded-lg px-2 py-1.5";
-  return href ? (
-    <Link
-      href={href}
-      className={`${base} transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary`}
-    >
-      {content}
-    </Link>
-  ) : (
-    <div className={base}>{content}</div>
+  const canCreate = lesson.status === "pending" || lesson.status === "failed";
+  const base = "flex min-h-8 min-w-0 flex-1 items-center gap-3 rounded-md px-2 py-0.5";
+  return (
+    <div className="flex items-center gap-1">
+      {href ? (
+        <Link
+          href={href}
+          className={`${base} transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary`}
+        >
+          {content}
+        </Link>
+      ) : (
+        <div className={base}>{content}</div>
+      )}
+      {canCreate && (
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-6 shrink-0 px-2 text-xs text-primary"
+          onClick={onCreate}
+        >
+          {lesson.status === "failed" ? t("retryLesson") : t("createLesson")}
+        </Button>
+      )}
+    </div>
   );
 }

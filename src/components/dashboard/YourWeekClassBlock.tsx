@@ -13,6 +13,7 @@ interface YourWeekClassBlockProps {
   locale: string;
   preparing: boolean;
   onPrepare: () => void;
+  onCreateLesson: (lessonId: string) => void;
 }
 
 /** One class of the week: color dot, title, its lessons and the "prepare the week" button. */
@@ -21,6 +22,7 @@ export function YourWeekClassBlock({
   locale,
   preparing,
   onPrepare,
+  onCreateLesson,
 }: YourWeekClassBlockProps) {
   const t = useTranslations("yourWeek");
   const { stagger, item } = useMotionSafe();
@@ -33,8 +35,8 @@ export function YourWeekClassBlock({
   const needsPreparing = lessons.some((l) => l.status === "pending" || l.status === "failed");
 
   return (
-    <section className="rounded-xl border border-border bg-background p-3">
-      <div className="mb-1.5 flex items-center justify-between gap-2">
+    <section className="rounded-lg border border-border bg-background px-2 py-1.5">
+      <div className="mb-0.5 flex items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2">
           <span
             aria-hidden
@@ -60,10 +62,14 @@ export function YourWeekClassBlock({
           </Button>
         )}
       </div>
-      <motion.ul variants={stagger} initial="initial" animate="animate" className="space-y-0.5">
+      <motion.ul variants={stagger} initial="initial" animate="animate" className="space-y-0">
         {lessons.map((lesson) => (
           <motion.li key={lesson.id} variants={item}>
-            <YourWeekLessonRow lesson={lesson} locale={locale} />
+            <YourWeekLessonRow
+              lesson={lesson}
+              locale={locale}
+              onCreate={() => onCreateLesson(lesson.id)}
+            />
           </motion.li>
         ))}
       </motion.ul>

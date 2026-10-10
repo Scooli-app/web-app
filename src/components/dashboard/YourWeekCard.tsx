@@ -4,7 +4,7 @@ import { YourWeekClassBlock } from "@/components/dashboard/YourWeekClassBlock";
 import { Button } from "@/components/ui/button";
 import { useNewClassGate, usePlanLimits } from "@/hooks/usePlanLimits";
 import { meService } from "@/services/api/me.service";
-import { generateWeek } from "@/services/api/timetable.service";
+import { generateLesson, generateWeek } from "@/services/api/timetable.service";
 import { userService } from "@/services/api/user.service";
 import { Routes } from "@/shared/types";
 import type { MyWeek, MyWeekLesson } from "@/shared/types/my-week";
@@ -22,6 +22,24 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 function isUpgradeReason(code: string): code is UpgradeReason {
   return code === "free_class_limit" || code === "free_period_limit";
+}
+
+function parseIso(iso: string): Date {
+  return new Date(`${iso}T00:00:00`);
+}
+
+/** "12 – 18 October" within one month, "27 Oct – 2 Nov" across two. */
+function formatWeekRange(weekStart: string, locale: string): string {
+  const start = parseIso(weekStart);
+  const end = parseIso(addDaysIso(weekStart, 6));
+  if (start.getMonth() === end.getMonth()) {
+    const day = new Intl.DateTimeFormat(locale, { day: "numeric" });
+    const month = new Intl.DateTimeFormat(locale, { month: "long" });
+    return `${day.format(start)} – ${day.format(end)} ${month.format(end)}`;
+  }
+  const short = new Intl.DateTimeFormat(locale, { day: "numeric", month: "short" });
+  const clean = (v: string) => v.replace(/\./g, "");
+  return `${clean(short.format(start))} – ${clean(short.format(end))}`;
 }
 
 /** Dashboard card with the lessons of the week being planned, grouped by class. */
@@ -96,6 +114,53 @@ export function YourWeekCard() {
     );
   }, []);
 
+  const handleCreateLesson = async (timetableId: string, lessonId: string) => {
+    if (!weekStart) return;
+    const generatedWeek = weekStart;
+    posthog.capture("your_week_create_lesson_clicked");
+    patchLesson(lessonId, "generating");
+    let problem = false;
+    let done = false;
+    try {
+      await generateLesson(
+        timetableId,
+        lessonId,
+        undefined,
+        {
+          onDone: () => {
+            done = true;
+          },
+          onFreeLimit: (code) => {
+            problem = true;
+            if (isUpgradeReason(code)) dispatch(openUpgradeModalForReason(code));
+          },
+          onQuotaExceeded: () => {
+            problem = true;
+            dispatch(setUpgradeModalOpen(true));
+          },
+          onError: () => {
+            problem = true;
+          },
+        },
+        getToken,
+      );
+    } catch (err) {
+      problem = true;
+      posthog.captureException(err);
+    } finally {
+      if (problem || !done) {
+        patchLesson(lessonId, "failed");
+        toast.error(t("createLessonError"));
+      }
+      meService
+        .getWeek(generatedWeek)
+        .then((data) => {
+          if (weekStartRef.current === generatedWeek) setWeek(data);
+        })
+        .catch(() => toast.error(t("refreshError")));
+    }
+  };
+
   const handlePrepare = async (timetableId: string) => {
     if (!weekStart) return;
     const generatedWeek = weekStart;
@@ -162,24 +227,21 @@ export function YourWeekCard() {
     }
   };
 
-  const format = new Intl.DateTimeFormat(locale, { day: "numeric", month: "short" });
-  const range = weekStart
-    ? `${format.format(new Date(`${weekStart}T00:00:00`))} – ${format.format(new Date(`${addDaysIso(weekStart, 6)}T00:00:00`))}`
-    : "";
+  const range = weekStart ? formatWeekRange(weekStart, locale) : "";
 
   const classes = week?.classes.filter((c) => c.lessons.length > 0) ?? [];
   const hasNoClasses = week !== null && week.classes.length === 0 && !hasClasses;
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-4 shadow-md sm:p-5">
-      <div className="mb-3 flex items-center justify-between gap-2">
+    <div className="flex max-h-80 flex-col rounded-2xl border border-border bg-card p-3 shadow-md sm:px-4 sm:py-3">
+      <div className="mb-2 flex shrink-0 items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2">
           <CalendarDays className="h-5 w-5 shrink-0 text-primary" aria-hidden />
-          <div className="flex min-w-0 flex-col sm:flex-row sm:items-center sm:gap-2">
-            <h2 className="text-xl font-semibold text-foreground sm:truncate sm:text-2xl">
+          <div className="flex min-w-0 flex-col sm:flex-row sm:items-baseline sm:gap-2">
+            <h2 className="text-lg font-semibold leading-tight text-foreground sm:truncate sm:text-xl">
               {t("title")}
             </h2>
-            {range && <span className="shrink-0 text-sm text-muted-foreground">{range}</span>}
+            {range && <span className="shrink-0 text-sm leading-tight text-muted-foreground">{range}</span>}
           </div>
         </div>
         {weekStart && (
@@ -246,7 +308,7 @@ export function YourWeekCard() {
           )}
         </div>
       ) : (
-        <div className="max-h-72 space-y-2.5 overflow-y-auto">
+        <div className="min-h-0 flex-1 space-y-2 overflow-y-auto">
           {classes.map((klass) => (
             <YourWeekClassBlock
               key={`${weekStart}-${klass.timetableId}`}
@@ -254,6 +316,7 @@ export function YourWeekCard() {
               locale={locale}
               preparing={preparing.has(klass.timetableId)}
               onPrepare={() => void handlePrepare(klass.timetableId)}
+              onCreateLesson={(lessonId) => void handleCreateLesson(klass.timetableId, lessonId)}
             />
           ))}
         </div>
