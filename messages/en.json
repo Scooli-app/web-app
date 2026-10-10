@@ -59,7 +59,9 @@
     "noLessons": "No lessons this week.",
     "empty": "Create your first class and Scooli prepares your week.",
     "error": "We couldn't load your week.",
-    "prepareError": "We couldn't prepare the week. Please try again."
+    "prepareError": "We couldn't prepare the week. Please try again.",
+    "nothingToPrepare": "There are no lessons left to prepare this week.",
+    "refreshError": "Your lessons are ready, but we couldn't refresh the list. Please reload the page."
   },
   "emailUnsubscribed": {
     "done": "You won't get the weekly email anymore.",

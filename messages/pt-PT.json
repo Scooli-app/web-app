@@ -59,7 +59,9 @@
     "noLessons": "Não há aulas nesta semana.",
     "empty": "Cria a tua primeira turma e a Scooli prepara a tua semana.",
     "error": "Não conseguimos carregar a tua semana.",
-    "prepareError": "Não foi possível preparar a semana. Tenta novamente."
+    "prepareError": "Não foi possível preparar a semana. Tenta novamente.",
+    "nothingToPrepare": "Não há aulas por preparar nesta semana.",
+    "refreshError": "As aulas foram preparadas, mas não foi possível atualizar a lista. Atualiza a página."
   },
   "emailUnsubscribed": {
     "done": "Já não vais receber o email semanal.",

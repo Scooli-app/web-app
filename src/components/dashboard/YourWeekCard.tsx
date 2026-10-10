@@ -102,6 +102,7 @@ export function YourWeekCard() {
     // Lessons started but not yet reported done/failed by the stream.
     const inFlight = new Set<string>();
     let problem = false;
+    let generated = 0;
     try {
       await generateWeek(
         timetableId,
@@ -113,6 +114,7 @@ export function YourWeekCard() {
           },
           onSlotDone: (id) => {
             inFlight.delete(id);
+            generated += 1;
             patchLesson(id, "completed");
           },
           onSlotError: (id) => {
@@ -141,6 +143,7 @@ export function YourWeekCard() {
       // A stream that ended or broke mid-lesson must not leave rows spinning.
       inFlight.forEach((id) => patchLesson(id, "failed"));
       if (problem || inFlight.size > 0) toast.error(t("prepareError"));
+      else if (generated === 0) toast.info(t("nothingToPrepare"));
       setPreparing((prev) => {
         const next = new Set(prev);
         next.delete(timetableId);
@@ -153,7 +156,7 @@ export function YourWeekCard() {
         .then((data) => {
           if (weekStartRef.current === generatedWeek) setWeek(data);
         })
-        .catch(() => undefined);
+        .catch(() => toast.error(t("refreshError")));
     }
   };
 
