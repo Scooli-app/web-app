@@ -155,7 +155,7 @@ export function RitualStep({ flow, onFinished }: RitualStepProps) {
           >
             {t("ritual.optionalToggle")}
             <ChevronDown
-              className={`h-4 w-4 text-muted-foreground transition-transform ${optionalOpen ? "rotate-180" : ""}`}
+              className={`h-4 w-4 text-muted-foreground transition-transform motion-reduce:transition-none ${optionalOpen ? "rotate-180" : ""}`}
               aria-hidden
             />
           </button>

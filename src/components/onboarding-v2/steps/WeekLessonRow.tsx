@@ -50,7 +50,7 @@ export function WeekLessonRow({ row, position, locale }: WeekLessonRowProps) {
       <div className="flex shrink-0 items-center gap-2 text-xs text-muted-foreground" role="status">
         <span>{t(row.status)}</span>
         {row.status === "generating" && (
-          <Loader2 className="h-4 w-4 animate-spin text-primary" aria-hidden />
+          <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none text-primary" aria-hidden />
         )}
         {row.status === "ready" && (
           <motion.span

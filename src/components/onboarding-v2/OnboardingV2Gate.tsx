@@ -19,12 +19,16 @@ import posthog from "posthog-js";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSelector } from "react-redux";
 
-type PendingFlow = { mode: OnboardingMode; profileDone: boolean };
+type PendingFlow = { mode: OnboardingMode; profileDone: boolean; hasClass: boolean };
 
 function toPendingFlow(status: OnboardingV2Status): PendingFlow | null {
   return status.mode === "none"
     ? null
-    : { mode: status.mode, profileDone: status.profileDone };
+    : {
+        mode: status.mode,
+        profileDone: status.profileDone,
+        hasClass: status.hasClass ?? false,
+      };
 }
 
 /**
@@ -104,6 +108,7 @@ export function OnboardingV2Gate() {
     <OnboardingV2Flow
       mode={pending.mode}
       profileDone={pending.profileDone}
+      hasClass={pending.hasClass}
       suspended={suspended}
       onClose={handleClose}
     />

@@ -63,6 +63,12 @@
     "nothingToPrepare": "Não há aulas por preparar nesta semana.",
     "refreshError": "As aulas foram preparadas, mas não foi possível atualizar a lista. Atualiza a página."
   },
+  "emailUnsubscribe": {
+    "title": "Deixar de receber o email semanal?",
+    "hint": "Podes voltar a ativá-lo quando quiseres, nas definições.",
+    "confirm": "Sim, deixar de receber",
+    "confirming": "A cancelar…"
+  },
   "emailUnsubscribed": {
     "done": "Já não vais receber o email semanal.",
     "hint": "Se mudares de ideias, podes voltar a ativá-lo nas definições.",

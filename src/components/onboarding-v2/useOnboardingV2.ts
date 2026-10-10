@@ -33,15 +33,21 @@ interface UseOnboardingV2Options {
   mode: OnboardingMode;
   /** Mandatory profile already saved (reload after step 2): resume at step 3. */
   profileDone: boolean;
+  /** A class already exists (reload after step 3/4): resume at the ritual step. */
+  hasClass?: boolean;
 }
 
 /** Step navigation, answers and analytics for the onboarding flow. */
-export function useOnboardingV2({ mode, profileDone }: UseOnboardingV2Options) {
+export function useOnboardingV2({
+  mode,
+  profileDone,
+  hasClass = false,
+}: UseOnboardingV2Options) {
   const steps = useMemo<OnboardingStepId[]>(
     () => (mode === "profile" ? [1, 2] : [1, 2, 3, 4, 5]),
     [mode],
   );
-  const firstIndex = mode === "full" && profileDone ? 2 : 0;
+  const firstIndex = mode === "full" && profileDone ? (hasClass ? 4 : 2) : 0;
 
   const [index, setIndex] = useState(firstIndex);
   const [direction, setDirection] = useState<1 | -1>(1);

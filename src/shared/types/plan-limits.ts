@@ -1,6 +1,10 @@
 /** Error codes returned by the API (HTTP 403) when a free-plan limit blocks an action. */
 export type UpgradeReason = "free_class_limit" | "free_period_limit";
 
+export function isUpgradeReason(code: string): code is UpgradeReason {
+  return code === "free_class_limit" || code === "free_period_limit";
+}
+
 export interface PlanLimits {
   isPro: boolean;
   maxActiveClasses: number | null;

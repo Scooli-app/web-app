@@ -28,6 +28,8 @@ import { useFeatureAccess } from "@/components/feature/useFeatureAccess";
 import { FeatureUnavailable } from "@/components/feature/FeatureUnavailable";
 import { generationStore } from "@/store/generationStore";
 import { useAppDispatch } from "@/store/hooks";
+import { openUpgradeModalForReason, setUpgradeModalOpen } from "@/store/ui/uiSlice";
+import { isUpgradeReason } from "@/shared/types/plan-limits";
 import { useNewClassGate } from "@/hooks/usePlanLimits";
 import type { RootState } from "@/store/store";
 import { fetchTimetables } from "@/store/timetable/timetableSlice";
@@ -653,6 +655,7 @@ function CalendarPageInner() {
 
   const handleGenerateLesson = useCallback(
     async (slot: SlotWithTimetable, message?: string) => {
+      const previousStatus = slot.status;
       startSlotGenerating(slot.id);
       patchSlotStatus(slot.timetable.id, slot.id, "generating");
       try {
@@ -668,6 +671,14 @@ function CalendarPageInner() {
             },
             onError: () =>
               patchSlotStatus(slot.timetable.id, slot.id, "failed"),
+            onFreeLimit: (code) => {
+              patchSlotStatus(slot.timetable.id, slot.id, previousStatus);
+              if (isUpgradeReason(code)) dispatch(openUpgradeModalForReason(code));
+            },
+            onQuotaExceeded: () => {
+              patchSlotStatus(slot.timetable.id, slot.id, previousStatus);
+              dispatch(setUpgradeModalOpen(true));
+            },
           },
           getToken,
         );
@@ -675,11 +686,12 @@ function CalendarPageInner() {
         stopSlotGenerating(slot.id);
       }
     },
-    [getToken, refreshTimetable, startSlotGenerating, stopSlotGenerating],
+    [dispatch, getToken, refreshTimetable, startSlotGenerating, stopSlotGenerating],
   );
 
   const handleRegenerateLesson = useCallback(
     async (slot: SlotWithTimetable, message?: string) => {
+      const previousStatus = slot.status;
       startSlotGenerating(slot.id);
       patchSlotStatus(slot.timetable.id, slot.id, "generating");
       try {
@@ -695,6 +707,14 @@ function CalendarPageInner() {
             },
             onError: () =>
               patchSlotStatus(slot.timetable.id, slot.id, "failed"),
+            onFreeLimit: (code) => {
+              patchSlotStatus(slot.timetable.id, slot.id, previousStatus);
+              if (isUpgradeReason(code)) dispatch(openUpgradeModalForReason(code));
+            },
+            onQuotaExceeded: () => {
+              patchSlotStatus(slot.timetable.id, slot.id, previousStatus);
+              dispatch(setUpgradeModalOpen(true));
+            },
           },
           getToken,
         );
@@ -702,7 +722,7 @@ function CalendarPageInner() {
         stopSlotGenerating(slot.id);
       }
     },
-    [getToken, refreshTimetable, startSlotGenerating, stopSlotGenerating],
+    [dispatch, getToken, refreshTimetable, startSlotGenerating, stopSlotGenerating],
   );
 
   // ── Generate whole week ───────────────────────────────────────────────────
@@ -717,13 +737,35 @@ function CalendarPageInner() {
             (s) => s.status === "pending" && s.slotType !== "HOLIDAY",
           );
           if (!hasPending) return;
+          const inFlight = new Set<string>();
+          const resetInFlight = () => {
+            inFlight.forEach((id) => patchSlotStatus(t.id, id, "pending"));
+            inFlight.clear();
+          };
           await generateWeekStream(
             t.id,
             weekIso,
             {
-              onSlotStart: (id) => patchSlotStatus(t.id, id, "generating"),
-              onSlotDone: (id) => patchSlotStatus(t.id, id, "completed"),
-              onSlotError: (id) => patchSlotStatus(t.id, id, "failed"),
+              onSlotStart: (id) => {
+                inFlight.add(id);
+                patchSlotStatus(t.id, id, "generating");
+              },
+              onSlotDone: (id) => {
+                inFlight.delete(id);
+                patchSlotStatus(t.id, id, "completed");
+              },
+              onSlotError: (id) => {
+                inFlight.delete(id);
+                patchSlotStatus(t.id, id, "failed");
+              },
+              onFreeLimit: (code) => {
+                resetInFlight();
+                if (isUpgradeReason(code)) dispatch(openUpgradeModalForReason(code));
+              },
+              onQuotaExceeded: () => {
+                resetInFlight();
+                dispatch(setUpgradeModalOpen(true));
+              },
               onDone: () => void refreshTimetable(t.id),
             },
             getToken,
@@ -733,7 +775,7 @@ function CalendarPageInner() {
     } finally {
       setGeneratingWeek(false);
     }
-  }, [timetables, slotsByTimetable, weekIso, getToken, refreshTimetable]);
+  }, [timetables, slotsByTimetable, weekIso, getToken, refreshTimetable, dispatch]);
 
   // ── Mutations ─────────────────────────────────────────────────────────────
   const handleSkip = useCallback(async (slot: SlotWithTimetable) => {

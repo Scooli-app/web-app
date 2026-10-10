@@ -13,6 +13,8 @@ import {
   updateLesson,
 } from "@/store/timetable/timetableSlice";
 import { useAppDispatch } from "@/store/hooks";
+import { openUpgradeModalForReason, setUpgradeModalOpen } from "@/store/ui/uiSlice";
+import { isUpgradeReason } from "@/shared/types/plan-limits";
 import type { RootState } from "@/store/store";
 import { Routes } from "@/shared/types";
 import {
@@ -37,7 +39,7 @@ import { SlotDialog } from "@/components/calendar/SlotDialog";
 import type { SlotWithTimetable } from "@/shared/types/calendar";
 import { toIso, getWeekStart, addDays, formatWeekLabel, toIntlLocale } from "@/shared/utils/calendar";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSelector } from "react-redux";
 import { useAuth } from "@clerk/nextjs";
@@ -142,7 +144,23 @@ export default function CalendarViewPage() {
   const dispatch = useAppDispatch();
   const { getToken } = useAuth();
 
-  const [weekStart, setWeekStart] = useState<Date>(() => getWeekStart(new Date()));
+  const searchParams = useSearchParams();
+  const weekParam = searchParams.get("week");
+  const [weekStart, setWeekStart] = useState<Date>(() => {
+    // The weekly email links here with ?week=YYYY-MM-DD.
+    if (weekParam) {
+      const d = new Date(`${weekParam}T00:00:00`);
+      if (!isNaN(d.getTime())) return getWeekStart(d);
+    }
+    return getWeekStart(new Date());
+  });
+
+  // Follow the ?week param when it changes (client-side navigation to the same page).
+  useEffect(() => {
+    if (!weekParam) return;
+    const d = new Date(`${weekParam}T00:00:00`);
+    if (!isNaN(d.getTime())) setWeekStart(getWeekStart(d));
+  }, [weekParam]);
   const [selectedSlot, setSelectedSlot] = useState<LessonSlot | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatingWeek, setGeneratingWeek] = useState(false);
@@ -246,6 +264,7 @@ export default function CalendarViewPage() {
   const handleGenerateLesson = useCallback(
     async (slotOrWrapped: SlotWithTimetable | LessonSlot, message?: string) => {
       const slot = slotOrWrapped as LessonSlot;
+      const previousStatus = slot.status;
       setSelectedSlot(null);
       setIsGenerating(true);
       streamRef.current = "";
@@ -272,6 +291,14 @@ export default function CalendarViewPage() {
               trackLessonMaterial("generate", slot, Boolean(message), "failed");
               dispatch(setSlotStatus({ slotId: slot.id, status: "failed" }));
             },
+            onFreeLimit: (code) => {
+              dispatch(setSlotStatus({ slotId: slot.id, status: previousStatus }));
+              if (isUpgradeReason(code)) dispatch(openUpgradeModalForReason(code));
+            },
+            onQuotaExceeded: () => {
+              dispatch(setSlotStatus({ slotId: slot.id, status: previousStatus }));
+              dispatch(setUpgradeModalOpen(true));
+            },
           },
           getToken
         );
@@ -287,6 +314,7 @@ export default function CalendarViewPage() {
   const handleRegenerateLesson = useCallback(
     async (slotOrWrapped: SlotWithTimetable | LessonSlot, message?: string) => {
       const slot = slotOrWrapped as LessonSlot;
+      const previousStatus = slot.status;
       setSelectedSlot(null);
       setIsGenerating(true);
       streamRef.current = "";
@@ -313,6 +341,14 @@ export default function CalendarViewPage() {
               trackLessonMaterial("regenerate", slot, Boolean(message), "failed");
               dispatch(setSlotStatus({ slotId: slot.id, status: "failed" }));
             },
+            onFreeLimit: (code) => {
+              dispatch(setSlotStatus({ slotId: slot.id, status: previousStatus }));
+              if (isUpgradeReason(code)) dispatch(openUpgradeModalForReason(code));
+            },
+            onQuotaExceeded: () => {
+              dispatch(setSlotStatus({ slotId: slot.id, status: previousStatus }));
+              dispatch(setUpgradeModalOpen(true));
+            },
           },
           getToken
         );
@@ -329,19 +365,40 @@ export default function CalendarViewPage() {
     setGeneratingWeek(true);
     let slotsCompleted = 0;
     let slotsFailed = 0;
+    // Slots shown as "generating" that a plan limit may leave stuck: back to pending.
+    const inFlight = new Set<string>();
+    const resetInFlight = () => {
+      inFlight.forEach((slotId) =>
+        dispatch(setSlotStatus({ slotId, status: "pending" })),
+      );
+      inFlight.clear();
+    };
     try {
       await generateWeekStream(
         id,
         currentWeekIso,
         {
-          onSlotStart: (slotId) => dispatch(setSlotStatus({ slotId, status: "generating" })),
+          onSlotStart: (slotId) => {
+            inFlight.add(slotId);
+            dispatch(setSlotStatus({ slotId, status: "generating" }));
+          },
           onSlotDone: (slotId) => {
             slotsCompleted += 1;
+            inFlight.delete(slotId);
             dispatch(setSlotStatus({ slotId, status: "completed" }));
           },
           onSlotError: (slotId) => {
             slotsFailed += 1;
+            inFlight.delete(slotId);
             dispatch(setSlotStatus({ slotId, status: "failed" }));
+          },
+          onFreeLimit: (code) => {
+            resetInFlight();
+            if (isUpgradeReason(code)) dispatch(openUpgradeModalForReason(code));
+          },
+          onQuotaExceeded: () => {
+            resetInFlight();
+            dispatch(setUpgradeModalOpen(true));
           },
           onDone: () => dispatch(fetchLessons({ timetableId: id })),
         },

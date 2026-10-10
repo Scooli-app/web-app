@@ -32,6 +32,7 @@ export interface OnboardingFlowResult {
 interface OnboardingV2FlowProps {
   mode: OnboardingMode;
   profileDone: boolean;
+  hasClass: boolean;
   /** Hidden but kept alive (route suppressed, or the upgrade modal is on top). */
   suspended: boolean;
   onClose: (result: OnboardingFlowResult) => void;
@@ -40,12 +41,13 @@ interface OnboardingV2FlowProps {
 export function OnboardingV2Flow({
   mode,
   profileDone,
+  hasClass,
   suspended,
   onClose,
 }: OnboardingV2FlowProps) {
   const t = useTranslations("onboardingV2");
   const { step: stepVariants } = useMotionSafe();
-  const flow = useOnboardingV2({ mode, profileDone });
+  const flow = useOnboardingV2({ mode, profileDone, hasClass });
   const { step, direction, steps, stepIndex, canGoBack, back } = flow;
 
   const [footer, setFooter] = useState<FooterDisplay | null>(null);
@@ -186,7 +188,7 @@ export function OnboardingV2Flow({
                   onClick={handleContinue}
                   disabled={!canContinue}
                 >
-                  {currentFooter?.busy && <Loader2 className="animate-spin" aria-hidden />}
+                  {currentFooter?.busy && <Loader2 className="animate-spin motion-reduce:animate-none" aria-hidden />}
                   {currentFooter?.continueLabel ?? t("continue")}
                 </Button>
               </div>

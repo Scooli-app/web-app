@@ -21,7 +21,7 @@ export function ClassTopicsReveal({ topics, failed }: ClassTopicsRevealProps) {
   if (topics === null) {
     return (
       <div className="flex flex-col items-center gap-3 py-12 text-center" role="status">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" aria-hidden />
+        <Loader2 className="h-8 w-8 animate-spin motion-reduce:animate-none text-primary" aria-hidden />
         <p className="text-lg font-medium text-foreground">{t("building")}</p>
         <p className="text-sm text-muted-foreground">{t("buildingHint")}</p>
       </div>

@@ -5,6 +5,8 @@ export type TeacherRole = "teacher" | "coordinator" | "director" | "tutor" | "ot
 export interface OnboardingV2Status {
   mode: "full" | "profile" | "none";
   profileDone: boolean;
+  /** The user already has at least one class (created in step 3). */
+  hasClass: boolean;
 }
 
 export interface OnboardingV2Profile {

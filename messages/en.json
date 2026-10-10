@@ -63,6 +63,12 @@
     "nothingToPrepare": "There are no lessons left to prepare this week.",
     "refreshError": "Your lessons are ready, but we couldn't refresh the list. Please reload the page."
   },
+  "emailUnsubscribe": {
+    "title": "Stop getting the weekly email?",
+    "hint": "You can turn it back on any time in settings.",
+    "confirm": "Yes, unsubscribe",
+    "confirming": "Unsubscribing…"
+  },
   "emailUnsubscribed": {
     "done": "You won't get the weekly email anymore.",
     "hint": "If you change your mind, you can turn it back on in settings.",
