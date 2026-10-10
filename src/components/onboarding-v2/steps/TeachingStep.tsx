@@ -1,6 +1,7 @@
 "use client";
 
 import { ChoiceChip } from "@/components/onboarding-v2/ChoiceChip";
+import { SubjectsIllustration } from "@/components/onboarding-v2/illustrations/StepIllustrations";
 import { StepHeading } from "@/components/onboarding-v2/StepHeading";
 import type { OnboardingFlowController } from "@/components/onboarding-v2/useOnboardingV2";
 import { useStepFooter } from "@/components/onboarding-v2/useStepFooter";
@@ -108,7 +109,11 @@ export function TeachingStep({ flow, onProfileSaved }: TeachingStepProps) {
 
   return (
     <div>
-      <StepHeading title={t("teaching.title")} subtitle={t("teaching.subtitle")} />
+      <StepHeading
+        title={t("teaching.title")}
+        subtitle={t("teaching.subtitle")}
+        illustration={<SubjectsIllustration />}
+      />
 
       <div className="space-y-8">
         <section className="space-y-4" aria-labelledby="onboarding-years">

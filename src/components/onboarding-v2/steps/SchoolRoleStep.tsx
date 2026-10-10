@@ -1,6 +1,7 @@
 "use client";
 
 import { ChoiceChip } from "@/components/onboarding-v2/ChoiceChip";
+import { SchoolIllustration } from "@/components/onboarding-v2/illustrations/StepIllustrations";
 import { StepHeading } from "@/components/onboarding-v2/StepHeading";
 import type { OnboardingFlowController } from "@/components/onboarding-v2/useOnboardingV2";
 import { useStepFooter } from "@/components/onboarding-v2/useStepFooter";
@@ -73,7 +74,11 @@ export function SchoolRoleStep({ flow }: SchoolRoleStepProps) {
 
   return (
     <div>
-      <StepHeading title={t("title")} subtitle={t("subtitle")} />
+      <StepHeading
+        title={t("title")}
+        subtitle={t("subtitle")}
+        illustration={<SchoolIllustration />}
+      />
 
       <div className="space-y-6">
         <div className="space-y-3">

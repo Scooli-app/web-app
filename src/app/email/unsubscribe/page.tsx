@@ -46,7 +46,7 @@ function UnsubscribeContent() {
           <h1 className="text-2xl font-semibold text-foreground">{t("title")}</h1>
           <p className="text-sm leading-6 text-muted-foreground">{t("hint")}</p>
           <Button onClick={confirm} disabled={busy || !token}>
-            {busy && <Loader2 className="animate-spin motion-reduce:animate-none" aria-hidden />}
+            {busy && <Loader2 className="animate-spin" aria-hidden />}
             {busy ? t("confirming") : t("confirm")}
           </Button>
         </div>

@@ -188,7 +188,7 @@ export function OnboardingV2Flow({
                   onClick={handleContinue}
                   disabled={!canContinue}
                 >
-                  {currentFooter?.busy && <Loader2 className="animate-spin motion-reduce:animate-none" aria-hidden />}
+                  {currentFooter?.busy && <Loader2 className="animate-spin" aria-hidden />}
                   {currentFooter?.continueLabel ?? t("continue")}
                 </Button>
               </div>

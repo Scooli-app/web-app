@@ -1,16 +1,15 @@
 "use client";
 
+import { RitualIllustration } from "@/components/onboarding-v2/illustrations/StepIllustrations";
 import { ChoiceChip } from "@/components/onboarding-v2/ChoiceChip";
 import { StepHeading } from "@/components/onboarding-v2/StepHeading";
 import type { OnboardingFlowController } from "@/components/onboarding-v2/useOnboardingV2";
 import { useStepFooter } from "@/components/onboarding-v2/useStepFooter";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { useMotionSafe } from "@/lib/motion/useMotionSafe";
 import { onboardingV2Service } from "@/services/api/onboarding-v2.service";
 import type { AcquisitionSource, OnboardingGoal } from "@/shared/types/onboarding";
-import { ChevronDown } from "lucide-react";
-import { AnimatePresence, motion } from "motion/react";
+import { AlertCircle, Check, Loader2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import posthog from "posthog-js";
 import { useState } from "react";
@@ -38,6 +37,35 @@ const SOURCES: AcquisitionSource[] = [
   "OTHER",
 ];
 
+function OptionalBadge({ label }: { label: string }) {
+  return (
+    <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-normal text-muted-foreground">
+      {label}
+    </span>
+  );
+}
+
+/** Small inline status of the background plan generation started in step 3. */
+function PlanStatus({ overall }: { overall: "working" | "done" | "failed" }) {
+  const t = useTranslations("onboardingV2.ritual");
+  return (
+    <p
+      role="status"
+      aria-live="polite"
+      className="flex items-center gap-2 rounded-xl bg-muted px-3 py-2.5 text-sm text-foreground"
+    >
+      {overall === "working" && (
+        <Loader2 className="h-4 w-4 shrink-0 animate-spin text-primary" aria-hidden />
+      )}
+      {overall === "done" && <Check className="h-4 w-4 shrink-0 text-primary" aria-hidden />}
+      {overall === "failed" && (
+        <AlertCircle className="h-4 w-4 shrink-0 text-destructive" aria-hidden />
+      )}
+      <span>{t(`planStatus.${overall}`)}</span>
+    </p>
+  );
+}
+
 interface RitualStepProps {
   flow: OnboardingFlowController;
   /** Called once the answers are saved; the shell plays the celebration. */
@@ -47,12 +75,11 @@ interface RitualStepProps {
 export function RitualStep({ flow, onFinished }: RitualStepProps) {
   const t = useTranslations("onboardingV2");
   const tEnum = useTranslations("enums");
-  const { reduce } = useMotionSafe();
-  const { answers, trackCompleted } = flow;
+  const { answers, trackCompleted, generation } = flow;
+  const hasPlan = answers.timetableId !== null && !answers.skippedClass;
 
   const [planningDay, setPlanningDay] = useState<number>(DEFAULT_PLANNING_DAY);
   const [weeklyEmail, setWeeklyEmail] = useState(true);
-  const [optionalOpen, setOptionalOpen] = useState(false);
   const [goals, setGoals] = useState<OnboardingGoal[]>([]);
   const [source, setSource] = useState<AcquisitionSource | null>(null);
   const [sourceOther, setSourceOther] = useState("");
@@ -113,9 +140,15 @@ export function RitualStep({ flow, onFinished }: RitualStepProps) {
 
   return (
     <div>
-      <StepHeading title={t("ritual.title")} subtitle={t("ritual.subtitle")} />
+      <StepHeading
+        title={t("ritual.title")}
+        subtitle={t("ritual.subtitle")}
+        illustration={<RitualIllustration />}
+      />
 
       <div className="space-y-8">
+        {hasPlan && <PlanStatus overall={generation.overall} />}
+
         <div className="flex flex-wrap gap-2">
           {DAYS.map((day) => (
             <ChoiceChip
@@ -146,76 +179,52 @@ export function RitualStep({ flow, onFinished }: RitualStepProps) {
           />
         </label>
 
-        <div className="rounded-2xl border border-border">
-          <button
-            type="button"
-            aria-expanded={optionalOpen}
-            onClick={() => setOptionalOpen((open) => !open)}
-            className="flex min-h-12 w-full items-center justify-between gap-3 rounded-2xl px-4 py-3 text-left text-sm font-medium text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            {t("ritual.optionalToggle")}
-            <ChevronDown
-              className={`h-4 w-4 text-muted-foreground transition-transform motion-reduce:transition-none ${optionalOpen ? "rotate-180" : ""}`}
-              aria-hidden
-            />
-          </button>
-          <AnimatePresence initial={false}>
-            {optionalOpen && (
-              <motion.div
-                initial={reduce ? { opacity: 0 } : { height: 0, opacity: 0 }}
-                animate={reduce ? { opacity: 1 } : { height: "auto", opacity: 1 }}
-                exit={reduce ? { opacity: 0 } : { height: 0, opacity: 0 }}
-                transition={{ duration: reduce ? 0.15 : 0.25, ease: [0.22, 1, 0.36, 1] }}
-                className="overflow-hidden"
-              >
-                <div className="space-y-6 px-4 pb-4 pt-1">
-                  <div className="space-y-3">
-                    <p className="text-sm font-medium text-foreground">
-                      {t("ritual.goalsTitle")}
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {GOALS.map((goal) => (
-                        <ChoiceChip
-                          key={goal}
-                          selected={goals.includes(goal)}
-                          showCheck
-                          onClick={() => toggleGoal(goal)}
-                        >
-                          {tEnum(`onboardingGoal.${goal}`)}
-                        </ChoiceChip>
-                      ))}
-                    </div>
-                  </div>
+        <div className="space-y-6">
+          <div className="space-y-3">
+            <p className="flex flex-wrap items-center gap-2 text-sm font-medium text-foreground">
+              {t("ritual.goalsTitle")}
+              <OptionalBadge label={t("ritual.optionalBadge")} />
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {GOALS.map((goal) => (
+                <ChoiceChip
+                  key={goal}
+                  selected={goals.includes(goal)}
+                  showCheck
+                  onClick={() => toggleGoal(goal)}
+                >
+                  {tEnum(`onboardingGoal.${goal}`)}
+                </ChoiceChip>
+              ))}
+            </div>
+          </div>
 
-                  <div className="space-y-3">
-                    <p className="text-sm font-medium text-foreground">
-                      {t("ritual.sourceTitle")}
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {SOURCES.map((value) => (
-                        <ChoiceChip
-                          key={value}
-                          selected={source === value}
-                          onClick={() => setSource(source === value ? null : value)}
-                        >
-                          {tEnum(`acquisitionSource.${value}`)}
-                        </ChoiceChip>
-                      ))}
-                    </div>
-                    {source === "OTHER" && (
-                      <Input
-                        value={sourceOther}
-                        onChange={(event) => setSourceOther(event.target.value)}
-                        placeholder={t("ritual.sourceOtherPlaceholder")}
-                        maxLength={200}
-                        className="h-11 rounded-xl px-4 text-base"
-                      />
-                    )}
-                  </div>
-                </div>
-              </motion.div>
+          <div className="space-y-3">
+            <p className="flex flex-wrap items-center gap-2 text-sm font-medium text-foreground">
+              {t("ritual.sourceTitle")}
+              <OptionalBadge label={t("ritual.optionalBadge")} />
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {SOURCES.map((value) => (
+                <ChoiceChip
+                  key={value}
+                  selected={source === value}
+                  onClick={() => setSource(source === value ? null : value)}
+                >
+                  {tEnum(`acquisitionSource.${value}`)}
+                </ChoiceChip>
+              ))}
+            </div>
+            {source === "OTHER" && (
+              <Input
+                value={sourceOther}
+                onChange={(event) => setSourceOther(event.target.value)}
+                placeholder={t("ritual.sourceOtherPlaceholder")}
+                maxLength={200}
+                className="h-11 rounded-xl px-4 text-base"
+              />
             )}
-          </AnimatePresence>
+          </div>
         </div>
 
         {error && (

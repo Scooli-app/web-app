@@ -5,11 +5,11 @@ import {
   SUBJECTS_BY_GRADE,
   translateSubjectLabel,
 } from "@/components/document-creation/constants";
+import { ClassIllustration } from "@/components/onboarding-v2/illustrations/StepIllustrations";
 import { toLocalIso } from "@/components/onboarding-v2/freeWeek";
 import { StepHeading } from "@/components/onboarding-v2/StepHeading";
 import type { OnboardingFlowController } from "@/components/onboarding-v2/useOnboardingV2";
 import { useStepFooter } from "@/components/onboarding-v2/useStepFooter";
-import { ClassTopicsReveal } from "@/components/onboarding-v2/steps/ClassTopicsReveal";
 import {
   CLASS_DAYS,
   WeekdayPicker,
@@ -17,8 +17,14 @@ import {
 } from "@/components/onboarding-v2/steps/WeekdayPicker";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { invalidatePlanLimits } from "@/hooks/usePlanLimits";
-import { resolveEffectiveContentLanguage } from "@/i18n/clientLocale";
 import {
   weekScheduleToRecurringSlots,
   type WeekSchedule,
@@ -27,24 +33,18 @@ import { UpgradeLimitError } from "@/services/api/client";
 import { meService } from "@/services/api/me.service";
 import {
   createTimetable,
-  generateTopics,
-  listLessons,
-  type LessonSlot,
 } from "@/services/api/timetable.service";
 import type { PlanLimits } from "@/shared/types/plan-limits";
 import { useAppDispatch } from "@/store/hooks";
-import type { RootState } from "@/store/store";
 import { setUpgradeModalOpen } from "@/store/ui/uiSlice";
 import { useLocale, useTranslations } from "next-intl";
 import posthog from "posthog-js";
 import { useEffect, useMemo, useState } from "react";
-import { useSelector } from "react-redux";
 
-const TOPICS_SHOWN = 8;
 const ALL_YEARS = Array.from({ length: 12 }, (_, index) => index + 1);
 const NO_LESSONS: LessonsByDay = { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0, sat: 0, sun: 0 };
 
-type Phase = "form" | "creating" | "ready" | "topicsFailed";
+type Phase = "form" | "creating";
 
 /** June 30 of the school year that contains `today` (the next one from July on). */
 function schoolYearEnd(today: Date): string {
@@ -69,8 +69,10 @@ function buildSchedule(lessons: LessonsByDay): Partial<WeekSchedule> {
   return schedule;
 }
 
-const selectClassName =
-  "h-11 w-full rounded-xl border border-input bg-transparent px-3 text-base text-foreground shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:opacity-50";
+const selectTriggerClassName = "h-11 rounded-xl px-3 text-base shadow-xs";
+// The onboarding overlay sits at z-[9999]; the menu is portalled to <body> and must clear it.
+const selectContentClassName = "z-[10000]";
+const selectItemClassName = "min-h-11 text-base";
 
 interface FirstClassStepProps {
   flow: OnboardingFlowController;
@@ -80,14 +82,12 @@ export function FirstClassStep({ flow }: FirstClassStepProps) {
   const t = useTranslations("onboardingV2");
   const locale = useLocale();
   const dispatch = useAppDispatch();
-  const ui = useSelector((state: RootState) => state.ui);
-  const { answers, update, next, goTo, trackCompleted } = flow;
+  const { answers, update, next, goTo, trackCompleted, generation } = flow;
 
   const [limits, setLimits] = useState<PlanLimits | null>(null);
   const [limitsSettled, setLimitsSettled] = useState(false);
   const [phase, setPhase] = useState<Phase>("form");
   const [error, setError] = useState(false);
-  const [topics, setTopics] = useState<LessonSlot[] | null>(null);
 
   const [chosenYear, setChosenYear] = useState<number | null>(null);
   const [chosenSubject, setChosenSubject] = useState<string | null>(null);
@@ -140,34 +140,12 @@ export function FirstClassStep({ flow }: FirstClassStepProps) {
       new Date(`${iso}T00:00:00`),
     );
 
-  const loadTopics = async (timetableId: string) => {
-    try {
-      const contentLanguage = resolveEffectiveContentLanguage(
-        ui.contentLanguage,
-        ui.interfaceLocale,
-      );
-      const result = await generateTopics(timetableId, contentLanguage);
-      const slots = await listLessons(timetableId);
-      const firstTopics = slots
-        .filter((slot) => slot.slotType === "LESSON")
-        .sort((a, b) => a.slotDate.localeCompare(b.slotDate))
-        .slice(0, TOPICS_SHOWN);
-      setTopics(firstTopics);
-      setPhase(result.updated > 0 ? "ready" : "topicsFailed");
-    } catch (err) {
-      posthog.captureException(err);
-      setTopics([]);
-      setPhase("topicsFailed");
-    }
-  };
-
   const handleCreate = async () => {
     if (!formValid || phase !== "form" || !subjectId) return;
     const subject = SUBJECTS.find((s) => s.id === subjectId);
     if (!subject) return;
     setError(false);
     setPhase("creating");
-    setTopics(null);
     try {
       const label = classLabel.trim();
       const created = await createTimetable({
@@ -184,7 +162,14 @@ export function FirstClassStep({ flow }: FirstClassStepProps) {
       // The dashboard's plan-limits cache still says 0 classes.
       invalidatePlanLimits();
       update({ timetableId: created.id, skippedClass: false });
-      await loadTopics(created.id);
+      // Topics and the first week are generated in the background (step 4 shows it live).
+      generation.start(created.id);
+      trackCompleted(3, {
+        grade_level: year,
+        lessons_per_week: lessonsPerWeek,
+        capped,
+      });
+      next();
     } catch (err) {
       // A free-plan limit already opened the upgrade modal; anything else gets an inline error.
       if (!(err instanceof UpgradeLimitError)) {
@@ -195,100 +180,62 @@ export function FirstClassStep({ flow }: FirstClassStepProps) {
     }
   };
 
-  const handleRetryTopics = async () => {
-    if (!answers.timetableId) return;
-    setPhase("creating");
-    setTopics(null);
-    await loadTopics(answers.timetableId);
-  };
-
   const handleLater = () => {
-    if (phase === "topicsFailed") {
-      // The class exists; topics can finish later, the week generation does not need them shown.
-      next();
-      return;
-    }
     posthog.capture("onboarding_v2_skipped_class");
     update({ skippedClass: true });
     goTo(5);
   };
 
-  const handleContinue = () => {
-    if (phase === "form") {
-      void handleCreate();
-    } else if (phase === "topicsFailed") {
-      void handleRetryTopics();
-    } else if (phase === "ready") {
-      trackCompleted(3, {
-        grade_level: year,
-        lessons_per_week: lessonsPerWeek,
-        capped,
-      });
-      next();
-    }
-  };
-
   useStepFooter({
     stepId: 3,
-    canContinue: phase === "form" ? formValid : phase !== "creating",
+    canContinue: formValid && phase === "form",
     busy: phase === "creating",
     hideBack: phase !== "form",
-    continueLabel:
-      phase === "form"
-        ? t("class.create")
-        : phase === "topicsFailed"
-          ? t("retry")
-          : undefined,
-    secondaryLabel:
-      phase === "form" ? t("later") : phase === "topicsFailed" ? t("continue") : undefined,
-    onContinue: handleContinue,
+    continueLabel: t("class.create"),
+    secondaryLabel: t("later"),
+    onContinue: () => void handleCreate(),
     onSecondary: handleLater,
   });
 
-  if (phase !== "form") {
-    return (
-      <div>
-        <StepHeading title={t("class.title")} subtitle={t("class.subtitle")} />
-        <ClassTopicsReveal topics={topics} failed={phase === "topicsFailed"} />
-      </div>
-    );
-  }
-
   return (
     <div>
-      <StepHeading title={t("class.title")} subtitle={t("class.subtitle")} />
+      <StepHeading
+        title={t("class.title")}
+        subtitle={t("class.subtitle")}
+        illustration={<ClassIllustration />}
+      />
 
       <div className="space-y-6">
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="onboarding-class-year">{t("class.yearLabel")}</Label>
-            <select
-              id="onboarding-class-year"
-              className={selectClassName}
-              value={year}
-              onChange={(event) => setChosenYear(Number(event.target.value))}
-            >
-              {yearOptions.map((value) => (
-                <option key={value} value={value}>
-                  {t("class.yearOption", { year: value })}
-                </option>
-              ))}
-            </select>
+            <Select value={String(year)} onValueChange={(value) => setChosenYear(Number(value))}>
+              <SelectTrigger id="onboarding-class-year" className={selectTriggerClassName}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className={selectContentClassName}>
+                {yearOptions.map((value) => (
+                  <SelectItem key={value} value={String(value)} className={selectItemClassName}>
+                    {t("class.yearOption", { year: value })}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="space-y-2">
             <Label htmlFor="onboarding-class-subject">{t("class.subjectLabel")}</Label>
-            <select
-              id="onboarding-class-subject"
-              className={selectClassName}
-              value={subjectId ?? ""}
-              onChange={(event) => setChosenSubject(event.target.value)}
-            >
-              {subjectOptions.map((id) => (
-                <option key={id} value={id}>
-                  {translateSubjectLabel(id)}
-                </option>
-              ))}
-            </select>
+            <Select value={subjectId ?? ""} onValueChange={setChosenSubject}>
+              <SelectTrigger id="onboarding-class-subject" className={selectTriggerClassName}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className={selectContentClassName}>
+                {subjectOptions.map((id) => (
+                  <SelectItem key={id} value={id} className={selectItemClassName}>
+                    {translateSubjectLabel(id)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 

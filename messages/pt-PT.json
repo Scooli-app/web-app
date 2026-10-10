@@ -791,24 +791,43 @@
       "capNote": "No plano gratuito planeias até 4 semanas.",
       "capLink": "Ver planos",
       "create": "Criar turma",
-      "createFailed": "Não foi possível criar a turma. Tenta outra vez.",
-      "building": "A construir o teu plano…",
-      "buildingHint": "Isto demora só uns segundos.",
-      "readyTitle": "Os primeiros temas do teu plano",
-      "topicsFailed": "Não conseguimos gerar os temas agora."
+      "createFailed": "Não foi possível criar a turma. Tenta outra vez."
+    },
+    "plan": {
+      "title": "A montar o teu plano",
+      "titleDone": "O teu plano está pronto",
+      "subtitle": "Podes continuar quando quiseres: nós acabamos em segundo plano.",
+      "allDone": "Tudo pronto para continuares.",
+      "progressLabel": "Progresso do plano",
+      "stages": {
+        "created": "Turma criada",
+        "topics": "A planear os temas do ano",
+        "topicsDone": "Temas do ano planeados",
+        "week": "A escrever as aulas da primeira semana",
+        "weekDone": "Aulas da primeira semana prontas"
+      },
+      "topicsHints": {
+        "1": "A ler as Aprendizagens Essenciais…",
+        "2": "A distribuir os temas pelo ano letivo…",
+        "3": "A descontar feriados e interrupções…",
+        "4": "A ordenar os conteúdos por período…"
+      },
+      "weekHints": {
+        "1": "A escrever objetivos e atividades…",
+        "2": "A montar o guião de cada aula…",
+        "3": "A afinar os últimos detalhes…"
+      },
+      "weekRange": "Semana de {range}",
+      "topicsFailed": "Não conseguimos planear os temas agora.",
+      "weekFailed": "Algumas aulas não ficaram prontas."
     },
     "week": {
-      "title": "A preparar a tua primeira semana",
-      "subtitle": "Estamos a escrever os planos das aulas de {range}.",
-      "doneTitle": "A tua primeira semana está pronta",
       "noLessons": "Não há aulas para preparar nesta semana. Podes gerar as outras no calendário.",
       "lessonFallback": "Aula {number}",
       "pending": "Em espera",
       "generating": "A escrever",
       "ready": "Pronta",
       "failed": "Falhou",
-      "error": "Vamos terminar isto em segundo plano",
-      "continueBackground": "Continuar em segundo plano",
       "openLesson": "Abrir a primeira aula"
     },
     "ritual": {
@@ -825,7 +844,12 @@
       },
       "emailLabel": "Enviar-me um email com a minha semana",
       "emailHint": "Chega ao fim da tarde do dia que escolheste. Podes desligar quando quiseres.",
-      "optionalToggle": "Duas perguntas rápidas (opcional)",
+      "optionalBadge": "Opcional",
+      "planStatus": {
+        "working": "A tua semana ainda está a ser preparada…",
+        "done": "Pronta ✓",
+        "failed": "Não conseguimos terminar a tua semana agora. Podes retomá-la no teu painel."
+      },
       "goalsTitle": "O que procuras na Scooli?",
       "sourceTitle": "Como nos conheceste?",
       "sourceOtherPlaceholder": "Conta-nos onde (opcional)",

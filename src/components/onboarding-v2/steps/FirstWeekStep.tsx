@@ -1,147 +1,152 @@
 "use client";
 
-import { onboardingFreeWeek } from "@/components/onboarding-v2/freeWeek";
+import { PlanIllustration } from "@/components/onboarding-v2/illustrations/StepIllustrations";
 import { StepHeading } from "@/components/onboarding-v2/StepHeading";
 import type { OnboardingFlowController } from "@/components/onboarding-v2/useOnboardingV2";
 import { useStepFooter } from "@/components/onboarding-v2/useStepFooter";
-import { WeekLessonRow, type WeekRow } from "@/components/onboarding-v2/steps/WeekLessonRow";
+import { WeekLessonRow } from "@/components/onboarding-v2/steps/WeekLessonRow";
 import { Button } from "@/components/ui/button";
 import { useMotionSafe } from "@/lib/motion/useMotionSafe";
-import { meService } from "@/services/api/me.service";
-import { generateWeek } from "@/services/api/timetable.service";
-import { Routes } from "@/shared/types";
-import type { UpgradeReason } from "@/shared/types/plan-limits";
-import { useAppDispatch } from "@/store/hooks";
-import { openUpgradeModalForReason, setUpgradeModalOpen } from "@/store/ui/uiSlice";
-import { useAuth } from "@clerk/nextjs";
-import { ExternalLink } from "lucide-react";
+import { cn } from "@/shared/utils/utils";
+import { AlertCircle, Check, ExternalLink, Loader2 } from "lucide-react";
 import { motion } from "motion/react";
 import { useLocale, useTranslations } from "next-intl";
-import posthog from "posthog-js";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
-type Phase = "loading" | "generating" | "done" | "error" | "empty";
+type StageState = "pending" | "active" | "done" | "failed";
 
-function isUpgradeReason(code: string): code is UpgradeReason {
-  return code === "free_class_limit" || code === "free_period_limit";
+const TOPICS_HINT_COUNT = 4;
+const WEEK_HINT_COUNT = 3;
+const TICK_MS = 500;
+const HINT_EVERY_TICKS = 7;
+const ASSUMED_TOPICS_MS = 15000;
+
+interface StageRowProps {
+  state: StageState;
+  label: string;
+  children?: ReactNode;
+}
+
+/** One line of the checklist: pending dot, spinner (always animated), check or alert. */
+function StageRow({ state, label, children }: StageRowProps) {
+  return (
+    <li className="space-y-3">
+      <div className="flex min-h-11 items-center gap-3">
+        <span
+          className={cn(
+            "flex h-7 w-7 shrink-0 items-center justify-center rounded-full border",
+            state === "done" && "border-primary bg-primary text-primary-foreground",
+            state === "active" && "border-primary/40 bg-primary/10 text-primary",
+            state === "failed" && "border-destructive/40 text-destructive",
+            state === "pending" && "border-border text-muted-foreground",
+          )}
+          aria-hidden
+        >
+          {state === "done" && <Check className="h-4 w-4" strokeWidth={3} />}
+          {state === "active" && <Loader2 className="h-4 w-4 animate-spin" />}
+          {state === "failed" && <AlertCircle className="h-4 w-4" />}
+          {state === "pending" && <span className="h-1.5 w-1.5 rounded-full bg-current" />}
+        </span>
+        <span
+          className={cn(
+            "min-w-0 text-base",
+            state === "pending" ? "text-muted-foreground" : "font-medium text-foreground",
+          )}
+        >
+          {label}
+        </span>
+      </div>
+      {children && <div className="ml-10 pb-2">{children}</div>}
+    </li>
+  );
 }
 
 interface FirstWeekStepProps {
   flow: OnboardingFlowController;
 }
 
+/**
+ * Step 4: a live checklist (class created, year topics, first-week lessons). The work
+ * itself runs in `flow.generation`, so "Continue" is available at any time.
+ */
 export function FirstWeekStep({ flow }: FirstWeekStepProps) {
   const t = useTranslations("onboardingV2");
   const locale = useLocale();
-  const dispatch = useAppDispatch();
-  const { getToken } = useAuth();
   const { stagger, item } = useMotionSafe();
-  const { answers, next, trackCompleted } = flow;
-  const { timetableId } = answers;
+  const { next, trackCompleted, generation } = flow;
+  const { topicsStatus, topics, topicsStartedAt, weekStatus, rows, firstLessonHref, weekStart } =
+    generation;
 
-  const weekStart = useMemo(() => onboardingFreeWeek(new Date()), []);
-  const [phase, setPhase] = useState<Phase>("loading");
-  const [rows, setRows] = useState<WeekRow[]>([]);
-  const [firstLessonHref, setFirstLessonHref] = useState<string | null>(null);
-  const startedRef = useRef(false);
+  const [now, setNow] = useState(() => Date.now());
+  const [tick, setTick] = useState(0);
 
-  const patchRow = (id: string, status: WeekRow["status"]) =>
-    setRows((prev) => prev.map((row) => (row.id === id ? { ...row, status } : row)));
+  const topicsRunning = topicsStatus === "running" || topicsStatus === "idle";
+  const weekRunning = weekStatus === "loading" || weekStatus === "generating";
+  const working = topicsRunning || weekRunning;
 
   useEffect(() => {
-    if (startedRef.current) return;
-    startedRef.current = true;
+    if (!working) return;
+    const id = window.setInterval(() => {
+      setNow(Date.now());
+      setTick((value) => value + 1);
+    }, TICK_MS);
+    return () => window.clearInterval(id);
+  }, [working]);
 
-    const run = async () => {
-      if (!timetableId) {
-        setPhase("empty");
-        return;
-      }
-      try {
-        const week = await meService.getWeek(weekStart);
-        const klass = week.classes.find((c) => c.timetableId === timetableId);
-        const lessons = (klass?.lessons ?? [])
-          .filter((l) => l.slotType !== "HOLIDAY" && l.status !== "skipped")
-          .sort((a, b) => a.slotDate.localeCompare(b.slotDate));
-        if (lessons.length === 0) {
-          setPhase("empty");
-          return;
-        }
-        setRows(
-          lessons.map((l) => ({
-            id: l.id,
-            slotDate: l.slotDate,
-            title: l.topicTitle,
-            status:
-              l.status === "completed"
-                ? "ready"
-                : l.status === "failed"
-                  ? "failed"
-                  : "pending",
-          })),
-        );
-        setPhase("generating");
+  const readyCount = rows.filter((row) => row.status === "ready").length;
+  const weekFraction = rows.length > 0 ? readyCount / rows.length : 0;
 
-        let problem = false;
-        await generateWeek(
-          timetableId,
-          weekStart,
-          {
-            onSlotStart: (id) => patchRow(id, "generating"),
-            onSlotDone: (id) => patchRow(id, "ready"),
-            onSlotError: (id) => {
-              problem = true;
-              patchRow(id, "failed");
-            },
-            onFreeLimit: (code) => {
-              problem = true;
-              if (isUpgradeReason(code)) dispatch(openUpgradeModalForReason(code));
-            },
-            onQuotaExceeded: () => {
-              problem = true;
-              dispatch(setUpgradeModalOpen(true));
-            },
-            onError: () => {
-              problem = true;
-            },
-          },
-          getToken,
-        );
+  let percent = 10;
+  if (topicsStatus === "done") {
+    percent = 40;
+    if (weekStatus === "done" || weekStatus === "empty") percent = 100;
+    else if (weekStatus === "generating" || weekStatus === "failed") {
+      percent = 40 + 60 * weekFraction;
+    }
+  } else if (topicsStatus === "running" && topicsStartedAt) {
+    const elapsed = Math.max(0, now - topicsStartedAt);
+    percent = 10 + 28 * (1 - Math.exp(-elapsed / ASSUMED_TOPICS_MS));
+  }
+  percent = Math.min(100, Math.max(0, percent));
 
-        // The first lesson that now has a document can be opened straight away.
-        const refreshed = await meService.getWeek(weekStart).catch(() => null);
-        const firstDocument = refreshed?.classes
-          .find((c) => c.timetableId === timetableId)
-          ?.lessons.find((l) => l.documentId);
-        if (firstDocument?.documentId) {
-          setFirstLessonHref(`${Routes.LESSON_PLAN}/${firstDocument.documentId}`);
-        }
-        setPhase(problem ? "error" : "done");
-      } catch (err) {
-        posthog.captureException(err);
-        setPhase("error");
-      }
-    };
+  const topicsState: StageState =
+    topicsStatus === "done" ? "done" : topicsStatus === "failed" ? "failed" : "active";
+  const weekState: StageState =
+    weekStatus === "done" || weekStatus === "empty"
+      ? "done"
+      : weekStatus === "failed"
+        ? "failed"
+        : topicsStatus === "done"
+          ? "active"
+          : "pending";
+  const allDone = topicsState === "done" && weekState === "done";
 
-    void run();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const inProgress = phase === "loading" || phase === "generating";
+  const hintIndex = Math.floor(tick / HINT_EVERY_TICKS);
+  const hint = topicsRunning
+    ? t(`plan.topicsHints.${(hintIndex % TOPICS_HINT_COUNT) + 1}`)
+    : weekRunning || (topicsStatus === "done" && weekState === "active")
+      ? t(`plan.weekHints.${(hintIndex % WEEK_HINT_COUNT) + 1}`)
+      : null;
 
   useStepFooter({
     stepId: 4,
-    canContinue: phase !== "loading",
+    canContinue: true,
     hideBack: true,
-    continueLabel: phase === "generating" ? t("week.continueBackground") : undefined,
     onContinue: () => {
       trackCompleted(4, {
-        outcome: phase,
-        lessons_ready: rows.filter((row) => row.status === "ready").length,
+        outcome: allDone ? "done" : working ? "background" : "error",
+        topics: topicsStatus,
+        week: weekStatus,
+        lessons_ready: readyCount,
       });
       next();
     },
   });
+
+  const formatDate = (iso: string) =>
+    new Intl.DateTimeFormat(locale, { weekday: "short", day: "numeric", month: "short" }).format(
+      new Date(`${iso}T00:00:00`),
+    );
 
   const formatRange = () => {
     const start = new Date(`${weekStart}T00:00:00`);
@@ -153,41 +158,119 @@ export function FirstWeekStep({ flow }: FirstWeekStepProps) {
   return (
     <div>
       <StepHeading
-        title={phase === "done" ? t("week.doneTitle") : t("week.title")}
-        subtitle={
-          phase === "error"
-            ? t("week.error")
-            : phase === "empty"
-              ? t("week.noLessons")
-              : inProgress
-                ? t("week.subtitle", { range: formatRange() })
-                : undefined
-        }
+        title={allDone ? t("plan.titleDone") : t("plan.title")}
+        subtitle={allDone ? undefined : t("plan.subtitle")}
+        illustration={<PlanIllustration progress={percent / 100} />}
       />
 
-      {rows.length > 0 && (
-        <motion.ul
-          variants={stagger}
-          initial="initial"
-          animate="animate"
-          className="space-y-2"
+      <div className="mb-6 space-y-2">
+        <div
+          role="progressbar"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={Math.round(percent)}
+          aria-label={t("plan.progressLabel")}
+          className="h-2 w-full overflow-hidden rounded-full bg-muted"
         >
-          {rows.map((row, index) => (
-            <motion.li key={row.id} variants={item}>
-              <WeekLessonRow row={row} position={index + 1} locale={locale} />
-            </motion.li>
-          ))}
-        </motion.ul>
-      )}
+          {/* Progress is essential feedback: it animates even under reduced motion. */}
+          <motion.div
+            className="h-full rounded-full bg-primary"
+            initial={false}
+            animate={{ width: `${percent}%` }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
+          />
+        </div>
+        <p className="min-h-5 text-sm text-muted-foreground" role="status" aria-live="polite">
+          {hint ?? (allDone ? t("plan.allDone") : "")}
+        </p>
+      </div>
 
-      {phase === "done" && firstLessonHref && (
-        <Button asChild variant="outline" className="mt-6 h-11 rounded-xl px-5">
-          <a href={firstLessonHref} target="_blank" rel="noopener noreferrer">
-            {t("week.openLesson")}
-            <ExternalLink aria-hidden />
-          </a>
-        </Button>
-      )}
+      <ul className="space-y-1">
+        <StageRow state="done" label={t("plan.stages.created")} />
+
+        <StageRow
+          state={topicsState}
+          label={topicsState === "done" ? t("plan.stages.topicsDone") : t("plan.stages.topics")}
+        >
+          {topicsStatus === "failed" && (
+            <div className="space-y-3">
+              <p role="alert" className="text-sm text-destructive">
+                {t("plan.topicsFailed")}
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                className="h-11 rounded-xl px-5"
+                onClick={generation.retryTopics}
+              >
+                {t("retry")}
+              </Button>
+            </div>
+          )}
+          {topicsStatus === "done" && topics.length > 0 && (
+            <motion.ol variants={stagger} initial="initial" animate="animate" className="space-y-2">
+              {topics.map((slot) => (
+                <motion.li
+                  key={slot.id}
+                  variants={item}
+                  className="flex flex-col gap-0.5 rounded-xl border border-border bg-card px-4 py-2.5 sm:flex-row sm:items-baseline sm:gap-3"
+                >
+                  <span className="shrink-0 text-xs font-medium capitalize text-muted-foreground sm:w-24">
+                    {formatDate(slot.slotDate)}
+                  </span>
+                  <span className="min-w-0 text-sm text-foreground">{slot.topicTitle}</span>
+                </motion.li>
+              ))}
+            </motion.ol>
+          )}
+        </StageRow>
+
+        <StageRow
+          state={weekState}
+          label={weekState === "done" ? t("plan.stages.weekDone") : t("plan.stages.week")}
+        >
+          {weekStatus === "empty" && (
+            <p className="text-sm text-muted-foreground">{t("week.noLessons")}</p>
+          )}
+          {weekState === "active" && rows.length === 0 && (
+            <p className="text-sm text-muted-foreground">
+              {t("plan.weekRange", { range: formatRange() })}
+            </p>
+          )}
+          {rows.length > 0 && (
+            <motion.ul variants={stagger} initial="initial" animate="animate" className="space-y-2">
+              {rows.map((row, index) => (
+                <motion.li key={row.id} variants={item}>
+                  <WeekLessonRow row={row} position={index + 1} locale={locale} />
+                </motion.li>
+              ))}
+            </motion.ul>
+          )}
+          {weekStatus === "failed" && (
+            <div className="mt-3 space-y-3">
+              <p role="alert" className="text-sm text-destructive">
+                {t("plan.weekFailed")}
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                className="h-11 rounded-xl px-5"
+                onClick={generation.retryWeek}
+              >
+                {t("retry")}
+              </Button>
+            </div>
+          )}
+          {weekStatus === "done" && firstLessonHref && (
+            <Button asChild variant="outline" className="mt-3 h-11 rounded-xl px-5">
+              <a href={firstLessonHref} target="_blank" rel="noopener noreferrer">
+                {t("week.openLesson")}
+                <ExternalLink aria-hidden />
+              </a>
+            </Button>
+          )}
+        </StageRow>
+      </ul>
     </div>
   );
 }

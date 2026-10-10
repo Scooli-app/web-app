@@ -273,7 +273,7 @@ export function YourWeekCard() {
       ) : !week ? (
         <div className="space-y-2.5" aria-hidden>
           {[0, 1].map((i) => (
-            <div key={i} className="animate-pulse rounded-xl border border-border p-3 motion-reduce:animate-none">
+            <div key={i} className="animate-pulse rounded-xl border border-border p-3">
               <div className="mb-3 h-3 w-1/3 rounded bg-muted" />
               <div className="space-y-2">
                 <div className="h-3 w-4/5 rounded bg-muted/60" />

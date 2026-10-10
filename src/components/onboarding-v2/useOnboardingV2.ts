@@ -1,5 +1,6 @@
 "use client";
 
+import { usePlanGeneration } from "@/components/onboarding-v2/usePlanGeneration";
 import { teachingProfileService } from "@/services/api/teaching-profile.service";
 import type { OnboardingV2Status, TeacherRole } from "@/shared/types/onboarding-v2";
 import posthog from "posthog-js";
@@ -54,6 +55,8 @@ export function useOnboardingV2({
   const [answers, setAnswers] = useState<OnboardingAnswers>(INITIAL_ANSWERS);
 
   const step = steps[index];
+  // Owned here so leaving step 4 never cancels the topic/week generation.
+  const generation = usePlanGeneration();
 
   const update = useCallback((patch: Partial<OnboardingAnswers>) => {
     setAnswers((prev) => ({ ...prev, ...patch }));
@@ -135,6 +138,7 @@ export function useOnboardingV2({
     back,
     canGoBack,
     trackCompleted,
+    generation,
   };
 }
 

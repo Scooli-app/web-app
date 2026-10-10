@@ -791,24 +791,43 @@
       "capNote": "On the free plan you can plan up to 4 weeks.",
       "capLink": "See plans",
       "create": "Create class",
-      "createFailed": "We couldn't create the class. Please try again.",
-      "building": "Building your plan…",
-      "buildingHint": "This only takes a few seconds.",
-      "readyTitle": "The first topics of your plan",
-      "topicsFailed": "We couldn't generate the topics right now."
+      "createFailed": "We couldn't create the class. Please try again."
+    },
+    "plan": {
+      "title": "Building your plan",
+      "titleDone": "Your plan is ready",
+      "subtitle": "Continue whenever you like: we'll finish in the background.",
+      "allDone": "All set, you can continue.",
+      "progressLabel": "Plan progress",
+      "stages": {
+        "created": "Class created",
+        "topics": "Planning the topics for the year",
+        "topicsDone": "Topics for the year planned",
+        "week": "Writing the lessons for your first week",
+        "weekDone": "First week's lessons ready"
+      },
+      "topicsHints": {
+        "1": "Mapping topics across the year…",
+        "2": "Spreading the topics over your school year…",
+        "3": "Skipping holidays and school breaks…",
+        "4": "Putting the content in a sensible order…"
+      },
+      "weekHints": {
+        "1": "Writing objectives and activities…",
+        "2": "Putting together each lesson's outline…",
+        "3": "Polishing the last details…"
+      },
+      "weekRange": "Week of {range}",
+      "topicsFailed": "We couldn't plan the topics right now.",
+      "weekFailed": "Some lessons didn't finish."
     },
     "week": {
-      "title": "Preparing your first week",
-      "subtitle": "We're writing the lesson plans for {range}.",
-      "doneTitle": "Your first week is ready",
       "noLessons": "There are no lessons to prepare this week. You can generate the others from the calendar.",
       "lessonFallback": "Lesson {number}",
       "pending": "Waiting",
       "generating": "Writing",
       "ready": "Ready",
       "failed": "Failed",
-      "error": "We'll finish this in the background",
-      "continueBackground": "Continue in the background",
       "openLesson": "Open the first lesson"
     },
     "ritual": {
@@ -825,7 +844,12 @@
       },
       "emailLabel": "Email me my week",
       "emailHint": "It arrives in the evening of the day you picked. Turn it off any time.",
-      "optionalToggle": "Two quick questions (optional)",
+      "optionalBadge": "Optional",
+      "planStatus": {
+        "working": "Your week is still being prepared…",
+        "done": "Ready ✓",
+        "failed": "We couldn't finish your week right now. You can resume it from your dashboard."
+      },
       "goalsTitle": "What are you looking for in Scooli?",
       "sourceTitle": "How did you find us?",
       "sourceOtherPlaceholder": "Tell us where (optional)",
