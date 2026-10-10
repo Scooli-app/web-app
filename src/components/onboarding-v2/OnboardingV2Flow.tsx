@@ -20,7 +20,7 @@ import { Button } from "@/components/ui/button";
 import { useMotionSafe } from "@/lib/motion/useMotionSafe";
 import { cn } from "@/shared/utils/utils";
 import { ArrowLeft, Loader2 } from "lucide-react";
-import { AnimatePresence, motion } from "motion/react";
+import { motion } from "motion/react";
 import { useTranslations } from "next-intl";
 import { useCallback, useMemo, useRef, useState, type KeyboardEvent } from "react";
 
@@ -137,18 +137,18 @@ export function OnboardingV2Flow({
             {celebrating ? (
               <Celebration onDone={handleCelebrated} />
             ) : (
-              <AnimatePresence mode="wait" custom={direction} initial={false}>
-                <motion.div
-                  key={step}
-                  custom={direction}
-                  variants={stepVariants}
-                  initial="initial"
-                  animate="animate"
-                  exit="exit"
-                >
-                  {renderStep()}
-                </motion.div>
-              </AnimatePresence>
+              // No exit phase: waiting for the old step to animate out (AnimatePresence
+              // mode="wait") left the screen blank for seconds while step 4's
+              // streaming rows were still animating. The new step enters immediately.
+              <motion.div
+                key={step}
+                custom={direction}
+                variants={stepVariants}
+                initial="initial"
+                animate="animate"
+              >
+                {renderStep()}
+              </motion.div>
             )}
           </div>
         </main>

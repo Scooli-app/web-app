@@ -2,7 +2,7 @@
 
 import { YourWeekClassBlock } from "@/components/dashboard/YourWeekClassBlock";
 import { Button } from "@/components/ui/button";
-import { useNewClassGate } from "@/hooks/usePlanLimits";
+import { useNewClassGate, usePlanLimits } from "@/hooks/usePlanLimits";
 import { meService } from "@/services/api/me.service";
 import { generateWeek } from "@/services/api/timetable.service";
 import { userService } from "@/services/api/user.service";
@@ -32,6 +32,8 @@ export function YourWeekCard() {
   const dispatch = useAppDispatch();
   const { getToken } = useAuth();
   const newClassGate = useNewClassGate();
+  const { limits } = usePlanLimits();
+  const hasClasses = (limits?.activeClasses ?? 0) > 0;
 
   const [weekStart, setWeekStart] = useState<string | null>(null);
   const [week, setWeek] = useState<MyWeek | null>(null);
@@ -166,7 +168,7 @@ export function YourWeekCard() {
     : "";
 
   const classes = week?.classes.filter((c) => c.lessons.length > 0) ?? [];
-  const hasNoClasses = week !== null && week.classes.length === 0;
+  const hasNoClasses = week !== null && week.classes.length === 0 && !hasClasses;
 
   return (
     <div className="rounded-2xl border border-border bg-card p-4 shadow-md sm:p-5">
@@ -227,7 +229,20 @@ export function YourWeekCard() {
           </Button>
         </div>
       ) : classes.length === 0 ? (
-        <p className="py-4 text-center text-sm text-muted-foreground">{t("noLessons")}</p>
+        <div className="py-6 text-center">
+          <p className="text-sm text-muted-foreground">{t("noLessons")}</p>
+          {weekStart && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="mt-3"
+              onClick={() => setWeekStart(addDaysIso(weekStart, 7))}
+            >
+              {t("seeNextWeek")}
+              <ChevronRight className="ml-1 h-3 w-3" aria-hidden />
+            </Button>
+          )}
+        </div>
       ) : (
         <div className="max-h-72 space-y-2.5 overflow-y-auto">
           {classes.map((klass) => (

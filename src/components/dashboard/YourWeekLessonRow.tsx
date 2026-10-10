@@ -29,7 +29,7 @@ export function YourWeekLessonRow({ lesson, locale }: YourWeekLessonRowProps) {
 
   const content = (
     <>
-      <span className="w-10 shrink-0 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+      <span className="w-16 shrink-0 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
         {weekday}
       </span>
       <span className="min-w-0 flex-1 truncate text-sm text-foreground">{topic}</span>

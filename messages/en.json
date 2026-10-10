@@ -57,6 +57,7 @@
     "prepare": "Prepare the week",
     "noTopic": "No topic",
     "noLessons": "No lessons this week.",
+    "seeNextWeek": "See next week",
     "empty": "Create your first class and Scooli prepares your week.",
     "error": "We couldn't load your week.",
     "prepareError": "We couldn't prepare the week. Please try again.",
