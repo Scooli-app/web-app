@@ -847,7 +847,7 @@
       "optionalBadge": "Optional",
       "planStatus": {
         "working": "Your week is still being prepared…",
-        "done": "Ready ✓",
+        "done": "Ready",
         "failed": "We couldn't finish your week right now. You can resume it from your dashboard."
       },
       "goalsTitle": "What are you looking for in Scooli?",

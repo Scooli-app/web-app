@@ -847,7 +847,7 @@
       "optionalBadge": "Opcional",
       "planStatus": {
         "working": "A tua semana ainda está a ser preparada…",
-        "done": "Pronta ✓",
+        "done": "Pronta",
         "failed": "Não conseguimos terminar a tua semana agora. Podes retomá-la no teu painel."
       },
       "goalsTitle": "O que procuras na Scooli?",
