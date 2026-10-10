@@ -7,6 +7,7 @@ import {
   generateTopics,
   generateWeek,
   listLessons,
+  listTimetables,
 } from "@/services/api/timetable.service";
 import { Routes } from "@/shared/types";
 import { isUpgradeReason } from "@/shared/types/plan-limits";
@@ -42,6 +43,20 @@ export interface PlanGenerationRunnerContext {
  */
 let ctx: PlanGenerationRunnerContext | null = null;
 const running = { topics: false, week: false };
+let resumeAttempted = false;
+
+function track(
+  event: "plan_generation_started" | "plan_generation_completed" | "plan_generation_failed",
+  stage: "topics" | "week",
+  startedAt: number,
+  extra: Record<string, number> = {},
+) {
+  posthog.capture(event, {
+    stage,
+    ...(event === "plan_generation_started" ? {} : { duration_ms: Date.now() - startedAt }),
+    ...extra,
+  });
+}
 
 function refresh(c: PlanGenerationRunnerContext) {
   c.dispatch(planGenerationRefreshRequested());
@@ -50,6 +65,9 @@ function refresh(c: PlanGenerationRunnerContext) {
 async function runWeek(c: PlanGenerationRunnerContext, id: string, weekStart: string) {
   if (running.week) return;
   running.week = true;
+  const startedAt = Date.now();
+  let lessonsReady = 0;
+  track("plan_generation_started", "week", startedAt);
   const { dispatch } = c;
   const patch = (slotId: string, status: WeekRow["status"]) =>
     dispatch(lessonStatusChanged({ id: slotId, status }));
@@ -62,6 +80,7 @@ async function runWeek(c: PlanGenerationRunnerContext, id: string, weekStart: st
       .sort((a, b) => a.slotDate.localeCompare(b.slotDate));
     if (lessons.length === 0) {
       dispatch(weekStatusChanged("empty"));
+      track("plan_generation_completed", "week", startedAt, { lessons_ready: 0 });
       return;
     }
     dispatch(
@@ -84,6 +103,7 @@ async function runWeek(c: PlanGenerationRunnerContext, id: string, weekStart: st
         onSlotStart: (slotId) => patch(slotId, "generating"),
         onSlotDone: (slotId) => {
           patch(slotId, "ready");
+          lessonsReady += 1;
           refresh(c);
         },
         onSlotError: (slotId) => {
@@ -114,9 +134,13 @@ async function runWeek(c: PlanGenerationRunnerContext, id: string, weekStart: st
       dispatch(firstLessonHrefSet(`${Routes.LESSON_PLAN}/${firstDocument.documentId}`));
     }
     dispatch(weekStatusChanged(problem ? "failed" : "done"));
+    track(problem ? "plan_generation_failed" : "plan_generation_completed", "week", startedAt, {
+      lessons_ready: lessonsReady,
+    });
   } catch (err) {
     posthog.captureException(err);
     dispatch(weekStatusChanged("failed"));
+    track("plan_generation_failed", "week", startedAt, { lessons_ready: lessonsReady });
   } finally {
     running.week = false;
     invalidatePlanLimits();
@@ -127,6 +151,8 @@ async function runWeek(c: PlanGenerationRunnerContext, id: string, weekStart: st
 async function runTopics(c: PlanGenerationRunnerContext, id: string, weekStart: string) {
   if (running.topics) return;
   running.topics = true;
+  const startedAt = Date.now();
+  track("plan_generation_started", "topics", startedAt);
   const { dispatch } = c;
   dispatch(topicsStatusChanged({ status: "running", startedAt: Date.now() }));
   let ok = false;
@@ -145,9 +171,13 @@ async function runTopics(c: PlanGenerationRunnerContext, id: string, weekStart: 
     );
     ok = result.updated > 0;
     dispatch(topicsStatusChanged({ status: ok ? "done" : "failed" }));
+    track(ok ? "plan_generation_completed" : "plan_generation_failed", "topics", startedAt, {
+      topics_count: result.updated,
+    });
   } catch (err) {
     posthog.captureException(err);
     dispatch(topicsStatusChanged({ status: "failed" }));
+    track("plan_generation_failed", "topics", startedAt, { topics_count: 0 });
   } finally {
     running.topics = false;
     invalidatePlanLimits();
@@ -157,9 +187,15 @@ async function runTopics(c: PlanGenerationRunnerContext, id: string, weekStart: 
 }
 
 /** Called right after the class is created; the work continues whatever is on screen. */
-export function startPlanGeneration(c: PlanGenerationRunnerContext, timetableId: string) {
+export function startPlanGeneration(
+  c: PlanGenerationRunnerContext,
+  timetableId: string,
+  weekStartOverride?: string,
+) {
   ctx = c;
-  const weekStart = onboardingFreeWeek(new Date());
+  // Never run twice for the same class (double click, resume racing the flow).
+  if (running.topics || running.week) return;
+  const weekStart = weekStartOverride ?? onboardingFreeWeek(new Date());
   c.dispatch(planGenerationStarted({ timetableId, weekStart }));
   void runTopics(c, timetableId, weekStart);
 }
@@ -171,4 +207,66 @@ export function retryPlanGeneration() {
   if (!timetableId || !weekStart) return;
   if (topicsStatus === "failed") void runTopics(ctx, timetableId, weekStart);
   else void runWeek(ctx, timetableId, weekStart);
+}
+
+/** App-level context so Retry works after a reload, not only from the onboarding flow. */
+export function setPlanGenerationContext(c: PlanGenerationRunnerContext) {
+  ctx = c;
+}
+
+const needsWork = (l: { slotType: string; status: string; topicTitle: string }) =>
+  l.slotType !== "HOLIDAY" && hasTopic(l) && (l.status === "pending" || l.status === "generating");
+
+/**
+ * After a reload (tab closed mid-generation): if the first class still has lessons
+ * without topics, or pending lessons in its free week, finish the plan. Runs once per
+ * page load and never while a run (or an already started plan) exists.
+ */
+export async function resumePlanGenerationIfNeeded(c: PlanGenerationRunnerContext) {
+  ctx = c;
+  if (resumeAttempted) return;
+  resumeAttempted = true;
+  const idle = () =>
+    !running.topics && !running.week && !c.getState().planGeneration.timetableId;
+  try {
+    if (!idle()) return;
+    const first = (await listTimetables()).sort((a, b) =>
+      a.createdAt.localeCompare(b.createdAt),
+    )[0];
+    if (!first) return;
+    const slots = await listLessons(first.id);
+    const topicsMissing = slots.some(
+      (s) => s.slotType === "LESSON" && s.status !== "skipped" && !hasTopic(s),
+    );
+
+    const now = new Date();
+    const current = onboardingFreeWeek(now);
+    const previous = onboardingFreeWeek(new Date(now.getTime() - 7 * 86400000));
+    const weekOf = async (weekStart: string) => {
+      const week = await meService.getWeek(weekStart).catch(() => null);
+      return week?.classes.find((k) => k.timetableId === first.id)?.lessons ?? [];
+    };
+
+    // The free week is fixed once chosen: if it was already started in an earlier
+    // week (created Wed, reloaded Fri), keep finishing that one.
+    let weekStart = current;
+    if (!topicsMissing && previous !== current) {
+      const earlier = await weekOf(previous);
+      if (earlier.some((l) => l.status === "completed") && earlier.some(needsWork)) {
+        weekStart = previous;
+      }
+    }
+    if (!topicsMissing && !(await weekOf(weekStart)).some(needsWork)) return;
+    if (!idle()) return;
+
+    if (topicsMissing) {
+      startPlanGeneration(c, first.id, weekStart);
+    } else {
+      c.dispatch(planGenerationStarted({ timetableId: first.id, weekStart }));
+      c.dispatch(topicsStatusChanged({ status: "done" }));
+      void runWeek(c, first.id, weekStart);
+    }
+  } catch (err) {
+    posthog.captureException(err);
+  }
 }

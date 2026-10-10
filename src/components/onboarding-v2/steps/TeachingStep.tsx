@@ -15,7 +15,7 @@ import { buildRegularTeachingItems } from "@/components/document-creation/teachi
 import { onboardingV2Service } from "@/services/api/onboarding-v2.service";
 import posthog from "posthog-js";
 import { useTranslations } from "next-intl";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
 const ALL_YEARS = Array.from({ length: 12 }, (_, index) => index + 1);
 
@@ -32,6 +32,7 @@ export function TeachingStep({ flow, onProfileSaved }: TeachingStepProps) {
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(false);
+  const submittingRef = useRef(false);
 
   // Subjects offered = union over the selected years, in catalogue order.
   const availableSubjectIds = useMemo(() => {
@@ -67,7 +68,8 @@ export function TeachingStep({ flow, onProfileSaved }: TeachingStepProps) {
   const valid = years.length > 0 && subjectIds.length > 0;
 
   const handleContinue = async () => {
-    if (!valid || saving || !answers.role) return;
+    if (!valid || saving || submittingRef.current || !answers.role) return;
+    submittingRef.current = true;
     setSaving(true);
     setError(false);
     try {
@@ -83,12 +85,14 @@ export function TeachingStep({ flow, onProfileSaved }: TeachingStepProps) {
         teacher_role: answers.role,
         has_school: !answers.noSchool,
         school_years: years,
+        subjects: subjectIds,
       });
       onProfileSaved();
     } catch (err) {
       posthog.captureException(err);
       setError(true);
     } finally {
+      submittingRef.current = false;
       setSaving(false);
     }
   };

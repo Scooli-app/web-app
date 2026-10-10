@@ -1,8 +1,14 @@
 "use client";
 
 import { usePlanGeneration } from "@/components/onboarding-v2/usePlanGeneration";
+import { queueDraft, resetDraft } from "@/components/onboarding-v2/onboardingDraft";
 import { teachingProfileService } from "@/services/api/teaching-profile.service";
-import type { OnboardingV2Status, TeacherRole } from "@/shared/types/onboarding-v2";
+import type {
+  OnboardingV2DraftAnswers,
+  OnboardingV2Status,
+  TeacherRole,
+} from "@/shared/types/onboarding-v2";
+import { useAuth } from "@clerk/nextjs";
 import posthog from "posthog-js";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -36,6 +42,9 @@ interface UseOnboardingV2Options {
   profileDone: boolean;
   /** A class already exists (reload after step 3/4): resume at the ritual step. */
   hasClass?: boolean;
+  /** Last step the server saw, and the answers saved so far. */
+  lastStep?: number | null;
+  draft?: OnboardingV2DraftAnswers | null;
 }
 
 /** Step navigation, answers and analytics for the onboarding flow. */
@@ -43,16 +52,36 @@ export function useOnboardingV2({
   mode,
   profileDone,
   hasClass = false,
+  lastStep = null,
+  draft = null,
 }: UseOnboardingV2Options) {
   const steps = useMemo<OnboardingStepId[]>(
     () => (mode === "profile" ? [1, 2] : [1, 2, 3, 4, 5]),
     [mode],
   );
   const firstIndex = mode === "full" && profileDone ? (hasClass ? 4 : 2) : 0;
+  // A teacher who skipped the class and reloaded at the ritual step stays there
+  // (Back still leads to step 3). Steps 1–2 are only "done" once the profile is saved.
+  const resumeAtRitual = mode === "full" && profileDone && !hasClass && lastStep === 5;
+  const startIndex = resumeAtRitual ? 4 : firstIndex;
 
-  const [index, setIndex] = useState(firstIndex);
+  const [index, setIndex] = useState(startIndex);
   const [direction, setDirection] = useState<1 | -1>(1);
-  const [answers, setAnswers] = useState<OnboardingAnswers>(INITIAL_ANSWERS);
+  const [answers, setAnswers] = useState<OnboardingAnswers>(() => ({
+    ...INITIAL_ANSWERS,
+    schoolName: draft?.schoolName ?? "",
+    noSchool: draft?.noSchool ?? false,
+    role: draft?.teacherRole ?? null,
+    skippedClass: resumeAtRitual,
+  }));
+  const { getToken } = useAuth();
+
+  // Seed the autosave with what the server already holds, so prefilled values are
+  // never re-sent. Runs once per flow instance.
+  useEffect(() => {
+    resetDraft(() => getToken(), draft, lastStep);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const step = steps[index];
   // Owned here so leaving step 4 never cancels the topic/week generation.
@@ -88,6 +117,8 @@ export function useOnboardingV2({
 
   useEffect(() => {
     posthog.capture("onboarding_v2_step_viewed", { step, mode });
+    // Remember how far the teacher got (steps 1–2 save their own answers).
+    if (mode === "full" && step >= 3) queueDraft({ step });
   }, [step, mode]);
 
   const goTo = useCallback(
@@ -132,6 +163,7 @@ export function useOnboardingV2({
     stepIndex: index,
     direction,
     answers,
+    draft,
     update,
     goTo,
     next,
