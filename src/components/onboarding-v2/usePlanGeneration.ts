@@ -25,13 +25,16 @@ export type {
 export function usePlanGeneration() {
   const dispatch = useAppDispatch();
   const store = useStore<RootState>();
-  const { getToken } = useAuth();
+  const { getToken, userId } = useAuth();
   const state = useSelector(selectPlanGeneration);
 
   const start = useCallback(
     (id: string) =>
-      startPlanGeneration({ dispatch, getState: store.getState, getToken: () => getToken() }, id),
-    [dispatch, store, getToken],
+      startPlanGeneration(
+        { dispatch, getState: store.getState, getToken: () => getToken(), userId },
+        id,
+      ),
+    [dispatch, store, getToken, userId],
   );
 
   const overall: "working" | "done" | "failed" =
