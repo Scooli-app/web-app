@@ -2,6 +2,7 @@
 
 import { isListableSlot } from "@/shared/utils/lessonTopic";
 import { Badge } from "@/components/ui/badge";
+import { PlanGenerationBanner } from "@/components/plan-generation/PlanGenerationBanner";
 import { Button } from "@/components/ui/button";
 import { selectIsHorarioPlanosEnabled } from "@/store/features/selectors";
 import { useFeatureAccess } from "@/components/feature/useFeatureAccess";
@@ -43,6 +44,7 @@ import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSelector } from "react-redux";
+import { selectPlanGeneration } from "@/store/planGeneration/selectors";
 import { useAuth } from "@clerk/nextjs";
 import posthog from "posthog-js";
 import { useLocale, useTranslations } from "next-intl";
@@ -173,6 +175,17 @@ export default function CalendarViewPage() {
     dispatch(fetchTimetable(id));
     dispatch(fetchLessons({ timetableId: id }));
   }, [enabled, id, dispatch]);
+
+  // Background plan generation (started in onboarding): reload this class's lessons
+  // whenever it produces new topics or finishes a lesson.
+  const planGenRefreshKey = useSelector(selectPlanGeneration).refreshKey;
+  const lastPlanGenKeyRef = useRef(planGenRefreshKey);
+  useEffect(() => {
+    if (planGenRefreshKey === lastPlanGenKeyRef.current) return;
+    lastPlanGenKeyRef.current = planGenRefreshKey;
+    if (!enabled) return;
+    dispatch(fetchLessons({ timetableId: id }));
+  }, [planGenRefreshKey, enabled, id, dispatch]);
 
   // Safety net: creation now waits for the topics before opening this page (see
   // useCreateClassWithTopics), but a teacher can carry on after a failed
@@ -497,6 +510,8 @@ export default function CalendarViewPage() {
           </Button>
         )}
       </div>
+
+      <PlanGenerationBanner timetableId={id} />
 
       {/* Week navigator */}
       <div className="flex items-center justify-between rounded-lg border bg-card px-4 py-2">

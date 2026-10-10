@@ -11,7 +11,9 @@ import { Routes } from "@/shared/types";
 import type { MyWeek, MyWeekLesson } from "@/shared/types/my-week";
 import type { UpgradeReason } from "@/shared/types/plan-limits";
 import { addDaysIso, defaultWeekStart } from "@/shared/utils/week";
-import { useAppDispatch } from "@/store/hooks";
+import { PlanGenerationBanner } from "@/components/plan-generation/PlanGenerationBanner";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { selectPlanGeneration } from "@/store/planGeneration/selectors";
 import { openUpgradeModalForReason, setUpgradeModalOpen } from "@/store/ui/uiSlice";
 import { useAuth } from "@clerk/nextjs";
 import { CalendarDays, ChevronLeft, ChevronRight, Plus } from "lucide-react";
@@ -59,6 +61,9 @@ export function YourWeekCard() {
   const [failed, setFailed] = useState(false);
   const [preparing, setPreparing] = useState<Set<string>>(new Set());
   const viewedRef = useRef(false);
+  // Background plan generation (started in onboarding, may outlive the overlay).
+  const planGen = useAppSelector(selectPlanGeneration);
+  const lastRefreshKeyRef = useRef(planGen.refreshKey);
   const weekStartRef = useRef<string | null>(null);
   weekStartRef.current = weekStart;
 
@@ -102,6 +107,23 @@ export function YourWeekCard() {
       cancelled = true;
     };
   }, [weekStart]);
+
+  // New topics / finished lessons from the background generation: reload once per
+  // change so they appear without a manual refresh.
+  useEffect(() => {
+    if (planGen.refreshKey === lastRefreshKeyRef.current) return;
+    lastRefreshKeyRef.current = planGen.refreshKey;
+    const target = weekStartRef.current;
+    if (!target) return;
+    meService
+      .getWeek(target)
+      .then((data) => {
+        if (weekStartRef.current === target) setWeek(data);
+      })
+      .catch(() => {
+        /* the next change retries; keep what is on screen */
+      });
+  }, [planGen.refreshKey]);
 
   const patchLesson = useCallback((id: string, status: MyWeekLesson["status"]) => {
     setWeek((prev) =>
@@ -231,9 +253,18 @@ export function YourWeekCard() {
   const range = weekStart ? formatWeekRange(weekStart, locale) : "";
 
   // Lessons without a topic are never shown.
+  const liveStatus = new Map(planGen.lessons.map((l) => [l.id, l.status]));
   const classes =
     week?.classes
-      .map((c) => ({ ...c, lessons: c.lessons.filter(isListableSlot) }))
+      .map((c) => ({
+        ...c,
+        lessons: c.lessons.filter(isListableSlot).map((l) =>
+          // A lesson being written right now by the background run shows as generating.
+          liveStatus.get(l.id) === "generating" && l.status === "pending"
+            ? { ...l, status: "generating" as const }
+            : l,
+        ),
+      }))
       .filter((c) => c.lessons.length > 0) ?? [];
   const hasNoClasses = week !== null && week.classes.length === 0 && !hasClasses;
 
@@ -272,6 +303,8 @@ export function YourWeekCard() {
           </div>
         )}
       </div>
+
+      <PlanGenerationBanner className="mb-2 shrink-0" />
 
       {failed ? (
         <p className="py-4 text-center text-sm text-muted-foreground">{t("error")}</p>

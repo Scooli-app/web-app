@@ -50,6 +50,15 @@
     },
     "saveError": "Não foi possível guardar a preferência de idioma."
   },
+  "planGeneration": {
+    "title": "A preparar o teu plano…",
+    "stageTopics": "A criar os temas do ano",
+    "stageLessons": "A preparar as aulas da semana ({done}/{total})",
+    "stageLessonsNoCount": "A preparar as aulas da semana",
+    "errorTopics": "Não conseguimos criar os temas do ano.",
+    "errorWeek": "Algumas aulas da semana não ficaram prontas.",
+    "retry": "Tentar novamente"
+  },
   "yourWeek": {
     "title": "A tua semana",
     "previousWeek": "Semana anterior",

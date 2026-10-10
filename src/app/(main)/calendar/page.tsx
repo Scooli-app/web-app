@@ -9,11 +9,14 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   useSyncExternalStore,
 } from "react";
 import { useSelector } from "react-redux";
+import { selectPlanGeneration } from "@/store/planGeneration/selectors";
 
+import { PlanGenerationBanner } from "@/components/plan-generation/PlanGenerationBanner";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -389,6 +392,35 @@ function CalendarPageInner() {
       .finally(() => setIsSlotsLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timetableKey, weekIso]); // timetableKey is stable — prevents duplicate requests
+
+  // Background plan generation (started in onboarding): when it produces new topics or
+  // finishes a lesson, reload this week's slots once so they appear on their own.
+  const planGenRefreshKey = useSelector(selectPlanGeneration).refreshKey;
+  const lastPlanGenKeyRef = useRef(planGenRefreshKey);
+  useEffect(() => {
+    if (planGenRefreshKey === lastPlanGenKeyRef.current) return;
+    lastPlanGenKeyRef.current = planGenRefreshKey;
+    const active = timetables.filter((t) => t.status === "active");
+    if (active.length === 0) {
+      // The class may not be in the list yet: reloading it re-runs the slots fetch.
+      if (enabled) dispatch(fetchTimetables());
+      return;
+    }
+    Promise.all(
+      active.map((t) =>
+        listLessons(t.id, weekIso)
+          .then((slots) => ({ timetableId: t.id, slots }))
+          .catch(() => null),
+      ),
+    ).then((results) => {
+      setSlotsByTimetable((prev) => {
+        const next = new Map(prev);
+        for (const r of results) if (r) next.set(r.timetableId, r.slots);
+        return next;
+      });
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [planGenRefreshKey]);
 
   // Build week days Mon–Sun
   const weekDays = useMemo<Date[]>(
@@ -861,6 +893,7 @@ function CalendarPageInner() {
       {/* ── Top bar ───────────────────────────────────────────────────── */}
       <div className="sticky top-0 z-10 border-b bg-card/95 backdrop-blur px-4 pt-2.5 pb-2">
         <div className="mx-auto max-w-[1400px] space-y-2">
+          <PlanGenerationBanner />
 
           {/* ── Mobile header: single compact row ── */}
           <div className="flex md:hidden items-center gap-1.5">

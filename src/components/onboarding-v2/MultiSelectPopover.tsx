@@ -14,7 +14,7 @@ interface MultiSelectPopoverProps {
   values: string[];
   onToggle: (id: string) => void;
   placeholder: string;
-  /** Short summary shown on the right of the trigger once something is picked. */
+  /** Summary shown in the trigger when more than one option is picked ("3 selected"). */
   countLabel: (count: number) => string;
   /** id of the element that labels the trigger. */
   labelledBy: string;
@@ -40,24 +40,23 @@ export function MultiSelectPopover({
         <button
           type="button"
           aria-labelledby={labelledBy}
-          className="flex h-10 w-full items-center justify-between gap-3 rounded-xl border border-input bg-card px-3 text-left text-base shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+          className="flex h-10 w-full min-w-0 max-w-full items-center justify-between gap-3 overflow-hidden rounded-xl border border-input bg-card px-3 text-left text-base shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
         >
-          <span className={cn("min-w-0 truncate", selected.length === 0 && "text-muted-foreground")}>
+          <span className={cn("min-w-0 flex-1 truncate", selected.length === 0 && "text-muted-foreground")}>
             {selected.length === 0
               ? placeholder
-              : selected.map((option) => option.label).join(", ")}
+              : selected.length === 1
+                ? selected[0].label
+                : countLabel(selected.length)}
           </span>
-          <span className="flex shrink-0 items-center gap-2 text-sm text-muted-foreground">
-            {selected.length > 0 && countLabel(selected.length)}
-            <ChevronDown className="h-4 w-4 opacity-50" aria-hidden />
-          </span>
+          <ChevronDown className="h-4 w-4 shrink-0 opacity-50" aria-hidden />
         </button>
       </PopoverTrigger>
       {/* The onboarding overlay sits at z-[9999]; the popover is portalled and must clear it. */}
       <PopoverContent
         align="start"
-        collisionPadding={12}
-        className="z-[10000] max-h-[min(20rem,var(--radix-popover-content-available-height))] w-[var(--radix-popover-trigger-width)] overflow-y-auto p-1"
+        collisionPadding={16}
+        className="z-[10000] max-h-[min(20rem,var(--radix-popover-content-available-height))] w-[var(--radix-popover-trigger-width)] max-w-[calc(100vw-2rem)] overflow-y-auto p-1"
       >
         <ul className="space-y-0.5">
           {options.map((option) => {

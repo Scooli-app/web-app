@@ -157,7 +157,7 @@ export function RitualStep({ flow, onFinished }: RitualStepProps) {
       <div className="space-y-3 sm:space-y-4">
         {hasPlan && <PlanStatus overall={generation.overall} />}
 
-        <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-start sm:gap-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto] sm:items-start sm:gap-4">
           <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
             {DAYS.map((day) => (
               <ChoiceChip
@@ -188,8 +188,8 @@ export function RitualStep({ flow, onFinished }: RitualStepProps) {
           </label>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
-          <div className="space-y-1.5">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
+          <div className="min-w-0 space-y-1.5">
             <p
               id="onboarding-goals"
               className="flex flex-wrap items-center gap-2 text-sm font-medium text-foreground"
@@ -207,7 +207,7 @@ export function RitualStep({ flow, onFinished }: RitualStepProps) {
             />
           </div>
 
-          <div className="space-y-1.5">
+          <div className="min-w-0 space-y-1.5">
             <p
               id="onboarding-source"
               className="flex flex-wrap items-center gap-2 text-sm font-medium text-foreground"
@@ -221,7 +221,7 @@ export function RitualStep({ flow, onFinished }: RitualStepProps) {
             >
               <SelectTrigger
                 aria-labelledby="onboarding-source"
-                className="h-10 rounded-xl px-3 text-base shadow-xs"
+                className="h-10 w-full min-w-0 rounded-xl px-3 text-base shadow-xs"
               >
                 <SelectValue placeholder={t("ritual.sourcePlaceholder")} />
               </SelectTrigger>

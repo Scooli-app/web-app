@@ -50,6 +50,15 @@
     },
     "saveError": "We couldn't save your language preference."
   },
+  "planGeneration": {
+    "title": "Preparing your plan…",
+    "stageTopics": "Writing the topics for the year",
+    "stageLessons": "Preparing this week's lessons ({done}/{total})",
+    "stageLessonsNoCount": "Preparing this week's lessons",
+    "errorTopics": "We couldn't create the topics for the year.",
+    "errorWeek": "Some of this week's lessons didn't finish.",
+    "retry": "Try again"
+  },
   "yourWeek": {
     "title": "Your week",
     "previousWeek": "Previous week",
