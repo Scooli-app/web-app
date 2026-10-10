@@ -113,13 +113,13 @@ export function TeachingStep({ flow, onProfileSaved }: TeachingStepProps) {
           <p id="onboarding-years" className="text-sm font-medium text-foreground">
             {t("teaching.yearsLabel")}
           </p>
-          <div className="flex flex-wrap gap-2">
+          <div className="grid grid-cols-6 sm:grid-cols-12 gap-2">
             {ALL_YEARS.map((year) => (
               <ChoiceChip
                 key={year}
                 selected={years.includes(year)}
                 onClick={() => toggleYear(year)}
-                className="min-w-12"
+                className="w-full min-w-12"
               >
                 {t("teaching.yearChip", { year })}
               </ChoiceChip>

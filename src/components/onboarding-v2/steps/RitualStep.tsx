@@ -157,7 +157,7 @@ export function RitualStep({ flow, onFinished }: RitualStepProps) {
       <div className="space-y-3 sm:space-y-4">
         {hasPlan && <PlanStatus overall={generation.overall} />}
 
-        <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-stretch sm:gap-4">
+        <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-start sm:gap-4">
           <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
             {DAYS.map((day) => (
               <ChoiceChip
