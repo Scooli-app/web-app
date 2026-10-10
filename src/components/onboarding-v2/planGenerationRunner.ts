@@ -1,3 +1,10 @@
+import {
+  claimLease,
+  clearMarker,
+  markerKey,
+  readMarker,
+  releaseLease,
+} from "@/components/onboarding-v2/planGenerationMarker";
 import { onboardingFreeWeek } from "@/components/onboarding-v2/freeWeek";
 import type { WeekRow } from "@/components/onboarding-v2/steps/WeekLessonRow";
 import { invalidatePlanLimits } from "@/hooks/usePlanLimits";
@@ -32,6 +39,7 @@ export interface PlanGenerationRunnerContext {
   dispatch: AppDispatch;
   getState: () => RootState;
   getToken: () => Promise<string | null>;
+  userId?: string | null;
 }
 
 /**
@@ -80,6 +88,7 @@ async function runWeek(c: PlanGenerationRunnerContext, id: string, weekStart: st
       .sort((a, b) => a.slotDate.localeCompare(b.slotDate));
     if (lessons.length === 0) {
       dispatch(weekStatusChanged("empty"));
+      clearMarker(c.userId);
       track("plan_generation_completed", "week", startedAt, { lessons_ready: 0 });
       return;
     }
@@ -134,6 +143,7 @@ async function runWeek(c: PlanGenerationRunnerContext, id: string, weekStart: st
       dispatch(firstLessonHrefSet(`${Routes.LESSON_PLAN}/${firstDocument.documentId}`));
     }
     dispatch(weekStatusChanged(problem ? "failed" : "done"));
+    if (!problem) clearMarker(c.userId);
     track(problem ? "plan_generation_failed" : "plan_generation_completed", "week", startedAt, {
       lessons_ready: lessonsReady,
     });
@@ -143,6 +153,7 @@ async function runWeek(c: PlanGenerationRunnerContext, id: string, weekStart: st
     track("plan_generation_failed", "week", startedAt, { lessons_ready: lessonsReady });
   } finally {
     running.week = false;
+    releaseLease(c.userId);
     invalidatePlanLimits();
     refresh(c);
   }
@@ -184,6 +195,7 @@ async function runTopics(c: PlanGenerationRunnerContext, id: string, weekStart: 
     refresh(c);
   }
   if (ok) await runWeek(c, id, weekStart);
+  else releaseLease(c.userId);
 }
 
 /** Called right after the class is created; the work continues whatever is on screen. */
@@ -196,6 +208,8 @@ export function startPlanGeneration(
   // Never run twice for the same class (double click, resume racing the flow).
   if (running.topics || running.week) return;
   const weekStart = weekStartOverride ?? onboardingFreeWeek(new Date());
+  // Cross-tab lease: another live tab already generates this plan.
+  if (!claimLease(c.userId, { timetableId, weekStart })) return;
   c.dispatch(planGenerationStarted({ timetableId, weekStart }));
   void runTopics(c, timetableId, weekStart);
 }
@@ -205,6 +219,7 @@ export function retryPlanGeneration() {
   if (!ctx) return;
   const { timetableId, weekStart, topicsStatus } = ctx.getState().planGeneration;
   if (!timetableId || !weekStart) return;
+  if (!claimLease(ctx.userId, { timetableId, weekStart })) return;
   if (topicsStatus === "failed") void runTopics(ctx, timetableId, weekStart);
   else void runWeek(ctx, timetableId, weekStart);
 }
@@ -217,24 +232,45 @@ export function setPlanGenerationContext(c: PlanGenerationRunnerContext) {
 const needsWork = (l: { slotType: string; status: string; topicTitle: string }) =>
   l.slotType !== "HOLIDAY" && hasTopic(l) && (l.status === "pending" || l.status === "generating");
 
+/** Bumps the refresh key when another tab clears the marker (its plan finished). */
+export function watchPlanGenerationMarker(userId: string, dispatch: AppDispatch) {
+  const onStorage = (event: StorageEvent) => {
+    if (event.key === markerKey(userId) && event.newValue === null) {
+      dispatch(planGenerationRefreshRequested());
+    }
+  };
+  window.addEventListener("storage", onStorage);
+  return () => window.removeEventListener("storage", onStorage);
+}
+
 /**
- * After a reload (tab closed mid-generation): if the first class still has lessons
- * without topics, or pending lessons in its free week, finish the plan. Runs once per
- * page load and never while a run (or an already started plan) exists.
+ * After a reload (tab closed mid-generation): if the class still has lessons without
+ * topics, or pending lessons in its free week, finish the plan. Uses the stored marker
+ * (any onboarding mode, < 48h old) or, when allowed, the first class. Runs once per page
+ * load, never while a run exists, and never while another tab holds the lease.
  */
-export async function resumePlanGenerationIfNeeded(c: PlanGenerationRunnerContext) {
+export async function resumePlanGenerationIfNeeded(
+  c: PlanGenerationRunnerContext,
+  options: { allowFirstClass: boolean },
+) {
   ctx = c;
   if (resumeAttempted) return;
+  const marker = readMarker(c.userId);
+  if (!marker && !options.allowFirstClass) return;
   resumeAttempted = true;
   const idle = () =>
     !running.topics && !running.week && !c.getState().planGeneration.timetableId;
   try {
     if (!idle()) return;
-    const first = (await listTimetables()).sort((a, b) =>
+    const timetables = (await listTimetables()).sort((a, b) =>
       a.createdAt.localeCompare(b.createdAt),
-    )[0];
-    if (!first) return;
-    const slots = await listLessons(first.id);
+    );
+    const klass = marker ? timetables.find((t) => t.id === marker.timetableId) : timetables[0];
+    if (!klass) {
+      if (marker) clearMarker(c.userId);
+      return;
+    }
+    const slots = await listLessons(klass.id);
     const topicsMissing = slots.some(
       (s) => s.slotType === "LESSON" && s.status !== "skipped" && !hasTopic(s),
     );
@@ -244,27 +280,30 @@ export async function resumePlanGenerationIfNeeded(c: PlanGenerationRunnerContex
     const previous = onboardingFreeWeek(new Date(now.getTime() - 7 * 86400000));
     const weekOf = async (weekStart: string) => {
       const week = await meService.getWeek(weekStart).catch(() => null);
-      return week?.classes.find((k) => k.timetableId === first.id)?.lessons ?? [];
+      return week?.classes.find((k) => k.timetableId === klass.id)?.lessons ?? [];
     };
 
-    // The free week is fixed once chosen: if it was already started in an earlier
-    // week (created Wed, reloaded Fri), keep finishing that one.
-    let weekStart = current;
-    if (!topicsMissing && previous !== current) {
+    // The free week is fixed once chosen: the marker remembers it; without a marker keep
+    // finishing an earlier week if it was already started (created Wed, reloaded Fri).
+    let weekStart = marker?.weekStart ?? current;
+    if (!marker && !topicsMissing && previous !== current) {
       const earlier = await weekOf(previous);
       if (earlier.some((l) => l.status === "completed") && earlier.some(needsWork)) {
         weekStart = previous;
       }
     }
-    if (!topicsMissing && !(await weekOf(weekStart)).some(needsWork)) return;
+    if (!topicsMissing && !(await weekOf(weekStart)).some(needsWork)) {
+      if (marker) clearMarker(c.userId);
+      return;
+    }
     if (!idle()) return;
 
     if (topicsMissing) {
-      startPlanGeneration(c, first.id, weekStart);
-    } else {
-      c.dispatch(planGenerationStarted({ timetableId: first.id, weekStart }));
+      startPlanGeneration(c, klass.id, weekStart);
+    } else if (claimLease(c.userId, { timetableId: klass.id, weekStart })) {
+      c.dispatch(planGenerationStarted({ timetableId: klass.id, weekStart }));
       c.dispatch(topicsStatusChanged({ status: "done" }));
-      void runWeek(c, first.id, weekStart);
+      void runWeek(c, klass.id, weekStart);
     }
   } catch (err) {
     posthog.captureException(err);

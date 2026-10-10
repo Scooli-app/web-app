@@ -7,6 +7,7 @@ import {
 import {
   resumePlanGenerationIfNeeded,
   setPlanGenerationContext,
+  watchPlanGenerationMarker,
 } from "@/components/onboarding-v2/planGenerationRunner";
 import type { OnboardingMode } from "@/components/onboarding-v2/useOnboardingV2";
 import { TUTORIAL_ROUTE, useTutorial } from "@/contexts/TutorialContext";
@@ -54,7 +55,7 @@ export function OnboardingV2Gate() {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const { startTutorial } = useTutorial();
-  const { isSignedIn, getToken } = useAuth();
+  const { isSignedIn, getToken, userId } = useAuth();
   const store = useStore<RootState>();
   const isUpgradeModalOpen = useSelector(
     (state: RootState) => state.ui.isUpgradeModalOpen,
@@ -78,15 +79,22 @@ export function OnboardingV2Gate() {
       .then((status) => {
         // The runner context lives at app level so Retry works after a reload, and a
         // plan interrupted by a closed tab is picked up again.
-        const runnerContext = { dispatch, getState: store.getState, getToken: () => getToken() };
+        const runnerContext = { dispatch, getState: store.getState, getToken: () => getToken(), userId };
         setPlanGenerationContext(runnerContext);
-        if (status.mode === "full" && status.hasClass) {
-          void resumePlanGenerationIfNeeded(runnerContext);
-        }
+        // Any mode: a stored marker also resumes a plan interrupted after completion.
+        void resumePlanGenerationIfNeeded(runnerContext, {
+          allowFirstClass: status.mode === "full" && status.hasClass,
+        });
         setPending(toPendingFlow(status));
       })
       .catch((error) => posthog.captureException(error));
-  }, [isSignedIn, dispatch, store, getToken]);
+  }, [isSignedIn, dispatch, store, getToken, userId]);
+
+  // Another tab finishing the plan clears the marker: refresh this tab's data.
+  useEffect(() => {
+    if (!userId) return;
+    return watchPlanGenerationMarker(userId, dispatch);
+  }, [userId, dispatch]);
 
   useEffect(() => {
     if (pending && !running && !suspended) setRunning(true);

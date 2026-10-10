@@ -2,6 +2,10 @@
 
 import { usePlanGeneration } from "@/components/onboarding-v2/usePlanGeneration";
 import { queueDraft, resetDraft } from "@/components/onboarding-v2/onboardingDraft";
+import {
+  readStepTwoSelection,
+  writeStepTwoSelection,
+} from "@/components/onboarding-v2/onboardingStorage";
 import { teachingProfileService } from "@/services/api/teaching-profile.service";
 import type {
   OnboardingV2DraftAnswers,
@@ -67,14 +71,25 @@ export function useOnboardingV2({
 
   const [index, setIndex] = useState(startIndex);
   const [direction, setDirection] = useState<1 | -1>(1);
-  const [answers, setAnswers] = useState<OnboardingAnswers>(() => ({
+  const { getToken, userId } = useAuth();
+  const [answers, setAnswers] = useState<OnboardingAnswers>(() => {
+    // Step 2 isn't saved server-side until Continue: restore a refresh from localStorage.
+    const stored = profileDone ? null : readStepTwoSelection(userId);
+    return {
     ...INITIAL_ANSWERS,
+    years: stored?.years ?? [],
+    subjectIds: stored?.subjectIds ?? [],
     schoolName: draft?.schoolName ?? "",
     noSchool: draft?.noSchool ?? false,
     role: draft?.teacherRole ?? null,
     skippedClass: resumeAtRitual,
-  }));
-  const { getToken } = useAuth();
+    };
+  });
+
+  useEffect(() => {
+    if (profileDone || (answers.years.length === 0 && answers.subjectIds.length === 0)) return;
+    writeStepTwoSelection(userId, { years: answers.years, subjectIds: answers.subjectIds });
+  }, [profileDone, userId, answers.years, answers.subjectIds]);
 
   // Seed the autosave with what the server already holds, so prefilled values are
   // never re-sent. Runs once per flow instance.

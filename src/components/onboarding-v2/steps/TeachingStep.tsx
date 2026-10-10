@@ -3,6 +3,7 @@
 import { MultiSelectPopover } from "@/components/onboarding-v2/MultiSelectPopover";
 import { ChoiceChip } from "@/components/onboarding-v2/ChoiceChip";
 import { SubjectsIllustration } from "@/components/onboarding-v2/illustrations/StepIllustrations";
+import { clearStepTwoSelection } from "@/components/onboarding-v2/onboardingStorage";
 import { StepHeading } from "@/components/onboarding-v2/StepHeading";
 import type { OnboardingFlowController } from "@/components/onboarding-v2/useOnboardingV2";
 import { useStepFooter } from "@/components/onboarding-v2/useStepFooter";
@@ -13,6 +14,7 @@ import {
 } from "@/components/document-creation/constants";
 import { buildRegularTeachingItems } from "@/components/document-creation/teaching-profile-preferences";
 import { onboardingV2Service } from "@/services/api/onboarding-v2.service";
+import { useAuth } from "@clerk/nextjs";
 import posthog from "posthog-js";
 import { useTranslations } from "next-intl";
 import { useMemo, useRef, useState } from "react";
@@ -28,6 +30,7 @@ interface TeachingStepProps {
 export function TeachingStep({ flow, onProfileSaved }: TeachingStepProps) {
   const t = useTranslations("onboardingV2");
   const { answers, update, trackCompleted } = flow;
+  const { userId } = useAuth();
   const { years, subjectIds } = answers;
 
   const [saving, setSaving] = useState(false);
@@ -80,6 +83,7 @@ export function TeachingStep({ flow, onProfileSaved }: TeachingStepProps) {
         schoolYears: years,
         items: buildRegularTeachingItems(subjectIds),
       });
+      clearStepTwoSelection(userId);
       trackCompleted(2, { school_years: years, subject_count: subjectIds.length });
       posthog.setPersonProperties({
         teacher_role: answers.role,
