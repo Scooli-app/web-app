@@ -2,6 +2,7 @@
 
 import { ChoiceChip } from "@/components/onboarding-v2/ChoiceChip";
 import { SchoolIllustration } from "@/components/onboarding-v2/illustrations/StepIllustrations";
+import { queueDraft } from "@/components/onboarding-v2/onboardingDraft";
 import { StepHeading } from "@/components/onboarding-v2/StepHeading";
 import type { OnboardingFlowController } from "@/components/onboarding-v2/useOnboardingV2";
 import { useStepFooter } from "@/components/onboarding-v2/useStepFooter";
@@ -53,10 +54,35 @@ export function SchoolRoleStep({ flow }: SchoolRoleStepProps) {
     return () => window.clearTimeout(timer);
   }, [trimmed, noSchool]);
 
+  // Autosave (debounced) so closing the tab keeps what was typed. Pruned against what
+  // the server already holds, so prefilled values are not re-sent.
+  const firstRun = useRef(true);
+  useEffect(() => {
+    if (firstRun.current) {
+      firstRun.current = false;
+      return;
+    }
+    queueDraft({
+      step: 1,
+      schoolName: noSchool ? null : trimmed,
+      noSchool,
+      ...(role ? { teacherRole: role } : {}),
+    });
+  }, [trimmed, noSchool, role]);
+
   const valid = role !== null && (noSchool || trimmed.length >= MIN_QUERY_LENGTH);
 
   const handleContinue = () => {
     if (!valid) return;
+    queueDraft(
+      {
+        step: 1,
+        schoolName: noSchool ? null : trimmed,
+        noSchool,
+        teacherRole: role,
+      },
+      { immediate: true },
+    );
     trackCompleted(1, {
       has_school: !noSchool,
       role,

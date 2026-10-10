@@ -7,6 +7,7 @@ import {
 } from "@/components/document-creation/constants";
 import { ClassIllustration } from "@/components/onboarding-v2/illustrations/StepIllustrations";
 import { toLocalIso } from "@/components/onboarding-v2/freeWeek";
+import { queueDraft } from "@/components/onboarding-v2/onboardingDraft";
 import { StepHeading } from "@/components/onboarding-v2/StepHeading";
 import type { OnboardingFlowController } from "@/components/onboarding-v2/useOnboardingV2";
 import { useStepFooter } from "@/components/onboarding-v2/useStepFooter";
@@ -39,7 +40,7 @@ import { useAppDispatch } from "@/store/hooks";
 import { setUpgradeModalOpen } from "@/store/ui/uiSlice";
 import { useLocale, useTranslations } from "next-intl";
 import posthog from "posthog-js";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 const ALL_YEARS = Array.from({ length: 12 }, (_, index) => index + 1);
 const NO_LESSONS: LessonsByDay = { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0, sat: 0, sun: 0 };
@@ -88,6 +89,7 @@ export function FirstClassStep({ flow }: FirstClassStepProps) {
   const [limitsSettled, setLimitsSettled] = useState(false);
   const [phase, setPhase] = useState<Phase>("form");
   const [error, setError] = useState(false);
+  const creatingRef = useRef(false);
 
   const [chosenYear, setChosenYear] = useState<number | null>(null);
   const [chosenSubject, setChosenSubject] = useState<string | null>(null);
@@ -141,9 +143,10 @@ export function FirstClassStep({ flow }: FirstClassStepProps) {
     );
 
   const handleCreate = async () => {
-    if (!formValid || phase !== "form" || !subjectId) return;
+    if (!formValid || phase !== "form" || !subjectId || creatingRef.current) return;
     const subject = SUBJECTS.find((s) => s.id === subjectId);
     if (!subject) return;
+    creatingRef.current = true;
     setError(false);
     setPhase("creating");
     try {
@@ -176,12 +179,17 @@ export function FirstClassStep({ flow }: FirstClassStepProps) {
         posthog.captureException(err);
         setError(true);
       }
+      creatingRef.current = false;
       setPhase("form");
     }
   };
 
   const handleLater = () => {
+    if (creatingRef.current) return;
     posthog.capture("onboarding_v2_skipped_class");
+    posthog.capture("onboarding_v2_step_skipped", { step: 3, reason: "later" });
+    posthog.capture("onboarding_v2_step_skipped", { step: 4, reason: "no_class" });
+    queueDraft({ step: 3, skippedClass: true }, { immediate: true });
     update({ skippedClass: true });
     goTo(5);
   };

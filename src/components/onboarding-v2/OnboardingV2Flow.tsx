@@ -1,6 +1,12 @@
 "use client";
 
 import { Celebration } from "@/components/onboarding-v2/Celebration";
+import {
+  flushDraftKeepalive,
+  isDraftLocked,
+  lockDrafts,
+  refreshDraftToken,
+} from "@/components/onboarding-v2/onboardingDraft";
 import { ProgressRail } from "@/components/onboarding-v2/ProgressRail";
 import { FirstClassStep } from "@/components/onboarding-v2/steps/FirstClassStep";
 import { FirstWeekStep } from "@/components/onboarding-v2/steps/FirstWeekStep";
@@ -20,9 +26,18 @@ import { Button } from "@/components/ui/button";
 import { useMotionSafe } from "@/lib/motion/useMotionSafe";
 import { cn } from "@/shared/utils/utils";
 import { ArrowLeft, Loader2 } from "lucide-react";
+import type { OnboardingV2DraftAnswers } from "@/shared/types/onboarding-v2";
 import { motion } from "motion/react";
 import { useTranslations } from "next-intl";
-import { useCallback, useMemo, useRef, useState, type KeyboardEvent } from "react";
+import posthog from "posthog-js";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent,
+} from "react";
 
 export interface OnboardingFlowResult {
   mode: OnboardingMode;
@@ -33,6 +48,8 @@ interface OnboardingV2FlowProps {
   mode: OnboardingMode;
   profileDone: boolean;
   hasClass: boolean;
+  lastStep?: number | null;
+  draft?: OnboardingV2DraftAnswers | null;
   /** Hidden but kept alive (route suppressed, or the upgrade modal is on top). */
   suspended: boolean;
   onClose: (result: OnboardingFlowResult) => void;
@@ -42,12 +59,14 @@ export function OnboardingV2Flow({
   mode,
   profileDone,
   hasClass,
+  lastStep,
+  draft,
   suspended,
   onClose,
 }: OnboardingV2FlowProps) {
   const t = useTranslations("onboardingV2");
   const { step: stepVariants } = useMotionSafe();
-  const flow = useOnboardingV2({ mode, profileDone, hasClass });
+  const flow = useOnboardingV2({ mode, profileDone, hasClass, lastStep, draft });
   const { step, direction, steps, stepIndex, canGoBack, back } = flow;
 
   const [footer, setFooter] = useState<FooterDisplay | null>(null);
@@ -86,9 +105,38 @@ export function OnboardingV2Flow({
     [onClose, mode, flow.answers.skippedClass],
   );
 
+  // Closing the tab mid-flow: flush the pending draft and record where the teacher left.
+  // Not while hidden behind another dialog, nor after Concluir (drafts are locked).
+  const abandonedSent = useRef(false);
+  useEffect(() => {
+    if (celebrating) return;
+    const onHide = () => {
+      if (isDraftLocked()) return;
+      flushDraftKeepalive();
+      if (suspended || abandonedSent.current) return;
+      abandonedSent.current = true;
+      posthog.capture("onboarding_v2_abandoned", { step, mode }, { transport: "sendBeacon" });
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") onHide();
+      else abandonedSent.current = false;
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("pagehide", onHide);
+    // Auth tokens are short-lived; keep one fresh for the keepalive request.
+    const refresh = window.setInterval(refreshDraftToken, 45_000);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("pagehide", onHide);
+      window.clearInterval(refresh);
+    };
+  }, [step, mode, suspended, celebrating]);
+
   const handleProfileSaved = () => {
-    if (mode === "profile") onClose({ mode, skippedClass: false });
-    else flow.next();
+    if (mode === "profile") {
+      void lockDrafts();
+      onClose({ mode, skippedClass: false });
+    } else flow.next();
   };
 
   const renderStep = () => {
