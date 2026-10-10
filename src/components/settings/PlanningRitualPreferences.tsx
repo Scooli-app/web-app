@@ -25,27 +25,48 @@ function weekdayName(day: number, locale: string): string {
 export function PlanningRitualPreferences() {
   const t = useTranslations("settings.planning");
   const locale = useLocale();
-  const [planningDay, setPlanningDay] = useState(7);
-  const [weeklyDigest, setWeeklyDigest] = useState(true);
-  const [loaded, setLoaded] = useState(false);
+  const [planningDay, setPlanningDay] = useState<number | null>(null);
+  const [weeklyDigest, setWeeklyDigest] = useState<boolean | null>(null);
+  const [dayFailed, setDayFailed] = useState(false);
+  const [digestFailed, setDigestFailed] = useState(false);
+  const [dayAttempt, setDayAttempt] = useState(0);
+  const [digestAttempt, setDigestAttempt] = useState(0);
 
+  // A value stays null (control disabled) until the server has confirmed it.
   useEffect(() => {
     let cancelled = false;
-    Promise.all([
-      userService.getCurrentUser().catch(() => null),
-      meService.getEmailPreferences().catch(() => null),
-    ]).then(([user, prefs]) => {
-      if (cancelled) return;
-      if (user) setPlanningDay(user.planningDay ?? 7);
-      if (prefs) setWeeklyDigest(prefs.weeklyDigest);
-      setLoaded(true);
-    });
+    setDayFailed(false);
+    userService
+      .getCurrentUser()
+      .then((user) => {
+        if (!cancelled) setPlanningDay(user.planningDay ?? 7);
+      })
+      .catch(() => {
+        if (!cancelled) setDayFailed(true);
+      });
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [dayAttempt]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setDigestFailed(false);
+    meService
+      .getEmailPreferences()
+      .then((prefs) => {
+        if (!cancelled) setWeeklyDigest(prefs.weeklyDigest);
+      })
+      .catch(() => {
+        if (!cancelled) setDigestFailed(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [digestAttempt]);
 
   const changeDay = (day: number) => {
+    if (planningDay === null) return;
     const previous = planningDay;
     setPlanningDay(day);
     meService.setPlanningDay(day).catch(() => {
@@ -55,6 +76,7 @@ export function PlanningRitualPreferences() {
   };
 
   const changeDigest = (value: boolean) => {
+    if (weeklyDigest === null) return;
     const previous = weeklyDigest;
     setWeeklyDigest(value);
     meService.setEmailPreferences(value).catch(() => {
@@ -62,6 +84,15 @@ export function PlanningRitualPreferences() {
       toast.error(t("saveError"));
     });
   };
+
+  const LoadError = ({ onRetry }: { onRetry: () => void }) => (
+    <p className="mt-1 text-xs text-destructive">
+      {t("loadError")}{" "}
+      <button type="button" onClick={onRetry} className="font-medium underline">
+        {t("retry")}
+      </button>
+    </p>
+  );
 
   return (
     <div id="planning" className="scroll-mt-24 space-y-3">
@@ -75,16 +106,17 @@ export function PlanningRitualPreferences() {
           <div className="min-w-0">
             <p className="font-medium text-foreground">{t("dayTitle")}</p>
             <p className="text-xs text-muted-foreground">{t("dayDescription")}</p>
+            {dayFailed && <LoadError onRetry={() => setDayAttempt((n) => n + 1)} />}
           </div>
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
               type="button"
-              disabled={!loaded}
+              disabled={planningDay === null}
               className="flex shrink-0 items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium capitalize text-foreground transition-colors hover:bg-accent disabled:pointer-events-none disabled:opacity-50"
             >
-              {weekdayName(planningDay, locale)}
+              {planningDay === null ? "…" : weekdayName(planningDay, locale)}
               <ChevronDown className="h-4 w-4 text-muted-foreground" aria-hidden />
             </button>
           </DropdownMenuTrigger>
@@ -109,11 +141,12 @@ export function PlanningRitualPreferences() {
             {t("digestTitle")}
           </p>
           <p className="text-xs text-muted-foreground">{t("digestDescription")}</p>
+          {digestFailed && <LoadError onRetry={() => setDigestAttempt((n) => n + 1)} />}
         </div>
         <Switch
           aria-labelledby="weekly-digest-label"
-          checked={weeklyDigest}
-          disabled={!loaded}
+          checked={weeklyDigest ?? false}
+          disabled={weeklyDigest === null}
           onCheckedChange={changeDigest}
         />
       </div>

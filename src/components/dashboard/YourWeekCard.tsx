@@ -17,6 +17,7 @@ import { CalendarDays, ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import posthog from "posthog-js";
+import { toast } from "sonner";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 function isUpgradeReason(code: string): code is UpgradeReason {
@@ -37,6 +38,8 @@ export function YourWeekCard() {
   const [failed, setFailed] = useState(false);
   const [preparing, setPreparing] = useState<Set<string>>(new Set());
   const viewedRef = useRef(false);
+  const weekStartRef = useRef<string | null>(null);
+  weekStartRef.current = weekStart;
 
   // The planning day decides which week opens first; fall back to the default (Sunday).
   useEffect(() => {
@@ -93,34 +96,64 @@ export function YourWeekCard() {
 
   const handlePrepare = async (timetableId: string) => {
     if (!weekStart) return;
+    const generatedWeek = weekStart;
     posthog.capture("your_week_prepare_clicked");
     setPreparing((prev) => new Set(prev).add(timetableId));
+    // Lessons started but not yet reported done/failed by the stream.
+    const inFlight = new Set<string>();
+    let problem = false;
     try {
       await generateWeek(
         timetableId,
-        weekStart,
+        generatedWeek,
         {
-          onSlotStart: (id) => patchLesson(id, "generating"),
-          onSlotDone: (id) => patchLesson(id, "completed"),
-          onSlotError: (id) => patchLesson(id, "failed"),
+          onSlotStart: (id) => {
+            inFlight.add(id);
+            patchLesson(id, "generating");
+          },
+          onSlotDone: (id) => {
+            inFlight.delete(id);
+            patchLesson(id, "completed");
+          },
+          onSlotError: (id) => {
+            inFlight.delete(id);
+            problem = true;
+            patchLesson(id, "failed");
+          },
           onFreeLimit: (code) => {
+            problem = true;
             if (isUpgradeReason(code)) dispatch(openUpgradeModalForReason(code));
           },
-          onQuotaExceeded: () => dispatch(setUpgradeModalOpen(true)),
-          onError: () => undefined,
+          onQuotaExceeded: () => {
+            problem = true;
+            dispatch(setUpgradeModalOpen(true));
+          },
+          onError: () => {
+            problem = true;
+          },
         },
         getToken,
       );
     } catch (err) {
+      problem = true;
       posthog.captureException(err);
     } finally {
+      // A stream that ended or broke mid-lesson must not leave rows spinning.
+      inFlight.forEach((id) => patchLesson(id, "failed"));
+      if (problem || inFlight.size > 0) toast.error(t("prepareError"));
       setPreparing((prev) => {
         const next = new Set(prev);
         next.delete(timetableId);
         return next;
       });
-      // Reload so finished lessons get their document link.
-      meService.getWeek(weekStart).then(setWeek).catch(() => undefined);
+      // Reload so finished lessons get their document link, unless the teacher
+      // moved to another week meanwhile (that week was already loaded).
+      meService
+        .getWeek(generatedWeek)
+        .then((data) => {
+          if (weekStartRef.current === generatedWeek) setWeek(data);
+        })
+        .catch(() => undefined);
     }
   };
 

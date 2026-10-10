@@ -58,7 +58,8 @@
     "noTopic": "Sem tópico",
     "noLessons": "Não há aulas nesta semana.",
     "empty": "Cria a tua primeira turma e a Scooli prepara a tua semana.",
-    "error": "Não conseguimos carregar a tua semana."
+    "error": "Não conseguimos carregar a tua semana.",
+    "prepareError": "Não foi possível preparar a semana. Tenta novamente."
   },
   "emailUnsubscribed": {
     "done": "Já não vais receber o email semanal.",
@@ -872,6 +873,8 @@
       "dayDescription": "A partir deste dia, a Scooli mostra-te a semana seguinte.",
       "digestTitle": "Email semanal com a minha semana",
       "digestDescription": "Recebes um resumo da semana seguinte no dia em que planeias.",
+      "loadError": "Não foi possível carregar esta preferência.",
+      "retry": "Tentar novamente",
       "saveError": "Não conseguimos guardar a alteração."
     },
     "title": "Definições",

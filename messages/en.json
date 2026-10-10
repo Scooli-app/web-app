@@ -58,7 +58,8 @@
     "noTopic": "No topic",
     "noLessons": "No lessons this week.",
     "empty": "Create your first class and Scooli prepares your week.",
-    "error": "We couldn't load your week."
+    "error": "We couldn't load your week.",
+    "prepareError": "We couldn't prepare the week. Please try again."
   },
   "emailUnsubscribed": {
     "done": "You won't get the weekly email anymore.",
@@ -872,6 +873,8 @@
       "dayDescription": "From this day on, Scooli shows you the following week.",
       "digestTitle": "Weekly email with my week",
       "digestDescription": "You get a summary of the coming week on the day you plan.",
+      "loadError": "Couldn't load this setting.",
+      "retry": "Try again",
       "saveError": "We couldn't save that change."
     },
     "title": "Settings",
