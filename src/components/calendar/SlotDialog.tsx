@@ -140,7 +140,7 @@ export function SlotDialog({
   const isHoliday = slot.slotType === "HOLIDAY";
 
   const handleTitleSave = () => {
-    if (draftTitle.trim() !== slot.topicTitle) {
+    if (draftTitle.trim() !== slot.topicTitle && (draftTitle.trim() !== "" || isHoliday)) {
       onTitleChange(slot, draftTitle.trim());
     }
     setEditingTitle(false);
@@ -212,10 +212,7 @@ export function SlotDialog({
                 title={isHoliday ? undefined : t("editTopicTitle")}
               >
                 <span className="hover:underline decoration-dashed underline-offset-2">
-                  {slot.topicTitle ||
-                    (isHoliday
-                      ? tShared("holidayNoLesson")
-                      : t("topicPlaceholderEmpty"))}
+                  {isHoliday ? slot.topicTitle || tShared("holidayNoLesson") : slot.topicTitle}
                 </span>
                 {!isHoliday && (
                   <Edit2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover/title:opacity-60" />

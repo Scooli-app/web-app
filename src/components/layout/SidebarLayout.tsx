@@ -3,7 +3,7 @@
 import { AssistantProvider } from "@/components/assistant";
 import { AppFeedbackSurveyGate } from "@/components/feedback-survey/AppFeedbackSurveyGate";
 import { FeatureFeedbackGate } from "@/components/feature-feedback/FeatureFeedbackGate";
-import { OnboardingGate } from "@/components/onboarding/OnboardingGate";
+import { OnboardingV2Gate } from "@/components/onboarding-v2/OnboardingV2Gate";
 import { PromoGate } from "@/components/promo/PromoGate";
 import { PromoNavCta } from "@/components/promo/PromoNavCta";
 import { TutorialOverlay } from "@/components/tutorial/TutorialOverlay";
@@ -693,6 +693,9 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const dispatch = useAppDispatch();
+  const upgradeModalReason = useSelector(
+    (state: RootState) => state.ui.upgradeModalReason,
+  );
   const isUpgradeModalOpen = useSelector(
     (state: RootState) => state.ui.isUpgradeModalOpen,
   );
@@ -741,11 +744,12 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
         <SourceIngestionTracker />
         <UpgradePlanModal
           open={isUpgradeModalOpen}
+          reason={upgradeModalReason}
           onOpenChange={handleUpgradeModalChange}
         />
         <AppFeedbackSurveyGate />
         <FeatureFeedbackGate />
-        <OnboardingGate />
+        <OnboardingV2Gate />
         <PromoGate />
         <TutorialOverlay />
 

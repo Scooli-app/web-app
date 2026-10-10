@@ -50,6 +50,44 @@
     },
     "saveError": "Não foi possível guardar a preferência de idioma."
   },
+  "planGeneration": {
+    "title": "A preparar o teu plano…",
+    "stageTopics": "A criar os temas do ano",
+    "stageLessons": "A preparar as aulas da semana ({done}/{total})",
+    "stageLessonsNoCount": "A preparar as aulas da semana",
+    "errorTopics": "Não conseguimos criar os temas do ano.",
+    "errorWeek": "Algumas aulas da semana não ficaram prontas.",
+    "retry": "Tentar novamente"
+  },
+  "yourWeek": {
+    "title": "A tua semana",
+    "previousWeek": "Semana anterior",
+    "nextWeek": "Semana seguinte",
+    "createLesson": "Criar",
+    "retryLesson": "Tentar de novo",
+    "createLessonError": "Não foi possível criar esta aula. Tenta novamente.",
+    "prepare": "Preparar a semana",
+    "noLessons": "Não tens aulas nesta semana.",
+    "seeNextWeek": "Ver próxima semana",
+    "empty": "Cria a tua primeira turma e a Scooli prepara a tua semana.",
+    "error": "Não conseguimos carregar a tua semana.",
+    "prepareError": "Não foi possível preparar a semana. Tenta novamente.",
+    "nothingToPrepare": "Não há aulas por preparar nesta semana.",
+    "refreshError": "As aulas foram preparadas, mas não foi possível atualizar a lista. Atualiza a página."
+  },
+  "emailUnsubscribe": {
+    "title": "Deixar de receber o email semanal?",
+    "hint": "Podes voltar a ativá-lo quando quiseres, nas definições.",
+    "confirm": "Sim, deixar de receber",
+    "confirming": "A cancelar…"
+  },
+  "emailUnsubscribed": {
+    "done": "Já não vais receber o email semanal.",
+    "hint": "Se mudares de ideias, podes voltar a ativá-lo nas definições.",
+    "turnOn": "Ativar nas definições",
+    "invalid": "Este link já não é válido.",
+    "openApp": "Abrir a Scooli"
+  },
   "nav": {
     "groups": {
       "navigation": "Navegação",
@@ -701,6 +739,141 @@
       "emptyDescription": "Cria o teu primeiro plano de aula, teste ou quiz e ele aparece aqui para continuares onde ficaste."
     }
   },
+  "onboardingV2": {
+    "dialogLabel": "Bem-vindo à Scooli",
+    "progress": "Passo {step} de {total}",
+    "back": "Voltar",
+    "continue": "Continuar",
+    "later": "Mais tarde",
+    "retry": "Tentar novamente",
+    "saveFailed": "Não conseguimos guardar. Tenta outra vez.",
+    "school": {
+      "title": "Onde dás aulas?",
+      "subtitle": "Escreve o nome da tua escola ou agrupamento.",
+      "placeholder": "Nome da escola",
+      "noSchool": "Não dou aulas numa escola",
+      "roleLabel": "O teu papel",
+      "roles": {
+        "teacher": "Professor/a",
+        "coordinator": "Coordenador/a",
+        "director": "Direção",
+        "tutor": "Explicador/a",
+        "other": "Outro"
+      }
+    },
+    "teaching": {
+      "title": "O que ensinas?",
+      "subtitle": "Escolhe os anos e as disciplinas. Podes mudar isto depois nas Definições.",
+      "yearsLabel": "Anos",
+      "yearChip": "{year}.º",
+      "cycles": {
+        "c1": "1.º–4.º",
+        "c2": "5.º–6.º",
+        "c3": "7.º–9.º",
+        "c4": "10.º–12.º"
+      },
+      "subjectsLabel": "Disciplinas",
+      "subjectsEmpty": "Escolhe primeiro os anos para veres as disciplinas.",
+      "subjectsPlaceholder": "Escolhe as disciplinas",
+      "subjectsCount": "{count, plural, one {# disciplina} other {# disciplinas}}"
+    },
+    "class": {
+      "title": "Cria a tua primeira turma",
+      "subtitle": "Com isto, a Scooli monta o teu plano de aulas.",
+      "subjectLabel": "Disciplina",
+      "yearLabel": "Ano",
+      "yearOption": "{year}.º ano",
+      "labelLabel": "Turma",
+      "labelPlaceholder": "7.º B",
+      "daysLabel": "Em que dias tens aula?",
+      "days": {
+        "mon": "Seg",
+        "tue": "Ter",
+        "wed": "Qua",
+        "thu": "Qui",
+        "fri": "Sex",
+        "sat": "Sáb"
+      },
+      "lessonsCount": "{count, plural, one {# aula} other {# aulas}}",
+      "lessonsFewer": "Menos aulas",
+      "lessonsMore": "Mais aulas",
+      "period": "De {start} a {end}",
+      "capNote": "No plano gratuito planeias até 4 semanas.",
+      "capLink": "Ver planos",
+      "create": "Criar turma",
+      "createFailed": "Não foi possível criar a turma. Tenta outra vez."
+    },
+    "plan": {
+      "title": "A montar o teu plano",
+      "titleDone": "O teu plano está pronto",
+      "subtitle": "Podes continuar quando quiseres: nós acabamos em segundo plano.",
+      "allDone": "Tudo pronto para continuares.",
+      "progressLabel": "Progresso do plano",
+      "stages": {
+        "created": "Turma criada",
+        "topics": "A planear os temas do ano",
+        "topicsDone": "Temas do ano planeados",
+        "week": "A escrever as aulas da primeira semana",
+        "weekDone": "Aulas da primeira semana prontas"
+      },
+      "topicsHints": {
+        "1": "A ler as Aprendizagens Essenciais…",
+        "2": "A distribuir os temas pelo ano letivo…",
+        "3": "A descontar feriados e interrupções…",
+        "4": "A ordenar os conteúdos por período…"
+      },
+      "weekHints": {
+        "1": "A escrever objetivos e atividades…",
+        "2": "A montar o guião de cada aula…",
+        "3": "A afinar os últimos detalhes…"
+      },
+      "moreLessons": "+{count} mais",
+      "weekRange": "Semana de {range}",
+      "topicsFailed": "Não conseguimos planear os temas agora.",
+      "weekFailed": "Algumas aulas não ficaram prontas."
+    },
+    "week": {
+      "noLessons": "Não há aulas para preparar nesta semana. Podes gerar as outras no calendário.",
+      "lessonFallback": "Aula {number}",
+      "pending": "Em espera",
+      "generating": "A escrever",
+      "ready": "Pronta",
+      "failed": "Falhou",
+      "openLesson": "Abrir a primeira aula"
+    },
+    "ritual": {
+      "title": "Quando planeias a tua semana?",
+      "subtitle": "Escolhe o dia em que queres ter tudo pronto para a semana seguinte.",
+      "days": {
+        "1": "Seg",
+        "2": "Ter",
+        "3": "Qua",
+        "4": "Qui",
+        "5": "Sex",
+        "6": "Sáb",
+        "7": "Dom"
+      },
+      "emailLabel": "Enviar-me um email com a minha semana",
+      "emailHint": "Chega ao fim da tarde do dia que escolheste. Podes desligar quando quiseres.",
+      "optionalBadge": "Opcional",
+      "planStatus": {
+        "working": "A tua semana ainda está a ser preparada…",
+        "done": "Pronta",
+        "failed": "Não conseguimos terminar a tua semana agora. Podes retomá-la no teu painel."
+      },
+      "goalsTitle": "O que procuras na Scooli?",
+      "sourceTitle": "Como nos conheceste?",
+      "goalsPlaceholder": "Escolhe os objetivos",
+      "selectedCount": "{count, plural, one {# escolhido} other {# escolhidos}}",
+      "sourcePlaceholder": "Escolhe uma opção",
+      "sourceOtherPlaceholder": "Conta-nos onde (opcional)",
+      "finish": "Concluir"
+    },
+    "celebration": {
+      "title": "Está tudo pronto",
+      "subtitle": "A levar-te para o teu painel…"
+    }
+  },
   "onboarding": {
     "dialogLabel": "Bem-vindo à Scooli",
     "stepIndicator": "Passo {step} de {total}",
@@ -744,6 +917,16 @@
     }
   },
   "settings": {
+    "planning": {
+      "title": "Planeamento semanal",
+      "dayTitle": "Dia de planear a semana",
+      "dayDescription": "A partir deste dia, a Scooli mostra-te a semana seguinte.",
+      "digestTitle": "Email semanal com a minha semana",
+      "digestDescription": "Recebes um resumo da semana seguinte no dia em que planeias.",
+      "loadError": "Não foi possível carregar esta preferência.",
+      "retry": "Tentar novamente",
+      "saveError": "Não conseguimos guardar a alteração."
+    },
     "title": "Definições",
     "subtitle": "Gere a tua conta, subscrição e preferências.",
     "preferences": {
@@ -1818,7 +2001,17 @@
         "description": "Exportação e ferramentas exclusivas"
       },
       "cta": "Ver planos Pro",
-      "maybeLater": "Talvez mais tarde"
+      "maybeLater": "Talvez mais tarde",
+      "reasons": {
+        "free_class_limit": {
+          "title": "Já tens uma turma no plano gratuito",
+          "description": "Atualiza para Pro para criares turmas sem limite."
+        },
+        "free_period_limit": {
+          "title": "O plano gratuito cobre 4 semanas",
+          "description": "Atualiza para Pro para planeares o ano letivo inteiro."
+        }
+      }
     },
     "plans": {
       "proMonthly": {
@@ -2482,7 +2675,6 @@
       "viewMonth": "Mês",
       "today": "Hoje",
       "tomorrow": "Amanhã",
-      "noTopic": "Sem tópico",
       "holidayNoLesson": "Feriado / Sem aula",
       "classInline": "Turma {label}",
       "minutesSuffix": "{count} min",
@@ -2498,7 +2690,6 @@
     },
     "detail": {
       "loading": "A carregar...",
-      "noTopicDefined": "Sem tópico definido",
       "generationFailed": "Falhou a geração",
       "noLessonsThisWeek": "Sem aulas programadas para esta semana.",
       "noLessonsYet": "Ainda não tens aulas criadas para esta turma.",
@@ -2562,7 +2753,6 @@
       "cancel": "Cancelar",
       "skip": "Ignorar",
       "editTopicTitle": "Clica para editar o tópico",
-      "topicPlaceholderEmpty": "Sem tópico — clica para editar",
       "lessonNumber": "Aula {number}"
     },
     "dashboardWidget": {
@@ -2605,7 +2795,9 @@
         "endLabel": "Fim *",
         "endPlaceholder": "Seleciona a data de fim",
         "schoolYearLabel": "Ano letivo",
-        "schoolYearPlaceholder": "Ex: 2025/2026"
+        "schoolYearPlaceholder": "Ex: 2025/2026",
+        "freeLimitNote": "No plano gratuito podes planear até 4 semanas (até {date}).",
+        "freeLimitUpgrade": "Atualizar para Pro"
       },
       "details": {
         "title": "Detalhes da turma",

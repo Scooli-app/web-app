@@ -4,6 +4,7 @@ import type { CreateTimetableParams } from "@/services/api/timetable.service";
 import { useAppDispatch } from "@/store/hooks";
 import { createTimetable, generateTopics } from "@/store/timetable/timetableSlice";
 import { useCallback, useEffect, useState } from "react";
+import { invalidatePlanLimits } from "@/hooks/usePlanLimits";
 
 export type ClassCreationPhase = "idle" | "creating" | "topics" | "done" | "failed";
 
@@ -58,6 +59,7 @@ export function useCreateClassWithTopics() {
         setPhase("idle");
         return { ok: false, error: typeof result.payload === "string" ? result.payload : undefined };
       }
+      invalidatePlanLimits();
       const id = result.payload.id;
       setTimetableId(id);
       return { ok: true, timetableId: id, topicsReady: await generate(id) };

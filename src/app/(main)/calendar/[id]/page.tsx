@@ -1,6 +1,8 @@
 "use client";
 
+import { isListableSlot } from "@/shared/utils/lessonTopic";
 import { Badge } from "@/components/ui/badge";
+import { PlanGenerationBanner } from "@/components/plan-generation/PlanGenerationBanner";
 import { Button } from "@/components/ui/button";
 import { selectIsHorarioPlanosEnabled } from "@/store/features/selectors";
 import { useFeatureAccess } from "@/components/feature/useFeatureAccess";
@@ -13,6 +15,8 @@ import {
   updateLesson,
 } from "@/store/timetable/timetableSlice";
 import { useAppDispatch } from "@/store/hooks";
+import { openUpgradeModalForReason, setUpgradeModalOpen } from "@/store/ui/uiSlice";
+import { isUpgradeReason } from "@/shared/types/plan-limits";
 import type { RootState } from "@/store/store";
 import { Routes } from "@/shared/types";
 import {
@@ -37,9 +41,10 @@ import { SlotDialog } from "@/components/calendar/SlotDialog";
 import type { SlotWithTimetable } from "@/shared/types/calendar";
 import { toIso, getWeekStart, addDays, formatWeekLabel, toIntlLocale } from "@/shared/utils/calendar";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSelector } from "react-redux";
+import { selectPlanGeneration } from "@/store/planGeneration/selectors";
 import { useAuth } from "@clerk/nextjs";
 import posthog from "posthog-js";
 import { useLocale, useTranslations } from "next-intl";
@@ -96,7 +101,7 @@ function SlotCard({ slot, color, subject, classLabel, onOpen }: SlotCardProps) {
         </span>
         <div className="min-w-0 flex-1">
           <p className={`truncate text-sm font-medium ${isHoliday ? "line-through text-muted-foreground" : ""}`}>
-            {isHoliday ? t("shared.holidayNoLesson") : slot.topicTitle || t("detail.noTopicDefined")}
+            {isHoliday ? t("shared.holidayNoLesson") : slot.topicTitle}
           </p>
           <p className="text-xs text-muted-foreground">
             {new Date(`${slot.slotDate}T00:00:00`).toLocaleDateString(toIntlLocale(locale), {
@@ -142,7 +147,23 @@ export default function CalendarViewPage() {
   const dispatch = useAppDispatch();
   const { getToken } = useAuth();
 
-  const [weekStart, setWeekStart] = useState<Date>(() => getWeekStart(new Date()));
+  const searchParams = useSearchParams();
+  const weekParam = searchParams.get("week");
+  const [weekStart, setWeekStart] = useState<Date>(() => {
+    // The weekly email links here with ?week=YYYY-MM-DD.
+    if (weekParam) {
+      const d = new Date(`${weekParam}T00:00:00`);
+      if (!isNaN(d.getTime())) return getWeekStart(d);
+    }
+    return getWeekStart(new Date());
+  });
+
+  // Follow the ?week param when it changes (client-side navigation to the same page).
+  useEffect(() => {
+    if (!weekParam) return;
+    const d = new Date(`${weekParam}T00:00:00`);
+    if (!isNaN(d.getTime())) setWeekStart(getWeekStart(d));
+  }, [weekParam]);
   const [selectedSlot, setSelectedSlot] = useState<LessonSlot | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatingWeek, setGeneratingWeek] = useState(false);
@@ -154,6 +175,17 @@ export default function CalendarViewPage() {
     dispatch(fetchTimetable(id));
     dispatch(fetchLessons({ timetableId: id }));
   }, [enabled, id, dispatch]);
+
+  // Background plan generation (started in onboarding): reload this class's lessons
+  // whenever it produces new topics or finishes a lesson.
+  const planGenRefreshKey = useSelector(selectPlanGeneration).refreshKey;
+  const lastPlanGenKeyRef = useRef(planGenRefreshKey);
+  useEffect(() => {
+    if (planGenRefreshKey === lastPlanGenKeyRef.current) return;
+    lastPlanGenKeyRef.current = planGenRefreshKey;
+    if (!enabled) return;
+    dispatch(fetchLessons({ timetableId: id }));
+  }, [planGenRefreshKey, enabled, id, dispatch]);
 
   // Safety net: creation now waits for the topics before opening this page (see
   // useCreateClassWithTopics), but a teacher can carry on after a failed
@@ -192,6 +224,7 @@ export default function CalendarViewPage() {
   const slotsByWeek: WeekMap = useMemo(() => {
     const map: WeekMap = new Map();
     for (const slot of slots) {
+      if (!isListableSlot(slot)) continue; // lessons without a topic are never shown
       const d = new Date(`${slot.slotDate}T00:00:00`);
       const ws = toIso(getWeekStart(d));
       if (!map.has(ws)) map.set(ws, []);
@@ -246,6 +279,7 @@ export default function CalendarViewPage() {
   const handleGenerateLesson = useCallback(
     async (slotOrWrapped: SlotWithTimetable | LessonSlot, message?: string) => {
       const slot = slotOrWrapped as LessonSlot;
+      const previousStatus = slot.status;
       setSelectedSlot(null);
       setIsGenerating(true);
       streamRef.current = "";
@@ -272,6 +306,14 @@ export default function CalendarViewPage() {
               trackLessonMaterial("generate", slot, Boolean(message), "failed");
               dispatch(setSlotStatus({ slotId: slot.id, status: "failed" }));
             },
+            onFreeLimit: (code) => {
+              dispatch(setSlotStatus({ slotId: slot.id, status: previousStatus }));
+              if (isUpgradeReason(code)) dispatch(openUpgradeModalForReason(code));
+            },
+            onQuotaExceeded: () => {
+              dispatch(setSlotStatus({ slotId: slot.id, status: previousStatus }));
+              dispatch(setUpgradeModalOpen(true));
+            },
           },
           getToken
         );
@@ -287,6 +329,7 @@ export default function CalendarViewPage() {
   const handleRegenerateLesson = useCallback(
     async (slotOrWrapped: SlotWithTimetable | LessonSlot, message?: string) => {
       const slot = slotOrWrapped as LessonSlot;
+      const previousStatus = slot.status;
       setSelectedSlot(null);
       setIsGenerating(true);
       streamRef.current = "";
@@ -313,6 +356,14 @@ export default function CalendarViewPage() {
               trackLessonMaterial("regenerate", slot, Boolean(message), "failed");
               dispatch(setSlotStatus({ slotId: slot.id, status: "failed" }));
             },
+            onFreeLimit: (code) => {
+              dispatch(setSlotStatus({ slotId: slot.id, status: previousStatus }));
+              if (isUpgradeReason(code)) dispatch(openUpgradeModalForReason(code));
+            },
+            onQuotaExceeded: () => {
+              dispatch(setSlotStatus({ slotId: slot.id, status: previousStatus }));
+              dispatch(setUpgradeModalOpen(true));
+            },
           },
           getToken
         );
@@ -329,19 +380,40 @@ export default function CalendarViewPage() {
     setGeneratingWeek(true);
     let slotsCompleted = 0;
     let slotsFailed = 0;
+    // Slots shown as "generating" that a plan limit may leave stuck: back to pending.
+    const inFlight = new Set<string>();
+    const resetInFlight = () => {
+      inFlight.forEach((slotId) =>
+        dispatch(setSlotStatus({ slotId, status: "pending" })),
+      );
+      inFlight.clear();
+    };
     try {
       await generateWeekStream(
         id,
         currentWeekIso,
         {
-          onSlotStart: (slotId) => dispatch(setSlotStatus({ slotId, status: "generating" })),
+          onSlotStart: (slotId) => {
+            inFlight.add(slotId);
+            dispatch(setSlotStatus({ slotId, status: "generating" }));
+          },
           onSlotDone: (slotId) => {
             slotsCompleted += 1;
+            inFlight.delete(slotId);
             dispatch(setSlotStatus({ slotId, status: "completed" }));
           },
           onSlotError: (slotId) => {
             slotsFailed += 1;
+            inFlight.delete(slotId);
             dispatch(setSlotStatus({ slotId, status: "failed" }));
+          },
+          onFreeLimit: (code) => {
+            resetInFlight();
+            if (isUpgradeReason(code)) dispatch(openUpgradeModalForReason(code));
+          },
+          onQuotaExceeded: () => {
+            resetInFlight();
+            dispatch(setUpgradeModalOpen(true));
           },
           onDone: () => dispatch(fetchLessons({ timetableId: id })),
         },
@@ -439,6 +511,8 @@ export default function CalendarViewPage() {
         )}
       </div>
 
+      <PlanGenerationBanner timetableId={id} />
+
       {/* Week navigator */}
       <div className="flex items-center justify-between rounded-lg border bg-card px-4 py-2">
         <Button variant="ghost" size="icon" onClick={prevWeek}>
@@ -466,7 +540,7 @@ export default function CalendarViewPage() {
           <CalendarDays className="mx-auto mb-3 h-10 w-10" />
           <p>{t("detail.noLessonsThisWeek")}</p>
           <p className="mt-1 text-sm">
-            {slots.length === 0
+            {!slots.some(isListableSlot)
               ? t("detail.noLessonsYet")
               : t("detail.navigateOtherWeek")}
           </p>
