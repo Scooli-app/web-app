@@ -8,7 +8,7 @@ import {
   flushDraft,
   unlockDrafts,
 } from "@/components/onboarding-v2/onboardingDraft";
-import { buildCompletePayload } from "@/components/onboarding-v2/ritualState";
+import { buildCompletePayload, effectiveWeeklyEmail } from "@/components/onboarding-v2/ritualState";
 import { StepHeading } from "@/components/onboarding-v2/StepHeading";
 import type { OnboardingFlowController } from "@/components/onboarding-v2/useOnboardingV2";
 import { useStepFooter } from "@/components/onboarding-v2/useStepFooter";
@@ -89,7 +89,8 @@ export function RitualStep({ flow, onFinished }: RitualStepProps) {
   const t = useTranslations("onboardingV2");
   const tEnum = useTranslations("enums");
   const { answers, trackCompleted, generation, ritual, updateRitual } = flow;
-  const { planningDay, weeklyEmail, goals, source, sourceOther } = ritual;
+  const { planningDay, goals, source, sourceOther } = ritual;
+  const weeklyEmail = effectiveWeeklyEmail(ritual.weeklyEmail);
   const hasPlan = answers.timetableId !== null && !answers.skippedClass;
   const submittingRef = useRef(false);
 

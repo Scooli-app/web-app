@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   applyRitualPatch,
   buildCompletePayload,
+  effectiveWeeklyEmail,
   initialRitualState,
   ritualDraftPatch,
   type RitualState,
@@ -9,7 +10,7 @@ import {
 
 const state = (over: Partial<RitualState> = {}): RitualState => ({
   planningDay: 7,
-  weeklyEmail: true,
+  weeklyEmail: true as boolean | null,
   goals: [],
   source: null,
   sourceOther: "",
@@ -55,7 +56,7 @@ describe("buildCompletePayload (F2)", () => {
 
 describe("lifted step-5 state (F7)", () => {
   it("starts from the server draft, with defaults", () => {
-    expect(initialRitualState(null)).toEqual(state());
+    expect(initialRitualState(null)).toEqual(state({ weeklyEmail: null }));
     expect(
       initialRitualState({
         schoolName: null,
@@ -82,7 +83,9 @@ describe("lifted step-5 state (F7)", () => {
     let current = initialRitualState(null);
     current = applyRitualPatch(current, { planningDay: 2 });
     current = applyRitualPatch(current, { goals: ["CURIOSITY"] });
-    expect(current).toEqual(state({ planningDay: 2, goals: ["CURIOSITY"] }));
+    expect(current).toEqual(
+      state({ planningDay: 2, goals: ["CURIOSITY"], weeklyEmail: null }),
+    );
   });
 
   it("builds a draft patch with the whole step-5 state", () => {
@@ -96,5 +99,41 @@ describe("lifted step-5 state (F7)", () => {
     expect(
       ritualDraftPatch(state({ source: "OTHER", sourceOther: " amigo " })),
     ).toMatchObject({ acquisitionSource: "OTHER", acquisitionSourceOther: "amigo" });
+  });
+});
+
+describe("weekly email choice (F4)", () => {
+  const draftWith = (weeklyEmail: boolean | null) => ({
+    schoolName: null,
+    noSchool: null,
+    teacherRole: null,
+    planningDay: null,
+    weeklyEmail,
+    goals: null,
+    acquisitionSource: null,
+    acquisitionSourceOther: null,
+  });
+
+  it("starts from the server value; null means never chosen", () => {
+    expect(initialRitualState(draftWith(false)).weeklyEmail).toBe(false);
+    expect(initialRitualState(draftWith(true)).weeklyEmail).toBe(true);
+    expect(initialRitualState(draftWith(null)).weeklyEmail).toBeNull();
+    expect(initialRitualState(null).weeklyEmail).toBeNull();
+  });
+
+  it("shows the toggle ON while the choice is still null", () => {
+    expect(effectiveWeeklyEmail(null)).toBe(true);
+    expect(effectiveWeeklyEmail(false)).toBe(false);
+  });
+
+  it("does not autosave an untouched (null) choice", () => {
+    const patch = ritualDraftPatch({ ...state(), weeklyEmail: null });
+    expect("weeklyEmail" in patch).toBe(false);
+    expect(ritualDraftPatch({ ...state(), weeklyEmail: false }).weeklyEmail).toBe(false);
+  });
+
+  it("Finish sends an explicit weeklyEmail even when untouched", () => {
+    expect(buildCompletePayload({ ...state(), weeklyEmail: null }, false).weeklyEmail).toBe(true);
+    expect(buildCompletePayload({ ...state(), weeklyEmail: false }, false).weeklyEmail).toBe(false);
   });
 });

@@ -8,7 +8,8 @@ import type {
 /** Step-5 answers. Owned by the flow hook so they survive the step unmounting. */
 export interface RitualState {
   planningDay: number;
-  weeklyEmail: boolean;
+  /** null = the teacher never chose; the toggle shows ON but nothing is saved until touched. */
+  weeklyEmail: boolean | null;
   goals: OnboardingGoal[];
   source: AcquisitionSource | null;
   sourceOther: string;
@@ -25,7 +26,7 @@ export function buildCompletePayload(
   const other = state.source === "OTHER" ? state.sourceOther.trim() : "";
   return {
     planningDay: state.planningDay,
-    weeklyEmail: state.weeklyEmail,
+    weeklyEmail: effectiveWeeklyEmail(state.weeklyEmail),
     goals: state.goals,
     acquisitionSource: state.source,
     acquisitionSourceOther: other || null,
@@ -35,10 +36,13 @@ export function buildCompletePayload(
 
 const DEFAULT_PLANNING_DAY = 7;
 
+/** What the toggle shows and what Finish saves: ON unless the teacher turned it off. */
+export const effectiveWeeklyEmail = (value: boolean | null): boolean => value ?? true;
+
 export function initialRitualState(draft: OnboardingV2DraftAnswers | null): RitualState {
   return {
     planningDay: draft?.planningDay ?? DEFAULT_PLANNING_DAY,
-    weeklyEmail: draft?.weeklyEmail ?? true,
+    weeklyEmail: draft?.weeklyEmail ?? null,
     goals: (draft?.goals ?? []) as OnboardingGoal[],
     source: (draft?.acquisitionSource ?? null) as AcquisitionSource | null,
     sourceOther: draft?.acquisitionSourceOther ?? "",
@@ -54,7 +58,7 @@ export function ritualDraftPatch(state: RitualState): OnboardingV2DraftPatch {
   return {
     step: 5,
     planningDay: state.planningDay,
-    weeklyEmail: state.weeklyEmail,
+    ...(state.weeklyEmail !== null ? { weeklyEmail: state.weeklyEmail } : {}),
     goals: state.goals,
     ...(state.source ? { acquisitionSource: state.source } : {}),
     acquisitionSourceOther: state.source === "OTHER" ? state.sourceOther.trim() : "",
