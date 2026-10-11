@@ -2,35 +2,37 @@
 
 import { QuickCreateCard } from "@/components/dashboard/QuickCreateCard";
 import { RecentDocumentsCard } from "@/components/dashboard/RecentDocumentsCard";
-import { PageContainer } from "@/components/layout/PageContainer";
-import { PageHeader } from "@/components/layout/PageHeader";
-import { PaymentSuccessModal } from "@/components/ui/payment-success-modal";
 import { YourWeekCard } from "@/components/dashboard/YourWeekCard";
+import { PageContainer } from "@/components/layout/PageContainer";
+import { PaymentSuccessModal } from "@/components/ui/payment-success-modal";
+import { Routes } from "@/shared/types";
+import { isPromoPlanCode } from "@/shared/utils/promo";
+import { fetchEntitlements } from "@/store/entitlements/entitlementsSlice";
 import {
-  selectIsWorksheetCreationEnabled,
+  selectIsCurriculumPlanEnabled,
   selectIsHorarioPlanosEnabled,
   selectIsPresentationCreationEnabled,
-  selectIsCurriculumPlanEnabled,
+  selectIsWorksheetCreationEnabled,
 } from "@/store/features/selectors";
 import { useAppSelector } from "@/store/hooks";
-import { Routes } from "@/shared/types";
+import {
+  fetchSubscription,
+  fetchUsage,
+} from "@/store/subscription/subscriptionSlice";
 import {
   FileText,
+  GanttChart,
   HelpCircle,
+  MonitorPlay,
   NotebookPen,
   ScrollText,
-  MonitorPlay,
-  GanttChart,
   type LucideIcon,
 } from "lucide-react";
-import { fetchEntitlements } from "@/store/entitlements/entitlementsSlice";
-import { fetchSubscription, fetchUsage } from "@/store/subscription/subscriptionSlice";
-import { isPromoPlanCode } from "@/shared/utils/promo";
-import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { useRouter, useSearchParams } from "next/navigation";
+import posthog from "posthog-js";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useDispatch } from "react-redux";
-import posthog from "posthog-js";
 
 import type { AppDispatch } from "@/store/store";
 
@@ -42,12 +44,27 @@ interface DocTypeAction {
 }
 
 const DOC_TYPE_ACTIONS: DocTypeAction[] = [
-  { id: "lessonPlan",      route: Routes.LESSON_PLAN,     icon: FileText },
-  { id: "test",            route: Routes.TEST,            icon: NotebookPen },
-  { id: "worksheet",       route: Routes.WORKSHEET,       icon: ScrollText,  gate: "worksheet" },
-  { id: "quiz",            route: Routes.QUIZ,            icon: HelpCircle },
-  { id: "presentation",    route: Routes.PRESENTATION,    icon: MonitorPlay, gate: "presentation" },
-  { id: "curriculumPlan",  route: Routes.CURRICULUM_PLAN, icon: GanttChart,  gate: "curriculumPlan" },
+  { id: "lessonPlan", route: Routes.LESSON_PLAN, icon: FileText },
+  { id: "test", route: Routes.TEST, icon: NotebookPen },
+  {
+    id: "worksheet",
+    route: Routes.WORKSHEET,
+    icon: ScrollText,
+    gate: "worksheet",
+  },
+  { id: "quiz", route: Routes.QUIZ, icon: HelpCircle },
+  {
+    id: "presentation",
+    route: Routes.PRESENTATION,
+    icon: MonitorPlay,
+    gate: "presentation",
+  },
+  {
+    id: "curriculumPlan",
+    route: Routes.CURRICULUM_PLAN,
+    icon: GanttChart,
+    gate: "curriculumPlan",
+  },
 ];
 
 function DashboardContent() {
@@ -56,8 +73,12 @@ function DashboardContent() {
   const t = useTranslations("dashboard");
   const tEnums = useTranslations("enums");
   const [showPaymentSuccess, setShowPaymentSuccess] = useState(false);
-  const isWorksheetCreationEnabled = useAppSelector(selectIsWorksheetCreationEnabled);
-  const isPresentationCreationEnabled = useAppSelector(selectIsPresentationCreationEnabled);
+  const isWorksheetCreationEnabled = useAppSelector(
+    selectIsWorksheetCreationEnabled,
+  );
+  const isPresentationCreationEnabled = useAppSelector(
+    selectIsPresentationCreationEnabled,
+  );
   const isCurriculumPlanEnabled = useAppSelector(selectIsCurriculumPlanEnabled);
   const isHorarioPlanosEnabled = useAppSelector(selectIsHorarioPlanosEnabled);
 
@@ -67,11 +88,16 @@ function DashboardContent() {
     () =>
       DOC_TYPE_ACTIONS.filter((action) => {
         if (action.gate === "worksheet") return isWorksheetCreationEnabled;
-        if (action.gate === "presentation") return isPresentationCreationEnabled;
+        if (action.gate === "presentation")
+          return isPresentationCreationEnabled;
         if (action.gate === "curriculumPlan") return isCurriculumPlanEnabled;
         return true;
       }),
-    [isWorksheetCreationEnabled, isPresentationCreationEnabled, isCurriculumPlanEnabled]
+    [
+      isWorksheetCreationEnabled,
+      isPresentationCreationEnabled,
+      isCurriculumPlanEnabled,
+    ],
   );
 
   useEffect(() => {
@@ -110,15 +136,14 @@ function DashboardContent() {
   }, [searchParams, dispatch]);
 
   return (
-    <PageContainer size="7xl" className="h-full" contentClassName="flex h-full flex-col py-1 sm:py-2">
+    <PageContainer
+      size="7xl"
+      className="h-full"
+      contentClassName="flex h-full flex-col py-1 sm:py-2"
+    >
       <PaymentSuccessModal
         open={showPaymentSuccess}
         onOpenChange={setShowPaymentSuccess}
-      />
-
-      <PageHeader
-        title={t("welcomeTitle")}
-        description={t("welcomeDescription")}
       />
 
       <div className="flex min-h-0 flex-1 flex-col gap-3 sm:gap-4">
@@ -129,7 +154,9 @@ function DashboardContent() {
         )}
 
         <div className="shrink-0">
-          <QuickCreateCard isWorksheetCreationEnabled={isWorksheetCreationEnabled} />
+          <QuickCreateCard
+            isWorksheetCreationEnabled={isWorksheetCreationEnabled}
+          />
         </div>
 
         {/* Bottom row — fills remaining height on md+; natural height on mobile */}
@@ -147,7 +174,9 @@ function DashboardContent() {
                     key={action.id}
                     type="button"
                     onClick={() => {
-                      posthog.capture("dashboard_quick_action_clicked", { action: action.id });
+                      posthog.capture("dashboard_quick_action_clicked", {
+                        action: action.id,
+                      });
                       router.push(action.route);
                     }}
                     className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-accent"
