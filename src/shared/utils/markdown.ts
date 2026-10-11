@@ -97,7 +97,7 @@ function getHtmlAttribute(tag: string, attrName: string): string | null {
   return null;
 }
 
-function escapeMarkdownImageAlt(value: string): string {
+export function escapeMarkdownImageAlt(value: string): string {
   return value
     .replace(/\\/g, "\\\\")
     .replace(/\]/g, "\\]")
