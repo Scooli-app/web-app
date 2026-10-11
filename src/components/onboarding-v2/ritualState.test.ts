@@ -72,7 +72,7 @@ describe("lifted step-5 state (F7)", () => {
         acquisitionSource: "OTHER",
         acquisitionSourceOther: "x",
         prepHoursPerWeek: "H2_5",
-        currentTools: ["AI_CHAT", "COLLEAGUES"],
+        currentTools: ["AI_CHAT", "OTHER_AI", "WEB_SEARCH", "COLLEAGUES"],
         classCount: "C3_4",
       }),
     ).toEqual(
@@ -83,7 +83,7 @@ describe("lifted step-5 state (F7)", () => {
         source: "OTHER",
         sourceOther: "x",
         prepHours: "H2_5",
-        currentTools: ["AI_CHAT", "COLLEAGUES"],
+        currentTools: ["AI_CHAT", "OTHER_AI", "WEB_SEARCH", "COLLEAGUES"],
         classCount: "C3_4",
       }),
     );

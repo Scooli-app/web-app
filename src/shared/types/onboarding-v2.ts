@@ -4,7 +4,7 @@ export type TeacherRole = "teacher" | "coordinator" | "director" | "tutor" | "ot
 
 /** Optional baseline answers (single choice, except the tools which are multi-select). */
 export type PrepHoursPerWeek = "LT2" | "H2_5" | "H5_10" | "GT10";
-export type CurrentTool = "AI_CHAT" | "PUBLISHER" | "COLLEAGUES" | "FROM_SCRATCH";
+export type CurrentTool = "AI_CHAT" | "OTHER_AI" | "WEB_SEARCH" | "PUBLISHER" | "COLLEAGUES" | "FROM_SCRATCH";
 export type ClassCount = "C1_2" | "C3_4" | "C5_PLUS";
 
 export type OnboardingV2Step = 1 | 2 | 3 | 4 | 5 | 6;

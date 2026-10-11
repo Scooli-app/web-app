@@ -70,7 +70,7 @@ function buildSchedule(lessons: LessonsByDay): Partial<WeekSchedule> {
   return schedule;
 }
 
-const selectTriggerClassName = "h-10 rounded-xl px-3 text-base shadow-xs";
+const selectTriggerClassName = "w-full min-w-0";
 // The onboarding overlay sits at z-[9999]; the menu is portalled to <body> and must clear it.
 const selectContentClassName = "z-[10000]";
 const selectItemClassName = "min-h-11 text-base";
@@ -254,7 +254,6 @@ export function FirstClassStep({ flow }: FirstClassStepProps) {
               placeholder={t("class.labelPlaceholder")}
               maxLength={40}
               autoComplete="off"
-              className="h-10 rounded-xl px-3 text-base"
             />
           </div>
         </div>

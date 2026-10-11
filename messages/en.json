@@ -843,8 +843,6 @@
     },
     "baseline": {
       "title": "So we can show you how much time you save",
-      "subtitle": "Three quick questions, all optional.",
-      "optionalBadge": "Optional",
       "prepTitle": "How many hours a week do you spend preparing lessons and materials?",
       "toolsTitle": "What do you use today to prepare lessons?",
       "classTitle": "How many classes do you teach this year?",
@@ -855,7 +853,9 @@
         "GT10": "10+ h"
       },
       "tools": {
-        "AI_CHAT": "ChatGPT or another AI",
+        "AI_CHAT": "ChatGPT",
+        "OTHER_AI": "I use another AI tool",
+        "WEB_SEARCH": "I search the web",
         "PUBLISHER": "Textbooks and publisher resources",
         "COLLEAGUES": "Colleagues’ materials",
         "FROM_SCRATCH": "I make everything from scratch"
@@ -880,7 +880,6 @@
       },
       "emailLabel": "Email me my week",
       "emailHint": "It arrives in the evening of the day you picked. Turn it off any time.",
-      "optionalBadge": "Optional",
       "planStatus": {
         "working": "Your week is still being prepared…",
         "done": "Ready",
