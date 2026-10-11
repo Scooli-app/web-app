@@ -1,7 +1,6 @@
 "use client";
 
 import { ChoiceChip } from "@/components/onboarding-v2/ChoiceChip";
-import { OptionalBadge } from "@/components/onboarding-v2/OptionalBadge";
 import { flushDraft } from "@/components/onboarding-v2/onboardingDraft";
 import { baselineAnalytics } from "@/components/onboarding-v2/ritualState";
 import { StepHeading } from "@/components/onboarding-v2/StepHeading";
@@ -13,22 +12,20 @@ import posthog from "posthog-js";
 import { useEffect, type ReactNode } from "react";
 
 const PREP_HOURS: PrepHoursPerWeek[] = ["LT2", "H2_5", "H5_10", "GT10"];
-const TOOLS: CurrentTool[] = ["AI_CHAT", "PUBLISHER", "COLLEAGUES", "FROM_SCRATCH"];
+const TOOLS: CurrentTool[] = ["AI_CHAT", "OTHER_AI", "WEB_SEARCH", "PUBLISHER", "COLLEAGUES", "FROM_SCRATCH"];
 const CLASS_COUNTS: ClassCount[] = ["C1_2", "C3_4", "C5_PLUS"];
 
 interface QuestionProps {
   id: string;
   title: string;
-  badge: string;
   children: ReactNode;
 }
 
-function Question({ id, title, badge, children }: QuestionProps) {
+function Question({ id, title, children }: QuestionProps) {
   return (
-    <div role="group" aria-labelledby={id} className="space-y-1.5">
-      <p id={id} className="flex flex-wrap items-center gap-2 text-sm font-medium text-foreground">
+    <div role="group" aria-labelledby={id} className="space-y-1 sm:space-y-1.5">
+      <p id={id} className="text-sm font-medium text-foreground">
         {title}
-        <OptionalBadge label={badge} />
       </p>
       {children}
     </div>
@@ -39,7 +36,7 @@ interface BaselineStepProps {
   flow: OnboardingFlowController;
 }
 
-/** Step 5: three optional baseline questions (time spent, current tools, class count). */
+/** Step 5: three non-blocking baseline questions (time spent, current tools, class count). */
 export function BaselineStep({ flow }: BaselineStepProps) {
   const t = useTranslations("onboardingV2.baseline");
   const { ritual, updateRitual, trackCompleted, next } = flow;
@@ -69,10 +66,10 @@ export function BaselineStep({ flow }: BaselineStepProps) {
 
   return (
     <div>
-      <StepHeading title={t("title")} subtitle={t("subtitle")} />
+      <StepHeading title={t("title")} />
 
-      <div className="space-y-3 sm:space-y-4">
-        <Question id="baseline-prep" title={t("prepTitle")} badge={t("optionalBadge")}>
+      <div className="space-y-2.5 sm:space-y-4">
+        <Question id="baseline-prep" title={t("prepTitle")}>
           <div className="grid grid-cols-4 gap-1.5 sm:gap-2">
             {PREP_HOURS.map((value) => (
               <ChoiceChip
@@ -87,7 +84,7 @@ export function BaselineStep({ flow }: BaselineStepProps) {
           </div>
         </Question>
 
-        <Question id="baseline-tools" title={t("toolsTitle")} badge={t("optionalBadge")}>
+        <Question id="baseline-tools" title={t("toolsTitle")}>
           <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
             {TOOLS.map((tool) => (
               <ChoiceChip
@@ -103,7 +100,7 @@ export function BaselineStep({ flow }: BaselineStepProps) {
           </div>
         </Question>
 
-        <Question id="baseline-classes" title={t("classTitle")} badge={t("optionalBadge")}>
+        <Question id="baseline-classes" title={t("classTitle")}>
           <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
             {CLASS_COUNTS.map((value) => (
               <ChoiceChip
