@@ -8,6 +8,7 @@ import {
   queueDraft,
   unlockDrafts,
 } from "@/components/onboarding-v2/onboardingDraft";
+import { buildCompletePayload } from "@/components/onboarding-v2/ritualState";
 import { StepHeading } from "@/components/onboarding-v2/StepHeading";
 import type { OnboardingFlowController } from "@/components/onboarding-v2/useOnboardingV2";
 import { useStepFooter } from "@/components/onboarding-v2/useStepFooter";
@@ -131,16 +132,13 @@ export function RitualStep({ flow, onFinished }: RitualStepProps) {
     // Flush pending drafts, wait for any in flight (keepalive too), then lock: complete()
     // below carries the full current state and nothing may land after it.
     await finalizeDrafts();
-    const otherText = source === "OTHER" ? sourceOther.trim() : "";
     try {
-      await onboardingV2Service.complete({
-        planningDay,
-        weeklyEmail,
-        goals: goals.length > 0 ? goals : null,
-        acquisitionSource: source,
-        acquisitionSourceOther: otherText || null,
-        skippedClass: answers.skippedClass,
-      });
+      await onboardingV2Service.complete(
+        buildCompletePayload(
+          { planningDay, weeklyEmail, goals, source, sourceOther },
+          answers.skippedClass,
+        ),
+      );
       trackCompleted(5, {
         planning_day: planningDay,
         weekly_email: weeklyEmail,
