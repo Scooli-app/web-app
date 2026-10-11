@@ -1,5 +1,9 @@
 import type { AcquisitionSource, OnboardingGoal } from "@/shared/types/onboarding";
-import type { OnboardingV2Complete } from "@/shared/types/onboarding-v2";
+import type {
+  OnboardingV2Complete,
+  OnboardingV2DraftAnswers,
+  OnboardingV2DraftPatch,
+} from "@/shared/types/onboarding-v2";
 
 /** Step-5 answers. Owned by the flow hook so they survive the step unmounting. */
 export interface RitualState {
@@ -26,5 +30,33 @@ export function buildCompletePayload(
     acquisitionSource: state.source,
     acquisitionSourceOther: other || null,
     skippedClass,
+  };
+}
+
+const DEFAULT_PLANNING_DAY = 7;
+
+export function initialRitualState(draft: OnboardingV2DraftAnswers | null): RitualState {
+  return {
+    planningDay: draft?.planningDay ?? DEFAULT_PLANNING_DAY,
+    weeklyEmail: draft?.weeklyEmail ?? true,
+    goals: (draft?.goals ?? []) as OnboardingGoal[],
+    source: (draft?.acquisitionSource ?? null) as AcquisitionSource | null,
+    sourceOther: draft?.acquisitionSourceOther ?? "",
+  };
+}
+
+export function applyRitualPatch(state: RitualState, patch: Partial<RitualState>): RitualState {
+  return { ...state, ...patch };
+}
+
+/** Autosave payload of the whole step-5 state. */
+export function ritualDraftPatch(state: RitualState): OnboardingV2DraftPatch {
+  return {
+    step: 5,
+    planningDay: state.planningDay,
+    weeklyEmail: state.weeklyEmail,
+    goals: state.goals,
+    ...(state.source ? { acquisitionSource: state.source } : {}),
+    acquisitionSourceOther: state.source === "OTHER" ? state.sourceOther.trim() : "",
   };
 }

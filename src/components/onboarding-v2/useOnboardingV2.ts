@@ -6,11 +6,17 @@ import {
   resolveStartStep,
 } from "@/components/onboarding-v2/resumeStep";
 import { usePlanGeneration } from "@/components/onboarding-v2/usePlanGeneration";
-import { queueDraft, resetDraft } from "@/components/onboarding-v2/onboardingDraft";
+import { flushDraft, queueDraft, resetDraft } from "@/components/onboarding-v2/onboardingDraft";
 import {
   persistStepTwoSelection,
   readStepTwoSelection,
 } from "@/components/onboarding-v2/onboardingStorage";
+import {
+  applyRitualPatch,
+  initialRitualState,
+  ritualDraftPatch,
+  type RitualState,
+} from "@/components/onboarding-v2/ritualState";
 import { teachingProfileService } from "@/services/api/teaching-profile.service";
 import type {
   OnboardingV2DraftAnswers,
@@ -119,6 +125,17 @@ export function useOnboardingV2({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Step-5 answers live here so Back → return never loses them, and every change is queued
+  // for autosave from the handler (not from an effect that unmounting would skip).
+  const [ritual, setRitual] = useState<RitualState>(() => initialRitualState(draft));
+  const ritualRef = useRef(ritual);
+  const updateRitual = useCallback((patch: Partial<RitualState>) => {
+    const nextState = applyRitualPatch(ritualRef.current, patch);
+    ritualRef.current = nextState;
+    setRitual(nextState);
+    queueDraft(ritualDraftPatch(nextState));
+  }, []);
+
   const step = steps[index];
   // Owned here so leaving step 4 never cancels the topic/week generation.
   const generation = usePlanGeneration();
@@ -180,6 +197,8 @@ export function useOnboardingV2({
     if (index <= 0) return;
     // After a skipped class the previous screen is step 3, not the (skipped) step 4.
     const target = step === 5 && answers.skippedClass ? steps.indexOf(3) : index - 1;
+    // Leaving the ritual step: send its debounced draft now.
+    if (step === 5) void flushDraft();
     setDirection(-1);
     setIndex(target);
   }, [index, step, answers.skippedClass, steps]);
@@ -207,6 +226,8 @@ export function useOnboardingV2({
     answers,
     draft,
     update,
+    ritual,
+    updateRitual,
     goTo,
     next,
     back,

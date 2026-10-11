@@ -5,7 +5,7 @@ import { ChoiceChip } from "@/components/onboarding-v2/ChoiceChip";
 import { MultiSelectPopover } from "@/components/onboarding-v2/MultiSelectPopover";
 import {
   finalizeDrafts,
-  queueDraft,
+  flushDraft,
   unlockDrafts,
 } from "@/components/onboarding-v2/onboardingDraft";
 import { buildCompletePayload } from "@/components/onboarding-v2/ritualState";
@@ -29,7 +29,6 @@ import posthog from "posthog-js";
 import { useEffect, useRef, useState } from "react";
 
 const DAYS = [1, 2, 3, 4, 5, 6, 7] as const;
-const DEFAULT_PLANNING_DAY = 7;
 
 const GOALS: OnboardingGoal[] = [
   "FASTER_DOCUMENTS",
@@ -89,38 +88,18 @@ interface RitualStepProps {
 export function RitualStep({ flow, onFinished }: RitualStepProps) {
   const t = useTranslations("onboardingV2");
   const tEnum = useTranslations("enums");
-  const { answers, trackCompleted, generation, draft } = flow;
+  const { answers, trackCompleted, generation, ritual, updateRitual } = flow;
+  const { planningDay, weeklyEmail, goals, source, sourceOther } = ritual;
   const hasPlan = answers.timetableId !== null && !answers.skippedClass;
-
-  const [planningDay, setPlanningDay] = useState<number>(
-    draft?.planningDay ?? DEFAULT_PLANNING_DAY,
-  );
-  const [weeklyEmail, setWeeklyEmail] = useState(draft?.weeklyEmail ?? true);
-  const [goals, setGoals] = useState<OnboardingGoal[]>(
-    (draft?.goals ?? []) as OnboardingGoal[],
-  );
-  const [source, setSource] = useState<AcquisitionSource | null>(
-    (draft?.acquisitionSource ?? null) as AcquisitionSource | null,
-  );
-  const [sourceOther, setSourceOther] = useState(draft?.acquisitionSourceOther ?? "");
   const submittingRef = useRef(false);
 
-  // Autosave every change (debounced) so closing before Concluir keeps everything.
-  const firstRun = useRef(true);
-  useEffect(() => {
-    if (firstRun.current) {
-      firstRun.current = false;
-      return;
-    }
-    queueDraft({
-      step: 5,
-      planningDay,
-      weeklyEmail,
-      goals,
-      ...(source ? { acquisitionSource: source } : {}),
-      acquisitionSourceOther: source === "OTHER" ? sourceOther.trim() : "",
-    });
-  }, [planningDay, weeklyEmail, goals, source, sourceOther]);
+  // The answers live in the flow (they survive Back → return); the autosave is queued
+  // from updateRitual. Leaving the step sends the debounced draft right away.
+  useEffect(() => () => void flushDraft(), []);
+  const setPlanningDay = (value: number) => updateRitual({ planningDay: value });
+  const setWeeklyEmail = (value: boolean) => updateRitual({ weeklyEmail: value });
+  const setSource = (value: AcquisitionSource) => updateRitual({ source: value });
+  const setSourceOther = (value: string) => updateRitual({ sourceOther: value });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(false);
 
@@ -177,9 +156,9 @@ export function RitualStep({ flow, onFinished }: RitualStepProps) {
   });
 
   const toggleGoal = (goal: OnboardingGoal) =>
-    setGoals((prev) =>
-      prev.includes(goal) ? prev.filter((g) => g !== goal) : [...prev, goal],
-    );
+    updateRitual({
+      goals: goals.includes(goal) ? goals.filter((g) => g !== goal) : [...goals, goal],
+    });
 
   return (
     <div>
