@@ -71,6 +71,26 @@ function getLevelLabel(key: string) {
   return TEACHING_LEVEL_LABELS[key as TeachingLevel] ?? key;
 }
 
+const PREP_HOURS_LABELS: Record<string, string> = {
+  LT2: "Menos de 2 h",
+  H2_5: "2–5 h",
+  H5_10: "5–10 h",
+  GT10: "10+ h",
+};
+
+const CURRENT_TOOLS_LABELS: Record<string, string> = {
+  AI_CHAT: "ChatGPT ou outra IA",
+  PUBLISHER: "Manuais e recursos das editoras",
+  COLLEAGUES: "Materiais de colegas",
+  FROM_SCRATCH: "Faz tudo de raiz",
+};
+
+const CLASS_COUNT_LABELS: Record<string, string> = {
+  C1_2: "1–2 turmas",
+  C3_4: "3–4 turmas",
+  C5_PLUS: "5+ turmas",
+};
+
 function getGoalLabel(key: string) {
   return ONBOARDING_GOAL_LABELS[key as OnboardingGoal] ?? key;
 }
@@ -206,6 +226,30 @@ export default function AdminOnboardingPage() {
       label: getGoalLabel(item.key),
     })) ?? [];
 
+
+  const baselineCards = [
+    {
+      title: "Horas por Semana a Preparar Aulas",
+      items: overview?.prepHoursBreakdown,
+      labels: PREP_HOURS_LABELS,
+      color: "var(--chart-2)",
+    },
+    {
+      title: "O que Usam para Preparar Aulas",
+      items: overview?.currentToolsBreakdown,
+      labels: CURRENT_TOOLS_LABELS,
+      color: "var(--chart-3)",
+    },
+    {
+      title: "Número de Turmas",
+      items: overview?.classCountBreakdown,
+      labels: CLASS_COUNT_LABELS,
+      color: "var(--chart-5)",
+    },
+  ].map((card) => ({
+    ...card,
+    data: (card.items ?? []).map((item) => ({ ...item, label: card.labels[item.key] ?? item.key })),
+  }));
 
   const responses = useMemo(
     () => sortResponses(overview?.recentResponses ?? [], sortField, sortDir),
@@ -544,6 +588,23 @@ export default function AdminOnboardingPage() {
                 )}
               </CardContent>
             </Card>
+
+            <div className="grid gap-6 xl:grid-cols-3">
+              {baselineCards.map((card) => (
+                <Card key={card.title}>
+                  <CardHeader>
+                    <CardTitle>{card.title}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {card.data.length === 0 ? (
+                      <EmptyChartState message="Ainda não existem respostas." />
+                    ) : (
+                      <RankedBars items={card.data} total={overview.summary.responses} color={card.color} sortDesc />
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
 
             <Card>
               <CardHeader>

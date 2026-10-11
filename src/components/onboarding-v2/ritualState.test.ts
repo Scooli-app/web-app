@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   applyRitualPatch,
+  baselineAnalytics,
   buildCompletePayload,
   effectiveWeeklyEmail,
   initialRitualState,
@@ -14,6 +15,9 @@ const state = (over: Partial<RitualState> = {}): RitualState => ({
   goals: [],
   source: null,
   sourceOther: "",
+  prepHours: null,
+  currentTools: [],
+  classCount: null,
   ...over,
 });
 
@@ -67,6 +71,9 @@ describe("lifted step-5 state (F7)", () => {
         goals: ["CURIOSITY"],
         acquisitionSource: "OTHER",
         acquisitionSourceOther: "x",
+        prepHoursPerWeek: "H2_5",
+        currentTools: ["AI_CHAT", "COLLEAGUES"],
+        classCount: "C3_4",
       }),
     ).toEqual(
       state({
@@ -75,6 +82,9 @@ describe("lifted step-5 state (F7)", () => {
         goals: ["CURIOSITY"],
         source: "OTHER",
         sourceOther: "x",
+        prepHours: "H2_5",
+        currentTools: ["AI_CHAT", "COLLEAGUES"],
+        classCount: "C3_4",
       }),
     );
   });
@@ -90,11 +100,12 @@ describe("lifted step-5 state (F7)", () => {
 
   it("builds a draft patch with the whole step-5 state", () => {
     expect(ritualDraftPatch(state({ goals: [], source: null }))).toEqual({
-      step: 5,
+      step: 6,
       planningDay: 7,
       weeklyEmail: true,
       goals: [],
       acquisitionSourceOther: "",
+      currentTools: [],
     });
     expect(
       ritualDraftPatch(state({ source: "OTHER", sourceOther: " amigo " })),
@@ -135,5 +146,51 @@ describe("weekly email choice (F4)", () => {
   it("Finish sends an explicit weeklyEmail even when untouched", () => {
     expect(buildCompletePayload({ ...state(), weeklyEmail: null }, false).weeklyEmail).toBe(true);
     expect(buildCompletePayload({ ...state(), weeklyEmail: false }, false).weeklyEmail).toBe(false);
+  });
+});
+
+describe("baseline questions", () => {
+  it("builds the draft patch for the step being edited, sending [] to clear the tools", () => {
+    const answered = state({ prepHours: "GT10", currentTools: ["FROM_SCRATCH"], classCount: "C5_PLUS" });
+    expect(ritualDraftPatch(answered, 5)).toMatchObject({
+      step: 5,
+      prepHoursPerWeek: "GT10",
+      currentTools: ["FROM_SCRATCH"],
+      classCount: "C5_PLUS",
+    });
+    const patch = ritualDraftPatch(state({ currentTools: [] }), 5);
+    expect(patch.currentTools).toEqual([]);
+    expect("prepHoursPerWeek" in patch).toBe(false);
+    expect("classCount" in patch).toBe(false);
+  });
+
+  it("Finish sends the three answers explicitly (null / [] when never answered)", () => {
+    expect(buildCompletePayload(state(), false)).toMatchObject({
+      prepHoursPerWeek: null,
+      currentTools: [],
+      classCount: null,
+    });
+    expect(
+      buildCompletePayload(
+        state({ prepHours: "LT2", currentTools: ["AI_CHAT", "PUBLISHER"], classCount: "C1_2" }),
+        false,
+      ),
+    ).toMatchObject({
+      prepHoursPerWeek: "LT2",
+      currentTools: ["AI_CHAT", "PUBLISHER"],
+      classCount: "C1_2",
+    });
+  });
+
+  it("restores unanswered baseline questions as empty", () => {
+    const restored = initialRitualState(null);
+    expect(restored).toMatchObject({ prepHours: null, currentTools: [], classCount: null });
+  });
+
+  it("reports only the answered questions to analytics", () => {
+    expect(baselineAnalytics(state())).toEqual({});
+    expect(
+      baselineAnalytics(state({ prepHours: "H5_10", currentTools: ["COLLEAGUES"], classCount: "C3_4" })),
+    ).toEqual({ prep_hours_per_week: "H5_10", current_tools: ["COLLEAGUES"], class_count: "C3_4" });
   });
 });

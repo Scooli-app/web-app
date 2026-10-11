@@ -31,7 +31,10 @@ describe("resolveStartStep truth table", () => {
     ["profile done, no class, lastStep 4", { profileDone: true, lastStep: 4 }, 3],
     ["profile done, no class, lastStep 5 (skipped class)", { profileDone: true, lastStep: 5 }, 5],
     ["profile done, no class, skippedClass", { profileDone: true, skippedClass: true }, 5],
+    ["profile done, no class, lastStep 6 (skipped class, at the ritual)", { profileDone: true, lastStep: 6 }, 6],
     ["profile done, has class", { profileDone: true, hasClass: true }, 5],
+    ["profile done, has class, lastStep 5", { profileDone: true, hasClass: true, lastStep: 5 }, 5],
+    ["profile done, has class, lastStep 6", { profileDone: true, hasClass: true, lastStep: 6 }, 6],
     ["profile mode, step 1 incomplete", { mode: "profile" }, 1],
     ["profile mode, step 1 complete", { mode: "profile", step1Complete: true }, 2],
     ["profile mode, profile done is still capped at 2", { mode: "profile", profileDone: true, step1Complete: true }, 2],
@@ -43,7 +46,7 @@ describe("resolveStartStep truth table", () => {
     for (const mode of ["full", "profile"] as const)
       for (const profileDone of [false, true])
         for (const hasClass of [false, true])
-          for (const lastStep of [null, 1, 2, 3, 4, 5])
+          for (const lastStep of [null, 1, 2, 3, 4, 5, 6])
             for (const skippedClass of [false, true])
               for (const step1Complete of [false, true]) {
                 const step = resolveStartStep({
@@ -79,8 +82,12 @@ describe("canGoBackFrom", () => {
     expect(canGoBackFrom({ stepIndex: 3, step: 4, classExists: true })).toBe(false);
     expect(canGoBackFrom({ stepIndex: 4, step: 5, classExists: true })).toBe(false);
   });
-  it("allows Back from the ritual step when the class was skipped", () => {
+  it("allows Back from the baseline step when the class was skipped", () => {
     expect(canGoBackFrom({ stepIndex: 4, step: 5, classExists: false })).toBe(true);
+  });
+  it("always allows Back from the ritual step to the baseline step", () => {
+    expect(canGoBackFrom({ stepIndex: 5, step: 6, classExists: true })).toBe(true);
+    expect(canGoBackFrom({ stepIndex: 5, step: 6, classExists: false })).toBe(true);
   });
   it("allows Back from step 2", () => {
     expect(canGoBackFrom({ stepIndex: 1, step: 2, classExists: false })).toBe(true);
