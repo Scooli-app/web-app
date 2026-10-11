@@ -1,5 +1,10 @@
 "use client";
 
+import {
+  canGoBackFrom,
+  isStepOneComplete,
+  resolveStartStep,
+} from "@/components/onboarding-v2/resumeStep";
 import { usePlanGeneration } from "@/components/onboarding-v2/usePlanGeneration";
 import { queueDraft, resetDraft } from "@/components/onboarding-v2/onboardingDraft";
 import {
@@ -63,13 +68,25 @@ export function useOnboardingV2({
     () => (mode === "profile" ? [1, 2] : [1, 2, 3, 4, 5]),
     [mode],
   );
-  const firstIndex = mode === "full" && profileDone ? (hasClass ? 4 : 2) : 0;
-  // A teacher who skipped the class and reloaded at the ritual step stays there
-  // (Back still leads to step 3). Steps 1–2 are only "done" once the profile is saved.
-  const resumeAtRitual = mode === "full" && profileDone && !hasClass && lastStep === 5;
-  const startIndex = resumeAtRitual ? 4 : firstIndex;
+  // Steps 1–2 are only "done" once the profile is saved (a draft role doesn't count), so
+  // until then the flow starts at step 1 or 2 and never past it. See resolveStartStep.
+  const startStep = resolveStartStep({
+    mode,
+    profileDone,
+    hasClass,
+    lastStep,
+    skippedClass: false,
+    step1Complete: isStepOneComplete({
+      role: draft?.teacherRole ?? null,
+      schoolName: draft?.schoolName ?? "",
+      noSchool: draft?.noSchool ?? false,
+    }),
+  });
+  // Reloaded at the ritual step without a class: the class was skipped (Back leads to step 3).
+  const resumeAtRitual = mode === "full" && startStep === 5 && !hasClass;
+  const startIndex = steps.indexOf(startStep);
 
-  const [index, setIndex] = useState(startIndex);
+  const [index, setIndex] = useState(Math.max(startIndex, 0));
   const [direction, setDirection] = useState<1 | -1>(1);
   const { getToken, userId } = useAuth();
   const [answers, setAnswers] = useState<OnboardingAnswers>(() => {
@@ -153,16 +170,19 @@ export function useOnboardingV2({
   }, [index, steps.length]);
 
   const back = useCallback(() => {
-    if (index <= firstIndex) return;
+    if (index <= 0) return;
     // After a skipped class the previous screen is step 3, not the (skipped) step 4.
     const target = step === 5 && answers.skippedClass ? steps.indexOf(3) : index - 1;
     setDirection(-1);
     setIndex(target);
-  }, [index, firstIndex, step, answers.skippedClass, steps]);
+  }, [index, step, answers.skippedClass, steps]);
 
   /** Back is hidden on the first screen, once a class exists, and on the week step. */
-  const canGoBack =
-    index > firstIndex && !(step >= 3 && answers.timetableId !== null) && step !== 4;
+  const canGoBack = canGoBackFrom({
+    stepIndex: index,
+    step,
+    classExists: answers.timetableId !== null || hasClass,
+  });
 
   const trackCompleted = useCallback(
     (completedStep: OnboardingStepId, props: Record<string, unknown> = {}) => {
