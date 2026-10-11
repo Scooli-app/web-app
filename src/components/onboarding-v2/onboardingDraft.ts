@@ -18,6 +18,9 @@ let pending: Patch | null = null;
 let timer: ReturnType<typeof setTimeout> | null = null;
 let chain: Promise<void> = Promise.resolve();
 let locked = false;
+/** Set while Concluir flushes and waits: no new draft may start, but it isn't locked yet. */
+let finalizing = false;
+const keepalives = new Set<Promise<unknown>>();
 let lastSent: Record<string, string> = {};
 let tokenGetter: (() => Promise<string | null>) | null = null;
 let cachedToken: string | null = null;
@@ -67,6 +70,7 @@ export function resetDraft(
   clearTimer();
   pending = null;
   locked = false;
+  finalizing = false;
   lastSent = {};
   tokenGetter = getToken;
   if (step) lastSent.step = JSON.stringify(step);
@@ -77,7 +81,7 @@ export function resetDraft(
 }
 
 export function queueDraft(patch: Patch, options: { immediate?: boolean } = {}) {
-  if (locked) return;
+  if (locked || finalizing) return;
   pending = { ...(pending ?? {}), ...patch };
   clearTimer();
   if (options.immediate) {
@@ -110,19 +114,51 @@ export function flushDraft(): Promise<void> {
 /** Page hide: send what is pending without waiting for the debounce. */
 export function flushDraftKeepalive() {
   clearTimer();
-  if (locked || !pending) return;
+  if (locked || finalizing || !pending) return;
   const patch = prune(pending);
   pending = null;
   if (!patch) return;
   if (cachedToken) {
     record(patch);
-    void onboardingV2Service.saveDraftKeepalive(patch, cachedToken);
+    // Tracked so Concluir can wait for it: a keepalive racing complete() could land after it.
+    const request = Promise.resolve(onboardingV2Service.saveDraftKeepalive(patch, cachedToken))
+      .catch(() => undefined)
+      .finally(() => keepalives.delete(request));
+    keepalives.add(request);
   } else {
-    void onboardingV2Service.saveDraft(patch).then(() => record(patch)).catch(() => undefined);
+    void flushViaChain(patch);
   }
 }
 
-/** Concluir pressed: drop pending drafts, wait for any in flight, send nothing more. */
+function flushViaChain(patch: Patch): Promise<void> {
+  chain = chain.then(async () => {
+    try {
+      await onboardingV2Service.saveDraft(patch);
+      record(patch);
+    } catch {
+      // The next complete() carries the full state.
+    }
+  });
+  return chain;
+}
+
+/**
+ * Concluir pressed: flush what is pending, wait for every request in flight (including
+ * keepalive ones), then lock so nothing is ever sent after complete(). complete() carries the
+ * full state, so a failed flush here doesn't matter.
+ */
+export async function finalizeDrafts(): Promise<void> {
+  const flushing = flushDraft();
+  finalizing = true;
+  clearTimer();
+  await flushing;
+  await Promise.allSettled([...keepalives]);
+  await chain;
+  pending = null;
+  locked = true;
+}
+
+/** Drops pending drafts, waits for any in flight, sends nothing more (profile-only mode). */
 export function lockDrafts(): Promise<void> {
   locked = true;
   clearTimer();
@@ -132,6 +168,7 @@ export function lockDrafts(): Promise<void> {
 
 export function unlockDrafts() {
   locked = false;
+  finalizing = false;
 }
 
 export const isDraftLocked = () => locked;

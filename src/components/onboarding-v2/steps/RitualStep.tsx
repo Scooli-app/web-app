@@ -4,7 +4,7 @@ import { RitualIllustration } from "@/components/onboarding-v2/illustrations/Ste
 import { ChoiceChip } from "@/components/onboarding-v2/ChoiceChip";
 import { MultiSelectPopover } from "@/components/onboarding-v2/MultiSelectPopover";
 import {
-  lockDrafts,
+  finalizeDrafts,
   queueDraft,
   unlockDrafts,
 } from "@/components/onboarding-v2/onboardingDraft";
@@ -128,8 +128,9 @@ export function RitualStep({ flow, onFinished }: RitualStepProps) {
     submittingRef.current = true;
     setSaving(true);
     setError(false);
-    // Complete wins: drop pending drafts and wait for any in flight before completing.
-    await lockDrafts();
+    // Flush pending drafts, wait for any in flight (keepalive too), then lock: complete()
+    // below carries the full current state and nothing may land after it.
+    await finalizeDrafts();
     const otherText = source === "OTHER" ? sourceOther.trim() : "";
     try {
       await onboardingV2Service.complete({
