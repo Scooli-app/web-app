@@ -1,11 +1,22 @@
 "use client";
 
-import { usePlanGeneration } from "@/components/onboarding-v2/usePlanGeneration";
-import { queueDraft, resetDraft } from "@/components/onboarding-v2/onboardingDraft";
 import {
+  canGoBackFrom,
+  isStepOneComplete,
+  resolveStartStep,
+} from "@/components/onboarding-v2/resumeStep";
+import { usePlanGeneration } from "@/components/onboarding-v2/usePlanGeneration";
+import { flushDraft, queueDraft, resetDraft } from "@/components/onboarding-v2/onboardingDraft";
+import {
+  persistStepTwoSelection,
   readStepTwoSelection,
-  writeStepTwoSelection,
 } from "@/components/onboarding-v2/onboardingStorage";
+import {
+  applyRitualPatch,
+  initialRitualState,
+  ritualDraftPatch,
+  type RitualState,
+} from "@/components/onboarding-v2/ritualState";
 import { teachingProfileService } from "@/services/api/teaching-profile.service";
 import type {
   OnboardingV2DraftAnswers,
@@ -14,7 +25,7 @@ import type {
 } from "@/shared/types/onboarding-v2";
 import { useAuth } from "@clerk/nextjs";
 import posthog from "posthog-js";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 export type OnboardingStepId = 1 | 2 | 3 | 4 | 5;
 export type OnboardingMode = Exclude<OnboardingV2Status["mode"], "none">;
@@ -63,13 +74,25 @@ export function useOnboardingV2({
     () => (mode === "profile" ? [1, 2] : [1, 2, 3, 4, 5]),
     [mode],
   );
-  const firstIndex = mode === "full" && profileDone ? (hasClass ? 4 : 2) : 0;
-  // A teacher who skipped the class and reloaded at the ritual step stays there
-  // (Back still leads to step 3). Steps 1–2 are only "done" once the profile is saved.
-  const resumeAtRitual = mode === "full" && profileDone && !hasClass && lastStep === 5;
-  const startIndex = resumeAtRitual ? 4 : firstIndex;
+  // Steps 1–2 are only "done" once the profile is saved (a draft role doesn't count), so
+  // until then the flow starts at step 1 or 2 and never past it. See resolveStartStep.
+  const startStep = resolveStartStep({
+    mode,
+    profileDone,
+    hasClass,
+    lastStep,
+    skippedClass: false,
+    step1Complete: isStepOneComplete({
+      role: draft?.teacherRole ?? null,
+      schoolName: draft?.schoolName ?? "",
+      noSchool: draft?.noSchool ?? false,
+    }),
+  });
+  // Reloaded at the ritual step without a class: the class was skipped (Back leads to step 3).
+  const resumeAtRitual = mode === "full" && startStep === 5 && !hasClass;
+  const startIndex = steps.indexOf(startStep);
 
-  const [index, setIndex] = useState(startIndex);
+  const [index, setIndex] = useState(Math.max(startIndex, 0));
   const [direction, setDirection] = useState<1 | -1>(1);
   const { getToken, userId } = useAuth();
   const [answers, setAnswers] = useState<OnboardingAnswers>(() => {
@@ -86,9 +109,13 @@ export function useOnboardingV2({
     };
   });
 
+  const selectionEdited = useRef(false);
   useEffect(() => {
-    if (profileDone || (answers.years.length === 0 && answers.subjectIds.length === 0)) return;
-    writeStepTwoSelection(userId, { years: answers.years, subjectIds: answers.subjectIds });
+    persistStepTwoSelection(
+      userId,
+      { years: answers.years, subjectIds: answers.subjectIds },
+      { profileDone, edited: selectionEdited.current },
+    );
   }, [profileDone, userId, answers.years, answers.subjectIds]);
 
   // Seed the autosave with what the server already holds, so prefilled values are
@@ -98,11 +125,25 @@ export function useOnboardingV2({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Step-5 answers live here so Back → return never loses them, and every change is queued
+  // for autosave from the handler (not from an effect that unmounting would skip).
+  const [ritual, setRitual] = useState<RitualState>(() => initialRitualState(draft));
+  const ritualRef = useRef(ritual);
+  const updateRitual = useCallback((patch: Partial<RitualState>) => {
+    const nextState = applyRitualPatch(ritualRef.current, patch);
+    ritualRef.current = nextState;
+    setRitual(nextState);
+    queueDraft(ritualDraftPatch(nextState));
+  }, []);
+
   const step = steps[index];
   // Owned here so leaving step 4 never cancels the topic/week generation.
   const generation = usePlanGeneration();
 
   const update = useCallback((patch: Partial<OnboardingAnswers>) => {
+    if (patch.years !== undefined || patch.subjectIds !== undefined) {
+      selectionEdited.current = true;
+    }
     setAnswers((prev) => ({ ...prev, ...patch }));
   }, []);
 
@@ -153,16 +194,21 @@ export function useOnboardingV2({
   }, [index, steps.length]);
 
   const back = useCallback(() => {
-    if (index <= firstIndex) return;
+    if (index <= 0) return;
     // After a skipped class the previous screen is step 3, not the (skipped) step 4.
     const target = step === 5 && answers.skippedClass ? steps.indexOf(3) : index - 1;
+    // Leaving the ritual step: send its debounced draft now.
+    if (step === 5) void flushDraft();
     setDirection(-1);
     setIndex(target);
-  }, [index, firstIndex, step, answers.skippedClass, steps]);
+  }, [index, step, answers.skippedClass, steps]);
 
   /** Back is hidden on the first screen, once a class exists, and on the week step. */
-  const canGoBack =
-    index > firstIndex && !(step >= 3 && answers.timetableId !== null) && step !== 4;
+  const canGoBack = canGoBackFrom({
+    stepIndex: index,
+    step,
+    classExists: answers.timetableId !== null || hasClass,
+  });
 
   const trackCompleted = useCallback(
     (completedStep: OnboardingStepId, props: Record<string, unknown> = {}) => {
@@ -180,6 +226,8 @@ export function useOnboardingV2({
     answers,
     draft,
     update,
+    ritual,
+    updateRitual,
     goTo,
     next,
     back,

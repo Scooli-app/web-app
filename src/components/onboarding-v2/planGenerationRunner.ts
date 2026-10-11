@@ -10,7 +10,9 @@ import type { WeekRow } from "@/components/onboarding-v2/steps/WeekLessonRow";
 import { invalidatePlanLimits } from "@/hooks/usePlanLimits";
 import { resolveEffectiveContentLanguage } from "@/i18n/clientLocale";
 import { meService } from "@/services/api/me.service";
+import { classifyWeek, retryFailedLessons } from "@/components/onboarding-v2/weekWork";
 import {
+  generateLesson,
   generateTopics,
   generateWeek,
   listLessons,
@@ -104,35 +106,79 @@ async function runWeek(c: PlanGenerationRunnerContext, id: string, weekStart: st
     );
     dispatch(weekStatusChanged("generating"));
 
+    // generateWeek only picks pending lessons: ones that failed earlier (previous session,
+    // or before a reload) are retried one by one below.
+    const initial = classifyWeek(klass?.lessons ?? []);
     let problem = false;
-    await generateWeek(
-      id,
-      weekStart,
-      {
-        onSlotStart: (slotId) => patch(slotId, "generating"),
-        onSlotDone: (slotId) => {
-          patch(slotId, "ready");
-          lessonsReady += 1;
-          refresh(c);
+    let limitHit = false;
+    if (initial.pendingIds.length > 0 || initial.failedIds.length === 0) {
+      await generateWeek(
+        id,
+        weekStart,
+        {
+          onSlotStart: (slotId) => patch(slotId, "generating"),
+          onSlotDone: (slotId) => {
+            patch(slotId, "ready");
+            lessonsReady += 1;
+            refresh(c);
+          },
+          onSlotError: (slotId) => {
+            problem = true;
+            patch(slotId, "failed");
+          },
+          onFreeLimit: (code) => {
+            problem = true;
+            limitHit = true;
+            if (isUpgradeReason(code)) dispatch(openUpgradeModalForReason(code));
+          },
+          onQuotaExceeded: () => {
+            problem = true;
+            limitHit = true;
+            dispatch(setUpgradeModalOpen(true));
+          },
+          onError: () => {
+            problem = true;
+          },
         },
-        onSlotError: (slotId) => {
-          problem = true;
-          patch(slotId, "failed");
+        c.getToken,
+      );
+    }
+    if (initial.failedIds.length > 0 && !limitHit) {
+      const retried = await retryFailedLessons(
+        initial.failedIds,
+        async (lessonId) => {
+          let ok = false;
+          patch(lessonId, "generating");
+          await generateLesson(
+            id,
+            lessonId,
+            undefined,
+            {
+              onDone: () => {
+                ok = true;
+              },
+              onFreeLimit: (code) => {
+                limitHit = true;
+                if (isUpgradeReason(code)) dispatch(openUpgradeModalForReason(code));
+              },
+              onQuotaExceeded: () => {
+                limitHit = true;
+                dispatch(setUpgradeModalOpen(true));
+              },
+            },
+            c.getToken,
+          );
+          patch(lessonId, ok ? "ready" : "failed");
+          if (ok) {
+            lessonsReady += 1;
+            refresh(c);
+          }
+          return ok;
         },
-        onFreeLimit: (code) => {
-          problem = true;
-          if (isUpgradeReason(code)) dispatch(openUpgradeModalForReason(code));
-        },
-        onQuotaExceeded: () => {
-          problem = true;
-          dispatch(setUpgradeModalOpen(true));
-        },
-        onError: () => {
-          problem = true;
-        },
-      },
-      c.getToken,
-    );
+        { shouldStop: () => limitHit },
+      );
+      if (retried.problem) problem = true;
+    }
 
     // The first lesson that now has a document can be opened straight away.
     const refreshed = await meService.getWeek(weekStart).catch(() => null);
@@ -143,7 +189,13 @@ async function runWeek(c: PlanGenerationRunnerContext, id: string, weekStart: st
       dispatch(firstLessonHrefSet(`${Routes.LESSON_PLAN}/${firstDocument.documentId}`));
     }
     dispatch(weekStatusChanged(problem ? "failed" : "done"));
-    if (!problem) clearMarker(c.userId);
+    // The marker is what lets a reload retry: it goes only once every first-week lesson is
+    // completed (unknown state keeps it).
+    const allCompleted = refreshed
+      ? classifyWeek(refreshed.classes.find((k) => k.timetableId === id)?.lessons ?? [])
+          .canClearMarker
+      : false;
+    if (!problem && allCompleted) clearMarker(c.userId);
     track(problem ? "plan_generation_failed" : "plan_generation_completed", "week", startedAt, {
       lessons_ready: lessonsReady,
     });
@@ -229,9 +281,6 @@ export function setPlanGenerationContext(c: PlanGenerationRunnerContext) {
   ctx = c;
 }
 
-const needsWork = (l: { slotType: string; status: string; topicTitle: string }) =>
-  l.slotType !== "HOLIDAY" && hasTopic(l) && (l.status === "pending" || l.status === "generating");
-
 /** Bumps the refresh key when another tab clears the marker (its plan finished). */
 export function watchPlanGenerationMarker(userId: string, dispatch: AppDispatch) {
   const onStorage = (event: StorageEvent) => {
@@ -288,11 +337,11 @@ export async function resumePlanGenerationIfNeeded(
     let weekStart = marker?.weekStart ?? current;
     if (!marker && !topicsMissing && previous !== current) {
       const earlier = await weekOf(previous);
-      if (earlier.some((l) => l.status === "completed") && earlier.some(needsWork)) {
+      if (earlier.some((l) => l.status === "completed") && classifyWeek(earlier).needsWork) {
         weekStart = previous;
       }
     }
-    if (!topicsMissing && !(await weekOf(weekStart)).some(needsWork)) {
+    if (!topicsMissing && !classifyWeek(await weekOf(weekStart)).needsWork) {
       if (marker) clearMarker(c.userId);
       return;
     }

@@ -49,7 +49,9 @@ export interface OnboardingV2Profile {
 export interface OnboardingV2Complete {
   planningDay: number;
   weeklyEmail: boolean;
-  goals: string[] | null;
+  /** Always the current list: [] clears the saved goals. */
+  goals: string[];
+  /** null only when the teacher never chose one. */
   acquisitionSource: string | null;
   acquisitionSourceOther: string | null;
   skippedClass: boolean;
