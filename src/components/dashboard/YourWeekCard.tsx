@@ -68,15 +68,17 @@ export function YourWeekCard() {
   weekStartRef.current = weekStart;
 
   // The planning day decides which week opens first; fall back to the default (Sunday).
+  // The onboarding free week (the week actually generated for a new teacher) can disagree
+  // with the planning-day rule, so it wins while it's still current or upcoming — otherwise
+  // the dashboard can open on an empty week while the generated lessons sit in another one.
   useEffect(() => {
     let cancelled = false;
-    userService
-      .getCurrentUser()
-      .then((user) => user.planningDay)
-      .catch(() => null)
-      .then((planningDay) => {
-        if (!cancelled) setWeekStart(defaultWeekStart(planningDay));
-      });
+    Promise.all([
+      userService.getCurrentUser().then((user) => user.planningDay).catch(() => null),
+      meService.getPlanLimits().then((l) => l.freeWeekStart).catch(() => null),
+    ]).then(([planningDay, freeWeekStart]) => {
+      if (!cancelled) setWeekStart(defaultWeekStart(planningDay, freeWeekStart));
+    });
     return () => {
       cancelled = true;
     };

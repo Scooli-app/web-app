@@ -8,7 +8,7 @@ import { AUTO_SAVE_DELAY } from "@/shared/config/constants";
 import { Routes } from "@/shared/types";
 import type { RagSource } from "@/shared/types/document";
 import { isUsableDocumentContent } from "@/shared/utils/documentContent";
-import { htmlToMarkdown, markdownToHtml } from "@/shared/utils/markdown";
+import { escapeMarkdownImageAlt, htmlToMarkdown, markdownToHtml } from "@/shared/utils/markdown";
 import { translate } from "@/i18n/translate";
 import {
   chatWithDocument,
@@ -189,9 +189,9 @@ function repairLeakedImageSegmentTokens(
     if (!image) {
       return "";
     }
-    const safeAlt = (image.alt || translate("editor.documentEditor.imageFallbackAlt"))
-      .replace(/\\/g, "\\\\")
-      .replace(/\]/g, "\\]");
+    const safeAlt = escapeMarkdownImageAlt(
+      image.alt || translate("editor.documentEditor.imageFallbackAlt"),
+    );
     return `![${safeAlt}]({{DOCUMENT_IMAGE:${image.id}}})`;
   });
 }
