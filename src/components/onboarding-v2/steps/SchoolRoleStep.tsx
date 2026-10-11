@@ -124,7 +124,6 @@ export function SchoolRoleStep({ flow }: SchoolRoleStepProps) {
               maxLength={200}
               autoFocus
               aria-label={t("placeholder")}
-              className="h-11 rounded-xl px-4 text-base"
             />
             {visibleSuggestions.length > 0 && (
               <motion.ul

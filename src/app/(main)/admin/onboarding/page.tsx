@@ -79,7 +79,9 @@ const PREP_HOURS_LABELS: Record<string, string> = {
 };
 
 const CURRENT_TOOLS_LABELS: Record<string, string> = {
-  AI_CHAT: "ChatGPT ou outra IA",
+  AI_CHAT: "ChatGPT",
+  OTHER_AI: "Outra ferramenta de IA",
+  WEB_SEARCH: "Procura na internet",
   PUBLISHER: "Manuais e recursos das editoras",
   COLLEAGUES: "Materiais de colegas",
   FROM_SCRATCH: "Faz tudo de raiz",

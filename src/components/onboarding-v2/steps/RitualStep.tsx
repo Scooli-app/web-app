@@ -2,7 +2,6 @@
 
 import { RitualIllustration } from "@/components/onboarding-v2/illustrations/StepIllustrations";
 import { ChoiceChip } from "@/components/onboarding-v2/ChoiceChip";
-import { OptionalBadge } from "@/components/onboarding-v2/OptionalBadge";
 import { MultiSelectPopover } from "@/components/onboarding-v2/MultiSelectPopover";
 import {
   finalizeDrafts,
@@ -202,12 +201,8 @@ export function RitualStep({ flow, onFinished }: RitualStepProps) {
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
           <div className="min-w-0 space-y-1.5">
-            <p
-              id="onboarding-goals"
-              className="flex flex-wrap items-center gap-2 text-sm font-medium text-foreground"
-            >
+            <p id="onboarding-goals" className="text-sm font-medium text-foreground">
               {t("ritual.goalsTitle")}
-              <OptionalBadge label={t("ritual.optionalBadge")} />
             </p>
             <MultiSelectPopover
               options={GOALS.map((goal) => ({ id: goal, label: tEnum(`onboardingGoal.${goal}`) }))}
@@ -220,12 +215,8 @@ export function RitualStep({ flow, onFinished }: RitualStepProps) {
           </div>
 
           <div className="min-w-0 space-y-1.5">
-            <p
-              id="onboarding-source"
-              className="flex flex-wrap items-center gap-2 text-sm font-medium text-foreground"
-            >
+            <p id="onboarding-source" className="text-sm font-medium text-foreground">
               {t("ritual.sourceTitle")}
-              <OptionalBadge label={t("ritual.optionalBadge")} />
             </p>
             <Select
               value={source ?? ""}
@@ -233,7 +224,7 @@ export function RitualStep({ flow, onFinished }: RitualStepProps) {
             >
               <SelectTrigger
                 aria-labelledby="onboarding-source"
-                className="h-10 w-full min-w-0 rounded-xl px-3 text-base shadow-xs"
+                className="w-full min-w-0"
               >
                 <SelectValue placeholder={t("ritual.sourcePlaceholder")} />
               </SelectTrigger>
@@ -251,7 +242,6 @@ export function RitualStep({ flow, onFinished }: RitualStepProps) {
                 onChange={(event) => setSourceOther(event.target.value)}
                 placeholder={t("ritual.sourceOtherPlaceholder")}
                 maxLength={200}
-                className="h-10 rounded-xl px-3 text-base"
               />
             )}
           </div>

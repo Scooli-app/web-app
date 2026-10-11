@@ -843,8 +843,6 @@
     },
     "baseline": {
       "title": "Para te mostrarmos quanto tempo poupas",
-      "subtitle": "Três perguntas rápidas, todas opcionais.",
-      "optionalBadge": "Opcional",
       "prepTitle": "Quantas horas por semana passas a preparar aulas e materiais?",
       "toolsTitle": "O que usas hoje para preparar aulas?",
       "classTitle": "Quantas turmas tens este ano?",
@@ -855,7 +853,9 @@
         "GT10": "10+ h"
       },
       "tools": {
-        "AI_CHAT": "ChatGPT ou outra IA",
+        "AI_CHAT": "ChatGPT",
+        "OTHER_AI": "Uso outra ferramenta de IA",
+        "WEB_SEARCH": "Procuro na internet",
         "PUBLISHER": "Manuais e recursos das editoras",
         "COLLEAGUES": "Materiais de colegas",
         "FROM_SCRATCH": "Faço tudo de raiz"
@@ -880,7 +880,6 @@
       },
       "emailLabel": "Enviar-me um email com a minha semana",
       "emailHint": "Chega ao fim da tarde do dia que escolheste. Podes desligar quando quiseres.",
-      "optionalBadge": "Opcional",
       "planStatus": {
         "working": "A tua semana ainda está a ser preparada…",
         "done": "Pronta",
