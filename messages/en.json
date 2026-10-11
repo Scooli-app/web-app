@@ -841,6 +841,31 @@
       "failed": "Failed",
       "openLesson": "Open the first lesson"
     },
+    "baseline": {
+      "title": "So we can show you how much time you save",
+      "subtitle": "Three quick questions, all optional.",
+      "optionalBadge": "Optional",
+      "prepTitle": "How many hours a week do you spend preparing lessons and materials?",
+      "toolsTitle": "What do you use today to prepare lessons?",
+      "classTitle": "How many classes do you teach this year?",
+      "prep": {
+        "LT2": "<2 h",
+        "H2_5": "2–5 h",
+        "H5_10": "5–10 h",
+        "GT10": "10+ h"
+      },
+      "tools": {
+        "AI_CHAT": "ChatGPT or another AI",
+        "PUBLISHER": "Textbooks and publisher resources",
+        "COLLEAGUES": "Colleagues’ materials",
+        "FROM_SCRATCH": "I make everything from scratch"
+      },
+      "classes": {
+        "C1_2": "1–2",
+        "C3_4": "3–4",
+        "C5_PLUS": "5+"
+      }
+    },
     "ritual": {
       "title": "When do you plan your week?",
       "subtitle": "Pick the day you like to have the coming week ready.",

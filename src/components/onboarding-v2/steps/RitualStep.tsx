@@ -2,13 +2,18 @@
 
 import { RitualIllustration } from "@/components/onboarding-v2/illustrations/StepIllustrations";
 import { ChoiceChip } from "@/components/onboarding-v2/ChoiceChip";
+import { OptionalBadge } from "@/components/onboarding-v2/OptionalBadge";
 import { MultiSelectPopover } from "@/components/onboarding-v2/MultiSelectPopover";
 import {
   finalizeDrafts,
   flushDraft,
   unlockDrafts,
 } from "@/components/onboarding-v2/onboardingDraft";
-import { buildCompletePayload, effectiveWeeklyEmail } from "@/components/onboarding-v2/ritualState";
+import {
+  baselineAnalytics,
+  buildCompletePayload,
+  effectiveWeeklyEmail,
+} from "@/components/onboarding-v2/ritualState";
 import { StepHeading } from "@/components/onboarding-v2/StepHeading";
 import type { OnboardingFlowController } from "@/components/onboarding-v2/useOnboardingV2";
 import { useStepFooter } from "@/components/onboarding-v2/useStepFooter";
@@ -49,14 +54,6 @@ const SOURCES: AcquisitionSource[] = [
   "AI_ASSISTANT",
   "OTHER",
 ];
-
-function OptionalBadge({ label }: { label: string }) {
-  return (
-    <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-normal text-muted-foreground">
-      {label}
-    </span>
-  );
-}
 
 /** Small inline status of the background plan generation started in step 3. */
 function PlanStatus({ overall }: { overall: "working" | "done" | "failed" }) {
@@ -114,16 +111,15 @@ export function RitualStep({ flow, onFinished }: RitualStepProps) {
     await finalizeDrafts();
     try {
       await onboardingV2Service.complete(
-        buildCompletePayload(
-          { planningDay, weeklyEmail, goals, source, sourceOther },
-          answers.skippedClass,
-        ),
+        buildCompletePayload(ritual, answers.skippedClass),
       );
-      trackCompleted(5, {
+      const baseline = baselineAnalytics(ritual);
+      trackCompleted(6, {
         planning_day: planningDay,
         weekly_email: weeklyEmail,
         goals,
         acquisition_source: source,
+        ...baseline,
       });
       posthog.capture("onboarding_v2_completed", {
         planning_day: planningDay,
@@ -137,6 +133,7 @@ export function RitualStep({ flow, onFinished }: RitualStepProps) {
         planning_day: planningDay,
         weekly_email: weeklyEmail,
         subjects: answers.subjectIds,
+        ...baseline,
       });
       onFinished();
     } catch (err) {
@@ -149,7 +146,7 @@ export function RitualStep({ flow, onFinished }: RitualStepProps) {
   };
 
   useStepFooter({
-    stepId: 5,
+    stepId: 6,
     canContinue: true,
     busy: saving,
     continueLabel: t("ritual.finish"),
