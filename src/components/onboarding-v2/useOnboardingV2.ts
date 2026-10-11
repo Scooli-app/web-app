@@ -8,8 +8,8 @@ import {
 import { usePlanGeneration } from "@/components/onboarding-v2/usePlanGeneration";
 import { queueDraft, resetDraft } from "@/components/onboarding-v2/onboardingDraft";
 import {
+  persistStepTwoSelection,
   readStepTwoSelection,
-  writeStepTwoSelection,
 } from "@/components/onboarding-v2/onboardingStorage";
 import { teachingProfileService } from "@/services/api/teaching-profile.service";
 import type {
@@ -19,7 +19,7 @@ import type {
 } from "@/shared/types/onboarding-v2";
 import { useAuth } from "@clerk/nextjs";
 import posthog from "posthog-js";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 export type OnboardingStepId = 1 | 2 | 3 | 4 | 5;
 export type OnboardingMode = Exclude<OnboardingV2Status["mode"], "none">;
@@ -103,9 +103,13 @@ export function useOnboardingV2({
     };
   });
 
+  const selectionEdited = useRef(false);
   useEffect(() => {
-    if (profileDone || (answers.years.length === 0 && answers.subjectIds.length === 0)) return;
-    writeStepTwoSelection(userId, { years: answers.years, subjectIds: answers.subjectIds });
+    persistStepTwoSelection(
+      userId,
+      { years: answers.years, subjectIds: answers.subjectIds },
+      { profileDone, edited: selectionEdited.current },
+    );
   }, [profileDone, userId, answers.years, answers.subjectIds]);
 
   // Seed the autosave with what the server already holds, so prefilled values are
@@ -120,6 +124,9 @@ export function useOnboardingV2({
   const generation = usePlanGeneration();
 
   const update = useCallback((patch: Partial<OnboardingAnswers>) => {
+    if (patch.years !== undefined || patch.subjectIds !== undefined) {
+      selectionEdited.current = true;
+    }
     setAnswers((prev) => ({ ...prev, ...patch }));
   }, []);
 

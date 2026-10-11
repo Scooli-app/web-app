@@ -31,6 +31,19 @@ export function writeStepTwoSelection(
   }
 }
 
+/**
+ * Mirrors the step-2 selection (including an emptied one) once the teacher edited it;
+ * it is removed only after saveProfile succeeds (clearStepTwoSelection).
+ */
+export function persistStepTwoSelection(
+  userId: string | null | undefined,
+  selection: StepTwoSelection,
+  state: { profileDone: boolean; edited: boolean },
+) {
+  if (state.profileDone || !state.edited) return;
+  writeStepTwoSelection(userId, selection);
+}
+
 export function clearStepTwoSelection(userId: string | null | undefined) {
   if (!userId) return;
   try {
