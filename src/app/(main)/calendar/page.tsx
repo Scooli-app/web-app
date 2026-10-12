@@ -1,5 +1,6 @@
 "use client";
 
+import { isListableSlot } from "@/shared/utils/lessonTopic";
 import { useAuth } from "@clerk/nextjs";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -8,11 +9,14 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   useSyncExternalStore,
 } from "react";
 import { useSelector } from "react-redux";
+import { selectPlanGeneration } from "@/store/planGeneration/selectors";
 
+import { PlanGenerationBanner } from "@/components/plan-generation/PlanGenerationBanner";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -28,6 +32,9 @@ import { useFeatureAccess } from "@/components/feature/useFeatureAccess";
 import { FeatureUnavailable } from "@/components/feature/FeatureUnavailable";
 import { generationStore } from "@/store/generationStore";
 import { useAppDispatch } from "@/store/hooks";
+import { openUpgradeModalForReason, setUpgradeModalOpen } from "@/store/ui/uiSlice";
+import { isUpgradeReason } from "@/shared/types/plan-limits";
+import { useNewClassGate } from "@/hooks/usePlanLimits";
 import type { RootState } from "@/store/store";
 import { fetchTimetables } from "@/store/timetable/timetableSlice";
 
@@ -231,8 +238,8 @@ function LessonCard({
               {isHoliday
                 ? tTimetable("slotType.holiday")
                 : isAssessment
-                  ? `📋 ${slot.topicTitle || tTimetable("slotType.assessment")}`
-                  : slot.topicTitle || t("shared.noTopic")}
+                  ? `📋 ${slot.topicTitle}`
+                  : slot.topicTitle}
             </p>
           </div>
           {!isHoliday && (
@@ -288,6 +295,7 @@ function CalendarPageInner() {
     (state: RootState) => state.timetable,
   );
   const dispatch = useAppDispatch();
+  const newClassGate = useNewClassGate();
   const { getToken } = useAuth();
 
   const searchParams = useSearchParams();
@@ -385,6 +393,35 @@ function CalendarPageInner() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timetableKey, weekIso]); // timetableKey is stable — prevents duplicate requests
 
+  // Background plan generation (started in onboarding): when it produces new topics or
+  // finishes a lesson, reload this week's slots once so they appear on their own.
+  const planGenRefreshKey = useSelector(selectPlanGeneration).refreshKey;
+  const lastPlanGenKeyRef = useRef(planGenRefreshKey);
+  useEffect(() => {
+    if (planGenRefreshKey === lastPlanGenKeyRef.current) return;
+    lastPlanGenKeyRef.current = planGenRefreshKey;
+    const active = timetables.filter((t) => t.status === "active");
+    if (active.length === 0) {
+      // The class may not be in the list yet: reloading it re-runs the slots fetch.
+      if (enabled) dispatch(fetchTimetables());
+      return;
+    }
+    Promise.all(
+      active.map((t) =>
+        listLessons(t.id, weekIso)
+          .then((slots) => ({ timetableId: t.id, slots }))
+          .catch(() => null),
+      ),
+    ).then((results) => {
+      setSlotsByTimetable((prev) => {
+        const next = new Map(prev);
+        for (const r of results) if (r) next.set(r.timetableId, r.slots);
+        return next;
+      });
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [planGenRefreshKey]);
+
   // Build week days Mon–Sun
   const weekDays = useMemo<Date[]>(
     () => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)),
@@ -401,6 +438,7 @@ function CalendarPageInner() {
       if (filterIds.size > 0 && !filterIds.has(t.id)) continue;
       const slots = slotsByTimetable.get(t.id) ?? [];
       for (const s of slots) {
+        if (!isListableSlot(s)) continue; // lessons without a topic are never shown
         const status = generatingSlots.has(s.id) ? "generating" : s.status;
         result.push({ ...s, status, timetable: t });
       }
@@ -651,6 +689,7 @@ function CalendarPageInner() {
 
   const handleGenerateLesson = useCallback(
     async (slot: SlotWithTimetable, message?: string) => {
+      const previousStatus = slot.status;
       startSlotGenerating(slot.id);
       patchSlotStatus(slot.timetable.id, slot.id, "generating");
       try {
@@ -666,6 +705,14 @@ function CalendarPageInner() {
             },
             onError: () =>
               patchSlotStatus(slot.timetable.id, slot.id, "failed"),
+            onFreeLimit: (code) => {
+              patchSlotStatus(slot.timetable.id, slot.id, previousStatus);
+              if (isUpgradeReason(code)) dispatch(openUpgradeModalForReason(code));
+            },
+            onQuotaExceeded: () => {
+              patchSlotStatus(slot.timetable.id, slot.id, previousStatus);
+              dispatch(setUpgradeModalOpen(true));
+            },
           },
           getToken,
         );
@@ -673,11 +720,12 @@ function CalendarPageInner() {
         stopSlotGenerating(slot.id);
       }
     },
-    [getToken, refreshTimetable, startSlotGenerating, stopSlotGenerating],
+    [dispatch, getToken, refreshTimetable, startSlotGenerating, stopSlotGenerating],
   );
 
   const handleRegenerateLesson = useCallback(
     async (slot: SlotWithTimetable, message?: string) => {
+      const previousStatus = slot.status;
       startSlotGenerating(slot.id);
       patchSlotStatus(slot.timetable.id, slot.id, "generating");
       try {
@@ -693,6 +741,14 @@ function CalendarPageInner() {
             },
             onError: () =>
               patchSlotStatus(slot.timetable.id, slot.id, "failed"),
+            onFreeLimit: (code) => {
+              patchSlotStatus(slot.timetable.id, slot.id, previousStatus);
+              if (isUpgradeReason(code)) dispatch(openUpgradeModalForReason(code));
+            },
+            onQuotaExceeded: () => {
+              patchSlotStatus(slot.timetable.id, slot.id, previousStatus);
+              dispatch(setUpgradeModalOpen(true));
+            },
           },
           getToken,
         );
@@ -700,7 +756,7 @@ function CalendarPageInner() {
         stopSlotGenerating(slot.id);
       }
     },
-    [getToken, refreshTimetable, startSlotGenerating, stopSlotGenerating],
+    [dispatch, getToken, refreshTimetable, startSlotGenerating, stopSlotGenerating],
   );
 
   // ── Generate whole week ───────────────────────────────────────────────────
@@ -712,16 +768,38 @@ function CalendarPageInner() {
         active.map(async (t) => {
           const slots = slotsByTimetable.get(t.id) ?? [];
           const hasPending = slots.some(
-            (s) => s.status === "pending" && s.slotType !== "HOLIDAY",
+            (s) => s.status === "pending" && s.slotType !== "HOLIDAY" && isListableSlot(s),
           );
           if (!hasPending) return;
+          const inFlight = new Set<string>();
+          const resetInFlight = () => {
+            inFlight.forEach((id) => patchSlotStatus(t.id, id, "pending"));
+            inFlight.clear();
+          };
           await generateWeekStream(
             t.id,
             weekIso,
             {
-              onSlotStart: (id) => patchSlotStatus(t.id, id, "generating"),
-              onSlotDone: (id) => patchSlotStatus(t.id, id, "completed"),
-              onSlotError: (id) => patchSlotStatus(t.id, id, "failed"),
+              onSlotStart: (id) => {
+                inFlight.add(id);
+                patchSlotStatus(t.id, id, "generating");
+              },
+              onSlotDone: (id) => {
+                inFlight.delete(id);
+                patchSlotStatus(t.id, id, "completed");
+              },
+              onSlotError: (id) => {
+                inFlight.delete(id);
+                patchSlotStatus(t.id, id, "failed");
+              },
+              onFreeLimit: (code) => {
+                resetInFlight();
+                if (isUpgradeReason(code)) dispatch(openUpgradeModalForReason(code));
+              },
+              onQuotaExceeded: () => {
+                resetInFlight();
+                dispatch(setUpgradeModalOpen(true));
+              },
               onDone: () => void refreshTimetable(t.id),
             },
             getToken,
@@ -731,7 +809,7 @@ function CalendarPageInner() {
     } finally {
       setGeneratingWeek(false);
     }
-  }, [timetables, slotsByTimetable, weekIso, getToken, refreshTimetable]);
+  }, [timetables, slotsByTimetable, weekIso, getToken, refreshTimetable, dispatch]);
 
   // ── Mutations ─────────────────────────────────────────────────────────────
   const handleSkip = useCallback(async (slot: SlotWithTimetable) => {
@@ -815,6 +893,7 @@ function CalendarPageInner() {
       {/* ── Top bar ───────────────────────────────────────────────────── */}
       <div className="sticky top-0 z-10 border-b bg-card/95 backdrop-blur px-4 pt-2.5 pb-2">
         <div className="mx-auto max-w-[1400px] space-y-2">
+          <PlanGenerationBanner />
 
           {/* ── Mobile header: single compact row ── */}
           <div className="flex md:hidden items-center gap-1.5">
@@ -859,7 +938,7 @@ function CalendarPageInner() {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link href={Routes.CALENDAR_NEW} className="flex items-center gap-2">
+                  <Link href={Routes.CALENDAR_NEW} onClick={newClassGate.onClick} className="flex items-center gap-2">
                     <Plus className="h-4 w-4" />
                     {t("shared.newClassLink")}
                   </Link>
@@ -923,7 +1002,7 @@ function CalendarPageInner() {
             </Button>
 
             <Button variant="outline" size="sm" asChild className="h-8">
-              <Link href={Routes.CALENDAR_NEW}>
+              <Link href={Routes.CALENDAR_NEW} onClick={newClassGate.onClick}>
                 <Plus className="mr-1 h-3.5 w-3.5" />
                 {t("shared.newClassLink")}
               </Link>
@@ -999,7 +1078,7 @@ function CalendarPageInner() {
               {t("shared.emptyDescription")}
             </p>
             <Button asChild className="mt-5">
-              <Link href={Routes.CALENDAR_NEW}>
+              <Link href={Routes.CALENDAR_NEW} onClick={newClassGate.onClick}>
                 <Plus className="mr-2 h-4 w-4" />
                 {t("shared.createClass")}
               </Link>

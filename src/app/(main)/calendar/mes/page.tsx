@@ -1,5 +1,6 @@
 "use client";
 
+import { isListableSlot } from "@/shared/utils/lessonTopic";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
@@ -12,6 +13,7 @@ import { useFeatureAccess } from "@/components/feature/useFeatureAccess";
 import { FeatureUnavailable } from "@/components/feature/FeatureUnavailable";
 import { fetchTimetables } from "@/store/timetable/timetableSlice";
 import { useAppDispatch } from "@/store/hooks";
+import { useNewClassGate } from "@/hooks/usePlanLimits";
 import type { RootState } from "@/store/store";
 import { listLessons, type LessonSlot, type Timetable } from "@/services/api/timetable.service";
 import { ArrowLeft, ArrowRight, CalendarDays, Plus } from "lucide-react";
@@ -55,6 +57,7 @@ export default function CalendarMonthPage() {
     (state: RootState) => state.timetable,
   );
   const dispatch = useAppDispatch();
+  const newClassGate = useNewClassGate();
   const router = useRouter();
 
   const [monthStart, setMonthStart] = useState<Date>(() => getMonthStart());
@@ -106,6 +109,7 @@ export default function CalendarMonthPage() {
       );
       for (const { timetable, slots } of results) {
         for (const slot of slots) {
+          if (!isListableSlot(slot)) continue; // lessons without a topic are never shown
           if (!map.has(slot.slotDate)) map.set(slot.slotDate, []);
           const dayEntries = map.get(slot.slotDate);
           if (dayEntries) dayEntries.push({ timetable, slot });
@@ -205,7 +209,7 @@ export default function CalendarMonthPage() {
               </Link>
             </Button>
             <Button variant="outline" size="sm" asChild className="h-8">
-              <Link href={Routes.CALENDAR_NEW}>
+              <Link href={Routes.CALENDAR_NEW} onClick={newClassGate.onClick}>
                 <Plus className="mr-1 h-3.5 w-3.5" />
                 {t("shared.newClassLink")}
               </Link>
@@ -254,7 +258,7 @@ export default function CalendarMonthPage() {
               {t("shared.emptyDescription")}
             </p>
             <Button asChild className="mt-5">
-              <Link href={Routes.CALENDAR_NEW}>
+              <Link href={Routes.CALENDAR_NEW} onClick={newClassGate.onClick}>
                 <Plus className="mr-2 h-4 w-4" />
                 {t("shared.createClass")}
               </Link>

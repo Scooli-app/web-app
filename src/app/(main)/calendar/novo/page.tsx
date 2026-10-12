@@ -77,7 +77,13 @@ import {
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import Link from "next/link";
+import { useFormatter, useLocale, useTranslations } from "next-intl";
+import { clampPeriodToFreeWindow, freePeriodBounds } from "@/lib/freePlanWindow";
+import { isClassLimitReached, usePlanLimits } from "@/hooks/usePlanLimits";
+import { useAppDispatch } from "@/store/hooks";
+import { openUpgradeModalForReason } from "@/store/ui/uiSlice";
+import type { PlanLimits } from "@/shared/types/plan-limits";
 import { isSupportedLocale, defaultLocale, type Locale } from "@/i18n/locales";
 import { toIntlLocale } from "@/shared/utils/calendar";
 
@@ -134,6 +140,14 @@ function isoToDate(iso: string): Date | undefined {
   if (!iso) return undefined;
   const d = new Date(`${iso}T00:00:00`);
   return isNaN(d.getTime()) ? undefined : d;
+}
+
+function earlierDate(a: Date | undefined, b: Date | undefined): Date | undefined {
+  return a && b ? (a < b ? a : b) : (a ?? b);
+}
+
+function laterDate(a: Date | undefined, b: Date | undefined): Date | undefined {
+  return a && b ? (a > b ? a : b) : (a ?? b);
 }
 
 function dateToIso(d: Date | undefined): string {
@@ -279,11 +293,17 @@ interface StepPeriodProps {
   periodStart: string;
   periodEnd: string;
   schoolYearLabel: string;
+  /** Free-plan limits; null (or Pro) leaves the dates unrestricted. */
+  limits: PlanLimits | null;
   onChange: (start: string, end: string, label: string) => void;
 }
 
-function StepPeriod({ periodStart, periodEnd, schoolYearLabel, onChange }: StepPeriodProps) {
+function StepPeriod({ periodStart, periodEnd, schoolYearLabel, limits, onChange }: StepPeriodProps) {
   const t = useTranslations("calendar.novo");
+  const format = useFormatter();
+  const bounds = freePeriodBounds(limits, periodStart);
+  const minDate = isoToDate(bounds.min ?? "");
+  const maxDate = isoToDate(bounds.max ?? "");
   const rawLocale = useLocale();
   const locale = isSupportedLocale(rawLocale) ? rawLocale : defaultLocale;
   const periodPresets = buildSchoolPeriodPresets();
@@ -335,7 +355,8 @@ function StepPeriod({ periodStart, periodEnd, schoolYearLabel, onChange }: StepP
             value={isoToDate(periodStart)}
             onChange={(d) => onChange(dateToIso(d), periodEnd, schoolYearLabel)}
             placeholder={t("period.startPlaceholder")}
-            toDate={isoToDate(periodEnd)}
+            fromDate={minDate}
+            toDate={earlierDate(isoToDate(periodEnd), maxDate)}
           />
         </div>
         <div className="min-w-0 space-y-1.5">
@@ -344,10 +365,22 @@ function StepPeriod({ periodStart, periodEnd, schoolYearLabel, onChange }: StepP
             value={isoToDate(periodEnd)}
             onChange={(d) => onChange(periodStart, dateToIso(d), schoolYearLabel)}
             placeholder={t("period.endPlaceholder")}
-            fromDate={isoToDate(periodStart)}
+            fromDate={laterDate(isoToDate(periodStart), minDate)}
+            toDate={maxDate}
           />
         </div>
       </div>
+
+      {maxDate && (
+        <p className="text-xs text-muted-foreground">
+          {t("period.freeLimitNote", {
+            date: format.dateTime(maxDate, { day: "numeric", month: "long", year: "numeric" }),
+          })}{" "}
+          <Link href={AppRoutes.CHECKOUT} className="font-medium text-primary underline-offset-2 hover:underline">
+            {t("period.freeLimitUpgrade")}
+          </Link>
+        </p>
+      )}
 
       <div className="space-y-1.5">
         <Label>{t("period.schoolYearLabel")}</Label>
@@ -693,6 +726,8 @@ function CalendarNewPageContent() {
   const classCreation = useCreateClassWithTopics();
   const isSubmitting = classCreation.phase !== "idle";
   const router = useRouter();
+  const dispatch = useAppDispatch();
+  const { limits } = usePlanLimits();
 
   const [step, setStep] = useState<WizardStep>("choose_mode");
   const [creationMode, setCreationMode] = useState<"from_plan" | "custom">("custom");
@@ -716,6 +751,26 @@ function CalendarNewPageContent() {
   const [schedule, setSchedule] = useState<WeekSchedule>(DEFAULT_WEEK_SCHEDULE);
   const [alreadyCoveredNotes, setAlreadyCoveredNotes] = useState("");
   const [previewSlots, setPreviewSlots] = useState<PreviewSlot[]>([]);
+
+  // Free plan: keep the period inside the window, whatever filled it (presets, a plan's dates).
+  useEffect(() => {
+    if (!periodStart || !periodEnd) return;
+    const clamped = clampPeriodToFreeWindow(limits, periodStart, periodEnd);
+    if (clamped.start !== periodStart) setPeriodStart(clamped.start);
+    if (clamped.end !== periodEnd) setPeriodEnd(clamped.end);
+  }, [limits, periodStart, periodEnd]);
+
+  // Free plan with a class already: the form can't succeed, so send them to the upgrade
+  // modal instead (direct links and bookmarks bypass the entry-point guards).
+  const limitHandledRef = useRef(false);
+  useEffect(() => {
+    // Only the first read counts: creating a class here refreshes the limits mid-flow.
+    if (limitHandledRef.current || !limits) return;
+    limitHandledRef.current = true;
+    if (!isClassLimitReached(limits)) return;
+    dispatch(openUpgradeModalForReason("free_class_limit"));
+    router.replace(AppRoutes.CALENDAR);
+  }, [limits, dispatch, router]);
 
   // Step validity (computed in parent so bottom nav can disable buttons)
   const periodCanProceed = !!periodStart && !!periodEnd && periodStart <= periodEnd;
@@ -951,6 +1006,7 @@ function CalendarNewPageContent() {
                 periodStart={periodStart}
                 periodEnd={periodEnd}
                 schoolYearLabel={schoolYearLabel}
+                limits={limits}
                 onChange={(s, e, l) => {
                   setPeriodStart(s);
                   setPeriodEnd(e);

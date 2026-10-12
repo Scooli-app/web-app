@@ -6,6 +6,7 @@
  * Spec: Feature 2, Phase 6 — only shown to Pro / Institucional users.
  */
 
+import { isListableSlot } from "@/shared/utils/lessonTopic";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -32,28 +33,17 @@ import { useCallback, useEffect, useSyncExternalStore, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { useAppDispatch } from "@/store/hooks";
+import { useNewClassGate } from "@/hooks/usePlanLimits";
 import { fetchTimetables } from "@/store/timetable/timetableSlice";
 import { generationStore } from "@/store/generationStore";
 import { SLOT_STATUS_CONFIG } from "@/shared/constants/lessonSlotStatus";
 import { useLocale, useTranslations } from "next-intl";
 import { isSupportedLocale, defaultLocale, type Locale } from "@/i18n/locales";
 import { toIntlLocale } from "@/shared/utils/calendar";
+import { isoWeekStart, localIsoDate } from "@/shared/utils/week";
 
 interface UpcomingLesson extends LessonSlot {
   timetable: Timetable;
-}
-
-/** Returns today's date as YYYY-MM-DD using local time (not UTC). */
-function localIsoDate(d: Date = new Date()): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
-/** Returns the ISO week-start (Monday) for the given date using local time. */
-function isoWeekStart(date: Date = new Date()): string {
-  const d = new Date(date);
-  const dow = d.getDay(); // 0=Sun … 6=Sat
-  d.setDate(d.getDate() + (dow === 0 ? -6 : 1 - dow));
-  return localIsoDate(d);
 }
 
 function isUpcoming(slot: LessonSlot): boolean {
@@ -62,7 +52,8 @@ function isUpcoming(slot: LessonSlot): boolean {
   return (
     slot.slotDate >= localIsoDate() &&
     slot.slotType !== "HOLIDAY" &&
-    slot.status !== "skipped"
+    slot.status !== "skipped" &&
+    isListableSlot(slot)
   );
 }
 
@@ -101,6 +92,7 @@ export function CalendarDashboardWidget() {
   const router = useRouter();
   const { getToken } = useAuth();
   const dispatch = useAppDispatch();
+  const newClassGate = useNewClassGate();
   const [upcoming, setUpcoming] = useState<UpcomingLesson[]>([]);
   const [loading, setLoading] = useState(true);
   /** Slot ID whose document is being fetched for navigation. */
@@ -267,7 +259,7 @@ export function CalendarDashboardWidget() {
             {t("noUpcoming")}
           </p>
           <Button asChild size="sm" className="mt-3">
-            <Link href={Routes.CALENDAR_NEW}>
+            <Link href={Routes.CALENDAR_NEW} onClick={newClassGate.onClick}>
               <Plus className="mr-1 h-3 w-3" />
               {tShared("createClass")}
             </Link>
@@ -308,7 +300,7 @@ export function CalendarDashboardWidget() {
                   {/* Text info: full-width row on mobile, grows inline on sm+ */}
                   <div className="min-w-0 basis-full sm:basis-0 sm:flex-1">
                     <p className="truncate text-sm font-medium">
-                      {lesson.topicTitle || tShared("noTopic")}
+                      {lesson.topicTitle}
                     </p>
                     <p className="text-xs text-muted-foreground">
                       <span className={isToday ? "font-semibold text-primary" : ""}>

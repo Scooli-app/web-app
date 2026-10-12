@@ -5,6 +5,7 @@ import {
   type InterfaceLocalePreference,
 } from "@/i18n/preferences";
 import type { UIState } from "@/shared/types";
+import type { UpgradeReason } from "@/shared/types/plan-limits";
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
 export type ThemeMode = "light" | "dark" | "system";
@@ -28,6 +29,8 @@ interface UIStoreState extends UIState {
   loading: boolean;
   error: string | null;
   isUpgradeModalOpen: boolean;
+  /** Why the upgrade modal was opened, when a free-plan limit blocked an action. */
+  upgradeModalReason: UpgradeReason | null;
   isPromoModalOpen: boolean;
   /**
    * True while the full-screen onboarding takes over the app. Other gates must
@@ -48,6 +51,7 @@ const initialState: UIStoreState = {
   loading: false,
   error: null,
   isUpgradeModalOpen: false,
+  upgradeModalReason: null,
   isPromoModalOpen: false,
   isOnboardingModalOpen: false,
 };
@@ -76,6 +80,12 @@ const uiSlice = createSlice({
     },
     setUpgradeModalOpen(state, action: PayloadAction<boolean>) {
       state.isUpgradeModalOpen = action.payload;
+      // A generic open (e.g. 402 usage limit) must not show a stale reason.
+      if (action.payload) state.upgradeModalReason = null;
+    },
+    openUpgradeModalForReason(state, action: PayloadAction<UpgradeReason>) {
+      state.isUpgradeModalOpen = true;
+      state.upgradeModalReason = action.payload;
     },
     setPromoModalOpen(state, action: PayloadAction<boolean>) {
       state.isPromoModalOpen = action.payload;
@@ -109,6 +119,7 @@ export const {
   setInterfaceLocale,
   setContentLanguage,
   setUpgradeModalOpen,
+  openUpgradeModalForReason,
   setPromoModalOpen,
   setOnboardingModalOpen,
 } = uiSlice.actions;

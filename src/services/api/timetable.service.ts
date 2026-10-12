@@ -37,6 +37,8 @@ export interface CreateTimetableParams {
   vocationalCourseCode?: string;
   vocationalUnitCode?: string;
   vocationalSchoolSubjectName?: string;
+  /** Where the class was created, for analytics. Defaults to "calendar" on the server. */
+  source?: "onboarding" | "calendar";
 }
 
 export interface UpdateTimetableParams {
@@ -109,6 +111,10 @@ export interface GenerateLessonStreamCallbacks {
   onSlotError?: (slotId: string) => void;
   onTotal?: (total: number) => void;
   onInfo?: (info: string) => void;
+  /** A free-plan limit (free_class_limit | free_period_limit) stopped the generation. */
+  onFreeLimit?: (code: string) => void;
+  /** The generation quota is used up. */
+  onQuotaExceeded?: () => void;
 }
 
 // ─── CRUD ────────────────────────────────────────────────────────────
@@ -263,6 +269,8 @@ async function streamTimetableEndpoint(
         case "slot_error": callbacks.onSlotError?.(evt.data); break;
         case "total": callbacks.onTotal?.(Number(evt.data)); break;
         case "info": callbacks.onInfo?.(evt.data); break;
+        case "free_limit": callbacks.onFreeLimit?.(evt.data); break;
+        case "quota_exceeded": callbacks.onQuotaExceeded?.(); break;
       }
     }
   }

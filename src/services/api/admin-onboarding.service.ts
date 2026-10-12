@@ -34,6 +34,9 @@ export interface AdminOnboardingOverview {
   subjectAreaBreakdown: AdminOnboardingBreakdownItem[];
   teachingLevelBreakdown: AdminOnboardingBreakdownItem[];
   goalsBreakdown: AdminOnboardingBreakdownItem[];
+  prepHoursBreakdown?: AdminOnboardingBreakdownItem[];
+  currentToolsBreakdown?: AdminOnboardingBreakdownItem[];
+  classCountBreakdown?: AdminOnboardingBreakdownItem[];
   recentResponses: AdminOnboardingResponse[];
 }
 
