@@ -876,11 +876,36 @@ export default function DocumentEditor({
     }
   }, [activeDocument, streamInfo]);
 
-  // Backend already reports the document as failed while we are still attached to its
-  // stream (e.g. the generation task died silently). Stop waiting and show the failure
-  // state instead of leaving the editor in a generating state.
+  // Backend reports the document as failed while we are still attached to its stream
+  // (e.g. the generation task died silently). Stop waiting and show the failure state
+  // instead of leaving the editor in a generating state.
+  // Only reacts to the transition into a failed status: a document that is already
+  // failed when a retry starts (status not refetched yet) must not kill the new stream,
+  // and one that is merely opened as failed is handled by the regular failed UI.
+  const lastDocStatusRef = useRef<{ id: string; status: string } | null>(null);
+  const failureErrorShownRef = useRef(false);
   useEffect(() => {
-    if (!isFailedDocumentStatus(activeDocument?.status)) {
+    const status = activeDocument?.status;
+    const previous = lastDocStatusRef.current;
+    lastDocStatusRef.current = activeDocument
+      ? { id: activeDocument.id, status: activeDocument.status }
+      : null;
+
+    if (!isFailedDocumentStatus(status)) {
+      if (failureErrorShownRef.current) {
+        failureErrorShownRef.current = false;
+        setError("");
+      }
+      return;
+    }
+    const alreadyFailed =
+      !!previous &&
+      previous.id === activeDocument?.id &&
+      isFailedDocumentStatus(previous.status);
+    const attachedToStream =
+      eventSourceRef.current !== null ||
+      (streamInfo?.id === documentId && streamInfo.status === "generating");
+    if (alreadyFailed || !attachedToStream) {
       return;
     }
     if (completionFallbackTimeoutRef.current) {
@@ -894,10 +919,11 @@ export default function DocumentEditor({
     setIsStreaming(false);
     setStreamStatus("");
     setError(t("generationFailedError"));
+    failureErrorShownRef.current = true;
     if (streamInfo?.id === documentId) {
       dispatch(clearStreamInfo());
     }
-  }, [activeDocument?.status, documentId, dispatch, streamInfo?.id, t]);
+  }, [activeDocument, documentId, dispatch, streamInfo?.id, streamInfo?.status, t]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -1244,11 +1270,6 @@ export default function DocumentEditor({
     (streamInfo?.id === documentId && streamInfo?.status === "generating");
   const isDocumentFailed = isFailedDocumentStatus(activeDocument?.status);
   const isGenerationStalled = useGenerationStalled(isGenerating && !isDocumentFailed);
-  // A full reload re-fetches the document and re-attaches to the stream from scratch;
-  // re-fetching alone keeps a stuck "generating" status on screen.
-  const handleRefreshStalledGeneration = useCallback(() => {
-    window.location.reload();
-  }, []);
   const resolvedTitle =
     documentTitle || normalizePendingTitle(activeDocument?.title || "");
 
@@ -1361,25 +1382,20 @@ export default function DocumentEditor({
                 <div className="min-h-[50dvh] w-full overflow-auto rounded-xl border border-border bg-card p-3 sm:min-h-[600px] sm:p-4">
                   {isGenerationStalled ? (
                     <div className="flex h-full min-h-[45dvh] w-full items-center justify-center sm:min-h-[550px]">
-                      <GenerationStalledNotice
-                        title={t("generationStalledTitle")}
-                        description={t("generationStalledDescription")}
-                        actionLabel={t("generationStalledAction")}
-                        onRefresh={handleRefreshStalledGeneration}
-                      />
+                      <GenerationStalledNotice />
                     </div>
                   ) : (
-                  /* Never show the raw markdown stream — keep the stepper until
-                      the formatted document is ready. Content chunks arriving
-                      while the status is still early means we're generating. */
-                  <GenerationProgress
-                    streamStatus={
-                      displayContent &&
-                      (!streamStatus || streamStatus === "preparing")
-                        ? "generating"
-                        : streamStatus
-                    }
-                  />
+                    // Never show the raw markdown stream — keep the stepper until
+                    // the formatted document is ready. Content chunks arriving
+                    // while the status is still early means we're generating.
+                    <GenerationProgress
+                      streamStatus={
+                        displayContent &&
+                        (!streamStatus || streamStatus === "preparing")
+                          ? "generating"
+                          : streamStatus
+                      }
+                    />
                   )}
                 </div>
               </>
