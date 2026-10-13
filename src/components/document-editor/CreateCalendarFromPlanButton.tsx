@@ -20,6 +20,10 @@ import { AlreadyCoveredSection } from "@/components/document-creation/AlreadyCov
 import { ClassTopicsProgress } from "@/components/calendar/ClassTopicsProgress";
 import { useCreateClassWithTopics } from "@/components/calendar/useCreateClassWithTopics";
 import { getTimetablesByLinkedPlan } from "@/services/api/timetable.service";
+import { clampPeriodToFreeWindow } from "@/lib/freePlanWindow";
+import { isClassLimitReached, usePlanLimits } from "@/hooks/usePlanLimits";
+import { useAppDispatch } from "@/store/hooks";
+import { openUpgradeModalForReason } from "@/store/ui/uiSlice";
 import { Routes } from "@/shared/types/routes";
 import type { Document } from "@/shared/types/document";
 import { CalendarPlus, Loader2 } from "lucide-react";
@@ -52,6 +56,8 @@ export default function CreateCalendarFromPlanButton({
   const t = useTranslations("editor.calendarButton");
   const router = useRouter();
   const classCreation = useCreateClassWithTopics();
+  const dispatch = useAppDispatch();
+  const { limits } = usePlanLimits();
   const isCreating = classCreation.busy;
   // From "Criar turma" until the dialog closes, it shows the progress instead of the form.
   const showProgress = classCreation.phase !== "idle";
@@ -102,6 +108,10 @@ export default function CreateCalendarFromPlanButton({
   }
 
   const openNameDialog = () => {
+    if (isClassLimitReached(limits)) {
+      dispatch(openUpgradeModalForReason("free_class_limit"));
+      return;
+    }
     const params = buildCreateTimetableParamsFromPlan(plan);
     if (!params) {
       // Imported plan / no weekly schedule — deep-link into the wizard, pre-filled.
@@ -126,8 +136,13 @@ export default function CreateCalendarFromPlanButton({
 
     // The dialog stays open on the progress until every lesson has its topic —
     // opening the calendar earlier showed empty lessons until a few refreshes.
+    // Free plan: the one-click flow never asks for dates, so it fits the plan to the window.
+    const period = clampPeriodToFreeWindow(limits, params.periodStart, params.periodEnd);
     const result = await classCreation.create({
       ...params,
+      periodStart: period.start,
+      periodEnd: period.end,
+      holidays: params.holidays?.filter((d) => d >= period.start && d <= period.end),
       title: name.trim() || params.title,
       classLabel: classLabel.trim() || undefined,
       alreadyCoveredNotes: alreadyCoveredNotes.trim() || undefined,
@@ -178,7 +193,7 @@ export default function CreateCalendarFromPlanButton({
             />
           </DialogContent>
         ) : (
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>{t("dialogTitle")}</DialogTitle>
             <DialogDescription>
@@ -187,7 +202,7 @@ export default function CreateCalendarFromPlanButton({
           </DialogHeader>
 
           {/* Header and footer pad themselves (p-6); the body matches them. */}
-          <div className="space-y-4 px-6 pt-4">
+          <div className="space-y-5 px-6 pb-2 pt-5">
             <div className="space-y-1.5">
               <Label>{t("nameLabel")}</Label>
               <Input
@@ -212,8 +227,8 @@ export default function CreateCalendarFromPlanButton({
             />
           </div>
 
-          <DialogFooter className="pt-2">
-            <AiDisclaimer className="sm:mr-auto sm:self-center sm:text-left" />
+          <DialogFooter className="pt-4 sm:flex-wrap">
+            <AiDisclaimer className="sm:order-last sm:basis-full" />
             <Button variant="ghost" onClick={() => setIsNameDialogOpen(false)}>
               {t("cancel")}
             </Button>

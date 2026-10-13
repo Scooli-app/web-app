@@ -5,6 +5,7 @@ import {
   diffPluginKey,
 } from "@/components/editor/extensions/DiffExtension";
 import { ImageBlockExtension } from "@/components/editor/extensions/ImageBlockExtension";
+import { FormulaModal } from "@/components/document-editor-v2/FormulaModal";
 import { AUTO_SAVE_DELAY } from "@/shared/config/constants";
 import { htmlToMarkdown, markdownToHtml } from "@/shared/utils/markdown";
 import { TableKit } from "@tiptap/extension-table";
@@ -70,12 +71,14 @@ const MenuBar = memo(function MenuBar({
   onEditorActivity,
   onUploadImage,
   isImageUploading = false,
+  onOpenFormula,
 }: {
   editor: Editor;
   rightHeaderContent?: React.ReactNode;
   onEditorActivity?: () => void;
   onUploadImage?: () => void;
   isImageUploading?: boolean;
+  onOpenFormula?: () => void;
 }) {
   const t = useTranslations("editor.richTextEditor");
   const editorState = useEditorState({
@@ -161,15 +164,8 @@ const MenuBar = memo(function MenuBar({
     [editor, runEditorCommand],
   );
   const handleInsertMath = useCallback(
-    () =>
-      runEditorCommand(() => {
-        editor
-          .chain()
-          .focus()
-          .insertContent({ type: "inlineMath", attrs: { latex: "x" } })
-          .run();
-      }),
-    [editor, runEditorCommand],
+    () => runEditorCommand(() => onOpenFormula?.()),
+    [onOpenFormula, runEditorCommand],
   );
   const handleInsertTable = useCallback(
     () => runEditorCommand(() =>
@@ -331,6 +327,7 @@ export function TipTapEditorCore({
   // Math edit popover state
   const [mathEdit, setMathEdit] = useState<MathEditState | null>(null);
   const [mathEditLatex, setMathEditLatex] = useState("");
+  const [formulaModalOpen, setFormulaModalOpen] = useState(false);
   const editorRef = useRef<Editor | null>(null);
   const setMathEditRef = useRef(setMathEdit);
   setMathEditRef.current = setMathEdit;
@@ -416,6 +413,18 @@ export function TipTapEditorCore({
     }
     setMathEdit(null);
   }, [editor, mathEdit, mathEditLatex]);
+
+  const handleFormulaInsert = useCallback(
+    (tex: string) => {
+      if (!editor) return;
+      editor
+        .chain()
+        .focus()
+        .insertContent({ type: "inlineMath", attrs: { latex: tex } })
+        .run();
+    },
+    [editor],
+  );
 
   const handleMathKeyDown = useCallback(
     (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -604,6 +613,11 @@ export function TipTapEditorCore({
           </div>
         </div>
       )}
+      <FormulaModal
+        open={formulaModalOpen}
+        onClose={() => setFormulaModalOpen(false)}
+        onInsert={handleFormulaInsert}
+      />
       <div className="w-full rounded-xl border border-border bg-card">
         <MenuBar
           editor={editor}
@@ -611,6 +625,7 @@ export function TipTapEditorCore({
           onEditorActivity={onEditorActivity}
           onUploadImage={onImageUpload ? handleToolbarUploadClick : undefined}
           isImageUploading={isImageUploading}
+          onOpenFormula={() => setFormulaModalOpen(true)}
         />
         <input
           ref={imageInputRef}

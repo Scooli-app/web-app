@@ -21,5 +21,7 @@ export interface CurrentUserProfile {
    * keeps a Portuguese interface and asks for English worksheets.
    */
   contentLanguage?: string | null;
+  /** ISO weekday (1 Mon - 7 Sun) the teacher plans the next week on. `null`/absent means 7. */
+  planningDay?: number | null;
   createdAt: string;
 }

@@ -10,10 +10,20 @@ export class UpgradeLimitError extends Error {
   }
 }
 
-import { setUpgradeModalOpen } from "@/store/ui/uiSlice";
+import { openUpgradeModalForReason, setUpgradeModalOpen } from "@/store/ui/uiSlice";
+import type { UpgradeReason } from "@/shared/types/plan-limits";
 import { translate } from "@/i18n/translate";
 import type { UnknownAction } from "@reduxjs/toolkit";
 import axios, { type AxiosError, type AxiosInstance } from "axios";
+import posthog from "posthog-js";
+
+const FREE_LIMIT_REASONS: readonly UpgradeReason[] = [
+  "free_class_limit",
+  "free_period_limit",
+];
+
+const isUpgradeReason = (value: unknown): value is UpgradeReason =>
+  FREE_LIMIT_REASONS.includes(value as UpgradeReason);
 
 let storeDispatch: ((action: UnknownAction) => void) | null = null;
 
@@ -116,6 +126,25 @@ apiClient.interceptors.response.use(
           : (error.response.data as { message?: string })?.message ||
             translate("errors.api.usageLimitExceeded");
       return Promise.reject(new UpgradeLimitError(limitMessage));
+    }
+
+    // 403 with a free-plan limit code = the free plan blocks this action (e.g.
+    // a second class, or a lesson outside the 4-week window). Open the upgrade
+    // modal with the matching reason, then reject like the 402 case.
+    if (error.response?.status === 403) {
+      const code = (error.response.data as { error?: unknown } | undefined)?.error;
+      if (isUpgradeReason(code)) {
+        if (storeDispatch) {
+          storeDispatch(openUpgradeModalForReason(code));
+        }
+        posthog.capture("free_limit_hit", {
+          kind: code === "free_class_limit" ? "class" : "period",
+        });
+        const limitMessage =
+          (error.response.data as { message?: string })?.message ||
+          translate("errors.api.usageLimitExceeded");
+        return Promise.reject(new UpgradeLimitError(limitMessage));
+      }
     }
 
     // Handle common errors

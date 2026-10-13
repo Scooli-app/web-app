@@ -5,7 +5,7 @@
  */
 
 import type { BackendPaginatedResponse, ChatResponse, CreateDocumentParams, CreateDocumentStreamResponse, Document, DocumentFilters, DocumentStatsResponse, DocumentStreamCallbacks, DocumentType, GenerateSlideResponse, GetDocumentsParams, GetDocumentsResponse, StreamedResponse, StreamEvent, WorksheetVariant } from "@/shared/types";
-import type { DocumentImage, RagSource } from "@/shared/types/document";
+import { isFailedDocumentStatus, type DocumentImage, type RagSource } from "@/shared/types/document";
 import { translate } from "@/i18n/translate";
 import axios, { type AxiosError } from "axios";
 import apiClient from "./client";
@@ -422,9 +422,11 @@ export async function waitForDocument(id: string, maxAttempts = 60): Promise<voi
       if (doc.status === "completed") {
         return; // Success!
       }
-      if (doc.status === "error") {
-        // The backend saves the specific error message into the 'content' field
-        throw new Error(doc.content || translate("errors.documents.processingFormatFailed"));
+      if (isFailedDocumentStatus(doc.status)) {
+        // For "error" the backend saves the specific message into 'content'. A "failed"
+        // document (e.g. swept after a dead task) may hold empty or partial content instead.
+        const message = doc.status === "error" ? doc.content : "";
+        throw new Error(message || translate("errors.documents.processingFormatFailed"));
       }
       // If status is still "processing", we just catch the timeout below
     } catch (e: unknown) {

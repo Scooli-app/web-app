@@ -29,6 +29,7 @@
 import AIChatPanel from "@/components/document-editor/AIChatPanel";
 import { AiDisclaimer } from "@/components/ui/ai-disclaimer";
 import { GenerationProgress } from "@/components/blocks/GenerationProgress";
+import { GenerationStalledNotice } from "@/components/ui/generation-stalled-notice";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -46,8 +47,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { useGenerationProgress } from "@/hooks/useGenerationProgress";
+import { useGenerationStalled } from "@/hooks/useGenerationStalled";
 import { parsePresentationDocument, slideBlockSchema } from "@/shared/types/blocks";
-import type { RagSource } from "@/shared/types/document";
+import { isFailedDocumentStatus, type RagSource } from "@/shared/types/document";
 import {
   isCanvasPresentation,
   type CanvasElement,
@@ -468,6 +470,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
   const inProgress =
     !!document &&
     (document.status === "generating" || document.status === "processing");
+  const isGenerationStalled = useGenerationStalled(inProgress, document?.updatedAt);
 
   const progress = useGenerationProgress({
     documentId: inProgress ? documentId : null,
@@ -1740,6 +1743,13 @@ export function BlockDocumentEditor({ documentId }: Props) {
     );
   }
   if (inProgress) {
+    if (isGenerationStalled) {
+      return (
+        <div className="flex h-full min-h-[60dvh] w-full items-center justify-center p-8">
+          <GenerationStalledNotice />
+        </div>
+      );
+    }
     return (
       <GenerationProgress
         phase={progress.phase}
@@ -1748,7 +1758,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
       />
     );
   }
-  if (document.status === "failed") {
+  if (isFailedDocumentStatus(document.status)) {
     return (
       <div className="mx-auto max-w-md p-8 text-center">
         <h2 className="text-lg font-semibold text-foreground">{t("generationFailedTitle")}</h2>

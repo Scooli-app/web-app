@@ -391,7 +391,7 @@ export default function AdminUsersPage() {
       const message =
         fetchError instanceof Error
           ? fetchError.message
-          : "Nao foi possivel carregar os insights.";
+          : "Não foi possível carregar os insights.";
       setError(message);
     } finally {
       setLoading(false);
@@ -458,8 +458,8 @@ export default function AdminUsersPage() {
     <PageContainer size="xl" contentClassName="py-4 sm:py-8">
       <div className="space-y-6 lg:space-y-8">
         <PageHeader
-          title="Insights de utilizacao"
-          description="Uma vista mais clara sobre retencao, intensidade de uso e sinais por utilizador."
+          title="Insights de utilização"
+          description="Uma vista mais clara sobre retenção, intensidade de uso e sinais por utilizador."
           icon={
             <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 sm:h-12 sm:w-12">
               <BarChart3 className="h-5 w-5 text-primary sm:h-6 sm:w-6" />
@@ -482,7 +482,7 @@ export default function AdminUsersPage() {
           <Card className="border-destructive/20 bg-destructive/5">
             <CardHeader className="gap-2">
               <CardTitle className="text-base">
-                Nao foi possivel carregar os insights
+                Não foi possível carregar os insights
               </CardTitle>
               <CardDescription>{error}</CardDescription>
             </CardHeader>
@@ -511,7 +511,7 @@ export default function AdminUsersPage() {
 
               <div className="space-y-2">
                 <CardTitle className="max-w-3xl text-2xl leading-tight sm:text-3xl">
-                  Quem volta ao produto, quem so testa uma vez e quem ainda nao
+                  Quem volta ao produto, quem só testa uma vez e quem ainda não
                   deixou sinais de uso.
                 </CardTitle>
                 <CardDescription className="max-w-2xl text-sm leading-6 sm:text-base">
@@ -593,7 +593,7 @@ export default function AdminUsersPage() {
                 ? "..."
                 : formatCount(summary?.totalDocumentsCreated)
             }
-            helper={`${formatCount(summary?.totalDocumentGenerationInteractions)} geracoes AI concluídas.`}
+            helper={`${formatCount(summary?.totalDocumentGenerationInteractions)} gerações AI concluídas.`}
           />
           <SummaryStatCard
             icon={<MessageSquare className="h-4 w-4" />}
@@ -778,7 +778,7 @@ export default function AdminUsersPage() {
                                     {formatCount(
                                       user.documentGenerationInteractions,
                                     )}{" "}
-                                    geracoes AI
+                                    gerações AI
                                   </div>
                                   <div className="text-xs text-muted-foreground">
                                     {formatCount(getImageCount(user))}{" "}

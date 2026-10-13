@@ -101,12 +101,9 @@ export function useSubjectChoice({ choice, update, prefilledRef }: UseSubjectCho
   );
   const [teachingProfile, setTeachingProfile] = useState<TeachingProfile | null>(null);
 
+  // The regular years and subjects prefill for everyone (onboarding saves them
+  // without the flag); only the vocational surface sits behind the flag.
   useEffect(() => {
-    if (!isTeacherProfileEnabled) {
-      setTeachingProfile(null);
-      return;
-    }
-
     let cancelled = false;
     teachingProfileService
       .get()
@@ -121,7 +118,7 @@ export function useSubjectChoice({ choice, update, prefilledRef }: UseSubjectCho
     return () => {
       cancelled = true;
     };
-  }, [isTeacherProfileEnabled]);
+  }, []);
 
   const availableSubjectIds = useMemo(
     () =>
@@ -139,8 +136,8 @@ export function useSubjectChoice({ choice, update, prefilledRef }: UseSubjectCho
     [teachingProfile]
   );
   const vocationalCourseOptions = useMemo(
-    () => getVocationalCourseOptions(teachingProfile),
-    [teachingProfile]
+    () => (isTeacherProfileEnabled ? getVocationalCourseOptions(teachingProfile) : []),
+    [teachingProfile, isTeacherProfileEnabled]
   );
   const teachingMode: EducationType =
     choice.subjectMode === "vocational" && vocationalCourseOptions.length > 0

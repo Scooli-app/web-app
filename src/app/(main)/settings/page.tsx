@@ -2,6 +2,7 @@
 
 import { BillingNifCard } from "@/components/billing/BillingNifCard";
 import { LanguagePreferences } from "@/components/settings/LanguagePreferences";
+import { PlanningRitualPreferences } from "@/components/settings/PlanningRitualPreferences";
 import { Button } from "@/components/ui/button";
 import { TeachingProfileCard } from "@/components/teaching-profile/TeachingProfileCard";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -715,6 +716,8 @@ function SettingsContent() {
             </div>
 
             <LanguagePreferences />
+
+            <PlanningRitualPreferences />
 
             {/* Notifications (placeholder - disabled) */}
             <div className="space-y-4">

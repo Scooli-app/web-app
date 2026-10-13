@@ -3,7 +3,7 @@
 import { AssistantProvider } from "@/components/assistant";
 import { AppFeedbackSurveyGate } from "@/components/feedback-survey/AppFeedbackSurveyGate";
 import { FeatureFeedbackGate } from "@/components/feature-feedback/FeatureFeedbackGate";
-import { OnboardingGate } from "@/components/onboarding/OnboardingGate";
+import { OnboardingV2Gate } from "@/components/onboarding-v2/OnboardingV2Gate";
 import { PromoGate } from "@/components/promo/PromoGate";
 import { PromoNavCta } from "@/components/promo/PromoNavCta";
 import { TutorialOverlay } from "@/components/tutorial/TutorialOverlay";
@@ -13,6 +13,7 @@ import {
   useTutorial,
 } from "@/contexts/TutorialContext";
 import { AppBootstrapGate } from "@/components/layout/AppBootstrapGate";
+import { PostHogPersonSync } from "@/components/providers/PostHogPersonSync";
 import { LanguageToggle } from "@/components/layout/LanguageToggle";
 import { SourceIngestionTracker } from "@/components/layout/SourceIngestionTracker";
 import { SourcesPendingBadge } from "@/components/layout/SourcesPendingBadge";
@@ -103,12 +104,11 @@ interface SidebarLayoutProps {
   className?: string;
 }
 
-// SCOOL-144 — Auto-collapse the desktop sidebar while viewing/reading a single
-// document or presentation (the editor/viewer pages below), then restore
-// whatever state the user had before, once they navigate away. Matches the
-// dynamic "[id]" editor routes (and the presentation fullscreen "present"
-// sub-route) but excludes the static "novo"/"importar" curriculum-plan pages,
-// which are creation forms, not a reading/editing canvas.
+// Auto-collapse the desktop sidebar while viewing/editing a single document or
+// presentation (the dynamic "[id]" editor routes, plus the presentation
+// fullscreen "present" sub-route), then restore whatever state the user had
+// before once they navigate away. The static "novo"/"importar" curriculum-plan
+// pages are creation forms, not a reading/editing canvas, so they are excluded.
 const DOCUMENT_READING_ROUTE_PATTERN =
   /^\/(lesson-plan|test|quiz|worksheet|presentation|curriculum-plan)\/(?!novo$|importar$)[^/]+(?:\/present)?$/;
 
@@ -705,20 +705,21 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const dispatch = useAppDispatch();
+  const upgradeModalReason = useSelector(
+    (state: RootState) => state.ui.upgradeModalReason,
+  );
   const isUpgradeModalOpen = useSelector(
     (state: RootState) => state.ui.isUpgradeModalOpen,
   );
 
-  // Desktop sidebar open/collapsed state, lifted out of SidebarProvider so we
-  // can drive it programmatically (see DOCUMENT_READING_ROUTE_PATTERN above).
+  // Desktop sidebar open/collapsed state, lifted out of SidebarProvider so it
+  // can be driven by the route (see DOCUMENT_READING_ROUTE_PATTERN) while the
+  // manual toggle (trigger button / ⌘+B) keeps working on the same state.
   const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(true);
   const desktopSidebarOpenRef = useRef(desktopSidebarOpen);
   const previousDesktopSidebarOpenRef = useRef(desktopSidebarOpen);
   const autoCollapsedRef = useRef(false);
-  const isDocumentReadingPage = useMemo(
-    () => isDocumentReadingRoute(pathname),
-    [pathname],
-  );
+  const isDocumentReadingPage = isDocumentReadingRoute(pathname);
 
   useEffect(() => {
     desktopSidebarOpenRef.current = desktopSidebarOpen;
@@ -727,8 +728,8 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
   useEffect(() => {
     if (isDocumentReadingPage) {
       if (!autoCollapsedRef.current) {
-        // Remember whatever the user had before entering a reading page, so
-        // we can restore it (not just force it back open) on the way out.
+        // Remember what the user had before entering a reading page, so we
+        // restore it (not just force it open) on the way out.
         previousDesktopSidebarOpenRef.current = desktopSidebarOpenRef.current;
         autoCollapsedRef.current = true;
         setDesktopSidebarOpen(false);
@@ -779,14 +780,16 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
     <SidebarProvider open={desktopSidebarOpen} onOpenChange={setDesktopSidebarOpen}>
       <div className="flex h-dvh w-full">
         <AppBootstrapGate />
+        <PostHogPersonSync />
         <SourceIngestionTracker />
         <UpgradePlanModal
           open={isUpgradeModalOpen}
+          reason={upgradeModalReason}
           onOpenChange={handleUpgradeModalChange}
         />
         <AppFeedbackSurveyGate />
         <FeatureFeedbackGate />
-        <OnboardingGate />
+        <OnboardingV2Gate />
         <PromoGate />
         <TutorialOverlay />
 

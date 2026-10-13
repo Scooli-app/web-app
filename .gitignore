@@ -49,3 +49,6 @@ curriculum-docs
 
 graphify-out/manifest.json
 graphify-out/cost.json
+
+# graphify generated output
+graphify-out/

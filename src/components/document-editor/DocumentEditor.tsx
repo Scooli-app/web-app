@@ -2,13 +2,14 @@
 
 import { useDocumentManager } from "@/hooks/useDocumentManager";
 import { useEditorAnalytics } from "@/hooks/useEditorAnalytics";
+import { useGenerationStalled } from "@/hooks/useGenerationStalled";
 import { uploadDocumentImage } from "@/services/api/document-images.service";
 import { streamDocumentContent } from "@/services/api/document.service";
 import { AUTO_SAVE_DELAY } from "@/shared/config/constants";
 import { Routes } from "@/shared/types";
-import type { RagSource } from "@/shared/types/document";
+import { isFailedDocumentStatus, type RagSource } from "@/shared/types/document";
 import { isUsableDocumentContent } from "@/shared/utils/documentContent";
-import { htmlToMarkdown, markdownToHtml } from "@/shared/utils/markdown";
+import { escapeMarkdownImageAlt, htmlToMarkdown, markdownToHtml } from "@/shared/utils/markdown";
 import { translate } from "@/i18n/translate";
 import {
   chatWithDocument,
@@ -40,11 +41,13 @@ import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import posthog from "posthog-js";
+import { reportUiProblem } from "@/lib/reportUiProblem";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { DiffToolbar } from "../editor/DiffToolbar";
 import { computeDiff, markdownToNode } from "../editor/utils/diffEngine";
 import RichTextEditor from "../ui/rich-text-editor";
+import { GenerationStalledNotice } from "../ui/generation-stalled-notice";
 import AIChatPanel from "./AIChatPanel";
 import DocumentTitle from "./DocumentTitle";
 import CreateCalendarFromPlanButton from "./CreateCalendarFromPlanButton";
@@ -188,7 +191,9 @@ function repairLeakedImageSegmentTokens(
     if (!image) {
       return "";
     }
-    const safeAlt = (image.alt || translate("editor.documentEditor.imageFallbackAlt")).replace(/\]/g, "\\]");
+    const safeAlt = escapeMarkdownImageAlt(
+      image.alt || translate("editor.documentEditor.imageFallbackAlt"),
+    );
     return `![${safeAlt}]({{DOCUMENT_IMAGE:${image.id}}})`;
   });
 }
@@ -233,6 +238,11 @@ export default function DocumentEditor({
   } = useDocumentManager(documentId);
   const activeDocument =
     currentDocument?.id === documentId ? currentDocument : null;
+  // Read from inside the stream effect without making it a dependency (that would restart the stream).
+  const documentTypeRef = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    documentTypeRef.current = currentDocument?.documentType;
+  }, [currentDocument?.documentType]);
   const {
     getSessionId,
     registerActivity,
@@ -786,6 +796,11 @@ export default function DocumentEditor({
               }
             },
             onError: (errorMsg) => {
+              reportUiProblem("generation_error_shown", {
+                documentId,
+                documentType: documentTypeRef.current,
+                message: errorMsg,
+              });
               clearCompletionFallback();
               eventSourceRef.current = null;
               setIsStreaming(false);
@@ -804,6 +819,11 @@ export default function DocumentEditor({
           })
           .catch((err) => {
             console.error("Failed to start streaming:", err);
+            reportUiProblem("generation_stream_start_failed", {
+              documentId,
+              documentType: documentTypeRef.current,
+              message: err instanceof Error ? err.message : null,
+            });
             eventSourceRef.current = null;
             setIsStreaming(false);
             setError(t("streamStartError"));
@@ -824,6 +844,86 @@ export default function DocumentEditor({
     skipNextEditorKeyBumpRef,
     t,
   ]);
+
+  // A document that is already broken when opened: failed, or "completed" with nothing in it.
+  // Reported once per document per page load.
+  const reportedBrokenOpenRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!activeDocument || reportedBrokenOpenRef.current === activeDocument.id) {
+      return;
+    }
+    const isStreamingNow =
+      streamInfo?.id === activeDocument.id && streamInfo.status === "generating";
+    if (isStreamingNow) {
+      return;
+    }
+    if (isFailedDocumentStatus(activeDocument.status)) {
+      reportedBrokenOpenRef.current = activeDocument.id;
+      reportUiProblem("document_opened_failed", {
+        documentId: activeDocument.id,
+        documentType: activeDocument.documentType,
+      });
+    } else if (
+      activeDocument.status === "completed" &&
+      activeDocument.contentFormat !== "json" &&
+      !isUsableDocumentContent(activeDocument.content)
+    ) {
+      reportedBrokenOpenRef.current = activeDocument.id;
+      reportUiProblem("document_opened_empty", {
+        documentId: activeDocument.id,
+        documentType: activeDocument.documentType,
+      });
+    }
+  }, [activeDocument, streamInfo]);
+
+  // Backend reports the document as failed while we are still attached to its stream
+  // (e.g. the generation task died silently). Stop waiting and show the failure state
+  // instead of leaving the editor in a generating state.
+  // Only reacts to the transition into a failed status: a document that is already
+  // failed when a retry starts (status not refetched yet) must not kill the new stream,
+  // and one that is merely opened as failed is handled by the regular failed UI.
+  const lastDocStatusRef = useRef<{ id: string; status: string } | null>(null);
+  const failureErrorShownRef = useRef(false);
+  useEffect(() => {
+    const status = activeDocument?.status;
+    const previous = lastDocStatusRef.current;
+    lastDocStatusRef.current = activeDocument
+      ? { id: activeDocument.id, status: activeDocument.status }
+      : null;
+
+    if (!isFailedDocumentStatus(status)) {
+      if (failureErrorShownRef.current) {
+        failureErrorShownRef.current = false;
+        setError("");
+      }
+      return;
+    }
+    const alreadyFailed =
+      !!previous &&
+      previous.id === activeDocument?.id &&
+      isFailedDocumentStatus(previous.status);
+    const attachedToStream =
+      eventSourceRef.current !== null ||
+      (streamInfo?.id === documentId && streamInfo.status === "generating");
+    if (alreadyFailed || !attachedToStream) {
+      return;
+    }
+    if (completionFallbackTimeoutRef.current) {
+      clearTimeout(completionFallbackTimeoutRef.current);
+      completionFallbackTimeoutRef.current = null;
+    }
+    if (eventSourceRef.current) {
+      eventSourceRef.current();
+      eventSourceRef.current = null;
+    }
+    setIsStreaming(false);
+    setStreamStatus("");
+    setError(t("generationFailedError"));
+    failureErrorShownRef.current = true;
+    if (streamInfo?.id === documentId) {
+      dispatch(clearStreamInfo());
+    }
+  }, [activeDocument, documentId, dispatch, streamInfo?.id, streamInfo?.status, t]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -1055,6 +1155,13 @@ export default function DocumentEditor({
           ? response.content
           : null;
 
+        if (!response.chatAnswer && !editedContent) {
+          reportUiProblem("chat_empty_reply", {
+            documentId: currentDocument.id,
+            documentType: currentDocument.documentType,
+          });
+        }
+
         // Add chat answer to history
         if (response.chatAnswer) {
           setChatHistory((prev) => [
@@ -1122,7 +1229,12 @@ export default function DocumentEditor({
         if (response.sources && response.sources.length > 0) {
           setSources(response.sources);
         }
-      } catch {
+      } catch (err) {
+        reportUiProblem("chat_error_shown", {
+          documentId: currentDocument.id,
+          documentType: currentDocument.documentType,
+          message: err instanceof Error ? err.message : null,
+        });
         setError(t("chatErrorGeneric"));
         // The backend runs text + image generation synchronously in one
         // request, which can outlast a client-side network hiccup or proxy
@@ -1156,6 +1268,8 @@ export default function DocumentEditor({
   const isGenerating =
     isStreaming ||
     (streamInfo?.id === documentId && streamInfo?.status === "generating");
+  const isDocumentFailed = isFailedDocumentStatus(activeDocument?.status);
+  const isGenerationStalled = useGenerationStalled(isGenerating && !isDocumentFailed);
   const resolvedTitle =
     documentTitle || normalizePendingTitle(activeDocument?.title || "");
 
@@ -1266,17 +1380,23 @@ export default function DocumentEditor({
                   </div>
                 </div>
                 <div className="min-h-[50dvh] w-full overflow-auto rounded-xl border border-border bg-card p-3 sm:min-h-[600px] sm:p-4">
-                  {/* Never show the raw markdown stream — keep the stepper until
-                      the formatted document is ready. Content chunks arriving
-                      while the status is still early means we're generating. */}
-                  <GenerationProgress
-                    streamStatus={
-                      displayContent &&
-                      (!streamStatus || streamStatus === "preparing")
-                        ? "generating"
-                        : streamStatus
-                    }
-                  />
+                  {isGenerationStalled ? (
+                    <div className="flex h-full min-h-[45dvh] w-full items-center justify-center sm:min-h-[550px]">
+                      <GenerationStalledNotice />
+                    </div>
+                  ) : (
+                    // Never show the raw markdown stream — keep the stepper until
+                    // the formatted document is ready. Content chunks arriving
+                    // while the status is still early means we're generating.
+                    <GenerationProgress
+                      streamStatus={
+                        displayContent &&
+                        (!streamStatus || streamStatus === "preparing")
+                          ? "generating"
+                          : streamStatus
+                      }
+                    />
+                  )}
                 </div>
               </>
             ) : (
