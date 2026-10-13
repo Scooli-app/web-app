@@ -1506,7 +1506,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
             const lineWidth = Math.max(0.75, (shape.strokeWidth ?? DEFAULT_SHAPE_STROKE_WIDTH) * 72 * SLIDE_W);
 
             if (shape.shape === "rect") {
-              slide.addShape(PptxGenJS.ShapeType.rect, {
+              slide.addShape(pptx.ShapeType.rect, {
                 x,
                 y,
                 w,
@@ -1516,7 +1516,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
                 line: { color: strokeColor, width: lineWidth },
               });
             } else if (shape.shape === "ellipse") {
-              slide.addShape(PptxGenJS.ShapeType.ellipse, {
+              slide.addShape(pptx.ShapeType.ellipse, {
                 x,
                 y,
                 w,
@@ -1526,7 +1526,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
                 line: { color: strokeColor, width: lineWidth },
               });
             } else {
-              slide.addShape(PptxGenJS.ShapeType.line, {
+              slide.addShape(pptx.ShapeType.line, {
                 x,
                 y: y + h / 2,
                 w,
