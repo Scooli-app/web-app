@@ -155,4 +155,15 @@ export interface UploadDocumentImageResponse {
   markdown: string;
 }
 
+/**
+ * Document statuses that mean generation/import will not complete. The backend's
+ * terminal failure status is "failed"; "error" is still produced by some
+ * import/stream paths (AGENTS.md Known Caveat #1). Both must render the same UI.
+ */
+export const FAILED_DOCUMENT_STATUSES: readonly string[] = ["failed", "error"];
+
+export function isFailedDocumentStatus(status: string | null | undefined): boolean {
+  return !!status && FAILED_DOCUMENT_STATUSES.includes(status);
+}
+
 

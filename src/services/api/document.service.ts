@@ -5,7 +5,7 @@
  */
 
 import type { BackendPaginatedResponse, ChatResponse, CreateDocumentParams, CreateDocumentStreamResponse, Document, DocumentFilters, DocumentStatsResponse, DocumentStreamCallbacks, DocumentType, GenerateSlideResponse, GetDocumentsParams, GetDocumentsResponse, StreamedResponse, StreamEvent, WorksheetVariant } from "@/shared/types";
-import type { DocumentImage, RagSource } from "@/shared/types/document";
+import { isFailedDocumentStatus, type DocumentImage, type RagSource } from "@/shared/types/document";
 import { translate } from "@/i18n/translate";
 import axios, { type AxiosError } from "axios";
 import apiClient from "./client";
@@ -422,7 +422,7 @@ export async function waitForDocument(id: string, maxAttempts = 60): Promise<voi
       if (doc.status === "completed") {
         return; // Success!
       }
-      if (doc.status === "error") {
+      if (isFailedDocumentStatus(doc.status)) {
         // The backend saves the specific error message into the 'content' field
         throw new Error(doc.content || translate("errors.documents.processingFormatFailed"));
       }
