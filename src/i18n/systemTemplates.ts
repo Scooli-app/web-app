@@ -16,6 +16,9 @@ const EN: Record<string, string> = {
   "Aula Invertida (Flipped)": "Flipped Classroom Lesson",
   "Plano de Aula Tradicional": "Traditional Lesson Plan",
   "Apresentação Educativa": "Educational Presentation",
+  "Apresentação com Debate": "Presentation with Debate",
+  "Apresentação de Projeto": "Project Presentation",
+  "Apresentação Visual Mínima": "Minimal Visual Presentation",
   "Quiz Padrão": "Standard Quiz",
   "Teste Formal": "Formal Test",
   "Ficha com Registo e Reflexão": "Worksheet with Checkpoints and Reflection",
@@ -32,6 +35,12 @@ const EN: Record<string, string> = {
     "Traditional lesson plan structure focused on objectives, development and assessment",
   "Estrutura de apresentação para aulas e exposições didáticas":
     "Presentation structure for lessons and teaching talks",
+  "Estrutura para apresentações com debate ou discussão em grupo, com argumentos e síntese final":
+    "Structure for presentations with a debate or group discussion, with arguments and a final summary",
+  "Estrutura para apresentar o desenvolvimento e resultados de um projeto escolar":
+    "Structure for presenting the development and results of a school project",
+  "Estrutura enxuta com poucos slides, focada em imagens e mensagens-chave, ideal para exposições curtas":
+    "A lean structure with few slides, focused on images and key messages, ideal for short talks",
   "Estrutura padrão para quizzes com diferentes tipos de questões":
     "Standard quiz structure with different question types",
   "Estrutura formal de teste de avaliação com grupos de questões":
@@ -50,6 +59,8 @@ const EN: Record<string, string> = {
   "Apoio à Correção": "Marking Support",
   "Apoio ao Professor": "Teacher Support",
   "Apresentação": "Presentation",
+  "Argumentos a Favor": "Arguments For",
+  "Argumentos Contra": "Arguments Against",
   "Ativação Inicial": "Warm-up",
   "Atividade Interativa": "Interactive Activity",
   "Avaliação": "Assessment",
@@ -67,6 +78,7 @@ const EN: Record<string, string> = {
   "Etapa 1": "Stage 1",
   "Etapa 2": "Stage 2",
   "Etapa 3": "Stage 3",
+  "Exemplo Visual": "Visual Example",
   "Extensão": "Extension",
   "Fecho": "Wrap-up",
   "Fecho Técnico": "Technical Wrap-up",
@@ -81,8 +93,12 @@ const EN: Record<string, string> = {
   "Introdução": "Introduction",
   "Introdução ao Tema": "Introduction to the Topic",
   "Investigação": "Investigation",
+  "Lições Aprendidas": "Lessons Learned",
   "Material Prévio": "Pre-class Material",
+  "Metodologia": "Methodology",
+  "Momento de Discussão": "Discussion Time",
   "Objetivo da Ficha": "Worksheet Goal",
+  "Objetivo do Projeto": "Project Objective",
   "Objetivos de Aprendizagem": "Learning Objectives",
   "Ponto de Situação": "Checkpoint",
   "Questão Orientadora": "Guiding Question",
@@ -93,6 +109,7 @@ const EN: Record<string, string> = {
   "Referências": "References",
   "Reflexão": "Reflection",
   "Registo Final": "Final Record",
+  "Resultados": "Results",
   "Resumo/Conclusão": "Summary/Conclusion",
   "Slide de Título": "Title Slide",
   "Tarefas Principais": "Main Tasks",
@@ -116,6 +133,7 @@ const EN: Record<string, string> = {
   "Desenvolvimento da solução ou produto": "Developing the solution or product",
   "Desenvolvimento dos conceitos e ideias": "Developing the concepts and ideas",
   "Discussão e clarificação de conceitos": "Discussion and clarification of concepts",
+  "Debate em grupo com perguntas orientadoras": "Group debate with guiding questions",
   "Enquadramento do tema com uma situação, texto curto, dado, observação ou problema de partida":
     "Introduces the topic with a situation, short text, data, observation or starting problem",
   "Enquadramento real e relevante": "Real, relevant context",
@@ -125,6 +143,7 @@ const EN: Record<string, string> = {
   "Fontes e materiais de apoio": "Sources and supporting materials",
   "Identificação da ficha e informação inicial relevante para o trabalho":
     "Worksheet details and starting information for the task",
+  "Imagem ou ilustração que reforça o conceito central": "An image or illustration that reinforces the central concept",
   "Incluir APENAS se o professor pedir explicitamente. Quando presente: critérios de correção, soluções ou notas de acompanhamento. Reflexão final pode ser incluída sem pedido explícito quando fizer sentido para o tipo de ficha.":
     "Included ONLY if the teacher explicitly asks. When present: marking criteria, solutions or follow-up notes. A final reflection may be included without being asked when it suits the worksheet.",
   "Incluir APENAS se o professor pedir explicitamente. Quando presente: soluções, critérios de correção ou pistas de acompanhamento, claramente separados das tarefas.":
@@ -157,9 +176,16 @@ const EN: Record<string, string> = {
     "First set of items, tasks or questions, organised by focus or difficulty",
   "Primeiro conjunto de tarefas ou questões com maior apoio e enquadramento":
     "First set of tasks or questions, with more support and context",
+  "Processo e métodos utilizados no desenvolvimento do projeto":
+    "Process and methods used in developing the project",
+  "Principais aprendizagens e desafios superados": "Key learnings and challenges overcome",
   "Propósito da ficha, critérios de sucesso e foco principal do trabalho":
     "The worksheet's purpose, success criteria and main focus",
+  "Propósito e metas do projeto": "Project purpose and goals",
   "Questões de seleção de resposta": "Selected-response questions",
+  "Razões e evidências que contrariam a posição": "Reasons and evidence against the position",
+  "Razões e evidências que suportam a posição": "Reasons and evidence supporting the position",
+  "Resultados obtidos e evidências do trabalho realizado": "Results obtained and evidence of the work done",
   "Secção condicional: converter para resposta curta direta quando nao houver pedido explicito do professor.":
     "Conditional section: becomes short direct answers unless the teacher explicitly asks otherwise.",
   "Secção condicional: usar apenas com pedido explicito de questoes abertas. Em NEE/1.o-4.o ano, limitar a 1-2 abertas curtas e diretas.":
