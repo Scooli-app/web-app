@@ -423,8 +423,10 @@ export async function waitForDocument(id: string, maxAttempts = 60): Promise<voi
         return; // Success!
       }
       if (isFailedDocumentStatus(doc.status)) {
-        // The backend saves the specific error message into the 'content' field
-        throw new Error(doc.content || translate("errors.documents.processingFormatFailed"));
+        // For "error" the backend saves the specific message into 'content'. A "failed"
+        // document (e.g. swept after a dead task) may hold empty or partial content instead.
+        const message = doc.status === "error" ? doc.content : "";
+        throw new Error(message || translate("errors.documents.processingFormatFailed"));
       }
       // If status is still "processing", we just catch the timeout below
     } catch (e: unknown) {
