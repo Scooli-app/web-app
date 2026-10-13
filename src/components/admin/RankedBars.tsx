@@ -22,6 +22,10 @@ interface RankedBarsProps {
   sortDesc?: boolean;
   /** Unit shown in the row tooltip, e.g. "respostas". */
   unit?: string;
+  /** Makes rows clickable (e.g. to filter a table by that category). */
+  onItemClick?: (key: string) => void;
+  /** Key of the row to highlight as the active filter. */
+  activeKey?: string | null;
   className?: string;
 }
 
@@ -40,6 +44,8 @@ export function RankedBars({
   color = "var(--chart-1)",
   sortDesc = false,
   unit = "respostas",
+  onItemClick,
+  activeKey,
   className,
 }: RankedBarsProps) {
   const rows = sortDesc ? [...items].sort((a, b) => b.count - a.count) : items;
@@ -56,7 +62,28 @@ export function RankedBars({
         return (
           <Tooltip key={row.key}>
             <TooltipTrigger asChild>
-              <li className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-3 gap-y-1.5 sm:grid-cols-[minmax(0,14rem)_minmax(0,1fr)_auto] sm:items-center">
+              <li
+                onClick={onItemClick ? () => onItemClick(row.key) : undefined}
+                onKeyDown={
+                  onItemClick
+                    ? (e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          onItemClick(row.key);
+                        }
+                      }
+                    : undefined
+                }
+                role={onItemClick ? "button" : undefined}
+                tabIndex={onItemClick ? 0 : undefined}
+                aria-pressed={onItemClick ? activeKey === row.key : undefined}
+                className={cn(
+                  "grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-3 gap-y-1.5 sm:grid-cols-[minmax(0,14rem)_minmax(0,1fr)_auto] sm:items-center",
+                  onItemClick &&
+                    "-mx-2 cursor-pointer rounded-md px-2 py-1 hover:bg-muted/50",
+                  activeKey === row.key && "bg-primary/10 ring-1 ring-primary/30",
+                )}
+              >
                 <span className="text-sm leading-snug text-foreground sm:pr-1">
                   {row.label}
                 </span>
