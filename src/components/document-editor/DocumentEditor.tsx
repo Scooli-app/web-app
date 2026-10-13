@@ -2,11 +2,12 @@
 
 import { useDocumentManager } from "@/hooks/useDocumentManager";
 import { useEditorAnalytics } from "@/hooks/useEditorAnalytics";
+import { useGenerationStalled } from "@/hooks/useGenerationStalled";
 import { uploadDocumentImage } from "@/services/api/document-images.service";
 import { streamDocumentContent } from "@/services/api/document.service";
 import { AUTO_SAVE_DELAY } from "@/shared/config/constants";
 import { Routes } from "@/shared/types";
-import type { RagSource } from "@/shared/types/document";
+import { isFailedDocumentStatus, type RagSource } from "@/shared/types/document";
 import { isUsableDocumentContent } from "@/shared/utils/documentContent";
 import { escapeMarkdownImageAlt, htmlToMarkdown, markdownToHtml } from "@/shared/utils/markdown";
 import { translate } from "@/i18n/translate";
@@ -46,6 +47,7 @@ import { toast } from "sonner";
 import { DiffToolbar } from "../editor/DiffToolbar";
 import { computeDiff, markdownToNode } from "../editor/utils/diffEngine";
 import RichTextEditor from "../ui/rich-text-editor";
+import { GenerationStalledNotice } from "../ui/generation-stalled-notice";
 import AIChatPanel from "./AIChatPanel";
 import DocumentTitle from "./DocumentTitle";
 import CreateCalendarFromPlanButton from "./CreateCalendarFromPlanButton";
@@ -855,7 +857,7 @@ export default function DocumentEditor({
     if (isStreamingNow) {
       return;
     }
-    if (activeDocument.status === "failed") {
+    if (isFailedDocumentStatus(activeDocument.status)) {
       reportedBrokenOpenRef.current = activeDocument.id;
       reportUiProblem("document_opened_failed", {
         documentId: activeDocument.id,
@@ -873,6 +875,29 @@ export default function DocumentEditor({
       });
     }
   }, [activeDocument, streamInfo]);
+
+  // Backend already reports the document as failed while we are still attached to its
+  // stream (e.g. the generation task died silently). Stop waiting and show the failure
+  // state instead of leaving the editor in a generating state.
+  useEffect(() => {
+    if (!isFailedDocumentStatus(activeDocument?.status)) {
+      return;
+    }
+    if (completionFallbackTimeoutRef.current) {
+      clearTimeout(completionFallbackTimeoutRef.current);
+      completionFallbackTimeoutRef.current = null;
+    }
+    if (eventSourceRef.current) {
+      eventSourceRef.current();
+      eventSourceRef.current = null;
+    }
+    setIsStreaming(false);
+    setStreamStatus("");
+    setError(t("generationFailedError"));
+    if (streamInfo?.id === documentId) {
+      dispatch(clearStreamInfo());
+    }
+  }, [activeDocument?.status, documentId, dispatch, streamInfo?.id, t]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -1217,6 +1242,13 @@ export default function DocumentEditor({
   const isGenerating =
     isStreaming ||
     (streamInfo?.id === documentId && streamInfo?.status === "generating");
+  const isDocumentFailed = isFailedDocumentStatus(activeDocument?.status);
+  const isGenerationStalled = useGenerationStalled(isGenerating && !isDocumentFailed);
+  // A full reload re-fetches the document and re-attaches to the stream from scratch;
+  // re-fetching alone keeps a stuck "generating" status on screen.
+  const handleRefreshStalledGeneration = useCallback(() => {
+    window.location.reload();
+  }, []);
   const resolvedTitle =
     documentTitle || normalizePendingTitle(activeDocument?.title || "");
 
@@ -1327,9 +1359,19 @@ export default function DocumentEditor({
                   </div>
                 </div>
                 <div className="min-h-[50dvh] w-full overflow-auto rounded-xl border border-border bg-card p-3 sm:min-h-[600px] sm:p-4">
-                  {/* Never show the raw markdown stream — keep the stepper until
+                  {isGenerationStalled ? (
+                    <div className="flex h-full min-h-[45dvh] w-full items-center justify-center sm:min-h-[550px]">
+                      <GenerationStalledNotice
+                        title={t("generationStalledTitle")}
+                        description={t("generationStalledDescription")}
+                        actionLabel={t("generationStalledAction")}
+                        onRefresh={handleRefreshStalledGeneration}
+                      />
+                    </div>
+                  ) : (
+                  /* Never show the raw markdown stream — keep the stepper until
                       the formatted document is ready. Content chunks arriving
-                      while the status is still early means we're generating. */}
+                      while the status is still early means we're generating. */
                   <GenerationProgress
                     streamStatus={
                       displayContent &&
@@ -1338,6 +1380,7 @@ export default function DocumentEditor({
                         : streamStatus
                     }
                   />
+                  )}
                 </div>
               </>
             ) : (
