@@ -2351,6 +2351,8 @@ export function BlockDocumentEditor({ documentId }: Props) {
             sources={sources}
             onImageRegen={handleImageRegen}
             onDismissImageRegen={handleImageRegenDismiss}
+            documentType={document?.documentType}
+            documentId={document?.id}
           />
         </aside>
       </div>
