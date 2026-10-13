@@ -470,7 +470,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
   const inProgress =
     !!document &&
     (document.status === "generating" || document.status === "processing");
-  const isGenerationStalled = useGenerationStalled(inProgress);
+  const isGenerationStalled = useGenerationStalled(inProgress, document?.updatedAt);
 
   const progress = useGenerationProgress({
     documentId: inProgress ? documentId : null,
@@ -1746,12 +1746,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
     if (isGenerationStalled) {
       return (
         <div className="flex h-full min-h-[60dvh] w-full items-center justify-center p-8">
-          <GenerationStalledNotice
-            title={t("generationStalledTitle")}
-            description={t("generationStalledDescription")}
-            actionLabel={t("generationStalledAction")}
-            onRefresh={() => window.location.reload()}
-          />
+          <GenerationStalledNotice />
         </div>
       );
     }

@@ -1211,9 +1211,6 @@
       "stepReviewingDescription": "A avaliar a qualidade do documento",
       "stepRevisedLabel": "Melhorias",
       "stepRevisedDescription": "A aplicar melhorias ao documento",
-      "generationStalledTitle": "Está a demorar mais do que o esperado",
-      "generationStalledDescription": "A geração está em curso há vários minutos. Pode ter parado. Atualiza a página para verificar se terminou ou tenta mais tarde.",
-      "generationStalledAction": "Atualizar página",
       "generationFailedError": "A geração falhou. Tenta novamente.",
       "defaultTitle": "Novo Documento",
       "loadingMessage": "A carregar documento...",
@@ -1289,9 +1286,6 @@
       "documentNotFound": "Documento não encontrado.",
       "generationFailedTitle": "A geração falhou",
       "generationFailedSubtitle": "Tenta criar a apresentação outra vez.",
-      "generationStalledTitle": "Está a demorar mais do que o esperado",
-      "generationStalledDescription": "A geração está em curso há vários minutos. Pode ter parado. Atualiza a página para verificar se terminou ou tenta mais tarde.",
-      "generationStalledAction": "Atualizar página",
       "loadFailedTitle": "Não foi possível carregar a apresentação",
       "loadFailedSubtitle": "O conteúdo não está em formato válido. Recarrega a página ou cria a apresentação novamente.",
       "savingIndicator": "A guardar…",
@@ -2659,7 +2653,12 @@
     }
   },
   "ui": {
-    "close": "Fechar"
+    "close": "Fechar",
+    "generationStalled": {
+      "title": "Está a demorar mais do que o esperado",
+      "description": "A geração está em curso há vários minutos. Pode ter parado. Atualiza a página para verificar se terminou ou tenta mais tarde.",
+      "action": "Atualizar página"
+    }
   },
   "layout": {
     "themeToggle": {

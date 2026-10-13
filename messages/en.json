@@ -1211,9 +1211,6 @@
       "stepReviewingDescription": "Evaluating the quality of the document",
       "stepRevisedLabel": "Improvements",
       "stepRevisedDescription": "Applying improvements to the document",
-      "generationStalledTitle": "This is taking longer than expected",
-      "generationStalledDescription": "Generation has been running for several minutes. It may have stopped. Refresh the page to check whether it finished, or try again later.",
-      "generationStalledAction": "Refresh page",
       "generationFailedError": "Generation failed. Please try again.",
       "defaultTitle": "New Document",
       "loadingMessage": "Loading document...",
@@ -1289,9 +1286,6 @@
       "documentNotFound": "Document not found.",
       "generationFailedTitle": "Generation failed",
       "generationFailedSubtitle": "Try creating the presentation again.",
-      "generationStalledTitle": "This is taking longer than expected",
-      "generationStalledDescription": "Generation has been running for several minutes. It may have stopped. Refresh the page to check whether it finished, or try again later.",
-      "generationStalledAction": "Refresh page",
       "loadFailedTitle": "We couldn't load the presentation",
       "loadFailedSubtitle": "The content isn't in a valid format. Reload the page or create the presentation again.",
       "savingIndicator": "Saving…",
@@ -2659,7 +2653,12 @@
     }
   },
   "ui": {
-    "close": "Close"
+    "close": "Close",
+    "generationStalled": {
+      "title": "This is taking longer than expected",
+      "description": "Generation has been running for several minutes. It may have stopped. Refresh the page to check whether it finished, or try again later.",
+      "action": "Refresh page"
+    }
   },
   "layout": {
     "themeToggle": {
