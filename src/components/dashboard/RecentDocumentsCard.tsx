@@ -47,18 +47,21 @@ const RECENT_LIMIT = 5;
 export function RecentDocumentsCard({ className }: { className?: string }) {
   const t = useTranslations("dashboard.recentDocuments");
   const tEnums = useTranslations("enums");
-  const { isLoaded: isAuthLoaded, isSignedIn } = useAuth();
-  const isAuthReady = isAuthLoaded && Boolean(isSignedIn);
+  const { isLoaded: isAuthLoaded, isSignedIn, userId } = useAuth();
+  const authUserId = isAuthLoaded && isSignedIn ? userId : null;
 
+  // Tagged with the user it was loaded for, so a sign-out or account switch in
+  // this tab never renders the previous user's list while the new one loads.
+  const [loaded, setLoaded] = useState<{ userId: string; documents: Document[] } | null>(null);
   // null = loading; [] = loaded but empty
-  const [documents, setDocuments] = useState<Document[] | null>(null);
+  const documents = loaded && loaded.userId === authUserId ? loaded.documents : null;
 
   useEffect(() => {
-    if (!isAuthReady) return;
+    if (!authUserId) return;
 
-    const cached = dashboardCache.get<Document[]>(CACHE_KEYS.RECENT_DOCUMENTS, CACHE_TTL.RECENT_DOCUMENTS);
+    const cached = dashboardCache.get<Document[]>(authUserId, CACHE_KEYS.RECENT_DOCUMENTS, CACHE_TTL.RECENT_DOCUMENTS);
     if (cached) {
-      setDocuments(cached);
+      setLoaded({ userId: authUserId, documents: cached });
       return;
     }
 
@@ -66,19 +69,19 @@ export function RecentDocumentsCard({ className }: { className?: string }) {
     getDocuments({ page: 1, limit: RECENT_LIMIT })
       .then((result) => {
         if (!cancelled) {
-          dashboardCache.set(CACHE_KEYS.RECENT_DOCUMENTS, result.documents);
-          setDocuments(result.documents);
+          dashboardCache.set(authUserId, CACHE_KEYS.RECENT_DOCUMENTS, result.documents);
+          setLoaded({ userId: authUserId, documents: result.documents });
         }
       })
       .catch((error) => {
         console.error("Error fetching recent documents:", error);
-        if (!cancelled) setDocuments([]);
+        if (!cancelled) setLoaded({ userId: authUserId, documents: [] });
       });
 
     return () => {
       cancelled = true;
     };
-  }, [isAuthReady]);
+  }, [authUserId]);
 
   return (
     <div className={cn("rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5", className)}>

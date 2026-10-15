@@ -1,5 +1,6 @@
 "use client";
 
+import { dashboardCache } from "@/lib/dashboardCache";
 import { setApiTokenGetter } from "@/services/api/client";
 import { useAuth, useUser } from "@clerk/nextjs";
 import posthog from "posthog-js";
@@ -51,6 +52,12 @@ export default function AuthProvider({
 
   useEffect(() => {
     if (!isLoaded) return;
+    const nextUserId = user?.id ?? null;
+    if (prevUserIdRef.current !== undefined && prevUserIdRef.current !== nextUserId) {
+      // Sign-out or account switch without a page reload: drop the previous
+      // user's dashboard data instead of keeping it in memory.
+      dashboardCache.clear();
+    }
     if (user) {
       posthog.identify(user.id, {
         email: user.primaryEmailAddress?.emailAddress,
@@ -83,7 +90,7 @@ export default function AuthProvider({
       // a bare `!== null` check treated "never signed in" the same as "just signed out".
       posthog.reset();
     }
-    prevUserIdRef.current = user?.id ?? null;
+    prevUserIdRef.current = nextUserId;
   }, [isLoaded, user]);
 
   return children;

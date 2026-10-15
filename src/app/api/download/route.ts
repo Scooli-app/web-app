@@ -1,4 +1,5 @@
-﻿import { getPostHogClient } from "@/lib/posthog-server";
+﻿import { BACKEND_TOKEN_COOKIE, cookieTokenForUser } from "@/lib/backendTokenCookie";
+import { getPostHogClient } from "@/lib/posthog-server";
 import { markdownToHtml } from "@/shared/utils/markdown";
 import { auth } from "@clerk/nextjs/server";
 import {
@@ -889,7 +890,10 @@ async function resolveBackendAuthToken(
   authContext: Awaited<ReturnType<typeof auth>>,
 ): Promise<string | null> {
   const cookieStore = await cookies();
-  const tokenFromCookie = cookieStore.get("scooli_token")?.value;
+  const tokenFromCookie = cookieTokenForUser(
+    cookieStore.get(BACKEND_TOKEN_COOKIE)?.value,
+    authContext.userId,
+  );
   if (tokenFromCookie) {
     return tokenFromCookie;
   }
