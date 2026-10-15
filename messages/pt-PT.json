@@ -416,7 +416,7 @@
     "slideCount": {
       "title": "Número de slides",
       "optional": "(Opcional)",
-      "hint": "Sem escolha, geramos {count} slides. Mínimo 5, máximo 20.",
+      "hint": "Sem escolha, ajustamos o número de slides à duração da aula.",
       "generateAriaLabel": "Gerar {count} slides"
     },
     "presentationTheme": {
@@ -701,7 +701,10 @@
         "clean": "Branco",
         "rainbow": "Arco-Íris",
         "meadow": "Prado",
-        "galaxy": "Galáxia"
+        "galaxy": "Galáxia",
+        "dyslexia": "Dislexia",
+        "high-contrast": "Alto contraste",
+        "low-stimulation": "Baixa estimulação"
       }
     },
     "quickStart": {
@@ -1261,6 +1264,7 @@
       "share": "Partilhar"
     },
     "blockEditor": {
+      "photoCredit": "Imagem: {credit}",
       "fontDefault": "Padrão",
       "loadingPresentation": "A carregar apresentação...",
       "generatingImage": "A gerar imagem...",
@@ -1341,6 +1345,8 @@
       "blankSlide": "Slide em branco",
       "generateWithAI": "Gerar com IA",
       "slideCounter": "Slide {current} / {total}",
+      "notesTitle": "Notas do professor",
+      "notesPlaceholder": "Notas só para ti: o que explicar, perguntas a fazer à turma, erros comuns a vigiar. Não aparecem no slide e vão para as notas do apresentador no PowerPoint.",
       "hiddenSuffix": " · oculto",
       "zoomOutTooltip": "Diminuir zoom",
       "zoomInTooltip": "Aumentar zoom",
@@ -1364,7 +1370,8 @@
       "simplifyPrompt": "Simplifica este texto de slide (responde só com o texto simplificado, sem introdução): \"{text}\"?",
       "expandPrompt": "Expande este texto de slide com mais detalhes (responde só com o texto expandido, sem introdução): \"{text}\"?",
       "improveListPrompt": "Melhora estes itens de lista para apresentação (responde só com os itens melhorados, um por linha, sem introdução): {items}?",
-      "newSlideTitle": "Novo Slide"
+      "newSlideTitle": "Novo Slide",
+      "exportMissingImages": "Exportado, mas {count, plural, one {# imagem não pôde ser incluída} other {# imagens não puderam ser incluídas}}. Verifica as imagens dos slides e exporta novamente."
     },
     "slideKonvaEditor": {
       "changeImage": "Trocar imagem",
@@ -1390,7 +1397,37 @@
     },
     "themePicker": {
       "themeButtonLabel": "Tema",
-      "chooseThemeTitle": "Escolher tema"
+      "chooseThemeTitle": "Escolher tema",
+      "filterLabel": "Filtrar temas",
+      "all": "Todos",
+      "inclusion": "Inclusão",
+      "dark": "Escuros",
+      "light": "Claros",
+      "playful": "Divertidos",
+      "inclusionHint": "Temas pensados para a educação inclusiva: legibilidade, contraste e menos estímulos.",
+      "descriptions": {
+        "dyslexia": "Letra Lexend sobre fundo creme, sem brilho de branco puro.",
+        "high-contrast": "Texto branco sobre preto e destaques amarelos, para baixa visão.",
+        "low-stimulation": "Cores suaves e zero decorações, para menos distrações.",
+        "clean": "Fundo branco sem decorações, um ponto de partida neutro.",
+        "dark": "Preto profundo com detalhes dourados e serifa clássica.",
+        "aurora": "Verde-azulado escuro com um brilho suave no canto.",
+        "midnight": "Índigo escuro com uma nebulosa e algumas estrelas.",
+        "rose": "Carmim escuro com uma faixa diagonal marcante.",
+        "white": "Branco pérola com círculos discretos, elegante e sóbrio.",
+        "pastel": "Rosa suave com pétalas no canto superior.",
+        "warm": "Tom pergaminho com cantos editoriais em castanho.",
+        "sky": "Azul gelo com losangos geométricos.",
+        "ocean": "Azul oceano profundo com uma faixa de fundo do mar.",
+        "forest": "Verde floresta com folhas no canto da capa.",
+        "sunset": "Roxo escuro a laranja, como lava a subir.",
+        "academic": "Azul-marinho e dourado, cabeçalho clássico.",
+        "classroom": "Azul cobalto com uma faixa amarela viva.",
+        "science": "Verde-azulado com órbitas atómicas, ideal para STEM.",
+        "rainbow": "Faixa arco-íris e pontos coloridos, alegre.",
+        "meadow": "Prado primaveril com sol e relva, para os mais novos.",
+        "galaxy": "Lilás claro com planeta e estrelas coloridas."
+      }
     },
     "formulaModal": {
       "groupFractions": "Frações, potências e índices",
@@ -1432,7 +1469,51 @@
       "uploadError": "Erro ao carregar imagem",
       "urlLabel": "URL da imagem",
       "urlPlaceholder": "https://...",
-      "insertImage": "Inserir imagem"
+      "insertImage": "Inserir imagem",
+      "tabImages": "Pesquisar imagens",
+      "imagesSearchPlaceholder": "Ex: ciclo da água, célula animal, Camões",
+      "imagesSearchButton": "Pesquisar",
+      "imagesEmptyHint": "Pesquisa fotografias, ilustrações, diagramas e mapas de uso livre para os teus diapositivos.",
+      "imagesNoResults": "Sem resultados para “{query}”. Experimenta outra palavra ou outro filtro.",
+      "imagesError": "Não foi possível pesquisar imagens",
+      "imagesInsertError": "Não foi possível inserir a imagem",
+      "imagesLoadMore": "Mostrar mais",
+      "imagesInserting": "A inserir…",
+      "imagesFilterLabel": "Tipo de imagem",
+      "imagesFilterAll": "Tudo",
+      "imagesFilterPhotos": "Fotos",
+      "imagesFilterIllustrations": "Ilustrações",
+      "imagesFilterDiagrams": "Diagramas e mapas",
+      "imagesTypePhoto": "Foto",
+      "imagesTypeIllustration": "Ilustração",
+      "imagesTypeDiagram": "Diagrama",
+      "imagesTypeMap": "Mapa",
+      "imagesLicensePublicDomain": "Domínio público",
+      "imagesLicenseProvider": "Licença {provider}",
+      "imagesBy": "Autor: {name}",
+      "imagesOpenSource": "Abrir a página original em {provider}",
+      "imagesPoweredBy": "Imagens de <links></links>",
+      "imagesPartial": "Alguns resultados podem faltar (sem resposta de {providers}).",
+      "imagesCreditNote": "O autor e a licença ficam guardados e aparecem nas exportações.",
+      "imagesRetry": "Tentar novamente",
+      "imagesErrorOffline": "Sem ligação à internet. Verifica a ligação e tenta novamente.",
+      "imagesErrorRateLimited": "Foram feitas muitas pesquisas de imagens. Espera um minuto e tenta novamente.",
+      "imagesErrorUnavailable": "As bibliotecas de imagens não estão a responder. Tenta novamente daqui a pouco, ou gera uma imagem com IA.",
+      "imagesErrorNotConfigured": "A pesquisa de imagens não está disponível de momento. Podes gerar uma imagem com IA ou carregar uma do teu computador.",
+      "imagesErrorDisabled": "A pesquisa de imagens não está disponível na tua conta. Podes gerar uma imagem com IA ou carregar uma do teu computador.",
+      "imagesErrorGone": "Esta imagem já não está disponível na biblioteca. Escolhe outra.",
+      "imagesErrorInvalid": "Não foi possível usar esta imagem. Escolhe outra.",
+      "imagesErrorStorage": "Não foi possível guardar a imagem. Tenta novamente.",
+      "imagesErrorDocument": "Este documento já não existe. Atualiza a página.",
+      "imagesLoadMoreError": "Não foi possível carregar mais resultados.",
+      "imagesThumbUnavailable": "Pré-visualização indisponível",
+      "uploadErrorType": "Este ficheiro não é uma imagem suportada. Usa PNG, JPG, WEBP ou GIF.",
+      "uploadErrorSize": "A imagem tem {size} MB. O limite é 10 MB.",
+      "uploadErrorEmpty": "O ficheiro está vazio.",
+      "uploadErrorOffline": "Sem ligação à internet. A imagem não foi carregada.",
+      "urlInvalid": "Escreve um endereço completo, começado por https://",
+      "urlLoadError": "Não foi possível abrir uma imagem neste endereço. Confirma o link ou carrega a imagem do teu computador.",
+      "urlChecking": "A verificar…"
     },
     "richTextEditor": {
       "bold": "Negrito",

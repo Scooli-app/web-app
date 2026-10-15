@@ -18,6 +18,7 @@ import type {
   SlideImage,
 } from "@/shared/types/blocks";
 import { InlineText } from "./inline-text";
+import { itemsCarryOwnMarkers } from "@/shared/utils/list-markers";
 
 export function BlockRenderer({ block }: { block: ContentBlock }) {
   switch (block.type) {
@@ -59,7 +60,13 @@ export function BlockRenderer({ block }: { block: ContentBlock }) {
 
     case "ordered_list":
       return (
-        <ol className="list-decimal space-y-2 pl-6 marker:text-primary marker:font-semibold">
+        <ol
+          className={
+            itemsCarryOwnMarkers(block.items)
+              ? "list-none space-y-2"
+              : "list-decimal space-y-2 pl-6 marker:text-primary marker:font-semibold"
+          }
+        >
           {block.items.map((item, i) => (
             <li key={i} className="text-foreground leading-relaxed">
               <InlineText value={item} />

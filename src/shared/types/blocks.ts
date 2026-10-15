@@ -126,12 +126,30 @@ export type MathBlock = z.infer<typeof mathBlockSchema>;
  * Image blocks
  * -------------------------------------------------------------------------- */
 
+/** Credit for a stock photo (e.g. Pexels), shown small on the slide and in exports. */
+/**
+ * Credit for an image from a stock library (Wikimedia Commons, Openverse, Pixabay, Pexels).
+ * CC BY / CC BY-SA images must show author + licence wherever the image is shown or exported.
+ */
+export const imageAttributionSchema = z.object({
+  provider: z.string(),
+  author: z.string().nullish(),
+  authorUrl: z.string().nullish(),
+  /** The image's page on the provider's site. */
+  sourceUrl: z.string().nullish(),
+  /** Short licence label, e.g. "CC BY-SA 4.0". */
+  license: z.string().nullish(),
+  licenseUrl: z.string().nullish(),
+});
+export type ImageAttribution = z.infer<typeof imageAttributionSchema>;
+
 export const imageBlockSchema = z.object({
   id: blockIdSchema,
   type: z.literal("image"),
   url: z.string().url(),
   alt: z.string().max(500),
   caption: z.string().max(500).optional(),
+  attribution: imageAttributionSchema.optional(),
 });
 export type ImageBlock = z.infer<typeof imageBlockSchema>;
 

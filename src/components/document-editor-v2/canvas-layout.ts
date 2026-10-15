@@ -298,6 +298,7 @@ export function slideToCanvas(slide: SlideBlock): CanvasSlide {
         h: bodyH,
         prompt: slide.image.alt,
         url: slide.image.url,
+        attribution: slide.image.attribution,
       } as CanvasImageElement);
     }
 
@@ -348,6 +349,7 @@ export function slideToCanvas(slide: SlideBlock): CanvasSlide {
         h: 1,
         prompt: slide.image.alt,
         url: slide.image.url,
+        attribution: slide.image.attribution,
       } as CanvasImageElement);
     }
 
@@ -381,7 +383,7 @@ export function slideToCanvas(slide: SlideBlock): CanvasSlide {
     }
   }
 
-  return { id: slide.id, layout, background: bg, elements };
+  return { id: slide.id, layout, background: bg, elements, notes: slide.notes };
 }
 
 export function canvasToSlide(cs: CanvasSlide, slideIdx: number): SlideBlock {
@@ -434,7 +436,9 @@ export function canvasToSlide(cs: CanvasSlide, slideIdx: number): SlideBlock {
           prompt: imageEl.prompt,
         }
       : undefined,
-    notes: undefined,
+    // SlideBlock.notes is capped at 2000 (blocks.ts); a longer note (e.g. from the AI chat)
+    // would otherwise fail validation and block saving the deck.
+    notes: cs.notes ? cs.notes.slice(0, 2000) : undefined,
   };
 }
 
@@ -483,12 +487,124 @@ export function canvasToPresentation(cp: CanvasPresentation): PresentationDocume
   };
 }
 
+// Renderers' default line height when an element has none (SlideKonvaEditor / CanvasSlideView).
+const RENDER_LINE_HEIGHT = 1.3;
+// How far a theme may shrink body text back down when its larger type would overflow.
+const REFLOW_MIN_SHRINK = 0.75;
+const REFLOW_SHRINK_STEP = 0.03;
+
+type TextLike = CanvasTextElement | CanvasListElement;
+
+function isTextLike(el: CanvasElement): el is TextLike {
+  return el.type === "text" || el.type === "bullet_list" || el.type === "ordered_list";
+}
+
+/** Estimated wrapped line count of a text/list element at a given font size. */
+function estimatedLines(el: TextLike, fontSize: number): number {
+  if (el.type === "text") {
+    return el.text.split("\n").reduce((sum, line) => sum + wrappedLines(line, el.w, fontSize), 0);
+  }
+  return el.items.reduce((sum, item) => sum + wrappedLines(item, el.w - fontSize * 1.5, fontSize), 0);
+}
+
+function overlapsHorizontally(a: CanvasElement, b: CanvasElement): boolean {
+  return a.x < b.x + b.w && b.x < a.x + a.w;
+}
+
+/**
+ * When a theme changes typography (font scale / line height), resize text and list
+ * boxes to the new estimated height and push the elements stacked below them in the
+ * same column. If the slide would then run off the bottom, body text is stepped back
+ * down (never below REFLOW_MIN_SHRINK of the themed size). Titles keep their size.
+ * Elements whose typography did not change are returned untouched.
+ */
+function reflowTypography(before: CanvasElement[], after: CanvasElement[]): CanvasElement[] {
+  const changed = after.some((el, i) => {
+    const prev = before[i];
+    return (
+      isTextLike(el) &&
+      prev !== undefined &&
+      isTextLike(prev) &&
+      (el.fontSize !== prev.fontSize ||
+        (el.lineHeight ?? RENDER_LINE_HEIGHT) !== (prev.lineHeight ?? RENDER_LINE_HEIGHT))
+    );
+  });
+  if (!changed) return after;
+
+  const order = after.map((_, i) => i).sort((a, b) => (after[a]?.y ?? 0) - (after[b]?.y ?? 0));
+  const originalBottom = Math.max(1 - PY, ...after.map((el) => el.y + el.h));
+
+  function layout(shrink: number) {
+    const fontSizes: number[] = [];
+    const heights = after.map((el, i) => {
+      const prev = before[i];
+      if (!isTextLike(el) || !prev || !isTextLike(prev)) return el.h;
+      const fs = el.type === "text" && el.role === "title" ? el.fontSize : el.fontSize * shrink;
+      fontSizes[i] = fs;
+      const oldLine = prev.fontSize * (prev.lineHeight ?? RENDER_LINE_HEIGHT);
+      const newLine = fs * (el.lineHeight ?? RENDER_LINE_HEIGHT);
+      const lines = estimatedLines(el, fs);
+      const lineRatio = lines / estimatedLines(prev, prev.fontSize);
+      // Never below the estimated height, so a box that was already tight still fits.
+      return Math.max(el.h * (newLine / oldLine) * lineRatio, lines * newLine * ASPECT);
+    });
+
+    // Each element moves by the shift of the nearest element stacked above it in its column.
+    const shifts: number[] = after.map(() => 0);
+    order.forEach((i, pos) => {
+      const el = after[i];
+      if (!el) return;
+      let nearest = -1;
+      for (const j of order.slice(0, pos)) {
+        const above = after[j];
+        if (!above || !overlapsHorizontally(above, el) || above.y + above.h > el.y + 0.01) continue;
+        if (nearest === -1 || above.y + above.h > (after[nearest]?.y ?? 0) + (after[nearest]?.h ?? 0)) {
+          nearest = j;
+        }
+      }
+      if (nearest !== -1) {
+        shifts[i] = (shifts[nearest] ?? 0) + (heights[nearest] ?? 0) - (after[nearest]?.h ?? 0);
+      }
+    });
+
+    const bottom = Math.max(...after.map((el, i) => el.y + (shifts[i] ?? 0) + (heights[i] ?? el.h)));
+    return { fontSizes, heights, shifts, bottom };
+  }
+
+  let shrink = 1;
+  let result = layout(shrink);
+  while (result.bottom > originalBottom + 0.001 && shrink - REFLOW_SHRINK_STEP >= REFLOW_MIN_SHRINK) {
+    shrink -= REFLOW_SHRINK_STEP;
+    result = layout(shrink);
+  }
+
+  return after.map((el, i) => {
+    const moved = { ...el, y: el.y + (result.shifts[i] ?? 0), h: result.heights[i] ?? el.h };
+    const fs = result.fontSizes[i];
+    if (!isTextLike(el) || fs === undefined || fs === el.fontSize) return moved;
+    const scale = (el.themeFontScale ?? 1) * (fs / el.fontSize);
+    return { ...moved, fontSize: fs, themeFontScale: Math.abs(scale - 1) < 1e-6 ? undefined : scale };
+  });
+}
+
 export function applyTheme(cp: CanvasPresentation, themeId: string): CanvasPresentation {
   const theme = getThemeById(themeId);
 
   const backgroundGradient: CanvasGradient | undefined = theme.bgGradient
     ? { type: "linear", angle: theme.bgGradient.angle, stops: theme.bgGradient.stops }
     : undefined;
+
+  const fontScale = theme.fontScale ?? 1;
+
+  /** Font size, line height and scale marker for a text/list element under this theme. */
+  function typography(el: { fontSize: number; themeFontScale?: number }) {
+    const baseSize = el.fontSize / (el.themeFontScale ?? 1);
+    return {
+      fontSize: baseSize * fontScale,
+      themeFontScale: fontScale === 1 ? undefined : fontScale,
+      lineHeight: theme.lineHeight,
+    };
+  }
 
   function buildDecorations(decoList: typeof theme.decorations): CanvasShapeElement[] {
     return (decoList ?? []).map((d, i) => ({
@@ -518,52 +634,55 @@ export function applyTheme(cp: CanvasPresentation, themeId: string): CanvasPrese
         : theme.decorations;
       const decorationShapes = buildDecorations(decoSource);
 
-      const contentElements = slide.elements
-        .filter((el) => !(el.type === "shape" && (el as CanvasShapeElement).isDecoration))
-        .map((el): CanvasElement => {
-          if (el.type === "text") {
-            const color =
-              el.role === "title"
-                ? theme.titleColor
-                : el.role === "subtitle"
-                  ? theme.mutedColor
-                  : el.role === "label"
-                    ? theme.accentColor
-                    : theme.bodyColor;
-            const fontFamily =
-              el.role === "title" || el.role === "label"
+      const originalElements = slide.elements.filter(
+        (el) => !(el.type === "shape" && (el as CanvasShapeElement).isDecoration),
+      );
+      const themedElements = originalElements.map((el): CanvasElement => {
+        if (el.type === "text") {
+          const color =
+            el.role === "title"
+              ? theme.titleColor
+              : el.role === "subtitle"
+                ? theme.mutedColor
+                : el.role === "label"
+                  ? theme.accentColor
+                  : theme.bodyColor;
+          const fontFamily =
+            el.role === "title" || el.role === "label"
+              ? theme.titleFont
+              : el.role === "subtitle"
                 ? theme.titleFont
+                : theme.bodyFont;
+          // Reposition cover-slide title/subtitle when the theme has a side panel
+          if (isCover && theme.coverTextLayout) {
+            const slot =
+              el.role === "title"
+                ? theme.coverTextLayout.title
                 : el.role === "subtitle"
-                  ? theme.titleFont
-                  : theme.bodyFont;
-            // Reposition cover-slide title/subtitle when the theme has a side panel
-            if (isCover && theme.coverTextLayout) {
-              const slot =
-                el.role === "title"
-                  ? theme.coverTextLayout.title
-                  : el.role === "subtitle"
-                    ? theme.coverTextLayout.subtitle
-                    : undefined;
-              if (slot) {
-                return {
-                  ...el,
-                  color,
-                  fontFamily,
-                  x: slot.x,
-                  y: slot.y,
-                  w: slot.w,
-                  ...(slot.h !== undefined ? { h: slot.h } : {}),
-                  ...(slot.align !== undefined ? { align: slot.align } : {}),
-                };
-              }
+                  ? theme.coverTextLayout.subtitle
+                  : undefined;
+            if (slot) {
+              return {
+                ...el,
+                ...typography(el),
+                color,
+                fontFamily,
+                x: slot.x,
+                y: slot.y,
+                w: slot.w,
+                ...(slot.h !== undefined ? { h: slot.h } : {}),
+                ...(slot.align !== undefined ? { align: slot.align } : {}),
+              };
             }
-            return { ...el, color, fontFamily };
           }
-          if (el.type === "bullet_list" || el.type === "ordered_list") {
-            return { ...el, color: theme.bodyColor };
-          }
-          return el;
-        });
+          return { ...el, ...typography(el), color, fontFamily };
+        }
+        if (el.type === "bullet_list" || el.type === "ordered_list") {
+          return { ...el, ...typography(el), color: theme.bodyColor, fontFamily: theme.bodyFont };
+        }
+        return el;
+      });
+      const contentElements = reflowTypography(originalElements, themedElements);
 
       return {
         ...slide,
