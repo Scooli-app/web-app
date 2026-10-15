@@ -13,6 +13,8 @@
  * converts it back to SlideBlock[] via canvasToPresentation() for rendering.
  */
 
+import type { ImageAttribution } from "@/shared/types/blocks";
+
 export interface CanvasBaseElement {
   id: string;
   x: number; // fraction of W  (0 = left edge)
@@ -32,6 +34,10 @@ export interface CanvasTextElement extends CanvasBaseElement {
   color: string;
   align: "left" | "center" | "right";
   underline?: boolean; // text-decoration underline
+  /** Line height multiplier; undefined -> renderer default (1.3). Set by the theme. */
+  lineHeight?: number;
+  /** Theme font scale already baked into fontSize (undefined = 1). */
+  themeFontScale?: number;
   /**
    * Semantic role -> used when reconstructing a SlideBlock from canvas elements.
    * "title"    -> slide.title
@@ -45,7 +51,12 @@ export interface CanvasListElement extends CanvasBaseElement {
   type: "bullet_list" | "ordered_list";
   items: string[];
   fontSize: number; // fraction of W
+  fontFamily?: string; // CSS font-family name; undefined -> app default
   color: string;
+  /** Line height multiplier; undefined -> renderer default (1.3). Set by the theme. */
+  lineHeight?: number;
+  /** Theme font scale already baked into fontSize (undefined = 1). */
+  themeFontScale?: number;
   /** Original ContentBlock.id -> preserved for round-trip reconstruction. */
   blockId: string;
 }
@@ -65,6 +76,8 @@ export interface CanvasImageElement extends CanvasBaseElement {
   url?: string;
   /** Backend image record ID -> set after upload or AI generation so we can regenerate. */
   imageBackendId?: string;
+  /** Stock images only: author/provider/licence credit, kept through save and export. */
+  attribution?: ImageAttribution;
 }
 
 export interface CanvasShapeElement extends CanvasBaseElement {
@@ -105,6 +118,8 @@ export interface CanvasSlide {
   elements: CanvasElement[];
   /** Hidden slides are dimmed in the sidebar and skipped in presentation mode. */
   hidden?: boolean;
+  /** Teacher-only speaker notes; never rendered on the slide face. Exported as PPTX notes. */
+  notes?: string;
 }
 
 export interface CanvasPresentation {

@@ -155,6 +155,55 @@ export interface UploadDocumentImageResponse {
   markdown: string;
 }
 
+/** What a stock image shows. */
+export type StockImageType = "photo" | "illustration" | "diagram" | "map";
+
+/** The picker's filter chips; "diagram" covers diagrams and maps. Omitted = all. */
+export type StockImageFilter = "photo" | "illustration" | "diagram";
+
+/**
+ * A stock image search hit (Wikimedia Commons, Openverse, Pixabay or Pexels). Thumbnails are
+ * hotlinked only for the picker grid; importing copies the image into our storage.
+ */
+export interface StockImage {
+  /** Opaque "provider:id", sent back on import. */
+  id: string;
+  provider: string;
+  providerName: string;
+  type: StockImageType;
+  thumbnailUrl: string;
+  width: number;
+  height: number;
+  alt?: string | null;
+  author?: string | null;
+  authorUrl?: string | null;
+  /** The image's page on the provider's site. */
+  sourceUrl?: string | null;
+  /** Short licence label: "CC BY-SA 4.0", "CC0", "Public domain", "Pexels License"... */
+  license: string;
+  licenseCode: string;
+  licenseUrl?: string | null;
+  /** CC BY / CC BY-SA: the credit must name the author and the licence. */
+  attributionRequired: boolean;
+  avgColor?: string | null;
+}
+
+export interface StockImageSearchResponse {
+  results: StockImage[];
+  page: number;
+  hasMore: boolean;
+  /** Providers that answered, in merge order. */
+  providers: string[];
+  /** Providers that failed or were rate limited: results are partial. */
+  failedProviders: string[];
+}
+
+export interface ImportStockImageResponse {
+  image: DocumentImage;
+  markdown: string;
+  attribution: StockImage;
+}
+
 /**
  * Document statuses that mean generation/import will not complete. The backend's
  * terminal failure status is "failed"; "error" is still produced by some

@@ -10,6 +10,24 @@ export class UpgradeLimitError extends Error {
   }
 }
 
+/**
+ * A failed API call. The message is the same as before (backend message or a
+ * translated fallback); `status` and the backend's `code` (its `error` field)
+ * are kept so callers can pick a specific message. `status` is 0 when no
+ * response arrived (offline, timeout, CORS).
+ */
+export class ApiRequestError extends Error {
+  readonly status: number;
+  readonly code: string | null;
+
+  constructor(message: string, status: number, code: string | null) {
+    super(message);
+    this.name = "ApiRequestError";
+    this.status = status;
+    this.code = code;
+  }
+}
+
 import { openUpgradeModalForReason, setUpgradeModalOpen } from "@/store/ui/uiSlice";
 import type { UpgradeReason } from "@/shared/types/plan-limits";
 import { translate } from "@/i18n/translate";
@@ -35,6 +53,29 @@ type GetTokenFn = () => Promise<string | null>;
 
 let getTokenFn: GetTokenFn | null = null;
 
+// On a hard load, components mount and fire requests before Clerk has loaded
+// and AuthProvider has registered the token getter. Those requests wait here
+// (bounded) instead of going out unauthenticated and failing with 401.
+const TOKEN_GETTER_WAIT_MS = 10_000;
+let tokenGetterWaiters: Array<(getter: GetTokenFn | null) => void> = [];
+
+function waitForTokenGetter(): Promise<GetTokenFn | null> {
+  if (getTokenFn || typeof window === "undefined") {
+    return Promise.resolve(getTokenFn);
+  }
+  return new Promise((resolve) => {
+    const waiter = (getter: GetTokenFn | null) => {
+      clearTimeout(timeoutId);
+      resolve(getter);
+    };
+    const timeoutId = setTimeout(() => {
+      tokenGetterWaiters = tokenGetterWaiters.filter((w) => w !== waiter);
+      resolve(getTokenFn);
+    }, TOKEN_GETTER_WAIT_MS);
+    tokenGetterWaiters.push(waiter);
+  });
+}
+
 const apiClient: AxiosInstance = axios.create({
   baseURL: process.env.NEXT_PUBLIC_BASE_API_URL || "",
   headers: {
@@ -51,13 +92,19 @@ const apiClient: AxiosInstance = axios.create({
  */
 export function setApiTokenGetter(getter: GetTokenFn | null): void {
   getTokenFn = getter;
+  if (getter) {
+    const waiters = tokenGetterWaiters;
+    tokenGetterWaiters = [];
+    waiters.forEach((resolve) => resolve(getter));
+  }
 }
 
 // Request interceptor to add auth token (fetches fresh token for each request)
 apiClient.interceptors.request.use(
   async (config) => {
-    if (getTokenFn) {
-      const token = await getTokenFn();
+    const getter = await waitForTokenGetter();
+    if (getter) {
+      const token = await getter();
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
@@ -79,15 +126,19 @@ apiClient.interceptors.response.use(undefined, async (error: AxiosError) => {
   if (
     error.response?.status === 401 &&
     originalRequest &&
-    !originalRequest._retried &&
-    getTokenFn
+    !originalRequest._retried
   ) {
     originalRequest._retried = true;
 
     // Wait a short moment for Clerk to finish restoring the session
     await new Promise((resolve) => setTimeout(resolve, 500));
 
-    const token = await getTokenFn();
+    const getter = await waitForTokenGetter();
+    if (!getter) {
+      return Promise.reject(error);
+    }
+
+    const token = await getter();
     if (token) {
       originalRequest.headers.Authorization = `Bearer ${token}`;
       return apiClient(originalRequest);
@@ -154,7 +205,7 @@ apiClient.interceptors.response.use(
       if (contentType && contentType.includes("text/html")) {
         const status = error.response.status;
         return Promise.reject(
-          new Error(translate("errors.api.htmlResponse", { status }))
+          new ApiRequestError(translate("errors.api.htmlResponse", { status }), status, null)
         );
       }
 
@@ -177,11 +228,17 @@ apiClient.interceptors.response.use(
         message = translate("errors.api.httpError", { status: error.response.status });
       }
 
-      return Promise.reject(new Error(message));
+      const code =
+        error.response.data && typeof error.response.data === "object"
+          ? (error.response.data as { error?: unknown }).error
+          : null;
+      return Promise.reject(
+        new ApiRequestError(message, error.response.status, typeof code === "string" ? code : null)
+      );
     }
     if (error.request) {
       return Promise.reject(
-        new Error(translate("errors.api.networkError"))
+        new ApiRequestError(translate("errors.api.networkError"), 0, null)
       );
     }
     return Promise.reject(error);
