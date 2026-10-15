@@ -13,7 +13,7 @@ import { selectIsPro } from "@/store/subscription/selectors";
 import { FeatureFlag } from "@/shared/types/featureFlags";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { SUBJECTS, SUBJECTS_BY_GRADE } from "./constants";
 import {
   AdditionalDetailsSection,
@@ -22,6 +22,7 @@ import {
   FormActions,
   FormHeader,
   NESTED_SECTION_CLASS,
+  SlideCountSection,
   SourcePickerSection,
   SubjectSection,
   TeachingMethodSection,
@@ -31,11 +32,7 @@ import {
 import { TemplateSection } from "./templates";
 import { Card } from "@/components/ui/card";
 import type { DocumentTypeConfig, FormState, FormUpdateFn } from "./types";
-import { THEMES, translateThemeName } from "@/shared/types/presentation-theme";
-import { cn } from "@/shared/utils/utils";
-import type { CanvasPresentation, CanvasSlide } from "@/shared/types/canvas-presentation";
-import { applyTheme } from "@/components/document-editor-v2/canvas-layout";
-import { SlideThumbnail } from "@/components/document-editor-v2/SlideThumbnail";
+import { ThemeGallery } from "@/components/document-editor-v2/ThemePicker";
 import { useSubjectChoice } from "./useSubjectChoice";
 
 interface DocumentCreationPageProps {
@@ -105,7 +102,6 @@ export default function DocumentCreationPage({
 }: DocumentCreationPageProps) {
   const router = useRouter();
   const t = useTranslations("documentCreation");
-  const tEnums = useTranslations("enums");
   const dispatch = useAppDispatch();
   const isProUser = useAppSelector(selectIsPro);
   const isEntitlementLoading = useAppSelector(selectEntitlementLoading);
@@ -162,46 +158,6 @@ export default function DocumentCreationPage({
       }
     }
   }, [updateForm]);
-
-  const themedCoverSlides = useMemo<CanvasSlide[]>(() => {
-    return THEMES.map((theme) => {
-      const bareSlide: CanvasSlide = {
-        id: `mock-${theme.id}`,
-        layout: "title",
-        background: theme.bg,
-        elements: [
-          {
-            id: "mock-title",
-            type: "text",
-            x: 0.10, y: 0.20, w: 0.80, h: 0.22,
-            text: translateThemeName(theme.id),
-            fontSize: 0.052,
-            fontStyle: "bold",
-            color: "#ffffff",
-            align: "center",
-            role: "title",
-          },
-          {
-            id: "mock-sub",
-            type: "text",
-            x: 0.10, y: 0.46, w: 0.80, h: 0.12,
-            text: tEnums("documentType.presentation"),
-            fontSize: 0.026,
-            fontStyle: "normal",
-            color: "#ffffff",
-            align: "center",
-            role: "subtitle",
-          },
-        ],
-      };
-      const mockCanvas: CanvasPresentation = {
-        schemaVersion: 2,
-        documentType: "presentation",
-        slides: [bareSlide],
-      };
-      return applyTheme(mockCanvas, theme.id).slides[0] ?? bareSlide;
-    });
-  }, [tEnums]);
 
   const showTeachingMethodSection = documentType.id === "lessonPlan";
   const showWorksheetVariantSection = documentType.id === "worksheet";
@@ -276,9 +232,9 @@ export default function DocumentCreationPage({
             includeAe: formState.includeAe ?? true,
             regulatorySourceIds: formState.regulatorySourceIds,
           }),
-          // Presentations use class duration (like other document types) so the
-          // backend can infer an appropriate slide count. duration is already
-          // included above from formState.lessonTime — nothing extra needed here.
+          // Presentations: an explicit slide count wins; without one the backend
+          // sizes the deck from the lesson duration.
+          ...(isPresentation && formState.slideCount ? { slideCount: formState.slideCount } : {}),
         })
       );
 
@@ -410,6 +366,17 @@ export default function DocumentCreationPage({
                   onUpdate={updateForm}
                   className={NESTED_SECTION_CLASS}
                 />
+
+                {isPresentation && (
+                  <>
+                    <div className="border-t border-border/60" />
+                    <SlideCountSection
+                      slideCount={formState.slideCount}
+                      onUpdate={updateForm}
+                      className={NESTED_SECTION_CLASS}
+                    />
+                  </>
+                )}
               </div>
             </Card>
           </div>
@@ -427,30 +394,10 @@ export default function DocumentCreationPage({
           {isPresentation && (
             <div className="rounded-xl border bg-card p-4 shadow-sm">
               <p className="text-sm font-medium mb-3">{t("presentationTheme.title")}</p>
-              <div className={cn("flex flex-wrap gap-2")}>
-                {themedCoverSlides.map((slide, i) => {
-                  const theme = THEMES[i];
-                  if (!theme) return null;
-                  return (
-                    <SlideThumbnail
-                      key={theme.id}
-                      slide={slide}
-                      index={i}
-                      isActive={(formState.themeId ?? "clean") === theme.id}
-                      onClick={() => updateForm("themeId", theme.id)}
-                      w={110}
-                      h={62}
-                      showIndex={false}
-                      ringOffset="ring-offset-card"
-                    />
-                  );
-                })}
-              </div>
-              <p className="text-xs text-muted-foreground mt-2">
-                {THEMES.find((theme) => theme.id === (formState.themeId ?? "clean"))
-                  ? translateThemeName(formState.themeId ?? "clean")
-                  : t("presentationTheme.defaultName")}
-              </p>
+              <ThemeGallery
+                value={formState.themeId ?? "clean"}
+                onSelect={(id) => updateForm("themeId", id)}
+              />
             </div>
           )}
 

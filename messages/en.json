@@ -416,7 +416,7 @@
     "slideCount": {
       "title": "Number of slides",
       "optional": "(Optional)",
-      "hint": "Without a choice, we generate {count} slides. Minimum 5, maximum 20.",
+      "hint": "If you don't pick one, we size the deck to the lesson length.",
       "generateAriaLabel": "Generate {count} slides"
     },
     "presentationTheme": {
@@ -701,7 +701,10 @@
         "clean": "Blank",
         "rainbow": "Rainbow",
         "meadow": "Meadow",
-        "galaxy": "Galaxy"
+        "galaxy": "Galaxy",
+        "dyslexia": "Dyslexia-friendly",
+        "high-contrast": "High contrast",
+        "low-stimulation": "Low stimulation"
       }
     },
     "quickStart": {
@@ -1261,6 +1264,7 @@
       "share": "Share"
     },
     "blockEditor": {
+      "photoCredit": "Image: {credit}",
       "fontDefault": "Default",
       "loadingPresentation": "Loading presentation...",
       "generatingImage": "Generating image...",
@@ -1341,6 +1345,8 @@
       "blankSlide": "Blank slide",
       "generateWithAI": "Generate with AI",
       "slideCounter": "Slide {current} / {total}",
+      "notesTitle": "Teacher notes",
+      "notesPlaceholder": "Notes just for you: what to explain, questions to ask the class, common mistakes to watch for. They stay off the slide and go into the PowerPoint speaker notes.",
       "hiddenSuffix": " · hidden",
       "zoomOutTooltip": "Zoom out",
       "zoomInTooltip": "Zoom in",
@@ -1364,7 +1370,8 @@
       "simplifyPrompt": "Simplify this slide text (reply only with the simplified text, no intro): \"{text}\"?",
       "expandPrompt": "Expand this slide text with more detail (reply only with the expanded text, no intro): \"{text}\"?",
       "improveListPrompt": "Improve these list items for a presentation (reply only with the improved items, one per line, no intro): {items}?",
-      "newSlideTitle": "New Slide"
+      "newSlideTitle": "New Slide",
+      "exportMissingImages": "Exported, but {count, plural, one {# image couldn't be included} other {# images couldn't be included}}. Check the slide images and export again."
     },
     "slideKonvaEditor": {
       "changeImage": "Change image",
@@ -1390,7 +1397,37 @@
     },
     "themePicker": {
       "themeButtonLabel": "Theme",
-      "chooseThemeTitle": "Choose a theme"
+      "chooseThemeTitle": "Choose a theme",
+      "filterLabel": "Filter themes",
+      "all": "All",
+      "inclusion": "Accessibility",
+      "dark": "Dark",
+      "light": "Light",
+      "playful": "Playful",
+      "inclusionHint": "Themes designed for inclusive classrooms: readability, contrast and fewer distractions.",
+      "descriptions": {
+        "dyslexia": "Lexend type on a cream background, without bright white glare.",
+        "high-contrast": "White on black with yellow highlights, for low vision.",
+        "low-stimulation": "Muted colours and no decorations, for fewer distractions.",
+        "clean": "Plain white with no decorations, a neutral starting point.",
+        "dark": "Deep black with gold accents and a classic serif.",
+        "aurora": "Dark teal with a soft glow in the corner.",
+        "midnight": "Dark indigo with a nebula and a few stars.",
+        "rose": "Dark crimson with a bold diagonal band.",
+        "white": "Pearl white with subtle rings, clean and understated.",
+        "pastel": "Soft pink with petals in the top corner.",
+        "warm": "Parchment tone with brown editorial corners.",
+        "sky": "Ice blue with geometric diamonds.",
+        "ocean": "Deep ocean blue with a sea-floor band.",
+        "forest": "Forest green with leaves on the cover.",
+        "sunset": "Dark purple to orange, like rising lava.",
+        "academic": "Navy and gold with a classic header.",
+        "classroom": "Cobalt blue with a bright yellow stripe.",
+        "science": "Teal with atomic orbits, made for STEM.",
+        "rainbow": "Rainbow stripe and colourful dots, cheerful.",
+        "meadow": "Spring meadow with sun and grass, for younger pupils.",
+        "galaxy": "Light lilac with a planet and colourful stars."
+      }
     },
     "formulaModal": {
       "groupFractions": "Fractions, powers and indices",
@@ -1432,7 +1469,51 @@
       "uploadError": "Error uploading image",
       "urlLabel": "Image URL",
       "urlPlaceholder": "https://...",
-      "insertImage": "Insert image"
+      "insertImage": "Insert image",
+      "tabImages": "Search images",
+      "imagesSearchPlaceholder": "E.g. water cycle, animal cell, Shakespeare",
+      "imagesSearchButton": "Search",
+      "imagesEmptyHint": "Search free-to-use photos, illustrations, diagrams and maps for your slides.",
+      "imagesNoResults": "No results for “{query}”. Try another word or filter.",
+      "imagesError": "Couldn't search images",
+      "imagesInsertError": "Couldn't insert the image",
+      "imagesLoadMore": "Show more",
+      "imagesInserting": "Inserting…",
+      "imagesFilterLabel": "Image type",
+      "imagesFilterAll": "All",
+      "imagesFilterPhotos": "Photos",
+      "imagesFilterIllustrations": "Illustrations",
+      "imagesFilterDiagrams": "Diagrams & maps",
+      "imagesTypePhoto": "Photo",
+      "imagesTypeIllustration": "Illustration",
+      "imagesTypeDiagram": "Diagram",
+      "imagesTypeMap": "Map",
+      "imagesLicensePublicDomain": "Public domain",
+      "imagesLicenseProvider": "{provider} License",
+      "imagesBy": "By {name}",
+      "imagesOpenSource": "Open the original page on {provider}",
+      "imagesPoweredBy": "Images from <links></links>",
+      "imagesPartial": "Some results may be missing (no response from {providers}).",
+      "imagesCreditNote": "The author and licence are saved and shown in exports.",
+      "imagesRetry": "Try again",
+      "imagesErrorOffline": "You're offline. Check your connection and try again.",
+      "imagesErrorRateLimited": "Too many image searches right now. Wait a minute and try again.",
+      "imagesErrorUnavailable": "The image libraries aren't responding. Try again shortly, or generate an image with AI.",
+      "imagesErrorNotConfigured": "Image search isn't available right now. You can generate an image with AI or upload one from your computer.",
+      "imagesErrorDisabled": "Image search isn't available on your account. You can generate an image with AI or upload one from your computer.",
+      "imagesErrorGone": "This image is no longer available in the library. Pick another one.",
+      "imagesErrorInvalid": "This image can't be used. Pick another one.",
+      "imagesErrorStorage": "Couldn't save the image. Try again.",
+      "imagesErrorDocument": "This document no longer exists. Refresh the page.",
+      "imagesLoadMoreError": "Couldn't load more results.",
+      "imagesThumbUnavailable": "Preview unavailable",
+      "uploadErrorType": "This file isn't a supported image. Use PNG, JPG, WEBP or GIF.",
+      "uploadErrorSize": "The image is {size} MB. The limit is 10 MB.",
+      "uploadErrorEmpty": "The file is empty.",
+      "uploadErrorOffline": "You're offline. The image wasn't uploaded.",
+      "urlInvalid": "Enter a full address starting with https://",
+      "urlLoadError": "Couldn't open an image at this address. Check the link or upload the image from your computer.",
+      "urlChecking": "Checking…"
     },
     "richTextEditor": {
       "bold": "Bold",

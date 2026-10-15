@@ -2,7 +2,7 @@
  * Slide-count picker for the Presentations creation form (SCOOL-135).
  *
  * Preset row (5 / 8 / 10 / 12 / 15 / 20) styled to match {@link DurationSection}.
- * Defaults to 10 — see PRESENTATIONS_NOTES.md decision #4.
+ * Optional: without a pick the backend sizes the deck from the lesson duration.
  *
  * Only rendered when {@code documentType.id === "presentation"} (the caller
  * guards rendering; this component does not check the type itself).
@@ -15,9 +15,6 @@ import type { FormUpdateFn } from "../types";
 
 /** Presets shown as preset buttons. Matches typical classroom decks. */
 const SLIDE_COUNT_PRESETS = [5, 8, 10, 12, 15, 20] as const;
-
-/** Default applied when the user submits without picking one. */
-export const DEFAULT_SLIDE_COUNT = 10;
 
 interface SlideCountSectionProps {
   slideCount?: number;
@@ -32,8 +29,7 @@ export function SlideCountSection({
 }: SlideCountSectionProps) {
   const t = useTranslations("documentCreation.slideCount");
 
-  // Treat the default (10) as "not yet explicitly chosen" for visual feedback —
-  // no preset is highlighted until the user clicks something.
+  // No preset is highlighted until the user clicks one.
   const selected = slideCount;
 
   return (
@@ -56,7 +52,7 @@ export function SlideCountSection({
           </h2>
         </div>
         <p className="text-xs sm:text-sm text-muted-foreground">
-          {t("hint", { count: DEFAULT_SLIDE_COUNT })}
+          {t("hint")}
         </p>
         <div className="flex flex-wrap gap-1.5 sm:gap-2">
           {SLIDE_COUNT_PRESETS.map((count) => (

@@ -46,9 +46,15 @@ export interface CoverTextSlot {
   align?: "left" | "center" | "right";
 }
 
+/** Filter groups shown as chips in the theme picker. A theme may belong to several. */
+export type ThemeGroup = "inclusion" | "dark" | "light" | "playful";
+
+export const THEME_GROUPS: ThemeGroup[] = ["inclusion", "dark", "light", "playful"];
+
 export interface PresentationTheme {
   id: string;
   name: string;
+  groups: ThemeGroup[];
   bg: string;
   bgGradient?: ThemeGradient;
   titleColor: string;
@@ -57,6 +63,13 @@ export interface PresentationTheme {
   mutedColor: string;
   titleFont: string;
   bodyFont: string;
+  /**
+   * Multiplier on every text/list font size (1 = unchanged). applyTheme()
+   * bakes it into element fontSize, undoing the previous theme's scale.
+   */
+  fontScale?: number;
+  /** Line height for text and lists (default 1.3 in the renderers). */
+  lineHeight?: number;
   /**
    * Optional repositioning for cover-slide text when the theme has a side panel
    * or other structural element that conflicts with the default centred layout.
@@ -84,6 +97,7 @@ export interface PresentationTheme {
 const noir: PresentationTheme = {
   id: "dark",
   name: "Noir",
+  groups: ["dark"],
   bg: "#0a0a0a",
   bgGradient: {
     angle: 160,
@@ -124,6 +138,7 @@ const noir: PresentationTheme = {
 const aurora: PresentationTheme = {
   id: "aurora",
   name: "Aurora",
+  groups: ["dark"],
   bg: "#030d0e",
   bgGradient: {
     angle: 135,
@@ -160,6 +175,7 @@ const aurora: PresentationTheme = {
 const nebula: PresentationTheme = {
   id: "midnight",
   name: "Nebula",
+  groups: ["dark"],
   bg: "#04000f",
   bgGradient: {
     angle: 150,
@@ -198,6 +214,7 @@ const nebula: PresentationTheme = {
 const carmim: PresentationTheme = {
   id: "rose",
   name: "Carmim",
+  groups: ["dark"],
   bg: "#0c0204",
   bgGradient: {
     angle: 160,
@@ -240,6 +257,7 @@ const carmim: PresentationTheme = {
 const pearl: PresentationTheme = {
   id: "white",
   name: "Pearl",
+  groups: ["light"],
   bg: "#f8f8f8",
   bgGradient: {
     angle: 160,
@@ -275,6 +293,7 @@ const pearl: PresentationTheme = {
 const floral: PresentationTheme = {
   id: "pastel",
   name: "Floral",
+  groups: ["light"],
   bg: "#fff5f7",
   bgGradient: {
     angle: 140,
@@ -310,6 +329,7 @@ const floral: PresentationTheme = {
 const linho: PresentationTheme = {
   id: "warm",
   name: "Linho",
+  groups: ["light"],
   bg: "#faf7f0",
   bgGradient: {
     angle: 120,
@@ -354,6 +374,7 @@ const linho: PresentationTheme = {
 const glacial: PresentationTheme = {
   id: "sky",
   name: "Glacial",
+  groups: ["light"],
   bg: "#e8f4fd",
   bgGradient: {
     angle: 150,
@@ -393,6 +414,7 @@ const glacial: PresentationTheme = {
 const abissal: PresentationTheme = {
   id: "ocean",
   name: "Abissal",
+  groups: ["dark"],
   bg: "#00111c",
   bgGradient: {
     angle: 180,
@@ -429,6 +451,7 @@ const abissal: PresentationTheme = {
 const esmeralda: PresentationTheme = {
   id: "forest",
   name: "Esmeralda",
+  groups: ["dark"],
   bg: "#050e08",
   bgGradient: {
     angle: 140,
@@ -466,6 +489,7 @@ const esmeralda: PresentationTheme = {
 const vulcao: PresentationTheme = {
   id: "sunset",
   name: "Vulcão",
+  groups: ["dark"],
   bg: "#0e0516",
   bgGradient: {
     angle: 160,
@@ -511,6 +535,7 @@ const vulcao: PresentationTheme = {
 const academico: PresentationTheme = {
   id: "academic",
   name: "Académico",
+  groups: ["dark"],
   bg: "#06091a",
   bgGradient: {
     angle: 180,
@@ -551,6 +576,7 @@ const academico: PresentationTheme = {
 const escola: PresentationTheme = {
   id: "classroom",
   name: "Escola",
+  groups: ["dark"],
   bg: "#050e30",
   bgGradient: {
     angle: 155,
@@ -593,6 +619,7 @@ const escola: PresentationTheme = {
 const ciencias: PresentationTheme = {
   id: "science",
   name: "Ciências",
+  groups: ["dark"],
   bg: "#020e12",
   bgGradient: {
     angle: 145,
@@ -633,6 +660,7 @@ const ciencias: PresentationTheme = {
 const branco: PresentationTheme = {
   id: "clean",
   name: "Branco",
+  groups: ["light"],
   bg: "#ffffff",
   titleColor: "#111827",
   bodyColor: "#374151",
@@ -650,6 +678,7 @@ const branco: PresentationTheme = {
 const arcoiris: PresentationTheme = {
   id: "rainbow",
   name: "Arco-Íris",
+  groups: ["light", "playful"],
   bg: "#fffef8",
   titleColor: "#1e1b4b",
   bodyColor: "#312e81",
@@ -695,6 +724,7 @@ const arcoiris: PresentationTheme = {
 const prado: PresentationTheme = {
   id: "meadow",
   name: "Prado",
+  groups: ["light", "playful"],
   bg: "#f7fee7",
   bgGradient: {
     angle: 180,
@@ -739,6 +769,7 @@ const prado: PresentationTheme = {
 const galaxia: PresentationTheme = {
   id: "galaxy",
   name: "Galáxia",
+  groups: ["light", "playful"],
   bg: "#f8f5ff",
   bgGradient: {
     angle: 150,
@@ -778,11 +809,87 @@ const galaxia: PresentationTheme = {
 };
 
 /* ─────────────────────────────────────────────────────────────────────────────
+ * INCLUSION THEMES (educação inclusiva, DL 54/2018)
+ * Calm, legible, predictable: no gradients, no busy cover art.
+ * ─────────────────────────────────────────────────────────────────────────── */
+
+/**
+ * DISLEXIA — Lexend on warm off-white (pure white glare is avoided), dark
+ * grey text instead of pure black, a single thin accent bar.
+ */
+const dislexia: PresentationTheme = {
+  id: "dyslexia",
+  name: "Dislexia",
+  groups: ["inclusion", "light"],
+  bg: "#faf6ea",
+  titleColor: "#1c2430",
+  bodyColor: "#2b3340",
+  accentColor: "#1d5fa8",
+  mutedColor: "#545d6a",
+  titleFont: "Lexend, Verdana, sans-serif",
+  bodyFont: "Lexend, Verdana, sans-serif",
+  fontScale: 1.15,
+  lineHeight: 1.5,
+  coverDecorations: [
+    { x: 0.10, y: 0.86, w: 0.14, h: 0.008, shape: "rect", fill: "#1d5fa8", strokeWidth: 0 },
+  ],
+  decorations: [
+    { x: 0, y: 0, w: 0.008, h: 1, shape: "rect", fill: "#1d5fa8", strokeWidth: 0 },
+  ],
+};
+
+/**
+ * ALTO CONTRASTE — for low vision. Pure black + white text (21:1) with a
+ * yellow accent (≈15:1). Thick, unambiguous bars instead of subtle art.
+ */
+const altoContraste: PresentationTheme = {
+  id: "high-contrast",
+  name: "Alto contraste",
+  groups: ["inclusion", "dark"],
+  bg: "#000000",
+  titleColor: "#ffffff",
+  bodyColor: "#ffffff",
+  accentColor: "#ffd60a",
+  mutedColor: "#e6e6e6",
+  titleFont: "Lexend, Verdana, sans-serif",
+  bodyFont: "Lexend, Verdana, sans-serif",
+  coverDecorations: [
+    { x: 0, y: 0.94, w: 1, h: 0.06, shape: "rect", fill: "#ffd60a", strokeWidth: 0 },
+  ],
+  decorations: [
+    { x: 0, y: 0, w: 0.014, h: 1, shape: "rect", fill: "#ffd60a", strokeWidth: 0 },
+  ],
+};
+
+/**
+ * BAIXA ESTIMULAÇÃO — muted warm grey, soft sage accent, rounded sans.
+ * No decorations at all, on the cover or content slides (ADHD, autism,
+ * sensory sensitivity).
+ */
+const baixaEstimulacao: PresentationTheme = {
+  id: "low-stimulation",
+  name: "Baixa estimulação",
+  groups: ["inclusion", "light"],
+  bg: "#f2f0eb",
+  titleColor: "#3a3f3c",
+  bodyColor: "#454a47",
+  accentColor: "#4f6a62",
+  mutedColor: "#6b706c",
+  titleFont: "Nunito, Lato, system-ui, sans-serif",
+  bodyFont: "Nunito, Lato, system-ui, sans-serif",
+  coverDecorations: [],
+  decorations: [],
+};
+
+/* ─────────────────────────────────────────────────────────────────────────────
  * Export
  * ─────────────────────────────────────────────────────────────────────────── */
 
 export const THEMES: PresentationTheme[] = [
   branco,
+  dislexia,
+  altoContraste,
+  baixaEstimulacao,
   noir,
   aurora,
   nebula,
