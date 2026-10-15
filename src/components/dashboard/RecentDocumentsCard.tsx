@@ -68,10 +68,18 @@ export function RecentDocumentsCard({ className }: { className?: string }) {
     let cancelled = false;
     getDocuments({ page: 1, limit: RECENT_LIMIT })
       .then((result) => {
-        if (!cancelled) {
-          dashboardCache.set(authUserId, CACHE_KEYS.RECENT_DOCUMENTS, result.documents);
-          setLoaded({ userId: authUserId, documents: result.documents });
+        if (cancelled) return;
+        // The request goes out as whatever session Clerk has active in this
+        // tab when it is sent, which can differ from the user this card
+        // renders for (a multi-session client reloads into the session another
+        // tab used last). Only keep a list fetched as this user; a userId
+        // change re-runs this effect.
+        if (result.requestedAs !== authUserId) {
+          setLoaded({ userId: authUserId, documents: [] });
+          return;
         }
+        dashboardCache.set(authUserId, CACHE_KEYS.RECENT_DOCUMENTS, result.documents);
+        setLoaded({ userId: authUserId, documents: result.documents });
       })
       .catch((error) => {
         console.error("Error fetching recent documents:", error);

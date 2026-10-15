@@ -7,6 +7,7 @@
 import type { BackendPaginatedResponse, ChatResponse, CreateDocumentParams, CreateDocumentStreamResponse, Document, DocumentFilters, DocumentStatsResponse, DocumentStreamCallbacks, DocumentType, GenerateSlideResponse, GetDocumentsParams, GetDocumentsResponse, StreamedResponse, StreamEvent, WorksheetVariant } from "@/shared/types";
 import { isFailedDocumentStatus, type DocumentImage, type RagSource } from "@/shared/types/document";
 import { translate } from "@/i18n/translate";
+import { getBearerSubject } from "@/lib/tokenSubject";
 import axios, { type AxiosError } from "axios";
 import apiClient from "./client";
 
@@ -79,6 +80,7 @@ export async function getDocuments(
       total: data?.totalItems ?? 0,
       hasMore: data?.hasNext ?? false,
     },
+    requestedAs: getBearerSubject(response.config.headers?.Authorization),
   };
 }
 
