@@ -1,3 +1,4 @@
+import type { CompanionType } from "@/components/dashboard/weekWindow";
 /**
  * Timetable Service — Feature 2: Horário & Planos Letivos
  */
@@ -97,6 +98,9 @@ export interface LessonDocument {
   documentId: string;
   documentRole: string;
   title: string;
+  documentType?: string;
+  /** generating | processing | completed | failed */
+  status?: string;
 }
 
 export interface GenerateLessonStreamCallbacks {
@@ -187,6 +191,32 @@ export async function listLessonDocuments(
     `/timetable/${timetableId}/lessons/${lessonId}/documents`
   );
   return response.data;
+}
+
+/**
+ * One-click lesson document ("+ Ficha", "+ Quiz", …): the backend creates it from the lesson's
+ * data and generates it server-side, so it finishes even if the teacher leaves the page.
+ * 402 / free-plan 403 open the upgrade modal in the API client; 409 = already being prepared.
+ */
+export async function generateLessonDocument(
+  timetableId: string,
+  lessonId: string,
+  documentType: CompanionType,
+): Promise<{ id: string }> {
+  const response = await apiClient.post<{ id: string; status: string }>(
+    `/timetable/${timetableId}/lessons/${lessonId}/documents/generate`,
+    { documentType },
+  );
+  return { id: response.data.id };
+}
+
+/** Puts a document made from the create form into one of the teacher's lessons (no credit). */
+export async function linkLessonDocument(
+  timetableId: string,
+  lessonId: string,
+  documentId: string,
+): Promise<void> {
+  await apiClient.post(`/timetable/${timetableId}/lessons/${lessonId}/documents/${documentId}/link`);
 }
 
 // ─── TOPIC GENERATION ─────────────────────────────────────────────────

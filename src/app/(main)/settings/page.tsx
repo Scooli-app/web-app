@@ -629,7 +629,8 @@ function SettingsContent() {
           )}
         </div>
 
-        <BillingNifCard />
+        {/* A teacher whose Pro comes only from the school has nothing to invoice. */}
+        {entitlement?.source !== "organization" && <BillingNifCard />}
 
         {/* App Preferences Card */}
         <div className="bg-card p-4 sm:p-6 md:p-8 rounded-2xl shadow-md border border-border">
