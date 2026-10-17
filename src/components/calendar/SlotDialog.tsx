@@ -1,4 +1,5 @@
 "use client";
+import { MAX_LENGTHS } from "@/shared/config/constants";
 import { AiDisclaimer } from "@/components/ui/ai-disclaimer";
 
 import { useEffect, useState } from "react";
@@ -50,7 +51,7 @@ import {
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { isSupportedLocale, defaultLocale } from "@/i18n/locales";
-import { toIntlLocale } from "@/shared/utils/calendar";
+import { readableTextOn, toIntlLocale } from "@/shared/utils/calendar";
 
 const ROLE_ROUTE: Record<string, string> = {
   lessonPlan: Routes.LESSON_PLAN,
@@ -216,10 +217,10 @@ export function SlotDialog({
             {/* Subject pill + status badge */}
             <div className="mb-3 flex items-center gap-2 flex-wrap">
               <span
-                className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium text-white"
-                style={{ backgroundColor: color }}
+                className="inline-flex min-w-0 max-w-full items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium"
+                style={{ backgroundColor: color, color: readableTextOn(color) }}
               >
-                <span className="h-1.5 w-1.5 rounded-full bg-white/70" />
+                <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-current opacity-70" />
                 {slot.timetable.gradeLevel ? `${tTimetable("gradeShort", { grade: slot.timetable.gradeLevel })} ` : ""}
                 {translateSubject(slot.timetable.subject)}
                 {slot.timetable.classLabel ? ` · ${slot.timetable.classLabel}` : ""}
@@ -249,6 +250,7 @@ export function SlotDialog({
             {editingTitle ? (
               <Input
                 autoFocus
+                maxLength={MAX_LENGTHS.LESSON_TOPIC}
                 value={draftTitle}
                 onChange={(e) => setDraftTitle(e.target.value)}
                 onBlur={handleTitleSave}
@@ -264,7 +266,7 @@ export function SlotDialog({
                 onClick={() => !isHoliday && setEditingTitle(true)}
                 title={isHoliday ? undefined : t("editTopicTitle")}
               >
-                <span className="hover:underline decoration-dashed underline-offset-2">
+                <span className="min-w-0 wrap-anywhere hover:underline decoration-dashed underline-offset-2">
                   {isHoliday ? slot.topicTitle || tShared("holidayNoLesson") : slot.topicTitle}
                 </span>
                 {!isHoliday && (

@@ -82,3 +82,19 @@ export function getDayLabels(locale: Locale): string[] {
   const monday = new Date(2024, 0, 1); // a known Monday
   return Array.from({ length: 7 }, (_, i) => fmt.format(addDays(monday, i)));
 }
+
+/**
+ * Text colour for a label drawn on a turma colour. White (the house style on mid-tone colours
+ * like the Scooli violet) unless it drops under 3:1 contrast, as on yellow or mint; then near-black.
+ */
+export function readableTextOn(hex: string): "#111827" | "#ffffff" {
+  const rgb = hexToRgb(hex);
+  if (!rgb || [rgb.r, rgb.g, rgb.b].some(Number.isNaN)) return "#ffffff";
+  const channel = (v: number) => {
+    const c = v / 255;
+    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  };
+  const luminance = 0.2126 * channel(rgb.r) + 0.7152 * channel(rgb.g) + 0.0722 * channel(rgb.b);
+  const contrastWithWhite = 1.05 / (luminance + 0.05);
+  return contrastWithWhite >= 3 ? "#ffffff" : "#111827";
+}

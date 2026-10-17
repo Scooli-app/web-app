@@ -101,7 +101,13 @@
     "prepareConfirmAction": "{count, plural, one {Preparar 1 plano} other {Preparar # planos}}",
     "prepareCostFree": "Sem custo: estas aulas estão na tua semana grátis.",
     "prepareCost": "{count, plural, one {Gasta # crédito.} other {Gasta # créditos.}}",
-    "cancel": "Cancelar"
+    "cancel": "Cancelar",
+    "moreLessons": "{count, plural, one {+ # aula} other {+ # aulas}}",
+    "dayReady": "{count, plural, one {# pronta} other {# prontas}}",
+    "dayToPrepare": "{count, plural, one {# por preparar} other {# por preparar}}",
+    "ready": "Pronta",
+    "toPrepare": "Por preparar",
+    "seeAllInCalendar": "Ver as {count} aulas no calendário"
   },
   "emailUnsubscribe": {
     "title": "Deixar de receber o email semanal?",
@@ -2782,7 +2788,8 @@
       "holidayNoLesson": "Feriado / sem aula",
       "classInline": "Turma {label}",
       "minutesSuffix": "{count} min",
-      "generateWeek": "Gerar semana ({count})"
+      "generateWeek": "Gerar semana ({count})",
+      "saveError": "Não foi possível guardar a alteração. Tenta novamente."
     },
     "week": {
       "generate": "Gerar ({count})",
@@ -2841,7 +2848,7 @@
       "typeLabel": "Tipo:",
       "objectivesTitle": "Objetivos de aprendizagem",
       "objectivesProcessing": "A processar…",
-      "objectivesEmpty": "Gera os tópicos da turma para ver os objetivos de aprendizagem.",
+      "objectivesEmpty": "Os objetivos aparecem quando o plano de aula estiver pronto.",
       "documentsTitle": "Documentos gerados",
       "loadingDocuments": "A carregar documentos…",
       "noDocuments": "Nenhum documento encontrado.",

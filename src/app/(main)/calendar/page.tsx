@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "sonner";
 import { isListableSlot } from "@/shared/utils/lessonTopic";
 import { useAuth } from "@clerk/nextjs";
 import Link from "next/link";
@@ -65,7 +66,7 @@ import { SlotDialog } from "@/components/calendar/SlotDialog";
 import { formatClassName } from "@/shared/utils/className";
 import { SlotSkeleton } from "@/components/calendar/SlotSkeleton";
 import type { SlotWithTimetable, DayMap } from "@/shared/types/calendar";
-import { toIso, addDays, compactWeekLabel, defaultCalendarWeek, getWeekStart, formatWeekLabel, hexToRgb, getDayLabels, toIntlLocale } from "@/shared/utils/calendar";
+import { toIso, addDays, compactWeekLabel, defaultCalendarWeek, getWeekStart, formatWeekLabel, hexToRgb, getDayLabels, readableTextOn, toIntlLocale } from "@/shared/utils/calendar";
 import { useLocale, useTranslations } from "next-intl";
 import { isSupportedLocale, defaultLocale } from "@/i18n/locales";
 
@@ -233,7 +234,7 @@ function LessonCard({
         <div className="px-2 py-1.5">
           <div className="flex items-start gap-1">
             <p
-              className={`line-clamp-1 sm:line-clamp-2 text-xs font-medium leading-tight ${
+              className={`line-clamp-1 min-w-0 wrap-anywhere sm:line-clamp-2 text-xs font-medium leading-tight ${
                 isHoliday
                   ? "line-through text-muted-foreground"
                   : "text-foreground"
@@ -245,10 +246,8 @@ function LessonCard({
             </p>
           </div>
           {!isHoliday && (
-            <p
-              className="mt-0.5 truncate text-[11px] font-medium"
-              style={{ color }}
-            >
+            // The left border carries the turma colour; as text a dark or pale colour was unreadable.
+            <p className="mt-0.5 truncate text-[11px] font-medium text-muted-foreground">
               {timetable.gradeLevel ? `${tTimetable("gradeShort", { grade: timetable.gradeLevel })} ` : ""}
               {translateSubject(timetable.subject)}
               {timetable.classLabel ? ` · ${timetable.classLabel}` : ""}
@@ -850,10 +849,10 @@ function CalendarPageInner() {
             : prev,
         );
       } catch {
-        /* ignore */
+        toast.error(t("shared.saveError"));
       }
     },
-    [],
+    [t],
   );
 
   const handleTitleChange = useCallback(
@@ -874,10 +873,10 @@ function CalendarPageInner() {
             : prev,
         );
       } catch {
-        /* ignore */
+        toast.error(t("shared.saveError"));
       }
     },
-    [],
+    [t],
   );
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -1041,7 +1040,8 @@ function CalendarPageInner() {
           </div>
 
           {/* Filter chips — shared ── */}
-          <div className="flex flex-wrap items-center gap-1.5 min-h-[28px]">
+          {/* One row that scrolls sideways: with many turmas the chips used to fill half the header. */}
+          <div className="-mx-1 flex min-h-[28px] items-center gap-1.5 overflow-x-auto px-1 pb-0.5 [scrollbar-width:none]">
             {isLoadingTimetables ? (
               <>
                 <div className="h-7 w-20 animate-pulse rounded-full bg-muted" />
@@ -1056,21 +1056,31 @@ function CalendarPageInner() {
                     key={tt.id}
                     type="button"
                     onClick={() => toggleFilter(tt.id)}
-                    className={`flex h-7 items-center gap-1.5 rounded-full border px-2.5 text-xs font-medium transition-all ${
+                    title={formatClassName(tt, {
+                      gradeShort: (grade) => tTimetable("gradeShort", { grade }),
+                      subject: translateSubject,
+                    })}
+                    className={`flex h-7 max-w-[14rem] shrink-0 items-center gap-1.5 rounded-full border px-2.5 text-xs font-medium transition-all ${
                       isActive
-                        ? "border-transparent text-white shadow-sm"
+                        ? "border-transparent shadow-sm"
                         : "border-border bg-transparent text-muted-foreground/50 hover:text-muted-foreground hover:border-border/80"
                     }`}
-                    style={isActive ? { backgroundColor: tt.color || "#7F77DD" } : {}}
+                    style={
+                      isActive
+                        ? { backgroundColor: tt.color || "#7F77DD", color: readableTextOn(tt.color || "#7F77DD") }
+                        : {}
+                    }
                   >
                     <span
                       className="h-1.5 w-1.5 shrink-0 rounded-full"
                       style={{ backgroundColor: tt.color || "#7F77DD" }}
                     />
-                    {formatClassName(tt, {
-                      gradeShort: (grade) => tTimetable("gradeShort", { grade }),
-                      subject: translateSubject,
-                    })}
+                    <span className="truncate">
+                      {formatClassName(tt, {
+                        gradeShort: (grade) => tTimetable("gradeShort", { grade }),
+                        subject: translateSubject,
+                      })}
+                    </span>
                   </button>
                 );
               })
@@ -1176,7 +1186,7 @@ function CalendarPageInner() {
                                 </button>
                               </div>
                               )}
-                              <div className="flex-1">
+                              <div className="min-w-0 flex-1">
                                 <LessonCard
                                   slot={slot}
                                   onOpen={setSelectedSlot}

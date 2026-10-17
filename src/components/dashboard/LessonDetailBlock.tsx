@@ -61,14 +61,15 @@ export function LessonDetailBlock({ klass, className, lesson, onOpen, onChanged 
       <button
         type="button"
         onClick={onOpen}
-        className="mt-1 block text-left text-base font-semibold leading-snug text-foreground hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:text-lg"
+        title={lesson.topicTitle}
+        className="mt-1 line-clamp-2 block wrap-anywhere text-left text-base font-semibold leading-snug text-foreground hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:text-lg"
       >
         {lesson.topicTitle}
       </button>
       {objectives.length > 0 ? (
         <ul className="mt-1.5 list-disc space-y-0.5 pl-5 text-sm text-muted-foreground marker:text-primary/60">
           {objectives.slice(0, 3).map((item) => (
-            <li key={item} className="line-clamp-1">
+            <li key={item} className="line-clamp-1 wrap-anywhere">
               {item}
             </li>
           ))}

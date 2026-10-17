@@ -1,3 +1,4 @@
+import { MAX_LENGTHS } from "@/shared/config/constants";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { MessageSquare } from "lucide-react";
@@ -36,6 +37,7 @@ export function AdditionalDetailsSection({
         </div>
         <Textarea
           value={additionalDetails}
+          maxLength={MAX_LENGTHS.ADDITIONAL_DETAILS}
           onChange={(e) => onUpdate("additionalDetails", e.target.value)}
           placeholder={t("placeholder")}
           rows={3}

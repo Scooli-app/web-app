@@ -240,7 +240,7 @@ function DocumentCardComponent({
           </p>
         )}
 
-        <h3 className="mb-3 line-clamp-2 text-lg font-semibold leading-tight text-foreground">
+        <h3 className="mb-3 line-clamp-2 wrap-anywhere text-lg font-semibold leading-tight text-foreground">
           {document.title}
         </h3>
 

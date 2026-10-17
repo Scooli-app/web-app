@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+import { toast } from "sonner";
 import { SlotDialog } from "@/components/calendar/SlotDialog";
 import { patchOpenSlot } from "@/components/dashboard/patchOpenSlot";
 import {
@@ -49,6 +51,7 @@ export function WeekLessonDialog({
   onLoadFailed,
 }: WeekLessonDialogProps) {
   const dispatch = useAppDispatch();
+  const tShared = useTranslations("calendar.shared");
   const { getToken } = useAuth();
   const [slot, setSlot] = useState<SlotWithTimetable | null>(null);
   // Callbacks from the parent change identity on every render: read them through refs so the
@@ -141,10 +144,11 @@ export function WeekLessonDialog({
         applyUpdate(await updateLessonService(current.timetable.id, current.id, patch));
         onChanged();
       } catch (err) {
+        toast.error(tShared("saveError"));
         posthog.captureException(err);
       }
     },
-    [applyUpdate, onChanged],
+    [applyUpdate, onChanged, tShared],
   );
 
   return (

@@ -101,7 +101,13 @@
     "prepareConfirmAction": "{count, plural, one {Prepare 1 plan} other {Prepare # plans}}",
     "prepareCostFree": "No cost: these lessons are in your free week.",
     "prepareCost": "{count, plural, one {Uses # credit.} other {Uses # credits.}}",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "moreLessons": "{count, plural, one {+ # lesson} other {+ # lessons}}",
+    "dayReady": "{count, plural, one {# ready} other {# ready}}",
+    "dayToPrepare": "{count, plural, one {# to prepare} other {# to prepare}}",
+    "ready": "Ready",
+    "toPrepare": "To prepare",
+    "seeAllInCalendar": "See all {count} lessons in the calendar"
   },
   "emailUnsubscribe": {
     "title": "Stop getting the weekly email?",
@@ -2782,7 +2788,8 @@
       "holidayNoLesson": "Holiday / No lesson",
       "classInline": "Class {label}",
       "minutesSuffix": "{count} min",
-      "generateWeek": "Generate week ({count})"
+      "generateWeek": "Generate week ({count})",
+      "saveError": "Couldn't save that change. Please try again."
     },
     "week": {
       "generate": "Generate ({count})",
@@ -2841,7 +2848,7 @@
       "typeLabel": "Type:",
       "objectivesTitle": "Learning Objectives",
       "objectivesProcessing": "Processing…",
-      "objectivesEmpty": "Generate the class's topics to see the learning objectives.",
+      "objectivesEmpty": "The objectives appear once the lesson plan is ready.",
       "documentsTitle": "Generated documents",
       "loadingDocuments": "Loading documents…",
       "noDocuments": "No documents found.",

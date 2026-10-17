@@ -1,5 +1,6 @@
 "use client";
 
+import { MAX_LENGTHS } from "@/shared/config/constants";
 import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import Link from "next/link";
@@ -189,6 +190,7 @@ function EditDialog({ timetable, isSaving, onSave, onCancel }: EditDialogProps) 
               <Label>{t("editDialog.nameLabel")}</Label>
               <Input
                 value={title}
+                maxLength={MAX_LENGTHS.TURMA_TITLE}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder={timetable.title}
               />
@@ -200,6 +202,7 @@ function EditDialog({ timetable, isSaving, onSave, onCancel }: EditDialogProps) 
                 <Label>{t("editDialog.classLabel")}</Label>
                 <Input
                   placeholder={t("editDialog.classPlaceholder")}
+                  maxLength={MAX_LENGTHS.CLASS_LABEL}
                   value={classLabel}
                   onChange={(e) => setClassLabel(e.target.value)}
                 />

@@ -52,10 +52,13 @@ const QUICK_START_EXAMPLES: QuickStartExample[] = [
 
 interface QuickCreateCardProps {
   isWorksheetCreationEnabled: boolean;
+  /** Examples help a new teacher start; one with turmas already has a week to work from. */
+  showExamples?: boolean;
 }
 
 export function QuickCreateCard({
   isWorksheetCreationEnabled,
+  showExamples = true,
 }: QuickCreateCardProps) {
   const router = useRouter();
   const t = useTranslations("dashboard.quickCreate");
@@ -123,6 +126,7 @@ export function QuickCreateCard({
         </Button>
       </form>
 
+      {showExamples && (
       <div className="mt-3 flex flex-wrap items-center gap-1.5">
         <span className="text-xs text-muted-foreground">{t("examplesLabel")}</span>
         {QUICK_START_EXAMPLES.map((example) => (
@@ -136,6 +140,7 @@ export function QuickCreateCard({
           </button>
         ))}
       </div>
+      )}
     </div>
   );
 }

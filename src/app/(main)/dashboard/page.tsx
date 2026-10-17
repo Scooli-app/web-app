@@ -5,6 +5,7 @@ import { useVisibleDocTypeActions } from "@/components/document-creation/documen
 import { LoadError } from "@/components/ui/load-error";
 import { YourWeekCard } from "@/components/dashboard/YourWeekCard";
 import { PageContainer } from "@/components/layout/PageContainer";
+import { usePlanLimits } from "@/hooks/usePlanLimits";
 import { PaymentSuccessModal } from "@/components/ui/payment-success-modal";
 import { isPromoPlanCode } from "@/shared/utils/promo";
 import { fetchEntitlements } from "@/store/entitlements/entitlementsSlice";
@@ -40,6 +41,8 @@ function DashboardContent() {
     (state) => state.features.error !== null && Object.keys(state.features.flags).length === 0,
   );
   const visibleActions = useVisibleDocTypeActions();
+  const { limits } = usePlanLimits();
+  const hasClasses = (limits?.activeClasses ?? 0) > 0;
 
   const dispatch = useDispatch<AppDispatch>();
 
@@ -103,10 +106,12 @@ function DashboardContent() {
         <div className="shrink-0 space-y-2">
           <QuickCreateCard
             isWorksheetCreationEnabled={isWorksheetCreationEnabled}
+            showExamples={!hasClasses}
           />
-          {/* Start a blank document of a given type: one compact row, no card. */}
-          <div className="flex flex-wrap items-center gap-1.5 px-1">
-            <span className="mr-1 text-sm text-muted-foreground">{t("createDocument")}</span>
+          {/* Start a blank document of a given type: one row (sideways on a phone), no card. */}
+          {/* On a short phone screen this row (the menu's "+ Criar" does the same) gives way. */}
+          <div className="-mx-1 flex items-center gap-1.5 overflow-x-auto px-1 pb-0.5 [scrollbar-width:none] max-sm:[@media(max-height:720px)]:hidden">
+            <span className="mr-1 shrink-0 text-sm text-muted-foreground">{t("createDocument")}</span>
             {visibleActions.map((action) => {
               const Icon = action.icon;
               return (
@@ -119,7 +124,7 @@ function DashboardContent() {
                     });
                     router.push(action.route);
                   }}
-                  className="flex items-center gap-1.5 rounded-full bg-card px-3 py-1.5 text-sm font-medium text-foreground shadow-sm transition-colors hover:bg-accent"
+                  className="flex shrink-0 items-center gap-1.5 rounded-full bg-card px-3 py-1.5 text-sm font-medium text-foreground shadow-sm transition-colors hover:bg-accent"
                 >
                   <Icon className="h-3.5 w-3.5 text-primary" />
                   {tEnums(`documentType.${action.id}`)}

@@ -4,6 +4,14 @@
 
 export const MAX_LENGTHS = {
   DOCUMENT_TITLE: 50,
+  /** Same sizes the API enforces (and the columns hold): turma name, class label, school year, lesson topic. */
+  TURMA_TITLE: 255,
+  CLASS_LABEL: 50,
+  SCHOOL_YEAR: 9,
+  LESSON_TOPIC: 255,
+  /** What to create (the topic) and the extra instructions sent to the AI. */
+  DOCUMENT_PROMPT: 2000,
+  ADDITIONAL_DETAILS: 4000,
 } as const;
 
 export const AUTO_SAVE_DELAY = 3000;

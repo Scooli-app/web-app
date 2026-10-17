@@ -1,5 +1,6 @@
 "use client";
 
+import { FocusDayList } from "@/components/dashboard/FocusDayList";
 import { LessonDetailBlock } from "@/components/dashboard/LessonDetailBlock";
 import { NextDaysStrip, type StripLesson } from "@/components/dashboard/NextDaysStrip";
 import { WeekLessonDialog, type WeekLessonTarget } from "@/components/dashboard/WeekLessonDialog";
@@ -195,7 +196,8 @@ export function YourWeekCard() {
   const title = weekTitle(from, todayIso, focus);
   const focusLessons = focus ? lessonsByDay.get(focus.iso) ?? [] : [];
   // The focus day is shown in full above the strip; listing it again in "A seguir" repeats it.
-  const stripDays = days.slice(1).filter((iso) => iso !== focus?.iso);
+  // Empty days are left out too: "Sem aulas" tiles only took room.
+  const stripDays = days.slice(1).filter((iso) => iso !== focus?.iso && (lessonsByDay.get(iso)?.length ?? 0) > 0);
   // A plan made from the create form leaves the lesson "pending": a lesson with a plan document isn't.
   const pending = days
     .flatMap((d) => lessonsByDay.get(d) ?? [])
@@ -338,30 +340,34 @@ export function YourWeekCard() {
         </div>
       ) : (
         <>
-          {title.kind === "focus" && (
-            <p className="mb-2 text-sm text-muted-foreground">{t("noLessonsToday")}</p>
-          )}
-          {focusLessons.length > 0 ? (
-            <div className="space-y-2">
-              {focusLessons.map((item) => (
-                <LessonDetailBlock
-                  key={item.lesson.id}
-                  klass={item.klass}
-                  className={classLabel(item.klass)}
-                  lesson={item.lesson}
-                  onOpen={() => openPopup(item)}
-                  onChanged={reload}
-                />
-              ))}
-            </div>
+          {/* One lesson in full; a busier day is summarised, so the card keeps its height. */}
+          {focusLessons.length === 1 ? (
+            <LessonDetailBlock
+              klass={focusLessons[0].klass}
+              className={classLabel(focusLessons[0].klass)}
+              lesson={focusLessons[0].lesson}
+              onOpen={() => openPopup(focusLessons[0])}
+              onChanged={reload}
+            />
+          ) : focusLessons.length > 1 ? (
+            <FocusDayList
+              lessons={focusLessons}
+              classLabel={classLabel}
+              onOpen={openPopup}
+              weekStart={weekStartOf(focusLessons[0].lesson.slotDate)}
+            />
           ) : (
             <p className="rounded-xl bg-background p-4 text-sm text-muted-foreground">
               {focus && !focusInWindow && !focusWeek ? t("loadingNextLesson") : t("noLessons")}
             </p>
           )}
 
-          <h3 className="mb-2 mt-4 text-sm font-semibold text-muted-foreground">{t("next")}</h3>
-          <NextDaysStrip days={stripDays} lessonsByDay={lessonsByDay} locale={locale} onOpen={openPopup} />
+          {stripDays.length > 0 && (
+            <>
+              <h3 className="mb-2 mt-4 text-sm font-semibold text-muted-foreground">{t("next")}</h3>
+              <NextDaysStrip days={stripDays} lessonsByDay={lessonsByDay} locale={locale} onOpen={openPopup} />
+            </>
+          )}
         </>
       )}
 
