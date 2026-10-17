@@ -171,7 +171,8 @@ export default function CalendarMonthPage() {
       {/* Top bar */}
       <div className="sticky top-0 z-10 border-b bg-card/95 backdrop-blur px-4 pt-2.5 pb-2">
         <div className="mx-auto max-w-[1400px] space-y-2">
-          <div className="flex items-center gap-2">
+          {/* Wraps on narrow screens: in one row "Nova turma" ran off the edge below ~720px. */}
+          <div className="flex flex-wrap items-center gap-2">
             <h1 className="mr-2 text-lg font-semibold">{t("shared.pageTitle")}</h1>
 
             {/* View toggle */}
@@ -196,7 +197,7 @@ export default function CalendarMonthPage() {
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setMonthStart((p) => addMonths(p, 1))}>
               <ArrowRight className="h-4 w-4" />
             </Button>
-            <span className="min-w-[160px] text-sm font-medium">
+            <span className="text-sm font-medium">
               {formatMonthHeader(monthStart, locale)}
             </span>
 

@@ -1,7 +1,6 @@
 "use client";
 
 import { OnboardingModal } from "@/components/onboarding/OnboardingModal";
-import { TUTORIAL_ROUTE, useTutorial } from "@/contexts/TutorialContext";
 import { onboardingService } from "@/services/api/onboarding.service";
 import { Routes } from "@/shared/types";
 import {
@@ -25,7 +24,6 @@ export function OnboardingGate() {
   const pathname = usePathname();
   const router = useRouter();
   const dispatch = useAppDispatch();
-  const { startTutorial } = useTutorial();
   const isUpgradeModalOpen = useSelector(
     (state: RootState) => state.ui.isUpgradeModalOpen,
   );
@@ -120,16 +118,13 @@ export function OnboardingGate() {
       });
   }, [dispatch, open]);
 
-  // Brand-new users get the first-time tutorial whether they answered the
-  // onboarding questions or skipped them — skipping a survey is not a signal
-  // that the user already knows the product.
-  const startFirstTimeTutorial = useCallback(() => {
+  // Brand-new users land on the dashboard after the questions, answered or skipped.
+  const goToDashboardIfNew = useCallback(() => {
     if (onboardingStatus?.hasDocuments) {
       return;
     }
-    router.push(TUTORIAL_ROUTE);
-    startTutorial("onboarding");
-  }, [onboardingStatus?.hasDocuments, router, startTutorial]);
+    router.push(Routes.DASHBOARD);
+  }, [onboardingStatus?.hasDocuments, router]);
 
   const handleSkip = useCallback(async () => {
     if (isBusy) {
@@ -142,14 +137,14 @@ export function OnboardingGate() {
       dispatch(setOnboardingStatus(nextStatus));
       setOpen(false);
       // Step-level event fired in OnboardingModal before this callback runs
-      startFirstTimeTutorial();
+      goToDashboardIfNew();
     } catch (error) {
       posthog.captureException(error);
       toast.error(t("skipFailed"));
     } finally {
       setIsBusy(false);
     }
-  }, [dispatch, isBusy, startFirstTimeTutorial, t]);
+  }, [dispatch, isBusy, goToDashboardIfNew, t]);
 
   const handleSubmit = useCallback(
     async (payload: OnboardingSubmitRequest) => {
@@ -180,9 +175,7 @@ export function OnboardingGate() {
           onboarding_goals: payload.goals ?? null,
         });
 
-        // Only show the first-time tutorial for brand-new users.
-        // Users who already have documents know the product — skip straight to dashboard.
-        startFirstTimeTutorial();
+        goToDashboardIfNew();
       } catch (error) {
         posthog.captureException(error);
         toast.error(t("saveFailed"));
@@ -190,7 +183,7 @@ export function OnboardingGate() {
         setIsBusy(false);
       }
     },
-    [dispatch, isBusy, startFirstTimeTutorial, t],
+    [dispatch, isBusy, goToDashboardIfNew, t],
   );
 
   if (!isSignedIn || !user?.id || !onboardingStatus) {

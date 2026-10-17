@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getBearerSubject, getTokenSubject } from "./tokenSubject";
+import { getTokenSubject } from "./tokenSubject";
 
 function base64Url(value: string): string {
   return Buffer.from(value, "utf8").toString("base64url");
@@ -31,17 +31,5 @@ describe("getTokenSubject", () => {
     expect(getTokenSubject("not-a-jwt")).toBeNull();
     expect(getTokenSubject("a.%%%.c")).toBeNull();
     expect(getTokenSubject(fakeJwt({ sub: 42 }))).toBeNull();
-  });
-});
-
-describe("getBearerSubject", () => {
-  it("reads the user behind a bearer header", () => {
-    expect(getBearerSubject(`Bearer ${fakeJwt({ sub: "user_a" })}`)).toBe("user_a");
-  });
-
-  it("returns null when the request had no bearer token", () => {
-    expect(getBearerSubject(undefined)).toBeNull();
-    expect(getBearerSubject("")).toBeNull();
-    expect(getBearerSubject(`Basic ${fakeJwt({ sub: "user_a" })}`)).toBeNull();
   });
 });

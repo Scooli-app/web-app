@@ -83,6 +83,8 @@ export interface DocumentFilters {
   search?: string;
   subject?: string;
   gradeLevel?: string;
+  /** A timetable id, or "none" for documents outside any turma. */
+  timetableId?: string;
 }
 
 export interface DocumentStatsResponse {
@@ -116,13 +118,6 @@ export interface GetDocumentsResponse {
     total: number;
     hasMore: boolean;
   };
-  /**
-   * Clerk user id of the bearer token the request was actually sent with
-   * (null when it went out without one). In multi-session Clerk clients the
-   * tab's active session can change between render and request, so callers
-   * that render per-user data check this against the user they render for.
-   */
-  requestedAs: string | null;
 }
 
 

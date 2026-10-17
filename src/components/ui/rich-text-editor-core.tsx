@@ -25,9 +25,12 @@ import {
   ArrowLeftToLine,
   ArrowRightToLine,
   ArrowUpToLine,
+  Code,
   Columns2,
+  Highlighter,
   ImagePlus,
   Loader2,
+  Quote,
   Rows2,
   Table2,
   Trash2,
@@ -246,9 +249,7 @@ const MenuBar = memo(function MenuBar({
           title={t("highlight")}
           type="button"
         >
-          <span className="bg-yellow-200 dark:bg-yellow-600 px-1 text-foreground">
-            D
-          </span>
+          <Highlighter className="h-4 w-4" />
         </button>
         <button
           onClick={handleBlockquote}
@@ -256,7 +257,7 @@ const MenuBar = memo(function MenuBar({
           title={t("blockquote")}
           type="button"
         >
-          &ldquo;
+          <Quote className="h-4 w-4" />
         </button>
         <button
           onClick={handleCodeBlock}
@@ -264,7 +265,7 @@ const MenuBar = memo(function MenuBar({
           title={t("codeBlock")}
           type="button"
         >
-          {"<>"}
+          <Code className="h-4 w-4" />
         </button>
         <button
           onClick={handleInsertMath}

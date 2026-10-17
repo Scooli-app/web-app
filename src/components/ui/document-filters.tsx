@@ -1,6 +1,9 @@
 "use client";
 
-import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -8,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { SUBJECTS, translateSubjectLabel } from "@/components/document-creation/constants";
 import type { Document } from "@/shared/types";
 import {
@@ -15,211 +19,221 @@ import {
   selectIsPresentationCreationEnabled,
 } from "@/store/features/selectors";
 import { useAppSelector } from "@/store/hooks";
-import {
-  CalendarDays,
-  FileText,
-  Folder,
-  HelpCircle,
-  MonitorPlay,
-  NotebookPen,
-  ScrollText,
-  type LucideIcon,
-} from "lucide-react";
+import { Search, SlidersHorizontal } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 export type DocumentOriginFilter = "all" | "ai" | "imported";
 
+/** "" = every document, "none" = documents outside any turma, otherwise a timetable id. */
+export const NO_CLASS_FILTER = "none";
+
+export interface DocumentClassOption {
+  id: string;
+  title: string;
+  color: string;
+}
+
 interface DocumentFiltersProps {
+  search: string;
+  onSearchChange: (search: string) => void;
   selectedType: string;
   onTypeChange: (type: string) => void;
-  documentCounts?: Record<string, number>;
-  selectedSubject?: string;
-  onSubjectChange?: (subject: string) => void;
-  selectedGrade?: string;
-  onGradeChange?: (grade: string) => void;
-  selectedOrigin?: DocumentOriginFilter;
-  onOriginChange?: (origin: DocumentOriginFilter) => void;
+  /** The "Agrupar por turma" switch. */
+  grouped: boolean;
+  onGroupedChange: (grouped: boolean) => void;
+  /** The Turma select is shown only when the list isn't already grouped by turma. */
+  showClassFilter: boolean;
+  classes: DocumentClassOption[];
+  selectedClass: string;
+  onClassChange: (classId: string) => void;
+  selectedSubject: string;
+  onSubjectChange: (subject: string) => void;
+  selectedGrade: string;
+  onGradeChange: (grade: string) => void;
+  selectedOrigin: DocumentOriginFilter;
+  onOriginChange: (origin: DocumentOriginFilter) => void;
 }
 
 const GRADE_OPTIONS = Array.from({ length: 12 }, (_, i) => i + 1);
 
-const typeFilterOptions: Array<{
-  value: Document["documentType"] | "all";
-  icon: LucideIcon;
-  // Tailwind classes for selected and unselected states
-  selectedCls: string;
-  unselectedCls: string;
-  badgeSelectedCls: string;
-}> = [
-  {
-    value: "all",
-    icon: Folder,
-    selectedCls: "border-primary bg-primary text-primary-foreground shadow-sm",
-    unselectedCls: "border-border bg-card text-muted-foreground hover:border-primary/60 hover:text-primary",
-    badgeSelectedCls: "bg-white/20 text-primary-foreground",
-  },
-  {
-    value: "lessonPlan",
-    icon: FileText,
-    selectedCls: "border-primary bg-primary text-primary-foreground shadow-sm",
-    unselectedCls: "border-border bg-card text-muted-foreground hover:border-primary/60 hover:text-primary",
-    badgeSelectedCls: "bg-white/20 text-primary-foreground",
-  },
-  {
-    value: "worksheet",
-    icon: ScrollText,
-    selectedCls: "border-teal-500 bg-teal-500 text-white shadow-sm dark:border-teal-600 dark:bg-teal-600",
-    unselectedCls: "border-border bg-card text-muted-foreground hover:border-teal-400 hover:text-teal-600 dark:hover:text-teal-400",
-    badgeSelectedCls: "bg-white/20 text-white",
-  },
-  {
-    value: "test",
-    icon: NotebookPen,
-    selectedCls: "border-orange-500 bg-orange-500 text-white shadow-sm dark:border-orange-600 dark:bg-orange-600",
-    unselectedCls: "border-border bg-card text-muted-foreground hover:border-orange-400 hover:text-orange-600 dark:hover:text-orange-400",
-    badgeSelectedCls: "bg-white/20 text-white",
-  },
-  {
-    value: "quiz",
-    icon: HelpCircle,
-    selectedCls: "border-amber-500 bg-amber-500 text-white shadow-sm dark:border-amber-600 dark:bg-amber-600",
-    unselectedCls: "border-border bg-card text-muted-foreground hover:border-amber-400 hover:text-amber-600 dark:hover:text-amber-400",
-    badgeSelectedCls: "bg-white/20 text-white",
-  },
-  {
-    value: "presentation",
-    icon: MonitorPlay,
-    selectedCls: "border-rose-500 bg-rose-500 text-white shadow-sm dark:border-rose-600 dark:bg-rose-600",
-    unselectedCls: "border-border bg-card text-muted-foreground hover:border-rose-400 hover:text-rose-600 dark:hover:text-rose-400",
-    badgeSelectedCls: "bg-white/20 text-white",
-  },
-  {
-    value: "curriculumPlan",
-    icon: CalendarDays,
-    selectedCls: "border-indigo-500 bg-indigo-500 text-white shadow-sm dark:border-indigo-600 dark:bg-indigo-600",
-    unselectedCls: "border-border bg-card text-muted-foreground hover:border-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-400",
-    badgeSelectedCls: "bg-white/20 text-white",
-  },
+const TYPE_OPTIONS: Array<Document["documentType"] | "all"> = [
+  "all",
+  "lessonPlan",
+  "worksheet",
+  "test",
+  "quiz",
+  "presentation",
+  "curriculumPlan",
 ];
 
-const originOptions: DocumentOriginFilter[] = ["all", "ai", "imported"];
+const ORIGIN_OPTIONS: DocumentOriginFilter[] = ["all", "ai", "imported"];
+const ALL = "__all__";
 
+/**
+ * One bar: search, type, the turma grouping switch (or the turma select when not grouped) and
+ * the rarely used filters tucked under "Mais filtros".
+ */
 export function DocumentFilters({
+  search,
+  onSearchChange,
   selectedType,
   onTypeChange,
-  documentCounts,
-  selectedSubject = "",
+  grouped,
+  onGroupedChange,
+  showClassFilter,
+  classes,
+  selectedClass,
+  onClassChange,
+  selectedSubject,
   onSubjectChange,
-  selectedGrade = "",
+  selectedGrade,
   onGradeChange,
-  selectedOrigin = "all",
+  selectedOrigin,
   onOriginChange,
 }: DocumentFiltersProps) {
   const t = useTranslations("documents.filters");
-  const isPresentationCreationEnabled = useAppSelector(
-    selectIsPresentationCreationEnabled
-  );
+  const isPresentationCreationEnabled = useAppSelector(selectIsPresentationCreationEnabled);
   const isCurriculumPlanEnabled = useAppSelector(selectIsCurriculumPlanEnabled);
 
-  const visibleTypeOptions = typeFilterOptions.filter((option) => {
-    if (option.value === "presentation" && !isPresentationCreationEnabled)
-      return false;
-    if (option.value === "curriculumPlan" && !isCurriculumPlanEnabled)
-      return false;
+  const typeOptions = TYPE_OPTIONS.filter((value) => {
+    if (value === "presentation" && !isPresentationCreationEnabled) return false;
+    if (value === "curriculumPlan" && !isCurriculumPlanEnabled) return false;
     return true;
   });
 
-  const totalCount = documentCounts
-    ? Object.values(documentCounts).reduce((sum, n) => sum + n, 0)
-    : 0;
+  const extraActive = [selectedSubject !== "", selectedGrade !== "", selectedOrigin !== "all"].filter(Boolean).length;
 
   return (
-    <div className="flex flex-col gap-3">
-      {/* Document type chips */}
-      <div className="flex flex-wrap gap-2">
-        {visibleTypeOptions.map((option) => {
-          const isSelected = selectedType === option.value;
-          const count =
-            option.value === "all"
-              ? totalCount
-              : (documentCounts?.[option.value] ?? 0);
-          const Icon = option.icon;
+    <div className="flex flex-wrap items-center gap-2">
+      <div className="relative min-w-[12rem] flex-1">
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
+        <Input
+          placeholder={t("searchPlaceholder")}
+          value={search}
+          onChange={(e) => onSearchChange(e.target.value)}
+          className="h-9 pl-9"
+          aria-label={t("searchPlaceholder")}
+        />
+      </div>
 
-          return (
-            <button
-              key={option.value}
-              onClick={() => onTypeChange(option.value)}
-              className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-xl border px-3 py-2 text-xs font-medium transition-all duration-200 sm:gap-2 sm:px-4 sm:text-sm ${isSelected ? option.selectedCls : option.unselectedCls}`}
+      <Select value={selectedType} onValueChange={onTypeChange}>
+        <SelectTrigger className="h-9 w-auto min-w-[9rem]" aria-label={t("typeLabel")}>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {typeOptions.map((value) => (
+            <SelectItem key={value} value={value}>
+              {value === "all" ? t("allTypes") : t(`types.${value}`)}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      {showClassFilter && classes.length > 0 && (
+        <Select value={selectedClass || ALL} onValueChange={(v) => onClassChange(v === ALL ? "" : v)}>
+          <SelectTrigger className="h-9 w-auto min-w-[10rem] max-w-[16rem]" aria-label={t("classes.label")}>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={ALL}>{t("classes.all")}</SelectItem>
+            {classes.map((c) => (
+              <SelectItem key={c.id} value={c.id}>
+                <span className="inline-flex items-center gap-2">
+                  <span aria-hidden className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: c.color }} />
+                  {c.title}
+                </span>
+              </SelectItem>
+            ))}
+            <SelectItem value={NO_CLASS_FILTER}>{t("classes.none")}</SelectItem>
+          </SelectContent>
+        </Select>
+      )}
+
+      {classes.length > 0 && (
+        <div className="flex h-9 items-center gap-2 rounded-md border border-input px-3">
+          <Switch id="documents-group-by-class" checked={grouped} onCheckedChange={onGroupedChange} />
+          <Label htmlFor="documents-group-by-class" className="cursor-pointer whitespace-nowrap text-sm font-normal">
+            {t("groupByClass")}
+          </Label>
+        </div>
+      )}
+
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button variant="outline" className="h-9">
+            <SlidersHorizontal className="mr-1.5 h-4 w-4" aria-hidden />
+            {t("moreFilters")}
+            {extraActive > 0 && (
+              <span className="ml-1.5 rounded-full bg-primary px-1.5 text-xs font-semibold text-primary-foreground">
+                {extraActive}
+              </span>
+            )}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent align="end" className="w-72 space-y-3">
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">{t("subjectPlaceholder")}</Label>
+            <Select value={selectedSubject || ALL} onValueChange={(v) => onSubjectChange(v === ALL ? "" : v)}>
+              <SelectTrigger className="h-9">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL}>{t("allSubjects")}</SelectItem>
+                {SUBJECTS.map((s) => (
+                  <SelectItem key={s.id} value={s.value}>
+                    {translateSubjectLabel(s.id)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">{t("gradePlaceholder")}</Label>
+            <Select value={selectedGrade || ALL} onValueChange={(v) => onGradeChange(v === ALL ? "" : v)}>
+              <SelectTrigger className="h-9">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL}>{t("allGrades")}</SelectItem>
+                {GRADE_OPTIONS.map((y) => (
+                  <SelectItem key={y} value={String(y)}>
+                    {t("gradeOption", { grade: y })}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">{t("originPlaceholder")}</Label>
+            <Select value={selectedOrigin} onValueChange={(v) => onOriginChange(v as DocumentOriginFilter)}>
+              <SelectTrigger className="h-9">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {ORIGIN_OPTIONS.map((o) => (
+                  <SelectItem key={o} value={o}>
+                    {t(`origin.${o}`)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {extraActive > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full"
+              onClick={() => {
+                onSubjectChange("");
+                onGradeChange("");
+                onOriginChange("all");
+              }}
             >
-              <Icon className="h-3.5 w-3.5 shrink-0" />
-              <span>{t(`types.${option.value}`)}</span>
-              {documentCounts && (
-                <Badge
-                  className={`ml-0.5 px-2 py-0 text-xs ${isSelected ? option.badgeSelectedCls : "bg-muted text-muted-foreground"}`}
-                >
-                  {count}
-                </Badge>
-              )}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Secondary filters: subject, grade, origin */}
-      <div className="flex flex-wrap items-center gap-2">
-        {/* Subject */}
-        <Select
-          value={selectedSubject || "__all__"}
-          onValueChange={(v) => onSubjectChange?.(v === "__all__" ? "" : v)}
-        >
-          <SelectTrigger className="h-8 w-auto min-w-[10rem] border-dashed text-xs">
-            <SelectValue placeholder={t("subjectPlaceholder")} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="__all__">{t("allSubjects")}</SelectItem>
-            {SUBJECTS.map((s) => (
-              <SelectItem key={s.id} value={s.value}>
-                {translateSubjectLabel(s.id)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        {/* Grade / Year */}
-        <Select
-          value={selectedGrade || "__all__"}
-          onValueChange={(v) => onGradeChange?.(v === "__all__" ? "" : v)}
-        >
-          <SelectTrigger className="h-8 w-auto min-w-[8rem] border-dashed text-xs">
-            <SelectValue placeholder={t("gradePlaceholder")} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="__all__">{t("allGrades")}</SelectItem>
-            {GRADE_OPTIONS.map((y) => (
-              <SelectItem key={y} value={String(y)}>
-                {t("gradeOption", { grade: y })}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        {/* Origin */}
-        <Select
-          value={selectedOrigin}
-          onValueChange={(v) => onOriginChange?.(v as DocumentOriginFilter)}
-        >
-          <SelectTrigger className="h-8 w-auto min-w-[9rem] border-dashed text-xs">
-            <SelectValue placeholder={t("originPlaceholder")} />
-          </SelectTrigger>
-          <SelectContent>
-            {originOptions.map((o) => (
-              <SelectItem key={o} value={o}>
-                {t(`origin.${o}`)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+              {t("clearMoreFilters")}
+            </Button>
+          )}
+        </PopoverContent>
+      </Popover>
     </div>
   );
 }

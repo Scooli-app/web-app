@@ -1,3 +1,4 @@
+import { MAX_LENGTHS } from "@/shared/config/constants";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { MessageSquare } from "lucide-react";
@@ -31,6 +32,7 @@ export function TopicSection({ topic, placeholder, onUpdate }: TopicSectionProps
         </div>
         <Input
           value={topic}
+          maxLength={MAX_LENGTHS.DOCUMENT_PROMPT}
           onChange={(e) => onUpdate("topic", e.target.value)}
           placeholder={placeholder}
           className="w-full h-11 sm:h-12 px-3 sm:px-4 text-sm sm:text-base bg-muted border-border rounded-xl placeholder:text-muted-foreground"

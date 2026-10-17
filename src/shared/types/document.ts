@@ -57,6 +57,20 @@ export type SharedResourceStatus = "PENDING" | "APPROVED" | "REJECTED"
  */
 export type DocumentSharedScope = "community" | "organization";
 
+export interface DocumentClassInfo {
+  timetableId: string;
+  title: string;
+  classLabel: string;
+  color: string;
+  subject: string | null;
+  gradeLevel: number | null;
+  /** The lesson in that turma (its most recent one), when the document belongs to a lesson. */
+  lessonId?: string | null;
+  lessonNumber?: number | null;
+  /** YYYY-MM-DD */
+  lessonDate?: string | null;
+}
+
 export interface Document {
   id: string;
   title: string;
@@ -73,6 +87,8 @@ export interface Document {
   content: string;
   status: string;
   metadata: DocumentMetadata | null;
+  /** The turma (timetable) this document was generated for; absent when it belongs to none. */
+  classInfo?: DocumentClassInfo | null;
   isPublic: boolean;
   subject: string | null;
   gradeLevel: string | null;
