@@ -90,7 +90,7 @@ export function CalendarDashboardWidget() {
   const rawLocale = useLocale();
   const locale = isSupportedLocale(rawLocale) ? rawLocale : defaultLocale;
   const router = useRouter();
-  const { getToken } = useAuth();
+  const { getToken, userId } = useAuth();
   const dispatch = useAppDispatch();
   const newClassGate = useNewClassGate();
   const [upcoming, setUpcoming] = useState<UpcomingLesson[]>([]);
@@ -165,14 +165,17 @@ export function CalendarDashboardWidget() {
     [getToken, patchStatus]
   );
 
-  const load = useCallback(async () => {
-    const cached = dashboardCache.get<UpcomingLesson[]>(CACHE_KEYS.UPCOMING_LESSONS, CACHE_TTL.UPCOMING_LESSONS);
+  const load = useCallback(async (isCurrent: () => boolean) => {
+    if (!userId) return;
+    const cached = dashboardCache.get<UpcomingLesson[]>(userId, CACHE_KEYS.UPCOMING_LESSONS, CACHE_TTL.UPCOMING_LESSONS);
     if (cached) {
       setUpcoming(cached);
       setLoading(false);
       return;
     }
 
+    // Never keep showing the previous user's lessons while this user's lessons load.
+    setUpcoming([]);
     setLoading(true);
     try {
       // Hydrate Redux store so other pages (calendar grid) don't need to re-fetch
@@ -207,16 +210,23 @@ export function CalendarDashboardWidget() {
         return a.sequenceNumber - b.sequenceNumber;
       });
       const upcoming = all.slice(0, 5);
-      dashboardCache.set(CACHE_KEYS.UPCOMING_LESSONS, upcoming);
+      if (!isCurrent()) return;
+      dashboardCache.set(userId, CACHE_KEYS.UPCOMING_LESSONS, upcoming);
       setUpcoming(upcoming);
     } catch {
-      setUpcoming([]);
+      if (isCurrent()) setUpcoming([]);
     } finally {
-      setLoading(false);
+      if (isCurrent()) setLoading(false);
     }
-  }, [dispatch]);
+  }, [dispatch, userId]);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    let current = true;
+    void load(() => current);
+    return () => {
+      current = false;
+    };
+  }, [load]);
 
   return (
     <div className="rounded-2xl border border-border bg-card p-4 shadow-md sm:p-5">

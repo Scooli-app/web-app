@@ -1,0 +1,17 @@
+/**
+ * The `sub` claim (the Clerk user id) of a JWT, read without verifying the
+ * signature. The backend verifies tokens; this only tells which Clerk user a
+ * token was issued for.
+ */
+export function getTokenSubject(token: string): string | null {
+  const payload = token.split(".")[1];
+  if (!payload) return null;
+  try {
+    const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), "=");
+    const claims = JSON.parse(atob(padded)) as { sub?: unknown };
+    return typeof claims.sub === "string" ? claims.sub : null;
+  } catch {
+    return null;
+  }
+}
