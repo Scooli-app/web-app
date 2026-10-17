@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 import { translateSubject, TIMETABLE_COLORS } from "@/components/document-creation/constants";
+import { formatClassName } from "@/shared/utils/className";
 import { Routes, type Document } from "@/shared/types";
 import { selectIsHorarioPlanosEnabled } from "@/store/features/selectors";
 import { useFeatureAccess } from "@/components/feature/useFeatureAccess";
@@ -283,7 +284,6 @@ interface SequenceCardProps {
 
 function SequenceCard({ timetable, onDelete, onEdit }: SequenceCardProps) {
   const t = useTranslations("calendar.classesList");
-  const tShared = useTranslations("calendar.shared");
   const tTimetable = useTranslations("timetable");
   const rawLocale = useLocale();
   const locale = isSupportedLocale(rawLocale) ? rawLocale : defaultLocale;
@@ -303,7 +303,6 @@ function SequenceCard({ timetable, onDelete, onEdit }: SequenceCardProps) {
   return (
     <div
       className="group flex items-center gap-4 rounded-lg border border-border bg-card p-4 transition-shadow hover:shadow-sm"
-      style={{ borderLeftWidth: "4px", borderLeftColor: color }}
     >
       <div
         className="h-3 w-3 shrink-0 rounded-full"
@@ -312,14 +311,16 @@ function SequenceCard({ timetable, onDelete, onEdit }: SequenceCardProps) {
 
       <Link href={`${Routes.CALENDAR}/${timetable.id}`} className="min-w-0 flex-1">
         <div className="flex flex-col gap-0.5">
+          {/* Same name as everywhere else ("2.º Matemática · A"); the turma's own title only when it differs. */}
           <p className="truncate font-medium text-foreground transition-colors group-hover:text-primary">
-            {timetable.title}
+            {formatClassName(timetable, {
+              gradeShort: (grade) => tTimetable("gradeShort", { grade }),
+              subject: translateSubject,
+            })}
           </p>
-          <p className="text-sm text-muted-foreground">
-            {translateSubject(timetable.subject)}
-            {timetable.gradeLevel ? ` · ${tTimetable("gradeYear", { grade: timetable.gradeLevel })}` : ""}
-            {timetable.classLabel ? ` · ${tShared("classInline", { label: timetable.classLabel })}` : ""}
-          </p>
+          {timetable.title && timetable.title !== translateSubject(timetable.subject) && (
+            <p className="truncate text-sm text-muted-foreground">{timetable.title}</p>
+          )}
           <p className="text-xs text-muted-foreground/70">{periodLabel}</p>
         </div>
       </Link>

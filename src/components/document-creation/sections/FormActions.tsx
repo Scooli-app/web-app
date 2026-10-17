@@ -1,8 +1,10 @@
-﻿import { AiDisclaimer } from "@/components/ui/ai-disclaimer";
+import { AiDisclaimer } from "@/components/ui/ai-disclaimer";
 import { Button } from "@/components/ui/button";
 import { GenerationCostHint } from "@/components/ui/generation-cost-hint";
 import { Loader2, Sparkles } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
+import type { MissingField } from "../missingField";
+import { typeNameInSentence } from "../typeNameInSentence";
 import type { DocumentTypeConfig } from "../types";
 
 interface FormActionsProps {
@@ -12,6 +14,8 @@ interface FormActionsProps {
   error: string;
   onSubmit: () => void;
   showGenerationHint?: boolean;
+  /** First required field still empty; shown under the disabled button. */
+  missingField?: MissingField | null;
 }
 
 export function FormActions({
@@ -21,10 +25,12 @@ export function FormActions({
   error,
   onSubmit,
   showGenerationHint = false,
+  missingField = null,
 }: FormActionsProps) {
   const t = useTranslations("documentCreation");
   const tEnums = useTranslations("enums");
-  const typeLabel = tEnums(`documentType.${documentType.id}`);
+  const locale = useLocale();
+  const typeLabel = typeNameInSentence(tEnums(`documentType.${documentType.id}`), locale);
 
   return (
     <>
@@ -34,7 +40,7 @@ export function FormActions({
         </div>
       )}
 
-      <div className="pt-2 sm:pt-4 pb-4 sm:pb-4 space-y-3">
+      <div className="-mx-1 space-y-2 bg-slate-50 px-1 pb-3 pt-3 dark:bg-background sm:pb-4">
         <Button
           onClick={onSubmit}
           disabled={isLoading || !isFormValid}
@@ -60,10 +66,13 @@ export function FormActions({
             </>
           )}
         </Button>
-        <AiDisclaimer />
-        <p className="text-center text-xs sm:text-sm text-muted-foreground">
-          <span className="text-destructive">*</span> {t("requiredFields")}
-        </p>
+        {missingField && !isLoading ? (
+          <p className="text-center text-sm font-medium text-muted-foreground" aria-live="polite">
+            {t("missing.prefix")} {t(`missing.${missingField}`)}
+          </p>
+        ) : (
+          <AiDisclaimer />
+        )}
       </div>
     </>
   );

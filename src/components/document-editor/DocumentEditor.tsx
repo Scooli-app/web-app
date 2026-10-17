@@ -49,6 +49,7 @@ import { computeDiff, markdownToNode } from "../editor/utils/diffEngine";
 import RichTextEditor from "../ui/rich-text-editor";
 import { GenerationStalledNotice } from "../ui/generation-stalled-notice";
 import AIChatPanel from "./AIChatPanel";
+import { DocumentLessonContext } from "./DocumentLessonContext";
 import DocumentTitle from "./DocumentTitle";
 import CreateCalendarFromPlanButton from "./CreateCalendarFromPlanButton";
 import DownloadButton from "./DownloadButton";
@@ -1337,6 +1338,9 @@ export default function DocumentEditor({
   return (
     <>
       <div className="flex-1 flex flex-col w-full">
+        {activeDocument && (
+          <DocumentLessonContext classInfo={activeDocument.classInfo} documentId={activeDocument.id} />
+        )}
         <DocumentTitle
           title={resolvedTitle}
           defaultTitle={resolvedDefaultTitle}

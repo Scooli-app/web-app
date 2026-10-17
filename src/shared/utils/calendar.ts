@@ -40,6 +40,21 @@ export function getWeekStart(date: Date = new Date()): Date {
   return d;
 }
 
+/** The week the calendar opens on: this one on a school day, the coming one at the weekend. */
+export function defaultCalendarWeek(now: Date = new Date()): Date {
+  const day = now.getDay();
+  return day === 6 || day === 0 ? getWeekStart(addDays(now, day === 6 ? 2 : 1)) : getWeekStart(now);
+}
+
+/** A short week label for narrow screens: "19–25 out", or "28 set – 4 out" across two months. */
+export function compactWeekLabel(weekStart: Date, intlLocale: string): string {
+  const end = addDays(weekStart, 6);
+  const month = (d: Date) => new Intl.DateTimeFormat(intlLocale, { month: "short" }).format(d).replace(/\./g, "");
+  return weekStart.getMonth() === end.getMonth()
+    ? `${weekStart.getDate()}–${end.getDate()} ${month(end)}`
+    : `${weekStart.getDate()} ${month(weekStart)} – ${end.getDate()} ${month(end)}`;
+}
+
 export function formatWeekLabel(weekStart: Date, locale: Locale): string {
   const end = addDays(weekStart, 6);
   const fmt = (d: Date) =>

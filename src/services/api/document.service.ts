@@ -63,6 +63,9 @@ export async function getDocuments(
   if (filters?.gradeLevel) {
     queryParams.set("gradeLevel", filters.gradeLevel);
   }
+  if (filters?.timetableId) {
+    queryParams.set("timetableId", filters.timetableId);
+  }
 
   const response = await apiClient.get<BackendPaginatedResponse>(
     `/documents?${queryParams.toString()}`

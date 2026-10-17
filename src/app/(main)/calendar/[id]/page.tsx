@@ -10,7 +10,6 @@ import { FeatureUnavailable } from "@/components/feature/FeatureUnavailable";
 import {
   fetchTimetable,
   fetchLessons,
-  skipLesson,
   setSlotStatus,
   updateLesson,
 } from "@/store/timetable/timetableSlice";
@@ -39,7 +38,7 @@ import { SLOT_STATUS_CONFIG } from "@/shared/constants/lessonSlotStatus";
 import { translateSubject } from "@/components/document-creation/constants";
 import { SlotDialog } from "@/components/calendar/SlotDialog";
 import type { SlotWithTimetable } from "@/shared/types/calendar";
-import { toIso, getWeekStart, addDays, formatWeekLabel, toIntlLocale } from "@/shared/utils/calendar";
+import { toIso, defaultCalendarWeek, getWeekStart, addDays, formatWeekLabel, toIntlLocale } from "@/shared/utils/calendar";
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -155,7 +154,7 @@ export default function CalendarViewPage() {
       const d = new Date(`${weekParam}T00:00:00`);
       if (!isNaN(d.getTime())) return getWeekStart(d);
     }
-    return getWeekStart(new Date());
+    return defaultCalendarWeek();
   });
 
   // Follow the ?week param when it changes (client-side navigation to the same page).
@@ -433,14 +432,6 @@ export default function CalendarViewPage() {
     }
   }, [id, currentWeekIso, dispatch, getToken, currentTimetable?.subject, currentTimetable?.gradeLevel]);
 
-  const handleSkip = useCallback(
-    (slotOrWrapped: SlotWithTimetable | LessonSlot) => {
-      dispatch(skipLesson({ timetableId: id, lessonId: slotOrWrapped.id }));
-      setSelectedSlot(null);
-    },
-    [dispatch, id]
-  );
-
   const handleTypeChange = useCallback(
     (slotOrWrapped: SlotWithTimetable | LessonSlot, type: LessonSlotType) => {
       dispatch(updateLesson({ timetableId: id, lessonId: slotOrWrapped.id, params: { slotType: type } }));
@@ -568,7 +559,6 @@ export default function CalendarViewPage() {
         onClose={() => setSelectedSlot(null)}
         onGenerate={handleGenerateLesson}
         onRegenerate={handleRegenerateLesson}
-        onSkip={handleSkip}
         onTypeChange={handleTypeChange}
         onTitleChange={handleTitleChange}
       />

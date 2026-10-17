@@ -4,6 +4,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { getDocumentPreview } from "@/shared/utils/documentPreview";
+import { formatClassName } from "@/shared/utils/className";
 import { useAppSelector } from "@/store/hooks";
 import { selectWorkspaceContext } from "@/store/workspace/selectors";
 import { Routes, type Document } from "@/shared/types";
@@ -15,6 +23,7 @@ import {
   Globe2,
   HelpCircle,
   MonitorPlay,
+  MoreHorizontal,
   NotebookPen,
   ScrollText,
   Trash2,
@@ -22,7 +31,7 @@ import {
   User,
   type LucideIcon,
 } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import { memo, useCallback, useMemo } from "react";
 
@@ -32,6 +41,8 @@ interface DocumentCardProps {
   onSelect?: (documentId: string, selected: boolean) => void;
   onDelete?: (documentId: string) => void;
   selectionMode?: boolean;
+  /** Shown inside its turma's section: the turma is the heading, so the card names the lesson instead. */
+  inClassSection?: boolean;
 }
 
 const DOCUMENT_TYPE_COLORS: Record<Document["documentType"], string> = {
@@ -75,67 +86,19 @@ function formatDate(dateString: string) {
   return dateFormatter.format(new Date(dateString));
 }
 
-function getContentPreview(content: string, noContentText: string, presentationFallback: string) {
-  if (!content) {
-    return noContentText;
-  }
-
-  // Handle JSON presentation content (v1 or v2)
-  if (content.trimStart().startsWith("{")) {
-    try {
-      const obj = JSON.parse(content) as Record<string, unknown>;
-      if (obj.documentType === "presentation") {
-        if (obj.schemaVersion === 2) {
-          // v2 canvas format — extract title-role text elements
-          type V2Slide = { elements: Array<{ type: string; role?: string; text?: string }> };
-          const slides = (obj.slides as V2Slide[] | undefined) ?? [];
-          const titles = slides
-            .slice(0, 4)
-            .map((s) => s.elements?.find((e) => e.type === "text" && e.role === "title")?.text ?? "")
-            .filter(Boolean);
-          return titles.length > 0 ? titles.join(" · ") : presentationFallback;
-        }
-        // v1 layout format — extract slide titles
-        type V1Block = { title?: string };
-        const blocks = (obj.blocks as V1Block[] | undefined) ?? [];
-        const titles = blocks
-          .slice(0, 4)
-          .map((b) => b.title ?? "")
-          .filter(Boolean);
-        return titles.length > 0 ? titles.join(" · ") : presentationFallback;
-      }
-    } catch {
-      // fall through to markdown processing
-    }
-  }
-
-  let plainText = content
-    .replace(/<[^>]*>/g, "")
-    .replace(/#{1,6}\s+/g, "")
-    .replace(/\*\*(.*?)\*\*/g, "$1")
-    .replace(/\*(.*?)\*/g, "$1")
-    .replace(/`(.*?)`/g, "$1")
-    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
-    .replace(/!\[([^\]]*)\]\([^)]+\)/g, "")
-    .replace(/\n{3,}/g, "\n\n")
-    .replace(/^\s+|\s+$/g, "");
-
-  if (plainText.length > 120) {
-    plainText = `${plainText.substring(0, 120).trim()}...`;
-  }
-
-  return plainText;
-}
-
 function DocumentCardComponent({
   document,
   isSelected = false,
   onSelect,
   onDelete,
   selectionMode = false,
+  inClassSection = false,
 }: DocumentCardProps) {
   const t = useTranslations("documents.card");
   const tEnums = useTranslations("enums");
+  const tTimetable = useTranslations("timetable");
+  const tLesson = useTranslations("editor.lessonContext");
+  const locale = useLocale();
   const workspace = useAppSelector(selectWorkspaceContext);
   const organizationName = workspace?.organization?.name ?? null;
 
@@ -146,14 +109,9 @@ function DocumentCardComponent({
     [document.id, onSelect]
   );
 
-  const handleDeleteClick = useCallback(
-    (event: React.MouseEvent) => {
-      event.preventDefault();
-      event.stopPropagation();
-      onDelete?.(document.id);
-    },
-    [document.id, onDelete]
-  );
+  const handleDeleteSelect = useCallback(() => {
+    onDelete?.(document.id);
+  }, [document.id, onDelete]);
 
   const typeLabel = useMemo(
     () => tEnums(`documentType.${document.documentType}`) || document.documentType,
@@ -172,10 +130,9 @@ function DocumentCardComponent({
   const documentRoute = useMemo(() => getDocumentRoute(document), [document]);
   const createdDate = useMemo(() => formatDate(document.createdAt), [document.createdAt]);
   const noContentText = t("noContent");
-  const presentationFallback = tEnums("documentType.presentation");
   const contentPreview = useMemo(
-    () => getContentPreview(document.content, noContentText, presentationFallback),
-    [document.content, noContentText, presentationFallback]
+    () => getDocumentPreview(document.content) || noContentText,
+    [document.content, noContentText]
   );
 
   // Derive which scope chips to render. `sharedScopes` is the source of truth
@@ -195,6 +152,18 @@ function DocumentCardComponent({
     }
     return scopes;
   }, [document.sharedScopes, document.sharedResourceId]);
+
+  const lessonDate = document.classInfo?.lessonDate
+    ? new Intl.DateTimeFormat(locale, { weekday: "short", day: "numeric", month: "short" })
+        .format(new Date(`${document.classInfo.lessonDate}T00:00:00`))
+        .replace(/\./g, "")
+    : null;
+  const lessonLabel = [
+    document.classInfo?.lessonNumber ? tLesson("lessonNumber", { number: document.classInfo.lessonNumber }) : null,
+    lessonDate,
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
   const orgChipLabel = organizationName
     ? organizationName
@@ -253,6 +222,24 @@ function DocumentCardComponent({
           </div>
         </div>
 
+        {document.classInfo && (
+          <p className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+            <span
+              aria-hidden
+              className="h-2 w-2 shrink-0 rounded-full"
+              style={{ background: document.classInfo.color || "#7F77DD" }}
+            />
+            <span className="truncate">
+              {inClassSection && lessonLabel
+                ? lessonLabel
+                : formatClassName(document.classInfo, {
+                    gradeShort: (grade) => tTimetable("gradeShort", { grade }),
+                    subject: translateSubject,
+                  })}
+            </span>
+          </p>
+        )}
+
         <h3 className="mb-3 line-clamp-2 text-lg font-semibold leading-tight text-foreground">
           {document.title}
         </h3>
@@ -261,7 +248,8 @@ function DocumentCardComponent({
           {contentPreview}
         </p>
 
-        {(document.subject || document.gradeLevel) && (
+        {/* A turma's document already says its subject and year in the line above. */}
+        {!document.classInfo && (document.subject || document.gradeLevel) && (
           <div className="mb-4 space-y-1.5">
             {document.subject && (
               <div className="flex items-center text-xs text-muted-foreground">
@@ -282,15 +270,31 @@ function DocumentCardComponent({
           <p className="truncate text-xs text-muted-foreground">
             {t("createdOn", { date: createdDate })}
           </p>
-          {!selectionMode && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleDeleteClick}
-              className="action-button h-auto w-auto shrink-0 p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
+          {!selectionMode && onDelete && (
+            // The card is a link: keep clicks on the menu from opening the document.
+            <div onClick={(event) => { event.preventDefault(); event.stopPropagation(); }}>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    aria-label={t("moreActions")}
+                    className="action-button h-auto w-auto shrink-0 p-1 text-muted-foreground hover:bg-accent"
+                  >
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    onSelect={handleDeleteSelect}
+                    className="gap-2 text-destructive focus:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    {t("delete")}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           )}
         </div>
       </div>
