@@ -1,5 +1,6 @@
 ﻿import { getPostHogClient } from "@/lib/posthog-server";
-import { markdownToHtml } from "@/shared/utils/markdown";
+import { markdownToHtml, rejoinSplitOptionReferences } from "@/shared/utils/markdown";
+import { normalizeMathMarkdown } from "@/shared/utils/math-markdown";
 import { auth } from "@clerk/nextjs/server";
 import {
   AlignmentType,
@@ -205,6 +206,8 @@ const LATEX_SYMBOL_MAP: Record<string, string> = {
   "\\Leftrightarrow": "\u21D4",
   "\\ldots": "\u2026",
   "\\cdots": "\u22EF",
+  "\\square": "\u25A1",
+  "\\Box": "\u25A1",
   "\\quad": " ",
   "\\qquad": "  ",
   "\\,": " ",
@@ -383,6 +386,15 @@ function formatLinearScript(prefix: "^" | "_", text: string): string {
   return text.length === 1 ? `${prefix}${text}` : `${prefix}(${text})`;
 }
 
+/** A numerator or denominator that reads unambiguously without brackets: "1", "12", "x", "□". */
+function isSimpleFractionPart(text: string): boolean {
+  return /^[\p{L}\p{N}□.,]+$/u.test(text);
+}
+
+function formatFractionPart(text: string): string {
+  return isSimpleFractionPart(text) ? text : `(${text})`;
+}
+
 function renderKatexNodeToText(
   node: KatexParseNode,
   options: Required<MathTextRenderOptions>,
@@ -417,7 +429,7 @@ function renderKatexNodeToText(
     case "genfrac": {
       const numerator = renderKatexNodesToText(node.numer, options);
       const denominator = renderKatexNodesToText(node.denom, options);
-      return `(${numerator}) / (${denominator})`;
+      return `${formatFractionPart(numerator)}/${formatFractionPart(denominator)}`;
     }
     case "supsub": {
       const base = renderKatexNodesToText(node.base, options);
@@ -453,6 +465,9 @@ function renderKatexNodeToText(
         return mathTokenToText(node.name);
       }
       return "";
+    case "kern":
+      // Explicit spacing such as "\," or "\quad"; dropping it glues "1/2 □ 2/4" together.
+      return " ";
     default:
       if (node.body) {
         return renderKatexNodesToText(node.body, options);
@@ -544,14 +559,23 @@ function renderKatexNodeToDocxTextRuns(
         ...renderKatexNodesToDocxTextRuns(node.body, style),
         ...createDocxMathTextRun(")", style),
       ];
-    case "genfrac":
+    case "genfrac": {
+      const fractionPart = (part: unknown): TextRun[] => {
+        const runs = renderKatexNodesToDocxTextRuns(part, style);
+        return isSimpleFractionPart(renderKatexNodesToText(part))
+          ? runs
+          : [
+              ...createDocxMathTextRun("(", style),
+              ...runs,
+              ...createDocxMathTextRun(")", style),
+            ];
+      };
       return [
-        ...createDocxMathTextRun("(", style),
-        ...renderKatexNodesToDocxTextRuns(node.numer, style),
-        ...createDocxMathTextRun(")/(", style),
-        ...renderKatexNodesToDocxTextRuns(node.denom, style),
-        ...createDocxMathTextRun(")", style),
+        ...fractionPart(node.numer),
+        ...createDocxMathTextRun("/", style),
+        ...fractionPart(node.denom),
       ];
+    }
     case "supsub": {
       return [
         ...renderKatexNodesToDocxTextRuns(node.base, style),
@@ -586,6 +610,9 @@ function renderKatexNodeToDocxTextRuns(
         return createDocxMathTextRun(mathTokenToText(node.name), style);
       }
       return [];
+    case "kern":
+      // Explicit spacing such as "\," or "\quad"; dropping it glues "1/2 □ 2/4" together.
+      return createDocxMathTextRun(" ", style);
     default:
       if (node.body) {
         return renderKatexNodesToDocxTextRuns(node.body, style);
@@ -776,6 +803,8 @@ function latexToText(
           Leftrightarrow: "⇔",
           ldots: "…",
           cdots: "…",
+          square: "□",
+          Box: "□",
           left: "",
           right: "",
           text: "",
@@ -1131,7 +1160,7 @@ function _stripInlineMarkdown(
 }
 
 function normalizeExportContent(content: string): string {
-  return removeHtmlComments(normalizeEscapedAnswerBlanks(content))
+  const normalized = removeHtmlComments(normalizeEscapedAnswerBlanks(content))
     .replace(/\r\n/g, "\n")
     .replace(/\r/g, "\n")
     .replace(HTML_BREAK_PATTERN, "\n")
@@ -1141,6 +1170,8 @@ function normalizeExportContent(content: string): string {
     .replace(/[ \t]+\n/g, "\n")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
+  // Same repairs the editor and the PDF get through markdownToHtml, so the DOCX matches them.
+  return rejoinSplitOptionReferences(normalizeMathMarkdown(normalized));
 }
 
 const ASCII_PDF_CHARACTER_MAP: Record<string, string> = {
