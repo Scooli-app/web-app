@@ -83,6 +83,8 @@ export interface DocumentFilters {
   search?: string;
   subject?: string;
   gradeLevel?: string;
+  /** A timetable id, or "none" for documents outside any turma. */
+  timetableId?: string;
 }
 
 export interface DocumentStatsResponse {

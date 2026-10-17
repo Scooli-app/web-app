@@ -1,4 +1,5 @@
 "use client";
+import { MAX_LENGTHS } from "@/shared/config/constants";
 import { AiDisclaimer } from "@/components/ui/ai-disclaimer";
 
 import { Badge } from "@/components/ui/badge";
@@ -386,6 +387,7 @@ function StepPeriod({ periodStart, periodEnd, schoolYearLabel, limits, onChange 
         <Label>{t("period.schoolYearLabel")}</Label>
         <Input
           placeholder={t("period.schoolYearPlaceholder")}
+          maxLength={MAX_LENGTHS.SCHOOL_YEAR}
           value={schoolYearLabel}
           onChange={(e) => onChange(periodStart, periodEnd, e.target.value)}
         />
@@ -479,6 +481,7 @@ function StepDetails({
           <Label>{t("details.classLabel")}</Label>
           <Input
             placeholder={t("details.classPlaceholder")}
+            maxLength={MAX_LENGTHS.CLASS_LABEL}
             value={classLabel}
             onChange={(e) => onFieldChange("classLabel", e.target.value)}
           />
@@ -487,6 +490,7 @@ function StepDetails({
           <Label>{t("details.nameLabel")}</Label>
           <Input
             placeholder={t("details.namePlaceholder")}
+            maxLength={MAX_LENGTHS.TURMA_TITLE}
             value={title}
             onChange={(e) => onFieldChange("title", e.target.value)}
           />

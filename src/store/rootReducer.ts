@@ -1,6 +1,5 @@
 import { combineReducers } from "@reduxjs/toolkit";
 import adminFeedbackReducer from "./admin-feedback/adminFeedbackSlice";
-import assistantReducer from "./assistant/assistantSlice";
 import { communityReducer } from "./community";
 import documentReducer from "./documents/documentSlice";
 import entitlementsReducer from "./entitlements/entitlementsSlice";
@@ -19,7 +18,6 @@ const rootReducer = combineReducers({
   ui: uiReducer,
   subscription: subscriptionReducer,
   entitlements: entitlementsReducer,
-  assistant: assistantReducer,
   adminFeedback: adminFeedbackReducer,
   community: communityReducer,
   moderation: moderationReducer,

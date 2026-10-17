@@ -25,9 +25,7 @@ export type UiProblemKind =
   /** A document in `failed` state was opened. */
   | "document_opened_failed"
   /** A document marked `completed` was opened with no content. */
-  | "document_opened_empty"
-  /** The assistant (floating chat) showed an error. */
-  | "assistant_error_shown";
+  | "document_opened_empty";
 
 export function reportUiProblem(
   kind: UiProblemKind,

@@ -7,6 +7,11 @@ export const meService = {
     apiClient
       .get<MyWeek>("/users/me/week", { params: { weekStart } })
       .then((r) => r.data),
+  /** Today-first rolling window: `from` and the `days` after it (7 = today + 6). */
+  getWindow: (from: string, days = 7) =>
+    apiClient
+      .get<MyWeek>("/users/me/week", { params: { from, days } })
+      .then((r) => r.data),
   getPlanLimits: () =>
     apiClient.get<PlanLimits>("/users/me/plan-limits").then((r) => r.data),
   getEmailPreferences: () =>

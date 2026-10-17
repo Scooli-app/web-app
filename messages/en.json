@@ -22,7 +22,11 @@
       "toggle": "Toggle sidebar"
     },
     "aiDisclaimer": "AI can make mistakes. Always review the content.",
-    "aiDisclaimerShort": "AI can make mistakes."
+    "aiDisclaimerShort": "AI can make mistakes.",
+    "loadError": {
+      "message": "We couldn’t load this right now.",
+      "retry": "Try again"
+    }
   },
   "language": {
     "interface": {
@@ -63,17 +67,47 @@
     "title": "Your week",
     "previousWeek": "Previous week",
     "nextWeek": "Next week",
-    "createLesson": "Create",
-    "retryLesson": "Try again",
-    "createLessonError": "We couldn't create this lesson. Please try again.",
-    "prepare": "Prepare the week",
     "noLessons": "No lessons this week.",
-    "seeNextWeek": "See next week",
     "empty": "Create your first class and Scooli prepares your week.",
     "error": "We couldn't load your week.",
     "prepareError": "We couldn't prepare the week. Please try again.",
-    "nothingToPrepare": "There are no lessons left to prepare this week.",
-    "refreshError": "Your lessons are ready, but we couldn't refresh the list. Please reload the page."
+    "todayTitle": "Today · {date}",
+    "focusTitle": "Next lesson · {date}",
+    "lessonsCount": "{count, plural, one {# lesson} other {# lessons}}",
+    "noLessonsToday": "No lessons today.",
+    "next": "Coming up",
+    "noLessonsDay": "No lessons",
+    "lessonNumber": "Lesson {number}",
+    "lessonMinutes": "{minutes} min",
+    "noObjectivesYet": "Objectives appear once the lesson plan is ready.",
+    "preparePlan": "Prepare lesson plan",
+    "documentGenerating": "Preparing…",
+    "companionError": "Couldn’t create this document. Try again.",
+    "companionInProgress": "This document is already being prepared.",
+    "backToToday": "Today",
+    "types": {
+      "lessonPlan": "Lesson plan",
+      "worksheet": "Worksheet",
+      "quiz": "Quiz",
+      "presentation": "Slides",
+      "test": "Test"
+    },
+    "windowTitle": "{from} – {to}",
+    "loadingNextLesson": "Loading the next lesson…",
+    "companionExists": "This lesson already has this document.",
+    "prepareLessonPlans": "Prepare lesson plans ({count})",
+    "prepareConfirmTitle": "Prepare lesson plans",
+    "prepareConfirmBody": "{count, plural, one {We'll write a lesson plan for the one lesson this week that doesn't have one yet:} other {We'll write lesson plans for the # lessons this week that don't have one yet:}}",
+    "prepareConfirmAction": "{count, plural, one {Prepare 1 plan} other {Prepare # plans}}",
+    "prepareCostFree": "No cost: these lessons are in your free week.",
+    "prepareCost": "{count, plural, one {Uses # credit.} other {Uses # credits.}}",
+    "cancel": "Cancel",
+    "moreLessons": "{count, plural, one {+ # lesson} other {+ # lessons}}",
+    "dayReady": "{count, plural, one {# ready} other {# ready}}",
+    "dayToPrepare": "{count, plural, one {# to prepare} other {# to prepare}}",
+    "ready": "Ready",
+    "toPrepare": "To prepare",
+    "seeAllInCalendar": "See all {count} lessons in the calendar"
   },
   "emailUnsubscribe": {
     "title": "Stop getting the weekly email?",
@@ -90,15 +124,14 @@
   },
   "nav": {
     "groups": {
-      "navigation": "Navigation",
-      "contentCreation": "Create content",
       "system": "System",
       "school": "School",
       "admin": "Administration"
     },
+    "create": "Create",
     "items": {
       "dashboard": {
-        "title": "Dashboard",
+        "title": "Home",
         "description": "An overview of your activity"
       },
       "documents": {
@@ -164,10 +197,13 @@
       "schoolMembers": {
         "title": "Members",
         "description": "See your school's members and seats"
+      },
+      "classes": {
+        "title": "Classes",
+        "description": "Your classes and timetables"
       }
     },
     "comingSoon": "Coming soon",
-    "viewTutorial": "View tutorial",
     "profile": {
       "userFallback": "User",
       "openProfile": "Open profile",
@@ -274,9 +310,9 @@
       "createFailedGeneric": "Error creating the document."
     },
     "topic": {
-      "title": "Lesson Topic",
+      "title": "Topic",
       "description": "Describe the topic you want to cover",
-      "ariaLabel": "Lesson topic"
+      "ariaLabel": "Topic"
     },
     "grade": {
       "title": "School Year",
@@ -717,6 +753,31 @@
       "quiz_descobrimentos": {
         "topic": "The Portuguese Discoveries"
       }
+    },
+    "filledSummary": {
+      "year": "Year {year}",
+      "change": "Change"
+    },
+    "moreOptions": {
+      "title": "More options",
+      "summaryTemplate": "Template: {name}",
+      "summaryDuration": "Length: {minutes} min",
+      "summaryDurationFree": "Length: any",
+      "summarySources": "{count, plural, one {Uses # of your sources} other {Uses # of your sources}}"
+    },
+    "missing": {
+      "prefix": "Still needed:",
+      "topic": "a topic",
+      "schoolYear": "the year",
+      "subject": "the subject",
+      "template": "a template, under More options",
+      "worksheetVariant": "the worksheet goal"
+    },
+    "lesson": {
+      "title": "Which lesson is it for?",
+      "description": "Optional. The document goes into the class and lesson you pick.",
+      "none": "None (standalone document)",
+      "alreadyHas": "already has one"
     }
   },
   "dashboard": {
@@ -734,12 +795,6 @@
         "testFracoes": "Test: Fractions · 5th grade",
         "quizDescobrimentos": "Quiz: The Portuguese Discoveries · 5th grade"
       }
-    },
-    "recentDocuments": {
-      "heading": "Pick up where you left off",
-      "viewAll": "View all",
-      "emptyTitle": "You don't have any documents yet.",
-      "emptyDescription": "Create your first lesson plan, test or quiz and it will show up here so you can pick up where you left off."
     }
   },
   "onboardingV2": {
@@ -945,11 +1000,9 @@
   },
   "settings": {
     "planning": {
-      "title": "Weekly planning",
-      "dayTitle": "Day to plan the week",
-      "dayDescription": "From this day on, Scooli shows you the following week.",
-      "digestTitle": "Weekly email with my week",
-      "digestDescription": "You get a summary of the coming week on the day you plan.",
+      "title": "Weekly email",
+      "digestTitle": "Email with my week",
+      "digestDescription": "At the weekend you get a summary of next week's lessons.",
       "loadError": "Couldn't load this setting.",
       "retry": "Try again",
       "saveError": "We couldn't save that change."
@@ -965,7 +1018,7 @@
         "system": "System",
         "lightHint": "Light mode",
         "darkHint": "Dark mode",
-        "systemHint": "Match my system"
+        "systemHint": "Follows your device's theme"
       },
       "notifications": {
         "title": "Notifications",
@@ -1047,7 +1100,7 @@
       "saveError": "We couldn't save. Try again."
     },
     "subscriptionCard": {
-      "title": "Subscription and Generations",
+      "title": "Plan and credits",
       "yourPlan": "Your plan",
       "orgAccessTitle": "You have Pro access through your organization.",
       "orgAccessDescription": "Your access is managed by the school — you don't need a personal subscription.",
@@ -1586,6 +1639,11 @@
       "generatingWord": "Generating Word…",
       "exportWord": "Export as Word",
       "exportWordPro": "Export Word (Pro)"
+    },
+    "lessonContext": {
+      "lessonNumber": "Lesson {number}",
+      "openLesson": "Open this lesson in the calendar",
+      "alsoHas": "This lesson also has:"
     }
   },
   "blocks": {
@@ -1606,41 +1664,6 @@
       "stepReviewingLabel": "Reviewing",
       "stepReviewingCaption": "Checking the structure and quality of the result.",
       "imagesLabel": "Images"
-    }
-  },
-  "assistant": {
-    "panel": {
-      "title": "Scooli Assistant",
-      "online": "Online",
-      "newConversation": "New conversation",
-      "minimize": "Minimize conversation",
-      "inputPlaceholder": "Write a message..."
-    },
-    "emptyState": {
-      "title": "Scooli Assistant",
-      "description": "I'm here to help you with ideas, teaching questions and guidance on using the app.",
-      "welcomeMessage": "Hi! 👋 I'm the Scooli Assistant.\n\nI can help you with:\n- **Ideas** for activities and lessons\n- **Questions** about teaching and the curriculum\n- **Guidance** on using Scooli\n\nWhat can I help with today?",
-      "quickActions": [
-        {
-          "label": "Activity ideas ✨",
-          "message": "Can you give me ideas for activities for my lesson?"
-        },
-        {
-          "label": "Suggestions for a lesson 📚",
-          "message": "I need suggestions for planning a lesson."
-        },
-        {
-          "label": "Curriculum questions ❓",
-          "message": "I have questions about the Portuguese curriculum."
-        },
-        {
-          "label": "How to create a document 📝",
-          "message": "How can I create a lesson plan in Scooli?"
-        }
-      ]
-    },
-    "button": {
-      "openLabel": "Open Scooli Assistant"
     }
   },
   "community": {
@@ -1793,14 +1816,9 @@
       "description": "Discover and share teaching resources created by teachers in Portugal",
       "myDashboard": "My dashboard",
       "share": "Share",
-      "createNew": "Create new",
       "generalLibrary": "General library",
       "schoolLibraryFallback": "School library",
-      "resourcesAvailable": "resources available",
-      "internalShares": "Internal shares from {org}",
       "schoolFallback": "your school",
-      "teacherCommunity": "A community of teachers in Portugal",
-      "alignedResources": "Resources aligned with the Aprendizagens Essenciais",
       "reuseSuccess": "Added to your documents",
       "reuseError": "Couldn't reuse this resource",
       "previewComingSoon": "Preview coming soon",
@@ -1820,7 +1838,8 @@
       "allTypes": "All types",
       "sortPopular": "Most reused",
       "sortRecent": "Most recent",
-      "gradeOption": "{n, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} grade"
+      "gradeOption": "{n, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} grade",
+      "moreFilters": "More filters"
     },
     "dashboardPage": {
       "title": "Contributor Dashboard",
@@ -1994,7 +2013,9 @@
       "community": "Community",
       "sharedOrgTitle": "Shared to {org}'s library",
       "gradeYear": "{grade, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} grade",
-      "createdOn": "Created on {date}"
+      "createdOn": "Created on {date}",
+      "moreActions": "More actions",
+      "delete": "Delete"
     },
     "filters": {
       "types": {
@@ -2016,7 +2037,18 @@
         "all": "Any origin",
         "ai": "AI generated",
         "imported": "Imported"
-      }
+      },
+      "classes": {
+        "label": "Class",
+        "all": "All classes",
+        "none": "No class"
+      },
+      "searchPlaceholder": "Search…",
+      "typeLabel": "Document type",
+      "allTypes": "All types",
+      "groupByClass": "Group by class",
+      "moreFilters": "More filters",
+      "clearMoreFilters": "Clear these filters"
     },
     "emptyState": {
       "genericDocuments": "documents",
@@ -2052,7 +2084,6 @@
       "visibleCount": "({count, plural, one {# visible} other {# visible}})",
       "deleting": "Deleting...",
       "delete": "Delete",
-      "searchPlaceholder": "Search documents...",
       "select": "Select",
       "loadingDocuments": "Loading documents...",
       "loadingMore": "Loading more documents...",
@@ -2063,7 +2094,9 @@
         "multipleDescription": "Are you sure you want to delete {count} documents? This action cannot be undone.",
         "confirm": "Delete",
         "cancel": "Cancel"
-      }
+      },
+      "seeAll": "See all",
+      "sectionCount": "{count, plural, one {# document} other {# documents}}"
     },
     "export": {
       "exercisePlaceholder": "[Interactive exercise ({kind}) — visible only in the app]",
@@ -2116,6 +2149,10 @@
         "free_period_limit": {
           "title": "The free plan covers 4 weeks",
           "description": "Upgrade to Pro to plan the whole school year."
+        },
+        "presentation_pro": {
+          "title": "Slides are part of Pro",
+          "description": "On the free plan you can prepare lesson plans, worksheets, quizzes and tests. Upgrade to Pro to create slides too."
         }
       }
     },
@@ -2254,38 +2291,6 @@
       "annualOption": "I'd rather pay annually for €47.90",
       "maybeLater": "Maybe later"
     }
-  },
-  "tutorial": {
-    "steps": {
-      "grade": {
-        "title": "School year",
-        "description": "Click on your students' school year.",
-        "hint": "Select a year to move on automatically"
-      },
-      "subject": {
-        "title": "Subject",
-        "description": "Open the dropdown and choose the subject you teach.",
-        "hint": "Select a subject to move on automatically"
-      },
-      "topic": {
-        "title": "Lesson topic",
-        "description": "Write the topic you want to teach. E.g.: 'Photosynthesis' or 'Fractions'.",
-        "hint": "Click Next when you're ready"
-      },
-      "template": {
-        "title": "Plan template",
-        "description": "A template was selected automatically. You can click to explore others.",
-        "hint": "Click Next to continue"
-      },
-      "generate": {
-        "title": "Generate the lesson plan! 🎉",
-        "description": "All set! Click 'Create Lesson Plan' to generate your first lesson plan with AI.",
-        "hint": "Click the button to create your lesson plan"
-      }
-    },
-    "completing": "Great! Moving on…",
-    "skip": "Skip tutorial",
-    "next": "Next"
   },
   "documentEditorPages": {
     "lessonPlan": {
@@ -2662,12 +2667,6 @@
       "ingestionError": "Ingestion error",
       "streamConnectionError": "Stream connection error"
     },
-    "assistant": {
-      "sessionExpired": "Session expired. Please sign in again.",
-      "creditLimitReached": "Credit limit reached. Upgrade to the Pro plan to continue.",
-      "serverError": "Server error: {status}",
-      "connectionError": "Connection error. Please try again."
-    },
     "moderation": {
       "fetchQueue": "Couldn't load the moderation queue",
       "processAction": "Couldn't process the moderation action"
@@ -2789,7 +2788,8 @@
       "holidayNoLesson": "Holiday / No lesson",
       "classInline": "Class {label}",
       "minutesSuffix": "{count} min",
-      "generateWeek": "Generate week ({count})"
+      "generateWeek": "Generate week ({count})",
+      "saveError": "Couldn't save that change. Please try again."
     },
     "week": {
       "generate": "Generate ({count})",
@@ -2808,8 +2808,8 @@
     },
     "month": {
       "lessonsCount": "{count, plural, one {# lesson} other {# lessons}}",
-      "completedCount": "{count, plural, one {# generated} other {# generated}}",
-      "pendingCount": "{count, plural, one {# pending} other {# pending}}"
+      "completedCount": "{count, plural, one {# ready} other {# ready}}",
+      "pendingCount": "{count, plural, one {# to prepare} other {# to prepare}}"
     },
     "classesList": {
       "header": {
@@ -2848,23 +2848,27 @@
       "typeLabel": "Type:",
       "objectivesTitle": "Learning Objectives",
       "objectivesProcessing": "Processing…",
-      "objectivesEmpty": "Generate the class's topics to see the learning objectives.",
+      "objectivesEmpty": "The objectives appear once the lesson plan is ready.",
       "documentsTitle": "Generated documents",
       "loadingDocuments": "Loading documents…",
       "noDocuments": "No documents found.",
       "viewLinkedPlan": "View linked plan",
       "additionalInstructionLabel": "Additional instruction (optional)",
       "additionalInstructionPlaceholder": "E.g. include a group practical activity",
-      "generateLessonPlan": "Generate lesson plan",
       "generating": "Generating…",
       "openLessonPlan": "Open lesson plan",
       "regenerate": "Regenerate",
-      "confirmSkipWarning": "This action cannot be undone.",
-      "confirm": "Confirm",
-      "cancel": "Cancel",
-      "skip": "Skip",
       "editTopicTitle": "Click to edit the topic",
-      "lessonNumber": "Lesson {number}"
+      "lessonNumber": "Lesson {number}",
+      "prepareSet": "Prepare {items}",
+      "cost": "{count, plural, =0 {no cost} one {# credit} other {# credits}}",
+      "shortTypes": {
+        "lessonPlan": "plan",
+        "worksheet": "worksheet",
+        "quiz": "quiz",
+        "presentation": "slides",
+        "test": "test"
+      }
     },
     "dashboardWidget": {
       "title": "Upcoming lessons",

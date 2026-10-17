@@ -1,5 +1,6 @@
 "use client";
 
+import { formatClassName } from "@/shared/utils/className";
 import { isListableSlot } from "@/shared/utils/lessonTopic";
 import { Badge } from "@/components/ui/badge";
 import { PlanGenerationBanner } from "@/components/plan-generation/PlanGenerationBanner";
@@ -10,7 +11,6 @@ import { FeatureUnavailable } from "@/components/feature/FeatureUnavailable";
 import {
   fetchTimetable,
   fetchLessons,
-  skipLesson,
   setSlotStatus,
   updateLesson,
 } from "@/store/timetable/timetableSlice";
@@ -39,7 +39,7 @@ import { SLOT_STATUS_CONFIG } from "@/shared/constants/lessonSlotStatus";
 import { translateSubject } from "@/components/document-creation/constants";
 import { SlotDialog } from "@/components/calendar/SlotDialog";
 import type { SlotWithTimetable } from "@/shared/types/calendar";
-import { toIso, getWeekStart, addDays, formatWeekLabel, toIntlLocale } from "@/shared/utils/calendar";
+import { toIso, defaultCalendarWeek, getWeekStart, addDays, formatWeekLabel, toIntlLocale } from "@/shared/utils/calendar";
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -61,12 +61,10 @@ const STATUS_CONFIG = SLOT_STATUS_CONFIG;
 interface SlotCardProps {
   slot: LessonSlot;
   color: string;
-  subject: string;
-  classLabel: string;
   onOpen: (slot: LessonSlot) => void;
 }
 
-function SlotCard({ slot, color, subject, classLabel, onOpen }: SlotCardProps) {
+function SlotCard({ slot, color, onOpen }: SlotCardProps) {
   const t = useTranslations("calendar");
   const tTimetable = useTranslations("timetable");
   const rawLocale = useLocale();
@@ -111,9 +109,6 @@ function SlotCard({ slot, color, subject, classLabel, onOpen }: SlotCardProps) {
             })}
             {" · "}{t("shared.minutesSuffix", { count: slot.durationMinutes })}
           </p>
-          <p className="text-xs text-muted-foreground/70">
-            {subject}{classLabel ? ` · ${t("shared.classInline", { label: classLabel })}` : ""}
-          </p>
           {isFailed && (
             <p className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400 mt-0.5">
               <AlertTriangle className="h-3 w-3" />
@@ -155,7 +150,7 @@ export default function CalendarViewPage() {
       const d = new Date(`${weekParam}T00:00:00`);
       if (!isNaN(d.getTime())) return getWeekStart(d);
     }
-    return getWeekStart(new Date());
+    return defaultCalendarWeek();
   });
 
   // Follow the ?week param when it changes (client-side navigation to the same page).
@@ -433,14 +428,6 @@ export default function CalendarViewPage() {
     }
   }, [id, currentWeekIso, dispatch, getToken, currentTimetable?.subject, currentTimetable?.gradeLevel]);
 
-  const handleSkip = useCallback(
-    (slotOrWrapped: SlotWithTimetable | LessonSlot) => {
-      dispatch(skipLesson({ timetableId: id, lessonId: slotOrWrapped.id }));
-      setSelectedSlot(null);
-    },
-    [dispatch, id]
-  );
-
   const handleTypeChange = useCallback(
     (slotOrWrapped: SlotWithTimetable | LessonSlot, type: LessonSlotType) => {
       dispatch(updateLesson({ timetableId: id, lessonId: slotOrWrapped.id, params: { slotType: type } }));
@@ -458,8 +445,6 @@ export default function CalendarViewPage() {
   const pendingThisWeek = currentWeekSlots.filter((s) => s.status === "pending").length;
 
   const timetableColor = currentTimetable?.color ?? "#7F77DD";
-  const timetableSubject = currentTimetable?.subject ?? "";
-  const timetableClassLabel = currentTimetable?.classLabel ?? "";
 
   if (!featuresLoaded) return null;
   if (!enabled)
@@ -474,22 +459,28 @@ export default function CalendarViewPage() {
     <div className="mx-auto w-full max-w-5xl space-y-4 px-4 pb-24 pt-6 md:pb-6">
       {/* Header */}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" asChild>
+        <div className="flex min-w-0 items-center gap-3">
+          <Button variant="ghost" size="icon" asChild className="shrink-0">
             <Link href={Routes.CALENDAR}><ArrowLeft className="h-4 w-4" /></Link>
           </Button>
           <div
             className="h-4 w-4 rounded-full shrink-0"
             style={{ background: timetableColor }}
           />
-          <div>
-            <h1 className="font-semibold leading-tight">
-              {currentTimetable?.title ?? t("detail.loading")}
+          {/* The short turma name everywhere else uses ("9.º Português · B"); the teacher's own
+              name, which can be long, goes on one line under it. */}
+          <div className="min-w-0">
+            <h1 className="truncate font-semibold leading-tight" title={currentTimetable?.title}>
+              {currentTimetable
+                ? formatClassName(currentTimetable, {
+                    gradeShort: (grade) => tTimetable("gradeShort", { grade }),
+                    subject: translateSubject,
+                  })
+                : t("detail.loading")}
             </h1>
-            {currentTimetable && (
-              <p className="text-sm text-muted-foreground">
-                {translateSubject(currentTimetable.subject)} · {tTimetable("gradeYear", { grade: currentTimetable.gradeLevel })}
-                {currentTimetable.classLabel ? ` · ${t("shared.classInline", { label: currentTimetable.classLabel })}` : ""}
+            {currentTimetable?.title && currentTimetable.title !== translateSubject(currentTimetable.subject) && (
+              <p className="truncate text-sm text-muted-foreground" title={currentTimetable.title}>
+                {currentTimetable.title}
               </p>
             )}
           </div>
@@ -552,8 +543,6 @@ export default function CalendarViewPage() {
               key={slot.id}
               slot={slot}
               color={timetableColor}
-              subject={timetableSubject}
-              classLabel={timetableClassLabel}
               onOpen={setSelectedSlot}
             />
           ))}
@@ -568,7 +557,6 @@ export default function CalendarViewPage() {
         onClose={() => setSelectedSlot(null)}
         onGenerate={handleGenerateLesson}
         onRegenerate={handleRegenerateLesson}
-        onSkip={handleSkip}
         onTypeChange={handleTypeChange}
         onTitleChange={handleTitleChange}
       />
