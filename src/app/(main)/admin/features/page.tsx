@@ -113,6 +113,12 @@ const FEATURE_FLAG_METADATA: Record<
       "Controla o perfil de ensino, o catálogo profissional e as sugestões durante a criação de recursos.",
     order: 50,
   },
+  [FeatureFlagKey.CLASS_STATE_ENABLED]: {
+    name: "Como correu a aula?",
+    description:
+      "Mostra no painel a confirmação de como correu cada aula passada (dada, com dificuldades, a meio ou não realizada).",
+    order: 55,
+  },
 };
 
 const applyFlagMetadata = (flag: AdminFeatureFlag): AdminFeatureFlag => {

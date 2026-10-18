@@ -1,5 +1,6 @@
 "use client";
 
+import { CheckInStrip } from "@/components/dashboard/CheckInStrip";
 import { FocusDayList } from "@/components/dashboard/FocusDayList";
 import { LessonDetailBlock } from "@/components/dashboard/LessonDetailBlock";
 import { NextDaysStrip, type StripLesson } from "@/components/dashboard/NextDaysStrip";
@@ -277,6 +278,7 @@ export function YourWeekCard() {
 
   return (
     <section className="rounded-2xl border border-border bg-card p-3 shadow-md sm:p-5">
+      <CheckInStrip />
       {/* On a phone the title gets its own line: the actions never squeeze it away. */}
       <header className="mb-3 flex flex-wrap items-center justify-between gap-x-2 gap-y-2">
         <div className="flex min-w-0 basis-full items-center gap-2 sm:flex-1 sm:basis-auto">
