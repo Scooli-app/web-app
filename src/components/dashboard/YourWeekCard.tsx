@@ -365,7 +365,7 @@ export function YourWeekCard() {
           {stripDays.length > 0 && (
             <>
               <h3 className="mb-2 mt-4 text-sm font-semibold text-muted-foreground">{t("next")}</h3>
-              <NextDaysStrip days={stripDays} lessonsByDay={lessonsByDay} locale={locale} onOpen={openPopup} />
+              <NextDaysStrip days={stripDays} lessonsByDay={lessonsByDay} locale={locale} classLabel={classLabel} onOpen={openPopup} />
             </>
           )}
         </>

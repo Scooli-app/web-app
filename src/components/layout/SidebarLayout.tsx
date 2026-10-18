@@ -574,7 +574,7 @@ function GenerationsIndicator() {
             : t("generations.proAccess")
         }
         className={cn(
-          "flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors",
+          "flex h-9 items-center gap-1.5 rounded-full border px-3 text-sm font-medium transition-colors",
           "border-primary/10 bg-primary/5 text-primary hover:bg-primary/10",
         )}
       >
@@ -591,10 +591,10 @@ function GenerationsIndicator() {
     return (
       <Link href={Routes.CHECKOUT}>
         <Button
-          size="sm"
+          size="bar"
           className="bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-sm transition-all hover:scale-105 hover:from-amber-600 hover:to-orange-700 active:scale-95"
         >
-          <Sparkles className="mr-1.5 h-4 w-4" />
+          <Sparkles />
           {t("generations.upgradeToPro")}
         </Button>
       </Link>
@@ -605,7 +605,7 @@ function GenerationsIndicator() {
     <Link
       href={Routes.SETTINGS}
       className={cn(
-        "flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors",
+        "flex h-9 items-center gap-1.5 rounded-full border px-3 text-sm font-medium transition-colors",
         isLow
           ? "border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 dark:border-amber-900/30 dark:bg-amber-900/20 dark:text-amber-400"
           : "border-primary/10 bg-primary/5 text-primary hover:bg-primary/10",
@@ -723,9 +723,10 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
                   <SheetTrigger asChild>
                     <Button
                       variant="ghost"
-                      className="h-9 w-9 px-0 text-base hover:bg-accent hover:text-primary md:hidden"
+                      size="bar-icon"
+                      className="text-foreground hover:bg-accent hover:text-primary md:hidden"
                     >
-                      <Menu className="h-6 w-6" />
+                      <Menu />
                       <span className="sr-only">{tCommon("toggle")}</span>
                     </Button>
                   </SheetTrigger>
@@ -741,7 +742,7 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
                     </ScrollArea>
                   </SheetContent>
                 </Sheet>
-                <SidebarTrigger className="hidden md:flex" />
+                <SidebarTrigger className="hidden size-9 rounded-full text-foreground hover:text-primary md:flex" />
               </div>
 
               <div className="flex items-center gap-2">
@@ -750,7 +751,7 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
                     <Button
                       asChild
                       variant="outline"
-                      size="sm"
+                      size="bar"
                       className="border-primary/40 text-primary hover:bg-primary/10 hover:text-primary"
                     >
                       <a
@@ -759,7 +760,7 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
                         rel="noreferrer"
                         aria-label={t("items.recommendSchool.title")}
                       >
-                        <Building2 className="h-4 w-4 sm:mr-1.5" />
+                        <Building2 />
                         <span className="hidden sm:inline">
                           {t("items.recommendSchool.title")}
                         </span>
@@ -775,6 +776,7 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
                   <SignInButton mode="modal">
                     <Button
                       variant="default"
+                      size="bar"
                       className="bg-primary hover:bg-primary/90"
                     >
                       {t("signIn")}

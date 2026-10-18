@@ -35,9 +35,10 @@ function LanguageToggleComponent() {
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
-          className="h-10 gap-1.5 rounded-full px-3 text-foreground hover:bg-accent hover:text-primary"
+          size="bar"
+          className="gap-1.5 text-foreground hover:bg-accent hover:text-primary"
         >
-          <Languages className="h-5 w-5" />
+          <Languages />
           <span className="text-sm font-semibold">
             {LOCALE_CODES[interfaceLocale]}
           </span>
