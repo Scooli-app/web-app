@@ -416,19 +416,23 @@
     "worksheetVariants": {
       "practice": {
         "label": "Practice and consolidate",
-        "description": "A worksheet with progressive exercises to practice and reinforce learning."
+        "description": "A worksheet with progressive exercises to practice and reinforce learning.",
+        "short": "Practise"
       },
       "diagnostic": {
         "label": "Diagnose knowledge",
-        "description": "Helps identify the starting point, gaps and common mistakes before the topic."
+        "description": "Helps identify the starting point, gaps and common mistakes before the topic.",
+        "short": "Diagnose"
       },
       "formative": {
         "label": "Track learning",
-        "description": "Supports monitoring, self-assessment and next steps throughout the work."
+        "description": "Supports monitoring, self-assessment and next steps throughout the work.",
+        "short": "Track"
       },
       "exploration": {
         "label": "Introduce new content",
-        "description": "Uses prompts and guided questions to explore ideas before formal practice."
+        "description": "Uses prompts and guided questions to explore ideas before formal practice.",
+        "short": "Introduce"
       }
     },
     "sourcePicker": {
@@ -763,7 +767,8 @@
       "summaryTemplate": "Template: {name}",
       "summaryDuration": "Length: {minutes} min",
       "summaryDurationFree": "Length: any",
-      "summarySources": "{count, plural, one {Uses # of your sources} other {Uses # of your sources}}"
+      "summarySources": "{count, plural, one {Uses # of your sources} other {Uses # of your sources}}",
+      "summarySlides": "{count} slides"
     },
     "missing": {
       "prefix": "Still needed:",
@@ -778,6 +783,9 @@
       "description": "Optional. The document goes into the class and lesson you pick.",
       "none": "None (standalone document)",
       "alreadyHas": "already has one"
+    },
+    "form": {
+      "optional": "optional"
     }
   },
   "dashboard": {

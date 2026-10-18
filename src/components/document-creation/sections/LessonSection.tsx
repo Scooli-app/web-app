@@ -1,6 +1,5 @@
 "use client";
 
-import { Card } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -12,10 +11,10 @@ import { translateSubject } from "@/components/document-creation/constants";
 import { meService } from "@/services/api/me.service";
 import { toIso } from "@/shared/utils/calendar";
 import { formatClassName } from "@/shared/utils/className";
-import { CalendarDays } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { lessonChoices, type LessonChoice } from "../lessonPicker";
+import { FieldHeading, FormCard } from "./FormCard";
 
 /** How far ahead the picker looks: this week and the next. */
 const WINDOW_DAYS = 14;
@@ -73,22 +72,16 @@ export function LessonSection({ documentType, selectedLessonId, onChange, initia
     });
 
   return (
-    <Card className="border-border p-4 shadow-sm sm:p-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent sm:h-10 sm:w-10 sm:rounded-xl">
-            <CalendarDays className="h-4 w-4 text-primary sm:h-5 sm:w-5" aria-hidden />
-          </div>
-          <div className="min-w-0">
-            <h2 className="text-base font-semibold text-foreground sm:text-lg">{t("title")}</h2>
-            <p className="text-xs text-muted-foreground sm:text-sm">{t("description")}</p>
-          </div>
+    <FormCard>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+        <div className="min-w-0 sm:w-44 sm:shrink-0">
+          <FieldHeading title={t("title")} optional className="mb-0" />
         </div>
         <Select
           value={selectedLessonId ?? NONE}
           onValueChange={(v) => onChange(v === NONE ? null : choices.find((c) => c.lessonId === v) ?? null)}
         >
-          <SelectTrigger className="h-11 w-full sm:w-80" aria-label={t("title")}>
+          <SelectTrigger className="h-10 w-full min-w-0 sm:flex-1" aria-label={t("title")}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -104,6 +97,6 @@ export function LessonSection({ documentType, selectedLessonId, onChange, initia
           </SelectContent>
         </Select>
       </div>
-    </Card>
+    </FormCard>
   );
 }

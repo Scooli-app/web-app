@@ -25,9 +25,9 @@ import {
   FormActions,
   FormHeader,
   LessonSection,
-  NESTED_SECTION_CLASS,
   FilledSummary,
   MoreOptions,
+  OptionRow,
   SlideCountSection,
   SourcePickerSection,
   SubjectSection,
@@ -36,7 +36,6 @@ import {
   WorksheetVariantSection,
 } from "./sections";
 import { TemplateSection } from "./templates";
-import { Card } from "@/components/ui/card";
 import type { DocumentTypeConfig, FormState, FormUpdateFn } from "./types";
 import { ThemeGallery } from "@/components/document-editor-v2/ThemePicker";
 import { useSubjectChoice } from "./useSubjectChoice";
@@ -219,6 +218,7 @@ export default function DocumentCreationPage({
     formState.lessonTime
       ? t("moreOptions.summaryDuration", { minutes: formState.lessonTime })
       : t("moreOptions.summaryDurationFree"),
+    isPresentation && formState.slideCount ? t("moreOptions.summarySlides", { count: formState.slideCount }) : null,
     // Says which of the teacher's own sources this document will follow.
     isUserSourcesEnabled && (formState.sourceIds?.length ?? 0) > 0
       ? t("moreOptions.summarySources", { count: formState.sourceIds?.length ?? 0 })
@@ -372,10 +372,10 @@ export default function DocumentCreationPage({
 
   return (
     <div className="w-full overflow-x-clip">
-      <div className="max-w-4xl mx-auto pb-6">
+      <div className="max-w-4xl mx-auto pb-2">
         <FormHeader documentType={documentType} />
 
-        <div className="space-y-4 sm:space-y-6">
+        <div className="space-y-3">
 
           {documentType.id !== "curriculumPlan" && (
             <LessonSection
@@ -402,25 +402,13 @@ export default function DocumentCreationPage({
           )}
 
           {showFilledSummary && formState.schoolYear && formState.subject ? (
-            <>
-              <FilledSummary
-                schoolYear={formState.schoolYear}
-                subjectId={formState.subject}
-                onChange={() => setShowFilledSummary(false)}
-              />
-              {/* Slide count lives in the Disciplina card, which is folded away here. */}
-              {isPresentation && (
-                <Card className="border-border p-4 shadow-sm sm:p-6">
-                  <SlideCountSection
-                    slideCount={formState.slideCount}
-                    onUpdate={updateForm}
-                    className={NESTED_SECTION_CLASS}
-                  />
-                </Card>
-              )}
-            </>
+            <FilledSummary
+              schoolYear={formState.schoolYear}
+              subjectId={formState.subject}
+              onChange={() => setShowFilledSummary(false)}
+            />
           ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
               <ClassSection
                 mode={teachingMode}
@@ -437,8 +425,7 @@ export default function DocumentCreationPage({
               />
             </div>
 
-            <Card className="h-full border-border p-4 shadow-sm transition-shadow hover:shadow-md sm:p-6">
-              <div className="space-y-5 sm:space-y-6">
+            <div className="h-full">
                 <SubjectSection
                   subject={formState.subject}
                   isSpecificComponent={formState.isSpecificComponent}
@@ -449,44 +436,27 @@ export default function DocumentCreationPage({
                   vocationalCourse={selectedVocationalCourse}
                   vocationalUnitCode={formState.vocationalUnitCode}
                   vocationalSchoolSubjectName={formState.vocationalSchoolSubjectName}
-                  className={NESTED_SECTION_CLASS}
+                  className="h-full"
                   disabled={!formState.schoolYear}
                 />
-
-                {isPresentation && (
-                  <>
-                    <div className="border-t border-border/60" />
-                    <SlideCountSection
-                      slideCount={formState.slideCount}
-                      onUpdate={updateForm}
-                      className={NESTED_SECTION_CLASS}
-                    />
-                  </>
-                )}
-              </div>
-            </Card>
+            </div>
           </div>
           )}
 
-          {isPresentation && (
-            <div className="rounded-xl border bg-card p-4 shadow-sm">
-              <p className="text-sm font-medium mb-3">{t("presentationTheme.title")}</p>
-              <ThemeGallery
-                value={formState.themeId ?? "clean"}
-                onSelect={(id) => updateForm("themeId", id)}
-              />
-            </div>
-          )}
-
           <MoreOptions summary={moreOptionsSummary}>
-            <Card className="border-border p-4 shadow-sm sm:p-6">
-              <DurationSection
-                lessonTime={formState.lessonTime}
-                customTime={formState.customTime}
-                onUpdate={updateForm}
-                className={NESTED_SECTION_CLASS}
-              />
-            </Card>
+            <DurationSection
+              lessonTime={formState.lessonTime}
+              customTime={formState.customTime}
+              onUpdate={updateForm}
+            />
+
+            {/* Presentations: deck size and look are optional too (the theme can change later in the editor). */}
+            {isPresentation && <SlideCountSection slideCount={formState.slideCount} onUpdate={updateForm} />}
+            {isPresentation && (
+              <OptionRow label={t("presentationTheme.title")} alignTop>
+                <ThemeGallery value={formState.themeId ?? "clean"} onSelect={(id) => updateForm("themeId", id)} />
+              </OptionRow>
+            )}
 
             {!isPresentation && (
               <TemplateSection

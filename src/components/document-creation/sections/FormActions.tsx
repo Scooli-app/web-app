@@ -40,11 +40,11 @@ export function FormActions({
         </div>
       )}
 
-      <div className="-mx-1 space-y-2 bg-slate-50 px-1 pb-3 pt-3 dark:bg-background sm:pb-4">
+      <div className="-mx-1 space-y-1.5 bg-slate-50 px-1 pb-2 pt-2 dark:bg-background">
         <Button
           onClick={onSubmit}
           disabled={isLoading || !isFormValid}
-          className="w-full h-12 sm:h-14 text-base sm:text-lg font-semibold bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl shadow-lg shadow-primary/20 transition-all hover:shadow-xl hover:shadow-primary/30 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+          className="w-full h-11 text-base font-semibold bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl shadow-lg shadow-primary/20 transition-all hover:shadow-xl hover:shadow-primary/30 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
           aria-label={`${t("createPrefix")} ${typeLabel}`}
         >
           {isLoading ? (

@@ -416,19 +416,23 @@
     "worksheetVariants": {
       "practice": {
         "label": "Treinar e consolidar",
-        "description": "Ficha com exercícios progressivos para praticar e reforçar aprendizagens."
+        "description": "Ficha com exercícios progressivos para praticar e reforçar aprendizagens.",
+        "short": "Treinar"
       },
       "diagnostic": {
         "label": "Diagnosticar conhecimentos",
-        "description": "Ajuda a perceber o ponto de partida, lacunas e erros frequentes antes do tema."
+        "description": "Ajuda a perceber o ponto de partida, lacunas e erros frequentes antes do tema.",
+        "short": "Diagnosticar"
       },
       "formative": {
         "label": "Acompanhar aprendizagem",
-        "description": "Apoia monitorização, autoavaliação e próximos passos ao longo do trabalho."
+        "description": "Apoia monitorização, autoavaliação e próximos passos ao longo do trabalho.",
+        "short": "Acompanhar"
       },
       "exploration": {
         "label": "Introduzir novo conteúdo",
-        "description": "Usa estímulos e perguntas guiadas para explorar ideias antes da prática formal."
+        "description": "Usa estímulos e perguntas guiadas para explorar ideias antes da prática formal.",
+        "short": "Introduzir"
       }
     },
     "sourcePicker": {
@@ -763,7 +767,8 @@
       "summaryTemplate": "Modelo: {name}",
       "summaryDuration": "Duração: {minutes} min",
       "summaryDurationFree": "Duração: livre",
-      "summarySources": "{count, plural, one {Usa # fonte tua} other {Usa # fontes tuas}}"
+      "summarySources": "{count, plural, one {Usa # fonte tua} other {Usa # fontes tuas}}",
+      "summarySlides": "{count} diapositivos"
     },
     "missing": {
       "prefix": "Falta:",
@@ -778,6 +783,9 @@
       "description": "Opcional. O documento fica na turma e na aula que escolheres.",
       "none": "Nenhuma (documento solto)",
       "alreadyHas": "já tem um"
+    },
+    "form": {
+      "optional": "opcional"
     }
   },
   "dashboard": {

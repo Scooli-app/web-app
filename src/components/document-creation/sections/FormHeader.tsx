@@ -15,7 +15,7 @@ export function FormHeader({ documentType }: FormHeaderProps) {
   const midSentence = typeNameInSentence(typeName, locale);
 
   return (
-    <div className="mb-5 sm:mb-6">
+    <div className="mb-3">
       <h1 className="text-2xl font-bold text-foreground sm:text-3xl">
         {t("createPrefix")} {midSentence}
       </h1>

@@ -1,6 +1,7 @@
 export { AdditionalDetailsSection } from "./AdditionalDetailsSection";
 export { ClassSection } from "./ClassSection";
 export { DurationSection } from "./DurationSection";
+export { FieldHeading, FormCard, OptionRow } from "./FormCard";
 export { FilledSummary } from "./FilledSummary";
 export { FormActions } from "./FormActions";
 export { FormHeader } from "./FormHeader";
