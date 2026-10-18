@@ -1,7 +1,9 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { SlotDialog } from "@/components/calendar/SlotDialog";
 import { patchOpenSlot } from "@/components/dashboard/patchOpenSlot";
 import {
@@ -63,9 +65,6 @@ export function WeekLessonDialog({
   const onLoadFailedRef = useRef(onLoadFailed);
   onLoadFailedRef.current = onLoadFailed;
 
-  // The lesson the pop-up is showing now; a stream for another lesson must not close it.
-  const openIdRef = useRef<string | null>(null);
-  openIdRef.current = target?.lessonId ?? null;
   const generating = useSyncExternalStore(
     generationStore.subscribe,
     generationStore.getSnapshot,
@@ -112,9 +111,8 @@ export function WeekLessonDialog({
           current.id,
           message,
           {
-            onDone: () => {
-              if (openIdRef.current === current.id) onClose();
-            },
+            // The pop-up stays open: the teacher may still be preparing the lesson's other documents.
+            onDone: () => setStatus("completed"),
             onError: () => setStatus("failed"),
             onFreeLimit: (code) => {
               setStatus(current.status);
@@ -135,7 +133,7 @@ export function WeekLessonDialog({
         onChanged();
       }
     },
-    [dispatch, getToken, onChanged, onClose],
+    [dispatch, getToken, onChanged],
   );
 
   const handleUpdate = useCallback(
@@ -150,6 +148,21 @@ export function WeekLessonDialog({
     },
     [applyUpdate, onChanged, tShared],
   );
+
+  // The lesson takes a moment to load: open the pop-up right away with a spinner so the click is acknowledged.
+  if (target && !slot) {
+    return (
+      <Dialog open onOpenChange={(open) => !open && onClose()}>
+        <DialogContent className="max-w-lg" aria-describedby={undefined}>
+          <DialogTitle className="sr-only">{tShared("openingLesson")}</DialogTitle>
+          <div className="flex items-center justify-center gap-2 py-10 text-sm text-muted-foreground" role="status">
+            <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+            {tShared("openingLesson")}
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <SlotDialog

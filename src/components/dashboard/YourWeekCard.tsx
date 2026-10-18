@@ -40,7 +40,7 @@ import posthog from "posthog-js";
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { toast } from "sonner";
 
-const POLL_MS = 5000;
+const POLL_MS = 3000;
 
 interface DayLesson {
   klass: MyWeekClass;

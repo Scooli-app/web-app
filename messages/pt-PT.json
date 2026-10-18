@@ -124,18 +124,20 @@
   },
   "nav": {
     "groups": {
+      "plan": "Planeamento",
+      "library": "O meu conteúdo",
       "system": "Sistema",
       "school": "Escola",
       "admin": "Administração"
     },
-    "create": "Criar",
+    "create": "Criar documentos",
     "items": {
       "dashboard": {
         "title": "Início",
         "description": "A tua semana e o que fizeste recentemente"
       },
       "documents": {
-        "title": "Os meus documentos",
+        "title": "Documentos",
         "description": "Gerir os teus documentos"
       },
       "community": {
@@ -1649,6 +1651,7 @@
       "exportWordPro": "Exportar Word (Pro)"
     },
     "lessonContext": {
+      "label": "Faz parte de uma aula",
       "lessonNumber": "Aula {number}",
       "openLesson": "Abrir esta aula no calendário",
       "alsoHas": "Esta aula também tem:"
@@ -2797,7 +2800,8 @@
       "classInline": "Turma {label}",
       "minutesSuffix": "{count} min",
       "generateWeek": "Gerar semana ({count})",
-      "saveError": "Não foi possível guardar a alteração. Tenta novamente."
+      "saveError": "Não foi possível guardar a alteração. Tenta novamente.",
+      "openingLesson": "A abrir a aula..."
     },
     "week": {
       "generate": "Gerar ({count})",

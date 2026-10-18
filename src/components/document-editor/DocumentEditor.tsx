@@ -1031,7 +1031,10 @@ export default function DocumentEditor({
       currentDocument?.metadata?.initial_prompt;
     const prompt = typeof rawPrompt === "string" ? rawPrompt.trim() : "";
 
-    if (chatHistory.length === 0 && prompt) {
+    // One-click lesson documents carry a prompt the server assembled: not something the teacher wrote.
+    const serverGenerated = currentDocument?.metadata?.promptServerGenerated === true;
+
+    if (chatHistory.length === 0 && prompt && !serverGenerated) {
       setChatHistory([{ role: "user", content: prompt }]);
     }
   }, [
@@ -1039,6 +1042,7 @@ export default function DocumentEditor({
     currentDocument?.metadata?.prompt,
     currentDocument?.metadata?.initialPrompt,
     currentDocument?.metadata?.initial_prompt,
+    currentDocument?.metadata?.promptServerGenerated,
     documentId,
     chatHistory.length,
   ]);

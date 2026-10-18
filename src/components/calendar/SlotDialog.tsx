@@ -152,6 +152,7 @@ export function SlotDialog({
     label: prepareLabel,
     preparing,
     prepare: handlePrepare,
+    inFlight: preparingTypes,
   } = usePrepareLessonSet({
     timetableId: slot?.timetable.id ?? "",
     lessonId: slot?.id ?? "",
@@ -381,6 +382,7 @@ export function SlotDialog({
                       timetableId={slot.timetable.id}
                       onLessonPlan={() => void onGenerate(slot, customMessage || undefined)}
                       lessonPlanBusy={isSlotGenerating}
+                      busyTypes={preparingTypes}
                       lesson={{ id: slot.id, slotType: slot.slotType, documents: lessonDocuments }}
                       onChanged={() => {
                         reloadDocs();

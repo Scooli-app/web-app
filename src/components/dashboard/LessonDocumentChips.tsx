@@ -125,6 +125,8 @@ interface LessonDocumentChipsProps {
   lessonPlanBusy?: boolean;
   /** The surface shows its own main "Preparar …" button, so the plan is a plain chip here too. */
   planAsChip?: boolean;
+  /** Types a "Preparar …" run will start: shown as busy before the server reports them. */
+  busyTypes?: CompanionType[];
 }
 
 /**
@@ -140,6 +142,7 @@ export function LessonDocumentChips({
   onLessonPlan,
   lessonPlanBusy = false,
   planAsChip = false,
+  busyTypes = [],
 }: LessonDocumentChipsProps) {
   const t = useTranslations("yourWeek");
   const dispatch = useAppDispatch();
@@ -209,7 +212,7 @@ export function LessonDocumentChips({
         ),
       )}
       {addable.map((type) => {
-        const busy = starting.has(type) || (type === "lessonPlan" && lessonPlanBusy);
+        const busy = starting.has(type) || busyTypes.includes(type) || (type === "lessonPlan" && lessonPlanBusy);
         // The dashboard's plan chip is the card's main action; in the pop-up it is one chip among others.
         const isPlan = type === "lessonPlan" && !onLessonPlan && !planAsChip;
         return (
