@@ -720,7 +720,6 @@ function CalendarPageInner() {
             onDone: () => {
               patchSlotStatus(slot.timetable.id, slot.id, "completed");
               void refreshTimetable(slot.timetable.id);
-              setSelectedSlot(null);
             },
             onError: () =>
               patchSlotStatus(slot.timetable.id, slot.id, "failed"),
@@ -756,7 +755,6 @@ function CalendarPageInner() {
             onDone: () => {
               patchSlotStatus(slot.timetable.id, slot.id, "completed");
               void refreshTimetable(slot.timetable.id);
-              setSelectedSlot(null);
             },
             onError: () =>
               patchSlotStatus(slot.timetable.id, slot.id, "failed"),

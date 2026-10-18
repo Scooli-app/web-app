@@ -25,7 +25,7 @@ export function LessonDetailBlock({ klass, className, lesson, onOpen, onChanged 
   const dispatch = useAppDispatch();
   const { getToken } = useAuth();
   // Same suggestion as the lesson pop-up, so the card and the pop-up never disagree.
-  const { suggested, label, preparing, prepare } = usePrepareLessonSet({
+  const { suggested, label, preparing, prepare, inFlight } = usePrepareLessonSet({
     timetableId: klass.timetableId,
     lessonId: lesson.id,
     slotDate: lesson.slotDate,
@@ -88,7 +88,7 @@ export function LessonDetailBlock({ klass, className, lesson, onOpen, onChanged 
             {preparing ? tDialog("generating") : label}
           </Button>
         )}
-        <LessonDocumentChips timetableId={klass.timetableId} lesson={lesson} onChanged={onChanged} planAsChip />
+        <LessonDocumentChips timetableId={klass.timetableId} lesson={lesson} onChanged={onChanged} planAsChip busyTypes={inFlight} />
       </div>
     </article>
   );

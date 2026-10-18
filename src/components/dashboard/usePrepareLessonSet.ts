@@ -57,6 +57,8 @@ export function usePrepareLessonSet({
   const presentation = presentationFlag && isPro;
   const { limits } = usePlanLimits();
   const [preparing, setPreparing] = useState(false);
+  // Types of this run that haven't started on the server yet: shown as "A preparar…" right away.
+  const [inFlight, setInFlight] = useState<CompanionType[]>([]);
 
   const suggested: CompanionType[] = ready
     ? suggestedDocuments(slotType, subject, documents, { worksheet, presentation })
@@ -74,20 +76,26 @@ export function usePrepareLessonSet({
     const types = suggested;
     posthog.capture("lesson_prepare_set_clicked", { surface, types, slot_type: slotType });
     setPreparing(true);
+    setInFlight(types);
     try {
       if (types.includes("lessonPlan")) {
         await generatePlan();
         invalidatePlanLimits(); // the first plan claims the free week
+        setInFlight((prev) => prev.filter((x) => x !== "lessonPlan"));
+        onDone();
       }
       for (const type of types) {
         if (type === "lessonPlan") continue;
         await startCompanionDocument(timetableId, lessonId, type, tWeek, dispatch);
+        setInFlight((prev) => prev.filter((x) => x !== type));
+        onDone(); // the started document shows as written now, not when the whole set is through
       }
     } finally {
+      setInFlight([]);
       setPreparing(false);
       onDone();
     }
   };
 
-  return { suggested, label, preparing, prepare };
+  return { suggested, label, preparing, prepare, inFlight };
 }

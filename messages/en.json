@@ -124,18 +124,20 @@
   },
   "nav": {
     "groups": {
+      "plan": "Planning",
+      "library": "My content",
       "system": "System",
       "school": "School",
       "admin": "Administration"
     },
-    "create": "Create",
+    "create": "Create documents",
     "items": {
       "dashboard": {
         "title": "Home",
         "description": "An overview of your activity"
       },
       "documents": {
-        "title": "My documents",
+        "title": "Documents",
         "description": "Manage your documents"
       },
       "community": {
@@ -1649,6 +1651,7 @@
       "exportWordPro": "Export Word (Pro)"
     },
     "lessonContext": {
+      "label": "Part of a lesson",
       "lessonNumber": "Lesson {number}",
       "openLesson": "Open this lesson in the calendar",
       "alsoHas": "This lesson also has:"
@@ -2797,7 +2800,8 @@
       "classInline": "Class {label}",
       "minutesSuffix": "{count} min",
       "generateWeek": "Generate week ({count})",
-      "saveError": "Couldn't save that change. Please try again."
+      "saveError": "Couldn't save that change. Please try again.",
+      "openingLesson": "Opening lesson..."
     },
     "week": {
       "generate": "Generate ({count})",

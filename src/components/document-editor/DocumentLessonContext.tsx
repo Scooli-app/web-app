@@ -6,7 +6,7 @@ import { Routes } from "@/shared/types";
 import type { DocumentClassInfo } from "@/shared/types/document";
 import { getWeekStart, toIso } from "@/shared/utils/calendar";
 import { formatClassName } from "@/shared/utils/className";
-import { ChevronRight } from "lucide-react";
+import { BookOpen, ChevronRight, FileText } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -79,27 +79,37 @@ export function DocumentLessonContext({ classInfo, documentId }: DocumentLessonC
   }).toString()}`;
 
   return (
-    <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm">
+    <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border border-primary/25 bg-primary/5 px-3.5 py-2.5 text-sm">
       <Link
         href={lessonHref}
-        className="inline-flex min-w-0 items-center gap-1.5 font-medium text-muted-foreground hover:text-primary"
+        className="group inline-flex min-w-0 items-center gap-2 font-semibold text-foreground hover:text-primary"
         title={t("openLesson")}
       >
-        <span aria-hidden className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: classInfo.color || "#7F77DD" }} />
-        <span className="truncate">{parts.join(" · ")}</span>
-        <ChevronRight className="h-3.5 w-3.5 shrink-0" aria-hidden />
+        <span
+          aria-hidden
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-white"
+          style={{ background: classInfo.color || "#7F77DD" }}
+        >
+          <BookOpen className="h-4 w-4" />
+        </span>
+        <span className="flex min-w-0 flex-col leading-tight">
+          <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("label")}</span>
+          <span className="truncate">{parts.join(" · ")}</span>
+        </span>
+        <ChevronRight className="h-4 w-4 shrink-0 transition-transform group-hover:translate-x-0.5" aria-hidden />
       </Link>
       {siblings.length > 0 && (
-        <span className="flex flex-wrap items-center gap-1.5">
-          <span className="text-xs text-muted-foreground">{t("alsoHas")}</span>
+        <span className="flex flex-wrap items-center gap-2 sm:border-l sm:border-primary/20 sm:pl-4">
+          <span className="text-xs font-medium text-muted-foreground">{t("alsoHas")}</span>
           {siblings.map((doc) => {
             const type = doc.documentType ?? doc.documentRole;
             return (
               <Link
                 key={doc.documentId}
                 href={`${DOCUMENT_ROUTES[type] ?? Routes.DOCUMENTS}/${doc.documentId}`}
-                className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary hover:bg-primary/20"
+                className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-background px-3 py-1 text-xs font-semibold text-primary shadow-sm hover:bg-primary/10"
               >
+                <FileText className="h-3.5 w-3.5" aria-hidden />
                 {tWeek.has(`types.${doc.documentRole}`) ? tWeek(`types.${doc.documentRole}`) : doc.title}
               </Link>
             );

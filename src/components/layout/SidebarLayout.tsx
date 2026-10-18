@@ -64,7 +64,6 @@ import {
   Building2,
   CalendarRange,
   Clock,
-  ExternalLink,
   FileText,
   FolderArchiveIcon,
   GanttChart,
@@ -134,7 +133,6 @@ interface NavItem {
   key: string;
   href: string;
   icon: LucideIcon;
-  external?: boolean;
 }
 
 const HOME_NAV_ITEM: NavItem = {
@@ -187,12 +185,6 @@ const SECONDARY_NAVIGATION: NavItem[] = [
     key: "settings",
     href: Routes.SETTINGS,
     icon: Settings,
-  },
-  {
-    key: "recommendSchool",
-    href: `${MARKETING_SITE_URL}/recomendar-instituicao`,
-    icon: Building2,
-    external: true,
   },
 ];
 
@@ -263,35 +255,6 @@ const NavMenuItem = memo(function NavMenuItem({
   );
 });
 
-const ExternalNavMenuItem = memo(function ExternalNavMenuItem({
-  item,
-  onClick,
-}: {
-  item: NavItem;
-  onClick?: () => void;
-}) {
-  const t = useTranslations("nav");
-  const Icon = item.icon;
-
-  return (
-    <SidebarMenuItem>
-      <a
-        href={item.href}
-        target="_blank"
-        rel="noreferrer"
-        onClick={onClick}
-        className="w-full"
-      >
-        <SidebarMenuButton className="h-10 px-4 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground">
-          <Icon className="h-4 w-4 shrink-0" />
-          <span className="flex-1">{t(`items.${item.key}.title`)}</span>
-          <ExternalLink className="h-3 w-3 shrink-0 text-muted-foreground" />
-        </SidebarMenuButton>
-      </a>
-    </SidebarMenuItem>
-  );
-});
-
 const DisabledNavMenuItem = memo(function DisabledNavMenuItem({
   item,
 }: {
@@ -346,12 +309,6 @@ const NavGroup = memo(function NavGroup({
           {items.map((item) =>
             disabledKeys.includes(item.href) ? (
               <DisabledNavMenuItem key={item.href} item={item} />
-            ) : item.external ? (
-              <ExternalNavMenuItem
-                key={item.href}
-                item={item}
-                onClick={onItemClick}
-              />
             ) : (
               <NavMenuItem
                 key={item.href}
@@ -481,10 +438,11 @@ const SidebarNavigationContent = memo(function SidebarNavigationContent({
   const isHorarioPlanosEnabled =
     features[FeatureFlag.HORARIO_PLANOS_ENABLED] === true;
 
-  const navigationItems: NavItem[] = [
-    HOME_NAV_ITEM,
+  const planItems: NavItem[] = [
     ...(isHorarioPlanosEnabled ? [CALENDAR_NAV_ITEM, CLASSES_NAV_ITEM] : []),
     ...(isCurriculumPlanEnabled ? [CURRICULUM_PLAN_NAV_ITEM] : []),
+  ];
+  const libraryItems: NavItem[] = [
     ...LIBRARY_NAVIGATION,
     ...(isUserSourcesEnabled ? [SOURCES_NAV_ITEM] : []),
   ];
@@ -503,10 +461,25 @@ const SidebarNavigationContent = memo(function SidebarNavigationContent({
         />
       </SidebarHeader>
       <SidebarContent className="py-4">
+        <NavGroup
+          items={[HOME_NAV_ITEM]}
+          pathname={pathname}
+          onItemClick={onItemClick}
+        />
         <CreateMenu onNavigate={onItemClick} />
 
+        {planItems.length > 0 && (
+          <NavGroup
+            label={t("groups.plan")}
+            items={planItems}
+            pathname={pathname}
+            onItemClick={onItemClick}
+          />
+        )}
+
         <NavGroup
-          items={navigationItems}
+          label={t("groups.library")}
+          items={libraryItems}
           pathname={pathname}
           onItemClick={onItemClick}
           disabledKeys={
@@ -774,6 +747,24 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
               <div className="flex items-center gap-2">
                 <SignedIn>
                   <div className="flex items-center gap-2">
+                    <Button
+                      asChild
+                      variant="outline"
+                      size="sm"
+                      className="border-primary/40 text-primary hover:bg-primary/10 hover:text-primary"
+                    >
+                      <a
+                        href={`${MARKETING_SITE_URL}/recomendar-instituicao`}
+                        target="_blank"
+                        rel="noreferrer"
+                        aria-label={t("items.recommendSchool.title")}
+                      >
+                        <Building2 className="h-4 w-4 sm:mr-1.5" />
+                        <span className="hidden sm:inline">
+                          {t("items.recommendSchool.title")}
+                        </span>
+                      </a>
+                    </Button>
                     <PromoNavCta />
                     <GenerationsIndicator />
                   </div>
