@@ -1,5 +1,9 @@
 {
   "$schema": "https://unpkg.com/knip@5/schema.json",
   "ignoreDependencies": ["eslint-config-next"],
-  "ignoreBinaries": ["mjml", "stripe"]
+  "ignoreBinaries": ["mjml", "stripe"],
+  "playwright": {
+    "config": ["playwright.config.ts"],
+    "entry": ["e2e/**/*.e2e.ts", "e2e/global.setup.ts", "e2e/clerk.global-setup.ts"]
+  }
 }
