@@ -1,92 +1,63 @@
-import { Card } from "@/components/ui/card";
 import { cn } from "@/shared/utils/utils";
-import { Compass, Pencil, Search, TrendingUp } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { WorksheetVariant } from "@/shared/types";
+import { FieldHeading, FormCard } from "./FormCard";
 
 interface WorksheetVariantSectionProps {
   worksheetVariant?: WorksheetVariant;
   onVariantChange: (worksheetVariant: WorksheetVariant) => void;
 }
 
-const VARIANT_OPTIONS: Array<{
-  value: Exclude<WorksheetVariant, "assessment">;
-  icon: typeof Pencil;
-}> = [
-  { value: "practice", icon: Pencil },
-  { value: "diagnostic", icon: Search },
-  { value: "formative", icon: TrendingUp },
-  { value: "exploration", icon: Compass },
+const VARIANT_OPTIONS: Array<Exclude<WorksheetVariant, "assessment">> = [
+  "practice",
+  "diagnostic",
+  "formative",
+  "exploration",
 ];
 
-export function WorksheetVariantSection({
-  worksheetVariant,
-  onVariantChange,
-}: WorksheetVariantSectionProps) {
+/** The worksheet's purpose as one row of buttons; only the chosen one's explanation is shown. */
+export function WorksheetVariantSection({ worksheetVariant, onVariantChange }: WorksheetVariantSectionProps) {
   const t = useTranslations("documentCreation.worksheetVariant");
   const tVariants = useTranslations("documentCreation.worksheetVariants");
 
   return (
-    <Card className="border-border p-4 shadow-sm transition-shadow hover:shadow-md sm:p-6 md:p-8">
-      <div className="space-y-4">
-        <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent sm:h-10 sm:w-10 sm:rounded-xl">
-            <Compass className="h-4 w-4 text-primary sm:h-5 sm:w-5" />
-          </div>
-          <div className="min-w-0">
-            <h2 className="text-base font-semibold text-foreground sm:text-lg">
-              {t("title")} <span className="text-destructive">*</span>
-            </h2>
-            <p className="text-xs text-muted-foreground sm:text-sm">
-              {t("description")}
-            </p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {VARIANT_OPTIONS.map((option) => {
-            const Icon = option.icon;
-            const isSelected = worksheetVariant === option.value;
-
-            return (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => onVariantChange(option.value)}
-                className={cn(
-                  "rounded-2xl border p-4 text-left transition-all",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
-                  isSelected
-                    ? "border-primary bg-primary/5 shadow-sm"
-                    : "border-border bg-card hover:border-primary/40 hover:bg-accent/40"
-                )}
-                aria-pressed={isSelected}
-              >
-                <div className="flex items-start gap-3">
-                  <div
-                    className={cn(
-                      "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl",
-                      isSelected
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-accent text-primary"
-                    )}
-                  >
-                    <Icon className="h-5 w-5" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-foreground sm:text-base">
-                      {tVariants(`${option.value}.label`)}
-                    </p>
-                    <p className="mt-1 text-xs leading-relaxed text-muted-foreground sm:text-sm">
-                      {tVariants(`${option.value}.description`)}
-                    </p>
-                  </div>
-                </div>
-              </button>
-            );
-          })}
-        </div>
+    <FormCard>
+      <FieldHeading title={t("title")} required />
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4" role="radiogroup" aria-label={t("title")}>
+        {VARIANT_OPTIONS.map((value) => {
+          const isSelected = worksheetVariant === value;
+          return (
+            <button
+              key={value}
+              type="button"
+              role="radio"
+              aria-checked={isSelected}
+              onClick={() => onVariantChange(value)}
+              title={`${tVariants(`${value}.label`)}: ${tVariants(`${value}.description`)}`}
+              className={cn(
+                "truncate rounded-lg border px-2 py-1.5 text-center text-sm font-medium transition-colors",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+                isSelected
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border bg-card text-foreground hover:border-primary/40 hover:bg-accent/40",
+              )}
+            >
+              {/* Short on the button; the full name and what it does are spelled out below. */}
+              {tVariants(`${value}.short`)}
+            </button>
+          );
+        })}
       </div>
-    </Card>
+      <p className="mt-1.5 truncate text-xs text-muted-foreground">
+        {worksheetVariant && worksheetVariant !== "assessment" ? (
+          <>
+            <span className="font-medium text-foreground">{tVariants(`${worksheetVariant}.label`)}:</span>{" "}
+            {tVariants(`${worksheetVariant}.description`)}
+          </>
+        ) : (
+          t("description")
+        )}
+      </p>
+    </FormCard>
   );
 }
