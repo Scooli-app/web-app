@@ -1,7 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import type { PendingCheckIn } from "@/shared/types/check-in";
 import {
+  afterConfirmAll,
   buildSubmission,
+  confirmableCount,
   isAssessmentCheckIn,
   loadPendingCheckIns,
   needsOutcomeStep,
@@ -95,6 +97,18 @@ describe("assessment variant", () => {
   it("applies to ASSESSMENT slots only", () => {
     expect(isAssessmentCheckIn(item("a", { slotType: "ASSESSMENT" }))).toBe(true);
     expect(isAssessmentCheckIn(item("a", { slotType: "EXERCISE" }))).toBe(false);
+  });
+});
+
+describe("Correram todas bem", () => {
+  const queue = [item("l1"), item("t1", { slotType: "ASSESSMENT" }), item("r1", { slotType: "REVIEW" })];
+
+  it("counts only the items it would confirm, leaving tests out", () => {
+    expect(confirmableCount(queue)).toBe(2);
+  });
+
+  it("keeps tests in the queue after confirming the lessons", () => {
+    expect(afterConfirmAll(queue).map((i) => i.slotId)).toEqual(["t1"]);
   });
 });
 

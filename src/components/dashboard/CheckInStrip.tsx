@@ -3,7 +3,13 @@
 import { translateSubject } from "@/components/document-creation/constants";
 import { Button } from "@/components/ui/button";
 import { ChoiceChip } from "@/components/ui/choice-chip";
-import { buildSubmission, isAssessmentCheckIn, needsOutcomeStep, shouldShowCheckInStrip } from "@/hooks/checkInQueue";
+import {
+  buildSubmission,
+  confirmableCount,
+  isAssessmentCheckIn,
+  needsOutcomeStep,
+  shouldShowCheckInStrip,
+} from "@/hooks/checkInQueue";
 import { usePendingCheckIns } from "@/hooks/usePendingCheckIns";
 import type { CheckInResult, CheckInSubmission, PendingCheckIn } from "@/shared/types/check-in";
 import { Routes } from "@/shared/types/routes";
@@ -67,7 +73,7 @@ export function CheckInStrip() {
           {t("pendingCount", { count: visible.length })}
         </span>
         <div className="flex items-center gap-1">
-          {visible.length >= 2 && (
+          {confirmableCount(visible) >= 2 && (
             <Button variant="link" size="sm" className="h-auto p-1 text-xs" onClick={() => void handleConfirmAll()}>
               {t("confirmAll")}
             </Button>

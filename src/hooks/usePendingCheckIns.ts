@@ -4,7 +4,7 @@ import { checkInService } from "@/services/api/check-in.service";
 import type { CheckInSubmission, PendingCheckIn } from "@/shared/types/check-in";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { readDismissed, readSkipped, writeDismissed, writeSkipped } from "./checkInSession";
-import { loadPendingCheckIns, visibleCheckIns, withCheckInAt, withoutCheckIn } from "./checkInQueue";
+import { afterConfirmAll, loadPendingCheckIns, visibleCheckIns, withCheckInAt, withoutCheckIn } from "./checkInQueue";
 
 /**
  * Pending "Como correu a aula?" check-ins for the dashboard. Loads once when `enabled` (the
@@ -63,7 +63,7 @@ export function usePendingCheckIns(enabled: boolean) {
   /** Confirms every pending lesson. Resolves the count, or null (and restores the list) on failure. */
   const confirmAll = useCallback(async (): Promise<number | null> => {
     const snapshot = itemsRef.current;
-    replaceItems([]);
+    replaceItems(afterConfirmAll(snapshot));
     try {
       const { updated } = await checkInService.confirmAll();
       return updated;

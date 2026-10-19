@@ -29,6 +29,19 @@ export function isAssessmentCheckIn(item: PendingCheckIn): boolean {
   return item.slotType === "ASSESSMENT";
 }
 
+/**
+ * "Correram todas bem" confirms lessons only: a test has its own question ("Já aplicaste o
+ * teste?"), so the backend leaves assessments pending and they stay in the queue.
+ */
+export function afterConfirmAll(items: readonly PendingCheckIn[]): PendingCheckIn[] {
+  return items.filter(isAssessmentCheckIn);
+}
+
+/** How many items "Correram todas bem" would confirm. */
+export function confirmableCount(items: readonly PendingCheckIn[]): number {
+  return items.filter((item) => !isAssessmentCheckIn(item)).length;
+}
+
 /** Difficulties and "ficou a meio" ask which outcomes, but only when the slot has some to pick from. */
 export function needsOutcomeStep(
   result: CheckInResult,
