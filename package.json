@@ -95,6 +95,7 @@
     "@types/showdown": "^2.0.6",
     "eslint": "^9",
     "eslint-config-next": "15.3.5",
+    "jsdom": "^26.1.0",
     "knip": "^5.88.1",
     "postcss": "^8.5.9",
     "tailwindcss": "^4",

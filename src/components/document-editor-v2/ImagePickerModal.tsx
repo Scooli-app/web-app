@@ -14,7 +14,6 @@ import { AiDisclaimer } from "@/components/ui/ai-disclaimer";
  */
 
 import { Button } from "@/components/ui/button";
-import { getImagePickerTitleKey } from "./slide-element-edit";
 import {
   Dialog,
   DialogContent,
@@ -288,7 +287,7 @@ export function ImagePickerModal({ open, documentId, replacing = false, onClose,
         <DialogHeader className="px-4 pb-0 pt-4">
           <DialogTitle className="flex items-center gap-2 text-base">
             <ImageIcon className="h-4 w-4 text-primary" />
-            {t(getImagePickerTitleKey(replacing))}
+            {t(replacing ? "replaceDialogTitle" : "dialogTitle")}
           </DialogTitle>
         </DialogHeader>
 
