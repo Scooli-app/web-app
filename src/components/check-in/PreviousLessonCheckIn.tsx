@@ -27,6 +27,8 @@ interface PreviousLessonCheckInProps {
   lessonId: string;
   /** The dialog's own slot. A past, checkable slot has its own question in the dialog, so no prompt here. */
   dialogSlot: TeachingSlotInput;
+  /** Fires after the answer is saved, so the turma's progress and the previous lesson's mark can refresh. */
+  onCheckedIn?: () => void;
 }
 
 /**
@@ -34,7 +36,7 @@ interface PreviousLessonCheckInProps {
  * never gates generation. Answering saves a normal check-in on the previous lesson, which the new lesson's
  * generation then reads. Hidden unless `class_state_enabled` is on.
  */
-export function PreviousLessonCheckIn({ timetableId, lessonId, dialogSlot }: PreviousLessonCheckInProps) {
+export function PreviousLessonCheckIn({ timetableId, lessonId, dialogSlot, onCheckedIn }: PreviousLessonCheckInProps) {
   const t = useTranslations("previousCheckIn");
   const enabled = useAppSelector(selectIsClassStateEnabled);
   const todayIso = toIso(new Date());
@@ -76,6 +78,7 @@ export function PreviousLessonCheckIn({ timetableId, lessonId, dialogSlot }: Pre
     if (phase) {
       setSaved(phase);
       setSaveFailed(false);
+      onCheckedIn?.();
     } else {
       setSaveFailed(true);
     }
@@ -158,15 +161,19 @@ export function PreviousLessonCheckInView({
   return (
     <section aria-label={question} className="space-y-2 rounded-lg border border-primary/25 bg-primary/5 px-3 py-2">
       {outcomeResult ? (
-        <CheckInOutcomeStep
-          question={outcomeResult === "PARTIAL" ? tc("uncoveredQuestion") : tc("difficultiesQuestion")}
-          outcomes={outcomes}
-          selected={selected}
-          onToggle={onToggle}
-          onConfirm={onConfirm}
-          onSkip={onSkipOutcomes}
-          onBack={onBackOutcomes}
-        />
+        <>
+          {/* Keeps the lesson in view: the outcome question alone does not say which lesson it is about. */}
+          <span className="text-sm text-muted-foreground">{question}</span>
+          <CheckInOutcomeStep
+            question={outcomeResult === "PARTIAL" ? tc("uncoveredQuestion") : tc("difficultiesQuestion")}
+            outcomes={outcomes}
+            selected={selected}
+            onToggle={onToggle}
+            onConfirm={onConfirm}
+            onSkip={onSkipOutcomes}
+            onBack={onBackOutcomes}
+          />
+        </>
       ) : (
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm text-foreground">{question}</span>

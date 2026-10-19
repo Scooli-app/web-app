@@ -1,6 +1,8 @@
-import { createElement } from "react";
+// @vitest-environment jsdom
+import { act, createElement } from "react";
+import { createRoot, type Root } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const store = vi.hoisted(() => ({ enabled: false }));
 
@@ -16,6 +18,8 @@ vi.mock("@/store/features/selectors", () => ({
 vi.mock("@/services/api/check-in.service", () => ({ checkInService: { submit: vi.fn() } }));
 vi.mock("@/services/api/timetable.service", () => ({ getPreviousCheckIn: vi.fn() }));
 
+import { checkInService } from "@/services/api/check-in.service";
+import { getPreviousCheckIn, type PreviousLessonCheckIn as PreviousCheckIn } from "@/services/api/timetable.service";
 import type { CheckInOutcome } from "@/shared/types/check-in";
 import { PreviousLessonCheckIn, PreviousLessonCheckInView } from "./PreviousLessonCheckIn";
 
@@ -60,6 +64,76 @@ describe("PreviousLessonCheckIn (container)", () => {
   });
 });
 
+describe("PreviousLessonCheckIn (saving)", () => {
+  const previous: PreviousCheckIn = {
+    slotId: "slot-9",
+    date: "2026-10-16",
+    topicTitle: "Frações",
+    slotType: "LESSON",
+    outcomes: [],
+  };
+  let container: HTMLDivElement;
+  let root: Root;
+
+  beforeEach(() => {
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    store.enabled = true;
+    vi.mocked(getPreviousCheckIn).mockResolvedValue(previous);
+    container = document.createElement("div");
+    document.body.appendChild(container);
+    root = createRoot(container);
+  });
+
+  afterEach(() => {
+    act(() => root.unmount());
+    container.remove();
+    vi.clearAllMocks();
+  });
+
+  async function mountWith(onCheckedIn: () => void) {
+    // A future dialog slot, so the prompt is shown (a past checkable slot has its own question).
+    const dialogSlot = { slotType: "LESSON" as const, slotDate: "2999-01-01", status: "pending" };
+    await act(async () => {
+      root.render(
+        createElement(PreviousLessonCheckIn, { timetableId: "tt", lessonId: "s", dialogSlot, onCheckedIn }),
+      );
+    });
+  }
+
+  function clickResult(label: string) {
+    const button = [...container.querySelectorAll("button")].find((b) => b.textContent?.includes(label));
+    if (!button) throw new Error(`no button ${label}`);
+    return act(async () => {
+      button.click();
+    });
+  }
+
+  it("calls onCheckedIn once the previous lesson's answer is saved", async () => {
+    vi.mocked(checkInService.submit).mockResolvedValue({
+      id: "c1",
+      timetableId: "tt",
+      teachingStatus: "taught",
+      checkedInAt: "2026-10-19T09:00:00Z",
+    });
+    const onCheckedIn = vi.fn();
+    await mountWith(onCheckedIn);
+    await clickResult("resultTaught");
+
+    expect(checkInService.submit).toHaveBeenCalledWith("tt", "slot-9", { result: "TAUGHT" });
+    expect(onCheckedIn).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not call onCheckedIn when the save fails", async () => {
+    vi.mocked(checkInService.submit).mockRejectedValue(new Error("500"));
+    const onCheckedIn = vi.fn();
+    await mountWith(onCheckedIn);
+    await clickResult("resultTaught");
+
+    expect(onCheckedIn).not.toHaveBeenCalled();
+    expect(container.textContent).toContain("saveError");
+  });
+});
+
 describe("PreviousLessonCheckInView", () => {
   it("asks the one-line question with the four results and 'Agora não'", () => {
     const html = view();
@@ -90,6 +164,12 @@ describe("PreviousLessonCheckInView", () => {
     expect(difficulties).not.toContain("resultTaught");
 
     expect(view({ outcomeResult: "PARTIAL" })).toContain("uncoveredQuestion");
+  });
+
+  it("keeps the lesson's header line above the outcome question", () => {
+    const partial = view({ outcomeResult: "PARTIAL" });
+    expect(partial).toContain("A última aula (Frações) correu bem?");
+    expect(partial.indexOf("A última aula (Frações)")).toBeLessThan(partial.indexOf("uncoveredQuestion"));
   });
 
   it("keeps the question and says so when the save failed", () => {

@@ -18,6 +18,20 @@ export type CheckInCardItem = Pick<
   "slotDate" | "slotType" | "turmaTitle" | "subject" | "topicTitle" | "outcomes"
 >;
 
+/** Lower-cased, accent-free, single-spaced: "História  e Geografia" compares equal to "historia e geografia". */
+function foldForCompare(text: string): string {
+  return text.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().replace(/\s+/g, " ").trim();
+}
+
+/**
+ * Whether the turma's title already names the subject ("6.º PLANO2 História e Geografia de Portugal" with
+ * subject "História e Geografia de Portugal"), so the card's meta line need not repeat it.
+ */
+export function subjectRepeatsTurma(turmaTitle: string, subjectLabel: string): boolean {
+  const subject = foldForCompare(subjectLabel);
+  return subject.length > 0 && foldForCompare(turmaTitle).includes(subject);
+}
+
 interface CheckInCardProps {
   item: CheckInCardItem;
   locale: string;
@@ -44,9 +58,14 @@ export function CheckInCard({ item, locale, onSubmit, onSkip, onCancel }: CheckI
     daysAgo: (count) => t("daysAgo", { count }),
   });
   const subject = translateSubject(item.subject);
-  const meta = item.topicTitle
-    ? t("meta", { turma: item.turmaTitle, subject, topic: item.topicTitle, day })
-    : t("metaNoTopic", { turma: item.turmaTitle, subject, day });
+  const showSubject = !subjectRepeatsTurma(item.turmaTitle, subject);
+  const meta = showSubject
+    ? item.topicTitle
+      ? t("meta", { turma: item.turmaTitle, subject, topic: item.topicTitle, day })
+      : t("metaNoTopic", { turma: item.turmaTitle, subject, day })
+    : item.topicTitle
+      ? t("metaNoSubject", { turma: item.turmaTitle, topic: item.topicTitle, day })
+      : t("metaNoSubjectNoTopic", { turma: item.turmaTitle, day });
 
   const toggle = (id: string) =>
     setSelected((current) => (current.includes(id) ? current.filter((x) => x !== id) : [...current, id]));
