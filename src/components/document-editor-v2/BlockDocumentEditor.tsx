@@ -2350,6 +2350,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
         <ImagePickerModal
           open={imageModalOpen}
           documentId={document.id}
+          replacing={imageModalReplacing}
           onClose={() => setImageModalOpen(false)}
           onInsert={handleImageFromModal}
           onGenerate={handleGenerateImageFromModal}

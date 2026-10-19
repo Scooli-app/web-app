@@ -1394,6 +1394,7 @@
     },
     "imagePickerModal": {
       "dialogTitle": "Adicionar imagem",
+      "replaceDialogTitle": "Trocar imagem",
       "tabGenerate": "Gerar com IA",
       "tabUpload": "Carregar",
       "tabUrl": "Por URL",

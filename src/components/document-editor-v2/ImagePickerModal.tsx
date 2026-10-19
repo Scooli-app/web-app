@@ -14,6 +14,7 @@ import { AiDisclaimer } from "@/components/ui/ai-disclaimer";
  */
 
 import { Button } from "@/components/ui/button";
+import { getImagePickerTitleKey } from "./slide-element-edit";
 import {
   Dialog,
   DialogContent,
@@ -42,6 +43,8 @@ export interface ImageInsertResult {
 interface Props {
   open: boolean;
   documentId: string;
+  /** True when replacing an existing image (changes the dialog title). */
+  replacing?: boolean;
   onClose: () => void;
   onInsert: (result: ImageInsertResult) => void;
   onGenerate: (prompt: string) => void;
@@ -270,7 +273,7 @@ function UrlTab({ onInsert }: { onInsert: (r: ImageInsertResult) => void }) {
 /* --------------------------------------------------------------------------
  * Main modal
  * -------------------------------------------------------------------------- */
-export function ImagePickerModal({ open, documentId, onClose, onInsert, onGenerate }: Props) {
+export function ImagePickerModal({ open, documentId, replacing = false, onClose, onInsert, onGenerate }: Props) {
   const t = useTranslations("editor.imagePickerModal");
   const [tab, setTab] = useState<Tab>("generate");
 
@@ -285,7 +288,7 @@ export function ImagePickerModal({ open, documentId, onClose, onInsert, onGenera
         <DialogHeader className="px-4 pb-0 pt-4">
           <DialogTitle className="flex items-center gap-2 text-base">
             <ImageIcon className="h-4 w-4 text-primary" />
-            {t("dialogTitle")}
+            {t(getImagePickerTitleKey(replacing))}
           </DialogTitle>
         </DialogHeader>
 
