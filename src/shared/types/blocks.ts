@@ -203,6 +203,8 @@ export type SlideBlock = z.infer<typeof slideBlockSchema>;
 export const presentationDocumentSchema = z.object({
   schemaVersion: z.literal(SCHEMA_VERSION),
   documentType: z.literal("presentation"),
+  /** Theme chosen by the model for lesson decks; null/absent otherwise (see canvas themeId). */
+  themeId: z.string().nullish().transform((v) => v ?? undefined).optional(),
   blocks: z.array(slideBlockSchema).min(3).max(20),
 });
 export type PresentationDocument = z.infer<typeof presentationDocumentSchema>;
