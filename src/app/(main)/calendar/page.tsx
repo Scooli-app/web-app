@@ -28,11 +28,11 @@ import {
 
 import { translateSubject } from "@/components/document-creation/constants";
 import { Routes } from "@/shared/types";
-import { selectIsHorarioPlanosEnabled } from "@/store/features/selectors";
+import { selectIsClassStateEnabled, selectIsHorarioPlanosEnabled } from "@/store/features/selectors";
 import { useFeatureAccess } from "@/components/feature/useFeatureAccess";
 import { FeatureUnavailable } from "@/components/feature/FeatureUnavailable";
 import { generationStore } from "@/store/generationStore";
-import { useAppDispatch } from "@/store/hooks";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { openUpgradeModalForReason, setUpgradeModalOpen } from "@/store/ui/uiSlice";
 import { isUpgradeReason } from "@/shared/types/plan-limits";
 import { useNewClassGate } from "@/hooks/usePlanLimits";
@@ -63,9 +63,12 @@ import {
 
 import { SLOT_STATUS_CONFIG } from "@/shared/constants/lessonSlotStatus";
 import { SlotDialog } from "@/components/calendar/SlotDialog";
+import { TeachingMarkBadge } from "@/components/calendar/TeachingMarkBadge";
 import { formatClassName } from "@/shared/utils/className";
 import { SlotSkeleton } from "@/components/calendar/SlotSkeleton";
 import type { SlotWithTimetable, DayMap } from "@/shared/types/calendar";
+import type { CheckInRecord } from "@/shared/types/check-in";
+import { teachingMark } from "@/shared/utils/teachingStatus";
 import { toIso, addDays, compactWeekLabel, defaultCalendarWeek, getWeekStart, formatWeekLabel, hexToRgb, getDayLabels, readableTextOn, toIntlLocale } from "@/shared/utils/calendar";
 import { useLocale, useTranslations } from "next-intl";
 import { isSupportedLocale, defaultLocale } from "@/i18n/locales";
@@ -175,6 +178,9 @@ function LessonCard({
   const rgb = hexToRgb(color);
   const tintBg = rgb ? `rgba(${rgb.r},${rgb.g},${rgb.b},0.07)` : undefined;
   const [isDropTarget, setIsDropTarget] = useState(false);
+  const checkInEnabled = useAppSelector(selectIsClassStateEnabled);
+  // Only with class_state_enabled: with the flag off the card looks as it always did.
+  const mark = checkInEnabled ? teachingMark(slot, toIso(new Date())) : null;
 
   return (
     <div
@@ -206,7 +212,7 @@ function LessonCard({
       }}
       className={`group rounded-md border text-left transition-all ${
         isDropTarget ? "ring-2 ring-primary/50 ring-offset-1" : ""
-      } ${
+      } ${mark?.key === "notHeld" ? "opacity-60" : ""} ${
         highlightPending && slot.status === "pending" && !isHoliday
           ? "ring-2 ring-primary/40 ring-offset-1 animate-pulse"
           : ""
@@ -261,6 +267,7 @@ function LessonCard({
               <span className="text-[10px] text-muted-foreground">
                 {tTimetable(`status.${slot.status}`)}
               </span>
+              {mark && <TeachingMarkBadge mark={mark} className="ml-1" />}
               {/* The lesson number reads as "Aula 3", not a loose digit glued to the title. */}
               {slot.sequenceNumber > 0 && (
                 <span className="ml-1 text-[10px] text-muted-foreground/60">
@@ -551,6 +558,18 @@ function CalendarPageInner() {
       return new Map(prev).set(timetableId, slots);
     });
   };
+
+  /** A check-in saved from the slot dialog: the card's mark follows without reloading the week. */
+  const handleCheckedIn = useCallback((target: SlotWithTimetable, record: CheckInRecord) => {
+    setSlotsByTimetable((prev) => {
+      const slots = (prev.get(target.timetable.id) ?? []).map((s) =>
+        s.id === target.id
+          ? { ...s, teachingStatus: record.teachingStatus, checkedInAt: record.checkedInAt }
+          : s,
+      );
+      return new Map(prev).set(target.timetable.id, slots);
+    });
+  }, []);
 
   // ── Drag and drop ─────────────────────────────────────────────────────────
   const handleDragStart = useCallback(
@@ -1317,6 +1336,7 @@ function CalendarPageInner() {
         onRegenerate={handleRegenerateLesson}
         onTypeChange={handleTypeChange}
         onTitleChange={handleTitleChange}
+        onCheckedIn={handleCheckedIn}
       />
     </div>
   );

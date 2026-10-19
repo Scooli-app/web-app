@@ -5,16 +5,17 @@ import { isListableSlot } from "@/shared/utils/lessonTopic";
 import { Badge } from "@/components/ui/badge";
 import { PlanGenerationBanner } from "@/components/plan-generation/PlanGenerationBanner";
 import { Button } from "@/components/ui/button";
-import { selectIsHorarioPlanosEnabled } from "@/store/features/selectors";
+import { selectIsClassStateEnabled, selectIsHorarioPlanosEnabled } from "@/store/features/selectors";
 import { useFeatureAccess } from "@/components/feature/useFeatureAccess";
 import { FeatureUnavailable } from "@/components/feature/FeatureUnavailable";
 import {
   fetchTimetable,
   fetchLessons,
+  setSlotCheckIn,
   setSlotStatus,
   updateLesson,
 } from "@/store/timetable/timetableSlice";
-import { useAppDispatch } from "@/store/hooks";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { openUpgradeModalForReason, setUpgradeModalOpen } from "@/store/ui/uiSlice";
 import { isUpgradeReason } from "@/shared/types/plan-limits";
 import type { RootState } from "@/store/store";
@@ -38,7 +39,10 @@ import {
 import { SLOT_STATUS_CONFIG } from "@/shared/constants/lessonSlotStatus";
 import { translateSubject } from "@/components/document-creation/constants";
 import { SlotDialog } from "@/components/calendar/SlotDialog";
+import { TeachingMarkBadge } from "@/components/calendar/TeachingMarkBadge";
 import type { SlotWithTimetable } from "@/shared/types/calendar";
+import type { CheckInRecord } from "@/shared/types/check-in";
+import { teachingMark } from "@/shared/utils/teachingStatus";
 import { toIso, defaultCalendarWeek, getWeekStart, addDays, formatWeekLabel, toIntlLocale } from "@/shared/utils/calendar";
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
@@ -72,6 +76,9 @@ function SlotCard({ slot, color, onOpen }: SlotCardProps) {
   const isHoliday = slot.slotType === "HOLIDAY";
   const isFailed = slot.status === "failed";
   const cfg = STATUS_CONFIG[slot.status];
+  const checkInEnabled = useAppSelector(selectIsClassStateEnabled);
+  // Only with class_state_enabled: with the flag off the card looks as it always did.
+  const mark = checkInEnabled ? teachingMark(slot, toIso(new Date())) : null;
   const borderColor = isFailed ? "#ef4444" : color;
   const rgb = color.replace("#", "").match(/.{2}/g);
   const tintBg = rgb
@@ -87,7 +94,7 @@ function SlotCard({ slot, color, onOpen }: SlotCardProps) {
         isHoliday
           ? "cursor-default opacity-50"
           : "cursor-pointer hover:shadow-sm hover:border-primary/40"
-      } ${isFailed ? "bg-red-50 dark:bg-red-950/20" : ""}`}
+      } ${isFailed ? "bg-red-50 dark:bg-red-950/20" : ""} ${mark?.key === "notHeld" ? "opacity-60" : ""}`}
       style={{
         borderLeft: `4px solid ${borderColor}`,
         backgroundColor: !isFailed && !isHoliday ? tintBg : undefined,
@@ -116,6 +123,7 @@ function SlotCard({ slot, color, onOpen }: SlotCardProps) {
             </p>
           )}
         </div>
+        {mark && <TeachingMarkBadge mark={mark} className="text-sm" />}
         {!isHoliday && (
           <Badge className={`shrink-0 gap-1 border text-xs ${cfg.badgeCls}`}>
             {cfg.icon}
@@ -242,6 +250,19 @@ export default function CalendarViewPage() {
     setWeekStart((p) => addDays(p, -7));
   const nextWeek = () =>
     setWeekStart((p) => addDays(p, 7));
+
+  // A check-in saved from the slot dialog: the card's mark follows without reloading the lessons.
+  const handleCheckedIn = useCallback(
+    (target: SlotWithTimetable, record: CheckInRecord) =>
+      dispatch(
+        setSlotCheckIn({
+          slotId: target.id,
+          teachingStatus: record.teachingStatus,
+          checkedInAt: record.checkedInAt,
+        })
+      ),
+    [dispatch]
+  );
 
   // Wrap the selected slot with the current timetable for the shared SlotDialog
   const selectedSlotWithTimetable = useMemo<SlotWithTimetable | null>(() => {
@@ -559,6 +580,7 @@ export default function CalendarViewPage() {
         onRegenerate={handleRegenerateLesson}
         onTypeChange={handleTypeChange}
         onTitleChange={handleTitleChange}
+        onCheckedIn={handleCheckedIn}
       />
     </div>
   );

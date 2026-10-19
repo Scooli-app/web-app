@@ -30,14 +30,21 @@ import { Routes } from "@/shared/types";
 import { LessonDocumentChips } from "@/components/dashboard/LessonDocumentChips";
 import { usePrepareLessonSet } from "@/components/dashboard/usePrepareLessonSet";
 import { isDocumentInProgress } from "@/components/dashboard/weekWindow";
+import { CheckInCard } from "@/components/check-in/CheckInCard";
+import { TeachingMarkBadge } from "@/components/calendar/TeachingMarkBadge";
 import { SLOT_STATUS_CONFIG } from "@/shared/constants/lessonSlotStatus";
 import { translateSubject } from "@/components/document-creation/constants";
+import type { CheckInRecord, CheckInSlotType, CheckInSubmission } from "@/shared/types/check-in";
 import type { SlotWithTimetable } from "@/shared/types/calendar";
 import {
   listLessonDocuments,
   type LessonDocument,
   type LessonSlotType,
 } from "@/services/api/timetable.service";
+import { checkInService } from "@/services/api/check-in.service";
+import { selectIsClassStateEnabled } from "@/store/features/selectors";
+import { useAppSelector } from "@/store/hooks";
+import { toast } from "sonner";
 
 import {
   ChevronDown,
@@ -51,7 +58,8 @@ import {
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { isSupportedLocale, defaultLocale } from "@/i18n/locales";
-import { readableTextOn, toIntlLocale } from "@/shared/utils/calendar";
+import { readableTextOn, toIntlLocale, toIso } from "@/shared/utils/calendar";
+import { canCheckIn, teachingMark } from "@/shared/utils/teachingStatus";
 
 const ROLE_ROUTE: Record<string, string> = {
   lessonPlan: Routes.LESSON_PLAN,
@@ -79,6 +87,8 @@ export interface SlotDialogProps {
   onTitleChange: (slot: SlotWithTimetable, title: string) => void;
   /** A document was added from this pop-up's chips (e.g. so the dashboard week refreshes). */
   onDocumentsChanged?: () => void;
+  /** A check-in was saved here: the parent puts the new status on the slot (the card badge follows). */
+  onCheckedIn?: (slot: SlotWithTimetable, record: CheckInRecord) => void;
 }
 
 export function SlotDialog({
@@ -91,19 +101,24 @@ export function SlotDialog({
   onTypeChange,
   onTitleChange,
   onDocumentsChanged,
+  onCheckedIn,
 }: SlotDialogProps) {
   const t = useTranslations("calendar.slotDialog");
   const tShared = useTranslations("calendar.shared");
   const tTimetable = useTranslations("timetable");
+  const tCheckIn = useTranslations("checkIns");
   const rawLocale = useLocale();
   const locale = isSupportedLocale(rawLocale) ? rawLocale : defaultLocale;
   const router = useRouter();
+  const checkInEnabled = useAppSelector(selectIsClassStateEnabled);
   const [editingTitle, setEditingTitle] = useState(false);
   const [draftTitle, setDraftTitle] = useState("");
   const [customMessage, setCustomMessage] = useState("");
   const [slotDocs, setSlotDocs] = useState<LessonDocument[]>([]);
   const [docsLoading, setDocsLoading] = useState(false);
   const [docsOpen, setDocsOpen] = useState(true);
+  /** Reopens the check-in card for a lesson that already has an answer ("Alterar"). */
+  const [checkInEditing, setCheckInEditing] = useState(false);
 
   const slotId = slot?.id;
 
@@ -112,6 +127,7 @@ export function SlotDialog({
       setDraftTitle(slot.topicTitle || "");
       setEditingTitle(false);
       setCustomMessage("");
+      setCheckInEditing(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slotId]);
@@ -183,6 +199,39 @@ export function SlotDialog({
   }, [docsInProgress, slotId]);
 
   if (!slot) return null;
+
+  const todayIso = toIso(new Date());
+  const showCheckIn = canCheckIn(checkInEnabled, slot, todayIso);
+  const checkInMark = teachingMark(slot, todayIso);
+  const checkInItem = {
+    slotDate: slot.slotDate,
+    // Only shown for checkable types (see showCheckIn), so the cast holds wherever the card renders.
+    slotType: slot.slotType as CheckInSlotType,
+    turmaTitle: slot.timetable.title,
+    subject: slot.timetable.subject,
+    topicTitle: slot.topicTitle || null,
+    outcomes: slot.outcomes ?? [],
+  };
+
+  // Same saving and toasts as the dashboard strip (CheckInStrip).
+  const handleCheckIn = async (body: CheckInSubmission) => {
+    try {
+      const record = await checkInService.submit(slot.timetable.id, slot.id, body);
+      setCheckInEditing(false);
+      onCheckedIn?.(slot, record);
+    } catch {
+      toast.error(tCheckIn("saveError"));
+      return;
+    }
+    if (body.result === "TAUGHT") {
+      toast.success(tCheckIn("taughtToast"), {
+        action: {
+          label: tCheckIn("prepareNext"),
+          onClick: () => router.push(`${Routes.CALENDAR}/${slot.timetable.id}`),
+        },
+      });
+    }
+  };
 
   const color = slot.timetable.color || "#7F77DD";
   const cfg = SLOT_STATUS_CONFIG[slot.status];
@@ -336,6 +385,35 @@ export function SlotDialog({
                 <div className="max-h-32 overflow-y-auto rounded-md border bg-muted/50 p-3 text-xs font-mono whitespace-pre-wrap leading-relaxed">
                   {streamContent}
                 </div>
+              </>
+            )}
+
+            {/* "Como correu?" for a past, checkable lesson (class_state_enabled only) */}
+            {showCheckIn && (
+              <>
+                <Separator />
+                <section aria-label={tCheckIn("title")} className="space-y-2">
+                  {slot.checkedInAt && !checkInEditing && checkInMark ? (
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="flex items-center gap-1.5 text-sm">
+                        <span className="text-muted-foreground">{tCheckIn("currentStatus")}:</span>
+                        <TeachingMarkBadge mark={checkInMark} />
+                        <span className="font-medium text-foreground">{tCheckIn(`mark.${checkInMark.key}`)}</span>
+                      </p>
+                      <Button variant="outline" size="sm" className="h-8" onClick={() => setCheckInEditing(true)}>
+                        {tCheckIn("changeAnswer")}
+                      </Button>
+                    </div>
+                  ) : (
+                    <CheckInCard
+                      key={slot.id}
+                      item={checkInItem}
+                      locale={locale}
+                      onSubmit={(body) => void handleCheckIn(body)}
+                      onCancel={slot.checkedInAt ? () => setCheckInEditing(false) : undefined}
+                    />
+                  )}
+                </section>
               </>
             )}
 

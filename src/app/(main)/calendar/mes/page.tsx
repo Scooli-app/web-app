@@ -8,7 +8,9 @@ import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { Routes } from "@/shared/types";
-import { selectIsHorarioPlanosEnabled } from "@/store/features/selectors";
+import { selectIsClassStateEnabled, selectIsHorarioPlanosEnabled } from "@/store/features/selectors";
+import { TeachingMarkBadge } from "@/components/calendar/TeachingMarkBadge";
+import { teachingMark } from "@/shared/utils/teachingStatus";
 import { useFeatureAccess } from "@/components/feature/useFeatureAccess";
 import { FeatureUnavailable } from "@/components/feature/FeatureUnavailable";
 import { fetchTimetables } from "@/store/timetable/timetableSlice";
@@ -59,6 +61,8 @@ export default function CalendarMonthPage() {
   const dispatch = useAppDispatch();
   const newClassGate = useNewClassGate();
   const router = useRouter();
+  const checkInEnabled = useSelector(selectIsClassStateEnabled);
+  const todayIso = toIso(new Date());
 
   const [monthStart, setMonthStart] = useState<Date>(() => getMonthStart());
   const [slotsByDate, setSlotsByDate] = useState<Map<string, Array<{ timetable: Timetable; slot: LessonSlot }>>>(new Map());
@@ -291,6 +295,14 @@ export default function CalendarMonthPage() {
                   // Collect unique timetable colors for this day
                   const colors = [...new Set(day.slots.map((s) => s.timetable.color || "#7F77DD"))];
 
+                  // Check-in marks for the past lessons of this day (class_state_enabled only)
+                  const dayMarks = checkInEnabled
+                    ? day.slots.flatMap((s) => {
+                        const mark = teachingMark(s.slot, todayIso);
+                        return mark ? [mark] : [];
+                      })
+                    : [];
+
                   const isWeekday = day.date.getDay() >= 1 && day.date.getDay() <= 5;
 
                   return (
@@ -358,6 +370,13 @@ export default function CalendarMonthPage() {
                                 </span>
                               )}
                             </p>
+                          )}
+                          {dayMarks.length > 0 && (
+                            <div className="flex flex-wrap gap-1">
+                              {dayMarks.map((mark, mi) => (
+                                <TeachingMarkBadge key={mi} mark={mark} />
+                              ))}
+                            </div>
                           )}
                         </div>
                       )}
