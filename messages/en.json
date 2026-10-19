@@ -2820,6 +2820,29 @@
     "autoTitleFallback": "New Class"
   },
   "calendar": {
+    "progress": {
+      "title": "Class progress",
+      "loadingLabel": "Loading class progress",
+      "coverageLabel": "Learning outcomes taught",
+      "coverageCount": "{covered} of {total} planned learning outcomes taught",
+      "coverageOfYear": "({total} of {curriculum} for the year)",
+      "given": "Taught",
+      "partial": "Partly",
+      "notHeld": "Not held",
+      "pending": "To confirm",
+      "behindTitle": "Behind schedule",
+      "allOnTime": "All on track",
+      "plannedFor": "Planned for {date}",
+      "behindLessons": "{count, plural, one {# lesson behind} other {# lessons behind}}",
+      "reinforceTitle": "To reinforce",
+      "reinforceEmpty": "Nothing to reinforce for now.",
+      "difficulties": "{count, plural, one {# difficulty} other {# difficulties}}",
+      "lastSignal": "last signal {when}",
+      "showMore": "See more ({count})",
+      "showLess": "See less",
+      "nextAssessmentTitle": "Next assessment",
+      "noAssessment": "No assessment scheduled"
+    },
     "shared": {
       "pageTitle": "Calendar",
       "featureTitle": "Classes",
