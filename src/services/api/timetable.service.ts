@@ -5,7 +5,7 @@ import type { CompanionType } from "@/components/dashboard/weekWindow";
 
 import apiClient from "./client";
 import { featureFeedbackTrigger } from "@/store/featureFeedbackTrigger";
-import type { CheckInOutcome, CheckInSlotType, TeachingStatus } from "@/shared/types/check-in";
+import type { CheckInOutcome, CheckInResult, CheckInSlotType, TeachingStatus } from "@/shared/types/check-in";
 
 export interface RecurringSlot {
   dayOfWeek: number; // 1=Mon..7=Sun (ISO)
@@ -85,6 +85,13 @@ export interface LessonSlot {
   teachingStatus?: TeachingStatus;
   /** ISO timestamp of the latest check-in, null until the teacher checks in. */
   checkedInAt?: string | null;
+  /**
+   * The latest answer's own result. "Com dificuldades" is stored as `taught`, so this is what tells it apart.
+   * Null until the teacher checks in, and when the backend has no result for the slot.
+   */
+  checkInResult?: CheckInResult | null;
+  /** Difficult outcome ids ("com dificuldades") or uncovered ones ("ficou a meio"); empty for the other answers. */
+  checkInOutcomeIds?: string[];
   /** Outcomes (AE) this lesson covers, offered as chips in the check-in card. */
   outcomes?: CheckInOutcome[];
 }

@@ -1,5 +1,5 @@
 import { dashboardCache, CACHE_KEYS } from "@/lib/dashboardCache";
-import type { TeachingStatus } from "@/shared/types/check-in";
+import type { CheckInResult, TeachingStatus } from "@/shared/types/check-in";
 import { resolveEffectiveContentLanguage } from "@/i18n/clientLocale";
 import {
   type ContentLanguagePreference,
@@ -180,12 +180,20 @@ const timetableSlice = createSlice({
     /** A check-in saved from the calendar dialog: the badge follows without a reload. */
     setSlotCheckIn(
       state,
-      action: PayloadAction<{ slotId: string; teachingStatus: TeachingStatus; checkedInAt: string }>
+      action: PayloadAction<{
+        slotId: string;
+        teachingStatus: TeachingStatus;
+        checkedInAt: string;
+        checkInResult?: CheckInResult | null;
+        checkInOutcomeIds?: string[];
+      }>
     ) {
       const slot = state.slots.find((s) => s.id === action.payload.slotId);
       if (slot) {
         slot.teachingStatus = action.payload.teachingStatus;
         slot.checkedInAt = action.payload.checkedInAt;
+        slot.checkInResult = action.payload.checkInResult ?? null;
+        slot.checkInOutcomeIds = action.payload.checkInOutcomeIds ?? [];
       }
     },
     clearError(state) {

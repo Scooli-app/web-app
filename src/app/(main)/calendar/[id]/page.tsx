@@ -44,7 +44,7 @@ import { NextStepsCard } from "@/components/next-steps/NextStepsCard";
 import { TurmaProgressPanel } from "@/components/calendar/TurmaProgressPanel";
 import type { SlotWithTimetable } from "@/shared/types/calendar";
 import type { CheckInRecord } from "@/shared/types/check-in";
-import { teachingMark } from "@/shared/utils/teachingStatus";
+import { teachingMark, type SlotCheckInAnswer } from "@/shared/utils/teachingStatus";
 import { toIso, defaultCalendarWeek, getWeekStart, addDays, formatWeekLabel, toIntlLocale } from "@/shared/utils/calendar";
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
@@ -267,12 +267,14 @@ export default function CalendarViewPage() {
   // and the turma progress panel reloads its figures.
   const [progressRefreshKey, setProgressRefreshKey] = useState(0);
   const handleCheckedIn = useCallback(
-    (target: SlotWithTimetable, record: CheckInRecord) => {
+    (target: SlotWithTimetable, record: CheckInRecord, answer: SlotCheckInAnswer) => {
       dispatch(
         setSlotCheckIn({
           slotId: target.id,
           teachingStatus: record.teachingStatus,
           checkedInAt: record.checkedInAt,
+          checkInResult: answer.checkInResult,
+          checkInOutcomeIds: answer.checkInOutcomeIds,
         })
       );
       setProgressRefreshKey((key) => key + 1);

@@ -153,3 +153,22 @@ describe("subjectRepeatsTurma", () => {
     expect(subjectRepeatsTurma("9.º A", "")).toBe(false);
   });
 });
+
+describe("CheckInResultOptions styling (ENG-246)", () => {
+  it("gives each card a tinted fill and a coloured border, with a dark-mode fill of its own", () => {
+    const html = renderToStaticMarkup(createElement(CheckInResultOptions, { onChoose: vi.fn() }));
+    expect(html).toContain("bg-emerald-500/[0.08]");
+    expect(html).toContain("dark:bg-emerald-500/10");
+    expect(html).toContain("border-emerald-500/35");
+    expect(html).toContain("dark:border-emerald-500/40");
+    expect(html).toContain("border-amber-500/35");
+    expect(html).toContain("border-sky-500/35");
+    expect(html).toContain("border-rose-500/35");
+  });
+
+  it("keeps the cards equal in height and the accessible names as the visible labels", () => {
+    const html = renderToStaticMarkup(createElement(CheckInResultOptions, { onChoose: vi.fn() }));
+    expect(html.match(/h-full/g)).toHaveLength(4);
+    expect(html).toContain("resultNotHeld");
+  });
+});
