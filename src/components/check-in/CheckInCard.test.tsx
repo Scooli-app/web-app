@@ -3,6 +3,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import { CheckInCard, subjectRepeatsTurma } from "./CheckInCard";
+import { CheckInOutcomeStep, CheckInResultOptions } from "./CheckInChoices";
 
 // Each translated string renders as its key, followed by its values, so the tests can read the meta line.
 vi.mock("next-intl", () => ({
@@ -65,6 +66,71 @@ describe("CheckInCard", () => {
   it("drops the subject from the meta line without a topic too", () => {
     const html = render({ item: { ...item, turmaTitle: "6.º Química", subject: "Quimica" } });
     expect(html).toContain("metaNoSubjectNoTopic|6.º Química|");
+  });
+});
+
+describe("CheckInCard in the calendar dialog", () => {
+  it("drops the meta line when the lesson is already named above it", () => {
+    const html = renderToStaticMarkup(
+      createElement(CheckInCard, {
+        item: { ...item, topicTitle: "Frações" },
+        locale: "pt-PT",
+        onSubmit: vi.fn(),
+        showMeta: false,
+      }),
+    );
+    expect(html).not.toContain("meta|");
+    expect(html).toContain("title");
+  });
+});
+
+describe("CheckInResultOptions", () => {
+  it("renders the four results as cards, each with its icon and label", () => {
+    const html = renderToStaticMarkup(createElement(CheckInResultOptions, { onChoose: vi.fn() }));
+    expect(html.match(/<button/g)).toHaveLength(4);
+    expect(html).toContain("resultTaught");
+    expect(html).toContain("resultDifficulties");
+    expect(html).toContain("resultPartial");
+    expect(html).toContain("resultNotHeld");
+    // Two per row on narrow screens, four on wide ones.
+    expect(html).toContain("grid-cols-2");
+    expect(html).toContain("sm:grid-cols-4");
+  });
+});
+
+describe("CheckInOutcomeStep", () => {
+  const outcomes = [
+    { id: "o1", text: "Ler com fluência", topicPath: [], source: "ai" },
+    { id: "o2", text: "Somar frações", topicPath: [], source: "ai" },
+  ];
+  const render = (selected: string[]) =>
+    renderToStaticMarkup(
+      createElement(CheckInOutcomeStep, {
+        question: "difficultiesQuestion",
+        outcomes,
+        selected,
+        onToggle: vi.fn(),
+        onSave: vi.fn(),
+        onBack: vi.fn(),
+      }),
+    );
+
+  it("saves with Guardar and goes back with Voltar, with no skip and no cancel", () => {
+    const html = render([]);
+    expect(html).toContain(">save<");
+    expect(html).toContain(">back<");
+    expect(html).not.toContain("skip");
+    expect(html).not.toContain("cancel");
+  });
+
+  it("lists each outcome as a checkbox row that shows the ticked ones", () => {
+    const html = render(["o2"]);
+    expect(html.match(/role="checkbox"/g)).toHaveLength(2);
+    expect(html).toContain('title="Ler com fluência"');
+    expect(html).toContain("line-clamp-2");
+    const rows = html.split("<li").slice(1);
+    expect(rows[0]).toContain('aria-checked="false"');
+    expect(rows[1]).toContain('aria-checked="true"');
   });
 });
 

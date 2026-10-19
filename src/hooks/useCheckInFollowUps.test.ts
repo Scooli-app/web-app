@@ -1,5 +1,22 @@
+import { Routes } from "@/shared/types/routes";
 import { describe, expect, it } from "vitest";
-import { followUpFor, formatLessonDay } from "./useCheckInFollowUps";
+import { followUpFor, formatLessonDay, lessonCalendarHref, reinforcementTarget } from "./useCheckInFollowUps";
+
+describe("reinforcementTarget and lessonCalendarHref", () => {
+  it("opens the lesson's week, on the Monday that holds it", () => {
+    // 2020-03-11 is a Wednesday, so its week starts on Monday 2020-03-09.
+    expect(reinforcementTarget("tt", "s4", "2020-03-11")).toEqual({
+      timetableId: "tt",
+      lessonId: "s4",
+      weekStart: "2020-03-09",
+    });
+  });
+
+  it("links to the turma's calendar with that week and lesson, which the calendar page opens", () => {
+    const href = lessonCalendarHref({ timetableId: "tt", lessonId: "s4", weekStart: "2020-03-09" });
+    expect(href).toBe(`${Routes.CALENDAR}/tt?week=2020-03-09&lesson=s4`);
+  });
+});
 
 describe("followUpFor", () => {
   it("offers a reinforcement worksheet for the outcomes of 'some had difficulties'", () => {

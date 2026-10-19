@@ -4,6 +4,7 @@ import {
   afterConfirmAll,
   buildSubmission,
   confirmableCount,
+  initialOutcomeSelection,
   isAssessmentCheckIn,
   loadPendingCheckIns,
   needsOutcomeStep,
@@ -62,7 +63,7 @@ describe("buildSubmission (the POST body per result)", () => {
     expect(buildSubmission("NOT_HELD")).toEqual({ result: "NOT_HELD" });
   });
 
-  it("sends difficultOutcomeIds for TAUGHT_WITH_DIFFICULTIES, and nothing extra when skipped", () => {
+  it("sends difficultOutcomeIds for TAUGHT_WITH_DIFFICULTIES, and nothing extra when nothing is ticked", () => {
     expect(buildSubmission("TAUGHT_WITH_DIFFICULTIES", ["o1", "o2"])).toEqual({
       result: "TAUGHT_WITH_DIFFICULTIES",
       difficultOutcomeIds: ["o1", "o2"],
@@ -80,6 +81,24 @@ describe("buildSubmission (the POST body per result)", () => {
     const body = buildSubmission("PARTIAL", selected);
     selected.push("o2");
     expect(body).toEqual({ result: "PARTIAL", uncoveredOutcomeIds: ["o1"] });
+  });
+});
+
+describe("outcome step", () => {
+  const outcome = (id: string) => ({ id, text: `texto ${id}`, topicPath: [], source: "ai" });
+
+  it("ticks a single outcome when the step opens", () => {
+    expect(initialOutcomeSelection([outcome("o1")])).toEqual(["o1"]);
+  });
+
+  it("starts with nothing ticked when there are several outcomes, or none", () => {
+    expect(initialOutcomeSelection([outcome("o1"), outcome("o2")])).toEqual([]);
+    expect(initialOutcomeSelection([])).toEqual([]);
+  });
+
+  it("saves with nothing ticked as the bare result, so the teacher has no skip to press", () => {
+    expect(buildSubmission("PARTIAL", [])).toEqual({ result: "PARTIAL" });
+    expect(buildSubmission("TAUGHT_WITH_DIFFICULTIES", [])).toEqual({ result: "TAUGHT_WITH_DIFFICULTIES" });
   });
 });
 

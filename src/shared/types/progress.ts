@@ -42,6 +42,16 @@ export interface TurmaProgressBehindSchedule {
   items: TurmaProgressBehindItem[];
 }
 
+/** A reinforcement worksheet made for an outcome (chalkboard: `reinforcement` on a flagged outcome). */
+export interface TurmaProgressReinforcement {
+  documentId: string;
+  /** The lesson the worksheet was written for. */
+  targetSlotId: string;
+  /** YYYY-MM-DD of that lesson. */
+  targetDate: string;
+  status: "generating" | "completed" | "failed";
+}
+
 export interface TurmaProgressFlaggedOutcome {
   outcomeId: string;
   text: string;
@@ -50,6 +60,13 @@ export interface TurmaProgressFlaggedOutcome {
   /** YYYY-MM-DD of the latest signal from a check-in. */
   lastSignalDate: string;
   state: FlaggedOutcomeState;
+  /**
+   * The lesson where the latest difficulty was reported: the source of a reinforcement request. Optional so the
+   * panel still renders against a backend that does not send it; without it the panel offers no "Gerar ficha".
+   */
+  lastSignalSlotId?: string | null;
+  /** The worksheet that covers this outcome, or null. Absent on a backend without it. */
+  reinforcement?: TurmaProgressReinforcement | null;
 }
 
 export interface TurmaProgressNextAssessment {

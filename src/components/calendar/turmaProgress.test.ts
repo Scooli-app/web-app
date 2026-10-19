@@ -7,9 +7,48 @@ import {
   formatCoveragePercent,
   hasProgressData,
   lessonsGiven,
+  reinforcementState,
   shouldLoadTurmaProgress,
   visibleFlaggedOutcomes,
 } from "./turmaProgress";
+
+describe("reinforcementState", () => {
+  const flagged = (over: Partial<TurmaProgressFlaggedOutcome> = {}): TurmaProgressFlaggedOutcome => ({
+    outcomeId: "o1",
+    text: "Frações",
+    topicPath: [],
+    difficultyCount: 1,
+    lastSignalDate: "2026-10-08",
+    state: "not_covered",
+    lastSignalSlotId: "s2",
+    reinforcement: null,
+    ...over,
+  });
+  const worksheet = (status: "generating" | "completed" | "failed") => ({
+    documentId: "d1",
+    targetSlotId: "s3",
+    targetDate: "2026-10-20",
+    status,
+  });
+
+  it("offers a request when there is no worksheet and a lesson to ask from", () => {
+    expect(reinforcementState(flagged())).toBe("request");
+  });
+
+  it("offers a request again after a worksheet failed", () => {
+    expect(reinforcementState(flagged({ reinforcement: worksheet("failed") }))).toBe("request");
+  });
+
+  it("shows progress while a worksheet is being written, and a finished one as ready", () => {
+    expect(reinforcementState(flagged({ reinforcement: worksheet("generating") }))).toBe("generating");
+    expect(reinforcementState(flagged({ reinforcement: worksheet("completed") }))).toBe("ready");
+  });
+
+  it("offers nothing without a source lesson, as on a backend that does not send it", () => {
+    expect(reinforcementState(flagged({ lastSignalSlotId: null }))).toBe("unavailable");
+    expect(reinforcementState(flagged({ lastSignalSlotId: undefined }))).toBe("unavailable");
+  });
+});
 
 const outcome = (n: number): TurmaProgressFlaggedOutcome => ({
   outcomeId: `o${n}`,

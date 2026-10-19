@@ -46,7 +46,15 @@ import {
   type LessonSlotType,
 } from "@/services/api/timetable.service";
 import { checkInService } from "@/services/api/check-in.service";
-import { followUpFor, useCheckInFollowUps, type CheckInFollowUp } from "@/hooks/useCheckInFollowUps";
+import {
+  followUpFor,
+  formatLessonDay,
+  lessonCalendarHref,
+  reinforcementTarget,
+  useCheckInFollowUps,
+  type CheckInFollowUp,
+} from "@/hooks/useCheckInFollowUps";
+import type { WeekLessonTarget } from "@/components/dashboard/WeekLessonDialog";
 import { useShiftFollowing } from "@/hooks/useShiftFollowing";
 import { selectIsClassStateEnabled } from "@/store/features/selectors";
 import { useAppSelector } from "@/store/hooks";
@@ -61,6 +69,7 @@ import {
   Loader2,
   RotateCcw,
   Sparkles,
+  Target,
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { isSupportedLocale, defaultLocale } from "@/i18n/locales";
@@ -75,6 +84,13 @@ const ROLE_ROUTE: Record<string, string> = {
   worksheet: Routes.WORKSHEET,
   presentation: Routes.PRESENTATION,
 };
+/** The reinforcement worksheet a check-in asked for, shown in this lesson's dialog until it is closed. */
+interface ReinforcementNote {
+  slotId: string;
+  target: WeekLessonTarget;
+  day: string;
+}
+
 function docUrl(role: string, documentId: string): string {
   return `${ROLE_ROUTE[role] ?? Routes.LESSON_PLAN}/${documentId}`;
 }
@@ -137,6 +153,8 @@ export function SlotDialog({
   const [shiftAsk, setShiftAsk] = useState(false);
   /** After a check-in with outcomes picked: offers a reinforcement worksheet or the carry-over, inline. */
   const [followUp, setFollowUp] = useState<CheckInFollowUp | null>(null);
+  /** After the reinforcement was asked for here: the line that says where it is. Kept for this lesson. */
+  const [reinforcementNote, setReinforcementNote] = useState<ReinforcementNote | null>(null);
 
   const slotId = slot?.id;
 
@@ -275,10 +293,18 @@ export function SlotDialog({
 
   const handleFollowUp = async () => {
     if (!followUp) return;
-    const done =
-      followUp.kind === "reinforcement"
-        ? await reinforce(slot.timetable.id, slot.id, followUp.outcomeIds)
-        : await carry(slot.timetable.id, slot.id, followUp.outcomeIds);
+    if (followUp.kind === "reinforcement") {
+      const started = await reinforce(slot.timetable.id, slot.id, followUp.outcomeIds);
+      if (!started) return;
+      setReinforcementNote({
+        slotId: slot.id,
+        target: reinforcementTarget(slot.timetable.id, started.targetSlotId, started.targetDate),
+        day: formatLessonDay(started.targetDate, locale),
+      });
+      setFollowUp(null);
+      return;
+    }
+    const done = await carry(slot.timetable.id, slot.id, followUp.outcomeIds);
     if (done) setFollowUp(null);
   };
 
@@ -464,6 +490,7 @@ export function SlotDialog({
                       key={slot.id}
                       item={checkInItem}
                       locale={locale}
+                      showMeta={false}
                       onSubmit={(body) => void handleCheckIn(body)}
                       onCancel={slot.checkedInAt ? () => setCheckInEditing(false) : undefined}
                     />
@@ -489,6 +516,25 @@ export function SlotDialog({
                       </Button>
                       <Button size="sm" variant="outline" className="h-8" onClick={() => setFollowUp(null)}>
                         {tCheckIn("followUpKeep")}
+                      </Button>
+                    </div>
+                  )}
+                  {reinforcementNote?.slotId === slot.id && (
+                    <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-rose-500/30 bg-rose-500/5 px-3 py-2">
+                      <span className="flex items-center gap-2 text-sm text-foreground">
+                        <Target className="h-4 w-4 shrink-0 text-rose-600 dark:text-rose-400" aria-hidden />
+                        {tCheckIn("reinforcementNote", { day: reinforcementNote.day })}
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8"
+                        onClick={() => {
+                          onClose();
+                          router.push(lessonCalendarHref(reinforcementNote.target));
+                        }}
+                      >
+                        {tCheckIn("followUpOpenLesson")}
                       </Button>
                     </div>
                   )}

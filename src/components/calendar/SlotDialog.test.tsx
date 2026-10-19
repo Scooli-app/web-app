@@ -222,8 +222,11 @@ describe("SlotDialog: offering a reinforcement worksheet or a carry-over after a
     });
   }
 
-  /** Picks a result, then the outcome chip and "Confirmar" (or "Saltar" when skipping the chips). */
-  async function answer(result: string, pick: "chip" | "skip") {
+  /**
+   * Picks a result, then "Guardar" on the outcome step. The slot has one outcome, so it is ticked already ("ticked");
+   * "unticked" clears that tick first, to save with nothing picked.
+   */
+  async function answer(result: string, pick: "ticked" | "unticked") {
     vi.mocked(checkInService.submit).mockResolvedValue({
       id: "c1",
       timetableId: "tt",
@@ -234,18 +237,18 @@ describe("SlotDialog: offering a reinforcement worksheet or a carry-over after a
     await act(async () => {
       buttonWith(result)?.click();
     });
-    if (pick === "chip") {
+    if (pick === "unticked") {
       await act(async () => {
-        buttonWith("Ler com fluência")?.click();
+        document.querySelector<HTMLElement>('[role="checkbox"]')?.click();
       });
     }
     await act(async () => {
-      buttonWith(pick === "chip" ? "confirm" : "skip")?.click();
+      buttonWith("save")?.click();
     });
   }
 
   it("offers the reinforcement worksheet after \"some had difficulties\" with an outcome picked", async () => {
-    await answer("resultDifficulties", "chip");
+    await answer("resultDifficulties", "ticked");
 
     expect(checkInService.submit).toHaveBeenCalledWith("tt", "slot-3", {
       result: "TAUGHT_WITH_DIFFICULTIES",
@@ -257,15 +260,15 @@ describe("SlotDialog: offering a reinforcement worksheet or a carry-over after a
   });
 
   it("offers the carry-over after \"half done\" with an outcome picked", async () => {
-    await answer("resultPartial", "chip");
+    await answer("resultPartial", "ticked");
 
     expect(document.body.textContent).toContain("carryOverQuestion");
     expect(buttonWith("carryOverAction")).toBeDefined();
     expect(document.body.textContent).not.toContain("reinforcementQuestion");
   });
 
-  it("offers nothing when the outcomes are skipped", async () => {
-    await answer("resultDifficulties", "skip");
+  it("saves with nothing ticked and offers nothing", async () => {
+    await answer("resultDifficulties", "unticked");
 
     expect(checkInService.submit).toHaveBeenCalledWith("tt", "slot-3", { result: "TAUGHT_WITH_DIFFICULTIES" });
     expect(document.body.textContent).not.toContain("reinforcementQuestion");
@@ -295,7 +298,7 @@ describe("SlotDialog: offering a reinforcement worksheet or a carry-over after a
       targetDate: "2020-03-11",
       status: "generating",
     });
-    await answer("resultDifficulties", "chip");
+    await answer("resultDifficulties", "ticked");
     await act(async () => {
       buttonWith("reinforcementAction")?.click();
     });
@@ -304,9 +307,26 @@ describe("SlotDialog: offering a reinforcement worksheet or a carry-over after a
     expect(document.body.textContent).not.toContain("reinforcementQuestion");
   });
 
+  it("keeps a line in this lesson's dialog that says where the worksheet is, with Abrir", async () => {
+    vi.mocked(checkInService.requestReinforcement).mockResolvedValue({
+      documentId: "d1",
+      targetSlotId: "slot-4",
+      targetDate: "2020-03-11",
+      status: "generating",
+    });
+    await answer("resultDifficulties", "ticked");
+    await act(async () => {
+      buttonWith("reinforcementAction")?.click();
+    });
+
+    expect(document.body.textContent).toContain("reinforcementNote");
+    expect(buttonWith("followUpOpenLesson")).toBeDefined();
+  });
+
+
   it("keeps the offer when the request fails", async () => {
     vi.mocked(checkInService.requestReinforcement).mockRejectedValue(new Error("boom"));
-    await answer("resultDifficulties", "chip");
+    await answer("resultDifficulties", "ticked");
     await act(async () => {
       buttonWith("reinforcementAction")?.click();
     });
@@ -315,7 +335,7 @@ describe("SlotDialog: offering a reinforcement worksheet or a carry-over after a
   });
 
   it("hides the offer on \"Agora não\" without calling the API", async () => {
-    await answer("resultPartial", "chip");
+    await answer("resultPartial", "ticked");
     await act(async () => {
       buttonWith("followUpKeep")?.click();
     });

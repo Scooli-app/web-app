@@ -1,5 +1,7 @@
 "use client";
 
+import type { WeekLessonTarget } from "@/components/dashboard/WeekLessonDialog";
+import { weekStartOf } from "@/components/next-steps/nextSteps";
 import { ApiRequestError, UpgradeLimitError } from "@/services/api/client";
 import { checkInService } from "@/services/api/check-in.service";
 import type { CheckInSubmission, CarryOverResult, ReinforcementRequested } from "@/shared/types/check-in";
@@ -38,10 +40,31 @@ export function formatLessonDay(isoDate: string, locale: string): string {
   );
 }
 
+/** The lesson pop-up target for a lesson of a turma: the week that holds it, as the pop-up expects. */
+export function lessonTarget(timetableId: string, lessonId: string, isoDate: string): WeekLessonTarget {
+  return { timetableId, lessonId, weekStart: weekStartOf(isoDate) };
+}
+
 /**
- * The two follow-ups a check-in can start. Both report their own outcome: a success toast with an action to open
- * the turma's calendar, or the matching failure. A quota or free-plan refusal opens the upgrade modal (the API
- * client does it), so it is not repeated here. Both resolve to the result, or null when nothing started.
+ * Where a reinforcement worksheet's lesson is: the target of its lesson pop-up. A reinforcement is always written
+ * for a lesson of the same turma, so the turma id is the request's.
+ */
+export function reinforcementTarget(timetableId: string, targetSlotId: string, targetDate: string): WeekLessonTarget {
+  return lessonTarget(timetableId, targetSlotId, targetDate);
+}
+
+/**
+ * The calendar page of a turma with one lesson opened: `?week` shows the lesson's week and `?lesson` opens the
+ * lesson's pop-up once the week has loaded. Used when no pop-up is mounted where the action is.
+ */
+export function lessonCalendarHref(target: WeekLessonTarget): string {
+  return `${Routes.CALENDAR}/${target.timetableId}?week=${target.weekStart}&lesson=${target.lessonId}`;
+}
+
+/**
+ * The two follow-ups a check-in can start. Both report their own outcome: a success toast with an action that opens
+ * the lesson, or the matching failure. A quota or free-plan refusal opens the upgrade modal (the API client does it),
+ * so it is not repeated here. Both resolve to the result, or null when nothing started.
  */
 export function useCheckInFollowUps() {
   const t = useTranslations("checkIns");
@@ -72,12 +95,25 @@ export function useCheckInFollowUps() {
     [dispatch, t],
   );
 
+  /**
+   * Asks for a reinforcement worksheet on the lesson after {@code lessonId}. The toast's "Abrir" calls {@code onOpen}
+   * with the target lesson when the caller has a pop-up mounted, and otherwise opens the turma's calendar on it.
+   */
   const reinforce = useCallback(
-    async (timetableId: string, lessonId: string, outcomeIds: string[]): Promise<ReinforcementRequested | null> => {
+    async (
+      timetableId: string,
+      lessonId: string,
+      outcomeIds: string[],
+      onOpen?: (target: WeekLessonTarget) => void,
+    ): Promise<ReinforcementRequested | null> => {
       try {
         const started = await checkInService.requestReinforcement(timetableId, lessonId, outcomeIds);
+        const target = reinforcementTarget(timetableId, started.targetSlotId, started.targetDate);
         toast.success(t("reinforcementToast", { day: formatLessonDay(started.targetDate, locale) }), {
-          action: { label: t("followUpOpenCalendar"), onClick: () => openCalendar(timetableId) },
+          action: {
+            label: t("followUpOpenLesson"),
+            onClick: () => (onOpen ? onOpen(target) : router.push(lessonCalendarHref(target))),
+          },
         });
         return started;
       } catch (err) {
@@ -85,7 +121,7 @@ export function useCheckInFollowUps() {
         return null;
       }
     },
-    [locale, openCalendar, reportFailure, t],
+    [locale, reportFailure, router, t],
   );
 
   const carry = useCallback(

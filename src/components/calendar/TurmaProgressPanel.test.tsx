@@ -14,6 +14,11 @@ vi.mock("next-intl", () => ({
 vi.mock("@/store/hooks", () => ({ useAppSelector: () => state.enabled }));
 vi.mock("@/store/features/selectors", () => ({ selectIsClassStateEnabled: () => state.enabled }));
 vi.mock("@/services/api/progress.service", () => ({ getTurmaProgress: service.getTurmaProgress }));
+vi.mock("@/hooks/useCheckInFollowUps", () => ({
+  useCheckInFollowUps: () => ({ reinforce: vi.fn(), carry: vi.fn() }),
+  reinforcementTarget: vi.fn(),
+}));
+vi.mock("@/components/dashboard/WeekLessonDialog", () => ({ WeekLessonDialog: () => null }));
 
 const outcome = (n: number): TurmaProgressFlaggedOutcome => ({
   outcomeId: `o${n}`,
@@ -43,8 +48,10 @@ function progress(over: Partial<TurmaProgress> = {}): TurmaProgress {
   };
 }
 
-function renderView(data: TurmaProgress) {
-  return renderToStaticMarkup(createElement(TurmaProgressView, { progress: data, todayIso: "2026-10-19" }));
+function renderView(data: TurmaProgress, extra: Partial<Parameters<typeof TurmaProgressView>[0]> = {}) {
+  return renderToStaticMarkup(
+    createElement(TurmaProgressView, { progress: data, todayIso: "2026-10-19", ...extra }),
+  );
 }
 
 beforeEach(() => {
@@ -64,6 +71,113 @@ describe("TurmaProgressPanel", () => {
     const html = renderToStaticMarkup(createElement(TurmaProgressPanel, { timetableId: "tt-1" }));
     expect(html).toContain('aria-busy="true"');
     expect(html).toContain("loadingLabel");
+  });
+});
+
+describe("TurmaProgressView layout", () => {
+  it("names the panel and says what the percent measures", () => {
+    const html = renderView(progress());
+    expect(html).toContain("<h2");
+    expect(html).toContain("coverageCaption");
+  });
+
+  it("shows the lesson counts as chips, dimming a zero count", () => {
+    const html = renderView(progress());
+    for (const key of ["given", "partial", "notHeld", "pending"]) {
+      expect(html).toContain(key);
+    }
+    const zero = renderView(
+      progress({ slots: { past: 0, counts: { planned: 0, taught: 0, partiallyTaught: 0, notHeld: 0, assumedTaught: 0 }, pendingCheckIns: 0 } }),
+    );
+    expect(zero).toContain("opacity-50");
+    expect(html.match(/opacity-50/g)?.length ?? 0).toBeLessThan(zero.match(/opacity-50/g)?.length ?? 0);
+  });
+
+  it("gives each section its icon", () => {
+    const html = renderView(progress());
+    expect(html).toContain("lucide-clock");
+    expect(html).toContain("lucide-target");
+    expect(html).toContain("lucide-calendar-check");
+  });
+
+  it("clamps each flagged outcome to two lines, with the full text as its tooltip", () => {
+    const html = renderView(progress({ flaggedOutcomes: [outcome(1)] }));
+    expect(html).toContain('title="Aprendizagem 1"');
+    expect(html).toContain("line-clamp-2");
+  });
+});
+
+describe("TurmaProgressView reinforcement", () => {
+  const withSource = (over: Partial<TurmaProgressFlaggedOutcome> = {}): TurmaProgressFlaggedOutcome => ({
+    ...outcome(1),
+    lastSignalSlotId: "s2",
+    ...over,
+  });
+
+  it("offers Gerar ficha for an outcome without a worksheet, when the caller can request one", () => {
+    const html = renderView(progress({ flaggedOutcomes: [withSource()] }), {
+      onRequestReinforcement: vi.fn(),
+    });
+    expect(html).toContain("reinforcementGenerate");
+  });
+
+  it("offers no action without a handler, or without the source lesson", () => {
+    expect(renderView(progress({ flaggedOutcomes: [withSource()] }))).not.toContain("reinforcementGenerate");
+    const noSource = renderView(progress({ flaggedOutcomes: [outcome(1)] }), {
+      onRequestReinforcement: vi.fn(),
+    });
+    expect(noSource).not.toContain("reinforcementGenerate");
+  });
+
+  it("shows a worksheet that is still being written as in progress, with no action", () => {
+    const html = renderView(
+      progress({
+        flaggedOutcomes: [
+          withSource({
+            reinforcement: { documentId: "d1", targetSlotId: "s3", targetDate: "2026-10-20", status: "generating" },
+          }),
+        ],
+      }),
+      { onRequestReinforcement: vi.fn(), onOpenLesson: vi.fn() },
+    );
+    expect(html).toContain("reinforcementGenerating");
+    expect(html).not.toContain("reinforcementGenerate<");
+    expect(html).not.toContain("reinforcementReady");
+  });
+
+  it("shows a finished worksheet as ready, with Abrir", () => {
+    const html = renderView(
+      progress({
+        flaggedOutcomes: [
+          withSource({
+            reinforcement: { documentId: "d1", targetSlotId: "s3", targetDate: "2026-10-20", status: "completed" },
+          }),
+        ],
+      }),
+      { onRequestReinforcement: vi.fn(), onOpenLesson: vi.fn() },
+    );
+    expect(html).toContain("reinforcementReady");
+    expect(html).toContain(">open<");
+  });
+
+  it("says a failed worksheet failed and offers to try again", () => {
+    const html = renderView(
+      progress({
+        flaggedOutcomes: [
+          withSource({
+            reinforcement: { documentId: "d1", targetSlotId: "s3", targetDate: "2026-10-20", status: "failed" },
+          }),
+        ],
+      }),
+      { onRequestReinforcement: vi.fn() },
+    );
+    expect(html).toContain("reinforcementFailed");
+    expect(html).toContain("reinforcementRetry");
+  });
+
+  it("renders an older build's outcome without the new fields", () => {
+    const old: TurmaProgressFlaggedOutcome = outcome(1);
+    expect(() => renderView(progress({ flaggedOutcomes: [old] }), { onRequestReinforcement: vi.fn() })).not.toThrow();
   });
 });
 

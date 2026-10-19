@@ -12,18 +12,18 @@ import {
   weekStartOf,
   type NextStepAction,
 } from "@/components/next-steps/nextSteps";
+import { useCheckInFollowUps } from "@/hooks/useCheckInFollowUps";
 import { useShiftFollowing } from "@/hooks/useShiftFollowing";
-import { ApiRequestError, UpgradeLimitError } from "@/services/api/client";
-import { checkInService } from "@/services/api/check-in.service";
 import { getSuggestions, getTurmaSuggestions } from "@/services/api/suggestions.service";
 import { isSupportedLocale, defaultLocale } from "@/i18n/locales";
 import { toIntlLocale } from "@/shared/utils/calendar";
-import type { Suggestion } from "@/shared/types/suggestions";
+import { cn } from "@/shared/utils/utils";
+import type { Suggestion, SuggestionKind } from "@/shared/types/suggestions";
 import { selectIsClassStateEnabled } from "@/store/features/selectors";
 import { useAppSelector } from "@/store/hooks";
+import { CalendarClock, FilePlus, ListChecks, Target, type LucideIcon } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useState } from "react";
-import { toast } from "sonner";
 
 interface NextStepsCardProps {
   /** One turma (the turma page). Omit on the dashboard, which lists the steps of every turma. */
@@ -39,8 +39,8 @@ interface NextStepsCardProps {
  */
 export function NextStepsCard({ timetableId, refreshKey = 0 }: NextStepsCardProps) {
   const enabled = useAppSelector(selectIsClassStateEnabled);
-  const t = useTranslations("nextSteps");
   const { shift } = useShiftFollowing();
+  const { reinforce } = useCheckInFollowUps();
   const [reloadTick, setReloadTick] = useState(0);
   const [loaded, setLoaded] = useState<{ scope: string; items: Suggestion[] } | null>(null);
   const [failedScope, setFailedScope] = useState<string | null>(null);
@@ -93,17 +93,9 @@ export function NextStepsCard({ timetableId, refreshKey = 0 }: NextStepsCardProp
         const result = await shift(lesson.timetableId, lesson.slotId);
         if (result) reload();
       } else if (action === "reinforce") {
-        await checkInService.requestReinforcement(lesson.timetableId, lesson.slotId, item.outcomeIds);
-        toast.success(t("reinforceToast"));
-        reload();
-      }
-    } catch (err) {
-      if (err instanceof UpgradeLimitError) {
-        // The API client already opened the upgrade modal.
-      } else if (err instanceof ApiRequestError && err.status === 409) {
-        toast.info(t("reinforceBusy"));
-      } else {
-        toast.error(t("actionError"));
+        // The hook reports its own success (with "Abrir" on the pop-up here) or failure.
+        const started = await reinforce(lesson.timetableId, lesson.slotId, item.outcomeIds, setOpenLesson);
+        if (started) reload();
       }
     } finally {
       setBusyKey(null);
@@ -137,6 +129,22 @@ export function NextStepsCard({ timetableId, refreshKey = 0 }: NextStepsCardProp
     </>
   );
 }
+
+/** Each step kind's icon, the text tone of that icon, and the left accent of its row. */
+const STEP_STYLE: Record<SuggestionKind, { icon: LucideIcon; tone: string; accent: string }> = {
+  prepare_next: { icon: FilePlus, tone: "text-primary", accent: "border-l-primary" },
+  replan_not_held: {
+    icon: CalendarClock,
+    tone: "text-amber-600 dark:text-amber-400",
+    accent: "border-l-amber-500",
+  },
+  reinforce: { icon: Target, tone: "text-rose-600 dark:text-rose-400", accent: "border-l-rose-500" },
+  check_in: {
+    icon: ListChecks,
+    tone: "text-emerald-600 dark:text-emerald-400",
+    accent: "border-l-emerald-500",
+  },
+};
 
 export interface NextStepsViewProps {
   /** Already filtered and cut to three (see visibleSteps). */
@@ -181,21 +189,32 @@ export function NextStepsView({ items, showTurma, busyKey, onAction }: NextSteps
     <section aria-label={t("title")} className="rounded-xl border bg-card p-3 sm:p-4">
       <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t("title")}</h3>
       <ul className="divide-y">
-        {steps.map((item) => {
+        {steps.map((item, index) => {
           const key = stepKey(item);
           const action = actionFor(item.kind);
+          const style = STEP_STYLE[item.kind];
+          const Icon = style.icon;
           return (
-            <li key={key} className="flex items-center justify-between gap-3 py-2 first:pt-0 last:pb-0">
-              <p className="min-w-0 truncate text-sm">
-                {text(item)}
-                {showTurma && item.turmaTitle ? (
-                  <span className="text-muted-foreground"> · {item.turmaTitle}</span>
-                ) : null}
+            <li
+              key={key}
+              className={cn(
+                "flex items-center justify-between gap-3 border-l-2 py-2 pl-3 first:pt-0 last:pb-0",
+                style.accent,
+              )}
+            >
+              <p className="flex min-w-0 items-center gap-2 text-sm">
+                <Icon className={cn("h-4 w-4 shrink-0", style.tone)} aria-hidden />
+                <span className="min-w-0 truncate">
+                  {text(item)}
+                  {showTurma && item.turmaTitle ? (
+                    <span className="text-muted-foreground"> · {item.turmaTitle}</span>
+                  ) : null}
+                </span>
               </p>
               {action ? (
                 <Button
                   size="sm"
-                  variant="outline"
+                  variant={index === 0 ? "default" : "outline"}
                   className="shrink-0"
                   disabled={busyKey === key}
                   onClick={() => onAction(item)}
