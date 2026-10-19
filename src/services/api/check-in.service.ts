@@ -7,6 +7,7 @@ import type {
   CheckInSubmission,
   ConfirmAllCheckInsResult,
   PendingCheckIn,
+  ReinforcementResult,
   ShiftFollowingResult,
 } from "@/shared/types/check-in";
 import apiClient from "./client";
@@ -31,6 +32,18 @@ export const checkInService = {
     apiClient
       .post<ShiftFollowingResult>(
         `/timetable/${encodeURIComponent(timetableId)}/lessons/${encodeURIComponent(slotId)}/shift-following`,
+      )
+      .then((r) => r.data),
+
+  /**
+   * Asks for a reinforcement sheet for the difficult outcomes of one lesson (ENG-208). 409 when one is already being
+   * prepared, 402 / 403 when the plan blocks it (the API client opens the upgrade modal for those).
+   */
+  requestReinforcement: (timetableId: string, slotId: string, outcomeIds: string[]) =>
+    apiClient
+      .post<ReinforcementResult>(
+        `/timetable/${encodeURIComponent(timetableId)}/lessons/${encodeURIComponent(slotId)}/reinforcement`,
+        { outcomeIds },
       )
       .then((r) => r.data),
 

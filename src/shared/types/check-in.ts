@@ -46,6 +46,12 @@ export interface ConfirmAllCheckInsResult {
   updated: number;
 }
 
+/** A reinforcement sheet requested for a lesson's difficult outcomes (ENG-208). */
+export interface ReinforcementResult {
+  /** The document created for the sheet, when the backend returns it. */
+  documentId?: string | null;
+}
+
 /** Outcome of moving the lessons after a not-held lesson (ENG-194). */
 export interface ShiftFollowingResult {
   /** Lessons whose content moved to a later slot. */
