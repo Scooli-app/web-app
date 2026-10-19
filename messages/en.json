@@ -1588,6 +1588,7 @@
       "tabImages": "Search images",
       "imagesSearchPlaceholder": "E.g. water cycle, animal cell, Shakespeare",
       "imagesSearchButton": "Search",
+      "imagesDefaultQuery": "educational diagram",
       "imagesEmptyHint": "Search free-to-use photos, illustrations, diagrams and maps for your slides.",
       "imagesNoResults": "No results for “{query}”. Try another word or filter.",
       "imagesError": "Couldn't search images",

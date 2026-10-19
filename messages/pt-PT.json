@@ -1588,6 +1588,7 @@
       "tabImages": "Pesquisar imagens",
       "imagesSearchPlaceholder": "Ex: ciclo da água, célula animal, Camões",
       "imagesSearchButton": "Pesquisar",
+      "imagesDefaultQuery": "diagrama educativo",
       "imagesEmptyHint": "Pesquisa fotografias, ilustrações, diagramas e mapas de uso livre para os teus diapositivos.",
       "imagesNoResults": "Sem resultados para “{query}”. Experimenta outra palavra ou outro filtro.",
       "imagesError": "Não foi possível pesquisar imagens",
