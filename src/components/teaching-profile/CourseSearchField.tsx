@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import type { Qualification } from "@/shared/types/teaching-profile";
 import { Check, Loader2, Search } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { COURSE_SEARCH_MIN_CHARS } from "./course-search";
 
 interface CourseSearchFieldProps {
   inputId?: string;
@@ -72,6 +73,10 @@ export function CourseSearchField({
             <p className="flex items-center gap-2 p-3 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
               {t("coursesLoading")}
+            </p>
+          ) : term.trim().length < COURSE_SEARCH_MIN_CHARS ? (
+            <p className="p-3 text-sm text-muted-foreground">
+              {t("coursesSearchMinChars", { count: COURSE_SEARCH_MIN_CHARS })}
             </p>
           ) : results.length === 0 ? (
             <p className="p-3 text-sm text-muted-foreground">{t("noCoursesFound")}</p>
