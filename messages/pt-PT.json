@@ -2963,6 +2963,14 @@
         "editTitle": "Editar turma"
       }
     },
+    "assessmentScope": {
+      "title": "Vai avaliar",
+      "since": "desde {date}",
+      "sinceStart": "desde o início do período",
+      "lessons": "{count, plural, one {# aula} other {# aulas}}",
+      "empty": "Ainda não há matéria dada desde o último teste.",
+      "pickAtLeastOne": "Escolhe pelo menos uma aprendizagem para criar o teste."
+    },
     "slotDialog": {
       "typeLabel": "Tipo:",
       "objectivesTitle": "Objetivos de aprendizagem",

@@ -2963,6 +2963,14 @@
         "editTitle": "Edit class"
       }
     },
+    "assessmentScope": {
+      "title": "Will assess",
+      "since": "since {date}",
+      "sinceStart": "since the start of the term",
+      "lessons": "{count, plural, one {# lesson} other {# lessons}}",
+      "empty": "Nothing has been taught since the last test yet.",
+      "pickAtLeastOne": "Pick at least one learning outcome to create the test."
+    },
     "slotDialog": {
       "typeLabel": "Type:",
       "objectivesTitle": "Learning Objectives",
