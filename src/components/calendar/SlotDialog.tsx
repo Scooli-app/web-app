@@ -33,6 +33,9 @@ import { usePrepareLessonSet } from "@/components/dashboard/usePrepareLessonSet"
 import { isDocumentInProgress } from "@/components/dashboard/weekWindow";
 import { CheckInCard } from "@/components/check-in/CheckInCard";
 import { TeachingMarkBadge } from "@/components/calendar/TeachingMarkBadge";
+import { AssessmentScopePicker } from "@/components/calendar/AssessmentScopePicker";
+import { useAssessmentScope } from "@/components/calendar/useAssessmentScope";
+import { testBlocked, testRequestOutcomeIds } from "@/components/calendar/assessmentScopeLogic";
 import { SLOT_STATUS_CONFIG } from "@/shared/constants/lessonSlotStatus";
 import { translateSubject } from "@/components/document-creation/constants";
 import type { CheckInRecord, CheckInSlotType, CheckInSubmission } from "@/shared/types/check-in";
@@ -166,6 +169,13 @@ export function SlotDialog({
       .finally(() => setDocsLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slotId]);
+
+  // ENG-209: "Vai avaliar" for an assessment, behind class_state_enabled. Loaded once per slot; nothing without the flag.
+  const assessment = useAssessmentScope(
+    checkInEnabled && !!slot && slot.slotType === "ASSESSMENT" && slot.status !== "skipped",
+    slot?.timetable.id ?? "",
+    slot?.id ?? "",
+  );
 
   const lessonDocuments = slotDocs.map((d) => ({
     id: d.documentId,
@@ -458,6 +468,18 @@ export function SlotDialog({
               </>
             )}
 
+            {/* ENG-209: what the test will assess, ticked by default; the ticked outcomes go with the test request */}
+            {isAssessment && slot.status !== "skipped" && assessment.scope && (
+              <>
+                <Separator />
+                <AssessmentScopePicker
+                  scope={assessment.scope}
+                  selected={assessment.selected}
+                  onToggle={assessment.toggle}
+                />
+              </>
+            )}
+
             {/* Generated documents accordion */}
             {!isHoliday && slot.status !== "skipped" && (
               <>
@@ -503,6 +525,8 @@ export function SlotDialog({
                       lessonPlanBusy={isSlotGenerating}
                       busyTypes={preparingTypes}
                       lesson={{ id: slot.id, slotType: slot.slotType, documents: lessonDocuments }}
+                      testOutcomeIds={testRequestOutcomeIds(assessment.scope, assessment.selected)}
+                      omit={testBlocked(assessment.scope, assessment.selected) ? ["test"] : undefined}
                       onChanged={() => {
                         reloadDocs();
                         onDocumentsChanged?.();
