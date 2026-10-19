@@ -7,6 +7,7 @@ import type {
   CheckInSubmission,
   ConfirmAllCheckInsResult,
   PendingCheckIn,
+  ShiftFollowingResult,
 } from "@/shared/types/check-in";
 import apiClient from "./client";
 
@@ -22,6 +23,14 @@ export const checkInService = {
       .post<CheckInRecord>(
         `/timetable/${encodeURIComponent(timetableId)}/lessons/${encodeURIComponent(slotId)}/check-in`,
         body,
+      )
+      .then((r) => r.data),
+
+  /** Moves the content of the lessons after a not-held lesson forward one slot (ENG-194). */
+  shiftFollowing: (timetableId: string, slotId: string) =>
+    apiClient
+      .post<ShiftFollowingResult>(
+        `/timetable/${encodeURIComponent(timetableId)}/lessons/${encodeURIComponent(slotId)}/shift-following`,
       )
       .then((r) => r.data),
 

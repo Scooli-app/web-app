@@ -45,3 +45,11 @@ export interface CheckInRecord {
 export interface ConfirmAllCheckInsResult {
   updated: number;
 }
+
+/** Outcome of moving the lessons after a not-held lesson (ENG-194). */
+export interface ShiftFollowingResult {
+  /** Lessons whose content moved to a later slot. */
+  shifted: number;
+  /** Topic titles that no longer fit in the period. Nothing is deleted silently. */
+  overflow: string[];
+}
