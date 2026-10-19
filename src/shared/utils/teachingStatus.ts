@@ -24,11 +24,12 @@ export interface TeachingMark {
  * future slots, skipped ones and holidays are not checkable. Dates are YYYY-MM-DD, so string order works.
  */
 export function isCheckableSlot(slot: TeachingSlotInput, todayIso: string): boolean {
-  return (
-    CHECKABLE_SLOT_TYPES.includes(slot.slotType) &&
-    slot.slotDate < todayIso &&
-    slot.status !== "skipped"
-  );
+  return isPastCheckableType(slot, todayIso) && slot.status !== "skipped";
+}
+
+/** A past lesson of a checkable type, whatever its status (skipped included). */
+function isPastCheckableType(slot: TeachingSlotInput, todayIso: string): boolean {
+  return CHECKABLE_SLOT_TYPES.includes(slot.slotType) && slot.slotDate < todayIso;
 }
 
 /**
@@ -48,7 +49,10 @@ export function teachingMark(
   slot: TeachingSlotInput & { teachingStatus?: TeachingStatus },
   todayIso: string,
 ): TeachingMark | null {
-  if (!isCheckableSlot(slot, todayIso)) return null;
+  // A not-held lesson keeps its ✕ even once ENG-194 has marked it skipped; the check-in itself
+  // still refuses skipped slots (see canCheckIn).
+  const notHeldKept = slot.teachingStatus === "not_held" && isPastCheckableType(slot, todayIso);
+  if (!notHeldKept && !isCheckableSlot(slot, todayIso)) return null;
   switch (slot.teachingStatus) {
     case "taught":
       return { key: "taught", glyph: "✓" };

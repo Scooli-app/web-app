@@ -67,6 +67,17 @@ describe("teachingMark", () => {
     expect(teachingMark(slot({ teachingStatus: "planned" }), TODAY)?.key).toBe("unconfirmed");
   });
 
+  it("keeps the not-held mark on a skipped slot, but a skipped slot is still not checkable", () => {
+    const skippedNotHeld = slot({ status: "skipped", teachingStatus: "not_held" });
+    expect(teachingMark(skippedNotHeld, TODAY)).toEqual({ key: "notHeld", glyph: "✕" });
+    expect(canCheckIn(true, skippedNotHeld, TODAY)).toBe(false);
+  });
+
+  it("has no mark for a skipped slot that is not marked not-held", () => {
+    expect(teachingMark(slot({ status: "skipped", teachingStatus: "taught" }), TODAY)).toBeNull();
+    expect(teachingMark(slot({ status: "skipped", teachingStatus: "planned" }), TODAY)).toBeNull();
+  });
+
   it("has no mark for future, skipped or holiday slots", () => {
     expect(teachingMark(slot({ slotDate: "2026-10-30", teachingStatus: "taught" }), TODAY)).toBeNull();
     expect(teachingMark(slot({ status: "skipped", teachingStatus: "taught" }), TODAY)).toBeNull();
