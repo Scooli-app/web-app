@@ -111,6 +111,7 @@ import { FormulaModal } from "./FormulaModal";
 import { SlideKonvaEditor, type SlideKonvaEditorHandle } from "./SlideKonvaEditor";
 import { SlideNotesPanel } from "./SlideNotesPanel";
 import { SlideThumbnail } from "./SlideThumbnail";
+import { getPresentationToolbarTitleDisplay } from "./presentation-toolbar-title";
 import { ThemePicker } from "./ThemePicker";
 import { renderKatexToPngDataUrl } from "./math-render";
 import { listItemPrefix } from "@/shared/utils/list-markers";
@@ -1907,14 +1908,16 @@ export function BlockDocumentEditor({ documentId }: Props) {
     );
   }
 
+  const titleDisplay = getPresentationToolbarTitleDisplay(document.title);
+
   return (
     <div className="flex w-full flex-1 min-h-0 flex-col overflow-hidden">
 
       {/* ── Main toolbar ───────────────────────────────────────────────── */}
       <div className="flex flex-shrink-0 flex-wrap items-center gap-1.5 border-b border-border bg-background px-3 py-2">
         {/* Title + auto-save status */}
-        <div className="mr-2 min-w-0">
-          <p className="truncate text-sm font-semibold text-foreground">{document.title}</p>
+        <div className={titleDisplay.containerClassName}>
+          <p className={titleDisplay.textClassName} title={titleDisplay.titleAttr}>{titleDisplay.text}</p>
           <p className="text-[10px] text-muted-foreground">
             {canvas.slides.length} slide{canvas.slides.length !== 1 ? "s" : ""}
             {saveStatus === "saving" && ` · ${t("savingIndicator")}`}
