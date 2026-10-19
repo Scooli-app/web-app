@@ -25,7 +25,7 @@ export function withCheckInAt(
   return [...items.slice(0, at), item, ...items.slice(at)];
 }
 
-export function isAssessmentCheckIn(item: PendingCheckIn): boolean {
+export function isAssessmentCheckIn(item: Pick<PendingCheckIn, "slotType">): boolean {
   return item.slotType === "ASSESSMENT";
 }
 
@@ -45,7 +45,7 @@ export function confirmableCount(items: readonly PendingCheckIn[]): number {
 /** Difficulties and "ficou a meio" ask which outcomes, but only when the slot has some to pick from. */
 export function needsOutcomeStep(
   result: CheckInResult,
-  item: PendingCheckIn,
+  item: Pick<PendingCheckIn, "outcomes">,
 ): boolean {
   return (result === "TAUGHT_WITH_DIFFICULTIES" || result === "PARTIAL") && item.outcomes.length > 0;
 }

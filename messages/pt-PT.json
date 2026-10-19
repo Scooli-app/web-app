@@ -135,7 +135,17 @@
     "confirmAllError": "Não foi possível confirmar as aulas. Tenta novamente.",
     "dayToday": "hoje",
     "dayYesterday": "ontem",
-    "daysAgo": "{count, plural, one {há # dia} other {há # dias}}"
+    "daysAgo": "{count, plural, one {há # dia} other {há # dias}}",
+    "cancel": "Cancelar",
+    "currentStatus": "Estado",
+    "changeAnswer": "Alterar",
+    "mark": {
+      "taught": "Lecionada",
+      "partiallyTaught": "Ficou a meio",
+      "notHeld": "Não houve aula",
+      "assumedTaught": "Assumida como lecionada",
+      "unconfirmed": "Por confirmar"
+    }
   },
   "emailUnsubscribe": {
     "title": "Deixar de receber o email semanal?",

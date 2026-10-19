@@ -5,6 +5,7 @@ import type { CompanionType } from "@/components/dashboard/weekWindow";
 
 import apiClient from "./client";
 import { featureFeedbackTrigger } from "@/store/featureFeedbackTrigger";
+import type { CheckInOutcome, TeachingStatus } from "@/shared/types/check-in";
 
 export interface RecurringSlot {
   dayOfWeek: number; // 1=Mon..7=Sun (ISO)
@@ -80,6 +81,12 @@ export interface LessonSlot {
   durationMinutes: number;
   status: LessonSlotStatus;
   errorMessage: string;
+  /** Set by the teacher's check-in ("Como correu a aula?"); `planned` until then. */
+  teachingStatus?: TeachingStatus;
+  /** ISO timestamp of the latest check-in, null until the teacher checks in. */
+  checkedInAt?: string | null;
+  /** Outcomes (AE) this lesson covers, offered as chips in the check-in card. */
+  outcomes?: CheckInOutcome[];
 }
 
 export interface UpdateSlotParams {

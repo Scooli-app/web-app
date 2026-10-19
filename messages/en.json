@@ -135,7 +135,17 @@
     "confirmAllError": "Could not confirm the lessons. Try again.",
     "dayToday": "today",
     "dayYesterday": "yesterday",
-    "daysAgo": "{count, plural, one {# day ago} other {# days ago}}"
+    "daysAgo": "{count, plural, one {# day ago} other {# days ago}}",
+    "cancel": "Cancel",
+    "currentStatus": "Status",
+    "changeAnswer": "Change",
+    "mark": {
+      "taught": "Taught",
+      "partiallyTaught": "Partly taught",
+      "notHeld": "Not held",
+      "assumedTaught": "Assumed taught",
+      "unconfirmed": "To confirm"
+    }
   },
   "emailUnsubscribe": {
     "title": "Stop getting the weekly email?",
