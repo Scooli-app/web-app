@@ -1337,6 +1337,7 @@ function CalendarPageInner() {
         onTypeChange={handleTypeChange}
         onTitleChange={handleTitleChange}
         onCheckedIn={handleCheckedIn}
+        onLessonsShifted={(shifted) => void refreshTimetable(shifted.timetable.id)}
       />
     </div>
   );

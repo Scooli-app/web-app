@@ -40,6 +40,15 @@ describe("checkInService", () => {
     expect(http.post).toHaveBeenLastCalledWith("/check-ins/confirm-all", { timetableId: "tt-1" });
   });
 
+  it("moves the following lessons on the lesson's shift-following route", async () => {
+    http.post.mockReturnValue(ok({ shifted: 2, overflow: ["Geometria"] }));
+    await expect(checkInService.shiftFollowing("tt 1", "slot/9")).resolves.toEqual({
+      shifted: 2,
+      overflow: ["Geometria"],
+    });
+    expect(http.post).toHaveBeenCalledWith("/timetable/tt%201/lessons/slot%2F9/shift-following");
+  });
+
   it("lets errors reach the caller so the optimistic UI can roll back", async () => {
     http.post.mockRejectedValue(new Error("boom"));
     await expect(checkInService.submit("tt", "s", { result: "NOT_HELD" })).rejects.toThrow("boom");

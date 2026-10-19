@@ -4,6 +4,7 @@ import { CheckInCard } from "@/components/check-in/CheckInCard";
 import { Button } from "@/components/ui/button";
 import { confirmableCount, shouldShowCheckInStrip } from "@/hooks/checkInQueue";
 import { usePendingCheckIns } from "@/hooks/usePendingCheckIns";
+import { useShiftFollowing } from "@/hooks/useShiftFollowing";
 import type { CheckInSubmission, PendingCheckIn } from "@/shared/types/check-in";
 import { Routes } from "@/shared/types/routes";
 import { selectIsClassStateEnabled } from "@/store/features/selectors";
@@ -24,6 +25,7 @@ export function CheckInStrip() {
   const router = useRouter();
   const enabled = useAppSelector(selectIsClassStateEnabled);
   const { visible, dismissed, submit, confirmAll, skipForSession, dismiss } = usePendingCheckIns(enabled);
+  const { offer: offerShift } = useShiftFollowing();
 
   if (!shouldShowCheckInStrip({ enabled, dismissed, visibleCount: visible.length })) return null;
 
@@ -42,6 +44,9 @@ export function CheckInStrip() {
           onClick: () => router.push(`${Routes.CALENDAR}/${item.timetableId}`),
         },
       });
+    }
+    if (body.result === "NOT_HELD") {
+      offerShift(item.timetableId, item.slotId);
     }
   };
 
@@ -71,7 +76,6 @@ export function CheckInStrip() {
           </Button>
         </div>
       </div>
-      {/* TODO(ENG-194): "Não houve aula" should also offer to move the following slots; not built here. */}
       <CheckInCard
         key={current.slotId}
         item={current}
