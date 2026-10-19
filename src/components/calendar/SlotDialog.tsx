@@ -46,6 +46,7 @@ import {
   type LessonSlotType,
 } from "@/services/api/timetable.service";
 import { checkInService } from "@/services/api/check-in.service";
+import { followUpFor, useCheckInFollowUps, type CheckInFollowUp } from "@/hooks/useCheckInFollowUps";
 import { useShiftFollowing } from "@/hooks/useShiftFollowing";
 import { selectIsClassStateEnabled } from "@/store/features/selectors";
 import { useAppSelector } from "@/store/hooks";
@@ -119,6 +120,7 @@ export function SlotDialog({
   const tTimetable = useTranslations("timetable");
   const tCheckIn = useTranslations("checkIns");
   const { shift: shiftFollowing } = useShiftFollowing();
+  const { reinforce, carry } = useCheckInFollowUps();
   const rawLocale = useLocale();
   const locale = isSupportedLocale(rawLocale) ? rawLocale : defaultLocale;
   const router = useRouter();
@@ -133,6 +135,8 @@ export function SlotDialog({
   const [checkInEditing, setCheckInEditing] = useState(false);
   /** After "Não houve aula" here: asks inline whether to move the lessons after this one. */
   const [shiftAsk, setShiftAsk] = useState(false);
+  /** After a check-in with outcomes picked: offers a reinforcement worksheet or the carry-over, inline. */
+  const [followUp, setFollowUp] = useState<CheckInFollowUp | null>(null);
 
   const slotId = slot?.id;
 
@@ -143,6 +147,7 @@ export function SlotDialog({
       setCustomMessage("");
       setCheckInEditing(false);
       setShiftAsk(false);
+      setFollowUp(null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slotId]);
@@ -247,6 +252,7 @@ export function SlotDialog({
     }
     // Inline, not a toast: the toast sits under this dialog's overlay and would expire unseen.
     if (body.result === "NOT_HELD") setShiftAsk(true);
+    setFollowUp(followUpFor(body));
     if (body.result === "TAUGHT") {
       toast.success(tCheckIn("taughtToast"), {
         action: {
@@ -266,6 +272,15 @@ export function SlotDialog({
   const isExercise = slot.slotType === "EXERCISE";
   const isReview = slot.slotType === "REVIEW";
   const isHoliday = slot.slotType === "HOLIDAY";
+
+  const handleFollowUp = async () => {
+    if (!followUp) return;
+    const done =
+      followUp.kind === "reinforcement"
+        ? await reinforce(slot.timetable.id, slot.id, followUp.outcomeIds)
+        : await carry(slot.timetable.id, slot.id, followUp.outcomeIds);
+    if (done) setFollowUp(null);
+  };
 
   const handleShift = async () => {
     setShiftAsk(false);
@@ -461,6 +476,19 @@ export function SlotDialog({
                       </Button>
                       <Button size="sm" variant="outline" className="h-8" onClick={() => setShiftAsk(false)}>
                         {tCheckIn("shiftKeep")}
+                      </Button>
+                    </div>
+                  )}
+                  {followUp && (
+                    <div className="flex flex-wrap items-center gap-2 rounded-md border border-primary/25 bg-primary/5 px-3 py-2">
+                      <span className="text-sm text-foreground">
+                        {tCheckIn(followUp.kind === "reinforcement" ? "reinforcementQuestion" : "carryOverQuestion")}
+                      </span>
+                      <Button size="sm" className="h-8" onClick={() => void handleFollowUp()}>
+                        {tCheckIn(followUp.kind === "reinforcement" ? "reinforcementAction" : "carryOverAction")}
+                      </Button>
+                      <Button size="sm" variant="outline" className="h-8" onClick={() => setFollowUp(null)}>
+                        {tCheckIn("followUpKeep")}
                       </Button>
                     </div>
                   )}

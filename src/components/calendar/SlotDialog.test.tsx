@@ -13,13 +13,19 @@ vi.mock("next-intl", () => ({
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
 vi.mock("@/store/hooks", () => ({
   useAppSelector: (selector: () => boolean) => selector(),
+  useAppDispatch: () => vi.fn(),
 }));
 vi.mock("@/store/features/selectors", () => ({
   selectIsClassStateEnabled: () => store.enabled,
 }));
 vi.mock("@/services/api/timetable.service", () => ({ listLessonDocuments: vi.fn().mockResolvedValue([]) }));
 vi.mock("@/services/api/check-in.service", () => ({
-  checkInService: { submit: vi.fn(), shiftFollowing: vi.fn() },
+  checkInService: {
+    submit: vi.fn(),
+    shiftFollowing: vi.fn(),
+    requestReinforcement: vi.fn(),
+    carryOver: vi.fn(),
+  },
 }));
 vi.mock("@/components/dashboard/usePrepareLessonSet", () => ({
   usePrepareLessonSet: () => ({
@@ -184,5 +190,137 @@ describe("SlotDialog: asking to move the following lessons after 'not held'", ()
     expect(checkInService.shiftFollowing).not.toHaveBeenCalled();
     expect(props.onLessonsShifted).not.toHaveBeenCalled();
     expect(document.body.textContent).not.toContain("shiftQuestion");
+  });
+});
+
+describe("SlotDialog: offering a reinforcement worksheet or a carry-over after a check-in", () => {
+  let container: HTMLDivElement;
+  let root: Root;
+  const withOutcomes = {
+    ...slot,
+    outcomes: [{ id: "o1", text: "Ler com fluência", topicPath: [], source: "ai" }],
+  } as unknown as SlotWithTimetable;
+
+  beforeEach(() => {
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    store.enabled = true;
+    container = document.createElement("div");
+    document.body.appendChild(container);
+    root = createRoot(container);
+  });
+
+  afterEach(() => {
+    act(() => root.unmount());
+    container.remove();
+    document.body.innerHTML = "";
+    vi.clearAllMocks();
+  });
+
+  async function render(props: ReturnType<typeof dialogProps>) {
+    await act(async () => {
+      root.render(createElement(SlotDialog, props));
+    });
+  }
+
+  /** Picks a result, then the outcome chip and "Confirmar" (or "Saltar" when skipping the chips). */
+  async function answer(result: string, pick: "chip" | "skip") {
+    vi.mocked(checkInService.submit).mockResolvedValue({
+      id: "c1",
+      timetableId: "tt",
+      teachingStatus: "taught",
+      checkedInAt: "2020-03-10T10:00:00Z",
+    });
+    await render(dialogProps({ slot: withOutcomes }));
+    await act(async () => {
+      buttonWith(result)?.click();
+    });
+    if (pick === "chip") {
+      await act(async () => {
+        buttonWith("Ler com fluência")?.click();
+      });
+    }
+    await act(async () => {
+      buttonWith(pick === "chip" ? "confirm" : "skip")?.click();
+    });
+  }
+
+  it("offers the reinforcement worksheet after \"some had difficulties\" with an outcome picked", async () => {
+    await answer("resultDifficulties", "chip");
+
+    expect(checkInService.submit).toHaveBeenCalledWith("tt", "slot-3", {
+      result: "TAUGHT_WITH_DIFFICULTIES",
+      difficultOutcomeIds: ["o1"],
+    });
+    expect(document.body.textContent).toContain("reinforcementQuestion");
+    expect(buttonWith("reinforcementAction")).toBeDefined();
+    expect(document.body.textContent).not.toContain("carryOverQuestion");
+  });
+
+  it("offers the carry-over after \"half done\" with an outcome picked", async () => {
+    await answer("resultPartial", "chip");
+
+    expect(document.body.textContent).toContain("carryOverQuestion");
+    expect(buttonWith("carryOverAction")).toBeDefined();
+    expect(document.body.textContent).not.toContain("reinforcementQuestion");
+  });
+
+  it("offers nothing when the outcomes are skipped", async () => {
+    await answer("resultDifficulties", "skip");
+
+    expect(checkInService.submit).toHaveBeenCalledWith("tt", "slot-3", { result: "TAUGHT_WITH_DIFFICULTIES" });
+    expect(document.body.textContent).not.toContain("reinforcementQuestion");
+    expect(document.body.textContent).not.toContain("carryOverQuestion");
+  });
+
+  it("offers nothing after a plain \"went well\" check-in", async () => {
+    vi.mocked(checkInService.submit).mockResolvedValue({
+      id: "c1",
+      timetableId: "tt",
+      teachingStatus: "taught",
+      checkedInAt: "2020-03-10T10:00:00Z",
+    });
+    await render(dialogProps({ slot: withOutcomes }));
+    await act(async () => {
+      buttonWith("resultTaught")?.click();
+    });
+
+    expect(document.body.textContent).not.toContain("reinforcementQuestion");
+    expect(document.body.textContent).not.toContain("carryOverQuestion");
+  });
+
+  it("asks the reinforcement worksheet for the chosen outcomes on the accept button", async () => {
+    vi.mocked(checkInService.requestReinforcement).mockResolvedValue({
+      documentId: "d1",
+      targetSlotId: "slot-4",
+      targetDate: "2020-03-11",
+      status: "generating",
+    });
+    await answer("resultDifficulties", "chip");
+    await act(async () => {
+      buttonWith("reinforcementAction")?.click();
+    });
+
+    expect(checkInService.requestReinforcement).toHaveBeenCalledWith("tt", "slot-3", ["o1"]);
+    expect(document.body.textContent).not.toContain("reinforcementQuestion");
+  });
+
+  it("keeps the offer when the request fails", async () => {
+    vi.mocked(checkInService.requestReinforcement).mockRejectedValue(new Error("boom"));
+    await answer("resultDifficulties", "chip");
+    await act(async () => {
+      buttonWith("reinforcementAction")?.click();
+    });
+
+    expect(document.body.textContent).toContain("reinforcementQuestion");
+  });
+
+  it("hides the offer on \"Agora não\" without calling the API", async () => {
+    await answer("resultPartial", "chip");
+    await act(async () => {
+      buttonWith("followUpKeep")?.click();
+    });
+
+    expect(checkInService.carryOver).not.toHaveBeenCalled();
+    expect(document.body.textContent).not.toContain("carryOverQuestion");
   });
 });

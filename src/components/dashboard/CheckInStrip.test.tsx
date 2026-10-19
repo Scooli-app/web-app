@@ -15,7 +15,7 @@ vi.mock("next-intl", () => ({
 }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
-vi.mock("@/store/hooks", () => ({ useAppSelector: () => state.enabled }));
+vi.mock("@/store/hooks", () => ({ useAppSelector: () => state.enabled, useAppDispatch: () => vi.fn() }));
 vi.mock("@/store/features/selectors", () => ({ selectIsClassStateEnabled: () => state.enabled }));
 vi.mock("@/hooks/usePendingCheckIns", () => ({
   usePendingCheckIns: () => ({

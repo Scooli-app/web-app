@@ -6,8 +6,9 @@ import type {
   CheckInRecord,
   CheckInSubmission,
   ConfirmAllCheckInsResult,
+  CarryOverResult,
   PendingCheckIn,
-  ReinforcementResult,
+  ReinforcementRequested,
   ShiftFollowingResult,
 } from "@/shared/types/check-in";
 import apiClient from "./client";
@@ -35,21 +36,27 @@ export const checkInService = {
       )
       .then((r) => r.data),
 
-  /**
-   * Asks for a reinforcement sheet for the difficult outcomes of one lesson (ENG-208). 409 when one is already being
-   * prepared, 402 / 403 when the plan blocks it (the API client opens the upgrade modal for those).
-   */
-  requestReinforcement: (timetableId: string, slotId: string, outcomeIds: string[]) =>
-    apiClient
-      .post<ReinforcementResult>(
-        `/timetable/${encodeURIComponent(timetableId)}/lessons/${encodeURIComponent(slotId)}/reinforcement`,
-        { outcomeIds },
-      )
-      .then((r) => r.data),
-
   /** Marks every pending lesson as taught (all turmas when `timetableId` is omitted). */
   confirmAll: (timetableId?: string) =>
     apiClient
       .post<ConfirmAllCheckInsResult>("/check-ins/confirm-all", timetableId ? { timetableId } : {})
+      .then((r) => r.data),
+
+  /** Asks for a reinforcement worksheet on the next lesson for the outcomes the lesson did not reach (ENG-236). */
+  requestReinforcement: (timetableId: string, lessonId: string, outcomeIds: string[]) =>
+    apiClient
+      .post<ReinforcementRequested>(
+        `/timetable/${encodeURIComponent(timetableId)}/lessons/${encodeURIComponent(lessonId)}/reinforcement`,
+        { outcomeIds },
+      )
+      .then((r) => r.data),
+
+  /** Carries the outcomes of a lesson over to the next lesson, idempotently (ENG-237). */
+  carryOver: (timetableId: string, lessonId: string, outcomeIds: string[]) =>
+    apiClient
+      .post<CarryOverResult>(
+        `/timetable/${encodeURIComponent(timetableId)}/lessons/${encodeURIComponent(lessonId)}/carry-over`,
+        { outcomeIds },
+      )
       .then((r) => r.data),
 };
