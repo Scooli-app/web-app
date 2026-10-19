@@ -53,3 +53,21 @@ export interface ShiftFollowingResult {
   /** Topic titles that no longer fit in the period. Nothing is deleted silently. */
   overflow: string[];
 }
+
+/** A reinforcement worksheet requested after a check-in (ENG-236). Contract: chalkboard feat/ENG-236-237. */
+export interface ReinforcementRequested {
+  documentId: string;
+  /** The next lesson, which the worksheet is linked to. */
+  targetSlotId: string;
+  /** YYYY-MM-DD */
+  targetDate: string;
+  status: "generating";
+}
+
+/** Outcomes carried over to the next lesson (ENG-237). `carried` counts the ones that were not on it already. */
+export interface CarryOverResult {
+  targetSlotId: string;
+  /** YYYY-MM-DD */
+  targetDate: string;
+  carried: number;
+}

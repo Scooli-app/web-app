@@ -3,6 +3,7 @@
 import { CheckInCard } from "@/components/check-in/CheckInCard";
 import { Button } from "@/components/ui/button";
 import { confirmableCount, shouldShowCheckInStrip } from "@/hooks/checkInQueue";
+import { followUpFor, useCheckInFollowUps, type CheckInFollowUp } from "@/hooks/useCheckInFollowUps";
 import { usePendingCheckIns } from "@/hooks/usePendingCheckIns";
 import { useShiftFollowing } from "@/hooks/useShiftFollowing";
 import type { CheckInSubmission, PendingCheckIn } from "@/shared/types/check-in";
@@ -26,10 +27,27 @@ export function CheckInStrip() {
   const enabled = useAppSelector(selectIsClassStateEnabled);
   const { visible, dismissed, submit, confirmAll, skipForSession, dismiss } = usePendingCheckIns(enabled);
   const { offer: offerShift } = useShiftFollowing();
+  const { reinforce, carry } = useCheckInFollowUps();
 
   if (!shouldShowCheckInStrip({ enabled, dismissed, visibleCount: visible.length })) return null;
 
   const current = visible[0];
+
+  /** ENG-236/237: after "some had difficulties" or "half done" with outcomes picked, asks as a toast with an action. */
+  const offerFollowUp = (item: PendingCheckIn, followUp: CheckInFollowUp) => {
+    const reinforcement = followUp.kind === "reinforcement";
+    toast(t(reinforcement ? "reinforcementQuestion" : "carryOverQuestion"), {
+      duration: 15000,
+      action: {
+        label: t(reinforcement ? "reinforcementAction" : "carryOverAction"),
+        onClick: () =>
+          void (reinforcement
+            ? reinforce(item.timetableId, item.slotId, followUp.outcomeIds)
+            : carry(item.timetableId, item.slotId, followUp.outcomeIds)),
+      },
+      cancel: { label: t("followUpKeep"), onClick: () => undefined },
+    });
+  };
 
   const handleSubmit = async (item: PendingCheckIn, body: CheckInSubmission) => {
     const saved = await submit(item, body);
@@ -48,6 +66,8 @@ export function CheckInStrip() {
     if (body.result === "NOT_HELD") {
       offerShift(item.timetableId, item.slotId);
     }
+    const followUp = followUpFor(body);
+    if (followUp) offerFollowUp(item, followUp);
   };
 
   const handleConfirmAll = async () => {
