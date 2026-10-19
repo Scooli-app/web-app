@@ -31,6 +31,11 @@ import type {
   CanvasTextElement,
 } from "@/shared/types/canvas-presentation";
 import { renderKatexToPngDataUrl } from "@/components/document-editor-v2/math-render";
+import {
+  getListEditValue,
+  getTextEditStyle,
+  parseListEditValue,
+} from "@/components/document-editor-v2/canvas-text-edit";
 import Konva from "konva";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useImperativeHandle, useRef, useState, forwardRef } from "react";
@@ -229,6 +234,7 @@ interface EditState {
   fontStyle?: string;
   color: string;
   align?: "left" | "center" | "right";
+  underline?: boolean;
   multiline: boolean;
 }
 
@@ -304,6 +310,7 @@ function TextEditOverlay({
         color: edit.color,
         caretColor: edit.color,
         textAlign: edit.align ?? "left",
+        textDecoration: edit.underline ? "underline" : "none",
         lineHeight: 1.3,
         // Invisible — looks like directly editing the canvas text.
         background: "transparent",
@@ -899,16 +906,15 @@ export const SlideKonvaEditor = forwardRef<
           ? (el as CanvasListElement).fontSize * W
         : el.type === "math" ? (el as CanvasMathElement).fontSize * W
         : FS_BASE * W;
-      const color =
-        el.type === "text" ? (el as CanvasTextElement).color
-        : el.type === "math" ? MATH_COLOR
-        : T.muted;
-      const fontFamily =
-        el.type === "text" ? (el as CanvasTextElement).fontFamily : undefined;
-      const fontStyle =
-        el.type === "text" ? (el as CanvasTextElement).fontStyle : undefined;
-      const align =
-        el.type === "text" ? (el as CanvasTextElement).align : undefined;
+      const style =
+        el.type === "text" || el.type === "bullet_list" || el.type === "ordered_list"
+          ? getTextEditStyle(el as CanvasTextElement | CanvasListElement)
+          : null;
+      const color = style ? style.color : el.type === "math" ? MATH_COLOR : T.muted;
+      const fontFamily = style?.fontFamily;
+      const fontStyle = style?.fontStyle;
+      const align = style?.align;
+      const underline = style?.underline ?? false;
 
       // Keep selectedId pointing at the element so the parent contextual
       // toolbar stays visible.  The Transformer effect clears its handles
@@ -929,6 +935,7 @@ export const SlideKonvaEditor = forwardRef<
         fontStyle,
         color,
         align,
+        underline,
         multiline,
       });
     },
@@ -952,10 +959,9 @@ export const SlideKonvaEditor = forwardRef<
           h: getFittedTextLikeHeight(nextEl, nextEl.w, nextEl.fontSize),
         } as Partial<CanvasTextElement>);
       } else if (el.type === "bullet_list" || el.type === "ordered_list") {
-        const items = raw.split("\n").map((s) => s.trim()).filter(Boolean);
         const nextEl = {
           ...el,
-          items: items.length > 0 ? items : [""],
+          items: parseListEditValue(raw, el.type === "ordered_list"),
         };
         updateElement(id, {
           items: nextEl.items,
@@ -1224,13 +1230,13 @@ export const SlideKonvaEditor = forwardRef<
                       e.cancelBubble = true;
                       setSelectedId(el.id);
                       const node = stageRef.current?.findOne(`#${el.id}`);
-                      if (node) startEdit(el.id, node, l.items.join("\n"), true);
+                      if (node) startEdit(el.id, node, getListEditValue(l), true);
                     }}
                     onDblTap={(e: Konva.KonvaEventObject<TouchEvent>) => {
                       e.cancelBubble = true;
                       setSelectedId(el.id);
                       const node = stageRef.current?.findOne(`#${el.id}`);
-                      if (node) startEdit(el.id, node, l.items.join("\n"), true);
+                      if (node) startEdit(el.id, node, getListEditValue(l), true);
                     }}
                     onMouseEnter={() => {
                       if (!isDraggingRef.current) setStageCursor("text");
