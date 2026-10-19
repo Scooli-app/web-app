@@ -2887,6 +2887,8 @@
       "nextAssessmentTitle": "Próximo teste",
       "noAssessment": "Sem teste agendado",
       "coverageCaption": "das aprendizagens planeadas já trabalhadas",
+      "unconfirmedLegend": "+{count} não confirmadas",
+      "unconfirmedHint": "Aprendizagens que só uma aula sem resposta dá como dadas. Não contam na percentagem.",
       "reinforcementGenerate": "Gerar ficha",
       "reinforcementRetry": "Tentar outra vez",
       "reinforcementGenerating": "A preparar…",
@@ -2974,6 +2976,7 @@
       "since": "desde {date}",
       "sinceStart": "desde o início do período",
       "lessons": "{count, plural, one {# aula} other {# aulas}}",
+      "notConfirmed": "não confirmado",
       "empty": "Ainda não há matéria dada desde o último teste.",
       "pickAtLeastOne": "Escolhe pelo menos uma aprendizagem para criar o teste."
     },

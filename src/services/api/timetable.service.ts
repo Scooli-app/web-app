@@ -249,11 +249,18 @@ export async function generateLessonDocument(
 }
 
 /** One learning outcome an assessment can cover (ENG-209). `lessons` is how many lessons since the last test teach it. */
+/**
+ * How well a scope outcome is attested (ENG-239): confirmed by the teacher, partly, or only by lessons nobody answered
+ * (assumed). Optional: a backend without it gives no evidence, and every outcome is then treated as confirmed.
+ */
+export type AssessmentScopeEvidence = "confirmed" | "partial" | "assumed";
+
 export interface AssessmentScopeOutcome {
   id: string;
   text: string;
   topicPath: string[];
   lessons: number;
+  evidence?: AssessmentScopeEvidence;
 }
 
 /** What "Vai avaliar" shows for an assessment: the outcomes taught since `fromDate` (YYYY-MM-DD, or null). */

@@ -2887,6 +2887,8 @@
       "nextAssessmentTitle": "Next assessment",
       "noAssessment": "No assessment scheduled",
       "coverageCaption": "of planned learning outcomes covered",
+      "unconfirmedLegend": "+{count} unconfirmed",
+      "unconfirmedHint": "Outcomes that only an unanswered lesson marks as taught. They are not counted in the percentage.",
       "reinforcementGenerate": "Create sheet",
       "reinforcementRetry": "Try again",
       "reinforcementGenerating": "Preparing…",
@@ -2974,6 +2976,7 @@
       "since": "since {date}",
       "sinceStart": "since the start of the term",
       "lessons": "{count, plural, one {# lesson} other {# lessons}}",
+      "notConfirmed": "not confirmed",
       "empty": "Nothing has been taught since the last test yet.",
       "pickAtLeastOne": "Pick at least one learning outcome to create the test."
     },

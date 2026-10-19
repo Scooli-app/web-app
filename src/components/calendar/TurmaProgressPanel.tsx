@@ -26,8 +26,9 @@ import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useState, type ReactNode } from "react";
 import {
   FLAGGED_PREVIEW_LIMIT,
-  coverageBarWidth,
+  coverageBarSegments,
   formatCoveragePercent,
+  unconfirmedOutcomes,
   formatProgressDate,
   lessonsGiven,
   reinforcementState,
@@ -162,7 +163,8 @@ export function TurmaProgressView({
   const [expanded, setExpanded] = useState(false);
 
   const { coverage, slots, behindSchedule, flaggedOutcomes, nextAssessment } = progress;
-  const width = coverageBarWidth(coverage.percent);
+  const bar = coverageBarSegments(coverage);
+  const unconfirmed = unconfirmedOutcomes(coverage);
   const shownOutcomes = visibleFlaggedOutcomes(flaggedOutcomes, expanded);
   const hiddenCount = flaggedOutcomes.length - shownOutcomes.length;
   const coverageLine = [
@@ -181,15 +183,33 @@ export function TurmaProgressView({
         </div>
         <p className="text-xs text-muted-foreground sm:text-right">{coverageLine}</p>
       </div>
-      <div
-        role="progressbar"
-        aria-label={t("coverageLabel")}
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-valuenow={width}
-        className="h-2 w-full overflow-hidden rounded-full bg-muted"
-      >
-        <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${width}%` }} />
+      <div>
+        <div
+          role="progressbar"
+          aria-label={t("coverageLabel")}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={bar.confirmed}
+          className="relative h-2 w-full overflow-hidden rounded-full bg-muted"
+        >
+          <div
+            className="absolute inset-y-0 left-0 rounded-full bg-primary transition-all"
+            style={{ width: `${bar.confirmed}%` }}
+          />
+          {bar.unconfirmed > 0 && (
+            <div
+              data-testid="coverage-unconfirmed"
+              className="absolute inset-y-0 bg-primary/25 transition-all"
+              style={{ left: `${bar.confirmed}%`, width: `${bar.unconfirmed}%`, backgroundImage: STRIPES }}
+            />
+          )}
+        </div>
+        {unconfirmed > 0 && (
+          <p className="mt-1.5 flex items-center gap-1.5 text-xs text-muted-foreground" title={t("unconfirmedHint")}>
+            <span aria-hidden className="inline-block h-2 w-3 rounded-sm bg-primary/25" style={{ backgroundImage: STRIPES }} />
+            {t("unconfirmedLegend", { count: unconfirmed })}
+          </p>
+        )}
       </div>
 
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -277,6 +297,9 @@ export function TurmaProgressView({
     </section>
   );
 }
+
+/** Light diagonal stripes over the unconfirmed share of the bar and its legend swatch. */
+const STRIPES = "repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.45) 0 3px, transparent 3px 6px)";
 
 /** Tones shared by the chips and the section icons; the dark variants keep the contrast on dark cards. */
 const TONE = {

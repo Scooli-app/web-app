@@ -42,6 +42,19 @@ describe("selection of the outcomes a test assesses", () => {
     expect(initialSelection(null)).toEqual([]);
   });
 
+  it("starts the assumed (not confirmed) outcomes unticked, and the confirmed and partial ones ticked", () => {
+    const mixed: AssessmentScope = {
+      fromDate: null,
+      outcomes: [
+        { id: "c", text: "Confirmada", topicPath: [], lessons: 1, evidence: "confirmed" },
+        { id: "p", text: "A meio", topicPath: [], lessons: 1, evidence: "partial" },
+        { id: "a", text: "Assumida", topicPath: [], lessons: 1, evidence: "assumed" },
+      ],
+    };
+
+    expect(initialSelection(mixed)).toEqual(["c", "p"]);
+  });
+
   it("unticks a ticked outcome and ticks it back, keeping the scope's order", () => {
     const unticked = toggleOutcome(["o1", "o2", "o3"], "o2", scope);
     expect(unticked).toEqual(["o1", "o3"]);

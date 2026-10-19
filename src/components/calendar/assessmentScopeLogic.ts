@@ -19,9 +19,12 @@ export async function loadAssessmentScope(
   }
 }
 
-/** Every outcome of the scope starts selected: the test assesses what was taught, unless the teacher unticks some. */
+/**
+ * The outcomes that start ticked: the confirmed and the partly confirmed ones, as the test assesses what was taught. An
+ * outcome only an unanswered lesson taught (evidence "assumed", ENG-239) starts unticked, for the teacher to tick.
+ */
 export function initialSelection(scope: AssessmentScope | null): string[] {
-  return scope ? scope.outcomes.map((outcome) => outcome.id) : [];
+  return scope ? scope.outcomes.filter((outcome) => outcome.evidence !== "assumed").map((outcome) => outcome.id) : [];
 }
 
 /** Ticks or unticks one outcome, keeping the scope's order. */
