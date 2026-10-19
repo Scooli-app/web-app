@@ -109,6 +109,21 @@
     "toPrepare": "To prepare",
     "seeAllInCalendar": "See all {count} lessons in the calendar"
   },
+  "nextSteps": {
+    "title": "What to do next",
+    "loading": "Loading suggestions",
+    "prepareNext": "Prepare the lesson for {day}",
+    "replanNotHeld": "Reschedule: move the following lessons",
+    "reinforce": "Create a reinforcement sheet for {outcome}",
+    "checkIn": "Confirm {count, plural, one {# lesson} other {# lessons}}",
+    "actionPrepare": "Prepare",
+    "actionReschedule": "Reschedule",
+    "actionReinforce": "Create sheet",
+    "actionView": "View",
+    "reinforceToast": "Reinforcement sheet requested.",
+    "reinforceBusy": "The reinforcement sheet is already being prepared.",
+    "actionError": "That didn't work. Try again."
+  },
   "checkIns": {
     "title": "How did the lesson go?",
     "pendingCount": "To confirm ({count})",
