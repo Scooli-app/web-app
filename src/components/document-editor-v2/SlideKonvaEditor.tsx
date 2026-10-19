@@ -36,7 +36,9 @@ import {
   getTextEditStyle,
   parseListEditValue,
 } from "@/components/document-editor-v2/canvas-text-edit";
-import Konva from "konva";
+import { getFittedTextBoxHeightPx } from "@/components/document-editor-v2/text-box-fit";
+import { measureWrappedTextHeightPx } from "@/components/document-editor-v2/text-measure";
+import type Konva from "konva";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useImperativeHandle, useRef, useState, forwardRef } from "react";
 import { Ellipse, Group, Image as KonvaImage, Layer, Line, Rect, Stage, Text, Transformer } from "react-konva";
@@ -122,34 +124,6 @@ function getListDisplayText(el: CanvasListElement) {
 
 function getTextLikeDisplayText(el: CanvasTextElement | CanvasListElement) {
   return el.type === "text" ? el.text : getListDisplayText(el);
-}
-
-function measureWrappedTextHeightPx({
-  text,
-  widthPx,
-  fontSizePx,
-  fontFamily,
-  fontStyle,
-  lineHeight,
-}: {
-  text: string;
-  widthPx: number;
-  fontSizePx: number;
-  fontFamily: string;
-  fontStyle?: string;
-  lineHeight: number;
-}) {
-  const probe = new Konva.Text({
-    text,
-    fontSize: fontSizePx,
-    fontFamily,
-    fontStyle,
-    lineHeight,
-    width: Math.max(1, widthPx),
-    padding: 0,
-    wrap: "word",
-  });
-  return Math.max(fontSizePx * lineHeight, probe.height());
 }
 
 function measureListItemHeightsPx(el: CanvasListElement, widthPx: number, fontSizePx: number) {
@@ -1185,7 +1159,16 @@ export const SlideKonvaEditor = forwardRef<
                     rotation={el.rotation ?? 0}
                     text={t.text}
                     width={el.w * W}
-                    height={el.h * H}
+                    height={getFittedTextBoxHeightPx(el.h * H, () =>
+                      measureWrappedTextHeightPx({
+                        text: t.text,
+                        widthPx: el.w * W,
+                        fontSizePx: t.fontSize * W,
+                        fontFamily: t.fontFamily || T.font,
+                        fontStyle: t.fontStyle,
+                        lineHeight: getTextLikeLineHeight(t),
+                      }),
+                    )}
                     fontSize={t.fontSize * W}
                     fontFamily={t.fontFamily || T.font}
                     fontStyle={t.fontStyle}
