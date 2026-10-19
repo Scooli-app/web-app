@@ -71,8 +71,6 @@ import {
   Sparkles,
   Target,
 } from "lucide-react";
-import Link from "next/link";
-import { cn } from "@/shared/utils/utils";
 import { useLocale, useTranslations } from "next-intl";
 import { isSupportedLocale, defaultLocale } from "@/i18n/locales";
 import { readableTextOn, toIntlLocale, toIso } from "@/shared/utils/calendar";
@@ -589,39 +587,7 @@ export function SlotDialog({
                         <p className="py-1 text-xs text-muted-foreground">
                           {t("noDocuments")}
                         </p>
-                      ) : (
-                        <ul className="space-y-0.5">
-                          {visibleDocs.map((doc) => {
-                            const isReinforcement = doc.documentRole === "reinforcement";
-                            const Icon = isReinforcement ? Target : FileText;
-                            return (
-                              <li key={doc.documentId}>
-                                <Link
-                                  href={docUrl(doc.documentType ?? doc.documentRole, doc.documentId)}
-                                  className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-accent"
-                                >
-                                  <Icon
-                                    className={cn(
-                                      "h-3.5 w-3.5 shrink-0",
-                                      isReinforcement ? "text-rose-600 dark:text-rose-400" : "text-muted-foreground",
-                                    )}
-                                    aria-hidden
-                                  />
-                                  <span className="min-w-0 flex-1 truncate">{doc.title}</span>
-                                  {isReinforcement && (
-                                    <Badge
-                                      variant="outline"
-                                      className="shrink-0 border-rose-500/40 text-rose-700 dark:text-rose-300"
-                                    >
-                                      {t("reinforcementBadge")}
-                                    </Badge>
-                                  )}
-                                </Link>
-                              </li>
-                            );
-                          })}
-                        </ul>
-                      )}
+                      ) : null}
                     </div>
                   )}
                   {/* One-click documents for this lesson, same as on the dashboard. */}

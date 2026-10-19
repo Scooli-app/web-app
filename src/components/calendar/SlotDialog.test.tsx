@@ -43,7 +43,6 @@ vi.mock("sonner", () => ({
 }));
 
 import { checkInService } from "@/services/api/check-in.service";
-import { listLessonDocuments } from "@/services/api/timetable.service";
 import { toast } from "sonner";
 import { SlotDialog } from "./SlotDialog";
 
@@ -324,31 +323,6 @@ describe("SlotDialog: offering a reinforcement worksheet or a carry-over after a
     expect(buttonWith("followUpOpenLesson")).toBeDefined();
   });
 
-  it("marks a reinforcement worksheet in the documents list", async () => {
-    vi.mocked(listLessonDocuments).mockResolvedValue([
-      {
-        documentId: "d1",
-        documentRole: "reinforcement",
-        documentType: "worksheet",
-        title: "Ficha de reforço: frações",
-        status: "completed",
-      },
-      {
-        documentId: "d2",
-        documentRole: "lessonPlan",
-        documentType: "lessonPlan",
-        title: "Plano da aula",
-        status: "completed",
-      },
-    ] as unknown as Awaited<ReturnType<typeof listLessonDocuments>>);
-    await render(dialogProps({ slot: withOutcomes }));
-
-    const text = document.body.textContent ?? "";
-    expect(text).toContain("Ficha de reforço: frações");
-    expect(text).toContain("Plano da aula");
-    // Only the reinforcement worksheet carries the badge.
-    expect(text.match(/reinforcementBadge/g)).toHaveLength(1);
-  });
 
   it("keeps the offer when the request fails", async () => {
     vi.mocked(checkInService.requestReinforcement).mockRejectedValue(new Error("boom"));

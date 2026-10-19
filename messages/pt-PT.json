@@ -90,7 +90,8 @@
       "worksheet": "Ficha",
       "quiz": "Quiz",
       "presentation": "Apresentação",
-      "test": "Teste"
+      "test": "Teste",
+      "reinforcement": "Reforço"
     },
     "windowTitle": "{from} – {to}",
     "loadingNextLesson": "A carregar a próxima aula…",
