@@ -1,7 +1,7 @@
 "use client";
 
 import { toast } from "sonner";
-import { isListableSlot } from "@/shared/utils/lessonTopic";
+import { hasTopic, isListableSlot, isVisibleSlot } from "@/shared/utils/lessonTopic";
 import { useAuth } from "@clerk/nextjs";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -248,7 +248,9 @@ function LessonCard({
             >
               {isHoliday
                 ? tTimetable("slotType.holiday")
-                : slot.topicTitle}
+                : hasTopic(slot)
+                  ? slot.topicTitle
+                  : t("shared.notHeldTitle")}
             </p>
           </div>
           {!isHoliday && (
@@ -452,7 +454,7 @@ function CalendarPageInner() {
       if (filterIds.size > 0 && !filterIds.has(t.id)) continue;
       const slots = slotsByTimetable.get(t.id) ?? [];
       for (const s of slots) {
-        if (!isListableSlot(s)) continue; // lessons without a topic are never shown
+        if (!isVisibleSlot(s)) continue; // lessons without a topic are never shown, except a not-held one
         const status = generatingSlots.has(s.id) ? "generating" : s.status;
         result.push({ ...s, status, timetable: t });
       }
@@ -1338,6 +1340,9 @@ function CalendarPageInner() {
         onTitleChange={handleTitleChange}
         onCheckedIn={handleCheckedIn}
         onLessonsShifted={(shifted) => void refreshTimetable(shifted.timetable.id)}
+        onPreviousCheckedIn={() => {
+          if (selectedSlot) void refreshTimetable(selectedSlot.timetable.id);
+        }}
       />
     </div>
   );

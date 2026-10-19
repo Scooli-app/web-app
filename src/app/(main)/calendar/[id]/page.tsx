@@ -1,7 +1,7 @@
 "use client";
 
 import { formatClassName } from "@/shared/utils/className";
-import { isListableSlot } from "@/shared/utils/lessonTopic";
+import { hasTopic, isListableSlot, isVisibleSlot } from "@/shared/utils/lessonTopic";
 import { Badge } from "@/components/ui/badge";
 import { PlanGenerationBanner } from "@/components/plan-generation/PlanGenerationBanner";
 import { Button } from "@/components/ui/button";
@@ -107,7 +107,7 @@ function SlotCard({ slot, color, onOpen }: SlotCardProps) {
         </span>
         <div className="min-w-0 flex-1">
           <p className={`truncate text-sm font-medium ${isHoliday ? "line-through text-muted-foreground" : ""}`}>
-            {isHoliday ? t("shared.holidayNoLesson") : slot.topicTitle}
+            {isHoliday ? t("shared.holidayNoLesson") : hasTopic(slot) ? slot.topicTitle : t("shared.notHeldTitle")}
           </p>
           <p className="text-xs text-muted-foreground">
             {new Date(`${slot.slotDate}T00:00:00`).toLocaleDateString(toIntlLocale(locale), {
@@ -228,7 +228,7 @@ export default function CalendarViewPage() {
   const slotsByWeek: WeekMap = useMemo(() => {
     const map: WeekMap = new Map();
     for (const slot of slots) {
-      if (!isListableSlot(slot)) continue; // lessons without a topic are never shown
+      if (!isVisibleSlot(slot)) continue; // lessons without a topic are never shown, except a not-held one
       const d = new Date(`${slot.slotDate}T00:00:00`);
       const ws = toIso(getWeekStart(d));
       if (!map.has(ws)) map.set(ws, []);
@@ -268,6 +268,13 @@ export default function CalendarViewPage() {
     },
     [dispatch]
   );
+
+  // A check-in saved on the previous lesson (asked at the top of the dialog): the progress panel and that
+  // lesson's mark reload from the server.
+  const handlePreviousCheckedIn = useCallback(() => {
+    setProgressRefreshKey((key) => key + 1);
+    dispatch(fetchLessons({ timetableId: id }));
+  }, [dispatch, id]);
 
   // Wrap the selected slot with the current timetable for the shared SlotDialog
   const selectedSlotWithTimetable = useMemo<SlotWithTimetable | null>(() => {
@@ -589,6 +596,7 @@ export default function CalendarViewPage() {
         onTitleChange={handleTitleChange}
         onCheckedIn={handleCheckedIn}
         onLessonsShifted={() => dispatch(fetchLessons({ timetableId: id }))}
+        onPreviousCheckedIn={handlePreviousCheckedIn}
       />
     </div>
   );

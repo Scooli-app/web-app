@@ -93,6 +93,8 @@ export interface SlotDialogProps {
   onCheckedIn?: (slot: SlotWithTimetable, record: CheckInRecord) => void;
   /** The lessons after this one were moved (ENG-194): the parent reloads the turma's slots. */
   onLessonsShifted?: (slot: SlotWithTimetable) => void;
+  /** A check-in was saved on the previous lesson (PreviousLessonCheckIn): the parent reloads the turma's figures and slots. */
+  onPreviousCheckedIn?: () => void;
 }
 
 export function SlotDialog({
@@ -107,12 +109,13 @@ export function SlotDialog({
   onDocumentsChanged,
   onCheckedIn,
   onLessonsShifted,
+  onPreviousCheckedIn,
 }: SlotDialogProps) {
   const t = useTranslations("calendar.slotDialog");
   const tShared = useTranslations("calendar.shared");
   const tTimetable = useTranslations("timetable");
   const tCheckIn = useTranslations("checkIns");
-  const { offer: offerShift } = useShiftFollowing();
+  const { shift: shiftFollowing } = useShiftFollowing();
   const rawLocale = useLocale();
   const locale = isSupportedLocale(rawLocale) ? rawLocale : defaultLocale;
   const router = useRouter();
@@ -125,6 +128,8 @@ export function SlotDialog({
   const [docsOpen, setDocsOpen] = useState(true);
   /** Reopens the check-in card for a lesson that already has an answer ("Alterar"). */
   const [checkInEditing, setCheckInEditing] = useState(false);
+  /** After "Não houve aula" here: asks inline whether to move the lessons after this one. */
+  const [shiftAsk, setShiftAsk] = useState(false);
 
   const slotId = slot?.id;
 
@@ -134,6 +139,7 @@ export function SlotDialog({
       setEditingTitle(false);
       setCustomMessage("");
       setCheckInEditing(false);
+      setShiftAsk(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slotId]);
@@ -229,9 +235,8 @@ export function SlotDialog({
       toast.error(tCheckIn("saveError"));
       return;
     }
-    if (body.result === "NOT_HELD") {
-      offerShift(slot.timetable.id, slot.id, () => onLessonsShifted?.(slot));
-    }
+    // Inline, not a toast: the toast sits under this dialog's overlay and would expire unseen.
+    if (body.result === "NOT_HELD") setShiftAsk(true);
     if (body.result === "TAUGHT") {
       toast.success(tCheckIn("taughtToast"), {
         action: {
@@ -251,6 +256,12 @@ export function SlotDialog({
   const isExercise = slot.slotType === "EXERCISE";
   const isReview = slot.slotType === "REVIEW";
   const isHoliday = slot.slotType === "HOLIDAY";
+
+  const handleShift = async () => {
+    setShiftAsk(false);
+    const result = await shiftFollowing(slot.timetable.id, slot.id);
+    if (result) onLessonsShifted?.(slot);
+  };
 
   const handleTitleSave = () => {
     if (draftTitle.trim() !== slot.topicTitle && (draftTitle.trim() !== "" || isHoliday)) {
@@ -344,7 +355,12 @@ export function SlotDialog({
           <div className="space-y-4">
             {/* ENG-224: asks about the previous lesson, only when this slot is not itself checkable (see PreviousLessonCheckIn) */}
             {!isHoliday && (
-              <PreviousLessonCheckIn timetableId={slot.timetable.id} lessonId={slot.id} dialogSlot={slot} />
+              <PreviousLessonCheckIn
+                timetableId={slot.timetable.id}
+                lessonId={slot.id}
+                dialogSlot={slot}
+                onCheckedIn={onPreviousCheckedIn}
+              />
             )}
 
             {/* Slot type selector */}
@@ -426,6 +442,17 @@ export function SlotDialog({
                       onSubmit={(body) => void handleCheckIn(body)}
                       onCancel={slot.checkedInAt ? () => setCheckInEditing(false) : undefined}
                     />
+                  )}
+                  {shiftAsk && (
+                    <div className="flex flex-wrap items-center gap-2 rounded-md border border-primary/25 bg-primary/5 px-3 py-2">
+                      <span className="text-sm text-foreground">{tCheckIn("shiftQuestion")}</span>
+                      <Button size="sm" className="h-8" onClick={() => void handleShift()}>
+                        {tCheckIn("shiftAction")}
+                      </Button>
+                      <Button size="sm" variant="outline" className="h-8" onClick={() => setShiftAsk(false)}>
+                        {tCheckIn("shiftKeep")}
+                      </Button>
+                    </div>
                   )}
                 </section>
               </>
