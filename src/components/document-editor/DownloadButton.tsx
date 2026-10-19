@@ -14,7 +14,7 @@ import type { DocumentImage } from "@/shared/types/document";
 import { Crown, Download, FileText, Loader2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
-import { memo, useCallback, useState } from "react";
+import { memo, useCallback, useRef, useState } from "react";
 import posthog from "posthog-js";
 
 interface DownloadButtonProps {
@@ -36,6 +36,12 @@ function DownloadButtonComponent({
   const router = useRouter();
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadFormat, setDownloadFormat] = useState<DownloadFormat | null>(null);
+  // React state updates are batched/async, so a user clicking (or hitting Enter on a
+  // focused menu item) twice within the same tick can call handleDownload twice before
+  // `isDownloading` re-renders true — each call hits /api/download and fires its own
+  // `document_downloaded`, double-counting one logical download. A ref guard is set
+  // synchronously, before the first `await`, so the second call sees it immediately.
+  const inFlightRef = useRef(false);
 
   const handleDownload = useCallback(
     async (format: DownloadFormat) => {
@@ -45,6 +51,10 @@ function DownloadButtonComponent({
       if (format === "docx" && !isProUser) {
         return;
       }
+      if (inFlightRef.current) {
+        return;
+      }
+      inFlightRef.current = true;
 
       setIsDownloading(true);
       setDownloadFormat(format);
@@ -58,6 +68,7 @@ function DownloadButtonComponent({
           posthog.captureException(error);
         }
       } finally {
+        inFlightRef.current = false;
         setIsDownloading(false);
         setDownloadFormat(null);
       }

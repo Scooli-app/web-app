@@ -21,6 +21,7 @@ import type {
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 import { Ellipse, Image as KonvaImage, Layer, Line, Rect, Stage, Text } from "react-konva";
+import { listItemPrefix } from "@/shared/utils/list-markers";
 
 const THUMB_W = 160;
 const THUMB_H = 90; // 16:9
@@ -125,6 +126,7 @@ export function SlideThumbnail({ slide, index, isActive, onClick, w = THUMB_W, h
                   textDecoration={t.underline ? "underline" : ""}
                   fill={t.color}
                   align={t.align}
+                  lineHeight={t.lineHeight ?? 1}
                   wrap="word"
                   ellipsis
                   listening={false}
@@ -135,9 +137,7 @@ export function SlideThumbnail({ slide, index, isActive, onClick, w = THUMB_W, h
             if (el.type === "bullet_list" || el.type === "ordered_list") {
               const l = el as CanvasListElement;
               const text = l.items
-                .map((item, i) =>
-                  el.type === "ordered_list" ? `${i + 1}. ${item}` : `• ${item}`,
-                )
+                .map((item, i) => `${listItemPrefix(el.type === "ordered_list", l.items, i)}${item}`)
                 .join("\n");
               return (
                 <Text
@@ -151,7 +151,9 @@ export function SlideThumbnail({ slide, index, isActive, onClick, w = THUMB_W, h
                   height={el.h * h}
                   text={text}
                   fontSize={Math.max(4, Math.round(el.fontSize * w))}
+                  fontFamily={l.fontFamily || "Inter, system-ui, sans-serif"}
                   fill={l.color}
+                  lineHeight={l.lineHeight ?? 1}
                   wrap="word"
                   ellipsis
                   listening={false}

@@ -1,3 +1,4 @@
+import { FieldHeading } from "./FormCard";
 import { Card } from "@/components/ui/card";
 import { ChoiceChip } from "@/components/ui/choice-chip";
 import { SegmentedControl } from "@/components/ui/segmented-control";
@@ -17,7 +18,7 @@ import type {
   VocationalUnit,
 } from "@/shared/types/teaching-profile";
 import { cn } from "@/shared/utils/utils";
-import { BookOpen, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Loader2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import {
@@ -329,8 +330,7 @@ export function SubjectSection({
     <div className="space-y-3">
       {hasPreferredSubjects && (
         <div>
-          <p className={SECTION_LABEL_CLASS}>{t("yourSubjects")}</p>
-          <div className="flex flex-wrap gap-1.5 sm:gap-2">
+          <div className="flex flex-wrap items-center gap-1.5">
             {preferredSubjects.map((option) => {
               const isSelected = subject === option.id;
               return (
@@ -395,19 +395,9 @@ export function SubjectSection({
   );
 
   return (
-    <Card className={cn("p-4 sm:p-6 border-border shadow-sm hover:shadow-md transition-shadow", className)}>
-      <div className="space-y-4">
-        <div className="flex items-center gap-2 sm:gap-3">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent sm:h-10 sm:w-10 sm:rounded-xl">
-            <BookOpen className="h-4 w-4 text-primary sm:h-5 sm:w-5" />
-          </div>
-          <h2 className="text-base font-semibold text-foreground sm:text-lg">
-            {isVocational ? t("titleVocational") : t("title")} <span className="text-destructive">*</span>
-          </h2>
-        </div>
-
-        {isVocational ? renderVocational() : renderRegular()}
-      </div>
+    <Card className={cn("gap-0 border-border p-3 py-3 shadow-sm sm:p-4", className)}>
+      <FieldHeading title={isVocational ? t("titleVocational") : t("title")} required />
+      {isVocational ? renderVocational() : renderRegular()}
     </Card>
   );
 }

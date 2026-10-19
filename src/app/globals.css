@@ -165,7 +165,8 @@
 
 @layer base {
   * {
-    @apply outline-ring/50;
+    /* Tailwind v4 draws a bare `border` in currentColor (black): default it to the token. */
+    @apply border-border outline-ring/50;
     /* Custom Scrollbar Styling */
     scrollbar-width: thin;
     scrollbar-color: var(--primary) transparent;

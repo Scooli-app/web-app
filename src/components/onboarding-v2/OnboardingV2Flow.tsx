@@ -10,6 +10,7 @@ import {
 import { ProgressRail } from "@/components/onboarding-v2/ProgressRail";
 import { FirstClassStep } from "@/components/onboarding-v2/steps/FirstClassStep";
 import { FirstWeekStep } from "@/components/onboarding-v2/steps/FirstWeekStep";
+import { BaselineStep } from "@/components/onboarding-v2/steps/BaselineStep";
 import { RitualStep } from "@/components/onboarding-v2/steps/RitualStep";
 import { SchoolRoleStep } from "@/components/onboarding-v2/steps/SchoolRoleStep";
 import { TeachingStep } from "@/components/onboarding-v2/steps/TeachingStep";
@@ -150,6 +151,8 @@ export function OnboardingV2Flow({
       case 4:
         return <FirstWeekStep flow={flow} />;
       case 5:
+        return <BaselineStep flow={flow} />;
+      case 6:
         return <RitualStep flow={flow} onFinished={finish} />;
     }
   };

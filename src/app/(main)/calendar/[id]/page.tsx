@@ -1,20 +1,21 @@
 "use client";
 
+import { formatClassName } from "@/shared/utils/className";
 import { isListableSlot } from "@/shared/utils/lessonTopic";
 import { Badge } from "@/components/ui/badge";
 import { PlanGenerationBanner } from "@/components/plan-generation/PlanGenerationBanner";
 import { Button } from "@/components/ui/button";
-import { selectIsHorarioPlanosEnabled } from "@/store/features/selectors";
+import { selectIsClassStateEnabled, selectIsHorarioPlanosEnabled } from "@/store/features/selectors";
 import { useFeatureAccess } from "@/components/feature/useFeatureAccess";
 import { FeatureUnavailable } from "@/components/feature/FeatureUnavailable";
 import {
   fetchTimetable,
   fetchLessons,
-  skipLesson,
+  setSlotCheckIn,
   setSlotStatus,
   updateLesson,
 } from "@/store/timetable/timetableSlice";
-import { useAppDispatch } from "@/store/hooks";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { openUpgradeModalForReason, setUpgradeModalOpen } from "@/store/ui/uiSlice";
 import { isUpgradeReason } from "@/shared/types/plan-limits";
 import type { RootState } from "@/store/store";
@@ -38,8 +39,12 @@ import {
 import { SLOT_STATUS_CONFIG } from "@/shared/constants/lessonSlotStatus";
 import { translateSubject } from "@/components/document-creation/constants";
 import { SlotDialog } from "@/components/calendar/SlotDialog";
+import { TeachingMarkBadge } from "@/components/calendar/TeachingMarkBadge";
+import { TurmaProgressPanel } from "@/components/calendar/TurmaProgressPanel";
 import type { SlotWithTimetable } from "@/shared/types/calendar";
-import { toIso, getWeekStart, addDays, formatWeekLabel, toIntlLocale } from "@/shared/utils/calendar";
+import type { CheckInRecord } from "@/shared/types/check-in";
+import { teachingMark } from "@/shared/utils/teachingStatus";
+import { toIso, defaultCalendarWeek, getWeekStart, addDays, formatWeekLabel, toIntlLocale } from "@/shared/utils/calendar";
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -61,12 +66,10 @@ const STATUS_CONFIG = SLOT_STATUS_CONFIG;
 interface SlotCardProps {
   slot: LessonSlot;
   color: string;
-  subject: string;
-  classLabel: string;
   onOpen: (slot: LessonSlot) => void;
 }
 
-function SlotCard({ slot, color, subject, classLabel, onOpen }: SlotCardProps) {
+function SlotCard({ slot, color, onOpen }: SlotCardProps) {
   const t = useTranslations("calendar");
   const tTimetable = useTranslations("timetable");
   const rawLocale = useLocale();
@@ -74,6 +77,9 @@ function SlotCard({ slot, color, subject, classLabel, onOpen }: SlotCardProps) {
   const isHoliday = slot.slotType === "HOLIDAY";
   const isFailed = slot.status === "failed";
   const cfg = STATUS_CONFIG[slot.status];
+  const checkInEnabled = useAppSelector(selectIsClassStateEnabled);
+  // Only with class_state_enabled: with the flag off the card looks as it always did.
+  const mark = checkInEnabled ? teachingMark(slot, toIso(new Date())) : null;
   const borderColor = isFailed ? "#ef4444" : color;
   const rgb = color.replace("#", "").match(/.{2}/g);
   const tintBg = rgb
@@ -89,7 +95,7 @@ function SlotCard({ slot, color, subject, classLabel, onOpen }: SlotCardProps) {
         isHoliday
           ? "cursor-default opacity-50"
           : "cursor-pointer hover:shadow-sm hover:border-primary/40"
-      } ${isFailed ? "bg-red-50 dark:bg-red-950/20" : ""}`}
+      } ${isFailed ? "bg-red-50 dark:bg-red-950/20" : ""} ${mark?.key === "notHeld" ? "opacity-60" : ""}`}
       style={{
         borderLeft: `4px solid ${borderColor}`,
         backgroundColor: !isFailed && !isHoliday ? tintBg : undefined,
@@ -111,9 +117,6 @@ function SlotCard({ slot, color, subject, classLabel, onOpen }: SlotCardProps) {
             })}
             {" · "}{t("shared.minutesSuffix", { count: slot.durationMinutes })}
           </p>
-          <p className="text-xs text-muted-foreground/70">
-            {subject}{classLabel ? ` · ${t("shared.classInline", { label: classLabel })}` : ""}
-          </p>
           {isFailed && (
             <p className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400 mt-0.5">
               <AlertTriangle className="h-3 w-3" />
@@ -121,6 +124,7 @@ function SlotCard({ slot, color, subject, classLabel, onOpen }: SlotCardProps) {
             </p>
           )}
         </div>
+        {mark && <TeachingMarkBadge mark={mark} className="text-sm" />}
         {!isHoliday && (
           <Badge className={`shrink-0 gap-1 border text-xs ${cfg.badgeCls}`}>
             {cfg.icon}
@@ -155,7 +159,7 @@ export default function CalendarViewPage() {
       const d = new Date(`${weekParam}T00:00:00`);
       if (!isNaN(d.getTime())) return getWeekStart(d);
     }
-    return getWeekStart(new Date());
+    return defaultCalendarWeek();
   });
 
   // Follow the ?week param when it changes (client-side navigation to the same page).
@@ -247,6 +251,23 @@ export default function CalendarViewPage() {
     setWeekStart((p) => addDays(p, -7));
   const nextWeek = () =>
     setWeekStart((p) => addDays(p, 7));
+
+  // A check-in saved from the slot dialog: the card's mark follows without reloading the lessons,
+  // and the turma progress panel reloads its figures.
+  const [progressRefreshKey, setProgressRefreshKey] = useState(0);
+  const handleCheckedIn = useCallback(
+    (target: SlotWithTimetable, record: CheckInRecord) => {
+      dispatch(
+        setSlotCheckIn({
+          slotId: target.id,
+          teachingStatus: record.teachingStatus,
+          checkedInAt: record.checkedInAt,
+        })
+      );
+      setProgressRefreshKey((key) => key + 1);
+    },
+    [dispatch]
+  );
 
   // Wrap the selected slot with the current timetable for the shared SlotDialog
   const selectedSlotWithTimetable = useMemo<SlotWithTimetable | null>(() => {
@@ -433,14 +454,6 @@ export default function CalendarViewPage() {
     }
   }, [id, currentWeekIso, dispatch, getToken, currentTimetable?.subject, currentTimetable?.gradeLevel]);
 
-  const handleSkip = useCallback(
-    (slotOrWrapped: SlotWithTimetable | LessonSlot) => {
-      dispatch(skipLesson({ timetableId: id, lessonId: slotOrWrapped.id }));
-      setSelectedSlot(null);
-    },
-    [dispatch, id]
-  );
-
   const handleTypeChange = useCallback(
     (slotOrWrapped: SlotWithTimetable | LessonSlot, type: LessonSlotType) => {
       dispatch(updateLesson({ timetableId: id, lessonId: slotOrWrapped.id, params: { slotType: type } }));
@@ -458,8 +471,6 @@ export default function CalendarViewPage() {
   const pendingThisWeek = currentWeekSlots.filter((s) => s.status === "pending").length;
 
   const timetableColor = currentTimetable?.color ?? "#7F77DD";
-  const timetableSubject = currentTimetable?.subject ?? "";
-  const timetableClassLabel = currentTimetable?.classLabel ?? "";
 
   if (!featuresLoaded) return null;
   if (!enabled)
@@ -474,22 +485,28 @@ export default function CalendarViewPage() {
     <div className="mx-auto w-full max-w-5xl space-y-4 px-4 pb-24 pt-6 md:pb-6">
       {/* Header */}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" asChild>
+        <div className="flex min-w-0 items-center gap-3">
+          <Button variant="ghost" size="icon" asChild className="shrink-0">
             <Link href={Routes.CALENDAR}><ArrowLeft className="h-4 w-4" /></Link>
           </Button>
           <div
             className="h-4 w-4 rounded-full shrink-0"
             style={{ background: timetableColor }}
           />
-          <div>
-            <h1 className="font-semibold leading-tight">
-              {currentTimetable?.title ?? t("detail.loading")}
+          {/* The short turma name everywhere else uses ("9.º Português · B"); the teacher's own
+              name, which can be long, goes on one line under it. */}
+          <div className="min-w-0">
+            <h1 className="truncate font-semibold leading-tight" title={currentTimetable?.title}>
+              {currentTimetable
+                ? formatClassName(currentTimetable, {
+                    gradeShort: (grade) => tTimetable("gradeShort", { grade }),
+                    subject: translateSubject,
+                  })
+                : t("detail.loading")}
             </h1>
-            {currentTimetable && (
-              <p className="text-sm text-muted-foreground">
-                {translateSubject(currentTimetable.subject)} · {tTimetable("gradeYear", { grade: currentTimetable.gradeLevel })}
-                {currentTimetable.classLabel ? ` · ${t("shared.classInline", { label: currentTimetable.classLabel })}` : ""}
+            {currentTimetable?.title && currentTimetable.title !== translateSubject(currentTimetable.subject) && (
+              <p className="truncate text-sm text-muted-foreground" title={currentTimetable.title}>
+                {currentTimetable.title}
               </p>
             )}
           </div>
@@ -512,6 +529,8 @@ export default function CalendarViewPage() {
       </div>
 
       <PlanGenerationBanner timetableId={id} />
+
+      <TurmaProgressPanel timetableId={id} refreshKey={progressRefreshKey} />
 
       {/* Week navigator */}
       <div className="flex items-center justify-between rounded-lg border bg-card px-4 py-2">
@@ -552,8 +571,6 @@ export default function CalendarViewPage() {
               key={slot.id}
               slot={slot}
               color={timetableColor}
-              subject={timetableSubject}
-              classLabel={timetableClassLabel}
               onOpen={setSelectedSlot}
             />
           ))}
@@ -568,9 +585,10 @@ export default function CalendarViewPage() {
         onClose={() => setSelectedSlot(null)}
         onGenerate={handleGenerateLesson}
         onRegenerate={handleRegenerateLesson}
-        onSkip={handleSkip}
         onTypeChange={handleTypeChange}
         onTitleChange={handleTitleChange}
+        onCheckedIn={handleCheckedIn}
+        onLessonsShifted={() => dispatch(fetchLessons({ timetableId: id }))}
       />
     </div>
   );

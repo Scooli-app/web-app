@@ -8,7 +8,11 @@ import {
   flushDraft,
   unlockDrafts,
 } from "@/components/onboarding-v2/onboardingDraft";
-import { buildCompletePayload, effectiveWeeklyEmail } from "@/components/onboarding-v2/ritualState";
+import {
+  baselineAnalytics,
+  buildCompletePayload,
+  effectiveWeeklyEmail,
+} from "@/components/onboarding-v2/ritualState";
 import { StepHeading } from "@/components/onboarding-v2/StepHeading";
 import type { OnboardingFlowController } from "@/components/onboarding-v2/useOnboardingV2";
 import { useStepFooter } from "@/components/onboarding-v2/useStepFooter";
@@ -49,14 +53,6 @@ const SOURCES: AcquisitionSource[] = [
   "AI_ASSISTANT",
   "OTHER",
 ];
-
-function OptionalBadge({ label }: { label: string }) {
-  return (
-    <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-normal text-muted-foreground">
-      {label}
-    </span>
-  );
-}
 
 /** Small inline status of the background plan generation started in step 3. */
 function PlanStatus({ overall }: { overall: "working" | "done" | "failed" }) {
@@ -114,16 +110,15 @@ export function RitualStep({ flow, onFinished }: RitualStepProps) {
     await finalizeDrafts();
     try {
       await onboardingV2Service.complete(
-        buildCompletePayload(
-          { planningDay, weeklyEmail, goals, source, sourceOther },
-          answers.skippedClass,
-        ),
+        buildCompletePayload(ritual, answers.skippedClass),
       );
-      trackCompleted(5, {
+      const baseline = baselineAnalytics(ritual);
+      trackCompleted(6, {
         planning_day: planningDay,
         weekly_email: weeklyEmail,
         goals,
         acquisition_source: source,
+        ...baseline,
       });
       posthog.capture("onboarding_v2_completed", {
         planning_day: planningDay,
@@ -137,6 +132,7 @@ export function RitualStep({ flow, onFinished }: RitualStepProps) {
         planning_day: planningDay,
         weekly_email: weeklyEmail,
         subjects: answers.subjectIds,
+        ...baseline,
       });
       onFinished();
     } catch (err) {
@@ -149,7 +145,7 @@ export function RitualStep({ flow, onFinished }: RitualStepProps) {
   };
 
   useStepFooter({
-    stepId: 5,
+    stepId: 6,
     canContinue: true,
     busy: saving,
     continueLabel: t("ritual.finish"),
@@ -205,12 +201,8 @@ export function RitualStep({ flow, onFinished }: RitualStepProps) {
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
           <div className="min-w-0 space-y-1.5">
-            <p
-              id="onboarding-goals"
-              className="flex flex-wrap items-center gap-2 text-sm font-medium text-foreground"
-            >
+            <p id="onboarding-goals" className="text-sm font-medium text-foreground">
               {t("ritual.goalsTitle")}
-              <OptionalBadge label={t("ritual.optionalBadge")} />
             </p>
             <MultiSelectPopover
               options={GOALS.map((goal) => ({ id: goal, label: tEnum(`onboardingGoal.${goal}`) }))}
@@ -223,12 +215,8 @@ export function RitualStep({ flow, onFinished }: RitualStepProps) {
           </div>
 
           <div className="min-w-0 space-y-1.5">
-            <p
-              id="onboarding-source"
-              className="flex flex-wrap items-center gap-2 text-sm font-medium text-foreground"
-            >
+            <p id="onboarding-source" className="text-sm font-medium text-foreground">
               {t("ritual.sourceTitle")}
-              <OptionalBadge label={t("ritual.optionalBadge")} />
             </p>
             <Select
               value={source ?? ""}
@@ -236,7 +224,7 @@ export function RitualStep({ flow, onFinished }: RitualStepProps) {
             >
               <SelectTrigger
                 aria-labelledby="onboarding-source"
-                className="h-10 w-full min-w-0 rounded-xl px-3 text-base shadow-xs"
+                className="w-full min-w-0"
               >
                 <SelectValue placeholder={t("ritual.sourcePlaceholder")} />
               </SelectTrigger>
@@ -254,7 +242,6 @@ export function RitualStep({ flow, onFinished }: RitualStepProps) {
                 onChange={(event) => setSourceOther(event.target.value)}
                 placeholder={t("ritual.sourceOtherPlaceholder")}
                 maxLength={200}
-                className="h-10 rounded-xl px-3 text-base"
               />
             )}
           </div>

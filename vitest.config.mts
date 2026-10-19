@@ -11,6 +11,10 @@ export default defineConfig({
       "@": path.join(root, "src"),
     },
   },
+  // tsconfig says "preserve" for Next.js; vitest must compile .tsx itself to render components.
+  oxc: {
+    jsx: { runtime: "automatic" },
+  },
   test: {
     environment: "node",
   },

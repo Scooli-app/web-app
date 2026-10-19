@@ -2,13 +2,14 @@
 
 import { useDocumentManager } from "@/hooks/useDocumentManager";
 import { useEditorAnalytics } from "@/hooks/useEditorAnalytics";
+import { useGenerationStalled } from "@/hooks/useGenerationStalled";
 import { uploadDocumentImage } from "@/services/api/document-images.service";
 import { streamDocumentContent } from "@/services/api/document.service";
 import { AUTO_SAVE_DELAY } from "@/shared/config/constants";
 import { Routes } from "@/shared/types";
-import type { RagSource } from "@/shared/types/document";
+import { isFailedDocumentStatus, type RagSource } from "@/shared/types/document";
 import { isUsableDocumentContent } from "@/shared/utils/documentContent";
-import { htmlToMarkdown, markdownToHtml } from "@/shared/utils/markdown";
+import { escapeMarkdownImageAlt, htmlToMarkdown, markdownToHtml } from "@/shared/utils/markdown";
 import { translate } from "@/i18n/translate";
 import {
   chatWithDocument,
@@ -46,7 +47,9 @@ import { toast } from "sonner";
 import { DiffToolbar } from "../editor/DiffToolbar";
 import { computeDiff, markdownToNode } from "../editor/utils/diffEngine";
 import RichTextEditor from "../ui/rich-text-editor";
+import { GenerationStalledNotice } from "../ui/generation-stalled-notice";
 import AIChatPanel from "./AIChatPanel";
+import { DocumentLessonContext } from "./DocumentLessonContext";
 import DocumentTitle from "./DocumentTitle";
 import CreateCalendarFromPlanButton from "./CreateCalendarFromPlanButton";
 import DownloadButton from "./DownloadButton";
@@ -189,9 +192,9 @@ function repairLeakedImageSegmentTokens(
     if (!image) {
       return "";
     }
-    const safeAlt = (image.alt || translate("editor.documentEditor.imageFallbackAlt"))
-      .replace(/\\/g, "\\\\")
-      .replace(/\]/g, "\\]");
+    const safeAlt = escapeMarkdownImageAlt(
+      image.alt || translate("editor.documentEditor.imageFallbackAlt"),
+    );
     return `![${safeAlt}]({{DOCUMENT_IMAGE:${image.id}}})`;
   });
 }
@@ -855,7 +858,7 @@ export default function DocumentEditor({
     if (isStreamingNow) {
       return;
     }
-    if (activeDocument.status === "failed") {
+    if (isFailedDocumentStatus(activeDocument.status)) {
       reportedBrokenOpenRef.current = activeDocument.id;
       reportUiProblem("document_opened_failed", {
         documentId: activeDocument.id,
@@ -873,6 +876,55 @@ export default function DocumentEditor({
       });
     }
   }, [activeDocument, streamInfo]);
+
+  // Backend reports the document as failed while we are still attached to its stream
+  // (e.g. the generation task died silently). Stop waiting and show the failure state
+  // instead of leaving the editor in a generating state.
+  // Only reacts to the transition into a failed status: a document that is already
+  // failed when a retry starts (status not refetched yet) must not kill the new stream,
+  // and one that is merely opened as failed is handled by the regular failed UI.
+  const lastDocStatusRef = useRef<{ id: string; status: string } | null>(null);
+  const failureErrorShownRef = useRef(false);
+  useEffect(() => {
+    const status = activeDocument?.status;
+    const previous = lastDocStatusRef.current;
+    lastDocStatusRef.current = activeDocument
+      ? { id: activeDocument.id, status: activeDocument.status }
+      : null;
+
+    if (!isFailedDocumentStatus(status)) {
+      if (failureErrorShownRef.current) {
+        failureErrorShownRef.current = false;
+        setError("");
+      }
+      return;
+    }
+    const alreadyFailed =
+      !!previous &&
+      previous.id === activeDocument?.id &&
+      isFailedDocumentStatus(previous.status);
+    const attachedToStream =
+      eventSourceRef.current !== null ||
+      (streamInfo?.id === documentId && streamInfo.status === "generating");
+    if (alreadyFailed || !attachedToStream) {
+      return;
+    }
+    if (completionFallbackTimeoutRef.current) {
+      clearTimeout(completionFallbackTimeoutRef.current);
+      completionFallbackTimeoutRef.current = null;
+    }
+    if (eventSourceRef.current) {
+      eventSourceRef.current();
+      eventSourceRef.current = null;
+    }
+    setIsStreaming(false);
+    setStreamStatus("");
+    setError(t("generationFailedError"));
+    failureErrorShownRef.current = true;
+    if (streamInfo?.id === documentId) {
+      dispatch(clearStreamInfo());
+    }
+  }, [activeDocument, documentId, dispatch, streamInfo?.id, streamInfo?.status, t]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -979,7 +1031,10 @@ export default function DocumentEditor({
       currentDocument?.metadata?.initial_prompt;
     const prompt = typeof rawPrompt === "string" ? rawPrompt.trim() : "";
 
-    if (chatHistory.length === 0 && prompt) {
+    // One-click lesson documents carry a prompt the server assembled: not something the teacher wrote.
+    const serverGenerated = currentDocument?.metadata?.promptServerGenerated === true;
+
+    if (chatHistory.length === 0 && prompt && !serverGenerated) {
       setChatHistory([{ role: "user", content: prompt }]);
     }
   }, [
@@ -987,6 +1042,7 @@ export default function DocumentEditor({
     currentDocument?.metadata?.prompt,
     currentDocument?.metadata?.initialPrompt,
     currentDocument?.metadata?.initial_prompt,
+    currentDocument?.metadata?.promptServerGenerated,
     documentId,
     chatHistory.length,
   ]);
@@ -1217,6 +1273,8 @@ export default function DocumentEditor({
   const isGenerating =
     isStreaming ||
     (streamInfo?.id === documentId && streamInfo?.status === "generating");
+  const isDocumentFailed = isFailedDocumentStatus(activeDocument?.status);
+  const isGenerationStalled = useGenerationStalled(isGenerating && !isDocumentFailed);
   const resolvedTitle =
     documentTitle || normalizePendingTitle(activeDocument?.title || "");
 
@@ -1284,6 +1342,9 @@ export default function DocumentEditor({
   return (
     <>
       <div className="flex-1 flex flex-col w-full">
+        {activeDocument && (
+          <DocumentLessonContext classInfo={activeDocument.classInfo} documentId={activeDocument.id} />
+        )}
         <DocumentTitle
           title={resolvedTitle}
           defaultTitle={resolvedDefaultTitle}
@@ -1327,17 +1388,23 @@ export default function DocumentEditor({
                   </div>
                 </div>
                 <div className="min-h-[50dvh] w-full overflow-auto rounded-xl border border-border bg-card p-3 sm:min-h-[600px] sm:p-4">
-                  {/* Never show the raw markdown stream — keep the stepper until
-                      the formatted document is ready. Content chunks arriving
-                      while the status is still early means we're generating. */}
-                  <GenerationProgress
-                    streamStatus={
-                      displayContent &&
-                      (!streamStatus || streamStatus === "preparing")
-                        ? "generating"
-                        : streamStatus
-                    }
-                  />
+                  {isGenerationStalled ? (
+                    <div className="flex h-full min-h-[45dvh] w-full items-center justify-center sm:min-h-[550px]">
+                      <GenerationStalledNotice />
+                    </div>
+                  ) : (
+                    // Never show the raw markdown stream — keep the stepper until
+                    // the formatted document is ready. Content chunks arriving
+                    // while the status is still early means we're generating.
+                    <GenerationProgress
+                      streamStatus={
+                        displayContent &&
+                        (!streamStatus || streamStatus === "preparing")
+                          ? "generating"
+                          : streamStatus
+                      }
+                    />
+                  )}
                 </div>
               </>
             ) : (

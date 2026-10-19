@@ -27,7 +27,7 @@ import { useAuth } from "@clerk/nextjs";
 import posthog from "posthog-js";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-export type OnboardingStepId = 1 | 2 | 3 | 4 | 5;
+export type OnboardingStepId = 1 | 2 | 3 | 4 | 5 | 6;
 export type OnboardingMode = Exclude<OnboardingV2Status["mode"], "none">;
 
 export interface OnboardingAnswers {
@@ -71,7 +71,7 @@ export function useOnboardingV2({
   draft = null,
 }: UseOnboardingV2Options) {
   const steps = useMemo<OnboardingStepId[]>(
-    () => (mode === "profile" ? [1, 2] : [1, 2, 3, 4, 5]),
+    () => (mode === "profile" ? [1, 2] : [1, 2, 3, 4, 5, 6]),
     [mode],
   );
   // Steps 1–2 are only "done" once the profile is saved (a draft role doesn't count), so
@@ -88,8 +88,8 @@ export function useOnboardingV2({
       noSchool: draft?.noSchool ?? false,
     }),
   });
-  // Reloaded at the ritual step without a class: the class was skipped (Back leads to step 3).
-  const resumeAtRitual = mode === "full" && startStep === 5 && !hasClass;
+  // Reloaded past the class step without a class: the class was skipped (Back leads to step 3).
+  const resumeAtRitual = mode === "full" && startStep >= 5 && !hasClass;
   const startIndex = steps.indexOf(startStep);
 
   const [index, setIndex] = useState(Math.max(startIndex, 0));
@@ -129,11 +129,11 @@ export function useOnboardingV2({
   // for autosave from the handler (not from an effect that unmounting would skip).
   const [ritual, setRitual] = useState<RitualState>(() => initialRitualState(draft));
   const ritualRef = useRef(ritual);
-  const updateRitual = useCallback((patch: Partial<RitualState>) => {
+  const updateRitual = useCallback((patch: Partial<RitualState>, draftStep: 5 | 6 = 6) => {
     const nextState = applyRitualPatch(ritualRef.current, patch);
     ritualRef.current = nextState;
     setRitual(nextState);
-    queueDraft(ritualDraftPatch(nextState));
+    queueDraft(ritualDraftPatch(nextState, draftStep));
   }, []);
 
   const step = steps[index];
@@ -197,8 +197,8 @@ export function useOnboardingV2({
     if (index <= 0) return;
     // After a skipped class the previous screen is step 3, not the (skipped) step 4.
     const target = step === 5 && answers.skippedClass ? steps.indexOf(3) : index - 1;
-    // Leaving the ritual step: send its debounced draft now.
-    if (step === 5) void flushDraft();
+    // Leaving the baseline / ritual step: send its debounced draft now.
+    if (step === 5 || step === 6) void flushDraft();
     setDirection(-1);
     setIndex(target);
   }, [index, step, answers.skippedClass, steps]);

@@ -2,6 +2,13 @@ import type { TeachingItem } from "./teaching-profile";
 
 export type TeacherRole = "teacher" | "coordinator" | "director" | "tutor" | "other";
 
+/** Optional baseline answers (single choice, except the tools which are multi-select). */
+export type PrepHoursPerWeek = "LT2" | "H2_5" | "H5_10" | "GT10";
+export type CurrentTool = "AI_CHAT" | "OTHER_AI" | "WEB_SEARCH" | "PUBLISHER" | "COLLEAGUES" | "FROM_SCRATCH";
+export type ClassCount = "C1_2" | "C3_4" | "C5_PLUS";
+
+export type OnboardingV2Step = 1 | 2 | 3 | 4 | 5 | 6;
+
 export interface OnboardingV2Status {
   mode: "full" | "profile" | "none";
   profileDone: boolean;
@@ -22,11 +29,14 @@ export interface OnboardingV2DraftAnswers {
   goals: string[] | null;
   acquisitionSource: string | null;
   acquisitionSourceOther: string | null;
+  prepHoursPerWeek?: string | null;
+  currentTools?: string[] | null;
+  classCount?: string | null;
 }
 
 /** Lenient partial save; `step` is the last step the teacher reached. */
 export interface OnboardingV2DraftPatch {
-  step: 1 | 2 | 3 | 4 | 5;
+  step: OnboardingV2Step;
   schoolName?: string | null;
   noSchool?: boolean;
   teacherRole?: TeacherRole;
@@ -36,6 +46,10 @@ export interface OnboardingV2DraftPatch {
   acquisitionSource?: string;
   acquisitionSourceOther?: string;
   skippedClass?: boolean;
+  prepHoursPerWeek?: PrepHoursPerWeek;
+  /** [] clears the saved tools. */
+  currentTools?: CurrentTool[];
+  classCount?: ClassCount;
 }
 
 export interface OnboardingV2Profile {
@@ -55,4 +69,9 @@ export interface OnboardingV2Complete {
   acquisitionSource: string | null;
   acquisitionSourceOther: string | null;
   skippedClass: boolean;
+  /** null = never answered (the server keeps whatever it has). */
+  prepHoursPerWeek: PrepHoursPerWeek | null;
+  /** Always the current list: [] clears the saved tools. */
+  currentTools: CurrentTool[];
+  classCount: ClassCount | null;
 }
