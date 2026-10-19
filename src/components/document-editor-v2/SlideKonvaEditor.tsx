@@ -1385,15 +1385,14 @@ export const SlideKonvaEditor = forwardRef<
               /* ── Image placeholder / actual image ───────────────────── */
               if (el.type === "image_placeholder") {
                 const img = el as CanvasImageElement;
+                const openImageModal = (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
+                  e.cancelBubble = true;
+                  setSelectedId(el.id);
+                  onChangeImage?.(el.id);
+                };
                 const dblHandlers = {
-                  onDblClick: () => {
-                    const node = stageRef.current?.findOne(`#${el.id}`);
-                    if (node) startEdit(el.id, node, img.prompt);
-                  },
-                  onDblTap: () => {
-                    const node = stageRef.current?.findOne(`#${el.id}`);
-                    if (node) startEdit(el.id, node, img.prompt);
-                  },
+                  onDblClick: openImageModal,
+                  onDblTap: openImageModal,
                 };
 
                 // If the element has a URL and it's loaded, render the real image.

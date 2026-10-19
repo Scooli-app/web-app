@@ -1571,6 +1571,7 @@
     },
     "imagePickerModal": {
       "dialogTitle": "Add image",
+      "replaceDialogTitle": "Change image",
       "tabGenerate": "Generate with AI",
       "tabUpload": "Upload",
       "tabUrl": "By URL",

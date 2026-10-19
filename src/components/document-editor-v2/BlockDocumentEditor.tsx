@@ -2497,6 +2497,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
         <ImagePickerModal
           open={imageModalOpen}
           documentId={document.id}
+          replacing={imageModalReplacing}
           initialSearchQuery={
             activeSlide?.elements.find(
               (el): el is CanvasTextElement => el.type === "text" && el.role === "title",
