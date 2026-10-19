@@ -12,22 +12,24 @@ export function measureWrappedTextHeightPx({
   fontSizePx,
   fontFamily,
   fontStyle,
+  lineHeight = TEXT_LINE_HEIGHT,
 }: {
   text: string;
   widthPx: number;
   fontSizePx: number;
   fontFamily: string;
   fontStyle?: string;
+  lineHeight?: number;
 }) {
   const probe = new Konva.Text({
     text,
     fontSize: fontSizePx,
     fontFamily,
     fontStyle,
-    lineHeight: TEXT_LINE_HEIGHT,
+    lineHeight,
     width: Math.max(1, widthPx),
     padding: 0,
     wrap: "word",
   });
-  return Math.max(fontSizePx * TEXT_LINE_HEIGHT, probe.height());
+  return Math.max(fontSizePx * lineHeight, probe.height());
 }

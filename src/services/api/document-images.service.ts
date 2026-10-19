@@ -1,7 +1,10 @@
 import apiClient from "./client";
 import type {
   DocumentImage,
+  ImportStockImageResponse,
   RegenerateDocumentImageResponse,
+  StockImageFilter,
+  StockImageSearchResponse,
   UploadDocumentImageResponse,
 } from "@/shared/types/document";
 
@@ -60,6 +63,32 @@ export async function uploadDocumentImage(
         "Content-Type": "multipart/form-data",
       },
     }
+  );
+  return response.data;
+}
+
+/** Searches the free stock image libraries; `type` narrows to one filter chip. */
+export async function searchStockImages(
+  documentId: string,
+  query: string,
+  options: { type?: StockImageFilter; page?: number; locale?: string } = {}
+): Promise<StockImageSearchResponse> {
+  const { type, page = 1, locale } = options;
+  const response = await apiClient.get<StockImageSearchResponse>(
+    `/documents/${documentId}/images/stock-search`,
+    { params: { q: query, type, page, locale } }
+  );
+  return response.data;
+}
+
+/** Copies a stock image into the document's own image storage and returns the stored image. */
+export async function importStockImage(
+  documentId: string,
+  imageId: string
+): Promise<ImportStockImageResponse> {
+  const response = await apiClient.post<ImportStockImageResponse>(
+    `/documents/${documentId}/images/stock`,
+    { imageId }
   );
   return response.data;
 }

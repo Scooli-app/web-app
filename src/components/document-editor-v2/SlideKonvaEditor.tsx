@@ -37,6 +37,7 @@ import type Konva from "konva";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useImperativeHandle, useRef, useState, forwardRef } from "react";
 import { Ellipse, Group, Image as KonvaImage, Layer, Line, Rect, Stage, Text, Transformer } from "react-konva";
+import { listItemPrefix } from "@/shared/utils/list-markers";
 
 /* --------------------------------------------------------------------------
  * Theme tokens — canvas can't use CSS vars so dark-theme values are hardcoded.
@@ -83,8 +84,11 @@ function getTextLikeFontSize(el: CanvasTextElement | CanvasListElement) {
 }
 
 function getTextLikeFontFamily(el: CanvasTextElement | CanvasListElement) {
-  if (el.type === "text") return el.fontFamily || T.font;
-  return (el as CanvasListElement & { fontFamily?: string }).fontFamily || T.font;
+  return el.fontFamily || T.font;
+}
+
+function getTextLikeLineHeight(el: CanvasTextElement | CanvasListElement) {
+  return el.lineHeight ?? TEXT_LINE_HEIGHT;
 }
 
 function gradientProps(g: CanvasGradient, W: number, H: number, OX = 0, OY = 0) {
@@ -104,7 +108,7 @@ function getTextLikeFontStyle(el: CanvasTextElement | CanvasListElement) {
 }
 
 function getListItemDisplayText(el: CanvasListElement, item: string, index: number) {
-  return el.type === "ordered_list" ? `${index + 1}. ${item}` : `\u2022 ${item}`;
+  return `${listItemPrefix(el.type === "ordered_list", el.items, index)}${item}`;
 }
 
 function getListDisplayText(el: CanvasListElement) {
@@ -125,6 +129,7 @@ function measureListItemHeightsPx(el: CanvasListElement, widthPx: number, fontSi
       fontSizePx,
       fontFamily: getTextLikeFontFamily(el),
       fontStyle: getTextLikeFontStyle(el),
+      lineHeight: getTextLikeLineHeight(el),
     }),
   );
 }
@@ -201,6 +206,7 @@ interface EditState {
   height: number;
   fontSize: number;
   fontFamily?: string;
+  lineHeight?: number;
   /** Konva fontStyle: "normal" | "bold" | "italic" | "bold italic" */
   fontStyle?: string;
   color: string;
@@ -280,7 +286,7 @@ function TextEditOverlay({
         color: edit.color,
         caretColor: edit.color,
         textAlign: edit.align ?? "left",
-        lineHeight: 1.3,
+        lineHeight: edit.lineHeight ?? TEXT_LINE_HEIGHT,
         // Invisible — looks like directly editing the canvas text.
         background: "transparent",
         border: "none",
@@ -509,6 +515,7 @@ export const SlideKonvaEditor = forwardRef<
               fontSizePx,
               fontFamily: getTextLikeFontFamily(el),
               fontStyle: getTextLikeFontStyle(el),
+              lineHeight: getTextLikeLineHeight(el),
             })
           : measureListItemHeightsPx(el, widthPx, fontSizePx).reduce((sum, itemHeight) => sum + itemHeight, 0);
       return Math.max(MIN_ELEMENT_H, heightPx / H);
@@ -563,13 +570,13 @@ export const SlideKonvaEditor = forwardRef<
         const itemHeights = measureListItemHeightsPx(el, widthPx, fontSizePx);
         group.find("Text").forEach((textNode, index) => {
           const listTextNode = textNode as Konva.Text;
-          const itemHeight = itemHeights[index] ?? fontSizePx * TEXT_LINE_HEIGHT;
+          const itemHeight = itemHeights[index] ?? fontSizePx * getTextLikeLineHeight(el);
           textNode.x(0);
           textNode.y(nextY);
           listTextNode.width(widthPx);
           listTextNode.height(itemHeight);
           listTextNode.fontSize(fontSizePx);
-          listTextNode.lineHeight(TEXT_LINE_HEIGHT);
+          listTextNode.lineHeight(getTextLikeLineHeight(el));
           nextY += itemHeight;
         });
       } else {
@@ -577,7 +584,7 @@ export const SlideKonvaEditor = forwardRef<
         textNode.width(widthPx);
         textNode.height(heightPx);
         textNode.fontSize(fontSizePx);
-        textNode.lineHeight(TEXT_LINE_HEIGHT);
+        textNode.lineHeight(getTextLikeLineHeight(el));
       }
     },
     [W, H],
@@ -728,10 +735,14 @@ export const SlideKonvaEditor = forwardRef<
         if (metrics) {
           liveW = metrics.newW;
           const fittedH = getFittedTextLikeHeight(el, metrics.newW, metrics.newFontSize);
-          liveH =
-            CORNER_ANCHORS.has(activeAnchor) || HORIZONTAL_SIDE_ANCHORS.has(activeAnchor)
-              ? fittedH
-              : Math.max(metrics.newH, fittedH);
+          // Corner handles change font size, so the box legitimately re-fits to
+          // the new font. Side handles (width-only or height-only drags) must
+          // never silently discard the box's current height -- only grow it
+          // when the content no longer fits, otherwise a width-only drag snaps
+          // the height down to the text's minimum and the box visibly jumps.
+          liveH = CORNER_ANCHORS.has(activeAnchor)
+            ? fittedH
+            : Math.max(metrics.newH, fittedH);
           applyLiveTextLikeGeometry(node, el, activeAnchor, metrics.newW, liveH, metrics.newFontSize);
           node.scaleX(1);
           node.scaleY(1);
@@ -811,10 +822,14 @@ export const SlideKonvaEditor = forwardRef<
 
         if (newFontSize !== null) {
           const fittedH = getFittedTextLikeHeight(el, newW, newFontSize);
-          newH =
-            activeAnchor && VERTICAL_SIDE_ANCHORS.has(activeAnchor)
-              ? Math.max(newH, fittedH)
-              : fittedH;
+          // Mirror handleTransformLive: only corner handles (which also resize
+          // the font) force an exact refit. Side handles must never shrink the
+          // box below its current size -- they only grow it if the content no
+          // longer fits, otherwise the box snaps/collapses on a width-only or
+          // height-only drag (the "resize bug" reported on SCOOL-147).
+          newH = activeAnchor && CORNER_ANCHORS.has(activeAnchor)
+            ? fittedH
+            : Math.max(newH, fittedH);
         }
       } else if (isShapeElement(el)) {
         newW = Math.max(MIN_ELEMENT_W, el.w * Math.abs(sx));
@@ -879,8 +894,8 @@ export const SlideKonvaEditor = forwardRef<
         el.type === "text" ? (el as CanvasTextElement).color
         : el.type === "math" ? MATH_COLOR
         : T.muted;
-      const fontFamily =
-        el.type === "text" ? (el as CanvasTextElement).fontFamily : undefined;
+      const fontFamily = isTextLikeElement(el) ? el.fontFamily : undefined;
+      const lineHeight = isTextLikeElement(el) ? el.lineHeight : undefined;
       const fontStyle =
         el.type === "text" ? (el as CanvasTextElement).fontStyle : undefined;
       const align =
@@ -902,6 +917,7 @@ export const SlideKonvaEditor = forwardRef<
         height: Math.max(el.h * H, fs * 1.5),
         fontSize: fs,
         fontFamily,
+        lineHeight,
         fontStyle,
         color,
         align,
@@ -1143,6 +1159,7 @@ export const SlideKonvaEditor = forwardRef<
                         fontSizePx: t.fontSize * W,
                         fontFamily: t.fontFamily || T.font,
                         fontStyle: t.fontStyle,
+                        lineHeight: getTextLikeLineHeight(t),
                       }),
                     )}
                     fontSize={t.fontSize * W}
@@ -1151,7 +1168,7 @@ export const SlideKonvaEditor = forwardRef<
                     textDecoration={t.underline ? "underline" : ""}
                     fill={t.color}
                     align={t.align}
-                    lineHeight={TEXT_LINE_HEIGHT}
+                    lineHeight={getTextLikeLineHeight(t)}
                     wrap="word"
                     visible={!isEditing}
                     scooliHalfW={el.w * W / 2}
@@ -1233,15 +1250,15 @@ export const SlideKonvaEditor = forwardRef<
                     {l.items.map((item, i) => (
                     <Text
                         key={i}
-                        text={ordered ? `${i + 1}. ${item}` : `• ${item}`}
+                        text={`${listItemPrefix(ordered, l.items, i)}${item}`}
                         x={0}
                         y={itemOffsets[i] ?? 0}
                         width={el.w * W}
-                        height={itemHeights[i] ?? l.fontSize * W * TEXT_LINE_HEIGHT}
+                        height={itemHeights[i] ?? l.fontSize * W * getTextLikeLineHeight(l)}
                         fontSize={l.fontSize * W}
                         fontFamily={getTextLikeFontFamily(l)}
                         fill={l.color}
-                        lineHeight={TEXT_LINE_HEIGHT}
+                        lineHeight={getTextLikeLineHeight(l)}
                         wrap="word"
                         listening={false}
                       />

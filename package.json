@@ -8,6 +8,8 @@
     "build": "next build",
     "start": "next start",
     "test": "vitest run",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
     "lint": "eslint .",
     "updateEmails": "cd ../chalkboard && make emails",
     "stripe:mock": "stripe listen --forward-to http://localhost:8080/webhooks/stripe",
@@ -87,7 +89,9 @@
     "prosemirror-view": "1.40.1"
   },
   "devDependencies": {
+    "@clerk/testing": "^2.2.47",
     "@eslint/eslintrc": "^3",
+    "@playwright/test": "^1.64.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
@@ -95,6 +99,7 @@
     "@types/showdown": "^2.0.6",
     "eslint": "^9",
     "eslint-config-next": "15.3.5",
+    "jsdom": "^26.1.0",
     "knip": "^5.88.1",
     "postcss": "^8.5.9",
     "tailwindcss": "^4",

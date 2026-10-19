@@ -1,10 +1,14 @@
 export { AdditionalDetailsSection } from "./AdditionalDetailsSection";
 export { ClassSection } from "./ClassSection";
 export { DurationSection } from "./DurationSection";
+export { FieldHeading, FormCard, OptionRow } from "./FormCard";
+export { FilledSummary } from "./FilledSummary";
 export { FormActions } from "./FormActions";
 export { FormHeader } from "./FormHeader";
+export { LessonSection } from "./LessonSection";
+export { MoreOptions } from "./MoreOptions";
 export { NESTED_SECTION_CLASS } from "./nested";
-export { SlideCountSection, DEFAULT_SLIDE_COUNT } from "./SlideCountSection";
+export { SlideCountSection } from "./SlideCountSection";
 export { SourcePickerSection } from "./SourcePickerSection";
 export { SubjectSection } from "./SubjectSection";
 export { TeachingMethodSection } from "./TeachingMethodSection";

@@ -1,5 +1,5 @@
 /** Pure decisions for where the onboarding flow starts and when Back is available. */
-export type StepId = 1 | 2 | 3 | 4 | 5;
+export type StepId = 1 | 2 | 3 | 4 | 5 | 6;
 
 export interface StartStepInput {
   mode: "full" | "profile";
@@ -27,23 +27,37 @@ export function isStepOneComplete(answers: {
   );
 }
 
+/** Steps 5 (baseline questions) and 6 (weekly ritual) come after the first class. */
+export const BASELINE_STEP = 5;
+export const RITUAL_STEP = 6;
+
 /**
  * While the profile is not saved the flow can only start at step 1 or 2, whatever the
- * draft says. Afterwards it resumes at the class step, or at the ritual step when a class
- * exists or was skipped.
+ * draft says. Afterwards it resumes at the class step, or at the baseline / ritual step when a
+ * class exists or was skipped (the ritual only when the server saw the teacher reach it).
  */
 export function resolveStartStep(input: StartStepInput): StepId {
   if (!input.profileDone || input.mode === "profile") return input.step1Complete ? 2 : 1;
-  if (input.hasClass) return 5;
-  if (input.skippedClass || input.lastStep === 5) return 5;
+  if (input.lastStep === RITUAL_STEP && (input.hasClass || input.skippedClass)) return RITUAL_STEP;
+  if (input.hasClass) return BASELINE_STEP;
+  if (input.skippedClass || (input.lastStep !== null && input.lastStep >= BASELINE_STEP)) {
+    return input.lastStep === RITUAL_STEP ? RITUAL_STEP : BASELINE_STEP;
+  }
   return 3;
 }
 
-/** Back is hidden on the first screen, once a class exists, and on the week step. */
+/**
+ * Back is hidden on the first screen, on the week step, and (once a class exists) on the baseline
+ * step, whose previous screen is the week step. The ritual step can always go back to the baseline.
+ */
 export function canGoBackFrom(input: {
   stepIndex: number;
   step: StepId;
   classExists: boolean;
 }): boolean {
-  return input.stepIndex > 0 && !(input.step >= 3 && input.classExists) && input.step !== 4;
+  return (
+    input.stepIndex > 0 &&
+    !(input.step >= 3 && input.step <= BASELINE_STEP && input.classExists) &&
+    input.step !== 4
+  );
 }

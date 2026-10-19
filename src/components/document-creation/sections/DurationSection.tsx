@@ -1,11 +1,11 @@
-import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/shared/utils/utils";
-import { Check, Clock, Pencil, X } from "lucide-react";
+import { Check, Pencil, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useRef, useState } from "react";
 import { LESSON_TIMES } from "../constants";
 import type { FormUpdateFn } from "../types";
+import { OptionRow } from "./FormCard";
 
 interface DurationSectionProps {
   lessonTime?: number;
@@ -64,36 +64,22 @@ export function DurationSection({
   const hasCustomTimeSelected = lessonTime && !isPreset && !isEditingCustomTime;
 
   return (
-    <Card className={cn("p-4 sm:p-6 border-border shadow-sm hover:shadow-md transition-shadow h-full", className)}>
-      <div className="space-y-3 sm:space-y-4">
-        <div className="flex items-center gap-2 sm:gap-3">
-          <div className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-accent shrink-0">
-            <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-          </div>
-          <h2 className="text-base sm:text-lg font-semibold text-foreground">
-            {t("title")}{" "}
-            <span className="text-xs sm:text-sm font-normal text-muted-foreground">
-              {t("optional")}
-            </span>
-          </h2>
-        </div>
-        <div className="flex flex-wrap gap-1.5 sm:gap-2">
+    <OptionRow label={t("title")}>
+        <div className={cn("flex flex-wrap gap-1.5", className)}>
           {LESSON_TIMES.map((time) => (
             <button
               key={time.id}
               type="button"
               onClick={() => handlePresets(time.value)}
               className={cn(
-                "inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium transition-all",
-                "border hover:scale-[1.02] active:scale-[0.98]",
+                "inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium transition-colors",
                 lessonTime === time.value
-                  ? "bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20"
+                  ? "bg-primary text-primary-foreground border-primary"
                   : "bg-card text-foreground border-border hover:border-primary hover:bg-accent"
               )}
               aria-pressed={lessonTime === time.value}
               aria-label={t("selectAriaLabel", { label: time.label })}
             >
-              <span>⏱️</span>
               <span>{time.label}</span>
             </button>
           ))}
@@ -102,10 +88,9 @@ export function DurationSection({
             <button
               type="button"
               onClick={handleCustomTimeClick}
-              className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium transition-all border bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] group"
+              className="group inline-flex items-center gap-1 rounded-full border border-primary bg-primary px-3 py-1 text-xs font-medium text-primary-foreground"
               aria-label={t("currentAriaLabel", { minutes: lessonTime })}
             >
-              <span>⏱️</span>
               <span>{lessonTime} min</span>
               <Pencil className="w-3 h-3 ml-1 opacity-70 group-hover:opacity-100 shrink-0" />
             </button>
@@ -127,7 +112,7 @@ export function DurationSection({
                     }
                   }}
                   placeholder="75"
-                  className="h-9 w-16 sm:w-20 px-2 sm:px-3 py-2 text-sm bg-muted border-primary rounded-xl placeholder:text-muted-foreground"
+                  className="h-8 w-16 rounded-lg border-primary bg-muted px-2 text-sm placeholder:text-muted-foreground"
                   aria-label={t("customAriaLabel")}
                   autoFocus
                 />
@@ -164,18 +149,15 @@ export function DurationSection({
                 handleCustomTimeClick();
               }}
               className={cn(
-                "inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium transition-all",
-                "border hover:scale-[1.02] active:scale-[0.98]",
+                "inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium transition-colors",
                 "bg-card text-foreground border-border hover:border-primary hover:bg-accent"
               )}
               aria-label={t("otherAriaLabel")}
             >
-              <span>⏱️</span>
               <span>{t("other")}</span>
             </button>
           )}
         </div>
-      </div>
-    </Card>
+    </OptionRow>
   );
 }

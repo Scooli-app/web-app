@@ -16,9 +16,6 @@ export * from "./template.service";
 export * from "./subscription.service";
 export * from "./entitlement.service";
 
-// Assistant service
-export * from "./assistant.service";
-
 // Health service
 export * from "./health.service";
 

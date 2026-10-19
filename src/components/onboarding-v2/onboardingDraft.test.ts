@@ -99,3 +99,29 @@ describe("finalizeDrafts (F2, F3)", () => {
     expect(saveDraft).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("baseline answers", () => {
+  it("sends only the changed baseline fields, and [] to clear the tools", async () => {
+    queueDraft({ step: 5, prepHoursPerWeek: "H2_5", currentTools: ["AI_CHAT"] }, { immediate: true });
+    await flushDraft();
+    expect(saveDraft).toHaveBeenLastCalledWith(
+      expect.objectContaining({ prepHoursPerWeek: "H2_5", currentTools: ["AI_CHAT"] }),
+    );
+
+    queueDraft({ step: 5, prepHoursPerWeek: "H2_5", currentTools: [], classCount: "C1_2" }, { immediate: true });
+    await flushDraft();
+    const sent = saveDraft.mock.calls.at(-1)?.[0];
+    expect(sent).toMatchObject({ currentTools: [], classCount: "C1_2" });
+    expect("prepHoursPerWeek" in sent).toBe(false);
+  });
+
+  it("does not resend the answers restored from the server draft", async () => {
+    resetDraft(async () => "tok", { prepHoursPerWeek: "LT2", currentTools: ["PUBLISHER"], classCount: "C3_4" }, 5);
+    queueDraft(
+      { step: 5, prepHoursPerWeek: "LT2", currentTools: ["PUBLISHER"], classCount: "C3_4" },
+      { immediate: true },
+    );
+    await flushDraft();
+    expect(saveDraft).not.toHaveBeenCalled();
+  });
+});

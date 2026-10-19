@@ -32,7 +32,8 @@ import {
 import { selectIsCurriculumPlanEnabled } from "@/store/features/selectors";
 import { useFeatureAccess } from "@/components/feature/useFeatureAccess";
 import { FeatureUnavailable } from "@/components/feature/FeatureUnavailable";
-import { useAppDispatch } from "@/store/hooks";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { resolveEffectiveContentLanguage } from "@/i18n/clientLocale";
 import {
   buildSchoolPeriodPresets,
   formatPresetRange,
@@ -100,12 +101,14 @@ const PLANNING_TYPE_LABEL_EN: Record<CurriculumPlanningType, string> = {
 };
 
 /**
- * The prompt sent to the AI is written in the interface language: the teacher
- * is the one who would read it back (in errors, history, a future "edit the
- * request" feature), so it should read like something they wrote, not a fixed
- * Portuguese template. The subject name and "Aprendizagens Essenciais" are the
- * exception — curriculum vocabulary, translated by the model itself the same
- * way the retrieved AE context is (see EnglishPromptLanguage).
+ * The prompt sent to the AI is written in the effective content language — the
+ * same one the backend writes the plan in (users.content_language, falling
+ * back to the interface locale). Writing it in the interface language instead
+ * would pair, say, an English request with a Portuguese system prompt for a
+ * teacher with UI=en and content=pt-PT, and leak English titles into the plan.
+ * "Aprendizagens Essenciais" stays as is — curriculum vocabulary, translated by
+ * the model itself the same way the retrieved AE context is (see
+ * EnglishPromptLanguage).
  */
 function buildPrompt(p: {
   planningType: CurriculumPlanningType;
@@ -189,14 +192,8 @@ export default function CurriculumPlanNewPage() {
     () => SUBJECTS.find((s) => s.id === choice.subject),
     [choice.subject]
   );
-  // The review step shows the translated name; the AI prompt uses whichever
-  // name matches the language the prompt itself is written in (see buildPrompt).
-  // A UC or school-component subject is already a name.
-  const subjectLabel = selectedSubject
-    ? locale === "en"
-      ? subjectChoiceLabel(choice)
-      : selectedSubject.label
-    : choice.subject;
+  const { contentLanguage: contentLanguagePreference, interfaceLocale: interfaceLocalePreference } =
+    useAppSelector((state) => state.ui);
   // Backend expects the canonical English value (or the UC's name) and, for a curso
   // profissional, the course and UC — see subjectChoicePayload.
   const { schoolYear, ...subjectFields } = subjectChoicePayload(choice);
@@ -231,6 +228,24 @@ export default function CurriculumPlanNewPage() {
     setStep("loading");
     setLoadingStep(0);
 
+    // Resolved at submit time (it reads localStorage and the locale cookie), with
+    // the same gate createDocument uses, and sent explicitly so the prompt and
+    // the generated plan can never disagree on language.
+    const contentLanguage = resolveEffectiveContentLanguage(
+      contentLanguagePreference,
+      interfaceLocalePreference,
+    );
+    // The AI prompt uses the subject name in the prompt's own language. The
+    // English interface already has the English name; otherwise use the
+    // canonical English value. A UC or school-component subject is already a name.
+    const subjectLabel = selectedSubject
+      ? contentLanguage === "en"
+        ? locale === "en"
+          ? subjectChoiceLabel(choice)
+          : selectedSubject.value
+        : selectedSubject.label
+      : choice.subject;
+
     const prompt = buildPrompt({
       planningType,
       subjectLabel,
@@ -239,7 +254,7 @@ export default function CurriculumPlanNewPage() {
       periodEnd: periodEndISO,
       lessonsPerWeek: lpw,
       totalLessons,
-      locale,
+      locale: contentLanguage,
     });
 
     try {
@@ -249,6 +264,7 @@ export default function CurriculumPlanNewPage() {
         createDocument({
           documentType: "curriculumPlan",
           prompt,
+          contentLanguage,
           ...subjectFields,
           schoolYear,
           additionalDetails: JSON.stringify({

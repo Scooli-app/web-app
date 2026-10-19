@@ -1,9 +1,11 @@
+import type { CompanionType } from "@/components/dashboard/weekWindow";
 /**
  * Timetable Service — Feature 2: Horário & Planos Letivos
  */
 
 import apiClient from "./client";
 import { featureFeedbackTrigger } from "@/store/featureFeedbackTrigger";
+import type { CheckInOutcome, CheckInSlotType, TeachingStatus } from "@/shared/types/check-in";
 
 export interface RecurringSlot {
   dayOfWeek: number; // 1=Mon..7=Sun (ISO)
@@ -79,6 +81,12 @@ export interface LessonSlot {
   durationMinutes: number;
   status: LessonSlotStatus;
   errorMessage: string;
+  /** Set by the teacher's check-in ("Como correu a aula?"); `planned` until then. */
+  teachingStatus?: TeachingStatus;
+  /** ISO timestamp of the latest check-in, null until the teacher checks in. */
+  checkedInAt?: string | null;
+  /** Outcomes (AE) this lesson covers, offered as chips in the check-in card. */
+  outcomes?: CheckInOutcome[];
 }
 
 export interface UpdateSlotParams {
@@ -97,6 +105,9 @@ export interface LessonDocument {
   documentId: string;
   documentRole: string;
   title: string;
+  documentType?: string;
+  /** generating | processing | completed | failed */
+  status?: string;
 }
 
 export interface GenerateLessonStreamCallbacks {
@@ -179,6 +190,31 @@ export async function skipLesson(timetableId: string, lessonId: string): Promise
   return response.data;
 }
 
+/** The lesson before a slot, when it still needs its "Como correu?" answer (ENG-224). */
+export interface PreviousLessonCheckIn {
+  slotId: string;
+  /** YYYY-MM-DD */
+  date: string;
+  topicTitle: string;
+  slotType: CheckInSlotType;
+  outcomes: CheckInOutcome[];
+}
+
+/**
+ * Null when there is nothing to ask: no previous lesson, already answered, or the class-state flag is off
+ * (the backend answers 204 for all of these).
+ */
+export async function getPreviousCheckIn(
+  timetableId: string,
+  lessonId: string
+): Promise<PreviousLessonCheckIn | null> {
+  const response = await apiClient.get<PreviousLessonCheckIn | "">(
+    `/timetable/${timetableId}/lessons/${lessonId}/previous-check-in`
+  );
+  if (response.status === 204 || !response.data) return null;
+  return response.data;
+}
+
 export async function listLessonDocuments(
   timetableId: string,
   lessonId: string
@@ -187,6 +223,32 @@ export async function listLessonDocuments(
     `/timetable/${timetableId}/lessons/${lessonId}/documents`
   );
   return response.data;
+}
+
+/**
+ * One-click lesson document ("+ Ficha", "+ Quiz", …): the backend creates it from the lesson's
+ * data and generates it server-side, so it finishes even if the teacher leaves the page.
+ * 402 / free-plan 403 open the upgrade modal in the API client; 409 = already being prepared.
+ */
+export async function generateLessonDocument(
+  timetableId: string,
+  lessonId: string,
+  documentType: CompanionType,
+): Promise<{ id: string }> {
+  const response = await apiClient.post<{ id: string; status: string }>(
+    `/timetable/${timetableId}/lessons/${lessonId}/documents/generate`,
+    { documentType },
+  );
+  return { id: response.data.id };
+}
+
+/** Puts a document made from the create form into one of the teacher's lessons (no credit). */
+export async function linkLessonDocument(
+  timetableId: string,
+  lessonId: string,
+  documentId: string,
+): Promise<void> {
+  await apiClient.post(`/timetable/${timetableId}/lessons/${lessonId}/documents/${documentId}/link`);
 }
 
 // ─── TOPIC GENERATION ─────────────────────────────────────────────────

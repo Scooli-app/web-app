@@ -1,0 +1,208 @@
+# =============================================================================
+# CI — unit tests and end-to-end tests
+# =============================================================================
+# Runs on every pull request to develop or main (and on pushes to them). Both
+# jobs are required status checks for merging into main.
+#
+#   Unit tests  vitest (npm test)
+#   E2E tests   Playwright (npm run test:e2e) against a real stack built here:
+#               Postgres (pgvector) + chalkboard API built with fake AI
+#               (CHALKBOARD_AI_FAKE=true: no OpenAI calls, no credits) + this
+#               web-app (next build / next start). See README → "Testes e2e".
+#
+# Secrets (Settings → Secrets and variables → Actions):
+#   CHALKBOARD_READ_TOKEN              fine-grained PAT, read-only "Contents" on Scooli-app/chalkboard
+#   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY  Clerk *dev* instance publishable key (pk_test_…)
+#   CLERK_SECRET_KEY                   Clerk *dev* instance secret key (sk_test_…)
+#   E2E_CLERK_USER_EMAIL               the dedicated e2e test user in the Clerk dev instance
+# Optional variable:
+#   CHALKBOARD_REF                     chalkboard branch/tag/sha to test against (default: main)
+#
+# Pull requests from forks get no secrets, so their E2E job fails: the web-app
+# is public, but its e2e tests need the private backend and Clerk keys.
+# =============================================================================
+
+name: CI
+
+on:
+  pull_request:
+    branches: [develop, main]
+  push:
+    branches: [develop, main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: "22"
+  JAVA_VERSION: "21"
+
+jobs:
+  unit:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: Run unit tests
+        run: npm test
+
+  e2e:
+    name: E2E tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_DB: scooli
+          POSTGRES_USER: scooli
+          POSTGRES_PASSWORD: scooli
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U scooli -d scooli"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
+    env:
+      # Read by the web-app build, the server and Playwright alike.
+      NEXT_PUBLIC_BASE_API_URL: http://127.0.0.1:8080
+      NEXT_PUBLIC_SITE_URL: https://www.scooli.app
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+      CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
+      NEXT_PUBLIC_CLERK_SIGN_IN_URL: /sign-in
+      NEXT_PUBLIC_CLERK_SIGN_UP_URL: /sign-up
+      NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL: /dashboard
+      NEXT_PUBLIC_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL: /dashboard
+      NEXT_PUBLIC_CLERK_KEYLESS_DISABLED: "1"
+      NEXT_PUBLIC_POSTHOG_ENABLED: "false"
+      POSTHOG_ENABLED: "false"
+      E2E_BASE_URL: http://localhost:3000
+      E2E_API_URL: http://127.0.0.1:8080
+      E2E_DATABASE_URL: postgresql://scooli:scooli@localhost:5432/scooli
+      E2E_CLERK_USER_EMAIL: ${{ secrets.E2E_CLERK_USER_EMAIL }}
+
+    steps:
+      - name: Check secrets
+        env:
+          CHALKBOARD_READ_TOKEN: ${{ secrets.CHALKBOARD_READ_TOKEN }}
+        run: |
+          missing=""
+          for name in CHALKBOARD_READ_TOKEN NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY CLERK_SECRET_KEY E2E_CLERK_USER_EMAIL; do
+            [ -n "${!name}" ] || missing="$missing $name"
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::Missing secrets:$missing (see the header of .github/workflows/ci.yml)"
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+
+      # ── chalkboard API, built with fake AI ─────────────────────────────────
+      - name: Check out chalkboard
+        uses: actions/checkout@v4
+        with:
+          repository: Scooli-app/chalkboard
+          ref: ${{ vars.CHALKBOARD_REF || 'main' }}
+          token: ${{ secrets.CHALKBOARD_READ_TOKEN }}
+          path: chalkboard
+
+      - uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: temurin
+          cache: maven
+          cache-dependency-path: chalkboard/**/pom.xml
+
+      - name: Build chalkboard (fake AI)
+        working-directory: chalkboard
+        env:
+          # Build-time switch: swaps OpenAiClient/EmbeddingService for the fakes.
+          CHALKBOARD_AI_FAKE: "true"
+        run: mvn -B -q -DskipTests package
+
+      - name: Start chalkboard
+        # The dev profile carries the local defaults (Clerk dev instance, CORS for
+        # localhost:3000, storage stubs); the database is the service above.
+        run: |
+          nohup java -Dquarkus.profile=dev -jar chalkboard/server/target/quarkus-app/quarkus-run.jar \
+            > chalkboard.log 2>&1 &
+
+      # ── web-app ────────────────────────────────────────────────────────────
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - name: Install Playwright browser
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+
+      - name: Install Playwright system dependencies
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
+
+      - name: Build web-app
+        run: npm run build
+
+      - name: Start web-app
+        run: nohup npm run start -- -p 3000 > web-app.log 2>&1 &
+
+      - name: Wait for chalkboard and web-app
+        run: |
+          wait_for() {
+            for _ in $(seq 1 90); do
+              if curl -sf -o /dev/null "$1"; then echo "$1 is up"; return 0; fi
+              sleep 2
+            done
+            echo "::error::$1 did not come up"; return 1
+          }
+          wait_for http://127.0.0.1:8080/q/health/ready || { tail -n 100 chalkboard.log; exit 1; }
+          wait_for http://localhost:3000/sign-in || { tail -n 100 web-app.log; exit 1; }
+
+      - name: Run e2e tests
+        run: npm run test:e2e
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+
+      - name: Upload server logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-logs
+          path: |
+            chalkboard.log
+            web-app.log
+          retention-days: 7

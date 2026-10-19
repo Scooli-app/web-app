@@ -2,15 +2,17 @@
 import { AiDisclaimer } from "@/components/ui/ai-disclaimer";
 
 /**
- * ImagePickerModal â€” modal for adding an image to a slide.
+ * ImagePickerModal - modal for adding an image to a slide.
  *
- * Three tabs:
- *   1. Gerar com IA  â€” prompt â†’ AI-generated image (Bloom)
- *   2. Carregar      â€” upload from PC (drag-drop or click)
- *   3. Por URL       â€” paste any image URL
+ * Four tabs:
+ *   1. Gerar com IA     - prompt -> AI-generated image (Bloom)
+ *   2. Pesquisar imagens - free stock images (Wikimedia Commons, Openverse, and
+ *                          Pixabay/Pexels when configured), copied into our storage
+ *   3. Carregar         - upload from PC (drag-drop or click)
+ *   4. Por URL          - paste any image URL
  *
- * On confirm the parent receives { url, prompt, backendId? } and is
- * responsible for inserting the canvas element.
+ * On confirm the parent receives { url, prompt, backendId?, attribution? } and
+ * is responsible for inserting the canvas element.
  */
 
 import { Button } from "@/components/ui/button";
@@ -20,28 +22,36 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { uploadDocumentImage } from "@/services/api";
+import { importStockImage, searchStockImages, uploadDocumentImage } from "@/services/api";
+import { ApiRequestError } from "@/services/api/client";
+import type { ImageAttribution } from "@/shared/types/blocks";
+import type { StockImage, StockImageFilter } from "@/shared/types/document";
+import { providerDisplayName } from "@/shared/utils/photo-credit";
 import { cn } from "@/shared/utils/utils";
-import { Image as ImageIcon, Link2, Loader2, Sparkles, Upload } from "lucide-react";
-import { useTranslations } from "next-intl";
-import { useCallback, useRef, useState } from "react";
+import { ExternalLink, Image as ImageIcon, Link2, Loader2, RotateCcw, Search, Sparkles, Upload } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 /* --------------------------------------------------------------------------
  * Types
  * -------------------------------------------------------------------------- */
 
-type Tab = "generate" | "upload" | "url";
+type Tab = "generate" | "images" | "upload" | "url";
 
 export interface ImageInsertResult {
   url: string;
   prompt: string;
   backendId?: string;
+  /** Stock images only: the author/licence credit to keep with the element. */
+  attribution?: ImageAttribution;
 }
 
 interface Props {
   open: boolean;
   documentId: string;
+  /** Suggested first search (active slide title, then document title). Empty = localized default. */
+  initialSearchQuery?: string;
   onClose: () => void;
   onInsert: (result: ImageInsertResult) => void;
   onGenerate: (prompt: string) => void;
@@ -66,7 +76,7 @@ function TabBtn({
       type="button"
       onClick={onClick}
       className={cn(
-        "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+        "flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
         active
           ? "bg-background text-foreground shadow-sm"
           : "text-muted-foreground hover:text-foreground",
@@ -136,8 +146,569 @@ function GenerateTab({
 }
 
 /* --------------------------------------------------------------------------
+ * Images tab (stock libraries: Wikimedia Commons, Openverse, Pixabay, Pexels)
+ * -------------------------------------------------------------------------- */
+const PROVIDER_HOME: Record<string, string> = {
+  wikimedia: "https://commons.wikimedia.org",
+  openverse: "https://openverse.org",
+  pixabay: "https://pixabay.com",
+  pexels: "https://www.pexels.com",
+};
+
+/** Short provider names for the result badges (the full name is in the footer and the credit). */
+const PROVIDER_SHORT: Record<string, string> = {
+  wikimedia: "Wikimedia",
+  openverse: "Openverse",
+  pixabay: "Pixabay",
+  pexels: "Pexels",
+};
+
+type FilterChip = "all" | StockImageFilter;
+
+const FILTER_CHIPS: { value: FilterChip; labelKey: string }[] = [
+  { value: "all", labelKey: "imagesFilterAll" },
+  { value: "photo", labelKey: "imagesFilterPhotos" },
+  { value: "illustration", labelKey: "imagesFilterIllustrations" },
+  { value: "diagram", labelKey: "imagesFilterDiagrams" },
+];
+
+const TYPE_LABEL_KEYS: Record<StockImage["type"], string> = {
+  photo: "imagesTypePhoto",
+  illustration: "imagesTypeIllustration",
+  diagram: "imagesTypeDiagram",
+  map: "imagesTypeMap",
+};
+
+/** Backend stock image error codes → message keys (see StockImageException on the backend). */
+const STOCK_ERROR_KEYS: Record<string, string> = {
+  stock_rate_limited: "imagesErrorRateLimited",
+  stock_unavailable: "imagesErrorUnavailable",
+  stock_not_configured: "imagesErrorNotConfigured",
+  stock_disabled: "imagesErrorDisabled",
+  stock_image_gone: "imagesErrorGone",
+  stock_invalid_image: "imagesErrorInvalid",
+  stock_storage_failed: "imagesErrorStorage",
+};
+
+/** Errors retrying cannot fix: the tab shows the message without a retry button. */
+const PERMANENT_ERROR_KEYS = new Set(["imagesErrorNotConfigured", "imagesErrorDisabled", "imagesErrorDocument"]);
+
+function isOffline(): boolean {
+  return typeof navigator !== "undefined" && navigator.onLine === false;
+}
+
+/** Picks the message key for a failed search or insert from the API error's status and code. */
+function stockErrorKey(err: unknown, phase: "search" | "insert"): string {
+  if (isOffline()) return "imagesErrorOffline";
+  if (err instanceof ApiRequestError) {
+    if (err.status === 0) return "imagesErrorOffline";
+    if (err.code && STOCK_ERROR_KEYS[err.code]) return STOCK_ERROR_KEYS[err.code];
+    if (err.status === 404) return "imagesErrorDocument";
+    if (err.status === 429) return "imagesErrorRateLimited";
+    if (err.status >= 500) return phase === "search" ? "imagesErrorUnavailable" : "imagesErrorStorage";
+  }
+  return phase === "search" ? "imagesError" : "imagesInsertError";
+}
+
+/** A thumbnail that failed to load (provider hiccup, removed file) becomes a labelled placeholder. */
+function StockThumbnail({ image, contain }: { image: StockImage; contain: boolean }) {
+  const t = useTranslations("editor.imagePickerModal");
+  const [broken, setBroken] = useState(false);
+  if (broken) {
+    return (
+      <span className="flex h-full w-full flex-col items-center justify-center gap-1 bg-muted px-2 text-center text-[10px] text-muted-foreground">
+        <ImageIcon className="h-5 w-5" />
+        {t("imagesThumbUnavailable")}
+      </span>
+    );
+  }
+  return (
+    // eslint-disable-next-line @next/next/no-img-element -- remote provider thumbnails
+    <img
+      src={image.thumbnailUrl}
+      alt={image.alt ?? ""}
+      loading="lazy"
+      referrerPolicy="no-referrer"
+      onError={() => setBroken(true)}
+      className={cn(
+        "h-full w-full transition-transform duration-200 group-hover:scale-105",
+        // Diagrams and maps are shown whole: cropping would cut labels off.
+        contain ? "object-contain p-1" : "object-cover",
+      )}
+    />
+  );
+}
+
+/** Longest search text we send: matches the input's maxLength, so suggestions never exceed it. */
+const MAX_QUERY_LENGTH = 200;
+
+/**
+ * Cleans a suggested search (slide or document title) before it becomes the query:
+ * strips control characters, collapses whitespace and bounds the length.
+ * Returns "" when nothing usable remains, so the caller can fall back to the default.
+ */
+export function cleanSearchSuggestion(raw: string | null | undefined): string {
+  if (!raw) return "";
+  return raw
+    .replace(/[\u0000-\u001f\u007f]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, MAX_QUERY_LENGTH)
+    .trim();
+}
+
+/** Opens illustrations by default: they suit slides best, and photos are rarely educational diagrams. */
+const DEFAULT_FILTER: FilterChip = "illustration";
+
+function ImagesTab({
+  documentId,
+  initialSearchQuery,
+  onInsert,
+}: {
+  documentId: string;
+  initialSearchQuery?: string;
+  onInsert: (r: ImageInsertResult) => void;
+}) {
+  const t = useTranslations("editor.imagePickerModal");
+  const locale = useLocale();
+  // Captured once per tab mount so a re-render with a new slide does not silently replace the query.
+  const [defaultQuery] = useState(
+    () => cleanSearchSuggestion(initialSearchQuery) || cleanSearchSuggestion(t("imagesDefaultQuery")),
+  );
+  const [query, setQuery] = useState(defaultQuery);
+  const [filter, setFilter] = useState<FilterChip>(DEFAULT_FILTER);
+  const [submittedQuery, setSubmittedQuery] = useState("");
+  const [results, setResults] = useState<StockImage[]>([]);
+  const [providers, setProviders] = useState<string[]>([]);
+  const [failedProviders, setFailedProviders] = useState<string[]>([]);
+  const [hasMore, setHasMore] = useState(false);
+  const [searching, setSearching] = useState(false);
+  /** Message key for a failed first page (shown in place of the grid). */
+  const [errorKey, setErrorKey] = useState<string | null>(null);
+  /** Message key for a failed "load more" (results so far stay visible). */
+  const [moreErrorKey, setMoreErrorKey] = useState<string | null>(null);
+  const [lastRequest, setLastRequest] = useState<{ q: string; chip: FilterChip } | null>(null);
+  const [insertingId, setInsertingId] = useState<string | null>(null);
+
+  // Refs read by the async paths and the observer, so they never act on stale state.
+  const requestSeq = useRef(0);
+  const submittedRef = useRef<{ q: string; chip: FilterChip }>({ q: defaultQuery, chip: DEFAULT_FILTER });
+  const pageRef = useRef(1);
+  const hasMoreRef = useRef(false);
+  /** Single-flight guard: true from the moment a "load more" starts until it settles. */
+  const pendingMoreRef = useRef(false);
+  /** Set by a failed "load more"; the observer stops until the user presses the button. */
+  const moreErrorRef = useRef(false);
+  const loadMoreRef = useRef<() => void>(() => undefined);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  // The modal can be closed while an import is in flight: don't insert into a closed editor.
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+
+  const runSearch = useCallback(
+    async (q: string, chip: FilterChip, nextPage: number) => {
+      const isMore = nextPage > 1;
+      if (isMore) {
+        if (pendingMoreRef.current) return;
+        pendingMoreRef.current = true;
+      } else {
+        submittedRef.current = { q, chip };
+      }
+      const seq = ++requestSeq.current;
+      try {
+        setSearching(true);
+        setMoreErrorKey(null);
+        moreErrorRef.current = false;
+        if (!isMore) {
+          setErrorKey(null);
+          setResults([]);
+          setHasMore(false);
+          hasMoreRef.current = false;
+          setLastRequest({ q, chip });
+        }
+        if (isOffline()) {
+          if (!isMore) setErrorKey("imagesErrorOffline");
+          else {
+            setMoreErrorKey("imagesErrorOffline");
+            moreErrorRef.current = true;
+          }
+          return;
+        }
+        const res = await searchStockImages(documentId, q, {
+          type: chip === "all" ? undefined : chip,
+          page: nextPage,
+          locale,
+        });
+        if (seq !== requestSeq.current) return;
+        setResults((prev) => {
+          const seen = new Set(isMore ? prev.map((r) => r.id) : []);
+          const fresh = res.results.filter((r) => {
+            if (seen.has(r.id)) return false;
+            seen.add(r.id);
+            return true;
+          });
+          return isMore ? [...prev, ...fresh] : fresh;
+        });
+        setProviders((prev) =>
+          isMore ? Array.from(new Set([...prev, ...res.providers])) : res.providers,
+        );
+        setFailedProviders(res.failedProviders ?? []);
+        pageRef.current = res.page;
+        setHasMore(res.hasMore);
+        hasMoreRef.current = res.hasMore;
+        setSubmittedQuery(q);
+      } catch (err) {
+        if (seq !== requestSeq.current) return;
+        const key = stockErrorKey(err, "search");
+        if (!isMore) {
+          setErrorKey(key);
+          setSubmittedQuery(q);
+        } else {
+          // Keep the results so far; the same page is retried on the next press.
+          setMoreErrorKey(key === "imagesError" ? "imagesLoadMoreError" : key);
+          moreErrorRef.current = true;
+        }
+      } finally {
+        if (isMore) pendingMoreRef.current = false;
+        if (seq === requestSeq.current) setSearching(false);
+      }
+    },
+    [documentId, locale],
+  );
+
+  /** Loads the page after the last one shown. `manual` = the user pressed the button (retries a failure). */
+  const loadMore = useCallback(
+    (manual: boolean) => {
+      if (!hasMoreRef.current) return;
+      if (moreErrorRef.current && !manual) return;
+      void runSearch(submittedRef.current.q, submittedRef.current.chip, pageRef.current + 1);
+    },
+    [runSearch],
+  );
+
+  // Automatic first page on mount, and again when the document or locale changes. The
+  // last submitted search is kept, so switching document does not discard the teacher's query.
+  useEffect(() => {
+    void runSearch(submittedRef.current.q, submittedRef.current.chip, 1);
+    const seqRef = requestSeq;
+    const pendingRef = pendingMoreRef;
+    return () => {
+      // Responses from the previous document/locale must not land in this one.
+      seqRef.current++;
+      pendingRef.current = false;
+    };
+  }, [documentId, locale, runSearch]);
+
+  // The observer watches the scroll container (not the window) and re-arms whenever the list grows.
+  useEffect(() => {
+    loadMoreRef.current = () => loadMore(false);
+  }, [loadMore]);
+
+  useEffect(() => {
+    const target = sentinelRef.current;
+    if (!hasMore || !target || typeof IntersectionObserver === "undefined") return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) loadMoreRef.current();
+      },
+      { root: scrollRef.current, rootMargin: "120px" },
+    );
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [hasMore, results.length]);
+
+  const handleSearch = () => {
+    const q = cleanSearchSuggestion(query);
+    if (!q) {
+      // Empty submit = back to the default suggestions, not a silent no-op.
+      setQuery(defaultQuery);
+      setFilter(DEFAULT_FILTER);
+      void runSearch(defaultQuery, DEFAULT_FILTER, 1);
+      return;
+    }
+    void runSearch(q, filter, 1);
+  };
+
+  const retry = () => {
+    if (lastRequest) void runSearch(lastRequest.q, lastRequest.chip, 1);
+  };
+
+  const handleFilter = (chip: FilterChip) => {
+    if (chip === filter) return;
+    setFilter(chip);
+    // The filter applies to what is in the box now, even if it was not submitted yet.
+    void runSearch(cleanSearchSuggestion(query) || defaultQuery, chip, 1);
+  };
+
+  const handlePick = async (image: StockImage) => {
+    if (insertingId) return;
+    setInsertingId(image.id);
+    if (isOffline()) {
+      toast.error(t("imagesErrorOffline"));
+      setInsertingId(null);
+      return;
+    }
+    try {
+      const res = await importStockImage(documentId, image.id);
+      if (!res.image?.url) throw new Error("missing url");
+      if (!mounted.current) return;
+      const credit = res.attribution ?? image;
+      onInsert({
+        url: res.image.url,
+        prompt: res.image.alt ?? image.alt ?? "",
+        backendId: res.image.id,
+        attribution: {
+          provider: credit.provider,
+          author: credit.author ?? null,
+          authorUrl: credit.authorUrl ?? null,
+          sourceUrl: credit.sourceUrl ?? null,
+          license: credit.license ?? null,
+          licenseUrl: credit.licenseUrl ?? null,
+        },
+      });
+    } catch (err) {
+      if (!mounted.current) return;
+      const key = stockErrorKey(err, "insert");
+      toast.error(t(key));
+      // A removed image would fail again: take it out of the grid.
+      if (key === "imagesErrorGone" || key === "imagesErrorInvalid") {
+        setResults((prev) => prev.filter((r) => r.id !== image.id));
+      }
+      setInsertingId(null);
+    }
+  };
+
+  const licenseLabel = (image: StockImage) => {
+    if (image.licenseCode === "pd") return t("imagesLicensePublicDomain");
+    if (image.licenseCode === image.provider) {
+      return t("imagesLicenseProvider", { provider: PROVIDER_SHORT[image.provider] ?? image.providerName });
+    }
+    return image.license;
+  };
+
+  return (
+    <div className="flex flex-col gap-3 p-4">
+      <form
+        className="flex gap-2"
+        onSubmit={(e) => {
+          e.preventDefault();
+          handleSearch();
+        }}
+      >
+        <div className="relative flex-1">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <input
+            type="search"
+            value={query}
+            autoFocus
+            maxLength={200}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={t("imagesSearchPlaceholder")}
+            aria-label={t("tabImages")}
+            className="w-full rounded-lg border border-border bg-muted/30 py-2 pl-9 pr-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+          />
+        </div>
+        <Button type="submit" disabled={searching} className="gap-2">
+          {searching && results.length === 0 ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Search className="h-4 w-4" />
+          )}
+          {t("imagesSearchButton")}
+        </Button>
+      </form>
+
+      <div
+        role="group"
+        aria-label={t("imagesFilterLabel")}
+        className="-mx-4 flex gap-1.5 overflow-x-auto px-4 [scrollbar-width:none]"
+      >
+        {FILTER_CHIPS.map((chip) => {
+          const active = filter === chip.value;
+          return (
+            <button
+              key={chip.value}
+              type="button"
+              aria-pressed={active}
+              onClick={() => handleFilter(chip.value)}
+              className={cn(
+                "shrink-0 whitespace-nowrap rounded-full border px-3 py-1 text-xs font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+                active
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-border bg-background text-muted-foreground hover:border-primary/50 hover:text-foreground",
+              )}
+            >
+              {t(chip.labelKey)}
+            </button>
+          );
+        })}
+      </div>
+
+      {results.length === 0 ? (
+        <div
+          role={errorKey ? "alert" : "status"}
+          aria-live="polite"
+          className="flex h-40 flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-muted/20 px-6 text-center text-sm text-muted-foreground"
+        >
+          {searching ? (
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          ) : errorKey ? (
+            <>
+              <p>{t(errorKey)}</p>
+              {!PERMANENT_ERROR_KEYS.has(errorKey) && lastRequest && (
+                <Button variant="outline" size="sm" onClick={retry} className="gap-2">
+                  <RotateCcw className="h-3.5 w-3.5" />
+                  {t("imagesRetry")}
+                </Button>
+              )}
+            </>
+          ) : submittedQuery ? (
+            t("imagesNoResults", { query: submittedQuery })
+          ) : (
+            t("imagesEmptyHint")
+          )}
+        </div>
+      ) : (
+        <div ref={scrollRef} className="max-h-[340px] overflow-y-auto pr-1">
+          <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {results.map((image) => {
+              const inserting = insertingId === image.id;
+              const isPhoto = image.type === "photo";
+              const provider = PROVIDER_SHORT[image.provider] ?? image.providerName;
+              const description = [
+                image.alt,
+                image.author ? t("imagesBy", { name: image.author }) : null,
+                `${image.providerName} · ${licenseLabel(image)}`,
+              ]
+                .filter(Boolean)
+                .join(" — ");
+              return (
+                <li
+                  key={image.id}
+                  className={cn(
+                    "group relative aspect-[4/3] overflow-hidden rounded-lg border border-border/60",
+                    isPhoto ? "bg-muted" : "bg-white",
+                  )}
+                  style={isPhoto && image.avgColor ? { backgroundColor: image.avgColor } : undefined}
+                >
+                  <button
+                    type="button"
+                    disabled={insertingId !== null}
+                    onClick={() => void handlePick(image)}
+                    title={description}
+                    aria-label={description || t("insertImage")}
+                    className="block h-full w-full focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary disabled:cursor-wait"
+                  >
+                    <StockThumbnail image={image} contain={!isPhoto} />
+                  </button>
+
+                  {!isPhoto && (
+                    <span className="pointer-events-none absolute left-1 top-1 rounded bg-background/90 px-1.5 py-0.5 text-[10px] font-medium text-foreground shadow-sm">
+                      {t(TYPE_LABEL_KEYS[image.type])}
+                    </span>
+                  )}
+
+                  {image.sourceUrl && !inserting && (
+                    <a
+                      href={image.sourceUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={t("imagesOpenSource", { provider: image.providerName })}
+                      title={t("imagesOpenSource", { provider: image.providerName })}
+                      className="absolute right-1 top-1 rounded bg-background/90 p-1 text-foreground opacity-0 shadow-sm transition-opacity hover:bg-background focus:opacity-100 group-hover:opacity-100"
+                    >
+                      <ExternalLink className="h-3 w-3" />
+                    </a>
+                  )}
+
+                  {/* Provider and licence stay visible: CC licences require it, Pixabay and Pexels ask for it. */}
+                  <div className="pointer-events-none absolute inset-x-0 bottom-0 truncate bg-gradient-to-t from-black/75 via-black/45 to-transparent px-1.5 pb-1 pt-4 text-[10px] leading-tight text-white">
+                    <span className="font-semibold">{provider}</span>
+                    {" · "}
+                    {licenseLabel(image)}
+                  </div>
+
+                  {inserting && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-black/50 text-xs text-white">
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                      {t("imagesInserting")}
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+          {hasMore && (
+            <div ref={sentinelRef} className="mt-3 flex flex-col items-center gap-1.5">
+              {moreErrorKey && (
+                <p role="alert" className="text-center text-xs text-destructive">
+                  {t(moreErrorKey)}
+                </p>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={searching}
+                onClick={() => loadMore(true)}
+                className="gap-2"
+              >
+                {searching ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  moreErrorKey && <RotateCcw className="h-3.5 w-3.5" />
+                )}
+                {moreErrorKey ? t("imagesRetry") : t("imagesLoadMore")}
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {(providers.length > 0 || failedProviders.length > 0) && (
+        <div className="flex flex-col gap-0.5 text-xs text-muted-foreground sm:flex-row sm:items-start sm:justify-between sm:gap-3">
+          <p>
+            {failedProviders.length > 0
+              ? t("imagesPartial", { providers: failedProviders.map(providerDisplayName).join(", ") })
+              : t("imagesCreditNote")}
+          </p>
+          {providers.length > 0 && (
+            <p className="shrink-0">
+              {t.rich("imagesPoweredBy", {
+                links: () =>
+                  providers.map((id, i) => (
+                    <span key={id}>
+                      {i > 0 && ", "}
+                      <a
+                        href={PROVIDER_HOME[id] ?? "#"}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="underline-offset-2 hover:text-foreground hover:underline"
+                      >
+                        {providerDisplayName(id)}
+                      </a>
+                    </span>
+                  )),
+              })}
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* --------------------------------------------------------------------------
  * Upload tab
  * -------------------------------------------------------------------------- */
+/** Formats the backend can decode (DocumentImageService.validateImage) and its 10 MB cap. */
+const UPLOAD_TYPES = new Set(["image/png", "image/jpeg", "image/webp", "image/gif"]);
+const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 function UploadTab({
   documentId,
   onInsert,
@@ -146,6 +717,7 @@ function UploadTab({
   onInsert: (r: ImageInsertResult) => void;
 }) {
   const t = useTranslations("editor.imagePickerModal");
+  const locale = useLocale();
   const [loading, setLoading] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -153,22 +725,42 @@ function UploadTab({
 
   const handleFile = useCallback(
     async (file: File) => {
+      // Same limits as the backend, checked first so the teacher gets a precise reason.
+      if (!UPLOAD_TYPES.has(file.type)) {
+        toast.error(t("uploadErrorType"));
+        return;
+      }
+      if (file.size === 0) {
+        toast.error(t("uploadErrorEmpty"));
+        return;
+      }
+      if (file.size > MAX_UPLOAD_BYTES) {
+        const size = (file.size / (1024 * 1024)).toLocaleString(locale, {
+          minimumFractionDigits: 1,
+          maximumFractionDigits: 1,
+        });
+        toast.error(t("uploadErrorSize", { size }));
+        return;
+      }
+      if (isOffline()) {
+        toast.error(t("uploadErrorOffline"));
+        return;
+      }
       setSelectedFile(file);
       setLoading(true);
       try {
         const result = await uploadDocumentImage(documentId, file, file.name);
-        if (result.image?.url) {
-          onInsert({ url: result.image.url, prompt: file.name, backendId: result.image.id });
-        } else {
-          toast.error(t("uploadError"));
-        }
+        if (!result.image?.url) throw new Error("missing url");
+        onInsert({ url: result.image.url, prompt: file.name, backendId: result.image.id });
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : t("uploadError"));
+        toast.error(
+          t(err instanceof ApiRequestError && err.status === 0 ? "uploadErrorOffline" : "uploadError"),
+        );
         setLoading(false);
         setSelectedFile(null);
       }
     },
-    [documentId, onInsert, t],
+    [documentId, locale, onInsert, t],
   );
 
   return (
@@ -176,10 +768,12 @@ function UploadTab({
       <input
         ref={inputRef}
         type="file"
-        accept="image/*"
         className="hidden"
+        accept={Array.from(UPLOAD_TYPES).join(",")}
         onChange={(e) => {
           const f = e.target.files?.[0];
+          // Reset so picking the same file again (after an error) fires onChange.
+          e.target.value = "";
           if (f) void handleFile(f);
         }}
       />
@@ -228,14 +822,53 @@ function UploadTab({
 /* --------------------------------------------------------------------------
  * URL tab
  * -------------------------------------------------------------------------- */
+const URL_CHECK_TIMEOUT_MS = 10_000;
 function UrlTab({ onInsert }: { onInsert: (r: ImageInsertResult) => void }) {
   const t = useTranslations("editor.imagePickerModal");
   const [url, setUrl] = useState("");
+  const [checking, setChecking] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleInsert = () => {
+  const handleInsert = async () => {
     const u = url.trim();
-    if (!u) return;
-    onInsert({ url: u, prompt: "" });
+    if (!u || checking) return;
+    let parsed: URL;
+    try {
+      parsed = new URL(u);
+    } catch {
+      setError(t("urlInvalid"));
+      return;
+    }
+    // http images are blocked as mixed content on the https app; anything else isn't an image URL.
+    if (parsed.protocol !== "https:") {
+      setError(t("urlInvalid"));
+      return;
+    }
+    setError(null);
+    setChecking(true);
+    // Load it once first, so a broken link fails here instead of as an empty box on the slide.
+    // Same CORS mode as the canvas (SlideKonvaEditor): a host that doesn't allow it can't be drawn.
+    const loads = await new Promise<boolean>((resolve) => {
+      const img = new window.Image();
+      img.crossOrigin = "anonymous";
+      const timer = window.setTimeout(() => resolve(false), URL_CHECK_TIMEOUT_MS);
+      img.onload = () => {
+        window.clearTimeout(timer);
+        resolve(img.naturalWidth > 0);
+      };
+      img.onerror = () => {
+        window.clearTimeout(timer);
+        resolve(false);
+      };
+      img.referrerPolicy = "no-referrer";
+      img.src = parsed.href;
+    });
+    setChecking(false);
+    if (!loads) {
+      setError(t(isOffline() ? "imagesErrorOffline" : "urlLoadError"));
+      return;
+    }
+    onInsert({ url: parsed.href, prompt: "" });
   };
 
   return (
@@ -248,20 +881,33 @@ function UrlTab({ onInsert }: { onInsert: (r: ImageInsertResult) => void }) {
           type="url"
           value={url}
           autoFocus
-          onChange={(e) => setUrl(e.target.value)}
-          onKeyDown={(e) => { if (e.key === "Enter") handleInsert(); }}
+          onChange={(e) => {
+            setUrl(e.target.value);
+            setError(null);
+          }}
+          onKeyDown={(e) => { if (e.key === "Enter") void handleInsert(); }}
           placeholder={t("urlPlaceholder")}
-          className="w-full rounded-lg border border-border bg-muted/30 px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? "image-url-error" : undefined}
+          className={cn(
+            "w-full rounded-lg border bg-muted/30 px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary",
+            error ? "border-destructive" : "border-border",
+          )}
         />
+        {error && (
+          <p id="image-url-error" role="alert" className="text-xs text-destructive">
+            {error}
+          </p>
+        )}
       </div>
 
       <Button
-        onClick={handleInsert}
-        disabled={!url.trim()}
+        onClick={() => void handleInsert()}
+        disabled={!url.trim() || checking}
         className="gap-2 self-end"
       >
-        <Link2 className="h-4 w-4" />
-        {t("insertImage")}
+        {checking ? <Loader2 className="h-4 w-4 animate-spin" /> : <Link2 className="h-4 w-4" />}
+        {checking ? t("urlChecking") : t("insertImage")}
       </Button>
     </div>
   );
@@ -270,7 +916,7 @@ function UrlTab({ onInsert }: { onInsert: (r: ImageInsertResult) => void }) {
 /* --------------------------------------------------------------------------
  * Main modal
  * -------------------------------------------------------------------------- */
-export function ImagePickerModal({ open, documentId, onClose, onInsert, onGenerate }: Props) {
+export function ImagePickerModal({ open, documentId, initialSearchQuery, onClose, onInsert, onGenerate }: Props) {
   const t = useTranslations("editor.imagePickerModal");
   const [tab, setTab] = useState<Tab>("generate");
 
@@ -289,12 +935,18 @@ export function ImagePickerModal({ open, documentId, onClose, onInsert, onGenera
           </DialogTitle>
         </DialogHeader>
 
-        <div className="mx-4 mt-3 flex gap-1 rounded-lg bg-muted/60 p-0.5">
+        <div className="mx-4 mt-3 flex gap-1 overflow-x-auto rounded-lg bg-muted/60 p-0.5 [scrollbar-width:none]">
           <TabBtn
             active={tab === "generate"}
             onClick={() => setTab("generate")}
             icon={Sparkles}
             label={t("tabGenerate")}
+          />
+          <TabBtn
+            active={tab === "images"}
+            onClick={() => setTab("images")}
+            icon={Search}
+            label={t("tabImages")}
           />
           <TabBtn
             active={tab === "upload"}
@@ -313,6 +965,9 @@ export function ImagePickerModal({ open, documentId, onClose, onInsert, onGenera
         <div className="min-h-[220px]">
           {tab === "generate" && (
             <GenerateTab onClose={onClose} onGenerate={onGenerate} />
+          )}
+          {tab === "images" && (
+            <ImagesTab documentId={documentId} initialSearchQuery={initialSearchQuery} onInsert={handleInsert} />
           )}
           {tab === "upload" && (
             <UploadTab documentId={documentId} onInsert={handleInsert} />

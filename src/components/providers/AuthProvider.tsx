@@ -1,5 +1,6 @@
 "use client";
 
+import { dashboardCache } from "@/lib/dashboardCache";
 import { setApiTokenGetter } from "@/services/api/client";
 import { useAuth, useUser } from "@clerk/nextjs";
 import posthog from "posthog-js";
@@ -51,6 +52,12 @@ export default function AuthProvider({
 
   useEffect(() => {
     if (!isLoaded) return;
+    const nextUserId = user?.id ?? null;
+    if (prevUserIdRef.current !== undefined && prevUserIdRef.current !== nextUserId) {
+      // Sign-out or account switch without a page reload: drop the previous
+      // user's dashboard data instead of keeping it in memory.
+      dashboardCache.clear();
+    }
     if (user) {
       posthog.identify(user.id, {
         email: user.primaryEmailAddress?.emailAddress,
@@ -72,14 +79,18 @@ export default function AuthProvider({
           signup_method: user.externalAccounts.length > 0 ? "google" : "email",
         });
       }
-    } else if (prevUserIdRef.current !== null) {
+    } else if (prevUserIdRef.current !== null && prevUserIdRef.current !== undefined) {
       // Only reset when transitioning from an authenticated user to null (sign-out).
-      // Calling reset() for unauthenticated visitors (e.g. the sign-up page) would
-      // destroy the anonymous distinct_id shared from the landing page, breaking the
-      // marketing_cta_clicked → user_signed_up conversion funnel.
+      // Calling reset() for unauthenticated visitors (e.g. the sign-up page, or this
+      // same effect's first run before any user has loaded) would destroy the
+      // anonymous distinct_id shared from the landing page, breaking the
+      // marketing_cta_clicked → user_signed_up conversion funnel. prevUserIdRef starts
+      // as `undefined` (effect never ran) and only becomes a real user id after a
+      // signed-in user was seen, so checking both null and undefined here is required —
+      // a bare `!== null` check treated "never signed in" the same as "just signed out".
       posthog.reset();
     }
-    prevUserIdRef.current = user?.id ?? null;
+    prevUserIdRef.current = nextUserId;
   }, [isLoaded, user]);
 
   return children;

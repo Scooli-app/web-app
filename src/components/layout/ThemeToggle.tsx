@@ -39,10 +39,10 @@ function ThemeToggleComponent() {
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
-          size="icon"
-          className="h-10 w-10 rounded-full text-foreground hover:bg-accent hover:text-primary"
+          size="bar-icon"
+          className="text-foreground hover:bg-accent hover:text-primary"
         >
-          <CurrentIcon className="h-5 w-5" />
+          <CurrentIcon />
           <span className="sr-only">{t("srLabel")}</span>
         </Button>
       </DropdownMenuTrigger>
