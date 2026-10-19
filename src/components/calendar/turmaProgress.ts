@@ -24,9 +24,12 @@ export function coverageBarWidth(percent: number | null): number {
   return Math.min(100, Math.max(0, percent));
 }
 
-/** Lessons that count as given: taught, plus those assumed taught. */
+/**
+ * Lessons the teacher confirmed as given (ENG-239). Assumed-taught lessons are not in this count: they have their own
+ * "unconfirmed" chip.
+ */
 export function lessonsGiven(counts: TurmaProgressSlotCounts): number {
-  return counts.taught + counts.assumedTaught;
+  return counts.taught;
 }
 
 /** Outcomes only an unanswered lesson teaches (ENG-239). A backend without the field has none. */

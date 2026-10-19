@@ -138,10 +138,10 @@ describe("coverageBarWidth", () => {
 });
 
 describe("lessonsGiven", () => {
-  it("counts taught and assumed-taught lessons", () => {
+  it("counts only the lessons the teacher confirmed as taught, not the assumed ones", () => {
     expect(
       lessonsGiven({ planned: 2, taught: 1, partiallyTaught: 1, notHeld: 1, assumedTaught: 2 }),
-    ).toBe(3);
+    ).toBe(1);
   });
 });
 

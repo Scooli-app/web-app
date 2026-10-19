@@ -2871,6 +2871,7 @@
       "coverageCount": "{covered} de {total} AE trabalhadas",
       "coverageOfYear": "{total} de {curriculum} do ano",
       "given": "Dadas",
+      "unconfirmedLessons": "Não confirmadas",
       "partial": "A meio",
       "notHeld": "Não houve aula",
       "pending": "Por confirmar",

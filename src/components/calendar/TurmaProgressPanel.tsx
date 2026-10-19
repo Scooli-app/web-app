@@ -212,8 +212,15 @@ export function TurmaProgressView({
         )}
       </div>
 
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
         <StatChip icon={CheckCircle2} tone={TONE.emerald} label={t("given")} value={lessonsGiven(slots.counts)} />
+        <StatChip
+          icon={CheckCircle2}
+          tone={TONE.muted}
+          label={t("unconfirmedLessons")}
+          value={slots.counts.assumedTaught}
+          dashed
+        />
         <StatChip icon={CircleDashed} tone={TONE.amber} label={t("partial")} value={slots.counts.partiallyTaught} />
         <StatChip icon={XCircle} tone={TONE.rose} label={t("notHeld")} value={slots.counts.notHeld} />
         <StatChip icon={CircleDot} tone={TONE.primary} label={t("pending")} value={slots.counts.planned} />
@@ -304,6 +311,7 @@ const STRIPES = "repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.45) 0 3p
 /** Tones shared by the chips and the section icons; the dark variants keep the contrast on dark cards. */
 const TONE = {
   emerald: "text-emerald-600 dark:text-emerald-400",
+  muted: "text-muted-foreground/60",
   amber: "text-amber-600 dark:text-amber-400",
   rose: "text-rose-600 dark:text-rose-400",
   primary: "text-primary",
@@ -314,14 +322,23 @@ function StatChip({
   tone,
   label,
   value,
+  dashed = false,
 }: {
   icon: LucideIcon;
   tone: string;
   label: string;
   value: number;
+  /** Muted, dashed border: a count that is not confirmed (ENG-239). */
+  dashed?: boolean;
 }) {
   return (
-    <div className={cn("flex items-center gap-2.5 rounded-lg border px-3 py-2", value === 0 && "opacity-50")}>
+    <div
+      className={cn(
+        "flex items-center gap-2.5 rounded-lg border px-3 py-2",
+        dashed && "border-dashed",
+        value === 0 && "opacity-50",
+      )}
+    >
       <Icon className={cn("h-4 w-4 shrink-0", tone)} aria-hidden />
       <div className="min-w-0">
         <p className="text-base font-semibold leading-none tabular-nums">{value}</p>

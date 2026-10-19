@@ -93,6 +93,23 @@ describe("TurmaProgressView unconfirmed coverage (ENG-239)", () => {
     expect(html).toContain("unconfirmedLegend");
   });
 
+  it("counts confirmed taught lessons apart from the unconfirmed (assumed) ones, with their own chip", () => {
+    const html = renderView(
+      progress({
+        slots: {
+          past: 6,
+          counts: { planned: 2, taught: 3, partiallyTaught: 1, notHeld: 0, assumedTaught: 2 },
+          pendingCheckIns: 0,
+        },
+      }),
+    );
+
+    expect(html).toContain("unconfirmedLessons");
+    expect(html).toMatch(/border-dashed[^>]*>[\s\S]*?unconfirmedLessons/);
+    expect(html).toContain(">3<");
+    expect(html).toContain(">2<");
+  });
+
   it("keeps the percent and the covered count on confirmed outcomes", () => {
     const html = renderView(progress({ coverage: coverage({ outcomesAssumed: 1 }) }));
 
