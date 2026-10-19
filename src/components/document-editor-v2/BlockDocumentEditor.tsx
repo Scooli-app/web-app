@@ -2494,6 +2494,11 @@ export function BlockDocumentEditor({ documentId }: Props) {
         <ImagePickerModal
           open={imageModalOpen}
           documentId={document.id}
+          initialSearchQuery={
+            activeSlide?.elements.find(
+              (el): el is CanvasTextElement => el.type === "text" && el.role === "title",
+            )?.text || document.title || undefined
+          }
           onClose={() => setImageModalOpen(false)}
           onInsert={handleImageFromModal}
           onGenerate={handleGenerateImageFromModal}
