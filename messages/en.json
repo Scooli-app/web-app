@@ -147,6 +147,13 @@
       "unconfirmed": "To confirm"
     }
   },
+  "previousCheckIn": {
+    "question": "Did the last lesson go well?",
+    "questionWithTopic": "Did the last lesson ({topic}) go well?",
+    "notNow": "Not now",
+    "saved": "Saved.",
+    "savedWithContext": "Saved. The next lesson will take this into account."
+  },
   "emailUnsubscribe": {
     "title": "Stop getting the weekly email?",
     "hint": "You can turn it back on any time in settings.",

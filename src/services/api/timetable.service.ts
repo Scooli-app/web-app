@@ -5,7 +5,7 @@ import type { CompanionType } from "@/components/dashboard/weekWindow";
 
 import apiClient from "./client";
 import { featureFeedbackTrigger } from "@/store/featureFeedbackTrigger";
-import type { CheckInOutcome, TeachingStatus } from "@/shared/types/check-in";
+import type { CheckInOutcome, CheckInSlotType, TeachingStatus } from "@/shared/types/check-in";
 
 export interface RecurringSlot {
   dayOfWeek: number; // 1=Mon..7=Sun (ISO)
@@ -187,6 +187,31 @@ export async function skipLesson(timetableId: string, lessonId: string): Promise
   const response = await apiClient.post<LessonSlot>(
     `/timetable/${timetableId}/lessons/${lessonId}/skip`
   );
+  return response.data;
+}
+
+/** The lesson before a slot, when it still needs its "Como correu?" answer (ENG-224). */
+export interface PreviousLessonCheckIn {
+  slotId: string;
+  /** YYYY-MM-DD */
+  date: string;
+  topicTitle: string;
+  slotType: CheckInSlotType;
+  outcomes: CheckInOutcome[];
+}
+
+/**
+ * Null when there is nothing to ask: no previous lesson, already answered, or the class-state flag is off
+ * (the backend answers 204 for all of these).
+ */
+export async function getPreviousCheckIn(
+  timetableId: string,
+  lessonId: string
+): Promise<PreviousLessonCheckIn | null> {
+  const response = await apiClient.get<PreviousLessonCheckIn | "">(
+    `/timetable/${timetableId}/lessons/${lessonId}/previous-check-in`
+  );
+  if (response.status === 204 || !response.data) return null;
   return response.data;
 }
 

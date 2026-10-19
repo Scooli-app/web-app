@@ -28,6 +28,7 @@ import { Separator } from "@/components/ui/separator";
 
 import { Routes } from "@/shared/types";
 import { LessonDocumentChips } from "@/components/dashboard/LessonDocumentChips";
+import { PreviousLessonCheckIn } from "@/components/check-in/PreviousLessonCheckIn";
 import { usePrepareLessonSet } from "@/components/dashboard/usePrepareLessonSet";
 import { isDocumentInProgress } from "@/components/dashboard/weekWindow";
 import { CheckInCard } from "@/components/check-in/CheckInCard";
@@ -333,6 +334,11 @@ export function SlotDialog({
           </DialogHeader>
 
           <div className="space-y-4">
+            {/* ENG-224: asks about the previous lesson, only when this slot is not itself checkable (see PreviousLessonCheckIn) */}
+            {!isHoliday && (
+              <PreviousLessonCheckIn timetableId={slot.timetable.id} lessonId={slot.id} dialogSlot={slot} />
+            )}
+
             {/* Slot type selector */}
             {!isHoliday && (
               <div className="flex items-center gap-2">

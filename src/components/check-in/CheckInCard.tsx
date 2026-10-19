@@ -3,9 +3,9 @@
 import { translateSubject } from "@/components/document-creation/constants";
 import { relativeDayLabel } from "@/components/dashboard/checkInDay";
 import { Button } from "@/components/ui/button";
-import { ChoiceChip } from "@/components/ui/choice-chip";
 import { buildSubmission, isAssessmentCheckIn, needsOutcomeStep } from "@/hooks/checkInQueue";
 import type { CheckInResult, CheckInSubmission, PendingCheckIn } from "@/shared/types/check-in";
+import { CheckInOutcomeStep, CheckInResultOptions } from "./CheckInChoices";
 import { toIso } from "@/shared/utils/calendar";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
@@ -99,61 +99,24 @@ export function CheckInCard({ item, locale, onSubmit, onSkip, onCancel }: CheckI
     return (
       <div className="space-y-3">
         {header}
-        <p className="text-sm font-medium text-foreground">{question}</p>
-        <div className="flex flex-wrap gap-1.5" role="group" aria-label={question}>
-          {item.outcomes.map((outcome) => (
-            <ChoiceChip
-              key={outcome.id}
-              selected={selected.includes(outcome.id)}
-              showCheck
-              title={outcome.topicPath.join(" › ")}
-              onClick={() => toggle(outcome.id)}
-            >
-              {outcome.text}
-            </ChoiceChip>
-          ))}
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button size="sm" onClick={() => onSubmit(buildSubmission(outcomeResult, selected))}>
-            {t("confirm")}
-          </Button>
-          <Button size="sm" variant="outline" onClick={() => onSubmit(buildSubmission(outcomeResult))}>
-            {t("skip")}
-          </Button>
-          <Button size="sm" variant="ghost" onClick={() => setOutcomeResult(null)}>
-            {t("back")}
-          </Button>
-          {cancelButton}
-        </div>
+        <CheckInOutcomeStep
+          question={question}
+          outcomes={item.outcomes}
+          selected={selected}
+          onToggle={toggle}
+          onConfirm={() => onSubmit(buildSubmission(outcomeResult, selected))}
+          onSkip={() => onSubmit(buildSubmission(outcomeResult))}
+          onBack={() => setOutcomeResult(null)}
+          extraActions={cancelButton}
+        />
       </div>
     );
   }
 
-  const options: { result: CheckInResult; label: string; glyph: string }[] = [
-    { result: "TAUGHT", label: t("resultTaught"), glyph: "✓" },
-    { result: "TAUGHT_WITH_DIFFICULTIES", label: t("resultDifficulties"), glyph: "~" },
-    { result: "PARTIAL", label: t("resultPartial"), glyph: "½" },
-    { result: "NOT_HELD", label: t("resultNotHeld"), glyph: "✕" },
-  ];
-
   return (
     <div className="space-y-3">
       {header}
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        {options.map((option) => (
-          <Button
-            key={option.result}
-            variant="outline"
-            className="h-auto min-h-9 justify-start whitespace-normal bg-card py-2 text-left"
-            onClick={() => choose(option.result)}
-          >
-            <span aria-hidden className="w-3 shrink-0 text-center font-semibold">
-              {option.glyph}
-            </span>
-            {option.label}
-          </Button>
-        ))}
-      </div>
+      <CheckInResultOptions onChoose={choose} />
       {cancelButton && <div>{cancelButton}</div>}
     </div>
   );
