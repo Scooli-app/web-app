@@ -2834,6 +2834,29 @@
     "autoTitleFallback": "Nova turma"
   },
   "calendar": {
+    "progress": {
+      "title": "Progresso da turma",
+      "loadingLabel": "A carregar o progresso da turma",
+      "coverageLabel": "Aprendizagens dadas",
+      "coverageCount": "{covered} de {total} aprendizagens planeadas dadas",
+      "coverageOfYear": "({total} de {curriculum} do ano)",
+      "given": "Dadas",
+      "partial": "A meio",
+      "notHeld": "Não houve aula",
+      "pending": "Por confirmar",
+      "behindTitle": "Em atraso",
+      "allOnTime": "Tudo em dia",
+      "plannedFor": "Planeada para {date}",
+      "behindLessons": "{count, plural, one {# aula de atraso} other {# aulas de atraso}}",
+      "reinforceTitle": "A reforçar",
+      "reinforceEmpty": "Nada a reforçar de momento.",
+      "difficulties": "{count, plural, one {# dificuldade} other {# dificuldades}}",
+      "lastSignal": "último sinal {when}",
+      "showMore": "Ver mais ({count})",
+      "showLess": "Ver menos",
+      "nextAssessmentTitle": "Próximo teste",
+      "noAssessment": "Sem teste agendado"
+    },
     "shared": {
       "pageTitle": "Calendário",
       "featureTitle": "As turmas",

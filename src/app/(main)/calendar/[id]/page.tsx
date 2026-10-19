@@ -40,6 +40,7 @@ import { SLOT_STATUS_CONFIG } from "@/shared/constants/lessonSlotStatus";
 import { translateSubject } from "@/components/document-creation/constants";
 import { SlotDialog } from "@/components/calendar/SlotDialog";
 import { TeachingMarkBadge } from "@/components/calendar/TeachingMarkBadge";
+import { TurmaProgressPanel } from "@/components/calendar/TurmaProgressPanel";
 import type { SlotWithTimetable } from "@/shared/types/calendar";
 import type { CheckInRecord } from "@/shared/types/check-in";
 import { teachingMark } from "@/shared/utils/teachingStatus";
@@ -251,16 +252,20 @@ export default function CalendarViewPage() {
   const nextWeek = () =>
     setWeekStart((p) => addDays(p, 7));
 
-  // A check-in saved from the slot dialog: the card's mark follows without reloading the lessons.
+  // A check-in saved from the slot dialog: the card's mark follows without reloading the lessons,
+  // and the turma progress panel reloads its figures.
+  const [progressRefreshKey, setProgressRefreshKey] = useState(0);
   const handleCheckedIn = useCallback(
-    (target: SlotWithTimetable, record: CheckInRecord) =>
+    (target: SlotWithTimetable, record: CheckInRecord) => {
       dispatch(
         setSlotCheckIn({
           slotId: target.id,
           teachingStatus: record.teachingStatus,
           checkedInAt: record.checkedInAt,
         })
-      ),
+      );
+      setProgressRefreshKey((key) => key + 1);
+    },
     [dispatch]
   );
 
@@ -524,6 +529,8 @@ export default function CalendarViewPage() {
       </div>
 
       <PlanGenerationBanner timetableId={id} />
+
+      <TurmaProgressPanel timetableId={id} refreshKey={progressRefreshKey} />
 
       {/* Week navigator */}
       <div className="flex items-center justify-between rounded-lg border bg-card px-4 py-2">
