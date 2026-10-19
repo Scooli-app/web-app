@@ -170,6 +170,16 @@ export default function CalendarViewPage() {
     if (!isNaN(d.getTime())) setWeekStart(getWeekStart(d));
   }, [weekParam]);
   const [selectedSlot, setSelectedSlot] = useState<LessonSlot | null>(null);
+  // ?lesson=<id> (the "Abrir" of a reinforcement worksheet) opens that lesson once its week has loaded, once.
+  const lessonParam = searchParams.get("lesson");
+  const openedLessonRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!lessonParam || openedLessonRef.current === lessonParam) return;
+    const found = slots.find((s) => s.id === lessonParam);
+    if (!found) return;
+    openedLessonRef.current = lessonParam;
+    setSelectedSlot(found);
+  }, [lessonParam, slots]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatingWeek, setGeneratingWeek] = useState(false);
   const [streamContent, setStreamContent] = useState("");

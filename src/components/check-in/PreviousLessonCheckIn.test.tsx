@@ -41,7 +41,6 @@ function view(overrides: Partial<Parameters<typeof PreviousLessonCheckInView>[0]
       onChoose: noop,
       onToggle: noop,
       onConfirm: noop,
-      onSkipOutcomes: noop,
       onBackOutcomes: noop,
       onNotNow: noop,
       ...overrides,

@@ -9,7 +9,7 @@ import { selectIsClassStateEnabled } from "@/store/features/selectors";
 import { useAppSelector } from "@/store/hooks";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
-import { buildSubmission, needsOutcomeStep } from "@/hooks/checkInQueue";
+import { buildSubmission, initialOutcomeSelection, needsOutcomeStep } from "@/hooks/checkInQueue";
 import { CheckInOutcomeStep, CheckInResultOptions } from "./CheckInChoices";
 import {
   answerPreviousLesson,
@@ -94,7 +94,7 @@ export function PreviousLessonCheckIn({ timetableId, lessonId, dialogSlot, onChe
       selected={selected}
       onChoose={(result: CheckInResult) => {
         if (needsOutcomeStep(result, pending)) {
-          setSelected([]);
+          setSelected(initialOutcomeSelection(pending.outcomes));
           setOutcomeResult(result as OutcomeResult);
           return;
         }
@@ -105,9 +105,6 @@ export function PreviousLessonCheckIn({ timetableId, lessonId, dialogSlot, onChe
       }
       onConfirm={() => {
         if (outcomeResult) void answer(buildSubmission(outcomeResult, selected));
-      }}
-      onSkipOutcomes={() => {
-        if (outcomeResult) void answer(buildSubmission(outcomeResult));
       }}
       onBackOutcomes={() => setOutcomeResult(null)}
       onNotNow={() => setHidden(true)}
@@ -130,7 +127,6 @@ export function PreviousLessonCheckInView({
   onChoose,
   onToggle,
   onConfirm,
-  onSkipOutcomes,
   onBackOutcomes,
   onNotNow,
 }: {
@@ -142,8 +138,8 @@ export function PreviousLessonCheckInView({
   selected: readonly string[];
   onChoose: (result: CheckInResult) => void;
   onToggle: (id: string) => void;
+  /** Saves the outcomes ticked, possibly none. */
   onConfirm: () => void;
-  onSkipOutcomes: () => void;
   onBackOutcomes: () => void;
   onNotNow: () => void;
 }) {
@@ -169,8 +165,7 @@ export function PreviousLessonCheckInView({
             outcomes={outcomes}
             selected={selected}
             onToggle={onToggle}
-            onConfirm={onConfirm}
-            onSkip={onSkipOutcomes}
+            onSave={onConfirm}
             onBack={onBackOutcomes}
           />
         </>

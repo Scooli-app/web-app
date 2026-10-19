@@ -32,6 +32,22 @@ export function visibleFlaggedOutcomes(
   return expanded ? outcomes : outcomes.slice(0, FLAGGED_PREVIEW_LIMIT);
 }
 
+/**
+ * What the reinforce row of a flagged outcome offers:
+ * - "generating": its worksheet is being written (show the progress, no action);
+ * - "ready": a finished worksheet to open;
+ * - "request": no usable worksheet (none, or it failed) and a lesson to ask from, so "Gerar ficha";
+ * - "unavailable": no worksheet and no source lesson on the backend (an older build), so no action.
+ */
+export type ReinforcementState = "generating" | "ready" | "request" | "unavailable";
+
+export function reinforcementState(outcome: TurmaProgressFlaggedOutcome): ReinforcementState {
+  const status = outcome.reinforcement?.status;
+  if (status === "generating") return "generating";
+  if (status === "completed") return "ready";
+  return outcome.lastSignalSlotId ? "request" : "unavailable";
+}
+
 /** Whether there is anything to say about the turma's progress at all. */
 export function hasProgressData(progress: TurmaProgress): boolean {
   return progress.coverage.outcomesTotal > 0 || progress.slots.past > 0;

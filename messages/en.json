@@ -119,10 +119,7 @@
     "actionPrepare": "Prepare",
     "actionReschedule": "Reschedule",
     "actionReinforce": "Create sheet",
-    "actionView": "View",
-    "reinforceToast": "Reinforcement sheet requested.",
-    "reinforceBusy": "The reinforcement sheet is already being prepared.",
-    "actionError": "That didn't work. Try again."
+    "actionView": "View"
   },
   "checkIns": {
     "title": "How did the lesson go?",
@@ -132,13 +129,11 @@
     "metaNoSubject": "{turma} · {topic} · {day}",
     "metaNoSubjectNoTopic": "{turma} · {day}",
     "resultTaught": "Went well",
-    "resultDifficulties": "Some students struggled",
+    "resultDifficulties": "Some difficulties",
     "resultPartial": "Stopped halfway",
     "resultNotHeld": "Lesson not held",
-    "difficultiesQuestion": "Which parts?",
+    "difficultiesQuestion": "Which parts were difficult?",
     "uncoveredQuestion": "What was not covered?",
-    "confirm": "Confirm",
-    "skip": "Skip",
     "back": "Back",
     "assessmentQuestion": "Did you give the test?",
     "assessmentYes": "Yes",
@@ -159,7 +154,7 @@
     "shiftError": "Could not move the lessons. Try again.",
     "reinforcementQuestion": "Generate a reinforcement worksheet for these outcomes?",
     "reinforcementAction": "Generate reinforcement worksheet",
-    "reinforcementToast": "Reinforcement worksheet being generated for the lesson on {day}",
+    "reinforcementToast": "Reinforcement sheet being prepared for the lesson on {day}",
     "reinforcementError": "Could not generate the reinforcement worksheet. Try again.",
     "carryOverQuestion": "Carry these outcomes over to the next lesson?",
     "carryOverAction": "Carry over to the next lesson",
@@ -181,7 +176,10 @@
       "notHeld": "Not held",
       "assumedTaught": "Assumed taught",
       "unconfirmed": "To confirm"
-    }
+    },
+    "save": "Save",
+    "followUpOpenLesson": "Open",
+    "reinforcementNote": "Reinforcement sheet: lesson on {day}"
   },
   "previousCheckIn": {
     "question": "Did the last lesson go well?",
@@ -2868,9 +2866,9 @@
     "progress": {
       "title": "Class progress",
       "loadingLabel": "Loading class progress",
-      "coverageLabel": "Learning outcomes taught",
-      "coverageCount": "{covered} of {total} planned learning outcomes taught",
-      "coverageOfYear": "({total} of {curriculum} for the year)",
+      "coverageLabel": "Learning outcomes covered",
+      "coverageCount": "{covered} of {total} learning outcomes covered",
+      "coverageOfYear": "{total} of {curriculum} for the year",
       "given": "Taught",
       "partial": "Partly",
       "notHeld": "Not held",
@@ -2886,7 +2884,14 @@
       "showMore": "See more ({count})",
       "showLess": "See less",
       "nextAssessmentTitle": "Next assessment",
-      "noAssessment": "No assessment scheduled"
+      "noAssessment": "No assessment scheduled",
+      "coverageCaption": "of planned learning outcomes covered",
+      "reinforcementGenerate": "Create sheet",
+      "reinforcementRetry": "Try again",
+      "reinforcementGenerating": "Preparing…",
+      "reinforcementReady": "Sheet ready · lesson on {day}",
+      "reinforcementFailed": "The sheet could not be made.",
+      "open": "Open"
     },
     "shared": {
       "pageTitle": "Calendar",
@@ -2995,7 +3000,8 @@
         "quiz": "quiz",
         "presentation": "slides",
         "test": "test"
-      }
+      },
+      "reinforcementBadge": "Reinforcement"
     },
     "dashboardWidget": {
       "title": "Upcoming lessons",

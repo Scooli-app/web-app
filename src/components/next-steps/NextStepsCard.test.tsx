@@ -81,6 +81,35 @@ describe("NextStepsView", () => {
     expect(disabledCount).toBe(1);
   });
 
+  it("gives each kind its icon and a coloured left accent", () => {
+    const html = render([
+      step({ kind: "prepare_next", slotId: "s1" }),
+      step({ kind: "replan_not_held", slotId: "s2" }),
+      step({ kind: "reinforce", slotId: "s3", outcomeIds: ["o1"], outcomeTexts: ["Frações"] }),
+    ]);
+    const checkIn = render([step({ kind: "check_in", timetableId: null, slotId: null, slotDate: null, count: 2 })]);
+
+    expect(html).toContain("lucide-file-plus");
+    expect(html).toContain("lucide-calendar-clock");
+    expect(html).toContain("lucide-target");
+    expect(checkIn).toContain("lucide-list-checks");
+    expect(html).toContain("border-l-primary");
+    expect(html).toContain("border-l-amber-500");
+    expect(html).toContain("border-l-rose-500");
+    expect(checkIn).toContain("border-l-emerald-500");
+  });
+
+  it("gives the primary button to the first step only", () => {
+    const rows = render([
+      step({ kind: "prepare_next", slotId: "s1" }),
+      step({ kind: "replan_not_held", slotId: "s2" }),
+    ]).split("<li").slice(1);
+
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toContain("bg-primary");
+    expect(rows[1]).not.toContain("bg-primary");
+  });
+
   it("shows at most three steps", () => {
     const items = [1, 2, 3, 4].map((n) => step({ slotId: `s${n}`, turmaTitle: `T${n}` }));
 

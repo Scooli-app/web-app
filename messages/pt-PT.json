@@ -119,10 +119,7 @@
     "actionPrepare": "Preparar",
     "actionReschedule": "Reajustar",
     "actionReinforce": "Gerar ficha",
-    "actionView": "Ver",
-    "reinforceToast": "Ficha de reforço pedida.",
-    "reinforceBusy": "A ficha de reforço já está a ser preparada.",
-    "actionError": "Não foi possível concluir. Tenta novamente."
+    "actionView": "Ver"
   },
   "checkIns": {
     "title": "Como correu a aula?",
@@ -132,13 +129,11 @@
     "metaNoSubject": "{turma} · {topic} · {day}",
     "metaNoSubjectNoTopic": "{turma} · {day}",
     "resultTaught": "Correu bem",
-    "resultDifficulties": "Alguns tiveram dificuldades",
+    "resultDifficulties": "Com dificuldades",
     "resultPartial": "Ficou a meio",
     "resultNotHeld": "Não houve aula",
-    "difficultiesQuestion": "Em quê?",
+    "difficultiesQuestion": "Em que tiveram dificuldades?",
     "uncoveredQuestion": "O que ficou por dar?",
-    "confirm": "Confirmar",
-    "skip": "Saltar",
     "back": "Voltar",
     "assessmentQuestion": "Já aplicaste o teste?",
     "assessmentYes": "Sim",
@@ -159,7 +154,7 @@
     "shiftError": "Não foi possível mover as aulas. Tenta novamente.",
     "reinforcementQuestion": "Gerar uma ficha de reforço para estes objetivos?",
     "reinforcementAction": "Gerar ficha de reforço",
-    "reinforcementToast": "Ficha de reforço a ser gerada para a aula de {day}",
+    "reinforcementToast": "Ficha de reforço a preparar para a aula de {day}",
     "reinforcementError": "Não foi possível gerar a ficha de reforço. Tenta novamente.",
     "carryOverQuestion": "Passar estes objetivos para a próxima aula?",
     "carryOverAction": "Passar para a próxima aula",
@@ -181,7 +176,10 @@
       "notHeld": "Não houve aula",
       "assumedTaught": "Assumida como lecionada",
       "unconfirmed": "Por confirmar"
-    }
+    },
+    "save": "Guardar",
+    "followUpOpenLesson": "Abrir",
+    "reinforcementNote": "Ficha de reforço: aula de {day}"
   },
   "previousCheckIn": {
     "question": "A última aula correu bem?",
@@ -2868,9 +2866,9 @@
     "progress": {
       "title": "Progresso da turma",
       "loadingLabel": "A carregar o progresso da turma",
-      "coverageLabel": "Aprendizagens dadas",
-      "coverageCount": "{covered} de {total} aprendizagens planeadas dadas",
-      "coverageOfYear": "({total} de {curriculum} do ano)",
+      "coverageLabel": "Aprendizagens trabalhadas",
+      "coverageCount": "{covered} de {total} AE trabalhadas",
+      "coverageOfYear": "{total} de {curriculum} do ano",
       "given": "Dadas",
       "partial": "A meio",
       "notHeld": "Não houve aula",
@@ -2886,7 +2884,14 @@
       "showMore": "Ver mais ({count})",
       "showLess": "Ver menos",
       "nextAssessmentTitle": "Próximo teste",
-      "noAssessment": "Sem teste agendado"
+      "noAssessment": "Sem teste agendado",
+      "coverageCaption": "das aprendizagens planeadas já trabalhadas",
+      "reinforcementGenerate": "Gerar ficha",
+      "reinforcementRetry": "Tentar outra vez",
+      "reinforcementGenerating": "A preparar…",
+      "reinforcementReady": "Ficha pronta · aula de {day}",
+      "reinforcementFailed": "Não foi possível gerar a ficha.",
+      "open": "Abrir"
     },
     "shared": {
       "pageTitle": "Calendário",
@@ -2995,7 +3000,8 @@
         "quiz": "quiz",
         "presentation": "apresentação",
         "test": "teste"
-      }
+      },
+      "reinforcementBadge": "Reforço"
     },
     "dashboardWidget": {
       "title": "Próximas aulas",
