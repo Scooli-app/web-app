@@ -46,6 +46,9 @@ export interface ConfirmAllCheckInsResult {
   updated: number;
 }
 
+/** Alias kept for the ENG-208 callers: the same response as ReinforcementRequested. */
+export type ReinforcementResult = ReinforcementRequested;
+
 /** Outcome of moving the lessons after a not-held lesson (ENG-194). */
 export interface ShiftFollowingResult {
   /** Lessons whose content moved to a later slot. */

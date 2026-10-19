@@ -109,6 +109,21 @@
     "toPrepare": "Por preparar",
     "seeAllInCalendar": "Ver as {count} aulas no calendário"
   },
+  "nextSteps": {
+    "title": "O que fazer a seguir",
+    "loading": "A carregar sugestões",
+    "prepareNext": "Prepara a aula de {day}",
+    "replanNotHeld": "Reajusta: move as aulas seguintes",
+    "reinforce": "Gera ficha de reforço para {outcome}",
+    "checkIn": "Confirma {count, plural, one {# aula} other {# aulas}}",
+    "actionPrepare": "Preparar",
+    "actionReschedule": "Reajustar",
+    "actionReinforce": "Gerar ficha",
+    "actionView": "Ver",
+    "reinforceToast": "Ficha de reforço pedida.",
+    "reinforceBusy": "A ficha de reforço já está a ser preparada.",
+    "actionError": "Não foi possível concluir. Tenta novamente."
+  },
   "checkIns": {
     "title": "Como correu a aula?",
     "pendingCount": "Por confirmar ({count})",

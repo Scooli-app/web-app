@@ -20,6 +20,18 @@ describe("checkInService", () => {
     expect(http.get).toHaveBeenCalledWith("/check-ins/pending", { params: { limit: 20 } });
   });
 
+  it("requests a reinforcement sheet for one lesson's outcomes", async () => {
+    http.post.mockReturnValue(ok({ documentId: "d1" }));
+
+    await expect(checkInService.requestReinforcement("tt 1", "slot/9", ["o1", "o2"])).resolves.toEqual({
+      documentId: "d1",
+    });
+    expect(http.post).toHaveBeenCalledWith(
+      "/timetable/tt%201/lessons/slot%2F9/reinforcement",
+      { outcomeIds: ["o1", "o2"] },
+    );
+  });
+
   it.each<[string, CheckInSubmission]>([
     ["TAUGHT", { result: "TAUGHT" }],
     ["NOT_HELD", { result: "NOT_HELD" }],

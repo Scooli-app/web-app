@@ -40,6 +40,7 @@ import { SLOT_STATUS_CONFIG } from "@/shared/constants/lessonSlotStatus";
 import { translateSubject } from "@/components/document-creation/constants";
 import { SlotDialog } from "@/components/calendar/SlotDialog";
 import { TeachingMarkBadge } from "@/components/calendar/TeachingMarkBadge";
+import { NextStepsCard } from "@/components/next-steps/NextStepsCard";
 import { TurmaProgressPanel } from "@/components/calendar/TurmaProgressPanel";
 import type { SlotWithTimetable } from "@/shared/types/calendar";
 import type { CheckInRecord } from "@/shared/types/check-in";
@@ -538,6 +539,7 @@ export default function CalendarViewPage() {
       <PlanGenerationBanner timetableId={id} />
 
       <TurmaProgressPanel timetableId={id} refreshKey={progressRefreshKey} />
+      <NextStepsCard timetableId={id} refreshKey={progressRefreshKey} />
 
       {/* Week navigator */}
       <div className="flex items-center justify-between rounded-lg border bg-card px-4 py-2">
