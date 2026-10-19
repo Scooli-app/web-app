@@ -126,12 +126,30 @@ export type MathBlock = z.infer<typeof mathBlockSchema>;
  * Image blocks
  * -------------------------------------------------------------------------- */
 
+/** Credit for a stock photo (e.g. Pexels), shown small on the slide and in exports. */
+/**
+ * Credit for an image from a stock library (Wikimedia Commons, Openverse, Pixabay, Pexels).
+ * CC BY / CC BY-SA images must show author + licence wherever the image is shown or exported.
+ */
+export const imageAttributionSchema = z.object({
+  provider: z.string(),
+  author: z.string().nullish(),
+  authorUrl: z.string().nullish(),
+  /** The image's page on the provider's site. */
+  sourceUrl: z.string().nullish(),
+  /** Short licence label, e.g. "CC BY-SA 4.0". */
+  license: z.string().nullish(),
+  licenseUrl: z.string().nullish(),
+});
+export type ImageAttribution = z.infer<typeof imageAttributionSchema>;
+
 export const imageBlockSchema = z.object({
   id: blockIdSchema,
   type: z.literal("image"),
   url: z.string().url(),
   alt: z.string().max(500),
   caption: z.string().max(500).optional(),
+  attribution: imageAttributionSchema.optional(),
 });
 export type ImageBlock = z.infer<typeof imageBlockSchema>;
 
@@ -185,6 +203,8 @@ export type SlideBlock = z.infer<typeof slideBlockSchema>;
 export const presentationDocumentSchema = z.object({
   schemaVersion: z.literal(SCHEMA_VERSION),
   documentType: z.literal("presentation"),
+  /** Theme chosen by the model for lesson decks; null/absent otherwise (see canvas themeId). */
+  themeId: z.string().nullish().transform((v) => v ?? undefined).optional(),
   blocks: z.array(slideBlockSchema).min(3).max(20),
 });
 export type PresentationDocument = z.infer<typeof presentationDocumentSchema>;

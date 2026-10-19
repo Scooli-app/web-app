@@ -1,41 +1,34 @@
 "use client";
 
 import { meService } from "@/services/api/me.service";
+import { createPlanLimitsCache } from "@/hooks/planLimitsCache";
+import { useAuth } from "@clerk/nextjs";
 import type { PlanLimits } from "@/shared/types/plan-limits";
 import { useAppDispatch } from "@/store/hooks";
 import { openUpgradeModalForReason } from "@/store/ui/uiSlice";
 import { useCallback, useEffect, useState, type MouseEvent } from "react";
 
-// One request per session: every class form and "new class" link shares it.
-let cached: Promise<PlanLimits | null> | null = null;
-
-function loadPlanLimits(): Promise<PlanLimits | null> {
-  if (!cached) {
-    // Fail open: if the limits can't be read the server still enforces them.
-    cached = meService.getPlanLimits().catch(() => {
-      cached = null;
-      return null;
-    });
-  }
-  return cached;
-}
+// One request per signed-in user: every class form and "new class" link shares it.
+// Fail open: if the limits can't be read the server still enforces them.
+const cache = createPlanLimitsCache(() => meService.getPlanLimits());
 
 const listeners = new Set<() => void>();
 
 /** Call after something changes the limits (a class was created or deleted). */
 export function invalidatePlanLimits() {
-  cached = null;
+  cache.invalidate();
   listeners.forEach((refresh) => refresh());
 }
 
 export function usePlanLimits(): { limits: PlanLimits | null; loading: boolean } {
+  const { userId } = useAuth();
   const [limits, setLimits] = useState<PlanLimits | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
     const refresh = () => {
-      loadPlanLimits().then((value) => {
+      cache.get(userId).then((value) => {
         if (cancelled) return;
         setLimits(value);
         setLoading(false);
@@ -47,7 +40,8 @@ export function usePlanLimits(): { limits: PlanLimits | null; loading: boolean }
       cancelled = true;
       listeners.delete(refresh);
     };
-  }, []);
+    // A different account signing in reads its own limits.
+  }, [userId]);
 
   return { limits, loading };
 }

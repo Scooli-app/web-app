@@ -44,6 +44,9 @@ export enum FeatureFlag {
 
   /** Controls the teacher profile, vocational catalogue, and creation suggestions. */
   TEACHER_PROFILE = "teacher_profile",
+
+  /** Controls the "Como correu a aula?" check-in on the dashboard (class state). */
+  CLASS_STATE_ENABLED = "class_state_enabled",
 }
 
 export function isTeacherProfileFeatureEnabled(

@@ -3,10 +3,26 @@ interface CacheEntry {
   at: number;
 }
 
+/**
+ * Short-lived, in-memory cache for dashboard cards. It lives at module level,
+ * so it survives client-side navigations, including sign-out → sign-in and
+ * Clerk account switches in the same tab. Every read and write therefore names
+ * the Clerk user it is for, and the cache only ever holds one user's data: a
+ * call for a different user drops everything cached for the previous one.
+ */
 class DashboardCache {
+  private ownerId: string | null = null;
   private store = new Map<string, CacheEntry>();
 
-  get<T>(key: string, ttlMs: number): T | null {
+  private claim(userId: string): void {
+    if (this.ownerId !== userId) {
+      this.store.clear();
+      this.ownerId = userId;
+    }
+  }
+
+  get<T>(userId: string, key: string, ttlMs: number): T | null {
+    this.claim(userId);
     const entry = this.store.get(key);
     if (!entry) return null;
     if (Date.now() - entry.at > ttlMs) {
@@ -16,7 +32,8 @@ class DashboardCache {
     return entry.data as T;
   }
 
-  set<T>(key: string, data: T): void {
+  set<T>(userId: string, key: string, data: T): void {
+    this.claim(userId);
     this.store.set(key, { data, at: Date.now() });
   }
 
@@ -24,10 +41,10 @@ class DashboardCache {
     this.store.delete(key);
   }
 
-  invalidatePrefix(prefix: string): void {
-    for (const key of this.store.keys()) {
-      if (key.startsWith(prefix)) this.store.delete(key);
-    }
+  /** Drops everything, e.g. on sign-out or when the signed-in user changes. */
+  clear(): void {
+    this.store.clear();
+    this.ownerId = null;
   }
 }
 

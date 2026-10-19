@@ -2,6 +2,7 @@
 
 import posthog from "posthog-js";
 import { UpgradeLimitError } from "@/services/api/client";
+import { linkLessonDocument } from "@/services/api/timetable.service";
 import type { DocumentTemplate } from "@/shared/types";
 import { selectEntitlementLoading } from "@/store/entitlements/selectors";
 import {
@@ -13,7 +14,9 @@ import { selectIsPro } from "@/store/subscription/selectors";
 import { FeatureFlag } from "@/shared/types/featureFlags";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { LessonChoice } from "./lessonPicker";
+import { getMissingField } from "./missingField";
 import { SUBJECTS, SUBJECTS_BY_GRADE } from "./constants";
 import {
   AdditionalDetailsSection,
@@ -21,7 +24,11 @@ import {
   DurationSection,
   FormActions,
   FormHeader,
-  NESTED_SECTION_CLASS,
+  LessonSection,
+  FilledSummary,
+  MoreOptions,
+  OptionRow,
+  SlideCountSection,
   SourcePickerSection,
   SubjectSection,
   TeachingMethodSection,
@@ -29,13 +36,8 @@ import {
   WorksheetVariantSection,
 } from "./sections";
 import { TemplateSection } from "./templates";
-import { Card } from "@/components/ui/card";
 import type { DocumentTypeConfig, FormState, FormUpdateFn } from "./types";
-import { THEMES, translateThemeName } from "@/shared/types/presentation-theme";
-import { cn } from "@/shared/utils/utils";
-import type { CanvasPresentation, CanvasSlide } from "@/shared/types/canvas-presentation";
-import { applyTheme } from "@/components/document-editor-v2/canvas-layout";
-import { SlideThumbnail } from "@/components/document-editor-v2/SlideThumbnail";
+import { ThemeGallery } from "@/components/document-editor-v2/ThemePicker";
 import { useSubjectChoice } from "./useSubjectChoice";
 
 interface DocumentCreationPageProps {
@@ -105,7 +107,6 @@ export default function DocumentCreationPage({
 }: DocumentCreationPageProps) {
   const router = useRouter();
   const t = useTranslations("documentCreation");
-  const tEnums = useTranslations("enums");
   const dispatch = useAppDispatch();
   const isProUser = useAppSelector(selectIsPro);
   const isEntitlementLoading = useAppSelector(selectEntitlementLoading);
@@ -113,6 +114,11 @@ export default function DocumentCreationPage({
     (state) => state.features.flags[FeatureFlag.USER_SOURCES] === true
   );
   const [isLoading, setIsLoading] = useState(false);
+  // Quick-create already filled year and subject: show them as one line until the teacher asks to change them.
+  const [showFilledSummary, setShowFilledSummary] = useState(false);
+  // "Para que aula?": the document joins this lesson (and its turma) once created.
+  const [lessonChoice, setLessonChoice] = useState<LessonChoice | null>(null);
+  const [initialLessonId, setInitialLessonId] = useState<string | null>(null);
 
   const { formState, error, setError, updateForm, isFormValid, handleTemplateSelect } =
     useDocumentForm(documentType.id);
@@ -137,6 +143,7 @@ export default function DocumentCreationPage({
   // creation page. Invalid or missing values are simply left for the form.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+    setInitialLessonId(params.get("lesson"));
     const topic = params.get("topic");
     const yearRaw = params.get("year");
     const subjectId = params.get("subject");
@@ -159,53 +166,66 @@ export default function DocumentCreationPage({
       if (validForYear) {
         prefilledRef.current.subject = true;
         updateForm("subject", subjectId);
+        if (hasValidYear) setShowFilledSummary(true);
       }
     }
   }, [updateForm]);
 
-  const themedCoverSlides = useMemo<CanvasSlide[]>(() => {
-    return THEMES.map((theme) => {
-      const bareSlide: CanvasSlide = {
-        id: `mock-${theme.id}`,
-        layout: "title",
-        background: theme.bg,
-        elements: [
-          {
-            id: "mock-title",
-            type: "text",
-            x: 0.10, y: 0.20, w: 0.80, h: 0.22,
-            text: translateThemeName(theme.id),
-            fontSize: 0.052,
-            fontStyle: "bold",
-            color: "#ffffff",
-            align: "center",
-            role: "title",
-          },
-          {
-            id: "mock-sub",
-            type: "text",
-            x: 0.10, y: 0.46, w: 0.80, h: 0.12,
-            text: tEnums("documentType.presentation"),
-            fontSize: 0.026,
-            fontStyle: "normal",
-            color: "#ffffff",
-            align: "center",
-            role: "subtitle",
-          },
-        ],
-      };
-      const mockCanvas: CanvasPresentation = {
-        schemaVersion: 2,
-        documentType: "presentation",
-        slides: [bareSlide],
-      };
-      return applyTheme(mockCanvas, theme.id).slides[0] ?? bareSlide;
-    });
-  }, [tEnums]);
+  // Picking a lesson fills what its turma already knows: the topic (if empty), year and subject.
+  const handleLessonChange = useCallback(
+    (choice: LessonChoice | null) => {
+      setLessonChoice(choice);
+      if (!choice) return;
+      setTopicIfEmpty(choice.topicTitle);
+      if (choice.gradeLevel >= 1 && choice.gradeLevel <= 12) {
+        prefilledRef.current.year = true;
+        updateForm("schoolYear", choice.gradeLevel);
+      }
+      if (choice.subjectId) {
+        prefilledRef.current.subject = true;
+        updateForm("subject", choice.subjectId);
+        setShowFilledSummary(true);
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [updateForm],
+  );
+  const topicRef = useRef(formState.topic);
+  topicRef.current = formState.topic;
+  const setTopicIfEmpty = (topic: string) => {
+    if (!topicRef.current.trim() && topic.trim()) updateForm("topic", topic.trim());
+  };
 
   const showTeachingMethodSection = documentType.id === "lessonPlan";
   const showWorksheetVariantSection = documentType.id === "worksheet";
   const isPresentation = documentType.id === "presentation";
+
+  const missingField = getMissingField(
+    {
+      topic: formState.topic,
+      schoolYear: formState.schoolYear,
+      subject: formState.subject,
+      templateId: formState.templateId,
+      worksheetVariant: formState.worksheetVariant,
+    },
+    { needsTemplate: !isPresentation, needsWorksheetVariant: showWorksheetVariantSection },
+  );
+
+  const moreOptionsSummary = [
+    !isPresentation && formState.template?.name
+      ? t("moreOptions.summaryTemplate", { name: formState.template.name })
+      : null,
+    formState.lessonTime
+      ? t("moreOptions.summaryDuration", { minutes: formState.lessonTime })
+      : t("moreOptions.summaryDurationFree"),
+    isPresentation && formState.slideCount ? t("moreOptions.summarySlides", { count: formState.slideCount }) : null,
+    // Says which of the teacher's own sources this document will follow.
+    isUserSourcesEnabled && (formState.sourceIds?.length ?? 0) > 0
+      ? t("moreOptions.summarySources", { count: formState.sourceIds?.length ?? 0 })
+      : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
   const handleWorksheetVariantChange = useCallback(
     (worksheetVariant: FormState["worksheetVariant"]) => {
@@ -276,9 +296,9 @@ export default function DocumentCreationPage({
             includeAe: formState.includeAe ?? true,
             regulatorySourceIds: formState.regulatorySourceIds,
           }),
-          // Presentations use class duration (like other document types) so the
-          // backend can infer an appropriate slide count. duration is already
-          // included above from formState.lessonTime — nothing extra needed here.
+          // Presentations: an explicit slide count wins; without one the backend
+          // sizes the deck from the lesson duration.
+          ...(isPresentation && formState.slideCount ? { slideCount: formState.slideCount } : {}),
         })
       );
 
@@ -296,7 +316,16 @@ export default function DocumentCreationPage({
           has_duration: !!formState.lessonTime,
           has_additional_details: !!formState.additionalDetails?.trim(),
           has_user_sources: (formState.sourceIds?.length ?? 0) > 0,
+          // Made for a lesson ("Para que aula?") rather than as a standalone document.
+          linked_to_lesson: !!lessonChoice,
         });
+
+        if (lessonChoice) {
+          // Joins the lesson while it's still being written; if that fails the document still opens.
+          await linkLessonDocument(lessonChoice.timetableId, lessonChoice.lessonId, streamResponse.id).catch(
+            (err) => posthog.captureException(err),
+          );
+        }
 
         dispatch(
           setPendingInitialPrompt({
@@ -342,14 +371,22 @@ export default function DocumentCreationPage({
   };
 
   return (
-    <div className="w-full overflow-x-hidden">
-      {/* pb-20: the generate button can scroll clear of the floating assistant button. */}
-      <div className="max-w-4xl mx-auto pb-20">
+    <div className="w-full overflow-x-clip">
+      <div className="max-w-4xl mx-auto pb-2">
         <FormHeader documentType={documentType} />
 
-        <div className="space-y-4 sm:space-y-6">
+        <div className="space-y-3">
 
-          <div data-tutorial="topic">
+          {documentType.id !== "curriculumPlan" && (
+            <LessonSection
+              documentType={documentType.id}
+              selectedLessonId={lessonChoice?.lessonId ?? null}
+              onChange={handleLessonChange}
+              initialLessonId={initialLessonId}
+            />
+          )}
+
+          <div>
             <TopicSection
               topic={formState.topic}
               placeholder={t(`types.${documentType.id}.placeholder`)}
@@ -364,8 +401,15 @@ export default function DocumentCreationPage({
             />
           )}
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6">
-            <div data-tutorial="grade">
+          {showFilledSummary && formState.schoolYear && formState.subject ? (
+            <FilledSummary
+              schoolYear={formState.schoolYear}
+              subjectId={formState.subject}
+              onChange={() => setShowFilledSummary(false)}
+            />
+          ) : (
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div>
               <ClassSection
                 mode={teachingMode}
                 onModeChange={handleTeachingModeChange}
@@ -381,103 +425,73 @@ export default function DocumentCreationPage({
               />
             </div>
 
-            {/* Subject and duration share one card, subject on top. The tutorial
-                spotlights the [data-tutorial="subject"] wrapper, so it must stay
-                tight around the subject block rather than the whole card. */}
-            <Card className="h-full border-border p-4 shadow-sm transition-shadow hover:shadow-md sm:p-6">
-              <div className="space-y-5 sm:space-y-6">
-                <div data-tutorial="subject">
-                  <SubjectSection
-                    subject={formState.subject}
-                    isSpecificComponent={formState.isSpecificComponent}
-                    onUpdate={updateForm}
-                    availableSubjects={formState.schoolYear ? SUBJECTS_BY_GRADE[String(formState.schoolYear)] : undefined}
-                    preferredSubjectIds={preferredSubjectIds}
-                    mode={teachingMode}
-                    vocationalCourse={selectedVocationalCourse}
-                    vocationalUnitCode={formState.vocationalUnitCode}
-                    vocationalSchoolSubjectName={formState.vocationalSchoolSubjectName}
-                    className={NESTED_SECTION_CLASS}
-                    disabled={!formState.schoolYear}
-                  />
-                </div>
-
-                <div className="border-t border-border/60" />
-
-                <DurationSection
-                  lessonTime={formState.lessonTime}
-                  customTime={formState.customTime}
+            <div className="h-full">
+                <SubjectSection
+                  subject={formState.subject}
+                  isSpecificComponent={formState.isSpecificComponent}
                   onUpdate={updateForm}
-                  className={NESTED_SECTION_CLASS}
+                  availableSubjects={formState.schoolYear ? SUBJECTS_BY_GRADE[String(formState.schoolYear)] : undefined}
+                  preferredSubjectIds={preferredSubjectIds}
+                  mode={teachingMode}
+                  vocationalCourse={selectedVocationalCourse}
+                  vocationalUnitCode={formState.vocationalUnitCode}
+                  vocationalSchoolSubjectName={formState.vocationalSchoolSubjectName}
+                  className="h-full"
+                  disabled={!formState.schoolYear}
                 />
-              </div>
-            </Card>
+            </div>
           </div>
+          )}
 
-          {!isPresentation && (
-            <div data-tutorial="template">
+          <MoreOptions summary={moreOptionsSummary}>
+            <DurationSection
+              lessonTime={formState.lessonTime}
+              customTime={formState.customTime}
+              onUpdate={updateForm}
+            />
+
+            {/* Presentations: deck size and look are optional too (the theme can change later in the editor). */}
+            {isPresentation && <SlideCountSection slideCount={formState.slideCount} onUpdate={updateForm} />}
+            {isPresentation && (
+              <OptionRow label={t("presentationTheme.title")} alignTop>
+                <ThemeGallery value={formState.themeId ?? "clean"} onSelect={(id) => updateForm("themeId", id)} />
+              </OptionRow>
+            )}
+
+            {!isPresentation && (
               <TemplateSection
                 documentType={documentType.id}
                 selectedTemplateId={formState.templateId || null}
                 onTemplateSelect={handleTemplateSelect}
               />
-            </div>
-          )}
+            )}
 
-          {isPresentation && (
-            <div className="rounded-xl border bg-card p-4 shadow-sm">
-              <p className="text-sm font-medium mb-3">{t("presentationTheme.title")}</p>
-              <div className={cn("flex flex-wrap gap-2")}>
-                {themedCoverSlides.map((slide, i) => {
-                  const theme = THEMES[i];
-                  if (!theme) return null;
-                  return (
-                    <SlideThumbnail
-                      key={theme.id}
-                      slide={slide}
-                      index={i}
-                      isActive={(formState.themeId ?? "clean") === theme.id}
-                      onClick={() => updateForm("themeId", theme.id)}
-                      w={110}
-                      h={62}
-                      showIndex={false}
-                      ringOffset="ring-offset-card"
-                    />
-                  );
-                })}
-              </div>
-              <p className="text-xs text-muted-foreground mt-2">
-                {THEMES.find((theme) => theme.id === (formState.themeId ?? "clean"))
-                  ? translateThemeName(formState.themeId ?? "clean")
-                  : t("presentationTheme.defaultName")}
-              </p>
-            </div>
-          )}
+            {showTeachingMethodSection && (
+              <TeachingMethodSection
+                teachingMethod={formState.teachingMethod}
+                onUpdate={updateForm}
+              />
+            )}
 
-          {showTeachingMethodSection && (
-            <TeachingMethodSection
-              teachingMethod={formState.teachingMethod}
+            <AdditionalDetailsSection
+              additionalDetails={formState.additionalDetails}
               onUpdate={updateForm}
             />
-          )}
 
-          <AdditionalDetailsSection
-            additionalDetails={formState.additionalDetails}
-            onUpdate={updateForm}
-          />
+            {isUserSourcesEnabled && (
+              <SourcePickerSection
+                sourceIds={formState.sourceIds ?? []}
+                includeAe={formState.includeAe ?? true}
+                regulatorySourceIds={formState.regulatorySourceIds}
+                subject={formState.subject}
+                schoolYear={formState.schoolYear || undefined}
+                onUpdate={updateForm}
+              />
+            )}
+          </MoreOptions>
 
-          {isUserSourcesEnabled && (
-            <SourcePickerSection
-              sourceIds={formState.sourceIds ?? []}
-              includeAe={formState.includeAe ?? true}
-              regulatorySourceIds={formState.regulatorySourceIds}
-              subject={formState.subject}
-              schoolYear={formState.schoolYear || undefined}
-              onUpdate={updateForm}
-            />
-          )}
-
-          <div data-tutorial="generate">
+          {/* Sticky so the Create button stays in view, however long the form is. */}
+          <div className="sticky bottom-0 z-10">
             <FormActions
               documentType={documentType}
               isLoading={isLoading}
@@ -485,6 +499,7 @@ export default function DocumentCreationPage({
               error={error}
               onSubmit={handleCreateDocument}
               showGenerationHint={!isEntitlementLoading && !isProUser}
+              missingField={missingField}
             />
           </div>
         </div>

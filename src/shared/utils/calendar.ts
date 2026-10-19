@@ -40,6 +40,21 @@ export function getWeekStart(date: Date = new Date()): Date {
   return d;
 }
 
+/** The week the calendar opens on: this one on a school day, the coming one at the weekend. */
+export function defaultCalendarWeek(now: Date = new Date()): Date {
+  const day = now.getDay();
+  return day === 6 || day === 0 ? getWeekStart(addDays(now, day === 6 ? 2 : 1)) : getWeekStart(now);
+}
+
+/** A short week label for narrow screens: "19–25 out", or "28 set – 4 out" across two months. */
+export function compactWeekLabel(weekStart: Date, intlLocale: string): string {
+  const end = addDays(weekStart, 6);
+  const month = (d: Date) => new Intl.DateTimeFormat(intlLocale, { month: "short" }).format(d).replace(/\./g, "");
+  return weekStart.getMonth() === end.getMonth()
+    ? `${weekStart.getDate()}–${end.getDate()} ${month(end)}`
+    : `${weekStart.getDate()} ${month(weekStart)} – ${end.getDate()} ${month(end)}`;
+}
+
 export function formatWeekLabel(weekStart: Date, locale: Locale): string {
   const end = addDays(weekStart, 6);
   const fmt = (d: Date) =>
@@ -66,4 +81,20 @@ export function getDayLabels(locale: Locale): string[] {
   const fmt = new Intl.DateTimeFormat(toIntlLocale(locale), { weekday: "short" });
   const monday = new Date(2024, 0, 1); // a known Monday
   return Array.from({ length: 7 }, (_, i) => fmt.format(addDays(monday, i)));
+}
+
+/**
+ * Text colour for a label drawn on a turma colour. White (the house style on mid-tone colours
+ * like the Scooli violet) unless it drops under 3:1 contrast, as on yellow or mint; then near-black.
+ */
+export function readableTextOn(hex: string): "#111827" | "#ffffff" {
+  const rgb = hexToRgb(hex);
+  if (!rgb || [rgb.r, rgb.g, rgb.b].some(Number.isNaN)) return "#ffffff";
+  const channel = (v: number) => {
+    const c = v / 255;
+    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  };
+  const luminance = 0.2126 * channel(rgb.r) + 0.7152 * channel(rgb.g) + 0.0722 * channel(rgb.b);
+  const contrastWithWhite = 1.05 / (luminance + 0.05);
+  return contrastWithWhite >= 3 ? "#ffffff" : "#111827";
 }

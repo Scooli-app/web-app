@@ -1,0 +1,101 @@
+import { describe, expect, it } from "vitest";
+import type { TurmaProgress, TurmaProgressFlaggedOutcome } from "@/shared/types/progress";
+import {
+  FLAGGED_PREVIEW_LIMIT,
+  coverageBarWidth,
+  formatProgressDate,
+  formatCoveragePercent,
+  hasProgressData,
+  lessonsGiven,
+  shouldLoadTurmaProgress,
+  visibleFlaggedOutcomes,
+} from "./turmaProgress";
+
+const outcome = (n: number): TurmaProgressFlaggedOutcome => ({
+  outcomeId: `o${n}`,
+  text: `Aprendizagem ${n}`,
+  topicPath: [],
+  difficultyCount: 1,
+  lastSignalDate: "2026-10-08",
+  state: "not_covered",
+});
+
+const progress = (over: Partial<TurmaProgress["coverage"]> & { past?: number } = {}): TurmaProgress => ({
+  asOf: "2026-10-19",
+  coverage: { outcomesTotal: 0, outcomesCovered: 0, outcomesPartial: 0, percent: null, curriculumTotal: 0, ...over },
+  slots: {
+    past: over.past ?? 0,
+    counts: { planned: 0, taught: 0, partiallyTaught: 0, notHeld: 0, assumedTaught: 0 },
+    pendingCheckIns: 0,
+  },
+  behindSchedule: { lessonsBehind: 0, items: [] },
+  flaggedOutcomes: [],
+  nextAssessment: null,
+});
+
+describe("shouldLoadTurmaProgress", () => {
+  it("never asks for progress with the flag off", () => {
+    expect(shouldLoadTurmaProgress(false, "tt-1")).toBe(false);
+  });
+
+  it("asks with the flag on and a turma id", () => {
+    expect(shouldLoadTurmaProgress(true, "tt-1")).toBe(true);
+    expect(shouldLoadTurmaProgress(true, "")).toBe(false);
+  });
+});
+
+describe("formatCoveragePercent", () => {
+  it("shows the percent, or the dash when null", () => {
+    expect(formatCoveragePercent(100)).toBe("100%");
+    expect(formatCoveragePercent(0)).toBe("0%");
+    expect(formatCoveragePercent(null)).toBe("—");
+  });
+});
+
+describe("coverageBarWidth", () => {
+  it("clamps to 0..100 and draws nothing for null", () => {
+    expect(coverageBarWidth(null)).toBe(0);
+    expect(coverageBarWidth(42)).toBe(42);
+    expect(coverageBarWidth(150)).toBe(100);
+    expect(coverageBarWidth(-3)).toBe(0);
+  });
+});
+
+describe("lessonsGiven", () => {
+  it("counts taught and assumed-taught lessons", () => {
+    expect(
+      lessonsGiven({ planned: 2, taught: 1, partiallyTaught: 1, notHeld: 1, assumedTaught: 2 }),
+    ).toBe(3);
+  });
+});
+
+describe("visibleFlaggedOutcomes", () => {
+  const many = Array.from({ length: 8 }, (_, i) => outcome(i + 1));
+
+  it("previews the first few until expanded", () => {
+    expect(visibleFlaggedOutcomes(many, false)).toHaveLength(FLAGGED_PREVIEW_LIMIT);
+    expect(visibleFlaggedOutcomes(many, true)).toHaveLength(8);
+  });
+
+  it("keeps short lists whole", () => {
+    expect(visibleFlaggedOutcomes([outcome(1)], false)).toEqual([outcome(1)]);
+  });
+});
+
+describe("hasProgressData", () => {
+  it("is false for a brand-new turma with nothing planned or taught", () => {
+    expect(hasProgressData(progress())).toBe(false);
+  });
+
+  it("is true once outcomes are planned or lessons are past", () => {
+    expect(hasProgressData(progress({ outcomesTotal: 2 }))).toBe(true);
+    expect(hasProgressData(progress({ past: 1 }))).toBe(true);
+  });
+});
+
+describe("formatProgressDate", () => {
+  it("writes the weekday, day and month in the given locale", () => {
+    expect(formatProgressDate("2026-10-05", "pt-PT")).toMatch(/5/);
+    expect(formatProgressDate("2026-10-05", "pt-PT")).toMatch(/outubro/i);
+  });
+});

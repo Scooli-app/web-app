@@ -29,6 +29,7 @@
 import AIChatPanel from "@/components/document-editor/AIChatPanel";
 import { AiDisclaimer } from "@/components/ui/ai-disclaimer";
 import { GenerationProgress } from "@/components/blocks/GenerationProgress";
+import { GenerationStalledNotice } from "@/components/ui/generation-stalled-notice";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -46,8 +47,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { useGenerationProgress } from "@/hooks/useGenerationProgress";
+import { useGenerationStalled } from "@/hooks/useGenerationStalled";
 import { parsePresentationDocument, slideBlockSchema } from "@/shared/types/blocks";
-import type { RagSource } from "@/shared/types/document";
+import { isFailedDocumentStatus, type RagSource } from "@/shared/types/document";
 import {
   isCanvasPresentation,
   type CanvasElement,
@@ -107,9 +109,12 @@ import { ImagePickerModal, type ImageInsertResult } from "./ImagePickerModal";
 import { ColorPickerPopover } from "./ColorPickerPopover";
 import { FormulaModal } from "./FormulaModal";
 import { SlideKonvaEditor, type SlideKonvaEditorHandle } from "./SlideKonvaEditor";
+import { SlideNotesPanel } from "./SlideNotesPanel";
 import { SlideThumbnail } from "./SlideThumbnail";
 import { ThemePicker } from "./ThemePicker";
 import { renderKatexToPngDataUrl } from "./math-render";
+import { listItemPrefix } from "@/shared/utils/list-markers";
+import { formatImageCredit } from "@/shared/utils/photo-credit";
 
 interface Props {
   documentId: string;
@@ -196,6 +201,10 @@ function sanitizeWinAnsiText(text: string): string {
     .replace(/[“”]/g, "\"")
     .replace(/[‘’]/g, "'")
     .replace(/\u00a0/g, " ")
+    // Arrows carry meaning in sequences ("Evapora\u00e7\u00e3o \u2192 Condensa\u00e7\u00e3o"): keep them as ASCII.
+    .replace(/[\u2192\u27f6\u2794\u279c]/g, "->")
+    .replace(/[\u2190\u27f5]/g, "<-")
+    .replace(/\u2026/g, "...")
     .replace(/[^\x09\x0A\x0D\x20-\x7E\xA0-\xFF]/g, "");
 }
 
@@ -283,6 +292,43 @@ async function fetchImageAsset(url: string): Promise<{ bytes: Uint8Array; conten
   } catch {
     return null;
   }
+}
+
+/** Redraws an image (e.g. webp/gif from a stock library) as PNG, which PDF and every PowerPoint can embed. */
+async function rasterizeToPng(dataUrl: string): Promise<{ bytes: Uint8Array; dataUrl: string } | null> {
+  try {
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const el = new window.Image();
+      el.onload = () => resolve(el);
+      el.onerror = () => reject(new Error("decode failed"));
+      el.src = dataUrl;
+    });
+    if (!img.naturalWidth || !img.naturalHeight) return null;
+    const c = window.document.createElement("canvas");
+    c.width = img.naturalWidth;
+    c.height = img.naturalHeight;
+    const ctx = c.getContext("2d");
+    if (!ctx) return null;
+    ctx.drawImage(img, 0, 0);
+    const pngDataUrl = c.toDataURL("image/png");
+    return { bytes: dataUrlToBytes(pngDataUrl), dataUrl: pngDataUrl };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Fetches an image for export as PNG or JPEG (other formats are converted).
+ * Null when it can't be fetched or decoded; the caller counts it so the
+ * teacher is told the export is missing images instead of finding out later.
+ */
+async function fetchExportImage(url: string): Promise<{ bytes: Uint8Array; dataUrl: string; isPng: boolean } | null> {
+  const asset = await fetchImageAsset(url);
+  if (!asset) return null;
+  if (/png/i.test(asset.contentType)) return { bytes: asset.bytes, dataUrl: asset.dataUrl, isPng: true };
+  if (/jpe?g/i.test(asset.contentType)) return { bytes: asset.bytes, dataUrl: asset.dataUrl, isPng: false };
+  const png = await rasterizeToPng(asset.dataUrl);
+  return png ? { ...png, isPng: true } : null;
 }
 
 function dataUrlToBytes(dataUrl: string): Uint8Array {
@@ -468,6 +514,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
   const inProgress =
     !!document &&
     (document.status === "generating" || document.status === "processing");
+  const isGenerationStalled = useGenerationStalled(inProgress, document?.updatedAt);
 
   const progress = useGenerationProgress({
     documentId: inProgress ? documentId : null,
@@ -771,7 +818,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
   }, [applyElementPatch]);
 
   const insertImageElement = useCallback(
-    ({ url, prompt, backendId }: ImageInsertResult) => {
+    ({ url, prompt, backendId, attribution }: ImageInsertResult) => {
       if (!activeSlideId) return;
       const newId = `img-${Date.now().toString(36)}`;
       const newEl: CanvasImageElement = {
@@ -784,6 +831,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
         prompt,
         url,
         imageBackendId: backendId,
+        ...(attribution ? { attribution } : {}),
       };
       pushHistory();
       setCanvas((prev) =>
@@ -810,16 +858,17 @@ export function BlockDocumentEditor({ documentId }: Props) {
    * - Insert mode: adds a new image_placeholder element to the active slide.
    */
   const handleImageFromModal = useCallback(
-    ({ url, prompt, backendId }: ImageInsertResult) => {
+    ({ url, prompt, backendId, attribution }: ImageInsertResult) => {
       if (imageModalReplacing) {
         applyElementPatch({
           url,
           prompt,
           imageBackendId: backendId,
+          attribution,
         } as Partial<CanvasImageElement>);
         return;
       }
-      insertImageElement({ url, prompt, backendId });
+      insertImageElement({ url, prompt, backendId, attribution });
     },
     [imageModalReplacing, applyElementPatch, insertImageElement],
   );
@@ -843,6 +892,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
             url: result.newUrl,
             prompt,
             imageBackendId: result.id,
+            attribution: undefined,
           } as Partial<CanvasImageElement>);
         } else {
           insertImageElement({
@@ -1081,6 +1131,19 @@ export function BlockDocumentEditor({ documentId }: Props) {
     },
     [pushHistory],
   );
+
+  /** Typing in the notes panel: no history entry per keystroke (see onEditStart). */
+  const updateSlideNotes = useCallback((slideId: string, notes: string) => {
+    setCanvas((prev) =>
+      prev
+        ? {
+            ...prev,
+            slides: prev.slides.map((s) => (s.id === slideId ? { ...s, notes: notes || undefined } : s)),
+          }
+        : prev,
+    );
+    setDirty(true);
+  }, []);
 
   const toggleHideSlide = useCallback(
     (slideId: string) => {
@@ -1426,10 +1489,14 @@ export function BlockDocumentEditor({ documentId }: Props) {
       const SLIDE_W = 10;
       const SLIDE_H = 5.625;
       const FS_SCALE = 720;
+      let missingImages = 0;
 
       for (const cs of canvas.slides) {
         const slide = pptx.addSlide();
         slide.background = { fill: toHex6(cs.background) };
+        if (cs.notes?.trim()) {
+          slide.addNotes(cs.notes.trim());
+        }
 
         for (const el of cs.elements) {
           const x = el.x * SLIDE_W;
@@ -1454,7 +1521,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
             const l = el as CanvasListElement;
             const isOrdered = el.type === "ordered_list";
             const bulletItems = l.items.map((item, i) => ({
-              text: isOrdered ? `${i + 1}. ${item}` : `• ${item}`,
+              text: `${listItemPrefix(isOrdered, l.items, i)}${item}`,
               options: {},
             }));
             const safeBulletItems = bulletItems.map((item) => ({
@@ -1472,8 +1539,11 @@ export function BlockDocumentEditor({ documentId }: Props) {
           } else if (el.type === "image_placeholder") {
             const image = el as CanvasImageElement;
             if (!image.url) continue;
-            const asset = await fetchImageAsset(image.url);
-            if (!asset) continue;
+            const asset = await fetchExportImage(image.url);
+            if (!asset) {
+              missingImages += 1;
+              continue;
+            }
             slide.addImage({
               data: asset.dataUrl,
               x,
@@ -1482,6 +1552,24 @@ export function BlockDocumentEditor({ documentId }: Props) {
               h,
               rotate: image.rotation ?? 0,
             });
+            const credit = formatImageCredit(image.attribution);
+            if (credit) {
+              // Small credit strip along the image's bottom edge (stock photo licence etiquette).
+              const creditH = 0.22;
+              slide.addText(sanitizeWinAnsiText(t("photoCredit", { credit })), {
+                x,
+                y: y + h - creditH,
+                w,
+                h: creditH,
+                fontSize: 7,
+                color: "FFFFFF",
+                fill: { color: "000000", transparency: 55 },
+                fontFace: "Calibri",
+                align: "right",
+                valign: "middle",
+                margin: 3,
+              });
+            }
           } else if (el.type === "math") {
             const math = el as CanvasMathElement;
             const rendered = await renderKatexToPngDataUrl(math.tex, {
@@ -1503,7 +1591,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
             const lineWidth = Math.max(0.75, (shape.strokeWidth ?? DEFAULT_SHAPE_STROKE_WIDTH) * 72 * SLIDE_W);
 
             if (shape.shape === "rect") {
-              slide.addShape(PptxGenJS.ShapeType.rect, {
+              slide.addShape(pptx.ShapeType.rect, {
                 x,
                 y,
                 w,
@@ -1513,7 +1601,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
                 line: { color: strokeColor, width: lineWidth },
               });
             } else if (shape.shape === "ellipse") {
-              slide.addShape(PptxGenJS.ShapeType.ellipse, {
+              slide.addShape(pptx.ShapeType.ellipse, {
                 x,
                 y,
                 w,
@@ -1523,7 +1611,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
                 line: { color: strokeColor, width: lineWidth },
               });
             } else {
-              slide.addShape(PptxGenJS.ShapeType.line, {
+              slide.addShape(pptx.ShapeType.line, {
                 x,
                 y: y + h / 2,
                 w,
@@ -1537,9 +1625,13 @@ export function BlockDocumentEditor({ documentId }: Props) {
       }
 
       const fileName = (document.title || "apresentacao")
-        .replace(/[^a-z0-9À-ÿ\s\-]/gi, "").trim().replace(/\s+/g, "_");
+        .replace(/[^a-z0-9À-ÿ\s\-]/gi, "").trim().replace(/\s+/g, "_") || "apresentacao";
       await pptx.writeFile({ fileName: `${fileName}.pptx` });
-      toast.success(t("pptxExported"));
+      if (missingImages > 0) {
+        toast.warning(t("exportMissingImages", { count: missingImages }));
+      } else {
+        toast.success(t("pptxExported"));
+      }
     } catch (err) {
       console.error("PPTX export error:", err);
       toast.error(t("pptxExportError"));
@@ -1561,6 +1653,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
       const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
       const fontItalic = await pdfDoc.embedFont(StandardFonts.HelveticaOblique);
       const fontBoldItalic = await pdfDoc.embedFont(StandardFonts.HelveticaBoldOblique);
+      let missingImages = 0;
 
       for (const cs of canvas.slides) {
         const page = pdfDoc.addPage([PAGE_W, PAGE_H]);
@@ -1607,7 +1700,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
             const c = hexToRgb01(l.color);
             const itemH = (el.h * PAGE_H) / Math.max(1, l.items.length);
             l.items.forEach((item, i) => {
-              const prefix = isOrdered ? `${i + 1}. ` : "- ";
+              const prefix = listItemPrefix(isOrdered, l.items, i, "-");
               const [firstLine = ""] = wrapPdfText(`${prefix}${item}`, el.w * PAGE_W, fontRegular, fontSize);
               page.drawText(firstLine, {
                 x: el.x * PAGE_W,
@@ -1667,10 +1760,13 @@ export function BlockDocumentEditor({ documentId }: Props) {
           } else if (el.type === "image_placeholder") {
             const image = el as CanvasImageElement;
             if (!image.url) continue;
-            const asset = await fetchImageAsset(image.url);
-            if (!asset) continue;
+            const asset = await fetchExportImage(image.url);
+            if (!asset) {
+              missingImages += 1;
+              continue;
+            }
             try {
-              const embedded = /png/i.test(asset.contentType)
+              const embedded = asset.isPng
                 ? await pdfDoc.embedPng(asset.bytes)
                 : await pdfDoc.embedJpg(asset.bytes);
               page.drawImage(embedded, {
@@ -1681,7 +1777,34 @@ export function BlockDocumentEditor({ documentId }: Props) {
                 rotate: degrees(image.rotation ?? 0),
               });
             } catch {
-              // Skip images pdf-lib cannot decode (e.g. webp) rather than failing the export.
+              // Skip an image pdf-lib still cannot decode rather than failing the export.
+              missingImages += 1;
+              continue;
+            }
+            const credit = formatImageCredit(image.attribution);
+            if (credit) {
+              const creditText = sanitizeWinAnsiText(t("photoCredit", { credit }));
+              const creditSize = 8;
+              const imgX = el.x * PAGE_W;
+              const imgY = PAGE_H - (el.y + el.h) * PAGE_H;
+              const imgW = el.w * PAGE_W;
+              const textW = Math.min(imgW - 6, fontRegular.widthOfTextAtSize(creditText, creditSize));
+              page.drawRectangle({
+                x: imgX + imgW - textW - 8,
+                y: imgY,
+                width: textW + 8,
+                height: creditSize + 6,
+                color: rgb(0, 0, 0),
+                opacity: 0.45,
+              });
+              page.drawText(creditText, {
+                x: imgX + imgW - textW - 4,
+                y: imgY + 4,
+                size: creditSize,
+                font: fontRegular,
+                color: rgb(1, 1, 1),
+                maxWidth: imgW - 6,
+              });
             }
           } else if (el.type === "math") {
             const math = el as CanvasMathElement;
@@ -1712,13 +1835,18 @@ export function BlockDocumentEditor({ documentId }: Props) {
       const a = window.document.createElement("a");
       a.href = url;
       const fileName = (document.title || "apresentacao")
-        .replace(/[^a-z0-9À-ÿ\s-]/gi, "").trim().replace(/\s+/g, "_");
+        .replace(/[^a-z0-9À-ÿ\s-]/gi, "").trim().replace(/\s+/g, "_") || "apresentacao";
       a.download = `${fileName}.pdf`;
       window.document.body.appendChild(a);
       a.click();
       window.document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      toast.success(t("pdfExported"));
+      // Revoking synchronously can cancel the download in Safari/Firefox.
+      window.setTimeout(() => URL.revokeObjectURL(url), 10_000);
+      if (missingImages > 0) {
+        toast.warning(t("exportMissingImages", { count: missingImages }));
+      } else {
+        toast.success(t("pdfExported"));
+      }
     } catch (err) {
       console.error("PDF export error:", err);
       toast.error(t("pdfExportError"));
@@ -1740,6 +1868,13 @@ export function BlockDocumentEditor({ documentId }: Props) {
     );
   }
   if (inProgress) {
+    if (isGenerationStalled) {
+      return (
+        <div className="flex h-full min-h-[60dvh] w-full items-center justify-center p-8">
+          <GenerationStalledNotice />
+        </div>
+      );
+    }
     return (
       <GenerationProgress
         phase={progress.phase}
@@ -1748,7 +1883,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
       />
     );
   }
-  if (document.status === "failed") {
+  if (isFailedDocumentStatus(document.status)) {
     return (
       <div className="mx-auto max-w-md p-8 text-center">
         <h2 className="text-lg font-semibold text-foreground">{t("generationFailedTitle")}</h2>
@@ -2326,6 +2461,13 @@ export function BlockDocumentEditor({ documentId }: Props) {
           ) : (
             <p className="text-sm text-muted-foreground">{t("noSlideSelected")}</p>
           )}
+          {activeSlide && (
+            <SlideNotesPanel
+              notes={activeSlide.notes ?? ""}
+              onEditStart={pushHistory}
+              onChange={(notes) => updateSlideNotes(activeSlide.id, notes)}
+            />
+          )}
         </main>
 
         {/* AI Chat panel — desktop: fixed right column; mobile: floating button */}
@@ -2341,6 +2483,8 @@ export function BlockDocumentEditor({ documentId }: Props) {
             sources={sources}
             onImageRegen={handleImageRegen}
             onDismissImageRegen={handleImageRegenDismiss}
+            documentType={document?.documentType}
+            documentId={document?.id}
           />
         </aside>
       </div>
@@ -2350,6 +2494,11 @@ export function BlockDocumentEditor({ documentId }: Props) {
         <ImagePickerModal
           open={imageModalOpen}
           documentId={document.id}
+          initialSearchQuery={
+            activeSlide?.elements.find(
+              (el): el is CanvasTextElement => el.type === "text" && el.role === "title",
+            )?.text || document.title || undefined
+          }
           onClose={() => setImageModalOpen(false)}
           onInsert={handleImageFromModal}
           onGenerate={handleGenerateImageFromModal}

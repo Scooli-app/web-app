@@ -1,11 +1,15 @@
 import type { AcquisitionSource, OnboardingGoal } from "@/shared/types/onboarding";
 import type {
+  ClassCount,
+  CurrentTool,
   OnboardingV2Complete,
   OnboardingV2DraftAnswers,
   OnboardingV2DraftPatch,
+  OnboardingV2Step,
+  PrepHoursPerWeek,
 } from "@/shared/types/onboarding-v2";
 
-/** Step-5 answers. Owned by the flow hook so they survive the step unmounting. */
+/** Steps 5 (baseline) and 6 (ritual) answers. Owned by the flow hook so they survive the step unmounting. */
 export interface RitualState {
   planningDay: number;
   /** null = the teacher never chose; the toggle shows ON but nothing is saved until touched. */
@@ -13,6 +17,19 @@ export interface RitualState {
   goals: OnboardingGoal[];
   source: AcquisitionSource | null;
   sourceOther: string;
+  /** Optional baseline questions (step 5). null / [] = not answered. */
+  prepHours: PrepHoursPerWeek | null;
+  currentTools: CurrentTool[];
+  classCount: ClassCount | null;
+}
+
+/** Baseline answers as analytics properties; unanswered questions are omitted. */
+export function baselineAnalytics(state: RitualState): Record<string, unknown> {
+  return {
+    ...(state.prepHours ? { prep_hours_per_week: state.prepHours } : {}),
+    ...(state.currentTools.length > 0 ? { current_tools: state.currentTools } : {}),
+    ...(state.classCount ? { class_count: state.classCount } : {}),
+  };
 }
 
 /**
@@ -31,6 +48,9 @@ export function buildCompletePayload(
     acquisitionSource: state.source,
     acquisitionSourceOther: other || null,
     skippedClass,
+    prepHoursPerWeek: state.prepHours,
+    currentTools: state.currentTools,
+    classCount: state.classCount,
   };
 }
 
@@ -46,6 +66,9 @@ export function initialRitualState(draft: OnboardingV2DraftAnswers | null): Ritu
     goals: (draft?.goals ?? []) as OnboardingGoal[],
     source: (draft?.acquisitionSource ?? null) as AcquisitionSource | null,
     sourceOther: draft?.acquisitionSourceOther ?? "",
+    prepHours: (draft?.prepHoursPerWeek ?? null) as PrepHoursPerWeek | null,
+    currentTools: (draft?.currentTools ?? []) as CurrentTool[],
+    classCount: (draft?.classCount ?? null) as ClassCount | null,
   };
 }
 
@@ -53,14 +76,20 @@ export function applyRitualPatch(state: RitualState, patch: Partial<RitualState>
   return { ...state, ...patch };
 }
 
-/** Autosave payload of the whole step-5 state. */
-export function ritualDraftPatch(state: RitualState): OnboardingV2DraftPatch {
+/** Autosave payload of the whole steps 5-6 state; `step` is the step being edited. */
+export function ritualDraftPatch(
+  state: RitualState,
+  step: OnboardingV2Step = 6,
+): OnboardingV2DraftPatch {
   return {
-    step: 5,
+    step,
     planningDay: state.planningDay,
     ...(state.weeklyEmail !== null ? { weeklyEmail: state.weeklyEmail } : {}),
     goals: state.goals,
     ...(state.source ? { acquisitionSource: state.source } : {}),
     acquisitionSourceOther: state.source === "OTHER" ? state.sourceOther.trim() : "",
+    ...(state.prepHours ? { prepHoursPerWeek: state.prepHours } : {}),
+    currentTools: state.currentTools,
+    ...(state.classCount ? { classCount: state.classCount } : {}),
   };
 }

@@ -10,7 +10,6 @@ import {
   watchPlanGenerationMarker,
 } from "@/components/onboarding-v2/planGenerationRunner";
 import type { OnboardingMode } from "@/components/onboarding-v2/useOnboardingV2";
-import { TUTORIAL_ROUTE, useTutorial } from "@/contexts/TutorialContext";
 import { onboardingV2Service } from "@/services/api/onboarding-v2.service";
 import { Routes } from "@/shared/types";
 import type { OnboardingV2DraftAnswers, OnboardingV2Status } from "@/shared/types/onboarding-v2";
@@ -54,7 +53,6 @@ export function OnboardingV2Gate() {
   const pathname = usePathname();
   const router = useRouter();
   const dispatch = useAppDispatch();
-  const { startTutorial } = useTutorial();
   const { isSignedIn, getToken, userId } = useAuth();
   const store = useStore<RootState>();
   const isUpgradeModalOpen = useSelector(
@@ -121,15 +119,10 @@ export function OnboardingV2Gate() {
       // The v1 status preloaded at bootstrap is superseded by the v2 completion.
       dispatch(setOnboardingStatus(null));
       if (result.mode !== "full") return;
-      if (result.skippedClass) {
-        // Brand-new teacher without a class yet: hand over to the first-time tutorial.
-        router.push(TUTORIAL_ROUTE);
-        startTutorial("onboarding");
-      } else {
-        router.push(Routes.DASHBOARD);
-      }
+      // With or without a class, the dashboard is next: its week card asks for a first class.
+      router.push(Routes.DASHBOARD);
     },
-    [dispatch, router, startTutorial],
+    [dispatch, router],
   );
 
   if (!isSignedIn || !pending || !running) return null;
