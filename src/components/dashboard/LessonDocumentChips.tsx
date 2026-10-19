@@ -45,9 +45,10 @@ export async function startCompanionDocument(
   type: Exclude<CompanionType, "lessonPlan">,
   t: Translate,
   dispatch: AppDispatch,
+  outcomeIds?: string[],
 ): Promise<boolean> {
   try {
-    await generateLessonDocument(timetableId, lessonId, type);
+    await generateLessonDocument(timetableId, lessonId, type, outcomeIds);
     return true;
   } catch (err) {
     if (err instanceof UpgradeLimitError) {
@@ -127,6 +128,8 @@ interface LessonDocumentChipsProps {
   planAsChip?: boolean;
   /** Types a "Preparar …" run will start: shown as busy before the server reports them. */
   busyTypes?: CompanionType[];
+  /** A test on an assessment: the outcomes it must assess (ENG-209). Left out, the server uses the whole scope. */
+  testOutcomeIds?: string[];
 }
 
 /**
@@ -143,6 +146,7 @@ export function LessonDocumentChips({
   lessonPlanBusy = false,
   planAsChip = false,
   busyTypes = [],
+  testOutcomeIds,
 }: LessonDocumentChipsProps) {
   const t = useTranslations("yourWeek");
   const dispatch = useAppDispatch();
@@ -176,7 +180,14 @@ export function LessonDocumentChips({
         }
         await writeLessonPlan(timetableId, lesson.id, t, dispatch, getToken);
       } else {
-        await startCompanionDocument(timetableId, lesson.id, type, t, dispatch);
+        await startCompanionDocument(
+          timetableId,
+          lesson.id,
+          type,
+          t,
+          dispatch,
+          type === "test" ? testOutcomeIds : undefined,
+        );
       }
       onChanged();
     } finally {
