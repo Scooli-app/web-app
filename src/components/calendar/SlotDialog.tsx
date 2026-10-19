@@ -42,6 +42,7 @@ import {
   type LessonSlotType,
 } from "@/services/api/timetable.service";
 import { checkInService } from "@/services/api/check-in.service";
+import { useShiftFollowing } from "@/hooks/useShiftFollowing";
 import { selectIsClassStateEnabled } from "@/store/features/selectors";
 import { useAppSelector } from "@/store/hooks";
 import { toast } from "sonner";
@@ -89,6 +90,8 @@ export interface SlotDialogProps {
   onDocumentsChanged?: () => void;
   /** A check-in was saved here: the parent puts the new status on the slot (the card badge follows). */
   onCheckedIn?: (slot: SlotWithTimetable, record: CheckInRecord) => void;
+  /** The lessons after this one were moved (ENG-194): the parent reloads the turma's slots. */
+  onLessonsShifted?: (slot: SlotWithTimetable) => void;
 }
 
 export function SlotDialog({
@@ -102,11 +105,13 @@ export function SlotDialog({
   onTitleChange,
   onDocumentsChanged,
   onCheckedIn,
+  onLessonsShifted,
 }: SlotDialogProps) {
   const t = useTranslations("calendar.slotDialog");
   const tShared = useTranslations("calendar.shared");
   const tTimetable = useTranslations("timetable");
   const tCheckIn = useTranslations("checkIns");
+  const { offer: offerShift } = useShiftFollowing();
   const rawLocale = useLocale();
   const locale = isSupportedLocale(rawLocale) ? rawLocale : defaultLocale;
   const router = useRouter();
@@ -222,6 +227,9 @@ export function SlotDialog({
     } catch {
       toast.error(tCheckIn("saveError"));
       return;
+    }
+    if (body.result === "NOT_HELD") {
+      offerShift(slot.timetable.id, slot.id, () => onLessonsShifted?.(slot));
     }
     if (body.result === "TAUGHT") {
       toast.success(tCheckIn("taughtToast"), {

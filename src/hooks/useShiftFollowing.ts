@@ -37,10 +37,15 @@ export function useShiftFollowing() {
   );
 
   const offer = useCallback(
-    (timetableId: string, slotId: string) => {
+    (timetableId: string, slotId: string, onShifted?: () => void) => {
       toast(t("shiftQuestion"), {
         duration: 15000,
-        action: { label: t("shiftAction"), onClick: () => void shift(timetableId, slotId) },
+        action: {
+          label: t("shiftAction"),
+          onClick: () => void shift(timetableId, slotId).then((result) => {
+            if (result) onShifted?.();
+          }),
+        },
         cancel: { label: t("shiftKeep"), onClick: () => undefined },
       });
     },

@@ -581,6 +581,7 @@ export default function CalendarViewPage() {
         onTypeChange={handleTypeChange}
         onTitleChange={handleTitleChange}
         onCheckedIn={handleCheckedIn}
+        onLessonsShifted={() => dispatch(fetchLessons({ timetableId: id }))}
       />
     </div>
   );
