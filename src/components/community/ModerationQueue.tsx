@@ -15,6 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { EmptyState } from "@/components/ui/empty-state";
 import { ResponsiveDataView } from "@/components/ui/responsive-data-view";
 import {
   Table,
@@ -179,18 +180,6 @@ export function ModerationQueue() {
     );
   }
 
-  if (pendingResources.length === 0) {
-    return (
-      <Card className="p-8 text-center">
-        <Clock className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-        <h3 className="mb-2 text-lg font-semibold">{t("emptyTitle")}</h3>
-        <p className="text-sm text-muted-foreground">
-          {t("emptyDescription")}
-        </p>
-      </Card>
-    );
-  }
-
   const mobileCards = (
     <div className="space-y-3">
       {sortedResources.map((resource) => (
@@ -322,10 +311,18 @@ export function ModerationQueue() {
           </div>
         </Card>
 
-        <ResponsiveDataView
-          mobileCardView={mobileCards}
-          desktopTableView={desktopTable}
-        />
+        {pendingResources.length === 0 ? (
+          <EmptyState
+            icon={Clock}
+            title={t("emptyTitle")}
+            description={t("emptyDescription")}
+          />
+        ) : (
+          <ResponsiveDataView
+            mobileCardView={mobileCards}
+            desktopTableView={desktopTable}
+          />
+        )}
       </div>
 
       <Dialog open={isReviewModalOpen} onOpenChange={setIsReviewModalOpen}>

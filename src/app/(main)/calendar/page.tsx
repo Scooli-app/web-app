@@ -17,6 +17,8 @@ import {
 import { useSelector } from "react-redux";
 import { selectPlanGeneration } from "@/store/planGeneration/selectors";
 
+import { EmptyState } from "@/components/ui/empty-state";
+import { LoadError } from "@/components/ui/load-error";
 import { PlanGenerationBanner } from "@/components/plan-generation/PlanGenerationBanner";
 import { Button } from "@/components/ui/button";
 import {
@@ -307,7 +309,7 @@ function CalendarPageInner() {
   const locale = isSupportedLocale(rawLocale) ? rawLocale : defaultLocale;
   const dayLabels = useMemo(() => getDayLabels(locale), [locale]);
   const { loaded: featuresLoaded, enabled } = useFeatureAccess(selectIsHorarioPlanosEnabled);
-  const { timetables, isLoading: isLoadingTimetables } = useSelector(
+  const { timetables, isLoading: isLoadingTimetables, error: timetablesError } = useSelector(
     (state: RootState) => state.timetable,
   );
   const dispatch = useAppDispatch();
@@ -339,6 +341,8 @@ function CalendarPageInner() {
     Map<string, LessonSlot[]>
   >(new Map());
   const [isSlotsLoading, setIsSlotsLoading] = useState(false);
+  const [slotsFailed, setSlotsFailed] = useState(false);
+  const [slotsRetry, setSlotsRetry] = useState(0);
   const [selectedSlot, setSelectedSlot] = useState<SlotWithTimetable | null>(
     null,
   );
@@ -387,12 +391,14 @@ function CalendarPageInner() {
       return;
     }
     setIsSlotsLoading(true);
+    setSlotsFailed(false);
     Promise.all(
       active.map(async (t) => {
         try {
           const slots = await listLessons(t.id, weekIso);
           return { timetableId: t.id, slots };
         } catch {
+          setSlotsFailed(true);
           return { timetableId: t.id, slots: [] as LessonSlot[] };
         }
       }),
@@ -407,7 +413,7 @@ function CalendarPageInner() {
       })
       .finally(() => setIsSlotsLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [timetableKey, weekIso]); // timetableKey is stable — prevents duplicate requests
+  }, [timetableKey, weekIso, slotsRetry]); // timetableKey is stable — prevents duplicate requests
 
   // Background plan generation (started in onboarding): when it produces new topics or
   // finishes a lesson, reload this week's slots once so they appear on their own.
@@ -914,6 +920,10 @@ function CalendarPageInner() {
     weekDays.slice(5).every((day) => (dayMap.get(toIso(day)) ?? []).length === 0);
   const weekGridColumns = narrowWeekend ? NARROW_WEEKEND_COLUMNS : EVEN_WEEK_COLUMNS;
   const activeTimetables = timetables.filter((t) => t.status === "active");
+  // Week arrows / Hoje / class chips do nothing without an active class.
+  const hideNav = !isLoadingTimetables && activeTimetables.length === 0;
+  const weekIsEmpty =
+    !isSlotsLoading && weekDays.every((day) => (dayMap.get(toIso(day)) ?? []).length === 0);
 
   if (!featuresLoaded) return null;
   if (!enabled)
@@ -946,6 +956,8 @@ function CalendarPageInner() {
               </Link>
             </div>
 
+            {!hideNav && (
+              <>
             <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={prevWeek}>
               <ArrowLeft className="h-3.5 w-3.5" />
             </Button>
@@ -959,6 +971,8 @@ function CalendarPageInner() {
             <Button variant="outline" size="sm" className="h-7 shrink-0 px-2 text-xs" onClick={goToday}>
               {t("shared.today")}
             </Button>
+              </>
+            )}
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -1016,6 +1030,8 @@ function CalendarPageInner() {
               </Link>
             </div>
 
+            {!hideNav && (
+              <>
             <Button variant="outline" size="sm" onClick={goToday} className="h-8">
               {t("shared.today")}
             </Button>
@@ -1028,6 +1044,8 @@ function CalendarPageInner() {
             <span className="min-w-[160px] text-sm font-medium text-foreground">
               {formatWeekLabel(weekStart, locale)}
             </span>
+              </>
+            )}
 
             <div className="flex-1" />
 
@@ -1074,7 +1092,17 @@ function CalendarPageInner() {
                 <div className="h-7 w-24 animate-pulse rounded-full bg-muted" />
               </>
             ) : (
-              activeTimetables.map((tt) => {
+              <>
+              {filterIds.size > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setFilterIds(new Set())}
+                  className="flex h-7 shrink-0 items-center rounded-full border border-border px-2.5 text-xs font-medium text-muted-foreground hover:text-foreground"
+                >
+                  {t("shared.allClasses")}
+                </button>
+              )}
+              {activeTimetables.map((tt) => {
                 const isActive = filterIds.size === 0 || filterIds.has(tt.id);
                 return (
                   <button
@@ -1108,7 +1136,8 @@ function CalendarPageInner() {
                     </span>
                   </button>
                 );
-              })
+              })}
+              </>
             )}
           </div>
         </div>
@@ -1118,22 +1147,56 @@ function CalendarPageInner() {
       <div className="mx-auto w-full max-w-[1400px] px-4 pb-24 pt-4 md:pb-8">
         {isLoadingTimetables && timetables.length === 0 ? (
           <CalendarGridSkeleton weekDays={weekDays} today={today} dayLabels={dayLabels} />
+        ) : timetablesError && timetables.length === 0 ? (
+          <LoadError onRetry={() => void dispatch(fetchTimetables())} />
         ) : activeTimetables.length === 0 ? (
-          <div className="py-20 text-center">
-            <CalendarDays className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-            <p className="text-lg font-medium">{t("shared.emptyTitle")}</p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {t("shared.emptyDescription")}
-            </p>
-            <Button asChild className="mt-5">
-              <Link href={Routes.CALENDAR_NEW} onClick={newClassGate.onClick}>
-                <Plus className="mr-2 h-4 w-4" />
-                {t("shared.createClass")}
-              </Link>
-            </Button>
-          </div>
+          <EmptyState
+            icon={CalendarDays}
+            title={timetables.length > 0 ? t("shared.noActiveTitle") : t("shared.emptyTitle")}
+            description={
+              timetables.length > 0 ? t("shared.noActiveDescription") : t("shared.emptyDescription")
+            }
+            actions={
+              <>
+                {timetables.length > 0 && (
+                  <Button variant="outline" asChild>
+                    <Link href={Routes.CALENDAR_SEQUENCES}>{t("shared.classesLink")}</Link>
+                  </Button>
+                )}
+                <Button asChild>
+                  <Link href={Routes.CALENDAR_NEW} onClick={newClassGate.onClick}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    {t("shared.createClass")}
+                  </Link>
+                </Button>
+              </>
+            }
+          />
         ) : (
           <>
+            {slotsFailed && (
+              <LoadError className="mb-3" onRetry={() => setSlotsRetry((n) => n + 1)} />
+            )}
+            {!slotsFailed && weekIsEmpty && (
+              <EmptyState
+                size="inline"
+                icon={CalendarDays}
+                title={t("week.emptyTitle")}
+                description={filterIds.size > 0 ? t("week.emptyFiltered") : t("week.emptyHint")}
+                className="mb-3"
+                actions={
+                  filterIds.size > 0 ? (
+                    <Button variant="outline" size="sm" onClick={() => setFilterIds(new Set())}>
+                      {t("week.showAllClasses")}
+                    </Button>
+                  ) : (
+                    <Button variant="outline" size="sm" asChild>
+                      <Link href={Routes.CALENDAR_SEQUENCES}>{t("shared.classesLink")}</Link>
+                    </Button>
+                  )
+                }
+              />
+            )}
             {/* ── Mobile: vertical day list (hidden on md+) ────────── */}
             <div className="md:hidden space-y-3">
               {weekDays.map((day, i) => {
@@ -1226,15 +1289,6 @@ function CalendarPageInner() {
                   </div>
                 );
               })}
-              {/* Days without lessons are hidden above, so an empty week needs saying. */}
-              {!isSlotsLoading &&
-                weekDays.every((day) => (dayMap.get(toIso(day)) ?? []).length === 0) && (
-                  <div className="rounded-lg border border-dashed border-border px-4 py-10 text-center">
-                    <CalendarDays className="mx-auto mb-3 h-8 w-8 text-muted-foreground" aria-hidden />
-                    <p className="text-sm font-medium">{t("week.emptyTitle")}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">{t("week.emptyHint")}</p>
-                  </div>
-                )}
             </div>
 
             {/* ── Desktop: 7-column grid (hidden on mobile) ────────── */}

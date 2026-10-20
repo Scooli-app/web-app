@@ -367,10 +367,12 @@ export function TemplateBrowserModal({
                     <div className="min-w-0">
                       <DialogTitle>{t("chooseTemplate")}</DialogTitle>
                       <DialogDescription className="line-clamp-2 sm:line-clamp-none">
-                        {t("modelsAvailable", {
-                          typeLabel: getDocumentTypeLabel(documentType),
-                          count: templates.length,
-                        })}
+                        {templates.length > 0
+                          ? t("modelsAvailable", {
+                              typeLabel: getDocumentTypeLabel(documentType),
+                              count: templates.length,
+                            })
+                          : getDocumentTypeLabel(documentType)}
                       </DialogDescription>
                     </div>
                   </div>

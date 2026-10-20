@@ -65,7 +65,14 @@ export function CommunityFilters({
   };
 
   const clearFilters = () => {
-    onFiltersChange({ sortBy: filters.sortBy || "popular" });
+    // Explicit undefined: the store merges filters, so omitted keys would linger.
+    onFiltersChange({
+      ...filters,
+      grade: undefined,
+      subject: undefined,
+      resourceType: undefined,
+      search: undefined,
+    });
   };
 
   const hasActiveFilters =

@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { LoadError } from "@/components/ui/load-error";
 import {
   Dialog,
   DialogContent,
@@ -153,6 +154,8 @@ export function SlotDialog({
   const [customMessage, setCustomMessage] = useState("");
   const [slotDocs, setSlotDocs] = useState<LessonDocument[]>([]);
   const [docsLoading, setDocsLoading] = useState(false);
+  const [docsFailed, setDocsFailed] = useState(false);
+  const [docsRetry, setDocsRetry] = useState(0);
   const [docsOpen, setDocsOpen] = useState(true);
   /** Reopens the check-in card for a lesson that already has an answer ("Alterar"). */
   const [checkInEditing, setCheckInEditing] = useState(false);
@@ -193,12 +196,16 @@ export function SlotDialog({
       return;
     }
     setDocsLoading(true);
+    setDocsFailed(false);
     listLessonDocuments(slot.timetable.id, slot.id)
       .then(setSlotDocs)
-      .catch(() => setSlotDocs([]))
+      .catch(() => {
+        setSlotDocs([]);
+        setDocsFailed(true);
+      })
       .finally(() => setDocsLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [slotId]);
+  }, [slotId, docsRetry]);
 
   // ENG-209: "Vai avaliar" for an assessment, behind class_state_enabled. Loaded once per slot; nothing without the flag.
   const assessment = useAssessmentScope(
@@ -229,7 +236,7 @@ export function SlotDialog({
     subject: slot?.timetable.subject,
     documents: lessonDocuments,
     ready:
-      !!slot && !docsLoading && !isSlotGenerating && slot.status !== "generating" && slot.status !== "skipped",
+      !!slot && !docsLoading && !docsFailed && !isSlotGenerating && slot.status !== "generating" && slot.status !== "skipped",
     generatePlan: () => (slot ? onGenerate(slot, customMessage || undefined) : undefined),
     onDone: () => {
       reloadDocs();
@@ -601,6 +608,8 @@ export function SlotDialog({
                           <Loader2 className="h-3 w-3 animate-spin" />
                           {t("loadingDocuments")}
                         </div>
+                      ) : docsFailed ? (
+                        <LoadError onRetry={() => setDocsRetry((n) => n + 1)} />
                       ) : visibleDocs.length === 0 ? (
                         <p className="py-1 text-xs text-muted-foreground">
                           {t("noDocuments")}

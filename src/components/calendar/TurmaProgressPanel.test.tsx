@@ -243,14 +243,15 @@ describe("TurmaProgressView", () => {
     expect(html).toContain("coverageOfYear");
   });
 
-  it("shows a dash, not a percent, when there is no coverage figure", () => {
+  it("shows one neutral line, not misleading stats, when no plan is linked", () => {
     const html = renderView(
       progress({
         coverage: { outcomesTotal: 0, outcomesCovered: 0, outcomesPartial: 0, percent: null, curriculumTotal: 3 },
       }),
     );
-    expect(html).toContain("—");
-    expect(html).not.toMatch(/>\d+%</);
+    expect(html).toContain("noPlan");
+    expect(html).not.toContain("allOnTime");
+    expect(html).not.toContain("coverageCount");
   });
 
   it("says all is on track when nothing is behind", () => {

@@ -283,10 +283,20 @@ export function FormulaModal({ open, onClose, onInsert, initialTex }: Props) {
 
             <div className="rounded-xl border border-border bg-muted/20 p-4">
               <p className="mb-3 text-sm font-medium text-foreground">{t("previewLabel")}</p>
-              <div
-                className="flex min-h-[144px] items-center justify-center rounded-lg border border-dashed border-border bg-background px-4 py-6 text-foreground"
-                dangerouslySetInnerHTML={{ __html: renderKatexHtml(previewTex || "\\,", true) }}
-              />
+              {previewTex.trim() ? (
+                <div
+                  className="flex min-h-[144px] items-center justify-center rounded-lg border border-dashed border-border bg-background px-4 py-6 text-foreground"
+                  dangerouslySetInnerHTML={{ __html: renderKatexHtml(previewTex, true) }}
+                />
+              ) : (
+                <div className="flex min-h-[144px] flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border bg-background px-4 py-6 text-sm text-muted-foreground">
+                  <span>{t("previewEmpty")}</span>
+                  <span
+                    className="opacity-70"
+                    dangerouslySetInnerHTML={{ __html: renderKatexHtml("\\frac{a}{b}") }}
+                  />
+                </div>
+              )}
             </div>
           </div>
 

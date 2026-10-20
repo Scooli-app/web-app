@@ -17,11 +17,13 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { EmptyState } from "@/components/ui/empty-state";
+import { LoadError } from "@/components/ui/load-error";
 
 import { translateSubject, TIMETABLE_COLORS } from "@/components/document-creation/constants";
 import { formatClassName } from "@/shared/utils/className";
 import { Routes, type Document } from "@/shared/types";
-import { selectIsHorarioPlanosEnabled } from "@/store/features/selectors";
+import { selectIsCurriculumPlanEnabled, selectIsHorarioPlanosEnabled } from "@/store/features/selectors";
 import { useFeatureAccess } from "@/components/feature/useFeatureAccess";
 import { FeatureUnavailable } from "@/components/feature/FeatureUnavailable";
 import { fetchTimetables, deleteTimetable, updateTimetable } from "@/store/timetable/timetableSlice";
@@ -140,7 +142,18 @@ function EditDialog({ timetable, isSaving, onSave, onCancel }: EditDialogProps) 
   const [color, setColor] = useState("");
   const [plans, setPlans] = useState<Document[]>([]);
   const [plansLoading, setPlansLoading] = useState(false);
+  const [plansFailed, setPlansFailed] = useState(false);
+  const planEnabled = useSelector(selectIsCurriculumPlanEnabled);
   const [linkedPlanId, setLinkedPlanId] = useState<string>("");
+
+  const loadPlans = () => {
+    setPlansLoading(true);
+    setPlansFailed(false);
+    getDocuments({ page: 1, limit: 50, filters: { documentType: "curriculum_plan" } })
+      .then((res) => setPlans(res.documents ?? []))
+      .catch(() => setPlansFailed(true))
+      .finally(() => setPlansLoading(false));
+  };
 
   useEffect(() => {
     if (!timetable) return;
@@ -148,11 +161,7 @@ function EditDialog({ timetable, isSaving, onSave, onCancel }: EditDialogProps) 
     setClassLabel(timetable.classLabel ?? "");
     setColor(timetable.color ?? "#7F77DD");
     setLinkedPlanId(timetable.linkedCurriculumPlan ?? "");
-    setPlansLoading(true);
-    getDocuments({ page: 1, limit: 50, filters: { documentType: "curriculum_plan" } })
-      .then((res) => setPlans(res.documents ?? []))
-      .catch(() => setPlans([]))
-      .finally(() => setPlansLoading(false));
+    loadPlans();
   }, [timetable?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!timetable) return null;
@@ -227,12 +236,22 @@ function EditDialog({ timetable, isSaving, onSave, onCancel }: EditDialogProps) 
             </div>
 
             {/* Planificação ligada */}
+            {(planEnabled || plans.length > 0 || plansFailed) && (
             <div className="space-y-1.5">
               <Label>{t("editDialog.linkedPlanLabel")}</Label>
               {plansLoading ? (
                 <div className="flex items-center gap-2 py-1 text-xs text-muted-foreground">
                   <Loader2 className="h-3 w-3 animate-spin" />{t("editDialog.loadingPlans")}
                 </div>
+              ) : plansFailed ? (
+                <LoadError onRetry={loadPlans} />
+              ) : plans.length === 0 ? (
+                <p className="text-xs text-muted-foreground">
+                  {t("editDialog.noPlans")}{" "}
+                  <Link href={Routes.CURRICULUM_PLAN_NEW} className="font-medium text-primary hover:underline">
+                    {t("editDialog.createPlan")}
+                  </Link>
+                </p>
               ) : (
                 <select
                   className="h-9 w-full rounded-lg border border-input bg-background px-2 text-sm"
@@ -250,6 +269,7 @@ function EditDialog({ timetable, isSaving, onSave, onCancel }: EditDialogProps) 
                 </select>
               )}
             </div>
+            )}
           </div>
         </div>
 
@@ -371,7 +391,7 @@ function SequenceCard({ timetable, onDelete, onEdit }: SequenceCardProps) {
 export default function SequenciasPage() {
   const t = useTranslations("calendar");
   const { loaded: featuresLoaded, enabled } = useFeatureAccess(selectIsHorarioPlanosEnabled);
-  const { timetables, isLoading } = useSelector((state: RootState) => state.timetable);
+  const { timetables, isLoading, error } = useSelector((state: RootState) => state.timetable);
   const dispatch = useAppDispatch();
   const newClassGate = useNewClassGate();
 
@@ -460,22 +480,22 @@ export default function SequenciasPage() {
         <div className="flex items-center justify-center py-16">
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
+      ) : timetables.length === 0 && error ? (
+        <LoadError onRetry={() => dispatch(fetchTimetables())} />
       ) : timetables.length === 0 ? (
-        <div className="flex flex-col items-center justify-center gap-4 rounded-lg border border-dashed border-border py-20 text-center">
-          <CalendarDays className="h-12 w-12 text-muted-foreground" />
-          <div>
-            <p className="font-medium text-foreground">{t("shared.emptyTitle")}</p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {t("shared.emptyDescription")}
-            </p>
-          </div>
-          <Button asChild>
-            <Link href={Routes.CALENDAR_NEW} onClick={newClassGate.onClick}>
-              <Plus className="mr-2 h-4 w-4" />
-              {t("shared.createClass")}
-            </Link>
-          </Button>
-        </div>
+        <EmptyState
+          icon={CalendarDays}
+          title={t("shared.emptyTitle")}
+          description={t("shared.emptyDescription")}
+          actions={
+            <Button asChild>
+              <Link href={Routes.CALENDAR_NEW} onClick={newClassGate.onClick}>
+                <Plus className="mr-2 h-4 w-4" />
+                {t("shared.createClass")}
+              </Link>
+            </Button>
+          }
+        />
       ) : (
         <div className="space-y-2">
           {timetables.map((tt) => (

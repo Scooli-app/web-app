@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { teachingProfileService } from "@/services/api/teaching-profile.service";
 import type { Qualification } from "@/shared/types/teaching-profile";
 import { normalizeSearch } from "./search";
@@ -7,6 +7,10 @@ export interface UseCourseSearchResult {
   /** The full level-4 catalogue, loaded once. Empty while still loading. */
   catalog: Qualification[];
   catalogError: string | null;
+  /** True once the catalogue request has succeeded (even if it came back empty). */
+  catalogLoaded: boolean;
+  /** Clears the error and requests the catalogue again. */
+  retryCatalog: () => void;
   term: string;
   setTerm: (term: string) => void;
   /** Local matches for `term`, capped like the Settings course search. */
@@ -23,14 +27,23 @@ export interface UseCourseSearchResult {
 export function useCourseSearch(catalogErrorFallback: string): UseCourseSearchResult {
   const [catalog, setCatalog] = useState<Qualification[]>([]);
   const [catalogError, setCatalogError] = useState<string | null>(null);
+  const [catalogLoaded, setCatalogLoaded] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
   const [term, setTerm] = useState("");
+
+  const retryCatalog = useCallback(() => {
+    setCatalogError(null);
+    setReloadKey((key) => key + 1);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
     teachingProfileService
       .searchQualifications("", 4, 200)
       .then((results) => {
-        if (!cancelled) setCatalog(results);
+        if (cancelled) return;
+        setCatalog(results);
+        setCatalogLoaded(true);
       })
       .catch((error) => {
         // apiClient's interceptor already turns failures into a specific
@@ -43,7 +56,7 @@ export function useCourseSearch(catalogErrorFallback: string): UseCourseSearchRe
     return () => {
       cancelled = true;
     };
-  }, [catalogErrorFallback]);
+  }, [catalogErrorFallback, reloadKey]);
 
   const results = useMemo(() => {
     const key = normalizeSearch(term);
@@ -58,5 +71,5 @@ export function useCourseSearch(catalogErrorFallback: string): UseCourseSearchRe
       .slice(0, 8);
   }, [catalog, term]);
 
-  return { catalog, catalogError, term, setTerm, results };
+  return { catalog, catalogError, catalogLoaded, retryCatalog, term, setTerm, results };
 }

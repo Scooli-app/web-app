@@ -5,7 +5,6 @@ import { LanguagePreferences } from "@/components/settings/LanguagePreferences";
 import { PlanningRitualPreferences } from "@/components/settings/PlanningRitualPreferences";
 import { Button } from "@/components/ui/button";
 import { TeachingProfileCard } from "@/components/teaching-profile/TeachingProfileCard";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   createPortalSession,
   getCurrentSubscription,
@@ -19,6 +18,7 @@ import {
   type SubscriptionStatus,
   type UsageStats,
 } from "@/shared/types/subscription";
+import { Routes } from "@/shared/types/routes";
 import { isTeacherProfileFeatureEnabled } from "@/shared/types/featureFlags";
 import {
   PROMO_PLANS,
@@ -46,6 +46,7 @@ import {
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -54,18 +55,8 @@ import posthog from "posthog-js";
 function getStatusBadge(
   status: SubscriptionStatus,
   cancelAtPeriodEnd: boolean,
-  planCode: string | undefined,
   t: ReturnType<typeof useTranslations>,
 ) {
-  // Free plan always shows the trial-period badge
-  if (planCode === "free") {
-    return {
-      label: t("statusBadge.trialPeriod"),
-      className:
-        "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-    };
-  }
-
   if (cancelAtPeriodEnd) {
     return {
       label: t("statusBadge.cancelsAtPeriodEnd"),
@@ -83,19 +74,22 @@ function getStatusBadge(
           "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
       };
     case "past_due":
+    case "unpaid":
+    case "incomplete":
       return {
         label: t("statusBadge.paymentPending"),
         className:
           "bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400",
       };
     case "canceled":
+    case "incomplete_expired":
       return {
         label: t("statusBadge.canceled"),
         className: "bg-secondary text-muted-foreground",
       };
     default:
       return {
-        label: status,
+        label: t("statusBadge.unknown"),
         className: "bg-secondary text-muted-foreground",
       };
   }
@@ -300,13 +294,8 @@ function SettingsContent() {
     : (getPlanDisplayInfo("free") as { name: string; description: string });
 
   const statusBadge = subscription
-    ? getStatusBadge(
-        subscription.status,
-        subscription.cancelAtPeriodEnd,
-        subscription.planCode,
-        t,
-      )
-    : getStatusBadge("free", false, "free", t);
+    ? getStatusBadge(subscription.status, subscription.cancelAtPeriodEnd, t)
+    : null;
 
   if (!isUserLoaded) {
     return <SettingsSkeleton />;
@@ -418,20 +407,6 @@ function SettingsContent() {
                   </span>
                 </div>
               </div>
-
-              {/* Free Trial Plan Info — hidden when org provides Pro access */}
-              {!hasOrganizationBackedAccess && (
-                <div className="flex flex-wrap items-center gap-3 mb-4">
-                  <span className="font-semibold text-foreground text-lg">
-                    {planInfo.name}
-                  </span>
-                  <span
-                    className={`inline-flex px-3 py-1 rounded-full text-sm font-medium ${statusBadge.className}`}
-                  >
-                    {statusBadge.label}
-                  </span>
-                </div>
-              )}
 
               {/* Free Trial Usage */}
               {showPersonalUpgradeOptions && usage && (
@@ -562,6 +537,20 @@ function SettingsContent() {
                   </div>
                 </div>
               )}
+
+              {showPersonalUpgradeOptions &&
+                !promoActive &&
+                plans.length === 0 && (
+                  <p className="text-sm text-muted-foreground">
+                    {t("subscriptionCard.plansUnavailable")}{" "}
+                    <Link
+                      href={Routes.CHECKOUT}
+                      className="font-medium text-primary hover:underline"
+                    >
+                      {t("subscriptionCard.plansUnavailableLink")}
+                    </Link>
+                  </p>
+                )}
             </>
           ) : (
             <>
@@ -588,11 +577,13 @@ function SettingsContent() {
                 <span className="font-semibold text-foreground text-lg">
                   {planInfo.name}
                 </span>
-                <span
-                  className={`inline-flex px-3 py-1 rounded-full text-sm font-medium ${statusBadge.className}`}
-                >
-                  {statusBadge.label}
-                </span>
+                {statusBadge && (
+                  <span
+                    className={`inline-flex px-3 py-1 rounded-full text-sm font-medium ${statusBadge.className}`}
+                  >
+                    {statusBadge.label}
+                  </span>
+                )}
               </div>
 
               {/* Renewal/Period Info */}
@@ -719,38 +710,6 @@ function SettingsContent() {
             <LanguagePreferences />
 
             <PlanningRitualPreferences />
-
-            {/* Notifications (placeholder - disabled) */}
-            <div className="space-y-4">
-              <p className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-                {t("preferences.notifications.title")}
-              </p>
-              <div className="flex items-start gap-3 opacity-50">
-                <Checkbox disabled checked={false} className="mt-0.5" />
-                <div>
-                  <p className="text-sm font-medium text-foreground">
-                    {t("preferences.notifications.productTitle")}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {t("preferences.notifications.productDescription")}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3 opacity-50">
-                <Checkbox disabled checked={false} className="mt-0.5" />
-                <div>
-                  <p className="text-sm font-medium text-foreground">
-                    {t("preferences.notifications.communityTitle")}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {t("preferences.notifications.communityDescription")}
-                  </p>
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground italic">
-                {t("preferences.notifications.comingSoon")}
-              </p>
-            </div>
           </div>
         </div>
       </div>

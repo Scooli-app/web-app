@@ -204,16 +204,32 @@ export function SourcePickerSection({
         ) : indexedSources.length === 0 ? (
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <AlertCircle className="h-3.5 w-3.5 shrink-0" />
-            <span>
-              {t("noIndexedSourcesPrefix")}{" "}
-              <Link
-                href={Routes.SOURCES}
-                className="text-primary underline underline-offset-2"
-              >
-                {t("uploadDocuments")}
-              </Link>{" "}
-              {t("noIndexedSourcesSuffix")}
-            </span>
+            {sources.length > 0 ? (
+              <span>
+                {sources.some((s) => s.status === "indexed")
+                  ? t("noneMatch")
+                  : sources.some((s) => s.status !== "failed")
+                    ? t("stillProcessing")
+                    : t("allFailed")}{" "}
+                <Link
+                  href={Routes.SOURCES}
+                  className="text-primary underline underline-offset-2"
+                >
+                  {t("manageSources")}
+                </Link>
+              </span>
+            ) : (
+              <span>
+                {t("noIndexedSourcesPrefix")}{" "}
+                <Link
+                  href={Routes.SOURCES}
+                  className="text-primary underline underline-offset-2"
+                >
+                  {t("uploadDocuments")}
+                </Link>{" "}
+                {t("noIndexedSourcesSuffix")}
+              </span>
+            )}
           </div>
         ) : (
           <div className="space-y-2">

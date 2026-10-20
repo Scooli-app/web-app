@@ -4,6 +4,7 @@ import { PageContainer } from "@/components/layout/PageContainer";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
@@ -130,9 +131,12 @@ export default function SchoolMembersPage() {
           ) : loading && members.length === 0 ? (
             <p className="text-sm text-muted-foreground">{t("members.loading")}</p>
           ) : members.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              {t("members.empty")}
-            </p>
+            <EmptyState
+              size="inline"
+              icon={Users}
+              title={t("members.emptyTitle")}
+              description={t("members.empty")}
+            />
           ) : (
             members.map((member) => (
               <div

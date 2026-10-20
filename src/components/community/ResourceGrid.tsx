@@ -6,9 +6,12 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Routes } from "@/shared/types";
 import type { SharedResource } from "@/services/api/community.service";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { BookOpen, ChevronLeft, ChevronRight, SearchX } from "lucide-react";
 import { useTranslations } from "next-intl";
+import Link from "next/link";
 import { ResourceCard } from "./ResourceCard";
 
 interface ResourceGridProps {
@@ -26,6 +29,9 @@ interface ResourceGridProps {
   isReusing?: boolean;
   reusingResourceId?: string;
   reusedResourceIds?: string[];
+  hasActiveFilters?: boolean;
+  onClearFilters?: () => void;
+  onShare?: () => void;
 }
 
 export function ResourceGrid({
@@ -37,7 +43,10 @@ export function ResourceGrid({
   isLoading = false,
   isReusing = false,
   reusingResourceId,
-  reusedResourceIds = []
+  reusedResourceIds = [],
+  hasActiveFilters = false,
+  onClearFilters,
+  onShare,
 }: ResourceGridProps) {
   const t = useTranslations("community.resourceGrid");
 
@@ -65,14 +74,34 @@ export function ResourceGrid({
   }
 
   if (resources.length === 0) {
-    return (
-      <div className="flex flex-col items-center py-16 text-center">
-        <div className="mb-4 text-5xl">📚</div>
-        <h3 className="mb-1 text-lg font-semibold text-foreground">{t("emptyTitle")}</h3>
-        <p className="max-w-sm text-sm text-muted-foreground">
-          {t("emptyDescription")}
-        </p>
-      </div>
+    return hasActiveFilters && onClearFilters ? (
+      <EmptyState
+        icon={SearchX}
+        title={t("emptyFilteredTitle")}
+        description={t("emptyFilteredDescription")}
+        actions={
+          <Button size="sm" onClick={onClearFilters}>
+            {t("clearFilters")}
+          </Button>
+        }
+      />
+    ) : (
+      <EmptyState
+        icon={BookOpen}
+        title={t("emptyTitle")}
+        description={t("emptyDescription")}
+        actions={
+          onShare ? (
+            <Button size="sm" onClick={onShare}>
+              {t("shareAction")}
+            </Button>
+          ) : (
+            <Button asChild size="sm">
+              <Link href={Routes.DOCUMENTS}>{t("shareFromDocuments")}</Link>
+            </Button>
+          )
+        }
+      />
     );
   }
 

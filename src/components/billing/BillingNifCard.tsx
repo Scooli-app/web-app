@@ -1,11 +1,12 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { LoadError } from "@/components/ui/load-error";
 import { Input } from "@/components/ui/input";
 import { userService } from "@/services/api/user.service";
 import { FileText, Loader2 } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 /**
@@ -25,6 +26,14 @@ export function BillingNifCard() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
+
+  const retryLoad = useCallback(() => {
+    setLoadFailed(false);
+    setIsLoading(true);
+    setReloadKey((key) => key + 1);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -37,7 +46,7 @@ export function BillingNifCard() {
         setSavedNif(user.nif ?? "");
       })
       .catch(() => {
-        if (!cancelled) toast.error(tErrors("nifLoadFailed"));
+        if (!cancelled) setLoadFailed(true);
       })
       .finally(() => {
         if (!cancelled) setIsLoading(false);
@@ -46,8 +55,7 @@ export function BillingNifCard() {
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [reloadKey]);
 
   const trimmed = nif.trim();
   const hasChanged = trimmed !== savedNif;
@@ -91,6 +99,8 @@ export function BillingNifCard() {
           <div className="h-4 bg-muted rounded-lg w-40 animate-pulse" />
           <div className="h-9 bg-muted rounded-md w-full max-w-xs animate-pulse" />
         </div>
+      ) : loadFailed ? (
+        <LoadError message={tErrors("nifLoadFailed")} onRetry={retryLoad} />
       ) : (
         <div className="space-y-4">
           <div className="space-y-2 max-w-xs">
@@ -116,11 +126,12 @@ export function BillingNifCard() {
                 setError(null);
               }}
             />
-            {error ?? (
-              <p id="nif-hint" className="text-sm text-red-500">
-                {error}
-              </p>
-            )}
+            <p
+              id="nif-hint"
+              className={error ? "text-sm text-red-500" : "text-sm text-muted-foreground"}
+            >
+              {error ?? t("hint")}
+            </p>
           </div>
 
           <Button

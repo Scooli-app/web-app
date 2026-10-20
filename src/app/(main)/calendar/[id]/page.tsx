@@ -1,10 +1,12 @@
 "use client";
 
 import { formatClassName } from "@/shared/utils/className";
-import { hasTopic, isListableSlot, isVisibleSlot } from "@/shared/utils/lessonTopic";
+import { hasTopic, isVisibleSlot } from "@/shared/utils/lessonTopic";
 import { Badge } from "@/components/ui/badge";
 import { PlanGenerationBanner } from "@/components/plan-generation/PlanGenerationBanner";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { LoadError } from "@/components/ui/load-error";
 import { selectIsClassStateEnabled, selectIsHorarioPlanosEnabled } from "@/store/features/selectors";
 import { useFeatureAccess } from "@/components/feature/useFeatureAccess";
 import { FeatureUnavailable } from "@/components/feature/FeatureUnavailable";
@@ -147,7 +149,7 @@ export default function CalendarViewPage() {
   const params = useParams();
   const id = params.id as string;
   const { loaded: featuresLoaded, enabled } = useFeatureAccess(selectIsHorarioPlanosEnabled);
-  const { currentTimetable, slots, isSlotsLoading } =
+  const { currentTimetable, slots, isSlotsLoading, isLoading, error } =
     useSelector((state: RootState) => state.timetable);
   const dispatch = useAppDispatch();
   const { getToken } = useAuth();
@@ -490,6 +492,22 @@ export default function CalendarViewPage() {
 
   const pendingThisWeek = currentWeekSlots.filter((s) => s.status === "pending").length;
 
+  const timetableFailed = !!error && !isLoading && currentTimetable?.id !== id;
+  const retryLoad = () => {
+    dispatch(fetchTimetable(id));
+    dispatch(fetchLessons({ timetableId: id }));
+  };
+  // Nearest week that has lessons, for the "no lessons this week" way out.
+  const nearestWeekIso = useMemo(() => {
+    const cur = new Date(`${currentWeekIso}T00:00:00`).getTime();
+    let best: string | null = null;
+    for (const ws of slotsByWeek.keys()) {
+      const dist = Math.abs(new Date(`${ws}T00:00:00`).getTime() - cur);
+      if (best === null || dist < Math.abs(new Date(`${best}T00:00:00`).getTime() - cur)) best = ws;
+    }
+    return best;
+  }, [slotsByWeek, currentWeekIso]);
+
   const timetableColor = currentTimetable?.color ?? "#7F77DD";
 
   if (!featuresLoaded) return null;
@@ -548,6 +566,8 @@ export default function CalendarViewPage() {
         )}
       </div>
 
+      {timetableFailed && <LoadError onRetry={retryLoad} />}
+
       <PlanGenerationBanner timetableId={id} />
 
       <TurmaProgressPanel timetableId={id} refreshKey={progressRefreshKey} />
@@ -576,15 +596,38 @@ export default function CalendarViewPage() {
           <Loader2 className="mx-auto h-6 w-6 animate-spin" />
         </div>
       ) : currentWeekSlots.length === 0 ? (
-        <div className="py-12 text-center text-muted-foreground">
-          <CalendarDays className="mx-auto mb-3 h-10 w-10" />
-          <p>{t("detail.noLessonsThisWeek")}</p>
-          <p className="mt-1 text-sm">
-            {!slots.some(isListableSlot)
-              ? t("detail.noLessonsYet")
-              : t("detail.navigateOtherWeek")}
-          </p>
-        </div>
+        nearestWeekIso ? (
+          <EmptyState
+            size="inline"
+            icon={CalendarDays}
+            title={t("detail.noLessonsThisWeek")}
+            description={t("detail.navigateOtherWeek")}
+            actions={
+              <Button size="sm" onClick={() => setWeekStart(new Date(`${nearestWeekIso}T00:00:00`))}>
+                {t("detail.goToNearestWeek")}
+              </Button>
+            }
+          />
+        ) : pendingTopics ? (
+          <EmptyState
+            size="inline"
+            icon={CalendarDays}
+            title={t("detail.preparingTitle")}
+            description={t("detail.preparingDescription")}
+          />
+        ) : (
+          <EmptyState
+            size="inline"
+            icon={CalendarDays}
+            title={t("detail.noLessonsYet")}
+            description={t("detail.noLessonsYetHint")}
+            actions={
+              <Button size="sm" variant="outline" asChild>
+                <Link href={Routes.CALENDAR_SEQUENCES}>{t("shared.classesLink")}</Link>
+              </Button>
+            }
+          />
+        )
       ) : (
         <div className="space-y-2">
           {currentWeekSlots.map((slot) => (

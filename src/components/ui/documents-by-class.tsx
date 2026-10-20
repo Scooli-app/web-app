@@ -6,6 +6,7 @@ import {
   type DocumentClassOption,
   type DocumentOriginFilter,
 } from "@/components/ui/document-filters";
+import { LoadError } from "@/components/ui/load-error";
 import { getDocuments } from "@/services/api/document.service";
 import type { Document } from "@/shared/types";
 import { ChevronRight, Loader2 } from "lucide-react";
@@ -21,6 +22,7 @@ interface Section {
   color: string | null;
   documents: Document[];
   total: number;
+  failed: boolean;
 }
 
 interface DocumentsByClassProps {
@@ -48,6 +50,7 @@ export function DocumentsByClass({ classes, filters, refreshKey, onSeeAll, onDel
   const t = useTranslations("documents.gallery");
   const tFilters = useTranslations("documents.filters");
   const [sections, setSections] = useState<Section[] | null>(null);
+  const [retryKey, setRetryKey] = useState(0);
   const { documentType, subject, gradeLevel, search, origin } = filters;
 
   useEffect(() => {
@@ -64,8 +67,8 @@ export function DocumentsByClass({ classes, filters, refreshKey, onSeeAll, onDel
           limit: SECTION_SIZE,
           filters: { documentType, subject, gradeLevel, search, timetableId: group.id },
         })
-          .then((result): Section => ({ ...group, documents: result.documents, total: result.pagination.total }))
-          .catch((): Section => ({ ...group, documents: [], total: 0 })),
+          .then((result): Section => ({ ...group, documents: result.documents, total: result.pagination.total, failed: false }))
+          .catch((): Section => ({ ...group, documents: [], total: 0, failed: true })),
       ),
     ).then((loaded) => {
       if (!cancelled) setSections(loaded);
@@ -73,7 +76,7 @@ export function DocumentsByClass({ classes, filters, refreshKey, onSeeAll, onDel
     return () => {
       cancelled = true;
     };
-  }, [classes, documentType, subject, gradeLevel, search, refreshKey, tFilters]);
+  }, [classes, documentType, subject, gradeLevel, search, refreshKey, retryKey, tFilters]);
 
   if (!sections) {
     return (
@@ -87,9 +90,12 @@ export function DocumentsByClass({ classes, filters, refreshKey, onSeeAll, onDel
   // Origin isn't a server filter: it narrows what each section already loaded.
   const byOrigin = (doc: Document) =>
     origin === "all" || (origin === "imported" ? !!doc.originalFormat : !doc.originalFormat);
+  const retry = () => setRetryKey((n) => n + 1);
+  if (sections.every((section) => section.failed)) return <LoadError onRetry={retry} />;
+
   const visible = sections
     .map((section) => ({ ...section, documents: section.documents.filter(byOrigin) }))
-    .filter((section) => section.documents.length > 0);
+    .filter((section) => section.failed || section.documents.length > 0);
 
   if (visible.length === 0) return empty;
 
@@ -103,9 +109,11 @@ export function DocumentsByClass({ classes, filters, refreshKey, onSeeAll, onDel
                 <span aria-hidden className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: section.color }} />
               )}
               <span className="truncate">{section.title}</span>
-              <span className="shrink-0 text-sm font-normal text-muted-foreground">
-                · {t("sectionCount", { count: section.total })}
-              </span>
+              {!section.failed && (
+                <span className="shrink-0 text-sm font-normal text-muted-foreground">
+                  · {t("sectionCount", { count: section.total })}
+                </span>
+              )}
             </h3>
             {section.total > section.documents.length && (
               <button
@@ -118,6 +126,9 @@ export function DocumentsByClass({ classes, filters, refreshKey, onSeeAll, onDel
               </button>
             )}
           </div>
+          {section.failed ? (
+            <LoadError onRetry={retry} />
+          ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 xl:grid-cols-4">
             {section.documents.map((document, index) => (
               // Three columns fit three cards: the fourth waits for the four-column grid.
@@ -126,6 +137,7 @@ export function DocumentsByClass({ classes, filters, refreshKey, onSeeAll, onDel
               </div>
             ))}
           </div>
+          )}
         </section>
       ))}
     </div>

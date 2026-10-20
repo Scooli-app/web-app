@@ -36,7 +36,7 @@ import {
 } from "@/store/subscription/subscriptionSlice";
 import { useAuth } from "@clerk/nextjs";
 import type { Editor } from "@tiptap/react";
-import { CheckCircle2, Crown, Loader2 } from "lucide-react";
+import { CheckCircle2, Crown, FileX, Loader2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -46,6 +46,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { DiffToolbar } from "../editor/DiffToolbar";
 import { computeDiff, markdownToNode } from "../editor/utils/diffEngine";
+import { Button } from "../ui/button";
+import { EmptyState } from "../ui/empty-state";
 import RichTextEditor from "../ui/rich-text-editor";
 import { GenerationStalledNotice } from "../ui/generation-stalled-notice";
 import AIChatPanel from "./AIChatPanel";
@@ -1275,6 +1277,16 @@ export default function DocumentEditor({
     (streamInfo?.id === documentId && streamInfo?.status === "generating");
   const isDocumentFailed = isFailedDocumentStatus(activeDocument?.status);
   const isGenerationStalled = useGenerationStalled(isGenerating && !isDocumentFailed);
+  const actionsDisabledReason = isGenerating
+    ? t("actionsDisabledGenerating")
+    : !content
+      ? t("actionsDisabledNoContent")
+      : undefined;
+  const isCompletedEmpty =
+    !isGenerating &&
+    activeDocument?.status === "completed" &&
+    activeDocument.contentFormat !== "json" &&
+    !isUsableDocumentContent(content);
   const resolvedTitle =
     documentTitle || normalizePendingTitle(activeDocument?.title || "");
 
@@ -1372,6 +1384,7 @@ export default function DocumentEditor({
                       title={resolvedTitle || resolvedDefaultTitle}
                       content={content}
                       disabled={isGenerating || !content}
+                      disabledReason={actionsDisabledReason}
                       documentId={documentId}
                       grade={activeDocument?.gradeLevel || ""}
                       subject={activeDocument?.subject || ""}
@@ -1384,6 +1397,7 @@ export default function DocumentEditor({
                       images={images}
                       isProUser={isPremium}
                       disabled={isGenerating || !content}
+                      disabledReason={actionsDisabledReason}
                     />
                   </div>
                 </div>
@@ -1409,6 +1423,20 @@ export default function DocumentEditor({
               </>
             ) : (
               <>
+                {isCompletedEmpty && (
+                  <EmptyState
+                    size="inline"
+                    icon={FileX}
+                    title={t("emptyDocumentTitle")}
+                    description={t("emptyDocumentDescription")}
+                    className="mb-3"
+                    actions={
+                      <Button asChild size="sm" variant="outline">
+                        <Link href={Routes.DOCUMENTS}>{t("backToDocuments")}</Link>
+                      </Button>
+                    }
+                  />
+                )}
                 {isSuggestionsMode && editorRef.current && (
                   <DiffToolbar
                     editor={editorRef.current}
@@ -1452,6 +1480,7 @@ export default function DocumentEditor({
                         title={resolvedTitle || resolvedDefaultTitle}
                         content={content}
                         disabled={isGenerating || !content}
+                        disabledReason={actionsDisabledReason}
                         documentId={documentId}
                         grade={activeDocument?.gradeLevel || ""}
                         subject={activeDocument?.subject || ""}
@@ -1464,6 +1493,7 @@ export default function DocumentEditor({
                         images={images}
                         isProUser={isPremium}
                         disabled={isGenerating || !content}
+                        disabledReason={actionsDisabledReason}
                       />
                     </div>
                   }
@@ -1477,6 +1507,7 @@ export default function DocumentEditor({
               onChatSubmit={handleChatSubmit}
               chatHistory={chatHistory}
               isStreaming={isStreaming || isChatting}
+              disabled={isGenerating}
               error={error}
               placeholder={resolvedChatPlaceholder}
               title={resolvedChatTitle}
@@ -1496,6 +1527,7 @@ export default function DocumentEditor({
           onChatSubmit={handleChatSubmit}
           chatHistory={chatHistory}
           isStreaming={isStreaming || isChatting}
+          disabled={isGenerating}
           error={error}
           placeholder={resolvedChatPlaceholder}
           title={resolvedChatTitle}

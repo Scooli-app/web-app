@@ -43,7 +43,8 @@ function DashboardContent() {
   );
   const visibleActions = useVisibleDocTypeActions();
   const { limits } = usePlanLimits();
-  const hasClasses = (limits?.activeClasses ?? 0) > 0;
+  // limits is null while loading or after a failed fetch: only show examples once we know there are no classes.
+  const showExamples = limits !== null && limits.activeClasses === 0;
 
   const dispatch = useDispatch<AppDispatch>();
 
@@ -108,7 +109,7 @@ function DashboardContent() {
         <div className="shrink-0 space-y-2">
           <QuickCreateCard
             isWorksheetCreationEnabled={isWorksheetCreationEnabled}
-            showExamples={!hasClasses}
+            showExamples={showExamples}
           />
           {/* Start a blank document of a given type: one row (sideways on a phone), no card. */}
           {/* On a short phone screen this row (the menu's "+ Criar" does the same) gives way. */}

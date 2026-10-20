@@ -534,7 +534,10 @@
       "mySources": "As minhas fontes ({count})",
       "excerpts": "{count} excertos",
       "schoolYearSuffix": "º ano",
-      "openInNewWindow": "Abrir {name} numa nova janela"
+      "openInNewWindow": "Abrir {name} numa nova janela",
+      "noneMatch": "Nenhuma das tuas fontes corresponde a esta disciplina e ano.",
+      "stillProcessing": "As tuas fontes ainda estão a ser processadas.",
+      "allFailed": "Nenhuma das tuas fontes foi processada."
     },
     "slideCount": {
       "title": "Número de slides",
@@ -859,17 +862,21 @@
       "schoolYear": "escolher o ano",
       "subject": "escolher a disciplina",
       "template": "escolher um modelo em Mais opções",
-      "worksheetVariant": "escolher o objetivo da ficha"
+      "worksheetVariant": "escolher o objetivo da ficha",
+      "templateNone": "criar um modelo em Mais opções"
     },
     "lesson": {
       "title": "Para que aula?",
       "description": "Opcional. O documento fica na turma e na aula que escolheres.",
       "none": "Nenhuma (documento solto)",
-      "alreadyHas": "já tem um"
+      "alreadyHas": "já tem um",
+      "emptyHint": "Não tens aulas nas próximas duas semanas. Com uma turma no calendário, podes ligar o documento a uma aula.",
+      "emptyLink": "Abrir calendário"
     },
     "form": {
       "optional": "opcional"
-    }
+    },
+    "outOfCredits": "Não tens créditos para criar mais documentos."
   },
   "dashboard": {
     "welcomeTitle": "Bem-vindo à Scooli!",
@@ -1130,7 +1137,8 @@
       "cancelsAtPeriodEnd": "Cancela no fim do período",
       "active": "Ativo",
       "paymentPending": "Pagamento pendente",
-      "canceled": "Cancelado"
+      "canceled": "Cancelado",
+      "unknown": "Estado indisponível"
     },
     "accessLabel": {
       "free": "Plano gratuito",
@@ -1209,7 +1217,9 @@
       "accessUntil": "Acesso até {date}",
       "renewsOn": "Renova a {date}",
       "manageSubscription": "Gerir subscrição",
-      "opening": "A abrir..."
+      "opening": "A abrir...",
+      "plansUnavailable": "Não conseguimos mostrar os planos agora.",
+      "plansUnavailableLink": "Ver planos e preços"
     }
   },
   "editor": {
@@ -1335,7 +1345,8 @@
             "message": "Adiciona ou melhora a conclusão do documento."
           }
         ]
-      }
+      },
+      "generatingPlaceholder": "O chat fica disponível quando o documento estiver pronto."
     },
     "calendarButton": {
       "viewClass": "Ver turma",
@@ -1380,7 +1391,11 @@
       "chatErrorGeneric": "Erro ao processar a tua mensagem. Tenta novamente mais tarde.",
       "streamStartError": "Erro ao iniciar streaming",
       "imageTokenRepairWarning": "Detetámos e corrigimos referências internas de imagem no documento.",
-      "imageFallbackAlt": "Imagem"
+      "imageFallbackAlt": "Imagem",
+      "actionsDisabledGenerating": "Disponível quando o documento estiver pronto.",
+      "actionsDisabledNoContent": "O documento ainda está vazio.",
+      "emptyDocumentTitle": "Este documento ficou vazio",
+      "emptyDocumentDescription": "A geração terminou sem conteúdo. Podes escrever aqui ou voltar aos documentos e criar outro."
     },
     "documentTitle": {
       "placeholder": "Título do documento...",
@@ -1515,7 +1530,10 @@
       "expandPrompt": "Expande este texto de slide com mais detalhes (responde só com o texto expandido, sem introdução): \"{text}\"?",
       "improveListPrompt": "Melhora estes itens de lista para apresentação (responde só com os itens melhorados, um por linha, sem introdução): {items}?",
       "newSlideTitle": "Novo slide",
-      "exportMissingImages": "Exportado, mas {count, plural, one {# imagem não pôde ser incluída} other {# imagens não puderam ser incluídas}}. Verifica as imagens dos slides e exporta novamente."
+      "exportMissingImages": "Exportado, mas {count, plural, one {# imagem não pôde ser incluída} other {# imagens não puderam ser incluídas}}. Verifica as imagens dos slides e exporta novamente.",
+      "createNewPresentation": "Criar nova apresentação",
+      "emptyDeckTitle": "Esta apresentação não tem slides",
+      "emptyDeckDescription": "Adiciona um slide em branco ou pede à IA para gerar um."
     },
     "slideKonvaEditor": {
       "changeImage": "Trocar imagem",
@@ -1596,7 +1614,8 @@
       "paletteHint": "Cada botão insere LaTeX diretamente no campo acima.",
       "cancel": "Cancelar",
       "save": "Guardar",
-      "add": "Adicionar"
+      "add": "Adicionar",
+      "previewEmpty": "A fórmula aparece aqui. Por exemplo:"
     },
     "imagePickerModal": {
       "dialogTitle": "Adicionar imagem",
@@ -1659,7 +1678,8 @@
       "uploadErrorOffline": "Sem ligação à internet. A imagem não foi carregada.",
       "urlInvalid": "Escreve um endereço completo, começado por https://",
       "urlLoadError": "Não foi possível abrir uma imagem neste endereço. Confirma o link ou carrega a imagem do teu computador.",
-      "urlChecking": "A verificar…"
+      "urlChecking": "A verificar…",
+      "imagesShowAllTypes": "Ver todos os tipos"
     },
     "richTextEditor": {
       "bold": "Negrito",
@@ -1839,11 +1859,16 @@
       "use": "Usar"
     },
     "resourceGrid": {
-      "emptyTitle": "Nenhum recurso encontrado",
-      "emptyDescription": "Experimenta ajustar os filtros, ou sê o primeiro a partilhar recursos desta categoria!",
+      "emptyTitle": "Ainda não há recursos partilhados",
+      "emptyDescription": "Partilha um dos teus documentos e ele aparece aqui para outros professores.",
       "showingCount": "Mostrando <b>{shown}</b> de <b>{total}</b> recursos",
       "previous": "Anterior",
-      "next": "Próximo"
+      "next": "Próximo",
+      "shareFromDocuments": "Ir para os meus documentos",
+      "emptyFilteredTitle": "Nenhum recurso corresponde aos filtros",
+      "emptyFilteredDescription": "Experimenta outra pesquisa ou limpa os filtros para ver tudo.",
+      "clearFilters": "Limpar filtros",
+      "shareAction": "Partilhar um documento"
     },
     "shareModal": {
       "orgLibraryLabel": "Biblioteca de {name}",
@@ -1947,8 +1972,8 @@
         "rejected": "Recusado",
         "changesRequested": "Revisão pedida"
       },
-      "emptyTitle": "Ainda não partilhou recursos",
-      "emptyDescription": "Começa a partilhar os teus recursos educativos para veres as estatísticas aqui.",
+      "emptyTitle": "Ainda não partilhaste recursos",
+      "emptyDescription": "Partilha um dos teus documentos e vês aqui quantas vezes é reutilizado.",
       "stats": {
         "shared": "Recursos partilhados",
         "totalReuses": "Total de reutilizações",
@@ -1963,7 +1988,8 @@
       "moderatorFeedback": "Feedback do moderador:",
       "impactTitle": "Impacto na comunidade",
       "impactDescription": "Os teus recursos já ajudaram <b>{count}</b> professores!",
-      "impactSubtitle": "Continua a partilhar para aumentar o teu impacto na educação portuguesa."
+      "impactSubtitle": "Continua a partilhar para aumentar o teu impacto na educação portuguesa.",
+      "shareFromDocuments": "Ir para os meus documentos"
     }
   },
   "feedback": {
@@ -2040,8 +2066,9 @@
       "statusResolved": "Resolvido",
       "statusRejected": "Rejeitado",
       "heading": "O meu histórico",
-      "emptyState": "Ainda não enviou nenhum feedback.",
-      "teamResponseLabel": "Resposta da equipa"
+      "emptyState": "Ainda não enviaste nenhum feedback.",
+      "teamResponseLabel": "Resposta da equipa",
+      "emptyStateHint": "Usa as opções acima para nos contares o que correu bem ou mal."
     },
     "survey": {
       "snoozeError": "Não foi possível adiar o pedido de feedback.",
@@ -2167,15 +2194,20 @@
         "presentation": "Cria diapositivos interativos",
         "quiz": "Avalie conhecimentos",
         "test": "Cria avaliações formais"
-      }
+      },
+      "noFilterMatch": {
+        "title": "Sem resultados com estes filtros",
+        "description": "Nenhum documento corresponde aos filtros escolhidos. Limpa-os para voltar a ver tudo."
+      },
+      "clearFilters": "Limpar filtros"
     },
     "gallery": {
       "heading": "Os meus documentos",
       "import": "Importar",
       "selectAll": "Selecionar tudo",
-      "deselectAll": "Desselecionar tudo",
+      "deselectAll": "Limpar seleção",
       "selectedCount": "{count, plural, one {# selecionado} other {# selecionados}}",
-      "visibleCount": "({count, plural, one {# visível} other {# visívelis}})",
+      "visibleCount": "({count, plural, one {# visível} other {# visíveis}})",
       "deleting": "A eliminar...",
       "delete": "Eliminar",
       "select": "Selecionar",
@@ -2273,7 +2305,8 @@
       "save": "Guardar",
       "saving": "A guardar...",
       "removedSuccess": "NIF removido. As próximas faturas saem como consumidor final.",
-      "savedSuccess": "NIF guardado. Será usado nas próximas faturas."
+      "savedSuccess": "NIF guardado. Será usado nas próximas faturas.",
+      "hint": "O NIF aparece nas tuas faturas. Podes deixá-lo vazio e as faturas saem sem NIF."
     }
   },
   "sources": {
@@ -2306,7 +2339,9 @@
       "strippedBackMatterTooltip": "Excluímos {size} de {heading} antes de processar.",
       "strippedSectionOmitted": "Secção {heading} omitida",
       "sectionFallback": "final",
-      "backMatterFallback": "back-matter"
+      "backMatterFallback": "back-matter",
+      "emptyDescription": "Carrega o manual ou os materiais da tua escola e a Scooli usa-os nos documentos que crias.",
+      "emptyAction": "Carregar uma fonte"
     },
     "status": {
       "uploaded": "A processar",
@@ -2490,11 +2525,13 @@
         "description": "Pedidos à IA concluídos com sucesso pela escola nos últimos catorze dias.",
         "requestsThisMonthBadge": "{count, plural, one {# pedido} other {# pedidos}} este mês",
         "tooltip": "{day}: {count, plural, one {# pedido} other {# pedidos}}",
-        "empty": "Ainda não existe atividade suficiente para desenhar o gráfico."
+        "empty": "O gráfico aparece quando a equipa começar a criar com a Scooli.",
+        "emptyTitle": "Ainda sem atividade"
       },
       "documentTypesCard": {
         "title": "Tipos de documento",
-        "empty": "Ainda não existem documentos suficientes para mostrar a distribuição por tipo."
+        "empty": "Os tipos de documento mais criados aparecem aqui.",
+        "emptyTitle": "Ainda sem documentos"
       },
       "activeUsersCard": {
         "title": "Utilizadores mais ativos",
@@ -2503,8 +2540,10 @@
         "aiRequestsBadge": "{count, plural, one {# pedido à IA} other {# pedidos à IA}}",
         "documentsThisMonthBadge": "{count, plural, one {# documento no mês} other {# documentos no mês}}",
         "totalDocumentsBadge": "{count, plural, one {# documento total} other {# documentos totais}}",
-        "empty": "Ainda não há atividade suficiente para destacar utilizadores."
-      }
+        "empty": "Os professores mais ativos aparecem aqui assim que a equipa começar a usar a Scooli.",
+        "emptyTitle": "Ainda sem professores ativos"
+      },
+      "viewMembers": "Ver membros"
     },
     "members": {
       "title": "Membros da escola",
@@ -2518,7 +2557,7 @@
       },
       "listTitle": "Membros",
       "loading": "A carregar membros...",
-      "empty": "Ainda não existem membros sincronizados para esta escola.",
+      "empty": "Os professores aparecem aqui assim que aceitarem o convite da escola.",
       "unnamedMember": "Utilizador sem nome",
       "noEmail": "Sem email disponível",
       "joinedAndLastActive": "Entrou em: {joinedDate} · Última atividade: {lastActiveDate}",
@@ -2528,7 +2567,8 @@
       "documentsCount": "{count, plural, one {# documento} other {# documentos}}",
       "createdThisMonth": "{count, plural, one {# criado este mês} other {# criados este mês}}",
       "statusLabel": "Estado",
-      "internalSharesCount": "{count, plural, one {# partilha interna} other {# partilhas internas}}"
+      "internalSharesCount": "{count, plural, one {# partilha interna} other {# partilhas internas}}",
+      "emptyTitle": "Ainda não há professores"
     },
     "settings": {
       "title": "Definições da escola",
@@ -2896,7 +2936,8 @@
       "reinforcementGenerating": "A preparar…",
       "reinforcementReady": "Ficha pronta · aula de {day}",
       "reinforcementFailed": "Não foi possível gerar a ficha.",
-      "open": "Abrir"
+      "open": "Abrir",
+      "noPlan": "Liga uma planificação a esta turma para veres o progresso."
     },
     "shared": {
       "pageTitle": "Calendário",
@@ -2918,7 +2959,10 @@
       "minutesSuffix": "{count} min",
       "generateWeek": "Gerar semana ({count})",
       "saveError": "Não foi possível guardar a alteração. Tenta novamente.",
-      "openingLesson": "A abrir a aula..."
+      "openingLesson": "A abrir a aula...",
+      "allClasses": "Todas",
+      "noActiveTitle": "Não tens turmas ativas",
+      "noActiveDescription": "Reativa uma turma na lista de turmas ou cria uma nova para voltares a ver o calendário."
     },
     "week": {
       "generate": "Gerar ({count})",
@@ -2926,19 +2970,28 @@
       "moveDown": "Mover para baixo",
       "durationCompact": "{count}m",
       "emptyTitle": "Sem aulas nesta semana",
-      "emptyHint": "Usa as setas para ver outras semanas."
+      "emptyHint": "Pode ser uma semana de férias, ou as aulas ainda não foram criadas.",
+      "emptyFiltered": "As turmas selecionadas não têm aulas nesta semana.",
+      "showAllClasses": "Ver todas as turmas"
     },
     "detail": {
       "loading": "A carregar...",
       "generationFailed": "Falhou a geração",
       "noLessonsThisWeek": "Sem aulas programadas para esta semana.",
-      "noLessonsYet": "Ainda não tens aulas criadas para esta turma.",
-      "navigateOtherWeek": "Navega para outra semana."
+      "noLessonsYet": "Sem aulas nesta turma",
+      "navigateOtherWeek": "Navega para outra semana.",
+      "noLessonsYetHint": "Revê o horário e o período da turma na lista de turmas.",
+      "goToNearestWeek": "Ir para a semana com aulas",
+      "preparingTitle": "A preparar as aulas desta turma",
+      "preparingDescription": "Os tópicos ainda estão a ser criados. Aparecem aqui assim que estiverem prontos."
     },
     "month": {
       "lessonsCount": "{count, plural, one {# aula} other {# aulas}}",
       "completedCount": "{count, plural, one {# pronta} other {# prontas}}",
-      "pendingCount": "{count, plural, one {# por preparar} other {# por preparar}}"
+      "pendingCount": "{count, plural, one {# por preparar} other {# por preparar}}",
+      "emptyTitle": "Sem aulas neste mês",
+      "emptyDescription": "Não há aulas marcadas para este mês.",
+      "goToWeek": "Ver semana"
     },
     "classesList": {
       "header": {
@@ -2965,7 +3018,9 @@
         "loadingPlans": "A carregar…",
         "none": "Nenhuma",
         "cancel": "Cancelar",
-        "save": "Guardar"
+        "save": "Guardar",
+        "noPlans": "Ainda não tens planificações.",
+        "createPlan": "Criar planificação"
       },
       "card": {
         "active": "Ativa",
@@ -3038,7 +3093,11 @@
         "subtitle": "A Scooli extrai o período, disciplina e tópicos automaticamente.",
         "searchPlaceholder": "Pesquisar planificações...",
         "noneYet": "Ainda não tens planificações criadas.",
-        "noneFound": "Nenhuma planificação encontrada."
+        "noneFound": "Nenhuma planificação encontrada.",
+        "noneYetHint": "Cria ou importa uma planificação para criares a turma a partir dela.",
+        "createPlan": "Criar planificação",
+        "importPlan": "Importar planificação",
+        "clearSearch": "Limpar pesquisa"
       },
       "period": {
         "title": "Período letivo",
@@ -3082,13 +3141,15 @@
         "markAs": "Marcar como:",
         "remove": "Remover",
         "emptyLine1": "Não há aulas geradas para este período com o horário definido.",
-        "emptyLine2": "Volta atrás e confirma as datas e os dias de aula."
+        "emptyLine2": "Volta atrás e confirma as datas e os dias de aula.",
+        "backToPeriod": "Voltar ao período"
       },
       "nav": {
         "cancel": "Cancelar",
         "previous": "Anterior",
         "next": "Seguinte",
-        "createClass": "Criar turma ({count, plural, one {# aula} other {# aulas}})"
+        "createClass": "Criar turma ({count, plural, one {# aula} other {# aulas}})",
+        "noLessonsHint": "Precisas de pelo menos uma aula para criar a turma."
       },
       "header": {
         "title": "Nova turma",

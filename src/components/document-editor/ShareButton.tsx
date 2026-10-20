@@ -46,6 +46,8 @@ interface ShareButtonProps {
   title: string;
   content: string;
   disabled?: boolean;
+  /** Tooltip explaining why the button is disabled. */
+  disabledReason?: string;
   documentId?: string;
   grade?: string;
   subject?: string;
@@ -74,6 +76,7 @@ function ShareButtonComponent({
   title,
   content,
   disabled = false,
+  disabledReason,
   documentId,
   grade = "",
   subject = "",
@@ -311,18 +314,21 @@ function ShareButtonComponent({
 
   return (
     <>
-      <Button
-        variant="outline"
-        size="sm"
-        disabled={isDisabled}
-        onClick={openShareModal}
-        className={`flex items-center gap-2 ${className}`}
-      >
-        <Share2 className="h-4 w-4" />
-        <span className="hidden sm:inline">
-          {isSharing ? t("sharing") : t("share")}
-        </span>
-      </Button>
+      {/* span: disabled buttons swallow pointer events, so the tooltip lives here */}
+      <span title={isDisabled ? disabledReason : undefined} className="inline-flex">
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={isDisabled}
+          onClick={openShareModal}
+          className={`flex items-center gap-2 ${className}`}
+        >
+          <Share2 className="h-4 w-4" />
+          <span className="hidden sm:inline">
+            {isSharing ? t("sharing") : t("share")}
+          </span>
+        </Button>
+      </span>
 
       {shareModal}
     </>
