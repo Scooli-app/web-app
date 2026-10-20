@@ -55,13 +55,13 @@ interface DayLesson {
 export function YourWeekCard() {
   const t = useTranslations("yourWeek");
   const tShared = useTranslations("calendar.shared");
+  const tWidget = useTranslations("calendar.dashboardWidget");
   const tTimetable = useTranslations("timetable");
   const locale = useLocale();
   const dispatch = useAppDispatch();
   const { getToken } = useAuth();
   const newClassGate = useNewClassGate();
   const { limits } = usePlanLimits();
-  const hasClasses = (limits?.activeClasses ?? 0) > 0;
 
   const todayIso = toIso(new Date());
   const [from, setFrom] = useState(todayIso);
@@ -73,6 +73,8 @@ export function YourWeekCard() {
   const [openLesson, setOpenLesson] = useState<WeekLessonTarget | null>(null);
   // The next lesson day when it lies beyond the 7 days shown (a school break): loaded on its own.
   const [focusWeek, setFocusWeek] = useState<MyWeek | null>(null);
+  const [focusFailed, setFocusFailed] = useState(false);
+  const [focusAttempt, setFocusAttempt] = useState(0);
   const viewedRef = useRef(false);
   const fromRef = useRef(from);
   fromRef.current = from;
@@ -180,6 +182,7 @@ export function YourWeekCard() {
   const focusInWindow = focusIso !== null && days.includes(focusIso);
   useEffect(() => {
     setFocusWeek(null);
+    setFocusFailed(false);
     if (!focusIso || focusInWindow) return;
     let cancelled = false;
     meService
@@ -188,12 +191,12 @@ export function YourWeekCard() {
         if (!cancelled) setFocusWeek(data);
       })
       .catch(() => {
-        /* the header still names the date */
+        if (!cancelled) setFocusFailed(true);
       });
     return () => {
       cancelled = true;
     };
-  }, [focusIso, focusInWindow]);
+  }, [focusIso, focusInWindow, focusAttempt]);
   const title = weekTitle(from, todayIso, focus);
   const focusLessons = focus ? lessonsByDay.get(focus.iso) ?? [] : [];
   // The focus day is shown in full above the strip; listing it again in "A seguir" repeats it.
@@ -207,7 +210,7 @@ export function YourWeekCard() {
         x.lesson.status === "pending" &&
         !x.lesson.documents.some((doc) => doc.role === "lessonPlan" && doc.status !== "failed"),
     );
-  const hasNoClasses = week !== null && week.classes.length === 0 && !hasClasses && !week.nextLessonDate;
+  const hasNoClasses = week !== null && week.classes.length === 0 && !week.nextLessonDate && limits !== null && limits.activeClasses === 0;
 
   const openPopup = (item: StripLesson | DayLesson) =>
     setOpenLesson({ timetableId: item.klass.timetableId, lessonId: item.lesson.id, weekStart: weekStartOf(item.lesson.slotDate) });
@@ -303,6 +306,8 @@ export function YourWeekCard() {
               {t("prepareLessonPlans", { count: pending.length })}
             </Button>
           )}
+          {!hasNoClasses && (
+          <>
           <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={t("previousWeek")} onClick={() => setFrom(addDaysIso(from, -7))}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
@@ -314,6 +319,8 @@ export function YourWeekCard() {
           <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={t("nextWeek")} onClick={() => setFrom(addDaysIso(from, 7))}>
             <ChevronRight className="h-4 w-4" />
           </Button>
+          </>
+          )}
         </div>
       </header>
 
@@ -358,9 +365,18 @@ export function YourWeekCard() {
               onOpen={openPopup}
               weekStart={weekStartOf(focusLessons[0].lesson.slotDate)}
             />
+          ) : focus && !focusInWindow && !focusWeek ? (
+            focusFailed ? (
+              <LoadError message={t("error")} onRetry={() => setFocusAttempt((n) => n + 1)} />
+            ) : (
+              <p className="rounded-xl bg-background p-4 text-sm text-muted-foreground">{t("loadingNextLesson")}</p>
+            )
           ) : (
             <p className="rounded-xl bg-background p-4 text-sm text-muted-foreground">
-              {focus && !focusInWindow && !focusWeek ? t("loadingNextLesson") : t("noLessons")}
+              {t("noLessons")}{" "}
+              <Link href={Routes.CALENDAR} className="font-medium text-primary hover:underline">
+                {tWidget("viewCalendar")}
+              </Link>
             </p>
           )}
 

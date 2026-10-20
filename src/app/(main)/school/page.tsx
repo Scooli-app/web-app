@@ -4,7 +4,10 @@ import { PageContainer } from "@/components/layout/PageContainer";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Routes } from "@/shared/types/routes";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
   selectWorkspaceContext,
@@ -23,6 +26,7 @@ import {
   Users,
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
+import Link from "next/link";
 import { useEffect } from "react";
 
 type Translator = ReturnType<typeof useTranslations>;
@@ -85,6 +89,8 @@ export default function SchoolDashboardPage() {
   const tEnums = useTranslations("enums");
   const locale = useLocale();
   const STATS = buildStats(t);
+  // Until the dashboard arrives, show skeletons instead of 0 / fallback values.
+  const pending = !dashboard;
 
   useEffect(() => {
     void dispatch(fetchOrganizationDashboard());
@@ -137,9 +143,11 @@ export default function SchoolDashboardPage() {
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-3xl font-semibold tracking-tight">
-                      {loading && !dashboard ? "..." : value}
-                    </div>
+                    {pending ? (
+                      <Skeleton className="h-9 w-14" />
+                    ) : (
+                      <div className="text-3xl font-semibold tracking-tight">{value}</div>
+                    )}
                   </CardContent>
                 </Card>
               );
@@ -154,25 +162,41 @@ export default function SchoolDashboardPage() {
               <CardContent className="space-y-4 text-sm text-muted-foreground">
                 <div className="flex items-center justify-between gap-3">
                   <span>{t("dashboard.planCard.plan")}</span>
-                  <span className="font-medium text-foreground">
-                    {dashboard?.planCode ?? t("dashboard.planCard.manualFallback")}
-                  </span>
+                  {pending ? (
+                    <Skeleton className="h-5 w-20" />
+                  ) : (
+                    <span className="font-medium text-foreground">
+                      {dashboard.planCode ?? t("dashboard.planCard.manualFallback")}
+                    </span>
+                  )}
                 </div>
                 <div className="flex items-center justify-between gap-3">
                   <span>{t("dashboard.planCard.status")}</span>
-                  <Badge variant="secondary">
-                    {formatSubscriptionStatus(dashboard?.subscriptionStatus, t)}
-                  </Badge>
+                  {pending ? (
+                    <Skeleton className="h-5 w-20" />
+                  ) : (
+                    <Badge variant="secondary">
+                      {formatSubscriptionStatus(dashboard.subscriptionStatus, t)}
+                    </Badge>
+                  )}
                 </div>
                 <div className="flex items-center justify-between gap-3">
                   <span>{t("dashboard.planCard.seatLimit")}</span>
-                  <span className="font-medium text-foreground">{dashboard?.seatLimit ?? 0}</span>
+                  {pending ? (
+                    <Skeleton className="h-5 w-10" />
+                  ) : (
+                    <span className="font-medium text-foreground">{dashboard.seatLimit ?? 0}</span>
+                  )}
                 </div>
                 <div className="flex items-center justify-between gap-3">
                   <span>{t("dashboard.planCard.renewal")}</span>
-                  <span className="font-medium text-foreground">
-                    {formatDate(dashboard?.renewalAt, locale, t)}
-                  </span>
+                  {pending ? (
+                    <Skeleton className="h-5 w-24" />
+                  ) : (
+                    <span className="font-medium text-foreground">
+                      {formatDate(dashboard.renewalAt, locale, t)}
+                    </span>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -184,21 +208,35 @@ export default function SchoolDashboardPage() {
               <CardContent className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
                 <div className="rounded-xl border border-border/80 px-4 py-3">
                   <p className="text-muted-foreground">{t("dashboard.usageCard.pendingInvites")}</p>
-                  <p className="mt-2 text-2xl font-semibold text-foreground">{dashboard?.invitedSeats ?? 0}</p>
+                  {pending ? (
+                    <Skeleton className="mt-2 h-8 w-12" />
+                  ) : (
+                    <p className="mt-2 text-2xl font-semibold text-foreground">{dashboard.invitedSeats ?? 0}</p>
+                  )}
                 </div>
                 <div className="rounded-xl border border-border/80 px-4 py-3">
                   <p className="text-muted-foreground">{t("dashboard.usageCard.suspendedSeats")}</p>
-                  <p className="mt-2 text-2xl font-semibold text-foreground">{dashboard?.suspendedSeats ?? 0}</p>
+                  {pending ? (
+                    <Skeleton className="mt-2 h-8 w-12" />
+                  ) : (
+                    <p className="mt-2 text-2xl font-semibold text-foreground">{dashboard.suspendedSeats ?? 0}</p>
+                  )}
                 </div>
                 <div className="rounded-xl border border-border/80 px-4 py-3">
                   <p className="text-muted-foreground">{t("dashboard.usageCard.documentsCreatedThisMonth")}</p>
-                  <p className="mt-2 text-2xl font-semibold text-foreground">
-                    {dashboard?.documentsCreatedThisMonth ?? 0}
-                  </p>
+                  {pending ? (
+                    <Skeleton className="mt-2 h-8 w-12" />
+                  ) : (
+                    <p className="mt-2 text-2xl font-semibold text-foreground">{dashboard.documentsCreatedThisMonth ?? 0}</p>
+                  )}
                 </div>
                 <div className="rounded-xl border border-border/80 px-4 py-3">
                   <p className="text-muted-foreground">{t("dashboard.usageCard.internalShares")}</p>
-                  <p className="mt-2 text-2xl font-semibold text-foreground">{dashboard?.sharedResources ?? 0}</p>
+                  {pending ? (
+                    <Skeleton className="mt-2 h-8 w-12" />
+                  ) : (
+                    <p className="mt-2 text-2xl font-semibold text-foreground">{dashboard.sharedResources ?? 0}</p>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -250,9 +288,17 @@ export default function SchoolDashboardPage() {
                     </div>
                   </div>
                 ) : (
-                  <div className="rounded-2xl border border-dashed border-border/80 px-6 py-10 text-center text-sm text-muted-foreground">
-                    {t("dashboard.activityCard.empty")}
-                  </div>
+                  <EmptyState
+                    size="inline"
+                    icon={ChartColumn}
+                    title={t("dashboard.activityCard.emptyTitle")}
+                    description={t("dashboard.activityCard.empty")}
+                    actions={
+                      <Button asChild size="sm" variant="outline">
+                        <Link href={Routes.SCHOOL_MEMBERS}>{t("dashboard.viewMembers")}</Link>
+                      </Button>
+                    }
+                  />
                 )}
               </CardContent>
             </Card>
@@ -280,9 +326,12 @@ export default function SchoolDashboardPage() {
                     </div>
                   ))
                 ) : (
-                  <p className="text-sm text-muted-foreground">
-                    {t("dashboard.documentTypesCard.empty")}
-                  </p>
+                  <EmptyState
+                    size="inline"
+                    icon={FileText}
+                    title={t("dashboard.documentTypesCard.emptyTitle")}
+                    description={t("dashboard.documentTypesCard.empty")}
+                  />
                 )}
               </CardContent>
             </Card>
@@ -334,9 +383,17 @@ export default function SchoolDashboardPage() {
                   </div>
                 ))
               ) : (
-                <p className="text-sm text-muted-foreground">
-                  {t("dashboard.activeUsersCard.empty")}
-                </p>
+                <EmptyState
+                  size="inline"
+                  icon={Users}
+                  title={t("dashboard.activeUsersCard.emptyTitle")}
+                  description={t("dashboard.activeUsersCard.empty")}
+                  actions={
+                    <Button asChild size="sm" variant="outline">
+                      <Link href={Routes.SCHOOL_MEMBERS}>{t("dashboard.viewMembers")}</Link>
+                    </Button>
+                  }
+                />
               )}
             </CardContent>
           </Card>

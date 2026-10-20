@@ -31,6 +31,7 @@ import { AiDisclaimer } from "@/components/ui/ai-disclaimer";
 import { GenerationProgress } from "@/components/blocks/GenerationProgress";
 import { GenerationStalledNotice } from "@/components/ui/generation-stalled-notice";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   Dialog,
   DialogContent,
@@ -89,6 +90,7 @@ import {
   MoreHorizontal,
   Play,
   Plus,
+  Presentation,
   Shapes,
   Redo2,
   Sigma,
@@ -481,6 +483,8 @@ function getPresentSlideIndex(slides: CanvasSlide[], activeSlideId: string | nul
 export function BlockDocumentEditor({ documentId }: Props) {
   const t = useTranslations("editor.blockEditor");
   const tChat = useTranslations("editor.aiChatPanel");
+  const tDoc = useTranslations("editor.documentEditor");
+  const tLoad = useTranslations("common.loadError");
   const dispatch = useAppDispatch();
   const rawDocument = useAppSelector((s) => s.documents.currentDocument);
   const document = rawDocument?.id === documentId ? rawDocument : null;
@@ -1863,8 +1867,11 @@ export function BlockDocumentEditor({ documentId }: Props) {
   }
   if (!document) {
     return (
-      <div className="flex h-[60vh] items-center justify-center text-muted-foreground">
+      <div className="flex h-[60vh] flex-col items-center justify-center gap-3 text-muted-foreground">
         {t("documentNotFound")}
+        <Link href={Routes.DOCUMENTS} className="text-primary hover:underline">
+          {tDoc("backToDocuments")}
+        </Link>
       </div>
     );
   }
@@ -1889,6 +1896,9 @@ export function BlockDocumentEditor({ documentId }: Props) {
       <div className="mx-auto max-w-md p-8 text-center">
         <h2 className="text-lg font-semibold text-foreground">{t("generationFailedTitle")}</h2>
         <p className="mt-2 text-sm text-muted-foreground">{t("generationFailedSubtitle")}</p>
+        <Button asChild className="mt-4">
+          <Link href={Routes.PRESENTATION}>{t("createNewPresentation")}</Link>
+        </Button>
       </div>
     );
   }
@@ -1904,6 +1914,9 @@ export function BlockDocumentEditor({ documentId }: Props) {
         <p className="mt-2 text-sm text-muted-foreground">
           {t("loadFailedSubtitle")}
         </p>
+        <Button className="mt-4" onClick={() => void dispatch(fetchDocument(documentId))}>
+          {tLoad("retry")}
+        </Button>
       </div>
     );
   }
@@ -2011,6 +2024,8 @@ export function BlockDocumentEditor({ documentId }: Props) {
 
         {/* ── Right side: Export dropdown + Present ──────────────────── */}
         <div className="ml-auto flex items-center gap-1.5">
+          {canvas.slides.length > 0 && (
+          <>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" className="h-8 gap-1" disabled={exporting}>
@@ -2047,6 +2062,8 @@ export function BlockDocumentEditor({ documentId }: Props) {
               {t("present")}
             </Button>
           </Link>
+          </>
+          )}
         </div>
       </div>
 
@@ -2462,7 +2479,28 @@ export function BlockDocumentEditor({ documentId }: Props) {
               </div>
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">{t("noSlideSelected")}</p>
+            canvas.slides.length === 0 ? (
+              <div className="flex w-full flex-1 items-center justify-center p-6">
+                <EmptyState
+                  icon={Presentation}
+                  title={t("emptyDeckTitle")}
+                  description={t("emptyDeckDescription")}
+                  className="bg-background"
+                  actions={
+                    <>
+                      <Button size="sm" onClick={addSlide}>
+                        {t("blankSlide")}
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => setGenerateSlideDialogOpen(true)}>
+                        {t("generateWithAI")}
+                      </Button>
+                    </>
+                  }
+                />
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">{t("noSlideSelected")}</p>
+            )
           )}
           {activeSlide && (
             <SlideNotesPanel

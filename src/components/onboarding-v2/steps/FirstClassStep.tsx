@@ -114,7 +114,10 @@ export function FirstClassStep({ flow }: FirstClassStepProps) {
     };
   }, []);
 
-  const yearOptions = answers.years.length > 0 ? answers.years : ALL_YEARS;
+  // A year with no mapped subjects would leave the subject select empty and the form stuck.
+  const hasSubjects = (y: number) => (SUBJECTS_BY_GRADE[String(y)] ?? []).length > 0;
+  const preferredYears = answers.years.filter(hasSubjects);
+  const yearOptions = preferredYears.length > 0 ? preferredYears : ALL_YEARS.filter(hasSubjects);
   const year = chosenYear !== null && yearOptions.includes(chosenYear) ? chosenYear : yearOptions[0];
 
   const subjectOptions = useMemo(() => {

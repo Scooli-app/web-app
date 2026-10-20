@@ -11,6 +11,7 @@ import {
 import { listTimetables } from "@/services/api/timetable.service";
 import { translateSubject } from "@/components/document-creation/constants";
 import { formatClassName } from "@/shared/utils/className";
+import { LoadError } from "@/components/ui/load-error";
 import { DocumentsEmptyState } from "@/components/ui/documents-empty-state";
 import {
   deleteDocument,
@@ -71,6 +72,9 @@ export function DocumentsGallery() {
   const { isLoaded: isAuthLoaded, isSignedIn, userId } = useAuth();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
+  // True once an unfiltered, unsearched fetch came back with nothing: the library is truly empty.
+  const [libraryEmpty, setLibraryEmpty] = useState(false);
   const [selectedType, setSelectedType] = useState<string>("all");
   const [selectedSubject, setSelectedSubject] = useState<string>("");
   const [selectedGrade, setSelectedGrade] = useState<string>("");
@@ -125,6 +129,7 @@ export function DocumentsGallery() {
 
       try {
         setLoading(true);
+        setLoadFailed(false);
 
         const result = await getDocuments({
           page,
@@ -134,9 +139,20 @@ export function DocumentsGallery() {
             subject: selectedSubject || undefined,
             gradeLevel: selectedGrade || undefined,
             timetableId: selectedClass || undefined,
+            search: debouncedSearchQuery || undefined,
           },
         });
 
+        if (page === 1) {
+          setLibraryEmpty(
+            result.pagination.total === 0 &&
+              selectedType === "all" &&
+              !selectedSubject &&
+              !selectedGrade &&
+              !selectedClass &&
+              !debouncedSearchQuery
+          );
+        }
         setDocuments((prev) =>
           reset ? result.documents : [...prev, ...result.documents]
         );
@@ -148,12 +164,13 @@ export function DocumentsGallery() {
         }));
       } catch (error) {
         console.error("Error fetching documents:", error);
+        setLoadFailed(true);
       } finally {
         setLoading(false);
         initialLoadRef.current = true;
       }
     },
-    [isAuthReady, selectedType, selectedSubject, selectedGrade, selectedClass, pagination.limit]
+    [isAuthReady, selectedType, selectedSubject, selectedGrade, selectedClass, debouncedSearchQuery, pagination.limit]
   );
 
   // Selection handlers - memoized
@@ -169,18 +186,9 @@ export function DocumentsGallery() {
     });
   }, []);
 
-  // Memoize filtered documents (search + origin are client-side; type/subject/grade go to backend)
+  // Origin is the only client-side filter; type, subject, grade, turma and search go to the backend
   const filteredDocuments = useMemo(() => {
     let result = documents;
-
-    if (debouncedSearchQuery) {
-      const query = debouncedSearchQuery.toLowerCase();
-      result = result.filter(
-        (doc) =>
-          doc.title.toLowerCase().includes(query) ||
-          doc.content.toLowerCase().includes(query)
-      );
-    }
 
     if (selectedOrigin === "imported") {
       result = result.filter((doc) => !!doc.originalFormat);
@@ -189,7 +197,7 @@ export function DocumentsGallery() {
     }
 
     return result;
-  }, [documents, debouncedSearchQuery, selectedOrigin]);
+  }, [documents, selectedOrigin]);
 
   const handleSelectAll = useCallback(() => {
     if (selectedDocuments.size === filteredDocuments.length) {
@@ -287,7 +295,7 @@ export function DocumentsGallery() {
       isActive = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedType, selectedSubject, selectedGrade, selectedClass, isAuthReady]);
+  }, [selectedType, selectedSubject, selectedGrade, selectedClass, debouncedSearchQuery, isAuthReady]);
 
   // The teacher's turmas, for the turma filter. Archived ones still own documents, so keep them.
   useEffect(() => {
@@ -314,10 +322,10 @@ export function DocumentsGallery() {
   }, [isAuthReady, tTimetable]);
 
   const loadMore = useCallback(() => {
-    if (pagination.hasMore && !loading) {
+    if (pagination.hasMore && !loading && !loadFailed) {
       fetchDocuments(pagination.page + 1, false);
     }
-  }, [pagination.hasMore, pagination.page, loading, fetchDocuments]);
+  }, [pagination.hasMore, pagination.page, loading, loadFailed, fetchDocuments]);
 
   const { ref: loadMoreRef, inView } = useInView({
     threshold: 0,
@@ -333,6 +341,31 @@ export function DocumentsGallery() {
 
   // Grouped is for browsing; picking documents to delete, or one turma's list, is a single grid.
   const showGrouped = groupByClass && classes.length > 0 && !selectedClass && !selectionMode;
+
+  const hasFilters =
+    selectedType !== "all" ||
+    !!selectedSubject ||
+    !!selectedGrade ||
+    !!selectedClass ||
+    selectedOrigin !== "all";
+  const onlyTypeFilter =
+    selectedType !== "all" && !selectedSubject && !selectedGrade && !selectedClass && selectedOrigin === "all";
+  const clearFilters = () => {
+    setSearchQuery("");
+    setSelectedType("all");
+    setSelectedSubject("");
+    setSelectedGrade("");
+    setSelectedClass("");
+    setSelectedOrigin("all");
+  };
+  const emptyState = (
+    <DocumentsEmptyState
+      variant={debouncedSearchQuery ? "no-search-results" : hasFilters ? "no-filter-results" : "no-documents"}
+      searchQuery={debouncedSearchQuery}
+      filterType={onlyTypeFilter ? selectedType : undefined}
+      onClearFilters={clearFilters}
+    />
+  );
 
   // Memoize selection info
   const selectionInfo = useMemo(() => ({
@@ -421,7 +454,7 @@ export function DocumentsGallery() {
               </div>
             )}
 
-            {!selectionMode && (
+            {!selectionMode && !libraryEmpty && (
               <Button
                 variant="outline"
                 size="sm"
@@ -436,6 +469,7 @@ export function DocumentsGallery() {
         </div>
 
         {/* Filters */}
+        {!libraryEmpty && (
         <DocumentFilters
           search={searchQuery}
           onSearchChange={setSearchQuery}
@@ -454,6 +488,7 @@ export function DocumentsGallery() {
           selectedClass={selectedClass}
           onClassChange={setSelectedClass}
         />
+        )}
 
         {/* Grouped by turma (the default), or one grid newest first */}
         {showGrouped ? (
@@ -469,19 +504,7 @@ export function DocumentsGallery() {
             refreshKey={refreshKey}
             onSeeAll={setSelectedClass}
             onDelete={handleRequestDelete}
-            empty={
-              <DocumentsEmptyState
-                variant={
-                  debouncedSearchQuery
-                    ? "no-search-results"
-                    : selectedType === "all"
-                    ? "no-documents"
-                    : "no-filter-results"
-                }
-                searchQuery={debouncedSearchQuery}
-                filterType={selectedType !== "all" ? selectedType : undefined}
-              />
-            }
+            empty={emptyState}
           />
         ) : (loading && documents.length === 0) || (groupByClass && !classesReady) ? (
           <div className="flex items-center justify-center py-12">
@@ -490,18 +513,17 @@ export function DocumentsGallery() {
               <span className="text-muted-foreground">{t("loadingDocuments")}</span>
             </div>
           </div>
+        ) : loadFailed && documents.length === 0 ? (
+          <LoadError onRetry={() => fetchDocuments(1, true)} />
         ) : filteredDocuments.length === 0 ? (
-          <DocumentsEmptyState
-            variant={
-              debouncedSearchQuery
-                ? "no-search-results"
-                : selectedType === "all"
-                ? "no-documents"
-                : "no-filter-results"
-            }
-            searchQuery={debouncedSearchQuery}
-            filterType={selectedType !== "all" ? selectedType : undefined}
-          />
+          // Origin filters client-side, so more pages may still hold matches.
+          pagination.hasMore ? (
+            <div ref={loadMoreRef} className="flex justify-center py-12">
+              <Loader2 className="w-5 h-5 animate-spin text-primary" />
+            </div>
+          ) : (
+            emptyState
+          )
         ) : (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
@@ -516,6 +538,10 @@ export function DocumentsGallery() {
                 />
               ))}
             </div>
+
+            {loadFailed && (
+              <LoadError onRetry={() => fetchDocuments(pagination.page + 1, false)} />
+            )}
 
             {/* Infinite Scroll Trigger */}
             {pagination.hasMore && (

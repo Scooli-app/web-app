@@ -569,7 +569,14 @@ function ImagesTab({
               )}
             </>
           ) : submittedQuery ? (
-            t("imagesNoResults", { query: submittedQuery })
+            <>
+              <p>{t("imagesNoResults", { query: submittedQuery })}</p>
+              {filter !== "all" && (
+                <Button variant="outline" size="sm" onClick={() => handleFilter("all")}>
+                  {t("imagesShowAllTypes")}
+                </Button>
+              )}
+            </>
           ) : (
             t("imagesEmptyHint")
           )}

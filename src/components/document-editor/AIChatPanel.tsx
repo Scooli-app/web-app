@@ -13,12 +13,6 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { SourcesList } from "@/components/ui/sources-list";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import type { RagSource } from "@/shared/types/document";
 import { cn } from "@/shared/utils/utils";
 import { FileText, Loader2, MessageCircle, Send, Sparkles, X } from "lucide-react";
@@ -81,6 +75,8 @@ interface AIChatPanelProps {
   onChatSubmit: (message: string) => Promise<void>;
   chatHistory: ChatMessage[];
   isStreaming?: boolean;
+  /** Document still generating: chat is locked until it is ready. */
+  disabled?: boolean;
   error?: string;
   placeholder?: string;
   title?: string;
@@ -104,11 +100,9 @@ interface AIChatPanelProps {
 function Tabs({
   activeTab,
   onTabChange,
-  hasSources = false,
 }: {
   activeTab: "assistant" | "sources";
   onTabChange: (tab: "assistant" | "sources") => void;
-  hasSources?: boolean;
 }) {
   const t = useTranslations("editor.aiChatPanel");
   return (
@@ -130,47 +124,21 @@ function Tabs({
         />
         {t("tabConversation")}
       </button>
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <div
-              className={cn("flex-1 flex", !hasSources && "cursor-not-allowed")}
-            >
-              <button
-                onClick={(e) => {
-                  if (!hasSources) {
-                    e.preventDefault();
-                    return;
-                  }
-                  onTabChange("sources");
-                }}
-                className={cn(
-                  "flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium transition-all rounded-lg w-full",
-                  activeTab === "sources"
-                    ? "bg-background text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground",
-                  !hasSources && "opacity-50 pointer-events-none",
-                )}
-                aria-disabled={!hasSources}
-                type="button"
-              >
-                <FileText
-                  className={cn(
-                    "w-4 h-4",
-                    activeTab === "sources" ? "text-primary" : "",
-                  )}
-                />
-                {t("tabSources")}
-              </button>
-            </div>
-          </TooltipTrigger>
-          {!hasSources && (
-            <TooltipContent>
-              <p>{t("sourcesTooltip")}</p>
-            </TooltipContent>
-          )}
-        </Tooltip>
-      </TooltipProvider>
+      <button
+        onClick={() => onTabChange("sources")}
+        className={cn(
+          "flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium transition-all rounded-lg",
+          activeTab === "sources"
+            ? "bg-background text-foreground shadow-sm"
+            : "text-muted-foreground hover:text-foreground",
+        )}
+        type="button"
+      >
+        <FileText
+          className={cn("w-4 h-4", activeTab === "sources" ? "text-primary" : "")}
+        />
+        {t("tabSources")}
+      </button>
     </div>
   );
 }
@@ -178,6 +146,7 @@ function Tabs({
 function ChatContent({
   chatHistory,
   isStreaming,
+  disabled = false,
   error,
   placeholder,
   chatMessage,
@@ -197,6 +166,7 @@ function ChatContent({
 }: {
   chatHistory: ChatMessage[];
   isStreaming: boolean;
+  disabled?: boolean;
   error?: string;
   placeholder: string;
   title: string;
@@ -217,7 +187,7 @@ function ChatContent({
 }) {
   const t = useTranslations("editor.aiChatPanel");
   const isDesktop = variant === "desktop";
-  const isInputLocked = isStreaming;
+  const isInputLocked = isStreaming || disabled;
   const [activeTab, setActiveTab] = useState<"assistant" | "sources">(
     "assistant",
   );
@@ -250,13 +220,13 @@ function ChatContent({
         </div>
       )}
 
-      <div className="px-4 py-4 md:px-6">
-        <Tabs
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-          hasSources={sources.length > 0}
-        />
-      </div>
+      {sources.length > 0 ? (
+        <div className="px-4 py-4 md:px-6">
+          <Tabs activeTab={activeTab} onTabChange={setActiveTab} />
+        </div>
+      ) : (
+        <div className="h-4" />
+      )}
 
       <div className="flex-1 overflow-hidden relative flex flex-col px-4 md:px-6">
         {activeTab === "assistant" ? (
@@ -328,7 +298,7 @@ function ChatContent({
               <SuggestionChips
                 documentType={documentType}
                 onChipClick={onSuggestionClick}
-                disabled={isStreaming}
+                disabled={isInputLocked}
               />
             )}
 
@@ -389,6 +359,7 @@ export default function AIChatPanel({
   onChatSubmit,
   chatHistory,
   isStreaming = false,
+  disabled = false,
   error,
   placeholder,
   title,
@@ -402,7 +373,9 @@ export default function AIChatPanel({
   onNudgeDismiss,
 }: AIChatPanelProps) {
   const t = useTranslations("editor.aiChatPanel");
-  const resolvedPlaceholder = placeholder ?? t("defaultPlaceholder");
+  const resolvedPlaceholder = disabled
+    ? t("generatingPlaceholder")
+    : (placeholder ?? t("defaultPlaceholder"));
   const resolvedTitle = title ?? t("defaultTitle");
   const [chatMessage, setChatMessage] = useState("");
   const [lockedMessage, setLockedMessage] = useState<string | null>(null);
@@ -416,7 +389,7 @@ export default function AIChatPanel({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isStreaming || lockedMessage !== null || !chatMessage.trim()) {
+    if (disabled || isStreaming || lockedMessage !== null || !chatMessage.trim()) {
       return;
     }
 
@@ -437,7 +410,7 @@ export default function AIChatPanel({
   };
 
   const handleSuggestionClick = async (chip: SuggestionChip) => {
-    if (isStreaming || lockedMessage !== null) return;
+    if (disabled || isStreaming || lockedMessage !== null) return;
     setShowSuggestions(false);
     setLockedMessage(chip.message);
     setChatMessage(chip.message);
@@ -487,6 +460,7 @@ export default function AIChatPanel({
         <ChatContent
           chatHistory={chatHistory}
           isStreaming={isStreaming}
+          disabled={disabled}
           error={error}
           placeholder={resolvedPlaceholder}
           title={resolvedTitle}
@@ -554,6 +528,7 @@ export default function AIChatPanel({
               <ChatContent
                 chatHistory={chatHistory}
                 isStreaming={isStreaming}
+                disabled={disabled}
                 error={error}
                 placeholder={resolvedPlaceholder}
                 title={resolvedTitle}

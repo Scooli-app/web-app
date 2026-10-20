@@ -119,6 +119,8 @@ export default function DocumentCreationPage({
   // "Para que aula?": the document joins this lesson (and its turma) once created.
   const [lessonChoice, setLessonChoice] = useState<LessonChoice | null>(null);
   const [initialLessonId, setInitialLessonId] = useState<string | null>(null);
+  // null until the template list has loaded.
+  const [templateCount, setTemplateCount] = useState<number | null>(null);
 
   const { formState, error, setError, updateForm, isFormValid, handleTemplateSelect } =
     useDocumentForm(documentType.id);
@@ -443,7 +445,7 @@ export default function DocumentCreationPage({
           </div>
           )}
 
-          <MoreOptions summary={moreOptionsSummary}>
+          <MoreOptions summary={moreOptionsSummary} forceOpen={missingField === "template" && templateCount !== null}>
             <DurationSection
               lessonTime={formState.lessonTime}
               customTime={formState.customTime}
@@ -463,6 +465,7 @@ export default function DocumentCreationPage({
                 documentType={documentType.id}
                 selectedTemplateId={formState.templateId || null}
                 onTemplateSelect={handleTemplateSelect}
+                onTemplateCountChange={setTemplateCount}
               />
             )}
 
@@ -500,6 +503,7 @@ export default function DocumentCreationPage({
               onSubmit={handleCreateDocument}
               showGenerationHint={!isEntitlementLoading && !isProUser}
               missingField={missingField}
+              noTemplates={templateCount === 0}
             />
           </div>
         </div>

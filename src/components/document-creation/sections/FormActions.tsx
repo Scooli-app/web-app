@@ -1,6 +1,9 @@
 import { AiDisclaimer } from "@/components/ui/ai-disclaimer";
 import { Button } from "@/components/ui/button";
 import { GenerationCostHint } from "@/components/ui/generation-cost-hint";
+import { selectEntitlementUsage } from "@/store/entitlements/selectors";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { setUpgradeModalOpen } from "@/store/ui/uiSlice";
 import { Loader2, Sparkles } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { MissingField } from "../missingField";
@@ -16,6 +19,8 @@ interface FormActionsProps {
   showGenerationHint?: boolean;
   /** First required field still empty; shown under the disabled button. */
   missingField?: MissingField | null;
+  /** The teacher has no templates for this type, so the missing one has to be created. */
+  noTemplates?: boolean;
 }
 
 export function FormActions({
@@ -26,9 +31,15 @@ export function FormActions({
   onSubmit,
   showGenerationHint = false,
   missingField = null,
+  noTemplates = false,
 }: FormActionsProps) {
   const t = useTranslations("documentCreation");
   const tEnums = useTranslations("enums");
+  const tUpgrade = useTranslations("nav.generations");
+  const dispatch = useAppDispatch();
+  const usage = useAppSelector(selectEntitlementUsage);
+  // Only free users see the cost hint, so the same flag says whose credits can run out.
+  const outOfCredits = showGenerationHint && usage?.remaining === 0;
   const locale = useLocale();
   const typeLabel = typeNameInSentence(tEnums(`documentType.${documentType.id}`), locale);
 
@@ -43,7 +54,7 @@ export function FormActions({
       <div className="-mx-1 space-y-1.5 bg-slate-50 px-1 pb-2 pt-2 dark:bg-background">
         <Button
           onClick={onSubmit}
-          disabled={isLoading || !isFormValid}
+          disabled={isLoading || !isFormValid || outOfCredits}
           className="w-full h-11 text-base font-semibold bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl shadow-lg shadow-primary/20 transition-all hover:shadow-xl hover:shadow-primary/30 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
           aria-label={`${t("createPrefix")} ${typeLabel}`}
         >
@@ -66,9 +77,18 @@ export function FormActions({
             </>
           )}
         </Button>
-        {missingField && !isLoading ? (
+        {outOfCredits ? (
+          <div className="flex flex-col items-center gap-2 pt-1" aria-live="polite">
+            <p className="text-center text-sm font-medium text-muted-foreground">{t("outOfCredits")}</p>
+            <Button type="button" variant="outline" size="sm" onClick={() => dispatch(setUpgradeModalOpen(true))}>
+              <Sparkles className="mr-1.5 h-4 w-4" />
+              {tUpgrade("upgradeToPro")}
+            </Button>
+          </div>
+        ) : missingField && !isLoading ? (
           <p className="text-center text-sm font-medium text-muted-foreground" aria-live="polite">
-            {t("missing.prefix")} {t(`missing.${missingField}`)}
+            {t("missing.prefix")}{" "}
+            {missingField === "template" && noTemplates ? t("missing.templateNone") : t(`missing.${missingField}`)}
           </p>
         ) : (
           <AiDisclaimer />

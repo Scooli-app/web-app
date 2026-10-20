@@ -41,7 +41,8 @@ export function QuickAddVocationalCourseDialog({
 }: QuickAddVocationalCourseDialogProps) {
   const t = useTranslations("documentCreation.classContext");
   const tSettings = useTranslations("settings.teachingProfileCard");
-  const { catalog, catalogError, term, setTerm, results } = useCourseSearch(tSettings("catalogError"));
+  const { catalog, catalogError, catalogLoaded, retryCatalog, term, setTerm, results } =
+    useCourseSearch(tSettings("catalogError"));
   const [isSaving, setIsSaving] = useState(false);
 
   const handleSelect = async (code: string) => {
@@ -83,6 +84,8 @@ export function QuickAddVocationalCourseDialog({
             onTermChange={setTerm}
             catalog={catalog}
             catalogError={catalogError}
+            catalogLoaded={catalogLoaded}
+            onRetryCatalog={retryCatalog}
             results={results}
             addedCodes={new Set<string>()}
             onSelect={(code) => void handleSelect(code)}

@@ -14,6 +14,8 @@ import {
 } from "@/lib/periodPresets";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Input } from "@/components/ui/input";
+import { EmptyState } from "@/components/ui/empty-state";
+import { LoadError } from "@/components/ui/load-error";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -219,14 +221,18 @@ function StepSelectPlan({
   const [plans, setPlans] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [failed, setFailed] = useState(false);
 
-  useEffect(() => {
+  const load = useCallback(() => {
     setLoading(true);
+    setFailed(false);
     getDocuments({ page: 1, limit: 50, filters: { documentType: "curriculum_plan" } })
       .then((res) => setPlans(res.documents ?? []))
-      .catch(() => setPlans([]))
+      .catch(() => setFailed(true))
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(load, [load]);
 
   const filtered = plans.filter(
     (p) =>
@@ -243,21 +249,46 @@ function StepSelectPlan({
           {t("selectPlan.subtitle")}
         </p>
       </div>
-      <Input
-        placeholder={t("selectPlan.searchPlaceholder")}
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-      />
+      {plans.length > 0 && (
+        <Input
+          placeholder={t("selectPlan.searchPlaceholder")}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+      )}
       {loading ? (
         <div className="py-8 text-center">
           <Loader2 className="mx-auto h-5 w-5 animate-spin text-muted-foreground" />
         </div>
+      ) : failed ? (
+        <LoadError onRetry={load} />
+      ) : plans.length === 0 ? (
+        <EmptyState
+          size="inline"
+          icon={BookOpen}
+          title={t("selectPlan.noneYet")}
+          description={t("selectPlan.noneYetHint")}
+          actions={
+            <>
+              <Button asChild size="sm">
+                <Link href={AppRoutes.CURRICULUM_PLAN_NEW}>{t("selectPlan.createPlan")}</Link>
+              </Button>
+              <Button asChild size="sm" variant="outline">
+                <Link href={AppRoutes.CURRICULUM_PLAN_IMPORT}>{t("selectPlan.importPlan")}</Link>
+              </Button>
+            </>
+          }
+        />
       ) : filtered.length === 0 ? (
-        <div className="py-8 text-center text-sm text-muted-foreground">
-          {plans.length === 0
-            ? t("selectPlan.noneYet")
-            : t("selectPlan.noneFound")}
-        </div>
+        <EmptyState
+          size="inline"
+          title={t("selectPlan.noneFound")}
+          actions={
+            <Button size="sm" variant="outline" onClick={() => setSearch("")}>
+              {t("selectPlan.clearSearch")}
+            </Button>
+          }
+        />
       ) : (
         <div className="max-h-[420px] space-y-2 overflow-y-auto pr-1">
           {filtered.map((plan) => (
@@ -536,9 +567,10 @@ function StepDetails({
 interface StepReverDatasProps {
   slots: PreviewSlot[];
   onSlotsChange: (slots: PreviewSlot[]) => void;
+  onBack: () => void;
 }
 
-function StepReverDatas({ slots, onSlotsChange }: StepReverDatasProps) {
+function StepReverDatas({ slots, onSlotsChange, onBack }: StepReverDatasProps) {
   const t = useTranslations("calendar.novo");
   const tTimetable = useTranslations("timetable");
   const rawLocale = useLocale();
@@ -596,6 +628,8 @@ function StepReverDatas({ slots, onSlotsChange }: StepReverDatasProps) {
         </p>
       </div>
 
+      {slots.length > 0 && (
+      <>
       {/* Summary bar */}
       <div className="flex flex-wrap gap-x-4 gap-y-1 rounded-lg border bg-muted/40 px-4 py-3 text-sm">
         <span>{t("reviewDates.total")} <strong>{slots.length}</strong></span>
@@ -643,13 +677,21 @@ function StepReverDatas({ slots, onSlotsChange }: StepReverDatasProps) {
           </>
         )}
       </div>
+      </>
+      )}
 
       {slots.length === 0 ? (
-        <div className="py-8 text-center text-sm text-muted-foreground">
-          {t("reviewDates.emptyLine1")}
-          <br />
-          {t("reviewDates.emptyLine2")}
-        </div>
+        <EmptyState
+          size="inline"
+          icon={CalendarDays}
+          title={t("reviewDates.emptyLine1")}
+          description={t("reviewDates.emptyLine2")}
+          actions={
+            <Button size="sm" variant="outline" onClick={onBack}>
+              {t("reviewDates.backToPeriod")}
+            </Button>
+          }
+        />
       ) : (
         <div className="max-h-[440px] space-y-4 overflow-y-auto pr-1">
           {grouped.map(({ month, slots: monthSlots }) => (
@@ -1043,6 +1085,7 @@ function CalendarNewPageContent() {
               <StepReverDatas
                 slots={previewSlots}
                 onSlotsChange={setPreviewSlots}
+                onBack={() => setStep("mode_b_period")}
               />
             )}
           </CardContent>
@@ -1097,6 +1140,9 @@ function CalendarNewPageContent() {
               )}
               {t("nav.createClass", { count: actionableSlots })}
             </Button>
+              {!isSubmitting && actionableSlots === 0 && (
+                <p className="text-right text-xs text-muted-foreground">{t("nav.noLessonsHint")}</p>
+              )}
               <AiDisclaimer className="text-right" />
             </div>
           )}

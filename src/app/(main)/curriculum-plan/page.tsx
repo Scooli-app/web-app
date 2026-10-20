@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { LoadError } from "@/components/ui/load-error";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { selectIsCurriculumPlanEnabled } from "@/store/features/selectors";
 import { useFeatureAccess } from "@/components/feature/useFeatureAccess";
@@ -25,14 +27,20 @@ export default function CurriculumPlanLandingPage() {
   const [plans, setPlans] = useState<Document[]>([]);
   const [plansLoading, setPlansLoading] = useState(true);
 
-  useEffect(() => {
-    if (!enabled) return;
+  const [plansFailed, setPlansFailed] = useState(false);
+
+  const loadPlans = useCallback(() => {
     setPlansLoading(true);
+    setPlansFailed(false);
     getDocuments({ page: 1, limit: 50, filters: { documentType: "curriculum_plan" } })
       .then((res) => setPlans(res.documents ?? []))
-      .catch(() => setPlans([]))
+      .catch(() => setPlansFailed(true))
       .finally(() => setPlansLoading(false));
-  }, [enabled]);
+  }, []);
+
+  useEffect(() => {
+    if (enabled) loadPlans();
+  }, [enabled, loadPlans]);
 
   if (!featuresLoaded) return null;
   if (!enabled)
@@ -101,10 +109,10 @@ export default function CurriculumPlanLandingPage() {
           <div className="flex items-center justify-center py-10">
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           </div>
+        ) : plansFailed ? (
+          <LoadError onRetry={loadPlans} />
         ) : plans.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-border py-10 text-center text-sm text-muted-foreground">
-            {t("empty")}
-          </div>
+          <EmptyState size="inline" icon={CalendarDays} title={t("empty")} />
         ) : (
           <div className="space-y-2">
             {plans.map((plan) => (

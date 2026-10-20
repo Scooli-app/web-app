@@ -505,7 +505,10 @@
       "mySources": "My sources ({count})",
       "excerpts": "{count} excerpts",
       "schoolYearSuffix": "th grade",
-      "openInNewWindow": "Open {name} in a new window"
+      "openInNewWindow": "Open {name} in a new window",
+      "noneMatch": "None of your sources match this subject and year.",
+      "stillProcessing": "Your sources are still being processed.",
+      "allFailed": "None of your sources could be processed."
     },
     "slideCount": {
       "title": "Number of slides",
@@ -830,17 +833,21 @@
       "schoolYear": "the year",
       "subject": "the subject",
       "template": "a template, under More options",
-      "worksheetVariant": "the worksheet goal"
+      "worksheetVariant": "the worksheet goal",
+      "templateNone": "create a template under More options"
     },
     "lesson": {
       "title": "Which lesson is it for?",
       "description": "Optional. The document goes into the class and lesson you pick.",
       "none": "None (standalone document)",
-      "alreadyHas": "already has one"
+      "alreadyHas": "already has one",
+      "emptyHint": "You have no lessons in the next two weeks. Once a class is on your calendar, you can attach the document to a lesson.",
+      "emptyLink": "Open calendar"
     },
     "form": {
       "optional": "optional"
-    }
+    },
+    "outOfCredits": "You're out of credits for creating more documents."
   },
   "dashboard": {
     "welcomeTitle": "Welcome to Scooli!",
@@ -1101,7 +1108,8 @@
       "cancelsAtPeriodEnd": "Cancels at period end",
       "active": "Active",
       "paymentPending": "Payment Pending",
-      "canceled": "Canceled"
+      "canceled": "Canceled",
+      "unknown": "Status unavailable"
     },
     "accessLabel": {
       "free": "Free plan",
@@ -1180,7 +1188,9 @@
       "accessUntil": "Access until {date}",
       "renewsOn": "Renews on {date}",
       "manageSubscription": "Manage Subscription",
-      "opening": "Opening..."
+      "opening": "Opening...",
+      "plansUnavailable": "We can't show the plans right now.",
+      "plansUnavailableLink": "See plans and pricing"
     }
   },
   "editor": {
@@ -1306,7 +1316,8 @@
             "message": "Add or improve the document's conclusion."
           }
         ]
-      }
+      },
+      "generatingPlaceholder": "Chat is available once the document is ready."
     },
     "calendarButton": {
       "viewClass": "View class",
@@ -1351,7 +1362,11 @@
       "chatErrorGeneric": "Something went wrong processing your message. Please try again later.",
       "streamStartError": "Error starting the stream",
       "imageTokenRepairWarning": "We detected and fixed internal image references in the document.",
-      "imageFallbackAlt": "Image"
+      "imageFallbackAlt": "Image",
+      "actionsDisabledGenerating": "Available once the document is ready.",
+      "actionsDisabledNoContent": "This document has no content yet.",
+      "emptyDocumentTitle": "This document came out empty",
+      "emptyDocumentDescription": "Generation finished without any content. You can write here or go back to your documents and create another."
     },
     "documentTitle": {
       "placeholder": "Document title...",
@@ -1486,7 +1501,10 @@
       "expandPrompt": "Expand this slide text with more detail (reply only with the expanded text, no intro): \"{text}\"?",
       "improveListPrompt": "Improve these list items for a presentation (reply only with the improved items, one per line, no intro): {items}?",
       "newSlideTitle": "New Slide",
-      "exportMissingImages": "Exported, but {count, plural, one {# image couldn't be included} other {# images couldn't be included}}. Check the slide images and export again."
+      "exportMissingImages": "Exported, but {count, plural, one {# image couldn't be included} other {# images couldn't be included}}. Check the slide images and export again.",
+      "createNewPresentation": "Create a new presentation",
+      "emptyDeckTitle": "This presentation has no slides",
+      "emptyDeckDescription": "Add a blank slide or ask the AI to generate one."
     },
     "slideKonvaEditor": {
       "changeImage": "Change image",
@@ -1567,7 +1585,8 @@
       "paletteHint": "Each button inserts LaTeX directly into the field above.",
       "cancel": "Cancel",
       "save": "Save",
-      "add": "Add"
+      "add": "Add",
+      "previewEmpty": "Your formula shows up here. For example:"
     },
     "imagePickerModal": {
       "dialogTitle": "Add image",
@@ -1629,7 +1648,8 @@
       "uploadErrorOffline": "You're offline. The image wasn't uploaded.",
       "urlInvalid": "Enter a full address starting with https://",
       "urlLoadError": "Couldn't open an image at this address. Check the link or upload the image from your computer.",
-      "urlChecking": "Checking…"
+      "urlChecking": "Checking…",
+      "imagesShowAllTypes": "Show all types"
     },
     "richTextEditor": {
       "bold": "Bold",
@@ -1809,11 +1829,16 @@
       "use": "Use"
     },
     "resourceGrid": {
-      "emptyTitle": "No resources found",
-      "emptyDescription": "Try adjusting the filters or be the first to share resources in this category!",
+      "emptyTitle": "No shared resources yet",
+      "emptyDescription": "Share one of your documents and it shows up here for other teachers.",
       "showingCount": "Showing <b>{shown}</b> of <b>{total}</b> resources",
       "previous": "Previous",
-      "next": "Next"
+      "next": "Next",
+      "shareFromDocuments": "Go to my documents",
+      "emptyFilteredTitle": "No resources match your filters",
+      "emptyFilteredDescription": "Try a different search or clear the filters to see everything.",
+      "clearFilters": "Clear filters",
+      "shareAction": "Share a document"
     },
     "shareModal": {
       "orgLibraryLabel": "{name} library",
@@ -1918,7 +1943,7 @@
         "changesRequested": "Changes requested"
       },
       "emptyTitle": "You haven't shared any resources yet",
-      "emptyDescription": "Start sharing your teaching resources to see your stats here.",
+      "emptyDescription": "Share one of your documents and you'll see here how often it gets reused.",
       "stats": {
         "shared": "Resources Shared",
         "totalReuses": "Total Reuses",
@@ -1933,7 +1958,8 @@
       "moderatorFeedback": "Moderator feedback:",
       "impactTitle": "Community Impact",
       "impactDescription": "Your resources have already helped <b>{count}</b> teachers!",
-      "impactSubtitle": "Keep sharing to grow your impact on Portuguese education."
+      "impactSubtitle": "Keep sharing to help more teachers.",
+      "shareFromDocuments": "Go to my documents"
     }
   },
   "feedback": {
@@ -2011,7 +2037,8 @@
       "statusRejected": "Rejected",
       "heading": "My history",
       "emptyState": "You haven't sent any feedback yet.",
-      "teamResponseLabel": "Team response"
+      "teamResponseLabel": "Team response",
+      "emptyStateHint": "Use the options above to tell us what worked and what didn't."
     },
     "survey": {
       "snoozeError": "We couldn't snooze the feedback request.",
@@ -2137,13 +2164,18 @@
         "presentation": "Create interactive slides",
         "quiz": "Assess knowledge",
         "test": "Create formal assessments"
-      }
+      },
+      "noFilterMatch": {
+        "title": "No results for these filters",
+        "description": "No documents match the filters you picked. Clear them to see everything again."
+      },
+      "clearFilters": "Clear filters"
     },
     "gallery": {
       "heading": "My Documents",
       "import": "Import",
       "selectAll": "Select all",
-      "deselectAll": "Deselect all",
+      "deselectAll": "Clear selection",
       "selectedCount": "{count, plural, one {# selected} other {# selected}}",
       "visibleCount": "({count, plural, one {# visible} other {# visible}})",
       "deleting": "Deleting...",
@@ -2243,7 +2275,8 @@
       "save": "Save",
       "saving": "Saving...",
       "removedSuccess": "Tax ID removed. Future invoices will be issued as a private consumer.",
-      "savedSuccess": "Tax ID saved. It will be used on future invoices."
+      "savedSuccess": "Tax ID saved. It will be used on future invoices.",
+      "hint": "Your tax ID is printed on your invoices. Leave it empty and invoices are issued without one."
     }
   },
   "sources": {
@@ -2272,11 +2305,13 @@
       "confirm": "Confirm",
       "cancel": "Cancel",
       "deleteAriaLabel": "Delete source",
-      "proNote": "Sources are only available for your own credits. Content is processed and indexed automatically in the background.",
+      "proNote": "Only you can see your sources. Scooli reads them in the background and uses them in the documents you create.",
       "strippedBackMatterTooltip": "We removed {size} from {heading} before processing.",
       "strippedSectionOmitted": "{heading} section omitted",
       "sectionFallback": "final",
-      "backMatterFallback": "back matter"
+      "backMatterFallback": "back matter",
+      "emptyDescription": "Upload a textbook or your own materials and Scooli will use them in the documents you create.",
+      "emptyAction": "Upload a source"
     },
     "status": {
       "uploaded": "Processing",
@@ -2460,11 +2495,13 @@
         "description": "AI requests the school completed successfully over the last fourteen days.",
         "requestsThisMonthBadge": "{count, plural, one {# request} other {# requests}} this month",
         "tooltip": "{day}: {count, plural, one {# request} other {# requests}}",
-        "empty": "There isn't enough activity yet to draw the chart."
+        "empty": "The chart shows up once the team starts creating with Scooli.",
+        "emptyTitle": "No activity yet"
       },
       "documentTypesCard": {
         "title": "Document types",
-        "empty": "There aren't enough documents yet to show the breakdown by type."
+        "empty": "The most-created document types will show up here.",
+        "emptyTitle": "No documents yet"
       },
       "activeUsersCard": {
         "title": "Most active users",
@@ -2473,8 +2510,10 @@
         "aiRequestsBadge": "{count, plural, one {# AI request} other {# AI requests}}",
         "documentsThisMonthBadge": "{count, plural, one {# document this month} other {# documents this month}}",
         "totalDocumentsBadge": "{count, plural, one {# document total} other {# documents total}}",
-        "empty": "There isn't enough activity yet to highlight users."
-      }
+        "empty": "The most active teachers appear here once the team starts using Scooli.",
+        "emptyTitle": "No active teachers yet"
+      },
+      "viewMembers": "View members"
     },
     "members": {
       "title": "School members",
@@ -2488,7 +2527,7 @@
       },
       "listTitle": "Members",
       "loading": "Loading members...",
-      "empty": "There are no members synced for this school yet.",
+      "empty": "Teachers appear here once they accept the school invitation.",
       "unnamedMember": "Unnamed user",
       "noEmail": "No email available",
       "joinedAndLastActive": "Joined: {joinedDate} · Last active: {lastActiveDate}",
@@ -2498,7 +2537,8 @@
       "documentsCount": "{count, plural, one {# document} other {# documents}}",
       "createdThisMonth": "{count, plural, one {# created this month} other {# created this month}}",
       "statusLabel": "Status",
-      "internalSharesCount": "{count, plural, one {# internal share} other {# internal shares}}"
+      "internalSharesCount": "{count, plural, one {# internal share} other {# internal shares}}",
+      "emptyTitle": "No teachers yet"
     },
     "settings": {
       "title": "School settings",
@@ -2856,7 +2896,8 @@
       "showMore": "See more ({count})",
       "showLess": "See less",
       "nextAssessmentTitle": "Next assessment",
-      "noAssessment": "No assessment scheduled"
+      "noAssessment": "No assessment scheduled",
+      "noPlan": "Link a plan to this class to see its progress."
     },
     "shared": {
       "pageTitle": "Calendar",
@@ -2877,7 +2918,10 @@
       "minutesSuffix": "{count} min",
       "generateWeek": "Generate week ({count})",
       "saveError": "Couldn't save that change. Please try again.",
-      "openingLesson": "Opening lesson..."
+      "openingLesson": "Opening lesson...",
+      "allClasses": "All",
+      "noActiveTitle": "You have no active classes",
+      "noActiveDescription": "Reactivate a class from the classes list or create a new one to see your calendar again."
     },
     "week": {
       "generate": "Generate ({count})",
@@ -2885,19 +2929,28 @@
       "moveDown": "Move down",
       "durationCompact": "{count}m",
       "emptyTitle": "No lessons this week",
-      "emptyHint": "Use the arrows to see other weeks."
+      "emptyHint": "It may be a holiday week, or the lessons haven't been created yet.",
+      "emptyFiltered": "The selected classes have no lessons this week.",
+      "showAllClasses": "Show all classes"
     },
     "detail": {
       "loading": "Loading...",
       "generationFailed": "Generation failed",
       "noLessonsThisWeek": "No lessons scheduled for this week.",
-      "noLessonsYet": "You don't have any lessons for this class yet.",
-      "navigateOtherWeek": "Go to another week."
+      "noLessonsYet": "This class has no lessons yet",
+      "navigateOtherWeek": "Go to another week.",
+      "noLessonsYetHint": "Check the class schedule and term dates in your classes list.",
+      "goToNearestWeek": "Go to the nearest week with lessons",
+      "preparingTitle": "Preparing this class's lessons",
+      "preparingDescription": "The topics are still being created. They'll appear here as soon as they're ready."
     },
     "month": {
       "lessonsCount": "{count, plural, one {# lesson} other {# lessons}}",
       "completedCount": "{count, plural, one {# ready} other {# ready}}",
-      "pendingCount": "{count, plural, one {# to prepare} other {# to prepare}}"
+      "pendingCount": "{count, plural, one {# to prepare} other {# to prepare}}",
+      "emptyTitle": "No lessons this month",
+      "emptyDescription": "There are no lessons scheduled this month.",
+      "goToWeek": "Go to week view"
     },
     "classesList": {
       "header": {
@@ -2924,7 +2977,9 @@
         "loadingPlans": "Loading…",
         "none": "None",
         "cancel": "Cancel",
-        "save": "Save"
+        "save": "Save",
+        "noPlans": "You have no plans yet.",
+        "createPlan": "Create a plan"
       },
       "card": {
         "active": "Active",
@@ -2987,7 +3042,11 @@
         "subtitle": "Scooli extracts the period, subject and topics automatically.",
         "searchPlaceholder": "Search curriculum plans...",
         "noneYet": "You don't have any curriculum plans yet.",
-        "noneFound": "No curriculum plan found."
+        "noneFound": "No curriculum plan found.",
+        "noneYetHint": "Create or import a plan to build the class from it.",
+        "createPlan": "Create a plan",
+        "importPlan": "Import a plan",
+        "clearSearch": "Clear search"
       },
       "period": {
         "title": "School period",
@@ -3031,13 +3090,15 @@
         "markAs": "Mark as:",
         "remove": "Remove",
         "emptyLine1": "No lessons were generated for this period with the current schedule.",
-        "emptyLine2": "Go back and confirm the dates and class days."
+        "emptyLine2": "Go back and confirm the dates and class days.",
+        "backToPeriod": "Back to the period"
       },
       "nav": {
         "cancel": "Cancel",
         "previous": "Previous",
         "next": "Next",
-        "createClass": "Create class ({count, plural, one {# lesson} other {# lessons}})"
+        "createClass": "Create class ({count, plural, one {# lesson} other {# lessons}})",
+        "noLessonsHint": "You need at least one lesson to create the class."
       },
       "header": {
         "title": "New class",

@@ -2,6 +2,7 @@
 
 import { getTemplates, setDefaultTemplate } from "@/services/api/template.service";
 import type { DocumentTemplate, DocumentType } from "@/shared/types";
+import { LoadError } from "@/components/ui/load-error";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { TemplateBrowserModal } from "./TemplateBrowserModal";
@@ -12,6 +13,8 @@ interface TemplateSectionProps {
   selectedTemplateId: string | null;
   onTemplateSelect: (template: DocumentTemplate) => void;
   requireExplicitSelection?: boolean;
+  /** Reports how many templates this teacher has once the list loads or changes. */
+  onTemplateCountChange?: (count: number) => void;
 }
 
 export function TemplateSection({
@@ -19,20 +22,24 @@ export function TemplateSection({
   selectedTemplateId,
   onTemplateSelect,
   requireExplicitSelection = false,
+  onTemplateCountChange,
 }: TemplateSectionProps) {
   const t = useTranslations("documentCreation.template");
-  const tEmpty = useTranslations("documentCreation.templateEmptyState");
+  const tModal = useTranslations("documentCreation.templateBrowserModal");
   const [templates, setTemplates] = useState<DocumentTemplate[]>([]);
   const [selectedTemplate, setSelectedTemplate] =
     useState<DocumentTemplate | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [retryKey, setRetryKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
 
     async function loadTemplates() {
       setIsLoading(true);
+      setLoadFailed(false);
       try {
         const data = await getTemplates(documentType);
         if (cancelled) {
@@ -41,6 +48,7 @@ export function TemplateSection({
         setTemplates(data);
       } catch (error) {
         console.error("Failed to load templates:", error);
+        if (!cancelled) setLoadFailed(true);
       } finally {
         if (!cancelled) {
           setIsLoading(false);
@@ -52,7 +60,11 @@ export function TemplateSection({
     return () => {
       cancelled = true;
     };
-  }, [documentType]);
+  }, [documentType, retryKey]);
+
+  useEffect(() => {
+    if (!isLoading && !loadFailed) onTemplateCountChange?.(templates.length);
+  }, [isLoading, loadFailed, templates.length, onTemplateCountChange]);
 
   useEffect(() => {
     if (requireExplicitSelection || templates.length === 0 || selectedTemplateId) {
@@ -130,6 +142,14 @@ export function TemplateSection({
     );
   }
 
+  if (loadFailed) {
+    return (
+      <OptionRow label={t("title")}>
+        <LoadError onRetry={() => setRetryKey((n) => n + 1)} />
+      </OptionRow>
+    );
+  }
+
   return (
     <>
       <OptionRow label={t("title")}>
@@ -146,10 +166,12 @@ export function TemplateSection({
                 <span className="text-muted-foreground"> · {t("sectionsCount", { count: selectedTemplate.sections.length })}</span>
               </>
             ) : (
-              <span className="text-muted-foreground">{templates.length === 0 ? tEmpty("create") : t("selectTemplate")}</span>
+              <span className="text-muted-foreground">{templates.length === 0 ? tModal("noTemplatesTitle") : t("selectTemplate")}</span>
             )}
           </span>
-          <span className="shrink-0 text-xs font-semibold text-primary">{t("changeCta")}</span>
+          <span className="shrink-0 text-xs font-semibold text-primary">
+            {templates.length === 0 ? tModal("createModel") : t("changeCta")}
+          </span>
         </button>
       </OptionRow>
 

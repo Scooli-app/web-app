@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { Qualification } from "@/shared/types/teaching-profile";
 import { Check, Loader2, Search } from "lucide-react";
@@ -11,6 +12,10 @@ interface CourseSearchFieldProps {
   onTermChange: (term: string) => void;
   catalog: Qualification[];
   catalogError: string | null;
+  /** When omitted, an empty catalogue is treated as still loading. */
+  catalogLoaded?: boolean;
+  /** Shows a retry button on the catalogue error. */
+  onRetryCatalog?: () => void;
   results: Qualification[];
   /** Courses already picked — shown with a check mark and disabled. */
   addedCodes: Set<string>;
@@ -32,6 +37,8 @@ export function CourseSearchField({
   onTermChange,
   catalog,
   catalogError,
+  catalogLoaded = false,
+  onRetryCatalog,
   results,
   addedCodes,
   onSelect,
@@ -44,6 +51,11 @@ export function CourseSearchField({
     return (
       <div className="rounded-xl bg-destructive/10 p-4">
         <p className="text-sm text-destructive">{catalogError}</p>
+        {onRetryCatalog && (
+          <Button type="button" variant="outline" size="sm" onClick={onRetryCatalog} className="mt-3">
+            {t("retryLoad")}
+          </Button>
+        )}
       </div>
     );
   }
@@ -68,7 +80,7 @@ export function CourseSearchField({
 
       {term.trim() && (
         <div className="mt-2 overflow-hidden rounded-xl border border-border bg-background">
-          {catalog.length === 0 ? (
+          {catalog.length === 0 && !catalogLoaded ? (
             <p className="flex items-center gap-2 p-3 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
               {t("coursesLoading")}

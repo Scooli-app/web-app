@@ -15,6 +15,18 @@ import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { useTranslations } from "next-intl";
 import { useEffect } from "react";
 
+type Translator = ReturnType<typeof useTranslations>;
+
+function formatRole(role: string, t: Translator): string {
+  const key = `roles.${role}` as Parameters<Translator["has"]>[0];
+  return t.has(key) ? t(key) : role;
+}
+
+function formatSubscriptionStatus(status: string, t: Translator): string {
+  const key = `subscriptionStatus.${status}` as Parameters<Translator["has"]>[0];
+  return t.has(key) ? t(key) : status;
+}
+
 export default function SchoolSettingsPage() {
   const dispatch = useAppDispatch();
   const workspace = useAppSelector(selectWorkspaceContext);
@@ -58,13 +70,13 @@ export default function SchoolSettingsPage() {
             <p>
               {t("settings.currentRole")}{" "}
               <span className="font-medium text-foreground">
-                {workspace?.organization?.role ?? "teacher"}
+                {formatRole(workspace?.organization?.role ?? "teacher", t)}
               </span>
             </p>
             <p>
               {t("settings.contractStatus")}{" "}
               <span className="font-medium text-foreground">
-                {dashboard?.subscriptionStatus ?? "draft"}
+                {formatSubscriptionStatus(dashboard?.subscriptionStatus ?? "draft", t)}
               </span>
             </p>
           </CardContent>

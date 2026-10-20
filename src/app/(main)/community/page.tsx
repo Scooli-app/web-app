@@ -92,6 +92,26 @@ function CommunityLibraryPage() {
     );
   };
 
+  const hasActiveFilters = Boolean(
+    filters.grade || filters.subject || filters.resourceType || filters.search,
+  );
+
+  const handleClearFilters = () =>
+    handleFiltersChange({
+      ...filters,
+      grade: undefined,
+      subject: undefined,
+      resourceType: undefined,
+      search: undefined,
+    });
+
+  // A page past the end (e.g. after the last item went away) comes back empty: go back to the first page.
+  useEffect(() => {
+    if (!isLoading && resources.length === 0 && pagination.page > 0) {
+      dispatch(fetchResources({ ...filters, page: 0 }));
+    }
+  }, [isLoading, resources.length, pagination.page, filters, dispatch]);
+
   const handlePageChange = (page: number) => {
     dispatch(fetchResources({ ...filters, page }));
   };
@@ -196,6 +216,9 @@ function CommunityLibraryPage() {
           isLoading={isLoading}
           isReusing={isReusing}
           reusedResourceIds={reusedResourceIds}
+          hasActiveFilters={hasActiveFilters}
+          onClearFilters={handleClearFilters}
+          onShare={() => setIsShareModalOpen(true)}
         />
 
         <ShareResourceModal

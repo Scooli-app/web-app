@@ -97,6 +97,15 @@ export function TurmaProgressView({ progress, todayIso }: TurmaProgressViewProps
   const shownOutcomes = visibleFlaggedOutcomes(flaggedOutcomes, expanded);
   const hiddenCount = flaggedOutcomes.length - shownOutcomes.length;
 
+  // No linked plan: every figure below would read as "0 of 0" / "all on time", which is not true.
+  if (coverage.outcomesTotal === 0) {
+    return (
+      <section aria-label={t("title")} className="rounded-xl border bg-card p-4 text-sm text-muted-foreground">
+        {t("noPlan")}
+      </section>
+    );
+  }
+
   return (
     <section aria-label={t("title")} className="space-y-4 rounded-xl border bg-card p-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
