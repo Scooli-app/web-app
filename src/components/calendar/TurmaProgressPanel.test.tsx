@@ -74,6 +74,60 @@ describe("TurmaProgressPanel", () => {
   });
 });
 
+describe("TurmaProgressView unconfirmed coverage (ENG-239)", () => {
+  const coverage = (over: Partial<TurmaProgress["coverage"]>) => ({
+    outcomesTotal: 4,
+    outcomesCovered: 2,
+    outcomesPartial: 0,
+    percent: 50,
+    curriculumTotal: 10,
+    ...over,
+  });
+
+  it("draws the unconfirmed share after the solid confirmed one, with a legend", () => {
+    const html = renderView(progress({ coverage: coverage({ outcomesAssumed: 1 }) }));
+
+    expect(html).toContain('data-testid="coverage-unconfirmed"');
+    expect(html).toContain("left:50%");
+    expect(html).toContain("width:25%");
+    expect(html).toContain("unconfirmedLegend");
+  });
+
+  it("counts confirmed taught lessons apart from the unconfirmed (assumed) ones, with their own chip", () => {
+    const html = renderView(
+      progress({
+        slots: {
+          past: 6,
+          counts: { planned: 2, taught: 3, partiallyTaught: 1, notHeld: 0, assumedTaught: 2 },
+          pendingCheckIns: 0,
+        },
+      }),
+    );
+
+    expect(html).toContain("unconfirmedLessons");
+    expect(html).toMatch(/border-dashed[^>]*>[\s\S]*?unconfirmedLessons/);
+    expect(html).toContain(">3<");
+    expect(html).toContain(">2<");
+  });
+
+  it("keeps the percent and the covered count on confirmed outcomes", () => {
+    const html = renderView(progress({ coverage: coverage({ outcomesAssumed: 1 }) }));
+
+    expect(html).toContain("50%");
+    expect(html).toContain("coverageCount");
+  });
+
+  it("shows no unconfirmed share or legend when nothing is unconfirmed, or the backend does not send it", () => {
+    const none = renderView(progress({ coverage: coverage({ outcomesAssumed: 0 }) }));
+    const old = renderView(progress({ coverage: coverage({}) }));
+
+    expect(none).not.toContain("coverage-unconfirmed");
+    expect(none).not.toContain("unconfirmedLegend");
+    expect(old).not.toContain("coverage-unconfirmed");
+    expect(old).not.toContain("unconfirmedLegend");
+  });
+});
+
 describe("TurmaProgressView layout", () => {
   it("names the panel and says what the percent measures", () => {
     const html = renderView(progress());

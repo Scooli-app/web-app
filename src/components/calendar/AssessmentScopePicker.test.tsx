@@ -75,6 +75,30 @@ describe("AssessmentScopePicker", () => {
     expect(chips().find((c) => c.textContent?.includes("Comparar frações"))?.getAttribute("aria-pressed")).toBe("false");
   });
 
+  it("tags an assumed outcome as not confirmed, and leaves it unticked when the scope gives it so", async () => {
+    const withAssumed: AssessmentScope = {
+      fromDate: null,
+      outcomes: [
+        { id: "o1", text: "Ler números até 100", topicPath: ["Números"], lessons: 2, evidence: "confirmed" },
+        { id: "o2", text: "Comparar frações", topicPath: ["Frações"], lessons: 1, evidence: "assumed" },
+      ],
+    };
+    await render({ scope: withAssumed, selected: ["o1"] });
+
+    const assumed = chips().find((c) => c.textContent?.includes("Comparar frações"));
+    const confirmed = chips().find((c) => c.textContent?.includes("Ler números até 100"));
+    expect(assumed?.textContent).toContain("notConfirmed");
+    expect(assumed?.getAttribute("aria-pressed")).toBe("false");
+    expect(confirmed?.textContent).not.toContain("notConfirmed");
+    expect(confirmed?.getAttribute("aria-pressed")).toBe("true");
+  });
+
+  it("shows no tag on an outcome with no evidence, as an older backend sends it", async () => {
+    await render();
+
+    expect(chips().some((c) => c.textContent?.includes("notConfirmed"))).toBe(false);
+  });
+
   it("shows the empty state, with no chips, when nothing has been taught since the last test", async () => {
     await render({ scope: { fromDate: null, outcomes: [] }, selected: [] });
 

@@ -51,7 +51,14 @@ export function AssessmentScopePicker({ scope, selected, onToggle }: AssessmentS
                 title={outcome.topicPath.join(" › ")}
                 onClick={() => onToggle(outcome.id)}
                 trailing={
-                  <span className="text-[10px] opacity-70">{t("lessons", { count: outcome.lessons })}</span>
+                  <>
+                    <span className="text-[10px] opacity-70">{t("lessons", { count: outcome.lessons })}</span>
+                    {outcome.evidence === "assumed" && (
+                      <span className="rounded bg-amber-100 px-1 text-[10px] font-medium text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
+                        {t("notConfirmed")}
+                      </span>
+                    )}
+                  </>
                 }
               >
                 {outcome.text}

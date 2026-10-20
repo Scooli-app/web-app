@@ -1,13 +1,19 @@
 /** Turma progress view (ENG-204). Contract: chalkboard PR #283, `GET /timetable/{id}/progress`. */
 
-export type FlaggedOutcomeState = "covered" | "partial" | "not_covered";
+export type FlaggedOutcomeState = "covered" | "partial" | "assumed" | "not_covered";
 
 export interface TurmaProgressCoverage {
   /** Outcomes (AE) planned for this turma. */
   outcomesTotal: number;
+  /** Confirmed as taught by the teacher. */
   outcomesCovered: number;
   outcomesPartial: number;
-  /** Null when the turma has no outcomes to measure against. */
+  /**
+   * Outcomes only an unanswered lesson (assumed taught) teaches. Not confirmed: not in `outcomesCovered` nor in
+   * `percent`. Optional so the panel still renders against a backend without it (then none).
+   */
+  outcomesAssumed?: number;
+  /** Confirmed outcomes as a percentage of the planned ones. Null when the turma has no outcomes to measure against. */
   percent: number | null;
   /** The year's AE catalogue for the subject and grade. */
   curriculumTotal: number;

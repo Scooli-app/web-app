@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
-import type { TurmaProgress, TurmaProgressFlaggedOutcome } from "@/shared/types/progress";
+import type { TurmaProgress, TurmaProgressCoverage, TurmaProgressFlaggedOutcome } from "@/shared/types/progress";
 import {
   FLAGGED_PREVIEW_LIMIT,
+  coverageBarSegments,
   coverageBarWidth,
   formatProgressDate,
   formatCoveragePercent,
@@ -9,8 +10,44 @@ import {
   lessonsGiven,
   reinforcementState,
   shouldLoadTurmaProgress,
+  unconfirmedOutcomes,
   visibleFlaggedOutcomes,
 } from "./turmaProgress";
+
+describe("unconfirmed coverage (ENG-239)", () => {
+  const coverage = (over: Partial<TurmaProgressCoverage> = {}): TurmaProgressCoverage => ({
+    outcomesTotal: 4,
+    outcomesCovered: 2,
+    outcomesPartial: 0,
+    percent: 50,
+    curriculumTotal: 10,
+    ...over,
+  });
+
+  it("counts the unconfirmed outcomes, and none from a backend without the field", () => {
+    expect(unconfirmedOutcomes(coverage({ outcomesAssumed: 1 }))).toBe(1);
+    expect(unconfirmedOutcomes(coverage())).toBe(0);
+  });
+
+  it("draws the confirmed share solid and the unconfirmed share after it, on the same planned scope", () => {
+    expect(coverageBarSegments(coverage({ outcomesAssumed: 1 }))).toEqual({ confirmed: 50, unconfirmed: 25 });
+  });
+
+  it("never draws past the full bar", () => {
+    expect(coverageBarSegments(coverage({ percent: 75, outcomesCovered: 3, outcomesAssumed: 2 }))).toEqual({
+      confirmed: 75,
+      unconfirmed: 25,
+    });
+  });
+
+  it("draws no unconfirmed share when there is nothing planned, or nothing unconfirmed", () => {
+    expect(coverageBarSegments(coverage({ outcomesTotal: 0, percent: null, outcomesCovered: 0 }))).toEqual({
+      confirmed: 0,
+      unconfirmed: 0,
+    });
+    expect(coverageBarSegments(coverage())).toEqual({ confirmed: 50, unconfirmed: 0 });
+  });
+});
 
 describe("reinforcementState", () => {
   const flagged = (over: Partial<TurmaProgressFlaggedOutcome> = {}): TurmaProgressFlaggedOutcome => ({
@@ -101,10 +138,10 @@ describe("coverageBarWidth", () => {
 });
 
 describe("lessonsGiven", () => {
-  it("counts taught and assumed-taught lessons", () => {
+  it("counts only the lessons the teacher confirmed as taught, not the assumed ones", () => {
     expect(
       lessonsGiven({ planned: 2, taught: 1, partiallyTaught: 1, notHeld: 1, assumedTaught: 2 }),
-    ).toBe(3);
+    ).toBe(1);
   });
 });
 
