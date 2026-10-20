@@ -286,9 +286,9 @@ export default function CalendarViewPage() {
     [dispatch]
   );
 
-  // A check-in saved on the previous lesson (asked at the top of the dialog): the progress panel and that
-  // lesson's mark reload from the server.
-  const handlePreviousCheckedIn = useCallback(() => {
+  // A check-in saved on the previous lesson (asked at the top of the dialog), or a reinforcement worksheet or
+  // carry-over started after a check-in: the progress panel, the next steps and the lessons reload from the server.
+  const reloadClassState = useCallback(() => {
     setProgressRefreshKey((key) => key + 1);
     dispatch(fetchLessons({ timetableId: id }));
   }, [dispatch, id]);
@@ -653,7 +653,8 @@ export default function CalendarViewPage() {
         onTitleChange={handleTitleChange}
         onCheckedIn={handleCheckedIn}
         onLessonsShifted={() => dispatch(fetchLessons({ timetableId: id }))}
-        onPreviousCheckedIn={handlePreviousCheckedIn}
+        onPreviousCheckedIn={reloadClassState}
+        onFollowUpStarted={reloadClassState}
       />
     </div>
   );

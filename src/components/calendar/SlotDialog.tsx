@@ -123,6 +123,8 @@ export interface SlotDialogProps {
   onLessonsShifted?: (slot: SlotWithTimetable) => void;
   /** A check-in was saved on the previous lesson (PreviousLessonCheckIn): the parent reloads the turma's figures and slots. */
   onPreviousCheckedIn?: () => void;
+  /** A reinforcement worksheet or a carry-over was started from here: the parent reloads the turma's figures and next steps. */
+  onFollowUpStarted?: () => void;
 }
 
 export function SlotDialog({
@@ -138,6 +140,7 @@ export function SlotDialog({
   onCheckedIn,
   onLessonsShifted,
   onPreviousCheckedIn,
+  onFollowUpStarted,
 }: SlotDialogProps) {
   const t = useTranslations("calendar.slotDialog");
   const tShared = useTranslations("calendar.shared");
@@ -317,10 +320,13 @@ export function SlotDialog({
         day: formatLessonDay(started.targetDate, locale),
       });
       setFollowUp(null);
+      onFollowUpStarted?.();
       return;
     }
     const done = await carry(slot.timetable.id, slot.id, followUp.outcomeIds);
-    if (done) setFollowUp(null);
+    if (!done) return;
+    setFollowUp(null);
+    onFollowUpStarted?.();
   };
 
   const handleShift = async () => {
