@@ -659,6 +659,7 @@ export default function CalendarViewPage() {
         onLessonsShifted={reloadClassState}
         onPreviousCheckedIn={reloadClassState}
         onFollowUpStarted={reloadClassState}
+        onProposalResolved={reloadClassState}
       />
     </div>
   );

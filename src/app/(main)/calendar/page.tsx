@@ -202,6 +202,11 @@ function LessonCard({
                 {tTimetable(`status.${slot.status}`)}
               </span>
               {mark && <TeachingMarkBadge mark={mark} className="ml-1" />}
+              {slot.pendingProposal && (
+                <span className="ml-1 rounded bg-primary/10 px-1 text-[10px] font-medium text-primary">
+                  {t("slotDialog.proposal.badge")}
+                </span>
+              )}
               {/* The lesson number reads as "Aula 3", not a loose digit glued to the title. */}
               {slot.sequenceNumber > 0 && (
                 <span className="ml-1 text-[10px] text-muted-foreground/60">
@@ -1333,6 +1338,7 @@ function CalendarPageInner() {
         onPreviousCheckedIn={() => {
           if (selectedSlot) void refreshTimetable(selectedSlot.timetable.id);
         }}
+        onProposalResolved={(resolved) => void refreshTimetable(resolved.timetable.id)}
       />
     </div>
   );

@@ -94,6 +94,16 @@ export interface LessonSlot {
   checkInOutcomeIds?: string[];
   /** Outcomes (AE) this lesson covers, offered as chips in the check-in card. */
   outcomes?: CheckInOutcome[];
+  /** A topic a regeneration proposed for this lesson, kept until the teacher accepts or rejects it (ENG-247). */
+  pendingProposal?: PendingProposal | null;
+}
+
+/** The topic a regeneration proposed for a lesson that already has documents (ENG-247). */
+export interface PendingProposal {
+  topicTitle: string;
+  description: string;
+  outcomes: CheckInOutcome[];
+  createdAt: string;
 }
 
 export interface UpdateSlotParams {
@@ -193,6 +203,22 @@ export async function updateLesson(
 export async function skipLesson(timetableId: string, lessonId: string): Promise<LessonSlot> {
   const response = await apiClient.post<LessonSlot>(
     `/timetable/${timetableId}/lessons/${lessonId}/skip`
+  );
+  return response.data;
+}
+
+/** Accepts the lesson's pending topic proposal: the new topic applies and the old one is kept as a version (ENG-247). */
+export async function acceptProposal(timetableId: string, lessonId: string): Promise<LessonSlot> {
+  const response = await apiClient.post<LessonSlot>(
+    `/timetable/${timetableId}/lessons/${lessonId}/proposal/accept`
+  );
+  return response.data;
+}
+
+/** Rejects the lesson's pending topic proposal: the lesson keeps its topic (ENG-247). */
+export async function rejectProposal(timetableId: string, lessonId: string): Promise<LessonSlot> {
+  const response = await apiClient.post<LessonSlot>(
+    `/timetable/${timetableId}/lessons/${lessonId}/proposal/reject`
   );
   return response.data;
 }
