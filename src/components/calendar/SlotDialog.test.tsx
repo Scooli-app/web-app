@@ -226,14 +226,14 @@ describe("SlotDialog: offering a reinforcement worksheet or a carry-over after a
    * Picks a result, then "Guardar" on the outcome step. The slot has one outcome, so it is ticked already ("ticked");
    * "unticked" clears that tick first, to save with nothing picked.
    */
-  async function answer(result: string, pick: "ticked" | "unticked") {
+  async function answer(result: string, pick: "ticked" | "unticked", props: Partial<ReturnType<typeof dialogProps>> = {}) {
     vi.mocked(checkInService.submit).mockResolvedValue({
       id: "c1",
       timetableId: "tt",
       teachingStatus: "taught",
       checkedInAt: "2020-03-10T10:00:00Z",
     });
-    await render(dialogProps({ slot: withOutcomes }));
+    await render(dialogProps({ slot: withOutcomes, ...props }));
     await act(async () => {
       buttonWith(result)?.click();
     });
@@ -323,6 +323,44 @@ describe("SlotDialog: offering a reinforcement worksheet or a carry-over after a
     expect(buttonWith("followUpOpenLesson")).toBeDefined();
   });
 
+
+  it("tells the parent once the worksheet is asked for, so the turma's figures and next steps reload", async () => {
+    vi.mocked(checkInService.requestReinforcement).mockResolvedValue({
+      documentId: "d1",
+      targetSlotId: "slot-4",
+      targetDate: "2020-03-11",
+      status: "generating",
+    });
+    const onFollowUpStarted = vi.fn();
+    await answer("resultDifficulties", "ticked", { onFollowUpStarted });
+    expect(onFollowUpStarted).not.toHaveBeenCalled();
+
+    await act(async () => {
+      buttonWith("reinforcementAction")?.click();
+    });
+
+    expect(onFollowUpStarted).toHaveBeenCalledTimes(1);
+  });
+
+  it("tells the parent after a carry-over, and not when the worksheet request fails", async () => {
+    vi.mocked(checkInService.carryOver).mockResolvedValue({ targetSlotId: "slot-4", targetDate: "2020-03-11", carried: 1 });
+    const onFollowUpStarted = vi.fn();
+    await answer("resultPartial", "ticked", { onFollowUpStarted });
+    await act(async () => {
+      buttonWith("carryOverAction")?.click();
+    });
+    expect(onFollowUpStarted).toHaveBeenCalledTimes(1);
+
+    act(() => root.unmount());
+    root = createRoot(container);
+    onFollowUpStarted.mockClear();
+    vi.mocked(checkInService.requestReinforcement).mockRejectedValue(new Error("boom"));
+    await answer("resultDifficulties", "ticked", { onFollowUpStarted });
+    await act(async () => {
+      buttonWith("reinforcementAction")?.click();
+    });
+    expect(onFollowUpStarted).not.toHaveBeenCalled();
+  });
 
   it("keeps the offer when the request fails", async () => {
     vi.mocked(checkInService.requestReinforcement).mockRejectedValue(new Error("boom"));

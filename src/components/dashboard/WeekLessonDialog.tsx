@@ -174,6 +174,7 @@ export function WeekLessonDialog({
       onTypeChange={(s, slotType) => void handleUpdate(s, { slotType })}
       onTitleChange={(s, topicTitle) => void handleUpdate(s, { topicTitle })}
       onDocumentsChanged={onChanged}
+      onFollowUpStarted={onChanged}
     />
   );
 }
