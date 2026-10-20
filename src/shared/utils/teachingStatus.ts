@@ -1,5 +1,10 @@
 import type { LessonSlotType } from "@/services/api/timetable.service";
-import type { TeachingStatus } from "@/shared/types/check-in";
+import type {
+  CheckInOutcome,
+  CheckInResult,
+  CheckInSubmission,
+  TeachingStatus,
+} from "@/shared/types/check-in";
 
 /** Slot types the backend accepts a check-in for. A holiday is never checkable. */
 const CHECKABLE_SLOT_TYPES: readonly LessonSlotType[] = ["LESSON", "ASSESSMENT", "EXERCISE", "REVIEW"];
@@ -12,7 +17,19 @@ export interface TeachingSlotInput {
 }
 
 /** Keys of the `checkIns.mark` messages; each one is a short label for the glyph. */
-export type TeachingMarkKey = "taught" | "partiallyTaught" | "notHeld" | "assumedTaught" | "unconfirmed";
+export type TeachingMarkKey =
+  | "taught"
+  | "taughtWithDifficulties"
+  | "partiallyTaught"
+  | "notHeld"
+  | "assumedTaught"
+  | "unconfirmed";
+
+/** What the teacher answered, as the slot keeps it (ENG-246). Only set for the answers that name outcomes. */
+export interface SlotCheckInAnswer {
+  checkInResult: CheckInResult;
+  checkInOutcomeIds: string[];
+}
 
 export interface TeachingMark {
   key: TeachingMarkKey;
@@ -44,9 +61,10 @@ export function canCheckIn(enabled: boolean, slot: TeachingSlotInput, todayIso: 
  * The small mark on a calendar card for a past lesson. Null when there is nothing to say: a future
  * or skipped slot, a holiday, or a type that is not checkable.
  * A checkable slot still `planned` gets the "por confirmar" dot.
+ * "Com dificuldades" is stored as `taught`, so its amber "~" comes from the answer's own result.
  */
 export function teachingMark(
-  slot: TeachingSlotInput & { teachingStatus?: TeachingStatus },
+  slot: TeachingSlotInput & { teachingStatus?: TeachingStatus; checkInResult?: CheckInResult | null },
   todayIso: string,
 ): TeachingMark | null {
   // A not-held lesson keeps its ✕ even once ENG-194 has marked it skipped; the check-in itself
@@ -55,7 +73,9 @@ export function teachingMark(
   if (!notHeldKept && !isCheckableSlot(slot, todayIso)) return null;
   switch (slot.teachingStatus) {
     case "taught":
-      return { key: "taught", glyph: "✓" };
+      return slot.checkInResult === "TAUGHT_WITH_DIFFICULTIES"
+        ? { key: "taughtWithDifficulties", glyph: "~" }
+        : { key: "taught", glyph: "✓" };
     case "partially_taught":
       return { key: "partiallyTaught", glyph: "½" };
     case "not_held":
@@ -65,4 +85,29 @@ export function teachingMark(
     default:
       return { key: "unconfirmed", glyph: "•" };
   }
+}
+
+/**
+ * The outcome texts a "com dificuldades" answer named, for the status tooltip. Empty for any other answer.
+ * Only the ids the slot still lists are shown, so a text the slot no longer has is simply left out.
+ */
+export function difficultOutcomeTexts(slot: {
+  checkInResult?: CheckInResult | null;
+  checkInOutcomeIds?: string[];
+  outcomes?: CheckInOutcome[];
+}): string[] {
+  if (slot.checkInResult !== "TAUGHT_WITH_DIFFICULTIES") return [];
+  const ids = new Set(slot.checkInOutcomeIds ?? []);
+  return (slot.outcomes ?? []).filter((outcome) => ids.has(outcome.id)).map((outcome) => outcome.text);
+}
+
+/** The answer as the slot keeps it locally, the same two fields the backend puts on a slot. */
+export function slotCheckInAnswer(submission: CheckInSubmission): SlotCheckInAnswer {
+  const ids =
+    submission.result === "TAUGHT_WITH_DIFFICULTIES"
+      ? submission.difficultOutcomeIds ?? []
+      : submission.result === "PARTIAL"
+        ? submission.uncoveredOutcomeIds ?? []
+        : [];
+  return { checkInResult: submission.result, checkInOutcomeIds: [...ids] };
 }

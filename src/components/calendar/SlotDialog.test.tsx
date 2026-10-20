@@ -344,3 +344,65 @@ describe("SlotDialog: offering a reinforcement worksheet or a carry-over after a
     expect(document.body.textContent).not.toContain("carryOverQuestion");
   });
 });
+
+describe("SlotDialog: the status of a checked-in lesson (ENG-246)", () => {
+  let container: HTMLDivElement;
+  let root: Root;
+  const outcomes = [
+    { id: "o1", text: "Ler com fluência", topicPath: [], source: "ai" },
+    { id: "o2", text: "Somar frações", topicPath: [], source: "ai" },
+  ];
+  const checked = (checkInResult: string, checkInOutcomeIds: string[]) =>
+    ({
+      ...slot,
+      checkedInAt: "2020-03-10T10:00:00Z",
+      teachingStatus: "taught",
+      checkInResult,
+      checkInOutcomeIds,
+      outcomes,
+    }) as unknown as SlotWithTimetable;
+
+  beforeEach(() => {
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    store.enabled = true;
+    container = document.createElement("div");
+    document.body.appendChild(container);
+    root = createRoot(container);
+  });
+
+  afterEach(() => {
+    act(() => root.unmount());
+    container.remove();
+    document.body.innerHTML = "";
+    vi.clearAllMocks();
+  });
+
+  async function renderWith(s: SlotWithTimetable) {
+    await act(async () => {
+      root.render(createElement(SlotDialog, dialogProps({ slot: s })));
+    });
+  }
+
+  /** The status value next to "Status:", which carries the mark's label and, for difficulties, the tooltip. */
+  function statusValue(label: string): HTMLElement | undefined {
+    return [...document.body.querySelectorAll<HTMLElement>("span")].find((el) => el.textContent === label);
+  }
+
+  it("says 'Lecionada · com dificuldades' in amber, with the difficult outcome texts as the tooltip", async () => {
+    await renderWith(checked("TAUGHT_WITH_DIFFICULTIES", ["o2"]));
+
+    const value = statusValue("mark.taughtWithDifficulties");
+    expect(value).toBeDefined();
+    expect(value?.className).toContain("text-amber-700");
+    expect(value?.getAttribute("title")).toBe("Somar frações");
+  });
+
+  it("keeps the plain 'Lecionada' status, with no tooltip, after a 'correu bem' answer", async () => {
+    await renderWith(checked("TAUGHT", []));
+
+    const value = statusValue("mark.taught");
+    expect(value).toBeDefined();
+    expect(value?.className).not.toContain("text-amber-700");
+    expect(value?.hasAttribute("title")).toBe(false);
+  });
+});

@@ -173,6 +173,7 @@
     "changeAnswer": "Alterar",
     "mark": {
       "taught": "Lecionada",
+      "taughtWithDifficulties": "Lecionada · com dificuldades",
       "partiallyTaught": "Ficou a meio",
       "notHeld": "Não houve aula",
       "assumedTaught": "Assumida como lecionada",

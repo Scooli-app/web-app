@@ -68,7 +68,7 @@ import { formatClassName } from "@/shared/utils/className";
 import { SlotSkeleton } from "@/components/calendar/SlotSkeleton";
 import type { SlotWithTimetable, DayMap } from "@/shared/types/calendar";
 import type { CheckInRecord } from "@/shared/types/check-in";
-import { teachingMark } from "@/shared/utils/teachingStatus";
+import { teachingMark, type SlotCheckInAnswer } from "@/shared/utils/teachingStatus";
 import { toIso, addDays, compactWeekLabel, defaultCalendarWeek, getWeekStart, formatWeekLabel, hexToRgb, getDayLabels, readableTextOn, toIntlLocale } from "@/shared/utils/calendar";
 import { useLocale, useTranslations } from "next-intl";
 import { isSupportedLocale, defaultLocale } from "@/i18n/locales";
@@ -562,11 +562,17 @@ function CalendarPageInner() {
   };
 
   /** A check-in saved from the slot dialog: the card's mark follows without reloading the week. */
-  const handleCheckedIn = useCallback((target: SlotWithTimetable, record: CheckInRecord) => {
+  const handleCheckedIn = useCallback((target: SlotWithTimetable, record: CheckInRecord, answer: SlotCheckInAnswer) => {
     setSlotsByTimetable((prev) => {
       const slots = (prev.get(target.timetable.id) ?? []).map((s) =>
         s.id === target.id
-          ? { ...s, teachingStatus: record.teachingStatus, checkedInAt: record.checkedInAt }
+          ? {
+              ...s,
+              teachingStatus: record.teachingStatus,
+              checkedInAt: record.checkedInAt,
+              checkInResult: answer.checkInResult,
+              checkInOutcomeIds: answer.checkInOutcomeIds,
+            }
           : s,
       );
       return new Map(prev).set(target.timetable.id, slots);

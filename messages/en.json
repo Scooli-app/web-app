@@ -173,6 +173,7 @@
     "changeAnswer": "Change",
     "mark": {
       "taught": "Taught",
+      "taughtWithDifficulties": "Taught · some difficulties",
       "partiallyTaught": "Partly taught",
       "notHeld": "Not held",
       "assumedTaught": "Assumed taught",

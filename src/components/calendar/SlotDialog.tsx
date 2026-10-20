@@ -74,7 +74,14 @@ import {
 import { useLocale, useTranslations } from "next-intl";
 import { isSupportedLocale, defaultLocale } from "@/i18n/locales";
 import { readableTextOn, toIntlLocale, toIso } from "@/shared/utils/calendar";
-import { canCheckIn, teachingMark } from "@/shared/utils/teachingStatus";
+import {
+  canCheckIn,
+  difficultOutcomeTexts,
+  slotCheckInAnswer,
+  teachingMark,
+  type SlotCheckInAnswer,
+} from "@/shared/utils/teachingStatus";
+import { cn } from "@/shared/utils/utils";
 
 const ROLE_ROUTE: Record<string, string> = {
   lessonPlan: Routes.LESSON_PLAN,
@@ -109,8 +116,8 @@ export interface SlotDialogProps {
   onTitleChange: (slot: SlotWithTimetable, title: string) => void;
   /** A document was added from this pop-up's chips (e.g. so the dashboard week refreshes). */
   onDocumentsChanged?: () => void;
-  /** A check-in was saved here: the parent puts the new status on the slot (the card badge follows). */
-  onCheckedIn?: (slot: SlotWithTimetable, record: CheckInRecord) => void;
+  /** A check-in was saved here: the parent puts the new status and answer on the slot (the card badge follows). */
+  onCheckedIn?: (slot: SlotWithTimetable, record: CheckInRecord, answer: SlotCheckInAnswer) => void;
   /** The lessons after this one were moved (ENG-194): the parent reloads the turma's slots. */
   onLessonsShifted?: (slot: SlotWithTimetable) => void;
   /** A check-in was saved on the previous lesson (PreviousLessonCheckIn): the parent reloads the turma's figures and slots. */
@@ -248,6 +255,7 @@ export function SlotDialog({
   const todayIso = toIso(new Date());
   const showCheckIn = canCheckIn(checkInEnabled, slot, todayIso);
   const checkInMark = teachingMark(slot, todayIso);
+  const checkInTooltip = difficultOutcomeTexts(slot).join("\n");
   const checkInItem = {
     slotDate: slot.slotDate,
     // Only shown for checkable types (see showCheckIn), so the cast holds wherever the card renders.
@@ -263,7 +271,7 @@ export function SlotDialog({
     try {
       const record = await checkInService.submit(slot.timetable.id, slot.id, body);
       setCheckInEditing(false);
-      onCheckedIn?.(slot, record);
+      onCheckedIn?.(slot, record, slotCheckInAnswer(body));
     } catch {
       toast.error(tCheckIn("saveError"));
       return;
@@ -479,7 +487,17 @@ export function SlotDialog({
                       <p className="flex items-center gap-1.5 text-sm">
                         <span className="text-muted-foreground">{tCheckIn("currentStatus")}:</span>
                         <TeachingMarkBadge mark={checkInMark} />
-                        <span className="font-medium text-foreground">{tCheckIn(`mark.${checkInMark.key}`)}</span>
+                        <span
+                          className={cn(
+                            "font-medium",
+                            checkInMark.key === "taughtWithDifficulties"
+                              ? "text-amber-700 dark:text-amber-400"
+                              : "text-foreground",
+                          )}
+                          title={checkInTooltip || undefined}
+                        >
+                          {tCheckIn(`mark.${checkInMark.key}`)}
+                        </span>
                       </p>
                       <Button variant="outline" size="sm" className="h-8" onClick={() => setCheckInEditing(true)}>
                         {tCheckIn("changeAnswer")}
