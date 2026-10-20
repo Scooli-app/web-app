@@ -1,5 +1,6 @@
 "use client";
 
+import { SkeletonRows } from "@/components/ui/page-skeleton";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -212,11 +213,7 @@ export default function SourcesPage() {
           )}
         </div>
 
-        {loading && sources.length === 0 && (
-          <div className="flex items-center gap-2 py-8 text-sm text-muted-foreground">
-            <Loader2 className="w-4 h-4 animate-spin" />{t("loadingSources")}
-          </div>
-        )}
+        {loading && sources.length === 0 && <SkeletonRows rows={3} />}
 
         {!loading && sources.length === 0 && error && (
           <LoadError onRetry={() => dispatch(fetchSources())} />

@@ -1,5 +1,7 @@
 "use client";
 
+import CalendarMonthLoading from "./loading";
+import { MonthGridSkeleton } from "@/components/calendar/CalendarGridSkeleton";
 import { isVisibleSlot } from "@/shared/utils/lessonTopic";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -174,7 +176,7 @@ export default function CalendarMonthPage() {
     router.push(`${Routes.CALENDAR}?week=${weekStart}`);
   };
 
-  if (!featuresLoaded) return null;
+  if (!featuresLoaded) return <CalendarMonthLoading />;
   if (!enabled)
     return (
       <FeatureUnavailable
@@ -241,33 +243,7 @@ export default function CalendarMonthPage() {
         {timetablesLoading || (loading && slotsByDate.size === 0) ? (
           // Full grid skeleton on first load (before any lesson data has arrived).
           // Subsequent month navigation reuses the lighter per-day skeleton below instead.
-          <div className="overflow-hidden rounded-lg border border-border">
-            <div className="grid grid-cols-7 divide-x divide-border border-b bg-muted/20">
-              {dayLabels.map((d) => (
-                <div key={d} className="py-2 text-center">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{d}</p>
-                </div>
-              ))}
-            </div>
-            {Array.from({ length: 5 }, (_, rowIdx) => (
-              <div key={rowIdx} className="grid grid-cols-7 divide-x divide-border border-b last:border-b-0">
-                {Array.from({ length: 7 }, (_, colIdx) => (
-                  <div key={colIdx} className="min-h-[100px] animate-pulse p-2">
-                    <div className="mb-2 h-5 w-5 rounded-full bg-muted" />
-                    {colIdx < 5 && rowIdx < 3 && (
-                      <div className="space-y-1">
-                        <div className="flex gap-0.5">
-                          <div className="h-2 w-2 rounded-full bg-muted/60" />
-                          <div className="h-2 w-2 rounded-full bg-muted/40" />
-                        </div>
-                        <div className="h-2.5 w-12 rounded bg-muted/60" />
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ))}
-          </div>
+          <MonthGridSkeleton dayLabels={dayLabels} />
         ) : timetablesError && timetables.length === 0 ? (
           <LoadError onRetry={() => void dispatch(fetchTimetables())} />
         ) : activeTimetables.length === 0 && !timetablesLoading ? (
@@ -359,11 +335,11 @@ export default function CalendarMonthPage() {
                       {loading && isWeekday && day.isCurrentMonth && (
                         <div className="animate-pulse space-y-1.5">
                           <div className="flex gap-1">
-                            <div className="h-2 w-2 rounded-full bg-muted" />
-                            <div className="h-2 w-2 rounded-full bg-muted/70" />
+                            <div className="h-2 w-2 rounded-full bg-muted-foreground/15" />
+                            <div className="h-2 w-2 rounded-full bg-muted-foreground/10" />
                           </div>
-                          <div className="h-2.5 w-14 rounded bg-muted" />
-                          <div className="h-2 w-10 rounded bg-muted/60" />
+                          <div className="h-2.5 w-14 rounded bg-muted-foreground/15" />
+                          <div className="h-2 w-10 rounded bg-muted-foreground/10" />
                         </div>
                       )}
 

@@ -37,6 +37,7 @@ import {
 import { useAuth } from "@clerk/nextjs";
 import type { Editor } from "@tiptap/react";
 import { CheckCircle2, Crown, FileX, Loader2 } from "lucide-react";
+import { DocumentEditorSkeleton } from "@/components/document-editor/DocumentEditorSkeleton";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -66,7 +67,6 @@ interface ChatMessage {
 interface DocumentEditorProps {
   documentId: string;
   defaultTitle?: string;
-  loadingMessage?: string;
   generateMessage?: string;
   chatTitle?: string;
   chatPlaceholder?: string;
@@ -204,7 +204,6 @@ function repairLeakedImageSegmentTokens(
 export default function DocumentEditor({
   documentId,
   defaultTitle,
-  loadingMessage,
   chatTitle,
   chatPlaceholder,
   onGenerationComplete,
@@ -212,7 +211,6 @@ export default function DocumentEditor({
   const t = useTranslations("editor.documentEditor");
   const tChat = useTranslations("editor.aiChatPanel");
   const resolvedDefaultTitle = defaultTitle ?? t("defaultTitle");
-  const resolvedLoadingMessage = loadingMessage ?? t("loadingMessage");
   const resolvedChatTitle = chatTitle ?? tChat("defaultTitle");
   const resolvedChatPlaceholder = chatPlaceholder ?? tChat("defaultPlaceholder");
   const router = useRouter();
@@ -1320,18 +1318,7 @@ export default function DocumentEditor({
     }
   }, [handleTrackedAutosave, setContent]);
 
-  if (isLoading && !isGenerating) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px] w-full">
-        <div className="flex items-center space-x-2">
-          <Loader2 className="w-6 h-6 animate-spin text-primary" />
-          <span className="text-lg text-muted-foreground">
-            {resolvedLoadingMessage}
-          </span>
-        </div>
-      </div>
-    );
-  }
+  if (isLoading && !isGenerating) return <DocumentEditorSkeleton />;
 
   if (!activeDocument?.id && !isGenerating) {
     return (

@@ -235,7 +235,6 @@ const NavMenuItem = memo(function NavMenuItem({
         href={item.href}
         onClick={onClick}
         className="w-full"
-        prefetch={false}
       >
         <SidebarMenuButton
           isActive={isActive}

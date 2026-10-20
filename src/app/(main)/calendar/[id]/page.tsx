@@ -1,5 +1,7 @@
 "use client";
 
+import ClassDetailLoading from "./loading";
+import { WeekSlotListSkeleton } from "@/components/calendar/ClassListSkeleton";
 import { formatClassName } from "@/shared/utils/className";
 import { hasTopic, isVisibleSlot } from "@/shared/utils/lessonTopic";
 import { Badge } from "@/components/ui/badge";
@@ -510,7 +512,7 @@ export default function CalendarViewPage() {
 
   const timetableColor = currentTimetable?.color ?? "#7F77DD";
 
-  if (!featuresLoaded) return null;
+  if (!featuresLoaded) return <ClassDetailLoading />;
   if (!enabled)
     return (
       <FeatureUnavailable
@@ -592,9 +594,7 @@ export default function CalendarViewPage() {
 
       {/* Week slot list */}
       {isSlotsLoading ? (
-        <div className="py-12 text-center text-muted-foreground">
-          <Loader2 className="mx-auto h-6 w-6 animate-spin" />
-        </div>
+        <WeekSlotListSkeleton />
       ) : currentWeekSlots.length === 0 ? (
         nearestWeekIso ? (
           <EmptyState

@@ -1,4 +1,6 @@
 "use client";
+import NewClassLoading from "./loading";
+import { SkeletonRows } from "@/components/ui/page-skeleton";
 import { MAX_LENGTHS } from "@/shared/config/constants";
 import { AiDisclaimer } from "@/components/ui/ai-disclaimer";
 
@@ -257,9 +259,7 @@ function StepSelectPlan({
         />
       )}
       {loading ? (
-        <div className="py-8 text-center">
-          <Loader2 className="mx-auto h-5 w-5 animate-spin text-muted-foreground" />
-        </div>
+        <SkeletonRows rows={3} />
       ) : failed ? (
         <LoadError onRetry={load} />
       ) : plans.length === 0 ? (
@@ -887,7 +887,7 @@ function CalendarNewPageContent() {
       .catch(() => toast.error(tErrors("loadPlan")));
   }, [searchParams, tErrors, handlePlanSelect]);
 
-  if (!featuresLoaded) return null;
+  if (!featuresLoaded) return <NewClassLoading />;
   if (!enabled)
     return (
       <FeatureUnavailable

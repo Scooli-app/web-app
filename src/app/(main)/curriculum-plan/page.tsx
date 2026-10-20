@@ -1,5 +1,7 @@
 "use client";
 
+import CurriculumPlansLoading from "./loading";
+import { SkeletonRows } from "@/components/ui/page-skeleton";
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -10,7 +12,7 @@ import { useFeatureAccess } from "@/components/feature/useFeatureAccess";
 import { FeatureUnavailable } from "@/components/feature/FeatureUnavailable";
 import { Routes, type Document } from "@/shared/types";
 import { getDocuments } from "@/services/api/document.service";
-import { CalendarDays, ChevronRight, Loader2, Sparkles, Upload } from "lucide-react";
+import { CalendarDays, ChevronRight, Sparkles, Upload } from "lucide-react";
 import { translateSubject } from "@/components/document-creation/constants";
 import { toIntlLocale } from "@/shared/utils/calendar";
 import { isSupportedLocale, defaultLocale } from "@/i18n/locales";
@@ -42,7 +44,7 @@ export default function CurriculumPlanLandingPage() {
     if (enabled) loadPlans();
   }, [enabled, loadPlans]);
 
-  if (!featuresLoaded) return null;
+  if (!featuresLoaded) return <CurriculumPlansLoading />;
   if (!enabled)
     return (
       <FeatureUnavailable
@@ -106,9 +108,7 @@ export default function CurriculumPlanLandingPage() {
         <h2 className="text-base font-semibold">{t("existingTitle")}</h2>
 
         {plansLoading ? (
-          <div className="flex items-center justify-center py-10">
-            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-          </div>
+          <SkeletonRows rows={5} />
         ) : plansFailed ? (
           <LoadError onRetry={loadPlans} />
         ) : plans.length === 0 ? (

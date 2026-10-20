@@ -1,5 +1,6 @@
 "use client";
 
+import { Skeleton } from "@/components/ui/skeleton";
 import { CheckInStrip } from "@/components/dashboard/CheckInStrip";
 import { FocusDayList } from "@/components/dashboard/FocusDayList";
 import { LessonDetailBlock } from "@/components/dashboard/LessonDetailBlock";
@@ -329,14 +330,7 @@ export function YourWeekCard() {
       {failed ? (
         <LoadError message={t("error")} onRetry={() => setAttempt((n) => n + 1)} />
       ) : !week ? (
-        <div className="space-y-3" aria-hidden>
-          <div className="h-28 animate-pulse rounded-xl bg-muted/60" />
-          <div className="grid grid-cols-3 gap-2 lg:grid-cols-6">
-            {[0, 1, 2, 3, 4, 5].map((i) => (
-              <div key={i} className="h-20 animate-pulse rounded-xl bg-muted/40" />
-            ))}
-          </div>
-        </div>
+        <WeekBodySkeleton />
       ) : hasNoClasses ? (
         <div className="py-6 text-center">
           <p className="text-sm text-muted-foreground">{t("empty")}</p>
@@ -440,4 +434,28 @@ function weekStartOf(iso: string): string {
   const d = new Date(`${iso}T00:00:00`);
   const offset = (d.getDay() + 6) % 7;
   return addDaysIso(iso, -offset);
+}
+
+/** The focus lesson + "A seguir" strip while the week loads (also used by the dashboard route skeleton). */
+export function WeekBodySkeleton() {
+  return (
+    <div className="space-y-3" aria-hidden>
+      <div className="space-y-3 rounded-xl bg-background p-3">
+        <Skeleton className="h-4 w-40" />
+        <Skeleton className="h-6 w-56" />
+        <div className="space-y-1.5 pl-5">
+          <Skeleton className="h-4 w-3/5" />
+          <Skeleton className="h-4 w-2/5" />
+          <Skeleton className="h-4 w-1/2" />
+        </div>
+        <div className="flex gap-1.5">
+          {["w-32", "w-28", "w-20", "w-20"].map((w, i) => (
+            <Skeleton key={i} className={`h-8 rounded-full ${w}`} />
+          ))}
+        </div>
+      </div>
+      <Skeleton className="h-4 w-16" />
+      <Skeleton className="h-[99px] rounded-xl" />
+    </div>
+  );
 }

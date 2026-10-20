@@ -1,5 +1,6 @@
 "use client";
 
+import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -121,8 +122,8 @@ export function VocationalCourseCard({
           <p className="text-sm text-destructive">{t("unitsError")}</p>
         ) : !units ? (
           <div className="space-y-2" aria-hidden>
-            <div className="h-9 animate-pulse rounded-lg bg-muted" />
-            <div className="h-24 animate-pulse rounded-lg bg-muted" />
+            <Skeleton className="h-9 rounded-lg" />
+            <Skeleton className="h-24 rounded-lg" />
           </div>
         ) : units.length === 0 ? (
           <p className="text-sm text-muted-foreground">{t("noUnitsInCourse")}</p>

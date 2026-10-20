@@ -1,5 +1,6 @@
 {
   "common": {
+    "loading": "Loading…",
     "selectDate": "Pick a date",
     "confirmationDialog": {
       "defaultTitle": "Are you sure?",
@@ -2875,6 +2876,7 @@
     }
   },
   "layout": {
+    "preparingAccount": "Getting your account ready",
     "themeToggle": {
       "srLabel": "Change theme",
       "light": "Light",

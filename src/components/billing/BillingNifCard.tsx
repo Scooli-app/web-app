@@ -1,5 +1,6 @@
 "use client";
 
+import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { LoadError } from "@/components/ui/load-error";
 import { Input } from "@/components/ui/input";
@@ -96,8 +97,8 @@ export function BillingNifCard() {
 
       {isLoading ? (
         <div className="space-y-4">
-          <div className="h-4 bg-muted rounded-lg w-40 animate-pulse" />
-          <div className="h-9 bg-muted rounded-md w-full max-w-xs animate-pulse" />
+          <Skeleton className="h-4 rounded-lg w-40" />
+          <Skeleton className="h-9 rounded-md w-full max-w-xs" />
         </div>
       ) : loadFailed ? (
         <LoadError message={tErrors("nifLoadFailed")} onRetry={retryLoad} />

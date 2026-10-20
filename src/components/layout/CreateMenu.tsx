@@ -27,7 +27,11 @@ export function CreateMenu({ onNavigate }: { onNavigate?: () => void }) {
       <SidebarMenuItem>
         <SidebarMenuButton
           aria-expanded={expanded}
-          onClick={() => setExpanded((v) => !v)}
+          onClick={() => {
+            // Warm the routes on open so the click below lands instantly.
+            if (!expanded) actions.forEach((a) => router.prefetch(a.route));
+            setExpanded((v) => !v);
+          }}
           className="h-10 px-4 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
         >
           <Plus className="h-4 w-4" />

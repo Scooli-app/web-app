@@ -1,5 +1,6 @@
 {
   "common": {
+    "loading": "A carregar…",
     "selectDate": "Seleciona uma data",
     "confirmationDialog": {
       "defaultTitle": "Tens a certeza?",
@@ -2875,6 +2876,7 @@
     }
   },
   "layout": {
+    "preparingAccount": "A preparar a tua conta",
     "themeToggle": {
       "srLabel": "Alterar tema",
       "light": "Claro",

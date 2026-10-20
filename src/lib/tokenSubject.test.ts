@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getTokenSubject } from "./tokenSubject";
+import { getTokenOrgId, getTokenSubject } from "./tokenSubject";
 
 function base64Url(value: string): string {
   return Buffer.from(value, "utf8").toString("base64url");
@@ -31,5 +31,14 @@ describe("getTokenSubject", () => {
     expect(getTokenSubject("not-a-jwt")).toBeNull();
     expect(getTokenSubject("a.%%%.c")).toBeNull();
     expect(getTokenSubject(fakeJwt({ sub: 42 }))).toBeNull();
+  });
+});
+
+describe("getTokenOrgId", () => {
+  it("reads org_id, falls back to the v2 o.id claim, and is null without an org", () => {
+    expect(getTokenOrgId(fakeJwt({ org_id: "org_1" }))).toBe("org_1");
+    expect(getTokenOrgId(fakeJwt({ o: { id: "org_2" } }))).toBe("org_2");
+    expect(getTokenOrgId(fakeJwt({ sub: "user_a" }))).toBeNull();
+    expect(getTokenOrgId("not-a-jwt")).toBeNull();
   });
 });

@@ -1,5 +1,6 @@
 "use client";
 
+import CalendarLoading from "./loading";
 import { toast } from "sonner";
 import { hasTopic, isListableSlot, isVisibleSlot } from "@/shared/utils/lessonTopic";
 import { useAuth } from "@clerk/nextjs";
@@ -68,6 +69,8 @@ import { SlotDialog } from "@/components/calendar/SlotDialog";
 import { TeachingMarkBadge } from "@/components/calendar/TeachingMarkBadge";
 import { formatClassName } from "@/shared/utils/className";
 import { SlotSkeleton } from "@/components/calendar/SlotSkeleton";
+import { Skeleton } from "@/components/ui/skeleton";
+import { CalendarGridSkeleton, EVEN_WEEK_COLUMNS, NARROW_WEEKEND_COLUMNS } from "@/components/calendar/CalendarGridSkeleton";
 import type { SlotWithTimetable, DayMap } from "@/shared/types/calendar";
 import type { CheckInRecord } from "@/shared/types/check-in";
 import { teachingMark, type SlotCheckInAnswer } from "@/shared/utils/teachingStatus";
@@ -78,79 +81,6 @@ import { isSupportedLocale, defaultLocale } from "@/i18n/locales";
 // ─────────────────────── Local helpers ───────────────────────────────────────
 
 const STATUS_CONFIG = SLOT_STATUS_CONFIG;
-
-/**
- * Full week-grid skeleton shown while timetables are still loading.
- * Uses the real week-day dates so it looks contextual, not generic.
- */
-/** School days get the width; the (usually empty) weekend gets two narrow columns. */
-const NARROW_WEEKEND_COLUMNS = "repeat(5, minmax(0, 1fr)) repeat(2, minmax(0, 0.35fr))";
-const EVEN_WEEK_COLUMNS = "repeat(7, minmax(0, 1fr))";
-
-function CalendarGridSkeleton({
-  weekDays,
-  today,
-  dayLabels,
-}: {
-  weekDays: Date[];
-  today: string;
-  dayLabels: string[];
-}) {
-  return (
-    <div className="overflow-x-auto rounded-lg border border-border w-full">
-      <div className="min-w-[640px] w-full">
-        {/* Real day headers */}
-        <div
-          className="grid divide-x divide-border border-b bg-muted/20"
-          style={{ gridTemplateColumns: NARROW_WEEKEND_COLUMNS }}
-        >
-          {weekDays.map((day, i) => {
-            const iso = toIso(day);
-            const isToday = iso === today;
-            return (
-              <div
-                key={iso}
-                className={`px-2 py-2 text-center ${isToday ? "bg-primary/5" : ""}`}
-              >
-                <p
-                  className={`text-xs font-semibold uppercase tracking-wider ${
-                    isToday ? "text-primary" : "text-muted-foreground"
-                  }`}
-                >
-                  {i >= 5 ? dayLabels[i].slice(0, 3) : dayLabels[i]}
-                </p>
-                <div className="mt-0.5 flex justify-center">
-                  <span
-                    className={`flex h-7 w-7 items-center justify-center text-sm font-bold leading-none ${
-                      isToday
-                        ? "rounded-full bg-primary text-primary-foreground"
-                        : "text-foreground"
-                    }`}
-                  >
-                    {day.getDate()}
-                  </span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-        {/* Skeleton slot cells — only weekdays (index 0–4) get cards */}
-        <div className="grid divide-x divide-border" style={{ gridTemplateColumns: NARROW_WEEKEND_COLUMNS }}>
-          {weekDays.map((day, i) => (
-            <div key={toIso(day)} className="min-h-[180px] p-2 space-y-1.5">
-              {i < 5 && (
-                <>
-                  <SlotSkeleton />
-                  {i % 3 !== 1 && <SlotSkeleton />}
-                </>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // ─────────────────────── Lesson card ─────────────────────────────────────────
 
@@ -296,7 +226,7 @@ function LessonCard({
 /** Suspense wrapper required by useSearchParams in Next.js App Router. */
 export default function CalendarPage() {
   return (
-    <Suspense>
+    <Suspense fallback={<CalendarLoading />}>
       <CalendarPageInner />
     </Suspense>
   );
@@ -925,7 +855,7 @@ function CalendarPageInner() {
   const weekIsEmpty =
     !isSlotsLoading && weekDays.every((day) => (dayMap.get(toIso(day)) ?? []).length === 0);
 
-  if (!featuresLoaded) return null;
+  if (!featuresLoaded) return <CalendarLoading />;
   if (!enabled)
     return (
       <FeatureUnavailable
@@ -1087,9 +1017,9 @@ function CalendarPageInner() {
           <div className="-mx-1 flex min-h-[28px] items-center gap-1.5 overflow-x-auto px-1 pb-0.5 [scrollbar-width:none]">
             {isLoadingTimetables ? (
               <>
-                <div className="h-7 w-20 animate-pulse rounded-full bg-muted" />
-                <div className="h-7 w-28 animate-pulse rounded-full bg-muted" />
-                <div className="h-7 w-24 animate-pulse rounded-full bg-muted" />
+                <Skeleton className="h-7 w-20 rounded-full" />
+                <Skeleton className="h-7 w-28 rounded-full" />
+                <Skeleton className="h-7 w-24 rounded-full" />
               </>
             ) : (
               <>
