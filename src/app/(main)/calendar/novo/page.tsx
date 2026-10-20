@@ -91,6 +91,7 @@ import { openUpgradeModalForReason } from "@/store/ui/uiSlice";
 import type { PlanLimits } from "@/shared/types/plan-limits";
 import { isSupportedLocale, defaultLocale, type Locale } from "@/i18n/locales";
 import { toIntlLocale } from "@/shared/utils/calendar";
+import { isReadyPlan } from "@/shared/utils/curriculumPlans";
 
 // ─────────────────────── Types ────────────────────────────────────────────────
 
@@ -229,7 +230,8 @@ function StepSelectPlan({
     setLoading(true);
     setFailed(false);
     getDocuments({ page: 1, limit: 50, filters: { documentType: "curriculum_plan" } })
-      .then((res) => setPlans(res.documents ?? []))
+      // Only a finished plan can be read for a turma: one still generating, or one that failed, has no content yet.
+      .then((res) => setPlans((res.documents ?? []).filter(isReadyPlan)))
       .catch(() => setFailed(true))
       .finally(() => setLoading(false));
   }, []);
