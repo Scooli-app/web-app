@@ -286,8 +286,9 @@ export default function CalendarViewPage() {
     [dispatch]
   );
 
-  // A check-in saved on the previous lesson (asked at the top of the dialog), or a reinforcement worksheet or
-  // carry-over started after a check-in: the progress panel, the next steps and the lessons reload from the server.
+  // A check-in saved on the previous lesson (asked at the top of the dialog), a reinforcement worksheet or
+  // carry-over started after a check-in, or the following lessons moved after "não houve aula": the progress
+  // panel, the next steps and the lessons reload from the server.
   const reloadClassState = useCallback(() => {
     setProgressRefreshKey((key) => key + 1);
     dispatch(fetchLessons({ timetableId: id }));
@@ -478,9 +479,12 @@ export default function CalendarViewPage() {
     }
   }, [id, currentWeekIso, dispatch, getToken, currentTimetable?.subject, currentTimetable?.gradeLevel]);
 
+  // The type decides what the progress panel counts (e.g. "Próximo teste") and what the next steps offer.
   const handleTypeChange = useCallback(
     (slotOrWrapped: SlotWithTimetable | LessonSlot, type: LessonSlotType) => {
-      dispatch(updateLesson({ timetableId: id, lessonId: slotOrWrapped.id, params: { slotType: type } }));
+      void dispatch(updateLesson({ timetableId: id, lessonId: slotOrWrapped.id, params: { slotType: type } })).then(
+        () => setProgressRefreshKey((key) => key + 1)
+      );
     },
     [dispatch, id]
   );
@@ -652,7 +656,7 @@ export default function CalendarViewPage() {
         onTypeChange={handleTypeChange}
         onTitleChange={handleTitleChange}
         onCheckedIn={handleCheckedIn}
-        onLessonsShifted={() => dispatch(fetchLessons({ timetableId: id }))}
+        onLessonsShifted={reloadClassState}
         onPreviousCheckedIn={reloadClassState}
         onFollowUpStarted={reloadClassState}
       />
