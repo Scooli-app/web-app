@@ -129,6 +129,12 @@ function SlotCard({ slot, color, onOpen }: SlotCardProps) {
             </p>
           )}
         </div>
+        {/* ENG-247: a regeneration proposed a new topic for this prepared lesson; the dialog shows it. */}
+        {slot.pendingProposal && (
+          <span className="shrink-0 rounded bg-primary/10 px-1.5 py-0.5 text-xs font-medium text-primary">
+            {t("slotDialog.proposal.badge")}
+          </span>
+        )}
         {mark && <TeachingMarkBadge mark={mark} className="text-sm" />}
         {!isHoliday && (
           <Badge className={`shrink-0 gap-1 border text-xs ${cfg.badgeCls}`}>
