@@ -26,6 +26,7 @@
  */
 "use client";
 
+import { PresentationEditorSkeleton } from "@/components/document-editor-v2/PresentationEditorSkeleton";
 import AIChatPanel from "@/components/document-editor/AIChatPanel";
 import { AiDisclaimer } from "@/components/ui/ai-disclaimer";
 import { GenerationProgress } from "@/components/blocks/GenerationProgress";
@@ -440,18 +441,6 @@ function makeMathElement(tex: string): CanvasMathElement {
     display: true,
     blockId: id,
   };
-}
-
-function PresentationEditorLoadingState() {
-  const t = useTranslations("editor.blockEditor");
-  return (
-    <div className="flex min-h-[400px] w-full items-center justify-center">
-      <div className="flex items-center gap-2">
-        <Loader2 className="h-6 w-6 animate-spin text-primary" />
-        <span className="text-lg text-muted-foreground">{t("loadingPresentation")}</span>
-      </div>
-    </div>
-  );
 }
 
 function getPresentSlideIndex(slides: CanvasSlide[], activeSlideId: string | null): number {
@@ -1863,7 +1852,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
   /* ── Render branches ─────────────────────────────────────────────────── */
   const isFetchingThisDoc = loadingDocumentId === documentId;
   if (!document && (isFetchingThisDoc || isLoading)) {
-    return <PresentationEditorLoadingState />;
+    return <PresentationEditorSkeleton />;
   }
   if (!document) {
     return (
@@ -1904,7 +1893,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
   }
   if (!canvas) {
     if (isFetchingThisDoc || isLoading) {
-      return <PresentationEditorLoadingState />;
+      return <PresentationEditorSkeleton />;
     }
     return (
       <div className="mx-auto max-w-md p-8 text-center">

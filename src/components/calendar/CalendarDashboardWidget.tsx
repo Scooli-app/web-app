@@ -252,14 +252,14 @@ export function CalendarDashboardWidget() {
             <div
               key={i}
               className="animate-pulse flex items-center gap-3 rounded-lg border border-border px-3 py-2.5"
-              style={{ borderLeft: "3px solid hsl(var(--muted))" }}
+              style={{ borderLeft: "3px solid color-mix(in srgb, var(--muted-foreground) 15%, transparent)" }}
             >
-              <div className="h-2 w-2 rounded-full bg-muted shrink-0" />
+              <div className="h-2 w-2 rounded-full bg-muted-foreground/15 shrink-0" />
               <div className="flex-1 space-y-1.5">
-                <div className="h-3 rounded bg-muted w-3/5" />
-                <div className="h-2.5 rounded bg-muted/60 w-2/5" />
+                <div className="h-3 rounded bg-muted-foreground/15 w-3/5" />
+                <div className="h-2.5 rounded bg-muted-foreground/10 w-2/5" />
               </div>
-              <div className="h-5 w-16 rounded-full bg-muted shrink-0" />
+              <div className="h-5 w-16 rounded-full bg-muted-foreground/15 shrink-0" />
             </div>
           ))}
         </div>

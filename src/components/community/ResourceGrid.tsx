@@ -5,6 +5,8 @@
 
 "use client";
 
+import { Skeleton } from "@/components/ui/skeleton";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Routes } from "@/shared/types";
@@ -50,28 +52,7 @@ export function ResourceGrid({
 }: ResourceGridProps) {
   const t = useTranslations("community.resourceGrid");
 
-  if (isLoading) {
-    return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-        {Array.from({ length: 6 }, (_, i) => (
-          <div key={i} className="animate-pulse rounded-xl border border-border bg-card p-4 sm:p-5 h-52">
-            <div className="h-4 bg-muted rounded-md w-3/4 mb-3" />
-            <div className="h-3 bg-muted rounded-md w-full mb-1.5" />
-            <div className="h-3 bg-muted rounded-md w-2/3 mb-4" />
-            <div className="flex gap-2 mb-4">
-              <div className="h-5 bg-muted rounded-full w-16" />
-              <div className="h-5 bg-muted rounded-full w-20" />
-              <div className="h-5 bg-muted rounded-full w-14" />
-            </div>
-            <div className="flex gap-2 mt-auto pt-3 border-t border-border">
-              <div className="h-8 bg-muted rounded-md flex-1" />
-              <div className="h-8 bg-muted rounded-md flex-1" />
-            </div>
-          </div>
-        ))}
-      </div>
-    );
-  }
+  if (isLoading) return <ResourceGridSkeleton />;
 
   if (resources.length === 0) {
     return hasActiveFilters && onClearFilters ? (
@@ -159,6 +140,41 @@ export function ResourceGrid({
           </div>
         </div>
       )}
+    </div>
+  );
+}
+/** Same shell as ResourceCard: accent strip, type chip, title, tags, author row, two buttons. */
+function ResourceCardSkeleton() {
+  return (
+    <Card className="flex h-full flex-col overflow-hidden border border-border">
+      <Skeleton className="h-1 w-full rounded-none" />
+      <div className="flex flex-1 flex-col p-4 sm:p-5">
+        <Skeleton className="mb-3 h-5 w-24 rounded-full" />
+        <Skeleton className="mb-2 h-5 w-4/5" />
+        <Skeleton className="mb-4 h-5 w-1/2" />
+        <div className="mb-4 mt-auto flex gap-1.5">
+          <Skeleton className="h-5 w-12" />
+          <Skeleton className="h-5 w-24" />
+        </div>
+        <div className="mb-3 flex items-center justify-between border-t border-border pt-3">
+          <Skeleton className="h-4 w-24" />
+          <Skeleton className="h-4 w-8" />
+        </div>
+        <div className="flex gap-2">
+          <Skeleton className="h-8 flex-1" />
+          <Skeleton className="h-8 flex-1" />
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+export function ResourceGridSkeleton() {
+  return (
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3" aria-hidden>
+      {Array.from({ length: 6 }, (_, i) => (
+        <ResourceCardSkeleton key={i} />
+      ))}
     </div>
   );
 }

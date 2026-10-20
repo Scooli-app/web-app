@@ -1,5 +1,6 @@
 "use client";
 
+import DashboardLoading from "./loading";
 import { QuickCreateCard } from "@/components/dashboard/QuickCreateCard";
 import { useVisibleDocTypeActions } from "@/components/document-creation/documentTypeActions";
 import { LoadError } from "@/components/ui/load-error";
@@ -144,24 +145,8 @@ function DashboardContent() {
 
 export default function DashboardPage() {
   return (
-    <Suspense fallback={<DashboardSkeleton />}>
+    <Suspense fallback={<DashboardLoading />}>
       <DashboardContent />
     </Suspense>
-  );
-}
-
-function DashboardSkeleton() {
-  return (
-    <PageContainer size="7xl" contentClassName="animate-pulse py-1 sm:py-2">
-      <div className="mb-6 sm:mb-8">
-        <div className="mb-2 h-8 w-48 rounded-lg bg-muted" />
-        <div className="h-4 w-72 rounded-lg bg-muted" />
-      </div>
-      <div className="grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-2">
-        <div className="md:col-span-2 h-20 rounded-2xl border border-border bg-card shadow-sm" />
-        <div className="h-48 rounded-2xl border border-border bg-card shadow-sm" />
-        <div className="h-48 rounded-2xl border border-border bg-card shadow-sm" />
-      </div>
-    </PageContainer>
   );
 }

@@ -1,5 +1,7 @@
 "use client";
 
+import ClassesLoading from "./loading";
+import { ClassListSkeleton } from "@/components/calendar/ClassListSkeleton";
 import { MAX_LENGTHS } from "@/shared/config/constants";
 import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
@@ -443,7 +445,7 @@ export default function SequenciasPage() {
     }
   };
 
-  if (!featuresLoaded) return null;
+  if (!featuresLoaded) return <ClassesLoading />;
   if (!enabled)
     return (
       <FeatureUnavailable
@@ -477,9 +479,7 @@ export default function SequenciasPage() {
       </div>
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-16">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-        </div>
+        <ClassListSkeleton />
       ) : timetables.length === 0 && error ? (
         <LoadError onRetry={() => dispatch(fetchTimetables())} />
       ) : timetables.length === 0 ? (

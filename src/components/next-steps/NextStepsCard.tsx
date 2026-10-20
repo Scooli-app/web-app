@@ -234,9 +234,9 @@ function NextStepsSkeleton() {
   const t = useTranslations("nextSteps");
   return (
     <div aria-busy="true" aria-label={t("loading")} className="animate-pulse rounded-xl border bg-card p-3 sm:p-4">
-      <div className="h-3 w-28 rounded bg-muted" />
-      <div className="mt-3 h-4 w-3/4 rounded bg-muted" />
-      <div className="mt-2 h-4 w-1/2 rounded bg-muted" />
+      <div className="h-3 w-28 rounded bg-muted-foreground/15" />
+      <div className="mt-3 h-4 w-3/4 rounded bg-muted-foreground/15" />
+      <div className="mt-2 h-4 w-1/2 rounded bg-muted-foreground/15" />
     </div>
   );
 }

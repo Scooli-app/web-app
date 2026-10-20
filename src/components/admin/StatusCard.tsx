@@ -78,8 +78,8 @@ export default function StatusCard() {
           </span>
         </div>
         <div className="animate-pulse">
-          <div className="h-8 bg-muted rounded w-24 mb-2" />
-          <div className="h-4 bg-muted rounded w-32" />
+          <div className="h-8 bg-muted-foreground/15 rounded w-24 mb-2" />
+          <div className="h-4 bg-muted-foreground/15 rounded w-32" />
         </div>
       </div>
     );
@@ -170,8 +170,8 @@ export default function StatusCard() {
         </>
       ) : loading ? (
         <div className="animate-pulse">
-          <div className="h-8 bg-muted rounded w-20 mb-2" />
-          <div className="h-4 bg-muted rounded w-32" />
+          <div className="h-8 bg-muted-foreground/15 rounded w-20 mb-2" />
+          <div className="h-4 bg-muted-foreground/15 rounded w-32" />
         </div>
       ) : (
         <>

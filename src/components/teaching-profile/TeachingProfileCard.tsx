@@ -1,5 +1,6 @@
 "use client";
 
+import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { LoadError } from "@/components/ui/load-error";
 import { ChoiceChip } from "@/components/ui/choice-chip";
@@ -179,11 +180,11 @@ export function TeachingProfileCard() {
   if (isLoading) {
     return (
       <div className="rounded-2xl border border-border bg-card p-4 shadow-md sm:p-6 md:p-8">
-        <div className="mb-4 h-6 w-48 animate-pulse rounded-lg bg-muted" />
-        <div className="mb-6 h-4 w-72 animate-pulse rounded-lg bg-muted" />
+        <Skeleton className="mb-4 h-6 w-48 rounded-lg" />
+        <Skeleton className="mb-6 h-4 w-72 rounded-lg" />
         <div className="grid gap-3 sm:grid-cols-2">
-          <div className="h-20 animate-pulse rounded-xl bg-muted" />
-          <div className="h-20 animate-pulse rounded-xl bg-muted" />
+          <Skeleton className="h-20 rounded-xl" />
+          <Skeleton className="h-20 rounded-xl" />
         </div>
       </div>
     );

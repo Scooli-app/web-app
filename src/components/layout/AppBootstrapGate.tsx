@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import {
   fetchFeatureFlags,
   resetFeaturesState,
@@ -65,6 +66,7 @@ async function getFreshClerkToken(getToken: ClerkGetToken): Promise<string | nul
 }
 
 export function AppBootstrapGate() {
+  const t = useTranslations("layout");
   const dispatch = useAppDispatch();
   const {
     getToken,
@@ -342,7 +344,7 @@ export function AppBootstrapGate() {
 
           <div className="mt-6 space-y-2 text-center">
             <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-              A preparar a tua conta
+              {t("preparingAccount")}
             </h1>
           </div>
         </div>

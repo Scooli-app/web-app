@@ -1,5 +1,6 @@
 "use client";
 
+import { DocumentSectionsSkeleton } from "@/components/ui/document-card-skeleton";
 import { DocumentCard } from "@/components/ui/document-card";
 import {
   NO_CLASS_FILTER,
@@ -9,7 +10,7 @@ import {
 import { LoadError } from "@/components/ui/load-error";
 import { getDocuments } from "@/services/api/document.service";
 import type { Document } from "@/shared/types";
-import { ChevronRight, Loader2 } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 
@@ -79,12 +80,7 @@ export function DocumentsByClass({ classes, filters, refreshKey, onSeeAll, onDel
   }, [classes, documentType, subject, gradeLevel, search, refreshKey, retryKey, tFilters]);
 
   if (!sections) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="mr-2 h-5 w-5 animate-spin text-primary" />
-        <span className="text-muted-foreground">{t("loadingDocuments")}</span>
-      </div>
-    );
+    return <DocumentSectionsSkeleton />;
   }
 
   // Origin isn't a server filter: it narrows what each section already loaded.

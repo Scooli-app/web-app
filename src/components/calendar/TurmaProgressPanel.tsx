@@ -124,13 +124,13 @@ function TurmaProgressSkeleton() {
       aria-label={t("loadingLabel")}
       className="animate-pulse space-y-4 rounded-xl border bg-card p-4"
     >
-      <div className="h-10 w-28 rounded bg-muted" />
-      <div className="h-2 w-full rounded-full bg-muted" />
+      <div className="h-10 w-28 rounded bg-muted-foreground/15" />
+      <div className="h-2 w-full rounded-full bg-muted-foreground/15" />
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <div className="h-12 rounded bg-muted" />
-        <div className="h-12 rounded bg-muted" />
-        <div className="h-12 rounded bg-muted" />
-        <div className="h-12 rounded bg-muted" />
+        <div className="h-12 rounded bg-muted-foreground/15" />
+        <div className="h-12 rounded bg-muted-foreground/15" />
+        <div className="h-12 rounded bg-muted-foreground/15" />
+        <div className="h-12 rounded bg-muted-foreground/15" />
       </div>
     </div>
   );

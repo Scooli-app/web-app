@@ -1,5 +1,6 @@
 "use client";
 
+import { SkeletonRows } from "@/components/ui/page-skeleton";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/badge";
@@ -129,7 +130,7 @@ export default function SchoolMembersPage() {
               </Button>
             </div>
           ) : loading && members.length === 0 ? (
-            <p className="text-sm text-muted-foreground">{t("members.loading")}</p>
+            <SkeletonRows rows={3} />
           ) : members.length === 0 ? (
             <EmptyState
               size="inline"

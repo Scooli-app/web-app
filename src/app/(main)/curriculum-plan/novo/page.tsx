@@ -1,4 +1,5 @@
 "use client";
+import NewCurriculumPlanLoading from "./loading";
 import { AiDisclaimer } from "@/components/ui/ai-disclaimer";
 
 import { Button } from "@/components/ui/button";
@@ -291,7 +292,7 @@ export default function CurriculumPlanNewPage() {
     }
   }
 
-  if (!featuresLoaded) return null;
+  if (!featuresLoaded) return <NewCurriculumPlanLoading />;
   if (!enabled)
     return (
       <FeatureUnavailable

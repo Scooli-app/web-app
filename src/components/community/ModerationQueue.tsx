@@ -168,11 +168,11 @@ export function ModerationQueue() {
       <div className="space-y-4">
         {Array.from({ length: 5 }, (_, i) => (
           <Card key={i} className="animate-pulse p-4">
-            <div className="mb-2 h-6 w-3/4 rounded bg-muted" />
-            <div className="mb-4 h-4 w-1/2 rounded bg-muted" />
+            <div className="mb-2 h-6 w-3/4 rounded bg-muted-foreground/15" />
+            <div className="mb-4 h-4 w-1/2 rounded bg-muted-foreground/15" />
             <div className="flex gap-2">
-              <div className="h-8 w-20 rounded bg-muted" />
-              <div className="h-8 w-20 rounded bg-muted" />
+              <div className="h-8 w-20 rounded bg-muted-foreground/15" />
+              <div className="h-8 w-20 rounded bg-muted-foreground/15" />
             </div>
           </Card>
         ))}

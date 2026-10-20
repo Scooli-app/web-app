@@ -1,5 +1,7 @@
 "use client";
 
+import { Skeleton } from "@/components/ui/skeleton";
+import SettingsLoading from "./loading";
 import { BillingNifCard } from "@/components/billing/BillingNifCard";
 import { LanguagePreferences } from "@/components/settings/LanguagePreferences";
 import { PlanningRitualPreferences } from "@/components/settings/PlanningRitualPreferences";
@@ -298,7 +300,7 @@ function SettingsContent() {
     : null;
 
   if (!isUserLoaded) {
-    return <SettingsSkeleton />;
+    return <SettingsLoading />;
   }
 
   return (
@@ -374,9 +376,9 @@ function SettingsContent() {
 
           {isLoadingData ? (
             <div className="space-y-4">
-              <div className="h-6 bg-muted rounded-lg w-48 animate-pulse" />
-              <div className="h-4 bg-muted rounded-lg w-64 animate-pulse" />
-              <div className="h-3 bg-muted rounded-full w-full animate-pulse" />
+              <Skeleton className="h-6 rounded-lg w-48" />
+              <Skeleton className="h-4 rounded-lg w-64" />
+              <Skeleton className="h-3 rounded-full w-full" />
             </div>
           ) : error ? (
             <div className="p-4 bg-destructive/10 rounded-xl">
@@ -717,25 +719,10 @@ function SettingsContent() {
   );
 }
 
-function SettingsSkeleton() {
-  return (
-    <div className="w-full max-w-4xl mx-auto animate-pulse">
-      <div className="mb-8">
-        <div className="h-10 bg-muted rounded-lg w-48 mb-2" />
-        <div className="h-6 bg-muted rounded-lg w-80" />
-      </div>
-      <div className="space-y-6">
-        <div className="bg-card p-8 rounded-2xl shadow-md border border-border h-48" />
-        <div className="bg-card p-8 rounded-2xl shadow-md border border-border h-64" />
-        <div className="bg-card p-8 rounded-2xl shadow-md border border-border h-56" />
-      </div>
-    </div>
-  );
-}
 
 export default function SettingsPage() {
   return (
-    <Suspense fallback={<SettingsSkeleton />}>
+    <Suspense fallback={<SettingsLoading />}>
       <SettingsContent />
     </Suspense>
   );

@@ -1,5 +1,6 @@
 "use client";
 
+import { Skeleton } from "@/components/ui/skeleton";
 import { getTemplates, setDefaultTemplate } from "@/services/api/template.service";
 import type { DocumentTemplate, DocumentType } from "@/shared/types";
 import { LoadError } from "@/components/ui/load-error";
@@ -137,7 +138,7 @@ export function TemplateSection({
   if (isLoading) {
     return (
       <OptionRow label={t("title")}>
-        <div className="h-9 animate-pulse rounded-lg bg-muted" />
+        <Skeleton className="h-9 rounded-lg" />
       </OptionRow>
     );
   }

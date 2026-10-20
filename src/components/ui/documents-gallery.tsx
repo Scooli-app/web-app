@@ -1,5 +1,6 @@
 "use client";
 
+import { DocumentGridSkeleton, DocumentSectionsSkeleton } from "@/components/ui/document-card-skeleton";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { DocumentCard } from "@/components/ui/document-card";
 import { DocumentsByClass } from "@/components/ui/documents-by-class";
@@ -506,13 +507,10 @@ export function DocumentsGallery() {
             onDelete={handleRequestDelete}
             empty={emptyState}
           />
-        ) : (loading && documents.length === 0) || (groupByClass && !classesReady) ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="flex items-center space-x-2">
-              <Loader2 className="w-5 h-5 animate-spin text-primary" />
-              <span className="text-muted-foreground">{t("loadingDocuments")}</span>
-            </div>
-          </div>
+        ) : groupByClass && !classesReady ? (
+          <DocumentSectionsSkeleton />
+        ) : loading && documents.length === 0 ? (
+          <DocumentGridSkeleton count={8} />
         ) : loadFailed && documents.length === 0 ? (
           <LoadError onRetry={() => fetchDocuments(1, true)} />
         ) : filteredDocuments.length === 0 ? (
