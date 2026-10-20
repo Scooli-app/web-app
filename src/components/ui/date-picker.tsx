@@ -51,11 +51,13 @@ export function DatePicker({
           <CalendarIcon className="mr-2 h-4 w-4 shrink-0" />
           <span className="truncate">
             {value
-              ? format.dateTime(value, {
-                  day: "numeric",
-                  month: "long",
-                  year: "numeric",
-                })
+              ? // The value is a calendar day at local midnight. The formatter runs in the app's
+                // time zone (UTC when none is configured), where that instant can fall on the day
+                // before, so format the same day as a UTC date.
+                format.dateTime(
+                  new Date(Date.UTC(value.getFullYear(), value.getMonth(), value.getDate())),
+                  { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }
+                )
               : (placeholder ?? t("selectDate"))}
           </span>
         </Button>
