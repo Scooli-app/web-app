@@ -318,6 +318,9 @@ export function SlotDialog({
   const isExercise = slot.slotType === "EXERCISE";
   const isReview = slot.slotType === "REVIEW";
   const isHoliday = slot.slotType === "HOLIDAY";
+  /** Not held and its content never moved (a shift marks it skipped): moving the next lessons stays on offer. */
+  const canShiftLater =
+    slot.teachingStatus === "not_held" && slot.status !== "skipped" && !isAssessment && !isHoliday;
 
   const handleFollowUp = async () => {
     if (!followUp) return;
@@ -460,6 +463,7 @@ export function SlotDialog({
                 lessonId={slot.id}
                 dialogSlot={slot}
                 onCheckedIn={onPreviousCheckedIn}
+                onShifted={() => (onLessonsShifted ? onLessonsShifted(slot) : onPreviousCheckedIn?.())}
               />
             )}
 
@@ -598,9 +602,16 @@ export function SlotDialog({
                           {tCheckIn(`mark.${checkInMark.key}`)}
                         </span>
                       </p>
-                      <Button variant="outline" size="sm" className="h-8" onClick={() => setCheckInEditing(true)}>
-                        {tCheckIn("changeAnswer")}
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        {canShiftLater && !shiftAsk && (
+                          <Button size="sm" className="h-8" onClick={() => void handleShift()}>
+                            {tCheckIn("shiftLaterAction")}
+                          </Button>
+                        )}
+                        <Button variant="outline" size="sm" className="h-8" onClick={() => setCheckInEditing(true)}>
+                          {tCheckIn("changeAnswer")}
+                        </Button>
+                      </div>
                     </div>
                   ) : (
                     <CheckInCard

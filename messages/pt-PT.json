@@ -150,6 +150,7 @@
     "shiftQuestion": "Mover as aulas seguintes?",
     "shiftAction": "Mover",
     "shiftKeep": "Manter",
+    "shiftLaterAction": "Mover aulas seguintes",
     "shiftedToast": "{count, plural, one {# aula movida} other {# aulas movidas}}",
     "shiftOverflowToast": "Já não cabe no período: {topics}",
     "shiftNothingToast": "Não há aulas seguintes para mover",

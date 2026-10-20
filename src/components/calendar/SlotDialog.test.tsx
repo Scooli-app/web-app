@@ -553,3 +553,58 @@ describe("SlotDialog: a topic proposal for a lesson with documents (ENG-247)", (
     expect(proposalSection()).not.toBeNull();
   });
 });
+
+describe("SlotDialog: moving the following lessons later, for a lesson not held", () => {
+  let container: HTMLDivElement;
+  let root: Root;
+
+  beforeEach(() => {
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    store.enabled = true;
+    container = document.createElement("div");
+    document.body.appendChild(container);
+    root = createRoot(container);
+  });
+
+  afterEach(() => {
+    act(() => root.unmount());
+    container.remove();
+    document.body.innerHTML = "";
+    vi.clearAllMocks();
+  });
+
+  async function renderWith(props: ReturnType<typeof dialogProps>) {
+    await act(async () => {
+      root.render(createElement(SlotDialog, props));
+    });
+  }
+
+  it("offers to move the following lessons when the dialog is reopened on a lesson not held", async () => {
+    vi.mocked(checkInService.shiftFollowing).mockResolvedValue({ shifted: 3, overflow: [] });
+    const props = dialogProps({ slot: checkedAsNotHeld });
+    await renderWith(props);
+
+    const move = buttonWith("shiftLaterAction");
+    if (!move) throw new Error("no move button");
+    await act(async () => {
+      move.click();
+    });
+
+    expect(checkInService.shiftFollowing).toHaveBeenCalledWith("tt", "slot-3");
+    expect(props.onLessonsShifted).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not offer it once the content moved (the lesson is skipped)", async () => {
+    await renderWith(dialogProps({ slot: { ...checkedAsNotHeld, status: "skipped" } as SlotWithTimetable }));
+
+    expect(buttonWith("shiftLaterAction")).toBeUndefined();
+  });
+
+  it("does not offer it for a lesson that was taught", async () => {
+    await renderWith(
+      dialogProps({ slot: { ...checkedAsNotHeld, teachingStatus: "taught" } as unknown as SlotWithTimetable }),
+    );
+
+    expect(buttonWith("shiftLaterAction")).toBeUndefined();
+  });
+});

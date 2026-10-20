@@ -9,6 +9,7 @@ import { selectIsClassStateEnabled } from "@/store/features/selectors";
 import { useAppSelector } from "@/store/hooks";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
+import { useShiftFollowing } from "@/hooks/useShiftFollowing";
 import { buildSubmission, initialOutcomeSelection, needsOutcomeStep } from "@/hooks/checkInQueue";
 import { CheckInOutcomeStep, CheckInResultOptions } from "./CheckInChoices";
 import {
@@ -29,6 +30,8 @@ interface PreviousLessonCheckInProps {
   dialogSlot: TeachingSlotInput;
   /** Fires after the answer is saved, so the turma's progress and the previous lesson's mark can refresh. */
   onCheckedIn?: () => void;
+  /** Fires after the lessons after a not-held previous lesson were moved, so the turma's lessons reload. */
+  onShifted?: () => void;
 }
 
 /**
@@ -36,7 +39,13 @@ interface PreviousLessonCheckInProps {
  * never gates generation. Answering saves a normal check-in on the previous lesson, which the new lesson's
  * generation then reads. Hidden unless `class_state_enabled` is on.
  */
-export function PreviousLessonCheckIn({ timetableId, lessonId, dialogSlot, onCheckedIn }: PreviousLessonCheckInProps) {
+export function PreviousLessonCheckIn({
+  timetableId,
+  lessonId,
+  dialogSlot,
+  onCheckedIn,
+  onShifted,
+}: PreviousLessonCheckInProps) {
   const t = useTranslations("previousCheckIn");
   const enabled = useAppSelector(selectIsClassStateEnabled);
   const todayIso = toIso(new Date());
@@ -47,10 +56,14 @@ export function PreviousLessonCheckIn({ timetableId, lessonId, dialogSlot, onChe
   const [saveFailed, setSaveFailed] = useState(false);
   const [outcomeResult, setOutcomeResult] = useState<OutcomeResult | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
+  /** The previous lesson was not held: asks whether to move the lessons after it, as the lesson's own dialog does. */
+  const [shiftAsk, setShiftAsk] = useState(false);
+  const { shift } = useShiftFollowing();
 
   useEffect(() => {
     let cancelled = false;
     setPending(null);
+    setShiftAsk(false);
     setHidden(false);
     setSaved(null);
     setSaveFailed(false);
@@ -78,6 +91,7 @@ export function PreviousLessonCheckIn({ timetableId, lessonId, dialogSlot, onChe
     if (phase) {
       setSaved(phase);
       setSaveFailed(false);
+      setShiftAsk(body.result === "NOT_HELD" && pending.slotType !== "ASSESSMENT");
       onCheckedIn?.();
     } else {
       setSaveFailed(true);
@@ -88,6 +102,14 @@ export function PreviousLessonCheckIn({ timetableId, lessonId, dialogSlot, onChe
     <PreviousLessonCheckInView
       question={pending.topicTitle ? t("questionWithTopic", { topic: pending.topicTitle }) : t("question")}
       saved={saved}
+      shiftAsk={shiftAsk}
+      onShift={() => {
+        setShiftAsk(false);
+        void shift(timetableId, pending.slotId).then((result) => {
+          if (result) onShifted?.();
+        });
+      }}
+      onKeep={() => setShiftAsk(false)}
       saveFailed={saveFailed}
       outcomeResult={outcomeResult}
       outcomes={pending.outcomes}
@@ -120,6 +142,9 @@ export function PreviousLessonCheckIn({ timetableId, lessonId, dialogSlot, onChe
 export function PreviousLessonCheckInView({
   question,
   saved,
+  shiftAsk = false,
+  onShift,
+  onKeep,
   saveFailed,
   outcomeResult,
   outcomes,
@@ -132,6 +157,10 @@ export function PreviousLessonCheckInView({
 }: {
   question: string;
   saved: SavedPhase | null;
+  /** After "Não houve aula" was saved: offers to move the lessons after the previous one. */
+  shiftAsk?: boolean;
+  onShift?: () => void;
+  onKeep?: () => void;
   saveFailed: boolean;
   outcomeResult: OutcomeResult | null;
   outcomes: CheckInOutcome[];
@@ -147,10 +176,27 @@ export function PreviousLessonCheckInView({
   const tc = useTranslations("checkIns");
 
   if (saved) {
+    const savedText = saved === "savedWithContext" ? t("savedWithContext") : t("saved");
+    if (!shiftAsk) {
+      return (
+        <p role="status" className="text-sm text-muted-foreground">
+          {savedText}
+        </p>
+      );
+    }
     return (
-      <p role="status" className="text-sm text-muted-foreground">
-        {saved === "savedWithContext" ? t("savedWithContext") : t("saved")}
-      </p>
+      <div className="flex flex-wrap items-center gap-2 rounded-md border border-primary/25 bg-primary/5 px-3 py-2">
+        <span role="status" className="text-sm text-muted-foreground">
+          {savedText}
+        </span>
+        <span className="text-sm text-foreground">{tc("shiftQuestion")}</span>
+        <Button size="sm" className="h-8" onClick={onShift}>
+          {tc("shiftAction")}
+        </Button>
+        <Button size="sm" variant="outline" className="h-8" onClick={onKeep}>
+          {tc("shiftKeep")}
+        </Button>
+      </div>
     );
   }
 

@@ -15,7 +15,12 @@ vi.mock("@/store/hooks", () => ({
 vi.mock("@/store/features/selectors", () => ({
   selectIsClassStateEnabled: () => store.enabled,
 }));
-vi.mock("@/services/api/check-in.service", () => ({ checkInService: { submit: vi.fn() } }));
+vi.mock("@/services/api/check-in.service", () => ({
+  checkInService: { submit: vi.fn(), shiftFollowing: vi.fn() },
+}));
+vi.mock("sonner", () => ({
+  toast: Object.assign(vi.fn(), { success: vi.fn(), error: vi.fn(), warning: vi.fn() }),
+}));
 vi.mock("@/services/api/timetable.service", () => ({ getPreviousCheckIn: vi.fn() }));
 
 import { checkInService } from "@/services/api/check-in.service";
@@ -89,12 +94,12 @@ describe("PreviousLessonCheckIn (saving)", () => {
     vi.clearAllMocks();
   });
 
-  async function mountWith(onCheckedIn: () => void) {
+  async function mountWith(onCheckedIn: () => void, onShifted?: () => void) {
     // A future dialog slot, so the prompt is shown (a past checkable slot has its own question).
     const dialogSlot = { slotType: "LESSON" as const, slotDate: "2999-01-01", status: "pending" };
     await act(async () => {
       root.render(
-        createElement(PreviousLessonCheckIn, { timetableId: "tt", lessonId: "s", dialogSlot, onCheckedIn }),
+        createElement(PreviousLessonCheckIn, { timetableId: "tt", lessonId: "s", dialogSlot, onCheckedIn, onShifted }),
       );
     });
   }
@@ -120,6 +125,39 @@ describe("PreviousLessonCheckIn (saving)", () => {
 
     expect(checkInService.submit).toHaveBeenCalledWith("tt", "slot-9", { result: "TAUGHT" });
     expect(onCheckedIn).toHaveBeenCalledTimes(1);
+  });
+
+  it("offers to move the following lessons after 'not held', and moves them on 'Mover'", async () => {
+    vi.mocked(checkInService.submit).mockResolvedValue({
+      id: "c1",
+      timetableId: "tt",
+      teachingStatus: "not_held",
+      checkedInAt: "2026-10-19T09:00:00Z",
+    });
+    vi.mocked(checkInService.shiftFollowing).mockResolvedValue({ shifted: 2, overflow: [] });
+    const onShifted = vi.fn();
+    await mountWith(vi.fn(), onShifted);
+    await clickResult("resultNotHeld");
+
+    expect(container.textContent).toContain("shiftQuestion");
+    await clickResult("shiftAction");
+
+    expect(checkInService.shiftFollowing).toHaveBeenCalledWith("tt", "slot-9");
+    expect(onShifted).toHaveBeenCalledTimes(1);
+    expect(container.textContent).not.toContain("shiftQuestion");
+  });
+
+  it("does not offer to move anything after the previous lesson went well", async () => {
+    vi.mocked(checkInService.submit).mockResolvedValue({
+      id: "c1",
+      timetableId: "tt",
+      teachingStatus: "taught",
+      checkedInAt: "2026-10-19T09:00:00Z",
+    });
+    await mountWith(vi.fn());
+    await clickResult("resultTaught");
+
+    expect(container.textContent).not.toContain("shiftQuestion");
   });
 
   it("does not call onCheckedIn when the save fails", async () => {

@@ -150,6 +150,7 @@
     "shiftQuestion": "Move the following lessons?",
     "shiftAction": "Move",
     "shiftKeep": "Keep",
+    "shiftLaterAction": "Move following lessons",
     "shiftedToast": "{count, plural, one {# lesson moved} other {# lessons moved}}",
     "shiftOverflowToast": "No longer fits in the period: {topics}",
     "shiftNothingToast": "No following lessons to move",
