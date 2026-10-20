@@ -1,7 +1,7 @@
 "use client";
 
 import { toast } from "sonner";
-import { isListableSlot } from "@/shared/utils/lessonTopic";
+import { hasTopic, isListableSlot, isVisibleSlot } from "@/shared/utils/lessonTopic";
 import { useAuth } from "@clerk/nextjs";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -70,7 +70,7 @@ import { formatClassName } from "@/shared/utils/className";
 import { SlotSkeleton } from "@/components/calendar/SlotSkeleton";
 import type { SlotWithTimetable, DayMap } from "@/shared/types/calendar";
 import type { CheckInRecord } from "@/shared/types/check-in";
-import { teachingMark } from "@/shared/utils/teachingStatus";
+import { teachingMark, type SlotCheckInAnswer } from "@/shared/utils/teachingStatus";
 import { toIso, addDays, compactWeekLabel, defaultCalendarWeek, getWeekStart, formatWeekLabel, hexToRgb, getDayLabels, readableTextOn, toIntlLocale } from "@/shared/utils/calendar";
 import { useLocale, useTranslations } from "next-intl";
 import { isSupportedLocale, defaultLocale } from "@/i18n/locales";
@@ -250,7 +250,9 @@ function LessonCard({
             >
               {isHoliday
                 ? tTimetable("slotType.holiday")
-                : slot.topicTitle}
+                : hasTopic(slot)
+                  ? slot.topicTitle
+                  : t("shared.notHeldTitle")}
             </p>
           </div>
           {!isHoliday && (
@@ -458,7 +460,7 @@ function CalendarPageInner() {
       if (filterIds.size > 0 && !filterIds.has(t.id)) continue;
       const slots = slotsByTimetable.get(t.id) ?? [];
       for (const s of slots) {
-        if (!isListableSlot(s)) continue; // lessons without a topic are never shown
+        if (!isVisibleSlot(s)) continue; // lessons without a topic are never shown, except a not-held one
         const status = generatingSlots.has(s.id) ? "generating" : s.status;
         result.push({ ...s, status, timetable: t });
       }
@@ -566,11 +568,17 @@ function CalendarPageInner() {
   };
 
   /** A check-in saved from the slot dialog: the card's mark follows without reloading the week. */
-  const handleCheckedIn = useCallback((target: SlotWithTimetable, record: CheckInRecord) => {
+  const handleCheckedIn = useCallback((target: SlotWithTimetable, record: CheckInRecord, answer: SlotCheckInAnswer) => {
     setSlotsByTimetable((prev) => {
       const slots = (prev.get(target.timetable.id) ?? []).map((s) =>
         s.id === target.id
-          ? { ...s, teachingStatus: record.teachingStatus, checkedInAt: record.checkedInAt }
+          ? {
+              ...s,
+              teachingStatus: record.teachingStatus,
+              checkedInAt: record.checkedInAt,
+              checkInResult: answer.checkInResult,
+              checkInOutcomeIds: answer.checkInOutcomeIds,
+            }
           : s,
       );
       return new Map(prev).set(target.timetable.id, slots);
@@ -1392,6 +1400,9 @@ function CalendarPageInner() {
         onTitleChange={handleTitleChange}
         onCheckedIn={handleCheckedIn}
         onLessonsShifted={(shifted) => void refreshTimetable(shifted.timetable.id)}
+        onPreviousCheckedIn={() => {
+          if (selectedSlot) void refreshTimetable(selectedSlot.timetable.id);
+        }}
       />
     </div>
   );

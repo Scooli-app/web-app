@@ -90,7 +90,8 @@
       "worksheet": "Ficha",
       "quiz": "Quiz",
       "presentation": "Apresentação",
-      "test": "Teste"
+      "test": "Teste",
+      "reinforcement": "Reforço"
     },
     "windowTitle": "{from} – {to}",
     "loadingNextLesson": "A carregar a próxima aula…",
@@ -109,19 +110,31 @@
     "toPrepare": "Por preparar",
     "seeAllInCalendar": "Ver as {count} aulas no calendário"
   },
+  "nextSteps": {
+    "title": "O que fazer a seguir",
+    "loading": "A carregar sugestões",
+    "prepareNext": "Prepara a aula de {day}",
+    "replanNotHeld": "Reajusta: move as aulas seguintes",
+    "reinforce": "Gera ficha de reforço para {outcome}",
+    "checkIn": "Confirma {count, plural, one {# aula} other {# aulas}}",
+    "actionPrepare": "Preparar",
+    "actionReschedule": "Reajustar",
+    "actionReinforce": "Gerar ficha",
+    "actionView": "Ver"
+  },
   "checkIns": {
     "title": "Como correu a aula?",
     "pendingCount": "Por confirmar ({count})",
     "meta": "{turma} · {subject} · {topic} · {day}",
     "metaNoTopic": "{turma} · {subject} · {day}",
+    "metaNoSubject": "{turma} · {topic} · {day}",
+    "metaNoSubjectNoTopic": "{turma} · {day}",
     "resultTaught": "Correu bem",
-    "resultDifficulties": "Alguns tiveram dificuldades",
+    "resultDifficulties": "Com dificuldades",
     "resultPartial": "Ficou a meio",
     "resultNotHeld": "Não houve aula",
-    "difficultiesQuestion": "Em quê?",
+    "difficultiesQuestion": "Em que tiveram dificuldades?",
     "uncoveredQuestion": "O que ficou por dar?",
-    "confirm": "Confirmar",
-    "skip": "Saltar",
     "back": "Voltar",
     "assessmentQuestion": "Já aplicaste o teste?",
     "assessmentYes": "Sim",
@@ -140,6 +153,18 @@
     "shiftOverflowToast": "Já não cabe no período: {topics}",
     "shiftNothingToast": "Não há aulas seguintes para mover",
     "shiftError": "Não foi possível mover as aulas. Tenta novamente.",
+    "reinforcementQuestion": "Gerar uma ficha de reforço para estes objetivos?",
+    "reinforcementAction": "Gerar ficha de reforço",
+    "reinforcementToast": "Ficha de reforço a preparar para a aula de {day}",
+    "reinforcementError": "Não foi possível gerar a ficha de reforço. Tenta novamente.",
+    "carryOverQuestion": "Passar estes objetivos para a próxima aula?",
+    "carryOverAction": "Passar para a próxima aula",
+    "carryOverToast": "Passado para {day}",
+    "carryOverError": "Não foi possível passar os objetivos. Tenta novamente.",
+    "followUpKeep": "Agora não",
+    "followUpOpenCalendar": "Ver calendário",
+    "noNextLesson": "Não há próxima aula.",
+    "followUpInProgress": "Já há uma ficha de reforço a ser gerada para essa aula.",
     "dayToday": "hoje",
     "dayYesterday": "ontem",
     "daysAgo": "{count, plural, one {há # dia} other {há # dias}}",
@@ -148,11 +173,15 @@
     "changeAnswer": "Alterar",
     "mark": {
       "taught": "Lecionada",
+      "taughtWithDifficulties": "Lecionada · com dificuldades",
       "partiallyTaught": "Ficou a meio",
       "notHeld": "Não houve aula",
       "assumedTaught": "Assumida como lecionada",
       "unconfirmed": "Por confirmar"
-    }
+    },
+    "save": "Guardar",
+    "followUpOpenLesson": "Abrir",
+    "reinforcementNote": "Ficha de reforço: aula de {day}"
   },
   "previousCheckIn": {
     "question": "A última aula correu bem?",
@@ -1590,6 +1619,7 @@
     },
     "imagePickerModal": {
       "dialogTitle": "Adicionar imagem",
+      "replaceDialogTitle": "Trocar imagem",
       "tabGenerate": "Gerar com IA",
       "tabUpload": "Carregar",
       "tabUrl": "Por URL",
@@ -2878,10 +2908,11 @@
     "progress": {
       "title": "Progresso da turma",
       "loadingLabel": "A carregar o progresso da turma",
-      "coverageLabel": "Aprendizagens dadas",
-      "coverageCount": "{covered} de {total} aprendizagens planeadas dadas",
-      "coverageOfYear": "({total} de {curriculum} do ano)",
+      "coverageLabel": "Aprendizagens trabalhadas",
+      "coverageCount": "{covered} de {total} AE trabalhadas",
+      "coverageOfYear": "{total} de {curriculum} do ano",
       "given": "Dadas",
+      "unconfirmedLessons": "Não confirmadas",
       "partial": "A meio",
       "notHeld": "Não houve aula",
       "pending": "Por confirmar",
@@ -2897,6 +2928,15 @@
       "showLess": "Ver menos",
       "nextAssessmentTitle": "Próximo teste",
       "noAssessment": "Sem teste agendado",
+      "coverageCaption": "das aprendizagens planeadas já trabalhadas",
+      "unconfirmedLegend": "+{count} não confirmadas",
+      "unconfirmedHint": "Aprendizagens que só uma aula sem resposta dá como dadas. Não contam na percentagem.",
+      "reinforcementGenerate": "Gerar ficha",
+      "reinforcementRetry": "Tentar outra vez",
+      "reinforcementGenerating": "A preparar…",
+      "reinforcementReady": "Ficha pronta · aula de {day}",
+      "reinforcementFailed": "Não foi possível gerar a ficha.",
+      "open": "Abrir",
       "noPlan": "Liga uma planificação a esta turma para veres o progresso."
     },
     "shared": {
@@ -2914,6 +2954,7 @@
       "today": "Hoje",
       "tomorrow": "Amanhã",
       "holidayNoLesson": "Feriado / sem aula",
+      "notHeldTitle": "Não houve aula",
       "classInline": "Turma {label}",
       "minutesSuffix": "{count} min",
       "generateWeek": "Gerar semana ({count})",
@@ -2987,6 +3028,15 @@
         "editTitle": "Editar turma"
       }
     },
+    "assessmentScope": {
+      "title": "Vai avaliar",
+      "since": "desde {date}",
+      "sinceStart": "desde o início do período",
+      "lessons": "{count, plural, one {# aula} other {# aulas}}",
+      "notConfirmed": "não confirmado",
+      "empty": "Ainda não há matéria dada desde o último teste.",
+      "pickAtLeastOne": "Escolhe pelo menos uma aprendizagem para criar o teste."
+    },
     "slotDialog": {
       "typeLabel": "Tipo:",
       "objectivesTitle": "Objetivos de aprendizagem",
@@ -3011,7 +3061,8 @@
         "quiz": "quiz",
         "presentation": "apresentação",
         "test": "teste"
-      }
+      },
+      "reinforcementBadge": "Reforço"
     },
     "dashboardWidget": {
       "title": "Próximas aulas",

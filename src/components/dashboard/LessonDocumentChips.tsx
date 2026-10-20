@@ -18,7 +18,7 @@ import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { openUpgradeModalForReason, setUpgradeModalOpen } from "@/store/ui/uiSlice";
 import type { AppDispatch } from "@/store/store";
 import { useAuth } from "@clerk/nextjs";
-import { Check, Loader2, Plus } from "lucide-react";
+import { Check, Loader2, Plus, Target } from "lucide-react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import posthog from "posthog-js";
@@ -45,9 +45,10 @@ export async function startCompanionDocument(
   type: Exclude<CompanionType, "lessonPlan">,
   t: Translate,
   dispatch: AppDispatch,
+  outcomeIds?: string[],
 ): Promise<boolean> {
   try {
-    await generateLessonDocument(timetableId, lessonId, type);
+    await generateLessonDocument(timetableId, lessonId, type, outcomeIds);
     return true;
   } catch (err) {
     if (err instanceof UpgradeLimitError) {
@@ -127,6 +128,8 @@ interface LessonDocumentChipsProps {
   planAsChip?: boolean;
   /** Types a "Preparar …" run will start: shown as busy before the server reports them. */
   busyTypes?: CompanionType[];
+  /** A test on an assessment: the outcomes it must assess (ENG-209). Left out, the server uses the whole scope. */
+  testOutcomeIds?: string[];
 }
 
 /**
@@ -143,6 +146,7 @@ export function LessonDocumentChips({
   lessonPlanBusy = false,
   planAsChip = false,
   busyTypes = [],
+  testOutcomeIds,
 }: LessonDocumentChipsProps) {
   const t = useTranslations("yourWeek");
   const dispatch = useAppDispatch();
@@ -176,7 +180,14 @@ export function LessonDocumentChips({
         }
         await writeLessonPlan(timetableId, lesson.id, t, dispatch, getToken);
       } else {
-        await startCompanionDocument(timetableId, lesson.id, type, t, dispatch);
+        await startCompanionDocument(
+          timetableId,
+          lesson.id,
+          type,
+          t,
+          dispatch,
+          type === "test" ? testOutcomeIds : undefined,
+        );
       }
       onChanged();
     } finally {
@@ -198,15 +209,24 @@ export function LessonDocumentChips({
             {t(`types.${doc.role}`)} · {t("documentGenerating")}
           </span>
         ) : (
+          // A reinforcement worksheet (a worksheet made after a check-in) is its own chip, rose and with a target,
+          // so it reads apart from the lesson's normal worksheet.
           <Link
             key={doc.id}
             href={`${DOCUMENT_ROUTES[doc.documentType] ?? DOCUMENT_ROUTES[doc.role] ?? Routes.DOCUMENTS}/${doc.id}`}
             className={cn(
-              "inline-flex items-center gap-1.5 rounded-full bg-primary/10 font-semibold text-primary transition-colors hover:bg-primary/20",
+              "inline-flex items-center gap-1.5 rounded-full font-semibold transition-colors",
+              doc.role === "reinforcement"
+                ? "bg-rose-500/10 text-rose-700 hover:bg-rose-500/20 dark:text-rose-300"
+                : "bg-primary/10 text-primary hover:bg-primary/20",
               size,
             )}
           >
-            <Check className="h-3.5 w-3.5" aria-hidden />
+            {doc.role === "reinforcement" ? (
+              <Target className="h-3.5 w-3.5" aria-hidden />
+            ) : (
+              <Check className="h-3.5 w-3.5" aria-hidden />
+            )}
             {t(`types.${doc.role}`)}
           </Link>
         ),

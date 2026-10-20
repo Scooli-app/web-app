@@ -1,4 +1,5 @@
 import type {
+  CheckInOutcome,
   CheckInResult,
   CheckInSubmission,
   PendingCheckIn,
@@ -51,8 +52,16 @@ export function needsOutcomeStep(
 }
 
 /**
+ * The outcomes ticked when the outcome step opens: a single outcome is ticked (the answer is almost always about
+ * it), several start unticked so the teacher names them.
+ */
+export function initialOutcomeSelection(outcomes: readonly Pick<CheckInOutcome, "id">[]): string[] {
+  return outcomes.length === 1 ? [outcomes[0].id] : [];
+}
+
+/**
  * The POST body for a result. Outcome ids are sent only when the teacher picked some;
- * "Saltar" on the chips step is the same as the bare result.
+ * "Guardar" with nothing ticked is the same as the bare result.
  */
 export function buildSubmission(
   result: CheckInResult,

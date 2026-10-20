@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canCheckIn, isCheckableSlot, teachingMark } from "./teachingStatus";
+import { canCheckIn, difficultOutcomeTexts, isCheckableSlot, slotCheckInAnswer, teachingMark } from "./teachingStatus";
 
 const TODAY = "2026-10-19";
 
@@ -82,5 +82,77 @@ describe("teachingMark", () => {
     expect(teachingMark(slot({ slotDate: "2026-10-30", teachingStatus: "taught" }), TODAY)).toBeNull();
     expect(teachingMark(slot({ status: "skipped", teachingStatus: "taught" }), TODAY)).toBeNull();
     expect(teachingMark(slot({ slotType: "HOLIDAY" }), TODAY)).toBeNull();
+  });
+});
+
+describe("teachingMark: a 'com dificuldades' answer (ENG-246)", () => {
+  it("shows an amber ~ for a taught lesson whose answer was TAUGHT_WITH_DIFFICULTIES", () => {
+    expect(
+      teachingMark({ ...slot({ teachingStatus: "taught" }), checkInResult: "TAUGHT_WITH_DIFFICULTIES" }, TODAY),
+    ).toEqual({ key: "taughtWithDifficulties", glyph: "~" });
+  });
+
+  it("keeps the plain check mark for a 'correu bem' answer", () => {
+    expect(teachingMark({ ...slot({ teachingStatus: "taught" }), checkInResult: "TAUGHT" }, TODAY)).toEqual({
+      key: "taught",
+      glyph: "✓",
+    });
+  });
+
+  it("keeps the plain check mark when there is no answer result (older slots)", () => {
+    expect(teachingMark({ ...slot({ teachingStatus: "taught" }), checkInResult: null }, TODAY)?.key).toBe("taught");
+  });
+
+  it("does not turn a partial answer into the difficulty mark", () => {
+    expect(
+      teachingMark({ ...slot({ teachingStatus: "partially_taught" }), checkInResult: "PARTIAL" }, TODAY)?.key,
+    ).toBe("partiallyTaught");
+  });
+});
+
+describe("difficultOutcomeTexts", () => {
+  const outcomes = [
+    { id: "o1", text: "Ler com fluência", topicPath: [], source: "ai" },
+    { id: "o2", text: "Somar frações", topicPath: [], source: "ai" },
+  ];
+
+  it("returns the texts of the difficult outcomes of a difficulty answer", () => {
+    expect(
+      difficultOutcomeTexts({ checkInResult: "TAUGHT_WITH_DIFFICULTIES", checkInOutcomeIds: ["o2"], outcomes }),
+    ).toEqual(["Somar frações"]);
+  });
+
+  it("is empty for any other answer, even with ids", () => {
+    expect(difficultOutcomeTexts({ checkInResult: "TAUGHT", checkInOutcomeIds: ["o1"], outcomes })).toEqual([]);
+    expect(difficultOutcomeTexts({ checkInResult: null, checkInOutcomeIds: ["o1"], outcomes })).toEqual([]);
+  });
+
+  it("leaves out an id the slot no longer lists", () => {
+    expect(
+      difficultOutcomeTexts({ checkInResult: "TAUGHT_WITH_DIFFICULTIES", checkInOutcomeIds: ["gone"], outcomes }),
+    ).toEqual([]);
+  });
+});
+
+describe("slotCheckInAnswer", () => {
+  it("keeps the difficult ids for a difficulty answer", () => {
+    expect(
+      slotCheckInAnswer({ result: "TAUGHT_WITH_DIFFICULTIES", difficultOutcomeIds: ["o1"], uncoveredOutcomeIds: ["o2"] }),
+    ).toEqual({ checkInResult: "TAUGHT_WITH_DIFFICULTIES", checkInOutcomeIds: ["o1"] });
+  });
+
+  it("keeps the uncovered ids for a partial answer", () => {
+    expect(slotCheckInAnswer({ result: "PARTIAL", uncoveredOutcomeIds: ["o2"] })).toEqual({
+      checkInResult: "PARTIAL",
+      checkInOutcomeIds: ["o2"],
+    });
+  });
+
+  it("has no ids for the other two answers", () => {
+    expect(slotCheckInAnswer({ result: "TAUGHT", difficultOutcomeIds: ["o1"] })).toEqual({
+      checkInResult: "TAUGHT",
+      checkInOutcomeIds: [],
+    });
+    expect(slotCheckInAnswer({ result: "NOT_HELD" }).checkInOutcomeIds).toEqual([]);
   });
 });

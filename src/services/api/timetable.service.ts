@@ -5,7 +5,7 @@ import type { CompanionType } from "@/components/dashboard/weekWindow";
 
 import apiClient from "./client";
 import { featureFeedbackTrigger } from "@/store/featureFeedbackTrigger";
-import type { CheckInOutcome, CheckInSlotType, TeachingStatus } from "@/shared/types/check-in";
+import type { CheckInOutcome, CheckInResult, CheckInSlotType, TeachingStatus } from "@/shared/types/check-in";
 
 export interface RecurringSlot {
   dayOfWeek: number; // 1=Mon..7=Sun (ISO)
@@ -85,6 +85,13 @@ export interface LessonSlot {
   teachingStatus?: TeachingStatus;
   /** ISO timestamp of the latest check-in, null until the teacher checks in. */
   checkedInAt?: string | null;
+  /**
+   * The latest answer's own result. "Com dificuldades" is stored as `taught`, so this is what tells it apart.
+   * Null until the teacher checks in, and when the backend has no result for the slot.
+   */
+  checkInResult?: CheckInResult | null;
+  /** Difficult outcome ids ("com dificuldades") or uncovered ones ("ficou a meio"); empty for the other answers. */
+  checkInOutcomeIds?: string[];
   /** Outcomes (AE) this lesson covers, offered as chips in the check-in card. */
   outcomes?: CheckInOutcome[];
 }
@@ -230,16 +237,54 @@ export async function listLessonDocuments(
  * data and generates it server-side, so it finishes even if the teacher leaves the page.
  * 402 / free-plan 403 open the upgrade modal in the API client; 409 = already being prepared.
  */
+/**
+ * `outcomeIds` (ENG-209) is only sent for a test: the outcomes it must assess, chosen from the assessment's scope.
+ * Left out, the backend uses the whole scope.
+ */
 export async function generateLessonDocument(
   timetableId: string,
   lessonId: string,
   documentType: CompanionType,
+  outcomeIds?: string[],
 ): Promise<{ id: string }> {
+  const body = outcomeIds ? { documentType, outcomeIds } : { documentType };
   const response = await apiClient.post<{ id: string; status: string }>(
     `/timetable/${timetableId}/lessons/${lessonId}/documents/generate`,
-    { documentType },
+    body,
   );
   return { id: response.data.id };
+}
+
+/** One learning outcome an assessment can cover (ENG-209). `lessons` is how many lessons since the last test teach it. */
+/**
+ * How well a scope outcome is attested (ENG-239): confirmed by the teacher, partly, or only by lessons nobody answered
+ * (assumed). Optional: a backend without it gives no evidence, and every outcome is then treated as confirmed.
+ */
+export type AssessmentScopeEvidence = "confirmed" | "partial" | "assumed";
+
+export interface AssessmentScopeOutcome {
+  id: string;
+  text: string;
+  topicPath: string[];
+  lessons: number;
+  evidence?: AssessmentScopeEvidence;
+}
+
+/** What "Vai avaliar" shows for an assessment: the outcomes taught since `fromDate` (YYYY-MM-DD, or null). */
+export interface AssessmentScope {
+  fromDate: string | null;
+  outcomes: AssessmentScopeOutcome[];
+}
+
+/**
+ * The outcomes a test for this assessment should cover (ENG-209). Rejects when the flag is off (403), the slot is not
+ * an assessment (400) or it is not the teacher's (404); callers treat a rejection as "no scope to show".
+ */
+export async function getAssessmentScope(timetableId: string, lessonId: string): Promise<AssessmentScope> {
+  const response = await apiClient.get<AssessmentScope>(
+    `/timetable/${timetableId}/lessons/${lessonId}/assessment-scope`
+  );
+  return response.data;
 }
 
 /** Puts a document made from the create form into one of the teacher's lessons (no credit). */

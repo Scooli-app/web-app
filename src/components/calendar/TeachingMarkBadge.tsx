@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 
 const TONE: Record<TeachingMarkKey, string> = {
   taught: "text-green-600 dark:text-green-400",
+  taughtWithDifficulties: "text-amber-600 dark:text-amber-400",
   partiallyTaught: "text-amber-600 dark:text-amber-400",
   notHeld: "text-muted-foreground",
   assumedTaught: "text-muted-foreground/60",

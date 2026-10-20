@@ -3,7 +3,12 @@
 import { translateSubject } from "@/components/document-creation/constants";
 import { relativeDayLabel } from "@/components/dashboard/checkInDay";
 import { Button } from "@/components/ui/button";
-import { buildSubmission, isAssessmentCheckIn, needsOutcomeStep } from "@/hooks/checkInQueue";
+import {
+  buildSubmission,
+  initialOutcomeSelection,
+  isAssessmentCheckIn,
+  needsOutcomeStep,
+} from "@/hooks/checkInQueue";
 import type { CheckInResult, CheckInSubmission, PendingCheckIn } from "@/shared/types/check-in";
 import { CheckInOutcomeStep, CheckInResultOptions } from "./CheckInChoices";
 import { toIso } from "@/shared/utils/calendar";
@@ -18,6 +23,20 @@ export type CheckInCardItem = Pick<
   "slotDate" | "slotType" | "turmaTitle" | "subject" | "topicTitle" | "outcomes"
 >;
 
+/** Lower-cased, accent-free, single-spaced: "História  e Geografia" compares equal to "historia e geografia". */
+function foldForCompare(text: string): string {
+  return text.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().replace(/\s+/g, " ").trim();
+}
+
+/**
+ * Whether the turma's title already names the subject ("6.º PLANO2 História e Geografia de Portugal" with
+ * subject "História e Geografia de Portugal"), so the card's meta line need not repeat it.
+ */
+export function subjectRepeatsTurma(turmaTitle: string, subjectLabel: string): boolean {
+  const subject = foldForCompare(subjectLabel);
+  return subject.length > 0 && foldForCompare(turmaTitle).includes(subject);
+}
+
 interface CheckInCardProps {
   item: CheckInCardItem;
   locale: string;
@@ -26,13 +45,18 @@ interface CheckInCardProps {
   onSkip?: () => void;
   /** Closes the card without saving. Only the calendar dialog passes it, when reopened to change an answer. */
   onCancel?: () => void;
+  /**
+   * The turma, subject, topic and day under the question. The dashboard strip needs it, since it shows many lessons;
+   * the calendar dialog already names the lesson above, so it passes false.
+   */
+  showMeta?: boolean;
 }
 
 /**
- * "Como correu a aula?" for one lesson: the four results, then the outcome chips for the
+ * "Como correu a aula?" for one lesson: the four results, then the outcome checkboxes for the
  * difficulties and "ficou a meio" answers. Shared by the dashboard strip and the calendar dialog.
  */
-export function CheckInCard({ item, locale, onSubmit, onSkip, onCancel }: CheckInCardProps) {
+export function CheckInCard({ item, locale, onSubmit, onSkip, onCancel, showMeta = true }: CheckInCardProps) {
   const t = useTranslations("checkIns");
   const [outcomeResult, setOutcomeResult] = useState<OutcomeResult | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
@@ -44,16 +68,21 @@ export function CheckInCard({ item, locale, onSubmit, onSkip, onCancel }: CheckI
     daysAgo: (count) => t("daysAgo", { count }),
   });
   const subject = translateSubject(item.subject);
-  const meta = item.topicTitle
-    ? t("meta", { turma: item.turmaTitle, subject, topic: item.topicTitle, day })
-    : t("metaNoTopic", { turma: item.turmaTitle, subject, day });
+  const showSubject = !subjectRepeatsTurma(item.turmaTitle, subject);
+  const meta = showSubject
+    ? item.topicTitle
+      ? t("meta", { turma: item.turmaTitle, subject, topic: item.topicTitle, day })
+      : t("metaNoTopic", { turma: item.turmaTitle, subject, day })
+    : item.topicTitle
+      ? t("metaNoSubject", { turma: item.turmaTitle, topic: item.topicTitle, day })
+      : t("metaNoSubjectNoTopic", { turma: item.turmaTitle, day });
 
   const toggle = (id: string) =>
     setSelected((current) => (current.includes(id) ? current.filter((x) => x !== id) : [...current, id]));
 
   const choose = (result: CheckInResult) => {
     if (needsOutcomeStep(result, item)) {
-      setSelected([]);
+      setSelected(initialOutcomeSelection(item.outcomes));
       setOutcomeResult(result as OutcomeResult);
       return;
     }
@@ -65,10 +94,11 @@ export function CheckInCard({ item, locale, onSubmit, onSkip, onCancel }: CheckI
       <h3 className="text-base font-semibold leading-snug text-foreground">
         {isAssessmentCheckIn(item) ? t("assessmentQuestion") : t("title")}
       </h3>
-      <p className="mt-0.5 truncate text-sm text-muted-foreground">{meta}</p>
+      {showMeta && <p className="mt-0.5 truncate text-sm text-muted-foreground">{meta}</p>}
     </div>
   );
 
+  // Cancel belongs to the first step only: once an outcome step is open, "Voltar" is the way back.
   const cancelButton = onCancel ? (
     <Button size="sm" variant="ghost" onClick={onCancel}>
       {t("cancel")}
@@ -104,10 +134,8 @@ export function CheckInCard({ item, locale, onSubmit, onSkip, onCancel }: CheckI
           outcomes={item.outcomes}
           selected={selected}
           onToggle={toggle}
-          onConfirm={() => onSubmit(buildSubmission(outcomeResult, selected))}
-          onSkip={() => onSubmit(buildSubmission(outcomeResult))}
+          onSave={() => onSubmit(buildSubmission(outcomeResult, selected))}
           onBack={() => setOutcomeResult(null)}
-          extraActions={cancelButton}
         />
       </div>
     );

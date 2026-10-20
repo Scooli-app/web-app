@@ -3,6 +3,7 @@
 import { QuickCreateCard } from "@/components/dashboard/QuickCreateCard";
 import { useVisibleDocTypeActions } from "@/components/document-creation/documentTypeActions";
 import { LoadError } from "@/components/ui/load-error";
+import { NextStepsCard } from "@/components/next-steps/NextStepsCard";
 import { YourWeekCard } from "@/components/dashboard/YourWeekCard";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { usePlanLimits } from "@/hooks/usePlanLimits";
@@ -99,8 +100,9 @@ function DashboardContent() {
         )}
 
         {isHorarioPlanosEnabled && (
-          <div className="shrink-0">
+          <div className="shrink-0 space-y-3">
             <YourWeekCard />
+            <NextStepsCard />
           </div>
         )}
 

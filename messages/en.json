@@ -90,7 +90,8 @@
       "worksheet": "Worksheet",
       "quiz": "Quiz",
       "presentation": "Slides",
-      "test": "Test"
+      "test": "Test",
+      "reinforcement": "Reinforcement"
     },
     "windowTitle": "{from} – {to}",
     "loadingNextLesson": "Loading the next lesson…",
@@ -109,19 +110,31 @@
     "toPrepare": "To prepare",
     "seeAllInCalendar": "See all {count} lessons in the calendar"
   },
+  "nextSteps": {
+    "title": "What to do next",
+    "loading": "Loading suggestions",
+    "prepareNext": "Prepare the lesson for {day}",
+    "replanNotHeld": "Reschedule: move the following lessons",
+    "reinforce": "Create a reinforcement sheet for {outcome}",
+    "checkIn": "Confirm {count, plural, one {# lesson} other {# lessons}}",
+    "actionPrepare": "Prepare",
+    "actionReschedule": "Reschedule",
+    "actionReinforce": "Create sheet",
+    "actionView": "View"
+  },
   "checkIns": {
     "title": "How did the lesson go?",
     "pendingCount": "To confirm ({count})",
     "meta": "{turma} · {subject} · {topic} · {day}",
     "metaNoTopic": "{turma} · {subject} · {day}",
+    "metaNoSubject": "{turma} · {topic} · {day}",
+    "metaNoSubjectNoTopic": "{turma} · {day}",
     "resultTaught": "Went well",
-    "resultDifficulties": "Some students struggled",
+    "resultDifficulties": "Some difficulties",
     "resultPartial": "Stopped halfway",
     "resultNotHeld": "Lesson not held",
-    "difficultiesQuestion": "Which parts?",
+    "difficultiesQuestion": "Which parts were difficult?",
     "uncoveredQuestion": "What was not covered?",
-    "confirm": "Confirm",
-    "skip": "Skip",
     "back": "Back",
     "assessmentQuestion": "Did you give the test?",
     "assessmentYes": "Yes",
@@ -140,6 +153,18 @@
     "shiftOverflowToast": "No longer fits in the period: {topics}",
     "shiftNothingToast": "No following lessons to move",
     "shiftError": "Could not move the lessons. Try again.",
+    "reinforcementQuestion": "Generate a reinforcement worksheet for these outcomes?",
+    "reinforcementAction": "Generate reinforcement worksheet",
+    "reinforcementToast": "Reinforcement sheet being prepared for the lesson on {day}",
+    "reinforcementError": "Could not generate the reinforcement worksheet. Try again.",
+    "carryOverQuestion": "Carry these outcomes over to the next lesson?",
+    "carryOverAction": "Carry over to the next lesson",
+    "carryOverToast": "Carried over to {day}",
+    "carryOverError": "Could not carry the outcomes over. Try again.",
+    "followUpKeep": "Not now",
+    "followUpOpenCalendar": "View calendar",
+    "noNextLesson": "There is no next lesson.",
+    "followUpInProgress": "A reinforcement worksheet is already being generated for that lesson.",
     "dayToday": "today",
     "dayYesterday": "yesterday",
     "daysAgo": "{count, plural, one {# day ago} other {# days ago}}",
@@ -148,11 +173,15 @@
     "changeAnswer": "Change",
     "mark": {
       "taught": "Taught",
+      "taughtWithDifficulties": "Taught · some difficulties",
       "partiallyTaught": "Partly taught",
       "notHeld": "Not held",
       "assumedTaught": "Assumed taught",
       "unconfirmed": "To confirm"
-    }
+    },
+    "save": "Save",
+    "followUpOpenLesson": "Open",
+    "reinforcementNote": "Reinforcement sheet: lesson on {day}"
   },
   "previousCheckIn": {
     "question": "Did the last lesson go well?",
@@ -1590,6 +1619,7 @@
     },
     "imagePickerModal": {
       "dialogTitle": "Add image",
+      "replaceDialogTitle": "Change image",
       "tabGenerate": "Generate with AI",
       "tabUpload": "Upload",
       "tabUrl": "By URL",
@@ -2878,10 +2908,11 @@
     "progress": {
       "title": "Class progress",
       "loadingLabel": "Loading class progress",
-      "coverageLabel": "Learning outcomes taught",
-      "coverageCount": "{covered} of {total} planned learning outcomes taught",
-      "coverageOfYear": "({total} of {curriculum} for the year)",
+      "coverageLabel": "Learning outcomes covered",
+      "coverageCount": "{covered} of {total} learning outcomes covered",
+      "coverageOfYear": "{total} of {curriculum} for the year",
       "given": "Taught",
+      "unconfirmedLessons": "Unconfirmed",
       "partial": "Partly",
       "notHeld": "Not held",
       "pending": "To confirm",
@@ -2897,6 +2928,15 @@
       "showLess": "See less",
       "nextAssessmentTitle": "Next assessment",
       "noAssessment": "No assessment scheduled",
+      "coverageCaption": "of planned learning outcomes covered",
+      "unconfirmedLegend": "+{count} unconfirmed",
+      "unconfirmedHint": "Outcomes that only an unanswered lesson marks as taught. They are not counted in the percentage.",
+      "reinforcementGenerate": "Create sheet",
+      "reinforcementRetry": "Try again",
+      "reinforcementGenerating": "Preparing…",
+      "reinforcementReady": "Sheet ready · lesson on {day}",
+      "reinforcementFailed": "The sheet could not be made.",
+      "open": "Open",
       "noPlan": "Link a plan to this class to see its progress."
     },
     "shared": {
@@ -2914,6 +2954,7 @@
       "today": "Today",
       "tomorrow": "Tomorrow",
       "holidayNoLesson": "Holiday / No lesson",
+      "notHeldTitle": "Lesson not held",
       "classInline": "Class {label}",
       "minutesSuffix": "{count} min",
       "generateWeek": "Generate week ({count})",
@@ -2987,6 +3028,15 @@
         "editTitle": "Edit class"
       }
     },
+    "assessmentScope": {
+      "title": "Will assess",
+      "since": "since {date}",
+      "sinceStart": "since the start of the term",
+      "lessons": "{count, plural, one {# lesson} other {# lessons}}",
+      "notConfirmed": "not confirmed",
+      "empty": "Nothing has been taught since the last test yet.",
+      "pickAtLeastOne": "Pick at least one learning outcome to create the test."
+    },
     "slotDialog": {
       "typeLabel": "Type:",
       "objectivesTitle": "Learning Objectives",
@@ -3011,7 +3061,8 @@
         "quiz": "quiz",
         "presentation": "slides",
         "test": "test"
-      }
+      },
+      "reinforcementBadge": "Reinforcement"
     },
     "dashboardWidget": {
       "title": "Upcoming lessons",

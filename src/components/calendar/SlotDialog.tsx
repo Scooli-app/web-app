@@ -34,6 +34,9 @@ import { usePrepareLessonSet } from "@/components/dashboard/usePrepareLessonSet"
 import { isDocumentInProgress } from "@/components/dashboard/weekWindow";
 import { CheckInCard } from "@/components/check-in/CheckInCard";
 import { TeachingMarkBadge } from "@/components/calendar/TeachingMarkBadge";
+import { AssessmentScopePicker } from "@/components/calendar/AssessmentScopePicker";
+import { useAssessmentScope } from "@/components/calendar/useAssessmentScope";
+import { testBlocked, testRequestOutcomeIds } from "@/components/calendar/assessmentScopeLogic";
 import { SLOT_STATUS_CONFIG } from "@/shared/constants/lessonSlotStatus";
 import { translateSubject } from "@/components/document-creation/constants";
 import type { CheckInRecord, CheckInSlotType, CheckInSubmission } from "@/shared/types/check-in";
@@ -44,6 +47,15 @@ import {
   type LessonSlotType,
 } from "@/services/api/timetable.service";
 import { checkInService } from "@/services/api/check-in.service";
+import {
+  followUpFor,
+  formatLessonDay,
+  lessonCalendarHref,
+  reinforcementTarget,
+  useCheckInFollowUps,
+  type CheckInFollowUp,
+} from "@/hooks/useCheckInFollowUps";
+import type { WeekLessonTarget } from "@/components/dashboard/WeekLessonDialog";
 import { useShiftFollowing } from "@/hooks/useShiftFollowing";
 import { selectIsClassStateEnabled } from "@/store/features/selectors";
 import { useAppSelector } from "@/store/hooks";
@@ -58,11 +70,19 @@ import {
   Loader2,
   RotateCcw,
   Sparkles,
+  Target,
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { isSupportedLocale, defaultLocale } from "@/i18n/locales";
 import { readableTextOn, toIntlLocale, toIso } from "@/shared/utils/calendar";
-import { canCheckIn, teachingMark } from "@/shared/utils/teachingStatus";
+import {
+  canCheckIn,
+  difficultOutcomeTexts,
+  slotCheckInAnswer,
+  teachingMark,
+  type SlotCheckInAnswer,
+} from "@/shared/utils/teachingStatus";
+import { cn } from "@/shared/utils/utils";
 
 const ROLE_ROUTE: Record<string, string> = {
   lessonPlan: Routes.LESSON_PLAN,
@@ -72,6 +92,13 @@ const ROLE_ROUTE: Record<string, string> = {
   worksheet: Routes.WORKSHEET,
   presentation: Routes.PRESENTATION,
 };
+/** The reinforcement worksheet a check-in asked for, shown in this lesson's dialog until it is closed. */
+interface ReinforcementNote {
+  slotId: string;
+  target: WeekLessonTarget;
+  day: string;
+}
+
 function docUrl(role: string, documentId: string): string {
   return `${ROLE_ROUTE[role] ?? Routes.LESSON_PLAN}/${documentId}`;
 }
@@ -90,10 +117,12 @@ export interface SlotDialogProps {
   onTitleChange: (slot: SlotWithTimetable, title: string) => void;
   /** A document was added from this pop-up's chips (e.g. so the dashboard week refreshes). */
   onDocumentsChanged?: () => void;
-  /** A check-in was saved here: the parent puts the new status on the slot (the card badge follows). */
-  onCheckedIn?: (slot: SlotWithTimetable, record: CheckInRecord) => void;
+  /** A check-in was saved here: the parent puts the new status and answer on the slot (the card badge follows). */
+  onCheckedIn?: (slot: SlotWithTimetable, record: CheckInRecord, answer: SlotCheckInAnswer) => void;
   /** The lessons after this one were moved (ENG-194): the parent reloads the turma's slots. */
   onLessonsShifted?: (slot: SlotWithTimetable) => void;
+  /** A check-in was saved on the previous lesson (PreviousLessonCheckIn): the parent reloads the turma's figures and slots. */
+  onPreviousCheckedIn?: () => void;
 }
 
 export function SlotDialog({
@@ -108,12 +137,14 @@ export function SlotDialog({
   onDocumentsChanged,
   onCheckedIn,
   onLessonsShifted,
+  onPreviousCheckedIn,
 }: SlotDialogProps) {
   const t = useTranslations("calendar.slotDialog");
   const tShared = useTranslations("calendar.shared");
   const tTimetable = useTranslations("timetable");
   const tCheckIn = useTranslations("checkIns");
-  const { offer: offerShift } = useShiftFollowing();
+  const { shift: shiftFollowing } = useShiftFollowing();
+  const { reinforce, carry } = useCheckInFollowUps();
   const rawLocale = useLocale();
   const locale = isSupportedLocale(rawLocale) ? rawLocale : defaultLocale;
   const router = useRouter();
@@ -128,6 +159,12 @@ export function SlotDialog({
   const [docsOpen, setDocsOpen] = useState(true);
   /** Reopens the check-in card for a lesson that already has an answer ("Alterar"). */
   const [checkInEditing, setCheckInEditing] = useState(false);
+  /** After "Não houve aula" here: asks inline whether to move the lessons after this one. */
+  const [shiftAsk, setShiftAsk] = useState(false);
+  /** After a check-in with outcomes picked: offers a reinforcement worksheet or the carry-over, inline. */
+  const [followUp, setFollowUp] = useState<CheckInFollowUp | null>(null);
+  /** After the reinforcement was asked for here: the line that says where it is. Kept for this lesson. */
+  const [reinforcementNote, setReinforcementNote] = useState<ReinforcementNote | null>(null);
 
   const slotId = slot?.id;
 
@@ -137,6 +174,8 @@ export function SlotDialog({
       setEditingTitle(false);
       setCustomMessage("");
       setCheckInEditing(false);
+      setShiftAsk(false);
+      setFollowUp(null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slotId]);
@@ -167,6 +206,13 @@ export function SlotDialog({
       .finally(() => setDocsLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slotId, docsRetry]);
+
+  // ENG-209: "Vai avaliar" for an assessment, behind class_state_enabled. Loaded once per slot; nothing without the flag.
+  const assessment = useAssessmentScope(
+    checkInEnabled && !!slot && slot.slotType === "ASSESSMENT" && slot.status !== "skipped",
+    slot?.timetable.id ?? "",
+    slot?.id ?? "",
+  );
 
   const lessonDocuments = slotDocs.map((d) => ({
     id: d.documentId,
@@ -216,6 +262,7 @@ export function SlotDialog({
   const todayIso = toIso(new Date());
   const showCheckIn = canCheckIn(checkInEnabled, slot, todayIso);
   const checkInMark = teachingMark(slot, todayIso);
+  const checkInTooltip = difficultOutcomeTexts(slot).join("\n");
   const checkInItem = {
     slotDate: slot.slotDate,
     // Only shown for checkable types (see showCheckIn), so the cast holds wherever the card renders.
@@ -231,14 +278,14 @@ export function SlotDialog({
     try {
       const record = await checkInService.submit(slot.timetable.id, slot.id, body);
       setCheckInEditing(false);
-      onCheckedIn?.(slot, record);
+      onCheckedIn?.(slot, record, slotCheckInAnswer(body));
     } catch {
       toast.error(tCheckIn("saveError"));
       return;
     }
-    if (body.result === "NOT_HELD") {
-      offerShift(slot.timetable.id, slot.id, () => onLessonsShifted?.(slot));
-    }
+    // Inline, not a toast: the toast sits under this dialog's overlay and would expire unseen.
+    if (body.result === "NOT_HELD") setShiftAsk(true);
+    setFollowUp(followUpFor(body));
     if (body.result === "TAUGHT") {
       toast.success(tCheckIn("taughtToast"), {
         action: {
@@ -258,6 +305,29 @@ export function SlotDialog({
   const isExercise = slot.slotType === "EXERCISE";
   const isReview = slot.slotType === "REVIEW";
   const isHoliday = slot.slotType === "HOLIDAY";
+
+  const handleFollowUp = async () => {
+    if (!followUp) return;
+    if (followUp.kind === "reinforcement") {
+      const started = await reinforce(slot.timetable.id, slot.id, followUp.outcomeIds);
+      if (!started) return;
+      setReinforcementNote({
+        slotId: slot.id,
+        target: reinforcementTarget(slot.timetable.id, started.targetSlotId, started.targetDate),
+        day: formatLessonDay(started.targetDate, locale),
+      });
+      setFollowUp(null);
+      return;
+    }
+    const done = await carry(slot.timetable.id, slot.id, followUp.outcomeIds);
+    if (done) setFollowUp(null);
+  };
+
+  const handleShift = async () => {
+    setShiftAsk(false);
+    const result = await shiftFollowing(slot.timetable.id, slot.id);
+    if (result) onLessonsShifted?.(slot);
+  };
 
   const handleTitleSave = () => {
     if (draftTitle.trim() !== slot.topicTitle && (draftTitle.trim() !== "" || isHoliday)) {
@@ -351,7 +421,12 @@ export function SlotDialog({
           <div className="space-y-4">
             {/* ENG-224: asks about the previous lesson, only when this slot is not itself checkable (see PreviousLessonCheckIn) */}
             {!isHoliday && (
-              <PreviousLessonCheckIn timetableId={slot.timetable.id} lessonId={slot.id} dialogSlot={slot} />
+              <PreviousLessonCheckIn
+                timetableId={slot.timetable.id}
+                lessonId={slot.id}
+                dialogSlot={slot}
+                onCheckedIn={onPreviousCheckedIn}
+              />
             )}
 
             {/* Slot type selector */}
@@ -419,7 +494,17 @@ export function SlotDialog({
                       <p className="flex items-center gap-1.5 text-sm">
                         <span className="text-muted-foreground">{tCheckIn("currentStatus")}:</span>
                         <TeachingMarkBadge mark={checkInMark} />
-                        <span className="font-medium text-foreground">{tCheckIn(`mark.${checkInMark.key}`)}</span>
+                        <span
+                          className={cn(
+                            "font-medium",
+                            checkInMark.key === "taughtWithDifficulties"
+                              ? "text-amber-700 dark:text-amber-400"
+                              : "text-foreground",
+                          )}
+                          title={checkInTooltip || undefined}
+                        >
+                          {tCheckIn(`mark.${checkInMark.key}`)}
+                        </span>
                       </p>
                       <Button variant="outline" size="sm" className="h-8" onClick={() => setCheckInEditing(true)}>
                         {tCheckIn("changeAnswer")}
@@ -430,11 +515,67 @@ export function SlotDialog({
                       key={slot.id}
                       item={checkInItem}
                       locale={locale}
+                      showMeta={false}
                       onSubmit={(body) => void handleCheckIn(body)}
                       onCancel={slot.checkedInAt ? () => setCheckInEditing(false) : undefined}
                     />
                   )}
+                  {shiftAsk && (
+                    <div className="flex flex-wrap items-center gap-2 rounded-md border border-primary/25 bg-primary/5 px-3 py-2">
+                      <span className="text-sm text-foreground">{tCheckIn("shiftQuestion")}</span>
+                      <Button size="sm" className="h-8" onClick={() => void handleShift()}>
+                        {tCheckIn("shiftAction")}
+                      </Button>
+                      <Button size="sm" variant="outline" className="h-8" onClick={() => setShiftAsk(false)}>
+                        {tCheckIn("shiftKeep")}
+                      </Button>
+                    </div>
+                  )}
+                  {followUp && (
+                    <div className="flex flex-wrap items-center gap-2 rounded-md border border-primary/25 bg-primary/5 px-3 py-2">
+                      <span className="text-sm text-foreground">
+                        {tCheckIn(followUp.kind === "reinforcement" ? "reinforcementQuestion" : "carryOverQuestion")}
+                      </span>
+                      <Button size="sm" className="h-8" onClick={() => void handleFollowUp()}>
+                        {tCheckIn(followUp.kind === "reinforcement" ? "reinforcementAction" : "carryOverAction")}
+                      </Button>
+                      <Button size="sm" variant="outline" className="h-8" onClick={() => setFollowUp(null)}>
+                        {tCheckIn("followUpKeep")}
+                      </Button>
+                    </div>
+                  )}
+                  {reinforcementNote?.slotId === slot.id && (
+                    <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-rose-500/30 bg-rose-500/5 px-3 py-2">
+                      <span className="flex items-center gap-2 text-sm text-foreground">
+                        <Target className="h-4 w-4 shrink-0 text-rose-600 dark:text-rose-400" aria-hidden />
+                        {tCheckIn("reinforcementNote", { day: reinforcementNote.day })}
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8"
+                        onClick={() => {
+                          onClose();
+                          router.push(lessonCalendarHref(reinforcementNote.target));
+                        }}
+                      >
+                        {tCheckIn("followUpOpenLesson")}
+                      </Button>
+                    </div>
+                  )}
                 </section>
+              </>
+            )}
+
+            {/* ENG-209: what the test will assess, ticked by default; the ticked outcomes go with the test request */}
+            {isAssessment && slot.status !== "skipped" && assessment.scope && (
+              <>
+                <Separator />
+                <AssessmentScopePicker
+                  scope={assessment.scope}
+                  selected={assessment.selected}
+                  onToggle={assessment.toggle}
+                />
               </>
             )}
 
@@ -485,6 +626,8 @@ export function SlotDialog({
                       lessonPlanBusy={isSlotGenerating}
                       busyTypes={preparingTypes}
                       lesson={{ id: slot.id, slotType: slot.slotType, documents: lessonDocuments }}
+                      testOutcomeIds={testRequestOutcomeIds(assessment.scope, assessment.selected)}
+                      omit={testBlocked(assessment.scope, assessment.selected) ? ["test"] : undefined}
                       onChanged={() => {
                         reloadDocs();
                         onDocumentsChanged?.();

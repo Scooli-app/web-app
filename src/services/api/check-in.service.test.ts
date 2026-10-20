@@ -20,6 +20,18 @@ describe("checkInService", () => {
     expect(http.get).toHaveBeenCalledWith("/check-ins/pending", { params: { limit: 20 } });
   });
 
+  it("requests a reinforcement sheet for one lesson's outcomes", async () => {
+    http.post.mockReturnValue(ok({ documentId: "d1" }));
+
+    await expect(checkInService.requestReinforcement("tt 1", "slot/9", ["o1", "o2"])).resolves.toEqual({
+      documentId: "d1",
+    });
+    expect(http.post).toHaveBeenCalledWith(
+      "/timetable/tt%201/lessons/slot%2F9/reinforcement",
+      { outcomeIds: ["o1", "o2"] },
+    );
+  });
+
   it.each<[string, CheckInSubmission]>([
     ["TAUGHT", { result: "TAUGHT" }],
     ["NOT_HELD", { result: "NOT_HELD" }],
@@ -52,5 +64,24 @@ describe("checkInService", () => {
   it("lets errors reach the caller so the optimistic UI can roll back", async () => {
     http.post.mockRejectedValue(new Error("boom"));
     await expect(checkInService.submit("tt", "s", { result: "NOT_HELD" })).rejects.toThrow("boom");
+  });
+
+  it("asks for a reinforcement worksheet on the lesson's reinforcement route", async () => {
+    const started = { documentId: "d1", targetSlotId: "s2", targetDate: "2026-10-22", status: "generating" };
+    http.post.mockReturnValue(ok(started));
+    await expect(checkInService.requestReinforcement("tt 1", "slot/9", ["o1", "o2"])).resolves.toEqual(started);
+    expect(http.post).toHaveBeenCalledWith("/timetable/tt%201/lessons/slot%2F9/reinforcement", {
+      outcomeIds: ["o1", "o2"],
+    });
+  });
+
+  it("carries outcomes over on the lesson's carry-over route", async () => {
+    http.post.mockReturnValue(ok({ targetSlotId: "s2", targetDate: "2026-10-22", carried: 1 }));
+    await expect(checkInService.carryOver("tt-1", "slot-9", ["o1"])).resolves.toEqual({
+      targetSlotId: "s2",
+      targetDate: "2026-10-22",
+      carried: 1,
+    });
+    expect(http.post).toHaveBeenCalledWith("/timetable/tt-1/lessons/slot-9/carry-over", { outcomeIds: ["o1"] });
   });
 });

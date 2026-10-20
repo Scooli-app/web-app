@@ -10,3 +10,15 @@ export function hasTopic(slot: { topicTitle?: string | null }): boolean {
 export function isListableSlot(slot: { slotType?: string; topicTitle?: string | null }): boolean {
   return slot.slotType === "HOLIDAY" || hasTopic(slot);
 }
+
+/**
+ * Whether a calendar view draws the slot. A not-held lesson is drawn even without a title (old data, or a
+ * title lost in a shift): its ✕ mark is the information the teacher needs.
+ */
+export function isVisibleSlot(slot: {
+  slotType?: string;
+  topicTitle?: string | null;
+  teachingStatus?: string;
+}): boolean {
+  return isListableSlot(slot) || slot.teachingStatus === "not_held";
+}

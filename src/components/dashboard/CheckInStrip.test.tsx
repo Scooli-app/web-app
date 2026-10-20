@@ -15,8 +15,9 @@ vi.mock("next-intl", () => ({
 }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
-vi.mock("@/store/hooks", () => ({ useAppSelector: () => state.enabled }));
+vi.mock("@/store/hooks", () => ({ useAppSelector: () => state.enabled, useAppDispatch: () => vi.fn() }));
 vi.mock("@/store/features/selectors", () => ({ selectIsClassStateEnabled: () => state.enabled }));
+vi.mock("@/components/dashboard/WeekLessonDialog", () => ({ WeekLessonDialog: () => null }));
 vi.mock("@/hooks/usePendingCheckIns", () => ({
   usePendingCheckIns: () => ({
     visible: state.visible,
@@ -59,6 +60,11 @@ describe("CheckInStrip", () => {
     expect(html).toContain("resultDifficulties");
     expect(html).toContain("resultPartial");
     expect(html).toContain("resultNotHeld");
+  });
+
+  it("keeps the lesson's meta line on the dashboard, where many lessons are listed", () => {
+    const html = renderToStaticMarkup(createElement(CheckInStrip));
+    expect(html).toContain(">meta<");
   });
 
   it("shows the test question and the not-yet button for an assessment", () => {
