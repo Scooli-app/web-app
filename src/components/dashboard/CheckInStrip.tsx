@@ -4,6 +4,7 @@ import { CheckInCard } from "@/components/check-in/CheckInCard";
 import { WeekLessonDialog, type WeekLessonTarget } from "@/components/dashboard/WeekLessonDialog";
 import { Button } from "@/components/ui/button";
 import { confirmableCount, shouldShowCheckInStrip } from "@/hooks/checkInQueue";
+import { SHOW_CHECK_INS_EVENT } from "@/hooks/checkInSession";
 import { followUpFor, useCheckInFollowUps, type CheckInFollowUp } from "@/hooks/useCheckInFollowUps";
 import { usePendingCheckIns } from "@/hooks/usePendingCheckIns";
 import { useShiftFollowing } from "@/hooks/useShiftFollowing";
@@ -14,7 +15,7 @@ import { useAppSelector } from "@/store/hooks";
 import { X } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 /**
@@ -27,7 +28,19 @@ export function CheckInStrip() {
   const locale = useLocale();
   const router = useRouter();
   const enabled = useAppSelector(selectIsClassStateEnabled);
-  const { visible, dismissed, submit, confirmAll, skipForSession, dismiss } = usePendingCheckIns(enabled);
+  const { visible, dismissed, submit, confirmAll, skipForSession, dismiss, show } = usePendingCheckIns(enabled);
+  const sectionRef = useRef<HTMLElement>(null);
+  /** Set by "Ver": scroll to the strip once it has rendered (it may have been hidden until now). */
+  const [scrollRequested, setScrollRequested] = useState(false);
+
+  useEffect(() => {
+    const onShow = () => {
+      show();
+      setScrollRequested(true);
+    };
+    window.addEventListener(SHOW_CHECK_INS_EVENT, onShow);
+    return () => window.removeEventListener(SHOW_CHECK_INS_EVENT, onShow);
+  }, [show]);
   const { offer: offerShift } = useShiftFollowing();
   const { reinforce, carry } = useCheckInFollowUps();
   /** The lesson a reinforcement worksheet's "Abrir" opens. Mounted outside the strip, so it outlives the last card. */
@@ -35,6 +48,13 @@ export function CheckInStrip() {
 
   const showStrip = shouldShowCheckInStrip({ enabled, dismissed, visibleCount: visible.length });
   const current = visible[0];
+
+  useEffect(() => {
+    if (!scrollRequested || !showStrip) return;
+    // scrollIntoView, not window.scrollTo: the dashboard scrolls inside its layout, not the window.
+    sectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    setScrollRequested(false);
+  }, [scrollRequested, showStrip]);
 
   /** ENG-236/237: after "some had difficulties" or "half done" with outcomes picked, asks as a toast with an action. */
   const offerFollowUp = (item: PendingCheckIn, followUp: CheckInFollowUp) => {
@@ -85,7 +105,11 @@ export function CheckInStrip() {
   return (
     <>
       {showStrip && (
-        <section aria-label={t("title")} className="mb-3 rounded-xl border border-primary/30 bg-primary/5 p-3">
+        <section
+          ref={sectionRef}
+          aria-label={t("title")}
+          className="mb-3 scroll-mt-4 rounded-xl border border-primary/30 bg-primary/5 p-3"
+        >
           <div className="mb-2 flex items-center justify-between gap-2">
             <span className="text-xs font-semibold uppercase tracking-wide text-primary">
               {t("pendingCount", { count: visible.length })}

@@ -26,6 +26,7 @@ vi.mock("@/hooks/usePendingCheckIns", () => ({
     confirmAll: async () => 0,
     skipForSession: vi.fn(),
     dismiss: vi.fn(),
+    show: vi.fn(),
   }),
 }));
 

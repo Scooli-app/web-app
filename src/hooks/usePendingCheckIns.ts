@@ -3,7 +3,7 @@
 import { checkInService } from "@/services/api/check-in.service";
 import type { CheckInSubmission, PendingCheckIn } from "@/shared/types/check-in";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { readDismissed, readSkipped, writeDismissed, writeSkipped } from "./checkInSession";
+import { clearDismissed, readDismissed, readSkipped, writeDismissed, writeSkipped } from "./checkInSession";
 import { afterConfirmAll, loadPendingCheckIns, visibleCheckIns, withCheckInAt, withoutCheckIn } from "./checkInQueue";
 
 /**
@@ -88,5 +88,13 @@ export function usePendingCheckIns(enabled: boolean) {
     setDismissed(true);
   }, []);
 
-  return { visible, dismissed, submit, confirmAll, skipForSession, dismiss };
+  /** The teacher asked to see the pending lessons ("Ver"): undoes the dismiss and the "Ainda não" skips. */
+  const show = useCallback(() => {
+    clearDismissed();
+    writeSkipped([]);
+    setDismissed(false);
+    setSkipped([]);
+  }, []);
+
+  return { visible, dismissed, submit, confirmAll, skipForSession, dismiss, show };
 }

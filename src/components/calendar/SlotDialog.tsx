@@ -34,6 +34,7 @@ import { usePrepareLessonSet } from "@/components/dashboard/usePrepareLessonSet"
 import { isDocumentInProgress } from "@/components/dashboard/weekWindow";
 import { CheckInCard } from "@/components/check-in/CheckInCard";
 import { TeachingMarkBadge } from "@/components/calendar/TeachingMarkBadge";
+import { streamPreviewTail } from "@/components/calendar/streamPreview";
 import { AssessmentScopePicker } from "@/components/calendar/AssessmentScopePicker";
 import { useAssessmentScope } from "@/components/calendar/useAssessmentScope";
 import { testBlocked, testRequestOutcomeIds } from "@/components/calendar/assessmentScopeLogic";
@@ -574,9 +575,15 @@ export function SlotDialog({
             {streamContent && isSlotGenerating && (
               <>
                 <Separator />
-                <div className="max-h-32 overflow-y-auto rounded-md border bg-muted/50 p-3 text-xs font-mono whitespace-pre-wrap leading-relaxed">
-                  {streamContent}
-                </div>
+                <section aria-label={t("streamPreviewTitle")} className="space-y-1.5">
+                  <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
+                    {t("streamPreviewTitle")}
+                  </p>
+                  <p className="max-h-24 overflow-hidden whitespace-pre-line text-sm leading-relaxed text-muted-foreground [mask-image:linear-gradient(to_bottom,transparent,black_40%)]">
+                    {streamPreviewTail(streamContent)}
+                  </p>
+                </section>
               </>
             )}
 
