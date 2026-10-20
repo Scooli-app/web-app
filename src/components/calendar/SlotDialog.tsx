@@ -42,7 +42,9 @@ import { translateSubject } from "@/components/document-creation/constants";
 import type { CheckInRecord, CheckInSlotType, CheckInSubmission } from "@/shared/types/check-in";
 import type { SlotWithTimetable } from "@/shared/types/calendar";
 import {
+  acceptProposal,
   listLessonDocuments,
+  rejectProposal,
   type LessonDocument,
   type LessonSlotType,
 } from "@/services/api/timetable.service";
@@ -125,6 +127,8 @@ export interface SlotDialogProps {
   onPreviousCheckedIn?: () => void;
   /** A reinforcement worksheet or a carry-over was started from here: the parent reloads the turma's figures and next steps. */
   onFollowUpStarted?: () => void;
+  /** The teacher accepted or rejected the lesson's topic proposal (ENG-247): the parent reloads the turma's slots. */
+  onProposalResolved?: (slot: SlotWithTimetable) => void;
 }
 
 export function SlotDialog({
@@ -141,6 +145,7 @@ export function SlotDialog({
   onLessonsShifted,
   onPreviousCheckedIn,
   onFollowUpStarted,
+  onProposalResolved,
 }: SlotDialogProps) {
   const t = useTranslations("calendar.slotDialog");
   const tShared = useTranslations("calendar.shared");
@@ -168,6 +173,10 @@ export function SlotDialog({
   const [followUp, setFollowUp] = useState<CheckInFollowUp | null>(null);
   /** After the reinforcement was asked for here: the line that says where it is. Kept for this lesson. */
   const [reinforcementNote, setReinforcementNote] = useState<ReinforcementNote | null>(null);
+  /** The topic proposal is being accepted or rejected. */
+  const [proposalBusy, setProposalBusy] = useState(false);
+  /** The proposal was accepted or rejected here; hides it until the parent's slot catches up. */
+  const [proposalHandled, setProposalHandled] = useState(false);
 
   const slotId = slot?.id;
 
@@ -179,6 +188,7 @@ export function SlotDialog({
       setCheckInEditing(false);
       setShiftAsk(false);
       setFollowUp(null);
+      setProposalHandled(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slotId]);
@@ -335,6 +345,24 @@ export function SlotDialog({
     if (result) onLessonsShifted?.(slot);
   };
 
+  const resolveProposal = async (action: "accept" | "reject") => {
+    if (proposalBusy) return;
+    setProposalBusy(true);
+    try {
+      if (action === "accept") {
+        await acceptProposal(slot.timetable.id, slot.id);
+      } else {
+        await rejectProposal(slot.timetable.id, slot.id);
+      }
+      setProposalHandled(true);
+      onProposalResolved?.(slot);
+    } catch {
+      toast.error(t("proposal.failed"));
+    } finally {
+      setProposalBusy(false);
+    }
+  };
+
   const handleTitleSave = () => {
     if (draftTitle.trim() !== slot.topicTitle && (draftTitle.trim() !== "" || isHoliday)) {
       onTitleChange(slot, draftTitle.trim());
@@ -433,6 +461,64 @@ export function SlotDialog({
                 dialogSlot={slot}
                 onCheckedIn={onPreviousCheckedIn}
               />
+            )}
+
+            {/* ENG-247: a regeneration proposed a new topic for this lesson, which already has documents */}
+            {!isHoliday && slot.pendingProposal && !proposalHandled && (
+              <div className="space-y-2 rounded-md border border-primary/30 bg-primary/5 p-3" data-testid="slot-proposal">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  {t("proposal.title")}
+                </p>
+                <p className="text-xs text-muted-foreground">{t("proposal.hint")}</p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-1">
+                    <p className="text-[11px] font-medium text-muted-foreground">{t("proposal.current")}</p>
+                    <p className="text-sm">{slot.topicTitle || t("proposal.noTopic")}</p>
+                    <p className="text-[11px] font-medium text-muted-foreground">{t("proposal.outcomes")}</p>
+                    {slot.outcomes && slot.outcomes.length > 0 ? (
+                      <ul className="list-disc pl-4 text-xs text-foreground/80">
+                        {slot.outcomes.map((o) => (
+                          <li key={o.id}>{o.text}</li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">{t("proposal.noOutcomes")}</p>
+                    )}
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[11px] font-medium text-muted-foreground">{t("proposal.proposed")}</p>
+                    <p className="text-sm font-medium">{slot.pendingProposal.topicTitle}</p>
+                    {slot.pendingProposal.description && (
+                      <p className="text-xs whitespace-pre-line text-foreground/80">
+                        {slot.pendingProposal.description}
+                      </p>
+                    )}
+                    <p className="text-[11px] font-medium text-muted-foreground">{t("proposal.outcomes")}</p>
+                    {slot.pendingProposal.outcomes.length > 0 ? (
+                      <ul className="list-disc pl-4 text-xs text-foreground/80">
+                        {slot.pendingProposal.outcomes.map((o) => (
+                          <li key={o.id}>{o.text}</li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">{t("proposal.noOutcomes")}</p>
+                    )}
+                  </div>
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={proposalBusy}
+                    onClick={() => void resolveProposal("reject")}
+                  >
+                    {t("proposal.reject")}
+                  </Button>
+                  <Button size="sm" disabled={proposalBusy} onClick={() => void resolveProposal("accept")}>
+                    {t("proposal.accept")}
+                  </Button>
+                </div>
+              </div>
             )}
 
             {/* Slot type selector */}

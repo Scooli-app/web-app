@@ -175,6 +175,7 @@ export function WeekLessonDialog({
       onTitleChange={(s, topicTitle) => void handleUpdate(s, { topicTitle })}
       onDocumentsChanged={onChanged}
       onFollowUpStarted={onChanged}
+      onProposalResolved={onChanged}
     />
   );
 }

@@ -18,7 +18,11 @@ vi.mock("@/store/hooks", () => ({
 vi.mock("@/store/features/selectors", () => ({
   selectIsClassStateEnabled: () => store.enabled,
 }));
-vi.mock("@/services/api/timetable.service", () => ({ listLessonDocuments: vi.fn().mockResolvedValue([]) }));
+vi.mock("@/services/api/timetable.service", () => ({
+  listLessonDocuments: vi.fn().mockResolvedValue([]),
+  acceptProposal: vi.fn(),
+  rejectProposal: vi.fn(),
+}));
 vi.mock("@/services/api/check-in.service", () => ({
   checkInService: {
     submit: vi.fn(),
@@ -43,6 +47,7 @@ vi.mock("sonner", () => ({
 }));
 
 import { checkInService } from "@/services/api/check-in.service";
+import { acceptProposal, rejectProposal, type LessonSlot } from "@/services/api/timetable.service";
 import { toast } from "sonner";
 import { SlotDialog } from "./SlotDialog";
 
@@ -442,5 +447,109 @@ describe("SlotDialog: the status of a checked-in lesson (ENG-246)", () => {
     expect(value).toBeDefined();
     expect(value?.className).not.toContain("text-amber-700");
     expect(value?.hasAttribute("title")).toBe(false);
+  });
+});
+
+describe("SlotDialog: a topic proposal for a lesson with documents (ENG-247)", () => {
+  let container: HTMLDivElement;
+  let root: Root;
+
+  // The lesson keeps "Frações"; a regeneration proposed another topic for it.
+  const withProposal = {
+    ...slot,
+    pendingProposal: {
+      topicTitle: "Equações do 1.º grau",
+      description: "- Resolver equações",
+      outcomes: [{ id: "o-2", text: "Resolver equações.", topicPath: ["Álgebra"], source: "ai" }],
+      createdAt: "2020-03-09T10:00:00Z",
+    },
+  } as unknown as SlotWithTimetable;
+
+  beforeEach(() => {
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    store.enabled = true;
+    container = document.createElement("div");
+    document.body.appendChild(container);
+    root = createRoot(container);
+  });
+
+  afterEach(() => {
+    act(() => root.unmount());
+    container.remove();
+    document.body.innerHTML = "";
+    vi.clearAllMocks();
+  });
+
+  async function render(props: ReturnType<typeof dialogProps>) {
+    await act(async () => {
+      root.render(createElement(SlotDialog, props));
+    });
+  }
+
+  function proposalSection(): HTMLElement | null {
+    return document.body.querySelector<HTMLElement>("[data-testid='slot-proposal']");
+  }
+
+  it("shows the current and the proposed topic and outcomes, with accept and reject", async () => {
+    await render(dialogProps({ slot: withProposal }));
+
+    expect(proposalSection()?.textContent).toContain("Frações");
+    expect(proposalSection()?.textContent).toContain("Equações do 1.º grau");
+    expect(proposalSection()?.textContent).toContain("Resolver equações.");
+    expect(buttonWith("proposal.accept")).toBeDefined();
+    expect(buttonWith("proposal.reject")).toBeDefined();
+  });
+
+  it("shows no proposal section when the lesson has no pending proposal", async () => {
+    await render(dialogProps());
+
+    expect(proposalSection()).toBeNull();
+  });
+
+  it("accepts the proposal, then tells the parent so the turma reloads", async () => {
+    vi.mocked(acceptProposal).mockResolvedValue({} as LessonSlot);
+    const onProposalResolved = vi.fn();
+    await render(dialogProps({ slot: withProposal, onProposalResolved }));
+
+    await act(async () => {
+      buttonWith("proposal.accept")?.click();
+    });
+
+    expect(acceptProposal).toHaveBeenCalledWith("tt", "slot-3");
+    expect(rejectProposal).not.toHaveBeenCalled();
+    expect(onProposalResolved).toHaveBeenCalledWith(withProposal);
+    expect(proposalSection()).toBeNull();
+    expect(toast.error).not.toHaveBeenCalled();
+  });
+
+  it("rejects the proposal and leaves the topic as it is", async () => {
+    vi.mocked(rejectProposal).mockResolvedValue({} as LessonSlot);
+    const onProposalResolved = vi.fn();
+    const onTitleChange = vi.fn();
+    await render(dialogProps({ slot: withProposal, onProposalResolved, onTitleChange }));
+
+    await act(async () => {
+      buttonWith("proposal.reject")?.click();
+    });
+
+    expect(rejectProposal).toHaveBeenCalledWith("tt", "slot-3");
+    expect(acceptProposal).not.toHaveBeenCalled();
+    expect(onProposalResolved).toHaveBeenCalledWith(withProposal);
+    expect(onTitleChange).not.toHaveBeenCalled();
+    expect(proposalSection()).toBeNull();
+  });
+
+  it("keeps the proposal and says so when the request fails", async () => {
+    vi.mocked(acceptProposal).mockRejectedValue(new Error("network"));
+    const onProposalResolved = vi.fn();
+    await render(dialogProps({ slot: withProposal, onProposalResolved }));
+
+    await act(async () => {
+      buttonWith("proposal.accept")?.click();
+    });
+
+    expect(toast.error).toHaveBeenCalledWith("proposal.failed");
+    expect(onProposalResolved).not.toHaveBeenCalled();
+    expect(proposalSection()).not.toBeNull();
   });
 });
