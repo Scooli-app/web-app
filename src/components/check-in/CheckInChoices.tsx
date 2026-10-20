@@ -34,7 +34,8 @@ const RESULT_STYLE: Record<CheckInResult, { icon: LucideIcon; tone: string }> = 
 
 /**
  * The four "Como correu?" results as tinted cards (icon and short label). Shared by the dashboard card, the calendar
- * dialog and the in-flow prompt, so all three look and behave the same. Two per row on narrow screens, four on wide.
+ * dialog and the in-flow prompt, so all three look and behave the same. Compact: icon and label on one line, two per
+ * row on narrow screens, four on wide.
  */
 export function CheckInResultOptions({
   onChoose,
@@ -59,13 +60,13 @@ export function CheckInResultOptions({
             key={option.result}
             variant="outline"
             className={cn(
-              "h-full min-h-16 flex-col items-start justify-start gap-1.5 whitespace-normal rounded-lg p-3 text-left font-medium shadow-none",
+              "h-full min-h-10 items-center justify-start gap-2 whitespace-normal rounded-lg px-3 py-2 text-left font-medium shadow-none",
               "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
               tone,
             )}
             onClick={() => onChoose(option.result)}
           >
-            <Icon className="h-6 w-6 shrink-0" aria-hidden />
+            <Icon className="h-4 w-4 shrink-0" aria-hidden />
             <span className="text-sm leading-snug">{option.label}</span>
           </Button>
         );

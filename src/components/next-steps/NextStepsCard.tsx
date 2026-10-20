@@ -12,6 +12,7 @@ import {
   weekStartOf,
   type NextStepAction,
 } from "@/components/next-steps/nextSteps";
+import { SHOW_CHECK_INS_EVENT } from "@/hooks/checkInSession";
 import { useCheckInFollowUps } from "@/hooks/useCheckInFollowUps";
 import { useShiftFollowing } from "@/hooks/useShiftFollowing";
 import { getSuggestions, getTurmaSuggestions } from "@/services/api/suggestions.service";
@@ -73,7 +74,8 @@ export function NextStepsCard({ timetableId, refreshKey = 0 }: NextStepsCardProp
   const onAction = async (item: Suggestion) => {
     const action = actionFor(item.kind);
     if (action === "view") {
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      // The check-in strip (dashboard) shows itself, even after "Esconder por agora", and scrolls into view.
+      window.dispatchEvent(new Event(SHOW_CHECK_INS_EVENT));
       return;
     }
     const lesson = lessonOf(item);

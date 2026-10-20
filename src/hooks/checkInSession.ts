@@ -6,6 +6,9 @@
 export const DISMISSED_KEY = "scooli.checkIns.dismissed";
 export const SKIPPED_KEY = "scooli.checkIns.skipped";
 
+/** Sent by "Ver" on the "Confirma N aulas" next step: the strip comes back and scrolls into view. */
+export const SHOW_CHECK_INS_EVENT = "scooli:show-check-ins";
+
 export function readDismissed(storage: Storage | null = safeSessionStorage()): boolean {
   try {
     return storage?.getItem(DISMISSED_KEY) === "1";
@@ -19,6 +22,14 @@ export function writeDismissed(storage: Storage | null = safeSessionStorage()): 
     storage?.setItem(DISMISSED_KEY, "1");
   } catch {
     /* non-fatal: the strip stays hidden until the tab changes */
+  }
+}
+
+export function clearDismissed(storage: Storage | null = safeSessionStorage()): void {
+  try {
+    storage?.removeItem(DISMISSED_KEY);
+  } catch {
+    /* non-fatal */
   }
 }
 
