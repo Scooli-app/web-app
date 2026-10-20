@@ -176,6 +176,8 @@ export function WeekLessonDialog({
       onDocumentsChanged={onChanged}
       onFollowUpStarted={onChanged}
       onProposalResolved={onChanged}
+      onPreviousCheckedIn={onChanged}
+      onLessonsShifted={onChanged}
     />
   );
 }
