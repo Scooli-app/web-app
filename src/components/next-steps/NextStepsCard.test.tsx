@@ -51,10 +51,10 @@ describe("NextStepsView", () => {
     ]);
 
     expect(html).toContain("prepareNext|");
-    expect(html).toContain("replanNotHeld");
+    expect(html).toContain("replanNotHeldShift");
     expect(html).toContain("reinforce|Frações");
     expect(html).toContain("actionPrepare");
-    expect(html).toContain("actionReschedule");
+    expect(html).toContain("actionShift");
     expect(html).toContain("actionReinforce");
   });
 
@@ -108,6 +108,35 @@ describe("NextStepsView", () => {
     expect(rows).toHaveLength(2);
     expect(rows[0]).toContain("bg-primary");
     expect(rows[1]).not.toContain("bg-primary");
+  });
+
+  it("names the non-Pro move 'Mover aulas seguintes' and keeps 'Reajustar' for Pro's review", () => {
+    const items = [step({ kind: "replan_not_held", slotId: "s2" })];
+
+    const nonPro = renderToStaticMarkup(
+      createElement(NextStepsView, { items, showTurma: false, busyKey: null, onAction: () => undefined }),
+    );
+    expect(nonPro).toContain("actionShift");
+    expect(nonPro).not.toContain("actionReschedule");
+    expect(nonPro).toContain("replanNotHeldShift");
+    expect(nonPro).not.toContain("replanNotHeld|");
+
+    const pro = renderToStaticMarkup(
+      createElement(NextStepsView, { items, showTurma: false, isPro: true, busyKey: null, onAction: () => undefined }),
+    );
+    expect(pro).toContain("actionReschedule");
+    expect(pro).not.toContain("actionShift");
+    expect(pro).toContain("replanNotHeld");
+    expect(pro).not.toContain("replanNotHeldShift");
+  });
+
+  it("sets the heading in sentence case, not uppercase tracked caps", () => {
+    const html = render([step({})]);
+    const heading = html.match(/<h3[^>]*>/)?.[0] ?? "";
+
+    expect(heading).toContain("font-semibold");
+    expect(heading).not.toContain("uppercase");
+    expect(heading).not.toContain("tracking-wide");
   });
 
   it("shows at most three steps", () => {

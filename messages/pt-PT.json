@@ -116,10 +116,12 @@
     "loading": "A carregar sugestões",
     "prepareNext": "Prepara a aula de {day}",
     "replanNotHeld": "Reajusta: move as aulas seguintes",
+    "replanNotHeldShift": "Não houve aula: mover as aulas seguintes",
     "reinforce": "Gera ficha de reforço para {outcome}",
     "checkIn": "Confirma {count, plural, one {# aula} other {# aulas}}",
     "actionPrepare": "Preparar",
     "actionReschedule": "Reajustar",
+    "actionShift": "Mover aulas seguintes",
     "actionReinforce": "Gerar ficha",
     "actionView": "Ver"
   },
@@ -141,9 +143,9 @@
     "assessmentYes": "Sim",
     "assessmentNotYet": "Ainda não",
     "confirmAll": "Correram todas bem",
-    "confirmAllToast": "{count, plural, one {# aula marcada como dada} other {# aulas marcadas como dadas}}",
+    "confirmAllToast": "{count, plural, one {# aula marcada como lecionada} other {# aulas marcadas como lecionadas}}",
     "dismiss": "Esconder por agora",
-    "taughtToast": "Aula marcada como dada",
+    "taughtToast": "Aula marcada como lecionada",
     "prepareNext": "Preparar a próxima aula",
     "saveError": "Não foi possível guardar. Tenta novamente.",
     "confirmAllError": "Não foi possível confirmar as aulas. Tenta novamente.",
@@ -193,8 +195,8 @@
     "notePlaceholder": "Ex.: faltou a parte das cadeias alimentares"
   },
   "previousCheckIn": {
-    "question": "A última aula correu bem?",
-    "questionWithTopic": "A última aula ({topic}) correu bem?",
+    "question": "Como correu a aula?",
+    "questionWithTopic": "Como correu a aula ({topic})?",
     "notNow": "Agora não",
     "saved": "Registado.",
     "savedWithContext": "Registado. A próxima aula vai ter isto em conta."
@@ -2949,11 +2951,11 @@
       "coverageLabel": "Aprendizagens trabalhadas",
       "coverageCount": "{covered} de {total} AE trabalhadas",
       "coverageOfYear": "{total} de {curriculum} do ano",
-      "given": "Dadas",
-      "unconfirmedLessons": "Não confirmadas",
+      "given": "Lecionadas",
+      "unconfirmedLessons": "Por confirmar",
       "partial": "A meio",
       "notHeld": "Não houve aula",
-      "pending": "Por confirmar",
+      "pending": "Previstas",
       "behindTitle": "Em atraso",
       "allOnTime": "Tudo em dia",
       "plannedFor": "Planeada para {date}",
@@ -2967,8 +2969,8 @@
       "nextAssessmentTitle": "Próximo teste",
       "noAssessment": "Sem teste agendado",
       "coverageCaption": "das aprendizagens planeadas já trabalhadas",
-      "unconfirmedLegend": "+{count} não confirmadas",
-      "unconfirmedHint": "Aprendizagens que só uma aula sem resposta dá como dadas. Não contam na percentagem.",
+      "unconfirmedLegend": "+{count} por confirmar",
+      "unconfirmedHint": "Aprendizagens que só uma aula sem resposta dá como lecionadas. Não contam na percentagem.",
       "reinforcementGenerate": "Gerar ficha",
       "reinforcementRetry": "Tentar outra vez",
       "reinforcementGenerating": "A preparar…",
@@ -3072,7 +3074,7 @@
       "sinceStart": "desde o início do período",
       "lessons": "{count, plural, one {# aula} other {# aulas}}",
       "notConfirmed": "não confirmado",
-      "empty": "Ainda não há matéria dada desde o último teste.",
+      "empty": "Ainda não há matéria lecionada desde o último teste.",
       "pickAtLeastOne": "Escolhe pelo menos uma aprendizagem para criar o teste."
     },
     "slotDialog": {
@@ -3086,8 +3088,8 @@
       "noDocuments": "Nenhum documento encontrado.",
       "viewLinkedPlan": "Ver planificação ligada",
       "proposal": {
-        "badge": "Proposta",
-        "title": "Proposta de atualização",
+        "badge": "Tema novo",
+        "title": "Tema novo para esta aula",
         "hint": "Esta aula já tem documentos, por isso o tópico foi mantido. Aceita a proposta para o alterar.",
         "current": "Atual",
         "proposed": "Proposto",
@@ -3451,6 +3453,71 @@
     "applied": "Alterações aplicadas",
     "rejected": "Proposta rejeitada",
     "actionError": "Não foi possível guardar a proposta."
+  },
+  "adminPilot": {
+    "title": "Piloto",
+    "description": "Respostas aos check-ins, propostas aceites e ciclo de reforço por professor e turma.",
+    "exportCsv": "Exportar CSV",
+    "loadFailed": "Não foi possível carregar as métricas do piloto.",
+    "range": {
+      "from": "Semana inicial",
+      "to": "Semana final",
+      "weekOf": "Semana de {date}"
+    },
+    "headlines": {
+      "answerRate": "Taxa de resposta",
+      "activeTeachers": "Professores ativos",
+      "proposals": "Propostas aceites",
+      "loop": "Ciclo completo"
+    },
+    "definitions": {
+      "answerRate": "Aulas respondidas no check-in sobre as aulas que tinham de ser respondidas.",
+      "activeTeachers": "Professores que responderam, aceitaram ou rejeitaram algo na última semana do período.",
+      "proposals": "Propostas aceites ou aceites em parte sobre as decididas. Sugestões substituídas pela IA não contam.",
+      "loop": "Dificuldades seguidas de reforço e de um check-in na aula a que o reforço ficou ligado."
+    },
+    "sub": {
+      "answerRate": "{answered} de {due} aulas",
+      "activeTeachers": "de {total} professores no piloto",
+      "proposals": "{accepted} de {decided} decididas",
+      "loop": "{completed} de {started} iniciados",
+      "none": "Sem dados no período"
+    },
+    "empty": {
+      "title": "Sem atividade neste período",
+      "description": "Aparece aqui quando os professores com Class State tiverem aulas no período."
+    },
+    "table": {
+      "title": "Professores por turma",
+      "teacher": "Professor",
+      "turma": "Turma",
+      "total": "Total",
+      "showWeeks": "Mostrar semanas",
+      "hideWeeks": "Ocultar semanas",
+      "noActivity": "Sem atividade"
+    },
+    "cell": {
+      "answeredOf": "{answered} de {due} aulas respondidas"
+    },
+    "weekly": {
+      "due": "Aulas devidas",
+      "answered": "Respondidas",
+      "assumed": "Assumidas",
+      "unanswered": "Sem resposta",
+      "notHeld": "Não realizadas",
+      "partial": "Parciais",
+      "difficulties": "Dificuldades",
+      "topics": "Propostas de tema",
+      "docs": "Sugestões de versão",
+      "replans": "Replanificações",
+      "loop": "Ciclo de reforço"
+    },
+    "breakdown": {
+      "topics": "{accepted} aceites, {rejected} rejeitadas, {pending} por rever",
+      "docs": "{appliedAll} aplicadas, {appliedPartial} aplicadas em parte, {rejected} substituídas, {pending} por rever",
+      "replans": "{accepted} aceites, {partiallyAccepted} aceites em parte, {rejected} rejeitadas, {failed} falharam, {noChange} sem alteração, {pending} por rever",
+      "loop": "{completed} de {started} completos"
+    }
   },
   "reviewFeed": {
     "title": "Por rever",

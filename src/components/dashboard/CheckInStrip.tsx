@@ -4,7 +4,7 @@ import { CheckInCard } from "@/components/check-in/CheckInCard";
 import { WeekLessonDialog, type WeekLessonTarget } from "@/components/dashboard/WeekLessonDialog";
 import { Button } from "@/components/ui/button";
 import { confirmableCount, shouldShowCheckInStrip } from "@/hooks/checkInQueue";
-import { SHOW_CHECK_INS_EVENT } from "@/hooks/checkInSession";
+import { SHOW_CHECK_INS_EVENT, writeAsked } from "@/hooks/checkInSession";
 import { followUpFor, useCheckInFollowUps, type CheckInFollowUp } from "@/hooks/useCheckInFollowUps";
 import { usePendingCheckIns } from "@/hooks/usePendingCheckIns";
 import { useReplan } from "@/hooks/useReplan";
@@ -48,6 +48,12 @@ export function CheckInStrip() {
 
   const showStrip = shouldShowCheckInStrip({ enabled, dismissed, visibleCount: visible.length });
   const current = visible[0];
+  const currentSlotId = current?.slotId;
+
+  // The strip has asked about this lesson, so the lesson dialog's previous-lesson prompt does not ask it again.
+  useEffect(() => {
+    if (showStrip && currentSlotId) writeAsked(currentSlotId);
+  }, [showStrip, currentSlotId]);
 
   useEffect(() => {
     if (!scrollRequested || !showStrip) return;

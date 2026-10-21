@@ -121,6 +121,7 @@ export function NextStepsCard({ timetableId, refreshKey = 0 }: NextStepsCardProp
         <NextStepsView
           items={steps}
           showTurma={!timetableId}
+          isPro={isPro}
           busyKey={busyKey}
           onAction={(item) => void onAction(item)}
         />
@@ -159,12 +160,14 @@ export interface NextStepsViewProps {
   items: Suggestion[];
   /** Name the turma on each step (the dashboard lists several). */
   showTurma: boolean;
+  /** Pro: "Reajustar" opens a review. Non-Pro: the same step moves the lessons now, so it is named that way. */
+  isPro?: boolean;
   busyKey: string | null;
   onAction: (item: Suggestion) => void;
 }
 
 /** The card's content for loaded steps. Exported so the rendering can be tested without a fetch. */
-export function NextStepsView({ items, showTurma, busyKey, onAction }: NextStepsViewProps) {
+export function NextStepsView({ items, showTurma, isPro = false, busyKey, onAction }: NextStepsViewProps) {
   const t = useTranslations("nextSteps");
   const rawLocale = useLocale();
   const intlLocale = toIntlLocale(isSupportedLocale(rawLocale) ? rawLocale : defaultLocale);
@@ -173,7 +176,7 @@ export function NextStepsView({ items, showTurma, busyKey, onAction }: NextSteps
 
   const labels: Record<NextStepAction, string> = {
     prepare: t("actionPrepare"),
-    reschedule: t("actionReschedule"),
+    reschedule: isPro ? t("actionReschedule") : t("actionShift"),
     reinforce: t("actionReinforce"),
     view: t("actionView"),
   };
@@ -183,7 +186,7 @@ export function NextStepsView({ items, showTurma, busyKey, onAction }: NextSteps
       case "prepare_next":
         return t("prepareNext", { day: formatStepDay(item.slotDate ?? "", intlLocale) });
       case "replan_not_held":
-        return t("replanNotHeld");
+        return isPro ? t("replanNotHeld") : t("replanNotHeldShift");
       case "reinforce":
         return t("reinforce", { outcome: item.outcomeTexts[0] ?? item.topicTitle ?? "" });
       case "check_in":
@@ -195,7 +198,7 @@ export function NextStepsView({ items, showTurma, busyKey, onAction }: NextSteps
 
   return (
     <section aria-label={t("title")} className="rounded-xl border bg-card p-3 sm:p-4">
-      <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t("title")}</h3>
+      <h3 className="mb-2 text-sm font-semibold">{t("title")}</h3>
       <ul className="divide-y">
         {steps.map((item, index) => {
           const key = stepKey(item);

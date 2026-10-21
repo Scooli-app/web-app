@@ -9,6 +9,7 @@ import { selectIsClassStateEnabled } from "@/store/features/selectors";
 import { useAppSelector } from "@/store/hooks";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
+import { readAsked } from "@/hooks/checkInSession";
 import { useReplan } from "@/hooks/useReplan";
 import { buildSubmission, initialOutcomeSelection, needsDetailStep } from "@/hooks/checkInQueue";
 import { CheckInOutcomeStep, CheckInResultOptions, type OutcomeStepExtras } from "./CheckInChoices";
@@ -73,7 +74,9 @@ export function PreviousLessonCheckIn({
     setOutcomeResult(null);
     setSelected([]);
     void loadPreviousCheckIn(enabled, timetableId, lessonId).then((found) => {
-      if (!cancelled) setPending(found);
+      if (cancelled) return;
+      // The check-in strip already asked about this lesson in this session: asking again would duplicate it.
+      setPending(found && !readAsked(found.slotId) ? found : null);
     });
     return () => {
       cancelled = true;
