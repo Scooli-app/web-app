@@ -54,6 +54,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
+    "diff": "^8.0.4",
     "docx": "^9.5.1",
     "katex": "^0.16.45",
     "konva": "^10.3.0",

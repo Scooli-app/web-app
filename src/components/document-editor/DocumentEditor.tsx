@@ -54,6 +54,7 @@ import RichTextEditor from "../ui/rich-text-editor";
 import { GenerationStalledNotice } from "../ui/generation-stalled-notice";
 import AIChatPanel from "./AIChatPanel";
 import { DocumentLessonContext } from "./DocumentLessonContext";
+import { SuggestionBar } from "@/components/document-versions/SuggestionBar";
 import DocumentTitle from "./DocumentTitle";
 import CreateCalendarFromPlanButton from "./CreateCalendarFromPlanButton";
 import DownloadButton from "./DownloadButton";
@@ -1354,6 +1355,13 @@ export default function DocumentEditor({
       <div className="flex-1 flex flex-col w-full">
         {activeDocument && (
           <DocumentLessonContext classInfo={activeDocument.classInfo} documentId={activeDocument.id} />
+        )}
+        {activeDocument && (
+          <SuggestionBar
+            documentId={activeDocument.id}
+            suggestion={activeDocument.pendingSuggestion}
+            contentFormat="markdown"
+          />
         )}
         <DocumentTitle
           title={resolvedTitle}

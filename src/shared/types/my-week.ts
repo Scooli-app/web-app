@@ -20,6 +20,8 @@ export interface MyWeekLessonDocument {
   documentType: string;
   title: string;
   status: string;
+  /** The document has a suggested version waiting for review (ENG-255). */
+  hasPendingSuggestion?: boolean;
 }
 
 export interface MyWeekClass {

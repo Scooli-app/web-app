@@ -27,6 +27,7 @@
 "use client";
 
 import { PresentationEditorSkeleton } from "@/components/document-editor-v2/PresentationEditorSkeleton";
+import { SuggestionBar } from "@/components/document-versions/SuggestionBar";
 import AIChatPanel from "@/components/document-editor/AIChatPanel";
 import { AiDisclaimer } from "@/components/ui/ai-disclaimer";
 import { GenerationProgress } from "@/components/blocks/GenerationProgress";
@@ -1925,6 +1926,16 @@ export function BlockDocumentEditor({ documentId }: Props) {
 
   return (
     <div className="flex w-full flex-1 min-h-0 flex-col overflow-hidden">
+      <div className="flex-shrink-0 px-3 pt-3">
+        <SuggestionBar
+          documentId={documentId}
+          suggestion={document.pendingSuggestion}
+          contentFormat="json"
+          onContentReplaced={() => {
+            canvasRef.current = null;
+          }}
+        />
+      </div>
 
       {/* ── Main toolbar ───────────────────────────────────────────────── */}
       <div className="flex flex-shrink-0 flex-wrap items-center gap-1.5 border-b border-border bg-background px-3 py-2">

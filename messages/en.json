@@ -3355,5 +3355,55 @@
       "existingTitle": "Your curriculum plans",
       "empty": "You don't have any curriculum plans yet. Create or import the first one above."
     }
+  },
+  "documentVersions": {
+    "bar": {
+      "title": "New suggested version",
+      "preparing": "Preparing a new version…",
+      "review": "Review changes"
+    },
+    "review": {
+      "title": "New suggested version",
+      "suggestedOn": "Suggested on {date}",
+      "staleNotice": "You edited the document after this suggestion was made. Your changes to the other sections stay as they are.",
+      "noChanges": "This suggestion has no changes.",
+      "unchangedCount": "{count, plural, one {# section without changes} other {# sections without changes}}",
+      "type": {
+        "added": "New",
+        "changed": "Changed",
+        "removed": "Removed"
+      },
+      "view": {
+        "before": "Before",
+        "after": "After",
+        "changes": "Changes"
+      },
+      "viewLabel": "View the section",
+      "addedText": "Added: ",
+      "removedText": "Removed: ",
+      "seeAll": "See all",
+      "showLess": "See less",
+      "before": "Before",
+      "after": "After",
+      "noSlide": "No slide",
+      "selectAll": "Select all",
+      "selectNone": "None",
+      "apply": "{count, plural, =0 {Apply changes} one {Apply # change} other {Apply # changes}}",
+      "reject": "Reject suggestion",
+      "rejectTitle": "Reject this suggestion?",
+      "rejectDescription": "The document stays as it is and the suggestion goes away.",
+      "rejectConfirm": "Reject",
+      "keepSuggestion": "Cancel",
+      "applied": "Changes applied",
+      "skipped": "{count, plural, one {# section no longer existed and was left out} other {# sections no longer existed and were left out}}",
+      "applyError": "Could not apply the changes. Try again.",
+      "rejected": "Suggestion rejected",
+      "rejectError": "Could not reject the suggestion. Try again.",
+      "loadError": "Could not load the changes.",
+      "retry": "Try again"
+    },
+    "chip": {
+      "suggestionDot": "New suggested version"
+    }
   }
 }

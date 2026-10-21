@@ -3355,5 +3355,55 @@
       "existingTitle": "As tuas planificações",
       "empty": "Ainda não tens planificações. Cria ou importa a primeira acima."
     }
+  },
+  "documentVersions": {
+    "bar": {
+      "title": "Nova versão sugerida",
+      "preparing": "A preparar uma nova versão…",
+      "review": "Rever alterações"
+    },
+    "review": {
+      "title": "Nova versão sugerida",
+      "suggestedOn": "Sugerida a {date}",
+      "staleNotice": "Editaste o documento depois desta sugestão. As tuas alterações nas outras secções ficam como estão.",
+      "noChanges": "Esta sugestão não tem alterações.",
+      "unchangedCount": "{count, plural, one {# secção sem alterações} other {# secções sem alterações}}",
+      "type": {
+        "added": "Nova",
+        "changed": "Alterada",
+        "removed": "Removida"
+      },
+      "view": {
+        "before": "Antes",
+        "after": "Depois",
+        "changes": "Alterações"
+      },
+      "viewLabel": "Ver a secção",
+      "addedText": "Acrescentado: ",
+      "removedText": "Removido: ",
+      "seeAll": "Ver tudo",
+      "showLess": "Ver menos",
+      "before": "Antes",
+      "after": "Depois",
+      "noSlide": "Sem diapositivo",
+      "selectAll": "Selecionar tudo",
+      "selectNone": "Nenhuma",
+      "apply": "{count, plural, =0 {Aplicar alterações} one {Aplicar # alteração} other {Aplicar # alterações}}",
+      "reject": "Rejeitar sugestão",
+      "rejectTitle": "Rejeitar esta sugestão?",
+      "rejectDescription": "O documento fica como está e a sugestão desaparece.",
+      "rejectConfirm": "Rejeitar",
+      "keepSuggestion": "Cancelar",
+      "applied": "Alterações aplicadas",
+      "skipped": "{count, plural, one {# secção já não existia e ficou de fora} other {# secções já não existiam e ficaram de fora}}",
+      "applyError": "Não foi possível aplicar as alterações. Tenta de novo.",
+      "rejected": "Sugestão rejeitada",
+      "rejectError": "Não foi possível rejeitar a sugestão. Tenta de novo.",
+      "loadError": "Não foi possível carregar as alterações.",
+      "retry": "Tentar de novo"
+    },
+    "chip": {
+      "suggestionDot": "Nova versão sugerida"
+    }
   }
 }
