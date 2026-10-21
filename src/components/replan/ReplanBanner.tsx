@@ -1,13 +1,15 @@
 "use client";
 
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { useReplan } from "@/hooks/useReplan";
 import { replanService } from "@/services/api/replan.service";
 import type { ReplanProposal } from "@/shared/types/replan";
-import { Loader2, Sparkles } from "lucide-react";
+import { Info, Loader2, Sparkles, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { ReplanReviewSheet } from "./ReplanReviewSheet";
+import { readDismissedProposals, writeDismissedProposal } from "./replanSession";
 import {
   REPLAN_CHANGED_EVENT,
   REPLAN_MAX_POLLS,
@@ -32,8 +34,14 @@ export function ReplanBanner({ timetableId, onChanged }: ReplanBannerProps) {
   const [proposal, setProposal] = useState<ReplanProposal | null>(null);
   const [reviewOpen, setReviewOpen] = useState(false);
   const [dismissed, setDismissed] = useState(false);
+  /** "No change" proposals the teacher dismissed in this session. Read after mount, so server and client markup match. */
+  const [dismissedIds, setDismissedIds] = useState<string[]>([]);
   /** Bumped when a proposal is requested or settles, so the banner shows it without a page reload. */
   const [reloadTick, setReloadTick] = useState(0);
+
+  useEffect(() => {
+    setDismissedIds(readDismissedProposals());
+  }, []);
 
   useEffect(() => {
     const onChangedEvent = (event: Event) => {
@@ -71,12 +79,17 @@ export function ReplanBanner({ timetableId, onChanged }: ReplanBannerProps) {
   }, [timetableId, reloadTick]);
 
   const state = bannerState(proposal);
-  if (!state || dismissed) return null;
+  if (!state || dismissed || (proposal && dismissedIds.includes(proposal.id))) return null;
 
   const onDecided = () => {
     setReviewOpen(false);
     setProposal(null);
     onChanged();
+  };
+
+  const dismissProposal = () => {
+    if (!proposal) return;
+    setDismissedIds(writeDismissedProposal(proposal.id));
   };
 
   const shiftFallback = async (triggerSlotId: string) => {
@@ -92,6 +105,7 @@ export function ReplanBanner({ timetableId, onChanged }: ReplanBannerProps) {
         state={state}
         onReview={() => setReviewOpen(true)}
         onShiftFallback={(triggerSlotId) => void shiftFallback(triggerSlotId)}
+        onDismiss={dismissProposal}
       />
 
       {proposal?.status === "pending" && (
@@ -112,11 +126,32 @@ interface ReplanBannerViewProps {
   state: ReplanBannerState;
   onReview: () => void;
   onShiftFallback: (triggerSlotId: string) => void;
+  onDismiss: () => void;
 }
 
 /** The three states of the banner. Presentational, so each state can be rendered and checked on its own. */
-export function ReplanBannerView({ state, onReview, onShiftFallback }: ReplanBannerViewProps) {
+export function ReplanBannerView({ state, onReview, onShiftFallback, onDismiss }: ReplanBannerViewProps) {
   const t = useTranslations("replan");
+
+  if (state.kind === "noChange") {
+    return (
+      <Alert role="status" className="relative items-center pr-12 text-sm">
+        <Info aria-hidden />
+        <AlertTitle className="line-clamp-none text-foreground">{t("noChange")}</AlertTitle>
+        {state.summary && <AlertDescription>{state.summary}</AlertDescription>}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="absolute top-2 right-2 h-7 w-7"
+          aria-label={t("dismiss")}
+          onClick={onDismiss}
+        >
+          <X className="h-4 w-4" aria-hidden />
+        </Button>
+      </Alert>
+    );
+  }
+
   const fallbackSlotId = state.kind === "failed" ? state.triggerSlotId : null;
 
   const message =

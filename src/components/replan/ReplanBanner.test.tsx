@@ -34,7 +34,12 @@ const generating: ReplanProposal = {
 describe("ReplanBannerView", () => {
   it("says a proposal is being prepared, with no action", () => {
     const html = renderToStaticMarkup(
-      createElement(ReplanBannerView, { state: { kind: "generating" }, onReview: vi.fn(), onShiftFallback: vi.fn() }),
+      createElement(ReplanBannerView, {
+        state: { kind: "generating" },
+        onReview: vi.fn(),
+        onShiftFallback: vi.fn(),
+        onDismiss: vi.fn(),
+      }),
     );
     expect(html).toContain("bannerGenerating");
     expect(html).not.toContain(">review<");
@@ -47,6 +52,7 @@ describe("ReplanBannerView", () => {
         state: { kind: "pending", count: 3 },
         onReview: vi.fn(),
         onShiftFallback: vi.fn(),
+        onDismiss: vi.fn(),
       }),
     );
     expect(html).toContain("bannerPending:");
@@ -60,6 +66,7 @@ describe("ReplanBannerView", () => {
         state: { kind: "failed", triggerSlotId: "s0" },
         onReview: vi.fn(),
         onShiftFallback: vi.fn(),
+        onDismiss: vi.fn(),
       }),
     );
     expect(html).toContain("bannerFailed");
@@ -73,10 +80,43 @@ describe("ReplanBannerView", () => {
         state: { kind: "failed", triggerSlotId: null },
         onReview: vi.fn(),
         onShiftFallback: vi.fn(),
+        onDismiss: vi.fn(),
       }),
     );
     expect(html).toContain("bannerFailed");
     expect(html).not.toContain("shiftFallback");
+  });
+});
+
+describe("ReplanBannerView no change", () => {
+  it("shows the quiet info line with the summary and a dismiss button, and no review or move", () => {
+    const html = renderToStaticMarkup(
+      createElement(ReplanBannerView, {
+        state: { kind: "noChange", summary: "The plan still fits the class." },
+        onReview: vi.fn(),
+        onShiftFallback: vi.fn(),
+        onDismiss: vi.fn(),
+      }),
+    );
+    expect(html).toContain("noChange");
+    expect(html).toContain("The plan still fits the class.");
+    expect(html).toContain('aria-label="dismiss"');
+    expect(html).not.toContain(">review<");
+    expect(html).not.toContain("shiftFallback");
+    expect(html).not.toContain("bannerFailed");
+  });
+
+  it("renders without a summary when the agent gave none", () => {
+    const html = renderToStaticMarkup(
+      createElement(ReplanBannerView, {
+        state: { kind: "noChange", summary: null },
+        onReview: vi.fn(),
+        onShiftFallback: vi.fn(),
+        onDismiss: vi.fn(),
+      }),
+    );
+    expect(html).toContain("noChange");
+    expect(html).not.toContain("data-slot=\"alert-description\"");
   });
 });
 

@@ -37,13 +37,22 @@ export function timelineOrder(items: ReplanItem[]): ReplanItem[] {
 export type ReplanBannerState =
   | { kind: "generating" }
   | { kind: "pending"; count: number }
+  | { kind: "noChange"; summary: string | null }
   | { kind: "failed"; triggerSlotId: string | null };
 
 export function bannerState(proposal: ReplanProposal | null): ReplanBannerState | null {
   if (!proposal) return null;
   if (proposal.status === "generating") return { kind: "generating" };
   if (proposal.status === "pending") return { kind: "pending", count: proposal.items.length };
+  if (proposal.status === "no_change") return { kind: "noChange", summary: proposal.summary };
   return { kind: "failed", triggerSlotId: proposal.triggerSlotId };
+}
+
+/** The toast a watch shows once a proposal settles: ready to review, nothing to change (info), or failed. */
+export function settledToast(proposal: ReplanProposal): "ready" | "noChange" | "failed" {
+  if (proposal.status === "pending") return "ready";
+  if (proposal.status === "no_change") return "noChange";
+  return "failed";
 }
 
 /**
