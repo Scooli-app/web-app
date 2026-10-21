@@ -3,16 +3,17 @@ import pt from "../../messages/pt-PT.json";
 import { describe, expect, it } from "vitest";
 
 /**
- * The agreed vocabulary of the ENG-313 pass (one word per state, "Previstas" for future lessons, "Tema novo",
+ * The agreed vocabulary of the ENG-313 pass (one word per state, "Por confirmar" for past unanswered lessons and "Assumidas" for assumed ones, "Tema novo",
  * "Mover aulas seguintes" for the non-Pro move). Pins the copy so a later edit cannot quietly bring back the old names.
  */
 describe("ENG-313 vocabulary", () => {
-  it("names future lessons in the progress panel 'Previstas', and past unanswered ones 'Por confirmar'", () => {
-    expect(pt.calendar.progress.pending).toBe("Previstas");
-    expect(pt.calendar.progress.unconfirmedLessons).toBe("Por confirmar");
-    expect(pt.calendar.progress.unconfirmedLegend).toBe("+{count} por confirmar");
-    expect(en.calendar.progress.pending).toBe("Planned");
-    expect(en.calendar.progress.unconfirmedLessons).toBe("To confirm");
+  it("names the panel's past unanswered lessons 'Por confirmar' and the assumed ones 'Assumidas'", () => {
+    // counts.planned are PAST lessons still without an answer (TurmaProgressService.StatusCounts), not future ones.
+    expect(pt.calendar.progress.pending).toBe("Por confirmar");
+    expect(pt.calendar.progress.unconfirmedLessons).toBe("Assumidas");
+    expect(pt.calendar.progress.unconfirmedLegend).toBe("+{count} assumidas");
+    expect(en.calendar.progress.pending).toBe("To confirm");
+    expect(en.calendar.progress.unconfirmedLessons).toBe("Assumed");
   });
 
   it("uses 'Mover aulas seguintes' for the non-Pro next step, and keeps 'Reajustar' for Pro", () => {
