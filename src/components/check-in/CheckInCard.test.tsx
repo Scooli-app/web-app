@@ -157,6 +157,25 @@ describe("CheckInOutcomeStep with one outcome (ENG-253)", () => {
     expect(html).toContain("Somar frações");
   });
 
+  it("with no outcomes, drops the outcome question and list and keeps only the note label", () => {
+    const html = renderToStaticMarkup(
+      createElement(CheckInOutcomeStep, {
+        question: "difficultiesQuestion",
+        result: "TAUGHT_WITH_DIFFICULTIES",
+        outcomes: [],
+        selected: [],
+        onToggle: vi.fn(),
+        onSave: vi.fn(),
+        onBack: vi.fn(),
+      }),
+    );
+    expect(html).not.toContain("difficultiesQuestion");
+    expect(html).not.toContain('role="group"');
+    expect(html).not.toContain('role="checkbox"');
+    expect(html).toContain("noteLabel");
+    expect(html).not.toContain("missingAmountQuestion");
+  });
+
   it("keeps the checklist when there are several outcomes", () => {
     const two = [...only, { id: "o2", text: "Ler com fluência", topicPath: [], source: "ai" }];
     const html = render("TAUGHT_WITH_DIFFICULTIES", two);

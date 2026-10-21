@@ -305,6 +305,70 @@ describe("SlotDialog: offering a reinforcement worksheet or a carry-over after a
     });
   });
 
+  /** Types into the note field of the open detail step. */
+  async function typeNote(text: string) {
+    await act(async () => {
+      const textarea = document.querySelector<HTMLTextAreaElement>("textarea");
+      const setValue = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")?.set;
+      setValue?.call(textarea, text);
+      textarea?.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+  }
+
+  it("opens the note step for 'com dificuldades' on a lesson with no outcomes, and sends the note with no outcome ids", async () => {
+    vi.mocked(checkInService.submit).mockResolvedValue({
+      id: "c1",
+      timetableId: "tt",
+      teachingStatus: "taught",
+      checkedInAt: "2020-03-10T10:00:00Z",
+    });
+    await render(dialogProps({ slot }));
+    await act(async () => {
+      buttonWith("resultDifficulties")?.click();
+    });
+
+    expect(document.body.textContent).toContain("noteLabel");
+    expect(document.body.textContent).not.toContain("difficultiesQuestion");
+    await typeNote("  Chuva na sala  ");
+    await act(async () => {
+      buttonWith("save")?.click();
+    });
+
+    expect(checkInService.submit).toHaveBeenCalledWith("tt", "slot-3", {
+      result: "TAUGHT_WITH_DIFFICULTIES",
+      note: "Chuva na sala",
+    });
+  });
+
+  it("opens the amount and note step for 'ficou a meio' on a lesson with no outcomes (ENG-253)", async () => {
+    vi.mocked(checkInService.submit).mockResolvedValue({
+      id: "c1",
+      timetableId: "tt",
+      teachingStatus: "partially_taught",
+      checkedInAt: "2020-03-10T10:00:00Z",
+    });
+    await render(dialogProps({ slot }));
+    await act(async () => {
+      buttonWith("resultPartial")?.click();
+    });
+
+    expect(document.body.textContent).toContain("missingAmountQuestion");
+    expect(document.body.textContent).not.toContain("uncoveredQuestion");
+    await act(async () => {
+      buttonWith("missingMost")?.click();
+    });
+    await typeNote("Faltou a revisão");
+    await act(async () => {
+      buttonWith("save")?.click();
+    });
+
+    expect(checkInService.submit).toHaveBeenCalledWith("tt", "slot-3", {
+      result: "PARTIAL",
+      missingAmount: "MOST",
+      note: "Faltou a revisão",
+    });
+  });
+
   it("saves with nothing ticked and offers nothing", async () => {
     // A checklist exists only with two or more outcomes, and those start unticked: saving now sends the bare result.
     const twoOutcomes = {

@@ -1,4 +1,4 @@
-import { buildSubmission, needsOutcomeStep } from "@/hooks/checkInQueue";
+import { buildSubmission, needsDetailStep } from "@/hooks/checkInQueue";
 import { checkInService } from "@/services/api/check-in.service";
 import { getPreviousCheckIn, type PreviousLessonCheckIn } from "@/services/api/timetable.service";
 import type { CheckInResult, CheckInSubmission } from "@/shared/types/check-in";
@@ -59,9 +59,9 @@ export async function answerPreviousLesson(
   }
 }
 
-/** Difficulties and "ficou a meio" offer outcome chips, but only when the previous lesson has outcomes. */
-export function needsPreviousOutcomeStep(result: CheckInResult, pending: PreviousLessonCheckIn): boolean {
-  return needsOutcomeStep(result, pending);
+/** Difficulties and "ficou a meio" open the detail step (outcomes when there are some, amount, note). */
+export function needsPreviousDetailStep(result: CheckInResult): boolean {
+  return needsDetailStep(result);
 }
 
 /** The POST body for a result and the chips the teacher picked (none picked means the bare result). */

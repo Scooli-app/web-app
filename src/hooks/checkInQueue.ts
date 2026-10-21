@@ -44,12 +44,12 @@ export function confirmableCount(items: readonly PendingCheckIn[]): number {
   return items.filter((item) => !isAssessmentCheckIn(item)).length;
 }
 
-/** Difficulties and "ficou a meio" ask which outcomes, but only when the slot has some to pick from. */
-export function needsOutcomeStep(
-  result: CheckInResult,
-  item: Pick<PendingCheckIn, "outcomes">,
-): boolean {
-  return (result === "TAUGHT_WITH_DIFFICULTIES" || result === "PARTIAL") && item.outcomes.length > 0;
+/**
+ * "Com dificuldades" and "ficou a meio" open the detail step: the outcomes when the slot has some, the note,
+ * and for "ficou a meio" how much was left. A slot with no outcomes still gets the step, without the outcome list.
+ */
+export function needsDetailStep(result: CheckInResult): boolean {
+  return result === "TAUGHT_WITH_DIFFICULTIES" || result === "PARTIAL";
 }
 
 /**

@@ -10,7 +10,7 @@ import { useAppSelector } from "@/store/hooks";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { useShiftFollowing } from "@/hooks/useShiftFollowing";
-import { buildSubmission, initialOutcomeSelection, needsOutcomeStep } from "@/hooks/checkInQueue";
+import { buildSubmission, initialOutcomeSelection, needsDetailStep } from "@/hooks/checkInQueue";
 import { CheckInOutcomeStep, CheckInResultOptions, type OutcomeStepExtras } from "./CheckInChoices";
 import {
   answerPreviousLesson,
@@ -115,7 +115,7 @@ export function PreviousLessonCheckIn({
       outcomes={pending.outcomes}
       selected={selected}
       onChoose={(result: CheckInResult) => {
-        if (needsOutcomeStep(result, pending)) {
+        if (needsDetailStep(result)) {
           setSelected(initialOutcomeSelection(pending.outcomes));
           setOutcomeResult(result as OutcomeResult);
           return;

@@ -7,7 +7,7 @@ import {
   buildSubmission,
   initialOutcomeSelection,
   isAssessmentCheckIn,
-  needsOutcomeStep,
+  needsDetailStep,
 } from "@/hooks/checkInQueue";
 import type { CheckInResult, CheckInSubmission, PendingCheckIn } from "@/shared/types/check-in";
 import { CheckInOutcomeStep, CheckInResultOptions } from "./CheckInChoices";
@@ -81,7 +81,7 @@ export function CheckInCard({ item, locale, onSubmit, onSkip, onCancel, showMeta
     setSelected((current) => (current.includes(id) ? current.filter((x) => x !== id) : [...current, id]));
 
   const choose = (result: CheckInResult) => {
-    if (needsOutcomeStep(result, item)) {
+    if (needsDetailStep(result)) {
       setSelected(initialOutcomeSelection(item.outcomes));
       setOutcomeResult(result as OutcomeResult);
       return;

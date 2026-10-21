@@ -7,7 +7,7 @@ import {
   initialOutcomeSelection,
   isAssessmentCheckIn,
   loadPendingCheckIns,
-  needsOutcomeStep,
+  needsDetailStep,
   shouldShowCheckInStrip,
   visibleCheckIns,
   withCheckInAt,
@@ -145,13 +145,24 @@ describe("outcome step", () => {
   });
 });
 
-describe("chips step", () => {
-  it("is shown for difficulties and partial only when the slot has outcomes", () => {
-    expect(needsOutcomeStep("TAUGHT_WITH_DIFFICULTIES", item("a"))).toBe(true);
-    expect(needsOutcomeStep("PARTIAL", item("a"))).toBe(true);
-    expect(needsOutcomeStep("PARTIAL", item("a", { outcomes: [] }))).toBe(false);
-    expect(needsOutcomeStep("TAUGHT", item("a"))).toBe(false);
-    expect(needsOutcomeStep("NOT_HELD", item("a"))).toBe(false);
+describe("detail step", () => {
+  it("opens for difficulties and partial, even when the slot has no outcomes (note and amount still asked)", () => {
+    expect(needsDetailStep("TAUGHT_WITH_DIFFICULTIES")).toBe(true);
+    expect(needsDetailStep("PARTIAL")).toBe(true);
+    expect(needsDetailStep("TAUGHT")).toBe(false);
+    expect(needsDetailStep("NOT_HELD")).toBe(false);
+  });
+
+  it("submits a zero-outcome answer with the note and amount and no outcome ids", () => {
+    expect(buildSubmission("PARTIAL", initialOutcomeSelection([]), { missingAmount: "LITTLE", note: "Chuva" })).toEqual({
+      result: "PARTIAL",
+      missingAmount: "LITTLE",
+      note: "Chuva",
+    });
+    expect(buildSubmission("TAUGHT_WITH_DIFFICULTIES", [], { note: "Chuva" })).toEqual({
+      result: "TAUGHT_WITH_DIFFICULTIES",
+      note: "Chuva",
+    });
   });
 });
 

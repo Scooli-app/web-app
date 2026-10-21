@@ -90,7 +90,7 @@ export interface OutcomeStepExtras {
 }
 
 /** The amounts "Quanto ficou por dar?" offers, in the order they read. */
-export const MISSING_AMOUNTS:{ value: MissingAmount; labelKey: "missingLittle" | "missingHalf" | "missingMost" }[] = [
+export const MISSING_AMOUNTS: { value: MissingAmount; labelKey: "missingLittle" | "missingHalf" | "missingMost" }[] = [
   { value: "LITTLE", labelKey: "missingLittle" },
   { value: "HALF", labelKey: "missingHalf" },
   { value: "MOST", labelKey: "missingMost" },
@@ -129,12 +129,13 @@ export function CheckInOutcomeStep({
 
   return (
     <>
-      <p className="text-sm font-medium text-foreground">{question}</p>
-      {outcomes.length === 1 ? (
+      {outcomes.length > 0 && <p className="text-sm font-medium text-foreground">{question}</p>}
+      {outcomes.length === 1 && (
         <p className="line-clamp-2 text-sm leading-snug text-muted-foreground" title={outcomes[0].text}>
           {outcomes[0].text}
         </p>
-      ) : (
+      )}
+      {outcomes.length > 1 && (
         <ul role="group" aria-label={question} className="space-y-1.5">
           {outcomes.map((outcome) => {
             const checked = selected.includes(outcome.id);
