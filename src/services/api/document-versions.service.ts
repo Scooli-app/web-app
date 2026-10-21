@@ -31,3 +31,8 @@ export async function applySuggestion(
 export async function rejectSuggestion(documentId: string, versionId: string): Promise<void> {
   await apiClient.post(`/documents/${documentId}/versions/${versionId}/reject`);
 }
+
+/** Asks the backend to write the suggestion again from the current document. Returns 202 while it generates. */
+export async function refreshSuggestion(documentId: string, versionId: string): Promise<void> {
+  await apiClient.post(`/documents/${documentId}/versions/${versionId}/refresh`);
+}

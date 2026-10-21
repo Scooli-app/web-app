@@ -1,6 +1,8 @@
 "use client";
 
 import { SlideThumbnail } from "@/components/document-editor-v2/SlideThumbnail";
+import { presentationToCanvas } from "@/components/document-editor-v2/canvas-layout";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -8,10 +10,18 @@ import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { applySuggestion, getSuggestionDiff, rejectSuggestion } from "@/services/api/document-versions.service";
+import { ApiRequestError } from "@/services/api/client";
+import {
+  applySuggestion,
+  getSuggestionDiff,
+  refreshSuggestion,
+  rejectSuggestion,
+} from "@/services/api/document-versions.service";
 import type { CanvasSlide } from "@/shared/types/canvas-presentation";
 import type { Document } from "@/shared/types/document";
 import type { DocumentVersionDiff, PendingSuggestion, SectionChange } from "@/shared/types/document-suggestions";
+import { SCHEMA_VERSION, slideBlockSchema } from "@/shared/types/blocks";
+import { THEMES, translateThemeName } from "@/shared/types/presentation-theme";
 import { cn } from "@/shared/utils/utils";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
@@ -21,6 +31,7 @@ import {
   diffSegments,
   initialSelection,
   isLongText,
+  META_KEY,
   reviewableChanges,
   selectedCount,
   toggleAll,
@@ -44,15 +55,51 @@ export function formatSuggestionDate(iso: string, locale: string): string {
   return new Date(iso).toLocaleDateString(locale, { day: "numeric", month: "long" });
 }
 
-/** A presentation section is a slide serialised as JSON. Anything unreadable yields null. */
+/** The backend's `409 format_changed` from apply: the presentation's format moved on since the suggestion. */
+function isFormatChangedError(error: unknown): boolean {
+  return error instanceof ApiRequestError && error.status === 409 && error.code === "format_changed";
+}
+
+/**
+ * A presentation section is a slide serialised as JSON. Two formats exist: a v2 canvas slide (has `elements`)
+ * and a v1 block (`type: "slide"`, not yet opened in the editor), which is converted with the editor's own
+ * converter. Anything unreadable yields null.
+ */
 function parseSlide(raw: string | null): CanvasSlide | null {
   if (!raw) return null;
+  let parsed: unknown;
   try {
-    const parsed = JSON.parse(raw) as CanvasSlide;
+    parsed = JSON.parse(raw);
+  } catch {
+    return null;
+  }
+  if (!parsed || typeof parsed !== "object") return null;
+  if ("elements" in parsed) return parsed as CanvasSlide;
+  const block = slideBlockSchema.safeParse(parsed);
+  if (!block.success) return null;
+  // A one-block document: the converter maps every block, so the only slide is the one we want.
+  return presentationToCanvas({ schemaVersion: SCHEMA_VERSION, documentType: "presentation", blocks: [block.data] })
+    .slides[0] ?? null;
+}
+
+interface PresentationSettings {
+  themeId?: string;
+}
+
+/** The `_meta` section holds deck-level fields rather than a slide. */
+function parseSettings(raw: string | null): PresentationSettings | null {
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw) as PresentationSettings | null;
     return parsed && typeof parsed === "object" ? parsed : null;
   } catch {
     return null;
   }
+}
+
+function themeName(themeId: string | undefined): string | null {
+  if (!themeId) return null;
+  return THEMES.some((theme) => theme.id === themeId) ? translateThemeName(themeId) : themeId;
 }
 
 function MarkdownBody({ change, view }: { change: SectionChange; view: DiffView }) {
@@ -141,6 +188,21 @@ function SlideBody({ change }: { change: SectionChange }) {
   );
 }
 
+/** Deck-level settings are a text line, not a slide: the theme name before and after when it changed. */
+function SettingsBody({ change }: { change: SectionChange }) {
+  const t = useTranslations("documentVersions.review");
+  const before = parseSettings(change.before);
+  const after = parseSettings(change.after);
+  if (!before?.themeId && !after?.themeId) return null;
+  if (before?.themeId === after?.themeId) return null;
+
+  return (
+    <p className="text-sm text-muted-foreground">
+      {t("themeChange", { before: themeName(before?.themeId) ?? "—", after: themeName(after?.themeId) ?? "—" })}
+    </p>
+  );
+}
+
 function ChangeRow({
   change,
   checked,
@@ -155,16 +217,18 @@ function ChangeRow({
   const t = useTranslations("documentVersions.review");
   const [view, setView] = useState<DiffView>("changes");
   const isPresentation = contentFormat === "json";
+  const isSettings = change.key === META_KEY;
+  const title = isSettings ? t("presentationSettings") : change.title;
   // Added sections only have an "after" and removed ones only a "before", so the toggle is for changed sections.
   const markdownView: DiffView = change.type === "added" ? "after" : change.type === "removed" ? "before" : view;
 
   return (
     <li className="border-b border-border py-5 last:border-b-0">
       <div className="flex items-start gap-3">
-        <Checkbox checked={checked} onCheckedChange={onToggle} aria-label={change.title} className="mt-1" />
+        <Checkbox checked={checked} onCheckedChange={onToggle} aria-label={title} className="mt-1" />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-            <h3 className="text-base font-semibold text-foreground">{change.title}</h3>
+            <h3 className="text-base font-semibold text-foreground">{title}</h3>
             <Badge variant={BADGE_VARIANT[change.type as keyof typeof BADGE_VARIANT] ?? "outline"}>
               {t(`type.${change.type}`)}
             </Badge>
@@ -189,7 +253,9 @@ function ChangeRow({
             )}
           </div>
           <div className="mt-3">
-            {isPresentation ? (
+            {isSettings ? (
+              <SettingsBody change={change} />
+            ) : isPresentation ? (
               <SlideBody change={change} />
             ) : (
               <MarkdownBody change={change} view={markdownView} />
@@ -206,10 +272,12 @@ interface SuggestionReviewBodyProps {
   selection: Set<string>;
   contentFormat: SuggestionContentFormat;
   onToggle: (key: string) => void;
+  /** Offers "Atualizar sugestão" next to the stale notice. */
+  onRefresh?: () => void;
 }
 
 /** The scrollable part of the review: the stale notice, the changed sections and the unchanged count. */
-export function SuggestionReviewBody({ diff, selection, contentFormat, onToggle }: SuggestionReviewBodyProps) {
+export function SuggestionReviewBody({ diff, selection, contentFormat, onToggle, onRefresh }: SuggestionReviewBodyProps) {
   const t = useTranslations("documentVersions.review");
   const changes = reviewableChanges(diff.changes);
   const unchanged = unchangedCount(diff.changes);
@@ -217,9 +285,14 @@ export function SuggestionReviewBody({ diff, selection, contentFormat, onToggle 
   return (
     <div className="flex flex-col gap-4">
       {diff.stale && (
-        <p role="note" className="rounded-md border border-border bg-muted/50 px-4 py-3 text-sm text-muted-foreground">
-          {t("staleNotice")}
-        </p>
+        <div role="note" className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border bg-muted/50 px-4 py-3">
+          <p className="min-w-0 flex-1 text-sm text-muted-foreground">{t("staleNotice")}</p>
+          {onRefresh && (
+            <Button variant="ghost" size="sm" onClick={onRefresh}>
+              {t("refresh")}
+            </Button>
+          )}
+        </div>
       )}
       {changes.length === 0 ? (
         <p className="py-8 text-center text-sm text-muted-foreground">{t("noChanges")}</p>
@@ -251,6 +324,8 @@ export interface SuggestionReviewSheetProps {
   onApplied: (document: Document) => void;
   /** Called after the suggestion is rejected. */
   onRejected: () => void;
+  /** Called after "Atualizar sugestão" was accepted (202): the caller closes the sheet and shows it generating. */
+  onRefreshed: () => void;
 }
 
 export function SuggestionReviewSheet({
@@ -261,6 +336,7 @@ export function SuggestionReviewSheet({
   contentFormat,
   onApplied,
   onRejected,
+  onRefreshed,
 }: SuggestionReviewSheetProps) {
   const t = useTranslations("documentVersions.review");
   const locale = useLocale();
@@ -270,10 +346,13 @@ export function SuggestionReviewSheet({
   const [busy, setBusy] = useState(false);
   const [confirmReject, setConfirmReject] = useState(false);
   const [attempt, setAttempt] = useState(0);
+  // Set when apply answers 409 format_changed, for a diff that did not report it when it loaded.
+  const [applyFormatChanged, setApplyFormatChanged] = useState(false);
 
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
+    setApplyFormatChanged(false);
     getSuggestionDiff(documentId, suggestion.versionId)
       .then((loaded) => {
         if (cancelled) return;
@@ -293,6 +372,7 @@ export function SuggestionReviewSheet({
   const reviewable = reviewableChanges(changes);
   const selected = selectedCount(changes, selection);
   const allSelected = reviewable.length > 0 && selected === reviewable.length;
+  const formatChanged = diff?.formatChanged === true || applyFormatChanged;
 
   const handleApply = async () => {
     setBusy(true);
@@ -303,8 +383,24 @@ export function SuggestionReviewSheet({
         toast.info(t("skipped", { count: result.skipped.length }));
       }
       onApplied(result.document);
+    } catch (error) {
+      if (isFormatChangedError(error)) {
+        setApplyFormatChanged(true);
+      } else {
+        toast.error(t("applyError"));
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleRefresh = async () => {
+    setBusy(true);
+    try {
+      await refreshSuggestion(documentId, suggestion.versionId);
+      onRefreshed();
     } catch {
-      toast.error(t("applyError"));
+      toast.error(t("refreshError"));
     } finally {
       setBusy(false);
     }
@@ -337,6 +433,14 @@ export function SuggestionReviewSheet({
           </SheetHeader>
 
           <div className="flex-1 overflow-y-auto px-5 py-5 sm:px-6">
+            {formatChanged && (
+              <Alert variant="primary" className="mb-5 flex flex-wrap items-center justify-between gap-3">
+                <AlertDescription className="min-w-0 flex-1 text-foreground">{t("formatChanged")}</AlertDescription>
+                <Button size="sm" disabled={busy} onClick={() => void handleRefresh()}>
+                  {t("refresh")}
+                </Button>
+              </Alert>
+            )}
             {loadError ? (
               <div className="flex flex-col items-start gap-3">
                 <p className="text-sm text-muted-foreground">{t("loadError")}</p>
@@ -356,6 +460,7 @@ export function SuggestionReviewSheet({
                 selection={selection}
                 contentFormat={contentFormat}
                 onToggle={(key) => setSelection((current) => toggleSection(current, key))}
+                onRefresh={() => void handleRefresh()}
               />
             )}
           </div>
@@ -373,7 +478,7 @@ export function SuggestionReviewSheet({
               <Button variant="ghost" disabled={busy} onClick={() => setConfirmReject(true)}>
                 {t("reject")}
               </Button>
-              <Button disabled={!diff || selected === 0 || busy} onClick={() => void handleApply()}>
+              <Button disabled={!diff || formatChanged || selected === 0 || busy} onClick={() => void handleApply()}>
                 {t("apply", { count: selected })}
               </Button>
             </div>

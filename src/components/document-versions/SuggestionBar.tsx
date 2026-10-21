@@ -29,7 +29,9 @@ export function SuggestionBar({ documentId, suggestion, contentFormat, onContent
   const t = useTranslations("documentVersions.bar");
   const dispatch = useAppDispatch();
   const [reviewOpen, setReviewOpen] = useState(false);
-  const generating = suggestion?.status === "generating";
+  // Set when "Atualizar sugestão" was accepted, so the bar shows the generating state before the document says so.
+  const [awaitingRefresh, setAwaitingRefresh] = useState(false);
+  const generating = suggestion?.status === "generating" || awaitingRefresh;
 
   useEffect(() => {
     if (!generating) return;
@@ -37,6 +39,7 @@ export function SuggestionBar({ documentId, suggestion, contentFormat, onContent
       check: async () => {
         const doc = await getDocument(documentId);
         if (doc.pendingSuggestion?.status === "generating") return false;
+        setAwaitingRefresh(false);
         dispatch(setCurrentDocument(doc));
         return true;
       },
@@ -90,6 +93,10 @@ export function SuggestionBar({ documentId, suggestion, contentFormat, onContent
           onRejected={() => {
             setReviewOpen(false);
             void getDocument(documentId).then(refreshWith).catch(() => undefined);
+          }}
+          onRefreshed={() => {
+            setReviewOpen(false);
+            setAwaitingRefresh(true);
           }}
         />
       )}

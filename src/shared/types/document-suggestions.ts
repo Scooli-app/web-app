@@ -36,6 +36,8 @@ export interface SectionChange {
 
 export interface DocumentVersionDiff {
   stale: boolean;
+  /** The presentation's format changed since the suggestion was made (e.g. v1 blocks became a canvas). */
+  formatChanged?: boolean;
   changes: SectionChange[];
 }
 

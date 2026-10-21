@@ -9,6 +9,9 @@ import type { SectionChange } from "@/shared/types/document-suggestions";
 
 export const POLL_INTERVAL_MS = 5000;
 
+/** Section key of a presentation's deck-level settings (theme, schema), which is not a slide. */
+export const META_KEY = "_meta";
+
 /** Long sections are clamped with a "Ver tudo" toggle after this many lines. */
 export const CLAMP_LINES = 12;
 
