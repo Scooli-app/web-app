@@ -3451,5 +3451,12 @@
     "applied": "Changes applied",
     "rejected": "Proposal rejected",
     "actionError": "Could not save the proposal."
+  },
+  "reviewFeed": {
+    "title": "To review",
+    "showAll": "Show all ({count})",
+    "preparing": "Preparing…",
+    "topicBadge": "New topic",
+    "chip": "{count} to review"
   }
 }

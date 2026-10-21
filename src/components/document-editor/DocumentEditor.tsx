@@ -41,7 +41,7 @@ import { CheckCircle2, Crown, FileX, Loader2 } from "lucide-react";
 import { DocumentEditorSkeleton } from "@/components/document-editor/DocumentEditorSkeleton";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import posthog from "posthog-js";
 import { reportUiProblem } from "@/lib/reportUiProblem";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -217,6 +217,7 @@ export default function DocumentEditor({
   const resolvedChatTitle = chatTitle ?? tChat("defaultTitle");
   const resolvedChatPlaceholder = chatPlaceholder ?? tChat("defaultPlaceholder");
   const router = useRouter();
+  const reviewRequested = useSearchParams().get("review") === "1";
   const dispatch = useAppDispatch();
   const { getToken } = useAuth();
   const {
@@ -1361,6 +1362,7 @@ export default function DocumentEditor({
             documentId={activeDocument.id}
             suggestion={activeDocument.pendingSuggestion}
             contentFormat="markdown"
+            autoOpenReview={reviewRequested}
           />
         )}
         <DocumentTitle

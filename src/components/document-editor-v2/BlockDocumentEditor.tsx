@@ -1931,6 +1931,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
           documentId={documentId}
           suggestion={document.pendingSuggestion}
           contentFormat="json"
+          autoOpenReview={searchParams.get("review") === "1"}
           onContentReplaced={() => {
             canvasRef.current = null;
           }}

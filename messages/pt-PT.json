@@ -3451,5 +3451,12 @@
     "applied": "Alterações aplicadas",
     "rejected": "Proposta rejeitada",
     "actionError": "Não foi possível guardar a proposta."
+  },
+  "reviewFeed": {
+    "title": "Por rever",
+    "showAll": "Ver todos ({count})",
+    "preparing": "A preparar…",
+    "topicBadge": "Tema novo",
+    "chip": "{count} por rever"
   }
 }
