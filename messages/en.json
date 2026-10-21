@@ -3453,5 +3453,70 @@
     "applied": "Changes applied",
     "rejected": "Proposal rejected",
     "actionError": "Could not save the proposal."
+  },
+  "adminPilot": {
+    "title": "Pilot",
+    "description": "Check-in answers, accepted proposals and the reinforcement loop per teacher and class.",
+    "exportCsv": "Export CSV",
+    "loadFailed": "Could not load the pilot metrics.",
+    "range": {
+      "from": "First week",
+      "to": "Last week",
+      "weekOf": "Week of {date}"
+    },
+    "headlines": {
+      "answerRate": "Answer rate",
+      "activeTeachers": "Active teachers",
+      "proposals": "Proposals accepted",
+      "loop": "Loop completed"
+    },
+    "definitions": {
+      "answerRate": "Lessons answered at check-in, out of the lessons that were due to be answered.",
+      "activeTeachers": "Teachers who answered, accepted or rejected something in the last week of the range.",
+      "proposals": "Proposals accepted or partly accepted, out of the decided ones. Suggestions replaced by the AI are not counted.",
+      "loop": "Difficulties followed by a reinforcement worksheet and a check-in on the lesson it was attached to."
+    },
+    "sub": {
+      "answerRate": "{answered} of {due} lessons",
+      "activeTeachers": "of {total} pilot teachers",
+      "proposals": "{accepted} of {decided} decided",
+      "loop": "{completed} of {started} started",
+      "none": "No data in this range"
+    },
+    "empty": {
+      "title": "No activity in this range",
+      "description": "Shows up here once teachers with Class State have lessons in the range."
+    },
+    "table": {
+      "title": "Teachers by class",
+      "teacher": "Teacher",
+      "turma": "Class",
+      "total": "Total",
+      "showWeeks": "Show weeks",
+      "hideWeeks": "Hide weeks",
+      "noActivity": "No activity"
+    },
+    "cell": {
+      "answeredOf": "{answered} of {due} lessons answered"
+    },
+    "weekly": {
+      "due": "Lessons due",
+      "answered": "Answered",
+      "assumed": "Assumed",
+      "unanswered": "Unanswered",
+      "notHeld": "Not held",
+      "partial": "Partial",
+      "difficulties": "Difficulties",
+      "topics": "Topic proposals",
+      "docs": "Document suggestions",
+      "replans": "Replans",
+      "loop": "Reinforcement loop"
+    },
+    "breakdown": {
+      "topics": "{accepted} accepted, {rejected} rejected, {pending} to review",
+      "docs": "{appliedAll} applied, {appliedPartial} applied in part, {rejected} replaced, {pending} to review",
+      "replans": "{accepted} accepted, {partiallyAccepted} partly accepted, {rejected} rejected, {failed} failed, {noChange} no change, {pending} to review",
+      "loop": "{completed} of {started} completed"
+    }
   }
 }
