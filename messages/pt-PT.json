@@ -3451,5 +3451,70 @@
     "applied": "Alterações aplicadas",
     "rejected": "Proposta rejeitada",
     "actionError": "Não foi possível guardar a proposta."
+  },
+  "adminPilot": {
+    "title": "Piloto",
+    "description": "Respostas aos check-ins, propostas aceites e ciclo de reforço por professor e turma.",
+    "exportCsv": "Exportar CSV",
+    "loadFailed": "Não foi possível carregar as métricas do piloto.",
+    "range": {
+      "from": "Semana inicial",
+      "to": "Semana final",
+      "weekOf": "Semana de {date}"
+    },
+    "headlines": {
+      "answerRate": "Taxa de resposta",
+      "activeTeachers": "Professores ativos",
+      "proposals": "Propostas aceites",
+      "loop": "Ciclo completo"
+    },
+    "definitions": {
+      "answerRate": "Aulas respondidas no check-in sobre as aulas que tinham de ser respondidas.",
+      "activeTeachers": "Professores que responderam, aceitaram ou rejeitaram algo na última semana do período.",
+      "proposals": "Propostas aceites ou aceites em parte sobre as decididas. Sugestões substituídas pela IA não contam.",
+      "loop": "Dificuldades seguidas de reforço e de um check-in na aula a que o reforço ficou ligado."
+    },
+    "sub": {
+      "answerRate": "{answered} de {due} aulas",
+      "activeTeachers": "de {total} professores no piloto",
+      "proposals": "{accepted} de {decided} decididas",
+      "loop": "{completed} de {started} iniciados",
+      "none": "Sem dados no período"
+    },
+    "empty": {
+      "title": "Sem atividade neste período",
+      "description": "Aparece aqui quando os professores com Class State tiverem aulas no período."
+    },
+    "table": {
+      "title": "Professores por turma",
+      "teacher": "Professor",
+      "turma": "Turma",
+      "total": "Total",
+      "showWeeks": "Mostrar semanas",
+      "hideWeeks": "Ocultar semanas",
+      "noActivity": "Sem atividade"
+    },
+    "cell": {
+      "answeredOf": "{answered} de {due} aulas respondidas"
+    },
+    "weekly": {
+      "due": "Aulas devidas",
+      "answered": "Respondidas",
+      "assumed": "Assumidas",
+      "unanswered": "Sem resposta",
+      "notHeld": "Não realizadas",
+      "partial": "Parciais",
+      "difficulties": "Dificuldades",
+      "topics": "Propostas de tema",
+      "docs": "Sugestões de versão",
+      "replans": "Replanificações",
+      "loop": "Ciclo de reforço"
+    },
+    "breakdown": {
+      "topics": "{accepted} aceites, {rejected} rejeitadas, {pending} por rever",
+      "docs": "{appliedAll} aplicadas, {appliedPartial} aplicadas em parte, {rejected} substituídas, {pending} por rever",
+      "replans": "{accepted} aceites, {partiallyAccepted} aceites em parte, {rejected} rejeitadas, {failed} falharam, {noChange} sem alteração, {pending} por rever",
+      "loop": "{completed} de {started} completos"
+    }
   }
 }
