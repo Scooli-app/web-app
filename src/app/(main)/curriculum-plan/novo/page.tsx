@@ -14,7 +14,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Stepper } from "@/components/ui/stepper";
-import { GenerationProgress } from "@/components/document-creation/GenerationProgress";
 import { AlreadyCoveredSection } from "@/components/document-creation/AlreadyCoveredSection";
 import { WizardShell } from "@/components/document-creation/WizardShell";
 import { WeekSchedulePicker } from "@/components/document-creation/WeekSchedulePicker";
@@ -62,7 +61,7 @@ import { toast } from "sonner";
 
 const STEP_IDS = ["period", "class", "schedule", "review"] as const;
 
-type StepId = (typeof STEP_IDS)[number] | "loading";
+type StepId = (typeof STEP_IDS)[number];
 
 function toISO(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -150,7 +149,6 @@ export default function CurriculumPlanNewPage() {
   const tSubject = useTranslations("documentCreation.subject");
   const rawLocale = useLocale();
   const locale = isSupportedLocale(rawLocale) ? rawLocale : defaultLocale;
-  const LOADING_STEPS = t.raw("loadingSteps") as string[];
   const STEPS = [
     { id: "period" as const, label: t("steps.period"), icon: CalendarDays },
     { id: "class" as const, label: t("steps.class"), icon: BookOpen },
@@ -172,7 +170,6 @@ export default function CurriculumPlanNewPage() {
   const [schedule, setSchedule] = useState<WeekSchedule>(DEFAULT_WEEK_SCHEDULE);
   const [alreadyCoveredNotes, setAlreadyCoveredNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [loadingStep, setLoadingStep] = useState(0);
 
   const PRESETS = useMemo(() => buildSchoolPeriodPresets(), []);
 
@@ -226,8 +223,6 @@ export default function CurriculumPlanNewPage() {
   async function handleSubmit() {
     if (!step1Valid || !step2Valid || !step3Valid) return;
     setSubmitting(true);
-    setStep("loading");
-    setLoadingStep(0);
 
     // Resolved at submit time (it reads localStorage and the locale cookie), with
     // the same gate createDocument uses, and sent explicitly so the prompt and
@@ -281,14 +276,13 @@ export default function CurriculumPlanNewPage() {
         })
       ).unwrap();
 
-      setLoadingStep(LOADING_STEPS.length - 1);
+      // The editor shows the generation progress; a second one here would double it.
       router.push(`/curriculum-plan/${result.id}`);
     } catch (err) {
       const message =
         err instanceof Error ? err.message : tErrors("createFailed");
       toast.error(message);
       setSubmitting(false);
-      setStep("review");
     }
   }
 
@@ -300,19 +294,6 @@ export default function CurriculumPlanNewPage() {
         description={tShared("featureDescription")}
       />
     );
-
-  if (step === "loading") {
-    return (
-      <WizardShell>
-        <GenerationProgress
-          title={t("generating.title")}
-          subtitle={t("generating.subtitle")}
-          steps={LOADING_STEPS}
-          currentStep={loadingStep}
-        />
-      </WizardShell>
-    );
-  }
 
   return (
     <WizardShell>
