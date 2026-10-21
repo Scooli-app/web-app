@@ -3518,5 +3518,12 @@
       "replans": "{accepted} aceites, {partiallyAccepted} aceites em parte, {rejected} rejeitadas, {failed} falharam, {noChange} sem alteração, {pending} por rever",
       "loop": "{completed} de {started} completos"
     }
+  },
+  "reviewFeed": {
+    "title": "Por rever",
+    "showAll": "Ver todos ({count})",
+    "preparing": "A preparar…",
+    "topicBadge": "Tema novo",
+    "chip": "{count} por rever"
   }
 }

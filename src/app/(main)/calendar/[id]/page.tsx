@@ -45,7 +45,7 @@ import { translateSubject } from "@/components/document-creation/constants";
 import { SlotDialog } from "@/components/calendar/SlotDialog";
 import { TeachingMarkBadge } from "@/components/calendar/TeachingMarkBadge";
 import { NextStepsCard } from "@/components/next-steps/NextStepsCard";
-import { ReplanBanner } from "@/components/replan/ReplanBanner";
+import { ReviewFeedSection } from "@/components/review-feed/ReviewFeedSection";
 import { ReplanRequestDialog } from "@/components/replan/ReplanRequestDialog";
 import { useReplan } from "@/hooks/useReplan";
 import { TurmaProgressPanel } from "@/components/calendar/TurmaProgressPanel";
@@ -80,6 +80,7 @@ interface SlotCardProps {
 function SlotCard({ slot, color, onOpen }: SlotCardProps) {
   const t = useTranslations("calendar");
   const tTimetable = useTranslations("timetable");
+  const tReview = useTranslations("reviewFeed");
   const rawLocale = useLocale();
   const locale = isSupportedLocale(rawLocale) ? rawLocale : defaultLocale;
   const isHoliday = slot.slotType === "HOLIDAY";
@@ -135,7 +136,7 @@ function SlotCard({ slot, color, onOpen }: SlotCardProps) {
         {/* ENG-247: a regeneration proposed a new topic for this prepared lesson; the dialog shows it. */}
         {slot.pendingProposal && (
           <span className="shrink-0 rounded bg-primary/10 px-1.5 py-0.5 text-xs font-medium text-primary">
-            {t("slotDialog.proposal.badge")}
+            {tReview("topicBadge")}
           </span>
         )}
         {mark && <TeachingMarkBadge mark={mark} className="text-sm" />}
@@ -308,6 +309,15 @@ export default function CalendarViewPage() {
     setProgressRefreshKey((key) => key + 1);
     dispatch(fetchLessons({ timetableId: id }));
   }, [dispatch, id]);
+
+  // "Por rever": a topic proposal opens its lesson in the dialog, where the proposal is.
+  const openLessonById = useCallback(
+    (slotId: string) => {
+      const found = slots.find((s) => s.id === slotId);
+      if (found) setSelectedSlot(found);
+    },
+    [slots]
+  );
 
   // Wrap the selected slot with the current timetable for the shared SlotDialog
   const selectedSlotWithTimetable = useMemo<SlotWithTimetable | null>(() => {
@@ -598,7 +608,15 @@ export default function CalendarViewPage() {
 
       <PlanGenerationBanner timetableId={id} />
 
-      {isPro && replanEnabled && <ReplanBanner key={id} timetableId={id} onChanged={reloadClassState} />}
+      {replanEnabled && (
+        <ReviewFeedSection
+          key={id}
+          timetableId={id}
+          refreshKey={progressRefreshKey}
+          onOpenLesson={openLessonById}
+          onChanged={reloadClassState}
+        />
+      )}
 
       <TurmaProgressPanel timetableId={id} refreshKey={progressRefreshKey} />
       <NextStepsCard timetableId={id} refreshKey={progressRefreshKey} />

@@ -8,7 +8,7 @@ import { setCurrentDocument } from "@/store/documents/documentSlice";
 import { useAppDispatch } from "@/store/hooks";
 import { Loader2 } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { SuggestionReviewSheet, type SuggestionContentFormat } from "./SuggestionReviewSheet";
 import { pollUntilDone } from "./suggestion-review";
 
@@ -19,19 +19,49 @@ export interface SuggestionBarProps {
   contentFormat: SuggestionContentFormat;
   /** Runs before the editor content is replaced, so an editor can reset local state (e.g. a canvas). */
   onContentReplaced?: () => void;
+  /** The editor was opened from "Por rever" (`?review=1`): the review sheet opens by itself once the suggestion is ready. */
+  autoOpenReview?: boolean;
+}
+
+/**
+ * Whether the review sheet should open by itself now: asked for from "Por rever", the suggestion is ready, and it
+ * has not opened yet in this editor. Pure, so the rule can be checked on its own.
+ */
+export function shouldAutoOpenReview(input: {
+  autoOpenReview: boolean;
+  alreadyOpened: boolean;
+  generating: boolean;
+  status: PendingSuggestion["status"] | undefined;
+}): boolean {
+  return input.autoOpenReview && !input.alreadyOpened && !input.generating && input.status === "ready";
 }
 
 /**
  * A slim bar above the document while a suggested version is being written or waiting for review.
  * Writing: polls the document every 5 s until the suggestion is ready. Ready: opens the review sheet.
  */
-export function SuggestionBar({ documentId, suggestion, contentFormat, onContentReplaced }: SuggestionBarProps) {
+export function SuggestionBar({
+  documentId,
+  suggestion,
+  contentFormat,
+  onContentReplaced,
+  autoOpenReview = false,
+}: SuggestionBarProps) {
   const t = useTranslations("documentVersions.bar");
   const dispatch = useAppDispatch();
   const [reviewOpen, setReviewOpen] = useState(false);
   // Set when "Atualizar sugestão" was accepted, so the bar shows the generating state before the document says so.
   const [awaitingRefresh, setAwaitingRefresh] = useState(false);
   const generating = suggestion?.status === "generating" || awaitingRefresh;
+  const autoOpened = useRef(false);
+
+  useEffect(() => {
+    if (!shouldAutoOpenReview({ autoOpenReview, alreadyOpened: autoOpened.current, generating, status: suggestion?.status })) {
+      return;
+    }
+    autoOpened.current = true;
+    setReviewOpen(true);
+  }, [autoOpenReview, generating, suggestion?.status]);
 
   useEffect(() => {
     if (!generating) return;

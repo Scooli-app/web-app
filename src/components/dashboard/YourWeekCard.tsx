@@ -10,6 +10,7 @@ import { preparationCost } from "@/components/dashboard/lessonSuggestions";
 import { hasGeneratingDocument, pickFocusDay, weekTitle, windowDays } from "@/components/dashboard/weekWindow";
 import { translateSubject } from "@/components/document-creation/constants";
 import { PlanGenerationBanner } from "@/components/plan-generation/PlanGenerationBanner";
+import { ReviewFeedChips } from "@/components/review-feed/ReviewFeedChips";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -326,6 +327,7 @@ export function YourWeekCard() {
       </header>
 
       <PlanGenerationBanner className="mb-3" />
+      <ReviewFeedChips />
 
       {failed ? (
         <LoadError message={t("error")} onRetry={() => setAttempt((n) => n + 1)} />
