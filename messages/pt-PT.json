@@ -183,7 +183,14 @@
     },
     "save": "Guardar",
     "followUpOpenLesson": "Abrir",
-    "reinforcementNote": "Ficha de reforço: aula de {day}"
+    "reinforcementNote": "Ficha de reforço: aula de {day}",
+    "missingAmountQuestion": "Quanto ficou por dar?",
+    "missingLittle": "Pouco",
+    "missingHalf": "Metade",
+    "missingMost": "Quase tudo",
+    "missingAmountShown": "Ficou por dar: {amount}",
+    "noteLabel": "O que aconteceu? (opcional)",
+    "notePlaceholder": "Ex.: faltou a parte das cadeias alimentares"
   },
   "previousCheckIn": {
     "question": "A última aula correu bem?",

@@ -4,6 +4,9 @@ export type CheckInResult = "TAUGHT" | "TAUGHT_WITH_DIFFICULTIES" | "PARTIAL" | 
 
 export type CheckInSlotType = "LESSON" | "ASSESSMENT" | "EXERCISE" | "REVIEW";
 
+/** How much of a "ficou a meio" lesson was left to teach (ENG-253). Contract: chalkboard T4. */
+export type MissingAmount = "LITTLE" | "HALF" | "MOST";
+
 /** The teaching status the backend keeps on a slot (`lesson_slots.teaching_status`). */
 export type TeachingStatus = "planned" | "taught" | "partially_taught" | "not_held" | "assumed_taught";
 
@@ -33,6 +36,10 @@ export interface CheckInSubmission {
   result: CheckInResult;
   difficultOutcomeIds?: string[];
   uncoveredOutcomeIds?: string[];
+  /** Only with `PARTIAL`. */
+  missingAmount?: MissingAmount;
+  /** Any result except `TAUGHT`; trimmed and left out when blank. */
+  note?: string;
 }
 
 export interface CheckInRecord {

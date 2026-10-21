@@ -138,21 +138,26 @@ describe("slotCheckInAnswer", () => {
   it("keeps the difficult ids for a difficulty answer", () => {
     expect(
       slotCheckInAnswer({ result: "TAUGHT_WITH_DIFFICULTIES", difficultOutcomeIds: ["o1"], uncoveredOutcomeIds: ["o2"] }),
-    ).toEqual({ checkInResult: "TAUGHT_WITH_DIFFICULTIES", checkInOutcomeIds: ["o1"] });
+    ).toEqual({ checkInResult: "TAUGHT_WITH_DIFFICULTIES", checkInOutcomeIds: ["o1"], missingAmount: null, teachingNote: null });
   });
 
-  it("keeps the uncovered ids for a partial answer", () => {
-    expect(slotCheckInAnswer({ result: "PARTIAL", uncoveredOutcomeIds: ["o2"] })).toEqual({
+  it("keeps the uncovered ids and the amount for a partial answer", () => {
+    expect(slotCheckInAnswer({ result: "PARTIAL", uncoveredOutcomeIds: ["o2"], missingAmount: "MOST" })).toEqual({
       checkInResult: "PARTIAL",
       checkInOutcomeIds: ["o2"],
+      missingAmount: "MOST",
+      teachingNote: null,
     });
   });
 
-  it("has no ids for the other two answers", () => {
+  it("keeps the note, trimmed as sent, and has no ids for the other two answers", () => {
     expect(slotCheckInAnswer({ result: "TAUGHT", difficultOutcomeIds: ["o1"] })).toEqual({
       checkInResult: "TAUGHT",
       checkInOutcomeIds: [],
+      missingAmount: null,
+      teachingNote: null,
     });
+    expect(slotCheckInAnswer({ result: "NOT_HELD", note: "Chuva" }).teachingNote).toBe("Chuva");
     expect(slotCheckInAnswer({ result: "NOT_HELD" }).checkInOutcomeIds).toEqual([]);
   });
 });

@@ -3,6 +3,7 @@ import type {
   CheckInOutcome,
   CheckInResult,
   CheckInSubmission,
+  MissingAmount,
   TeachingStatus,
 } from "@/shared/types/check-in";
 
@@ -29,6 +30,10 @@ export type TeachingMarkKey =
 export interface SlotCheckInAnswer {
   checkInResult: CheckInResult;
   checkInOutcomeIds: string[];
+  /** How much was left, for "ficou a meio" (ENG-253). */
+  missingAmount: MissingAmount | null;
+  /** The note the teacher wrote (ENG-253). */
+  teachingNote: string | null;
 }
 
 export interface TeachingMark {
@@ -109,5 +114,10 @@ export function slotCheckInAnswer(submission: CheckInSubmission): SlotCheckInAns
       : submission.result === "PARTIAL"
         ? submission.uncoveredOutcomeIds ?? []
         : [];
-  return { checkInResult: submission.result, checkInOutcomeIds: [...ids] };
+  return {
+    checkInResult: submission.result,
+    checkInOutcomeIds: [...ids],
+    missingAmount: submission.missingAmount ?? null,
+    teachingNote: submission.note ?? null,
+  };
 }

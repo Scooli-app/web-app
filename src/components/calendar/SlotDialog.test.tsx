@@ -255,6 +255,7 @@ describe("SlotDialog: offering a reinforcement worksheet or a carry-over after a
   it("offers the reinforcement worksheet after \"some had difficulties\" with an outcome picked", async () => {
     await answer("resultDifficulties", "ticked");
 
+    // One outcome: no checklist, and its id goes with the answer.
     expect(checkInService.submit).toHaveBeenCalledWith("tt", "slot-3", {
       result: "TAUGHT_WITH_DIFFICULTIES",
       difficultOutcomeIds: ["o1"],
@@ -272,8 +273,48 @@ describe("SlotDialog: offering a reinforcement worksheet or a carry-over after a
     expect(document.body.textContent).not.toContain("reinforcementQuestion");
   });
 
+  it("sends the amount and the trimmed note with 'ficou a meio' (ENG-253)", async () => {
+    vi.mocked(checkInService.submit).mockResolvedValue({
+      id: "c1",
+      timetableId: "tt",
+      teachingStatus: "partially_taught",
+      checkedInAt: "2020-03-10T10:00:00Z",
+    });
+    await render(dialogProps({ slot: withOutcomes }));
+    await act(async () => {
+      buttonWith("resultPartial")?.click();
+    });
+    await act(async () => {
+      buttonWith("missingHalf")?.click();
+    });
+    await act(async () => {
+      const textarea = document.querySelector<HTMLTextAreaElement>("textarea");
+      const setValue = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")?.set;
+      setValue?.call(textarea, "  faltou a parte das cadeias  ");
+      textarea?.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    await act(async () => {
+      buttonWith("save")?.click();
+    });
+
+    expect(checkInService.submit).toHaveBeenCalledWith("tt", "slot-3", {
+      result: "PARTIAL",
+      uncoveredOutcomeIds: ["o1"],
+      missingAmount: "HALF",
+      note: "faltou a parte das cadeias",
+    });
+  });
+
   it("saves with nothing ticked and offers nothing", async () => {
-    await answer("resultDifficulties", "unticked");
+    // A checklist exists only with two or more outcomes, and those start unticked: saving now sends the bare result.
+    const twoOutcomes = {
+      ...slot,
+      outcomes: [
+        { id: "o1", text: "Ler com fluência", topicPath: [], source: "ai" },
+        { id: "o2", text: "Somar frações", topicPath: [], source: "ai" },
+      ],
+    } as unknown as SlotWithTimetable;
+    await answer("resultDifficulties", "ticked", { slot: twoOutcomes });
 
     expect(checkInService.submit).toHaveBeenCalledWith("tt", "slot-3", { result: "TAUGHT_WITH_DIFFICULTIES" });
     expect(document.body.textContent).not.toContain("reinforcementQuestion");
@@ -447,6 +488,36 @@ describe("SlotDialog: the status of a checked-in lesson (ENG-246)", () => {
     expect(value).toBeDefined();
     expect(value?.className).not.toContain("text-amber-700");
     expect(value?.hasAttribute("title")).toBe(false);
+  });
+
+  it("shows how much was left and the note, one muted line each, when the check-in has them (ENG-253)", async () => {
+    await renderWith({
+      ...checked("PARTIAL", []),
+      teachingStatus: "partially_taught",
+      missingAmount: "HALF",
+      teachingNote: "Faltou a parte das cadeias alimentares",
+    } as unknown as SlotWithTimetable);
+
+    const text = document.body.textContent ?? "";
+    expect(text).toContain("missingAmountShown");
+    expect(text).toContain("Faltou a parte das cadeias alimentares");
+  });
+
+  it("adds the note to the difficulties tooltip, after the outcome texts (ENG-253)", async () => {
+    await renderWith({
+      ...checked("TAUGHT_WITH_DIFFICULTIES", ["o2"]),
+      teachingNote: "Faltou a parte das cadeias alimentares",
+    } as unknown as SlotWithTimetable);
+
+    expect(statusValue("mark.taughtWithDifficulties")?.getAttribute("title")).toBe(
+      "Somar frações\nFaltou a parte das cadeias alimentares",
+    );
+  });
+
+  it("shows neither line when the check-in has no amount and no note", async () => {
+    await renderWith(checked("TAUGHT", []));
+
+    expect(document.body.textContent).not.toContain("missingAmountShown");
   });
 });
 

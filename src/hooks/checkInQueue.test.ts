@@ -84,6 +84,49 @@ describe("buildSubmission (the POST body per result)", () => {
   });
 });
 
+describe("buildSubmission with the amount and the note (ENG-253)", () => {
+  it("sends the amount only with PARTIAL", () => {
+    expect(buildSubmission("PARTIAL", ["o3"], { missingAmount: "HALF" })).toEqual({
+      result: "PARTIAL",
+      uncoveredOutcomeIds: ["o3"],
+      missingAmount: "HALF",
+    });
+    expect(buildSubmission("TAUGHT_WITH_DIFFICULTIES", ["o1"], { missingAmount: "HALF" })).toEqual({
+      result: "TAUGHT_WITH_DIFFICULTIES",
+      difficultOutcomeIds: ["o1"],
+    });
+  });
+
+  it("leaves the amount out when none is picked", () => {
+    expect(buildSubmission("PARTIAL", [], { missingAmount: undefined })).toEqual({ result: "PARTIAL" });
+  });
+
+  it("trims the note and sends it", () => {
+    expect(buildSubmission("TAUGHT_WITH_DIFFICULTIES", [], { note: "  faltou a parte das cadeias  " })).toEqual({
+      result: "TAUGHT_WITH_DIFFICULTIES",
+      note: "faltou a parte das cadeias",
+    });
+  });
+
+  it("omits the note when it is blank once trimmed", () => {
+    expect(buildSubmission("PARTIAL", [], { note: "   " })).toEqual({ result: "PARTIAL" });
+    expect(buildSubmission("PARTIAL", [], { note: "" })).not.toHaveProperty("note");
+  });
+
+  it("never sends a note with TAUGHT", () => {
+    expect(buildSubmission("TAUGHT", [], { note: "algo" })).toEqual({ result: "TAUGHT" });
+  });
+
+  it("keeps a single outcome: it is ticked by default, so its id is still sent", () => {
+    const only = [{ id: "o9", text: "Somar frações", topicPath: [], source: "ai" }];
+    expect(buildSubmission("PARTIAL", initialOutcomeSelection(only), { missingAmount: "MOST" })).toEqual({
+      result: "PARTIAL",
+      uncoveredOutcomeIds: ["o9"],
+      missingAmount: "MOST",
+    });
+  });
+});
+
 describe("outcome step", () => {
   const outcome = (id: string) => ({ id, text: `texto ${id}`, topicPath: [], source: "ai" });
 

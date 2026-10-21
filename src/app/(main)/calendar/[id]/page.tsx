@@ -285,6 +285,8 @@ export default function CalendarViewPage() {
           checkedInAt: record.checkedInAt,
           checkInResult: answer.checkInResult,
           checkInOutcomeIds: answer.checkInOutcomeIds,
+          missingAmount: answer.missingAmount,
+          teachingNote: answer.teachingNote,
         })
       );
       setProgressRefreshKey((key) => key + 1);

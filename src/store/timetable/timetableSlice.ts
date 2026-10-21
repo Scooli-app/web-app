@@ -1,5 +1,5 @@
 import { dashboardCache, CACHE_KEYS } from "@/lib/dashboardCache";
-import type { CheckInResult, TeachingStatus } from "@/shared/types/check-in";
+import type { CheckInResult, MissingAmount, TeachingStatus } from "@/shared/types/check-in";
 import { resolveEffectiveContentLanguage } from "@/i18n/clientLocale";
 import {
   type ContentLanguagePreference,
@@ -186,6 +186,8 @@ const timetableSlice = createSlice({
         checkedInAt: string;
         checkInResult?: CheckInResult | null;
         checkInOutcomeIds?: string[];
+        missingAmount?: MissingAmount | null;
+        teachingNote?: string | null;
       }>
     ) {
       const slot = state.slots.find((s) => s.id === action.payload.slotId);
@@ -194,6 +196,8 @@ const timetableSlice = createSlice({
         slot.checkedInAt = action.payload.checkedInAt;
         slot.checkInResult = action.payload.checkInResult ?? null;
         slot.checkInOutcomeIds = action.payload.checkInOutcomeIds ?? [];
+        slot.missingAmount = action.payload.missingAmount ?? null;
+        slot.teachingNote = action.payload.teachingNote ?? null;
       }
     },
     clearError(state) {

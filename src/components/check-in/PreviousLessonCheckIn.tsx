@@ -11,7 +11,7 @@ import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { useShiftFollowing } from "@/hooks/useShiftFollowing";
 import { buildSubmission, initialOutcomeSelection, needsOutcomeStep } from "@/hooks/checkInQueue";
-import { CheckInOutcomeStep, CheckInResultOptions } from "./CheckInChoices";
+import { CheckInOutcomeStep, CheckInResultOptions, type OutcomeStepExtras } from "./CheckInChoices";
 import {
   answerPreviousLesson,
   loadPreviousCheckIn,
@@ -125,8 +125,8 @@ export function PreviousLessonCheckIn({
       onToggle={(id) =>
         setSelected((current) => (current.includes(id) ? current.filter((x) => x !== id) : [...current, id]))
       }
-      onConfirm={() => {
-        if (outcomeResult) void answer(buildSubmission(outcomeResult, selected));
+      onConfirm={(extras) => {
+        if (outcomeResult) void answer(buildSubmission(outcomeResult, selected, extras));
       }}
       onBackOutcomes={() => setOutcomeResult(null)}
       onNotNow={() => setHidden(true)}
@@ -167,8 +167,8 @@ export function PreviousLessonCheckInView({
   selected: readonly string[];
   onChoose: (result: CheckInResult) => void;
   onToggle: (id: string) => void;
-  /** Saves the outcomes ticked, possibly none. */
-  onConfirm: () => void;
+  /** Saves the outcomes ticked, possibly none, with the amount and note the step collected. */
+  onConfirm: (extras: OutcomeStepExtras) => void;
   onBackOutcomes: () => void;
   onNotNow: () => void;
 }) {
@@ -208,6 +208,7 @@ export function PreviousLessonCheckInView({
           <span className="text-sm text-muted-foreground">{question}</span>
           <CheckInOutcomeStep
             question={outcomeResult === "PARTIAL" ? tc("uncoveredQuestion") : tc("difficultiesQuestion")}
+            result={outcomeResult}
             outcomes={outcomes}
             selected={selected}
             onToggle={onToggle}

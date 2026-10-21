@@ -33,6 +33,7 @@ import { PreviousLessonCheckIn } from "@/components/check-in/PreviousLessonCheck
 import { usePrepareLessonSet } from "@/components/dashboard/usePrepareLessonSet";
 import { isDocumentInProgress } from "@/components/dashboard/weekWindow";
 import { CheckInCard } from "@/components/check-in/CheckInCard";
+import { MISSING_AMOUNTS } from "@/components/check-in/CheckInChoices";
 import { TeachingMarkBadge } from "@/components/calendar/TeachingMarkBadge";
 import { streamPreviewTail } from "@/components/calendar/streamPreview";
 import { AssessmentScopePicker } from "@/components/calendar/AssessmentScopePicker";
@@ -276,7 +277,8 @@ export function SlotDialog({
   const todayIso = toIso(new Date());
   const showCheckIn = canCheckIn(checkInEnabled, slot, todayIso);
   const checkInMark = teachingMark(slot, todayIso);
-  const checkInTooltip = difficultOutcomeTexts(slot).join("\n");
+  const checkInTooltip = [...difficultOutcomeTexts(slot), ...(slot.teachingNote ? [slot.teachingNote] : [])].join("\n");
+  const missingAmountLabel = MISSING_AMOUNTS.find((amount) => amount.value === slot.missingAmount);
   const checkInItem = {
     slotDate: slot.slotDate,
     // Only shown for checkable types (see showCheckIn), so the cast holds wherever the card renders.
@@ -629,6 +631,18 @@ export function SlotDialog({
                       onSubmit={(body) => void handleCheckIn(body)}
                       onCancel={slot.checkedInAt ? () => setCheckInEditing(false) : undefined}
                     />
+                  )}
+                  {slot.checkedInAt && !checkInEditing && checkInMark && (missingAmountLabel || slot.teachingNote) && (
+                    <div className="space-y-0.5 text-sm text-muted-foreground">
+                      {missingAmountLabel && (
+                        <p>{tCheckIn("missingAmountShown", { amount: tCheckIn(missingAmountLabel.labelKey) })}</p>
+                      )}
+                      {slot.teachingNote && (
+                        <p className="truncate" title={slot.teachingNote}>
+                          {slot.teachingNote}
+                        </p>
+                      )}
+                    </div>
                   )}
                   {shiftAsk && (
                     <div className="flex flex-wrap items-center gap-2 rounded-md border border-primary/25 bg-primary/5 px-3 py-2">

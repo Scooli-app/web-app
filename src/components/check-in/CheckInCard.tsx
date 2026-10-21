@@ -131,10 +131,11 @@ export function CheckInCard({ item, locale, onSubmit, onSkip, onCancel, showMeta
         {header}
         <CheckInOutcomeStep
           question={question}
+          result={outcomeResult}
           outcomes={item.outcomes}
           selected={selected}
           onToggle={toggle}
-          onSave={() => onSubmit(buildSubmission(outcomeResult, selected))}
+          onSave={(extras) => onSubmit(buildSubmission(outcomeResult, selected, extras))}
           onBack={() => setOutcomeResult(null)}
         />
       </div>
