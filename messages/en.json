@@ -685,7 +685,8 @@
     "weekSchedule": {
       "description": "Choose the days and the number of periods per day.",
       "lessonsPerWeek": "{count, plural, one {# lesson/week} other {# lessons/week}}",
-      "addPeriod": "period"
+      "addPeriod": "period",
+      "customDuration": "Custom"
     },
     "weekScheduleTypeOptions": {
       "auto": "Automatic",
