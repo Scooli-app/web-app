@@ -1362,6 +1362,33 @@
       "classPlaceholder": "Ex: A",
       "cancel": "Cancelar"
     },
+    "documentVersions": {
+      "buttonLabel": "Versões",
+      "buttonTooltip": "Versões do documento",
+      "sheetTitle": "Versões",
+      "sheetDescription": "Volta a uma versão anterior deste documento quando quiseres.",
+      "kind": {
+        "generated": "Gerado",
+        "aiEdit": "Alterado com o assistente",
+        "teacherEdit": "Editado por ti",
+        "aiSuggestion": "Sugestão",
+        "suggestionApplied": "Sugestão aplicada",
+        "restored": "Restaurado"
+      },
+      "currentBadge": "Atual",
+      "listLoadError": "Não foi possível carregar as versões.",
+      "previewLoadError": "Não foi possível abrir esta versão.",
+      "previewLabel": "Pré-visualização",
+      "slidesLabel": "Diapositivos",
+      "pickVersionHint": "Escolhe uma versão para a ver.",
+      "restoreButton": "Restaurar esta versão",
+      "restoreTitle": "Restaurar a versão de {date}?",
+      "restoreDescription": "A versão atual fica guardada no histórico.",
+      "restoreConfirm": "Restaurar",
+      "restoring": "A restaurar a versão",
+      "restoredToast": "Versão restaurada",
+      "restoreError": "Não foi possível restaurar a versão."
+    },
     "documentEditor": {
       "stepPreparingLabel": "Preparar",
       "stepPreparingDescription": "A analisar o currículo e preparar o contexto",

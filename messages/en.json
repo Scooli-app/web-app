@@ -1362,6 +1362,33 @@
       "classPlaceholder": "E.g. A",
       "cancel": "Cancel"
     },
+    "documentVersions": {
+      "buttonLabel": "Versions",
+      "buttonTooltip": "Document versions",
+      "sheetTitle": "Versions",
+      "sheetDescription": "Go back to an earlier version of this document whenever you like.",
+      "kind": {
+        "generated": "Generated",
+        "aiEdit": "Changed with the assistant",
+        "teacherEdit": "Edited by you",
+        "aiSuggestion": "Suggestion",
+        "suggestionApplied": "Suggestion applied",
+        "restored": "Restored"
+      },
+      "currentBadge": "Current",
+      "listLoadError": "We couldn’t load the versions.",
+      "previewLoadError": "We couldn’t open this version.",
+      "previewLabel": "Preview",
+      "slidesLabel": "Slides",
+      "pickVersionHint": "Pick a version to see it.",
+      "restoreButton": "Restore this version",
+      "restoreTitle": "Restore the version from {date}?",
+      "restoreDescription": "The current version is kept in the history.",
+      "restoreConfirm": "Restore",
+      "restoring": "Restoring the version",
+      "restoredToast": "Version restored",
+      "restoreError": "We couldn’t restore this version."
+    },
     "documentEditor": {
       "stepPreparingLabel": "Prepare",
       "stepPreparingDescription": "Analyzing the curriculum and preparing the context",
