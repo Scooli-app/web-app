@@ -2,7 +2,7 @@
  * Document versions: review and apply a pending suggested version (ENG-255).
  */
 
-import type { ApplySuggestionResult, DocumentVersionDiff } from "@/shared/types/document-versions";
+import type { ApplySuggestionResult, DocumentVersionDiff } from "@/shared/types/document-suggestions";
 import apiClient from "./client";
 
 export async function getSuggestionDiff(

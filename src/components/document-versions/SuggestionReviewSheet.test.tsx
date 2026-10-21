@@ -1,4 +1,4 @@
-import type { DocumentVersionDiff, SectionChange } from "@/shared/types/document-versions";
+import type { DocumentVersionDiff, SectionChange } from "@/shared/types/document-suggestions";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";

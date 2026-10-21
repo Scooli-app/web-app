@@ -5,7 +5,7 @@
  */
 
 import { diffWords } from "diff";
-import type { SectionChange } from "@/shared/types/document-versions";
+import type { SectionChange } from "@/shared/types/document-suggestions";
 
 export const POLL_INTERVAL_MS = 5000;
 

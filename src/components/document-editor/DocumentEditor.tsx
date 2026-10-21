@@ -6,7 +6,7 @@ import { useGenerationStalled } from "@/hooks/useGenerationStalled";
 import { uploadDocumentImage } from "@/services/api/document-images.service";
 import { streamDocumentContent } from "@/services/api/document.service";
 import { AUTO_SAVE_DELAY } from "@/shared/config/constants";
-import { Routes } from "@/shared/types";
+import { Routes, type Document } from "@/shared/types";
 import { isFailedDocumentStatus, type RagSource } from "@/shared/types/document";
 import { isUsableDocumentContent } from "@/shared/utils/documentContent";
 import { escapeMarkdownImageAlt, htmlToMarkdown, markdownToHtml } from "@/shared/utils/markdown";
@@ -19,6 +19,7 @@ import {
   fetchDocumentImages,
   setGeneratingImages,
   setImageError,
+  setCurrentDocument,
   setImages,
   upsertImage,
 } from "@/store/documents/documentSlice";
@@ -58,6 +59,7 @@ import DocumentTitle from "./DocumentTitle";
 import CreateCalendarFromPlanButton from "./CreateCalendarFromPlanButton";
 import DownloadButton from "./DownloadButton";
 import ShareButton from "./ShareButton";
+import { DocumentVersionsButton } from "@/components/document-versions/DocumentVersionsButton";
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -393,6 +395,15 @@ export default function DocumentEditor({
       await handleAutosave(nextContent);
     },
     [handleAutosave, registerAutosave, syncContent],
+  );
+
+  // A restored version replaces the document in the store; useDocumentManager
+  // then swaps the editor content for it without a page reload.
+  const handleVersionRestored = useCallback(
+    (restored: Document) => {
+      dispatch(setCurrentDocument(restored));
+    },
+    [dispatch]
   );
 
   const handleToolbarImageUpload = useCallback(
@@ -1471,6 +1482,7 @@ export default function DocumentEditor({
                       {activeDocument?.documentType === "curriculumPlan" && !isGenerating && content && (
                         <CreateCalendarFromPlanButton plan={activeDocument} />
                       )}
+                      <DocumentVersionsButton documentId={documentId} onRestored={handleVersionRestored} />
                       <ShareButton
                         title={resolvedTitle || resolvedDefaultTitle}
                         content={content}

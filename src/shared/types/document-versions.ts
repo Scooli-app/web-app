@@ -1,46 +1,36 @@
 /**
- * Suggested document versions (ENG-255). A lesson document can carry one pending suggestion that the
- * teacher reviews section by section before it is applied or rejected.
+ * Version history of a document (ENG-254). Mirrors the chalkboard
+ * `GET /documents/{id}/versions` contract.
  */
 
-import type { Document } from "./document";
+export type DocumentVersionKind =
+  | "generated"
+  | "ai_edit"
+  | "teacher_edit"
+  | "ai_suggestion"
+  | "suggestion_applied"
+  | "restored";
 
-export type PendingSuggestionStatus = "generating" | "ready";
+export type DocumentVersionStatus =
+  | "current"
+  | "superseded"
+  | "suggested"
+  | "rejected"
+  | "applied";
 
-export interface PendingSuggestionReason {
-  /** pt-PT sentence explaining why the suggestion exists. */
-  summary: string;
-}
-
-export interface PendingSuggestion {
-  versionId: string;
-  createdAt: string;
-  reason: PendingSuggestionReason | null;
-  /** The teacher edited the document after the suggestion was made. */
-  stale: boolean;
-  status: PendingSuggestionStatus;
-}
-
-export type SectionChangeType = "added" | "removed" | "changed" | "unchanged";
-
-export interface SectionChange {
-  key: string;
-  type: SectionChangeType;
+export interface DocumentVersionSummary {
+  id: string;
+  versionNumber: number;
+  kind: DocumentVersionKind;
+  status: DocumentVersionStatus;
   title: string;
-  /** Markdown section, or slide JSON for presentations. Null when the section is new. */
-  before: string | null;
-  /** Markdown section, or slide JSON for presentations. Null when the section was removed. */
-  after: string | null;
-  position: number;
+  /** ISO-8601 instant. */
+  createdAt: string;
+  createdBy: string | null;
+  reason: string | null;
 }
 
-export interface DocumentVersionDiff {
-  stale: boolean;
-  changes: SectionChange[];
-}
-
-export interface ApplySuggestionResult {
-  document: Document;
-  /** Section keys that no longer exist in the document and were left out. */
-  skipped: string[];
+export interface DocumentVersionDetail extends DocumentVersionSummary {
+  content: string;
+  contentFormat: "markdown" | "json";
 }

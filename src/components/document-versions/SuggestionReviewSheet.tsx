@@ -11,7 +11,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { applySuggestion, getSuggestionDiff, rejectSuggestion } from "@/services/api/document-versions.service";
 import type { CanvasSlide } from "@/shared/types/canvas-presentation";
 import type { Document } from "@/shared/types/document";
-import type { DocumentVersionDiff, PendingSuggestion, SectionChange } from "@/shared/types/document-versions";
+import type { DocumentVersionDiff, PendingSuggestion, SectionChange } from "@/shared/types/document-suggestions";
 import { cn } from "@/shared/utils/utils";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useState } from "react";

@@ -1,4 +1,4 @@
-import type { PendingSuggestion } from "@/shared/types/document-versions";
+import type { PendingSuggestion } from "@/shared/types/document-suggestions";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
@@ -6,7 +6,7 @@ import { SuggestionBar } from "./SuggestionBar";
 
 vi.mock("next-intl", () => ({ useTranslations: () => (key: string) => key, useLocale: () => "pt-PT" }));
 vi.mock("@/store/hooks", () => ({ useAppDispatch: () => vi.fn() }));
-vi.mock("@/store/documents/documentSlice", () => ({ documentRefreshed: (payload: unknown) => payload }));
+vi.mock("@/store/documents/documentSlice", () => ({ setCurrentDocument: (payload: unknown) => payload }));
 vi.mock("@/services/api/document.service", () => ({ getDocument: vi.fn() }));
 vi.mock("@/services/api/document-versions.service", () => ({
   getSuggestionDiff: vi.fn(),

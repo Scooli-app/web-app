@@ -3,8 +3,8 @@
 import { Button } from "@/components/ui/button";
 import { getDocument } from "@/services/api/document.service";
 import type { Document } from "@/shared/types/document";
-import type { PendingSuggestion } from "@/shared/types/document-versions";
-import { documentRefreshed } from "@/store/documents/documentSlice";
+import type { PendingSuggestion } from "@/shared/types/document-suggestions";
+import { setCurrentDocument } from "@/store/documents/documentSlice";
 import { useAppDispatch } from "@/store/hooks";
 import { Loader2 } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -37,7 +37,7 @@ export function SuggestionBar({ documentId, suggestion, contentFormat, onContent
       check: async () => {
         const doc = await getDocument(documentId);
         if (doc.pendingSuggestion?.status === "generating") return false;
-        dispatch(documentRefreshed(doc));
+        dispatch(setCurrentDocument(doc));
         return true;
       },
     });
@@ -47,7 +47,7 @@ export function SuggestionBar({ documentId, suggestion, contentFormat, onContent
 
   const refreshWith = (doc: Document) => {
     onContentReplaced?.();
-    dispatch(documentRefreshed(doc));
+    dispatch(setCurrentDocument(doc));
   };
 
   return (

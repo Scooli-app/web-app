@@ -1,4 +1,4 @@
-import type { SectionChange } from "@/shared/types/document-versions";
+import type { SectionChange } from "@/shared/types/document-suggestions";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   applyPayload,

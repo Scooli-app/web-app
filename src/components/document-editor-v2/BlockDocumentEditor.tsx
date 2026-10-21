@@ -66,8 +66,9 @@ import {
 } from "@/shared/types/canvas-presentation";
 import { getThemeById } from "@/shared/types/presentation-theme";
 import { translate } from "@/i18n/translate";
-import { Routes } from "@/shared/types";
-import { fetchDocument, updateDocument, chatWithDocument } from "@/store/documents/documentSlice";
+import { Routes, type Document } from "@/shared/types";
+import { fetchDocument, setCurrentDocument, updateDocument, chatWithDocument } from "@/store/documents/documentSlice";
+import { DocumentVersionsButton } from "@/components/document-versions/DocumentVersionsButton";
 import { regenerateDocumentImage as regenerateDocumentImageApi, generateDocumentImage as generateDocumentImageApi } from "@/services/api/document-images.service";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { selectIsPro } from "@/store/subscription/selectors";
@@ -601,6 +602,16 @@ export function BlockDocumentEditor({ documentId }: Props) {
   const [canRedo, setCanRedo] = useState(false);
 
   useEffect(() => { canvasRef.current = canvas; });
+
+  // A restored version is a new canvas. Clearing canvasRef lets the init
+  // effect above rebuild the editor state (undo history included) from it.
+  const handleVersionRestored = useCallback(
+    (restored: Document) => {
+      canvasRef.current = null;
+      dispatch(setCurrentDocument(restored));
+    },
+    [dispatch]
+  );
 
   /** Kept in sync with activeSlideId state so keyboard handlers don't go stale. */
   const activeSlideIdRef = useRef(activeSlideId);
@@ -2024,6 +2035,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
 
         {/* ── Right side: Export dropdown + Present ──────────────────── */}
         <div className="ml-auto flex items-center gap-1.5">
+          <DocumentVersionsButton documentId={documentId} onRestored={handleVersionRestored} />
           {canvas.slides.length > 0 && (
           <>
           <DropdownMenu>

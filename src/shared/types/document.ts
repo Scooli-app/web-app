@@ -1,4 +1,4 @@
-import type { PendingSuggestion } from "./document-versions";
+import type { PendingSuggestion } from "./document-suggestions";
 
 /**
  * Document types and interfaces
