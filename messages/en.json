@@ -3402,6 +3402,7 @@
       "loadError": "Could not load the changes.",
       "retry": "Try again",
       "presentationSettings": "Presentation theme and settings",
+      "documentTitle": "Title",
       "themeChange": "Theme: {before} → {after}",
       "formatChanged": "The presentation changed format since this suggestion was made.",
       "refresh": "Update suggestion",

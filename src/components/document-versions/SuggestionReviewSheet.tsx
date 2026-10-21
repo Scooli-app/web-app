@@ -32,12 +32,14 @@ import {
   initialSelection,
   isLongText,
   META_KEY,
+  TITLE_KEY,
   reviewableChanges,
   selectedCount,
   toggleAll,
   toggleSection,
   toReadableText,
   unchangedCount,
+  withoutSectionHeadings,
 } from "./suggestion-review";
 
 export type SuggestionContentFormat = "markdown" | "json";
@@ -115,7 +117,7 @@ function MarkdownBody({ change, view }: { change: SectionChange; view: DiffView 
     <div>
       <div
         className={cn(
-          "whitespace-pre-wrap font-serif text-[15px] leading-7 text-foreground",
+          "whitespace-pre-wrap font-sans text-[15px] leading-7 text-foreground",
           long && !expanded && "line-clamp-[12]",
         )}
       >
@@ -203,6 +205,27 @@ function SettingsBody({ change }: { change: SectionChange }) {
   );
 }
 
+/** The document title change: the old title struck through, then the new one. Not a word diff. */
+function TitleBody({ change }: { change: SectionChange }) {
+  const t = useTranslations("documentVersions.review");
+  return (
+    <p className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-base">
+      {change.before && (
+        <del className="text-muted-foreground line-through decoration-red-700/70 decoration-1 dark:decoration-red-300/70">
+          <span className="sr-only">{t("removedText")}</span>
+          {change.before}
+        </del>
+      )}
+      {change.after && (
+        <span className="font-semibold text-foreground">
+          <span className="sr-only">{t("addedText")}</span>
+          {change.after}
+        </span>
+      )}
+    </p>
+  );
+}
+
 function ChangeRow({
   change,
   checked,
@@ -218,7 +241,8 @@ function ChangeRow({
   const [view, setView] = useState<DiffView>("changes");
   const isPresentation = contentFormat === "json";
   const isSettings = change.key === META_KEY;
-  const title = isSettings ? t("presentationSettings") : change.title;
+  const isTitle = change.key === TITLE_KEY;
+  const title = isSettings ? t("presentationSettings") : isTitle ? t("documentTitle") : (change.title ?? "");
   // Added sections only have an "after" and removed ones only a "before", so the toggle is for changed sections.
   const markdownView: DiffView = change.type === "added" ? "after" : change.type === "removed" ? "before" : view;
 
@@ -232,7 +256,7 @@ function ChangeRow({
             <Badge variant={BADGE_VARIANT[change.type as keyof typeof BADGE_VARIANT] ?? "outline"}>
               {t(`type.${change.type}`)}
             </Badge>
-            {!isPresentation && change.type === "changed" && (
+            {!isPresentation && !isTitle && change.type === "changed" && (
               <ToggleGroup
                 type="single"
                 value={view}
@@ -253,7 +277,9 @@ function ChangeRow({
             )}
           </div>
           <div className="mt-3">
-            {isSettings ? (
+            {isTitle ? (
+              <TitleBody change={change} />
+            ) : isSettings ? (
               <SettingsBody change={change} />
             ) : isPresentation ? (
               <SlideBody change={change} />
@@ -279,7 +305,9 @@ interface SuggestionReviewBodyProps {
 /** The scrollable part of the review: the stale notice, the changed sections and the unchanged count. */
 export function SuggestionReviewBody({ diff, selection, contentFormat, onToggle, onRefresh }: SuggestionReviewBodyProps) {
   const t = useTranslations("documentVersions.review");
-  const changes = reviewableChanges(diff.changes);
+  const reviewable = reviewableChanges(diff.changes);
+  // A markdown section repeats its title as its first line; the row already shows the title.
+  const changes = contentFormat === "markdown" ? withoutSectionHeadings(reviewable) : reviewable;
   const unchanged = unchangedCount(diff.changes);
 
   return (

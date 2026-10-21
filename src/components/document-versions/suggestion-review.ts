@@ -12,15 +12,60 @@ export const POLL_INTERVAL_MS = 5000;
 /** Section key of a presentation's deck-level settings (theme, schema), which is not a slide. */
 export const META_KEY = "_meta";
 
+/** Pseudo section for the document title. Shown first; applied by including it in `sectionKeys`. */
+export const TITLE_KEY = "_title";
+
 /** Long sections are clamped with a "Ver tudo" toggle after this many lines. */
 export const CLAMP_LINES = 12;
 
-/** Sections the teacher can act on, in document order. Unchanged sections are not reviewable. */
+/** Sections the teacher can act on, in document order, with the title first. Unchanged sections are not reviewable. */
 export function reviewableChanges(changes: SectionChange[]): SectionChange[] {
   return changes
     .filter((change) => change.type !== "unchanged")
-    .sort((a, b) => a.position - b.position);
+    .sort((a, b) => {
+      if (a.key === TITLE_KEY) return -1;
+      if (b.key === TITLE_KEY) return 1;
+      return a.position - b.position;
+    });
 }
+
+function normaliseHeading(text: string): string {
+  return text
+    .replace(/[*_`]/g, "")
+    .replace(/^#{1,6}\s*/, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
+/**
+ * Drops the first line of a markdown section when it repeats the section's own title (the row already shows it).
+ * Only the first non-empty line is considered; any other content is returned untouched.
+ */
+export function stripSectionHeading(markdown: string | null, title: string): string | null {
+  if (markdown === null) return null;
+  const lines = markdown.split("\n");
+  const first = lines.findIndex((line) => line.trim() !== "");
+  if (first === -1 || normaliseHeading(lines[first]) !== normaliseHeading(title)) return markdown;
+  return lines
+    .slice(first + 1)
+    .join("\n")
+    .replace(/^\s+/, "");
+}
+
+/** Markdown changes with their repeated heading lines removed, before and after. The title and settings rows are kept. */
+export function withoutSectionHeadings(changes: SectionChange[]): SectionChange[] {
+  return changes.map((change) =>
+    change.key === TITLE_KEY || change.key === META_KEY
+      ? change
+      : {
+          ...change,
+          before: stripSectionHeading(change.before, change.title ?? ""),
+          after: stripSectionHeading(change.after, change.title ?? ""),
+        },
+  );
+}
+
 
 export function unchangedCount(changes: SectionChange[]): number {
   return changes.filter((change) => change.type === "unchanged").length;

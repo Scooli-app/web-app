@@ -30,12 +30,15 @@ export function versionLabelKey(version: DocumentVersionSummary): DocumentVersio
   return LABEL_KEY_BY_KIND[version.kind];
 }
 
-/** Suggestions still open or dismissed belong to the suggestions flow (T7), not here. */
+/**
+ * Suggestions belong to the suggestions flow (T7), not here: open, dismissed and applied ones alike. An applied
+ * suggestion is listed through its `suggestion_applied` row instead.
+ */
 export function isListedVersion(version: DocumentVersionSummary): boolean {
-  return version.status !== "suggested" && version.status !== "rejected";
+  return version.kind !== "ai_suggestion";
 }
 
-/** The list shown in the sheet: newest first, without suggestions that are still open or rejected. */
+/** The list shown in the sheet: newest first, without any suggestion row. */
 export function listedVersions(versions: DocumentVersionSummary[]): DocumentVersionSummary[] {
   return versions
     .filter(isListedVersion)

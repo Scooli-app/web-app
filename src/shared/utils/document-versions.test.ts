@@ -39,16 +39,17 @@ describe("versionLabelKey", () => {
 });
 
 describe("listedVersions", () => {
-  it("hides suggested and rejected rows and keeps applied suggestions", () => {
+  it("hides every suggestion row, applied ones included, and keeps the applied result row", () => {
     const rows = listedVersions([
       version({ id: "a", versionNumber: 1, status: "superseded" }),
       version({ id: "b", versionNumber: 2, kind: "ai_suggestion", status: "suggested" }),
       version({ id: "c", versionNumber: 3, kind: "ai_suggestion", status: "rejected" }),
       version({ id: "d", versionNumber: 4, kind: "ai_suggestion", status: "applied" }),
-      version({ id: "e", versionNumber: 5, status: "current" }),
+      version({ id: "f", versionNumber: 5, kind: "suggestion_applied", status: "current" }),
+      version({ id: "e", versionNumber: 6, status: "current" }),
     ]);
 
-    expect(rows.map((row) => row.id)).toEqual(["e", "d", "a"]);
+    expect(rows.map((row) => row.id)).toEqual(["e", "f", "a"]);
   });
 
   it("orders the list newest first", () => {
@@ -69,10 +70,15 @@ describe("listedVersions", () => {
 });
 
 describe("isListedVersion", () => {
-  it("is false for open and dismissed suggestions only", () => {
-    expect(isListedVersion(version({ status: "suggested" }))).toBe(false);
-    expect(isListedVersion(version({ status: "rejected" }))).toBe(false);
-    expect(isListedVersion(version({ status: "current" }))).toBe(true);
+  it("is false for every suggestion row, whatever its status", () => {
+    expect(isListedVersion(version({ kind: "ai_suggestion", status: "suggested" }))).toBe(false);
+    expect(isListedVersion(version({ kind: "ai_suggestion", status: "rejected" }))).toBe(false);
+    expect(isListedVersion(version({ kind: "ai_suggestion", status: "applied" }))).toBe(false);
+  });
+
+  it("is true for the applied result row and ordinary versions", () => {
+    expect(isListedVersion(version({ kind: "suggestion_applied", status: "current" }))).toBe(true);
+    expect(isListedVersion(version({ kind: "generated", status: "current" }))).toBe(true);
   });
 });
 

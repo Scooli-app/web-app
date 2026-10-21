@@ -210,3 +210,67 @@ describe("SuggestionReviewBody: refresh offer on a stale suggestion", () => {
     expect(html).not.toContain(">refresh<");
   });
 });
+
+describe("SuggestionReviewBody: markdown reading", () => {
+  it("sets the diff text in the app sans font, not a serif fallback", () => {
+    const html = render({ stale: false, changes: [CHANGED] });
+
+    expect(html).toContain("font-sans");
+    expect(html).not.toContain("font-serif");
+  });
+
+  it("does not repeat the section heading line inside the body", () => {
+    const html = render({
+      stale: false,
+      changes: [
+        {
+          key: "objetivos",
+          type: "changed",
+          title: "Objetivos",
+          before: "# Objetivos\nOs alunos conhecem a fração.",
+          after: "# Objetivos\nOs alunos dominam a fração equivalente.",
+          position: 1,
+        },
+      ],
+    });
+
+    // The title appears in the heading and as the checkbox label only; the body does not repeat it.
+    expect(html.match(/Objetivos/g)).toHaveLength(2);
+    expect(html).toContain("conhecem");
+    expect(html).toContain("dominam");
+  });
+});
+
+describe("SuggestionReviewBody: document title row", () => {
+  const TITLE_CHANGE: SectionChange = {
+    key: "_title",
+    type: "changed",
+    title: null,
+    before: "Plano antigo",
+    after: "Plano novo",
+    position: 0,
+  };
+
+  it("renders the title change first, with the old title struck through and then the new one", () => {
+    const html = render({ stale: false, changes: [CHANGED, TITLE_CHANGE] });
+
+    expect(html.indexOf("documentTitle")).toBeLessThan(html.indexOf("Objetivos"));
+    expect(html).toMatch(/<del[^>]*>.*Plano antigo.*<\/del>/);
+    expect(html).toMatch(/Plano novo/);
+    expect(html.indexOf("Plano antigo")).toBeLessThan(html.indexOf("Plano novo"));
+  });
+
+  it("gives the title row a selectable checkbox and no Antes / Depois / Alterações toggle", () => {
+    const html = render({ stale: false, changes: [TITLE_CHANGE] });
+
+    expect(html).toContain('aria-label="documentTitle"');
+    expect(html).toContain('role="checkbox"');
+    expect(html).not.toContain("view.changes");
+  });
+
+  it("is checked by default", () => {
+    const html = render({ stale: false, changes: [TITLE_CHANGE] });
+
+    expect(html).toMatch(/role="checkbox" aria-checked="true"/);
+  });
+});

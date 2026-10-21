@@ -26,7 +26,8 @@ export type SectionChangeType = "added" | "removed" | "changed" | "unchanged";
 export interface SectionChange {
   key: string;
   type: SectionChangeType;
-  title: string;
+  /** Null only for the `_title` pseudo change, which is labelled by the UI. */
+  title: string | null;
   /** Markdown section, or slide JSON for presentations. Null when the section is new. */
   before: string | null;
   /** Markdown section, or slide JSON for presentations. Null when the section was removed. */
