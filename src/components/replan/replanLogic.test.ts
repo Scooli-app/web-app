@@ -6,6 +6,7 @@ import {
   initialSelection,
   newOutcomes,
   pollUntilSettled,
+  settledToast,
   timelineOrder,
 } from "./replanLogic";
 
@@ -118,5 +119,22 @@ describe("pollUntilSettled", () => {
     );
     expect(result).toBeUndefined();
     expect(calls).toBe(3);
+  });
+});
+
+describe("no_change proposals", () => {
+  const base = { id: "p9", trigger: "NOT_HELD", triggerSlotId: "s1", createdAt: null, items: [] };
+
+  it("the banner shows the summary and no actions", () => {
+    expect(bannerState({ ...base, status: "no_change", summary: "Nothing to move." })).toEqual({
+      kind: "noChange",
+      summary: "Nothing to move.",
+    });
+  });
+
+  it("a watch toasts info, not an error, when nothing needs to change", () => {
+    expect(settledToast({ ...base, status: "no_change", summary: null })).toBe("noChange");
+    expect(settledToast({ ...base, status: "pending", summary: null })).toBe("ready");
+    expect(settledToast({ ...base, status: "failed", summary: null })).toBe("failed");
   });
 });

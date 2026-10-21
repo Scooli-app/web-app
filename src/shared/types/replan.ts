@@ -1,6 +1,7 @@
 /** Replanning proposals (ENG-257, API from ENG-256 / T8). Mirrors `ReplanView` on the backend. */
 
-export type ReplanStatus = "generating" | "pending" | "failed";
+/** "no_change": the agent judged that nothing needs to change; it carries a summary and no items. */
+export type ReplanStatus = "generating" | "pending" | "failed" | "no_change";
 
 export type ReplanChange = "retitled" | "extended" | "merged" | "reinforcement";
 

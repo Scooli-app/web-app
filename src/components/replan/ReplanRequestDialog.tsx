@@ -48,7 +48,7 @@ export function ReplanRequestDialog({ timetableId, triggerSlotId, open, onOpenCh
           <DialogTitle>{t("requestTitle")}</DialogTitle>
           <DialogDescription>{t("requestDescription")}</DialogDescription>
         </DialogHeader>
-        <div className="space-y-2">
+        <div className="space-y-2 px-6 pt-4">
           <Label htmlFor="replan-note">{t("requestNoteLabel")}</Label>
           <Textarea
             id="replan-note"

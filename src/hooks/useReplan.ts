@@ -1,6 +1,6 @@
 "use client";
 
-import { REPLAN_MAX_POLLS, REPLAN_POLL_MS, REPLAN_CHANGED_EVENT, pollUntilSettled } from "@/components/replan/replanLogic";
+import { REPLAN_MAX_POLLS, REPLAN_POLL_MS, REPLAN_CHANGED_EVENT, pollUntilSettled, settledToast } from "@/components/replan/replanLogic";
 import { ApiRequestError } from "@/services/api/client";
 import { replanService } from "@/services/api/replan.service";
 import { useShiftFollowing } from "@/hooks/useShiftFollowing";
@@ -58,13 +58,16 @@ export function useReplan() {
           );
           if (!proposal) return;
           notifyChanged(timetableId);
-          if (proposal.status === "pending") {
+          const outcome = settledToast(proposal);
+          if (outcome === "ready") {
             toast.success(t("readyToast"), {
               action: {
                 label: t("readyAction"),
                 onClick: () => router.push(`${Routes.CALENDAR}/${timetableId}`),
               },
             });
+          } else if (outcome === "noChange") {
+            toast.info(t("noChangeToast"));
           } else {
             const { triggerSlotId } = proposal;
             toast.error(t("failedToast"), {
