@@ -513,6 +513,8 @@ function CalendarPageInner() {
               checkedInAt: record.checkedInAt,
               checkInResult: answer.checkInResult,
               checkInOutcomeIds: answer.checkInOutcomeIds,
+              missingAmount: answer.missingAmount,
+              teachingNote: answer.teachingNote,
             }
           : s,
       );

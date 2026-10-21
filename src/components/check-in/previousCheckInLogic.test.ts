@@ -8,7 +8,7 @@ import {
   answerPreviousLesson,
   feedsNextLesson,
   loadPreviousCheckIn,
-  needsPreviousOutcomeStep,
+  needsPreviousDetailStep,
   phaseAfterSave,
   previousCheckInVisible,
   previousSubmission,
@@ -114,12 +114,11 @@ describe("previousSubmission and the outcome step", () => {
     expect(previousSubmission("TAUGHT", ["o1"])).toEqual({ result: "TAUGHT" });
   });
 
-  it("asks for outcomes only on difficulties or partial, and only when the lesson has outcomes", () => {
-    expect(needsPreviousOutcomeStep("TAUGHT_WITH_DIFFICULTIES", pending)).toBe(true);
-    expect(needsPreviousOutcomeStep("PARTIAL", pending)).toBe(true);
-    expect(needsPreviousOutcomeStep("TAUGHT", pending)).toBe(false);
-    expect(needsPreviousOutcomeStep("NOT_HELD", pending)).toBe(false);
-    expect(needsPreviousOutcomeStep("PARTIAL", { ...pending, outcomes: [] })).toBe(false);
+  it("opens the detail step for difficulties or partial, with or without outcomes", () => {
+    expect(needsPreviousDetailStep("TAUGHT_WITH_DIFFICULTIES")).toBe(true);
+    expect(needsPreviousDetailStep("PARTIAL")).toBe(true);
+    expect(needsPreviousDetailStep("TAUGHT")).toBe(false);
+    expect(needsPreviousDetailStep("NOT_HELD")).toBe(false);
   });
 
   it("marks only difficulties and partial as feeding the next lesson", () => {

@@ -183,7 +183,14 @@
     },
     "save": "Save",
     "followUpOpenLesson": "Open",
-    "reinforcementNote": "Reinforcement sheet: lesson on {day}"
+    "reinforcementNote": "Reinforcement sheet: lesson on {day}",
+    "missingAmountQuestion": "How much was left to teach?",
+    "missingLittle": "A little",
+    "missingHalf": "Half",
+    "missingMost": "Almost all",
+    "missingAmountShown": "Left to teach: {amount}",
+    "noteLabel": "What happened? (optional)",
+    "notePlaceholder": "E.g.: the food chains part was missed"
   },
   "previousCheckIn": {
     "question": "Did the last lesson go well?",

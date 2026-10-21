@@ -107,6 +107,7 @@ describe("CheckInOutcomeStep", () => {
     renderToStaticMarkup(
       createElement(CheckInOutcomeStep, {
         question: "difficultiesQuestion",
+        result: "TAUGHT_WITH_DIFFICULTIES",
         outcomes,
         selected,
         onToggle: vi.fn(),
@@ -131,6 +132,92 @@ describe("CheckInOutcomeStep", () => {
     const rows = html.split("<li").slice(1);
     expect(rows[0]).toContain('aria-checked="false"');
     expect(rows[1]).toContain('aria-checked="true"');
+  });
+});
+
+describe("CheckInOutcomeStep with one outcome (ENG-253)", () => {
+  const only = [{ id: "o1", text: "Somar frações", topicPath: [], source: "ai" }];
+  const render = (result: "TAUGHT_WITH_DIFFICULTIES" | "PARTIAL", outcomes = only) =>
+    renderToStaticMarkup(
+      createElement(CheckInOutcomeStep, {
+        question: "difficultiesQuestion",
+        result,
+        outcomes,
+        selected: ["o1"],
+        onToggle: vi.fn(),
+        onSave: vi.fn(),
+        onBack: vi.fn(),
+      }),
+    );
+
+  it("hides the checklist and shows the outcome as one line of text", () => {
+    const html = render("TAUGHT_WITH_DIFFICULTIES");
+    expect(html).not.toContain('role="checkbox"');
+    expect(html).not.toContain('role="group"');
+    expect(html).toContain("Somar frações");
+  });
+
+  it("with no outcomes, drops the outcome question and list and keeps only the note label", () => {
+    const html = renderToStaticMarkup(
+      createElement(CheckInOutcomeStep, {
+        question: "difficultiesQuestion",
+        result: "TAUGHT_WITH_DIFFICULTIES",
+        outcomes: [],
+        selected: [],
+        onToggle: vi.fn(),
+        onSave: vi.fn(),
+        onBack: vi.fn(),
+      }),
+    );
+    expect(html).not.toContain("difficultiesQuestion");
+    expect(html).not.toContain('role="group"');
+    expect(html).not.toContain('role="checkbox"');
+    expect(html).toContain("noteLabel");
+    expect(html).not.toContain("missingAmountQuestion");
+  });
+
+  it("keeps the checklist when there are several outcomes", () => {
+    const two = [...only, { id: "o2", text: "Ler com fluência", topicPath: [], source: "ai" }];
+    const html = render("TAUGHT_WITH_DIFFICULTIES", two);
+    expect(html.match(/role="checkbox"/g)).toHaveLength(2);
+  });
+});
+
+describe("CheckInOutcomeStep amount and note (ENG-253)", () => {
+  const outcomes = [
+    { id: "o1", text: "Ler com fluência", topicPath: [], source: "ai" },
+    { id: "o2", text: "Somar frações", topicPath: [], source: "ai" },
+  ];
+  const render = (result: "TAUGHT_WITH_DIFFICULTIES" | "PARTIAL") =>
+    renderToStaticMarkup(
+      createElement(CheckInOutcomeStep, {
+        question: "uncoveredQuestion",
+        result,
+        outcomes,
+        selected: [],
+        onToggle: vi.fn(),
+        onSave: vi.fn(),
+        onBack: vi.fn(),
+      }),
+    );
+
+  it("asks how much was left only for 'ficou a meio', as three choices", () => {
+    const partial = render("PARTIAL");
+    expect(partial).toContain("missingAmountQuestion");
+    expect(partial).toContain("missingLittle");
+    expect(partial).toContain("missingHalf");
+    expect(partial).toContain("missingMost");
+    expect(render("TAUGHT_WITH_DIFFICULTIES")).not.toContain("missingAmountQuestion");
+  });
+
+  it("has a labelled note field for both results, with the placeholder and no counter when short", () => {
+    for (const result of ["TAUGHT_WITH_DIFFICULTIES", "PARTIAL"] as const) {
+      const html = render(result);
+      expect(html).toContain("noteLabel");
+      expect(html).toContain('placeholder="notePlaceholder"');
+      expect(html).toContain("<textarea");
+      expect(html).not.toMatch(/\/500/);
+    }
   });
 });
 

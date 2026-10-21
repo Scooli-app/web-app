@@ -5,7 +5,7 @@ import type { CompanionType } from "@/components/dashboard/weekWindow";
 
 import apiClient from "./client";
 import { featureFeedbackTrigger } from "@/store/featureFeedbackTrigger";
-import type { CheckInOutcome, CheckInResult, CheckInSlotType, TeachingStatus } from "@/shared/types/check-in";
+import type { CheckInOutcome, CheckInResult, CheckInSlotType, MissingAmount, TeachingStatus } from "@/shared/types/check-in";
 
 export interface RecurringSlot {
   dayOfWeek: number; // 1=Mon..7=Sun (ISO)
@@ -92,6 +92,10 @@ export interface LessonSlot {
   checkInResult?: CheckInResult | null;
   /** Difficult outcome ids ("com dificuldades") or uncovered ones ("ficou a meio"); empty for the other answers. */
   checkInOutcomeIds?: string[];
+  /** How much was left to teach, for a "ficou a meio" answer (ENG-253). Null otherwise. */
+  missingAmount?: MissingAmount | null;
+  /** The note the teacher wrote on the check-in (ENG-253). Null when blank or not given. */
+  teachingNote?: string | null;
   /** Outcomes (AE) this lesson covers, offered as chips in the check-in card. */
   outcomes?: CheckInOutcome[];
   /** A topic a regeneration proposed for this lesson, kept until the teacher accepts or rejects it (ENG-247). */
