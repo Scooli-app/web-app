@@ -376,6 +376,12 @@ const documentSlice = createSlice({
     setCurrentDocument(state, action) {
       state.currentDocument = action.payload;
     },
+    /** Replaces the open document in place, without the loading state that re-mounts the editor (ENG-255). */
+    documentRefreshed(state, action) {
+      if (state.currentDocument?.id === action.payload.id) {
+        state.currentDocument = action.payload;
+      }
+    },
     setFilters(state, action) {
       state.filters = { ...state.filters, ...action.payload };
       state.pagination.page = 1;
@@ -684,6 +690,7 @@ const documentSlice = createSlice({
 });
 
 export const {
+  documentRefreshed,
   setPendingInitialPrompt,
   clearStreamInfo,
   clearLastChatAnswer,

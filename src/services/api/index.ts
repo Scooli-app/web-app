@@ -8,6 +8,7 @@
 // Document service
 export * from "./document.service";
 export * from "./document-images.service";
+export * from "./document-versions.service";
 
 // Template service
 export * from "./template.service";

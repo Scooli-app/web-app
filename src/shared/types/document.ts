@@ -1,3 +1,5 @@
+import type { PendingSuggestion } from "./document-versions";
+
 /**
  * Document types and interfaces
  */
@@ -110,6 +112,8 @@ export interface Document {
    */
   sharedScopes?: DocumentSharedScope[];
   sources?: RagSource[];
+  /** A suggested version waiting for review (ENG-255). Null for non-Pro users and when nothing is pending. */
+  pendingSuggestion?: PendingSuggestion | null;
   createdAt: string;
   updatedAt: string;
 }

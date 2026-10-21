@@ -149,6 +149,7 @@ export function LessonDocumentChips({
   testOutcomeIds,
 }: LessonDocumentChipsProps) {
   const t = useTranslations("yourWeek");
+  const tVersions = useTranslations("documentVersions");
   const dispatch = useAppDispatch();
   const { getToken } = useAuth();
   const worksheet = useAppSelector(selectIsWorksheetCreationEnabled);
@@ -228,6 +229,15 @@ export function LessonDocumentChips({
               <Check className="h-3.5 w-3.5" aria-hidden />
             )}
             {t(`types.${doc.role}`)}
+            {doc.hasPendingSuggestion && (
+              <span
+                role="img"
+                aria-label={tVersions("chip.suggestionDot")}
+                title={tVersions("chip.suggestionDot")}
+                data-testid="pending-suggestion-dot"
+                className="h-2 w-2 shrink-0 rounded-full bg-primary ring-2 ring-primary/20"
+              />
+            )}
           </Link>
         ),
       )}
