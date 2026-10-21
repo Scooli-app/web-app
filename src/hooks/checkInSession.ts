@@ -5,6 +5,8 @@
 
 export const DISMISSED_KEY = "scooli.checkIns.dismissed";
 export const SKIPPED_KEY = "scooli.checkIns.skipped";
+/** Slot ids the check-in strip has asked about in this session (shown, answered or not). */
+export const ASKED_KEY = "scooli.checkIns.asked";
 
 /** Sent by "Ver" on the "Confirma N aulas" next step: the strip comes back and scrolls into view. */
 export const SHOW_CHECK_INS_EVENT = "scooli:show-check-ins";
@@ -50,6 +52,29 @@ export function writeSkipped(slotIds: readonly string[], storage: Storage | null
     storage?.setItem(SKIPPED_KEY, JSON.stringify(slotIds));
   } catch {
     /* non-fatal */
+  }
+}
+
+/** Whether the strip has already asked about this lesson in this session. */
+export function readAsked(slotId: string, storage: Storage | null = safeSessionStorage()): boolean {
+  try {
+    const raw = storage?.getItem(ASKED_KEY);
+    if (!raw) return false;
+    const parsed: unknown = JSON.parse(raw);
+    return Array.isArray(parsed) && parsed.includes(slotId);
+  } catch {
+    return false;
+  }
+}
+
+export function writeAsked(slotId: string, storage: Storage | null = safeSessionStorage()): void {
+  try {
+    const raw = storage?.getItem(ASKED_KEY);
+    const parsed: unknown = raw ? JSON.parse(raw) : [];
+    const asked = Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === "string") : [];
+    if (!asked.includes(slotId)) storage?.setItem(ASKED_KEY, JSON.stringify([...asked, slotId]));
+  } catch {
+    /* non-fatal: the dialog may ask once more in this session */
   }
 }
 

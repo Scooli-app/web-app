@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
+  ASKED_KEY,
   DISMISSED_KEY,
   SKIPPED_KEY,
+  readAsked,
   readDismissed,
   readSkipped,
+  writeAsked,
   writeDismissed,
   writeSkipped,
 } from "./checkInSession";
@@ -50,6 +53,24 @@ describe("check-in session memory", () => {
   it("ignores a corrupt skipped list", () => {
     expect(readSkipped(fakeStorage({ [SKIPPED_KEY]: "{not json" }))).toEqual([]);
     expect(readSkipped(fakeStorage({ [SKIPPED_KEY]: '{"a":1}' }))).toEqual([]);
+  });
+
+  it("remembers the lessons the strip has asked about, once each", () => {
+    const storage = fakeStorage();
+    expect(readAsked("a", storage)).toBe(false);
+    writeAsked("a", storage);
+    writeAsked("a", storage);
+    writeAsked("b", storage);
+    expect(storage.getItem(ASKED_KEY)).toBe('["a","b"]');
+    expect(readAsked("a", storage)).toBe(true);
+    expect(readAsked("c", storage)).toBe(false);
+  });
+
+  it("treats a corrupt asked list as empty and never throws when storage is unavailable", () => {
+    expect(readAsked("a", fakeStorage({ [ASKED_KEY]: "{not json" }))).toBe(false);
+    expect(() => writeAsked("a", fakeStorage({ [ASKED_KEY]: "{not json" }))).not.toThrow();
+    expect(() => writeAsked("a", throwingStorage)).not.toThrow();
+    expect(readAsked("a", throwingStorage)).toBe(false);
   });
 
   it("never throws when storage is unavailable", () => {
