@@ -60,7 +60,8 @@ import {
   type CheckInFollowUp,
 } from "@/hooks/useCheckInFollowUps";
 import type { WeekLessonTarget } from "@/components/dashboard/WeekLessonDialog";
-import { useShiftFollowing } from "@/hooks/useShiftFollowing";
+import { useReplan } from "@/hooks/useReplan";
+import { ReplanRequestDialog } from "@/components/replan/ReplanRequestDialog";
 import { selectIsClassStateEnabled } from "@/store/features/selectors";
 import { useAppSelector } from "@/store/hooks";
 import { toast } from "sonner";
@@ -153,7 +154,8 @@ export function SlotDialog({
   const tShared = useTranslations("calendar.shared");
   const tTimetable = useTranslations("timetable");
   const tCheckIn = useTranslations("checkIns");
-  const { shift: shiftFollowing } = useShiftFollowing();
+  const { isPro, requestReplan, watchAfterNotHeld, shift: shiftFollowing } = useReplan();
+  const tReplan = useTranslations("replan");
   const { reinforce, carry } = useCheckInFollowUps();
   const rawLocale = useLocale();
   const locale = isSupportedLocale(rawLocale) ? rawLocale : defaultLocale;
@@ -171,6 +173,9 @@ export function SlotDialog({
   const [checkInEditing, setCheckInEditing] = useState(false);
   /** After "Não houve aula" here: asks inline whether to move the lessons after this one. */
   const [shiftAsk, setShiftAsk] = useState(false);
+  /** Pro: the replanning agent is preparing the following lessons, so the shift question is not asked. */
+  const [replanning, setReplanning] = useState(false);
+  const [replanOpen, setReplanOpen] = useState(false);
   /** After a check-in with outcomes picked: offers a reinforcement worksheet or the carry-over, inline. */
   const [followUp, setFollowUp] = useState<CheckInFollowUp | null>(null);
   /** After the reinforcement was asked for here: the line that says where it is. Kept for this lesson. */
@@ -189,6 +194,7 @@ export function SlotDialog({
       setCustomMessage("");
       setCheckInEditing(false);
       setShiftAsk(false);
+      setReplanning(false);
       setFollowUp(null);
       setProposalHandled(false);
     }
@@ -300,7 +306,12 @@ export function SlotDialog({
       return;
     }
     // Inline, not a toast: the toast sits under this dialog's overlay and would expire unseen.
-    if (body.result === "NOT_HELD") setShiftAsk(true);
+    if (body.result === "NOT_HELD" && isPro) {
+      setReplanning(true);
+      void watchAfterNotHeld(slot.timetable.id);
+    } else if (body.result === "NOT_HELD") {
+      setShiftAsk(true);
+    }
     setFollowUp(followUpFor(body));
     if (body.result === "TAUGHT") {
       toast.success(tCheckIn("taughtToast"), {
@@ -324,6 +335,15 @@ export function SlotDialog({
   /** Not held and its content never moved (a shift marks it skipped): moving the next lessons stays on offer. */
   const canShiftLater =
     slot.teachingStatus === "not_held" && slot.status !== "skipped" && !isAssessment && !isHoliday;
+
+  /** Pro, for a lesson that is past or today: asks for a proposal from here. A not-held lesson has its own button. */
+  const showReplanRequest = isPro && checkInEnabled && slot.slotDate <= todayIso && !canShiftLater;
+
+  /** Pro: asks the replanning agent for the lessons after this one. The wait shows inline: toasts sit under this dialog. */
+  const handleReplanRequest = async (triggerSlotId: string) => {
+    const started = await requestReplan(slot.timetable.id, { triggerSlotId });
+    if (started) setReplanning(true);
+  };
 
   const handleFollowUp = async () => {
     if (!followUp) return;
@@ -612,11 +632,16 @@ export function SlotDialog({
                         </span>
                       </p>
                       <div className="flex items-center gap-2">
-                        {canShiftLater && !shiftAsk && (
-                          <Button size="sm" className="h-8" onClick={() => void handleShift()}>
-                            {tCheckIn("shiftLaterAction")}
-                          </Button>
-                        )}
+                        {canShiftLater && !shiftAsk && !replanning &&
+                          (isPro ? (
+                            <Button size="sm" className="h-8" onClick={() => void handleReplanRequest(slot.id)}>
+                              {tReplan("action")}
+                            </Button>
+                          ) : (
+                            <Button size="sm" className="h-8" onClick={() => void handleShift()}>
+                              {tCheckIn("shiftLaterAction")}
+                            </Button>
+                          ))}
                         <Button variant="outline" size="sm" className="h-8" onClick={() => setCheckInEditing(true)}>
                           {tCheckIn("changeAnswer")}
                         </Button>
@@ -654,6 +679,11 @@ export function SlotDialog({
                         {tCheckIn("shiftKeep")}
                       </Button>
                     </div>
+                  )}
+                  {replanning && (
+                    <p className="rounded-md border border-primary/25 bg-primary/5 px-3 py-2 text-sm text-foreground">
+                      {tReplan("notHeldInProgress")}
+                    </p>
                   )}
                   {followUp && (
                     <div className="flex flex-wrap items-center gap-2 rounded-md border border-primary/25 bg-primary/5 px-3 py-2">
@@ -799,6 +829,11 @@ export function SlotDialog({
         {!isHoliday && (
           <DialogFooter className="border-t bg-muted/30 px-6 py-4 gap-2">
             {(canGenerate || isCompleted) && <AiDisclaimer className="sm:mr-auto sm:self-center sm:text-left" />}
+            {showReplanRequest && (
+              <Button variant="outline" onClick={() => setReplanOpen(true)} className="h-9 rounded-lg">
+                {tReplan("action")}
+              </Button>
+            )}
             {isCompleted && (
               <>
                 <Button
@@ -838,6 +873,15 @@ export function SlotDialog({
               </Button>
             ) : null}
           </DialogFooter>
+        )}
+        {isPro && checkInEnabled && (
+          <ReplanRequestDialog
+            timetableId={slot.timetable.id}
+            triggerSlotId={slot.id}
+            open={replanOpen}
+            onOpenChange={setReplanOpen}
+            onStarted={() => setReplanning(true)}
+          />
         )}
       </DialogContent>
     </Dialog>

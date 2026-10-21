@@ -7,7 +7,7 @@ import { confirmableCount, shouldShowCheckInStrip } from "@/hooks/checkInQueue";
 import { SHOW_CHECK_INS_EVENT } from "@/hooks/checkInSession";
 import { followUpFor, useCheckInFollowUps, type CheckInFollowUp } from "@/hooks/useCheckInFollowUps";
 import { usePendingCheckIns } from "@/hooks/usePendingCheckIns";
-import { useShiftFollowing } from "@/hooks/useShiftFollowing";
+import { useReplan } from "@/hooks/useReplan";
 import type { CheckInSubmission, PendingCheckIn } from "@/shared/types/check-in";
 import { Routes } from "@/shared/types/routes";
 import { selectIsClassStateEnabled } from "@/store/features/selectors";
@@ -41,7 +41,7 @@ export function CheckInStrip() {
     window.addEventListener(SHOW_CHECK_INS_EVENT, onShow);
     return () => window.removeEventListener(SHOW_CHECK_INS_EVENT, onShow);
   }, [show]);
-  const { offer: offerShift } = useShiftFollowing();
+  const { offerAfterNotHeld } = useReplan();
   const { reinforce, carry } = useCheckInFollowUps();
   /** The lesson a reinforcement worksheet's "Abrir" opens. Mounted outside the strip, so it outlives the last card. */
   const [openTarget, setOpenTarget] = useState<WeekLessonTarget | null>(null);
@@ -87,7 +87,7 @@ export function CheckInStrip() {
       });
     }
     if (body.result === "NOT_HELD") {
-      offerShift(item.timetableId, item.slotId);
+      offerAfterNotHeld(item.timetableId, item.slotId);
     }
     const followUp = followUpFor(body);
     if (followUp) offerFollowUp(item, followUp);

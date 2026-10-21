@@ -14,7 +14,7 @@ import {
 } from "@/components/next-steps/nextSteps";
 import { SHOW_CHECK_INS_EVENT } from "@/hooks/checkInSession";
 import { useCheckInFollowUps } from "@/hooks/useCheckInFollowUps";
-import { useShiftFollowing } from "@/hooks/useShiftFollowing";
+import { useReplan } from "@/hooks/useReplan";
 import { getSuggestions, getTurmaSuggestions } from "@/services/api/suggestions.service";
 import { isSupportedLocale, defaultLocale } from "@/i18n/locales";
 import { toIntlLocale } from "@/shared/utils/calendar";
@@ -25,6 +25,7 @@ import { useAppSelector } from "@/store/hooks";
 import { CalendarClock, FilePlus, ListChecks, Target, type LucideIcon } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
 
 interface NextStepsCardProps {
   /** One turma (the turma page). Omit on the dashboard, which lists the steps of every turma. */
@@ -40,7 +41,8 @@ interface NextStepsCardProps {
  */
 export function NextStepsCard({ timetableId, refreshKey = 0 }: NextStepsCardProps) {
   const enabled = useAppSelector(selectIsClassStateEnabled);
-  const { shift } = useShiftFollowing();
+  const { isPro, requestReplan, shift } = useReplan();
+  const tReplan = useTranslations("replan");
   const { reinforce } = useCheckInFollowUps();
   const [reloadTick, setReloadTick] = useState(0);
   const [loaded, setLoaded] = useState<{ scope: string; items: Suggestion[] } | null>(null);
@@ -90,7 +92,11 @@ export function NextStepsCard({ timetableId, refreshKey = 0 }: NextStepsCardProp
     const key = stepKey(item);
     setBusyKey(key);
     try {
-      if (action === "reschedule") {
+      if (action === "reschedule" && isPro) {
+        // Pro: the replanning agent proposes the changes; the turma banner shows them when ready.
+        const started = await requestReplan(lesson.timetableId, { triggerSlotId: lesson.slotId });
+        if (started) toast(tReplan("notHeldInProgress"));
+      } else if (action === "reschedule") {
         // useShiftFollowing reports its own success or failure; null means it failed.
         const result = await shift(lesson.timetableId, lesson.slotId);
         if (result) reload();

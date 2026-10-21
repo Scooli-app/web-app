@@ -3411,5 +3411,41 @@
     "chip": {
       "suggestionDot": "New suggested version"
     }
+  },
+  "replan": {
+    "bannerPending": "{count, plural, one {There is a rescheduling proposal for # lesson} other {There is a rescheduling proposal for # lessons}}",
+    "bannerGenerating": "Preparing a rescheduling proposal…",
+    "bannerFailed": "Could not propose a rescheduling.",
+    "review": "Review",
+    "shiftFallback": "Move the next lessons",
+    "action": "Reschedule",
+    "notHeldInProgress": "Rescheduling the next lessons…",
+    "readyToast": "Rescheduling proposal ready",
+    "readyAction": "View",
+    "failedToast": "Could not propose a rescheduling.",
+    "requestTitle": "What changed?",
+    "requestDescription": "Tell us what happened so the next lessons are proposed more accurately.",
+    "requestNoteLabel": "Note (optional)",
+    "requestNotePlaceholder": "E.g. the class needed more time on the previous topic",
+    "requestSubmit": "Propose rescheduling",
+    "requestCancel": "Cancel",
+    "requestError": "Could not propose a rescheduling.",
+    "proRequired": "Automatic rescheduling of lessons is a Pro feature.",
+    "sheetTitle": "Rescheduling proposal",
+    "sheetDescription": "Review each lesson before applying. Unchecked lessons stay as they are.",
+    "changeRetitled": "New topic",
+    "changeExtended": "Adds content",
+    "changeMerged": "Merges topics",
+    "changeReinforcement": "Reinforcement",
+    "lessonNumber": "Lesson {number}",
+    "lessonCheck": "Apply lesson {number}",
+    "addition": "Adds: {text}",
+    "newOutcome": "New",
+    "documentsNote": "The documents of this lesson will get a new suggested version",
+    "applyLabel": "{count, plural, =0 {No change selected} one {Apply # change} other {Apply # changes}}",
+    "reject": "Reject",
+    "applied": "Changes applied",
+    "rejected": "Proposal rejected",
+    "actionError": "Could not save the proposal."
   }
 }

@@ -45,6 +45,9 @@ import { translateSubject } from "@/components/document-creation/constants";
 import { SlotDialog } from "@/components/calendar/SlotDialog";
 import { TeachingMarkBadge } from "@/components/calendar/TeachingMarkBadge";
 import { NextStepsCard } from "@/components/next-steps/NextStepsCard";
+import { ReplanBanner } from "@/components/replan/ReplanBanner";
+import { ReplanRequestDialog } from "@/components/replan/ReplanRequestDialog";
+import { useReplan } from "@/hooks/useReplan";
 import { TurmaProgressPanel } from "@/components/calendar/TurmaProgressPanel";
 import type { SlotWithTimetable } from "@/shared/types/calendar";
 import type { CheckInRecord } from "@/shared/types/check-in";
@@ -276,6 +279,10 @@ export default function CalendarViewPage() {
   // A check-in saved from the slot dialog: the card's mark follows without reloading the lessons,
   // and the turma progress panel reloads its figures.
   const [progressRefreshKey, setProgressRefreshKey] = useState(0);
+  const { isPro } = useReplan();
+  const tReplan = useTranslations("replan");
+  const replanEnabled = useAppSelector(selectIsClassStateEnabled);
+  const [replanOpen, setReplanOpen] = useState(false);
   const handleCheckedIn = useCallback(
     (target: SlotWithTimetable, record: CheckInRecord, answer: SlotCheckInAnswer) => {
       dispatch(
@@ -564,25 +571,34 @@ export default function CalendarViewPage() {
           </div>
         </div>
 
-        {pendingThisWeek > 0 && (
-          <Button
-            size="sm"
-            onClick={handleGenerateWeek}
-            disabled={generatingWeek || isGenerating}
-          >
-            {generatingWeek ? (
-              <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-            ) : (
-              <Sparkles className="mr-1 h-3 w-3" />
-            )}
-            {t("shared.generateWeek", { count: pendingThisWeek })}
-          </Button>
-        )}
+        <div className="flex flex-wrap items-center gap-2">
+          {isPro && replanEnabled && currentTimetable && (
+            <Button variant="outline" size="sm" onClick={() => setReplanOpen(true)}>
+              {tReplan("action")}
+            </Button>
+          )}
+          {pendingThisWeek > 0 && (
+            <Button
+              size="sm"
+              onClick={handleGenerateWeek}
+              disabled={generatingWeek || isGenerating}
+            >
+              {generatingWeek ? (
+                <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+              ) : (
+                <Sparkles className="mr-1 h-3 w-3" />
+              )}
+              {t("shared.generateWeek", { count: pendingThisWeek })}
+            </Button>
+          )}
+        </div>
       </div>
 
       {timetableFailed && <LoadError onRetry={retryLoad} />}
 
       <PlanGenerationBanner timetableId={id} />
+
+      {isPro && replanEnabled && <ReplanBanner key={id} timetableId={id} onChanged={reloadClassState} />}
 
       <TurmaProgressPanel timetableId={id} refreshKey={progressRefreshKey} />
       <NextStepsCard timetableId={id} refreshKey={progressRefreshKey} />
@@ -651,6 +667,10 @@ export default function CalendarViewPage() {
             />
           ))}
         </div>
+      )}
+
+      {isPro && replanEnabled && (
+        <ReplanRequestDialog timetableId={id} open={replanOpen} onOpenChange={setReplanOpen} />
       )}
 
       {/* Shared slot dialog */}
