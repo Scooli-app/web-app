@@ -2,6 +2,7 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -19,8 +20,12 @@ import {
 import { cn } from "@/shared/utils/utils";
 import { Plus, X } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { useState } from "react";
 
-const DURATION_OPTIONS = [45, 50, 55, 60, 75, 90, 100, 120];
+const DURATION_OPTIONS = [30, 45, 50, 90, 120];
+const CUSTOM = "custom";
+// Any duration outside the presets (including ones saved before the list changed) is "custom".
+const isCustomDuration = (minutes: number) => !DURATION_OPTIONS.includes(minutes);
 
 const TYPE_OPTIONS: { value: SlotTypeOrAuto }[] = [
   { value: "AUTO" },
@@ -51,6 +56,11 @@ export function WeekSchedulePicker({
   const tDays = useTranslations("documentCreation.days");
   const tType = useTranslations("documentCreation.weekScheduleTypeOptions");
 
+  // Periods in custom mode ("day-index"): a typed value like 45 must not collapse the input mid-typing.
+  const [customPeriods, setCustomPeriods] = useState<Set<string>>(new Set());
+  const isCustom = (key: DayKey, index: number, minutes: number) =>
+    customPeriods.has(`${key}-${index}`) || isCustomDuration(minutes);
+
   function toggle(key: DayKey) {
     onChange({ ...schedule, [key]: { ...schedule[key], enabled: !schedule[key].enabled } });
   }
@@ -66,6 +76,7 @@ export function WeekSchedulePicker({
   function removePeriod(key: DayKey, index: number) {
     const periods = schedule[key].periods.filter((_, i) => i !== index);
     if (periods.length === 0) return;
+    setCustomPeriods(new Set()); // indices shift after a removal
     onChange({ ...schedule, [key]: { ...schedule[key], periods } });
   }
 
@@ -167,10 +178,16 @@ export function WeekSchedulePicker({
                         </SelectContent>
                       </Select>
                       <Select
-                        value={String(period.durationMinutes)}
-                        onValueChange={(v) => setPeriodDuration(key, index, Number(v))}
+                        value={isCustom(key, index, period.durationMinutes) ? CUSTOM : String(period.durationMinutes)}
+                        onValueChange={(v) => {
+                          const next = new Set(customPeriods);
+                          if (v === CUSTOM) next.add(`${key}-${index}`);
+                          else next.delete(`${key}-${index}`);
+                          setCustomPeriods(next);
+                          if (v !== CUSTOM) setPeriodDuration(key, index, Number(v));
+                        }}
                       >
-                        <SelectTrigger className="h-8 w-28 shrink-0">
+                        <SelectTrigger className="h-8 w-32 shrink-0">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -179,8 +196,24 @@ export function WeekSchedulePicker({
                               {minutes} min
                             </SelectItem>
                           ))}
+                          <SelectItem value={CUSTOM}>{t("customDuration")}</SelectItem>
                         </SelectContent>
                       </Select>
+                      {isCustom(key, index, period.durationMinutes) && (
+                        <Input
+                          type="number"
+                          min={10}
+                          max={300}
+                          value={period.durationMinutes || ""}
+                          onChange={(e) => setPeriodDuration(key, index, Number(e.target.value))}
+                          // Clamp on blur so an empty or tiny value never reaches the plan.
+                          onBlur={() =>
+                            setPeriodDuration(key, index, Math.min(300, Math.max(10, period.durationMinutes || 10)))
+                          }
+                          aria-label={t("customDuration")}
+                          className="h-8 w-16 shrink-0 px-2"
+                        />
+                      )}
                       <button
                         type="button"
                         onClick={() => removePeriod(key, index)}

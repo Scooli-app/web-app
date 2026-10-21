@@ -685,7 +685,8 @@
     "weekSchedule": {
       "description": "Seleciona os dias e o número de tempos letivos por dia.",
       "lessonsPerWeek": "{count, plural, one {# aula/semana} other {# aulas/semana}}",
-      "addPeriod": "tempo"
+      "addPeriod": "tempo",
+      "customDuration": "Personalizado"
     },
     "weekScheduleTypeOptions": {
       "auto": "Automático",
