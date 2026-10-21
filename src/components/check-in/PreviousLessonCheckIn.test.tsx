@@ -41,7 +41,7 @@ const noop = () => undefined;
 function view(overrides: Partial<Parameters<typeof PreviousLessonCheckInView>[0]> = {}) {
   return renderToStaticMarkup(
     createElement(PreviousLessonCheckInView, {
-      question: "A última aula (Frações) correu bem?",
+      question: "Como correu a aula (Frações)?",
       saved: null,
       saveFailed: false,
       outcomeResult: null,
@@ -178,7 +178,7 @@ describe("PreviousLessonCheckIn (saving)", () => {
 describe("PreviousLessonCheckInView", () => {
   it("asks the one-line question with the four results and 'Agora não'", () => {
     const html = view();
-    expect(html).toContain("A última aula (Frações) correu bem?");
+    expect(html).toContain("Como correu a aula (Frações)?");
     expect(html).toContain("resultTaught");
     expect(html).toContain("resultDifficulties");
     expect(html).toContain("resultPartial");
@@ -209,13 +209,13 @@ describe("PreviousLessonCheckInView", () => {
 
   it("keeps the lesson's header line above the outcome question", () => {
     const partial = view({ outcomeResult: "PARTIAL" });
-    expect(partial).toContain("A última aula (Frações) correu bem?");
+    expect(partial).toContain("Como correu a aula (Frações)?");
     expect(partial.indexOf("A última aula (Frações)")).toBeLessThan(partial.indexOf("uncoveredQuestion"));
   });
 
   it("keeps the question and says so when the save failed", () => {
     const html = view({ saveFailed: true });
-    expect(html).toContain("A última aula (Frações) correu bem?");
+    expect(html).toContain("Como correu a aula (Frações)?");
     expect(html).toContain("saveError");
     expect(html).not.toContain('role="status"');
   });
