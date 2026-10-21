@@ -3400,7 +3400,13 @@
       "rejected": "Sugestão rejeitada",
       "rejectError": "Não foi possível rejeitar a sugestão. Tenta de novo.",
       "loadError": "Não foi possível carregar as alterações.",
-      "retry": "Tentar de novo"
+      "retry": "Tentar de novo",
+      "presentationSettings": "Tema e definições da apresentação",
+      "documentTitle": "Título",
+      "themeChange": "Tema: {before} → {after}",
+      "formatChanged": "A apresentação mudou de formato desde esta sugestão.",
+      "refresh": "Atualizar sugestão",
+      "refreshError": "Não foi possível atualizar a sugestão. Tenta de novo."
     },
     "chip": {
       "suggestionDot": "Nova versão sugerida"

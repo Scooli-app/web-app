@@ -3,6 +3,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   applyPayload,
   diffSegments,
+  stripSectionHeading,
+  TITLE_KEY,
+  withoutSectionHeadings,
   initialSelection,
   isLongText,
   pollUntilDone,
@@ -122,5 +125,66 @@ describe("pollUntilDone", () => {
     await vi.advanceTimersByTimeAsync(5000);
     await vi.advanceTimersByTimeAsync(5000);
     expect(check).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("stripSectionHeading", () => {
+  it("drops the first line when it is a heading with the section title", () => {
+    expect(stripSectionHeading("# 1. Identificação\n\nO texto da secção.", "1. Identificação")).toBe(
+      "O texto da secção.",
+    );
+  });
+
+  it("matches the title ignoring heading level, bold markers and case", () => {
+    expect(stripSectionHeading("## **Objetivos**\nAlunos.", "objetivos")).toBe("Alunos.");
+  });
+
+  it("keeps the text when the first line is different from the title", () => {
+    const text = "# Outra coisa\nTexto.";
+    expect(stripSectionHeading(text, "Objetivos")).toBe(text);
+  });
+
+  it("only looks at the first non-empty line", () => {
+    const text = "Texto.\n# Objetivos\nMais.";
+    expect(stripSectionHeading(text, "Objetivos")).toBe(text);
+  });
+
+  it("returns null for a missing side", () => {
+    expect(stripSectionHeading(null, "Objetivos")).toBeNull();
+  });
+});
+
+describe("withoutSectionHeadings", () => {
+  it("strips the repeated heading from both sides of a markdown change", () => {
+    const [change] = withoutSectionHeadings([
+      { key: "k", type: "changed", title: "Objetivos", before: "# Objetivos\nAntes.", after: "# Objetivos\nDepois.", position: 1 },
+    ]);
+    expect(change.before).toBe("Antes.");
+    expect(change.after).toBe("Depois.");
+  });
+
+  it("leaves the title row untouched", () => {
+    const [change] = withoutSectionHeadings([
+      { key: TITLE_KEY, type: "changed", title: null, before: "Plano", after: "Plano novo", position: 0 },
+    ]);
+    expect(change.before).toBe("Plano");
+    expect(change.after).toBe("Plano novo");
+  });
+});
+
+describe("title pseudo change", () => {
+  const TITLE: SectionChange = { key: TITLE_KEY, type: "changed", title: null, before: "Plano", after: "Plano novo", position: 3 };
+
+  it("is listed first and selected by default", () => {
+    const changes = [CHANGES[0], TITLE];
+    expect(reviewableChanges(changes).map((c) => c.key)).toEqual([TITLE_KEY, "c"]);
+    expect(initialSelection(changes).has(TITLE_KEY)).toBe(true);
+  });
+
+  it("is included in the apply payload when selected, first in document order", () => {
+    const changes = [CHANGES[0], CHANGES[2], TITLE];
+    expect(applyPayload(changes, new Set([TITLE_KEY]))).toEqual([TITLE_KEY]);
+    expect(applyPayload(changes, new Set([TITLE_KEY, "n"]))).toEqual([TITLE_KEY, "n"]);
+    expect(applyPayload(changes, initialSelection(changes))).toBeNull();
   });
 });

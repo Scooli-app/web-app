@@ -3400,7 +3400,13 @@
       "rejected": "Suggestion rejected",
       "rejectError": "Could not reject the suggestion. Try again.",
       "loadError": "Could not load the changes.",
-      "retry": "Try again"
+      "retry": "Try again",
+      "presentationSettings": "Presentation theme and settings",
+      "documentTitle": "Title",
+      "themeChange": "Theme: {before} → {after}",
+      "formatChanged": "The presentation changed format since this suggestion was made.",
+      "refresh": "Update suggestion",
+      "refreshError": "Could not update the suggestion. Try again."
     },
     "chip": {
       "suggestionDot": "New suggested version"
