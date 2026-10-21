@@ -15,6 +15,10 @@ vi.mock("@/store/hooks", () => ({
 vi.mock("@/store/features/selectors", () => ({
   selectIsClassStateEnabled: () => store.enabled,
 }));
+vi.mock("@/store/entitlements/selectors", () => ({
+  selectHasEffectivePro: () => false,
+}));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
 vi.mock("@/services/api/check-in.service", () => ({
   checkInService: { submit: vi.fn(), shiftFollowing: vi.fn() },
 }));

@@ -11,6 +11,7 @@ vi.mock("next-intl", () => ({
   useLocale: () => "pt-PT",
 }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
+vi.mock("@/store/entitlements/selectors", () => ({ selectHasEffectivePro: () => false }));
 vi.mock("@/store/hooks", () => ({
   useAppSelector: (selector: () => boolean) => selector(),
   useAppDispatch: () => vi.fn(),

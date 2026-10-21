@@ -3405,5 +3405,41 @@
     "chip": {
       "suggestionDot": "Nova versão sugerida"
     }
+  },
+  "replan": {
+    "bannerPending": "{count, plural, one {Há uma proposta de reajuste para # aula} other {Há uma proposta de reajuste para # aulas}}",
+    "bannerGenerating": "A preparar uma proposta de reajuste…",
+    "bannerFailed": "Não foi possível propor um reajuste.",
+    "review": "Rever",
+    "shiftFallback": "Mover aulas seguintes",
+    "action": "Reajustar",
+    "notHeldInProgress": "A reajustar as próximas aulas…",
+    "readyToast": "Proposta de reajuste pronta",
+    "readyAction": "Ver",
+    "failedToast": "Não foi possível propor um reajuste.",
+    "requestTitle": "O que mudou?",
+    "requestDescription": "Conta o que aconteceu. Ajuda a propor as aulas seguintes com mais rigor.",
+    "requestNoteLabel": "Nota (opcional)",
+    "requestNotePlaceholder": "Ex.: a turma precisou de mais tempo com o tema anterior",
+    "requestSubmit": "Propor reajuste",
+    "requestCancel": "Cancelar",
+    "requestError": "Não foi possível propor um reajuste.",
+    "proRequired": "A reorganização automática das aulas é um recurso Pro.",
+    "sheetTitle": "Proposta de reajuste",
+    "sheetDescription": "Revê cada aula antes de aplicar. Desmarcadas, ficam como estão.",
+    "changeRetitled": "Novo tema",
+    "changeExtended": "Acrescenta conteúdo",
+    "changeMerged": "Junta temas",
+    "changeReinforcement": "Reforço",
+    "lessonNumber": "Aula {number}",
+    "lessonCheck": "Aplicar a aula {number}",
+    "addition": "Acrescenta: {text}",
+    "newOutcome": "Novo",
+    "documentsNote": "Os documentos desta aula vão receber uma nova versão sugerida",
+    "applyLabel": "{count, plural, =0 {Nenhuma alteração selecionada} one {Aplicar # alteração} other {Aplicar # alterações}}",
+    "reject": "Rejeitar",
+    "applied": "Alterações aplicadas",
+    "rejected": "Proposta rejeitada",
+    "actionError": "Não foi possível guardar a proposta."
   }
 }

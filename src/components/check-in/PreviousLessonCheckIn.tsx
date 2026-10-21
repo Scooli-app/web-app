@@ -9,7 +9,7 @@ import { selectIsClassStateEnabled } from "@/store/features/selectors";
 import { useAppSelector } from "@/store/hooks";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
-import { useShiftFollowing } from "@/hooks/useShiftFollowing";
+import { useReplan } from "@/hooks/useReplan";
 import { buildSubmission, initialOutcomeSelection, needsDetailStep } from "@/hooks/checkInQueue";
 import { CheckInOutcomeStep, CheckInResultOptions, type OutcomeStepExtras } from "./CheckInChoices";
 import {
@@ -58,12 +58,15 @@ export function PreviousLessonCheckIn({
   const [selected, setSelected] = useState<string[]>([]);
   /** The previous lesson was not held: asks whether to move the lessons after it, as the lesson's own dialog does. */
   const [shiftAsk, setShiftAsk] = useState(false);
-  const { shift } = useShiftFollowing();
+  /** Pro: the backend is replanning after "Não houve aula"; the question about moving lessons is not asked. */
+  const [replanning, setReplanning] = useState(false);
+  const { isPro, shift, watchAfterNotHeld } = useReplan();
 
   useEffect(() => {
     let cancelled = false;
     setPending(null);
     setShiftAsk(false);
+    setReplanning(false);
     setHidden(false);
     setSaved(null);
     setSaveFailed(false);
@@ -91,7 +94,10 @@ export function PreviousLessonCheckIn({
     if (phase) {
       setSaved(phase);
       setSaveFailed(false);
-      setShiftAsk(body.result === "NOT_HELD" && pending.slotType !== "ASSESSMENT");
+      const notHeld = body.result === "NOT_HELD" && pending.slotType !== "ASSESSMENT";
+      setShiftAsk(notHeld && !isPro);
+      setReplanning(notHeld && isPro);
+      if (notHeld && isPro) void watchAfterNotHeld(timetableId);
       onCheckedIn?.();
     } else {
       setSaveFailed(true);
@@ -103,6 +109,7 @@ export function PreviousLessonCheckIn({
       question={pending.topicTitle ? t("questionWithTopic", { topic: pending.topicTitle }) : t("question")}
       saved={saved}
       shiftAsk={shiftAsk}
+      replanning={replanning}
       onShift={() => {
         setShiftAsk(false);
         void shift(timetableId, pending.slotId).then((result) => {
@@ -143,6 +150,7 @@ export function PreviousLessonCheckInView({
   question,
   saved,
   shiftAsk = false,
+  replanning = false,
   onShift,
   onKeep,
   saveFailed,
@@ -159,6 +167,8 @@ export function PreviousLessonCheckInView({
   saved: SavedPhase | null;
   /** After "Não houve aula" was saved: offers to move the lessons after the previous one. */
   shiftAsk?: boolean;
+  /** Pro: the replanning agent is preparing the lessons after it. */
+  replanning?: boolean;
   onShift?: () => void;
   onKeep?: () => void;
   saveFailed: boolean;
@@ -174,10 +184,11 @@ export function PreviousLessonCheckInView({
 }) {
   const t = useTranslations("previousCheckIn");
   const tc = useTranslations("checkIns");
+  const tr = useTranslations("replan");
 
   if (saved) {
     const savedText = saved === "savedWithContext" ? t("savedWithContext") : t("saved");
-    if (!shiftAsk) {
+    if (!shiftAsk && !replanning) {
       return (
         <p role="status" className="text-sm text-muted-foreground">
           {savedText}
@@ -189,13 +200,19 @@ export function PreviousLessonCheckInView({
         <span role="status" className="text-sm text-muted-foreground">
           {savedText}
         </span>
-        <span className="text-sm text-foreground">{tc("shiftQuestion")}</span>
-        <Button size="sm" className="h-8" onClick={onShift}>
-          {tc("shiftAction")}
-        </Button>
-        <Button size="sm" variant="outline" className="h-8" onClick={onKeep}>
-          {tc("shiftKeep")}
-        </Button>
+        {replanning ? (
+          <span className="text-sm text-foreground">{tr("notHeldInProgress")}</span>
+        ) : (
+          <>
+            <span className="text-sm text-foreground">{tc("shiftQuestion")}</span>
+            <Button size="sm" className="h-8" onClick={onShift}>
+              {tc("shiftAction")}
+            </Button>
+            <Button size="sm" variant="outline" className="h-8" onClick={onKeep}>
+              {tc("shiftKeep")}
+            </Button>
+          </>
+        )}
       </div>
     );
   }
