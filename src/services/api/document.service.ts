@@ -6,6 +6,7 @@
 
 import type { BackendPaginatedResponse, ChatResponse, CreateDocumentParams, CreateDocumentStreamResponse, Document, DocumentFilters, DocumentStatsResponse, DocumentStreamCallbacks, DocumentType, GenerateSlideResponse, GetDocumentsParams, GetDocumentsResponse, StreamedResponse, StreamEvent, WorksheetVariant } from "@/shared/types";
 import { isFailedDocumentStatus, type DocumentImage, type RagSource } from "@/shared/types/document";
+import type { DocumentVersionDetail, DocumentVersionSummary } from "@/shared/types/document-versions";
 import { translate } from "@/i18n/translate";
 import axios, { type AxiosError } from "axios";
 import apiClient from "./client";
@@ -453,4 +454,43 @@ export async function waitForDocument(id: string, maxAttempts = 60): Promise<voi
     await new Promise((resolve) => setTimeout(resolve, delayMs));
   }
   throw new Error(translate("errors.documents.importTimeout"));
+}
+
+/**
+ * Version history of a document, newest first.
+ */
+export async function getDocumentVersions(
+  documentId: string
+): Promise<DocumentVersionSummary[]> {
+  const response = await apiClient.get<DocumentVersionSummary[]>(
+    `/documents/${encodeURIComponent(documentId)}/versions`
+  );
+  return response.data;
+}
+
+/**
+ * One version of a document, including its content.
+ */
+export async function getDocumentVersion(
+  documentId: string,
+  versionId: string
+): Promise<DocumentVersionDetail> {
+  const response = await apiClient.get<DocumentVersionDetail>(
+    `/documents/${encodeURIComponent(documentId)}/versions/${encodeURIComponent(versionId)}`
+  );
+  return response.data;
+}
+
+/**
+ * Make an old version the document's content again. The previous current
+ * version is kept in the history. Returns the updated document.
+ */
+export async function restoreDocumentVersion(
+  documentId: string,
+  versionId: string
+): Promise<Document> {
+  const response = await apiClient.post<Document>(
+    `/documents/${encodeURIComponent(documentId)}/versions/${encodeURIComponent(versionId)}/restore`
+  );
+  return normalizeDocument(response.data);
 }

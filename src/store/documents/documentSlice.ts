@@ -685,6 +685,7 @@ const documentSlice = createSlice({
 
 export const {
   setPendingInitialPrompt,
+  setCurrentDocument,
   clearStreamInfo,
   clearLastChatAnswer,
   updateDocumentOptimistic,
