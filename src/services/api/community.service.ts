@@ -31,6 +31,8 @@ export interface SharedResource {
   title: string;
   description: string | null;
   content: string;
+  /** "json": a structured test/worksheet/quiz (render it, never as HTML). Missing on older APIs = markdown. */
+  contentFormat?: "markdown" | "json";
   grade: string;
   subject: string;
   resourceType: string;

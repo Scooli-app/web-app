@@ -12,10 +12,13 @@ import { ResourceGrid } from "@/components/community/ResourceGrid";
 import { ShareResourceModal } from "@/components/community/ShareResourceModal";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { AssessmentPreview } from "@/components/assessment-editor/AssessmentPreview";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   type LibraryScope,
   type DiscoverResourcesParams,
+  type SharedResource,
   type ShareResourceRequest,
 } from "@/services/api/community.service";
 import {
@@ -62,6 +65,7 @@ function CommunityLibraryPage() {
   const activeScope = (filters.scope ?? "community") as LibraryScope;
 
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [previewResource, setPreviewResource] = useState<SharedResource | null>(null);
 
   useEffect(() => {
     dispatch(fetchResources({ scope: activeScope }));
@@ -129,8 +133,11 @@ function CommunityLibraryPage() {
     }
   };
 
-  const handlePreview = (_resourceId: string) => {
-    toast.info(t("previewComingSoon"));
+  // Structured tests/worksheets/quizzes have a read-only preview; other resources don't yet.
+  const handlePreview = (resourceId: string) => {
+    const resource = resources.find((r) => r.id === resourceId);
+    if (resource?.contentFormat === "json") setPreviewResource(resource);
+    else toast.info(t("previewComingSoon"));
   };
 
   const handleShareResource = async (request: ShareResourceRequest) => {
@@ -220,6 +227,16 @@ function CommunityLibraryPage() {
           onClearFilters={handleClearFilters}
           onShare={() => setIsShareModalOpen(true)}
         />
+
+        <Dialog open={previewResource !== null} onOpenChange={(open) => !open && setPreviewResource(null)}>
+          <DialogContent className="max-h-[90dvh] max-w-3xl overflow-y-auto">
+            <DialogHeader className="pr-8 text-left">
+              <DialogTitle>{previewResource?.title}</DialogTitle>
+              <DialogDescription>{t("previewDescription", { name: previewResource?.contributorName ?? "" })}</DialogDescription>
+            </DialogHeader>
+            {previewResource && <AssessmentPreview content={previewResource.content} />}
+          </DialogContent>
+        </Dialog>
 
         <ShareResourceModal
           isOpen={isShareModalOpen}

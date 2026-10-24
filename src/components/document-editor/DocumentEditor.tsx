@@ -1,5 +1,6 @@
 "use client";
 
+import { isJsonDoc } from "@/lib/documents/kind";
 import { useDocumentManager } from "@/hooks/useDocumentManager";
 import { useEditorAnalytics } from "@/hooks/useEditorAnalytics";
 import { useGenerationStalled } from "@/hooks/useGenerationStalled";
@@ -879,7 +880,7 @@ export default function DocumentEditor({
       });
     } else if (
       activeDocument.status === "completed" &&
-      activeDocument.contentFormat !== "json" &&
+      !isJsonDoc(activeDocument) &&
       !isUsableDocumentContent(activeDocument.content)
     ) {
       reportedBrokenOpenRef.current = activeDocument.id;
@@ -1296,7 +1297,7 @@ export default function DocumentEditor({
   const isCompletedEmpty =
     !isGenerating &&
     activeDocument?.status === "completed" &&
-    activeDocument.contentFormat !== "json" &&
+    !isJsonDoc(activeDocument) &&
     !isUsableDocumentContent(content);
   const resolvedTitle =
     documentTitle || normalizePendingTitle(activeDocument?.title || "");

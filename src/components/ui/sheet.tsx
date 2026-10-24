@@ -45,9 +45,14 @@ function SheetContent({
   className,
   children,
   side = "right",
+  showClose = true,
+  largeClose = false,
   ...props
 }: React.ComponentProps<typeof SheetPrimitive.Content> & {
   side?: "top" | "right" | "bottom" | "left";
+  showClose?: boolean;
+  /** Touch-sized (44px) hit area around the close icon; opt-in so other sheets stay as they are. */
+  largeClose?: boolean;
 }) {
   const t = useTranslations("ui");
   return (
@@ -70,10 +75,10 @@ function SheetContent({
         {...props}
       >
         {children}
-        <SheetPrimitive.Close className="ring-offset-background data-[state=open]:bg-secondary absolute top-4 right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none disabled:pointer-events-none">
+        {showClose && <SheetPrimitive.Close className={cn("ring-offset-background data-[state=open]:bg-secondary absolute top-4 right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none disabled:pointer-events-none", largeClose && "after:absolute after:-inset-3.5 after:content-['']")}>
           <XIcon className="size-4" />
           <span className="sr-only">{t("close")}</span>
-        </SheetPrimitive.Close>
+        </SheetPrimitive.Close>}
       </SheetPrimitive.Content>
     </SheetPortal>
   );

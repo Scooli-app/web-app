@@ -285,7 +285,8 @@ export function ShareResourceModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-h-[90dvh] max-w-2xl overflow-y-auto p-0">
+      {/* Phone: 44 px touch targets (checkboxes keep their size) and 16 px field text, so iOS doesn't zoom on focus. */}
+      <DialogContent className="max-h-[90dvh] max-w-2xl overflow-y-auto p-0 max-md:[&_button:not([role=checkbox])]:min-h-11 max-md:[&_button:not([role=checkbox])]:min-w-11 max-md:[&_input]:min-h-11 max-md:[&_input]:text-base max-md:[&_textarea]:text-base">
         <DialogHeader className="border-b border-border/70 bg-muted/40 px-6 py-5 pr-14">
           <div className="flex items-center gap-3">
             {allowOrganizationScope && (
@@ -295,7 +296,7 @@ export function ShareResourceModal({
             )}
             <DialogTitle className="flex min-w-0 items-center gap-2 text-lg">
               <Share2 className="h-5 w-5 shrink-0" />
-              <span className="truncate">{modalTitle}</span>
+              <span className="truncate max-md:whitespace-normal">{modalTitle}</span>
             </DialogTitle>
           </div>
           <DialogDescription className="mt-1 text-sm leading-5 text-muted-foreground">
@@ -312,7 +313,7 @@ export function ShareResourceModal({
         </DialogHeader>
 
         {allowOrganizationScope && step === 1 ? (
-          <div className="space-y-3 px-6 pb-6 pt-4 pr-14">
+          <div className="space-y-3 px-6 pb-6 pt-4 pr-14 max-md:pr-6">
             {destinationOptions.map((option) => {
               const Icon = option.icon;
               const isSelected = currentDestination === option.value;
@@ -353,7 +354,7 @@ export function ShareResourceModal({
             </div>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-5 px-6 pb-6 pt-4 pr-14">
+          <form onSubmit={handleSubmit} className="space-y-5 px-6 pb-6 pt-4 pr-14 max-md:pr-6">
             <div className="space-y-1.5">
               <Label htmlFor="share-title">
                 {t("titleLabel")} <span className="text-destructive">*</span>
@@ -408,7 +409,7 @@ export function ShareResourceModal({
                   <SelectTrigger className={errors.grade ? "border-destructive" : ""}>
                     <SelectValue placeholder={t("gradePlaceholder")} />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="max-md:[&_[role=option]]:min-h-11">
                     {GRADE_OPTIONS.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
                         {tFilters("gradeOption", { n: option.value })}
@@ -434,7 +435,7 @@ export function ShareResourceModal({
                   <SelectTrigger className={errors.subject ? "border-destructive" : ""}>
                     <SelectValue placeholder={t("subjectPlaceholder")} />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="max-md:[&_[role=option]]:min-h-11">
                     {SUBJECT_OPTIONS.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
                         {translateSubject(option.value)}
@@ -462,7 +463,7 @@ export function ShareResourceModal({
                   >
                     <SelectValue placeholder={t("typePlaceholder")} />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="max-md:[&_[role=option]]:min-h-11">
                     {RESOURCE_TYPE_OPTIONS.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
                         {tResourceTypes(`${option.value}`)}

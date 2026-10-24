@@ -26,6 +26,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
+import { AssessmentPreview } from "@/components/assessment-editor/AssessmentPreview";
 import type { SharedResource } from "@/services/api/community.service";
 import type { ModerationActionRequest } from "@/services/api/moderation.service";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
@@ -79,6 +80,30 @@ function SortableHead({
   );
 }
 import { toast } from "sonner";
+
+/**
+ * The submitted content: a structured test/worksheet/quiz is rendered read-only, never injected as HTML, in the
+ * teacher view, so the moderator checks the answers too.
+ */
+export function ResourceContentPreview({ resource }: { resource: Pick<SharedResource, "content" | "contentFormat"> }) {
+  if (resource.contentFormat === "json") {
+    return (
+      <div className="max-h-[28rem] overflow-y-auto rounded-lg border bg-muted/30 p-2 sm:p-3">
+        <AssessmentPreview content={resource.content} studentView={false} />
+      </div>
+    );
+  }
+  return (
+    <div className="max-h-80 overflow-y-auto rounded-lg border bg-muted/30 p-4">
+      <div
+        className="prose prose-sm max-w-none"
+        dangerouslySetInnerHTML={{
+          __html: resource.content,
+        }}
+      />
+    </div>
+  );
+}
 
 export function ModerationQueue() {
   const t = useTranslations("community.moderationQueue");
@@ -378,14 +403,7 @@ export function ModerationQueue() {
 
               <div>
                 <h4 className="mb-2 font-semibold">{t("contentHeading")}</h4>
-                <div className="max-h-80 overflow-y-auto rounded-lg border bg-muted/30 p-4">
-                  <div
-                    className="prose prose-sm max-w-none"
-                    dangerouslySetInnerHTML={{
-                      __html: selectedResource.content,
-                    }}
-                  />
-                </div>
+                <ResourceContentPreview resource={selectedResource} />
               </div>
 
               <div>

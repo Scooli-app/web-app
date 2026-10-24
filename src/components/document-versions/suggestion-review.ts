@@ -67,6 +67,11 @@ export function withoutSectionHeadings(changes: SectionChange[]): SectionChange[
 }
 
 
+/** Assessment exercises and reading boxes the suggestion leaves as they are (group headers and settings not counted). */
+export function unchangedExercises(changes: SectionChange[]): number {
+  return changes.filter((c) => c.type === "unchanged" && c.key !== META_KEY && !c.key.startsWith("group:")).length;
+}
+
 export function unchangedCount(changes: SectionChange[]): number {
   return changes.filter((change) => change.type === "unchanged").length;
 }

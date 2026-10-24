@@ -274,3 +274,47 @@ describe("SuggestionReviewBody: document title row", () => {
     expect(html).toMatch(/role="checkbox" aria-checked="true"/);
   });
 });
+
+describe("SuggestionReviewBody: assessment suggestions", () => {
+  const mc = (prompt: string, points: number) =>
+    JSON.stringify({
+      id: "e1", kind: "exercise", type: "multiple_choice", prompt, points,
+      options: [{ id: "a", text: "Golfinho", side: null }, { id: "b", text: "Sardinha", side: null }],
+      answer: { optionIds: ["a"] }, answerSpace: { kind: "none", count: null },
+    });
+  const renderTest = (changes: SectionChange[]) =>
+    renderToStaticMarkup(
+      createElement(SuggestionReviewBody, {
+        diff: { stale: false, changes },
+        selection: initialSelection(changes),
+        contentFormat: "json",
+        documentType: "test",
+        onToggle: () => undefined,
+      }),
+    );
+
+  it("shows a changed exercise before and after, as it prints, with its own checkbox", () => {
+    const html = renderTest([
+      { key: "e1", type: "changed", title: "Qual é um mamífero?", before: mc("Qual é um mamífero?", 10), after: mc("Qual destes é um mamífero?", 10), position: 0 },
+    ]);
+
+    expect(html).toContain('aria-label="assessment.exercise {&quot;number&quot;:1}"');
+    expect(html).toContain("Qual é um mamífero?");
+    expect(html).toContain("Qual destes é um mamífero?");
+    expect(html).toContain("Golfinho");
+    expect(html).not.toContain("optionIds");
+    expect(html).not.toContain("view.changes");
+  });
+
+  it("sums up a points-only rebalance in one line and counts unchanged exercises", () => {
+    const html = renderTest([
+      { key: "_meta", type: "unchanged", title: null, before: "{}", after: "{}", position: 0 },
+      { key: "group:g1", type: "unchanged", title: "Grupo I", before: "{}", after: "{}", position: 1 },
+      { key: "e1", type: "changed", title: "P", before: mc("P", 10), after: mc("P", 8), position: 2 },
+      { key: "e2", type: "unchanged", title: "Q", before: mc("Q", 5), after: mc("Q", 5), position: 3 },
+    ]);
+
+    expect(html).toContain("assessment.pointsOnly {&quot;before&quot;:10,&quot;after&quot;:8}");
+    expect(html).toContain("assessment.unchangedCount {&quot;count&quot;:1}");
+  });
+});

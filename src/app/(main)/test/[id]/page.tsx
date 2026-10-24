@@ -1,18 +1,9 @@
 "use client";
 
 import { Suspense, use } from "react";
-import dynamic from "next/dynamic";
+import { EditorSwitch } from "@/components/assessment-editor/EditorSwitch";
 import { DocumentEditorSkeleton } from "@/components/document-editor/DocumentEditorSkeleton";
 import { useTranslations } from "next-intl";
-
-// Dynamic import for the heavy DocumentEditor component
-const DocumentEditor = dynamic(
-  () => import("@/components/document-editor/DocumentEditor"),
-  {
-    loading: DocumentEditorSkeleton,
-    ssr: false,
-  }
-);
 
 interface TestEditorPageProps {
   params: Promise<{ id: string }>;
@@ -24,7 +15,7 @@ export default function TestEditorPage({ params }: TestEditorPageProps) {
 
   return (
     <Suspense fallback={<DocumentEditorSkeleton />}>
-      <DocumentEditor
+      <EditorSwitch
         documentId={id}
         defaultTitle={t("defaultTitle")}
         generateMessage={t("generateMessage")}
