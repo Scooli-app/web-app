@@ -20,12 +20,13 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Loader2, MessageCircle, Plus } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { toast } from "sonner";
 import { A4Page } from "./A4Page";
 import { AssessmentEditorContext, PHONE_TOUCH, type AssessmentEditorContextValue } from "./context";
 import { ExerciseSheet } from "./ExerciseSheet";
 import { ExerciseView, ReadingView } from "./ExerciseView";
 import { HeaderForm } from "./HeaderForm";
-import { allExercises, exerciseNumbers, newExercise, nextId } from "./model";
+import { MAX_ITEMS, allExercises, exerciseNumbers, newExercise, nextId } from "./model";
 import { SectionBlock, type SectionActions } from "./SectionBlock";
 import { StudentToggle } from "./StudentToggle";
 import { TotalsBar } from "./TotalsBar";
@@ -57,10 +58,16 @@ export interface AssessmentWorkspaceProps {
   requestImage: (onPicked: (url: string) => void) => void;
   /** The item open in the editor (desktop form or phone sheet), or null. */
   onEditingChange?: (id: string | null) => void;
+  answerChecks?: Record<string, string>;
+  onConfirmCheck?: (exerciseId: string) => void;
+  /** The document is in English (its printed labels follow it). */
+  english?: boolean;
 }
 
+const AE_RETRY_MS = 10000;
+
 /** Presentational editor: everything except loading, saving and chat transport. */
-export function AssessmentWorkspace({ doc, onChange: onChangeProp, readOnly = false, title, actions, chat, onOpenChat, banner, lessonContext, lookupAe, showAe = true, searchAe, requestImage, onEditingChange }: AssessmentWorkspaceProps) {
+export function AssessmentWorkspace({ doc, onChange: onChangeProp, readOnly = false, title, actions, chat, onOpenChat, banner, lessonContext, lookupAe, showAe = true, searchAe, requestImage, onEditingChange, answerChecks, onConfirmCheck, english }: AssessmentWorkspaceProps) {
   const t = useTranslations("assessmentEditor");
   const phone = useIsMobile();
   const [studentView, setStudentView] = useState(false);
@@ -69,6 +76,21 @@ export function AssessmentWorkspace({ doc, onChange: onChangeProp, readOnly = fa
   const [aeLookup, setAeLookup] = useState<Record<string, AeOutcome | null>>({});
   const pendingAe = useRef(new Set<string>());
   const onChange = useCallback((next: AssessmentDocument) => !readOnly && onChangeProp(next), [readOnly, onChangeProp]);
+  // "Anular" acts on the document as it is when clicked, not as it was when the toast opened.
+  const docRef = useRef(doc);
+  docRef.current = doc;
+  const offerUndo = (message: string, restore: (current: AssessmentDocument) => AssessmentDocument | null) =>
+    toast(message, {
+      duration: 10000,
+      action: {
+        label: t("undo.action"),
+        onClick: () => {
+          const current = docRef.current;
+          const restored = current && restore(current);
+          if (restored) onChange(restored);
+        },
+      },
+    });
   useEffect(() => {
     if (readOnly) setSelectedId(null);
   }, [readOnly]);
@@ -76,25 +98,30 @@ export function AssessmentWorkspace({ doc, onChange: onChangeProp, readOnly = fa
 
   // Resolve labels for every AE id in the document that we have not looked up yet.
   const aeIds = useMemo(() => (doc && showAe ? [...new Set(allExercises(doc).flatMap((e) => e.aeOutcomeIds))] : []), [doc, showAe]);
+  // A failed lookup (offline) is not "Objetivo indisponível": the chips keep loading and it is tried again.
+  const [aeRetry, setAeRetry] = useState(0);
   useEffect(() => {
     const missing = aeIds.filter((id) => !(id in aeLookup) && !pendingAe.current.has(id));
     if (!missing.length) return;
     missing.forEach((id) => pendingAe.current.add(id));
+    let retry: ReturnType<typeof setTimeout> | undefined;
     lookupAe(missing)
       .then((rows) => setAeLookup((prev) => {
         const next = { ...prev };
         for (const id of missing) next[id] = rows.find((r) => r.id === id) ?? null;
         return next;
       }))
-      // Unavailable for this session rather than loading forever; a fresh mount retries.
-      .catch(() => setAeLookup((prev) => ({ ...prev, ...Object.fromEntries(missing.map((id) => [id, null])) })))
+      .catch(() => {
+        retry = setTimeout(() => setAeRetry((n) => n + 1), AE_RETRY_MS);
+      })
       .finally(() => missing.forEach((id) => pendingAe.current.delete(id)));
-  }, [aeIds, aeLookup, lookupAe]);
+    return () => clearTimeout(retry);
+  }, [aeIds, aeLookup, lookupAe, aeRetry]);
 
   const rememberAe = useCallback((o: AeOutcome) => setAeLookup((prev) => ({ ...prev, [o.id]: o })), []);
   const ctx = useMemo<AssessmentEditorContextValue>(
-    () => ({ studentView, phone, aeLookup, showAe, searchAe, rememberAe, requestImage }),
-    [studentView, phone, aeLookup, showAe, searchAe, rememberAe, requestImage],
+    () => ({ studentView, phone, aeLookup, showAe, searchAe, rememberAe, requestImage, answerChecks, confirmCheck: onConfirmCheck, english }),
+    [studentView, phone, aeLookup, showAe, searchAe, rememberAe, requestImage, answerChecks, onConfirmCheck, english],
   );
 
   const sensors = useSensors(
@@ -162,9 +189,16 @@ export function AssessmentWorkspace({ doc, onChange: onChangeProp, readOnly = fa
 
     const actionsFor = (s: AssessmentSection): SectionActions => ({
       updateSection: (patch) => mapSection(s.id, (x) => ({ ...x, ...patch })),
-      deleteSection: () => setSections(doc.sections.filter((x) => x.id !== s.id)),
+      deleteSection: () => {
+        const at = doc.sections.findIndex((x) => x.id === s.id);
+        setSections(doc.sections.filter((x) => x.id !== s.id));
+        offerUndo(t("undo.groupDeleted", { count: s.items.length }), (current) =>
+          current.sections.some((x) => x.id === s.id) ? null
+            : { ...current, sections: [...current.sections.slice(0, at), s, ...current.sections.slice(at)] });
+      },
       updateItem: (item) => mapSection(s.id, (x) => ({ ...x, items: x.items.map((i) => (i.id === item.id ? item : i)) })),
       duplicateItem: (itemId) => {
+        if (s.items.length >= MAX_ITEMS) return;
         const idx = s.items.findIndex((i) => i.id === itemId);
         const copy: AssessmentItem = { ...structuredClone(s.items[idx]), id: nextId(doc, s.items[idx].kind === "exercise" ? "e" : "r") };
         mapSection(s.id, (x) => ({ ...x, items: [...x.items.slice(0, idx + 1), copy, ...x.items.slice(idx + 1)] }));
@@ -172,15 +206,25 @@ export function AssessmentWorkspace({ doc, onChange: onChangeProp, readOnly = fa
       },
       deleteItem: (itemId) => {
         if (s.items.length <= 1) return;
+        const at = s.items.findIndex((i) => i.id === itemId);
+        const removed = s.items[at];
         mapSection(s.id, (x) => ({ ...x, items: x.items.filter((i) => i.id !== itemId) }));
         if (selectedId === itemId) onSelect(null);
+        offerUndo(t(removed.kind === "exercise" ? "undo.exerciseDeleted" : "undo.readingDeleted"), (current) => {
+          const section = current.sections.find((x) => x.id === s.id);
+          if (!section || section.items.length >= MAX_ITEMS || section.items.some((i) => i.id === itemId)) return null;
+          const items = [...section.items.slice(0, at), removed, ...section.items.slice(at)];
+          return { ...current, sections: current.sections.map((x) => (x.id === s.id ? { ...x, items } : x)) };
+        });
       },
       addExercise: (type) => {
+        if (s.items.length >= MAX_ITEMS) return;
         const ex = newExercise(doc, type);
         mapSection(s.id, (x) => ({ ...x, items: [...x.items, ex] }));
         onSelect(ex.id);
       },
       addReading: () => {
+        if (s.items.length >= MAX_ITEMS) return;
         const id = nextId(doc, "r");
         mapSection(s.id, (x) => ({ ...x, items: [{ id, kind: "reading", title: null, body: "", media: null }, ...x.items] }));
         onSelect(id);
@@ -195,7 +239,7 @@ export function AssessmentWorkspace({ doc, onChange: onChangeProp, readOnly = fa
       if (j >= 0 && j < from.items.length) return mapSection(from.id, (x) => ({ ...x, items: arrayMove(x.items, ii, j) }));
       // Past the Grupo's edge: into the neighbouring Grupo, unless that would empty this one.
       const to = doc.sections[si + dir];
-      if (!to || from.items.length <= 1) return;
+      if (!to || from.items.length <= 1 || to.items.length >= MAX_ITEMS) return;
       const moved = from.items[ii];
       setSections(doc.sections.map((x) => {
         if (x.id === from.id) return { ...x, items: x.items.filter((i) => i.id !== id) };
@@ -250,7 +294,7 @@ export function AssessmentWorkspace({ doc, onChange: onChangeProp, readOnly = fa
         if (toIdx >= 0) mapSection(from.id, (x) => ({ ...x, items: arrayMove(x.items, fromIdx, toIdx) }));
         return;
       }
-      if (from.items.length <= 1) return; // a Grupo can't be left empty
+      if (from.items.length <= 1 || to.items.length >= MAX_ITEMS) return; // a Grupo can't be left empty, nor take a 31st item
       const moved = from.items[fromIdx];
       const overIdx = to.items.findIndex((i) => i.id === over.id);
       const toIdx = overIdx < 0 ? to.items.length : overIdx;

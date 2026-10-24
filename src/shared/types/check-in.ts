@@ -23,6 +23,8 @@ export interface PendingCheckIn {
   turmaTitle: string;
   subject: string;
   gradeLevel: number;
+  /** "B", "7.º B": with subject and year, the turma's short name. */
+  classLabel?: string | null;
   slotId: string;
   /** YYYY-MM-DD */
   slotDate: string;

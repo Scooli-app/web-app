@@ -407,6 +407,16 @@ export default function SequenciasPage() {
     dispatch(fetchTimetables());
   }, [enabled, dispatch]);
 
+  // ?edit=<id> (the turma's "Ligar uma planificação"): opens that turma's edit dialog once the list is here.
+  const [editParam, setEditParam] = useState<string | null>(null);
+  useEffect(() => setEditParam(new URLSearchParams(window.location.search).get("edit")), []);
+  useEffect(() => {
+    const target = editParam ? timetables.find((tt) => tt.id === editParam) : undefined;
+    if (!target) return;
+    setPendingEdit(target);
+    setEditParam(null);
+  }, [editParam, timetables]);
+
   const handleDeleteConfirm = async (deleteDocuments: boolean) => {
     if (!pendingDelete) return;
     setIsDeleting(true);

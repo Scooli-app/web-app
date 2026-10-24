@@ -31,11 +31,12 @@ export function ReviewFeedRow({ item, locale, onAction }: ReviewFeedRowProps) {
     <li className="flex items-center gap-3 px-3 py-2.5">
       <Icon className="h-4 w-4 shrink-0 text-primary" aria-hidden />
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-foreground">
+        <p className="line-clamp-2 text-sm font-medium text-foreground sm:line-clamp-1">
           {item.title}
           {date && <span className="ml-2 text-xs font-normal text-muted-foreground">{date}</span>}
         </p>
-        {item.summary && <p className="truncate text-xs text-muted-foreground">{item.summary}</p>}
+        {/* Phones: two lines each, so "Proposta de reajuste para 1 aula" isn't cut before the number. */}
+        {item.summary && <p className="line-clamp-2 text-xs text-muted-foreground sm:line-clamp-1">{item.summary}</p>}
       </div>
 
       {action.kind === "generating" ? (

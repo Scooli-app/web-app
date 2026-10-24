@@ -604,6 +604,8 @@ export function BlockDocumentEditor({ documentId }: Props) {
   const [exporting, setExporting] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // The stored content the canvas starts from (load, our saves, chat turns): a save from another tab isn't overwritten.
+  const baseVersionRef = useRef<string | undefined>(undefined);
 
   /* ── Zoom ──────────────────────────────────────────────────────────────── */
   const [zoom, setZoom] = useState(1.0);
@@ -643,6 +645,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
           : canvasFromDoc;
 
       setCanvas(initialCanvas);
+      baseVersionRef.current = document?.contentVersion;
       setActiveSlideId((prev) => {
         if (prev && initialCanvas.slides.some((s) => s.id === prev)) return prev;
         return initialCanvas.slides[0]?.id ?? null;
@@ -654,7 +657,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
       setCanUndo(false);
       setCanRedo(false);
     }
-  }, [canvasFromDoc, urlThemeId]);
+  }, [canvasFromDoc, urlThemeId, document?.contentVersion]);
 
   /* ── Undo / Redo ─────────────────────────────────────────────────────── */
   const canvasRef = useRef<CanvasPresentation | null>(null);
@@ -1356,6 +1359,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
         const response = await dispatch(
           chatWithDocument({ id: document.id, message: enrichedMessage, canvasState: canvas ? JSON.stringify(canvas) : undefined }),
         ).unwrap();
+        baseVersionRef.current = response.contentVersion;
         if (response.chatAnswer) {
           // If this was a quick-action (Simplificar / Expandir / Melhorar),
           // apply the AI text directly to the targeted canvas element.
@@ -1539,11 +1543,38 @@ export function BlockDocumentEditor({ documentId }: Props) {
     if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
     setSaveStatus("saving");
     autoSaveTimerRef.current = setTimeout(async () => {
-      try {
-        const result = await dispatch(
-          updateDocument({ id: documentId, title: document.title, content: JSON.stringify(canvas) }),
+      const save = (overwrite: boolean) =>
+        dispatch(
+          updateDocument({
+            id: documentId,
+            title: document.title,
+            content: JSON.stringify(canvas),
+            baseContentVersion: overwrite ? undefined : baseVersionRef.current,
+          }),
         );
+      try {
+        let result = await save(false);
+        if (updateDocument.rejected.match(result) && result.meta.conflict) {
+          // Nothing was overwritten: the teacher picks which version stays.
+          const choice = await new Promise<"reload" | "keep" | "dismiss">((resolve) =>
+            toast.error(tDoc("conflict"), {
+              id: "document-conflict",
+              duration: Infinity,
+              action: { label: tDoc("conflictReload"), onClick: () => resolve("reload") },
+              cancel: { label: tDoc("conflictKeepMine"), onClick: () => resolve("keep") },
+              // Closed without choosing: stays unsaved; the next edit asks again.
+              onDismiss: () => resolve("dismiss"),
+            }),
+          );
+          if (choice !== "keep") {
+            setSaveStatus("idle");
+            if (choice === "reload") window.location.reload();
+            return;
+          }
+          result = await save(true);
+        }
         if (updateDocument.fulfilled.match(result)) {
+          baseVersionRef.current = result.payload.contentVersion;
           setDirty(false);
           setSaveStatus("saved");
           setTimeout(() => setSaveStatus((s) => s === "saved" ? "idle" : s), 2000);

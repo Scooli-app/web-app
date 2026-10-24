@@ -131,6 +131,7 @@ export interface ChatResponse {
   id: string;
   title: string;
   content: string;
+  contentVersion?: string;
   chatAnswer: string;
   sources?: RagSource[];
   updatedAt: string;

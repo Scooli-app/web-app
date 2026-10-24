@@ -69,7 +69,7 @@ function triggerDownload(file: ExportFile) {
  * "Descarregar ambos". Nothing is generated until the first download click; the answer is cached per format.
  * Desktop dialog, bottom sheet on phones.
  */
-export function ExportDialog({ open, onOpenChange, documentId, documentType, title, english, isPro, chatting, flush }: {
+export function ExportDialog({ open, onOpenChange, documentId, documentType, title, english, isPro, chatting, flush, incomplete = [] }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   documentId: string;
@@ -83,6 +83,8 @@ export function ExportDialog({ open, onOpenChange, documentId, documentType, tit
   chatting: boolean;
   /** Saves pending edits; false when the save failed (the files would not match the screen). */
   flush: () => Promise<boolean>;
+  /** Numbers of the exercises without a statement or a solution: they print like that. */
+  incomplete?: number[];
 }) {
   const t = useTranslations("assessmentEditor.exportDialog");
   const tDownload = useTranslations("editor.downloadButton");
@@ -178,6 +180,12 @@ export function ExportDialog({ open, onOpenChange, documentId, documentType, tit
 
   const body = (
     <div className={cn("flex flex-col gap-3", phone && PHONE_TOUCH)}>
+      {incomplete.length > 0 && (
+        <p className="flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-700/60 dark:bg-amber-950/40 dark:text-amber-200">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>{t("incomplete", { count: incomplete.length, numbers: incomplete.join(", ") })}</span>
+        </p>
+      )}
       {isPro === null ? (
         // Plan still unknown: no Word upsell for someone who may be Pro.
         <Skeleton className="h-10 w-full rounded-xl" aria-label={t("formatLabel")} />
@@ -224,9 +232,12 @@ export function ExportDialog({ open, onOpenChange, documentId, documentType, tit
                   {format === "pdf" ? "PDF" : "DOC"}
                 </span>
                 <div className="min-w-0 flex-1">
-                  <div className="text-sm font-semibold text-foreground">
-                    {label}
-                    <span className="font-normal text-muted-foreground"> · {t(variant === "student" ? "forStudents" : "forYou")}</span>
+                  {/* On a phone "· Para ti" wrapped under a long label: it goes to its own line, not half of one. */}
+                  <div className="flex flex-wrap items-baseline gap-x-1 text-sm font-semibold text-foreground">
+                    <span className="min-w-0 max-w-full truncate">{label}</span>
+                    <span className="whitespace-nowrap font-normal text-muted-foreground max-sm:basis-full max-sm:text-xs">
+                      <span className="max-sm:hidden">· </span>{t(variant === "student" ? "forStudents" : "forYou")}
+                    </span>
                   </div>
                   <div className="truncate text-xs text-muted-foreground" title={nameFor(variant)}>
                     {nameFor(variant)}

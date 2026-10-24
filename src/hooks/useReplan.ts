@@ -12,6 +12,9 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
 
+/** The outcome arrives while the teacher may be elsewhere in the dialog; the default 4 s hides its "Ver" too soon. */
+const OUTCOME_TOAST_MS = 15000;
+
 /** Tells the turma banner (if open) to reload its state. */
 function notifyChanged(timetableId: string) {
   window.dispatchEvent(new CustomEvent(REPLAN_CHANGED_EVENT, { detail: { timetableId } }));
@@ -45,7 +48,7 @@ export function useReplan() {
 
   /** Polls until a proposal other than `skipId` settles, then toasts the outcome. */
   const watch = useCallback(
-    (timetableId: string, skipId: string | null) => {
+    (timetableId: string, skipId: string | null, onSettled?: () => void) => {
       notifyChanged(timetableId);
       const controller = new AbortController();
       watches.current.add(controller);
@@ -58,19 +61,22 @@ export function useReplan() {
           );
           if (!proposal) return;
           notifyChanged(timetableId);
+          onSettled?.();
           const outcome = settledToast(proposal);
           if (outcome === "ready") {
             toast.success(t("readyToast"), {
+              duration: OUTCOME_TOAST_MS,
               action: {
                 label: t("readyAction"),
                 onClick: () => router.push(`${Routes.CALENDAR}/${timetableId}`),
               },
             });
           } else if (outcome === "noChange") {
-            toast.info(t("noChangeToast"));
+            toast.info(t("noChangeToast"), { duration: OUTCOME_TOAST_MS });
           } else {
             const { triggerSlotId } = proposal;
             toast.error(t("failedToast"), {
+              duration: OUTCOME_TOAST_MS,
               action: triggerSlotId
                 ? { label: t("shiftFallback"), onClick: () => void shift(timetableId, triggerSlotId) }
                 : undefined,
@@ -97,11 +103,15 @@ export function useReplan() {
 
   /** Asks for a proposal now (the lesson dialog's "Reajustar", the turma header, next steps). Resolves true when started; the caller says so. */
   const requestReplan = useCallback(
-    async (timetableId: string, body: { triggerSlotId?: string; note?: string } = {}): Promise<boolean> => {
+    async (
+      timetableId: string,
+      body: { triggerSlotId?: string; note?: string } = {},
+      onSettled?: () => void,
+    ): Promise<boolean> => {
       const skipId = await settledProposalId(timetableId);
       try {
         const started = await replanService.start(timetableId, body);
-        watch(timetableId, skipId);
+        watch(timetableId, skipId, onSettled);
         return started.status === "generating";
       } catch (error) {
         const proRequired = error instanceof ApiRequestError && error.code === "pro_required";

@@ -28,6 +28,10 @@ interface PrepareLessonSetArgs {
   onDone: () => void;
   /** Where the click came from, for analytics. */
   surface: "dashboard" | "lesson_popup";
+  /** A test's outcomes, ticked under "Vai avaliar" (ENG-209); undefined lets the backend use the whole scope. */
+  testOutcomeIds?: string[];
+  /** Nothing is ticked under "Vai avaliar": no test is suggested, as the lesson's test chip is hidden too. */
+  testBlocked?: boolean;
 }
 
 /**
@@ -46,6 +50,8 @@ export function usePrepareLessonSet({
   generatePlan,
   onDone,
   surface,
+  testOutcomeIds,
+  testBlocked = false,
 }: PrepareLessonSetArgs) {
   const t = useTranslations("calendar.slotDialog");
   const tWeek = useTranslations("yourWeek");
@@ -61,7 +67,9 @@ export function usePrepareLessonSet({
   const [inFlight, setInFlight] = useState<CompanionType[]>([]);
 
   const suggested: CompanionType[] = ready
-    ? suggestedDocuments(slotType, subject, documents, { worksheet, presentation })
+    ? suggestedDocuments(slotType, subject, documents, { worksheet, presentation }).filter(
+        (type) => !(type === "test" && testBlocked),
+      )
     : [];
   const cost = preparationCost([{ slotDate, types: suggested }], limits);
   const label = [
@@ -86,7 +94,7 @@ export function usePrepareLessonSet({
       }
       for (const type of types) {
         if (type === "lessonPlan") continue;
-        await startCompanionDocument(timetableId, lessonId, type, tWeek, dispatch);
+        await startCompanionDocument(timetableId, lessonId, type, tWeek, dispatch, type === "test" ? testOutcomeIds : undefined);
         setInFlight((prev) => prev.filter((x) => x !== type));
         onDone(); // the started document shows as written now, not when the whole set is through
       }

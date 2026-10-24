@@ -65,7 +65,8 @@ describe("CheckInStrip", () => {
 
   it("keeps the lesson's meta line on the dashboard, where many lessons are listed", () => {
     const html = renderToStaticMarkup(createElement(CheckInStrip));
-    expect(html).toContain(">meta<");
+    // With the turma's year it is named as in the calendar, which already says the subject: "metaNoSubject".
+    expect(html).toMatch(/>meta(NoSubject)?</);
   });
 
   it("shows the test question and the not-yet button for an assessment", () => {

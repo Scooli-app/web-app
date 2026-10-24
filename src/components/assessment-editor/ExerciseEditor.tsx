@@ -1,6 +1,7 @@
 "use client";
 
 import { InlineText } from "@/components/blocks/inline-text";
+import { FormulaModal } from "@/components/document-editor-v2/FormulaModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -8,21 +9,24 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/shared/utils/utils";
 import type { AssessmentExercise, AssessmentOption, AssessmentReadingBox, ExerciseType } from "@/types/assessment";
-import { AlertTriangle, ArrowDown, ArrowUp, Check, ImageIcon, MapPin, Plus, SquareDashed, Trash2, X } from "lucide-react";
+import { AlertTriangle, ArrowDown, ArrowUp, Check, ImageIcon, MapPin, Plus, Sigma, SquareDashed, Trash2, X } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useState, type ReactNode } from "react";
+import { useRef, useState, type FocusEvent, type FormEvent, type ReactNode } from "react";
+import { toast } from "sonner";
 import { AeChip } from "./AeChip";
 import { AePicker } from "./AePicker";
 import { PHONE_TOUCH, useAssessmentEditor } from "./context";
 import { LabelImage } from "./ExerciseView";
 import {
-  EXERCISE_TYPES, MAX_CATEGORIES, MAX_WORDS, MAX_WORD_LETTERS, TABLE_MAX_COLS, TABLE_MAX_ROWS, addCategory, addLabel, addOption, addTableColumn,
+  EXERCISE_TYPES, MAX_CATEGORIES, MAX_LEVEL, MAX_MODEL_ANSWER, MAX_READING, MAX_SHORT, MAX_TEXT, MAX_WORDS, MAX_WORD_LETTERS, TABLE_MAX_COLS, TABLE_MAX_ROWS, addCategory, addLabel, addOption, addTableColumn,
   addTableRow, cellAnswer, changeType, classifyItem, gapText, isBlankCell, optionLetter, removeCategory, removeLabel, removeOption,
   removeTableColumn, removeTableRow, setTableCell, setTableHeader, skippedWordIndexes, syncAnswer, toggleBlank, withEmptyCategories,
   withEmptyTable, withImage,
 } from "./model";
 
 const NONE = "__none";
+
+const halfPoints = (points: number) => Math.round(points * 2) / 2;
 
 function Field({ label, hint, children, className }: { label: string; hint?: string; children: ReactNode; className?: string }) {
   return (
@@ -68,6 +72,43 @@ export function ExerciseEditor({ exercise: ex, number, onChange, onClose, toolba
   // label_image: the target the next click on the picture places.
   const [activeLabel, setActiveLabel] = useState<string | null>(null);
   const set = (patch: Partial<AssessmentExercise>) => onChange(syncAnswer({ ...ex, ...patch }));
+
+  // "Fórmula" writes $…$ at the cursor of the text field used last (statement, options, gaps, answer…), and that
+  // field's maths shows rendered below, so it can be checked without reading LaTeX (the phone sheet has no page).
+  const lastFieldRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
+  const [fieldText, setFieldText] = useState("");
+  const [formulaOpen, setFormulaOpen] = useState(false);
+  const fieldHasMaths = fieldText.includes("$") || fieldText.includes("\\");
+  const trackField = (e: FocusEvent<HTMLDivElement> | FormEvent<HTMLDivElement>) => {
+    const el = e.target;
+    const textField = el instanceof HTMLTextAreaElement || (el instanceof HTMLInputElement && el.type === "text");
+    // The formula dialog is a portal: its own field is not one of ours.
+    if (!textField || !e.currentTarget.contains(el)) return;
+    lastFieldRef.current = el;
+    setFieldText(el.value);
+  };
+  const insertFormula = (tex: string) => {
+    setFormulaOpen(false);
+    const el = lastFieldRef.current;
+    if (!el?.isConnected) return;
+    const start = el.selectionStart ?? el.value.length;
+    const end = el.selectionEnd ?? start;
+    // Against another formula, "$a$$b$" would read as display maths: keep a space between them.
+    const snippet = `${el.value[start - 1] === "$" ? " " : ""}$${tex}$${el.value[end] === "$" ? " " : ""}`;
+    const next = el.value.slice(0, start) + snippet + el.value.slice(end);
+    if (el.maxLength > 0 && next.length > el.maxLength) {
+      toast.error(t("editor.formulaTooLong"));
+      return;
+    }
+    // Through the native setter, so React's onChange sees it as typing.
+    const proto = el instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
+    Object.getOwnPropertyDescriptor(proto, "value")?.set?.call(el, next);
+    el.dispatchEvent(new Event("input", { bubbles: true }));
+    requestAnimationFrame(() => {
+      el.focus();
+      el.setSelectionRange(start + snippet.length, start + snippet.length);
+    });
+  };
   const setOption = (id: string, text: string) => set({ options: options.map((o) => (o.id === id ? { ...o, text } : o)) });
   const atMax = options.length >= 20;
   // MC needs 2 options; the word bank is optional; matching keeps one item per column (checked per row).
@@ -77,7 +118,7 @@ export function ExerciseEditor({ exercise: ex, number, onChange, onClose, toolba
   const optionRow = (o: AssessmentOption, i: number, prefix: ReactNode, placeholder?: string, extra?: ReactNode, wrap = false) => (
     <div key={o.id} className={cn("flex items-center gap-2", wrap && "max-md:flex-wrap")}>
       {prefix}
-      <Input value={o.text} onChange={(e) => setOption(o.id, e.target.value)} placeholder={placeholder ?? `${optionLetter(i)}`} className={cn("h-8 min-w-0 flex-1", wrap && "max-md:basis-[calc(100%-1.75rem)]")} />
+      <Input value={o.text} maxLength={MAX_TEXT} onChange={(e) => setOption(o.id, e.target.value)} placeholder={placeholder ?? `${optionLetter(i)}`} className={cn("h-8 min-w-0 flex-1", wrap && "max-md:basis-[calc(100%-1.75rem)]")} />
       {extra}
       <IconBtn label={t("editor.removeOption")} onClick={() => onChange(removeOption(ex, o.id))} disabled={ex.type === "matching" ? options.filter((x) => x.side === o.side).length <= 1 : options.length <= minOptions}>
         <X className="h-4 w-4" />
@@ -93,14 +134,14 @@ export function ExerciseEditor({ exercise: ex, number, onChange, onClose, toolba
     return (
       <>
         <Field label={t("editor.modelAnswer")}>
-          <Textarea value={ex.answer.text ?? ""} onChange={(e) => set({ answer: { ...ex.answer, text: e.target.value } })} rows={2} className="min-h-0" />
+          <Textarea value={ex.answer.text ?? ""} maxLength={MAX_MODEL_ANSWER} onChange={(e) => set({ answer: { ...ex.answer, text: e.target.value } })} rows={2} className="min-h-0" />
         </Field>
         <Field label={t("editor.criteria")}>
           {criteria.map((c, i) => (
             <div key={i} className="flex items-center gap-2 max-md:flex-wrap">
-              <Input value={c.level} onChange={(e) => setCriterion(i, { level: e.target.value })} placeholder={t("editor.criterionLevel")} className="h-8 w-32 shrink-0 max-md:w-auto max-md:min-w-0 max-md:flex-1 max-md:shrink" />
-              <Input value={c.descriptor} onChange={(e) => setCriterion(i, { descriptor: e.target.value })} placeholder={t("editor.criterionDescriptor")} className="h-8 min-w-0 flex-1 max-md:order-last max-md:basis-full" />
-              <Input type="number" min={0} step={0.5} value={c.points} onChange={(e) => setCriterion(i, { points: Math.min(1000, Math.max(0, Number(e.target.value) || 0)) })} aria-label={t("editor.criterionPoints")} className="h-8 w-20 shrink-0" />
+              <Input value={c.level} maxLength={MAX_LEVEL} onChange={(e) => setCriterion(i, { level: e.target.value })} placeholder={t("editor.criterionLevel")} className="h-8 w-32 shrink-0 max-md:w-auto max-md:min-w-0 max-md:flex-1 max-md:shrink" />
+              <Input value={c.descriptor} maxLength={MAX_TEXT} onChange={(e) => setCriterion(i, { descriptor: e.target.value })} placeholder={t("editor.criterionDescriptor")} className="h-8 min-w-0 flex-1 max-md:order-last max-md:basis-full" />
+              <Input type="number" min={0} step={0.5} value={c.points} onChange={(e) => setCriterion(i, { points: Math.min(1000, Math.max(0, Number(e.target.value) || 0)) })} onBlur={() => c.points !== halfPoints(c.points) && setCriterion(i, { points: halfPoints(c.points) })} aria-label={t("editor.criterionPoints")} className="h-8 w-20 shrink-0" />
               <IconBtn label={t("editor.removeOption")} onClick={() => set({ criteria: criteria.filter((_, j) => j !== i).length ? criteria.filter((_, j) => j !== i) : null })}>
                 <X className="h-4 w-4" />
               </IconBtn>
@@ -143,6 +184,7 @@ export function ExerciseEditor({ exercise: ex, number, onChange, onClose, toolba
               <AddBtn label={t("editor.addOption")} onClick={() => onChange(addOption(ex))} disabled={atMax} />
               <label className="flex items-center gap-2 text-xs text-muted-foreground max-md:min-h-11">
                 <Switch
+                  className="data-[state=unchecked]:bg-muted-foreground/40"
                   checked={multi}
                   onCheckedChange={(on) => {
                     if (on) {
@@ -187,6 +229,7 @@ export function ExerciseEditor({ exercise: ex, number, onChange, onClose, toolba
                   {truth && !truth.value && (
                     <Input
                       value={truth.correction ?? ""}
+                      maxLength={MAX_TEXT}
                       onChange={(e) => setTruth({ correction: e.target.value || null })}
                       placeholder={t("editor.correctionPlaceholder")}
                       className="ml-7 h-8 w-[calc(100%-4.75rem)] text-xs max-md:w-[calc(100%-1.75rem)]"
@@ -208,6 +251,7 @@ export function ExerciseEditor({ exercise: ex, number, onChange, onClose, toolba
                   <span className="w-16 shrink-0 text-xs font-semibold text-muted-foreground">{t("editor.gapN", { n: i + 1 })}</span>
                   <Input
                     value={gapText(ex, g)}
+                    maxLength={MAX_SHORT}
                     onChange={(e) => set({ answer: { ...ex.answer, gaps: (ex.answer.gaps ?? []).map((x, j) => (j === i ? e.target.value : x)) } })}
                     className="h-8"
                   />
@@ -276,7 +320,7 @@ export function ExerciseEditor({ exercise: ex, number, onChange, onClose, toolba
                     {table.headers.map((h, j) => (
                       <th key={j} className="font-normal">
                         <div className="flex items-center gap-1">
-                          <Input value={h} onChange={(e) => onChange(setTableHeader(ex, j, e.target.value))} placeholder={t("editor.headerN", { n: j + 1 })} className="h-8 min-w-32 flex-1 bg-muted font-semibold" />
+                          <Input value={h} maxLength={MAX_SHORT} onChange={(e) => onChange(setTableHeader(ex, j, e.target.value))} placeholder={t("editor.headerN", { n: j + 1 })} className="h-8 min-w-32 flex-1 bg-muted font-semibold" />
                           <IconBtn label={t("editor.removeColumn")} onClick={() => onChange(removeTableColumn(ex, j))} disabled={table.headers.length <= 1}>
                             <X className="h-4 w-4" />
                           </IconBtn>
@@ -298,6 +342,7 @@ export function ExerciseEditor({ exercise: ex, number, onChange, onClose, toolba
                               <Textarea
                                 rows={1}
                                 value={blank ? cellAnswer(ex, i, j) : cell}
+                                maxLength={MAX_SHORT}
                                 onKeyDown={(e) => e.key === "Enter" && e.preventDefault()}
                                 onChange={(e) => {
                                   const v = e.target.value.replace(/\s*\n\s*/g, " ");
@@ -353,6 +398,7 @@ export function ExerciseEditor({ exercise: ex, number, onChange, onClose, toolba
                 <div key={c.id} className="flex items-center gap-2">
                   <Input
                     value={c.label}
+                    maxLength={MAX_SHORT}
                     onChange={(e) => set({ categories: cats.map((x) => (x.id === c.id ? { ...x, label: e.target.value } : x)) })}
                     placeholder={t("editor.categoryN", { n: i + 1 })}
                     className="h-8 min-w-0 flex-1"
@@ -448,9 +494,10 @@ export function ExerciseEditor({ exercise: ex, number, onChange, onClose, toolba
                   {l.n}
                   {l.x !== null && <MapPin className="h-3 w-3" aria-label={t("editor.pinPlaced")} />}
                 </button>
-                <Input value={l.hint ?? ""} onChange={(e) => setLabel(l.id, { hint: e.target.value || null })} placeholder={t("editor.labelHint")} className="h-8 min-w-0 flex-1 max-md:basis-[calc(100%-3.25rem)]" />
+                <Input value={l.hint ?? ""} maxLength={MAX_SHORT} onChange={(e) => setLabel(l.id, { hint: e.target.value || null })} placeholder={t("editor.labelHint")} className="h-8 min-w-0 flex-1 max-md:basis-[calc(100%-3.25rem)]" />
                 <Input
                   value={ex.answer.labels?.find((a) => a.labelId === l.id)?.text ?? ""}
+                  maxLength={MAX_SHORT}
                   onChange={(e) => setAnswer(l.id, e.target.value)}
                   placeholder={t("editor.labelAnswer")}
                   className="h-8 min-w-0 flex-1 max-md:ml-[3.25rem]"
@@ -503,7 +550,16 @@ export function ExerciseEditor({ exercise: ex, number, onChange, onClose, toolba
   };
 
   return (
-    <div className={cn("flex flex-col gap-4 rounded-xl border border-border bg-card p-4 font-sans text-sm text-card-foreground shadow-lg", className)} onClick={(e) => e.stopPropagation()}>
+    <div
+      className={cn("flex flex-col gap-4 rounded-xl border border-border bg-card p-4 font-sans text-sm text-card-foreground shadow-lg", className)}
+      onClick={(e) => e.stopPropagation()}
+      onKeyDown={(e) => {
+        // Escape closes the exercise; one pressed in a menu or dialog (portals, outside this box) is theirs.
+        if (e.key === "Escape" && e.currentTarget.contains(e.target as Node)) onClose();
+      }}
+      onFocusCapture={trackField}
+      onInputCapture={trackField}
+    >
       <div className="flex items-center justify-between gap-3">
         <p className="font-semibold">{t("editor.title", { number })}</p>
         <Button type="button" size="sm" onClick={onClose}>{t("editor.close")}</Button>
@@ -528,19 +584,35 @@ export function ExerciseEditor({ exercise: ex, number, onChange, onClose, toolba
             value={ex.points ?? ""}
             placeholder={t("editor.pointsPlaceholder")}
             onChange={(e) => set({ points: e.target.value === "" ? null : Math.min(1000, Math.max(0, Number(e.target.value) || 0)) })}
+            // Whole or half points, as the totals and the rescale assume (7,25 became 7,5 only in print).
+            onBlur={() => ex.points !== null && ex.points !== halfPoints(ex.points) && set({ points: halfPoints(ex.points) })}
             className="h-9"
           />
         </Field>
       </div>
 
       <Field label={t("editor.prompt")} hint={ex.type === "fill_gaps" ? t("editor.promptGapsHint") : undefined}>
-        <Textarea value={ex.prompt} onChange={(e) => set({ prompt: e.target.value })} rows={2} className="min-h-0" autoFocus={autoFocus} />
+        <Textarea value={ex.prompt} maxLength={MAX_TEXT} onChange={(e) => set({ prompt: e.target.value })} rows={2} className="min-h-0" autoFocus={autoFocus} />
       </Field>
+
+      <div className="flex flex-wrap items-start gap-2">
+        <Button type="button" variant="outline" size="sm" className="h-8 gap-1.5" onMouseDown={(e) => e.preventDefault()} onClick={() => setFormulaOpen(true)}>
+          <Sigma className="h-3.5 w-3.5" />
+          {t("editor.formula")}
+        </Button>
+        {fieldHasMaths && (
+          <div className="min-w-0 flex-1 rounded-md border border-border bg-background px-2 py-1 text-sm" aria-live="polite">
+            <span className="mr-1.5 text-[11px] font-semibold text-muted-foreground">{t("editor.preview")}</span>
+            <InlineText value={fieldText} />
+          </div>
+        )}
+      </div>
+      <FormulaModal open={formulaOpen} onClose={() => setFormulaOpen(false)} onInsert={insertFormula} />
 
       {typeFields()}
 
       <Field label={t("editor.explanation")}>
-        <Textarea value={ex.explanation ?? ""} onChange={(e) => set({ explanation: e.target.value || null })} rows={1} className="min-h-0" />
+        <Textarea value={ex.explanation ?? ""} maxLength={MAX_TEXT} onChange={(e) => set({ explanation: e.target.value || null })} rows={1} className="min-h-0" />
       </Field>
 
       <div className="flex flex-wrap items-end gap-3">
@@ -624,10 +696,10 @@ export function ReadingEditor({ item, onChange, onClose, toolbar, className, aut
       </div>
       {toolbar}
       <Field label={t("item.readingTitle")}>
-        <Input value={item.title ?? ""} onChange={(e) => onChange({ ...item, title: e.target.value || null })} className="h-9" />
+        <Input value={item.title ?? ""} maxLength={MAX_TEXT} onChange={(e) => onChange({ ...item, title: e.target.value || null })} className="h-9" />
       </Field>
       <Field label={t("item.readingBody")}>
-        <Textarea value={item.body} onChange={(e) => onChange({ ...item, body: e.target.value })} rows={4} autoFocus={autoFocus} />
+        <Textarea value={item.body} maxLength={MAX_READING} onChange={(e) => onChange({ ...item, body: e.target.value })} rows={4} autoFocus={autoFocus} />
       </Field>
       <div className="flex gap-2">
         <Button type="button" variant="outline" size="sm" className="h-9 gap-1.5" onClick={() => requestImage((url) => onChange({ ...item, media: { imageRef: url, placeholder: item.media?.placeholder ?? null } }))}>

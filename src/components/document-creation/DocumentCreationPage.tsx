@@ -45,7 +45,7 @@ interface DocumentCreationPageProps {
   userId?: string;
 }
 
-function useDocumentForm(documentTypeId: DocumentTypeConfig["id"]) {
+function useDocumentForm(documentTypeId: DocumentTypeConfig["id"], usesTemplate: boolean) {
   const [formState, setFormState] = useState<FormState>({
     topic: "",
     subject: "",
@@ -78,12 +78,11 @@ function useDocumentForm(documentTypeId: DocumentTypeConfig["id"]) {
 
   const isFormValid = () => {
     const requiresWorksheetVariant = documentTypeId === "worksheet";
-    const isPresentation = documentTypeId === "presentation";
     return Boolean(
       formState.topic.trim() &&
         formState.subject &&
         formState.schoolYear &&
-        (isPresentation || formState.templateId) &&
+        (!usesTemplate || formState.templateId) &&
         (!requiresWorksheetVariant || formState.worksheetVariant)
     );
   };
@@ -122,8 +121,12 @@ export default function DocumentCreationPage({
   // null until the template list has loaded.
   const [templateCount, setTemplateCount] = useState<number | null>(null);
 
+  // Structured tests / worksheets / quizzes are generated without a template (the server ignores one): no picker.
+  const isStructured = useAppSelector((state) => state.features.flags[FeatureFlag.STRUCTURED_ASSESSMENTS] === true)
+    && (documentType.id === "test" || documentType.id === "worksheet" || documentType.id === "quiz");
+  const usesTemplate = documentType.id !== "presentation" && !isStructured;
   const { formState, error, setError, updateForm, isFormValid, handleTemplateSelect } =
-    useDocumentForm(documentType.id);
+    useDocumentForm(documentType.id, usesTemplate);
 
   // A year or subject from the URL wins over the profile defaults.
   const prefilledRef = useRef({ year: false, subject: false });
@@ -210,11 +213,11 @@ export default function DocumentCreationPage({
       templateId: formState.templateId,
       worksheetVariant: formState.worksheetVariant,
     },
-    { needsTemplate: !isPresentation, needsWorksheetVariant: showWorksheetVariantSection },
+    { needsTemplate: usesTemplate, needsWorksheetVariant: showWorksheetVariantSection },
   );
 
   const moreOptionsSummary = [
-    !isPresentation && formState.template?.name
+    usesTemplate && formState.template?.name
       ? t("moreOptions.summaryTemplate", { name: formState.template.name })
       : null,
     formState.lessonTime
@@ -241,7 +244,7 @@ export default function DocumentCreationPage({
   const handleCreateDocument = async () => {
     if (isLoading) return;
 
-    if (!isPresentation && !formState.templateId) {
+    if (usesTemplate && !formState.templateId) {
       setError(t("errors.selectTemplate"));
       return;
     }
@@ -460,7 +463,7 @@ export default function DocumentCreationPage({
               </OptionRow>
             )}
 
-            {!isPresentation && (
+            {usesTemplate && (
               <TemplateSection
                 documentType={documentType.id}
                 selectedTemplateId={formState.templateId || null}

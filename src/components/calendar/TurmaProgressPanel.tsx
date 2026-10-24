@@ -22,6 +22,8 @@ import {
   XCircle,
   type LucideIcon,
 } from "lucide-react";
+import { Routes } from "@/shared/types/routes";
+import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useState, type ReactNode } from "react";
 import {
@@ -106,6 +108,7 @@ export function TurmaProgressPanel({ timetableId, refreshKey = 0 }: TurmaProgres
         busyOutcomeId={busyOutcomeId}
         onRequestReinforcement={(outcome) => void requestReinforcement(outcome)}
         onOpenLesson={(lessonId, date) => setOpenTarget(reinforcementTarget(timetableId, lessonId, date))}
+        linkPlanHref={`${Routes.CALENDAR_SEQUENCES}?edit=${timetableId}`}
       />
       <WeekLessonDialog
         target={openTarget}
@@ -146,6 +149,8 @@ interface TurmaProgressViewProps {
   onRequestReinforcement?: (outcome: TurmaProgressFlaggedOutcome) => void;
   /** "Abrir" on a ready worksheet: the lesson it was written for, and that lesson's date. */
   onOpenLesson?: (lessonId: string, date: string) => void;
+  /** Without a linked plan: where the teacher links one (the turma's edit dialog). */
+  linkPlanHref?: string;
 }
 
 /** The panel's content for loaded figures. Exported so the rendering can be tested without a fetch. */
@@ -155,6 +160,7 @@ export function TurmaProgressView({
   busyOutcomeId = null,
   onRequestReinforcement,
   onOpenLesson,
+  linkPlanHref,
 }: TurmaProgressViewProps) {
   const t = useTranslations("calendar.progress");
   const tCheckIns = useTranslations("checkIns");
@@ -175,8 +181,13 @@ export function TurmaProgressView({
   // No linked plan: every figure below would read as "0 of 0" / "all on time", which is not true.
   if (coverage.outcomesTotal === 0) {
     return (
-      <section aria-label={t("title")} className="rounded-xl border bg-card p-4 text-sm text-muted-foreground">
-        {t("noPlan")}
+      <section aria-label={t("title")} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card p-4 text-sm text-muted-foreground">
+        <span>{t("noPlan")}</span>
+        {linkPlanHref && (
+          <Button asChild size="sm" variant="outline">
+            <Link href={linkPlanHref}>{t("linkPlan")}</Link>
+          </Button>
+        )}
       </section>
     );
   }

@@ -305,10 +305,15 @@ export async function streamDocumentContent(
 
 export async function updateDocument(
   id: string,
-  data: { title?: string; content?: string }
+  data: { title?: string; content?: string; baseContentVersion?: string }
 ): Promise<Document> {
   const response = await apiClient.put<Document>(`/documents/${id}`, data);
   return response.data;
+}
+
+/** "Está correto": the teacher confirmed an exercise flagged by the answer-key check. */
+export async function dismissAnswerCheck(id: string, exerciseId: string): Promise<void> {
+  await apiClient.delete(`/documents/${id}/answer-checks/${encodeURIComponent(exerciseId)}`);
 }
 
 /**

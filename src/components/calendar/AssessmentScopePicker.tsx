@@ -54,7 +54,8 @@ export function AssessmentScopePicker({ scope, selected, onToggle }: AssessmentS
                   <>
                     <span className="text-[10px] opacity-70">{t("lessons", { count: outcome.lessons })}</span>
                     {outcome.evidence === "assumed" && (
-                      <span className="rounded bg-amber-100 px-1 text-[10px] font-medium text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
+                      // Solid in both themes: on a selected (filled) chip a translucent badge lost its contrast.
+                      <span className="rounded bg-amber-100 px-1 text-[10px] font-medium text-amber-900">
                         {t("notConfirmed")}
                       </span>
                     )}
@@ -66,7 +67,8 @@ export function AssessmentScopePicker({ scope, selected, onToggle }: AssessmentS
             ))}
           </div>
           {testBlocked(scope, selected) && (
-            <p className="text-xs text-amber-700 dark:text-amber-400">{t("pickAtLeastOne")}</p>
+            // A how-to, not an error: nothing is wrong before the teacher has chosen.
+            <p className="text-xs text-muted-foreground">{t("pickAtLeastOne")}</p>
           )}
         </>
       )}

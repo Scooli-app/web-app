@@ -5,8 +5,11 @@ import type { AeOutcome } from "@/types/assessment";
 import { X } from "lucide-react";
 import { useTranslations } from "next-intl";
 
-/** `undefined` = still loading, `null` = unknown id. Retired outcomes count as unavailable. */
-export function AeChip({ outcome, onRemove }: { outcome: AeOutcome | null | undefined; onRemove?: () => void }) {
+/**
+ * `undefined` = still loading, `null` = unknown id. Retired outcomes count as unavailable.
+ * `onPaper`: drawn on the always-white page, so it keeps its light colours in dark mode.
+ */
+export function AeChip({ outcome, onRemove, onPaper }: { outcome: AeOutcome | null | undefined; onRemove?: () => void; onPaper?: boolean }) {
   const t = useTranslations("assessmentEditor.ae");
   const unavailable = outcome === null || outcome?.retired;
   const label = outcome === undefined ? t("loading") : unavailable ? t("unavailable") : `${outcome.topicLeaf}: ${outcome.text}`;
@@ -16,9 +19,10 @@ export function AeChip({ outcome, onRemove }: { outcome: AeOutcome | null | unde
       title={outcome && !unavailable ? outcome.text : undefined}
       className={cn(
         "inline-flex max-w-full items-center gap-1 rounded-full border px-2 py-0.5 font-sans text-[11px] font-medium leading-4",
-        unavailable
-          ? "border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-700/60 dark:bg-amber-950/40 dark:text-amber-300"
-          : "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-800/60 dark:bg-emerald-950/40 dark:text-emerald-300",
+        unavailable ? "border-amber-300 bg-amber-50 text-amber-800" : "border-emerald-200 bg-emerald-50 text-emerald-800",
+        !onPaper && (unavailable
+          ? "dark:border-amber-700/60 dark:bg-amber-950/40 dark:text-amber-300"
+          : "dark:border-emerald-800/60 dark:bg-emerald-950/40 dark:text-emerald-300"),
         outcome === undefined && "animate-pulse",
       )}
     >

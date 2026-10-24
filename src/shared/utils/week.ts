@@ -3,6 +3,11 @@ export function localIsoDate(d: Date = new Date()): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
+/** The timetable.status label of a lesson: "Por preparar" means nothing once the lesson is past. */
+export function slotStatusKey(status: string, slotDate: string): string {
+  return status === "pending" && slotDate < localIsoDate() ? "pendingPast" : status;
+}
+
 /** Returns the ISO week-start (Monday) for the given date using local time. */
 export function isoWeekStart(date: Date = new Date()): string {
   const d = new Date(date);

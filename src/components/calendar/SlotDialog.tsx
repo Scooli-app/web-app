@@ -88,6 +88,7 @@ import {
   type SlotCheckInAnswer,
 } from "@/shared/utils/teachingStatus";
 import { cn } from "@/shared/utils/utils";
+import { slotStatusKey } from "@/shared/utils/week";
 
 const ROLE_ROUTE: Record<string, string> = {
   lessonPlan: Routes.LESSON_PLAN,
@@ -264,6 +265,9 @@ export function SlotDialog({
       onDocumentsChanged?.();
     },
     surface: "lesson_popup",
+    // The footer's "Preparar teste" assesses what is ticked under "Vai avaliar", like the test chip.
+    testOutcomeIds: testRequestOutcomeIds(assessment.scope, assessment.selected),
+    testBlocked: testBlocked(assessment.scope, assessment.selected),
   });
 
   // Failed attempts aren't documents the teacher has; the chips offer that type again.
@@ -341,7 +345,7 @@ export function SlotDialog({
 
   /** Pro: asks the replanning agent for the lessons after this one. The wait shows inline: toasts sit under this dialog. */
   const handleReplanRequest = async (triggerSlotId: string) => {
-    const started = await requestReplan(slot.timetable.id, { triggerSlotId });
+    const started = await requestReplan(slot.timetable.id, { triggerSlotId }, () => setReplanning(false));
     if (started) setReplanning(true);
   };
 
@@ -404,11 +408,12 @@ export function SlotDialog({
 
   return (
     <Dialog open={!!slot} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-lg gap-0 p-0 overflow-hidden">
+      {/* A column whose body scrolls: a tall lesson ("Vai avaliar", documents) must not push the footer's actions off screen. */}
+      <DialogContent className="max-w-lg gap-0 p-0 overflow-hidden flex flex-col">
         {/* Colored header strip */}
-        <div className="h-1 w-full" style={{ background: color }} />
+        <div className="h-1 w-full shrink-0" style={{ background: color }} />
 
-        <div className="p-6">
+        <div className="min-h-0 flex-1 overflow-y-auto p-6">
           <DialogHeader className="mb-4">
             {/* Subject pill + status badge */}
             <div className="mb-3 flex items-center gap-2 flex-wrap">
@@ -423,7 +428,7 @@ export function SlotDialog({
               </span>
               <Badge className={`gap-1 border text-xs ${cfg.badgeCls}`}>
                 {cfg.icon}
-                {tTimetable(`status.${slot.status}`)}
+                {tTimetable(`status.${slotStatusKey(slot.status, slot.slotDate)}`)}
               </Badge>
               {isAssessment && (
                 <Badge variant="outline" className="text-xs text-amber-600 border-amber-300">
@@ -574,6 +579,15 @@ export function SlotDialog({
             {!isHoliday && (
               <>
                 <Separator />
+                {/* A test lists what it assesses under "Vai avaliar": the plan's objectives fold away there, one list in sight. */}
+                {isAssessment && assessment.scope && slot.description ? (
+                  <details className="group space-y-1.5">
+                    <summary className="cursor-pointer list-none text-xs font-semibold uppercase tracking-wide text-muted-foreground hover:text-foreground">
+                      {t("objectivesTitle")} <span aria-hidden className="inline-block transition-transform group-open:rotate-90">›</span>
+                    </summary>
+                    <p className="text-sm leading-relaxed text-foreground/80 whitespace-pre-line">{slot.description}</p>
+                  </details>
+                ) : (
                 <div className="space-y-1.5">
                   <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                     {t("objectivesTitle")}
@@ -590,6 +604,7 @@ export function SlotDialog({
                     </p>
                   )}
                 </div>
+                )}
               </>
             )}
 
@@ -867,7 +882,8 @@ export function SlotDialog({
                 {t("generating")}
               </Button>
             ) : suggested.length > 0 ? (
-              <Button onClick={() => void handlePrepare()} className="h-9 rounded-lg">
+              // A past lesson's main business is its check-in: preparing documents for it stays possible, not primary.
+              <Button onClick={() => void handlePrepare()} variant={slot.slotDate < todayIso ? "outline" : "default"} className="h-9 rounded-lg">
                 <Sparkles className="mr-1.5 h-4 w-4" />
                 {prepareLabel}
               </Button>
@@ -881,6 +897,7 @@ export function SlotDialog({
             open={replanOpen}
             onOpenChange={setReplanOpen}
             onStarted={() => setReplanning(true)}
+            onSettled={() => setReplanning(false)}
           />
         )}
       </DialogContent>

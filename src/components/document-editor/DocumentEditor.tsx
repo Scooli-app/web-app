@@ -40,6 +40,7 @@ import { useAuth } from "@clerk/nextjs";
 import type { Editor } from "@tiptap/react";
 import { CheckCircle2, Crown, FileX, Loader2 } from "lucide-react";
 import { DocumentEditorSkeleton } from "@/components/document-editor/DocumentEditorSkeleton";
+import { DocumentNotFound } from "@/components/document-editor/DocumentNotFound";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -204,6 +205,9 @@ function repairLeakedImageSegmentTokens(
     return `![${safeAlt}]({{DOCUMENT_IMAGE:${image.id}}})`;
   });
 }
+
+/** A background refresh that fails changes nothing: the editor keeps what it shows. */
+const ignoreRefreshFailure = () => undefined;
 
 export default function DocumentEditor({
   documentId,
@@ -768,7 +772,7 @@ export default function DocumentEditor({
                 skipNextEditorKeyBumpRef.current = true;
                 dispatch(fetchDocument(docId))
                   .unwrap()
-                  .catch(() => {})
+                  .catch(ignoreRefreshFailure)
                   .finally(() => {
                     skipNextEditorKeyBumpRef.current = false;
                   });
@@ -1120,6 +1124,11 @@ export default function DocumentEditor({
     );
   }, [content, handleTrackedAutosave, images, setContent, t]);
 
+  const dismissChatNudge = useCallback(() => {
+    setShowChatNudge(false);
+    if (nudgeTimerRef.current) clearTimeout(nudgeTimerRef.current);
+  }, []);
+
   const handleChatSubmit = useCallback(
     async (userMessage: string) => {
       if (!currentDocument?.id || currentDocument.id !== documentId) {
@@ -1271,6 +1280,7 @@ export default function DocumentEditor({
     [
       currentDocument?.documentType,
       currentDocument?.id,
+      dismissChatNudge,
       dispatch,
       documentId,
       getSessionId,
@@ -1315,11 +1325,6 @@ export default function DocumentEditor({
   // Cleanup nudge timer on unmount
   useEffect(() => () => { if (nudgeTimerRef.current) clearTimeout(nudgeTimerRef.current); }, []);
 
-  const dismissChatNudge = useCallback(() => {
-    setShowChatNudge(false);
-    if (nudgeTimerRef.current) clearTimeout(nudgeTimerRef.current);
-  }, []);
-
   // Handle exiting diff / suggestions mode
   const handleExitDiffMode = useCallback(() => {
     setIsSuggestionsMode(false);
@@ -1334,23 +1339,7 @@ export default function DocumentEditor({
 
   if (isLoading && !isGenerating) return <DocumentEditorSkeleton />;
 
-  if (!activeDocument?.id && !isGenerating) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px] w-full">
-        <div className="text-center">
-          <p className="text-lg text-muted-foreground mb-4">
-            {t("documentNotFound")}
-          </p>
-          <button
-            onClick={() => router.push(Routes.DOCUMENTS)}
-            className="text-primary hover:underline"
-          >
-            {t("backToDocuments")}
-          </button>
-        </div>
-      </div>
-    );
-  }
+  if (!activeDocument?.id && !isGenerating) return <DocumentNotFound documentId={documentId} />;
 
   return (
     <>

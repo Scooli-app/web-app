@@ -2,7 +2,7 @@
 
 import ClassDetailLoading from "./loading";
 import { WeekSlotListSkeleton } from "@/components/calendar/ClassListSkeleton";
-import { formatClassName } from "@/shared/utils/className";
+import { formatClassName, sameClassWords } from "@/shared/utils/className";
 import { hasTopic, isVisibleSlot } from "@/shared/utils/lessonTopic";
 import { Badge } from "@/components/ui/badge";
 import { PlanGenerationBanner } from "@/components/plan-generation/PlanGenerationBanner";
@@ -43,7 +43,7 @@ import {
 import { SLOT_STATUS_CONFIG } from "@/shared/constants/lessonSlotStatus";
 import { translateSubject } from "@/components/document-creation/constants";
 import { SlotDialog } from "@/components/calendar/SlotDialog";
-import { TeachingMarkBadge } from "@/components/calendar/TeachingMarkBadge";
+import { TeachingMarkBadge, TeachingMarkLegend } from "@/components/calendar/TeachingMarkBadge";
 import { NextStepsCard } from "@/components/next-steps/NextStepsCard";
 import { ReviewFeedSection } from "@/components/review-feed/ReviewFeedSection";
 import { ReplanRequestDialog } from "@/components/replan/ReplanRequestDialog";
@@ -62,6 +62,7 @@ import { useAuth } from "@clerk/nextjs";
 import posthog from "posthog-js";
 import { useLocale, useTranslations } from "next-intl";
 import { isSupportedLocale, defaultLocale } from "@/i18n/locales";
+import { slotStatusKey } from "@/shared/utils/week";
 
 // ─────────────────────── Types / helpers ─────────────────────────────────────
 
@@ -143,7 +144,7 @@ function SlotCard({ slot, color, onOpen }: SlotCardProps) {
         {!isHoliday && (
           <Badge className={`shrink-0 gap-1 border text-xs ${cfg.badgeCls}`}>
             {cfg.icon}
-            {tTimetable(`status.${slot.status}`)}
+            {tTimetable(`status.${slotStatusKey(slot.status, slot.slotDate)}`)}
           </Badge>
         )}
       </div>
@@ -573,7 +574,11 @@ export default function CalendarViewPage() {
                   })
                 : t("detail.loading")}
             </h1>
-            {currentTimetable?.title && currentTimetable.title !== translateSubject(currentTimetable.subject) && (
+            {currentTimetable?.title && currentTimetable.title !== translateSubject(currentTimetable.subject)
+              && !sameClassWords(currentTimetable.title, formatClassName(currentTimetable, {
+                gradeShort: (grade) => tTimetable("gradeShort", { grade }),
+                subject: translateSubject,
+              })) && (
               <p className="truncate text-sm text-muted-foreground" title={currentTimetable.title}>
                 {currentTimetable.title}
               </p>
@@ -637,6 +642,7 @@ export default function CalendarViewPage() {
           <ArrowRight className="h-4 w-4" />
         </Button>
       </div>
+      {replanEnabled && <TeachingMarkLegend className="px-1" />}
 
       {/* Week slot list */}
       {isSlotsLoading ? (

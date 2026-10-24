@@ -142,12 +142,14 @@ function CommunityLibraryPage() {
 
   const handleShareResource = async (request: ShareResourceRequest) => {
     try {
-      await dispatch(submitResource({ ...request, libraryScope: activeScope })).unwrap();
+      const shared = await dispatch(submitResource({ ...request, libraryScope: activeScope })).unwrap();
       setIsShareModalOpen(false);
       toast.success(
         activeScope === "organization"
           ? t("shareOrgSuccess")
-          : t("shareCommunitySuccess"),
+          : shared.status === "APPROVED"
+            ? t("sharePublished")
+            : t("shareCommunitySuccess"),
       );
     } catch (error) {
       toast.error(

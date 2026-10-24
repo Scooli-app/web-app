@@ -1,6 +1,7 @@
 "use client";
 
 import { DocumentEditorSkeleton } from "@/components/document-editor/DocumentEditorSkeleton";
+import { DocumentNotFound } from "@/components/document-editor/DocumentNotFound";
 import { isAssessmentDoc } from "@/lib/documents/kind";
 import { fetchDocument } from "@/store/documents/documentSlice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
@@ -43,6 +44,8 @@ export function EditorSwitch(props: EditorSwitchProps) {
   }, [attempted, dispatch, document, documentId, loadingId]);
 
   if (!document && (attempted !== documentId || loadingId === documentId)) return <DocumentEditorSkeleton />;
+  // The fetch failed (deleted, someone else's, bad link): DocumentEditor would refetch on mount and loop.
+  if (!document) return <DocumentNotFound documentId={documentId} />;
 
   if (isAssessmentDoc(document)) {
     return (

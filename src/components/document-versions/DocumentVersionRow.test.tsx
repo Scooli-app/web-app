@@ -9,6 +9,7 @@ vi.mock("next-intl", async () => {
   return {
     useTranslations: () => (key: string) => key,
     useFormatter: () => formatter,
+    useNow: () => new Date(),
   };
 });
 

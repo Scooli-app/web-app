@@ -15,7 +15,7 @@ import { useState } from "react";
 import { PHONE_TOUCH, useAssessmentEditor } from "./context";
 import { ExerciseEditor, ReadingEditor } from "./ExerciseEditor";
 import { ExerciseView, ReadingView } from "./ExerciseView";
-import { EXERCISE_TYPES } from "./model";
+import { EXERCISE_TYPES, MAX_ITEMS, MAX_TEXT } from "./model";
 
 export interface SectionActions {
   updateSection: (patch: Partial<AssessmentSection>) => void;
@@ -43,6 +43,7 @@ export function SectionBlock({ section, subtotal, numbers, selectedId, onSelect,
   const { studentView } = useAssessmentEditor();
   const { setNodeRef } = useDroppable({ id: `section:${section.id}` });
   const [editingHeading, setEditingHeading] = useState(false);
+  const full = section.items.length >= MAX_ITEMS;
 
   return (
     <section className="mt-6 first:mt-5">
@@ -51,6 +52,7 @@ export function SectionBlock({ section, subtotal, numbers, selectedId, onSelect,
           <Input
             autoFocus
             value={section.title}
+            maxLength={MAX_TEXT}
             placeholder={t("section.titlePlaceholder")}
             onChange={(e) => actions.updateSection({ title: e.target.value })}
             onBlur={() => setEditingHeading(false)}
@@ -80,7 +82,7 @@ export function SectionBlock({ section, subtotal, numbers, selectedId, onSelect,
                   <Pencil className="h-4 w-4" />
                   {t("section.titlePlaceholder")}
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={actions.addReading} className="gap-2">
+                <DropdownMenuItem onClick={actions.addReading} disabled={full} className="gap-2">
                   <BookOpen className="h-4 w-4" />
                   {t("section.addReading")}
                 </DropdownMenuItem>
@@ -105,6 +107,7 @@ export function SectionBlock({ section, subtotal, numbers, selectedId, onSelect,
           rows={1}
           ref={growWithoutFieldSizing}
           value={section.instructions ?? ""}
+          maxLength={MAX_TEXT}
           placeholder={t("section.instructionsPlaceholder")}
           onKeyDown={(e) => e.key === "Enter" && e.preventDefault()}
           onInput={(e) => growWithoutFieldSizing(e.currentTarget)}
@@ -132,9 +135,9 @@ export function SectionBlock({ section, subtotal, numbers, selectedId, onSelect,
       {!studentView && (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="mt-1 h-7 gap-1 px-2 font-sans text-xs text-muted-foreground hover:text-primary">
+            <Button variant="ghost" size="sm" disabled={full} title={full ? t("section.full", { max: MAX_ITEMS }) : undefined} className="mt-1 h-7 gap-1 px-2 font-sans text-xs text-neutral-500 hover:bg-neutral-100 hover:text-primary dark:hover:bg-neutral-100">
               <Plus className="h-3.5 w-3.5" />
-              {t("section.addExercise")}
+              {full ? t("section.full", { max: MAX_ITEMS }) : t("section.addExercise")}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className={cn("w-56", PHONE_TOUCH)}>
@@ -175,6 +178,8 @@ function SortableItem({ item, number, selected, onSelect, onlyItem, actions }: {
       className={cn("relative", isDragging && "opacity-40")}
     >
       <div
+        // A4Page breaks its page guides between these, as the files keep an exercise on one page.
+        data-page-item
         // Mouse shortcut only; keyboard users reach the same action through the toolbar's "Editar" button.
         onClick={() => !studentView && !selected && onSelect(item.id)}
         className={cn(
@@ -220,9 +225,9 @@ function SortableItem({ item, number, selected, onSelect, onlyItem, actions }: {
       {selected && !studentView && !phone && (
         <div className="mt-2 mb-3">
           {item.kind === "exercise" ? (
-            <ExerciseEditor exercise={item} number={number} onChange={actions.updateItem} onClose={() => onSelect(null)} />
+            <ExerciseEditor className="paper-light" exercise={item} number={number} onChange={actions.updateItem} onClose={() => onSelect(null)} />
           ) : (
-            <ReadingEditor item={item} onChange={actions.updateItem} onClose={() => onSelect(null)} />
+            <ReadingEditor className="paper-light" item={item} onChange={actions.updateItem} onClose={() => onSelect(null)} />
           )}
         </div>
       )}

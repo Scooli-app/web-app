@@ -192,10 +192,10 @@ describe("loading and visibility", () => {
     expect(load).not.toHaveBeenCalled();
   });
 
-  it("loads up to 20 pending check-ins when the flag is on", async () => {
+  it("loads up to 100 pending check-ins (the API maximum) when the flag is on", async () => {
     const load = vi.fn().mockResolvedValue([item("a")]);
     await expect(loadPendingCheckIns(true, load)).resolves.toHaveLength(1);
-    expect(load).toHaveBeenCalledWith(20);
+    expect(load).toHaveBeenCalledWith(100);
   });
 
   it("drops items set aside for this session", () => {

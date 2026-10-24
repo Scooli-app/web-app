@@ -54,4 +54,16 @@ describe("getDocumentPreview", () => {
     });
     expect(getDocumentPreview(json)).toBe("O Ciclo da Água · Evaporação");
   });
+
+  it("lists the first questions of a structured test, maths elided, never the JSON", () => {
+    const json = JSON.stringify({
+      schemaVersion: 1,
+      documentType: "test",
+      sections: [
+        { items: [{ kind: "reading", title: "Texto A", body: "…" }, { kind: "exercise", prompt: "Quanto é $\\frac{1}{2}$?" }] },
+        { items: [{ kind: "exercise", prompt: "Explica." }, { kind: "exercise", prompt: "Não aparece." }] },
+      ],
+    });
+    expect(getDocumentPreview(json)).toBe("Texto A · Quanto é …? · Explica.");
+  });
 });
