@@ -34,16 +34,17 @@ function loadImage(src: string) {
  * the page stylesheet does not apply, but a bare <math> node renders natively
  * in Chromium's MathML engine — giving a visible, self-contained formula.
  */
-function extractMathMarkup(html: string) {
+function extractMathMarkup(html: string, display: "block" | "inline" = "block") {
   const doc = new window.DOMParser().parseFromString(html, "text/html");
   const mathNode = doc.querySelector("math");
   if (!mathNode) return html;
   mathNode.removeAttribute("class");
-  mathNode.setAttribute("display", "block");
+  mathNode.setAttribute("display", display);
   return mathNode.outerHTML;
 }
 
-async function renderSvgMarkupToPngDataUrl(markup: string, color: string, pixelHeight: number) {
+/** `fontSizePx` renders at that font size (inline maths beside text); otherwise the formula is scaled to `pixelHeight`. */
+async function renderSvgMarkupToPngDataUrl(markup: string, color: string, pixelHeight: number, fontSizePx?: number) {
   // 1) Measure the formula's natural aspect ratio at a reference font size.
   const REF_FONT = 64;
   const measure = document.createElement("div");
@@ -66,9 +67,12 @@ async function renderSvgMarkupToPngDataUrl(markup: string, color: string, pixelH
   // 2) Render the SVG at the FINAL target size (no raster upscaling), with a
   //    2x device-pixel supersample for crisp edges.
   const SS = 2;
-  const fontSize = (REF_FONT * pixelHeight) / refHeight;
-  const width = Math.max(1, Math.ceil((refWidth * pixelHeight) / refHeight));
-  const height = Math.max(1, Math.ceil(pixelHeight));
+  const targetHeight = fontSizePx ? (refHeight * fontSizePx) / REF_FONT : pixelHeight;
+  const fontSize = (REF_FONT * targetHeight) / refHeight;
+  // inline: a little slack on the right, or the last glyph can be clipped at small sizes
+  const slack = fontSizePx ? Math.ceil(fontSizePx * 0.15) : 0;
+  const width = Math.max(1, Math.ceil((refWidth * targetHeight) / refHeight) + slack);
+  const height = Math.max(1, Math.ceil(targetHeight));
   const svg = [
     `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">`,
     "<foreignObject width=\"100%\" height=\"100%\">",
@@ -151,5 +155,28 @@ export async function renderKatexToPngDataUrl(
     return await renderSvgMarkupToPngDataUrl(markup, color, pixelHeight);
   } catch {
     return renderPlainTextToPngDataUrl(tex, color, pixelHeight);
+  }
+}
+
+/** Inline maths (`$…$` inside slide text) at the text's font size, in text style. */
+export async function renderInlineKatexToPngDataUrl(
+  tex: string,
+  opts: { color: string; fontSizePx: number },
+): Promise<{ dataUrl: string; width: number; height: number }> {
+  const fontSizePx = Math.max(1, opts.fontSizePx);
+  if (typeof window === "undefined" || typeof document === "undefined") {
+    return { dataUrl: "", width: fontSizePx, height: fontSizePx };
+  }
+  try {
+    const html = katex.renderToString(tex, {
+      throwOnError: false,
+      displayMode: false,
+      output: "mathml",
+      maxSize: 10,
+      maxExpand: 100,
+    });
+    return await renderSvgMarkupToPngDataUrl(extractMathMarkup(html, "inline"), opts.color, fontSizePx, fontSizePx);
+  } catch {
+    return renderPlainTextToPngDataUrl(tex, opts.color, fontSizePx * 1.2);
   }
 }

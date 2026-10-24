@@ -20,7 +20,8 @@ import type {
 } from "@/shared/types/canvas-presentation";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
-import { Ellipse, Image as KonvaImage, Layer, Line, Rect, Stage, Text } from "react-konva";
+import { Ellipse, Image as KonvaImage, Layer, Line, Rect, Stage } from "react-konva";
+import { SlideText } from "@/components/document-editor-v2/InlineMathText";
 import { listItemPrefix } from "@/shared/utils/list-markers";
 
 const THUMB_W = 160;
@@ -110,7 +111,7 @@ export function SlideThumbnail({ slide, index, isActive, onClick, w = THUMB_W, h
             if (el.type === "text") {
               const t = el as CanvasTextElement;
               return (
-                <Text
+                <SlideText
                   key={el.id}
                   x={el.x * w + el.w * w / 2}
                   y={el.y * h + el.h * h / 2}
@@ -140,7 +141,7 @@ export function SlideThumbnail({ slide, index, isActive, onClick, w = THUMB_W, h
                 .map((item, i) => `${listItemPrefix(el.type === "ordered_list", l.items, i)}${item}`)
                 .join("\n");
               return (
-                <Text
+                <SlideText
                   key={el.id}
                   x={el.x * w + el.w * w / 2}
                   y={el.y * h + el.h * h / 2}
