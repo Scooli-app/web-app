@@ -269,7 +269,8 @@ function ShareButtonComponent({
             >
               {statusIcon}
               <span className="hidden sm:inline">{statusLabel}</span>
-              <ChevronDown className="h-3.5 w-3.5 opacity-70" />
+              {/* Phone: icon only, like the other header actions. */}
+              <ChevronDown className="h-3.5 w-3.5 opacity-70 max-md:hidden" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
@@ -321,6 +322,7 @@ function ShareButtonComponent({
           size="sm"
           disabled={isDisabled}
           onClick={openShareModal}
+          aria-label={isSharing ? t("sharing") : t("share")}
           className={`flex items-center gap-2 ${className}`}
         >
           <Share2 className="h-4 w-4" />

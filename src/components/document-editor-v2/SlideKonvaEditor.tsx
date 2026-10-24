@@ -42,6 +42,8 @@ import type Konva from "konva";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useImperativeHandle, useRef, useState, forwardRef } from "react";
 import { Ellipse, Group, Image as KonvaImage, Layer, Line, Rect, Stage, Text, Transformer } from "react-konva";
+import { SlideText } from "@/components/document-editor-v2/InlineMathText";
+import { hasInlineMath, inlineMathIndexAt, type InlineMathStyle } from "@/components/document-editor-v2/inline-math";
 import { listItemPrefix } from "@/shared/utils/list-markers";
 
 /* --------------------------------------------------------------------------
@@ -94,6 +96,38 @@ function getTextLikeFontFamily(el: CanvasTextElement | CanvasListElement) {
 
 function getTextLikeLineHeight(el: CanvasTextElement | CanvasListElement) {
   return el.lineHeight ?? TEXT_LINE_HEIGHT;
+}
+
+/** A text element's inline-maths style at slide width `W`, as SlideText draws it. */
+function textMathStyle(t: CanvasTextElement, W: number): InlineMathStyle {
+  return {
+    fontSizePx: t.fontSize * W,
+    fontFamily: t.fontFamily || T.font,
+    fontStyle: t.fontStyle,
+    color: t.color,
+    align: t.align,
+    lineHeight: getTextLikeLineHeight(t),
+  };
+}
+
+/** Number of the `$…$` formula under the pointer in `node`'s text, or -1. */
+function formulaAt(node: Konva.Node, text: string, width: number, style: InlineMathStyle) {
+  if (!hasInlineMath(text)) return -1;
+  const p = node.getRelativePointerPosition();
+  return p ? inlineMathIndexAt(text, width, style, p) : -1;
+}
+
+/** The list item and formula under the pointer in a list group, or null. */
+function listFormulaAt(node: Konva.Node, l: CanvasListElement, ordered: boolean, itemOffsets: number[], W: number) {
+  const p = node.getRelativePointerPosition();
+  if (!p) return null;
+  let item = -1;
+  itemOffsets.forEach((offset, i) => { if (p.y >= offset) item = i; });
+  if (item < 0) return null;
+  const style = { fontSizePx: l.fontSize * W, fontFamily: getTextLikeFontFamily(l), color: l.color, lineHeight: getTextLikeLineHeight(l) };
+  const text = `${listItemPrefix(ordered, l.items, item)}${l.items[item]}`;
+  const index = hasInlineMath(text) ? inlineMathIndexAt(text, l.w * W, style, { x: p.x, y: p.y - itemOffsets[item] }) : -1;
+  return index >= 0 ? { item, index } : null;
 }
 
 function gradientProps(g: CanvasGradient, W: number, H: number, OX = 0, OY = 0) {
@@ -331,8 +365,11 @@ export const SlideKonvaEditor = forwardRef<
     onSelectionChange?: (id: string | null) => void;
     /** Called when the user clicks the change-image button on an image element. */
     onChangeImage?: (elementId: string) => void;
-    /** Called when a math element is double-clicked, to open the formula modal. */
-    onEditMath?: (elementId: string) => void;
+    /**
+     * Called when a math element, or a `$…$` formula inside a text or list, is double-clicked, to open the
+     * formula modal. `inline` is that formula's position: list item (lists only) and its number in the text.
+     */
+    onEditMath?: (elementId: string, inline?: { item?: number; index: number }) => void;
   }
 >(function SlideKonvaEditor({ slide, onChange, onSelectionChange, onChangeImage, onEditMath }, ref) {
   const t = useTranslations("editor.slideKonvaEditor");
@@ -1149,7 +1186,7 @@ export const SlideKonvaEditor = forwardRef<
               if (el.type === "text") {
                 const t = el as CanvasTextElement;
                 return (
-                  <Text
+                  <SlideText
                     key={el.id}
                     id={el.id}
                     x={el.x * W + OX + el.w * W / 2}
@@ -1185,13 +1222,17 @@ export const SlideKonvaEditor = forwardRef<
                       e.cancelBubble = true;
                       setSelectedId(el.id);
                       const node = stageRef.current?.findOne(`#${el.id}`);
-                      if (node) startEdit(el.id, node, t.text);
+                      const formula = node ? formulaAt(node, t.text, el.w * W, textMathStyle(t, W)) : -1;
+                      if (formula >= 0) onEditMath?.(el.id, { index: formula });
+                      else if (node) startEdit(el.id, node, t.text);
                     }}
                     onDblTap={(e: Konva.KonvaEventObject<TouchEvent>) => {
                       e.cancelBubble = true;
                       setSelectedId(el.id);
                       const node = stageRef.current?.findOne(`#${el.id}`);
-                      if (node) startEdit(el.id, node, t.text);
+                      const formula = node ? formulaAt(node, t.text, el.w * W, textMathStyle(t, W)) : -1;
+                      if (formula >= 0) onEditMath?.(el.id, { index: formula });
+                      else if (node) startEdit(el.id, node, t.text);
                     }}
                     // Change cursor to text-beam on hover so users know it's editable.
                     onMouseEnter={() => {
@@ -1232,13 +1273,17 @@ export const SlideKonvaEditor = forwardRef<
                       e.cancelBubble = true;
                       setSelectedId(el.id);
                       const node = stageRef.current?.findOne(`#${el.id}`);
-                      if (node) startEdit(el.id, node, getListEditValue(l), true);
+                      const hit = node ? listFormulaAt(node, l, ordered, itemOffsets, W) : null;
+                      if (hit) onEditMath?.(el.id, hit);
+                      else if (node) startEdit(el.id, node, getListEditValue(l), true);
                     }}
                     onDblTap={(e: Konva.KonvaEventObject<TouchEvent>) => {
                       e.cancelBubble = true;
                       setSelectedId(el.id);
                       const node = stageRef.current?.findOne(`#${el.id}`);
-                      if (node) startEdit(el.id, node, getListEditValue(l), true);
+                      const hit = node ? listFormulaAt(node, l, ordered, itemOffsets, W) : null;
+                      if (hit) onEditMath?.(el.id, hit);
+                      else if (node) startEdit(el.id, node, getListEditValue(l), true);
                     }}
                     onMouseEnter={() => {
                       if (!isDraggingRef.current) setStageCursor("text");
@@ -1255,7 +1300,7 @@ export const SlideKonvaEditor = forwardRef<
                       strokeEnabled={false}
                     />
                     {l.items.map((item, i) => (
-                    <Text
+                    <SlideText
                         key={i}
                         text={`${listItemPrefix(ordered, l.items, i)}${item}`}
                         x={0}

@@ -1356,6 +1356,60 @@
             "label": "Add a conclusion 📝",
             "message": "Add or improve the document's conclusion."
           }
+        ],
+        "assessment": [
+          {
+            "label": "Make it easier",
+            "message": "Make the test easier and keep the points adding up."
+          },
+          {
+            "label": "Add an extended-answer question",
+            "message": "Add an extended-answer question to the last section and rebalance the points."
+          },
+          {
+            "label": "Balance the points",
+            "message": "Balance the points according to how hard each question is."
+          },
+          {
+            "label": "Make a shorter version",
+            "message": "Make a shorter version of this document with fewer questions."
+          }
+        ],
+        "assessmentWorksheet": [
+          {
+            "label": "Make it easier",
+            "message": "Make the worksheet easier, with more guided exercises."
+          },
+          {
+            "label": "Add exercises",
+            "message": "Add three more exercises to the last section."
+          },
+          {
+            "label": "Mix the exercise types",
+            "message": "Mix the exercise types, with fill-in-the-gaps and matching."
+          },
+          {
+            "label": "Make a shorter version",
+            "message": "Make a shorter version of this worksheet with fewer exercises."
+          }
+        ],
+        "assessmentQuiz": [
+          {
+            "label": "Make it easier",
+            "message": "Make the quiz easier."
+          },
+          {
+            "label": "Add questions",
+            "message": "Add five more questions to the quiz."
+          },
+          {
+            "label": "Explain the answers",
+            "message": "Add a short explanation to each correct answer."
+          },
+          {
+            "label": "Mix the question types",
+            "message": "Mix the question types, with true or false and short answer."
+          }
         ]
       },
       "generatingPlaceholder": "Chat is available once the document is ready."
@@ -1980,6 +2034,7 @@
       "reuseSuccess": "Added to your documents",
       "reuseError": "Couldn't reuse this resource",
       "previewComingSoon": "Preview coming soon",
+      "previewDescription": "Read-only preview, as students get it. Shared by {name}.",
       "shareOrgSuccess": "Resource shared with your school library.",
       "shareCommunitySuccess": "Resource submitted for review — you'll be notified within 24–48 hours.",
       "shareError": "Couldn't share this resource"
@@ -2466,35 +2521,35 @@
       "defaultTitle": "New Lesson Plan",
       "generateMessage": "Generate lesson plan",
       "chatTitle": "Plan Assistant",
-      "chatPlaceholder": "Ask something or request changes to the plan..."
+      "chatPlaceholder": "Ask for a change…"
     },
     "worksheet": {
       "loading": "Loading worksheet...",
       "defaultTitle": "New Worksheet",
       "generateMessage": "Generate worksheet",
       "chatTitle": "Worksheet Assistant",
-      "chatPlaceholder": "Ask something or request changes to the worksheet..."
+      "chatPlaceholder": "Ask for a change…"
     },
     "test": {
       "loading": "Loading test...",
       "defaultTitle": "New Test",
       "generateMessage": "Generate test",
       "chatTitle": "Test Assistant",
-      "chatPlaceholder": "Ask something or request changes to the test..."
+      "chatPlaceholder": "Ask for a change…"
     },
     "quiz": {
       "loading": "Loading quiz...",
       "defaultTitle": "New Quiz",
       "generateMessage": "Generate quiz",
       "chatTitle": "Quiz Assistant",
-      "chatPlaceholder": "Ask something or request changes to the quiz..."
+      "chatPlaceholder": "Ask for a change…"
     },
     "curriculumPlan": {
       "loading": "Loading curriculum plan...",
       "defaultTitle": "New Curriculum Plan",
       "generateMessage": "Generate curriculum plan",
       "chatTitle": "Curriculum Plan Assistant",
-      "chatPlaceholder": "Ask something or request changes to the curriculum plan..."
+      "chatPlaceholder": "Ask for a change…"
     }
   },
   "support": {
@@ -3409,7 +3464,40 @@
       "themeChange": "Theme: {before} → {after}",
       "formatChanged": "The presentation changed format since this suggestion was made.",
       "refresh": "Update suggestion",
-      "refreshError": "Could not update the suggestion. Try again."
+      "refreshError": "Could not update the suggestion. Try again.",
+      "assessment": {
+        "settings": "Document settings",
+        "group": "Section",
+        "reading": "Reading passage",
+        "exercise": "Question {number}",
+        "exerciseNoNumber": "Question",
+        "unreadable": "This part can't be shown.",
+        "pointsOnly": "Only the points change: {before, number} → {after, number} pts",
+        "otherSettings": "Other header settings",
+        "field": {
+          "title": "Title",
+          "instructions": "Instructions",
+          "targetTotal": "Total",
+          "school": "School",
+          "gradeClass": "Class",
+          "duration": "Duration (min)"
+        },
+        "unchangedCount": "{count, plural, one {# question unchanged} other {# questions unchanged}}",
+        "saveFirst": "Your edits couldn't be saved. Try again before applying.",
+        "reviewAgain": "Your latest edits were saved. Check the suggestion again before applying.",
+        "invalidMerge": "These changes don't make a valid document on their own. Also pick the related changes.",
+        "whatChanges": "Changes: {parts}",
+        "part": {
+          "type": "question type",
+          "prompt": "question text",
+          "content": "options and items",
+          "answer": "answers",
+          "points": "points",
+          "notes": "explanation and criteria",
+          "media": "image",
+          "goals": "curriculum goals"
+        }
+      }
     },
     "chip": {
       "suggestionDot": "New suggested version"
@@ -3525,5 +3613,269 @@
     "preparing": "Preparing…",
     "topicBadge": "New topic",
     "chip": "{count} to review"
+  },
+  "assessmentEditor": {
+    "studentView": "Student version",
+    "studentViewHint": "Shows exactly what students get: no answers, explanations, marking criteria or goals.",
+    "export": "Export",
+    "saving": "Saving…",
+    "saved": "Saved",
+    "unsaved": "Unsaved changes",
+    "saveFailed": "Couldn't save. Your changes are still here: check the exercise you edited and try again.",
+    "retrySave": "Try again",
+    "dismiss": "Dismiss",
+    "generatingTitle": "Creating your document…",
+    "generatingSubtitle": "This takes about 30 to 60 seconds. You can wait here.",
+    "generationFailedTitle": "We couldn't create this document.",
+    "generationFailedSubtitle": "Try creating it again from your documents.",
+    "loadFailedTitle": "We couldn't open this document.",
+    "backToDocuments": "Back to documents",
+    "retry": "Try again",
+    "chatError": "The assistant couldn't reply. Try again.",
+    "chatUpdated": "I've updated the document.",
+    "imageGenerating": "Generating the image…",
+    "imageFailed": "Couldn't get the image. Try again.",
+    "page": "page {page} of {total}",
+    "points": "{points, number} pts",
+    "totals": {
+      "total": "Total: {total, number} / {target, number} pts",
+      "onTarget": "Points add up",
+      "under": "{diff, plural, one {# pt short} other {# pts short}}",
+      "over": "{diff, plural, one {# pt over} other {# pts over}}",
+      "questions": "{count, plural, one {# question} other {# questions}}",
+      "goals": "{count, plural, =0 {no learning goals} one {# learning goal} other {# learning goals}}",
+      "goalsTitle": "Learning goals covered",
+      "goalQuestions": "{count, plural, one {Question {numbers}} other {Questions {numbers}}}",
+      "goalsEmpty": "No exercise has a learning goal yet.",
+      "withoutGoal": "{count, plural, one {# exercise without a goal} other {# exercises without a goal}}"
+    },
+    "ae": {
+      "prefix": "Goal",
+      "unavailable": "Goal unavailable",
+      "loading": "Loading goal…",
+      "add": "Add goal",
+      "remove": "Remove goal",
+      "searchPlaceholder": "Search learning goals…",
+      "noResults": "No goals found.",
+      "searchError": "Couldn't search goals. Try again.",
+      "needsContext": "This document has no subject and year set, so goals can't be searched.",
+      "limit": "Each exercise can have up to 5 goals."
+    },
+    "header": {
+      "school": "School",
+      "class": "Class",
+      "name": "Name",
+      "number": "No.",
+      "date": "Date",
+      "duration": "Time",
+      "grade": "Grade",
+      "teacher": "Teacher",
+      "guardian": "Parent/guardian",
+      "durationValue": "{minutes} min",
+      "edit": "Edit header",
+      "add": "Add header",
+      "fieldsLabel": "Fields to show",
+      "schoolPlaceholder": "School name",
+      "classPlaceholder": "E.g. 6B",
+      "durationPlaceholder": "Minutes",
+      "done": "Done",
+      "label": "Header",
+      "editShort": "edit"
+    },
+    "section": {
+      "titlePlaceholder": "Section title",
+      "instructionsPlaceholder": "Instructions for students (optional)",
+      "newTitle": "Part {roman}",
+      "subtotal": "{points, number} pts",
+      "addExercise": "Add exercise",
+      "addReading": "Add reading passage",
+      "addGroup": "Add section",
+      "deleteGroup": "Delete section",
+      "menu": "Section options",
+      "lastGroup": "The document needs at least one section."
+    },
+    "item": {
+      "edit": "Edit",
+      "drag": "Drag to reorder",
+      "duplicate": "Duplicate",
+      "delete": "Delete",
+      "moveUp": "Move up",
+      "moveDown": "Move down",
+      "lastItem": "A section needs at least one item. Delete the section instead.",
+      "emptyPrompt": "No question text yet",
+      "readingDefaultTitle": "Reading passage",
+      "readingTitle": "Title (optional)",
+      "readingBody": "Text",
+      "imageAlt": "Exercise image"
+    },
+    "types": {
+      "multiple_choice": "Multiple choice",
+      "true_false": "True or false",
+      "fill_gaps": "Fill in the gaps",
+      "matching": "Matching",
+      "ordering": "Ordering",
+      "short_answer": "Short answer",
+      "long_answer": "Long answer",
+      "calculation": "Calculation",
+      "table_completion": "Complete the table",
+      "classify": "Classify",
+      "wordsearch": "Word search",
+      "label_image": "Label the picture"
+    },
+    "view": {
+      "answer": "Answer",
+      "explanation": "Explanation",
+      "criteria": "Marking criteria",
+      "trueFalseBlank": "T / F",
+      "correction": "Correction: {text}",
+      "wordBank": "Word bank",
+      "words": "Words to find",
+      "gridOnSave": "The grid updates once your changes are saved."
+    },
+    "editor": {
+      "title": "Edit exercise {number}",
+      "readingTitle": "Edit reading passage",
+      "type": "Type",
+      "prompt": "Question",
+      "promptGapsHint": "Type ___ (three underscores) wherever students fill in a word.",
+      "preview": "Preview",
+      "options": "Options",
+      "addOption": "Add option",
+      "removeOption": "Remove",
+      "markCorrect": "Mark as correct",
+      "multipleCorrect": "More than one correct answer",
+      "statements": "Statements",
+      "addStatement": "Add statement",
+      "trueShort": "T",
+      "falseShort": "F",
+      "correctionPlaceholder": "Correction for a false statement (optional)",
+      "gaps": "Gap answers",
+      "gapN": "Gap {n}",
+      "noGaps": "There are no gaps (___) in the question yet.",
+      "wordBank": "Word bank (optional)",
+      "addWord": "Add word",
+      "wordsHint": "Up to {max} words of at most {letters} letters. Accents and spaces are left out of the grid.",
+      "wordNotInGrid": "This word won't go into the grid (repeated or under 2 letters).",
+      "wordN": "Word {n}",
+      "words": "Words",
+      "leftColumn": "Column A",
+      "rightColumn": "Column B",
+      "addItem": "Add item",
+      "pairs": "Correct matches",
+      "pairNone": "No match",
+      "items": "Items (in the order shown)",
+      "correctOrder": "Correct order",
+      "moveUp": "Move up",
+      "moveDown": "Move down",
+      "modelAnswer": "Model answer",
+      "criteria": "Marking criteria (optional)",
+      "addCriterion": "Add level",
+      "criterionLevel": "Level",
+      "criterionPoints": "Pts",
+      "criterionDescriptor": "Descriptor",
+      "explanation": "Explanation for the answer key (optional)",
+      "points": "Points",
+      "pointsPlaceholder": "No points",
+      "answerSpace": "Answer space",
+      "spaceLines": "Lines",
+      "spaceBox": "Box",
+      "spaceNone": "None",
+      "lineCount": "Number of lines",
+      "image": "Image",
+      "addImage": "Add image",
+      "replaceImage": "Replace image",
+      "removeImage": "Remove image",
+      "goals": "Learning goals",
+      "close": "Done",
+      "labels": "Numbers on the picture",
+      "pinHint": "Pick a number, then tap the picture to place it. Unplaced numbers only show in the list.",
+      "labelsNeedImage": "Add a picture to place the numbers.",
+      "placePin": "Place number {n} on the picture",
+      "selectPin": "Pick number {n}",
+      "pinPlaced": "Placed on the picture",
+      "labelHint": "Clue for the student (optional)",
+      "labelAnswer": "Answer",
+      "addLabel": "Add a number",
+      "table": "Table",
+      "tableHint": "Mark the cells students fill in as blanks and type the answer in them. Up to {cols} columns and {rows} rows.",
+      "headerN": "Column {n}",
+      "cellAnswer": "Answer",
+      "markBlank": "Mark as blank",
+      "unmarkBlank": "Unmark blank",
+      "addRow": "Add row",
+      "addColumn": "Add column",
+      "removeRow": "Remove row",
+      "removeColumn": "Remove column",
+      "addTable": "Create table",
+      "categories": "Boxes",
+      "categoryN": "Box {n}",
+      "addCategory": "Add box",
+      "addCategories": "Create boxes",
+      "classifyItems": "Items to sort",
+      "itemN": "Item {n}",
+      "itemCategory": "Item's box",
+      "noCategory": "No box"
+    },
+    "versionPreviewEmpty": "This version has no exercises.",
+    "chatSaveFirst": "Couldn't save your changes; try again before using the assistant.",
+    "shareSaveFirst": "Your changes couldn't be saved. Try again before sharing.",
+    "titleSaveFailed": "Couldn't save the title. Try again.",
+    "chatLocked": "The assistant is revising the document…",
+    "chatButton": "Chat",
+    "missing": {
+      "answer": "Model answer missing",
+      "correct": "Correct option not marked",
+      "truth": "True/false not set",
+      "pairs": "Correct matches missing",
+      "order": "Correct order missing",
+      "gaps": "Gap answers missing",
+      "options": "Needs at least 2 options",
+      "labels": "Add at least one number to the picture",
+      "image": "The picture to label is missing",
+      "pins": "Place the numbers on the picture",
+      "words": "Add at least 3 words",
+      "blanks": "Mark at least one cell as a blank",
+      "cells": "Some blanks in the table have no answer",
+      "categories": "Needs at least 2 boxes",
+      "classes": "Some items have no box yet"
+    },
+    "exportDialog": {
+      "title": {
+        "test": "Export test",
+        "worksheet": "Export worksheet",
+        "quiz": "Export quiz"
+      },
+      "subtitle": "Both files are generated together. Download either or both.",
+      "formatLabel": "File format",
+      "files": {
+        "test": {
+          "student": "Test",
+          "teacher": "Marking guide"
+        },
+        "worksheet": {
+          "student": "Worksheet",
+          "teacher": "Answer key"
+        },
+        "quiz": {
+          "student": "Quiz",
+          "teacher": "Answers"
+        }
+      },
+      "forStudents": "For your students",
+      "forYou": "For you",
+      "preparing": "Preparing the files…",
+      "download": "Download",
+      "downloadBoth": "Download both",
+      "busy": {
+        "test": "Wait for the chat to finish editing the test.",
+        "worksheet": "Wait for the chat to finish editing the worksheet.",
+        "quiz": "Wait for the chat to finish editing the quiz."
+      },
+      "saveFailed": "Your latest changes couldn't be saved. Try again so the files match what you see.",
+      "failed": "The files couldn't be generated.",
+      "revising": "We're updating this document. Try exporting again in a minute.",
+      "rateLimited": "That's a lot of exports in a short time. Wait a minute and try again.",
+      "retry": "Try again"
+    }
   }
 }

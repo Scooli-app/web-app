@@ -18,8 +18,11 @@ test("o formulário aberto a partir de uma aula fica ligado a essa aula", async 
   await page.waitForURL(/\/quiz\/[0-9a-f-]{36}/, { timeout: 30_000 });
   const documentId = page.url().split("/quiz/")[1].split(/[?#]/)[0];
 
-  // The editor says which turma and lesson the document is for.
-  await expect(page.getByRole("link", { name: new RegExp(`^2\\.º Matemática · Aula ${lesson.sequenceNumber} · `) })).toBeVisible();
+  // The editor says which turma and lesson the document is for (the link's name starts with its "Faz parte de uma
+  // aula" caption).
+  await expect(
+    page.getByRole("link", { name: new RegExp(`^Faz parte de uma aula 2\\.º Matemática · Aula ${lesson.sequenceNumber} · `) }),
+  ).toBeVisible();
 
   const docs = await api.listLessonDocuments(timetable.id, lesson.id);
   expect(docs).toEqual(expect.arrayContaining([expect.objectContaining({ documentId, documentRole: "quiz" })]));

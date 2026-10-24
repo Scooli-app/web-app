@@ -13,7 +13,7 @@ import {
   getDocumentVersions,
   restoreDocumentVersion,
 } from "@/services/api/document.service";
-import type { Document } from "@/shared/types";
+import type { Document, DocumentType } from "@/shared/types";
 import { isCanvasPresentation, type CanvasPresentation } from "@/shared/types/canvas-presentation";
 import { parsePresentationDocument } from "@/shared/types/blocks";
 import type { DocumentVersionDetail, DocumentVersionSummary } from "@/shared/types/document-versions";
@@ -24,10 +24,14 @@ import { useCallback, useEffect, useState } from "react";
 import Markdown from "react-markdown";
 import remarkBreaks from "remark-breaks";
 import { toast } from "sonner";
+import { isAssessmentDoc } from "@/lib/documents/kind";
+import { AssessmentVersionPreview } from "@/components/assessment-editor/AssessmentVersionPreview";
 import { DocumentVersionRestoreButton, DocumentVersionRow } from "./DocumentVersionRow";
 
 interface Props {
   documentId: string;
+  /** Needed to tell a presentation preview from an assessment one (both are json). */
+  documentType?: DocumentType;
   /** Called with the restored document; the editor swaps its content for it. */
   onRestored: (document: Document) => void;
 }
@@ -49,7 +53,7 @@ function parsePresentationVersion(content: string): CanvasPresentation | null {
  * "Versões" button for the document editors. Opens a sheet with the history,
  * a read-only preview of the selected version and the restore action.
  */
-export function DocumentVersionsButton({ documentId, onRestored }: Props) {
+export function DocumentVersionsButton({ documentId, documentType, onRestored }: Props) {
   const t = useTranslations("editor.documentVersions");
   const format = useFormatter();
 
@@ -191,7 +195,9 @@ export function DocumentVersionsButton({ documentId, onRestored }: Props) {
                 )}
 
                 {previewStatus === "ready" && preview && (
-                  preview.contentFormat === "json" ? (
+                  isAssessmentDoc({ documentType, contentFormat: preview.contentFormat }) ? (
+                    <AssessmentVersionPreview content={preview.content} />
+                  ) : preview.contentFormat === "json" ? (
                     <PresentationPreview content={preview.content} />
                   ) : (
                     <div className="max-h-[50dvh] overflow-y-auto rounded-lg border border-border bg-background p-4 text-sm leading-relaxed text-foreground [&_h1]:mb-2 [&_h1]:text-base [&_h1]:font-semibold [&_h2]:mb-2 [&_h2]:font-semibold [&_h3]:font-semibold [&_li]:ml-4 [&_ol]:list-decimal [&_p]:mb-3 [&_ul]:list-disc">

@@ -166,6 +166,9 @@ function renderTokens(tokens: Token[]): ReactNode[] {
           html = katex.renderToString(token.tex, {
             throwOnError: false,
             displayMode: false,
+            // Caps on what one formula may cost: \rule/\kern sizes (em) and macro expansions.
+            maxSize: 10,
+            maxExpand: 100,
           });
         } catch {
           // Fall back to raw text rather than crashing the slide.

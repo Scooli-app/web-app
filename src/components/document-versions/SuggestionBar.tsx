@@ -17,6 +17,10 @@ export interface SuggestionBarProps {
   /** The document's pending suggestion, or null/undefined when there is none. */
   suggestion: PendingSuggestion | null | undefined;
   contentFormat: SuggestionContentFormat;
+  /** The document's type; only presentations get the slide view of a JSON suggestion. */
+  documentType?: Document["documentType"];
+  /** Saves the editor's unsaved edits before the review loads and before an apply ("saved": something was saved). */
+  flushEdits?: () => Promise<"clean" | "saved" | "failed">;
   /** Runs before the editor content is replaced, so an editor can reset local state (e.g. a canvas). */
   onContentReplaced?: () => void;
   /** The editor was opened from "Por rever" (`?review=1`): the review sheet opens by itself once the suggestion is ready. */
@@ -44,6 +48,8 @@ export function SuggestionBar({
   documentId,
   suggestion,
   contentFormat,
+  documentType,
+  flushEdits,
   onContentReplaced,
   autoOpenReview = false,
 }: SuggestionBarProps) {
@@ -116,6 +122,8 @@ export function SuggestionBar({
           documentId={documentId}
           suggestion={suggestion}
           contentFormat={contentFormat}
+          documentType={documentType}
+          flushEdits={flushEdits}
           onApplied={(doc) => {
             setReviewOpen(false);
             refreshWith(doc);

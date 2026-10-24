@@ -25,6 +25,7 @@ import { getFittedTextBoxHeightPx } from "@/components/document-editor-v2/text-b
 import { measureWrappedTextHeightPx } from "@/components/document-editor-v2/text-measure";
 import { useEffect, useRef, useState } from "react";
 import { Ellipse, Image as KonvaImage, Layer, Line, Rect, Stage, Text } from "react-konva";
+import { SlideText } from "@/components/document-editor-v2/InlineMathText";
 import { listItemPrefix } from "@/shared/utils/list-markers";
 
 interface Props {
@@ -153,7 +154,7 @@ export function CanvasSlideView({ slide }: Props) {
             if (el.type === "text") {
               const t = el as CanvasTextElement;
               return (
-                <Text
+                <SlideText
                   key={el.id}
                   x={el.x * W + el.w * W / 2}
                   y={el.y * H + el.h * H / 2}
@@ -196,7 +197,7 @@ export function CanvasSlideView({ slide }: Props) {
                 .map((item, i) => `${listItemPrefix(el.type === "ordered_list", l.items, i)}${item}`)
                 .join("\n");
               return (
-                <Text
+                <SlideText
                   key={el.id}
                   x={el.x * W + el.w * W / 2}
                   y={el.y * H + el.h * H / 2}

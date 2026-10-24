@@ -26,6 +26,7 @@
  */
 "use client";
 
+import { isPresentationDoc } from "@/lib/documents/kind";
 import { PresentationEditorSkeleton } from "@/components/document-editor-v2/PresentationEditorSkeleton";
 import { SuggestionBar } from "@/components/document-versions/SuggestionBar";
 import AIChatPanel from "@/components/document-editor/AIChatPanel";
@@ -119,6 +120,9 @@ import { SlideThumbnail } from "./SlideThumbnail";
 import { getPresentationToolbarTitleDisplay } from "./presentation-toolbar-title";
 import { ThemePicker } from "./ThemePicker";
 import { renderKatexToPngDataUrl } from "./math-render";
+import { hasInlineMath, inlineMathTex, renderInlineMathBoxPng, replaceInlineMath, splitInlineMath } from "./inline-math";
+import { injectEquations, mathPictureName, mathRunToken, mathTextName } from "./pptx-math";
+import { latexToOmml } from "@/services/api/math.service";
 import { listItemPrefix } from "@/shared/utils/list-markers";
 import { formatImageCredit } from "@/shared/utils/photo-credit";
 
@@ -199,6 +203,62 @@ const DEFAULT_SHAPE_STROKE_WIDTH = 0.004;
 type PdfFontLike = {
   widthOfTextAtSize: (text: string, size: number) => number;
 };
+
+/**
+ * A text or list element whose text carries inline `$…$` maths, drawn as a PNG of its box:
+ * native PPTX/PDF text cannot hold formulas. Null for elements without inline maths.
+ * Sizes use a 1280×720 slide, the same fractions the canvas uses.
+ */
+async function inlineMathElementPng(el: CanvasElement) {
+  const isList = el.type === "bullet_list" || el.type === "ordered_list";
+  if (el.type !== "text" && !isList) return null;
+  const t = el as CanvasTextElement | CanvasListElement;
+  const text = isList
+    ? (t as CanvasListElement).items
+        .map((item, i, items) => `${listItemPrefix(el.type === "ordered_list", items, i)}${item}`)
+        .join("\n")
+    : (t as CanvasTextElement).text;
+  if (!hasInlineMath(text)) return null;
+  const W = 1280;
+  const H = 720;
+  const rendered = await renderInlineMathBoxPng(text, el.w * W, el.h * H, {
+    fontSizePx: t.fontSize * W,
+    fontFamily: t.fontFamily || (isList ? "Lato, Inter, system-ui, sans-serif" : "Lexend, Inter, system-ui, sans-serif"),
+    fontStyle: isList ? undefined : (t as CanvasTextElement).fontStyle,
+    color: t.color,
+    align: isList ? "left" : (t as CanvasTextElement).align,
+    lineHeight: t.lineHeight ?? 1.3,
+  });
+  return rendered && { dataUrl: rendered.dataUrl, hFrac: rendered.heightPx / H };
+}
+
+/** The `$…$` formulas of a text or list element, in order. */
+function elementFormulas(el: CanvasElement): string[] {
+  const texts =
+    el.type === "text"
+      ? [(el as CanvasTextElement).text]
+      : el.type === "bullet_list" || el.type === "ordered_list"
+        ? (el as CanvasListElement).items
+        : [];
+  return texts.flatMap((text) => splitInlineMath(text).flatMap((s) => (s.kind === "math" ? [s.tex] : [])));
+}
+
+/** LaTeX the formula modal edits: a math element's, or formula `inline.index` of a text or list item. */
+function editedMathTex(
+  elements: CanvasElement[] | undefined,
+  id: string,
+  inline: { item?: number; index: number } | null,
+): string | undefined {
+  const el = elements?.find((e) => e.id === id);
+  if (!el) return undefined;
+  if (el.type === "math") return (el as CanvasMathElement).tex;
+  if (!inline) return undefined;
+  if (el.type === "text") return inlineMathTex((el as CanvasTextElement).text, inline.index);
+  if (el.type === "bullet_list" || el.type === "ordered_list") {
+    return inlineMathTex((el as CanvasListElement).items[inline.item ?? -1] ?? "", inline.index);
+  }
+  return undefined;
+}
 
 function sanitizeWinAnsiText(text: string): string {
   return text
@@ -522,7 +582,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
 
   /* ── Parse document content → CanvasPresentation ────────────────────── */
   const canvasFromDoc = useMemo<CanvasPresentation | null>(() => {
-    if (!document || document.contentFormat !== "json" || !document.content) return null;
+    if (!document || !isPresentationDoc(document) || !document.content) return null;
     try {
       const raw: unknown = JSON.parse(document.content);
       if (isCanvasPresentation(raw)) {
@@ -555,6 +615,8 @@ export function BlockDocumentEditor({ documentId }: Props) {
   const [formulaModalOpen, setFormulaModalOpen] = useState(false);
   /** Non-null when the formula modal is editing an existing math element. */
   const [editingMathId, setEditingMathId] = useState<string | null>(null);
+  /** Set when that formula is a `$…$` inside a text or list (`item`) rather than a math element. */
+  const [editingInlineMath, setEditingInlineMath] = useState<{ item?: number; index: number } | null>(null);
   /** true = replacing an existing selected image; false = inserting a new one */
   const [imageModalReplacing, setImageModalReplacing] = useState(false);
   const [addSlideMenuOpen, setAddSlideMenuOpen] = useState(false);
@@ -1018,9 +1080,10 @@ export function BlockDocumentEditor({ documentId }: Props) {
   );
 
   /** Open the formula modal to edit an existing math element. */
-  const handleEditMath = useCallback((elementId: string) => {
+  const handleEditMath = useCallback((elementId: string, inline?: { item?: number; index: number }) => {
     setSelectedElementId(elementId);
     setEditingMathId(elementId);
+    setEditingInlineMath(inline ?? null);
     setFormulaModalOpen(true);
   }, []);
 
@@ -1041,11 +1104,23 @@ export function BlockDocumentEditor({ documentId }: Props) {
                 s.id === activeSlideId
                   ? {
                       ...s,
-                      elements: s.elements.map((el) =>
-                        el.id === targetId && el.type === "math"
-                          ? ({ ...el, tex } as CanvasElement)
-                          : el,
-                      ),
+                      elements: s.elements.map((el) => {
+                        if (el.id !== targetId) return el;
+                        if (el.type === "math") return { ...el, tex } as CanvasElement;
+                        if (!editingInlineMath) return el;
+                        if (el.type === "text") {
+                          return { ...el, text: replaceInlineMath(el.text, editingInlineMath.index, tex) } as CanvasElement;
+                        }
+                        if (el.type === "bullet_list" || el.type === "ordered_list") {
+                          return {
+                            ...el,
+                            items: el.items.map((item, i) =>
+                              i === editingInlineMath.item ? replaceInlineMath(item, editingInlineMath.index, tex) : item,
+                            ),
+                          } as CanvasElement;
+                        }
+                        return el;
+                      }),
                     }
                   : s,
               ),
@@ -1054,7 +1129,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
       );
       setDirty(true);
     },
-    [editingMathId, activeSlideId, insertMathElement, pushHistory],
+    [editingMathId, editingInlineMath, activeSlideId, insertMathElement, pushHistory],
   );
 
   const handleGenerateSlide = useCallback(async () => {
@@ -1497,7 +1572,13 @@ export function BlockDocumentEditor({ documentId }: Props) {
       const FS_SCALE = 720;
       let missingImages = 0;
 
-      for (const cs of canvas.slides) {
+      // Inline formulas become native equations: their OMML up front, in one request.
+      const formulas = [...new Set(canvas.slides.flatMap((cs) => cs.elements.flatMap(elementFormulas)))];
+      const omml = await latexToOmml(formulas).catch(() => [] as (string | null)[]);
+      const ommlByTex = new Map(formulas.map((tex, i) => [tex, omml[i] ?? null]));
+      const equationBoxes: { slideNo: number; box: number; omml: string[] }[] = [];
+
+      for (const [slideIndex, cs] of canvas.slides.entries()) {
         const slide = pptx.addSlide();
         slide.background = { fill: toHex6(cs.background) };
         if (cs.notes?.trim()) {
@@ -1510,38 +1591,58 @@ export function BlockDocumentEditor({ documentId }: Props) {
           const w = el.w * SLIDE_W;
           const h = el.h * SLIDE_H;
 
-          if (el.type === "text") {
+          if (el.type === "text" || el.type === "bullet_list" || el.type === "ordered_list") {
             const t = el as CanvasTextElement;
-            slide.addText(sanitizeWinAnsiText(t.text), {
-              x, y, w, h,
-              fontSize: Math.max(8, Math.round(t.fontSize * FS_SCALE)),
-              bold: t.fontStyle.includes("bold"),
-              italic: t.fontStyle.includes("italic"),
-              color: toHex6(t.color),
-              align: t.align as "left" | "center" | "right",
-              fontFace: "Calibri",
-              valign: "top",
-              wrap: true,
-            });
-          } else if (el.type === "bullet_list" || el.type === "ordered_list") {
             const l = el as CanvasListElement;
-            const isOrdered = el.type === "ordered_list";
-            const bulletItems = l.items.map((item, i) => ({
-              text: `${listItemPrefix(isOrdered, l.items, i)}${item}`,
-              options: {},
-            }));
-            const safeBulletItems = bulletItems.map((item) => ({
-              ...item,
-              text: sanitizeWinAnsiText(item.text),
-            }));
-            slide.addText(safeBulletItems, {
+            const isList = el.type !== "text";
+            const paragraphs = isList
+              ? l.items.map((item, i) => `${listItemPrefix(el.type === "ordered_list", l.items, i)}${item}`)
+              : [t.text];
+            const textOptions = {
               x, y, w, h,
-              fontSize: Math.max(8, Math.round(l.fontSize * FS_SCALE)),
-              color: toHex6(l.color),
+              fontSize: Math.max(8, Math.round((isList ? l.fontSize : t.fontSize) * FS_SCALE)),
+              color: toHex6(isList ? l.color : t.color),
               fontFace: "Calibri",
-              valign: "top",
+              valign: "top" as const,
               wrap: true,
+              ...(isList
+                ? {}
+                : {
+                    bold: t.fontStyle.includes("bold"),
+                    italic: t.fontStyle.includes("italic"),
+                    align: t.align as "left" | "center" | "right",
+                  }),
+            };
+            const inlineMath = await inlineMathElementPng(el);
+            if (!inlineMath) {
+              slide.addText(
+                paragraphs.map((text, i) => ({
+                  text: sanitizeWinAnsiText(text),
+                  options: { breakLine: i < paragraphs.length - 1 },
+                })),
+                textOptions,
+              );
+              continue;
+            }
+            const picture = { data: inlineMath.dataUrl, x, y, w, h: inlineMath.hFrac * SLIDE_H, rotate: el.rotation ?? 0 };
+            const boxOmml = elementFormulas(el).map((tex) => ommlByTex.get(tex) ?? null);
+            if (!boxOmml.every((o): o is string => !!o)) {
+              // a formula outside the converter's subset: the whole box stays a picture
+              slide.addImage(picture);
+              continue;
+            }
+            const box = equationBoxes.length;
+            equationBoxes.push({ slideNo: slideIndex + 1, box, omml: boxOmml });
+            let formula = 0;
+            const runs = paragraphs.flatMap((text, pi) => {
+              const segments = splitInlineMath(text);
+              return (segments.length ? segments : [{ kind: "text" as const, text: "" }]).map((seg, si, all) => ({
+                text: seg.kind === "text" ? sanitizeWinAnsiText(seg.text) : mathRunToken(box, formula++),
+                options: { breakLine: si === all.length - 1 && pi < paragraphs.length - 1 },
+              }));
             });
+            slide.addText(runs, { ...textOptions, objectName: mathTextName(box) });
+            slide.addImage({ ...picture, objectName: mathPictureName(box) });
           } else if (el.type === "image_placeholder") {
             const image = el as CanvasImageElement;
             if (!image.url) continue;
@@ -1632,7 +1733,31 @@ export function BlockDocumentEditor({ documentId }: Props) {
 
       const fileName = (document.title || "apresentacao")
         .replace(/[^a-z0-9À-ÿ\s\-]/gi, "").trim().replace(/\s+/g, "_") || "apresentacao";
-      await pptx.writeFile({ fileName: `${fileName}.pptx` });
+      if (equationBoxes.length === 0) {
+        await pptx.writeFile({ fileName: `${fileName}.pptx` });
+      } else {
+        const JSZip = (await import("jszip")).default;
+        const zip = await JSZip.loadAsync((await pptx.write({ outputType: "arraybuffer" })) as ArrayBuffer);
+        for (const slideNo of new Set(equationBoxes.map((b) => b.slideNo))) {
+          const path = `ppt/slides/slide${slideNo}.xml`;
+          let xml = (await zip.file(path)?.async("string")) ?? "";
+          for (const b of equationBoxes.filter((e) => e.slideNo === slideNo)) xml = injectEquations(xml, b.box, b.omml);
+          zip.file(path, xml);
+        }
+        const blob = await zip.generateAsync({
+          type: "blob",
+          mimeType: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        });
+        const url = URL.createObjectURL(blob);
+        const a = window.document.createElement("a");
+        a.href = url;
+        a.download = `${fileName}.pptx`;
+        window.document.body.appendChild(a);
+        a.click();
+        window.document.body.removeChild(a);
+        // Revoking synchronously can cancel the download in Safari/Firefox.
+        window.setTimeout(() => URL.revokeObjectURL(url), 10_000);
+      }
       if (missingImages > 0) {
         toast.warning(t("exportMissingImages", { count: missingImages }));
       } else {
@@ -1668,6 +1793,18 @@ export function BlockDocumentEditor({ documentId }: Props) {
         page.drawRectangle({ x: 0, y: 0, width: PAGE_W, height: PAGE_H, color: rgb(bgC.r, bgC.g, bgC.b) });
 
         for (const el of cs.elements) {
+          const inlineMath = await inlineMathElementPng(el);
+          if (inlineMath) {
+            const embedded = await pdfDoc.embedPng(dataUrlToBytes(inlineMath.dataUrl));
+            page.drawImage(embedded, {
+              x: el.x * PAGE_W,
+              y: PAGE_H - (el.y + inlineMath.hFrac) * PAGE_H,
+              width: el.w * PAGE_W,
+              height: inlineMath.hFrac * PAGE_H,
+              rotate: degrees(el.rotation ?? 0),
+            });
+            continue;
+          }
           if (el.type === "text") {
             const t = el as CanvasTextElement;
             const c = hexToRgb01(t.color);
@@ -1931,6 +2068,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
           documentId={documentId}
           suggestion={document.pendingSuggestion}
           contentFormat="json"
+          documentType={document.documentType}
           autoOpenReview={searchParams.get("review") === "1"}
           onContentReplaced={() => {
             canvasRef.current = null;
@@ -2036,7 +2174,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
 
         {/* ── Right side: Export dropdown + Present ──────────────────── */}
         <div className="ml-auto flex items-center gap-1.5">
-          <DocumentVersionsButton documentId={documentId} onRestored={handleVersionRestored} />
+          <DocumentVersionsButton documentId={documentId} documentType={document?.documentType} onRestored={handleVersionRestored} />
           {canvas.slides.length > 0 && (
           <>
           <DropdownMenu>
@@ -2563,14 +2701,8 @@ export function BlockDocumentEditor({ documentId }: Props) {
       {/* Formula builder modal — insert new, or edit an existing math element */}
       <FormulaModal
         open={formulaModalOpen}
-        initialTex={
-          editingMathId
-            ? (activeSlide?.elements.find(
-                (e): e is CanvasMathElement => e.id === editingMathId && e.type === "math",
-              )?.tex ?? undefined)
-            : undefined
-        }
-        onClose={() => { setFormulaModalOpen(false); setEditingMathId(null); }}
+        initialTex={editingMathId ? editedMathTex(activeSlide?.elements, editingMathId, editingInlineMath) : undefined}
+        onClose={() => { setFormulaModalOpen(false); setEditingMathId(null); setEditingInlineMath(null); }}
         onInsert={handleFormulaConfirm}
       />
 

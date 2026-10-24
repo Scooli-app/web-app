@@ -22,9 +22,14 @@ import type { Document } from "@/shared/types/document";
 import type { DocumentVersionDiff, PendingSuggestion, SectionChange } from "@/shared/types/document-suggestions";
 import { SCHEMA_VERSION, slideBlockSchema } from "@/shared/types/blocks";
 import { THEMES, translateThemeName } from "@/shared/types/presentation-theme";
+import { isAssessmentDoc, isPresentationDoc } from "@/lib/documents/kind";
+import { CompactItem } from "@/components/assessment-editor/AssessmentPreview";
+import { InlineText } from "@/components/blocks/inline-text";
+import type { AssessmentItem } from "@/types/assessment";
+import { assessmentChanges, type AssessmentChangeView, type FieldChange } from "./assessment-review";
 import { cn } from "@/shared/utils/utils";
 import { useLocale, useTranslations } from "next-intl";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   applyPayload,
@@ -39,6 +44,7 @@ import {
   toggleSection,
   toReadableText,
   unchangedCount,
+  unchangedExercises,
   withoutSectionHeadings,
 } from "./suggestion-review";
 
@@ -53,8 +59,16 @@ const BADGE_VARIANT = {
   removed: "outline",
 } as const;
 
+const PHONE_TARGETS =
+  "max-md:[&_button:not([role=checkbox])]:min-h-11 max-md:[&_[role=checkbox]]:relative max-md:[&_[role=checkbox]]:after:absolute max-md:[&_[role=checkbox]]:after:-inset-3.5 max-md:[&_[role=checkbox]]:after:content-['']";
+
 export function formatSuggestionDate(iso: string, locale: string): string {
   return new Date(iso).toLocaleDateString(locale, { day: "numeric", month: "long" });
+}
+
+/** The backend's `409 invalid_assessment_merge` from apply: the chosen exercises would not form a valid assessment. */
+function isInvalidMergeError(error: unknown): boolean {
+  return error instanceof ApiRequestError && error.status === 409 && error.code === "invalid_assessment_merge";
 }
 
 /** The backend's `409 format_changed` from apply: the presentation's format moved on since the suggestion. */
@@ -229,17 +243,16 @@ function TitleBody({ change }: { change: SectionChange }) {
 function ChangeRow({
   change,
   checked,
-  contentFormat,
+  isPresentation,
   onToggle,
 }: {
   change: SectionChange;
   checked: boolean;
-  contentFormat: SuggestionContentFormat;
+  isPresentation: boolean;
   onToggle: () => void;
 }) {
   const t = useTranslations("documentVersions.review");
   const [view, setView] = useState<DiffView>("changes");
-  const isPresentation = contentFormat === "json";
   const isSettings = change.key === META_KEY;
   const isTitle = change.key === TITLE_KEY;
   const title = isSettings ? t("presentationSettings") : isTitle ? t("documentTitle") : (change.title ?? "");
@@ -293,22 +306,141 @@ function ChangeRow({
   );
 }
 
+function FieldList({ fields }: { fields: FieldChange[] }) {
+  const t = useTranslations("documentVersions.review");
+  if (fields.length === 0) return <p className="text-sm text-muted-foreground">{t("assessment.otherSettings")}</p>;
+  return (
+    <ul className="flex flex-col gap-1 text-sm">
+      {fields.map((f) => (
+        <li key={f.field} className="flex flex-wrap items-baseline gap-x-2">
+          <span className="text-muted-foreground">{t(`assessment.field.${f.field}`)}:</span>
+          {f.before === null || f.after === null ? (
+            // Added or removed: the value alone, no "before → after".
+            <span className={cn("text-foreground", f.after === null && "text-muted-foreground line-through")}>
+              {f.after ?? f.before}
+            </span>
+          ) : (
+            <>
+              <del className="text-muted-foreground line-through decoration-red-700/70 decoration-1 dark:decoration-red-300/70">
+                <span className="sr-only">{t("removedText")}</span>
+                {f.before}
+              </del>
+              <span aria-hidden>→</span>
+              <span className="font-medium text-foreground">
+                <span className="sr-only">{t("addedText")}</span>
+                {f.after}
+              </span>
+            </>
+          )}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** Before and after of one exercise or reading box, rendered as it prints (teacher view: answers shown). */
+function ItemBody({ view }: { view: Extract<AssessmentChangeView, { kind: "item" }> }) {
+  const t = useTranslations("documentVersions.review");
+  const points = (item: AssessmentItem | null) => (item?.kind === "exercise" ? item.points : null);
+  if (view.parts.length === 1 && view.parts[0] === "points") {
+    return <p className="text-sm text-foreground">{t("assessment.pointsOnly", { before: points(view.before) ?? 0, after: points(view.after) ?? 0 })}</p>;
+  }
+  const sides = [
+    { label: t("before"), item: view.before, raw: view.change.before },
+    { label: t("after"), item: view.after, raw: view.change.after },
+  ].filter((side) => side.raw !== null);
+  return (
+    <div className="flex flex-col gap-2">
+      {view.parts.length > 0 && (
+        <p className="text-sm text-muted-foreground">
+          {t("assessment.whatChanges", { parts: view.parts.map((part) => t(`assessment.part.${part}`)).join(", ") })}
+        </p>
+      )}
+      <div className="flex flex-col gap-4 sm:flex-row">
+        {sides.map(({ label, item }) => (
+          <div key={label} className="flex min-w-0 flex-1 flex-col gap-1.5">
+            {view.change.type === "changed" && <span className="text-xs font-medium text-muted-foreground">{label}</span>}
+            {item ? (
+              <CompactItem item={item} number={view.number} />
+            ) : (
+              <p className="text-sm text-muted-foreground">{t("assessment.unreadable")}</p>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** One assessment change: an exercise or reading box, a group's title/instructions, or the document settings. */
+function AssessmentChangeRow({
+  view,
+  checked,
+  onToggle,
+}: {
+  view: Exclude<AssessmentChangeView, { kind: "title" }>;
+  checked: boolean;
+  onToggle: () => void;
+}) {
+  const t = useTranslations("documentVersions.review");
+  const { change } = view;
+  const reading = view.kind === "item" && (view.after ?? view.before)?.kind === "reading";
+  const title =
+    view.kind === "settings" ? t("assessment.settings")
+      : view.kind === "group" ? t("assessment.group")
+        : reading ? t("assessment.reading")
+          : view.kind === "item" && view.number !== null ? t("assessment.exercise", { number: view.number }) : t("assessment.exerciseNoNumber");
+
+  return (
+    <li className="border-b border-border py-5 last:border-b-0">
+      <div className="flex items-start gap-3">
+        <Checkbox checked={checked} onCheckedChange={onToggle} aria-label={title} className="mt-1" />
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <h3 className="text-base font-semibold text-foreground">{title}</h3>
+            {view.kind === "group" && change.title && (
+              <span className="min-w-0 text-sm text-muted-foreground"><InlineText value={change.title} /></span>
+            )}
+            <Badge variant={BADGE_VARIANT[change.type as keyof typeof BADGE_VARIANT] ?? "outline"}>
+              {t(`type.${change.type}`)}
+            </Badge>
+          </div>
+          <div className="mt-3">
+            {view.kind === "item" ? <ItemBody view={view} /> : <FieldList fields={view.fields} />}
+          </div>
+        </div>
+      </div>
+    </li>
+  );
+}
+
 interface SuggestionReviewBodyProps {
   diff: DocumentVersionDiff;
   selection: Set<string>;
   contentFormat: SuggestionContentFormat;
+  /** Tells a presentation (slides) from an assessment (exercises); both are JSON. */
+  documentType?: Document["documentType"];
   onToggle: (key: string) => void;
   /** Offers "Atualizar sugestão" next to the stale notice. */
   onRefresh?: () => void;
 }
 
 /** The scrollable part of the review: the stale notice, the changed sections and the unchanged count. */
-export function SuggestionReviewBody({ diff, selection, contentFormat, onToggle, onRefresh }: SuggestionReviewBodyProps) {
+export function SuggestionReviewBody({
+  diff,
+  selection,
+  contentFormat,
+  documentType = "presentation",
+  onToggle,
+  onRefresh,
+}: SuggestionReviewBodyProps) {
+  const isPresentation = isPresentationDoc({ contentFormat, documentType });
+  const assessment = isAssessmentDoc({ contentFormat, documentType }) ? assessmentChanges(diff.changes) : null;
   const t = useTranslations("documentVersions.review");
   const reviewable = reviewableChanges(diff.changes);
   // A markdown section repeats its title as its first line; the row already shows the title.
   const changes = contentFormat === "markdown" ? withoutSectionHeadings(reviewable) : reviewable;
-  const unchanged = unchangedCount(diff.changes);
+  const unchanged = assessment ? unchangedExercises(diff.changes) : unchangedCount(diff.changes);
 
   return (
     <div className="flex flex-col gap-4">
@@ -326,18 +458,40 @@ export function SuggestionReviewBody({ diff, selection, contentFormat, onToggle,
         <p className="py-8 text-center text-sm text-muted-foreground">{t("noChanges")}</p>
       ) : (
         <ul className="flex flex-col">
-          {changes.map((change) => (
+          {assessment?.map((view) =>
+            view.kind === "title" ? (
+              <ChangeRow
+                key={view.change.key}
+                change={view.change}
+                checked={selection.has(view.change.key)}
+                isPresentation={false}
+                onToggle={() => onToggle(view.change.key)}
+              />
+            ) : (
+              <AssessmentChangeRow
+                key={view.change.key}
+                view={view}
+                checked={selection.has(view.change.key)}
+                onToggle={() => onToggle(view.change.key)}
+              />
+            ),
+          )}
+          {!assessment && changes.map((change) => (
             <ChangeRow
               key={change.key}
               change={change}
               checked={selection.has(change.key)}
-              contentFormat={contentFormat}
+              isPresentation={isPresentation}
               onToggle={() => onToggle(change.key)}
             />
           ))}
         </ul>
       )}
-      {unchanged > 0 && <p className="text-sm text-muted-foreground">{t("unchangedCount", { count: unchanged })}</p>}
+      {unchanged > 0 && (
+        <p className="text-sm text-muted-foreground">
+          {t(assessment ? "assessment.unchangedCount" : "unchangedCount", { count: unchanged })}
+        </p>
+      )}
     </div>
   );
 }
@@ -348,6 +502,12 @@ export interface SuggestionReviewSheetProps {
   documentId: string;
   suggestion: PendingSuggestion;
   contentFormat: SuggestionContentFormat;
+  documentType?: Document["documentType"];
+  /**
+   * Saves the editor's unsaved edits, before the diff loads and before an apply. "saved" before an apply reloads the
+   * diff (now marked stale) instead of applying; "failed" stops the apply.
+   */
+  flushEdits?: () => Promise<"clean" | "saved" | "failed">;
   /** Called after the suggestion is applied, with the updated document. */
   onApplied: (document: Document) => void;
   /** Called after the suggestion is rejected. */
@@ -362,6 +522,8 @@ export function SuggestionReviewSheet({
   documentId,
   suggestion,
   contentFormat,
+  documentType,
+  flushEdits,
   onApplied,
   onRejected,
   onRefreshed,
@@ -376,12 +538,18 @@ export function SuggestionReviewSheet({
   const [attempt, setAttempt] = useState(0);
   // Set when apply answers 409 format_changed, for a diff that did not report it when it loaded.
   const [applyFormatChanged, setApplyFormatChanged] = useState(false);
+  // Read at load time only: a new flush function (the editor's save state changed) must not reload the diff.
+  const flushRef = useRef(flushEdits);
+  flushRef.current = flushEdits;
 
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
     setApplyFormatChanged(false);
-    getSuggestionDiff(documentId, suggestion.versionId)
+    // The diff is computed against what is stored, so pending edits are saved first.
+    (flushRef.current ? flushRef.current() : Promise.resolve("clean"))
+      .catch(() => "failed")
+      .then(() => getSuggestionDiff(documentId, suggestion.versionId))
       .then((loaded) => {
         if (cancelled) return;
         setDiff(loaded);
@@ -405,6 +573,17 @@ export function SuggestionReviewSheet({
   const handleApply = async () => {
     setBusy(true);
     try {
+      const flushed = flushEdits ? await flushEdits() : "clean";
+      if (flushed === "failed") {
+        toast.error(t("assessment.saveFirst"));
+        return;
+      }
+      if (flushed === "saved") {
+        // The document just changed: show the up-to-date diff (with its stale notice) before applying.
+        toast.info(t("assessment.reviewAgain"));
+        setAttempt((value) => value + 1);
+        return;
+      }
       const result = await applySuggestion(documentId, suggestion.versionId, applyPayload(changes, selection));
       toast.success(t("applied"));
       if (result.skipped.length > 0) {
@@ -414,6 +593,8 @@ export function SuggestionReviewSheet({
     } catch (error) {
       if (isFormatChangedError(error)) {
         setApplyFormatChanged(true);
+      } else if (isInvalidMergeError(error)) {
+        toast.error(t("assessment.invalidMerge"));
       } else {
         toast.error(t("applyError"));
       }
@@ -451,7 +632,7 @@ export function SuggestionReviewSheet({
   return (
     <>
       <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent side="right" className="flex w-full flex-col gap-0 p-0 sm:max-w-[min(960px,90vw)]">
+        <SheetContent side="right" largeClose className="flex w-full flex-col gap-0 p-0 sm:max-w-[min(960px,90vw)]">
           <SheetHeader className="border-b border-border px-5 py-4 text-left sm:px-6">
             <SheetTitle className="text-lg">{t("title")}</SheetTitle>
             <SheetDescription className="text-sm text-foreground">{suggestion.reason?.summary}</SheetDescription>
@@ -460,7 +641,8 @@ export function SuggestionReviewSheet({
             </p>
           </SheetHeader>
 
-          <div className="flex-1 overflow-y-auto px-5 py-5 sm:px-6">
+          {/* Phone: 44 px buttons; checkboxes keep their look and get an invisible 44 px hit area. */}
+          <div className={cn("flex-1 overflow-y-auto px-5 py-5 sm:px-6", PHONE_TARGETS)}>
             {formatChanged && (
               <Alert variant="primary" className="mb-5 flex flex-wrap items-center justify-between gap-3">
                 <AlertDescription className="min-w-0 flex-1 text-foreground">{t("formatChanged")}</AlertDescription>
@@ -487,13 +669,14 @@ export function SuggestionReviewSheet({
                 diff={diff}
                 selection={selection}
                 contentFormat={contentFormat}
+                documentType={documentType}
                 onToggle={(key) => setSelection((current) => toggleSection(current, key))}
                 onRefresh={() => void handleRefresh()}
               />
             )}
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border bg-background px-5 py-3 sm:px-6">
+          <div className={cn("flex flex-wrap items-center justify-between gap-3 border-t border-border bg-background px-5 py-3 sm:px-6", PHONE_TARGETS)}>
             <Button
               variant="ghost"
               size="sm"
@@ -502,11 +685,12 @@ export function SuggestionReviewSheet({
             >
               {allSelected ? t("selectNone") : t("selectAll")}
             </Button>
-            <div className="flex items-center gap-2">
+            {/* Phone: "Nenhuma" and "Rejeitar" share a row, "Aplicar" takes the full width under them. */}
+            <div className="flex items-center gap-2 max-md:contents">
               <Button variant="ghost" disabled={busy} onClick={() => setConfirmReject(true)}>
                 {t("reject")}
               </Button>
-              <Button disabled={!diff || formatChanged || selected === 0 || busy} onClick={() => void handleApply()}>
+              <Button className="max-md:w-full" disabled={!diff || formatChanged || selected === 0 || busy} onClick={() => void handleApply()}>
                 {t("apply", { count: selected })}
               </Button>
             </div>

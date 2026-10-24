@@ -1356,6 +1356,60 @@
             "label": "Adiciona uma conclusão 📝",
             "message": "Adiciona ou melhora a conclusão do documento."
           }
+        ],
+        "assessment": [
+          {
+            "label": "Torna o teste mais fácil",
+            "message": "Torna o teste mais fácil, mantendo as cotações certas."
+          },
+          {
+            "label": "Acrescenta uma pergunta de resposta extensa",
+            "message": "Acrescenta uma pergunta de resposta extensa no último grupo e reequilibra as cotações."
+          },
+          {
+            "label": "Equilibra as cotações",
+            "message": "Equilibra as cotações de acordo com a dificuldade de cada pergunta."
+          },
+          {
+            "label": "Gera uma versão mais curta",
+            "message": "Gera uma versão mais curta deste documento, com menos perguntas."
+          }
+        ],
+        "assessmentWorksheet": [
+          {
+            "label": "Torna a ficha mais fácil",
+            "message": "Torna a ficha mais fácil, com exercícios mais guiados."
+          },
+          {
+            "label": "Acrescenta exercícios",
+            "message": "Acrescenta mais três exercícios no último grupo."
+          },
+          {
+            "label": "Varia os tipos de exercício",
+            "message": "Varia os tipos de exercício, com completar espaços e correspondência."
+          },
+          {
+            "label": "Gera uma versão mais curta",
+            "message": "Gera uma versão mais curta desta ficha, com menos exercícios."
+          }
+        ],
+        "assessmentQuiz": [
+          {
+            "label": "Torna o quiz mais fácil",
+            "message": "Torna o quiz mais fácil."
+          },
+          {
+            "label": "Acrescenta perguntas",
+            "message": "Acrescenta mais cinco perguntas ao quiz."
+          },
+          {
+            "label": "Explica as respostas",
+            "message": "Acrescenta uma explicação curta a cada resposta correta."
+          },
+          {
+            "label": "Varia os tipos de pergunta",
+            "message": "Varia os tipos de pergunta, com verdadeiro ou falso e resposta curta."
+          }
         ]
       },
       "generatingPlaceholder": "O chat fica disponível quando o documento estiver pronto."
@@ -1980,6 +2034,7 @@
       "reuseSuccess": "Adicionado aos teus documentos",
       "reuseError": "Erro ao reutilizar recurso",
       "previewComingSoon": "Pré-visualização em breve disponível",
+      "previewDescription": "Pré-visualização só de leitura, como o aluno a recebe. Partilhado por {name}.",
       "shareOrgSuccess": "Recurso partilhado com a biblioteca da escola.",
       "shareCommunitySuccess": "Recurso enviado para revisão. Vais receber uma notificação em 24 a 48 horas.",
       "shareError": "Erro ao partilhar recurso"
@@ -2466,35 +2521,35 @@
       "defaultTitle": "Novo plano de aula",
       "generateMessage": "Gerar plano de aula",
       "chatTitle": "Assistente de planos",
-      "chatPlaceholder": "Pergunta algo ou pede para modificar o plano..."
+      "chatPlaceholder": "Pede uma alteração…"
     },
     "worksheet": {
       "loading": "A carregar ficha de trabalho...",
       "defaultTitle": "Nova ficha de trabalho",
       "generateMessage": "Gerar ficha de trabalho",
       "chatTitle": "Assistente de fichas",
-      "chatPlaceholder": "Pergunta algo ou pede para modificar a ficha..."
+      "chatPlaceholder": "Pede uma alteração…"
     },
     "test": {
       "loading": "A carregar teste...",
       "defaultTitle": "Novo teste",
       "generateMessage": "Gerar teste",
       "chatTitle": "Assistente de testes",
-      "chatPlaceholder": "Pergunta algo ou pede para modificar o teste..."
+      "chatPlaceholder": "Pede uma alteração…"
     },
     "quiz": {
       "loading": "A carregar quiz...",
       "defaultTitle": "Novo quiz",
       "generateMessage": "Gerar quiz",
       "chatTitle": "Assistente de quizzes",
-      "chatPlaceholder": "Pergunta algo ou pede para modificar o quiz..."
+      "chatPlaceholder": "Pede uma alteração…"
     },
     "curriculumPlan": {
       "loading": "A carregar planificação...",
       "defaultTitle": "Nova planificação",
       "generateMessage": "Gerar planificação",
       "chatTitle": "Assistente de planificações",
-      "chatPlaceholder": "Pergunta algo ou pede para modificar a planificação..."
+      "chatPlaceholder": "Pede uma alteração…"
     }
   },
   "support": {
@@ -3409,7 +3464,40 @@
       "themeChange": "Tema: {before} → {after}",
       "formatChanged": "A apresentação mudou de formato desde esta sugestão.",
       "refresh": "Atualizar sugestão",
-      "refreshError": "Não foi possível atualizar a sugestão. Tenta de novo."
+      "refreshError": "Não foi possível atualizar a sugestão. Tenta de novo.",
+      "assessment": {
+        "settings": "Definições do documento",
+        "group": "Grupo",
+        "reading": "Texto de apoio",
+        "exercise": "Exercício {number}",
+        "exerciseNoNumber": "Exercício",
+        "unreadable": "Não foi possível mostrar esta parte.",
+        "pointsOnly": "Só muda a cotação: {before, number} → {after, number} pts",
+        "otherSettings": "Outras definições do cabeçalho",
+        "field": {
+          "title": "Título",
+          "instructions": "Instruções",
+          "targetTotal": "Total",
+          "school": "Escola",
+          "gradeClass": "Turma",
+          "duration": "Duração (min)"
+        },
+        "unchangedCount": "{count, plural, one {# exercício sem alterações} other {# exercícios sem alterações}}",
+        "saveFirst": "Não foi possível guardar as tuas alterações. Tenta de novo antes de aplicar.",
+        "reviewAgain": "Guardámos as tuas últimas alterações. Revê a sugestão antes de aplicar.",
+        "invalidMerge": "Estas alterações não formam um documento válido sozinhas. Escolhe também as alterações relacionadas.",
+        "whatChanges": "Muda: {parts}",
+        "part": {
+          "type": "tipo de exercício",
+          "prompt": "enunciado",
+          "content": "opções e itens",
+          "answer": "respostas",
+          "points": "cotação",
+          "notes": "explicação e critérios",
+          "media": "imagem",
+          "goals": "objetivos das AE"
+        }
+      }
     },
     "chip": {
       "suggestionDot": "Nova versão sugerida"
@@ -3525,5 +3613,269 @@
     "preparing": "A preparar…",
     "topicBadge": "Tema novo",
     "chip": "{count} por rever"
+  },
+  "assessmentEditor": {
+    "studentView": "Versão do aluno",
+    "studentViewHint": "Mostra exatamente o que o aluno recebe: sem soluções, explicações, critérios nem objetivos.",
+    "export": "Exportar",
+    "saving": "A guardar…",
+    "saved": "Guardado",
+    "unsaved": "Alterações por guardar",
+    "saveFailed": "Não foi possível guardar. As tuas alterações continuam aqui: verifica o exercício que editaste e tenta outra vez.",
+    "retrySave": "Tentar outra vez",
+    "dismiss": "Fechar",
+    "generatingTitle": "A criar o teu documento…",
+    "generatingSubtitle": "Demora cerca de 30 a 60 segundos. Podes esperar aqui.",
+    "generationFailedTitle": "Não foi possível criar este documento.",
+    "generationFailedSubtitle": "Tenta criá-lo outra vez a partir dos documentos.",
+    "loadFailedTitle": "Não foi possível abrir este documento.",
+    "backToDocuments": "Voltar aos documentos",
+    "retry": "Tentar outra vez",
+    "chatError": "O assistente não conseguiu responder. Tenta outra vez.",
+    "chatUpdated": "Atualizei o documento.",
+    "imageGenerating": "A gerar a imagem…",
+    "imageFailed": "Não foi possível obter a imagem. Tenta outra vez.",
+    "page": "página {page} de {total}",
+    "points": "{points, number} pts",
+    "totals": {
+      "total": "Total: {total, number} / {target, number} pts",
+      "onTarget": "Cotações certas",
+      "under": "{diff, plural, one {falta # pt} other {faltam # pts}}",
+      "over": "{diff, plural, one {# pt a mais} other {# pts a mais}}",
+      "questions": "{count, plural, one {# pergunta} other {# perguntas}}",
+      "goals": "{count, plural, =0 {sem objetivos das AE} one {# objetivo das AE} other {# objetivos das AE}}",
+      "goalsTitle": "Objetivos das AE avaliados",
+      "goalQuestions": "{count, plural, one {Pergunta {numbers}} other {Perguntas {numbers}}}",
+      "goalsEmpty": "Ainda nenhum exercício tem um objetivo das AE.",
+      "withoutGoal": "{count, plural, one {# exercício sem objetivo} other {# exercícios sem objetivo}}"
+    },
+    "ae": {
+      "prefix": "AE",
+      "unavailable": "Objetivo indisponível",
+      "loading": "A carregar objetivo…",
+      "add": "Adicionar objetivo",
+      "remove": "Remover objetivo",
+      "searchPlaceholder": "Procura um objetivo das AE…",
+      "noResults": "Nenhum objetivo encontrado.",
+      "searchError": "Não foi possível procurar objetivos. Tenta outra vez.",
+      "needsContext": "Este documento não tem disciplina e ano definidos, por isso não é possível procurar objetivos.",
+      "limit": "Cada exercício pode ter até 5 objetivos."
+    },
+    "header": {
+      "school": "Escola",
+      "class": "Ano/Turma",
+      "name": "Nome",
+      "number": "N.º",
+      "date": "Data",
+      "duration": "Duração",
+      "grade": "Classificação",
+      "teacher": "Professor",
+      "guardian": "Enc. Educação",
+      "durationValue": "{minutes} min",
+      "edit": "Editar cabeçalho",
+      "add": "Adicionar cabeçalho",
+      "fieldsLabel": "Campos a mostrar",
+      "schoolPlaceholder": "Nome da escola",
+      "classPlaceholder": "Ex.: 6.º B",
+      "durationPlaceholder": "Minutos",
+      "done": "Concluído",
+      "label": "Cabeçalho",
+      "editShort": "editar"
+    },
+    "section": {
+      "titlePlaceholder": "Título do grupo",
+      "instructionsPlaceholder": "Instruções para o aluno (opcional)",
+      "newTitle": "Grupo {roman}",
+      "subtotal": "{points, number} pts",
+      "addExercise": "Adicionar exercício",
+      "addReading": "Adicionar texto de apoio",
+      "addGroup": "Adicionar grupo",
+      "deleteGroup": "Apagar grupo",
+      "menu": "Opções do grupo",
+      "lastGroup": "O documento precisa de pelo menos um grupo."
+    },
+    "item": {
+      "edit": "Editar",
+      "drag": "Arrastar para reordenar",
+      "duplicate": "Duplicar",
+      "delete": "Apagar",
+      "moveUp": "Mover para cima",
+      "moveDown": "Mover para baixo",
+      "lastItem": "Um grupo precisa de pelo menos um item. Apaga o grupo em vez disso.",
+      "emptyPrompt": "Enunciado por escrever",
+      "readingDefaultTitle": "Texto de apoio",
+      "readingTitle": "Título (opcional)",
+      "readingBody": "Texto",
+      "imageAlt": "Imagem do exercício"
+    },
+    "types": {
+      "multiple_choice": "Escolha múltipla",
+      "true_false": "Verdadeiro ou falso",
+      "fill_gaps": "Completar espaços",
+      "matching": "Correspondência",
+      "ordering": "Ordenação",
+      "short_answer": "Resposta curta",
+      "long_answer": "Resposta longa",
+      "calculation": "Cálculo",
+      "table_completion": "Completar tabela",
+      "classify": "Classificação",
+      "wordsearch": "Sopa de letras",
+      "label_image": "Legendar imagem"
+    },
+    "view": {
+      "answer": "Solução",
+      "explanation": "Explicação",
+      "criteria": "Critérios de correção",
+      "trueFalseBlank": "V / F",
+      "correction": "Correção: {text}",
+      "wordBank": "Banco de palavras",
+      "words": "Palavras a encontrar",
+      "gridOnSave": "A grelha atualiza-se quando as alterações forem guardadas."
+    },
+    "editor": {
+      "title": "Editar exercício {number}",
+      "readingTitle": "Editar texto de apoio",
+      "type": "Tipo",
+      "prompt": "Enunciado",
+      "promptGapsHint": "Escreve ___ (três traços) onde o aluno tem de completar.",
+      "preview": "Pré-visualização",
+      "options": "Opções",
+      "addOption": "Adicionar opção",
+      "removeOption": "Remover",
+      "markCorrect": "Marcar como correta",
+      "multipleCorrect": "Várias respostas corretas",
+      "statements": "Afirmações",
+      "addStatement": "Adicionar afirmação",
+      "trueShort": "V",
+      "falseShort": "F",
+      "correctionPlaceholder": "Correção da afirmação falsa (opcional)",
+      "gaps": "Respostas dos espaços",
+      "gapN": "Espaço {n}",
+      "noGaps": "Ainda não há espaços (___) no enunciado.",
+      "wordBank": "Banco de palavras (opcional)",
+      "addWord": "Adicionar palavra",
+      "wordsHint": "Até {max} palavras, com {letters} letras no máximo. Acentos e espaços não contam na grelha.",
+      "wordNotInGrid": "Esta palavra não cabe na grelha (repetida ou com menos de 2 letras).",
+      "wordN": "Palavra {n}",
+      "words": "Palavras",
+      "leftColumn": "Coluna A",
+      "rightColumn": "Coluna B",
+      "addItem": "Adicionar item",
+      "pairs": "Ligações corretas",
+      "pairNone": "Sem ligação",
+      "items": "Itens (pela ordem em que aparecem)",
+      "correctOrder": "Ordem correta",
+      "moveUp": "Subir",
+      "moveDown": "Descer",
+      "modelAnswer": "Resposta modelo",
+      "criteria": "Critérios de correção (opcional)",
+      "addCriterion": "Adicionar nível",
+      "criterionLevel": "Nível",
+      "criterionPoints": "Pts",
+      "criterionDescriptor": "Descritor",
+      "explanation": "Explicação para as soluções (opcional)",
+      "points": "Cotação",
+      "pointsPlaceholder": "Sem cotação",
+      "answerSpace": "Espaço de resposta",
+      "spaceLines": "Linhas",
+      "spaceBox": "Caixa",
+      "spaceNone": "Nenhum",
+      "lineCount": "N.º de linhas",
+      "image": "Imagem",
+      "addImage": "Adicionar imagem",
+      "replaceImage": "Substituir imagem",
+      "removeImage": "Remover imagem",
+      "goals": "Objetivos das AE",
+      "close": "Concluído",
+      "labels": "Números na imagem",
+      "pinHint": "Escolhe um número e toca na imagem para o colocar. Sem posição, o número aparece só na lista.",
+      "labelsNeedImage": "Adiciona uma imagem para colocares os números.",
+      "placePin": "Colocar o número {n} na imagem",
+      "selectPin": "Escolher o número {n}",
+      "pinPlaced": "Colocado na imagem",
+      "labelHint": "Pista para o aluno (opcional)",
+      "labelAnswer": "Resposta",
+      "addLabel": "Adicionar número",
+      "table": "Tabela",
+      "tableHint": "Marca como lacuna as células que o aluno preenche e escreve nelas a resposta. Até {cols} colunas e {rows} linhas.",
+      "headerN": "Coluna {n}",
+      "cellAnswer": "Resposta",
+      "markBlank": "Marcar como lacuna",
+      "unmarkBlank": "Deixar de ser lacuna",
+      "addRow": "Adicionar linha",
+      "addColumn": "Adicionar coluna",
+      "removeRow": "Remover linha",
+      "removeColumn": "Remover coluna",
+      "addTable": "Criar tabela",
+      "categories": "Caixas",
+      "categoryN": "Caixa {n}",
+      "addCategory": "Adicionar caixa",
+      "addCategories": "Criar caixas",
+      "classifyItems": "Itens a classificar",
+      "itemN": "Item {n}",
+      "itemCategory": "Caixa do item",
+      "noCategory": "Sem caixa"
+    },
+    "versionPreviewEmpty": "Esta versão não tem exercícios.",
+    "chatSaveFirst": "Não foi possível guardar as tuas alterações; tenta novamente antes de usar a conversa.",
+    "shareSaveFirst": "Não foi possível guardar as tuas alterações; tenta novamente antes de partilhar.",
+    "titleSaveFailed": "Não foi possível guardar o título. Tenta outra vez.",
+    "chatLocked": "O assistente está a rever o documento…",
+    "chatButton": "Conversa",
+    "missing": {
+      "answer": "Falta a resposta modelo",
+      "correct": "Falta marcar a opção correta",
+      "truth": "Falta indicar V ou F",
+      "pairs": "Faltam as ligações corretas",
+      "order": "Falta a ordem correta",
+      "gaps": "Faltam respostas nos espaços",
+      "options": "Precisa de pelo menos 2 opções",
+      "labels": "Falta pelo menos um número na imagem",
+      "image": "Falta a imagem a legendar",
+      "pins": "Falta colocar os números na imagem",
+      "words": "Faltam palavras (pelo menos 3)",
+      "blanks": "Marca pelo menos uma célula como lacuna",
+      "cells": "Faltam respostas nas lacunas da tabela",
+      "categories": "Precisa de pelo menos 2 caixas",
+      "classes": "Falta indicar a caixa de cada item"
+    },
+    "exportDialog": {
+      "title": {
+        "test": "Exportar teste",
+        "worksheet": "Exportar ficha",
+        "quiz": "Exportar quiz"
+      },
+      "subtitle": "Os dois ficheiros são gerados juntos. Descarrega um ou ambos.",
+      "formatLabel": "Formato do ficheiro",
+      "files": {
+        "test": {
+          "student": "Teste",
+          "teacher": "Critérios de correção"
+        },
+        "worksheet": {
+          "student": "Ficha",
+          "teacher": "Soluções"
+        },
+        "quiz": {
+          "student": "Quiz",
+          "teacher": "Respostas"
+        }
+      },
+      "forStudents": "Para os alunos",
+      "forYou": "Para ti",
+      "preparing": "A preparar os ficheiros…",
+      "download": "Descarregar",
+      "downloadBoth": "Descarregar ambos",
+      "busy": {
+        "test": "Espera que a conversa termine de editar o teste.",
+        "worksheet": "Espera que a conversa termine de editar a ficha.",
+        "quiz": "Espera que a conversa termine de editar o quiz."
+      },
+      "saveFailed": "Não foi possível guardar as tuas últimas alterações. Tenta outra vez para os ficheiros ficarem iguais ao que vês.",
+      "failed": "Não foi possível gerar os ficheiros.",
+      "revising": "Estamos a atualizar este documento; tenta exportar daqui a um minuto.",
+      "rateLimited": "Fizeste muitas exportações seguidas. Espera um minuto e tenta outra vez.",
+      "retry": "Tentar outra vez"
+    }
   }
 }

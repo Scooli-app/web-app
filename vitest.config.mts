@@ -15,6 +15,8 @@ export default defineConfig({
   oxc: {
     jsx: { runtime: "automatic" },
   },
+  // Components that import CSS (KaTeX) load in tests without the app's Tailwind PostCSS pipeline.
+  css: { postcss: {} },
   test: {
     environment: "node",
   },

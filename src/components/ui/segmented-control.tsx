@@ -8,6 +8,7 @@ interface SegmentedOption<T extends string> {
   value: T;
   label: string;
   icon?: LucideIcon;
+  disabled?: boolean;
 }
 
 interface SegmentedControlProps<T extends string> {
@@ -42,7 +43,10 @@ export function SegmentedControl<T extends string>({
           : 0;
     if (step === 0) return;
     event.preventDefault();
-    const nextIndex = (index + step + options.length) % options.length;
+    let nextIndex = (index + step + options.length) % options.length;
+    while (options[nextIndex].disabled && nextIndex !== index) {
+      nextIndex = (nextIndex + step + options.length) % options.length;
+    }
     onChange(options[nextIndex].value);
     buttonsRef.current[nextIndex]?.focus();
   };
@@ -66,6 +70,7 @@ export function SegmentedControl<T extends string>({
             role="radio"
             aria-checked={isSelected}
             tabIndex={isSelected ? 0 : -1}
+            disabled={option.disabled}
             onClick={() => onChange(option.value)}
             onKeyDown={(event) => handleKeyDown(event, index)}
             className={cn(
@@ -74,7 +79,8 @@ export function SegmentedControl<T extends string>({
               size === "sm" ? "px-2.5 py-1.5 text-xs" : "px-3 py-2 text-xs sm:text-sm",
               isSelected
                 ? "bg-background text-primary shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
+                : "text-muted-foreground enabled:hover:text-foreground",
+              "disabled:cursor-not-allowed disabled:opacity-50"
             )}
           >
             {Icon && <Icon className={cn("shrink-0", size === "sm" ? "h-3.5 w-3.5" : "h-4 w-4")} aria-hidden />}

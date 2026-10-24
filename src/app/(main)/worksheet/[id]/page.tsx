@@ -1,17 +1,9 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import dynamic from "next/dynamic";
+import { EditorSwitch } from "@/components/assessment-editor/EditorSwitch";
 import { DocumentEditorSkeleton } from "@/components/document-editor/DocumentEditorSkeleton";
 import { Suspense, use } from "react";
-
-const DocumentEditor = dynamic(
-  () => import("@/components/document-editor/DocumentEditor"),
-  {
-    loading: DocumentEditorSkeleton,
-    ssr: false,
-  }
-);
 
 interface WorksheetEditorPageProps {
   params: Promise<{ id: string }>;
@@ -25,7 +17,7 @@ export default function WorksheetEditorPage({
 
   return (
     <Suspense fallback={<DocumentEditorSkeleton />}>
-      <DocumentEditor
+      <EditorSwitch
         documentId={id}
         defaultTitle={t("defaultTitle")}
         generateMessage={t("generateMessage")}
