@@ -113,7 +113,7 @@ import { generateSlide as generateSlideApi } from "@/services/api/document.servi
 import { applyTheme, clampCanvasSlide, presentationToCanvas, slideToCanvas } from "./canvas-layout";
 import { ImagePickerModal, type ImageInsertResult } from "./ImagePickerModal";
 import { ColorPickerPopover } from "./ColorPickerPopover";
-import { FormulaModal } from "./FormulaModal";
+import { MathFieldPopover, type MathAnchor } from "@/components/math/MathFieldPopover";
 import { SlideKonvaEditor, type SlideKonvaEditorHandle } from "./SlideKonvaEditor";
 import { SlideNotesPanel } from "./SlideNotesPanel";
 import { SlideThumbnail } from "./SlideThumbnail";
@@ -614,7 +614,15 @@ export function BlockDocumentEditor({ documentId }: Props) {
 
   /* ── Image toolbar state ─────────────────────────────────────────────── */
   const [imageModalOpen, setImageModalOpen] = useState(false);
-  const [formulaModalOpen, setFormulaModalOpen] = useState(false);
+  // The formula field: open at this point of the screen (null = closed).
+  const [formulaAnchor, setFormulaAnchor] = useState<MathAnchor | null>(null);
+  // Where the teacher last pressed, so a formula opened from the canvas opens next to it.
+  const lastPointer = useRef<MathAnchor>({ x: 0, y: 0 });
+  useEffect(() => {
+    const track = (e: PointerEvent) => { lastPointer.current = { x: e.clientX, y: e.clientY }; };
+    window.addEventListener("pointerdown", track, true);
+    return () => window.removeEventListener("pointerdown", track, true);
+  }, []);
   /** Non-null when the formula modal is editing an existing math element. */
   const [editingMathId, setEditingMathId] = useState<string | null>(null);
   /** Set when that formula is a `$…$` inside a text or list (`item`) rather than a math element. */
@@ -1082,12 +1090,12 @@ export function BlockDocumentEditor({ documentId }: Props) {
     [activeSlideId, pushHistory],
   );
 
-  /** Open the formula modal to edit an existing math element. */
+  /** Opens the formula field on an existing formula element, next to where it was double-clicked. */
   const handleEditMath = useCallback((elementId: string, inline?: { item?: number; index: number }) => {
     setSelectedElementId(elementId);
     setEditingMathId(elementId);
     setEditingInlineMath(inline ?? null);
-    setFormulaModalOpen(true);
+    setFormulaAnchor(lastPointer.current);
   }, []);
 
   /** Modal confirm: update the edited math element, or insert a new one. */
@@ -2193,7 +2201,14 @@ export function BlockDocumentEditor({ documentId }: Props) {
           className="h-8 gap-1.5"
           disabled={!activeSlide}
           title={t("addFormulaTooltip")}
-          onClick={() => { setEditingMathId(null); setFormulaModalOpen(true); }}
+          // Keeps an open text box focused, so the formula goes in at its cursor.
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={(e) => {
+            if (editorRef.current?.insertFormulaInText()) return;
+            const r = e.currentTarget.getBoundingClientRect();
+            setEditingMathId(null);
+            setFormulaAnchor({ x: r.left, y: r.bottom });
+          }}
         >
           <Sigma className="h-3.5 w-3.5" />
           {t("formulaLabel")}
@@ -2729,13 +2744,25 @@ export function BlockDocumentEditor({ documentId }: Props) {
         />
       )}
 
-      {/* Formula builder modal — insert new, or edit an existing math element */}
-      <FormulaModal
-        open={formulaModalOpen}
-        initialTex={editingMathId ? editedMathTex(activeSlide?.elements, editingMathId, editingInlineMath) : undefined}
-        onClose={() => { setFormulaModalOpen(false); setEditingMathId(null); setEditingInlineMath(null); }}
-        onInsert={handleFormulaConfirm}
-      />
+      {/* Formula field: a new formula element, or edit an existing one */}
+      {formulaAnchor && (
+        <MathFieldPopover
+          tex={(editingMathId ? editedMathTex(activeSlide?.elements, editingMathId, editingInlineMath) : undefined) ?? ""}
+          anchor={formulaAnchor}
+          onSave={(tex) => {
+            // Emptied: nothing new is added, and an existing formula is left as it was.
+            if (tex.trim()) handleFormulaConfirm(tex);
+            setFormulaAnchor(null);
+            setEditingMathId(null);
+            setEditingInlineMath(null);
+          }}
+          onCancel={() => {
+            setFormulaAnchor(null);
+            setEditingMathId(null);
+            setEditingInlineMath(null);
+          }}
+        />
+      )}
 
       <Dialog
         open={generateSlideDialogOpen}

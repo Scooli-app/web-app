@@ -14,6 +14,8 @@ interface RichTextEditorProps {
   onEditorActivity?: () => void;
   onImageUpload?: (file: File) => Promise<void> | void;
   isImageUploading?: boolean;
+  /** Drawn as a page on the editor's grey desk (shared editor frame). */
+  page?: boolean;
 }
 
 // Loading fallback
@@ -55,6 +57,7 @@ function RichTextEditorComponent({
   onEditorActivity,
   onImageUpload,
   isImageUploading = false,
+  page = false,
 }: RichTextEditorProps) {
   return (
     <TipTapEditor
@@ -67,6 +70,7 @@ function RichTextEditorComponent({
       onEditorActivity={onEditorActivity}
       onImageUpload={onImageUpload}
       isImageUploading={isImageUploading}
+      page={page}
     />
   );
 }

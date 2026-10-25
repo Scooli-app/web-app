@@ -4,6 +4,7 @@ import {
   canRestoreVersion,
   isListedVersion,
   listedVersions,
+  pendingSuggestionVersion,
   versionLabelKey,
 } from "./document-versions";
 
@@ -90,5 +91,20 @@ describe("canRestoreVersion", () => {
   it("offers to restore any other version", () => {
     expect(canRestoreVersion(version({ status: "superseded" }))).toBe(true);
     expect(canRestoreVersion(version({ status: "applied" }))).toBe(true);
+  });
+});
+
+// The banner can be hidden with ✕, so Versões is where a pending suggestion stays reachable.
+describe("pendingSuggestionVersion", () => {
+  it("finds the suggestion still waiting for review", () => {
+    const pending = version({ id: "s", kind: "ai_suggestion", status: "suggested", versionNumber: 3 });
+    expect(pendingSuggestionVersion([version(), pending])).toBe(pending);
+  });
+
+  it("ignores rejected and applied suggestions", () => {
+    expect(pendingSuggestionVersion([
+      version({ kind: "ai_suggestion", status: "rejected" }),
+      version({ kind: "ai_suggestion", status: "applied" }),
+    ])).toBeNull();
   });
 });

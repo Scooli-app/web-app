@@ -1,6 +1,7 @@
 "use client";
 
 import AIChatPanel from "@/components/document-editor/AIChatPanel";
+import { InlineTitle } from "@/components/document-editor/InlineTitle";
 import { DocumentEditorSkeleton } from "@/components/document-editor/DocumentEditorSkeleton";
 import { DocumentLessonContext } from "@/components/document-editor/DocumentLessonContext";
 import { ImagePickerModal, type ImageInsertResult } from "@/components/document-editor-v2/ImagePickerModal";
@@ -9,13 +10,11 @@ import { DocumentVersionsButton } from "@/components/document-versions/DocumentV
 import { SuggestionBar } from "@/components/document-versions/SuggestionBar";
 import { Button } from "@/components/ui/button";
 import { GenerationStalledNotice } from "@/components/ui/generation-stalled-notice";
-import { Input } from "@/components/ui/input";
 import { useGenerationProgress } from "@/hooks/useGenerationProgress";
 import { useGenerationStalled } from "@/hooks/useGenerationStalled";
 import { generateDocumentImage } from "@/services/api/document-images.service";
 import { dismissAnswerCheck } from "@/services/api/document.service";
 import { searchAeOutcomes } from "@/services/export/documentExport";
-import { MAX_LENGTHS } from "@/shared/config/constants";
 import { Routes, type Document } from "@/shared/types";
 import { isFailedDocumentStatus, type RagSource } from "@/shared/types/document";
 import { chatWithDocument, fetchDocument, setCurrentDocument, updateDocument } from "@/store/documents/documentSlice";
@@ -588,46 +587,3 @@ export default function AssessmentEditor({ documentId, defaultTitle, chatTitle, 
   );
 }
 
-function InlineTitle({ title, onSave, disabled }: { title: string; onSave: (title: string) => Promise<void>; disabled?: boolean }) {
-  const [editing, setEditing] = useState(false);
-  const [value, setValue] = useState(title);
-  const commit = () => {
-    setEditing(false);
-    const next = value.trim();
-    if (next && next !== title) void onSave(next);
-    else setValue(title);
-  };
-  if (editing) {
-    return (
-      <Input
-        autoFocus
-        value={value}
-        maxLength={MAX_LENGTHS.DOCUMENT_TITLE}
-        onChange={(e) => setValue(e.target.value)}
-        onBlur={commit}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") commit();
-          if (e.key === "Escape") {
-            setValue(title);
-            setEditing(false);
-          }
-        }}
-        className="h-8 max-w-md text-sm font-semibold"
-      />
-    );
-  }
-  return (
-    <button
-      type="button"
-      disabled={disabled}
-      onClick={() => {
-        setValue(title);
-        setEditing(true);
-      }}
-      className="min-w-0 truncate rounded px-1 -mx-1 text-left text-sm font-semibold text-foreground enabled:hover:bg-accent"
-      title={title}
-    >
-      {title}
-    </button>
-  );
-}

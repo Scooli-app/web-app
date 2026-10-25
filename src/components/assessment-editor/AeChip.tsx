@@ -19,7 +19,8 @@ export function AeChip({ outcome, onRemove, onPaper }: { outcome: AeOutcome | nu
       title={outcome && !unavailable ? outcome.text : undefined}
       className={cn(
         "inline-flex max-w-full items-center gap-1 rounded-full border px-2 py-0.5 font-sans text-[11px] font-medium leading-4",
-        unavailable ? "border-amber-300 bg-amber-50 text-amber-800" : "border-emerald-200 bg-emerald-50 text-emerald-800",
+        // On the sheet it is a teacher's note, not an answer: grey, so it doesn't read like the green correct answers.
+        unavailable ? "border-amber-300 bg-amber-50 text-amber-800" : onPaper ? "border-neutral-200 bg-neutral-100 text-neutral-600" : "border-emerald-200 bg-emerald-50 text-emerald-800",
         !onPaper && (unavailable
           ? "dark:border-amber-700/60 dark:bg-amber-950/40 dark:text-amber-300"
           : "dark:border-emerald-800/60 dark:bg-emerald-950/40 dark:text-emerald-300"),

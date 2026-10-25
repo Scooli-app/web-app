@@ -6,9 +6,10 @@ import type { Document } from "@/shared/types/document";
 import type { PendingSuggestion } from "@/shared/types/document-suggestions";
 import { setCurrentDocument } from "@/store/documents/documentSlice";
 import { useAppDispatch } from "@/store/hooks";
-import { Loader2 } from "lucide-react";
+import { Loader2, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
+import { dismissSuggestion, isSuggestionDismissed, OPEN_SUGGESTION_REVIEW } from "./dismissedSuggestions";
 import { SuggestionReviewSheet, type SuggestionContentFormat } from "./SuggestionReviewSheet";
 import { pollUntilDone } from "./suggestion-review";
 
@@ -60,6 +61,18 @@ export function SuggestionBar({
   const [awaitingRefresh, setAwaitingRefresh] = useState(false);
   const generating = suggestion?.status === "generating" || awaitingRefresh;
   const autoOpened = useRef(false);
+  // Hidden with ✕ (this browser, this version): the review stays reachable from Versões.
+  const versionId = suggestion?.versionId;
+  const [hidden, setHidden] = useState(false);
+  useEffect(() => setHidden(versionId ? isSuggestionDismissed(versionId) : false), [versionId]);
+
+  useEffect(() => {
+    const open = (e: Event) => {
+      if ((e as CustomEvent<{ documentId: string }>).detail?.documentId === documentId) setReviewOpen(true);
+    };
+    window.addEventListener(OPEN_SUGGESTION_REVIEW, open);
+    return () => window.removeEventListener(OPEN_SUGGESTION_REVIEW, open);
+  }, [documentId]);
 
   useEffect(() => {
     if (!shouldAutoOpenReview({ autoOpenReview, alreadyOpened: autoOpened.current, generating, status: suggestion?.status })) {
@@ -91,7 +104,7 @@ export function SuggestionBar({
 
   return (
     <>
-      <div
+      {!(hidden && !generating) && <div
         role="status"
         className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border border-primary/25 bg-primary/5 px-4 py-3"
       >
@@ -111,9 +124,22 @@ export function SuggestionBar({
             <Button size="sm" onClick={() => setReviewOpen(true)}>
               {t("review")}
             </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="-mr-2 h-8 w-8 shrink-0 text-muted-foreground max-md:h-11 max-md:w-11"
+              aria-label={t("dismiss")}
+              title={t("dismissHint")}
+              onClick={() => {
+                dismissSuggestion(suggestion.versionId);
+                setHidden(true);
+              }}
+            >
+              <X className="h-4 w-4" />
+            </Button>
           </>
         )}
-      </div>
+      </div>}
 
       {!generating && (
         <SuggestionReviewSheet

@@ -16,7 +16,7 @@ const FIELDS: HeaderField[] = ["class", "number", "name", "date", "duration", "g
 /** The printed test header (school, class, name, date…), editable in place. */
 export function HeaderForm({ header, onChange }: { header: AssessmentHeader; onChange: (next: AssessmentHeader) => void }) {
   const t = useTranslations("assessmentEditor.header");
-  const { studentView, phone, english } = useAssessmentEditor();
+  const { phone, english } = useAssessmentEditor();
   const fieldLabel = (f: HeaderField | "school") => (english === undefined ? t(f) : printLabel(english, f));
   const [editing, setEditing] = useState(false);
   const shown = new Set(header.showFields);
@@ -30,7 +30,7 @@ export function HeaderForm({ header, onChange }: { header: AssessmentHeader; onC
     })),
   ];
 
-  if (editing && !studentView) {
+  if (editing) {
     const toggle = (f: HeaderField, on: boolean) =>
       onChange({ ...header, showFields: on ? FIELDS.filter((x) => x === f || shown.has(x)) : header.showFields.filter((x) => x !== f) });
     return (
@@ -78,7 +78,7 @@ export function HeaderForm({ header, onChange }: { header: AssessmentHeader; onC
   }
 
   if (cells.length === 0) {
-    return studentView ? null : (
+    return (
       <button type="button" onClick={() => setEditing(true)} className="flex w-full items-center justify-center gap-1.5 rounded border border-dashed border-neutral-300 py-2 font-sans text-xs text-neutral-500 hover:border-primary hover:text-primary">
         <Plus className="h-3.5 w-3.5" />
         {t("add")}
@@ -92,26 +92,25 @@ export function HeaderForm({ header, onChange }: { header: AssessmentHeader; onC
     return (
       <button
         type="button"
-        disabled={studentView}
         onClick={() => setEditing(true)}
         className="flex min-h-11 w-full items-center gap-2 rounded border border-neutral-300 px-3 text-left font-sans text-xs text-neutral-600"
       >
         <span className="min-w-0 flex-1 truncate"><span className="font-semibold text-neutral-800">{t("label")}</span> · {summary}</span>
-        {!studentView && <span className="shrink-0 font-medium text-primary underline">{t("editShort")}</span>}
+        <span className="shrink-0 font-medium text-primary underline">{t("editShort")}</span>
       </button>
     );
   }
 
   return (
     <div
-      role={studentView ? undefined : "button"}
-      tabIndex={studentView ? undefined : 0}
-      title={studentView ? undefined : t("edit")}
-      onClick={() => !studentView && setEditing(true)}
-      onKeyDown={(e) => !studentView && (e.key === "Enter" || e.key === " ") && (e.preventDefault(), setEditing(true))}
+      role="button"
+      tabIndex={0}
+      title={t("edit")}
+      onClick={() => setEditing(true)}
+      onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), setEditing(true))}
       className={cn(
         "grid grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)] overflow-hidden rounded border-[1.5px] border-neutral-700 font-sans text-[11px]",
-        !studentView && "cursor-pointer transition-shadow hover:ring-2 hover:ring-primary/30",
+        "cursor-pointer transition-shadow hover:ring-2 hover:ring-primary/30",
       )}
     >
       {cells.map((c, i) => (

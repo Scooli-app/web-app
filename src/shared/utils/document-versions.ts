@@ -45,6 +45,11 @@ export function listedVersions(versions: DocumentVersionSummary[]): DocumentVers
     .sort((a, b) => b.versionNumber - a.versionNumber);
 }
 
+/** The suggestion waiting for review, shown at the top of Versões (its banner can be hidden). */
+export function pendingSuggestionVersion(versions: DocumentVersionSummary[]): DocumentVersionSummary | null {
+  return versions.find((v) => v.kind === "ai_suggestion" && v.status === "suggested") ?? null;
+}
+
 /** The current version is already what the editor shows, so it cannot be restored. */
 export function canRestoreVersion(version: DocumentVersionSummary): boolean {
   return version.status !== "current";

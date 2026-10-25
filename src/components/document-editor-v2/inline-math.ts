@@ -6,7 +6,8 @@
  */
 import { renderInlineKatexToPngDataUrl } from "./math-render";
 
-export type InlineSegment = { kind: "text"; text: string } | { kind: "math"; tex: string };
+/** `raw`: the formula as written (`$…$` or `$$…$$`), so text the teacher didn't touch is saved back unchanged. */
+export type InlineSegment = { kind: "text"; text: string } | { kind: "math"; tex: string; raw: string };
 
 // `$$…$$`, or `$…$` that does not open or close on a space and is not followed by a digit,
 // so prices ("custa $5 e $6") stay text.
@@ -22,7 +23,7 @@ export function splitInlineMath(text: string): InlineSegment[] {
   let last = 0;
   for (const m of text.matchAll(INLINE_MATH)) {
     if (m.index > last) out.push({ kind: "text", text: text.slice(last, m.index) });
-    out.push({ kind: "math", tex: (m[1] ?? m[2]).trim() });
+    out.push({ kind: "math", tex: (m[1] ?? m[2]).trim(), raw: m[0] });
     last = m.index + m[0].length;
   }
   if (last < text.length) out.push({ kind: "text", text: text.slice(last) });

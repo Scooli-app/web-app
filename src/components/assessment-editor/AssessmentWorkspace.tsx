@@ -28,7 +28,8 @@ import { ExerciseView, ReadingView } from "./ExerciseView";
 import { HeaderForm } from "./HeaderForm";
 import { MAX_ITEMS, allExercises, exerciseNumbers, newExercise, nextId } from "./model";
 import { SectionBlock, type SectionActions } from "./SectionBlock";
-import { StudentToggle } from "./StudentToggle";
+import { initialSheetTab, readSheetTab, rememberSheetTab, type SheetTab } from "./sheetTab";
+import { SheetTabs } from "./SheetTabs";
 import { TotalsBar } from "./TotalsBar";
 
 const MAX_SECTIONS = 10;
@@ -42,7 +43,7 @@ export interface AssessmentWorkspaceProps {
   readOnly?: boolean;
   /** Toolbar left: title and save status. */
   title: ReactNode;
-  /** Toolbar right, after the student toggle: versions, share, export. */
+  /** Toolbar right: versions, share, export. */
   actions: ReactNode;
   chat: ReactNode;
   /** Opens the chat sheet; shown as "Conversa" in the bottom bar where the chat column is hidden (below lg). */
@@ -70,7 +71,20 @@ const AE_RETRY_MS = 10000;
 export function AssessmentWorkspace({ doc, onChange: onChangeProp, readOnly = false, title, actions, chat, onOpenChat, banner, lessonContext, lookupAe, showAe = true, searchAe, requestImage, onEditingChange, answerChecks, onConfirmCheck, english }: AssessmentWorkspaceProps) {
   const t = useTranslations("assessmentEditor");
   const phone = useIsMobile();
-  const [studentView, setStudentView] = useState(false);
+  const [tab, setTab] = useState<SheetTab>("answers");
+  const studentView = tab === "student";
+  const pendingChecks = Object.keys(answerChecks ?? {}).length;
+  // Once the document is there: the teacher's last tab, or the solutions while answers still need checking.
+  const tabChosen = useRef(false);
+  useEffect(() => {
+    if (!doc || tabChosen.current) return;
+    tabChosen.current = true;
+    setTab(initialSheetTab(readSheetTab(), pendingChecks));
+  }, [doc, pendingChecks]);
+  const changeTab = (next: SheetTab) => {
+    setTab(next);
+    rememberSheetTab(next);
+  };
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [dragId, setDragId] = useState<string | null>(null);
   const [aeLookup, setAeLookup] = useState<Record<string, AeOutcome | null>>({});
@@ -129,50 +143,47 @@ export function AssessmentWorkspace({ doc, onChange: onChangeProp, readOnly = fa
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
-  const toggleStudent = (on: boolean) => {
-    setStudentView(on);
-    if (on) setSelectedId(null);
-  };
-
   return (
     <AssessmentEditorContext.Provider value={ctx}>
       <div className={cn("flex min-h-0 w-full flex-1 flex-col overflow-hidden bg-muted/40", PHONE_TOUCH)}>
         <div className="flex flex-shrink-0 flex-wrap items-center gap-2 border-b border-border bg-background px-4 py-2 max-md:gap-1.5 max-md:px-3">
           <div className="flex min-w-0 flex-1 items-center gap-3 max-md:basis-full">{title}</div>
-          <StudentToggle pressed={studentView} onChange={toggleStudent} />
           {actions}
         </div>
         {banner}
 
+        {/* The chat runs the full height, as in the other editors; the totals bar belongs to the sheet column. */}
         <div className="flex min-h-0 flex-1">
-          <div className="relative min-w-0 flex-1 overflow-y-auto px-4 py-6 sm:px-6 max-md:px-0 max-md:py-3" onClick={() => setSelectedId(null)} aria-busy={readOnly || undefined}>
-            {readOnly && doc && (
-              <div className="sticky top-0 z-20 mx-auto mb-3 flex w-fit items-center gap-2 rounded-full border border-border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-sm">
-                <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
-                {t("chatLocked")}
+          <div className="flex min-w-0 flex-1 flex-col">
+            <div className="relative min-h-0 flex-1 overflow-y-auto px-4 py-6 sm:px-6 max-md:px-0 max-md:py-3" onClick={() => setSelectedId(null)} aria-busy={readOnly || undefined}>
+              {readOnly && doc && (
+                <div className="sticky top-0 z-20 mx-auto mb-3 flex w-fit items-center gap-2 rounded-full border border-border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-sm">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+                  {t("chatLocked")}
+                </div>
+              )}
+              {lessonContext}
+              {doc && <SheetTabs value={tab} onChange={changeTab} pendingChecks={pendingChecks} />}
+              <div className={cn(readOnly && "pointer-events-none select-none opacity-60 transition-opacity")} inert={readOnly || undefined}>
+                {doc ? renderPages(doc) : <GeneratingPages />}
+              </div>
+            </div>
+            {doc && (
+              <div className="flex-shrink-0 border-t border-border bg-background px-4 py-2 max-md:px-3 max-md:py-1.5">
+                <TotalsBar
+                  doc={doc}
+                  trailing={onOpenChat && (
+                    <Button type="button" variant="outline" size="sm" className="h-8 shrink-0 gap-1.5 lg:hidden" onClick={onOpenChat}>
+                      <MessageCircle className="h-4 w-4" />
+                      {t("chatButton")}
+                    </Button>
+                  )}
+                />
               </div>
             )}
-            {lessonContext}
-            <div className={cn(readOnly && "pointer-events-none select-none opacity-60 transition-opacity")} inert={readOnly || undefined}>
-              {doc ? renderPages(doc) : <GeneratingPages />}
-            </div>
           </div>
           <aside className="hidden w-80 flex-shrink-0 flex-col overflow-hidden border-l border-border bg-background lg:flex">{chat}</aside>
         </div>
-
-        {doc && (
-          <div className="flex-shrink-0 border-t border-border bg-background px-4 py-2 max-md:px-3 max-md:py-1.5">
-            <TotalsBar
-              doc={doc}
-              trailing={onOpenChat && (
-                <Button type="button" variant="outline" size="sm" className="h-8 shrink-0 gap-1.5 lg:hidden" onClick={onOpenChat}>
-                  <MessageCircle className="h-4 w-4" />
-                  {t("chatButton")}
-                </Button>
-              )}
-            />
-          </div>
-        )}
       </div>
     </AssessmentEditorContext.Provider>
   );
@@ -250,7 +261,7 @@ export function AssessmentWorkspace({ doc, onChange: onChangeProp, readOnly = fa
 
     const renderSheet = () => {
       const si = doc.sections.findIndex((x) => x.items.some((i) => i.id === selectedId));
-      if (!phone || studentView || si < 0) return null;
+      if (!phone || si < 0) return null;
       const s = doc.sections[si];
       const ii = s.items.findIndex((i) => i.id === selectedId);
       const item = s.items[ii];
@@ -343,7 +354,7 @@ export function AssessmentWorkspace({ doc, onChange: onChangeProp, readOnly = fa
           </DndContext>
         </A4Page>
         {renderSheet()}
-        {!studentView && doc.sections.length < MAX_SECTIONS && (
+        {doc.sections.length < MAX_SECTIONS && (
           <div className="mx-auto mt-4 flex max-w-[794px] justify-center">
             <Button variant="outline" size="sm" className="gap-1.5 bg-background" onClick={(e) => { e.stopPropagation(); addSection(); }}>
               <Plus className="h-3.5 w-3.5" />

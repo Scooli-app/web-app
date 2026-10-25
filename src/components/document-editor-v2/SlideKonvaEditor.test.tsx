@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { NextIntlClientProvider } from "next-intl";
+import type { Editor } from "@tiptap/react";
 import { SlideKonvaEditor } from "./SlideKonvaEditor";
 import type { CanvasElement, CanvasImageElement, CanvasSlide } from "@/shared/types/canvas-presentation";
 import messages from "../../../messages/en.json";
@@ -130,21 +131,26 @@ describe("ENG-233 image editing through the actual canvas handlers", () => {
     expect(container.querySelector("textarea")).toBeNull();
   });
 
-  it("normal text still opens inline and commits edited text", () => {
+  // The text box edits in a field that shows formulas as maths (MathTextInput), not a textarea of $…$.
+  it("normal text still opens inline and commits edited text", async () => {
     const h = mount([{
       id: "text-1", type: "text", x: 0, y: 0, w: 0.5, h: 0.1,
       text: "Original text", fontSize: 0.03, fontStyle: "normal", color: "#000", align: "left",
     }]);
     trigger("text-1", "onDblClick");
-    const textarea = container.querySelector("textarea");
-    if (!textarea) throw new Error("Missing inline text editor");
-    expect(textarea.value).toBe("Original text");
+    // The field's editor mounts in an effect: let it.
+    await act(() => Promise.resolve());
+    const field = container.querySelector<HTMLElement & { editor?: Editor }>(".ProseMirror");
+    if (!field?.editor) throw new Error("Missing inline text editor");
+    expect(field.textContent).toBe("Original text");
     act(() => {
-      textarea.value = "Updated text";
-      textarea.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+      field.editor?.commands.setContent({ type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "Updated text" }] }] }, { emitUpdate: true });
+    });
+    act(() => {
+      field.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
     });
     expect(h.onChange).toHaveBeenCalledWith([expect.objectContaining({ id: "text-1", text: "Updated text" })]);
-    expect(container.querySelector("textarea")).toBeNull();
+    expect(container.querySelector(".ProseMirror")).toBeNull();
     expect(h.onChangeImage).not.toHaveBeenCalled();
   });
 });

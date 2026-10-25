@@ -1453,7 +1453,9 @@
       "restoreConfirm": "Restore",
       "restoring": "Restoring the version",
       "restoredToast": "Version restored",
-      "restoreError": "We couldn’t restore this version."
+      "restoreError": "We couldn’t restore this version.",
+      "pendingSuggestion": "Pending suggestion",
+      "pendingSuggestionReview": "Review"
     },
     "documentEditor": {
       "stepPreparingLabel": "Prepare",
@@ -1690,32 +1692,6 @@
         "meadow": "Spring meadow with sun and grass, for younger pupils.",
         "galaxy": "Light lilac with a planet and colourful stars."
       }
-    },
-    "formulaModal": {
-      "groupFractions": "Fractions, powers and indices",
-      "groupRoots": "Roots",
-      "groupTrigLogs": "Trig and logs",
-      "groupBigOperators": "Big operators",
-      "groupBarsVectors": "Bars and vectors",
-      "groupRelations": "Relations",
-      "groupOperators": "Operators",
-      "groupGreek": "Greek",
-      "groupSetsLogic": "Sets and logic",
-      "groupNumberSets": "Number sets",
-      "editTitle": "Edit formula",
-      "addTitle": "Add formula",
-      "latexModeLabel": "LaTeX mode",
-      "latexModeHint": "Turn on to write plain LaTeX. Turn off for a simpler input.",
-      "formulaLabel": "Formula",
-      "formulaPlaceholderSimple": "E.g.: sin(x) + πr^2",
-      "formulaHint": "Use the palette to insert symbols at the cursor and confirm once the preview looks right.",
-      "previewLabel": "Preview",
-      "paletteLabel": "Symbol palette",
-      "paletteHint": "Each button inserts LaTeX directly into the field above.",
-      "cancel": "Cancel",
-      "save": "Save",
-      "add": "Add",
-      "previewEmpty": "Your formula shows up here. For example:"
     },
     "imagePickerModal": {
       "dialogTitle": "Add image",
@@ -3440,7 +3416,9 @@
     "bar": {
       "title": "New suggested version",
       "preparing": "Preparing a new version…",
-      "review": "Review changes"
+      "review": "Review changes",
+      "dismiss": "Hide",
+      "dismissHint": "Hides this notice. The suggestion stays in Versions."
     },
     "review": {
       "title": "New suggested version",
@@ -3484,7 +3462,7 @@
       "presentationSettings": "Presentation theme and settings",
       "documentTitle": "Title",
       "themeChange": "Theme: {before} → {after}",
-      "formatChanged": "The presentation changed format since this suggestion was made.",
+      "formatChanged": "This suggestion was made before the presentation changed. Update it to see the changes on the presentation as it is now.",
       "refresh": "Update suggestion",
       "refreshError": "Could not update the suggestion. Try again.",
       "assessment": {
@@ -3637,8 +3615,6 @@
     "chip": "{count} to review"
   },
   "assessmentEditor": {
-    "studentView": "Student version",
-    "studentViewHint": "Shows exactly what students get: no answers, explanations, marking criteria or goals.",
     "export": "Export",
     "saving": "Saving…",
     "saved": "Saved",
@@ -3744,7 +3720,8 @@
       "readingDefaultTitle": "Reading passage",
       "readingTitle": "Title (optional)",
       "readingBody": "Text",
-      "imageAlt": "Exercise image"
+      "imageAlt": "Exercise image",
+      "more": "More actions"
     },
     "types": {
       "multiple_choice": "Multiple choice",
@@ -3772,14 +3749,11 @@
     },
     "editor": {
       "formula": "Formula",
-      "preview": "Preview",
-      "formulaTooLong": "The formula doesn't fit in this field.",
       "title": "Edit exercise {number}",
       "readingTitle": "Edit reading passage",
       "type": "Type",
       "prompt": "Question",
       "promptGapsHint": "Type ___ (three underscores) wherever students fill in a word.",
-      "preview": "Preview",
       "options": "Options",
       "addOption": "Add option",
       "removeOption": "Remove",
@@ -3918,6 +3892,27 @@
       "revising": "We're updating this document. Try exporting again in a minute.",
       "rateLimited": "That's a lot of exports in a short time. Wait a minute and try again.",
       "retry": "Try again"
+    },
+    "tabs": {
+      "label": "Sheet version",
+      "student": {
+        "title": "Student sheet",
+        "hint": "what the student gets"
+      },
+      "answers": {
+        "title": "Answers",
+        "hint": "just for you"
+      },
+      "toCheck": "{count, plural, one {# to check} other {# to check}}"
     }
+  },
+  "math": {
+    "editLabel": "Edit formula",
+    "loading": "Loading the formula editor",
+    "blank": "Blank",
+    "hint": "Type 3/4 for a fraction, x^2 for an exponent.",
+    "cancel": "Cancel",
+    "save": "Save",
+    "insert": "Formula"
   }
 }

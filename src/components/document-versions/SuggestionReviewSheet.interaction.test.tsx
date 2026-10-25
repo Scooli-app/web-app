@@ -147,6 +147,18 @@ describe("SuggestionReviewSheet: format changed", () => {
     expect(document.body.textContent).not.toContain("formatChanged");
   });
 
+  // Audit: two "Atualizar sugestão" buttons, one per notice, and no way to tell them apart.
+  it("shows one notice and one refresh button when the deck changed format and was edited", async () => {
+    vi.mocked(getSuggestionDiff).mockResolvedValue({ ...DIFF, formatChanged: true, stale: true });
+
+    await openSheet();
+
+    const refreshButtons = Array.from(document.body.querySelectorAll("button")).filter((b) => b.textContent === "refresh");
+    expect(refreshButtons).toHaveLength(1);
+    expect(document.body.textContent).toContain("formatChanged");
+    expect(document.body.textContent).not.toContain("staleNotice");
+  });
+
   it("does not call refresh when no change of format was reported", async () => {
     vi.mocked(getSuggestionDiff).mockResolvedValue(DIFF);
     await openSheet();
