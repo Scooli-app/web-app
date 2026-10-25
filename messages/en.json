@@ -145,6 +145,8 @@
     "confirmAll": "All went well",
     "confirmAllToast": "{count, plural, one {# lesson marked as taught} other {# lessons marked as taught}}",
     "dismiss": "Hide for now",
+    "savedToast": "Saved: {result}",
+    "change": "Change",
     "taughtToast": "Lesson marked as taught",
     "prepareNext": "Prepare the next lesson",
     "saveError": "Could not save. Try again.",
@@ -186,7 +188,7 @@
     "save": "Save",
     "followUpOpenLesson": "Open",
     "reinforcementNote": "Reinforcement sheet: lesson on {day}",
-    "missingAmountQuestion": "How much was left to teach?",
+    "missingAmountQuestion": "How much was left to teach? (optional)",
     "missingLittle": "A little",
     "missingHalf": "Half",
     "missingMost": "Almost all",
@@ -1451,7 +1453,10 @@
       "restoreConfirm": "Restore",
       "restoring": "Restoring the version",
       "restoredToast": "Version restored",
-      "restoreError": "We couldn’t restore this version."
+      "restoreError": "We couldn’t restore this version.",
+      "pendingSuggestion": "Pending suggestion",
+      "pendingSuggestionReview": "Review",
+      "pendingSuggestionPreparing": "Preparing…"
     },
     "documentEditor": {
       "stepPreparingLabel": "Prepare",
@@ -1473,6 +1478,11 @@
       "imageUploadFailed": "We couldn't upload the image.",
       "imageAdded": "Image added to the document.",
       "imageGenDelayError": "Image generation finished with failures or delays in the stream.",
+      "conflict": "This document was changed in another tab or device. Your latest changes weren't saved.",
+      "conflictReload": "Reload",
+      "conflictKeepMine": "Keep my version",
+      "documentUnreachable": "This document couldn't be opened. Check your connection and try again.",
+      "retryLoad": "Try again",
       "documentNotFound": "Document not found",
       "backToDocuments": "Back to documents",
       "editorHeading": "Editor",
@@ -1683,32 +1693,6 @@
         "meadow": "Spring meadow with sun and grass, for younger pupils.",
         "galaxy": "Light lilac with a planet and colourful stars."
       }
-    },
-    "formulaModal": {
-      "groupFractions": "Fractions, powers and indices",
-      "groupRoots": "Roots",
-      "groupTrigLogs": "Trig and logs",
-      "groupBigOperators": "Big operators",
-      "groupBarsVectors": "Bars and vectors",
-      "groupRelations": "Relations",
-      "groupOperators": "Operators",
-      "groupGreek": "Greek",
-      "groupSetsLogic": "Sets and logic",
-      "groupNumberSets": "Number sets",
-      "editTitle": "Edit formula",
-      "addTitle": "Add formula",
-      "latexModeLabel": "LaTeX mode",
-      "latexModeHint": "Turn on to write plain LaTeX. Turn off for a simpler input.",
-      "formulaLabel": "Formula",
-      "formulaPlaceholderSimple": "E.g.: sin(x) + πr^2",
-      "formulaHint": "Use the palette to insert symbols at the cursor and confirm once the preview looks right.",
-      "previewLabel": "Preview",
-      "paletteLabel": "Symbol palette",
-      "paletteHint": "Each button inserts LaTeX directly into the field above.",
-      "cancel": "Cancel",
-      "save": "Save",
-      "add": "Add",
-      "previewEmpty": "Your formula shows up here. For example:"
     },
     "imagePickerModal": {
       "dialogTitle": "Add image",
@@ -1969,6 +1953,9 @@
       "destinationAll": "All",
       "destinationAllHint": "Share with the community and the school at the same time.",
       "destinationCommunity": "Community library",
+      "destinationCommunityInstantHint": "Visible to every teacher on Scooli.",
+      "shareAllInstantDescription": "The resource is published to the school library and to the community library.",
+      "shareCommunityInstantDescription": "Share your resource with other teachers. It is published right away.",
       "destinationCommunityHint": "Visible to every teacher on Scooli after review.",
       "destinationOrgHint": "Only your school colleagues will see this resource.",
       "cancel": "Cancel",
@@ -1979,7 +1966,7 @@
       "shareCommunityTitle": "Share with the Community",
       "shareWithOrgDescription": "This resource will be available to {name}'s members.",
       "shareAllDescription": "The resource will be published to the school library and submitted for review in the community library.",
-      "shareCommunityDescription": "Share your educational resource with other Portuguese teachers. The resource will be reviewed before publishing.",
+      "shareCommunityDescription": "Share your resource with other teachers. It is reviewed before it is published.",
       "schoolFallback": "the school",
       "titleLabel": "Title",
       "titlePlaceholder": "E.g. Review - Functions - 9th grade",
@@ -2010,6 +1997,15 @@
         "• In the community, it will be reviewed by the Scooli team within 24-48h before publishing",
         "• You'll get notified once the public version is approved"
       ],
+      "instantHeading": "How it works",
+      "communityInstantBullets": [
+        "• The resource is available right away in the community library",
+        "• Other teachers can reuse and adapt it"
+      ],
+      "bothInstantBullets": [
+        "• It's available right away to your school's members and in the community library",
+        "• Other teachers can reuse and adapt it"
+      ],
       "communityBullets": [
         "• The resource will be reviewed by our team within 24-48 hours",
         "• We check alignment with the AEs and pedagogical quality",
@@ -2036,6 +2032,7 @@
       "previewComingSoon": "Preview coming soon",
       "previewDescription": "Read-only preview, as students get it. Shared by {name}.",
       "shareOrgSuccess": "Resource shared with your school library.",
+      "sharePublished": "Resource published in the community library.",
       "shareCommunitySuccess": "Resource submitted for review — you'll be notified within 24–48 hours.",
       "shareError": "Couldn't share this resource"
     },
@@ -2983,6 +2980,7 @@
   "timetable": {
     "status": {
       "pending": "Pending",
+      "pendingPast": "No documents",
       "generating": "Generating",
       "completed": "Generated",
       "failed": "Failed",
@@ -3032,6 +3030,7 @@
       "reinforcementReady": "Sheet ready · lesson on {day}",
       "reinforcementFailed": "The sheet could not be made.",
       "open": "Open",
+      "linkPlan": "Link a plan",
       "noPlan": "Link a plan to this class to see its progress."
     },
     "shared": {
@@ -3418,7 +3417,9 @@
     "bar": {
       "title": "New suggested version",
       "preparing": "Preparing a new version…",
-      "review": "Review changes"
+      "review": "Review changes",
+      "dismiss": "Hide",
+      "dismissHint": "Hides this notice. The suggestion stays in Versions."
     },
     "review": {
       "title": "New suggested version",
@@ -3462,7 +3463,7 @@
       "presentationSettings": "Presentation theme and settings",
       "documentTitle": "Title",
       "themeChange": "Theme: {before} → {after}",
-      "formatChanged": "The presentation changed format since this suggestion was made.",
+      "formatChanged": "This suggestion was made before the presentation changed. Update it to see the changes on the presentation as it is now.",
       "refresh": "Update suggestion",
       "refreshError": "Could not update the suggestion. Try again.",
       "assessment": {
@@ -3615,13 +3616,26 @@
     "chip": "{count} to review"
   },
   "assessmentEditor": {
-    "studentView": "Student version",
-    "studentViewHint": "Shows exactly what students get: no answers, explanations, marking criteria or goals.",
     "export": "Export",
     "saving": "Saving…",
     "saved": "Saved",
     "unsaved": "Unsaved changes",
-    "saveFailed": "Couldn't save. Your changes are still here: check the exercise you edited and try again.",
+    "saveFailed": "Couldn't save. Your changes are still here. Try again; if it keeps failing, check your internet connection and the last exercise you edited.",
+    "leaveUnsaved": "Your latest changes haven't been saved and will be lost if you leave. Leave anyway?",
+    "conflict": "This document was changed in another tab or device. Your latest changes weren't saved.",
+    "conflictReload": "Reload",
+    "conflictKeepMine": "Keep my version",
+    "check": {
+      "label": "Check this",
+      "confirm": "It's correct",
+      "confirmFailed": "Couldn't save that. Try again."
+    },
+    "undo": {
+      "action": "Undo",
+      "exerciseDeleted": "Exercise deleted.",
+      "readingDeleted": "Text deleted.",
+      "groupDeleted": "Group deleted ({count, plural, one {# item} other {# items}})."
+    },
     "retrySave": "Try again",
     "dismiss": "Dismiss",
     "generatingTitle": "Creating your document…",
@@ -3688,6 +3702,7 @@
       "newTitle": "Part {roman}",
       "subtotal": "{points, number} pts",
       "addExercise": "Add exercise",
+      "full": "Section full ({max} items)",
       "addReading": "Add reading passage",
       "addGroup": "Add section",
       "deleteGroup": "Delete section",
@@ -3706,7 +3721,8 @@
       "readingDefaultTitle": "Reading passage",
       "readingTitle": "Title (optional)",
       "readingBody": "Text",
-      "imageAlt": "Exercise image"
+      "imageAlt": "Exercise image",
+      "more": "More actions"
     },
     "types": {
       "multiple_choice": "Multiple choice",
@@ -3733,12 +3749,12 @@
       "gridOnSave": "The grid updates once your changes are saved."
     },
     "editor": {
+      "formula": "Formula",
       "title": "Edit exercise {number}",
       "readingTitle": "Edit reading passage",
       "type": "Type",
       "prompt": "Question",
       "promptGapsHint": "Type ___ (three underscores) wherever students fill in a word.",
-      "preview": "Preview",
       "options": "Options",
       "addOption": "Add option",
       "removeOption": "Remove",
@@ -3814,7 +3830,10 @@
       "classifyItems": "Items to sort",
       "itemN": "Item {n}",
       "itemCategory": "Item's box",
-      "noCategory": "No box"
+      "noCategory": "No box",
+      "tooLong": "This field has reached its character limit.",
+      "optionLabel": "Option {letter}",
+      "cellLabel": "Cell in row {row}, column {column}"
     },
     "versionPreviewEmpty": "This version has no exercises.",
     "chatSaveFirst": "Couldn't save your changes; try again before using the assistant.",
@@ -3840,6 +3859,7 @@
       "classes": "Some items have no box yet"
     },
     "exportDialog": {
+      "incomplete": "{count, plural, one {Question {numbers} is incomplete} other {Questions {numbers} are incomplete}} (no statement or no answer). It will print like that.",
       "title": {
         "test": "Export test",
         "worksheet": "Export worksheet",
@@ -3876,6 +3896,29 @@
       "revising": "We're updating this document. Try exporting again in a minute.",
       "rateLimited": "That's a lot of exports in a short time. Wait a minute and try again.",
       "retry": "Try again"
+    },
+    "tabs": {
+      "label": "Sheet version",
+      "student": {
+        "title": "Student sheet",
+        "hint": "what the student gets"
+      },
+      "answers": {
+        "title": "Answers",
+        "hint": "just for you"
+      },
+      "toCheck": "{count, plural, one {# to check} other {# to check}}"
     }
+  },
+  "math": {
+    "editLabel": "Edit formula",
+    "loading": "Loading the formula editor",
+    "blank": "Blank",
+    "hint": "Type 3/4 for a fraction, x^2 for an exponent.",
+    "cancel": "Cancel",
+    "save": "Save",
+    "insert": "Formula",
+    "loadFailed": "The formula editor couldn't open.",
+    "retry": "Try again"
   }
 }

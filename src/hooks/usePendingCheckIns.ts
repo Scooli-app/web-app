@@ -13,6 +13,7 @@ import { afterConfirmAll, loadPendingCheckIns, visibleCheckIns, withCheckInAt, w
  */
 export function usePendingCheckIns(enabled: boolean) {
   const [items, setItems] = useState<PendingCheckIn[]>([]);
+  const [loaded, setLoaded] = useState(false);
   const [dismissed, setDismissed] = useState(false);
   const [skipped, setSkipped] = useState<string[]>([]);
   // Mirror of `items` for the async handlers, so each one sees the queue as it is now.
@@ -31,7 +32,9 @@ export function usePendingCheckIns(enabled: boolean) {
     setSkipped(readSkipped());
     loadPendingCheckIns(enabled, (limit) => checkInService.getPending(limit))
       .then((list) => {
-        if (!cancelled) replaceItems(list);
+        if (cancelled) return;
+        replaceItems(list);
+        setLoaded(true);
       })
       .catch(() => {
         /* the strip stays hidden; the dashboard works without it */
@@ -96,5 +99,5 @@ export function usePendingCheckIns(enabled: boolean) {
     setSkipped([]);
   }, []);
 
-  return { visible, dismissed, submit, confirmAll, skipForSession, dismiss, show };
+  return { visible, loaded, dismissed, submit, confirmAll, skipForSession, dismiss, show };
 }

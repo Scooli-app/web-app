@@ -81,7 +81,7 @@ function isFormatChangedError(error: unknown): boolean {
  * and a v1 block (`type: "slide"`, not yet opened in the editor), which is converted with the editor's own
  * converter. Anything unreadable yields null.
  */
-function parseSlide(raw: string | null): CanvasSlide | null {
+function parseSlide(raw: string | null, themeId?: string): CanvasSlide | null {
   if (!raw) return null;
   let parsed: unknown;
   try {
@@ -94,7 +94,8 @@ function parseSlide(raw: string | null): CanvasSlide | null {
   const block = slideBlockSchema.safeParse(parsed);
   if (!block.success) return null;
   // A one-block document: the converter maps every block, so the only slide is the one we want.
-  return presentationToCanvas({ schemaVersion: SCHEMA_VERSION, documentType: "presentation", blocks: [block.data] })
+  // An old-format suggestion carries the deck's theme in its settings; without it the preview is the default dark look.
+  return presentationToCanvas({ schemaVersion: SCHEMA_VERSION, documentType: "presentation", themeId, blocks: [block.data] })
     .slides[0] ?? null;
 }
 
@@ -176,7 +177,7 @@ function MarkdownBody({ change, view }: { change: SectionChange; view: DiffView 
   );
 }
 
-function SlideBody({ change }: { change: SectionChange }) {
+function SlideBody({ change, themeId }: { change: SectionChange; themeId?: string }) {
   const t = useTranslations("documentVersions.review");
   const sides = [
     { label: t("before"), raw: change.before },
@@ -186,7 +187,7 @@ function SlideBody({ change }: { change: SectionChange }) {
   return (
     <div className="flex flex-col gap-4 sm:flex-row">
       {sides.map(({ label, raw }) => {
-        const slide = parseSlide(raw);
+        const slide = parseSlide(raw, themeId);
         return (
           <div key={label} className="flex min-w-0 flex-1 flex-col gap-1.5">
             <span className="text-xs font-medium text-muted-foreground">{label}</span>
@@ -244,11 +245,13 @@ function ChangeRow({
   change,
   checked,
   isPresentation,
+  themeId,
   onToggle,
 }: {
   change: SectionChange;
   checked: boolean;
   isPresentation: boolean;
+  themeId?: string;
   onToggle: () => void;
 }) {
   const t = useTranslations("documentVersions.review");
@@ -295,7 +298,7 @@ function ChangeRow({
             ) : isSettings ? (
               <SettingsBody change={change} />
             ) : isPresentation ? (
-              <SlideBody change={change} />
+              <SlideBody change={change} themeId={themeId} />
             ) : (
               <MarkdownBody change={change} view={markdownView} />
             )}
@@ -423,6 +426,8 @@ interface SuggestionReviewBodyProps {
   onToggle: (key: string) => void;
   /** Offers "Atualizar sugestão" next to the stale notice. */
   onRefresh?: () => void;
+  /** The sheet already shows the format notice and its button: no second notice here. */
+  formatChanged?: boolean;
 }
 
 /** The scrollable part of the review: the stale notice, the changed sections and the unchanged count. */
@@ -433,8 +438,12 @@ export function SuggestionReviewBody({
   documentType = "presentation",
   onToggle,
   onRefresh,
+  formatChanged = false,
 }: SuggestionReviewBodyProps) {
   const isPresentation = isPresentationDoc({ contentFormat, documentType });
+  const meta = isPresentation ? diff.changes.find((change) => change.key === META_KEY) : undefined;
+  // The deck's own theme first: an old suggestion may carry one the model picked.
+  const themeId = parseSettings(meta?.before ?? null)?.themeId ?? parseSettings(meta?.after ?? null)?.themeId;
   const assessment = isAssessmentDoc({ contentFormat, documentType }) ? assessmentChanges(diff.changes) : null;
   const t = useTranslations("documentVersions.review");
   const reviewable = reviewableChanges(diff.changes);
@@ -444,7 +453,7 @@ export function SuggestionReviewBody({
 
   return (
     <div className="flex flex-col gap-4">
-      {diff.stale && (
+      {diff.stale && !formatChanged && (
         <div role="note" className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border bg-muted/50 px-4 py-3">
           <p className="min-w-0 flex-1 text-sm text-muted-foreground">{t("staleNotice")}</p>
           {onRefresh && (
@@ -482,6 +491,7 @@ export function SuggestionReviewBody({
               change={change}
               checked={selection.has(change.key)}
               isPresentation={isPresentation}
+              themeId={themeId}
               onToggle={() => onToggle(change.key)}
             />
           ))}
@@ -672,6 +682,7 @@ export function SuggestionReviewSheet({
                 documentType={documentType}
                 onToggle={(key) => setSelection((current) => toggleSection(current, key))}
                 onRefresh={() => void handleRefresh()}
+                formatChanged={formatChanged}
               />
             )}
           </div>

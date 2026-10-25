@@ -1,7 +1,8 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-@custom-variant dark (&:is(.dark *));
+/* .paper-light: editing panels drawn on the always-white A4 page keep the light theme in dark mode. */
+@custom-variant dark (&:is(.dark *):not(.paper-light, .paper-light *));
 
 @theme {
   --color-background: var(--background);
@@ -105,6 +106,25 @@
   --sidebar-accent-foreground: #6753FF;
   --sidebar-border: #C7C9D9;
   --sidebar-ring: #6753FF;
+}
+
+/* The utilities read the --color-* tokens, resolved once at the root: the scope sets those. */
+.dark .paper-light {
+  color-scheme: light;
+  --color-background: #F8F9FA;
+  --color-foreground: #0B0D17;
+  --color-card: #FFFFFF;
+  --color-card-foreground: #0B0D17;
+  --color-popover: #FFFFFF;
+  --color-popover-foreground: #0B0D17;
+  --color-secondary: #F8F9FA;
+  --color-secondary-foreground: #0B0D17;
+  --color-muted: #F8F9FA;
+  --color-muted-foreground: #64748B;
+  --color-accent: #EEF0FF;
+  --color-accent-foreground: #0B0D17;
+  --color-border: #E2E8F0;
+  --color-input: #E2E8F0;
 }
 
 .dark {
@@ -686,4 +706,21 @@
 
 button {
   cursor: pointer;
+}
+/* Formula field (MathLive): no menu, only the formula and its on-screen keyboard button. */
+math-field::part(menu-toggle) {
+  display: none;
+}
+
+/* A text field with formulas (MathTextInput) is a Tiptap editor too, but sized like an input, not like a document. */
+.tiptap.math-text-input {
+  min-height: 0;
+  padding: 0;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  color: inherit;
+}
+.tiptap.math-text-input p {
+  margin: 0;
 }

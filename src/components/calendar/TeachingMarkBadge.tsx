@@ -30,3 +30,26 @@ export function TeachingMarkBadge({ mark, className = "" }: { mark: TeachingMark
     </span>
   );
 }
+
+const LEGEND: TeachingMark[] = [
+  { key: "taught", glyph: "✓" },
+  { key: "taughtWithDifficulties", glyph: "~" },
+  { key: "partiallyTaught", glyph: "½" },
+  { key: "notHeld", glyph: "✕" },
+  { key: "unconfirmed", glyph: "•" },
+];
+
+/** What the marks mean, once, next to the week (the marks alone are small and only explained on hover). */
+export function TeachingMarkLegend({ className = "" }: { className?: string }) {
+  const t = useTranslations("checkIns.mark");
+  return (
+    <p className={`flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground ${className}`}>
+      {LEGEND.map((mark) => (
+        <span key={mark.key} className="inline-flex items-center gap-1">
+          <TeachingMarkBadge mark={mark} />
+          {t(mark.key)}
+        </span>
+      ))}
+    </p>
+  );
+}

@@ -9,10 +9,11 @@ import {
   NEXT_STEPS_LIMIT,
   shouldLoadNextSteps,
   visibleSteps,
+  withStripCount,
   weekStartOf,
   type NextStepAction,
 } from "@/components/next-steps/nextSteps";
-import { SHOW_CHECK_INS_EVENT } from "@/hooks/checkInSession";
+import { CHECK_INS_CHANGED_EVENT, CHECK_INS_VISIBLE_EVENT, SHOW_CHECK_INS_EVENT, lastVisibleCheckIns } from "@/hooks/checkInSession";
 import { useCheckInFollowUps } from "@/hooks/useCheckInFollowUps";
 import { useReplan } from "@/hooks/useReplan";
 import { getSuggestions, getTurmaSuggestions } from "@/services/api/suggestions.service";
@@ -73,6 +74,21 @@ export function NextStepsCard({ timetableId, refreshKey = 0 }: NextStepsCardProp
 
   const reload = useCallback(() => setReloadTick((n) => n + 1), []);
 
+  // The dashboard strip saves check-ins elsewhere on the page: "Confirma N aulas" and "Reforçar" follow them.
+  useEffect(() => {
+    window.addEventListener(CHECK_INS_CHANGED_EVENT, reload);
+    return () => window.removeEventListener(CHECK_INS_CHANGED_EVENT, reload);
+  }, [reload]);
+
+  // …and "Ainda não" there leaves fewer to confirm than the server counts.
+  const [stripCount, setStripCount] = useState<number | null>(null);
+  useEffect(() => {
+    const sync = () => setStripCount(lastVisibleCheckIns());
+    sync();
+    window.addEventListener(CHECK_INS_VISIBLE_EVENT, sync);
+    return () => window.removeEventListener(CHECK_INS_VISIBLE_EVENT, sync);
+  }, []);
+
   const onAction = async (item: Suggestion) => {
     const action = actionFor(item.kind);
     if (action === "view") {
@@ -111,7 +127,7 @@ export function NextStepsCard({ timetableId, refreshKey = 0 }: NextStepsCardProp
   };
 
   if (!shouldLoad || failedScope === scope) return null;
-  const steps = loaded?.scope === scope ? visibleSteps(loaded.items) : null;
+  const steps = loaded?.scope === scope ? visibleSteps(withStripCount(loaded.items, timetableId ? null : stripCount)) : null;
 
   return (
     <>

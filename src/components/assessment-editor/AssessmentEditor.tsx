@@ -1,6 +1,7 @@
 "use client";
 
 import AIChatPanel from "@/components/document-editor/AIChatPanel";
+import { InlineTitle } from "@/components/document-editor/InlineTitle";
 import { DocumentEditorSkeleton } from "@/components/document-editor/DocumentEditorSkeleton";
 import { DocumentLessonContext } from "@/components/document-editor/DocumentLessonContext";
 import { ImagePickerModal, type ImageInsertResult } from "@/components/document-editor-v2/ImagePickerModal";
@@ -9,12 +10,11 @@ import { DocumentVersionsButton } from "@/components/document-versions/DocumentV
 import { SuggestionBar } from "@/components/document-versions/SuggestionBar";
 import { Button } from "@/components/ui/button";
 import { GenerationStalledNotice } from "@/components/ui/generation-stalled-notice";
-import { Input } from "@/components/ui/input";
 import { useGenerationProgress } from "@/hooks/useGenerationProgress";
 import { useGenerationStalled } from "@/hooks/useGenerationStalled";
 import { generateDocumentImage } from "@/services/api/document-images.service";
+import { dismissAnswerCheck } from "@/services/api/document.service";
 import { searchAeOutcomes } from "@/services/export/documentExport";
-import { MAX_LENGTHS } from "@/shared/config/constants";
 import { Routes, type Document } from "@/shared/types";
 import { isFailedDocumentStatus, type RagSource } from "@/shared/types/document";
 import { chatWithDocument, fetchDocument, setCurrentDocument, updateDocument } from "@/store/documents/documentSlice";
@@ -32,7 +32,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { AssessmentWorkspace } from "./AssessmentWorkspace";
 import { ExportDialog } from "./ExportDialog";
-import { adoptGrids, adoptStudentOrder, parseAssessment } from "./model";
+import { adoptGrids, adoptStudentOrder, exerciseNumbers, missingAnswer, parseAssessment } from "./model";
 import { createSerialRunner } from "./serialRunner";
 
 interface ChatMessage {
@@ -94,7 +94,13 @@ export default function AssessmentEditor({ documentId, defaultTitle, chatTitle, 
   const [doc, setDoc] = useState<AssessmentDocument | null>(null);
   const [dirty, setDirty] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
-  const [saveFailed, setSaveFailed] = useState<"content" | "title" | null>(null);
+  // "conflict": another tab or device saved first; nothing is overwritten unless the teacher keeps their version.
+  const [saveFailed, setSaveFailed] = useState<"content" | "title" | "conflict" | null>(null);
+  const overwriteRef = useRef(false);
+  // The stored content our working copy starts from: set on load and by each save (a follow-up save can run before
+  // the store's copy re-renders).
+  const baseVersionRef = useRef<string | undefined>(undefined);
+  const reloadingRef = useRef(false);
   const [pendingTitle, setPendingTitle] = useState<string | null>(null);
   const [isChatting, setIsChatting] = useState(false);
   // The pre-chat save: editing is already locked, but the chat panel isn't "streaming" yet.
@@ -126,10 +132,31 @@ export default function AssessmentEditor({ documentId, defaultTitle, chatTitle, 
     const parsed = parseAssessment(document.content);
     if (!parsed) return;
     needsLoadRef.current = false;
+    baseVersionRef.current = document.contentVersion;
     lastSavedRef.current = null;
     setDoc(parsed);
     setDirty(false);
   }, [document, inProgress]);
+
+  // The server's maths check flags (metadata); a confirmed one hides at once, before the request returns.
+  const [confirmedChecks, setConfirmedChecks] = useState<string[]>([]);
+  const answerChecks = useMemo(() => {
+    const out: Record<string, string> = {};
+    for (const c of document?.metadata?.answerChecks ?? []) {
+      if (!confirmedChecks.includes(c.exerciseId)) out[c.exerciseId] = c.note;
+    }
+    return out;
+  }, [document?.metadata?.answerChecks, confirmedChecks]);
+  const handleConfirmCheck = useCallback(
+    (exerciseId: string) => {
+      setConfirmedChecks((prev) => [...prev, exerciseId]);
+      dismissAnswerCheck(documentId, exerciseId).catch(() => {
+        setConfirmedChecks((prev) => prev.filter((id) => id !== exerciseId));
+        toast.error(t("check.confirmFailed"));
+      });
+    },
+    [documentId, t],
+  );
 
   const handleEditingChange = useCallback((id: string | null) => {
     editingIdRef.current = id;
@@ -154,8 +181,11 @@ export default function AssessmentEditor({ documentId, defaultTitle, chatTitle, 
     if (!snapshot || !current) return false;
     const title = pendingTitleRef.current ?? current.title;
     setSaveStatus("saving");
-    const result = await dispatch(updateDocument({ id: documentId, title, content: JSON.stringify(snapshot) }));
+    const baseContentVersion = overwriteRef.current ? undefined : baseVersionRef.current;
+    const result = await dispatch(updateDocument({ id: documentId, title, content: JSON.stringify(snapshot), baseContentVersion }));
     if (updateDocument.fulfilled.match(result)) {
+      overwriteRef.current = false;
+      baseVersionRef.current = result.payload.contentVersion;
       const clean = docRef.current === snapshot;
       // A word search whose words changed comes back with the grid the server built (the one that prints), and
       // items typed in answer order with the shuffled order the student gets.
@@ -175,7 +205,7 @@ export default function AssessmentEditor({ documentId, defaultTitle, chatTitle, 
       return true;
     }
     // Structural problems come back as 400: keep the teacher's local state and say so, without blocking editing.
-    setSaveFailed(pendingTitleRef.current !== null && !dirtyRef.current ? "title" : "content");
+    setSaveFailed(result.meta.conflict ? "conflict" : pendingTitleRef.current !== null && !dirtyRef.current ? "title" : "content");
     setSaveStatus("idle");
     return false;
   };
@@ -193,15 +223,38 @@ export default function AssessmentEditor({ documentId, defaultTitle, chatTitle, 
     };
   }, [doc, dirty, isChatting, flushing, save]);
 
+  // An in-app link unmounts the editor before the autosave timer fires (beforeunload only covers reloads): send what is pending.
+  useEffect(
+    () => () => {
+      if (dirtyRef.current || pendingTitleRef.current !== null) void save();
+    },
+    [save],
+  );
+
   useEffect(() => {
     if (!dirty && pendingTitle === null) return;
     const warn = (e: BeforeUnloadEvent) => {
+      if (reloadingRef.current) return;
       e.preventDefault();
       e.returnValue = "";
     };
     window.addEventListener("beforeunload", warn);
     return () => window.removeEventListener("beforeunload", warn);
   }, [dirty, pendingTitle]);
+
+  // After a failed save the unmount save above would fail too: ask before an in-app link drops the edits.
+  useEffect(() => {
+    if (!saveFailed) return;
+    const guard = (e: MouseEvent) => {
+      const link = (e.target as Element | null)?.closest?.("a[href]");
+      if (!(link instanceof HTMLAnchorElement) || link.target === "_blank" || link.origin !== window.location.origin) return;
+      if (window.confirm(t("leaveUnsaved"))) return;
+      e.preventDefault();
+      e.stopPropagation();
+    };
+    window.document.addEventListener("click", guard, true);
+    return () => window.document.removeEventListener("click", guard, true);
+  }, [saveFailed, t]);
 
   const handleTitleSave = useCallback(
     async (title: string) => {
@@ -240,6 +293,13 @@ export default function AssessmentEditor({ documentId, defaultTitle, chatTitle, 
   const searchParams = useSearchParams();
 
   const [exportOpen, setExportOpen] = useState(false);
+  // Blank statements and missing solutions print as they are: the export dialog says which ones first.
+  const incompleteNumbers = useMemo(() => {
+    if (!doc || !exportOpen) return [];
+    const numbers = exerciseNumbers(doc);
+    return doc.sections.flatMap((s) => s.items).flatMap((item) =>
+      item.kind === "exercise" && (!item.prompt.trim() || missingAnswer(item)) ? [numbers.get(item.id) ?? 0] : []);
+  }, [doc, exportOpen]);
   // The files must match the screen: send pending edits (or wait for the save on its way) first.
   const flushForExport = useCallback(() => (dirtyRef.current || saveFailed ? save() : save.settled()), [save, saveFailed]);
 
@@ -391,6 +451,9 @@ export default function AssessmentEditor({ documentId, defaultTitle, chatTitle, 
         searchAe={subject && Number.isFinite(schoolYear) ? searchAe : null}
         requestImage={requestImage}
         onEditingChange={handleEditingChange}
+        answerChecks={answerChecks}
+        onConfirmCheck={handleConfirmCheck}
+        english={english}
         title={
           <>
             <InlineTitle title={pendingTitle ?? (document.title || defaultTitle)} onSave={handleTitleSave} disabled={!ready || isChatting || flushing} />
@@ -429,8 +492,37 @@ export default function AssessmentEditor({ documentId, defaultTitle, chatTitle, 
           saveFailed ? (
             <div role="alert" className="flex flex-shrink-0 items-center gap-3 border-b max-md:flex-wrap max-md:gap-y-1 border-amber-300 bg-amber-50 px-4 py-2 text-sm text-amber-900 dark:border-amber-700/60 dark:bg-amber-950/40 dark:text-amber-200">
               <AlertTriangle className="h-4 w-4 shrink-0" />
-              <span className="min-w-0 flex-1 max-md:basis-[calc(100%-1.75rem)]">{saveFailed === "title" ? t("titleSaveFailed") : t("saveFailed")}</span>
-              <Button size="sm" variant="outline" className="h-7 bg-background max-md:ml-7" onClick={() => void save()}>{t("retrySave")}</Button>
+              <span className="min-w-0 flex-1 max-md:basis-[calc(100%-1.75rem)]">
+                {saveFailed === "conflict" ? t("conflict") : saveFailed === "title" ? t("titleSaveFailed") : t("saveFailed")}
+              </span>
+              {saveFailed === "conflict" ? (
+                <>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 bg-background max-md:ml-7"
+                    onClick={() => {
+                      reloadingRef.current = true;
+                      window.location.reload();
+                    }}
+                  >
+                    {t("conflictReload")}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 bg-background"
+                    onClick={() => {
+                      overwriteRef.current = true;
+                      void save();
+                    }}
+                  >
+                    {t("conflictKeepMine")}
+                  </Button>
+                </>
+              ) : (
+                <Button size="sm" variant="outline" className="h-7 bg-background max-md:ml-7" onClick={() => void save()}>{t("retrySave")}</Button>
+              )}
               <button type="button" aria-label={t("dismiss")} onClick={() => setSaveFailed(null)} className="rounded p-1 hover:bg-amber-100 dark:hover:bg-amber-900/40">
                 <X className="h-4 w-4" />
               </button>
@@ -481,6 +573,7 @@ export default function AssessmentEditor({ documentId, defaultTitle, chatTitle, 
         isPro={exportIsPro}
         chatting={isChatting || flushing}
         flush={flushForExport}
+        incomplete={incompleteNumbers}
       />
       <ImagePickerModal
         open={imageOpen}
@@ -494,46 +587,3 @@ export default function AssessmentEditor({ documentId, defaultTitle, chatTitle, 
   );
 }
 
-function InlineTitle({ title, onSave, disabled }: { title: string; onSave: (title: string) => Promise<void>; disabled?: boolean }) {
-  const [editing, setEditing] = useState(false);
-  const [value, setValue] = useState(title);
-  const commit = () => {
-    setEditing(false);
-    const next = value.trim();
-    if (next && next !== title) void onSave(next);
-    else setValue(title);
-  };
-  if (editing) {
-    return (
-      <Input
-        autoFocus
-        value={value}
-        maxLength={MAX_LENGTHS.DOCUMENT_TITLE}
-        onChange={(e) => setValue(e.target.value)}
-        onBlur={commit}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") commit();
-          if (e.key === "Escape") {
-            setValue(title);
-            setEditing(false);
-          }
-        }}
-        className="h-8 max-w-md text-sm font-semibold"
-      />
-    );
-  }
-  return (
-    <button
-      type="button"
-      disabled={disabled}
-      onClick={() => {
-        setValue(title);
-        setEditing(true);
-      }}
-      className="min-w-0 truncate rounded px-1 -mx-1 text-left text-sm font-semibold text-foreground enabled:hover:bg-accent"
-      title={title}
-    >
-      {title}
-    </button>
-  );
-}

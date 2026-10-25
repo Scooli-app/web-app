@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Suggestion } from "@/shared/types/suggestions";
 import {
+  withStripCount,
   actionFor,
   formatStepDay,
   lessonOf,
@@ -93,5 +94,14 @@ describe("formatStepDay", () => {
   it("names the weekday and the month in the locale", () => {
     expect(formatStepDay("2026-10-20", "pt-PT")).toContain("outubro");
     expect(formatStepDay("2026-10-20", "en-GB")).toContain("October");
+  });
+});
+
+describe("withStripCount", () => {
+  const checkIn = { kind: "check_in", count: 2 } as unknown as Suggestion;
+  it("follows the strip after \"Ainda não\" and drops the step when nothing is left (audit 2026-10-24)", () => {
+    expect(withStripCount([checkIn], 1)[0].count).toBe(1);
+    expect(withStripCount([checkIn], 0)).toEqual([]);
+    expect(withStripCount([checkIn], null)).toEqual([checkIn]);
   });
 });

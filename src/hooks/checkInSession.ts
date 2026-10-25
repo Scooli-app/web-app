@@ -11,6 +11,21 @@ export const ASKED_KEY = "scooli.checkIns.asked";
 /** Sent by "Ver" on the "Confirma N aulas" next step: the strip comes back and scrolls into view. */
 export const SHOW_CHECK_INS_EVENT = "scooli:show-check-ins";
 
+/** Sent by the strip after it saves check-ins or starts a follow-up: "O que fazer a seguir" reloads its steps. */
+export const CHECK_INS_CHANGED_EVENT = "scooli:check-ins-changed";
+
+/**
+ * Sent by the strip with how many lessons it still asks about: after "Ainda não" that is fewer than the server's
+ * count, and "Confirma N aulas" follows it. Kept here too, for a card that mounts after the event.
+ */
+export const CHECK_INS_VISIBLE_EVENT = "scooli:check-ins-visible";
+let visibleCheckIns: number | null = null;
+export const lastVisibleCheckIns = () => visibleCheckIns;
+export function announceVisibleCheckIns(count: number | null): void {
+  visibleCheckIns = count;
+  window.dispatchEvent(new Event(CHECK_INS_VISIBLE_EVENT));
+}
+
 export function readDismissed(storage: Storage | null = safeSessionStorage()): boolean {
   try {
     return storage?.getItem(DISMISSED_KEY) === "1";

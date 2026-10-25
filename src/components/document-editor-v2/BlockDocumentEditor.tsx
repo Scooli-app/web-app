@@ -113,7 +113,7 @@ import { generateSlide as generateSlideApi } from "@/services/api/document.servi
 import { applyTheme, clampCanvasSlide, presentationToCanvas, slideToCanvas } from "./canvas-layout";
 import { ImagePickerModal, type ImageInsertResult } from "./ImagePickerModal";
 import { ColorPickerPopover } from "./ColorPickerPopover";
-import { FormulaModal } from "./FormulaModal";
+import { MathFieldPopover, type MathAnchor } from "@/components/math/MathFieldPopover";
 import { SlideKonvaEditor, type SlideKonvaEditorHandle } from "./SlideKonvaEditor";
 import { SlideNotesPanel } from "./SlideNotesPanel";
 import { SlideThumbnail } from "./SlideThumbnail";
@@ -604,6 +604,8 @@ export function BlockDocumentEditor({ documentId }: Props) {
   const [exporting, setExporting] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // The stored content the canvas starts from (load, our saves, chat turns): a save from another tab isn't overwritten.
+  const baseVersionRef = useRef<string | undefined>(undefined);
 
   /* ── Zoom ──────────────────────────────────────────────────────────────── */
   const [zoom, setZoom] = useState(1.0);
@@ -612,7 +614,15 @@ export function BlockDocumentEditor({ documentId }: Props) {
 
   /* ── Image toolbar state ─────────────────────────────────────────────── */
   const [imageModalOpen, setImageModalOpen] = useState(false);
-  const [formulaModalOpen, setFormulaModalOpen] = useState(false);
+  // The formula field: open at this point of the screen (null = closed).
+  const [formulaAnchor, setFormulaAnchor] = useState<MathAnchor | null>(null);
+  // Where the teacher last pressed, so a formula opened from the canvas opens next to it.
+  const lastPointer = useRef<MathAnchor>({ x: 0, y: 0 });
+  useEffect(() => {
+    const track = (e: PointerEvent) => { lastPointer.current = { x: e.clientX, y: e.clientY }; };
+    window.addEventListener("pointerdown", track, true);
+    return () => window.removeEventListener("pointerdown", track, true);
+  }, []);
   /** Non-null when the formula modal is editing an existing math element. */
   const [editingMathId, setEditingMathId] = useState<string | null>(null);
   /** Set when that formula is a `$…$` inside a text or list (`item`) rather than a math element. */
@@ -643,6 +653,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
           : canvasFromDoc;
 
       setCanvas(initialCanvas);
+      baseVersionRef.current = document?.contentVersion;
       setActiveSlideId((prev) => {
         if (prev && initialCanvas.slides.some((s) => s.id === prev)) return prev;
         return initialCanvas.slides[0]?.id ?? null;
@@ -654,7 +665,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
       setCanUndo(false);
       setCanRedo(false);
     }
-  }, [canvasFromDoc, urlThemeId]);
+  }, [canvasFromDoc, urlThemeId, document?.contentVersion]);
 
   /* ── Undo / Redo ─────────────────────────────────────────────────────── */
   const canvasRef = useRef<CanvasPresentation | null>(null);
@@ -1079,12 +1090,12 @@ export function BlockDocumentEditor({ documentId }: Props) {
     [activeSlideId, pushHistory],
   );
 
-  /** Open the formula modal to edit an existing math element. */
+  /** Opens the formula field on an existing formula element, next to where it was double-clicked. */
   const handleEditMath = useCallback((elementId: string, inline?: { item?: number; index: number }) => {
     setSelectedElementId(elementId);
     setEditingMathId(elementId);
     setEditingInlineMath(inline ?? null);
-    setFormulaModalOpen(true);
+    setFormulaAnchor(lastPointer.current);
   }, []);
 
   /** Modal confirm: update the edited math element, or insert a new one. */
@@ -1356,6 +1367,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
         const response = await dispatch(
           chatWithDocument({ id: document.id, message: enrichedMessage, canvasState: canvas ? JSON.stringify(canvas) : undefined }),
         ).unwrap();
+        baseVersionRef.current = response.contentVersion;
         if (response.chatAnswer) {
           // If this was a quick-action (Simplificar / Expandir / Melhorar),
           // apply the AI text directly to the targeted canvas element.
@@ -1539,11 +1551,38 @@ export function BlockDocumentEditor({ documentId }: Props) {
     if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
     setSaveStatus("saving");
     autoSaveTimerRef.current = setTimeout(async () => {
-      try {
-        const result = await dispatch(
-          updateDocument({ id: documentId, title: document.title, content: JSON.stringify(canvas) }),
+      const save = (overwrite: boolean) =>
+        dispatch(
+          updateDocument({
+            id: documentId,
+            title: document.title,
+            content: JSON.stringify(canvas),
+            baseContentVersion: overwrite ? undefined : baseVersionRef.current,
+          }),
         );
+      try {
+        let result = await save(false);
+        if (updateDocument.rejected.match(result) && result.meta.conflict) {
+          // Nothing was overwritten: the teacher picks which version stays.
+          const choice = await new Promise<"reload" | "keep" | "dismiss">((resolve) =>
+            toast.error(tDoc("conflict"), {
+              id: "document-conflict",
+              duration: Infinity,
+              action: { label: tDoc("conflictReload"), onClick: () => resolve("reload") },
+              cancel: { label: tDoc("conflictKeepMine"), onClick: () => resolve("keep") },
+              // Closed without choosing: stays unsaved; the next edit asks again.
+              onDismiss: () => resolve("dismiss"),
+            }),
+          );
+          if (choice !== "keep") {
+            setSaveStatus("idle");
+            if (choice === "reload") window.location.reload();
+            return;
+          }
+          result = await save(true);
+        }
         if (updateDocument.fulfilled.match(result)) {
+          baseVersionRef.current = result.payload.contentVersion;
           setDirty(false);
           setSaveStatus("saved");
           setTimeout(() => setSaveStatus((s) => s === "saved" ? "idle" : s), 2000);
@@ -2162,7 +2201,14 @@ export function BlockDocumentEditor({ documentId }: Props) {
           className="h-8 gap-1.5"
           disabled={!activeSlide}
           title={t("addFormulaTooltip")}
-          onClick={() => { setEditingMathId(null); setFormulaModalOpen(true); }}
+          // Keeps an open text box focused, so the formula goes in at its cursor.
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={(e) => {
+            if (editorRef.current?.insertFormulaInText()) return;
+            const r = e.currentTarget.getBoundingClientRect();
+            setEditingMathId(null);
+            setFormulaAnchor({ x: r.left, y: r.bottom });
+          }}
         >
           <Sigma className="h-3.5 w-3.5" />
           {t("formulaLabel")}
@@ -2698,13 +2744,25 @@ export function BlockDocumentEditor({ documentId }: Props) {
         />
       )}
 
-      {/* Formula builder modal — insert new, or edit an existing math element */}
-      <FormulaModal
-        open={formulaModalOpen}
-        initialTex={editingMathId ? editedMathTex(activeSlide?.elements, editingMathId, editingInlineMath) : undefined}
-        onClose={() => { setFormulaModalOpen(false); setEditingMathId(null); setEditingInlineMath(null); }}
-        onInsert={handleFormulaConfirm}
-      />
+      {/* Formula field: a new formula element, or edit an existing one */}
+      {formulaAnchor && (
+        <MathFieldPopover
+          tex={(editingMathId ? editedMathTex(activeSlide?.elements, editingMathId, editingInlineMath) : undefined) ?? ""}
+          anchor={formulaAnchor}
+          onSave={(tex) => {
+            // Emptied: nothing new is added, and an existing formula is left as it was.
+            if (tex.trim()) handleFormulaConfirm(tex);
+            setFormulaAnchor(null);
+            setEditingMathId(null);
+            setEditingInlineMath(null);
+          }}
+          onCancel={() => {
+            setFormulaAnchor(null);
+            setEditingMathId(null);
+            setEditingInlineMath(null);
+          }}
+        />
+      )}
 
       <Dialog
         open={generateSlideDialogOpen}

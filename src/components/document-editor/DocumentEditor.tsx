@@ -40,6 +40,7 @@ import { useAuth } from "@clerk/nextjs";
 import type { Editor } from "@tiptap/react";
 import { CheckCircle2, Crown, FileX, Loader2 } from "lucide-react";
 import { DocumentEditorSkeleton } from "@/components/document-editor/DocumentEditorSkeleton";
+import { DocumentNotFound } from "@/components/document-editor/DocumentNotFound";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -50,13 +51,14 @@ import { toast } from "sonner";
 import { DiffToolbar } from "../editor/DiffToolbar";
 import { computeDiff, markdownToNode } from "../editor/utils/diffEngine";
 import { Button } from "../ui/button";
+import { cn } from "@/shared/utils/utils";
 import { EmptyState } from "../ui/empty-state";
 import RichTextEditor from "../ui/rich-text-editor";
 import { GenerationStalledNotice } from "../ui/generation-stalled-notice";
 import AIChatPanel from "./AIChatPanel";
 import { DocumentLessonContext } from "./DocumentLessonContext";
 import { SuggestionBar } from "@/components/document-versions/SuggestionBar";
-import DocumentTitle from "./DocumentTitle";
+import { InlineTitle } from "./InlineTitle";
 import CreateCalendarFromPlanButton from "./CreateCalendarFromPlanButton";
 import DownloadButton from "./DownloadButton";
 import ShareButton from "./ShareButton";
@@ -204,6 +206,9 @@ function repairLeakedImageSegmentTokens(
     return `![${safeAlt}]({{DOCUMENT_IMAGE:${image.id}}})`;
   });
 }
+
+/** A background refresh that fails changes nothing: the editor keeps what it shows. */
+const ignoreRefreshFailure = () => undefined;
 
 export default function DocumentEditor({
   documentId,
@@ -768,7 +773,7 @@ export default function DocumentEditor({
                 skipNextEditorKeyBumpRef.current = true;
                 dispatch(fetchDocument(docId))
                   .unwrap()
-                  .catch(() => {})
+                  .catch(ignoreRefreshFailure)
                   .finally(() => {
                     skipNextEditorKeyBumpRef.current = false;
                   });
@@ -1120,6 +1125,11 @@ export default function DocumentEditor({
     );
   }, [content, handleTrackedAutosave, images, setContent, t]);
 
+  const dismissChatNudge = useCallback(() => {
+    setShowChatNudge(false);
+    if (nudgeTimerRef.current) clearTimeout(nudgeTimerRef.current);
+  }, []);
+
   const handleChatSubmit = useCallback(
     async (userMessage: string) => {
       if (!currentDocument?.id || currentDocument.id !== documentId) {
@@ -1271,6 +1281,7 @@ export default function DocumentEditor({
     [
       currentDocument?.documentType,
       currentDocument?.id,
+      dismissChatNudge,
       dispatch,
       documentId,
       getSessionId,
@@ -1315,11 +1326,6 @@ export default function DocumentEditor({
   // Cleanup nudge timer on unmount
   useEffect(() => () => { if (nudgeTimerRef.current) clearTimeout(nudgeTimerRef.current); }, []);
 
-  const dismissChatNudge = useCallback(() => {
-    setShowChatNudge(false);
-    if (nudgeTimerRef.current) clearTimeout(nudgeTimerRef.current);
-  }, []);
-
   // Handle exiting diff / suggestions mode
   const handleExitDiffMode = useCallback(() => {
     setIsSuggestionsMode(false);
@@ -1334,91 +1340,113 @@ export default function DocumentEditor({
 
   if (isLoading && !isGenerating) return <DocumentEditorSkeleton />;
 
-  if (!activeDocument?.id && !isGenerating) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px] w-full">
-        <div className="text-center">
-          <p className="text-lg text-muted-foreground mb-4">
-            {t("documentNotFound")}
-          </p>
-          <button
-            onClick={() => router.push(Routes.DOCUMENTS)}
-            className="text-primary hover:underline"
-          >
-            {t("backToDocuments")}
-          </button>
-        </div>
-      </div>
-    );
-  }
+  if (!activeDocument?.id && !isGenerating) return <DocumentNotFound documentId={documentId} />;
 
+  const shareButton = (
+    <ShareButton
+      title={resolvedTitle || resolvedDefaultTitle}
+      content={content}
+      disabled={isGenerating || !content}
+      disabledReason={actionsDisabledReason}
+      documentId={documentId}
+      grade={activeDocument?.gradeLevel || ""}
+      subject={activeDocument?.subject || ""}
+      resourceType={activeDocument?.documentType || ""}
+      sharedStatus={activeDocument?.sharedResourceStatus}
+    />
+  );
+  const downloadButton = (
+    <DownloadButton
+      title={resolvedTitle || resolvedDefaultTitle}
+      content={content}
+      images={images}
+      isProUser={isPremium}
+      disabled={isGenerating || !content}
+      disabledReason={actionsDisabledReason}
+    />
+  );
+  const chatPanel = (
+    <AIChatPanel
+      onChatSubmit={handleChatSubmit}
+      chatHistory={chatHistory}
+      isStreaming={isStreaming || isChatting}
+      disabled={isGenerating}
+      error={error}
+      placeholder={resolvedChatPlaceholder}
+      title={resolvedChatTitle}
+      sources={sources}
+      showGenerationHint={!isEntitlementLoading && !isPremium}
+      documentType={activeDocument?.documentType}
+      documentId={documentId}
+      nudge={showChatNudge}
+      onNudgeDismiss={dismissChatNudge}
+    />
+  );
+  // Curriculum plans carry wide tables: their page takes the desk's width instead of a reading width.
+  const wide = activeDocument?.documentType === "curriculumPlan";
+
+  // The same frame as the exercise and presentation editors: top bar, grey desk with the page, full-height chat.
   return (
     <>
-      <div className="flex-1 flex flex-col w-full">
-        {activeDocument && (
-          <DocumentLessonContext classInfo={activeDocument.classInfo} documentId={activeDocument.id} />
-        )}
-        {activeDocument && (
-          <SuggestionBar
-            documentId={activeDocument.id}
-            suggestion={activeDocument.pendingSuggestion}
-            contentFormat="markdown"
-            autoOpenReview={reviewRequested}
-          />
-        )}
-        <DocumentTitle
-          title={resolvedTitle}
-          defaultTitle={resolvedDefaultTitle}
-          onSave={handleTitleSave}
-          isSaving={isSaving}
-          isStreaming={isGenerating && !!documentTitle}
-        />
-
-        {imageError && (
-          <div className="mb-4 rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-            {imageError}
+      <div className="-m-3 flex w-full min-h-0 flex-1 flex-col overflow-hidden bg-muted/40 sm:-m-4 md:-m-6">
+        <div className="flex flex-shrink-0 flex-wrap items-center gap-2 border-b border-border bg-background px-4 py-2 max-md:gap-1.5 max-md:px-3">
+          <div className="flex min-w-0 flex-1 items-center gap-3 max-md:basis-full">
+            <InlineTitle title={resolvedTitle || resolvedDefaultTitle} onSave={handleTitleSave} disabled={isGenerating || isSaving} />
+            {showUpdateIndicator && (
+              <span className="flex shrink-0 animate-pulse items-center gap-1 text-xs font-medium text-primary">
+                ✨ {tChat("documentRefined")}
+              </span>
+            )}
           </div>
-        )}
+          {!isEntitlementLoading && !isPremium && (
+            <Link
+              href={Routes.CHECKOUT}
+              className="hidden md:inline-flex items-center gap-2 rounded-full border border-amber-300/60 bg-gradient-to-r from-amber-50 to-yellow-50 px-2.5 py-1 text-[11px] font-medium text-amber-800 transition-colors hover:bg-amber-100 dark:border-amber-700/60 dark:from-amber-950/40 dark:to-yellow-950/40 dark:text-amber-300 dark:hover:bg-amber-900/30"
+              title={t("proTooltip")}
+            >
+              <Crown className="h-3.5 w-3.5 text-amber-500 dark:text-amber-300" />
+              <span className="whitespace-nowrap">{t("proImagesLabel")}</span>
+              <span className="hidden xl:inline-flex rounded-full border border-amber-400/60 bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700 dark:border-amber-500/40 dark:bg-amber-900/40 dark:text-amber-200">
+                {t("upgrade")}
+              </span>
+            </Link>
+          )}
+          {activeDocument?.documentType === "curriculumPlan" && !isGenerating && content && (
+            <CreateCalendarFromPlanButton plan={activeDocument} />
+          )}
+          {!isGenerating && <DocumentVersionsButton documentId={documentId} onRestored={handleVersionRestored} />}
+          {shareButton}
+          {downloadButton}
+        </div>
 
-        <div className="relative grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-[minmax(0,1fr)_400px]">
-          <div className="flex flex-col min-w-0">
-            {isGenerating ? (
-              <>
-                <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <h2 className="text-lg font-semibold text-foreground sm:text-xl">
-                    {t("editorHeading")}
-                  </h2>
-                  <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-                    <ShareButton
-                      title={resolvedTitle || resolvedDefaultTitle}
-                      content={content}
-                      disabled={isGenerating || !content}
-                      disabledReason={actionsDisabledReason}
-                      documentId={documentId}
-                      grade={activeDocument?.gradeLevel || ""}
-                      subject={activeDocument?.subject || ""}
-                      resourceType={activeDocument?.documentType || ""}
-                      sharedStatus={activeDocument?.sharedResourceStatus}
-                    />
-                    <DownloadButton
-                      title={resolvedTitle || resolvedDefaultTitle}
-                      content={content}
-                      images={images}
-                      isProUser={isPremium}
-                      disabled={isGenerating || !content}
-                      disabledReason={actionsDisabledReason}
-                    />
-                  </div>
+        <div className="flex min-h-0 flex-1">
+          <div className="min-w-0 flex-1 overflow-y-auto px-4 py-6 sm:px-6 max-md:px-2 max-md:py-3">
+            <div className={cn("mx-auto flex w-full flex-col", wide ? "max-w-none" : "max-w-[820px]")}>
+              {activeDocument && (
+                <DocumentLessonContext classInfo={activeDocument.classInfo} documentId={activeDocument.id} />
+              )}
+              {activeDocument && (
+                <SuggestionBar
+                  documentId={activeDocument.id}
+                  suggestion={activeDocument.pendingSuggestion}
+                  contentFormat="markdown"
+                  autoOpenReview={reviewRequested}
+                />
+              )}
+              {imageError && (
+                <div className="mb-4 rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                  {imageError}
                 </div>
-                <div className="min-h-[50dvh] w-full overflow-auto rounded-xl border border-border bg-card p-3 sm:min-h-[600px] sm:p-4">
+              )}
+              {isGenerating ? (
+                <div className="min-h-[50dvh] w-full overflow-auto rounded-md border border-border bg-card p-3 shadow-sm sm:min-h-[600px] sm:p-4">
                   {isGenerationStalled ? (
                     <div className="flex h-full min-h-[45dvh] w-full items-center justify-center sm:min-h-[550px]">
                       <GenerationStalledNotice />
                     </div>
                   ) : (
-                    // Never show the raw markdown stream — keep the stepper until
-                    // the formatted document is ready. Content chunks arriving
-                    // while the status is still early means we're generating.
+                    // Never show the raw markdown stream: keep the stepper until the formatted document is ready.
+                    // Content chunks arriving while the status is still early mean it is generating.
                     <GenerationProgress
                       streamStatus={
                         displayContent &&
@@ -1429,125 +1457,52 @@ export default function DocumentEditor({
                     />
                   )}
                 </div>
-              </>
-            ) : (
-              <>
-                {isCompletedEmpty && (
-                  <EmptyState
-                    size="inline"
-                    icon={FileX}
-                    title={t("emptyDocumentTitle")}
-                    description={t("emptyDocumentDescription")}
-                    className="mb-3"
-                    actions={
-                      <Button asChild size="sm" variant="outline">
-                        <Link href={Routes.DOCUMENTS}>{t("backToDocuments")}</Link>
-                      </Button>
-                    }
+              ) : (
+                <>
+                  {isCompletedEmpty && (
+                    <EmptyState
+                      size="inline"
+                      icon={FileX}
+                      title={t("emptyDocumentTitle")}
+                      description={t("emptyDocumentDescription")}
+                      className="mb-3"
+                      actions={
+                        <Button asChild size="sm" variant="outline">
+                          <Link href={Routes.DOCUMENTS}>{t("backToDocuments")}</Link>
+                        </Button>
+                      }
+                    />
+                  )}
+                  {isSuggestionsMode && editorRef.current && (
+                    <DiffToolbar
+                      editor={editorRef.current}
+                      onExitDiffMode={handleExitDiffMode}
+                    />
+                  )}
+                  <RichTextEditor
+                    key={editorKey}
+                    content={content}
+                    onChange={handleTrackedContentChange}
+                    onAutosave={handleTrackedAutosave}
+                    className="min-h-[55dvh] max-w-full sm:min-h-[600px]"
+                    page
+                    onEditorReady={handleEditorReady}
+                    onEditorActivity={registerActivity}
+                    onImageUpload={handleToolbarImageUpload}
+                    isImageUploading={isImageUploading}
                   />
-                )}
-                {isSuggestionsMode && editorRef.current && (
-                  <DiffToolbar
-                    editor={editorRef.current}
-                    onExitDiffMode={handleExitDiffMode}
-                  />
-                )}
-                <RichTextEditor
-                  key={editorKey}
-                  content={content}
-                  onChange={handleTrackedContentChange}
-                  onAutosave={handleTrackedAutosave}
-                  className="min-h-[55dvh] max-w-full sm:min-h-[600px]"
-                  onEditorReady={handleEditorReady}
-                  onEditorActivity={registerActivity}
-                  onImageUpload={handleToolbarImageUpload}
-                  isImageUploading={isImageUploading}
-                  rightHeaderContent={
-                    <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
-                      {showUpdateIndicator && (
-                        <span className="text-sm font-medium text-primary animate-pulse flex items-center gap-1">
-                          ✨ {tChat("documentRefined")}
-                        </span>
-                      )}
-                      {!isEntitlementLoading && !isPremium && (
-                        <Link
-                          href={Routes.CHECKOUT}
-                          className="hidden md:inline-flex items-center gap-2 rounded-full border border-amber-300/60 bg-gradient-to-r from-amber-50 to-yellow-50 px-2.5 py-1 text-[11px] font-medium text-amber-800 transition-colors hover:bg-amber-100 dark:border-amber-700/60 dark:from-amber-950/40 dark:to-yellow-950/40 dark:text-amber-300 dark:hover:bg-amber-900/30"
-                          title={t("proTooltip")}
-                        >
-                          <Crown className="h-3.5 w-3.5 text-amber-500 dark:text-amber-300" />
-                          <span className="whitespace-nowrap">{t("proImagesLabel")}</span>
-                          <span className="hidden xl:inline-flex rounded-full border border-amber-400/60 bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700 dark:border-amber-500/40 dark:bg-amber-900/40 dark:text-amber-200">
-                            {t("upgrade")}
-                          </span>
-                        </Link>
-                      )}
-                      {activeDocument?.documentType === "curriculumPlan" && !isGenerating && content && (
-                        <CreateCalendarFromPlanButton plan={activeDocument} />
-                      )}
-                      <DocumentVersionsButton documentId={documentId} onRestored={handleVersionRestored} />
-                      <ShareButton
-                        title={resolvedTitle || resolvedDefaultTitle}
-                        content={content}
-                        disabled={isGenerating || !content}
-                        disabledReason={actionsDisabledReason}
-                        documentId={documentId}
-                        grade={activeDocument?.gradeLevel || ""}
-                        subject={activeDocument?.subject || ""}
-                        resourceType={activeDocument?.documentType || ""}
-                        sharedStatus={activeDocument?.sharedResourceStatus}
-                      />
-                      <DownloadButton
-                        title={resolvedTitle || resolvedDefaultTitle}
-                        content={content}
-                        images={images}
-                        isProUser={isPremium}
-                        disabled={isGenerating || !content}
-                        disabledReason={actionsDisabledReason}
-                      />
-                    </div>
-                  }
-                />
-              </>
-            )}
+                </>
+              )}
+            </div>
           </div>
-
-          <div className="sticky top-2 hidden self-start lg:block">
-            <AIChatPanel
-              onChatSubmit={handleChatSubmit}
-              chatHistory={chatHistory}
-              isStreaming={isStreaming || isChatting}
-              disabled={isGenerating}
-              error={error}
-              placeholder={resolvedChatPlaceholder}
-              title={resolvedChatTitle}
-              sources={sources}
-              showGenerationHint={!isEntitlementLoading && !isPremium}
-              documentType={activeDocument?.documentType}
-              documentId={documentId}
-              nudge={showChatNudge}
-              onNudgeDismiss={dismissChatNudge}
-            />
-          </div>
+          <aside className="hidden w-80 flex-shrink-0 flex-col overflow-hidden border-l border-border bg-background lg:flex">
+            {chatPanel}
+          </aside>
         </div>
       </div>
 
       <div className="lg:hidden pb-[max(env(safe-area-inset-bottom),0px)]">
-        <AIChatPanel
-          onChatSubmit={handleChatSubmit}
-          chatHistory={chatHistory}
-          isStreaming={isStreaming || isChatting}
-          disabled={isGenerating}
-          error={error}
-          placeholder={resolvedChatPlaceholder}
-          title={resolvedChatTitle}
-          sources={sources}
-          showGenerationHint={!isEntitlementLoading && !isPremium}
-          documentType={activeDocument?.documentType}
-          documentId={documentId}
-          nudge={showChatNudge}
-          onNudgeDismiss={dismissChatNudge}
-        />
+        {chatPanel}
       </div>
     </>
   );

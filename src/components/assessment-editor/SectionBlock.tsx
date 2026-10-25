@@ -1,6 +1,5 @@
 "use client";
 
-import { InlineText } from "@/components/blocks/inline-text";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
@@ -15,7 +14,7 @@ import { useState } from "react";
 import { PHONE_TOUCH, useAssessmentEditor } from "./context";
 import { ExerciseEditor, ReadingEditor } from "./ExerciseEditor";
 import { ExerciseView, ReadingView } from "./ExerciseView";
-import { EXERCISE_TYPES } from "./model";
+import { EXERCISE_TYPES, MAX_ITEMS, MAX_TEXT } from "./model";
 
 export interface SectionActions {
   updateSection: (patch: Partial<AssessmentSection>) => void;
@@ -43,14 +42,16 @@ export function SectionBlock({ section, subtotal, numbers, selectedId, onSelect,
   const { studentView } = useAssessmentEditor();
   const { setNodeRef } = useDroppable({ id: `section:${section.id}` });
   const [editingHeading, setEditingHeading] = useState(false);
+  const full = section.items.length >= MAX_ITEMS;
 
   return (
     <section className="mt-6 first:mt-5">
       <div className="group/heading flex items-end justify-between gap-3 border-b-2 border-neutral-800 pb-0.5 font-sans max-md:items-center">
-        {editingHeading && !studentView ? (
+        {editingHeading ? (
           <Input
             autoFocus
             value={section.title}
+            maxLength={MAX_TEXT}
             placeholder={t("section.titlePlaceholder")}
             onChange={(e) => actions.updateSection({ title: e.target.value })}
             onBlur={() => setEditingHeading(false)}
@@ -60,7 +61,6 @@ export function SectionBlock({ section, subtotal, numbers, selectedId, onSelect,
         ) : (
           <button
             type="button"
-            disabled={studentView}
             onClick={() => setEditingHeading(true)}
             className="min-w-0 truncate text-left text-[13px] font-bold enabled:hover:text-primary max-md:whitespace-normal"
           >
@@ -68,50 +68,46 @@ export function SectionBlock({ section, subtotal, numbers, selectedId, onSelect,
           </button>
         )}
         <div className="flex shrink-0 items-center gap-1">
-          {!studentView && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 transition-opacity focus-visible:opacity-100 group-hover/heading:opacity-100 data-[state=open]:opacity-100 max-md:opacity-100" aria-label={t("section.menu")}>
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className={PHONE_TOUCH}>
-                <DropdownMenuItem onClick={() => setEditingHeading(true)} className="gap-2">
-                  <Pencil className="h-4 w-4" />
-                  {t("section.titlePlaceholder")}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={actions.addReading} className="gap-2">
-                  <BookOpen className="h-4 w-4" />
-                  {t("section.addReading")}
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={actions.deleteSection} disabled={!canDelete} className="gap-2 text-destructive focus:text-destructive">
-                  <Trash2 className="h-4 w-4" />
-                  {t("section.deleteGroup")}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 transition-opacity focus-visible:opacity-100 group-hover/heading:opacity-100 data-[state=open]:opacity-100 max-md:opacity-100" aria-label={t("section.menu")}>
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className={PHONE_TOUCH}>
+              <DropdownMenuItem onClick={() => setEditingHeading(true)} className="gap-2">
+                <Pencil className="h-4 w-4" />
+                {t("section.titlePlaceholder")}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={actions.addReading} disabled={full} className="gap-2">
+                <BookOpen className="h-4 w-4" />
+                {t("section.addReading")}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={actions.deleteSection} disabled={!canDelete} className="gap-2 text-destructive focus:text-destructive">
+                <Trash2 className="h-4 w-4" />
+                {t("section.deleteGroup")}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           {subtotal !== null && <span className="text-[13px] font-bold">{t("section.subtotal", { points: subtotal })}</span>}
         </div>
       </div>
 
-      {studentView ? (
-        section.instructions && <p className="mt-1.5 text-[13px] italic text-neutral-600"><InlineText value={section.instructions} /></p>
-      ) : (
-        // A textarea sized to its text, so long instructions wrap instead of being clipped on phones. One paragraph:
-        // print collapses line breaks, so Enter adds none (and pasted ones become spaces).
-        <textarea
-          rows={1}
-          ref={growWithoutFieldSizing}
-          value={section.instructions ?? ""}
-          placeholder={t("section.instructionsPlaceholder")}
-          onKeyDown={(e) => e.key === "Enter" && e.preventDefault()}
-          onInput={(e) => growWithoutFieldSizing(e.currentTarget)}
-          onChange={(e) => actions.updateSection({ instructions: e.target.value.replace(/\s*\n\s*/g, " ") || null })}
-          className="mt-1.5 block w-full resize-none rounded bg-transparent px-1 -mx-1 text-[13px] italic text-neutral-600 outline-none [field-sizing:content] placeholder:text-neutral-300 hover:bg-neutral-50 focus:bg-neutral-50 focus:ring-1 focus:ring-primary/30"
-        />
-      )}
+      {/* A textarea sized to its text, so long instructions wrap instead of being clipped on phones. One paragraph:
+          print collapses line breaks, so Enter adds none (and pasted ones become spaces). */}
+      <textarea
+        rows={1}
+        ref={growWithoutFieldSizing}
+        value={section.instructions ?? ""}
+        maxLength={MAX_TEXT}
+        // The student's sheet shows no empty instructions line.
+        placeholder={studentView ? undefined : t("section.instructionsPlaceholder")}
+        onKeyDown={(e) => e.key === "Enter" && e.preventDefault()}
+        onInput={(e) => growWithoutFieldSizing(e.currentTarget)}
+        onChange={(e) => actions.updateSection({ instructions: e.target.value.replace(/\s*\n\s*/g, " ") || null })}
+        className="mt-1.5 block w-full resize-none rounded bg-transparent px-1 -mx-1 text-[13px] italic text-neutral-600 outline-none [field-sizing:content] placeholder:text-neutral-300 hover:bg-neutral-50 focus:bg-neutral-50 focus:ring-1 focus:ring-primary/30"
+      />
 
       <SortableContext items={section.items.map((i) => i.id)} strategy={verticalListSortingStrategy}>
         <div ref={setNodeRef} className="mt-2 flex min-h-8 flex-col gap-1">
@@ -129,21 +125,19 @@ export function SectionBlock({ section, subtotal, numbers, selectedId, onSelect,
         </div>
       </SortableContext>
 
-      {!studentView && (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="mt-1 h-7 gap-1 px-2 font-sans text-xs text-muted-foreground hover:text-primary">
-              <Plus className="h-3.5 w-3.5" />
-              {t("section.addExercise")}
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className={cn("w-56", PHONE_TOUCH)}>
-            {EXERCISE_TYPES.map((type) => (
-              <DropdownMenuItem key={type} onClick={() => actions.addExercise(type)}>{t(`types.${type}`)}</DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      )}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="sm" disabled={full} title={full ? t("section.full", { max: MAX_ITEMS }) : undefined} className="mt-1 h-7 gap-1 px-2 font-sans text-xs text-neutral-500 hover:bg-neutral-100 hover:text-primary dark:hover:bg-neutral-100">
+            <Plus className="h-3.5 w-3.5" />
+            {full ? t("section.full", { max: MAX_ITEMS }) : t("section.addExercise")}
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className={cn("w-56", PHONE_TOUCH)}>
+          {EXERCISE_TYPES.map((type) => (
+            <DropdownMenuItem key={type} onClick={() => actions.addExercise(type)}>{t(`types.${type}`)}</DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
     </section>
   );
 }
@@ -157,9 +151,9 @@ function SortableItem({ item, number, selected, onSelect, onlyItem, actions }: {
   actions: SectionActions;
 }) {
   const t = useTranslations("assessmentEditor");
-  const { studentView, phone } = useAssessmentEditor();
+  const { phone } = useAssessmentEditor();
   // Phone reorders with up/down buttons in the ExerciseSheet, not drag.
-  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({ id: item.id, disabled: studentView || phone });
+  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({ id: item.id, disabled: phone });
   const points = item.kind === "exercise" ? item.points : null;
   const chip = points !== null && (
     <span className={cn("rounded border border-neutral-300 bg-white px-1.5 py-px font-sans text-[11px] font-semibold", !phone && "absolute right-2 top-2")}>
@@ -175,20 +169,23 @@ function SortableItem({ item, number, selected, onSelect, onlyItem, actions }: {
       className={cn("relative", isDragging && "opacity-40")}
     >
       <div
+        // A4Page breaks its page guides between these, as the files keep an exercise on one page.
+        data-page-item
         // Mouse shortcut only; keyboard users reach the same action through the toolbar's "Editar" button.
-        onClick={() => !studentView && !selected && onSelect(item.id)}
+        onClick={() => !selected && onSelect(item.id)}
         className={cn(
           "group/item relative rounded-md px-2 py-2",
           points !== null && !phone && "pr-16",
-          !studentView && "cursor-pointer outline-1 outline-transparent transition-colors hover:bg-[#f4f6ff] hover:outline hover:outline-[#c9d2ff]",
+          "cursor-pointer outline-1 outline-transparent transition-colors hover:bg-[#f4f6ff] hover:outline hover:outline-[#c9d2ff]",
           selected && "cursor-default bg-[#f4f6ff] outline outline-[#c9d2ff]",
           isDragging && "bg-[#f4f6ff]",
         )}
       >
-        {!studentView && !phone && (
+        {!phone && (
           <div className={cn(
-            "absolute -left-9 top-1 z-10 flex flex-col gap-0.5 rounded-md bg-neutral-900 p-0.5 font-sans text-white shadow-sm transition-opacity",
-            selected ? "opacity-100" : "pointer-events-none opacity-0 group-hover/item:pointer-events-auto group-hover/item:opacity-100 group-focus-within/item:pointer-events-auto group-focus-within/item:opacity-100",
+            // The transparent right border bridges the gap to the exercise, so the hover holds on the way to the toolbar.
+            "absolute -left-9 top-1 z-10 flex flex-col gap-0.5 rounded-md border-r-[10px] border-transparent bg-neutral-900 bg-clip-padding p-0.5 font-sans text-white shadow-sm transition-opacity",
+            selected ? "opacity-100" : "pointer-events-none opacity-0 group-hover/item:pointer-events-auto group-hover/item:opacity-100 group-focus-within/item:pointer-events-auto group-focus-within/item:opacity-100 has-[[data-state=open]]:pointer-events-auto has-[[data-state=open]]:opacity-100",
           )}>
             {!selected && (
               <ToolbarBtn label={t("item.edit")} onClick={() => onSelect(item.id)}><Pencil className="h-3.5 w-3.5" /></ToolbarBtn>
@@ -205,10 +202,31 @@ function SortableItem({ item, number, selected, onSelect, onlyItem, actions }: {
             >
               <GripVertical className="h-3.5 w-3.5" />
             </button>
-            <ToolbarBtn label={t("item.duplicate")} onClick={() => actions.duplicateItem(item.id)}><Copy className="h-3.5 w-3.5" /></ToolbarBtn>
-            <ToolbarBtn label={onlyItem ? t("item.lastItem") : t("item.delete")} onClick={() => actions.deleteItem(item.id)} disabled={onlyItem}>
-              <Trash2 className="h-3.5 w-3.5" />
-            </ToolbarBtn>
+            {/* Duplicar/Apagar behind a menu: a toolbar taller than a short exercise reaches the next one's side,
+                where a one-click button acted on the wrong exercise. */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  aria-label={t("item.more")}
+                  title={t("item.more")}
+                  onClick={(e) => e.stopPropagation()}
+                  className="flex h-6 w-6 items-center justify-center rounded hover:bg-white/15"
+                >
+                  <MoreHorizontal className="h-3.5 w-3.5" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" side="right" onClick={(e) => e.stopPropagation()}>
+                <DropdownMenuItem onClick={() => actions.duplicateItem(item.id)} className="gap-2">
+                  <Copy className="h-4 w-4" />
+                  {t("item.duplicate")}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => actions.deleteItem(item.id)} disabled={onlyItem} className="gap-2 text-destructive focus:text-destructive">
+                  <Trash2 className="h-4 w-4" />
+                  {onlyItem ? t("item.lastItem") : t("item.delete")}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         )}
 
@@ -217,12 +235,12 @@ function SortableItem({ item, number, selected, onSelect, onlyItem, actions }: {
         {!phone && chip}
       </div>
 
-      {selected && !studentView && !phone && (
+      {selected && !phone && (
         <div className="mt-2 mb-3">
           {item.kind === "exercise" ? (
-            <ExerciseEditor exercise={item} number={number} onChange={actions.updateItem} onClose={() => onSelect(null)} />
+            <ExerciseEditor className="paper-light" exercise={item} number={number} onChange={actions.updateItem} onClose={() => onSelect(null)} />
           ) : (
-            <ReadingEditor item={item} onChange={actions.updateItem} onClose={() => onSelect(null)} />
+            <ReadingEditor className="paper-light" item={item} onChange={actions.updateItem} onClose={() => onSelect(null)} />
           )}
         </div>
       )}

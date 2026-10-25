@@ -37,4 +37,8 @@ export interface TurmaReviewCount {
   timetableId: string;
   turmaTitle: string;
   count: number;
+  /** For the turma's short name, as the calendar writes it. */
+  subject?: string | null;
+  gradeLevel?: number | null;
+  classLabel?: string | null;
 }

@@ -4,6 +4,7 @@ import {
   canRestoreVersion,
   isListedVersion,
   listedVersions,
+  versionsSuggestionRow,
   versionLabelKey,
 } from "./document-versions";
 
@@ -90,5 +91,25 @@ describe("canRestoreVersion", () => {
   it("offers to restore any other version", () => {
     expect(canRestoreVersion(version({ status: "superseded" }))).toBe(true);
     expect(canRestoreVersion(version({ status: "applied" }))).toBe(true);
+  });
+});
+
+// The banner can be hidden with ✕, so Versões is where a pending suggestion stays reachable. It follows the
+// document's own suggestion (the one its banner reviews), not the versions list: review: "Rever" did nothing while
+// the suggestion was being rewritten, or with Class State off.
+describe("versionsSuggestionRow", () => {
+  const pending = (status: "ready" | "generating") => ({ versionId: "s", createdAt: "", reason: null, stale: false, status });
+
+  it("offers the review when the suggestion is ready", () => {
+    expect(versionsSuggestionRow(pending("ready"))).toBe("review");
+  });
+
+  it("says it is being prepared while it is rewritten", () => {
+    expect(versionsSuggestionRow(pending("generating"))).toBe("preparing");
+  });
+
+  it("shows nothing without a suggestion to review", () => {
+    expect(versionsSuggestionRow(null)).toBeNull();
+    expect(versionsSuggestionRow(undefined)).toBeNull();
   });
 });

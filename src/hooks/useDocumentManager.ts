@@ -9,7 +9,9 @@ import {
   useAppDispatch,
   useAppSelector,
 } from "@/store/hooks";
+import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 
 export function useDocumentManager(documentId: string) {
   const [content, setContent] = useState("");
@@ -17,6 +19,11 @@ export function useDocumentManager(documentId: string) {
   const currentDocument = useAppSelector(selectCurrentDocument);
   const storeLoading = useAppSelector(selectIsLoading);
   const dispatch = useAppDispatch();
+  const t = useTranslations("editor.documentEditor");
+  // The stored content the editor's text starts from, and the saves in order: two autosaves in flight at once
+  // would otherwise send the same base and the second would look like another tab's save.
+  const baseVersionRef = useRef<string | undefined>(undefined);
+  const saveChainRef = useRef<Promise<unknown>>(Promise.resolve());
 
   // Track previous document ID to avoid unnecessary fetches
   const prevDocumentIdRef = useRef<string | null>(null);
@@ -68,6 +75,7 @@ export function useDocumentManager(documentId: string) {
     }
 
     prevContentRef.current = currentDocument.content;
+    baseVersionRef.current = currentDocument.contentVersion;
 
     if (skipNextEditorKeyBumpRef.current) {
       // Skip editor remount - the caller is handling the content change
@@ -79,7 +87,7 @@ export function useDocumentManager(documentId: string) {
     console.warn("[DIFF] useDocumentManager: bumping editorKey");
     setContent(currentDocument.content || "");
     setEditorKey((prev) => prev + 1);
-  }, [currentDocument?.id, currentDocument?.content, documentId]);
+  }, [currentDocument?.id, currentDocument?.content, currentDocument?.contentVersion, documentId]);
 
   const handleContentChange = useCallback((newContent: string) => {
     setContent(newContent);
@@ -137,18 +145,32 @@ export function useDocumentManager(documentId: string) {
       prevContentRef.current = newContent;
       setContent(newContent);
 
-      try {
-        await dispatch(
-          updateDocument({
-            id: currentDocument.id,
-            content: newContent,
-          })
-        ).unwrap();
-      } catch (error) {
-        console.error("Failed to autosave content:", error);
-      }
+      const id = currentDocument.id;
+      const save = async (overwrite: boolean): Promise<void> => {
+        const result = await dispatch(
+          updateDocument({ id, content: newContent, baseContentVersion: overwrite ? undefined : baseVersionRef.current })
+        );
+        if (updateDocument.fulfilled.match(result)) {
+          baseVersionRef.current = result.payload.contentVersion;
+          return;
+        }
+        if (result.meta.conflict) {
+          // Nothing was overwritten: the teacher picks which version stays.
+          toast.error(t("conflict"), {
+            id: "document-conflict",
+            duration: Infinity,
+            action: { label: t("conflictReload"), onClick: () => window.location.reload() },
+            cancel: { label: t("conflictKeepMine"), onClick: () => void save(true) },
+          });
+          return;
+        }
+        console.error("Failed to autosave content:", result.payload);
+      };
+      const run = saveChainRef.current.then(() => save(false));
+      saveChainRef.current = run.catch(() => undefined);
+      await run;
     },
-    [currentDocument, dispatch, documentId]
+    [currentDocument, dispatch, documentId, t]
   );
 
   const isSaving = useAppSelector((state) => state.documents.isSaving);

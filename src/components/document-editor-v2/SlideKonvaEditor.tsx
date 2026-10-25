@@ -43,7 +43,8 @@ import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useImperativeHandle, useRef, useState, forwardRef } from "react";
 import { Ellipse, Group, Image as KonvaImage, Layer, Line, Rect, Stage, Text, Transformer } from "react-konva";
 import { SlideText } from "@/components/document-editor-v2/InlineMathText";
-import { hasInlineMath, inlineMathIndexAt, type InlineMathStyle } from "@/components/document-editor-v2/inline-math";
+import { hasInlineMath, inlineMathIndexAt, splitInlineMath, type InlineMathStyle } from "@/components/document-editor-v2/inline-math";
+import { MathTextInput, type MathTextInputHandle } from "@/components/math/MathTextInput";
 import { listItemPrefix } from "@/shared/utils/list-markers";
 
 /* --------------------------------------------------------------------------
@@ -252,6 +253,8 @@ interface EditState {
   align?: "left" | "center" | "right";
   underline?: boolean;
   multiline: boolean;
+  /** Opened by a double-click on a formula: that formula (by order in the text) opens for editing. */
+  formula?: number;
 }
 
 /**
@@ -265,60 +268,53 @@ interface EditState {
  *   • Auto-resizes height as the user types.
  *   • Subtle focus ring instead of a coloured border.
  */
+/** A formula hit in a list (item, index in item) as its order in the whole list's text. */
+function listFormulaIndex(el: CanvasListElement, hit: { item?: number; index: number }): number {
+  const before = el.items.slice(0, hit.item ?? 0).reduce((n, item) => n + splitInlineMath(item).filter((x) => x.kind === "math").length, 0);
+  return before + hit.index;
+}
+
 function TextEditOverlay({
   edit,
   onCommit,
+  fieldRef,
 }: {
   edit: EditState;
   onCommit: (id: string, value: string) => void;
+  fieldRef: React.RefObject<MathTextInputHandle | null>;
 }) {
-  const ref = useRef<HTMLTextAreaElement>(null);
-
   // Split Konva's combined fontStyle string into CSS fontWeight + fontStyle.
   const isBold   = edit.fontStyle?.includes("bold")   ?? false;
   const isItalic = edit.fontStyle?.includes("italic") ?? false;
-
-  // Focus + cursor-at-end + initial auto-size on mount / element change.
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    el.focus();
-    const len = el.value.length;
-    el.setSelectionRange(len, len);
-    // Size to content immediately so the textarea matches the Konva element.
-    el.style.height = "auto";
-    el.style.height = `${Math.max(el.scrollHeight, edit.height)}px`;
-  }, [edit.id, edit.height]);
-
-  // Grow/shrink textarea as the user types.
-  const autoResize = () => {
-    const el = ref.current;
-    if (!el) return;
-    el.style.height = "auto";
-    el.style.height = `${Math.max(el.scrollHeight, edit.height)}px`;
+  const value = useRef(edit.value);
+  const committed = useRef(false);
+  const commit = () => {
+    if (committed.current) return;
+    committed.current = true;
+    onCommit(edit.id, value.current);
   };
 
-  const commit = () => onCommit(edit.id, ref.current?.value ?? edit.value);
-
+  // Formulas show as maths and edit in place (MathTextInput), so the teacher never sees $…$ in a text box.
   return (
-    <textarea
-      ref={ref}
-      defaultValue={edit.value}
-      onInput={autoResize}
+    <MathTextInput
+      ref={fieldRef}
+      plain
+      multiline
+      autoFocus
+      value={edit.value}
+      initialFormula={edit.formula}
+      onChange={(next) => { value.current = next; }}
       onBlur={commit}
+      onEnter={edit.multiline ? undefined : commit}
       onKeyDown={(e) => {
         if (e.key === "Escape") { e.preventDefault(); commit(); }
-        if (e.key === "Enter" && !e.shiftKey && !edit.multiline) {
-          e.preventDefault();
-          commit();
-        }
       }}
       style={{
         position: "absolute",
         left: edit.x,
         top: edit.y,
         width: edit.width,
-        height: edit.height,     // initial; overridden by autoResize
+        minHeight: edit.height,
         fontSize: edit.fontSize,
         fontFamily: edit.fontFamily ?? T.font,
         fontWeight: isBold ? "bold" : "normal",
@@ -330,16 +326,9 @@ function TextEditOverlay({
         lineHeight: edit.lineHeight ?? TEXT_LINE_HEIGHT,
         // Invisible — looks like directly editing the canvas text.
         background: "transparent",
-        border: "none",
-        outline: "none",
         boxShadow: `0 0 0 2px ${T.selection}55`,  // translucent focus ring
         borderRadius: 4,
-        padding: 0,
-        resize: "none",
-        boxSizing: "border-box",
         zIndex: 10,
-        overflow: "hidden",
-        whiteSpace: "pre-wrap",
         wordBreak: "break-word",
       }}
     />
@@ -354,6 +343,8 @@ function TextEditOverlay({
 export interface SlideKonvaEditorHandle {
   addText: () => void;
   removeSelected: () => void;
+  /** With a text box open: puts a new formula at its cursor and returns true; otherwise false. */
+  insertFormulaInText: () => boolean;
   clearSelection: () => void;
 }
 
@@ -386,6 +377,7 @@ export const SlideKonvaEditor = forwardRef<
   const elements = slide.elements;
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [editState, setEditState] = useState<EditState | null>(null);
+  const textFieldRef = useRef<MathTextInputHandle | null>(null);
   /** Active snap guide lines (cleared on drag end). */
   const [guides, setGuides] = useState<{ vLines: number[]; hLines: number[] }>({ vLines: [], hLines: [] });
   const isDraggingRef = useRef(false);
@@ -924,6 +916,7 @@ export const SlideKonvaEditor = forwardRef<
       node: Konva.Node,
       value: string,
       multiline = false,
+      formula?: number,
     ) => {
       const el = elements.find((e) => e.id === id);
       if (!el) return;
@@ -967,6 +960,7 @@ export const SlideKonvaEditor = forwardRef<
         align,
         underline,
         multiline,
+        formula,
       });
     },
     [elements, W, H, OX, OY],
@@ -1038,7 +1032,12 @@ export const SlideKonvaEditor = forwardRef<
     addText,
     removeSelected,
     clearSelection: () => setSelectedId(null),
-  }), [addText, removeSelected]);
+    insertFormulaInText: () => {
+      if (!editState || !textFieldRef.current) return false;
+      textFieldRef.current.insertFormula();
+      return true;
+    },
+  }), [addText, removeSelected, editState]);
 
   /* ── Shared draggable/selectable props per element ─────────────────────── */
   // Inline to avoid TypeScript spread issues with different Konva node types
@@ -1223,16 +1222,14 @@ export const SlideKonvaEditor = forwardRef<
                       setSelectedId(el.id);
                       const node = stageRef.current?.findOne(`#${el.id}`);
                       const formula = node ? formulaAt(node, t.text, el.w * W, textMathStyle(t, W)) : -1;
-                      if (formula >= 0) onEditMath?.(el.id, { index: formula });
-                      else if (node) startEdit(el.id, node, t.text);
+                      if (node) startEdit(el.id, node, t.text, false, formula >= 0 ? formula : undefined);
                     }}
                     onDblTap={(e: Konva.KonvaEventObject<TouchEvent>) => {
                       e.cancelBubble = true;
                       setSelectedId(el.id);
                       const node = stageRef.current?.findOne(`#${el.id}`);
                       const formula = node ? formulaAt(node, t.text, el.w * W, textMathStyle(t, W)) : -1;
-                      if (formula >= 0) onEditMath?.(el.id, { index: formula });
-                      else if (node) startEdit(el.id, node, t.text);
+                      if (node) startEdit(el.id, node, t.text, false, formula >= 0 ? formula : undefined);
                     }}
                     // Change cursor to text-beam on hover so users know it's editable.
                     onMouseEnter={() => {
@@ -1274,16 +1271,14 @@ export const SlideKonvaEditor = forwardRef<
                       setSelectedId(el.id);
                       const node = stageRef.current?.findOne(`#${el.id}`);
                       const hit = node ? listFormulaAt(node, l, ordered, itemOffsets, W) : null;
-                      if (hit) onEditMath?.(el.id, hit);
-                      else if (node) startEdit(el.id, node, getListEditValue(l), true);
+                      if (node) startEdit(el.id, node, getListEditValue(l), true, hit ? listFormulaIndex(l, hit) : undefined);
                     }}
                     onDblTap={(e: Konva.KonvaEventObject<TouchEvent>) => {
                       e.cancelBubble = true;
                       setSelectedId(el.id);
                       const node = stageRef.current?.findOne(`#${el.id}`);
                       const hit = node ? listFormulaAt(node, l, ordered, itemOffsets, W) : null;
-                      if (hit) onEditMath?.(el.id, hit);
-                      else if (node) startEdit(el.id, node, getListEditValue(l), true);
+                      if (node) startEdit(el.id, node, getListEditValue(l), true, hit ? listFormulaIndex(l, hit) : undefined);
                     }}
                     onMouseEnter={() => {
                       if (!isDraggingRef.current) setStageCursor("text");
@@ -1673,7 +1668,7 @@ export const SlideKonvaEditor = forwardRef<
 
         {/* Floating textarea overlay for active text edit */}
         {editState && (
-          <TextEditOverlay edit={editState} onCommit={commitEdit} />
+          <TextEditOverlay edit={editState} onCommit={commitEdit} fieldRef={textFieldRef} />
         )}
       </div>
     </div>

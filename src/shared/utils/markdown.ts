@@ -730,12 +730,13 @@ function protectMathHtml(input: string): {
       let result = value.replace(MATH_BLOCK_TOKEN_RESTORE_PATTERN, (_match, rawId) => {
         const index = Number(rawId);
         const latex = blockSegments[index] ?? "";
-        return `\n\n$$${latex}$$\n\n`;
+        // An empty formula (closed unwritten, or the formula editor failed) is nothing, not "$$".
+        return latex.trim() ? `\n\n$$${latex}$$\n\n` : "";
       });
       result = result.replace(MATH_INLINE_TOKEN_RESTORE_PATTERN, (_match, rawId) => {
         const index = Number(rawId);
         const latex = inlineSegments[index] ?? "";
-        return `$${latex}$`;
+        return latex.trim() ? `$${latex}$` : "";
       });
       return result;
     },

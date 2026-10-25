@@ -145,6 +145,8 @@
     "confirmAll": "Correram todas bem",
     "confirmAllToast": "{count, plural, one {# aula marcada como lecionada} other {# aulas marcadas como lecionadas}}",
     "dismiss": "Esconder por agora",
+    "savedToast": "Registado: {result}",
+    "change": "Alterar",
     "taughtToast": "Aula marcada como lecionada",
     "prepareNext": "Preparar a próxima aula",
     "saveError": "Não foi possível guardar. Tenta novamente.",
@@ -186,7 +188,7 @@
     "save": "Guardar",
     "followUpOpenLesson": "Abrir",
     "reinforcementNote": "Ficha de reforço: aula de {day}",
-    "missingAmountQuestion": "Quanto ficou por dar?",
+    "missingAmountQuestion": "Quanto ficou por dar? (opcional)",
     "missingLittle": "Pouco",
     "missingHalf": "Metade",
     "missingMost": "Quase tudo",
@@ -1451,7 +1453,10 @@
       "restoreConfirm": "Restaurar",
       "restoring": "A restaurar a versão",
       "restoredToast": "Versão restaurada",
-      "restoreError": "Não foi possível restaurar a versão."
+      "restoreError": "Não foi possível restaurar a versão.",
+      "pendingSuggestion": "Sugestão pendente",
+      "pendingSuggestionReview": "Rever",
+      "pendingSuggestionPreparing": "A preparar…"
     },
     "documentEditor": {
       "stepPreparingLabel": "Preparar",
@@ -1473,6 +1478,11 @@
       "imageUploadFailed": "Não foi possível carregar a imagem.",
       "imageAdded": "Imagem adicionada ao documento.",
       "imageGenDelayError": "A geração de imagens terminou com falhas ou atrasos no stream.",
+      "conflict": "Este documento foi alterado noutro separador ou dispositivo. As tuas últimas alterações não foram guardadas.",
+      "conflictReload": "Recarregar",
+      "conflictKeepMine": "Manter a minha versão",
+      "documentUnreachable": "Não foi possível abrir este documento. Verifica a ligação e tenta outra vez.",
+      "retryLoad": "Tentar outra vez",
       "documentNotFound": "Documento não encontrado",
       "backToDocuments": "Voltar aos documentos",
       "editorHeading": "Editor",
@@ -1683,32 +1693,6 @@
         "meadow": "Prado primaveril com sol e relva, para os mais novos.",
         "galaxy": "Lilás claro com planeta e estrelas coloridas."
       }
-    },
-    "formulaModal": {
-      "groupFractions": "Frações, potências e índices",
-      "groupRoots": "Raízes",
-      "groupTrigLogs": "Trig e logs",
-      "groupBigOperators": "Operadores grandes",
-      "groupBarsVectors": "Barras e vetores",
-      "groupRelations": "Relações",
-      "groupOperators": "Operadores",
-      "groupGreek": "Grego",
-      "groupSetsLogic": "Conjuntos e lógica",
-      "groupNumberSets": "Conjuntos numéricos",
-      "editTitle": "Editar fórmula",
-      "addTitle": "Adicionar fórmula",
-      "latexModeLabel": "Modo LaTeX",
-      "latexModeHint": "Ativa para escrever LaTeX puro. Desativa para entrada mais simples.",
-      "formulaLabel": "Fórmula",
-      "formulaPlaceholderSimple": "Ex.: sin(x) + πr^2",
-      "formulaHint": "Usa a paleta para inserir símbolos no cursor e confirma quando a pré-visualização estiver correta.",
-      "previewLabel": "Pré-visualização",
-      "paletteLabel": "Paleta de símbolos",
-      "paletteHint": "Cada botão insere LaTeX diretamente no campo acima.",
-      "cancel": "Cancelar",
-      "save": "Guardar",
-      "add": "Adicionar",
-      "previewEmpty": "A fórmula aparece aqui. Por exemplo:"
     },
     "imagePickerModal": {
       "dialogTitle": "Adicionar imagem",
@@ -1969,6 +1953,9 @@
       "destinationAll": "Todas",
       "destinationAllHint": "Partilhar com a comunidade e com a escola ao mesmo tempo.",
       "destinationCommunity": "Biblioteca comunitária",
+      "destinationCommunityInstantHint": "Visível para todos os professores na Scooli.",
+      "shareAllInstantDescription": "O recurso fica publicado na biblioteca da escola e na biblioteca comunitária.",
+      "shareCommunityInstantDescription": "Partilha o teu recurso educativo com outros professores portugueses. Fica publicado de imediato.",
       "destinationCommunityHint": "Visível para todos os professores na Scooli após revisão.",
       "destinationOrgHint": "Só os colegas da escola vão ver este recurso.",
       "cancel": "Cancelar",
@@ -2010,6 +1997,15 @@
         "• Na comunidade, será revisto pela equipa Scooli em 24-48h antes de publicar",
         "• Recebe notificação quando a versão pública for aprovada"
       ],
+      "instantHeading": "Como funciona",
+      "communityInstantBullets": [
+        "• O recurso fica disponível de imediato na biblioteca comunitária",
+        "• Outros professores podem reutilizá-lo e adaptá-lo"
+      ],
+      "bothInstantBullets": [
+        "• Fica disponível de imediato para os membros da escola e na biblioteca comunitária",
+        "• Outros professores podem reutilizá-lo e adaptá-lo"
+      ],
       "communityBullets": [
         "• O recurso será revisto pela nossa equipa em 24-48 horas",
         "• Verificamos alinhamento com as AEs e qualidade pedagógica",
@@ -2036,6 +2032,7 @@
       "previewComingSoon": "Pré-visualização em breve disponível",
       "previewDescription": "Pré-visualização só de leitura, como o aluno a recebe. Partilhado por {name}.",
       "shareOrgSuccess": "Recurso partilhado com a biblioteca da escola.",
+      "sharePublished": "Recurso publicado na biblioteca comunitária.",
       "shareCommunitySuccess": "Recurso enviado para revisão. Vais receber uma notificação em 24 a 48 horas.",
       "shareError": "Erro ao partilhar recurso"
     },
@@ -2983,6 +2980,7 @@
   "timetable": {
     "status": {
       "pending": "Por preparar",
+      "pendingPast": "Sem documentos",
       "generating": "A preparar",
       "completed": "Pronta",
       "failed": "Falhou",
@@ -3032,6 +3030,7 @@
       "reinforcementReady": "Ficha pronta · aula de {day}",
       "reinforcementFailed": "Não foi possível gerar a ficha.",
       "open": "Abrir",
+      "linkPlan": "Ligar uma planificação",
       "noPlan": "Liga uma planificação a esta turma para veres o progresso."
     },
     "shared": {
@@ -3418,7 +3417,9 @@
     "bar": {
       "title": "Nova versão sugerida",
       "preparing": "A preparar uma nova versão…",
-      "review": "Rever alterações"
+      "review": "Rever alterações",
+      "dismiss": "Esconder",
+      "dismissHint": "Esconde este aviso. A sugestão continua em Versões."
     },
     "review": {
       "title": "Nova versão sugerida",
@@ -3462,7 +3463,7 @@
       "presentationSettings": "Tema e definições da apresentação",
       "documentTitle": "Título",
       "themeChange": "Tema: {before} → {after}",
-      "formatChanged": "A apresentação mudou de formato desde esta sugestão.",
+      "formatChanged": "Esta sugestão foi feita antes de a apresentação mudar. Atualiza-a para veres as alterações na apresentação de agora.",
       "refresh": "Atualizar sugestão",
       "refreshError": "Não foi possível atualizar a sugestão. Tenta de novo.",
       "assessment": {
@@ -3615,13 +3616,26 @@
     "chip": "{count} por rever"
   },
   "assessmentEditor": {
-    "studentView": "Versão do aluno",
-    "studentViewHint": "Mostra exatamente o que o aluno recebe: sem soluções, explicações, critérios nem objetivos.",
     "export": "Exportar",
     "saving": "A guardar…",
     "saved": "Guardado",
     "unsaved": "Alterações por guardar",
-    "saveFailed": "Não foi possível guardar. As tuas alterações continuam aqui: verifica o exercício que editaste e tenta outra vez.",
+    "saveFailed": "Não foi possível guardar. As tuas alterações continuam aqui. Tenta outra vez; se voltar a falhar, verifica a ligação à internet e o último exercício que editaste.",
+    "leaveUnsaved": "As tuas últimas alterações ainda não foram guardadas e perdem-se se saíres. Sair mesmo assim?",
+    "conflict": "Este documento foi alterado noutro separador ou dispositivo. As tuas últimas alterações não foram guardadas.",
+    "conflictReload": "Recarregar",
+    "conflictKeepMine": "Manter a minha versão",
+    "check": {
+      "label": "Por verificar",
+      "confirm": "Está correto",
+      "confirmFailed": "Não foi possível guardar. Tenta outra vez."
+    },
+    "undo": {
+      "action": "Anular",
+      "exerciseDeleted": "Exercício apagado.",
+      "readingDeleted": "Texto apagado.",
+      "groupDeleted": "Grupo apagado ({count, plural, one {# item} other {# itens}})."
+    },
     "retrySave": "Tentar outra vez",
     "dismiss": "Fechar",
     "generatingTitle": "A criar o teu documento…",
@@ -3688,6 +3702,7 @@
       "newTitle": "Grupo {roman}",
       "subtotal": "{points, number} pts",
       "addExercise": "Adicionar exercício",
+      "full": "Grupo cheio ({max} itens)",
       "addReading": "Adicionar texto de apoio",
       "addGroup": "Adicionar grupo",
       "deleteGroup": "Apagar grupo",
@@ -3706,7 +3721,8 @@
       "readingDefaultTitle": "Texto de apoio",
       "readingTitle": "Título (opcional)",
       "readingBody": "Texto",
-      "imageAlt": "Imagem do exercício"
+      "imageAlt": "Imagem do exercício",
+      "more": "Mais ações"
     },
     "types": {
       "multiple_choice": "Escolha múltipla",
@@ -3733,12 +3749,12 @@
       "gridOnSave": "A grelha atualiza-se quando as alterações forem guardadas."
     },
     "editor": {
+      "formula": "Fórmula",
       "title": "Editar exercício {number}",
       "readingTitle": "Editar texto de apoio",
       "type": "Tipo",
       "prompt": "Enunciado",
       "promptGapsHint": "Escreve ___ (três traços) onde o aluno tem de completar.",
-      "preview": "Pré-visualização",
       "options": "Opções",
       "addOption": "Adicionar opção",
       "removeOption": "Remover",
@@ -3814,7 +3830,10 @@
       "classifyItems": "Itens a classificar",
       "itemN": "Item {n}",
       "itemCategory": "Caixa do item",
-      "noCategory": "Sem caixa"
+      "noCategory": "Sem caixa",
+      "tooLong": "Este campo já chegou ao limite de caracteres.",
+      "optionLabel": "Opção {letter}",
+      "cellLabel": "Célula da linha {row}, coluna {column}"
     },
     "versionPreviewEmpty": "Esta versão não tem exercícios.",
     "chatSaveFirst": "Não foi possível guardar as tuas alterações; tenta novamente antes de usar a conversa.",
@@ -3840,6 +3859,7 @@
       "classes": "Falta indicar a caixa de cada item"
     },
     "exportDialog": {
+      "incomplete": "{count, plural, one {O exercício {numbers} está incompleto} other {Os exercícios {numbers} estão incompletos}} (sem enunciado ou sem solução). Vai sair assim nos ficheiros.",
       "title": {
         "test": "Exportar teste",
         "worksheet": "Exportar ficha",
@@ -3876,6 +3896,29 @@
       "revising": "Estamos a atualizar este documento; tenta exportar daqui a um minuto.",
       "rateLimited": "Fizeste muitas exportações seguidas. Espera um minuto e tenta outra vez.",
       "retry": "Tentar outra vez"
+    },
+    "tabs": {
+      "label": "Versão da folha",
+      "student": {
+        "title": "Enunciado",
+        "hint": "o que o aluno recebe"
+      },
+      "answers": {
+        "title": "Soluções",
+        "hint": "só para ti"
+      },
+      "toCheck": "{count, plural, one {# por verificar} other {# por verificar}}"
     }
+  },
+  "math": {
+    "editLabel": "Editar fórmula",
+    "loading": "A carregar o editor de fórmulas",
+    "blank": "Lacuna",
+    "hint": "Escreve 3/4 para uma fração, x^2 para um expoente.",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "insert": "Fórmula",
+    "loadFailed": "Não foi possível abrir o editor de fórmulas.",
+    "retry": "Tentar de novo"
   }
 }

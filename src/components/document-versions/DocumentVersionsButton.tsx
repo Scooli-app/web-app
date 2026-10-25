@@ -17,8 +17,9 @@ import type { Document, DocumentType } from "@/shared/types";
 import { isCanvasPresentation, type CanvasPresentation } from "@/shared/types/canvas-presentation";
 import { parsePresentationDocument } from "@/shared/types/blocks";
 import type { DocumentVersionDetail, DocumentVersionSummary } from "@/shared/types/document-versions";
-import { listedVersions } from "@/shared/utils/document-versions";
-import { History } from "lucide-react";
+import { listedVersions, versionsSuggestionRow } from "@/shared/utils/document-versions";
+import { useAppSelector } from "@/store/hooks";
+import { History, Sparkles } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import { useCallback, useEffect, useState } from "react";
 import Markdown from "react-markdown";
@@ -26,6 +27,7 @@ import remarkBreaks from "remark-breaks";
 import { toast } from "sonner";
 import { isAssessmentDoc } from "@/lib/documents/kind";
 import { AssessmentVersionPreview } from "@/components/assessment-editor/AssessmentVersionPreview";
+import { requestSuggestionReview } from "./dismissedSuggestions";
 import { DocumentVersionRestoreButton, DocumentVersionRow } from "./DocumentVersionRow";
 
 interface Props {
@@ -71,6 +73,10 @@ export function DocumentVersionsButton({ documentId, documentType, onRestored }:
   const [isRestoring, setIsRestoring] = useState(false);
 
   const visible = listedVersions(versions);
+  // The document's own suggestion, the one its banner reviews.
+  const suggestionRow = versionsSuggestionRow(
+    useAppSelector((state) => (state.documents.currentDocument?.id === documentId ? state.documents.currentDocument.pendingSuggestion : null)),
+  );
   const selected = visible.find((version) => version.id === selectedId) ?? null;
 
   useEffect(() => {
@@ -167,6 +173,26 @@ export function DocumentVersionsButton({ documentId, documentType, onRestored }:
 
             {listStatus === "error" && (
               <LoadError message={t("listLoadError")} onRetry={() => setListAttempt((n) => n + 1)} />
+            )}
+
+            {listStatus === "ready" && suggestionRow && (
+              <div className="flex items-center gap-3 rounded-lg border border-primary/25 bg-primary/5 px-3 py-2.5">
+                <Sparkles className="h-4 w-4 shrink-0 text-primary" aria-hidden />
+                <p className="min-w-0 flex-1 text-sm font-medium text-foreground">{t("pendingSuggestion")}</p>
+                {suggestionRow === "review" ? (
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      handleOpenChange(false);
+                      requestSuggestionReview(documentId);
+                    }}
+                  >
+                    {t("pendingSuggestionReview")}
+                  </Button>
+                ) : (
+                  <span className="text-xs text-muted-foreground">{t("pendingSuggestionPreparing")}</span>
+                )}
+              </div>
             )}
 
             {listStatus === "ready" && (

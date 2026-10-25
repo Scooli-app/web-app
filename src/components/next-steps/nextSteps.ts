@@ -22,6 +22,14 @@ export function actionFor(kind: string): NextStepAction | null {
 }
 
 /** The steps to show: the known kinds only, in the order the backend sent them, at most three. */
+/** The dashboard's "Confirma N aulas" counts what the strip still asks (null: no strip); none left drops it. */
+export function withStripCount(items: Suggestion[], stripCount: number | null): Suggestion[] {
+  if (stripCount === null) return items;
+  return items.flatMap((item) =>
+    item.kind !== "check_in" ? [item] : stripCount === 0 ? [] : [{ ...item, count: Math.min(item.count ?? stripCount, stripCount) }],
+  );
+}
+
 export function visibleSteps(items: Suggestion[]): Suggestion[] {
   return items.filter((item) => actionFor(item.kind) !== null).slice(0, NEXT_STEPS_LIMIT);
 }

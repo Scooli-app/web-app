@@ -42,6 +42,8 @@ import {
 import { cn } from "@/shared/utils/utils";
 import { ArrowLeft, Building2, Globe2, Share2, Sparkles } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { selectIsDocumentReviewEnabled } from "@/store/features/selectors";
+import { useAppSelector } from "@/store/hooks";
 import { useEffect, useMemo, useState } from "react";
 
 interface ShareResourceModalProps {
@@ -84,6 +86,7 @@ type ShareModalTranslate = (key: string, values?: Record<string, string | number
 function getDestinationOptions(
   organizationName: string | null,
   t: ShareModalTranslate,
+  review: boolean,
 ): DestinationOption[] {
   const orgLabel = organizationName
     ? t("orgLibraryLabel", { name: organizationName })
@@ -103,7 +106,7 @@ function getDestinationOptions(
     {
       value: "community",
       title: t("destinationCommunity"),
-      hint: t("destinationCommunityHint"),
+      hint: t(review ? "destinationCommunityHint" : "destinationCommunityInstantHint"),
       icon: Globe2,
       cardClassName:
         "border-teal-500/30 bg-teal-500/10 hover:border-teal-500/45 hover:bg-teal-500/14",
@@ -139,6 +142,8 @@ export function ShareResourceModal({
   documentId,
 }: ShareResourceModalProps) {
   const t = useTranslations("community.shareModal");
+  // Off, a community share is published at once: no "revisto em 24-48h" promise.
+  const review = useAppSelector(selectIsDocumentReviewEnabled);
   const tResourceTypes = useTranslations("community.resourceCard.resourceTypes");
   const tFilters = useTranslations("community.filters");
   const defaultDestination: ShareDestination = allowOrganizationScope
@@ -160,8 +165,8 @@ export function ShareResourceModal({
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const destinationOptions = useMemo(
-    () => getDestinationOptions(organizationName, t),
-    [organizationName, t],
+    () => getDestinationOptions(organizationName, t, review),
+    [organizationName, t, review],
   );
 
   useEffect(() => {
@@ -278,9 +283,9 @@ export function ShareResourceModal({
       return t("shareWithOrgDescription", { name: organizationName ?? t("schoolFallbackPossessive") });
     }
     if (currentDestination === "both") {
-      return t("shareAllDescription");
+      return t(review ? "shareAllDescription" : "shareAllInstantDescription");
     }
-    return t("shareCommunityDescription");
+    return t(review ? "shareCommunityDescription" : "shareCommunityInstantDescription");
   })();
 
   return (
@@ -483,7 +488,7 @@ export function ShareResourceModal({
                   ? t("orgLibraryHeading")
                   : currentDestination === "both"
                     ? t("combinedShareHeading")
-                    : t("reviewProcessHeading")}
+                    : review ? t("reviewProcessHeading") : t("instantHeading")}
               </p>
               {currentDestination === "organization" ? (
                 <ul className="space-y-1 text-xs text-muted-foreground">
@@ -493,13 +498,13 @@ export function ShareResourceModal({
                 </ul>
               ) : currentDestination === "both" ? (
                 <ul className="space-y-1 text-xs text-muted-foreground">
-                  {(t.raw("bothBullets") as string[]).map((bullet) => (
+                  {(t.raw(review ? "bothBullets" : "bothInstantBullets") as string[]).map((bullet) => (
                     <li key={bullet}>{bullet}</li>
                   ))}
                 </ul>
               ) : (
                 <ul className="space-y-1 text-xs text-muted-foreground">
-                  {(t.raw("communityBullets") as string[]).map((bullet) => (
+                  {(t.raw(review ? "communityBullets" : "communityInstantBullets") as string[]).map((bullet) => (
                     <li key={bullet}>{bullet}</li>
                   ))}
                 </ul>

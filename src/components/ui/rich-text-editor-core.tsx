@@ -5,7 +5,7 @@ import {
   diffPluginKey,
 } from "@/components/editor/extensions/DiffExtension";
 import { ImageBlockExtension } from "@/components/editor/extensions/ImageBlockExtension";
-import { FormulaModal } from "@/components/document-editor-v2/FormulaModal";
+import { MathFieldPopover } from "@/components/math/MathFieldPopover";
 import { AUTO_SAVE_DELAY } from "@/shared/config/constants";
 import { htmlToMarkdown, markdownToHtml } from "@/shared/utils/markdown";
 import { TableKit } from "@tiptap/extension-table";
@@ -42,7 +42,6 @@ import {
   useRef,
   useState,
   type ChangeEvent,
-  type KeyboardEvent,
   type TouchEvent,
 } from "react";
 import { createPortal } from "react-dom";
@@ -57,6 +56,7 @@ interface TipTapEditorCoreProps {
   onEditorActivity?: () => void;
   onImageUpload?: (file: File) => Promise<void> | void;
   isImageUploading?: boolean;
+  page?: boolean;
 }
 
 interface MathEditState {
@@ -318,6 +318,7 @@ export function TipTapEditorCore({
   onEditorActivity,
   onImageUpload,
   isImageUploading = false,
+  page = false,
 }: TipTapEditorCoreProps) {
   const t = useTranslations("editor.richTextEditor");
   const autosaveTimer = useRef<NodeJS.Timeout | null>(null);
@@ -327,8 +328,6 @@ export function TipTapEditorCore({
 
   // Math edit popover state
   const [mathEdit, setMathEdit] = useState<MathEditState | null>(null);
-  const [mathEditLatex, setMathEditLatex] = useState("");
-  const [formulaModalOpen, setFormulaModalOpen] = useState(false);
   const editorRef = useRef<Editor | null>(null);
   const setMathEditRef = useRef(setMathEdit);
   setMathEditRef.current = setMathEdit;
@@ -345,7 +344,6 @@ export function TipTapEditorCore({
         x: coords.left,
         y: coords.bottom,
       });
-      setMathEditLatex(node.attrs.latex);
     },
     block: (node: ProseMirrorNode, pos: number) => {
       const ed = editorRef.current;
@@ -358,7 +356,6 @@ export function TipTapEditorCore({
         x: coords.left,
         y: coords.bottom,
       });
-      setMathEditLatex(node.attrs.latex);
     },
   });
 
@@ -399,46 +396,32 @@ export function TipTapEditorCore({
     editorRef.current = editor;
   }, [editor]);
 
-  const handleMathSave = useCallback(() => {
-    if (!editor || !mathEdit) return;
-    if (mathEdit.type === "inline") {
-      editor.commands.updateInlineMath({
-        latex: mathEditLatex,
-        pos: mathEdit.pos,
-      });
-    } else {
-      editor.commands.updateBlockMath({
-        latex: mathEditLatex,
-        pos: mathEdit.pos,
-      });
-    }
-    setMathEdit(null);
-  }, [editor, mathEdit, mathEditLatex]);
-
-  const handleFormulaInsert = useCallback(
-    (tex: string) => {
-      if (!editor) return;
-      editor
-        .chain()
-        .focus()
-        .insertContent({ type: "inlineMath", attrs: { latex: tex } })
-        .run();
+  // The formula field: null = cancelled; "" = emptied, so the formula goes.
+  const handleMathSave = useCallback(
+    (tex: string | null) => {
+      setMathEdit(null);
+      if (!editor || !mathEdit) return;
+      const node = editor.state.doc.nodeAt(mathEdit.pos);
+      if ((tex === null && !mathEdit.latex) || (tex !== null && !tex.trim())) {
+        if (node) editor.chain().focus().deleteRange({ from: mathEdit.pos, to: mathEdit.pos + node.nodeSize }).run();
+        return;
+      }
+      if (tex === null || tex === mathEdit.latex) return;
+      if (mathEdit.type === "inline") editor.commands.updateInlineMath({ latex: tex, pos: mathEdit.pos });
+      else editor.commands.updateBlockMath({ latex: tex, pos: mathEdit.pos });
     },
-    [editor],
+    [editor, mathEdit],
   );
 
-  const handleMathKeyDown = useCallback(
-    (e: KeyboardEvent<HTMLTextAreaElement>) => {
-      if (e.key === "Enter" && !e.shiftKey) {
-        e.preventDefault();
-        handleMathSave();
-      }
-      if (e.key === "Escape") {
-        setMathEdit(null);
-      }
-    },
-    [handleMathSave],
-  );
+  // "Fórmula": an empty formula at the cursor, opened straight away.
+  const handleFormulaInsert = useCallback(() => {
+    if (!editor) return;
+    editor.chain().focus().insertContent({ type: "inlineMath", attrs: { latex: "" } }).run();
+    const pos = editor.state.selection.from - 1;
+    const coords = editor.view.coordsAtPos(pos);
+    setMathEdit({ latex: "", pos, type: "inline", x: coords.left, y: coords.bottom });
+  }, [editor]);
+
 
   const handleToolbarUploadClick = useCallback(() => {
     if (!onImageUpload || isImageUploading) return;
@@ -581,52 +564,21 @@ export function TipTapEditorCore({
   return (
     <div className="relative w-full">
       {mathEdit && (
-        <div
-          className="fixed z-50 rounded-lg border border-border bg-popover p-3 shadow-lg"
-          style={{ left: mathEdit.x, top: mathEdit.y + 6 }}
-        >
-          <p className="mb-2 text-xs font-medium text-muted-foreground">
-            {t("editFormula")}
-          </p>
-          <textarea
-            autoFocus
-            value={mathEditLatex}
-            onChange={(e) => setMathEditLatex(e.target.value)}
-            onKeyDown={handleMathKeyDown}
-            rows={2}
-            className="mb-2 w-64 resize-none rounded border border-input bg-background px-2 py-1 font-mono text-sm focus:outline-none focus:ring-1 focus:ring-ring"
-          />
-          <div className="flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={() => setMathEdit(null)}
-              className="rounded px-2 py-1 text-xs text-muted-foreground hover:bg-accent"
-            >
-              {t("cancel")}
-            </button>
-            <button
-              type="button"
-              onClick={handleMathSave}
-              className="rounded bg-primary px-2 py-1 text-xs text-primary-foreground hover:bg-primary/90"
-            >
-              {t("save")}
-            </button>
-          </div>
-        </div>
+        <MathFieldPopover
+          tex={mathEdit.latex}
+          anchor={{ x: mathEdit.x, y: mathEdit.y }}
+          onSave={(tex) => handleMathSave(tex)}
+          onCancel={() => handleMathSave(null)}
+        />
       )}
-      <FormulaModal
-        open={formulaModalOpen}
-        onClose={() => setFormulaModalOpen(false)}
-        onInsert={handleFormulaInsert}
-      />
-      <div className="w-full rounded-xl border border-border bg-card">
+      <div className={page ? "w-full rounded-md border border-border bg-card shadow-sm" : "w-full rounded-xl border border-border bg-card"}>
         <MenuBar
           editor={editor}
           rightHeaderContent={rightHeaderContent}
           onEditorActivity={onEditorActivity}
           onUploadImage={onImageUpload ? handleToolbarUploadClick : undefined}
           isImageUploading={isImageUploading}
-          onOpenFormula={() => setFormulaModalOpen(true)}
+          onOpenFormula={handleFormulaInsert}
         />
         <input
           ref={imageInputRef}
@@ -636,7 +588,7 @@ export function TipTapEditorCore({
           onChange={handleImageFileChange}
         />
         <div
-          className="p-2 sm:p-4"
+          className={page ? "px-4 py-6 sm:px-10 sm:py-8" : "p-2 sm:p-4"}
           onContextMenu={handleContextMenu}
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}

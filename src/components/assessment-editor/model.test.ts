@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
-  addCategory, addLabel, addOption, addTableColumn, addTableRow, adoptGrids, adoptStudentOrder, cellAnswer, changeType, classifyItem, countBlanks, gridLetters,
+  addCategory, addLabel, addOption, addTableColumn, addTableRow, adoptGrids, adoptStudentOrder, boxedGap, cellAnswer, changeType, classifyItem, countBlanks, gridLetters,
   gridStale, gridWords, hasTextAnswer, isBlankCell, listedWords, missingAnswer, newExercise, parseAssessment, placedCells, removeCategory,
-  removeLabel, removeOption, removeTableColumn, removeTableRow, setTableCell, skippedWordIndexes, syncAnswer, toggleBlank, withEmptyCategories, withEmptyTable, withImage,
+  removeLabel, removeOption, removeTableColumn, removeTableRow, setTableCell, skippedWordIndexes, splitBlanks, syncAnswer, toggleBlank, withEmptyCategories, withEmptyTable, withImage,
 } from "./model";
 
 const doc = parseAssessment(JSON.stringify({
@@ -19,12 +19,13 @@ describe("assessment model", () => {
     expect(e.kind === "exercise" && e.answer.truth).toBeNull();
   });
 
-  it("new exercise gets the next id, 0 points under a target and 3 lines", () => {
+  it("new exercise gets the next id, 0 points under a target, and lines only when written", () => {
     const e = newExercise(doc, "multiple_choice");
     expect(e.id).toBe("e2");
     expect(e.points).toBe(0);
-    expect(e.answerSpace).toEqual({ kind: "lines", count: 3 });
+    expect(e.answerSpace).toEqual({ kind: "none", count: null });
     expect(e.answer.optionIds).toEqual(["a"]);
+    expect(newExercise(doc, "short_answer").answerSpace).toEqual({ kind: "lines", count: 3 });
   });
 
   it("keeps MC with a correct option when the correct one is removed", () => {
@@ -54,6 +55,15 @@ describe("assessment model", () => {
   it("counts one blank per run of three or more underscores, like the server", () => {
     expect(countBlanks("O ______ bombeia.")).toBe(1);
     expect(countBlanks("O ___ e ______.")).toBe(2);
+  });
+
+  it("keeps a blank inside maths in its formula, numbered with the others", () => {
+    const { parts, gaps } = splitBlanks("O ___ de $\\frac{1}{2} = \\frac{___}{4}$ e ___.", (gap) => `[${gap}]`);
+    expect(parts).toEqual(["O ", " de $\\frac{1}{2} = \\frac{[1]}{4}$ e ", "."]);
+    expect(gaps).toEqual([0, 2]);
+    expect(boxedGap("3")).toBe("\\boxed{\\text{3}}");
+    expect(boxedGap("$\\frac{1}{2}$")).toBe("\\boxed{\\frac{1}{2}}");
+    expect(boxedGap(" ")).toBe("\\square");
   });
   it("label_image keeps one answer per target and renumbers after a removal", () => {
     const e = doc.sections[0].items[0];

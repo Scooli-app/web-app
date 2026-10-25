@@ -16,6 +16,12 @@ export interface AssessmentEditorContextValue {
   rememberAe: (outcome: AeOutcome) => void;
   /** Opens the image picker; the editor calls `onPicked` with the chosen image URL. */
   requestImage: (onPicked: (url: string) => void) => void;
+  /** Exercise id → why its answer key needs a look (the server's maths check). Editor only. */
+  answerChecks?: Record<string, string>;
+  /** "Está correto": the teacher confirmed a flagged exercise. */
+  confirmCheck?: (exerciseId: string) => void;
+  /** The document's language, for what is printed on the page (as in its files). Unknown: the interface's. */
+  english?: boolean;
 }
 
 /** Below md, every button, input and menu/select item inside gets a 44 px touch target and 16 px text (no iOS focus zoom); textareas grow with their text instead of clipping it

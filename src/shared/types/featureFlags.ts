@@ -47,6 +47,9 @@ export enum FeatureFlag {
 
   /** Controls the "Como correu a aula?" check-in on the dashboard (class state). */
   CLASS_STATE_ENABLED = "class_state_enabled",
+
+  /** New tests, worksheets and quizzes are generated as structured questions (server-side); they take no template. */
+  STRUCTURED_ASSESSMENTS = "structured_assessments",
 }
 
 export function isTeacherProfileFeatureEnabled(

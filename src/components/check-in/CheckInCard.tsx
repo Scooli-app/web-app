@@ -12,16 +12,28 @@ import {
 import type { CheckInResult, CheckInSubmission, PendingCheckIn } from "@/shared/types/check-in";
 import { CheckInOutcomeStep, CheckInResultOptions } from "./CheckInChoices";
 import { toIso } from "@/shared/utils/calendar";
+import { formatClassName } from "@/shared/utils/className";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 
 type OutcomeResult = Extract<CheckInResult, "TAUGHT_WITH_DIFFICULTIES" | "PARTIAL">;
 
 /** What the card needs to ask about one lesson, so the dashboard and the calendar can both use it. */
+/** The turma's short name, as the calendar and the dashboard write it ("7.º Matemática · B"), when its parts came. */
+export function checkInTurmaName(item: CheckInCardItem, gradeShort: (grade: number) => string): string {
+  return item.subject && (item.gradeLevel || item.classLabel)
+    ? formatClassName(
+        { gradeLevel: item.gradeLevel, subject: item.subject, classLabel: item.classLabel, title: item.turmaTitle },
+        { gradeShort, subject: translateSubject },
+      )
+    : item.turmaTitle;
+}
+
 export type CheckInCardItem = Pick<
   PendingCheckIn,
   "slotDate" | "slotType" | "turmaTitle" | "subject" | "topicTitle" | "outcomes"
->;
+> &
+  Partial<Pick<PendingCheckIn, "gradeLevel" | "classLabel">>;
 
 /** Lower-cased, accent-free, single-spaced: "História  e Geografia" compares equal to "historia e geografia". */
 function foldForCompare(text: string): string {
@@ -36,6 +48,8 @@ export function subjectRepeatsTurma(turmaTitle: string, subjectLabel: string): b
   const subject = foldForCompare(subjectLabel);
   return subject.length > 0 && foldForCompare(turmaTitle).includes(subject);
 }
+
+const clip = (text: string, max: number) => (text.length > max ? `${text.slice(0, max - 1).trimEnd()}…` : text);
 
 interface CheckInCardProps {
   item: CheckInCardItem;
@@ -58,6 +72,7 @@ interface CheckInCardProps {
  */
 export function CheckInCard({ item, locale, onSubmit, onSkip, onCancel, showMeta = true }: CheckInCardProps) {
   const t = useTranslations("checkIns");
+  const tTimetable = useTranslations("timetable");
   const [outcomeResult, setOutcomeResult] = useState<OutcomeResult | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
 
@@ -68,14 +83,18 @@ export function CheckInCard({ item, locale, onSubmit, onSkip, onCancel, showMeta
     daysAgo: (count) => t("daysAgo", { count }),
   });
   const subject = translateSubject(item.subject);
-  const showSubject = !subjectRepeatsTurma(item.turmaTitle, subject);
+  const turmaName = checkInTurmaName(item, (grade) => tTimetable("gradeShort", { grade }));
+  const showSubject = !subjectRepeatsTurma(turmaName, subject);
+  // One truncated line: a long turma or topic name would push out which lesson and which day.
+  const turma = clip(turmaName, 40);
+  const topic = item.topicTitle ? clip(item.topicTitle, 60) : null;
   const meta = showSubject
-    ? item.topicTitle
-      ? t("meta", { turma: item.turmaTitle, subject, topic: item.topicTitle, day })
-      : t("metaNoTopic", { turma: item.turmaTitle, subject, day })
-    : item.topicTitle
-      ? t("metaNoSubject", { turma: item.turmaTitle, topic: item.topicTitle, day })
-      : t("metaNoSubjectNoTopic", { turma: item.turmaTitle, day });
+    ? topic
+      ? t("meta", { turma, subject, topic, day })
+      : t("metaNoTopic", { turma, subject, day })
+    : topic
+      ? t("metaNoSubject", { turma, topic, day })
+      : t("metaNoSubjectNoTopic", { turma, day });
 
   const toggle = (id: string) =>
     setSelected((current) => (current.includes(id) ? current.filter((x) => x !== id) : [...current, id]));

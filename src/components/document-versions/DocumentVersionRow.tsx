@@ -7,7 +7,7 @@ import { cn } from "@/shared/utils/utils";
 import { canRestoreVersion, versionLabelKey } from "@/shared/utils/document-versions";
 import type { DocumentVersionSummary } from "@/shared/types/document-versions";
 import { RotateCcw } from "lucide-react";
-import { useFormatter, useTranslations } from "next-intl";
+import { useFormatter, useNow, useTranslations } from "next-intl";
 
 interface RowProps {
   version: DocumentVersionSummary;
@@ -19,6 +19,8 @@ interface RowProps {
 export function DocumentVersionRow({ version, selected, onSelect }: RowProps) {
   const t = useTranslations("editor.documentVersions");
   const format = useFormatter();
+  // An explicit "now" (refreshed each minute): without one next-intl warns and falls back to the render time.
+  const now = useNow({ updateInterval: 60_000 });
   const createdAt = new Date(version.createdAt);
   const fullDate = format.dateTime(createdAt, { dateStyle: "long", timeStyle: "short" });
   const isCurrent = version.status === "current";
@@ -41,7 +43,7 @@ export function DocumentVersionRow({ version, selected, onSelect }: RowProps) {
         <Tooltip>
           <TooltipTrigger asChild>
             <time dateTime={version.createdAt} className="text-xs text-muted-foreground">
-              {format.relativeTime(createdAt)}
+              {format.relativeTime(createdAt, now)}
             </time>
           </TooltipTrigger>
           <TooltipContent>{fullDate}</TooltipContent>

@@ -39,6 +39,8 @@ export enum TeachingMethod {
 }
 
 export interface DocumentMetadata {
+  /** Structured assessments: exercises whose answer key the server's maths check corrected or could not confirm. */
+  answerChecks?: { exerciseId: string; note: string }[];
   prompt?: string;
   duration?: number;
   schoolYear?: number;
@@ -87,6 +89,8 @@ export interface Document {
    */
   contentFormat?: "markdown" | "json";
   content: string;
+  /** Identifies the stored content; sent back with an edit so a save from another tab isn't overwritten. */
+  contentVersion?: string;
   status: string;
   metadata: DocumentMetadata | null;
   /** The turma (timetable) this document was generated for; absent when it belongs to none. */

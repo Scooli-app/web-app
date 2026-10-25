@@ -3,39 +3,40 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 const TEXT_LINES = ["w-3/5", "w-1/2", "w-2/3"];
 
-/** Mirrors DocumentEditor: title row, editor card (toolbar + body) and the assistant panel. */
+/** Mirrors the shared editor frame (lesson plans, exercise documents): top bar, grey desk with the page, chat panel. */
 export function DocumentEditorSkeleton() {
   return (
-    <PageSkeleton className="flex flex-1 flex-col">
-      <div className="mb-2 flex items-start justify-between gap-4">
-        <Skeleton className="h-8 w-[28rem] max-w-full sm:h-9" />
-        <Skeleton className="mt-2 hidden h-4 w-20 sm:block" />
+    <PageSkeleton className="-m-3 flex min-h-0 flex-1 flex-col overflow-hidden bg-muted/40 sm:-m-4 md:-m-6">
+      <div className="flex flex-shrink-0 items-center gap-2 border-b border-border bg-background px-4 py-2">
+        <Skeleton className="h-5 w-72 max-w-[60%]" />
+        <div className="flex-1" />
+        <Skeleton className="hidden h-8 w-24 sm:block" />
+        <Skeleton className="hidden h-8 w-24 sm:block" />
+        <Skeleton className="h-8 w-24" />
       </div>
-      <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-[minmax(0,1fr)_400px]">
-        <div className="min-h-[50dvh] rounded-xl border border-border bg-card sm:min-h-[600px]">
-          <div className="flex h-[59px] items-center gap-2 border-b border-border px-3">
-            {Array.from({ length: 12 }, (_, i) => (
-              <Skeleton key={i} className="hidden size-7 sm:block" />
-            ))}
-            <div className="flex-1" />
-            <Skeleton className="h-8 w-[106px]" />
-            <Skeleton className="h-8 w-[104px]" />
-          </div>
-          <div className="space-y-10 p-6 sm:p-8">
-            {[0, 1, 2].map((section) => (
-              <div key={section} className="space-y-4">
-                <Skeleton className="h-7 w-56" />
-                <div className="space-y-3 pl-5">
-                  {TEXT_LINES.map((w, i) => (
-                    <Skeleton key={i} className={`h-4 ${w}`} />
-                  ))}
+      <div className="flex min-h-0 flex-1">
+        <div className="min-w-0 flex-1 overflow-hidden px-4 py-6 sm:px-6 max-md:px-2 max-md:py-3">
+          <div className="mx-auto min-h-[600px] w-full max-w-[820px] rounded-md border border-border bg-card shadow-sm">
+            <div className="flex h-12 items-center gap-2 border-b border-border px-3">
+              {Array.from({ length: 10 }, (_, i) => (
+                <Skeleton key={i} className="hidden size-7 sm:block" />
+              ))}
+            </div>
+            <div className="space-y-10 px-4 py-6 sm:px-10 sm:py-8">
+              {[0, 1, 2].map((section) => (
+                <div key={section} className="space-y-4">
+                  <Skeleton className="h-7 w-56" />
+                  <div className="space-y-3 pl-5">
+                    {TEXT_LINES.map((w, i) => (
+                      <Skeleton key={i} className={`h-4 ${w}`} />
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
-        <div className="hidden h-[708px] flex-col rounded-xl border border-border bg-card p-6 lg:flex">
-          <Skeleton className="ml-auto h-[70px] w-[290px] rounded-2xl" />
+        <div className="hidden w-80 flex-shrink-0 flex-col border-l border-border bg-background p-4 lg:flex">
           <div className="flex-1" />
           <div className="mb-3 grid grid-cols-2 gap-2">
             {[0, 1, 2, 3].map((i) => (
@@ -43,7 +44,6 @@ export function DocumentEditorSkeleton() {
             ))}
           </div>
           <Skeleton className="h-12 w-full rounded-lg" />
-          <Skeleton className="mx-auto mt-4 h-3 w-56" />
         </div>
       </div>
     </PageSkeleton>

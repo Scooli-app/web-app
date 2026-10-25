@@ -17,10 +17,22 @@ function truncate(text: string): string {
   return clean.length > MAX_LENGTH ? `${clean.slice(0, MAX_LENGTH).trimEnd()}…` : clean;
 }
 
-function presentationTitles(content: string): string | null {
+/** Block JSON (presentation or test / worksheet / quiz): a line of its titles or questions; null for markdown. */
+function jsonPreview(content: string): string | null {
   if (!content.trimStart().startsWith("{")) return null;
   try {
     const obj = JSON.parse(content) as Record<string, unknown>;
+    if (obj.documentType === "test" || obj.documentType === "worksheet" || obj.documentType === "quiz") {
+      type Item = { prompt?: string; title?: string | null };
+      return truncate(
+        ((obj.sections as Array<{ items?: Item[] }> | undefined) ?? [])
+          .flatMap((s) => s.items ?? [])
+          .map((i) => (i.prompt ?? i.title ?? "").replace(/\$[^$]*\$/g, "…"))
+          .filter(Boolean)
+          .slice(0, 3)
+          .join(" · "),
+      );
+    }
     if (obj.documentType !== "presentation") return null;
     if (obj.schemaVersion === 2) {
       type V2Slide = { elements?: Array<{ type: string; role?: string; text?: string }> };
@@ -49,7 +61,7 @@ function presentationTitles(content: string): string | null {
 export function getDocumentPreview(content: string): string {
   if (!content?.trim()) return "";
 
-  const titles = presentationTitles(content);
+  const titles = jsonPreview(content);
   if (titles !== null) return titles;
 
   const lines = toPlainText(content).split("\n").map((l) => l.trim());

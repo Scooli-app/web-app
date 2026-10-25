@@ -2,7 +2,7 @@
 
 import { InlineText } from "@/components/blocks/inline-text";
 import { useTranslations } from "next-intl";
-import { exerciseNumbers, parseAssessment } from "./model";
+import { exerciseNumbers, parseAssessment, splitBlanks } from "./model";
 
 /** Read-only outline of a stored assessment version for the versions sheet: Grupos and numbered prompts. */
 export function AssessmentVersionPreview({ content }: { content: string }) {
@@ -23,7 +23,8 @@ export function AssessmentVersionPreview({ content }: { content: string }) {
                 {i.kind === "exercise" ? (
                   <>
                     <span className="shrink-0 font-semibold">{numbers.get(i.id)}.</span>
-                    <span className="min-w-0"><InlineText value={i.prompt} /></span>
+                    {/* A blank inside maths is drawn as a box, as in the editor (underscores would break the formula). */}
+                    <span className="min-w-0"><InlineText value={i.type === "fill_gaps" ? splitBlanks(i.prompt, () => "\\square").parts.join("___") : i.prompt} /></span>
                   </>
                 ) : (
                   <span className="italic text-muted-foreground">{i.title || t("item.readingDefaultTitle")}</span>

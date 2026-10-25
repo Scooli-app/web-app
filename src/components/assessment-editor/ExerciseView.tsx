@@ -8,7 +8,7 @@ import { useTranslations } from "next-intl";
 import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
 import { AeChip } from "./AeChip";
 import { useAssessmentEditor } from "./context";
-import { cellAnswer, gapText, gridStale, hasTextAnswer, isBlankCell, listedWords, missingAnswer, optionLetter, placedCells, splitBlanks } from "./model";
+import { boxedGap, cellAnswer, gapText, gridStale, hasTextAnswer, isBlankCell, listedWords, missingAnswer, optionLetter, placedCells, printLabel, splitBlanks, type PrintLabel } from "./model";
 
 const correctCls = "rounded bg-emerald-50 px-1 text-emerald-900 ring-1 ring-emerald-200";
 
@@ -16,18 +16,22 @@ const correctCls = "rounded bg-emerald-50 px-1 text-emerald-900 ring-1 ring-emer
 /** `points`, when given, sits beside the number on its own row (phone layout) and the body takes the full width. */
 export function ExerciseView({ exercise: ex, number, points }: { exercise: AssessmentExercise; number: number; points?: ReactNode }) {
   const t = useTranslations("assessmentEditor");
-  const { studentView, aeLookup, showAe } = useAssessmentEditor();
+  const { studentView, aeLookup, showAe, answerChecks, confirmCheck, english } = useAssessmentEditor();
+  // Printed labels follow the document's language when it is known (as in its files).
+  const printed = (key: PrintLabel, uiKey: string) => (english === undefined ? t(uiKey) : printLabel(english, key));
   const teacher = !studentView;
   const options = ex.options ?? [];
   const missing = teacher ? missingAnswer(ex) : null;
 
-  const prompt = ex.type === "fill_gaps" ? (
-    splitBlanks(ex.prompt).map((part, i, parts) => (
+  const answerOf = (gap: number) => gapText(ex, ex.answer.gaps?.[gap] ?? "");
+  const blanks = ex.type === "fill_gaps" ? splitBlanks(ex.prompt, (gap) => (teacher ? boxedGap(answerOf(gap)) : "\\square")) : null;
+  const prompt = blanks ? (
+    blanks.parts.map((part, i, parts) => (
       <Fragment key={i}>
         <InlineText value={part} />
         {i < parts.length - 1 && (
           <span className={cn("mx-0.5 inline-block min-w-20 border-b border-neutral-700 text-center", teacher && "font-medium text-emerald-800")}>
-            {teacher ? <InlineText value={gapText(ex, ex.answer.gaps?.[i] ?? "")} /> : " "}
+            {teacher ? <InlineText value={answerOf(blanks.gaps[i])} /> :" "}
           </span>
         )}
       </Fragment>
@@ -54,13 +58,13 @@ export function ExerciseView({ exercise: ex, number, points }: { exercise: Asses
 
         {teacher && hasTextAnswer(ex) && ex.answer.text && (
           <div className={cn("mt-2 px-2 py-1 text-sm", correctCls)}>
-            <span className="font-sans text-[11px] font-semibold uppercase tracking-wide text-emerald-700">{t("view.answer")} </span>
+            <span className="font-sans text-[11px] font-semibold uppercase tracking-wide text-emerald-700">{printed("answer", "view.answer")} </span>
             <InlineText value={ex.answer.text} />
           </div>
         )}
         {teacher && ex.criteria && ex.criteria.length > 0 && (
           <div className="mt-2 rounded border border-neutral-200 font-sans text-xs">
-            <p className="border-b border-neutral-200 bg-neutral-50 px-2 py-1 font-semibold text-neutral-700">{t("view.criteria")}</p>
+            <p className="border-b border-neutral-200 bg-neutral-50 px-2 py-1 font-semibold text-neutral-700">{printed("criteria", "view.criteria")}</p>
             {ex.criteria.map((c, i) => (
               // Phones: level and points on one line, the descriptor full width under them.
               <div key={i} className="flex flex-wrap gap-x-3 border-b border-neutral-100 px-2 py-1 last:border-0">
@@ -73,9 +77,30 @@ export function ExerciseView({ exercise: ex, number, points }: { exercise: Asses
         )}
         {teacher && ex.explanation && (
           <p className="mt-2 font-sans text-xs text-neutral-600">
-            <span className="font-semibold">{t("view.explanation")}: </span>
+            <span className="font-semibold">{printed("explanation", "view.explanation")}: </span>
             <InlineText value={ex.explanation} />
           </p>
+        )}
+        {teacher && answerChecks?.[ex.id] && (
+          <div className="mt-2 flex flex-wrap items-start gap-x-2 gap-y-1 rounded-md bg-amber-50 px-2 py-1.5 font-sans text-xs text-amber-900 ring-1 ring-amber-300">
+            <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            <span className="min-w-0 flex-1">
+              <span className="font-semibold">{t("check.label")}: </span>
+              <InlineText value={answerChecks[ex.id]} />
+            </span>
+            {confirmCheck && (
+              <button
+                type="button"
+                className="shrink-0 rounded px-1.5 py-0.5 font-semibold underline-offset-2 hover:bg-amber-100 hover:underline"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  confirmCheck(ex.id);
+                }}
+              >
+                {t("check.confirm")}
+              </button>
+            )}
+          </div>
         )}
         {missing && (
           <p className="mt-2 flex items-center gap-1.5 font-sans text-xs font-medium text-amber-700">
@@ -85,7 +110,7 @@ export function ExerciseView({ exercise: ex, number, points }: { exercise: Asses
         )}
         {teacher && showAe && ex.aeOutcomeIds.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-1">
-            {ex.aeOutcomeIds.map((id) => <AeChip key={id} outcome={aeLookup[id]} />)}
+            {ex.aeOutcomeIds.map((id) => <AeChip key={id} outcome={aeLookup[id]} onPaper />)}
           </div>
         )}
       </div>
@@ -134,7 +159,7 @@ export function ExerciseView({ exercise: ex, number, points }: { exercise: Asses
                   <div className="flex items-baseline gap-3">
                     <span className="min-w-0 flex-1">{String.fromCharCode(97 + i)}) <InlineText value={o.text} /></span>
                     {teacher && truth ? (
-                      <span className={cn("shrink-0 font-sans text-xs font-bold", correctCls)}>{truth.value ? t("editor.trueShort") : t("editor.falseShort")}</span>
+                      <span className={cn("shrink-0 font-sans text-xs font-bold", correctCls)}>{truth.value ? printed("trueShort", "editor.trueShort") : printed("falseShort", "editor.falseShort")}</span>
                     ) : (
                       <span className="shrink-0 font-sans text-xs text-neutral-500">{t("view.trueFalseBlank")}</span>
                     )}

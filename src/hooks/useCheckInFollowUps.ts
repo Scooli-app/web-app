@@ -13,6 +13,9 @@ import { useRouter } from "next/navigation";
 import { useCallback } from "react";
 import { toast } from "sonner";
 
+/** Long enough to read the toast and reach its action (the default 4 s is not); the question toast uses the same. */
+const FOLLOW_UP_TOAST_MS = 15000;
+
 /** What a check-in offers next (ENG-236/237): only when the teacher picked outcomes. */
 export type CheckInFollowUp =
   | { kind: "reinforcement"; outcomeIds: string[] }
@@ -110,6 +113,7 @@ export function useCheckInFollowUps() {
         const started = await checkInService.requestReinforcement(timetableId, lessonId, outcomeIds);
         const target = reinforcementTarget(timetableId, started.targetSlotId, started.targetDate);
         toast.success(t("reinforcementToast", { day: formatLessonDay(started.targetDate, locale) }), {
+          duration: FOLLOW_UP_TOAST_MS,
           action: {
             label: t("followUpOpenLesson"),
             onClick: () => (onOpen ? onOpen(target) : router.push(lessonCalendarHref(target))),
@@ -129,6 +133,7 @@ export function useCheckInFollowUps() {
       try {
         const result = await checkInService.carryOver(timetableId, lessonId, outcomeIds);
         toast.success(t("carryOverToast", { day: formatLessonDay(result.targetDate, locale) }), {
+          duration: FOLLOW_UP_TOAST_MS,
           action: { label: t("followUpOpenCalendar"), onClick: () => openCalendar(timetableId) },
         });
         return result;

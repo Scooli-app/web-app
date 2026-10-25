@@ -19,10 +19,12 @@ interface ReplanRequestDialogProps {
   onOpenChange: (open: boolean) => void;
   /** Fires once the proposal is being prepared, so the caller can say so where the teacher is looking. */
   onStarted?: () => void;
+  /** Fires when that proposal is ready or failed (the toast that says which may be gone by then). */
+  onSettled?: () => void;
 }
 
 /** "O que mudou?": asks for a proposal, with an optional note. Pro only; the entry point hides it otherwise. */
-export function ReplanRequestDialog({ timetableId, triggerSlotId, open, onOpenChange, onStarted }: ReplanRequestDialogProps) {
+export function ReplanRequestDialog({ timetableId, triggerSlotId, open, onOpenChange, onStarted, onSettled }: ReplanRequestDialogProps) {
   const t = useTranslations("replan");
   const { requestReplan } = useReplan();
   const [note, setNote] = useState("");
@@ -30,10 +32,11 @@ export function ReplanRequestDialog({ timetableId, triggerSlotId, open, onOpenCh
 
   const submit = async () => {
     setBusy(true);
-    const started = await requestReplan(timetableId, {
-      triggerSlotId,
-      note: note.trim() || undefined,
-    });
+    const started = await requestReplan(
+      timetableId,
+      { triggerSlotId, note: note.trim() || undefined },
+      onSettled,
+    );
     setBusy(false);
     if (!started) return;
     setNote("");

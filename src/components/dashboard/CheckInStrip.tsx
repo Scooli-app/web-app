@@ -1,11 +1,11 @@
 "use client";
 
-import { CheckInCard } from "@/components/check-in/CheckInCard";
+import { CheckInCard, checkInTurmaName } from "@/components/check-in/CheckInCard";
 import { WeekLessonDialog, type WeekLessonTarget } from "@/components/dashboard/WeekLessonDialog";
 import { Button } from "@/components/ui/button";
 import { confirmableCount, shouldShowCheckInStrip } from "@/hooks/checkInQueue";
-import { SHOW_CHECK_INS_EVENT, writeAsked } from "@/hooks/checkInSession";
-import { followUpFor, useCheckInFollowUps, type CheckInFollowUp } from "@/hooks/useCheckInFollowUps";
+import { CHECK_INS_CHANGED_EVENT, SHOW_CHECK_INS_EVENT, announceVisibleCheckIns, writeAsked } from "@/hooks/checkInSession";
+import { followUpFor, lessonTarget, useCheckInFollowUps, type CheckInFollowUp } from "@/hooks/useCheckInFollowUps";
 import { usePendingCheckIns } from "@/hooks/usePendingCheckIns";
 import { useReplan } from "@/hooks/useReplan";
 import type { CheckInSubmission, PendingCheckIn } from "@/shared/types/check-in";
@@ -18,6 +18,8 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
+const notifyChanged = () => window.dispatchEvent(new Event(CHECK_INS_CHANGED_EVENT));
+
 /**
  * "Como correu a aula?": the past lessons still waiting for a check-in, one card at a time,
  * at the top of the week card. Hidden unless the `class_state_enabled` flag is on and something
@@ -25,10 +27,16 @@ import { toast } from "sonner";
  */
 export function CheckInStrip() {
   const t = useTranslations("checkIns");
+  const tTimetable = useTranslations("timetable");
   const locale = useLocale();
   const router = useRouter();
   const enabled = useAppSelector(selectIsClassStateEnabled);
-  const { visible, dismissed, submit, confirmAll, skipForSession, dismiss, show } = usePendingCheckIns(enabled);
+  const { visible, loaded, dismissed, submit, confirmAll, skipForSession, dismiss, show } = usePendingCheckIns(enabled);
+  useEffect(() => {
+    if (!loaded) return;
+    announceVisibleCheckIns(visible.length);
+    return () => announceVisibleCheckIns(null);
+  }, [loaded, visible.length]);
   const sectionRef = useRef<HTMLElement>(null);
   /** Set by "Ver": scroll to the strip once it has rendered (it may have been hidden until now). */
   const [scrollRequested, setScrollRequested] = useState(false);
@@ -69,10 +77,12 @@ export function CheckInStrip() {
       duration: 15000,
       action: {
         label: t(reinforcement ? "reinforcementAction" : "carryOverAction"),
-        onClick: () =>
-          void (reinforcement
+        onClick: () => {
+          const started: Promise<unknown> = reinforcement
             ? reinforce(item.timetableId, item.slotId, followUp.outcomeIds, setOpenTarget)
-            : carry(item.timetableId, item.slotId, followUp.outcomeIds)),
+            : carry(item.timetableId, item.slotId, followUp.outcomeIds);
+          void started.then((result) => result && notifyChanged());
+        },
       },
       cancel: { label: t("followUpKeep"), onClick: () => undefined },
     });
@@ -84,6 +94,7 @@ export function CheckInStrip() {
       toast.error(t("saveError"));
       return;
     }
+    notifyChanged();
     if (body.result === "TAUGHT") {
       toast.success(t("taughtToast"), {
         action: {
@@ -96,7 +107,19 @@ export function CheckInStrip() {
       offerAfterNotHeld(item.timetableId, item.slotId);
     }
     const followUp = followUpFor(body);
-    if (followUp) offerFollowUp(item, followUp);
+    if (followUp) {
+      offerFollowUp(item, followUp);
+    } else if (body.result === "TAUGHT_WITH_DIFFICULTIES" || body.result === "PARTIAL") {
+      // The card moves on to the next lesson: say what was saved, and how to change it.
+      toast.success(t("savedToast", { result: t(body.result === "PARTIAL" ? "resultPartial" : "resultDifficulties") }), {
+        description: checkInTurmaName(item, (grade) => tTimetable("gradeShort", { grade })),
+        duration: 10000,
+        action: {
+          label: t("change"),
+          onClick: () => setOpenTarget(lessonTarget(item.timetableId, item.slotId, item.slotDate)),
+        },
+      });
+    }
   };
 
   const handleConfirmAll = async () => {
@@ -104,6 +127,7 @@ export function CheckInStrip() {
     if (updated === null) {
       toast.error(t("confirmAllError"));
     } else {
+      notifyChanged();
       toast.success(t("confirmAllToast", { count: updated }));
     }
   };

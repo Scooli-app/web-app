@@ -8,9 +8,9 @@ describe("splitInlineMath", () => {
   it("separates text and formulas", () => {
     expect(splitInlineMath("Metade é $\\frac{2}{4}$ ou $$0{,}5$$.")).toEqual([
       { kind: "text", text: "Metade é " },
-      { kind: "math", tex: "\\frac{2}{4}" },
+      { kind: "math", tex: "\\frac{2}{4}", raw: "$\\frac{2}{4}$" },
       { kind: "text", text: " ou " },
-      { kind: "math", tex: "0{,}5" },
+      { kind: "math", tex: "0{,}5", raw: "$$0{,}5$$" },
       { kind: "text", text: "." },
     ]);
   });

@@ -66,7 +66,7 @@ import {
 
 import { SLOT_STATUS_CONFIG } from "@/shared/constants/lessonSlotStatus";
 import { SlotDialog } from "@/components/calendar/SlotDialog";
-import { TeachingMarkBadge } from "@/components/calendar/TeachingMarkBadge";
+import { TeachingMarkBadge, TeachingMarkLegend } from "@/components/calendar/TeachingMarkBadge";
 import { formatClassName } from "@/shared/utils/className";
 import { SlotSkeleton } from "@/components/calendar/SlotSkeleton";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -77,6 +77,7 @@ import { teachingMark, type SlotCheckInAnswer } from "@/shared/utils/teachingSta
 import { toIso, addDays, compactWeekLabel, defaultCalendarWeek, getWeekStart, formatWeekLabel, hexToRgb, getDayLabels, readableTextOn, toIntlLocale } from "@/shared/utils/calendar";
 import { useLocale, useTranslations } from "next-intl";
 import { isSupportedLocale, defaultLocale } from "@/i18n/locales";
+import { slotStatusKey } from "@/shared/utils/week";
 
 // ─────────────────────── Local helpers ───────────────────────────────────────
 
@@ -199,7 +200,7 @@ function LessonCard({
                 className={`h-1.5 w-1.5 shrink-0 rounded-full ${cfg.dotCls}`}
               />
               <span className="text-[10px] text-muted-foreground">
-                {tTimetable(`status.${slot.status}`)}
+                {tTimetable(`status.${slotStatusKey(slot.status, slot.slotDate)}`)}
               </span>
               {mark && <TeachingMarkBadge mark={mark} className="ml-1" />}
               {slot.pendingProposal && (
@@ -282,6 +283,7 @@ function CalendarPageInner() {
     null,
   );
   const [filterIds, setFilterIds] = useState<Set<string>>(new Set());
+  const classStateEnabled = useAppSelector(selectIsClassStateEnabled);
   /** Local generations started from THIS page. */
   const [localGeneratingSlots, setLocalGeneratingSlots] = useState<Set<string>>(
     new Set(),
@@ -857,6 +859,8 @@ function CalendarPageInner() {
     weekDays.slice(5).every((day) => (dayMap.get(toIso(day)) ?? []).length === 0);
   const weekGridColumns = narrowWeekend ? NARROW_WEEKEND_COLUMNS : EVEN_WEEK_COLUMNS;
   const activeTimetables = timetables.filter((t) => t.status === "active");
+  // Past lessons carry check-in marks: say once what they mean.
+  const checkInLegend = classStateEnabled && allSlots.some((slot) => slot.slotDate < today);
   // Week arrows / Hoje / class chips do nothing without an active class.
   const hideNav = !isLoadingTimetables && activeTimetables.length === 0;
   const weekIsEmpty =
@@ -898,7 +902,8 @@ function CalendarPageInner() {
             <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={prevWeek}>
               <ArrowLeft className="h-3.5 w-3.5" />
             </Button>
-            <span className="flex-1 min-w-0 truncate text-center text-sm font-medium text-foreground">
+            {/* Narrow phones: "26 out – 1 nov" was cut to "26 out – 1 …" at 14 px. */}
+            <span className="flex-1 min-w-0 truncate text-center text-sm font-medium tracking-tight text-foreground max-[420px]:text-xs">
               {compactWeekLabel(weekStart, toIntlLocale(locale))}
             </span>
             <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={nextWeek}>
@@ -1111,6 +1116,7 @@ function CalendarPageInner() {
           />
         ) : (
           <>
+            {checkInLegend && <TeachingMarkLegend className="mb-3" />}
             {slotsFailed && (
               <LoadError className="mb-3" onRetry={() => setSlotsRetry((n) => n + 1)} />
             )}

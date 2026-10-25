@@ -1,7 +1,8 @@
+// @vitest-environment jsdom
 import katex from "katex";
 import { describe, expect, it } from "vitest";
 
-import { markdownToHtml } from "./markdown";
+import { htmlToMarkdown, markdownToHtml } from "./markdown";
 
 // Lines as stored for the production quiz 9d44d7c6 and worksheet bd00c960 (4.º ano, "Frações",
 // 2026-10-15), which showed students raw or garbled LaTeX. markdownToHtml feeds both the editor
@@ -90,5 +91,15 @@ describe("markdownToHtml — maths in the repro documents", () => {
     );
 
     expect(html).toContain("(D) Ambas (A) e (C)");
+  });
+});
+
+// A formula left empty (closed before it was written, or the editor failed) must not be saved as "$$".
+describe("htmlToMarkdown: empty formulas", () => {
+  it("drops an empty inline or block formula", () => {
+    // The editor's own HTML for an empty formula (seen saved as "## Título$$").
+    const md = htmlToMarkdown('<h2>Título<span data-latex="" data-type="inline-math"></span></h2><p>a <span data-latex="" data-type="inline-math"></span> b</p><div data-latex=" " data-type="block-math"></div>');
+    expect(md).not.toContain("$$");
+    expect(md).toContain("a");
   });
 });

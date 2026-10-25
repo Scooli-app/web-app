@@ -63,6 +63,17 @@ describe("CheckInCard", () => {
     expect(html).not.toContain("Quimica");
   });
 
+  it("clips a long turma name so the topic and day still fit the line", () => {
+    const html = render({ item: { ...item, turmaTitle: "Turma ".repeat(40), subject: "Quimica", topicTitle: "Frações" } });
+    expect(html).toContain(`meta|${"Turma ".repeat(6)}Tur…|Quimica|Frações|`);
+  });
+
+  it("names the turma as the calendar does when its year and class label come with it", () => {
+    const html = render({ item: { ...item, gradeLevel: 7, classLabel: "B", subject: "Quimica", topicTitle: "Frações" } });
+    expect(html).toContain("metaNoSubject|gradeShort|7");
+    expect(html).toContain("· B|Frações|");
+  });
+
   it("drops the subject from the meta line without a topic too", () => {
     const html = render({ item: { ...item, turmaTitle: "6.º Química", subject: "Quimica" } });
     expect(html).toContain("metaNoSubjectNoTopic|6.º Química|");

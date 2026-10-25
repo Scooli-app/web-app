@@ -89,11 +89,14 @@ export function buildSubmission(
 /** The longest note the API takes (ENG-253). */
 export const NOTE_MAX_LENGTH = 500;
 
-/** Loads the pending list only when the flag is on: with it off, no request goes out. */
+/**
+ * Loads the pending list only when the flag is on: with it off, no request goes out. Up to the API's maximum: a full
+ * timetable has 20+ lessons a week, and the strip's "Por confirmar (n)" counts this list.
+ */
 export async function loadPendingCheckIns(
   enabled: boolean,
   load: (limit: number) => Promise<PendingCheckIn[]>,
-  limit = 20,
+  limit = 100,
 ): Promise<PendingCheckIn[]> {
   if (!enabled) return [];
   return load(limit);

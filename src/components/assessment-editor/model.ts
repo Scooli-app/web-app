@@ -21,12 +21,54 @@ export const hasTextAnswer = (ex: AssessmentExercise) =>
 
 export const MAX_AE_PER_EXERCISE = 5;
 
+/** chalkboard's assessment.schema.json limits: past any of them every save is refused (400), so inputs stop there. */
+export const MAX_TEXT = 1000;
+export const MAX_SHORT = 200;
+export const MAX_MODEL_ANSWER = 2000;
+export const MAX_READING = 5000;
+export const MAX_LEVEL = 40;
+export const MAX_SCHOOL = 200;
+export const MAX_CLASS = 100;
+export const MAX_ITEMS = 30;
+
 const BLANK = /_{3,}/g;
 
 export const countBlanks = (prompt: string) => (prompt.match(BLANK) ?? []).length;
 
-/** Splits a fill_gaps prompt around its `___` blanks. */
-export const splitBlanks = (prompt: string) => prompt.split(BLANK);
+/** Inline maths as InlineText reads it: from a `$` to the next one. */
+const MATHS = /(\$[^$]*\$)/;
+
+/**
+ * A fill_gaps prompt cut at its `___` blanks: the `parts` around them and, per cut, its blank's index. A blank inside
+ * $…$ can't leave its formula (`\frac{___}{8}`, and underscores are subscripts in LaTeX): it stays in it as
+ * `inMaths(index)` and is not a cut.
+ */
+export function splitBlanks(prompt: string, inMaths: (gap: number) => string): { parts: string[]; gaps: number[] } {
+  const parts = [""];
+  const gaps: number[] = [];
+  let gap = 0;
+  for (const chunk of prompt.split(MATHS)) {
+    if (chunk.length > 1 && chunk.startsWith("$") && chunk.endsWith("$")) {
+      parts[parts.length - 1] += chunk.replace(BLANK, () => inMaths(gap++));
+      continue;
+    }
+    const [first, ...rest] = chunk.split(BLANK);
+    parts[parts.length - 1] += first;
+    for (const part of rest) {
+      gaps.push(gap++);
+      parts.push(part);
+    }
+  }
+  return { parts, gaps };
+}
+
+/** A gap's answer boxed inside its formula: maths as is (its own `$…$` dropped), anything else as plain text. */
+export function boxedGap(answer: string): string {
+  const text = answer.trim();
+  if (!text) return "\\square";
+  const maths = /^\$([^$]+)\$$/.exec(text);
+  return `\\boxed{${maths ? maths[1] : `\\text{${text.replace(/[\\{}$&#^_%~]/g, "")}}`}}`;
+}
 
 const emptyAnswer = (): AssessmentAnswer => ({
   optionIds: null, text: null, pairs: null, order: null, truth: null, gaps: null, labels: null, cells: null, classes: null,
@@ -410,6 +452,26 @@ function typeDefaults(type: ExerciseType, keptTexts: string[]): Pick<AssessmentE
   }
 }
 
+/** The labels printed on the page, in the document's language: the same as the PDF and Word files (ExportSupport). */
+const PRINT_LABELS = {
+  pt: {
+    school: "Escola", class: "Ano/Turma", number: "N.º", name: "Nome", date: "Data", duration: "Duração",
+    grade: "Classificação", teacher: "Professor", guardian: "Enc. Educação", answer: "Solução", explanation: "Explicação",
+    criteria: "Critérios de correção", trueShort: "V", falseShort: "F",
+  },
+  en: {
+    school: "School", class: "Class", number: "No.", name: "Name", date: "Date", duration: "Duration",
+    grade: "Grade", teacher: "Teacher", guardian: "Parent/guardian", answer: "Answer", explanation: "Explanation",
+    criteria: "Marking criteria", trueShort: "T", falseShort: "F",
+  },
+};
+export type PrintLabel = keyof typeof PRINT_LABELS.pt;
+export const printLabel = (english: boolean, key: PrintLabel) => PRINT_LABELS[english ? "en" : "pt"][key];
+
+const ANSWERED_IN_PLACE: ExerciseType[] = [
+  "multiple_choice", "true_false", "matching", "ordering", "fill_gaps", "label_image", "wordsearch", "table_completion", "classify",
+];
+
 export function newExercise(doc: AssessmentDocument, type: ExerciseType = "short_answer"): AssessmentExercise {
   return syncAnswer({
     id: nextId(doc, "e"),
@@ -423,9 +485,9 @@ export function newExercise(doc: AssessmentDocument, type: ExerciseType = "short
     aeCodes: [],
     aeOutcomeIds: [],
     ...typeDefaults(type, []),
-    // Brief: a new exercise always starts with 3 answer lines (a picture to label, a word search, a table and
-    // classify boxes are answered in place).
-    answerSpace: ["label_image", "wordsearch", "table_completion", "classify"].includes(type) ? { kind: "none", count: null } : { kind: "lines", count: 3 },
+    // Written answers start with 3 lines. What is answered in place (choosing, ticking, linking, ordering, filling the
+    // blanks, labelling, finding words, a table, classify boxes) gets none: the lines went unused (audit 2026-10-24).
+    answerSpace: ANSWERED_IN_PLACE.includes(type) ? { kind: "none", count: null } : { kind: "lines", count: 3 },
   });
 }
 

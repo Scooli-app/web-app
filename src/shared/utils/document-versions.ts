@@ -1,3 +1,4 @@
+import type { PendingSuggestion } from "@/shared/types/document-suggestions";
 import type {
   DocumentVersionKind,
   DocumentVersionSummary,
@@ -43,6 +44,15 @@ export function listedVersions(versions: DocumentVersionSummary[]): DocumentVers
   return versions
     .filter(isListedVersion)
     .sort((a, b) => b.versionNumber - a.versionNumber);
+}
+
+/**
+ * The row at the top of Versões for the document's suggestion (its banner can be hidden): the review when it is
+ * ready, a note while it is being rewritten, nothing when there is none to review (e.g. Class State off).
+ */
+export function versionsSuggestionRow(pending: PendingSuggestion | null | undefined): "review" | "preparing" | null {
+  if (!pending) return null;
+  return pending.status === "ready" ? "review" : "preparing";
 }
 
 /** The current version is already what the editor shows, so it cannot be restored. */
