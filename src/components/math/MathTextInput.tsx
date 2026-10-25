@@ -1,12 +1,14 @@
 "use client";
 
 import { cn } from "@/shared/utils/utils";
+import { Extension } from "@tiptap/core";
 import { InlineMath } from "@tiptap/extension-mathematics";
+import { Plugin } from "@tiptap/pm/state";
 import { EditorContent, useEditor, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { useEffect, useImperativeHandle, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type Ref } from "react";
 import { MathFieldPopover, type MathAnchor } from "./MathFieldPopover";
-import { docToText, textToDoc } from "./mathText";
+import { docToText, textToDoc, type MathRule } from "./mathText";
 
 export interface MathTextInputHandle {
   /** Inserts an empty formula at the cursor and opens it. */
@@ -40,7 +42,9 @@ export function MathTextInput({
   onBlur,
   onKeyDown,
   onEnter,
+  onTooLong,
   initialFormula,
+  mathRule = "slide",
   ref,
   "aria-label": ariaLabel,
 }: {
@@ -60,16 +64,22 @@ export function MathTextInput({
   onKeyDown?: (e: ReactKeyboardEvent<HTMLDivElement>) => void;
   /** Enter (without Shift) finishes instead of starting a new line; Shift+Enter still breaks the line. */
   onEnter?: () => void;
+  /** An edit was refused because the text would go over maxLength. */
+  onTooLong?: () => void;
   /** Opens this formula (by order in the text) as soon as the field is ready. */
   initialFormula?: number;
+  /** Which `$…$` are formulas: the rule of the text's renderer ("sheet" for exercises, see mathText.ts). */
+  mathRule?: MathRule;
   ref?: Ref<MathTextInputHandle>;
   "aria-label"?: string;
 }) {
   const [editing, setEditing] = useState<Editing | null>(null);
   const editingRef = useRef<Editing | null>(null);
   editingRef.current = editing;
-  const latest = useRef({ value, onChange, onBlur, maxLength, onEnter });
-  latest.current = { value, onChange, onBlur, maxLength, onEnter };
+  const latest = useRef({ value, onChange, onBlur, maxLength, onEnter, onTooLong });
+  latest.current = { value, onChange, onBlur, maxLength, onEnter, onTooLong };
+  // Set while the value from outside replaces the content: that is never refused for its length.
+  const replacing = useRef(false);
   const editorRef = useRef<Editor | null>(null);
   const boxRef = useRef<HTMLDivElement>(null);
 
@@ -90,12 +100,29 @@ export function MathTextInput({
         strike: false, underline: false, dropcursor: false, gapcursor: false, trailingNode: false,
       }),
       StoredInlineMath.configure({ onClick: (_node, pos) => editorRef.current && open(editorRef.current, pos) }),
+      // Over maxLength the edit is refused as a whole (typing, paste, a formula), never half undone.
+      Extension.create({
+        name: "lengthLimit",
+        addProseMirrorPlugins: () => [
+          new Plugin({
+            filterTransaction: (tr, state) => {
+              const max = latest.current.maxLength;
+              if (max === undefined || !tr.docChanged || replacing.current) return true;
+              const next = docToText(tr.doc.toJSON(), mathRule).length;
+              if (next <= max || next <= docToText(state.doc.toJSON(), mathRule).length) return true;
+              latest.current.onTooLong?.();
+              return false;
+            },
+          }),
+        ],
+      }),
     ],
-    content: textToDoc(value, multiline),
+    content: textToDoc(value, multiline, mathRule),
     autofocus: autoFocus ? "end" : false,
     editorProps: {
       attributes: {
-        class: cn("math-text-input outline-none", multiline ? "whitespace-pre-wrap" : "whitespace-pre"),
+        // Long text wraps in single-line fields too (table cells, options); Enter still adds no line.
+        class: "math-text-input whitespace-pre-wrap break-words outline-none",
         ...(ariaLabel ? { "aria-label": ariaLabel } : {}),
         role: "textbox",
         ...(multiline ? { "aria-multiline": "true" } : {}),
@@ -120,32 +147,31 @@ export function MathTextInput({
         const text = event.clipboardData?.getData("text/plain");
         if (text === undefined || !editorRef.current) return false;
         const clean = multiline ? text : text.replace(/\s*\n\s*/g, " ");
-        const doc = textToDoc(clean, multiline);
+        const doc = textToDoc(clean, multiline, mathRule);
         editorRef.current.commands.insertContent(multiline ? doc.content ?? [] : doc.content?.[0]?.content ?? []);
         return true;
       },
     },
     onUpdate: ({ editor: ed }) => {
-      const next = docToText(ed.getJSON());
-      const { value: current, onChange: change, maxLength: max } = latest.current;
-      if (max !== undefined && next.length > max && next.length > current.length) {
-        ed.commands.undo();
-        return;
-      }
-      if (next !== current) change(next);
+      const next = docToText(ed.getJSON(), mathRule);
+      if (next !== latest.current.value) latest.current.onChange(next);
     },
     onBlur: ({ editor: ed }) => {
       // Opening a formula moves focus to its field: that isn't leaving the text.
-      if (!editingRef.current) latest.current.onBlur?.(docToText(ed.getJSON()));
+      if (!editingRef.current) latest.current.onBlur?.(docToText(ed.getJSON(), mathRule));
     },
   });
   editorRef.current = editor;
 
   // A value changed from outside (undo, chat, another field) replaces the content.
   useEffect(() => {
-    if (!editor || docToText(editor.getJSON()) === value) return;
-    editor.commands.setContent(textToDoc(value, multiline), { emitUpdate: false });
-  }, [editor, value, multiline]);
+    if (!editor || docToText(editor.getJSON(), mathRule) === value) return;
+    // An open formula would point into the old text.
+    setEditing(null);
+    replacing.current = true;
+    editor.commands.setContent(textToDoc(value, multiline, mathRule), { emitUpdate: false });
+    replacing.current = false;
+  }, [editor, value, multiline, mathRule]);
 
   // Opened on a formula (a double-click on it): that formula's field opens once the editor is there.
   const openedInitial = useRef(false);

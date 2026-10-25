@@ -10,6 +10,7 @@ import { cn } from "@/shared/utils/utils";
 import type { AssessmentExercise, AssessmentOption, AssessmentReadingBox, ExerciseType } from "@/types/assessment";
 import { AlertTriangle, ArrowDown, ArrowUp, Check, ImageIcon, MapPin, Plus, Sigma, SquareDashed, Trash2, X } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { toast } from "sonner";
 import { useRef, useState, type ReactNode } from "react";
 import { AeChip } from "./AeChip";
 import { AePicker } from "./AePicker";
@@ -100,12 +101,15 @@ export function ExerciseEditor({ exercise: ex, number, onChange, onClose, toolba
         placeholder={opts.placeholder}
         autoFocus={opts.autoFocus}
         allowBlank={ex.type === "fill_gaps"}
-        aria-label={opts.label}
+        mathRule="sheet"
+        onTooLong={tooLong}
+        aria-label={opts.label ?? opts.placeholder}
         className={cn(!opts.multiline && "min-h-8 py-0.5 md:text-sm", opts.className)}
       />
     </div>
   );
   const insertFormula = () => (fields.current.get(lastField.current) ?? fields.current.get("prompt"))?.insertFormula();
+  const tooLong = () => toast.error(t("editor.tooLong"));
   const setOption = (id: string, text: string) => set({ options: options.map((o) => (o.id === id ? { ...o, text } : o)) });
   const atMax = options.length >= 20;
   // MC needs 2 options; the word bank is optional; matching keeps one item per column (checked per row).
@@ -115,7 +119,7 @@ export function ExerciseEditor({ exercise: ex, number, onChange, onClose, toolba
   const optionRow = (o: AssessmentOption, i: number, prefix: ReactNode, placeholder?: string, extra?: ReactNode, wrap = false) => (
     <div key={o.id} className={cn("flex items-center gap-2", wrap && "max-md:flex-wrap")}>
       {prefix}
-      {mathField(`option-${o.id}`, o.text, (v) => setOption(o.id, v), { maxLength: MAX_TEXT, placeholder: placeholder ?? `${optionLetter(i)}`, wrap: cn("flex-1", wrap && "max-md:basis-[calc(100%-1.75rem)]") })}
+      {mathField(`option-${o.id}`, o.text, (v) => setOption(o.id, v), { maxLength: MAX_TEXT, placeholder: placeholder ?? `${optionLetter(i)}`, label: t("editor.optionLabel", { letter: optionLetter(i) }), wrap: cn("flex-1", wrap && "max-md:basis-[calc(100%-1.75rem)]") })}
       {extra}
       <IconBtn label={t("editor.removeOption")} onClick={() => onChange(removeOption(ex, o.id))} disabled={ex.type === "matching" ? options.filter((x) => x.side === o.side).length <= 1 : options.length <= minOptions}>
         <X className="h-4 w-4" />
@@ -131,7 +135,7 @@ export function ExerciseEditor({ exercise: ex, number, onChange, onClose, toolba
     return (
       <>
         <Field label={t("editor.modelAnswer")}>
-          {mathField("answer", ex.answer.text ?? "", (v) => set({ answer: { ...ex.answer, text: v } }), { multiline: true, maxLength: MAX_MODEL_ANSWER })}
+          {mathField("answer", ex.answer.text ?? "", (v) => set({ answer: { ...ex.answer, text: v } }), { multiline: true, maxLength: MAX_MODEL_ANSWER, label: t("editor.modelAnswer") })}
         </Field>
         <Field label={t("editor.criteria")}>
           {criteria.map((c, i) => (
@@ -245,7 +249,7 @@ export function ExerciseEditor({ exercise: ex, number, onChange, onClose, toolba
               {(ex.answer.gaps ?? []).map((g, i) => (
                 <div key={i} className="flex items-center gap-2">
                   <span className="w-16 shrink-0 text-xs font-semibold text-muted-foreground">{t("editor.gapN", { n: i + 1 })}</span>
-                  {mathField(`gap-${i}`, gapText(ex, g), (v) => set({ answer: { ...ex.answer, gaps: (ex.answer.gaps ?? []).map((x, j) => (j === i ? v : x)) } }), { maxLength: MAX_SHORT, wrap: "flex-1" })}
+                  {mathField(`gap-${i}`, gapText(ex, g), (v) => set({ answer: { ...ex.answer, gaps: (ex.answer.gaps ?? []).map((x, j) => (j === i ? v : x)) } }), { maxLength: MAX_SHORT, label: t("editor.gapN", { n: i + 1 }), wrap: "flex-1" })}
                 </div>
               ))}
             </Field>
@@ -332,7 +336,7 @@ export function ExerciseEditor({ exercise: ex, number, onChange, onClose, toolba
                               {mathField(`cell-${i}-${j}`, blank ? cellAnswer(ex, i, j) : cell, (v) => (blank ? setAnswer(i, j, v) : onChange(setTableCell(ex, i, j, v))), {
                                 maxLength: MAX_SHORT,
                                 placeholder: blank ? t("editor.cellAnswer") : undefined,
-                                label: blank ? t("editor.cellAnswer") : undefined,
+                                label: blank ? t("editor.cellAnswer") : t("editor.cellLabel", { row: i + 1, column: j + 1 }),
                                 wrap: "min-w-32 flex-1",
                                 className: cn(blank && "border-emerald-400 bg-emerald-50 text-emerald-900"),
                               })}
@@ -561,7 +565,7 @@ export function ExerciseEditor({ exercise: ex, number, onChange, onClose, toolba
       </div>
 
       <Field label={t("editor.prompt")} hint={ex.type === "fill_gaps" ? t("editor.promptGapsHint") : undefined}>
-        {mathField("prompt", ex.prompt, (v) => set({ prompt: v }), { multiline: true, maxLength: MAX_TEXT, autoFocus })}
+        {mathField("prompt", ex.prompt, (v) => set({ prompt: v }), { multiline: true, maxLength: MAX_TEXT, autoFocus, label: t("editor.prompt") })}
       </Field>
 
       <div>
@@ -574,7 +578,7 @@ export function ExerciseEditor({ exercise: ex, number, onChange, onClose, toolba
       {typeFields()}
 
       <Field label={t("editor.explanation")}>
-        {mathField("explanation", ex.explanation ?? "", (v) => set({ explanation: v || null }), { multiline: true, maxLength: MAX_TEXT })}
+        {mathField("explanation", ex.explanation ?? "", (v) => set({ explanation: v || null }), { multiline: true, maxLength: MAX_TEXT, label: t("editor.explanation") })}
       </Field>
 
       <div className="flex flex-wrap items-end gap-3">
@@ -661,7 +665,7 @@ export function ReadingEditor({ item, onChange, onClose, toolbar, className, aut
         <Input value={item.title ?? ""} maxLength={MAX_TEXT} onChange={(e) => onChange({ ...item, title: e.target.value || null })} className="h-9" />
       </Field>
       <Field label={t("item.readingBody")}>
-        <MathTextInput value={item.body} maxLength={MAX_READING} onChange={(body) => onChange({ ...item, body })} multiline autoFocus={autoFocus} className="min-h-24" />
+        <MathTextInput value={item.body} maxLength={MAX_READING} onChange={(body) => onChange({ ...item, body })} multiline autoFocus={autoFocus} className="min-h-24" mathRule="sheet" aria-label={t("item.readingBody")} onTooLong={() => toast.error(t("editor.tooLong"))} />
       </Field>
       <div className="flex gap-2">
         <Button type="button" variant="outline" size="sm" className="h-9 gap-1.5" onClick={() => requestImage((url) => onChange({ ...item, media: { imageRef: url, placeholder: item.media?.placeholder ?? null } }))}>

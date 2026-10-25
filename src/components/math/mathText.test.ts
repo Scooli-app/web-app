@@ -46,3 +46,38 @@ describe("text with formulas", () => {
     expect(docToText(doc)).toBe("a  b");
   });
 });
+
+// The exercise sheet prints with its own rule (any $…$ pair is a formula); its fields must edit by the same rule.
+describe("sheet rule", () => {
+  it("reads formulas as the printed sheet does and gives text back unchanged", () => {
+    const text = "Calcula $x$2 e $\\frac{1}{2}$";
+    const doc = textToDoc(text, false, "sheet");
+    expect((doc.content?.[0]?.content ?? []).filter((n) => n.type === "inlineMath")).toHaveLength(2);
+    expect(docToText(doc, "sheet")).toBe(text);
+  });
+});
+
+describe("edited formulas stay formulas when read back", () => {
+  const edited = (latex: string, after: string): JSONContent => ({
+    type: "doc",
+    content: [{ type: "paragraph", content: [{ type: "text", text: "a " }, { type: "inlineMath", attrs: { latex } }, { type: "text", text: after }] }],
+  });
+
+  // Slides keep "custa $5" as money, so "$x$2" would come back as text: "$$x$$2" reads as a formula there.
+  it("before a digit on a slide", () => {
+    const text = docToText(edited("x", "2"), "slide");
+    expect(text).toBe("a $$x$$2");
+    expect(textToDoc(text, false, "slide").content?.[0]?.content?.[1]?.type).toBe("inlineMath");
+  });
+
+  it("before a digit on the sheet", () => {
+    expect(docToText(edited("x", "2"), "sheet")).toBe("a $x$2");
+  });
+
+  // A dollar inside a formula would end it early under either rule.
+  it("with a dollar sign inside", () => {
+    const text = docToText(edited("5\\$", " b"), "sheet");
+    expect(text).toBe("a $5\\text{\\textdollar}$ b");
+    expect(textToDoc(text, false, "sheet").content?.[0]?.content?.[1]?.attrs?.latex).toBe("5\\text{\\textdollar}");
+  });
+});

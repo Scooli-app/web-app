@@ -1455,7 +1455,8 @@
       "restoredToast": "Version restored",
       "restoreError": "We couldn’t restore this version.",
       "pendingSuggestion": "Pending suggestion",
-      "pendingSuggestionReview": "Review"
+      "pendingSuggestionReview": "Review",
+      "pendingSuggestionPreparing": "Preparing…"
     },
     "documentEditor": {
       "stepPreparingLabel": "Prepare",
@@ -3829,7 +3830,10 @@
       "classifyItems": "Items to sort",
       "itemN": "Item {n}",
       "itemCategory": "Item's box",
-      "noCategory": "No box"
+      "noCategory": "No box",
+      "tooLong": "This field has reached its character limit.",
+      "optionLabel": "Option {letter}",
+      "cellLabel": "Cell in row {row}, column {column}"
     },
     "versionPreviewEmpty": "This version has no exercises.",
     "chatSaveFirst": "Couldn't save your changes; try again before using the assistant.",
@@ -3913,6 +3917,8 @@
     "hint": "Type 3/4 for a fraction, x^2 for an exponent.",
     "cancel": "Cancel",
     "save": "Save",
-    "insert": "Formula"
+    "insert": "Formula",
+    "loadFailed": "The formula editor couldn't open.",
+    "retry": "Try again"
   }
 }

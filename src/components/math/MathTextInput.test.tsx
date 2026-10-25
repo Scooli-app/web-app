@@ -95,4 +95,29 @@ describe("MathTextInput", () => {
     await tick();
     expect(dialog.querySelector("[data-testid=formula-field]")).not.toBeNull();
   });
+
+  // Review: going over the limit undid more than the extra text, silently.
+  it("refuses an edit that would go over the length limit and keeps the text as it was", async () => {
+    const onTooLong = vi.fn();
+    const { onChange, editor } = await mount("abcd", { maxLength: 5, onTooLong });
+    const pm = (editor as HTMLElement & { editor?: { commands: { insertContent: (c: string) => boolean; setTextSelection: (p: number) => boolean } } }).editor;
+    act(() => { pm?.commands.setTextSelection(5); });
+    act(() => { pm?.commands.insertContent("xyz"); });
+    expect(onChange).not.toHaveBeenCalled();
+    expect(editor.textContent).toBe("abcd");
+    expect(onTooLong).toHaveBeenCalledTimes(1);
+    act(() => { pm?.commands.insertContent("e"); });
+    expect(onChange).toHaveBeenCalledWith("abcde");
+  });
+
+  // Review: a value replaced from outside (chat, undo) while a formula was open left it pointing at the old text.
+  it("closes the open formula when the text is replaced from outside", async () => {
+    const { editor } = await mount("a $x$ b");
+    act(() => { editor.querySelector("[data-type=inline-math]")?.dispatchEvent(new MouseEvent("click", { bubbles: true })); });
+    await tick();
+    expect(document.querySelector("[data-testid=formula-field]")).not.toBeNull();
+    await act(async () => { root.render(<MathTextInput value="outro $y$" onChange={vi.fn()} />); });
+    await tick();
+    expect(document.querySelector("[data-testid=formula-field]")).toBeNull();
+  });
 });

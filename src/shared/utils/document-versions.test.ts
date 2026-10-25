@@ -4,7 +4,7 @@ import {
   canRestoreVersion,
   isListedVersion,
   listedVersions,
-  pendingSuggestionVersion,
+  versionsSuggestionRow,
   versionLabelKey,
 } from "./document-versions";
 
@@ -94,17 +94,22 @@ describe("canRestoreVersion", () => {
   });
 });
 
-// The banner can be hidden with ✕, so Versões is where a pending suggestion stays reachable.
-describe("pendingSuggestionVersion", () => {
-  it("finds the suggestion still waiting for review", () => {
-    const pending = version({ id: "s", kind: "ai_suggestion", status: "suggested", versionNumber: 3 });
-    expect(pendingSuggestionVersion([version(), pending])).toBe(pending);
+// The banner can be hidden with ✕, so Versões is where a pending suggestion stays reachable. It follows the
+// document's own suggestion (the one its banner reviews), not the versions list: review: "Rever" did nothing while
+// the suggestion was being rewritten, or with Class State off.
+describe("versionsSuggestionRow", () => {
+  const pending = (status: "ready" | "generating") => ({ versionId: "s", createdAt: "", reason: null, stale: false, status });
+
+  it("offers the review when the suggestion is ready", () => {
+    expect(versionsSuggestionRow(pending("ready"))).toBe("review");
   });
 
-  it("ignores rejected and applied suggestions", () => {
-    expect(pendingSuggestionVersion([
-      version({ kind: "ai_suggestion", status: "rejected" }),
-      version({ kind: "ai_suggestion", status: "applied" }),
-    ])).toBeNull();
+  it("says it is being prepared while it is rewritten", () => {
+    expect(versionsSuggestionRow(pending("generating"))).toBe("preparing");
+  });
+
+  it("shows nothing without a suggestion to review", () => {
+    expect(versionsSuggestionRow(null)).toBeNull();
+    expect(versionsSuggestionRow(undefined)).toBeNull();
   });
 });

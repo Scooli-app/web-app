@@ -442,7 +442,8 @@ export function SuggestionReviewBody({
 }: SuggestionReviewBodyProps) {
   const isPresentation = isPresentationDoc({ contentFormat, documentType });
   const meta = isPresentation ? diff.changes.find((change) => change.key === META_KEY) : undefined;
-  const themeId = parseSettings(meta?.after ?? meta?.before ?? null)?.themeId;
+  // The deck's own theme first: an old suggestion may carry one the model picked.
+  const themeId = parseSettings(meta?.before ?? null)?.themeId ?? parseSettings(meta?.after ?? null)?.themeId;
   const assessment = isAssessmentDoc({ contentFormat, documentType }) ? assessmentChanges(diff.changes) : null;
   const t = useTranslations("documentVersions.review");
   const reviewable = reviewableChanges(diff.changes);

@@ -63,7 +63,8 @@ export function SuggestionBar({
   const autoOpened = useRef(false);
   // Hidden with ✕ (this browser, this version): the review stays reachable from Versões.
   const versionId = suggestion?.versionId;
-  const [hidden, setHidden] = useState(false);
+  // Read on the first render, so a hidden banner never flashes in.
+  const [hidden, setHidden] = useState(() => (versionId ? isSuggestionDismissed(versionId) : false));
   useEffect(() => setHidden(versionId ? isSuggestionDismissed(versionId) : false), [versionId]);
 
   useEffect(() => {

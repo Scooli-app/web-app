@@ -1455,7 +1455,8 @@
       "restoredToast": "Versão restaurada",
       "restoreError": "Não foi possível restaurar a versão.",
       "pendingSuggestion": "Sugestão pendente",
-      "pendingSuggestionReview": "Rever"
+      "pendingSuggestionReview": "Rever",
+      "pendingSuggestionPreparing": "A preparar…"
     },
     "documentEditor": {
       "stepPreparingLabel": "Preparar",
@@ -3829,7 +3830,10 @@
       "classifyItems": "Itens a classificar",
       "itemN": "Item {n}",
       "itemCategory": "Caixa do item",
-      "noCategory": "Sem caixa"
+      "noCategory": "Sem caixa",
+      "tooLong": "Este campo já chegou ao limite de caracteres.",
+      "optionLabel": "Opção {letter}",
+      "cellLabel": "Célula da linha {row}, coluna {column}"
     },
     "versionPreviewEmpty": "Esta versão não tem exercícios.",
     "chatSaveFirst": "Não foi possível guardar as tuas alterações; tenta novamente antes de usar a conversa.",
@@ -3913,6 +3917,8 @@
     "hint": "Escreve 3/4 para uma fração, x^2 para um expoente.",
     "cancel": "Cancelar",
     "save": "Guardar",
-    "insert": "Fórmula"
+    "insert": "Fórmula",
+    "loadFailed": "Não foi possível abrir o editor de fórmulas.",
+    "retry": "Tentar de novo"
   }
 }

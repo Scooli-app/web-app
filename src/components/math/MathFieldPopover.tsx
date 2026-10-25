@@ -15,12 +15,19 @@ const WIDTH = 360;
 /** MathLive is loaded the first time a formula is edited, never when an editor opens. */
 let loading: Promise<typeof import("mathlive")> | null = null;
 function loadMathLive() {
-  loading ??= import("mathlive").then((mod) => {
-    // KaTeX's fonts are already on the page (app layout); no sounds.
-    mod.MathfieldElement.fontsDirectory = null;
-    mod.MathfieldElement.soundsDirectory = null;
-    return mod;
-  });
+  loading ??= import("mathlive").then(
+    (mod) => {
+      // KaTeX's fonts are already on the page (app layout); no sounds.
+      mod.MathfieldElement.fontsDirectory = null;
+      mod.MathfieldElement.soundsDirectory = null;
+      return mod;
+    },
+    (error: unknown) => {
+      // A failed download (offline, a deploy in between) is tried again next time, not cached.
+      loading = null;
+      throw error;
+    },
+  );
   return loading;
 }
 
@@ -47,6 +54,8 @@ export function MathFieldPopover({ tex, anchor, allowBlank = false, within, onSa
   const initial = useRef("");
   const done = useRef(false);
   const [ready, setReady] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
   const [pos, setPos] = useState({ left: anchor.x, top: anchor.y + 8 });
   const save = useRef<() => void>(() => undefined);
   const cancel = useRef<() => void>(() => undefined);
@@ -97,7 +106,7 @@ export function MathFieldPopover({ tex, anchor, allowBlank = false, within, onSa
       fieldRef.current = field;
       setReady(true);
       requestAnimationFrame(() => field.focus());
-    });
+    }, () => alive && setFailed(true));
     return () => {
       alive = false;
       fieldRef.current?.remove();
@@ -108,7 +117,7 @@ export function MathFieldPopover({ tex, anchor, allowBlank = false, within, onSa
         // See above: not movable inside an iframe.
       }
     };
-  }, [tex, within]);
+  }, [tex, within, attempt]);
 
   // A click outside the popover (and outside MathLive's on-screen keyboard) saves.
   useEffect(() => {
@@ -146,7 +155,15 @@ export function MathFieldPopover({ tex, anchor, allowBlank = false, within, onSa
       onMouseDown={(e) => e.stopPropagation()}
     >
       <div ref={hostRef} className="min-h-10 rounded-md border border-input bg-white px-2 py-1 text-neutral-900">
-        {!ready && <Loader2 className="m-1 h-4 w-4 animate-spin text-muted-foreground" aria-label={t("loading")} />}
+        {!ready && !failed && <Loader2 className="m-1 h-4 w-4 animate-spin text-muted-foreground" aria-label={t("loading")} />}
+        {failed && (
+          <div role="alert" className="flex items-center justify-between gap-2 py-1 font-sans text-sm text-neutral-700">
+            <span>{t("loadFailed")}</span>
+            <Button type="button" variant="outline" size="sm" onClick={() => { setFailed(false); setAttempt((n) => n + 1); }}>
+              {t("retry")}
+            </Button>
+          </div>
+        )}
       </div>
       <div className="flex items-center gap-2">
         {allowBlank && (
