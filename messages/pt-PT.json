@@ -3134,6 +3134,7 @@
       "lessonsTitle": "Aulas que entram no teste",
       "untitledLesson": "Aula sem tema",
       "plannedLesson": "por dar",
+      "unconfirmedLesson": "por confirmar",
       "outcomesPending": "As aprendizagens aparecem aqui à medida que as aulas forem dadas."
     },
     "slotDialog": {

@@ -3134,6 +3134,7 @@
       "lessonsTitle": "Lessons the test covers",
       "untitledLesson": "Lesson without a topic",
       "plannedLesson": "not taught yet",
+      "unconfirmedLesson": "to confirm",
       "outcomesPending": "Learning outcomes show up here as the lessons are taught."
     },
     "slotDialog": {

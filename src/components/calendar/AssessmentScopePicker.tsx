@@ -3,7 +3,7 @@
 import { ChoiceChip } from "@/components/ui/choice-chip";
 import { isSupportedLocale, defaultLocale } from "@/i18n/locales";
 import type { AssessmentScope } from "@/services/api/timetable.service";
-import { toIntlLocale } from "@/shared/utils/calendar";
+import { toIntlLocale, toIso } from "@/shared/utils/calendar";
 import { useLocale, useTranslations } from "next-intl";
 import { testBlocked } from "./assessmentScopeLogic";
 
@@ -32,6 +32,7 @@ export function AssessmentScopePicker({ scope, selected, onToggle }: AssessmentS
       })
     : t("sinceStart");
   const lessons = scope.lessons ?? [];
+  const todayIso = toIso(new Date());
   const shortDate = (iso: string) =>
     new Date(`${iso}T00:00:00`).toLocaleDateString(toIntlLocale(locale), { day: "numeric", month: "short" });
 
@@ -50,8 +51,11 @@ export function AssessmentScopePicker({ scope, selected, onToggle }: AssessmentS
               <span className="min-w-0 flex-1 truncate" title={lesson.topicTitle ?? undefined}>
                 {lesson.topicTitle || <span className="italic text-muted-foreground">{t("untitledLesson")}</span>}
               </span>
+              {/* An unanswered lesson is "por confirmar" once its day has come, "por dar" before. */}
               {lesson.teachingStatus === "planned" && (
-                <span className="shrink-0 text-[10px] text-muted-foreground">{t("plannedLesson")}</span>
+                <span className="shrink-0 text-[10px] text-muted-foreground">
+                  {t(lesson.date <= todayIso ? "unconfirmedLesson" : "plannedLesson")}
+                </span>
               )}
             </li>
           ))}
