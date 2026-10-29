@@ -3129,7 +3129,11 @@
       "lessons": "{count, plural, one {# lesson} other {# lessons}}",
       "notConfirmed": "not confirmed",
       "empty": "Nothing has been taught since the last test yet.",
-      "pickAtLeastOne": "Pick at least one learning outcome to create the test."
+      "pickAtLeastOne": "Pick at least one learning outcome to create the test.",
+      "lessonsTitle": "Lessons the test covers",
+      "untitledLesson": "Lesson without a topic",
+      "plannedLesson": "not taught yet",
+      "outcomesPending": "Learning outcomes show up here as the lessons are taught."
     },
     "slotDialog": {
       "typeLabel": "Type:",

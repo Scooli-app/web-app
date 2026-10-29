@@ -3129,7 +3129,11 @@
       "lessons": "{count, plural, one {# aula} other {# aulas}}",
       "notConfirmed": "não confirmado",
       "empty": "Ainda não há matéria lecionada desde o último teste.",
-      "pickAtLeastOne": "Escolhe pelo menos uma aprendizagem para criar o teste."
+      "pickAtLeastOne": "Escolhe pelo menos uma aprendizagem para criar o teste.",
+      "lessonsTitle": "Aulas que entram no teste",
+      "untitledLesson": "Aula sem tema",
+      "plannedLesson": "por dar",
+      "outcomesPending": "As aprendizagens aparecem aqui à medida que as aulas forem dadas."
     },
     "slotDialog": {
       "typeLabel": "Tipo:",

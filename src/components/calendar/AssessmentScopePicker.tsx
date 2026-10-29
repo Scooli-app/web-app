@@ -14,8 +14,9 @@ interface AssessmentScopePickerProps {
 }
 
 /**
- * "Vai avaliar" (ENG-209): the outcomes the test will assess, all ticked to begin with. Shown on an assessment before
- * its test is created; the ticked ones are sent with the request.
+ * "Vai avaliar" (ENG-209): the lessons the test covers, then the outcomes it will assess, all ticked to begin with.
+ * Shown on an assessment before its test is created; the ticked outcomes are sent with the request. Lessons still
+ * ahead of the test are listed too ("por dar"), so a test a few weeks out already shows what it will cover.
  */
 export function AssessmentScopePicker({ scope, selected, onToggle }: AssessmentScopePickerProps) {
   const t = useTranslations("calendar.assessmentScope");
@@ -30,6 +31,9 @@ export function AssessmentScopePicker({ scope, selected, onToggle }: AssessmentS
         }),
       })
     : t("sinceStart");
+  const lessons = scope.lessons ?? [];
+  const shortDate = (iso: string) =>
+    new Date(`${iso}T00:00:00`).toLocaleDateString(toIntlLocale(locale), { day: "numeric", month: "short" });
 
   return (
     <section aria-label={t("title")} className="space-y-2">
@@ -38,8 +42,23 @@ export function AssessmentScopePicker({ scope, selected, onToggle }: AssessmentS
         <p className="text-xs text-muted-foreground">{since}</p>
       </div>
 
+      {lessons.length > 0 && (
+        <ol aria-label={t("lessonsTitle")} className="space-y-0.5">
+          {lessons.map((lesson) => (
+            <li key={lesson.id} className="flex items-baseline gap-2 text-sm">
+              <span className="w-12 shrink-0 text-xs tabular-nums text-muted-foreground">{shortDate(lesson.date)}</span>
+              <span className="min-w-0 flex-1 truncate" title={lesson.topicTitle ?? undefined}>
+                {lesson.topicTitle || <span className="italic text-muted-foreground">{t("untitledLesson")}</span>}
+              </span>
+              {lesson.teachingStatus === "planned" && (
+                <span className="shrink-0 text-[10px] text-muted-foreground">{t("plannedLesson")}</span>
+              )}
+            </li>
+          ))}
+        </ol>
+      )}
       {scope.outcomes.length === 0 ? (
-        <p className="text-sm italic text-muted-foreground/70">{t("empty")}</p>
+        <p className="text-sm italic text-muted-foreground/70">{t(lessons.length > 0 ? "outcomesPending" : "empty")}</p>
       ) : (
         <>
           <div className="flex flex-wrap gap-1.5" role="group" aria-label={t("title")}>
