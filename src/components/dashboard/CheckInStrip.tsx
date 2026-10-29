@@ -75,6 +75,8 @@ export function CheckInStrip() {
     const reinforcement = followUp.kind === "reinforcement";
     toast(t(reinforcement ? "reinforcementQuestion" : "carryOverQuestion"), {
       duration: 15000,
+      // The question is long and has two buttons: put the buttons on their own row so the text keeps the width.
+      classNames: { toast: "flex-wrap", content: "basis-full pr-4" },
       action: {
         label: t(reinforcement ? "reinforcementAction" : "carryOverAction"),
         onClick: () => {
