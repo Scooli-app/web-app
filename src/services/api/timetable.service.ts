@@ -300,10 +300,20 @@ export interface AssessmentScopeOutcome {
   evidence?: AssessmentScopeEvidence;
 }
 
+/** A lesson between the previous assessment and this one; planned ones are still ahead of the test. */
+export interface AssessmentScopeLesson {
+  id: string;
+  date: string;
+  topicTitle: string | null;
+  teachingStatus: TeachingStatus;
+}
+
 /** What "Vai avaliar" shows for an assessment: the outcomes taught since `fromDate` (YYYY-MM-DD, or null). */
 export interface AssessmentScope {
   fromDate: string | null;
   outcomes: AssessmentScopeOutcome[];
+  /** The lessons the test covers, by date. Absent from an older backend. */
+  lessons?: AssessmentScopeLesson[];
 }
 
 /**
