@@ -268,6 +268,7 @@ export function SlotDialog({
     // The footer's "Preparar teste" assesses what is ticked under "Vai avaliar", like the test chip.
     testOutcomeIds: testRequestOutcomeIds(assessment.scope, assessment.selected),
     testBlocked: testBlocked(assessment.scope, assessment.selected),
+    instruction: customMessage || undefined,
   });
 
   // Failed attempts aren't documents the teacher has; the chips offer that type again.
@@ -796,6 +797,7 @@ export function SlotDialog({
                       busyTypes={preparingTypes}
                       lesson={{ id: slot.id, slotType: slot.slotType, documents: lessonDocuments }}
                       testOutcomeIds={testRequestOutcomeIds(assessment.scope, assessment.selected)}
+                      instruction={customMessage || undefined}
                       omit={testBlocked(assessment.scope, assessment.selected) ? ["test"] : undefined}
                       onChanged={() => {
                         reloadDocs();

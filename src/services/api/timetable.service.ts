@@ -269,15 +269,20 @@ export async function listLessonDocuments(
  */
 /**
  * `outcomeIds` (ENG-209) is only sent for a test: the outcomes it must assess, chosen from the assessment's scope.
- * Left out, the backend uses the whole scope.
+ * Left out, the backend uses the whole scope. `instruction` is the lesson dialog's "Instrução adicional", for any type.
  */
 export async function generateLessonDocument(
   timetableId: string,
   lessonId: string,
   documentType: CompanionType,
   outcomeIds?: string[],
+  instruction?: string,
 ): Promise<{ id: string }> {
-  const body = outcomeIds ? { documentType, outcomeIds } : { documentType };
+  const body = {
+    documentType,
+    ...(outcomeIds ? { outcomeIds } : {}),
+    ...(instruction?.trim() ? { instruction: instruction.trim() } : {}),
+  };
   const response = await apiClient.post<{ id: string; status: string }>(
     `/timetable/${timetableId}/lessons/${lessonId}/documents/generate`,
     body,

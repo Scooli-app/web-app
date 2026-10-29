@@ -42,4 +42,15 @@ describe("generateLessonDocument", () => {
       outcomeIds: ["o1", "o3"],
     });
   });
+
+  it("sends the lesson dialog's instruction, trimmed, and leaves a blank one out", async () => {
+    await generateLessonDocument("tt", "s", "presentation", undefined, "  Inclui um jogo de pistas ");
+    expect(http.post).toHaveBeenLastCalledWith("/timetable/tt/lessons/s/documents/generate", {
+      documentType: "presentation",
+      instruction: "Inclui um jogo de pistas",
+    });
+
+    await generateLessonDocument("tt", "s", "quiz", undefined, "   ");
+    expect(http.post).toHaveBeenLastCalledWith("/timetable/tt/lessons/s/documents/generate", { documentType: "quiz" });
+  });
 });
