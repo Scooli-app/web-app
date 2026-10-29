@@ -5,6 +5,7 @@ import { XIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import * as React from "react";
 
+import { keepOpenOnToastClick } from "@/components/ui/sonner";
 import { cn } from "@/shared/utils/utils";
 
 function Sheet({ ...props }: React.ComponentProps<typeof SheetPrimitive.Root>) {
@@ -47,6 +48,7 @@ function SheetContent({
   side = "right",
   showClose = true,
   largeClose = false,
+  onInteractOutside,
   ...props
 }: React.ComponentProps<typeof SheetPrimitive.Content> & {
   side?: "top" | "right" | "bottom" | "left";
@@ -73,6 +75,10 @@ function SheetContent({
           className
         )}
         {...props}
+        onInteractOutside={(event) => {
+          keepOpenOnToastClick(event);
+          onInteractOutside?.(event);
+        }}
       >
         {children}
         {showClose && <SheetPrimitive.Close className={cn("ring-offset-background data-[state=open]:bg-secondary absolute top-4 right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none disabled:pointer-events-none", largeClose && "after:absolute after:-inset-3.5 after:content-['']")}>
