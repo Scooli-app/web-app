@@ -844,6 +844,25 @@ export function BlockDocumentEditor({ documentId }: Props) {
     ? (selectedElement as CanvasShapeElement)
     : null;
 
+  const selectedMathEl = selectedElement?.type === "math"
+    ? (selectedElement as CanvasMathElement)
+    : null;
+
+  /** Resizes the selected formula about its centre: its image is drawn to fit the box, so the box sets its size. */
+  const scaleSelectedMath = (factor: number) => {
+    if (!selectedMathEl) return;
+    const w = Math.min(0.9, Math.max(0.04, selectedMathEl.w * factor));
+    const applied = w / selectedMathEl.w;
+    const h = selectedMathEl.h * applied;
+    applyElementPatch({
+      x: selectedMathEl.x + (selectedMathEl.w - w) / 2,
+      y: selectedMathEl.y + (selectedMathEl.h - h) / 2,
+      w,
+      h,
+      fontSize: selectedMathEl.fontSize * applied,
+    } as Partial<CanvasMathElement>);
+  };
+
   /* ── Editor ref (addText / removeSelected) ───────────────────────────── */
   const editorRef = useRef<SlideKonvaEditorHandle>(null);
 
@@ -2418,6 +2437,23 @@ export function BlockDocumentEditor({ documentId }: Props) {
                 <Sparkles className="h-3 w-3" />
                 {t("improveListLabel")}
               </Button>
+            </>
+          )}
+
+          {/* MATH: a single click shows these, so a formula never needs a double click to be changed */}
+          {selectedMathEl && (
+            <>
+              <Button variant="ghost" size="sm" className="h-7 gap-1.5 px-2 text-xs" onClick={() => handleEditMath(selectedMathEl.id)}>
+                <Sigma className="h-3.5 w-3.5" />
+                {t("editFormula")}
+              </Button>
+
+              <div className="mx-1 h-5 w-px bg-border" />
+
+              <Button variant="ghost" size="sm" className="h-7 w-7 p-0 font-bold" title={t("decreaseSizeTooltip")}
+                onClick={() => scaleSelectedMath(1 / 1.15)}>−</Button>
+              <Button variant="ghost" size="sm" className="h-7 w-7 p-0 font-bold" title={t("increaseSizeTooltip")}
+                onClick={() => scaleSelectedMath(1.15)}>+</Button>
             </>
           )}
 

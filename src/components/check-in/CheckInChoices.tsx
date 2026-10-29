@@ -97,8 +97,8 @@ export const MISSING_AMOUNTS: { value: MissingAmount; labelKey: "missingLittle" 
 ];
 
 /**
- * The second step after "algumas tiveram dificuldades" or "ficou a meio". With one outcome, the outcome is
- * already ticked, so it shows as one quiet line instead of a checklist. With several, they are checkbox rows.
+ * The second step after "algumas tiveram dificuldades" or "ficou a meio". Outcomes are checkbox rows; a lone
+ * outcome is already ticked, and stays a row so it reads as the answer to the question, not as loose text.
  * "Ficou a meio" also asks how much was left (optional). Both ask for an optional note. Then "Guardar"
  * (saves with whatever is ticked, possibly nothing) and "Voltar". Long outcome texts are clamped to two lines,
  * and the full text is in the row's tooltip.
@@ -130,12 +130,7 @@ export function CheckInOutcomeStep({
   return (
     <>
       {outcomes.length > 0 && <p className="text-sm font-medium text-foreground">{question}</p>}
-      {outcomes.length === 1 && (
-        <p className="line-clamp-2 text-sm leading-snug text-muted-foreground" title={outcomes[0].text}>
-          {outcomes[0].text}
-        </p>
-      )}
-      {outcomes.length > 1 && (
+      {outcomes.length > 0 && (
         <ul role="group" aria-label={question} className="space-y-1.5">
           {outcomes.map((outcome) => {
             const checked = selected.includes(outcome.id);

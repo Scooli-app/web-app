@@ -23,7 +23,7 @@ interface ReplanRequestDialogProps {
   onSettled?: () => void;
 }
 
-/** "O que mudou?": asks for a proposal, with an optional note. Pro only; the entry point hides it otherwise. */
+/** From a lesson, "O que se passou nesta aula?"; for the whole turma, "O que mudou na turma?". Asks for a proposal, with an optional note. Pro only; the entry point hides it otherwise. */
 export function ReplanRequestDialog({ timetableId, triggerSlotId, open, onOpenChange, onStarted, onSettled }: ReplanRequestDialogProps) {
   const t = useTranslations("replan");
   const { requestReplan } = useReplan();
@@ -48,8 +48,9 @@ export function ReplanRequestDialog({ timetableId, triggerSlotId, open, onOpenCh
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{t("requestTitle")}</DialogTitle>
-          <DialogDescription>{t("requestDescription")}</DialogDescription>
+          {/* Named after where it was opened, so the teacher knows whether the note is about this lesson or the turma. */}
+          <DialogTitle>{t(triggerSlotId ? "requestTitle" : "requestTitleTurma")}</DialogTitle>
+          <DialogDescription>{t(triggerSlotId ? "requestDescription" : "requestDescriptionTurma")}</DialogDescription>
         </DialogHeader>
         <div className="space-y-2 px-6 pt-4">
           <Label htmlFor="replan-note">{t("requestNoteLabel")}</Label>

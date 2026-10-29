@@ -21,7 +21,7 @@ import { listedVersions, versionsSuggestionRow } from "@/shared/utils/document-v
 import { useAppSelector } from "@/store/hooks";
 import { History, Sparkles } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Markdown from "react-markdown";
 import remarkBreaks from "remark-breaks";
 import { toast } from "sonner";
@@ -71,6 +71,8 @@ export function DocumentVersionsButton({ documentId, documentType, onRestored }:
 
   const [restoreTarget, setRestoreTarget] = useState<DocumentVersionSummary | null>(null);
   const [isRestoring, setIsRestoring] = useState(false);
+  // A second click lands before the re-render disables the button, so the guard is a ref, not the state.
+  const restoringRef = useRef(false);
 
   const visible = listedVersions(versions);
   // The document's own suggestion, the one its banner reviews.
@@ -122,7 +124,8 @@ export function DocumentVersionsButton({ documentId, documentType, onRestored }:
   }, []);
 
   const handleRestore = useCallback(async () => {
-    if (!restoreTarget) return;
+    if (!restoreTarget || restoringRef.current) return;
+    restoringRef.current = true;
     setIsRestoring(true);
     try {
       const restored = await restoreDocumentVersion(documentId, restoreTarget.id);
@@ -133,6 +136,7 @@ export function DocumentVersionsButton({ documentId, documentType, onRestored }:
     } catch {
       toast.error(t("restoreError"));
     } finally {
+      restoringRef.current = false;
       setIsRestoring(false);
     }
   }, [documentId, handleOpenChange, onRestored, restoreTarget, t]);
@@ -249,6 +253,7 @@ export function DocumentVersionsButton({ documentId, documentType, onRestored }:
         description={t("restoreDescription")}
         confirmLabel={t("restoreConfirm")}
         variant="warning"
+        isLoading={isRestoring}
       />
       {isRestoring && <span className="sr-only" role="status">{t("restoring")}</span>}
     </>

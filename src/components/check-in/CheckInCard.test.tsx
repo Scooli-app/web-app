@@ -161,10 +161,11 @@ describe("CheckInOutcomeStep with one outcome (ENG-253)", () => {
       }),
     );
 
-  it("hides the checklist and shows the outcome as one line of text", () => {
+  it("shows the outcome as one ticked checkbox row, like a list of one", () => {
     const html = render("TAUGHT_WITH_DIFFICULTIES");
-    expect(html).not.toContain('role="checkbox"');
-    expect(html).not.toContain('role="group"');
+    expect(html.match(/role="checkbox"/g)).toHaveLength(1);
+    expect(html).toContain('aria-checked="true"');
+    expect(html).toContain('role="group"');
     expect(html).toContain("Somar frações");
   });
 
