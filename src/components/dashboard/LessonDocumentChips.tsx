@@ -46,9 +46,10 @@ export async function startCompanionDocument(
   t: Translate,
   dispatch: AppDispatch,
   outcomeIds?: string[],
+  instruction?: string,
 ): Promise<boolean> {
   try {
-    await generateLessonDocument(timetableId, lessonId, type, outcomeIds);
+    await generateLessonDocument(timetableId, lessonId, type, outcomeIds, instruction);
     return true;
   } catch (err) {
     if (err instanceof UpgradeLimitError) {
@@ -130,6 +131,8 @@ interface LessonDocumentChipsProps {
   busyTypes?: CompanionType[];
   /** A test on an assessment: the outcomes it must assess (ENG-209). Left out, the server uses the whole scope. */
   testOutcomeIds?: string[];
+  /** The lesson dialog's "Instrução adicional": sent with every document a chip starts, like with the lesson plan. */
+  instruction?: string;
 }
 
 /**
@@ -147,6 +150,7 @@ export function LessonDocumentChips({
   planAsChip = false,
   busyTypes = [],
   testOutcomeIds,
+  instruction,
 }: LessonDocumentChipsProps) {
   const t = useTranslations("yourWeek");
   const tVersions = useTranslations("documentVersions");
@@ -188,6 +192,7 @@ export function LessonDocumentChips({
           t,
           dispatch,
           type === "test" ? testOutcomeIds : undefined,
+          instruction,
         );
       }
       onChanged();

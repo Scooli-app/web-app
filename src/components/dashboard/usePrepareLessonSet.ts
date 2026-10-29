@@ -30,6 +30,8 @@ interface PrepareLessonSetArgs {
   surface: "dashboard" | "lesson_popup";
   /** A test's outcomes, ticked under "Vai avaliar" (ENG-209); undefined lets the backend use the whole scope. */
   testOutcomeIds?: string[];
+  /** The lesson dialog's "Instrução adicional": goes with every document of the set, not only the lesson plan. */
+  instruction?: string;
   /** Nothing is ticked under "Vai avaliar": no test is suggested, as the lesson's test chip is hidden too. */
   testBlocked?: boolean;
 }
@@ -51,6 +53,7 @@ export function usePrepareLessonSet({
   onDone,
   surface,
   testOutcomeIds,
+  instruction,
   testBlocked = false,
 }: PrepareLessonSetArgs) {
   const t = useTranslations("calendar.slotDialog");
@@ -94,7 +97,15 @@ export function usePrepareLessonSet({
       }
       for (const type of types) {
         if (type === "lessonPlan") continue;
-        await startCompanionDocument(timetableId, lessonId, type, tWeek, dispatch, type === "test" ? testOutcomeIds : undefined);
+        await startCompanionDocument(
+          timetableId,
+          lessonId,
+          type,
+          tWeek,
+          dispatch,
+          type === "test" ? testOutcomeIds : undefined,
+          instruction,
+        );
         setInFlight((prev) => prev.filter((x) => x !== type));
         onDone(); // the started document shows as written now, not when the whole set is through
       }
