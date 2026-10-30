@@ -122,6 +122,8 @@ export class Api {
         durationMinutes: 50,
         slotType: "LESSON",
       })),
+      // Teacher-placed days stay lessons even on a public holiday or school break (else they become HOLIDAY).
+      exerciseDates: dates,
       source: "e2e",
     });
 
