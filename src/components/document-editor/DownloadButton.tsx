@@ -23,6 +23,8 @@ interface DownloadButtonProps {
   images: DocumentImage[];
   isProUser?: boolean;
   disabled?: boolean;
+  /** Tooltip explaining why the button is disabled. */
+  disabledReason?: string;
 }
 
 function DownloadButtonComponent({
@@ -31,6 +33,7 @@ function DownloadButtonComponent({
   images,
   isProUser = false,
   disabled,
+  disabledReason,
 }: DownloadButtonProps) {
   const t = useTranslations("editor.downloadButton");
   const router = useRouter();
@@ -89,70 +92,72 @@ function DownloadButtonComponent({
   const isDocxDisabled = isDownloading;
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="default"
-          size="sm"
-          disabled={isDisabled}
-          className="flex items-center gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
-        >
-          {isDownloading ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Download className="h-4 w-4" />
-          )}
-          <span className="hidden sm:inline">
-            {isDownloading ? t("exporting") : t("export")}
-          </span>
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-[18rem] p-1.5">
-        <DropdownMenuItem
-          onClick={handlePdfDownload}
-          disabled={isDownloading}
-          className="flex items-center gap-3 cursor-pointer rounded-lg px-3 py-2.5 text-[15px] leading-none whitespace-nowrap"
-        >
-          {downloadFormat === "pdf" ? (
-            <Loader2 className="h-4 w-4 animate-spin text-primary" />
-          ) : (
-            <FileText className="h-4 w-4 text-red-500 dark:text-red-400" />
-          )}
-          <span className="whitespace-nowrap">
-            {downloadFormat === "pdf" ? t("generatingPdf") : t("exportPdf")}
-          </span>
-        </DropdownMenuItem>
-        {isProUser ? (
+    <span title={isDisabled ? disabledReason : undefined} className="inline-flex">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="default"
+            size="sm"
+            disabled={isDisabled}
+            className="flex items-center gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
+          >
+            {isDownloading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Download className="h-4 w-4" />
+            )}
+            <span className="hidden sm:inline">
+              {isDownloading ? t("exporting") : t("export")}
+            </span>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-[18rem] p-1.5">
           <DropdownMenuItem
-            onClick={handleDocxDownload}
-            disabled={isDocxDisabled}
+            onClick={handlePdfDownload}
+            disabled={isDownloading}
             className="flex items-center gap-3 cursor-pointer rounded-lg px-3 py-2.5 text-[15px] leading-none whitespace-nowrap"
           >
-            {downloadFormat === "docx" ? (
+            {downloadFormat === "pdf" ? (
               <Loader2 className="h-4 w-4 animate-spin text-primary" />
             ) : (
-              <FileText className="h-4 w-4 text-blue-500 dark:text-blue-400" />
+              <FileText className="h-4 w-4 text-red-500 dark:text-red-400" />
             )}
             <span className="whitespace-nowrap">
-              {downloadFormat === "docx" ? t("generatingWord") : t("exportWord")}
+              {downloadFormat === "pdf" ? t("generatingPdf") : t("exportPdf")}
             </span>
           </DropdownMenuItem>
-        ) : (
-          <DropdownMenuItem
-            onSelect={handleUpgradeToPro}
-            className="flex items-center justify-between gap-3 cursor-pointer rounded-lg border border-amber-300/60 bg-gradient-to-r from-amber-50 to-yellow-50 px-3 py-2.5 text-[15px] leading-none whitespace-nowrap text-amber-800 focus:bg-amber-100 dark:border-amber-700/60 dark:from-amber-950/40 dark:to-yellow-950/40 dark:text-amber-300"
-          >
-            <span className="inline-flex items-center gap-2.5">
-              <Crown className="h-4 w-4 text-amber-500 dark:text-amber-300" />
-              <span className="font-medium whitespace-nowrap">{t("exportWordPro")}</span>
-            </span>
-            <span className="ml-auto rounded-full border border-amber-400/60 bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700 dark:border-amber-500/40 dark:bg-amber-900/40 dark:text-amber-200">
-              Upgrade
-            </span>
-          </DropdownMenuItem>
-        )}
-      </DropdownMenuContent>
-    </DropdownMenu>
+          {isProUser ? (
+            <DropdownMenuItem
+              onClick={handleDocxDownload}
+              disabled={isDocxDisabled}
+              className="flex items-center gap-3 cursor-pointer rounded-lg px-3 py-2.5 text-[15px] leading-none whitespace-nowrap"
+            >
+              {downloadFormat === "docx" ? (
+                <Loader2 className="h-4 w-4 animate-spin text-primary" />
+              ) : (
+                <FileText className="h-4 w-4 text-blue-500 dark:text-blue-400" />
+              )}
+              <span className="whitespace-nowrap">
+                {downloadFormat === "docx" ? t("generatingWord") : t("exportWord")}
+              </span>
+            </DropdownMenuItem>
+          ) : (
+            <DropdownMenuItem
+              onSelect={handleUpgradeToPro}
+              className="flex items-center justify-between gap-3 cursor-pointer rounded-lg border border-amber-300/60 bg-gradient-to-r from-amber-50 to-yellow-50 px-3 py-2.5 text-[15px] leading-none whitespace-nowrap text-amber-800 focus:bg-amber-100 dark:border-amber-700/60 dark:from-amber-950/40 dark:to-yellow-950/40 dark:text-amber-300"
+            >
+              <span className="inline-flex items-center gap-2.5">
+                <Crown className="h-4 w-4 text-amber-500 dark:text-amber-300" />
+                <span className="font-medium whitespace-nowrap">{t("exportWordPro")}</span>
+              </span>
+              <span className="ml-auto rounded-full border border-amber-400/60 bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700 dark:border-amber-500/40 dark:bg-amber-900/40 dark:text-amber-200">
+                Upgrade
+              </span>
+            </DropdownMenuItem>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </span>
   );
 }
 

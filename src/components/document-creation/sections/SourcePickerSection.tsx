@@ -1,6 +1,6 @@
 "use client";
 
-import { Card } from "@/components/ui/card";
+import { OptionRow } from "./FormCard";
 import { listRegulatorySources } from "@/services/api/sources.service";
 import { Routes } from "@/shared/types/routes";
 import type { UserSource } from "@/shared/types/sources";
@@ -8,7 +8,7 @@ import { cn } from "@/shared/utils/utils";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { selectIsContextPipelineV2Enabled } from "@/store/features/selectors";
 import { fetchSources } from "@/store/sources/sourcesSlice";
-import { AlertCircle, Check, ExternalLink, Library, Loader2, Scale, Upload } from "lucide-react";
+import { AlertCircle, Check, ExternalLink, Loader2, Scale, Upload } from "lucide-react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -99,58 +99,31 @@ export function SourcePickerSection({
   };
 
   return (
-    <Card className="p-4 sm:p-6 md:p-8 border-border shadow-sm hover:shadow-md transition-shadow">
-      <div className="space-y-4">
-        {/* Header */}
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 sm:gap-3">
-            <div className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-accent shrink-0">
-              <Library className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-            </div>
-            <div>
-              <h2 className="text-base sm:text-lg font-semibold text-foreground">
-                {t("title")}{" "}
-                <span className="text-xs sm:text-sm font-normal text-muted-foreground">
-                  {t("optional")}
-                </span>
-              </h2>
-              <p className="text-xs sm:text-sm text-muted-foreground">
-                {t("description")}
-              </p>
-            </div>
-          </div>
-          <Link
-            href={Routes.SOURCES}
-            className="flex items-center gap-1.5 text-xs text-primary hover:underline underline-offset-2 shrink-0"
-          >
-            <Upload className="w-3.5 h-3.5" />
-            {t("manageSources")}
-          </Link>
-        </div>
-
-        {/* AE toggle */}
-        <div
-          className="flex items-center gap-3 p-3 rounded-xl bg-muted cursor-pointer select-none"
-          onClick={() => onUpdate("includeAe", !includeAe)}
-          role="checkbox"
-          aria-checked={includeAe}
-          tabIndex={0}
-          onKeyDown={(e) => e.key === " " && onUpdate("includeAe", !includeAe)}
-        >
-          <div
+    <OptionRow label={t("title")}>
+      <div className="space-y-2">
+        {/* AE toggle and the way to the teacher's own sources, on one line. */}
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <button
+            type="button"
+            onClick={() => onUpdate("includeAe", !includeAe)}
+            role="checkbox"
+            aria-checked={includeAe}
             className={cn(
-              "w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors",
-              includeAe ? "bg-primary border-primary" : "border-border bg-background",
+              "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+              includeAe ? "border-primary bg-primary/10 text-primary" : "border-border bg-card text-foreground hover:bg-accent",
             )}
           >
-            {includeAe && <Check className="w-2.5 h-2.5 text-primary-foreground" />}
-          </div>
-          <span className="text-sm font-medium flex-1">
+            {includeAe && <Check className="h-3 w-3" aria-hidden />}
             {t("includeAe")}
-            <span className="ml-1.5 text-xs font-normal text-muted-foreground">
-              {t("recommended")}
-            </span>
-          </span>
+            <span className="font-normal text-muted-foreground">· {t("recommended")}</span>
+          </button>
+          <Link
+            href={Routes.SOURCES}
+            className="flex shrink-0 items-center gap-1.5 text-xs text-primary underline-offset-2 hover:underline"
+          >
+            <Upload className="h-3.5 w-3.5" />
+            {t("manageSources")}
+          </Link>
         </div>
 
         {/* Regulatory documents (scooli-managed) — only shown when context_pipeline_v2 is enabled */}
@@ -229,18 +202,34 @@ export function SourcePickerSection({
             {t("loadingSources")}
           </div>
         ) : indexedSources.length === 0 ? (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
-            <AlertCircle className="w-4 h-4 shrink-0" />
-            <span>
-              {t("noIndexedSourcesPrefix")}{" "}
-              <Link
-                href={Routes.SOURCES}
-                className="text-primary underline underline-offset-2"
-              >
-                {t("uploadDocuments")}
-              </Link>{" "}
-              {t("noIndexedSourcesSuffix")}
-            </span>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+            {sources.length > 0 ? (
+              <span>
+                {sources.some((s) => s.status === "indexed")
+                  ? t("noneMatch")
+                  : sources.some((s) => s.status !== "failed")
+                    ? t("stillProcessing")
+                    : t("allFailed")}{" "}
+                <Link
+                  href={Routes.SOURCES}
+                  className="text-primary underline underline-offset-2"
+                >
+                  {t("manageSources")}
+                </Link>
+              </span>
+            ) : (
+              <span>
+                {t("noIndexedSourcesPrefix")}{" "}
+                <Link
+                  href={Routes.SOURCES}
+                  className="text-primary underline underline-offset-2"
+                >
+                  {t("uploadDocuments")}
+                </Link>{" "}
+                {t("noIndexedSourcesSuffix")}
+              </span>
+            )}
           </div>
         ) : (
           <div className="space-y-2">
@@ -293,6 +282,6 @@ export function SourcePickerSection({
           </div>
         )}
       </div>
-    </Card>
+    </OptionRow>
   );
 }

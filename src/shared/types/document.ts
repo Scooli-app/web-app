@@ -1,3 +1,5 @@
+import type { PendingSuggestion } from "./document-suggestions";
+
 /**
  * Document types and interfaces
  */
@@ -37,6 +39,8 @@ export enum TeachingMethod {
 }
 
 export interface DocumentMetadata {
+  /** Structured assessments: exercises whose answer key the server's maths check corrected or could not confirm. */
+  answerChecks?: { exerciseId: string; note: string }[];
   prompt?: string;
   duration?: number;
   schoolYear?: number;
@@ -57,6 +61,20 @@ export type SharedResourceStatus = "PENDING" | "APPROVED" | "REJECTED"
  */
 export type DocumentSharedScope = "community" | "organization";
 
+export interface DocumentClassInfo {
+  timetableId: string;
+  title: string;
+  classLabel: string;
+  color: string;
+  subject: string | null;
+  gradeLevel: number | null;
+  /** The lesson in that turma (its most recent one), when the document belongs to a lesson. */
+  lessonId?: string | null;
+  lessonNumber?: number | null;
+  /** YYYY-MM-DD */
+  lessonDate?: string | null;
+}
+
 export interface Document {
   id: string;
   title: string;
@@ -71,8 +89,12 @@ export interface Document {
    */
   contentFormat?: "markdown" | "json";
   content: string;
+  /** Identifies the stored content; sent back with an edit so a save from another tab isn't overwritten. */
+  contentVersion?: string;
   status: string;
   metadata: DocumentMetadata | null;
+  /** The turma (timetable) this document was generated for; absent when it belongs to none. */
+  classInfo?: DocumentClassInfo | null;
   isPublic: boolean;
   subject: string | null;
   gradeLevel: string | null;
@@ -94,6 +116,8 @@ export interface Document {
    */
   sharedScopes?: DocumentSharedScope[];
   sources?: RagSource[];
+  /** A suggested version waiting for review (ENG-255). Null for non-Pro users and when nothing is pending. */
+  pendingSuggestion?: PendingSuggestion | null;
   createdAt: string;
   updatedAt: string;
 }

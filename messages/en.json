@@ -1,5 +1,6 @@
 {
   "common": {
+    "loading": "Loading…",
     "selectDate": "Pick a date",
     "confirmationDialog": {
       "defaultTitle": "Are you sure?",
@@ -22,7 +23,11 @@
       "toggle": "Toggle sidebar"
     },
     "aiDisclaimer": "AI can make mistakes. Always review the content.",
-    "aiDisclaimerShort": "AI can make mistakes."
+    "aiDisclaimerShort": "AI can make mistakes.",
+    "loadError": {
+      "message": "We couldn’t load this right now.",
+      "retry": "Try again"
+    }
   },
   "language": {
     "interface": {
@@ -63,17 +68,140 @@
     "title": "Your week",
     "previousWeek": "Previous week",
     "nextWeek": "Next week",
-    "createLesson": "Create",
-    "retryLesson": "Try again",
-    "createLessonError": "We couldn't create this lesson. Please try again.",
-    "prepare": "Prepare the week",
     "noLessons": "No lessons this week.",
-    "seeNextWeek": "See next week",
     "empty": "Create your first class and Scooli prepares your week.",
     "error": "We couldn't load your week.",
     "prepareError": "We couldn't prepare the week. Please try again.",
-    "nothingToPrepare": "There are no lessons left to prepare this week.",
-    "refreshError": "Your lessons are ready, but we couldn't refresh the list. Please reload the page."
+    "todayTitle": "Today · {date}",
+    "focusTitle": "Next lesson · {date}",
+    "lessonsCount": "{count, plural, one {# lesson} other {# lessons}}",
+    "noLessonsToday": "No lessons today.",
+    "next": "Coming up",
+    "noLessonsDay": "No lessons",
+    "lessonNumber": "Lesson {number}",
+    "lessonMinutes": "{minutes} min",
+    "noObjectivesYet": "Objectives appear once the lesson plan is ready.",
+    "preparePlan": "Prepare lesson plan",
+    "documentGenerating": "Preparing…",
+    "companionError": "Couldn’t create this document. Try again.",
+    "companionInProgress": "This document is already being prepared.",
+    "backToToday": "Today",
+    "types": {
+      "lessonPlan": "Lesson plan",
+      "worksheet": "Worksheet",
+      "quiz": "Quiz",
+      "presentation": "Slides",
+      "test": "Test",
+      "reinforcement": "Reinforcement"
+    },
+    "windowTitle": "{from} – {to}",
+    "loadingNextLesson": "Loading the next lesson…",
+    "companionExists": "This lesson already has this document.",
+    "prepareLessonPlans": "Prepare lesson plans ({count})",
+    "prepareConfirmTitle": "Prepare lesson plans",
+    "prepareConfirmBody": "{count, plural, one {We'll write a lesson plan for the one lesson this week that doesn't have one yet:} other {We'll write lesson plans for the # lessons this week that don't have one yet:}}",
+    "prepareConfirmAction": "{count, plural, one {Prepare 1 plan} other {Prepare # plans}}",
+    "prepareCostFree": "No cost: these lessons are in your free week.",
+    "prepareCost": "{count, plural, one {Uses # credit.} other {Uses # credits.}}",
+    "cancel": "Cancel",
+    "moreLessons": "{count, plural, one {+ # lesson} other {+ # lessons}}",
+    "dayReady": "{count, plural, one {# ready} other {# ready}}",
+    "dayToPrepare": "{count, plural, one {# to prepare} other {# to prepare}}",
+    "ready": "Ready",
+    "toPrepare": "To prepare",
+    "seeAllInCalendar": "See all {count} lessons in the calendar"
+  },
+  "nextSteps": {
+    "title": "What to do next",
+    "loading": "Loading suggestions",
+    "prepareNext": "Prepare the lesson for {day}",
+    "replanNotHeld": "Reschedule: move the following lessons",
+    "replanNotHeldShift": "Not held: move the following lessons",
+    "reinforce": "Create a reinforcement sheet for {outcome}",
+    "checkIn": "Confirm {count, plural, one {# lesson} other {# lessons}}",
+    "actionPrepare": "Prepare",
+    "actionReschedule": "Reschedule",
+    "actionShift": "Move following lessons",
+    "actionReinforce": "Create sheet",
+    "actionView": "View"
+  },
+  "checkIns": {
+    "title": "How did the lesson go?",
+    "pendingCount": "To confirm ({count})",
+    "meta": "{turma} · {subject} · {topic} · {day}",
+    "metaNoTopic": "{turma} · {subject} · {day}",
+    "metaNoSubject": "{turma} · {topic} · {day}",
+    "metaNoSubjectNoTopic": "{turma} · {day}",
+    "resultTaught": "Went well",
+    "resultDifficulties": "Some difficulties",
+    "resultPartial": "Stopped halfway",
+    "resultNotHeld": "Lesson not held",
+    "difficultiesQuestion": "Which parts were difficult?",
+    "uncoveredQuestion": "What was not covered?",
+    "back": "Back",
+    "assessmentQuestion": "Did you give the test?",
+    "assessmentYes": "Yes",
+    "assessmentNotYet": "Not yet",
+    "confirmAll": "All went well",
+    "confirmAllToast": "{count, plural, one {# lesson marked as taught} other {# lessons marked as taught}}",
+    "dismiss": "Hide for now",
+    "savedToast": "Saved: {result}",
+    "change": "Change",
+    "taughtToast": "Lesson marked as taught",
+    "prepareNext": "Prepare the next lesson",
+    "saveError": "Could not save. Try again.",
+    "confirmAllError": "Could not confirm the lessons. Try again.",
+    "shiftQuestion": "Move the following lessons?",
+    "shiftAction": "Move",
+    "shiftKeep": "Keep",
+    "shiftLaterAction": "Move following lessons",
+    "shiftedToast": "{count, plural, one {# lesson moved} other {# lessons moved}}",
+    "shiftOverflowToast": "No longer fits in the period: {topics}",
+    "shiftNothingToast": "No following lessons to move",
+    "shiftError": "Could not move the lessons. Try again.",
+    "reinforcementQuestion": "Generate a reinforcement worksheet for these outcomes?",
+    "reinforcementAction": "Generate reinforcement worksheet",
+    "reinforcementToast": "Reinforcement sheet being prepared for the lesson on {day}",
+    "reinforcementError": "Could not generate the reinforcement worksheet. Try again.",
+    "carryOverQuestion": "Carry these outcomes over to the next lesson?",
+    "carryOverAction": "Carry over to the next lesson",
+    "carryOverToast": "Carried over to {day}",
+    "carryOverError": "Could not carry the outcomes over. Try again.",
+    "followUpKeep": "Not now",
+    "followUpOpenCalendar": "View calendar",
+    "noNextLesson": "There is no next lesson.",
+    "followUpInProgress": "A reinforcement worksheet is already being generated for that lesson.",
+    "dayToday": "today",
+    "dayYesterday": "yesterday",
+    "daysAgo": "{count, plural, one {# day ago} other {# days ago}}",
+    "cancel": "Cancel",
+    "currentStatus": "Status",
+    "changeAnswer": "Change",
+    "mark": {
+      "taught": "Taught",
+      "taughtWithDifficulties": "Taught · some difficulties",
+      "partiallyTaught": "Partly taught",
+      "notHeld": "Not held",
+      "assumedTaught": "Assumed taught",
+      "unconfirmed": "To confirm"
+    },
+    "save": "Save",
+    "followUpOpenLesson": "Open",
+    "reinforcementNote": "Reinforcement sheet: lesson on {day}",
+    "missingAmountQuestion": "How much was left to teach? (optional)",
+    "missingLittle": "A little",
+    "missingHalf": "Half",
+    "missingMost": "Almost all",
+    "missingAmountShown": "Left to teach: {amount}",
+    "noteLabel": "What happened? (optional)",
+    "notePlaceholder": "E.g.: the food chains part was missed"
+  },
+  "previousCheckIn": {
+    "question": "How did the lesson go?",
+    "questionWithTopic": "How did the lesson ({topic}) go?",
+    "notNow": "Not now",
+    "saved": "Saved.",
+    "savedWithContext": "Saved. The next lesson will take this into account."
   },
   "emailUnsubscribe": {
     "title": "Stop getting the weekly email?",
@@ -90,19 +218,20 @@
   },
   "nav": {
     "groups": {
-      "navigation": "Navigation",
-      "contentCreation": "Create content",
+      "plan": "Planning",
+      "library": "My content",
       "system": "System",
       "school": "School",
       "admin": "Administration"
     },
+    "create": "Create documents",
     "items": {
       "dashboard": {
-        "title": "Dashboard",
+        "title": "Home",
         "description": "An overview of your activity"
       },
       "documents": {
-        "title": "My documents",
+        "title": "Documents",
         "description": "Manage your documents"
       },
       "community": {
@@ -164,10 +293,13 @@
       "schoolMembers": {
         "title": "Members",
         "description": "See your school's members and seats"
+      },
+      "classes": {
+        "title": "Classes",
+        "description": "Your classes and timetables"
       }
     },
     "comingSoon": "Coming soon",
-    "viewTutorial": "View tutorial",
     "profile": {
       "userFallback": "User",
       "openProfile": "Open profile",
@@ -274,9 +406,9 @@
       "createFailedGeneric": "Error creating the document."
     },
     "topic": {
-      "title": "Lesson Topic",
+      "title": "Topic",
       "description": "Describe the topic you want to cover",
-      "ariaLabel": "Lesson topic"
+      "ariaLabel": "Topic"
     },
     "grade": {
       "title": "School Year",
@@ -380,19 +512,23 @@
     "worksheetVariants": {
       "practice": {
         "label": "Practice and consolidate",
-        "description": "A worksheet with progressive exercises to practice and reinforce learning."
+        "description": "A worksheet with progressive exercises to practice and reinforce learning.",
+        "short": "Practise"
       },
       "diagnostic": {
         "label": "Diagnose knowledge",
-        "description": "Helps identify the starting point, gaps and common mistakes before the topic."
+        "description": "Helps identify the starting point, gaps and common mistakes before the topic.",
+        "short": "Diagnose"
       },
       "formative": {
         "label": "Track learning",
-        "description": "Supports monitoring, self-assessment and next steps throughout the work."
+        "description": "Supports monitoring, self-assessment and next steps throughout the work.",
+        "short": "Track"
       },
       "exploration": {
         "label": "Introduce new content",
-        "description": "Uses prompts and guided questions to explore ideas before formal practice."
+        "description": "Uses prompts and guided questions to explore ideas before formal practice.",
+        "short": "Introduce"
       }
     },
     "sourcePicker": {
@@ -411,7 +547,10 @@
       "mySources": "My sources ({count})",
       "excerpts": "{count} excerpts",
       "schoolYearSuffix": "th grade",
-      "openInNewWindow": "Open {name} in a new window"
+      "openInNewWindow": "Open {name} in a new window",
+      "noneMatch": "None of your sources match this subject and year.",
+      "stillProcessing": "Your sources are still being processed.",
+      "allFailed": "None of your sources could be processed."
     },
     "slideCount": {
       "title": "Number of slides",
@@ -550,7 +689,8 @@
     "weekSchedule": {
       "description": "Choose the days and the number of periods per day.",
       "lessonsPerWeek": "{count, plural, one {# lesson/week} other {# lessons/week}}",
-      "addPeriod": "period"
+      "addPeriod": "period",
+      "customDuration": "Custom"
     },
     "weekScheduleTypeOptions": {
       "auto": "Automatic",
@@ -717,7 +857,40 @@
       "quiz_descobrimentos": {
         "topic": "The Portuguese Discoveries"
       }
-    }
+    },
+    "filledSummary": {
+      "year": "Year {year}",
+      "change": "Change"
+    },
+    "moreOptions": {
+      "title": "More options",
+      "summaryTemplate": "Template: {name}",
+      "summaryDuration": "Length: {minutes} min",
+      "summaryDurationFree": "Length: any",
+      "summarySources": "{count, plural, one {Uses # of your sources} other {Uses # of your sources}}",
+      "summarySlides": "{count} slides"
+    },
+    "missing": {
+      "prefix": "Still needed:",
+      "topic": "a topic",
+      "schoolYear": "the year",
+      "subject": "the subject",
+      "template": "a template, under More options",
+      "worksheetVariant": "the worksheet goal",
+      "templateNone": "create a template under More options"
+    },
+    "lesson": {
+      "title": "Which lesson is it for?",
+      "description": "Optional. The document goes into the class and lesson you pick.",
+      "none": "None (standalone document)",
+      "alreadyHas": "already has one",
+      "emptyHint": "You have no lessons in the next two weeks. Once a class is on your calendar, you can attach the document to a lesson.",
+      "emptyLink": "Open calendar"
+    },
+    "form": {
+      "optional": "optional"
+    },
+    "outOfCredits": "You're out of credits for creating more documents."
   },
   "dashboard": {
     "welcomeTitle": "Welcome to Scooli!",
@@ -734,12 +907,6 @@
         "testFracoes": "Test: Fractions · 5th grade",
         "quizDescobrimentos": "Quiz: The Portuguese Discoveries · 5th grade"
       }
-    },
-    "recentDocuments": {
-      "heading": "Pick up where you left off",
-      "viewAll": "View all",
-      "emptyTitle": "You don't have any documents yet.",
-      "emptyDescription": "Create your first lesson plan, test or quiz and it will show up here so you can pick up where you left off."
     }
   },
   "onboardingV2": {
@@ -945,11 +1112,9 @@
   },
   "settings": {
     "planning": {
-      "title": "Weekly planning",
-      "dayTitle": "Day to plan the week",
-      "dayDescription": "From this day on, Scooli shows you the following week.",
-      "digestTitle": "Weekly email with my week",
-      "digestDescription": "You get a summary of the coming week on the day you plan.",
+      "title": "Weekly email",
+      "digestTitle": "Email with my week",
+      "digestDescription": "At the weekend you get a summary of next week's lessons.",
       "loadError": "Couldn't load this setting.",
       "retry": "Try again",
       "saveError": "We couldn't save that change."
@@ -965,7 +1130,7 @@
         "system": "System",
         "lightHint": "Light mode",
         "darkHint": "Dark mode",
-        "systemHint": "Match my system"
+        "systemHint": "Follows your device's theme"
       },
       "notifications": {
         "title": "Notifications",
@@ -986,7 +1151,8 @@
       "cancelsAtPeriodEnd": "Cancels at period end",
       "active": "Active",
       "paymentPending": "Payment Pending",
-      "canceled": "Canceled"
+      "canceled": "Canceled",
+      "unknown": "Status unavailable"
     },
     "accessLabel": {
       "free": "Free plan",
@@ -1047,7 +1213,7 @@
       "saveError": "We couldn't save. Try again."
     },
     "subscriptionCard": {
-      "title": "Subscription and Generations",
+      "title": "Plan and credits",
       "yourPlan": "Your plan",
       "orgAccessTitle": "You have Pro access through your organization.",
       "orgAccessDescription": "Your access is managed by the school — you don't need a personal subscription.",
@@ -1065,7 +1231,9 @@
       "accessUntil": "Access until {date}",
       "renewsOn": "Renews on {date}",
       "manageSubscription": "Manage Subscription",
-      "opening": "Opening..."
+      "opening": "Opening...",
+      "plansUnavailable": "We can't show the plans right now.",
+      "plansUnavailableLink": "See plans and pricing"
     }
   },
   "editor": {
@@ -1190,8 +1358,63 @@
             "label": "Add a conclusion 📝",
             "message": "Add or improve the document's conclusion."
           }
+        ],
+        "assessment": [
+          {
+            "label": "Make it easier",
+            "message": "Make the test easier and keep the points adding up."
+          },
+          {
+            "label": "Add an extended-answer question",
+            "message": "Add an extended-answer question to the last section and rebalance the points."
+          },
+          {
+            "label": "Balance the points",
+            "message": "Balance the points according to how hard each question is."
+          },
+          {
+            "label": "Make a shorter version",
+            "message": "Make a shorter version of this document with fewer questions."
+          }
+        ],
+        "assessmentWorksheet": [
+          {
+            "label": "Make it easier",
+            "message": "Make the worksheet easier, with more guided exercises."
+          },
+          {
+            "label": "Add exercises",
+            "message": "Add three more exercises to the last section."
+          },
+          {
+            "label": "Mix the exercise types",
+            "message": "Mix the exercise types, with fill-in-the-gaps and matching."
+          },
+          {
+            "label": "Make a shorter version",
+            "message": "Make a shorter version of this worksheet with fewer exercises."
+          }
+        ],
+        "assessmentQuiz": [
+          {
+            "label": "Make it easier",
+            "message": "Make the quiz easier."
+          },
+          {
+            "label": "Add questions",
+            "message": "Add five more questions to the quiz."
+          },
+          {
+            "label": "Explain the answers",
+            "message": "Add a short explanation to each correct answer."
+          },
+          {
+            "label": "Mix the question types",
+            "message": "Mix the question types, with true or false and short answer."
+          }
         ]
-      }
+      },
+      "generatingPlaceholder": "Chat is available once the document is ready."
     },
     "calendarButton": {
       "viewClass": "View class",
@@ -1204,6 +1427,36 @@
       "classLabel": "Class (optional)",
       "classPlaceholder": "E.g. A",
       "cancel": "Cancel"
+    },
+    "documentVersions": {
+      "buttonLabel": "Versions",
+      "buttonTooltip": "Document versions",
+      "sheetTitle": "Versions",
+      "sheetDescription": "Go back to an earlier version of this document whenever you like.",
+      "kind": {
+        "generated": "Generated",
+        "aiEdit": "Changed with the assistant",
+        "teacherEdit": "Edited by you",
+        "aiSuggestion": "Suggestion",
+        "suggestionApplied": "Suggestion applied",
+        "restored": "Restored"
+      },
+      "currentBadge": "Current",
+      "listLoadError": "We couldn’t load the versions.",
+      "previewLoadError": "We couldn’t open this version.",
+      "previewLabel": "Preview",
+      "slidesLabel": "Slides",
+      "pickVersionHint": "Pick a version to see it.",
+      "restoreButton": "Restore this version",
+      "restoreTitle": "Restore the version from {date}?",
+      "restoreDescription": "The current version is kept in the history.",
+      "restoreConfirm": "Restore",
+      "restoring": "Restoring the version",
+      "restoredToast": "Version restored",
+      "restoreError": "We couldn’t restore this version.",
+      "pendingSuggestion": "Pending suggestion",
+      "pendingSuggestionReview": "Review",
+      "pendingSuggestionPreparing": "Preparing…"
     },
     "documentEditor": {
       "stepPreparingLabel": "Prepare",
@@ -1225,6 +1478,11 @@
       "imageUploadFailed": "We couldn't upload the image.",
       "imageAdded": "Image added to the document.",
       "imageGenDelayError": "Image generation finished with failures or delays in the stream.",
+      "conflict": "This document was changed in another tab or device. Your latest changes weren't saved.",
+      "conflictReload": "Reload",
+      "conflictKeepMine": "Keep my version",
+      "documentUnreachable": "This document couldn't be opened. Check your connection and try again.",
+      "retryLoad": "Try again",
       "documentNotFound": "Document not found",
       "backToDocuments": "Back to documents",
       "editorHeading": "Editor",
@@ -1236,7 +1494,11 @@
       "chatErrorGeneric": "Something went wrong processing your message. Please try again later.",
       "streamStartError": "Error starting the stream",
       "imageTokenRepairWarning": "We detected and fixed internal image references in the document.",
-      "imageFallbackAlt": "Image"
+      "imageFallbackAlt": "Image",
+      "actionsDisabledGenerating": "Available once the document is ready.",
+      "actionsDisabledNoContent": "This document has no content yet.",
+      "emptyDocumentTitle": "This document came out empty",
+      "emptyDocumentDescription": "Generation finished without any content. You can write here or go back to your documents and create another."
     },
     "documentTitle": {
       "placeholder": "Document title...",
@@ -1320,6 +1582,7 @@
       "alignRightTooltip": "Align right",
       "decreaseSizeTooltip": "Decrease size",
       "increaseSizeTooltip": "Increase size",
+      "editFormula": "Edit formula",
       "fontFamilyTooltip": "Font",
       "textColorTooltip": "Text color",
       "simplifyTooltip": "Ask AI to simplify this text",
@@ -1371,7 +1634,10 @@
       "expandPrompt": "Expand this slide text with more detail (reply only with the expanded text, no intro): \"{text}\"?",
       "improveListPrompt": "Improve these list items for a presentation (reply only with the improved items, one per line, no intro): {items}?",
       "newSlideTitle": "New Slide",
-      "exportMissingImages": "Exported, but {count, plural, one {# image couldn't be included} other {# images couldn't be included}}. Check the slide images and export again."
+      "exportMissingImages": "Exported, but {count, plural, one {# image couldn't be included} other {# images couldn't be included}}. Check the slide images and export again.",
+      "createNewPresentation": "Create a new presentation",
+      "emptyDeckTitle": "This presentation has no slides",
+      "emptyDeckDescription": "Add a blank slide or ask the AI to generate one."
     },
     "slideKonvaEditor": {
       "changeImage": "Change image",
@@ -1429,33 +1695,9 @@
         "galaxy": "Light lilac with a planet and colourful stars."
       }
     },
-    "formulaModal": {
-      "groupFractions": "Fractions, powers and indices",
-      "groupRoots": "Roots",
-      "groupTrigLogs": "Trig and logs",
-      "groupBigOperators": "Big operators",
-      "groupBarsVectors": "Bars and vectors",
-      "groupRelations": "Relations",
-      "groupOperators": "Operators",
-      "groupGreek": "Greek",
-      "groupSetsLogic": "Sets and logic",
-      "groupNumberSets": "Number sets",
-      "editTitle": "Edit formula",
-      "addTitle": "Add formula",
-      "latexModeLabel": "LaTeX mode",
-      "latexModeHint": "Turn on to write plain LaTeX. Turn off for a simpler input.",
-      "formulaLabel": "Formula",
-      "formulaPlaceholderSimple": "E.g.: sin(x) + πr^2",
-      "formulaHint": "Use the palette to insert symbols at the cursor and confirm once the preview looks right.",
-      "previewLabel": "Preview",
-      "paletteLabel": "Symbol palette",
-      "paletteHint": "Each button inserts LaTeX directly into the field above.",
-      "cancel": "Cancel",
-      "save": "Save",
-      "add": "Add"
-    },
     "imagePickerModal": {
       "dialogTitle": "Add image",
+      "replaceDialogTitle": "Change image",
       "tabGenerate": "Generate with AI",
       "tabUpload": "Upload",
       "tabUrl": "By URL",
@@ -1473,6 +1715,7 @@
       "tabImages": "Search images",
       "imagesSearchPlaceholder": "E.g. water cycle, animal cell, Shakespeare",
       "imagesSearchButton": "Search",
+      "imagesDefaultQuery": "educational diagram",
       "imagesEmptyHint": "Search free-to-use photos, illustrations, diagrams and maps for your slides.",
       "imagesNoResults": "No results for “{query}”. Try another word or filter.",
       "imagesError": "Couldn't search images",
@@ -1513,7 +1756,8 @@
       "uploadErrorOffline": "You're offline. The image wasn't uploaded.",
       "urlInvalid": "Enter a full address starting with https://",
       "urlLoadError": "Couldn't open an image at this address. Check the link or upload the image from your computer.",
-      "urlChecking": "Checking…"
+      "urlChecking": "Checking…",
+      "imagesShowAllTypes": "Show all types"
     },
     "richTextEditor": {
       "bold": "Bold",
@@ -1586,6 +1830,12 @@
       "generatingWord": "Generating Word…",
       "exportWord": "Export as Word",
       "exportWordPro": "Export Word (Pro)"
+    },
+    "lessonContext": {
+      "label": "Part of a lesson",
+      "lessonNumber": "Lesson {number}",
+      "openLesson": "Open this lesson in the calendar",
+      "alsoHas": "This lesson also has:"
     }
   },
   "blocks": {
@@ -1606,41 +1856,6 @@
       "stepReviewingLabel": "Reviewing",
       "stepReviewingCaption": "Checking the structure and quality of the result.",
       "imagesLabel": "Images"
-    }
-  },
-  "assistant": {
-    "panel": {
-      "title": "Scooli Assistant",
-      "online": "Online",
-      "newConversation": "New conversation",
-      "minimize": "Minimize conversation",
-      "inputPlaceholder": "Write a message..."
-    },
-    "emptyState": {
-      "title": "Scooli Assistant",
-      "description": "I'm here to help you with ideas, teaching questions and guidance on using the app.",
-      "welcomeMessage": "Hi! 👋 I'm the Scooli Assistant.\n\nI can help you with:\n- **Ideas** for activities and lessons\n- **Questions** about teaching and the curriculum\n- **Guidance** on using Scooli\n\nWhat can I help with today?",
-      "quickActions": [
-        {
-          "label": "Activity ideas ✨",
-          "message": "Can you give me ideas for activities for my lesson?"
-        },
-        {
-          "label": "Suggestions for a lesson 📚",
-          "message": "I need suggestions for planning a lesson."
-        },
-        {
-          "label": "Curriculum questions ❓",
-          "message": "I have questions about the Portuguese curriculum."
-        },
-        {
-          "label": "How to create a document 📝",
-          "message": "How can I create a lesson plan in Scooli?"
-        }
-      ]
-    },
-    "button": {
-      "openLabel": "Open Scooli Assistant"
     }
   },
   "community": {
@@ -1722,11 +1937,16 @@
       "use": "Use"
     },
     "resourceGrid": {
-      "emptyTitle": "No resources found",
-      "emptyDescription": "Try adjusting the filters or be the first to share resources in this category!",
+      "emptyTitle": "No shared resources yet",
+      "emptyDescription": "Share one of your documents and it shows up here for other teachers.",
       "showingCount": "Showing <b>{shown}</b> of <b>{total}</b> resources",
       "previous": "Previous",
-      "next": "Next"
+      "next": "Next",
+      "shareFromDocuments": "Go to my documents",
+      "emptyFilteredTitle": "No resources match your filters",
+      "emptyFilteredDescription": "Try a different search or clear the filters to see everything.",
+      "clearFilters": "Clear filters",
+      "shareAction": "Share a document"
     },
     "shareModal": {
       "orgLibraryLabel": "{name} library",
@@ -1734,6 +1954,9 @@
       "destinationAll": "All",
       "destinationAllHint": "Share with the community and the school at the same time.",
       "destinationCommunity": "Community library",
+      "destinationCommunityInstantHint": "Visible to every teacher on Scooli.",
+      "shareAllInstantDescription": "The resource is published to the school library and to the community library.",
+      "shareCommunityInstantDescription": "Share your resource with other teachers. It is published right away.",
       "destinationCommunityHint": "Visible to every teacher on Scooli after review.",
       "destinationOrgHint": "Only your school colleagues will see this resource.",
       "cancel": "Cancel",
@@ -1744,7 +1967,7 @@
       "shareCommunityTitle": "Share with the Community",
       "shareWithOrgDescription": "This resource will be available to {name}'s members.",
       "shareAllDescription": "The resource will be published to the school library and submitted for review in the community library.",
-      "shareCommunityDescription": "Share your educational resource with other Portuguese teachers. The resource will be reviewed before publishing.",
+      "shareCommunityDescription": "Share your resource with other teachers. It is reviewed before it is published.",
       "schoolFallback": "the school",
       "titleLabel": "Title",
       "titlePlaceholder": "E.g. Review - Functions - 9th grade",
@@ -1775,6 +1998,15 @@
         "• In the community, it will be reviewed by the Scooli team within 24-48h before publishing",
         "• You'll get notified once the public version is approved"
       ],
+      "instantHeading": "How it works",
+      "communityInstantBullets": [
+        "• The resource is available right away in the community library",
+        "• Other teachers can reuse and adapt it"
+      ],
+      "bothInstantBullets": [
+        "• It's available right away to your school's members and in the community library",
+        "• Other teachers can reuse and adapt it"
+      ],
       "communityBullets": [
         "• The resource will be reviewed by our team within 24-48 hours",
         "• We check alignment with the AEs and pedagogical quality",
@@ -1793,18 +2025,15 @@
       "description": "Discover and share teaching resources created by teachers in Portugal",
       "myDashboard": "My dashboard",
       "share": "Share",
-      "createNew": "Create new",
       "generalLibrary": "General library",
       "schoolLibraryFallback": "School library",
-      "resourcesAvailable": "resources available",
-      "internalShares": "Internal shares from {org}",
       "schoolFallback": "your school",
-      "teacherCommunity": "A community of teachers in Portugal",
-      "alignedResources": "Resources aligned with the Aprendizagens Essenciais",
       "reuseSuccess": "Added to your documents",
       "reuseError": "Couldn't reuse this resource",
       "previewComingSoon": "Preview coming soon",
+      "previewDescription": "Read-only preview, as students get it. Shared by {name}.",
       "shareOrgSuccess": "Resource shared with your school library.",
+      "sharePublished": "Resource published in the community library.",
       "shareCommunitySuccess": "Resource submitted for review — you'll be notified within 24–48 hours.",
       "shareError": "Couldn't share this resource"
     },
@@ -1820,7 +2049,8 @@
       "allTypes": "All types",
       "sortPopular": "Most reused",
       "sortRecent": "Most recent",
-      "gradeOption": "{n, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} grade"
+      "gradeOption": "{n, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} grade",
+      "moreFilters": "More filters"
     },
     "dashboardPage": {
       "title": "Contributor Dashboard",
@@ -1835,7 +2065,7 @@
         "changesRequested": "Changes requested"
       },
       "emptyTitle": "You haven't shared any resources yet",
-      "emptyDescription": "Start sharing your teaching resources to see your stats here.",
+      "emptyDescription": "Share one of your documents and you'll see here how often it gets reused.",
       "stats": {
         "shared": "Resources Shared",
         "totalReuses": "Total Reuses",
@@ -1850,7 +2080,8 @@
       "moderatorFeedback": "Moderator feedback:",
       "impactTitle": "Community Impact",
       "impactDescription": "Your resources have already helped <b>{count}</b> teachers!",
-      "impactSubtitle": "Keep sharing to grow your impact on Portuguese education."
+      "impactSubtitle": "Keep sharing to help more teachers.",
+      "shareFromDocuments": "Go to my documents"
     }
   },
   "feedback": {
@@ -1928,7 +2159,8 @@
       "statusRejected": "Rejected",
       "heading": "My history",
       "emptyState": "You haven't sent any feedback yet.",
-      "teamResponseLabel": "Team response"
+      "teamResponseLabel": "Team response",
+      "emptyStateHint": "Use the options above to tell us what worked and what didn't."
     },
     "survey": {
       "snoozeError": "We couldn't snooze the feedback request.",
@@ -1994,7 +2226,9 @@
       "community": "Community",
       "sharedOrgTitle": "Shared to {org}'s library",
       "gradeYear": "{grade, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} grade",
-      "createdOn": "Created on {date}"
+      "createdOn": "Created on {date}",
+      "moreActions": "More actions",
+      "delete": "Delete"
     },
     "filters": {
       "types": {
@@ -2016,7 +2250,18 @@
         "all": "Any origin",
         "ai": "AI generated",
         "imported": "Imported"
-      }
+      },
+      "classes": {
+        "label": "Class",
+        "all": "All classes",
+        "none": "No class"
+      },
+      "searchPlaceholder": "Search…",
+      "typeLabel": "Document type",
+      "allTypes": "All types",
+      "groupByClass": "Group by class",
+      "moreFilters": "More filters",
+      "clearMoreFilters": "Clear these filters"
     },
     "emptyState": {
       "genericDocuments": "documents",
@@ -2041,18 +2286,22 @@
         "presentation": "Create interactive slides",
         "quiz": "Assess knowledge",
         "test": "Create formal assessments"
-      }
+      },
+      "noFilterMatch": {
+        "title": "No results for these filters",
+        "description": "No documents match the filters you picked. Clear them to see everything again."
+      },
+      "clearFilters": "Clear filters"
     },
     "gallery": {
       "heading": "My Documents",
       "import": "Import",
       "selectAll": "Select all",
-      "deselectAll": "Deselect all",
+      "deselectAll": "Clear selection",
       "selectedCount": "{count, plural, one {# selected} other {# selected}}",
       "visibleCount": "({count, plural, one {# visible} other {# visible}})",
       "deleting": "Deleting...",
       "delete": "Delete",
-      "searchPlaceholder": "Search documents...",
       "select": "Select",
       "loadingDocuments": "Loading documents...",
       "loadingMore": "Loading more documents...",
@@ -2063,7 +2312,9 @@
         "multipleDescription": "Are you sure you want to delete {count} documents? This action cannot be undone.",
         "confirm": "Delete",
         "cancel": "Cancel"
-      }
+      },
+      "seeAll": "See all",
+      "sectionCount": "{count, plural, one {# document} other {# documents}}"
     },
     "export": {
       "exercisePlaceholder": "[Interactive exercise ({kind}) — visible only in the app]",
@@ -2116,6 +2367,10 @@
         "free_period_limit": {
           "title": "The free plan covers 4 weeks",
           "description": "Upgrade to Pro to plan the whole school year."
+        },
+        "presentation_pro": {
+          "title": "Slides are part of Pro",
+          "description": "On the free plan you can prepare lesson plans, worksheets, quizzes and tests. Upgrade to Pro to create slides too."
         }
       }
     },
@@ -2142,7 +2397,8 @@
       "save": "Save",
       "saving": "Saving...",
       "removedSuccess": "Tax ID removed. Future invoices will be issued as a private consumer.",
-      "savedSuccess": "Tax ID saved. It will be used on future invoices."
+      "savedSuccess": "Tax ID saved. It will be used on future invoices.",
+      "hint": "Your tax ID is printed on your invoices. Leave it empty and invoices are issued without one."
     }
   },
   "sources": {
@@ -2171,11 +2427,13 @@
       "confirm": "Confirm",
       "cancel": "Cancel",
       "deleteAriaLabel": "Delete source",
-      "proNote": "Sources are only available for your own credits. Content is processed and indexed automatically in the background.",
+      "proNote": "Only you can see your sources. Scooli reads them in the background and uses them in the documents you create.",
       "strippedBackMatterTooltip": "We removed {size} from {heading} before processing.",
       "strippedSectionOmitted": "{heading} section omitted",
       "sectionFallback": "final",
-      "backMatterFallback": "back matter"
+      "backMatterFallback": "back matter",
+      "emptyDescription": "Upload a textbook or your own materials and Scooli will use them in the documents you create.",
+      "emptyAction": "Upload a source"
     },
     "status": {
       "uploaded": "Processing",
@@ -2255,73 +2513,41 @@
       "maybeLater": "Maybe later"
     }
   },
-  "tutorial": {
-    "steps": {
-      "grade": {
-        "title": "School year",
-        "description": "Click on your students' school year.",
-        "hint": "Select a year to move on automatically"
-      },
-      "subject": {
-        "title": "Subject",
-        "description": "Open the dropdown and choose the subject you teach.",
-        "hint": "Select a subject to move on automatically"
-      },
-      "topic": {
-        "title": "Lesson topic",
-        "description": "Write the topic you want to teach. E.g.: 'Photosynthesis' or 'Fractions'.",
-        "hint": "Click Next when you're ready"
-      },
-      "template": {
-        "title": "Plan template",
-        "description": "A template was selected automatically. You can click to explore others.",
-        "hint": "Click Next to continue"
-      },
-      "generate": {
-        "title": "Generate the lesson plan! 🎉",
-        "description": "All set! Click 'Create Lesson Plan' to generate your first lesson plan with AI.",
-        "hint": "Click the button to create your lesson plan"
-      }
-    },
-    "completing": "Great! Moving on…",
-    "skip": "Skip tutorial",
-    "next": "Next"
-  },
   "documentEditorPages": {
     "lessonPlan": {
       "loading": "Loading lesson plan...",
       "defaultTitle": "New Lesson Plan",
       "generateMessage": "Generate lesson plan",
       "chatTitle": "Plan Assistant",
-      "chatPlaceholder": "Ask something or request changes to the plan..."
+      "chatPlaceholder": "Ask for a change…"
     },
     "worksheet": {
       "loading": "Loading worksheet...",
       "defaultTitle": "New Worksheet",
       "generateMessage": "Generate worksheet",
       "chatTitle": "Worksheet Assistant",
-      "chatPlaceholder": "Ask something or request changes to the worksheet..."
+      "chatPlaceholder": "Ask for a change…"
     },
     "test": {
       "loading": "Loading test...",
       "defaultTitle": "New Test",
       "generateMessage": "Generate test",
       "chatTitle": "Test Assistant",
-      "chatPlaceholder": "Ask something or request changes to the test..."
+      "chatPlaceholder": "Ask for a change…"
     },
     "quiz": {
       "loading": "Loading quiz...",
       "defaultTitle": "New Quiz",
       "generateMessage": "Generate quiz",
       "chatTitle": "Quiz Assistant",
-      "chatPlaceholder": "Ask something or request changes to the quiz..."
+      "chatPlaceholder": "Ask for a change…"
     },
     "curriculumPlan": {
       "loading": "Loading curriculum plan...",
       "defaultTitle": "New Curriculum Plan",
       "generateMessage": "Generate curriculum plan",
       "chatTitle": "Curriculum Plan Assistant",
-      "chatPlaceholder": "Ask something or request changes to the curriculum plan..."
+      "chatPlaceholder": "Ask for a change…"
     }
   },
   "support": {
@@ -2391,11 +2617,13 @@
         "description": "AI requests the school completed successfully over the last fourteen days.",
         "requestsThisMonthBadge": "{count, plural, one {# request} other {# requests}} this month",
         "tooltip": "{day}: {count, plural, one {# request} other {# requests}}",
-        "empty": "There isn't enough activity yet to draw the chart."
+        "empty": "The chart shows up once the team starts creating with Scooli.",
+        "emptyTitle": "No activity yet"
       },
       "documentTypesCard": {
         "title": "Document types",
-        "empty": "There aren't enough documents yet to show the breakdown by type."
+        "empty": "The most-created document types will show up here.",
+        "emptyTitle": "No documents yet"
       },
       "activeUsersCard": {
         "title": "Most active users",
@@ -2404,8 +2632,10 @@
         "aiRequestsBadge": "{count, plural, one {# AI request} other {# AI requests}}",
         "documentsThisMonthBadge": "{count, plural, one {# document this month} other {# documents this month}}",
         "totalDocumentsBadge": "{count, plural, one {# document total} other {# documents total}}",
-        "empty": "There isn't enough activity yet to highlight users."
-      }
+        "empty": "The most active teachers appear here once the team starts using Scooli.",
+        "emptyTitle": "No active teachers yet"
+      },
+      "viewMembers": "View members"
     },
     "members": {
       "title": "School members",
@@ -2419,7 +2649,7 @@
       },
       "listTitle": "Members",
       "loading": "Loading members...",
-      "empty": "There are no members synced for this school yet.",
+      "empty": "Teachers appear here once they accept the school invitation.",
       "unnamedMember": "Unnamed user",
       "noEmail": "No email available",
       "joinedAndLastActive": "Joined: {joinedDate} · Last active: {lastActiveDate}",
@@ -2429,7 +2659,8 @@
       "documentsCount": "{count, plural, one {# document} other {# documents}}",
       "createdThisMonth": "{count, plural, one {# created this month} other {# created this month}}",
       "statusLabel": "Status",
-      "internalSharesCount": "{count, plural, one {# internal share} other {# internal shares}}"
+      "internalSharesCount": "{count, plural, one {# internal share} other {# internal shares}}",
+      "emptyTitle": "No teachers yet"
     },
     "settings": {
       "title": "School settings",
@@ -2662,12 +2893,6 @@
       "ingestionError": "Ingestion error",
       "streamConnectionError": "Stream connection error"
     },
-    "assistant": {
-      "sessionExpired": "Session expired. Please sign in again.",
-      "creditLimitReached": "Credit limit reached. Upgrade to the Pro plan to continue.",
-      "serverError": "Server error: {status}",
-      "connectionError": "Connection error. Please try again."
-    },
     "moderation": {
       "fetchQueue": "Couldn't load the moderation queue",
       "processAction": "Couldn't process the moderation action"
@@ -2742,6 +2967,7 @@
     }
   },
   "layout": {
+    "preparingAccount": "Getting your account ready",
     "themeToggle": {
       "srLabel": "Change theme",
       "light": "Light",
@@ -2755,6 +2981,7 @@
   "timetable": {
     "status": {
       "pending": "Pending",
+      "pendingPast": "No documents",
       "generating": "Generating",
       "completed": "Generated",
       "failed": "Failed",
@@ -2772,6 +2999,41 @@
     "autoTitleFallback": "New Class"
   },
   "calendar": {
+    "progress": {
+      "title": "Class progress",
+      "loadingLabel": "Loading class progress",
+      "coverageLabel": "Learning outcomes covered",
+      "coverageCount": "{covered} of {total} learning outcomes covered",
+      "coverageOfYear": "{total} of {curriculum} for the year",
+      "given": "Taught",
+      "unconfirmedLessons": "Assumed",
+      "partial": "Partly",
+      "notHeld": "Not held",
+      "pending": "To confirm",
+      "behindTitle": "Behind schedule",
+      "allOnTime": "All on track",
+      "plannedFor": "Planned for {date}",
+      "behindLessons": "{count, plural, one {# lesson behind} other {# lessons behind}}",
+      "reinforceTitle": "To reinforce",
+      "reinforceEmpty": "Nothing to reinforce for now.",
+      "difficulties": "{count, plural, one {# difficulty} other {# difficulties}}",
+      "lastSignal": "last signal {when}",
+      "showMore": "See more ({count})",
+      "showLess": "See less",
+      "nextAssessmentTitle": "Next assessment",
+      "noAssessment": "No assessment scheduled",
+      "coverageCaption": "of planned learning outcomes covered",
+      "unconfirmedLegend": "+{count} assumed",
+      "unconfirmedHint": "Outcomes that only an unanswered lesson marks as taught. They are not counted in the percentage.",
+      "reinforcementGenerate": "Create sheet",
+      "reinforcementRetry": "Try again",
+      "reinforcementGenerating": "Preparing…",
+      "reinforcementReady": "Sheet ready · lesson on {day}",
+      "reinforcementFailed": "The sheet could not be made.",
+      "open": "Open",
+      "linkPlan": "Link a plan",
+      "noPlan": "Link a plan to this class to see its progress."
+    },
     "shared": {
       "pageTitle": "Calendar",
       "featureTitle": "Classes",
@@ -2787,9 +3049,15 @@
       "today": "Today",
       "tomorrow": "Tomorrow",
       "holidayNoLesson": "Holiday / No lesson",
+      "notHeldTitle": "Lesson not held",
       "classInline": "Class {label}",
       "minutesSuffix": "{count} min",
-      "generateWeek": "Generate week ({count})"
+      "generateWeek": "Generate week ({count})",
+      "saveError": "Couldn't save that change. Please try again.",
+      "openingLesson": "Opening lesson...",
+      "allClasses": "All",
+      "noActiveTitle": "You have no active classes",
+      "noActiveDescription": "Reactivate a class from the classes list or create a new one to see your calendar again."
     },
     "week": {
       "generate": "Generate ({count})",
@@ -2797,19 +3065,28 @@
       "moveDown": "Move down",
       "durationCompact": "{count}m",
       "emptyTitle": "No lessons this week",
-      "emptyHint": "Use the arrows to see other weeks."
+      "emptyHint": "It may be a holiday week, or the lessons haven't been created yet.",
+      "emptyFiltered": "The selected classes have no lessons this week.",
+      "showAllClasses": "Show all classes"
     },
     "detail": {
       "loading": "Loading...",
       "generationFailed": "Generation failed",
       "noLessonsThisWeek": "No lessons scheduled for this week.",
-      "noLessonsYet": "You don't have any lessons for this class yet.",
-      "navigateOtherWeek": "Go to another week."
+      "noLessonsYet": "This class has no lessons yet",
+      "navigateOtherWeek": "Go to another week.",
+      "noLessonsYetHint": "Check the class schedule and term dates in your classes list.",
+      "goToNearestWeek": "Go to the nearest week with lessons",
+      "preparingTitle": "Preparing this class's lessons",
+      "preparingDescription": "The topics are still being created. They'll appear here as soon as they're ready."
     },
     "month": {
       "lessonsCount": "{count, plural, one {# lesson} other {# lessons}}",
-      "completedCount": "{count, plural, one {# generated} other {# generated}}",
-      "pendingCount": "{count, plural, one {# pending} other {# pending}}"
+      "completedCount": "{count, plural, one {# ready} other {# ready}}",
+      "pendingCount": "{count, plural, one {# to prepare} other {# to prepare}}",
+      "emptyTitle": "No lessons this month",
+      "emptyDescription": "There are no lessons scheduled this month.",
+      "goToWeek": "Go to week view"
     },
     "classesList": {
       "header": {
@@ -2836,7 +3113,9 @@
         "loadingPlans": "Loading…",
         "none": "None",
         "cancel": "Cancel",
-        "save": "Save"
+        "save": "Save",
+        "noPlans": "You have no plans yet.",
+        "createPlan": "Create a plan"
       },
       "card": {
         "active": "Active",
@@ -2844,27 +3123,60 @@
         "editTitle": "Edit class"
       }
     },
+    "assessmentScope": {
+      "title": "Will assess",
+      "since": "since {date}",
+      "sinceStart": "since the start of the term",
+      "lessons": "{count, plural, one {# lesson} other {# lessons}}",
+      "notConfirmed": "not confirmed",
+      "empty": "Nothing has been taught since the last test yet.",
+      "pickAtLeastOne": "Pick at least one learning outcome to create the test.",
+      "lessonsTitle": "Lessons the test covers",
+      "untitledLesson": "Lesson without a topic",
+      "plannedLesson": "not taught yet",
+      "unconfirmedLesson": "to confirm",
+      "outcomesPending": "Learning outcomes show up here as the lessons are taught."
+    },
     "slotDialog": {
       "typeLabel": "Type:",
       "objectivesTitle": "Learning Objectives",
       "objectivesProcessing": "Processing…",
-      "objectivesEmpty": "Generate the class's topics to see the learning objectives.",
+      "streamPreviewTitle": "Writing the lesson plan",
+      "objectivesEmpty": "The objectives appear once the lesson plan is ready.",
       "documentsTitle": "Generated documents",
       "loadingDocuments": "Loading documents…",
       "noDocuments": "No documents found.",
       "viewLinkedPlan": "View linked plan",
+      "proposal": {
+        "badge": "New topic",
+        "title": "New topic for this lesson",
+        "hint": "This lesson already has documents, so its topic was kept. Accept the proposal to change it.",
+        "current": "Current",
+        "proposed": "Proposed",
+        "noTopic": "No topic yet",
+        "outcomes": "Outcomes",
+        "noOutcomes": "No outcomes",
+        "accept": "Accept",
+        "reject": "Reject",
+        "failed": "Could not update the lesson. Try again."
+      },
       "additionalInstructionLabel": "Additional instruction (optional)",
       "additionalInstructionPlaceholder": "E.g. include a group practical activity",
-      "generateLessonPlan": "Generate lesson plan",
       "generating": "Generating…",
       "openLessonPlan": "Open lesson plan",
       "regenerate": "Regenerate",
-      "confirmSkipWarning": "This action cannot be undone.",
-      "confirm": "Confirm",
-      "cancel": "Cancel",
-      "skip": "Skip",
       "editTopicTitle": "Click to edit the topic",
-      "lessonNumber": "Lesson {number}"
+      "lessonNumber": "Lesson {number}",
+      "prepareSet": "Prepare {items}",
+      "cost": "{count, plural, =0 {no cost} one {# credit} other {# credits}}",
+      "shortTypes": {
+        "lessonPlan": "plan",
+        "worksheet": "worksheet",
+        "quiz": "quiz",
+        "presentation": "slides",
+        "test": "test"
+      },
+      "reinforcementBadge": "Reinforcement"
     },
     "dashboardWidget": {
       "title": "Upcoming lessons",
@@ -2895,7 +3207,11 @@
         "subtitle": "Scooli extracts the period, subject and topics automatically.",
         "searchPlaceholder": "Search curriculum plans...",
         "noneYet": "You don't have any curriculum plans yet.",
-        "noneFound": "No curriculum plan found."
+        "noneFound": "No curriculum plan found.",
+        "noneYetHint": "Create or import a plan to build the class from it.",
+        "createPlan": "Create a plan",
+        "importPlan": "Import a plan",
+        "clearSearch": "Clear search"
       },
       "period": {
         "title": "School period",
@@ -2939,13 +3255,15 @@
         "markAs": "Mark as:",
         "remove": "Remove",
         "emptyLine1": "No lessons were generated for this period with the current schedule.",
-        "emptyLine2": "Go back and confirm the dates and class days."
+        "emptyLine2": "Go back and confirm the dates and class days.",
+        "backToPeriod": "Back to the period"
       },
       "nav": {
         "cancel": "Cancel",
         "previous": "Previous",
         "next": "Next",
-        "createClass": "Create class ({count, plural, one {# lesson} other {# lessons}})"
+        "createClass": "Create class ({count, plural, one {# lesson} other {# lessons}})",
+        "noLessonsHint": "You need at least one lesson to create the class."
       },
       "header": {
         "title": "New class",
@@ -3100,5 +3418,515 @@
       "existingTitle": "Your curriculum plans",
       "empty": "You don't have any curriculum plans yet. Create or import the first one above."
     }
+  },
+  "documentVersions": {
+    "bar": {
+      "title": "New suggested version",
+      "preparing": "Preparing a new version…",
+      "review": "Review changes",
+      "dismiss": "Hide",
+      "dismissHint": "Hides this notice. The suggestion stays in Versions."
+    },
+    "review": {
+      "title": "New suggested version",
+      "suggestedOn": "Suggested on {date}",
+      "staleNotice": "You edited the document after this suggestion was made. Your changes to the other sections stay as they are.",
+      "noChanges": "This suggestion has no changes.",
+      "unchangedCount": "{count, plural, one {# section without changes} other {# sections without changes}}",
+      "type": {
+        "added": "New",
+        "changed": "Changed",
+        "removed": "Removed"
+      },
+      "view": {
+        "before": "Before",
+        "after": "After",
+        "changes": "Changes"
+      },
+      "viewLabel": "View the section",
+      "addedText": "Added: ",
+      "removedText": "Removed: ",
+      "seeAll": "See all",
+      "showLess": "See less",
+      "before": "Before",
+      "after": "After",
+      "noSlide": "No slide",
+      "selectAll": "Select all",
+      "selectNone": "None",
+      "apply": "{count, plural, =0 {Apply changes} one {Apply # change} other {Apply # changes}}",
+      "reject": "Reject suggestion",
+      "rejectTitle": "Reject this suggestion?",
+      "rejectDescription": "The document stays as it is and the suggestion goes away.",
+      "rejectConfirm": "Reject",
+      "keepSuggestion": "Cancel",
+      "applied": "Changes applied",
+      "skipped": "{count, plural, one {# section no longer existed and was left out} other {# sections no longer existed and were left out}}",
+      "applyError": "Could not apply the changes. Try again.",
+      "rejected": "Suggestion rejected",
+      "rejectError": "Could not reject the suggestion. Try again.",
+      "loadError": "Could not load the changes.",
+      "retry": "Try again",
+      "presentationSettings": "Presentation theme and settings",
+      "documentTitle": "Title",
+      "themeChange": "Theme: {before} → {after}",
+      "formatChanged": "This suggestion was made before the presentation changed. Update it to see the changes on the presentation as it is now.",
+      "refresh": "Update suggestion",
+      "refreshError": "Could not update the suggestion. Try again.",
+      "assessment": {
+        "settings": "Document settings",
+        "group": "Section",
+        "reading": "Reading passage",
+        "exercise": "Question {number}",
+        "exerciseNoNumber": "Question",
+        "unreadable": "This part can't be shown.",
+        "pointsOnly": "Only the points change: {before, number} → {after, number} pts",
+        "otherSettings": "Other header settings",
+        "field": {
+          "title": "Title",
+          "instructions": "Instructions",
+          "targetTotal": "Total",
+          "school": "School",
+          "gradeClass": "Class",
+          "duration": "Duration (min)"
+        },
+        "unchangedCount": "{count, plural, one {# question unchanged} other {# questions unchanged}}",
+        "saveFirst": "Your edits couldn't be saved. Try again before applying.",
+        "reviewAgain": "Your latest edits were saved. Check the suggestion again before applying.",
+        "invalidMerge": "These changes don't make a valid document on their own. Also pick the related changes.",
+        "whatChanges": "Changes: {parts}",
+        "part": {
+          "type": "question type",
+          "prompt": "question text",
+          "content": "options and items",
+          "answer": "answers",
+          "points": "points",
+          "notes": "explanation and criteria",
+          "media": "image",
+          "goals": "curriculum goals"
+        }
+      }
+    },
+    "chip": {
+      "suggestionDot": "New suggested version"
+    }
+  },
+  "replan": {
+    "bannerPending": "{count, plural, one {There is a rescheduling proposal for # lesson} other {There is a rescheduling proposal for # lessons}}",
+    "bannerGenerating": "Preparing a rescheduling proposal…",
+    "bannerFailed": "Could not propose a rescheduling.",
+    "noChange": "No need to change the next lessons.",
+    "noChangeToast": "No need to change the next lessons",
+    "dismiss": "Dismiss",
+    "review": "Review",
+    "shiftFallback": "Move the next lessons",
+    "action": "Reschedule",
+    "notHeldInProgress": "Rescheduling the next lessons…",
+    "readyToast": "Rescheduling proposal ready",
+    "readyAction": "View",
+    "failedToast": "Could not propose a rescheduling.",
+    "requestTitle": "What happened in this lesson?",
+    "requestDescription": "Tell us how this lesson went. We use the note to propose changes to the following lessons.",
+    "requestTitleTurma": "What changed in the class?",
+    "requestDescriptionTurma": "Tell us what changed. We use the note to propose changes to the upcoming lessons.",
+    "requestNoteLabel": "Note (optional)",
+    "requestNotePlaceholder": "E.g. the class needed more time on the previous topic",
+    "requestSubmit": "Propose rescheduling",
+    "requestCancel": "Cancel",
+    "requestError": "Could not propose a rescheduling.",
+    "proRequired": "Automatic rescheduling of lessons is a Pro feature.",
+    "sheetTitle": "Rescheduling proposal",
+    "sheetDescription": "Review each lesson before applying. Unchecked lessons stay as they are.",
+    "changeRetitled": "New topic",
+    "changeExtended": "Adds content",
+    "changeMerged": "Merges topics",
+    "changeReinforcement": "Reinforcement",
+    "lessonNumber": "Lesson {number}",
+    "lessonCheck": "Apply lesson {number}",
+    "addition": "Adds: {text}",
+    "newOutcome": "New",
+    "documentsNote": "The documents of this lesson will get a new suggested version",
+    "applyLabel": "{count, plural, =0 {No change selected} one {Apply # change} other {Apply # changes}}",
+    "reject": "Reject",
+    "applied": "Changes applied",
+    "rejected": "Proposal rejected",
+    "actionError": "Could not save the proposal."
+  },
+  "adminPilot": {
+    "title": "Pilot",
+    "description": "Check-in answers, accepted proposals and the reinforcement loop per teacher and class.",
+    "exportCsv": "Export CSV",
+    "loadFailed": "Could not load the pilot metrics.",
+    "range": {
+      "from": "First week",
+      "to": "Last week",
+      "weekOf": "Week of {date}"
+    },
+    "headlines": {
+      "answerRate": "Answer rate",
+      "activeTeachers": "Active teachers",
+      "proposals": "Proposals accepted",
+      "loop": "Loop completed"
+    },
+    "definitions": {
+      "answerRate": "Lessons answered at check-in, out of the lessons that were due to be answered.",
+      "activeTeachers": "Teachers who answered, accepted or rejected something in the last week of the range.",
+      "proposals": "Proposals accepted or partly accepted, out of the decided ones. Suggestions replaced by the AI are not counted.",
+      "loop": "Difficulties followed by a reinforcement worksheet and a check-in on the lesson it was attached to."
+    },
+    "sub": {
+      "answerRate": "{answered} of {due} lessons",
+      "activeTeachers": "of {total} pilot teachers",
+      "proposals": "{accepted} of {decided} decided",
+      "loop": "{completed} of {started} started",
+      "none": "No data in this range"
+    },
+    "empty": {
+      "title": "No activity in this range",
+      "description": "Shows up here once teachers with Class State have lessons in the range."
+    },
+    "table": {
+      "title": "Teachers by class",
+      "teacher": "Teacher",
+      "turma": "Class",
+      "total": "Total",
+      "showWeeks": "Show weeks",
+      "hideWeeks": "Hide weeks",
+      "noActivity": "No activity"
+    },
+    "cell": {
+      "answeredOf": "{answered} of {due} lessons answered"
+    },
+    "weekly": {
+      "due": "Lessons due",
+      "answered": "Answered",
+      "assumed": "Assumed",
+      "unanswered": "Unanswered",
+      "notHeld": "Not held",
+      "partial": "Partial",
+      "difficulties": "Difficulties",
+      "topics": "Topic proposals",
+      "docs": "Document suggestions",
+      "replans": "Replans",
+      "loop": "Reinforcement loop"
+    },
+    "breakdown": {
+      "topics": "{accepted} accepted, {rejected} rejected, {pending} to review",
+      "docs": "{appliedAll} applied, {appliedPartial} applied in part, {rejected} replaced, {pending} to review",
+      "replans": "{accepted} accepted, {partiallyAccepted} partly accepted, {rejected} rejected, {failed} failed, {noChange} no change, {pending} to review",
+      "loop": "{completed} of {started} completed"
+    }
+  },
+  "reviewFeed": {
+    "title": "To review",
+    "showAll": "Show all ({count})",
+    "preparing": "Preparing…",
+    "topicBadge": "New topic",
+    "chip": "{count} to review"
+  },
+  "assessmentEditor": {
+    "export": "Export",
+    "saving": "Saving…",
+    "saved": "Saved",
+    "unsaved": "Unsaved changes",
+    "saveFailed": "Couldn't save. Your changes are still here. Try again; if it keeps failing, check your internet connection and the last exercise you edited.",
+    "leaveUnsaved": "Your latest changes haven't been saved and will be lost if you leave. Leave anyway?",
+    "conflict": "This document was changed in another tab or device. Your latest changes weren't saved.",
+    "conflictReload": "Reload",
+    "conflictKeepMine": "Keep my version",
+    "check": {
+      "label": "Check this",
+      "confirm": "It's correct",
+      "confirmFailed": "Couldn't save that. Try again."
+    },
+    "undo": {
+      "action": "Undo",
+      "exerciseDeleted": "Exercise deleted.",
+      "readingDeleted": "Text deleted.",
+      "groupDeleted": "Group deleted ({count, plural, one {# item} other {# items}})."
+    },
+    "retrySave": "Try again",
+    "dismiss": "Dismiss",
+    "generatingTitle": "Creating your document…",
+    "generatingSubtitle": "This takes about 30 to 60 seconds. You can wait here.",
+    "generationFailedTitle": "We couldn't create this document.",
+    "generationFailedSubtitle": "Try creating it again from your documents.",
+    "loadFailedTitle": "We couldn't open this document.",
+    "backToDocuments": "Back to documents",
+    "retry": "Try again",
+    "chatError": "The assistant couldn't reply. Try again.",
+    "chatUpdated": "I've updated the document.",
+    "imageGenerating": "Generating the image…",
+    "imageFailed": "Couldn't get the image. Try again.",
+    "page": "page {page} of {total}",
+    "points": "{points, number} pts",
+    "totals": {
+      "total": "Total: {total, number} / {target, number} pts",
+      "onTarget": "Points add up",
+      "under": "{diff, plural, one {# pt short} other {# pts short}}",
+      "over": "{diff, plural, one {# pt over} other {# pts over}}",
+      "questions": "{count, plural, one {# question} other {# questions}}",
+      "goals": "{count, plural, =0 {no learning goals} one {# learning goal} other {# learning goals}}",
+      "goalsTitle": "Learning goals covered",
+      "goalQuestions": "{count, plural, one {Question {numbers}} other {Questions {numbers}}}",
+      "goalsEmpty": "No exercise has a learning goal yet.",
+      "withoutGoal": "{count, plural, one {# exercise without a goal} other {# exercises without a goal}}"
+    },
+    "ae": {
+      "prefix": "Goal",
+      "unavailable": "Goal unavailable",
+      "loading": "Loading goal…",
+      "add": "Add goal",
+      "remove": "Remove goal",
+      "searchPlaceholder": "Search learning goals…",
+      "noResults": "No goals found.",
+      "searchError": "Couldn't search goals. Try again.",
+      "needsContext": "This document has no subject and year set, so goals can't be searched.",
+      "limit": "Each exercise can have up to 5 goals."
+    },
+    "header": {
+      "school": "School",
+      "class": "Class",
+      "name": "Name",
+      "number": "No.",
+      "date": "Date",
+      "duration": "Time",
+      "grade": "Grade",
+      "teacher": "Teacher",
+      "guardian": "Parent/guardian",
+      "durationValue": "{minutes} min",
+      "edit": "Edit header",
+      "add": "Add header",
+      "fieldsLabel": "Fields to show",
+      "schoolPlaceholder": "School name",
+      "classPlaceholder": "E.g. 6B",
+      "durationPlaceholder": "Minutes",
+      "done": "Done",
+      "label": "Header",
+      "editShort": "edit"
+    },
+    "section": {
+      "titlePlaceholder": "Section title",
+      "instructionsPlaceholder": "Instructions for students (optional)",
+      "newTitle": "Part {roman}",
+      "subtotal": "{points, number} pts",
+      "addExercise": "Add exercise",
+      "full": "Section full ({max} items)",
+      "addReading": "Add reading passage",
+      "addGroup": "Add section",
+      "deleteGroup": "Delete section",
+      "menu": "Section options",
+      "lastGroup": "The document needs at least one section."
+    },
+    "item": {
+      "edit": "Edit",
+      "drag": "Drag to reorder",
+      "duplicate": "Duplicate",
+      "delete": "Delete",
+      "moveUp": "Move up",
+      "moveDown": "Move down",
+      "lastItem": "A section needs at least one item. Delete the section instead.",
+      "emptyPrompt": "No question text yet",
+      "readingDefaultTitle": "Reading passage",
+      "readingTitle": "Title (optional)",
+      "readingBody": "Text",
+      "imageAlt": "Exercise image",
+      "more": "More actions"
+    },
+    "types": {
+      "multiple_choice": "Multiple choice",
+      "true_false": "True or false",
+      "fill_gaps": "Fill in the gaps",
+      "matching": "Matching",
+      "ordering": "Ordering",
+      "short_answer": "Short answer",
+      "long_answer": "Long answer",
+      "calculation": "Calculation",
+      "table_completion": "Complete the table",
+      "classify": "Classify",
+      "wordsearch": "Word search",
+      "label_image": "Label the picture"
+    },
+    "view": {
+      "answer": "Answer",
+      "explanation": "Explanation",
+      "criteria": "Marking criteria",
+      "trueFalseBlank": "T / F",
+      "correction": "Correction: {text}",
+      "wordBank": "Word bank",
+      "words": "Words to find",
+      "gridOnSave": "The grid updates once your changes are saved."
+    },
+    "editor": {
+      "formula": "Formula",
+      "title": "Edit exercise {number}",
+      "readingTitle": "Edit reading passage",
+      "type": "Type",
+      "prompt": "Question",
+      "promptGapsHint": "Type ___ (three underscores) wherever students fill in a word.",
+      "options": "Options",
+      "addOption": "Add option",
+      "removeOption": "Remove",
+      "markCorrect": "Mark as correct",
+      "multipleCorrect": "More than one correct answer",
+      "statements": "Statements",
+      "addStatement": "Add statement",
+      "trueShort": "T",
+      "falseShort": "F",
+      "correctionPlaceholder": "Correction for a false statement (optional)",
+      "gaps": "Gap answers",
+      "gapN": "Gap {n}",
+      "noGaps": "There are no gaps (___) in the question yet.",
+      "wordBank": "Word bank (optional)",
+      "addWord": "Add word",
+      "wordsHint": "Up to {max} words of at most {letters} letters. Accents and spaces are left out of the grid.",
+      "wordNotInGrid": "This word won't go into the grid (repeated or under 2 letters).",
+      "wordN": "Word {n}",
+      "words": "Words",
+      "leftColumn": "Column A",
+      "rightColumn": "Column B",
+      "addItem": "Add item",
+      "pairs": "Correct matches",
+      "pairNone": "No match",
+      "items": "Items (in the order shown)",
+      "correctOrder": "Correct order",
+      "moveUp": "Move up",
+      "moveDown": "Move down",
+      "modelAnswer": "Model answer",
+      "criteria": "Marking criteria (optional)",
+      "addCriterion": "Add level",
+      "criterionLevel": "Level",
+      "criterionPoints": "Pts",
+      "criterionDescriptor": "Descriptor",
+      "explanation": "Explanation for the answer key (optional)",
+      "points": "Points",
+      "pointsPlaceholder": "No points",
+      "answerSpace": "Answer space",
+      "spaceLines": "Lines",
+      "spaceBox": "Box",
+      "spaceNone": "None",
+      "lineCount": "Number of lines",
+      "image": "Image",
+      "addImage": "Add image",
+      "replaceImage": "Replace image",
+      "removeImage": "Remove image",
+      "goals": "Learning goals",
+      "close": "Done",
+      "labels": "Numbers on the picture",
+      "pinHint": "Pick a number, then tap the picture to place it. Unplaced numbers only show in the list.",
+      "labelsNeedImage": "Add a picture to place the numbers.",
+      "placePin": "Place number {n} on the picture",
+      "selectPin": "Pick number {n}",
+      "pinPlaced": "Placed on the picture",
+      "labelHint": "Clue for the student (optional)",
+      "labelAnswer": "Answer",
+      "addLabel": "Add a number",
+      "table": "Table",
+      "tableHint": "Mark the cells students fill in as blanks and type the answer in them. Up to {cols} columns and {rows} rows.",
+      "headerN": "Column {n}",
+      "cellAnswer": "Answer",
+      "markBlank": "Mark as blank",
+      "unmarkBlank": "Unmark blank",
+      "addRow": "Add row",
+      "addColumn": "Add column",
+      "removeRow": "Remove row",
+      "removeColumn": "Remove column",
+      "addTable": "Create table",
+      "categories": "Boxes",
+      "categoryN": "Box {n}",
+      "addCategory": "Add box",
+      "addCategories": "Create boxes",
+      "classifyItems": "Items to sort",
+      "itemN": "Item {n}",
+      "itemCategory": "Item's box",
+      "noCategory": "No box",
+      "tooLong": "This field has reached its character limit.",
+      "optionLabel": "Option {letter}",
+      "cellLabel": "Cell in row {row}, column {column}"
+    },
+    "versionPreviewEmpty": "This version has no exercises.",
+    "chatSaveFirst": "Couldn't save your changes; try again before using the assistant.",
+    "shareSaveFirst": "Your changes couldn't be saved. Try again before sharing.",
+    "titleSaveFailed": "Couldn't save the title. Try again.",
+    "chatLocked": "The assistant is revising the document…",
+    "chatButton": "Chat",
+    "missing": {
+      "answer": "Model answer missing",
+      "correct": "Correct option not marked",
+      "truth": "True/false not set",
+      "pairs": "Correct matches missing",
+      "order": "Correct order missing",
+      "gaps": "Gap answers missing",
+      "options": "Needs at least 2 options",
+      "labels": "Add at least one number to the picture",
+      "image": "The picture to label is missing",
+      "pins": "Place the numbers on the picture",
+      "words": "Add at least 3 words",
+      "blanks": "Mark at least one cell as a blank",
+      "cells": "Some blanks in the table have no answer",
+      "categories": "Needs at least 2 boxes",
+      "classes": "Some items have no box yet"
+    },
+    "exportDialog": {
+      "incomplete": "{count, plural, one {Question {numbers} is incomplete} other {Questions {numbers} are incomplete}} (no statement or no answer). It will print like that.",
+      "title": {
+        "test": "Export test",
+        "worksheet": "Export worksheet",
+        "quiz": "Export quiz"
+      },
+      "subtitle": "Both files are generated together. Download either or both.",
+      "formatLabel": "File format",
+      "files": {
+        "test": {
+          "student": "Test",
+          "teacher": "Marking guide"
+        },
+        "worksheet": {
+          "student": "Worksheet",
+          "teacher": "Answer key"
+        },
+        "quiz": {
+          "student": "Quiz",
+          "teacher": "Answers"
+        }
+      },
+      "forStudents": "For your students",
+      "forYou": "For you",
+      "preparing": "Preparing the files…",
+      "download": "Download",
+      "downloadBoth": "Download both",
+      "busy": {
+        "test": "Wait for the chat to finish editing the test.",
+        "worksheet": "Wait for the chat to finish editing the worksheet.",
+        "quiz": "Wait for the chat to finish editing the quiz."
+      },
+      "saveFailed": "Your latest changes couldn't be saved. Try again so the files match what you see.",
+      "failed": "The files couldn't be generated.",
+      "revising": "We're updating this document. Try exporting again in a minute.",
+      "rateLimited": "That's a lot of exports in a short time. Wait a minute and try again.",
+      "retry": "Try again"
+    },
+    "tabs": {
+      "label": "Sheet version",
+      "student": {
+        "title": "Student sheet",
+        "hint": "what the student gets"
+      },
+      "answers": {
+        "title": "Answers",
+        "hint": "just for you"
+      },
+      "toCheck": "{count, plural, one {# to check} other {# to check}}"
+    }
+  },
+  "math": {
+    "editLabel": "Edit formula",
+    "loading": "Loading the formula editor",
+    "blank": "Blank",
+    "hint": "Type 3/4 for a fraction, x^2 for an exponent.",
+    "cancel": "Cancel",
+    "save": "Save",
+    "insert": "Formula",
+    "loadFailed": "The formula editor couldn't open.",
+    "retry": "Try again"
   }
 }

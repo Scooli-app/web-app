@@ -50,6 +50,10 @@ export interface ImageInsertResult {
 interface Props {
   open: boolean;
   documentId: string;
+  /** True when replacing an existing image (changes the dialog title). */
+  replacing?: boolean;
+  /** Suggested first search (active slide title, then document title). Empty = localized default. */
+  initialSearchQuery?: string;
   onClose: () => void;
   onInsert: (result: ImageInsertResult) => void;
   onGenerate: (prompt: string) => void;
@@ -237,22 +241,48 @@ function StockThumbnail({ image, contain }: { image: StockImage; contain: boolea
   );
 }
 
+/** Longest search text we send: matches the input's maxLength, so suggestions never exceed it. */
+const MAX_QUERY_LENGTH = 200;
+
+/**
+ * Cleans a suggested search (slide or document title) before it becomes the query:
+ * strips control characters, collapses whitespace and bounds the length.
+ * Returns "" when nothing usable remains, so the caller can fall back to the default.
+ */
+export function cleanSearchSuggestion(raw: string | null | undefined): string {
+  if (!raw) return "";
+  return raw
+    .replace(/[\u0000-\u001f\u007f]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, MAX_QUERY_LENGTH)
+    .trim();
+}
+
+/** Opens illustrations by default: they suit slides best, and photos are rarely educational diagrams. */
+const DEFAULT_FILTER: FilterChip = "illustration";
+
 function ImagesTab({
   documentId,
+  initialSearchQuery,
   onInsert,
 }: {
   documentId: string;
+  initialSearchQuery?: string;
   onInsert: (r: ImageInsertResult) => void;
 }) {
   const t = useTranslations("editor.imagePickerModal");
   const locale = useLocale();
-  const [query, setQuery] = useState("");
-  const [filter, setFilter] = useState<FilterChip>("all");
+  // Captured once per tab mount so a re-render with a new slide does not silently replace the query.
+  const [defaultQuery] = useState(
+    () => cleanSearchSuggestion(initialSearchQuery) || cleanSearchSuggestion(t("imagesDefaultQuery")),
+  );
+  const [query, setQuery] = useState(defaultQuery);
+  const [filter, setFilter] = useState<FilterChip>(DEFAULT_FILTER);
   const [submittedQuery, setSubmittedQuery] = useState("");
   const [results, setResults] = useState<StockImage[]>([]);
   const [providers, setProviders] = useState<string[]>([]);
   const [failedProviders, setFailedProviders] = useState<string[]>([]);
-  const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   const [searching, setSearching] = useState(false);
   /** Message key for a failed first page (shown in place of the grid). */
@@ -261,8 +291,19 @@ function ImagesTab({
   const [moreErrorKey, setMoreErrorKey] = useState<string | null>(null);
   const [lastRequest, setLastRequest] = useState<{ q: string; chip: FilterChip } | null>(null);
   const [insertingId, setInsertingId] = useState<string | null>(null);
-  // Ignore responses to searches that a newer query or filter has superseded.
+
+  // Refs read by the async paths and the observer, so they never act on stale state.
   const requestSeq = useRef(0);
+  const submittedRef = useRef<{ q: string; chip: FilterChip }>({ q: defaultQuery, chip: DEFAULT_FILTER });
+  const pageRef = useRef(1);
+  const hasMoreRef = useRef(false);
+  /** Single-flight guard: true from the moment a "load more" starts until it settles. */
+  const pendingMoreRef = useRef(false);
+  /** Set by a failed "load more"; the observer stops until the user presses the button. */
+  const moreErrorRef = useRef(false);
+  const loadMoreRef = useRef<() => void>(() => undefined);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const sentinelRef = useRef<HTMLDivElement>(null);
   // The modal can be closed while an import is in flight: don't insert into a closed editor.
   const mounted = useRef(true);
   useEffect(() => {
@@ -274,67 +315,137 @@ function ImagesTab({
 
   const runSearch = useCallback(
     async (q: string, chip: FilterChip, nextPage: number) => {
+      const isMore = nextPage > 1;
+      if (isMore) {
+        if (pendingMoreRef.current) return;
+        pendingMoreRef.current = true;
+      } else {
+        submittedRef.current = { q, chip };
+      }
       const seq = ++requestSeq.current;
-      setSearching(true);
-      setMoreErrorKey(null);
-      if (nextPage === 1) {
-        setErrorKey(null);
-        setResults([]);
-        setLastRequest({ q, chip });
-      }
-      if (isOffline()) {
-        if (nextPage === 1) setErrorKey("imagesErrorOffline");
-        else setMoreErrorKey("imagesErrorOffline");
-        setSearching(false);
-        return;
-      }
       try {
+        setSearching(true);
+        setMoreErrorKey(null);
+        moreErrorRef.current = false;
+        if (!isMore) {
+          setErrorKey(null);
+          setResults([]);
+          setHasMore(false);
+          hasMoreRef.current = false;
+          setLastRequest({ q, chip });
+        }
+        if (isOffline()) {
+          if (!isMore) setErrorKey("imagesErrorOffline");
+          else {
+            setMoreErrorKey("imagesErrorOffline");
+            moreErrorRef.current = true;
+          }
+          return;
+        }
         const res = await searchStockImages(documentId, q, {
           type: chip === "all" ? undefined : chip,
           page: nextPage,
           locale,
         });
         if (seq !== requestSeq.current) return;
-        setResults((prev) => (nextPage === 1 ? res.results : [...prev, ...res.results]));
+        setResults((prev) => {
+          const seen = new Set(isMore ? prev.map((r) => r.id) : []);
+          const fresh = res.results.filter((r) => {
+            if (seen.has(r.id)) return false;
+            seen.add(r.id);
+            return true;
+          });
+          return isMore ? [...prev, ...fresh] : fresh;
+        });
         setProviders((prev) =>
-          nextPage === 1 ? res.providers : Array.from(new Set([...prev, ...res.providers])),
+          isMore ? Array.from(new Set([...prev, ...res.providers])) : res.providers,
         );
         setFailedProviders(res.failedProviders ?? []);
-        setPage(res.page);
+        pageRef.current = res.page;
         setHasMore(res.hasMore);
+        hasMoreRef.current = res.hasMore;
         setSubmittedQuery(q);
       } catch (err) {
         if (seq !== requestSeq.current) return;
         const key = stockErrorKey(err, "search");
-        if (nextPage === 1) {
+        if (!isMore) {
           setErrorKey(key);
           setSubmittedQuery(q);
         } else {
+          // Keep the results so far; the same page is retried on the next press.
           setMoreErrorKey(key === "imagesError" ? "imagesLoadMoreError" : key);
+          moreErrorRef.current = true;
         }
       } finally {
+        if (isMore) pendingMoreRef.current = false;
         if (seq === requestSeq.current) setSearching(false);
       }
     },
     [documentId, locale],
   );
 
-  const retry = () => {
-    if (lastRequest) void runSearch(lastRequest.q, lastRequest.chip, 1);
-  };
+  /** Loads the page after the last one shown. `manual` = the user pressed the button (retries a failure). */
+  const loadMore = useCallback(
+    (manual: boolean) => {
+      if (!hasMoreRef.current) return;
+      if (moreErrorRef.current && !manual) return;
+      void runSearch(submittedRef.current.q, submittedRef.current.chip, pageRef.current + 1);
+    },
+    [runSearch],
+  );
+
+  // Automatic first page on mount, and again when the document or locale changes. The
+  // last submitted search is kept, so switching document does not discard the teacher's query.
+  useEffect(() => {
+    void runSearch(submittedRef.current.q, submittedRef.current.chip, 1);
+    const seqRef = requestSeq;
+    const pendingRef = pendingMoreRef;
+    return () => {
+      // Responses from the previous document/locale must not land in this one.
+      seqRef.current++;
+      pendingRef.current = false;
+    };
+  }, [documentId, locale, runSearch]);
+
+  // The observer watches the scroll container (not the window) and re-arms whenever the list grows.
+  useEffect(() => {
+    loadMoreRef.current = () => loadMore(false);
+  }, [loadMore]);
+
+  useEffect(() => {
+    const target = sentinelRef.current;
+    if (!hasMore || !target || typeof IntersectionObserver === "undefined") return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) loadMoreRef.current();
+      },
+      { root: scrollRef.current, rootMargin: "120px" },
+    );
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [hasMore, results.length]);
 
   const handleSearch = () => {
-    const q = query.trim();
-    if (!q) return;
+    const q = cleanSearchSuggestion(query);
+    if (!q) {
+      // Empty submit = back to the default suggestions, not a silent no-op.
+      setQuery(defaultQuery);
+      setFilter(DEFAULT_FILTER);
+      void runSearch(defaultQuery, DEFAULT_FILTER, 1);
+      return;
+    }
     void runSearch(q, filter, 1);
+  };
+
+  const retry = () => {
+    if (lastRequest) void runSearch(lastRequest.q, lastRequest.chip, 1);
   };
 
   const handleFilter = (chip: FilterChip) => {
     if (chip === filter) return;
     setFilter(chip);
     // The filter applies to what is in the box now, even if it was not submitted yet.
-    const q = query.trim() || submittedQuery;
-    if (q) void runSearch(q, chip, 1);
+    void runSearch(cleanSearchSuggestion(query) || defaultQuery, chip, 1);
   };
 
   const handlePick = async (image: StockImage) => {
@@ -405,7 +516,7 @@ function ImagesTab({
             className="w-full rounded-lg border border-border bg-muted/30 py-2 pl-9 pr-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
           />
         </div>
-        <Button type="submit" disabled={!query.trim() || searching} className="gap-2">
+        <Button type="submit" disabled={searching} className="gap-2">
           {searching && results.length === 0 ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
@@ -460,13 +571,20 @@ function ImagesTab({
               )}
             </>
           ) : submittedQuery ? (
-            t("imagesNoResults", { query: submittedQuery })
+            <>
+              <p>{t("imagesNoResults", { query: submittedQuery })}</p>
+              {filter !== "all" && (
+                <Button variant="outline" size="sm" onClick={() => handleFilter("all")}>
+                  {t("imagesShowAllTypes")}
+                </Button>
+              )}
+            </>
           ) : (
             t("imagesEmptyHint")
           )}
         </div>
       ) : (
-        <div className="max-h-[340px] overflow-y-auto pr-1">
+        <div ref={scrollRef} className="max-h-[340px] overflow-y-auto pr-1">
           <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {results.map((image) => {
               const inserting = insertingId === image.id;
@@ -536,7 +654,7 @@ function ImagesTab({
             })}
           </ul>
           {hasMore && (
-            <div className="mt-3 flex flex-col items-center gap-1.5">
+            <div ref={sentinelRef} className="mt-3 flex flex-col items-center gap-1.5">
               {moreErrorKey && (
                 <p role="alert" className="text-center text-xs text-destructive">
                   {t(moreErrorKey)}
@@ -546,7 +664,7 @@ function ImagesTab({
                 variant="outline"
                 size="sm"
                 disabled={searching}
-                onClick={() => void runSearch(submittedQuery, filter, page + 1)}
+                onClick={() => loadMore(true)}
                 className="gap-2"
               >
                 {searching ? (
@@ -807,7 +925,7 @@ function UrlTab({ onInsert }: { onInsert: (r: ImageInsertResult) => void }) {
 /* --------------------------------------------------------------------------
  * Main modal
  * -------------------------------------------------------------------------- */
-export function ImagePickerModal({ open, documentId, onClose, onInsert, onGenerate }: Props) {
+export function ImagePickerModal({ open, documentId, replacing = false, initialSearchQuery, onClose, onInsert, onGenerate }: Props) {
   const t = useTranslations("editor.imagePickerModal");
   const [tab, setTab] = useState<Tab>("generate");
 
@@ -822,7 +940,7 @@ export function ImagePickerModal({ open, documentId, onClose, onInsert, onGenera
         <DialogHeader className="px-4 pb-0 pt-4">
           <DialogTitle className="flex items-center gap-2 text-base">
             <ImageIcon className="h-4 w-4 text-primary" />
-            {t("dialogTitle")}
+            {t(replacing ? "replaceDialogTitle" : "dialogTitle")}
           </DialogTitle>
         </DialogHeader>
 
@@ -858,7 +976,7 @@ export function ImagePickerModal({ open, documentId, onClose, onInsert, onGenera
             <GenerateTab onClose={onClose} onGenerate={onGenerate} />
           )}
           {tab === "images" && (
-            <ImagesTab documentId={documentId} onInsert={handleInsert} />
+            <ImagesTab documentId={documentId} initialSearchQuery={initialSearchQuery} onInsert={handleInsert} />
           )}
           {tab === "upload" && (
             <UploadTab documentId={documentId} onInsert={handleInsert} />

@@ -1,5 +1,8 @@
 "use client";
 
+import ClassesLoading from "./loading";
+import { ClassListSkeleton } from "@/components/calendar/ClassListSkeleton";
+import { MAX_LENGTHS } from "@/shared/config/constants";
 import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import Link from "next/link";
@@ -16,10 +19,13 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { EmptyState } from "@/components/ui/empty-state";
+import { LoadError } from "@/components/ui/load-error";
 
 import { translateSubject, TIMETABLE_COLORS } from "@/components/document-creation/constants";
+import { formatClassName } from "@/shared/utils/className";
 import { Routes, type Document } from "@/shared/types";
-import { selectIsHorarioPlanosEnabled } from "@/store/features/selectors";
+import { selectIsCurriculumPlanEnabled, selectIsHorarioPlanosEnabled } from "@/store/features/selectors";
 import { useFeatureAccess } from "@/components/feature/useFeatureAccess";
 import { FeatureUnavailable } from "@/components/feature/FeatureUnavailable";
 import { fetchTimetables, deleteTimetable, updateTimetable } from "@/store/timetable/timetableSlice";
@@ -138,7 +144,18 @@ function EditDialog({ timetable, isSaving, onSave, onCancel }: EditDialogProps) 
   const [color, setColor] = useState("");
   const [plans, setPlans] = useState<Document[]>([]);
   const [plansLoading, setPlansLoading] = useState(false);
+  const [plansFailed, setPlansFailed] = useState(false);
+  const planEnabled = useSelector(selectIsCurriculumPlanEnabled);
   const [linkedPlanId, setLinkedPlanId] = useState<string>("");
+
+  const loadPlans = () => {
+    setPlansLoading(true);
+    setPlansFailed(false);
+    getDocuments({ page: 1, limit: 50, filters: { documentType: "curriculum_plan" } })
+      .then((res) => setPlans(res.documents ?? []))
+      .catch(() => setPlansFailed(true))
+      .finally(() => setPlansLoading(false));
+  };
 
   useEffect(() => {
     if (!timetable) return;
@@ -146,11 +163,7 @@ function EditDialog({ timetable, isSaving, onSave, onCancel }: EditDialogProps) 
     setClassLabel(timetable.classLabel ?? "");
     setColor(timetable.color ?? "#7F77DD");
     setLinkedPlanId(timetable.linkedCurriculumPlan ?? "");
-    setPlansLoading(true);
-    getDocuments({ page: 1, limit: 50, filters: { documentType: "curriculum_plan" } })
-      .then((res) => setPlans(res.documents ?? []))
-      .catch(() => setPlans([]))
-      .finally(() => setPlansLoading(false));
+    loadPlans();
   }, [timetable?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!timetable) return null;
@@ -188,6 +201,7 @@ function EditDialog({ timetable, isSaving, onSave, onCancel }: EditDialogProps) 
               <Label>{t("editDialog.nameLabel")}</Label>
               <Input
                 value={title}
+                maxLength={MAX_LENGTHS.TURMA_TITLE}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder={timetable.title}
               />
@@ -199,6 +213,7 @@ function EditDialog({ timetable, isSaving, onSave, onCancel }: EditDialogProps) 
                 <Label>{t("editDialog.classLabel")}</Label>
                 <Input
                   placeholder={t("editDialog.classPlaceholder")}
+                  maxLength={MAX_LENGTHS.CLASS_LABEL}
                   value={classLabel}
                   onChange={(e) => setClassLabel(e.target.value)}
                 />
@@ -223,12 +238,22 @@ function EditDialog({ timetable, isSaving, onSave, onCancel }: EditDialogProps) 
             </div>
 
             {/* Planificação ligada */}
+            {(planEnabled || plans.length > 0 || plansFailed) && (
             <div className="space-y-1.5">
               <Label>{t("editDialog.linkedPlanLabel")}</Label>
               {plansLoading ? (
                 <div className="flex items-center gap-2 py-1 text-xs text-muted-foreground">
                   <Loader2 className="h-3 w-3 animate-spin" />{t("editDialog.loadingPlans")}
                 </div>
+              ) : plansFailed ? (
+                <LoadError onRetry={loadPlans} />
+              ) : plans.length === 0 ? (
+                <p className="text-xs text-muted-foreground">
+                  {t("editDialog.noPlans")}{" "}
+                  <Link href={Routes.CURRICULUM_PLAN_NEW} className="font-medium text-primary hover:underline">
+                    {t("editDialog.createPlan")}
+                  </Link>
+                </p>
               ) : (
                 <select
                   className="h-9 w-full rounded-lg border border-input bg-background px-2 text-sm"
@@ -246,6 +271,7 @@ function EditDialog({ timetable, isSaving, onSave, onCancel }: EditDialogProps) 
                 </select>
               )}
             </div>
+            )}
           </div>
         </div>
 
@@ -283,7 +309,6 @@ interface SequenceCardProps {
 
 function SequenceCard({ timetable, onDelete, onEdit }: SequenceCardProps) {
   const t = useTranslations("calendar.classesList");
-  const tShared = useTranslations("calendar.shared");
   const tTimetable = useTranslations("timetable");
   const rawLocale = useLocale();
   const locale = isSupportedLocale(rawLocale) ? rawLocale : defaultLocale;
@@ -303,7 +328,6 @@ function SequenceCard({ timetable, onDelete, onEdit }: SequenceCardProps) {
   return (
     <div
       className="group flex items-center gap-4 rounded-lg border border-border bg-card p-4 transition-shadow hover:shadow-sm"
-      style={{ borderLeftWidth: "4px", borderLeftColor: color }}
     >
       <div
         className="h-3 w-3 shrink-0 rounded-full"
@@ -312,14 +336,16 @@ function SequenceCard({ timetable, onDelete, onEdit }: SequenceCardProps) {
 
       <Link href={`${Routes.CALENDAR}/${timetable.id}`} className="min-w-0 flex-1">
         <div className="flex flex-col gap-0.5">
+          {/* Same name as everywhere else ("2.º Matemática · A"); the turma's own title only when it differs. */}
           <p className="truncate font-medium text-foreground transition-colors group-hover:text-primary">
-            {timetable.title}
+            {formatClassName(timetable, {
+              gradeShort: (grade) => tTimetable("gradeShort", { grade }),
+              subject: translateSubject,
+            })}
           </p>
-          <p className="text-sm text-muted-foreground">
-            {translateSubject(timetable.subject)}
-            {timetable.gradeLevel ? ` · ${tTimetable("gradeYear", { grade: timetable.gradeLevel })}` : ""}
-            {timetable.classLabel ? ` · ${tShared("classInline", { label: timetable.classLabel })}` : ""}
-          </p>
+          {timetable.title && timetable.title !== translateSubject(timetable.subject) && (
+            <p className="truncate text-sm text-muted-foreground">{timetable.title}</p>
+          )}
           <p className="text-xs text-muted-foreground/70">{periodLabel}</p>
         </div>
       </Link>
@@ -367,7 +393,7 @@ function SequenceCard({ timetable, onDelete, onEdit }: SequenceCardProps) {
 export default function SequenciasPage() {
   const t = useTranslations("calendar");
   const { loaded: featuresLoaded, enabled } = useFeatureAccess(selectIsHorarioPlanosEnabled);
-  const { timetables, isLoading } = useSelector((state: RootState) => state.timetable);
+  const { timetables, isLoading, error } = useSelector((state: RootState) => state.timetable);
   const dispatch = useAppDispatch();
   const newClassGate = useNewClassGate();
 
@@ -380,6 +406,16 @@ export default function SequenciasPage() {
     if (!enabled) return; // gated users get the FeatureUnavailable screen below
     dispatch(fetchTimetables());
   }, [enabled, dispatch]);
+
+  // ?edit=<id> (the turma's "Ligar uma planificação"): opens that turma's edit dialog once the list is here.
+  const [editParam, setEditParam] = useState<string | null>(null);
+  useEffect(() => setEditParam(new URLSearchParams(window.location.search).get("edit")), []);
+  useEffect(() => {
+    const target = editParam ? timetables.find((tt) => tt.id === editParam) : undefined;
+    if (!target) return;
+    setPendingEdit(target);
+    setEditParam(null);
+  }, [editParam, timetables]);
 
   const handleDeleteConfirm = async (deleteDocuments: boolean) => {
     if (!pendingDelete) return;
@@ -419,7 +455,7 @@ export default function SequenciasPage() {
     }
   };
 
-  if (!featuresLoaded) return null;
+  if (!featuresLoaded) return <ClassesLoading />;
   if (!enabled)
     return (
       <FeatureUnavailable
@@ -453,25 +489,23 @@ export default function SequenciasPage() {
       </div>
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-16">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-        </div>
+        <ClassListSkeleton />
+      ) : timetables.length === 0 && error ? (
+        <LoadError onRetry={() => dispatch(fetchTimetables())} />
       ) : timetables.length === 0 ? (
-        <div className="flex flex-col items-center justify-center gap-4 rounded-lg border border-dashed border-border py-20 text-center">
-          <CalendarDays className="h-12 w-12 text-muted-foreground" />
-          <div>
-            <p className="font-medium text-foreground">{t("shared.emptyTitle")}</p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {t("shared.emptyDescription")}
-            </p>
-          </div>
-          <Button asChild>
-            <Link href={Routes.CALENDAR_NEW} onClick={newClassGate.onClick}>
-              <Plus className="mr-2 h-4 w-4" />
-              {t("shared.createClass")}
-            </Link>
-          </Button>
-        </div>
+        <EmptyState
+          icon={CalendarDays}
+          title={t("shared.emptyTitle")}
+          description={t("shared.emptyDescription")}
+          actions={
+            <Button asChild>
+              <Link href={Routes.CALENDAR_NEW} onClick={newClassGate.onClick}>
+                <Plus className="mr-2 h-4 w-4" />
+                {t("shared.createClass")}
+              </Link>
+            </Button>
+          }
+        />
       ) : (
         <div className="space-y-2">
           {timetables.map((tt) => (

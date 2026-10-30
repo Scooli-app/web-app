@@ -3,7 +3,9 @@
 import { Lock, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { useAppDispatch } from "@/store/hooks";
+import { LoadError } from "@/components/ui/load-error";
+import { fetchFeatureFlags } from "@/store/features/featuresSlice";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setUpgradeModalOpen } from "@/store/ui/uiSlice";
 import { useTranslations } from "next-intl";
 
@@ -22,6 +24,19 @@ interface FeatureUnavailableProps {
 export function FeatureUnavailable({ title, description }: FeatureUnavailableProps) {
   const dispatch = useAppDispatch();
   const t = useTranslations("featureGate");
+  // A failed /features fetch leaves every flag off; that is not "not on your plan".
+  const flagsFailed = useAppSelector((state) => state.features.error !== null);
+
+  if (flagsFailed) {
+    return (
+      <div className="flex min-h-[60vh] w-full items-center justify-center p-6">
+        <LoadError
+          className="max-w-md"
+          onRetry={() => void dispatch(fetchFeatureFlags())}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-[60vh] w-full items-center justify-center p-6">

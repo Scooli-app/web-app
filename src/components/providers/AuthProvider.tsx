@@ -1,5 +1,7 @@
 "use client";
 
+import { dashboardCache } from "@/lib/dashboardCache";
+import { getTokenOrgId } from "@/lib/tokenSubject";
 import { setApiTokenGetter } from "@/services/api/client";
 import { useAuth, useUser } from "@clerk/nextjs";
 import posthog from "posthog-js";
@@ -10,17 +12,19 @@ export default function AuthProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const { getToken, isLoaded } = useAuth();
+  const { getToken, isLoaded, orgId } = useAuth();
   const { user } = useUser();
 
   // Use a ref so the API client always calls the latest getToken
   // without waiting for React effect cycles on re-renders.
   const getTokenRef = useRef(getToken);
+  const orgIdRef = useRef(orgId);
   // undefined = effect hasn't run yet; null = was unauthenticated; string = previous user id
   const prevUserIdRef = useRef<string | null | undefined>(undefined);
   useEffect(() => {
     getTokenRef.current = getToken;
-  }, [getToken]);
+    orgIdRef.current = orgId;
+  }, [getToken, orgId]);
 
   useLayoutEffect(() => {
     if (!isLoaded) {
@@ -34,6 +38,11 @@ export default function AuthProvider({
     // Clerk getToken via the ref, avoiding stale closures.
     const tokenGetter = async () => {
       try {
+        // Clerk's cached token is fine unless it still carries the previous
+        // organization (right after a workspace switch). Skipping the cache on
+        // every call cost a Clerk round trip per API request and hit 429s.
+        const cached = await getTokenRef.current(template ? { template } : undefined);
+        if (!cached || getTokenOrgId(cached) === (orgIdRef.current ?? null)) return cached;
         return await getTokenRef.current(
           template ? { template, skipCache: true } : { skipCache: true },
         );
@@ -51,6 +60,12 @@ export default function AuthProvider({
 
   useEffect(() => {
     if (!isLoaded) return;
+    const nextUserId = user?.id ?? null;
+    if (prevUserIdRef.current !== undefined && prevUserIdRef.current !== nextUserId) {
+      // Sign-out or account switch without a page reload: drop the previous
+      // user's dashboard data instead of keeping it in memory.
+      dashboardCache.clear();
+    }
     if (user) {
       posthog.identify(user.id, {
         email: user.primaryEmailAddress?.emailAddress,
@@ -83,7 +98,7 @@ export default function AuthProvider({
       // a bare `!== null` check treated "never signed in" the same as "just signed out".
       posthog.reset();
     }
-    prevUserIdRef.current = user?.id ?? null;
+    prevUserIdRef.current = nextUserId;
   }, [isLoaded, user]);
 
   return children;

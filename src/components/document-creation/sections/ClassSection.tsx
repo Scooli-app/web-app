@@ -2,7 +2,6 @@
 
 import { Card } from "@/components/ui/card";
 import { ChoiceChip } from "@/components/ui/choice-chip";
-import { SegmentedControl } from "@/components/ui/segmented-control";
 import {
   Select,
   SelectContent,
@@ -12,7 +11,7 @@ import {
 } from "@/components/ui/select";
 import type { EducationType, TeachingProfile } from "@/shared/types/teaching-profile";
 import { cn } from "@/shared/utils/utils";
-import { Briefcase, ChevronDown, ChevronUp, GraduationCap, School } from "lucide-react";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { GRADE_GROUPS, translateGradeGroupLabel, translateGradeLabel } from "../constants";
@@ -22,6 +21,7 @@ import {
   type VocationalCourseOption,
 } from "../teaching-profile-preferences";
 import type { SubjectChoiceUpdateFn } from "../useSubjectChoice";
+import { FieldHeading } from "./FormCard";
 import { QuickAddVocationalCourseDialog } from "./QuickAddVocationalCourseDialog";
 
 const SECTION_LABEL_CLASS =
@@ -65,33 +65,28 @@ function YearPicker({ schoolYear, preferredSchoolYears, onSelect }: YearPickerPr
   const toggleClass =
     "flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground";
 
+  // The teacher's own years in one row, the "other years" switch as its last item.
   return (
-    <div className="space-y-3">
+    <div className="space-y-2.5">
       {hasPreferredYears && (
-        <div>
-          <p className={SECTION_LABEL_CLASS}>{t("myYearsGroupLabel")}</p>
-          <div className="flex flex-wrap gap-1.5 sm:gap-2">
-            {GRADE_GROUPS.flatMap((group) => group.grades as readonly { id: string }[])
-              .filter((grade) => preferred.has(parseInt(grade.id)))
-              .map(renderGrade)}
-          </div>
+        <div className="flex flex-wrap items-center gap-1.5">
+          {GRADE_GROUPS.flatMap((group) => group.grades as readonly { id: string }[])
+            .filter((grade) => preferred.has(parseInt(grade.id)))
+            .map(renderGrade)}
+          <button
+            type="button"
+            onClick={() => setExpanded(!showAllYears)}
+            aria-expanded={showAllYears}
+            className={toggleClass}
+          >
+            {showAllYears ? (
+              <ChevronUp className="h-3.5 w-3.5" aria-hidden />
+            ) : (
+              <ChevronDown className="h-3.5 w-3.5" aria-hidden />
+            )}
+            {showAllYears ? t("hideOtherYears") : t("showOtherYears")}
+          </button>
         </div>
-      )}
-
-      {hasPreferredYears && (
-        <button
-          type="button"
-          onClick={() => setExpanded(!showAllYears)}
-          aria-expanded={showAllYears}
-          className={toggleClass}
-        >
-          {showAllYears ? (
-            <ChevronUp className="h-3.5 w-3.5" aria-hidden />
-          ) : (
-            <ChevronDown className="h-3.5 w-3.5" aria-hidden />
-          )}
-          {showAllYears ? t("hideOtherYears") : t("showOtherYears")}
-        </button>
       )}
 
       {showAllYears && (
@@ -202,7 +197,6 @@ export function ClassSection({
   const isVocational = mode === "vocational" && vocationalCourses.length > 0;
   const selectedCourse =
     vocationalCourses.find((course) => course.code === vocationalCourseCode) ?? vocationalCourses[0];
-  const Icon = isVocational ? Briefcase : GraduationCap;
 
   const handleModeChange = (nextMode: EducationType) => {
     if (nextMode === "vocational" && vocationalCourses.length === 0) {
@@ -213,29 +207,37 @@ export function ClassSection({
   };
 
   return (
-    <Card className={cn("p-4 sm:p-6 border-border shadow-sm hover:shadow-md transition-shadow", className)}>
-      <div className="space-y-4">
-        <div className="flex items-center gap-2 sm:gap-3">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent sm:h-10 sm:w-10 sm:rounded-xl">
-            <Icon className="h-4 w-4 text-primary sm:h-5 sm:w-5" />
-          </div>
-          <h2 className="text-base font-semibold text-foreground sm:text-lg">
-            {isVocational ? t("titleVocational") : tGrade("title")}{" "}
-            <span className="text-destructive">*</span>
-          </h2>
-        </div>
-
-        {isVocationalFeatureEnabled && (
-          <SegmentedControl
-            value={isVocational ? "vocational" : "regular"}
-            onChange={handleModeChange}
-            ariaLabel={t("modeLabel")}
-            options={[
-              { value: "regular", label: t("modeRegular"), icon: School },
-              { value: "vocational", label: t("modeVocational"), icon: Briefcase },
-            ]}
-          />
-        )}
+    <Card className={cn("gap-0 border-border p-3 py-3 shadow-sm sm:p-4", className)}>
+      <div className="space-y-3">
+        <FieldHeading
+          title={isVocational ? t("titleVocational") : tGrade("title")}
+          required
+          aside={
+            isVocationalFeatureEnabled ? (
+              // The kind of teaching as a small switch beside the heading, not a full-width bar.
+              <div className="flex shrink-0 rounded-md border border-border p-0.5 text-xs" role="radiogroup" aria-label={t("modeLabel")}>
+                {(["regular", "vocational"] as const).map((value) => {
+                  const active = (isVocational ? "vocational" : "regular") === value;
+                  return (
+                    <button
+                      key={value}
+                      type="button"
+                      role="radio"
+                      aria-checked={active}
+                      onClick={() => handleModeChange(value)}
+                      className={cn(
+                        "rounded px-2 py-0.5 font-medium transition-colors",
+                        active ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground",
+                      )}
+                    >
+                      {value === "regular" ? t("modeRegular") : t("modeVocational")}
+                    </button>
+                  );
+                })}
+              </div>
+            ) : undefined
+          }
+        />
 
         {isVocationalFeatureEnabled && isVocational && selectedCourse ? (
           <div className="space-y-4">

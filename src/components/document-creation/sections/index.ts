@@ -1,8 +1,12 @@
 export { AdditionalDetailsSection } from "./AdditionalDetailsSection";
 export { ClassSection } from "./ClassSection";
 export { DurationSection } from "./DurationSection";
+export { FieldHeading, FormCard, OptionRow } from "./FormCard";
+export { FilledSummary } from "./FilledSummary";
 export { FormActions } from "./FormActions";
 export { FormHeader } from "./FormHeader";
+export { LessonSection } from "./LessonSection";
+export { MoreOptions } from "./MoreOptions";
 export { NESTED_SECTION_CLASS } from "./nested";
 export { SlideCountSection } from "./SlideCountSection";
 export { SourcePickerSection } from "./SourcePickerSection";

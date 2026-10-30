@@ -9,7 +9,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Loader2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 interface ConfirmationDialogProps {
@@ -21,6 +21,8 @@ interface ConfirmationDialogProps {
   confirmLabel?: string;
   cancelLabel?: string;
   variant?: "warning" | "danger";
+  /** While the confirmed action runs: both buttons are disabled, the confirm button spins and the dialog stays open. */
+  isLoading?: boolean;
 }
 
 export function ConfirmationDialog({
@@ -32,6 +34,7 @@ export function ConfirmationDialog({
   confirmLabel,
   cancelLabel,
   variant = "warning",
+  isLoading = false,
 }: ConfirmationDialogProps) {
   const t = useTranslations("common.confirmationDialog");
   const resolvedTitle = title ?? t("defaultTitle");
@@ -52,7 +55,7 @@ export function ConfirmationDialog({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && !isLoading && onClose()}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <div className="flex items-start gap-4">
@@ -74,6 +77,7 @@ export function ConfirmationDialog({
             type="button"
             variant="outline"
             onClick={onClose}
+            disabled={isLoading}
             className="flex-1 sm:flex-none h-10 border-border text-secondary-foreground hover:bg-muted rounded-xl"
           >
             {resolvedCancelLabel}
@@ -81,8 +85,11 @@ export function ConfirmationDialog({
           <Button
             type="button"
             onClick={onConfirm}
+            disabled={isLoading}
+            aria-busy={isLoading}
             className={`flex-1 sm:flex-none h-10 rounded-xl ${confirmColors[variant]}`}
           >
+            {isLoading && <Loader2 className="w-4 h-4 animate-spin" aria-hidden />}
             {resolvedConfirmLabel}
           </Button>
         </DialogFooter>

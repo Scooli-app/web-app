@@ -7,7 +7,10 @@
 "use client";
 
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Routes } from "@/shared/types";
 import { cn } from "@/shared/utils/utils";
 import {
   fetchContributorStats,
@@ -30,6 +33,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
+import Link from "next/link";
 import { useEffect } from "react";
 
 type ResourceStatus = "PENDING" | "APPROVED" | "REJECTED" | "CHANGES_REQUESTED";
@@ -103,20 +107,20 @@ export function ContributorDashboard() {
           {Array.from({ length: 4 }, (_, i) => (
             <Card key={i} className="w-full min-w-0 animate-pulse p-4 sm:p-5">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 flex-shrink-0 rounded-xl bg-muted" />
+                <div className="h-10 w-10 flex-shrink-0 rounded-xl bg-muted-foreground/15" />
                 <div className="min-w-0 flex-1">
-                  <div className="mb-1.5 h-6 w-12 rounded-md bg-muted" />
-                  <div className="h-3 w-24 rounded-md bg-muted" />
+                  <div className="mb-1.5 h-6 w-12 rounded-md bg-muted-foreground/15" />
+                  <div className="h-3 w-24 rounded-md bg-muted-foreground/15" />
                 </div>
               </div>
             </Card>
           ))}
         </div>
         <Card className="w-full min-w-0 animate-pulse p-4 sm:p-6">
-          <div className="mb-4 h-5 w-1/3 rounded-md bg-muted" />
+          <div className="mb-4 h-5 w-1/3 rounded-md bg-muted-foreground/15" />
           <div className="space-y-3">
             {Array.from({ length: 3 }, (_, i) => (
-              <div key={i} className="h-14 rounded-lg bg-muted" />
+              <div key={i} className="h-14 rounded-lg bg-muted-foreground/15" />
             ))}
           </div>
         </Card>
@@ -124,19 +128,18 @@ export function ContributorDashboard() {
     );
   }
 
-  if (!stats && myResources.length === 0) {
+  if (myResources.length === 0 && (stats?.totalResourcesShared ?? 0) === 0) {
     return (
-      <Card className="w-full min-w-0 border border-border p-8 text-center sm:p-12">
-        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-muted">
-          <Share2 className="h-7 w-7 text-muted-foreground" />
-        </div>
-        <h3 className="mb-1 text-lg font-semibold">
-          {t("emptyTitle")}
-        </h3>
-        <p className="text-sm text-muted-foreground">
-          {t("emptyDescription")}
-        </p>
-      </Card>
+      <EmptyState
+        icon={Share2}
+        title={t("emptyTitle")}
+        description={t("emptyDescription")}
+        actions={
+          <Button asChild size="sm">
+            <Link href={Routes.DOCUMENTS}>{t("shareFromDocuments")}</Link>
+          </Button>
+        }
+      />
     );
   }
 

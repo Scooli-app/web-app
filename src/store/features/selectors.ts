@@ -60,6 +60,17 @@ export const selectIsHorarioPlanosEnabled = createSelector(
   (enabledFeatures) => enabledFeatures.includes(FeatureFlag.HORARIO_PLANOS_ENABLED)
 );
 
+/** Community shares wait for the Scooli team's review; off, they are published at once. */
+export const selectIsDocumentReviewEnabled = createSelector(
+  [selectEnabledFeatureFlags],
+  (enabledFeatures) => enabledFeatures.includes(FeatureFlag.DOCUMENT_REVIEW)
+);
+
+export const selectIsClassStateEnabled = createSelector(
+  [selectEnabledFeatureFlags],
+  (enabledFeatures) => enabledFeatures.includes(FeatureFlag.CLASS_STATE_ENABLED)
+);
+
 export const selectIsAlreadyCoveredEnabled = createSelector(
   [selectEnabledFeatureFlags],
   (enabledFeatures) => enabledFeatures.includes(FeatureFlag.ALREADY_COVERED_ENABLED)

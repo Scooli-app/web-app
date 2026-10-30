@@ -31,10 +31,20 @@ import type {
   CanvasTextElement,
 } from "@/shared/types/canvas-presentation";
 import { renderKatexToPngDataUrl } from "@/components/document-editor-v2/math-render";
-import Konva from "konva";
+import {
+  getListEditValue,
+  getTextEditStyle,
+  parseListEditValue,
+} from "@/components/document-editor-v2/canvas-text-edit";
+import { getFittedTextBoxHeightPx } from "@/components/document-editor-v2/text-box-fit";
+import { measureWrappedTextHeightPx } from "@/components/document-editor-v2/text-measure";
+import type Konva from "konva";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useImperativeHandle, useRef, useState, forwardRef } from "react";
 import { Ellipse, Group, Image as KonvaImage, Layer, Line, Rect, Stage, Text, Transformer } from "react-konva";
+import { SlideText } from "@/components/document-editor-v2/InlineMathText";
+import { hasInlineMath, inlineMathIndexAt, splitInlineMath, type InlineMathStyle } from "@/components/document-editor-v2/inline-math";
+import { MathTextInput, type MathTextInputHandle } from "@/components/math/MathTextInput";
 import { listItemPrefix } from "@/shared/utils/list-markers";
 
 /* --------------------------------------------------------------------------
@@ -89,6 +99,38 @@ function getTextLikeLineHeight(el: CanvasTextElement | CanvasListElement) {
   return el.lineHeight ?? TEXT_LINE_HEIGHT;
 }
 
+/** A text element's inline-maths style at slide width `W`, as SlideText draws it. */
+function textMathStyle(t: CanvasTextElement, W: number): InlineMathStyle {
+  return {
+    fontSizePx: t.fontSize * W,
+    fontFamily: t.fontFamily || T.font,
+    fontStyle: t.fontStyle,
+    color: t.color,
+    align: t.align,
+    lineHeight: getTextLikeLineHeight(t),
+  };
+}
+
+/** Number of the `$…$` formula under the pointer in `node`'s text, or -1. */
+function formulaAt(node: Konva.Node, text: string, width: number, style: InlineMathStyle) {
+  if (!hasInlineMath(text)) return -1;
+  const p = node.getRelativePointerPosition();
+  return p ? inlineMathIndexAt(text, width, style, p) : -1;
+}
+
+/** The list item and formula under the pointer in a list group, or null. */
+function listFormulaAt(node: Konva.Node, l: CanvasListElement, ordered: boolean, itemOffsets: number[], W: number) {
+  const p = node.getRelativePointerPosition();
+  if (!p) return null;
+  let item = -1;
+  itemOffsets.forEach((offset, i) => { if (p.y >= offset) item = i; });
+  if (item < 0) return null;
+  const style = { fontSizePx: l.fontSize * W, fontFamily: getTextLikeFontFamily(l), color: l.color, lineHeight: getTextLikeLineHeight(l) };
+  const text = `${listItemPrefix(ordered, l.items, item)}${l.items[item]}`;
+  const index = hasInlineMath(text) ? inlineMathIndexAt(text, l.w * W, style, { x: p.x, y: p.y - itemOffsets[item] }) : -1;
+  return index >= 0 ? { item, index } : null;
+}
+
 function gradientProps(g: CanvasGradient, W: number, H: number, OX = 0, OY = 0) {
   const rad = (g.angle * Math.PI) / 180;
   const dx = Math.sin(rad);
@@ -117,34 +159,6 @@ function getListDisplayText(el: CanvasListElement) {
 
 function getTextLikeDisplayText(el: CanvasTextElement | CanvasListElement) {
   return el.type === "text" ? el.text : getListDisplayText(el);
-}
-
-function measureWrappedTextHeightPx({
-  text,
-  widthPx,
-  fontSizePx,
-  fontFamily,
-  fontStyle,
-  lineHeight,
-}: {
-  text: string;
-  widthPx: number;
-  fontSizePx: number;
-  fontFamily: string;
-  fontStyle?: string;
-  lineHeight: number;
-}) {
-  const probe = new Konva.Text({
-    text,
-    fontSize: fontSizePx,
-    fontFamily,
-    fontStyle,
-    lineHeight,
-    width: Math.max(1, widthPx),
-    padding: 0,
-    wrap: "word",
-  });
-  return Math.max(fontSizePx * lineHeight, probe.height());
 }
 
 function measureListItemHeightsPx(el: CanvasListElement, widthPx: number, fontSizePx: number) {
@@ -237,7 +251,10 @@ interface EditState {
   fontStyle?: string;
   color: string;
   align?: "left" | "center" | "right";
+  underline?: boolean;
   multiline: boolean;
+  /** Opened by a double-click on a formula: that formula (by order in the text) opens for editing. */
+  formula?: number;
 }
 
 /**
@@ -251,60 +268,53 @@ interface EditState {
  *   • Auto-resizes height as the user types.
  *   • Subtle focus ring instead of a coloured border.
  */
+/** A formula hit in a list (item, index in item) as its order in the whole list's text. */
+function listFormulaIndex(el: CanvasListElement, hit: { item?: number; index: number }): number {
+  const before = el.items.slice(0, hit.item ?? 0).reduce((n, item) => n + splitInlineMath(item).filter((x) => x.kind === "math").length, 0);
+  return before + hit.index;
+}
+
 function TextEditOverlay({
   edit,
   onCommit,
+  fieldRef,
 }: {
   edit: EditState;
   onCommit: (id: string, value: string) => void;
+  fieldRef: React.RefObject<MathTextInputHandle | null>;
 }) {
-  const ref = useRef<HTMLTextAreaElement>(null);
-
   // Split Konva's combined fontStyle string into CSS fontWeight + fontStyle.
   const isBold   = edit.fontStyle?.includes("bold")   ?? false;
   const isItalic = edit.fontStyle?.includes("italic") ?? false;
-
-  // Focus + cursor-at-end + initial auto-size on mount / element change.
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    el.focus();
-    const len = el.value.length;
-    el.setSelectionRange(len, len);
-    // Size to content immediately so the textarea matches the Konva element.
-    el.style.height = "auto";
-    el.style.height = `${Math.max(el.scrollHeight, edit.height)}px`;
-  }, [edit.id, edit.height]);
-
-  // Grow/shrink textarea as the user types.
-  const autoResize = () => {
-    const el = ref.current;
-    if (!el) return;
-    el.style.height = "auto";
-    el.style.height = `${Math.max(el.scrollHeight, edit.height)}px`;
+  const value = useRef(edit.value);
+  const committed = useRef(false);
+  const commit = () => {
+    if (committed.current) return;
+    committed.current = true;
+    onCommit(edit.id, value.current);
   };
 
-  const commit = () => onCommit(edit.id, ref.current?.value ?? edit.value);
-
+  // Formulas show as maths and edit in place (MathTextInput), so the teacher never sees $…$ in a text box.
   return (
-    <textarea
-      ref={ref}
-      defaultValue={edit.value}
-      onInput={autoResize}
+    <MathTextInput
+      ref={fieldRef}
+      plain
+      multiline
+      autoFocus
+      value={edit.value}
+      initialFormula={edit.formula}
+      onChange={(next) => { value.current = next; }}
       onBlur={commit}
+      onEnter={edit.multiline ? undefined : commit}
       onKeyDown={(e) => {
         if (e.key === "Escape") { e.preventDefault(); commit(); }
-        if (e.key === "Enter" && !e.shiftKey && !edit.multiline) {
-          e.preventDefault();
-          commit();
-        }
       }}
       style={{
         position: "absolute",
         left: edit.x,
         top: edit.y,
         width: edit.width,
-        height: edit.height,     // initial; overridden by autoResize
+        minHeight: edit.height,
         fontSize: edit.fontSize,
         fontFamily: edit.fontFamily ?? T.font,
         fontWeight: isBold ? "bold" : "normal",
@@ -312,19 +322,13 @@ function TextEditOverlay({
         color: edit.color,
         caretColor: edit.color,
         textAlign: edit.align ?? "left",
+        textDecoration: edit.underline ? "underline" : "none",
         lineHeight: edit.lineHeight ?? TEXT_LINE_HEIGHT,
         // Invisible — looks like directly editing the canvas text.
         background: "transparent",
-        border: "none",
-        outline: "none",
         boxShadow: `0 0 0 2px ${T.selection}55`,  // translucent focus ring
         borderRadius: 4,
-        padding: 0,
-        resize: "none",
-        boxSizing: "border-box",
         zIndex: 10,
-        overflow: "hidden",
-        whiteSpace: "pre-wrap",
         wordBreak: "break-word",
       }}
     />
@@ -339,6 +343,8 @@ function TextEditOverlay({
 export interface SlideKonvaEditorHandle {
   addText: () => void;
   removeSelected: () => void;
+  /** With a text box open: puts a new formula at its cursor and returns true; otherwise false. */
+  insertFormulaInText: () => boolean;
   clearSelection: () => void;
 }
 
@@ -350,8 +356,11 @@ export const SlideKonvaEditor = forwardRef<
     onSelectionChange?: (id: string | null) => void;
     /** Called when the user clicks the change-image button on an image element. */
     onChangeImage?: (elementId: string) => void;
-    /** Called when a math element is double-clicked, to open the formula modal. */
-    onEditMath?: (elementId: string) => void;
+    /**
+     * Called when a math element, or a `$…$` formula inside a text or list, is double-clicked, to open the
+     * formula modal. `inline` is that formula's position: list item (lists only) and its number in the text.
+     */
+    onEditMath?: (elementId: string, inline?: { item?: number; index: number }) => void;
   }
 >(function SlideKonvaEditor({ slide, onChange, onSelectionChange, onChangeImage, onEditMath }, ref) {
   const t = useTranslations("editor.slideKonvaEditor");
@@ -368,6 +377,7 @@ export const SlideKonvaEditor = forwardRef<
   const elements = slide.elements;
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [editState, setEditState] = useState<EditState | null>(null);
+  const textFieldRef = useRef<MathTextInputHandle | null>(null);
   /** Active snap guide lines (cleared on drag end). */
   const [guides, setGuides] = useState<{ vLines: number[]; hLines: number[] }>({ vLines: [], hLines: [] });
   const isDraggingRef = useRef(false);
@@ -906,6 +916,7 @@ export const SlideKonvaEditor = forwardRef<
       node: Konva.Node,
       value: string,
       multiline = false,
+      formula?: number,
     ) => {
       const el = elements.find((e) => e.id === id);
       if (!el) return;
@@ -916,16 +927,16 @@ export const SlideKonvaEditor = forwardRef<
           ? (el as CanvasListElement).fontSize * W
         : el.type === "math" ? (el as CanvasMathElement).fontSize * W
         : FS_BASE * W;
-      const color =
-        el.type === "text" ? (el as CanvasTextElement).color
-        : el.type === "math" ? MATH_COLOR
-        : T.muted;
-      const fontFamily = isTextLikeElement(el) ? el.fontFamily : undefined;
+      const style =
+        el.type === "text" || el.type === "bullet_list" || el.type === "ordered_list"
+          ? getTextEditStyle(el as CanvasTextElement | CanvasListElement)
+          : null;
+      const color = style ? style.color : el.type === "math" ? MATH_COLOR : T.muted;
+      const fontFamily = style?.fontFamily;
+      const fontStyle = style?.fontStyle;
+      const align = style?.align;
+      const underline = style?.underline ?? false;
       const lineHeight = isTextLikeElement(el) ? el.lineHeight : undefined;
-      const fontStyle =
-        el.type === "text" ? (el as CanvasTextElement).fontStyle : undefined;
-      const align =
-        el.type === "text" ? (el as CanvasTextElement).align : undefined;
 
       // Keep selectedId pointing at the element so the parent contextual
       // toolbar stays visible.  The Transformer effect clears its handles
@@ -947,7 +958,9 @@ export const SlideKonvaEditor = forwardRef<
         fontStyle,
         color,
         align,
+        underline,
         multiline,
+        formula,
       });
     },
     [elements, W, H, OX, OY],
@@ -970,10 +983,9 @@ export const SlideKonvaEditor = forwardRef<
           h: getFittedTextLikeHeight(nextEl, nextEl.w, nextEl.fontSize),
         } as Partial<CanvasTextElement>);
       } else if (el.type === "bullet_list" || el.type === "ordered_list") {
-        const items = raw.split("\n").map((s) => s.trim()).filter(Boolean);
         const nextEl = {
           ...el,
-          items: items.length > 0 ? items : [""],
+          items: parseListEditValue(raw, el.type === "ordered_list"),
         };
         updateElement(id, {
           items: nextEl.items,
@@ -1020,7 +1032,12 @@ export const SlideKonvaEditor = forwardRef<
     addText,
     removeSelected,
     clearSelection: () => setSelectedId(null),
-  }), [addText, removeSelected]);
+    insertFormulaInText: () => {
+      if (!editState || !textFieldRef.current) return false;
+      textFieldRef.current.insertFormula();
+      return true;
+    },
+  }), [addText, removeSelected, editState]);
 
   /* ── Shared draggable/selectable props per element ─────────────────────── */
   // Inline to avoid TypeScript spread issues with different Konva node types
@@ -1168,7 +1185,7 @@ export const SlideKonvaEditor = forwardRef<
               if (el.type === "text") {
                 const t = el as CanvasTextElement;
                 return (
-                  <Text
+                  <SlideText
                     key={el.id}
                     id={el.id}
                     x={el.x * W + OX + el.w * W / 2}
@@ -1178,7 +1195,16 @@ export const SlideKonvaEditor = forwardRef<
                     rotation={el.rotation ?? 0}
                     text={t.text}
                     width={el.w * W}
-                    height={el.h * H}
+                    height={getFittedTextBoxHeightPx(el.h * H, () =>
+                      measureWrappedTextHeightPx({
+                        text: t.text,
+                        widthPx: el.w * W,
+                        fontSizePx: t.fontSize * W,
+                        fontFamily: t.fontFamily || T.font,
+                        fontStyle: t.fontStyle,
+                        lineHeight: getTextLikeLineHeight(t),
+                      }),
+                    )}
                     fontSize={t.fontSize * W}
                     fontFamily={t.fontFamily || T.font}
                     fontStyle={t.fontStyle}
@@ -1195,13 +1221,15 @@ export const SlideKonvaEditor = forwardRef<
                       e.cancelBubble = true;
                       setSelectedId(el.id);
                       const node = stageRef.current?.findOne(`#${el.id}`);
-                      if (node) startEdit(el.id, node, t.text);
+                      const formula = node ? formulaAt(node, t.text, el.w * W, textMathStyle(t, W)) : -1;
+                      if (node) startEdit(el.id, node, t.text, false, formula >= 0 ? formula : undefined);
                     }}
                     onDblTap={(e: Konva.KonvaEventObject<TouchEvent>) => {
                       e.cancelBubble = true;
                       setSelectedId(el.id);
                       const node = stageRef.current?.findOne(`#${el.id}`);
-                      if (node) startEdit(el.id, node, t.text);
+                      const formula = node ? formulaAt(node, t.text, el.w * W, textMathStyle(t, W)) : -1;
+                      if (node) startEdit(el.id, node, t.text, false, formula >= 0 ? formula : undefined);
                     }}
                     // Change cursor to text-beam on hover so users know it's editable.
                     onMouseEnter={() => {
@@ -1242,13 +1270,15 @@ export const SlideKonvaEditor = forwardRef<
                       e.cancelBubble = true;
                       setSelectedId(el.id);
                       const node = stageRef.current?.findOne(`#${el.id}`);
-                      if (node) startEdit(el.id, node, l.items.join("\n"), true);
+                      const hit = node ? listFormulaAt(node, l, ordered, itemOffsets, W) : null;
+                      if (node) startEdit(el.id, node, getListEditValue(l), true, hit ? listFormulaIndex(l, hit) : undefined);
                     }}
                     onDblTap={(e: Konva.KonvaEventObject<TouchEvent>) => {
                       e.cancelBubble = true;
                       setSelectedId(el.id);
                       const node = stageRef.current?.findOne(`#${el.id}`);
-                      if (node) startEdit(el.id, node, l.items.join("\n"), true);
+                      const hit = node ? listFormulaAt(node, l, ordered, itemOffsets, W) : null;
+                      if (node) startEdit(el.id, node, getListEditValue(l), true, hit ? listFormulaIndex(l, hit) : undefined);
                     }}
                     onMouseEnter={() => {
                       if (!isDraggingRef.current) setStageCursor("text");
@@ -1265,7 +1295,7 @@ export const SlideKonvaEditor = forwardRef<
                       strokeEnabled={false}
                     />
                     {l.items.map((item, i) => (
-                    <Text
+                    <SlideText
                         key={i}
                         text={`${listItemPrefix(ordered, l.items, i)}${item}`}
                         x={0}
@@ -1395,15 +1425,14 @@ export const SlideKonvaEditor = forwardRef<
               /* ── Image placeholder / actual image ───────────────────── */
               if (el.type === "image_placeholder") {
                 const img = el as CanvasImageElement;
+                const openImageModal = (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
+                  e.cancelBubble = true;
+                  setSelectedId(el.id);
+                  onChangeImage?.(el.id);
+                };
                 const dblHandlers = {
-                  onDblClick: () => {
-                    const node = stageRef.current?.findOne(`#${el.id}`);
-                    if (node) startEdit(el.id, node, img.prompt);
-                  },
-                  onDblTap: () => {
-                    const node = stageRef.current?.findOne(`#${el.id}`);
-                    if (node) startEdit(el.id, node, img.prompt);
-                  },
+                  onDblClick: openImageModal,
+                  onDblTap: openImageModal,
                 };
 
                 // If the element has a URL and it's loaded, render the real image.
@@ -1639,7 +1668,7 @@ export const SlideKonvaEditor = forwardRef<
 
         {/* Floating textarea overlay for active text edit */}
         {editState && (
-          <TextEditOverlay edit={editState} onCommit={commitEdit} />
+          <TextEditOverlay edit={editState} onCommit={commitEdit} fieldRef={textFieldRef} />
         )}
       </div>
     </div>

@@ -1,0 +1,320 @@
+import type { DocumentVersionDiff, SectionChange } from "@/shared/types/document-suggestions";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { describe, expect, it, vi } from "vitest";
+import { SuggestionReviewBody } from "./SuggestionReviewSheet";
+import { initialSelection } from "./suggestion-review";
+
+vi.mock("next-intl", () => ({
+  useTranslations: () => (key: string, values?: Record<string, unknown>) => (values ? `${key} ${JSON.stringify(values)}` : key),
+  useLocale: () => "pt-PT",
+}));
+vi.mock("sonner", () => ({ toast: { success: vi.fn(), info: vi.fn(), error: vi.fn() } }));
+vi.mock("@/services/api/document-versions.service", () => ({
+  getSuggestionDiff: vi.fn(),
+  applySuggestion: vi.fn(),
+  rejectSuggestion: vi.fn(),
+}));
+vi.mock("@/components/document-editor-v2/SlideThumbnail", () => ({
+  SlideThumbnail: ({ slide }: { slide: { elements: unknown[] } }) =>
+    createElement("div", { "data-testid": "slide-thumb", "data-element-count": String(slide.elements.length) }),
+}));
+
+function render(diff: DocumentVersionDiff, selection = initialSelection(diff.changes), contentFormat: "markdown" | "json" = "markdown") {
+  return renderToStaticMarkup(
+    createElement(SuggestionReviewBody, { diff, selection, contentFormat, onToggle: () => undefined }),
+  );
+}
+
+const CHANGED: SectionChange = {
+  key: "objetivos",
+  type: "changed",
+  title: "Objetivos",
+  before: "Os alunos conhecem a fração.",
+  after: "Os alunos dominam a fração equivalente.",
+  position: 1,
+};
+
+describe("SuggestionReviewBody: diff rendering", () => {
+  it("renders an inserted word with the insertion marker and a deleted word struck through", () => {
+    const html = render({ stale: false, changes: [CHANGED] });
+
+    expect(html).toContain("<ins");
+    expect(html).toContain("dominam");
+    expect(html).toContain("bg-emerald-500/15");
+    expect(html).toContain("<del");
+    expect(html).toContain("line-through");
+    expect(html).toContain("conhecem");
+  });
+
+  it("labels each section checkbox with the section title", () => {
+    const html = render({ stale: false, changes: [CHANGED] });
+
+    expect(html).toContain('aria-label="Objetivos"');
+    expect(html).toContain('role="checkbox"');
+  });
+
+  it("gives a changed section a Antes / Depois / Alterações toggle", () => {
+    const html = render({ stale: false, changes: [CHANGED] });
+
+    expect(html).toContain("view.before");
+    expect(html).toContain("view.after");
+    expect(html).toContain("view.changes");
+  });
+
+  it("shows a new section as its own text, not a diff against nothing", () => {
+    const html = render({
+      stale: false,
+      changes: [{ key: "nova", type: "added", title: "Extra", before: null, after: "Conteúdo novo", position: 0 }],
+    });
+
+    expect(html).toContain("Conteúdo novo");
+    expect(html).toContain("type.added");
+    expect(html).not.toContain("view.changes");
+  });
+});
+
+describe("SuggestionReviewBody: stale notice and unchanged sections", () => {
+  it("shows the stale notice when the teacher edited after the suggestion", () => {
+    const html = render({ stale: true, changes: [CHANGED] });
+
+    expect(html).toContain("staleNotice");
+  });
+
+  it("does not show the stale notice otherwise", () => {
+    const html = render({ stale: false, changes: [CHANGED] });
+
+    expect(html).not.toContain("staleNotice");
+  });
+
+  it("collapses unchanged sections into a count line instead of listing them", () => {
+    const html = render({
+      stale: false,
+      changes: [CHANGED, { key: "resto", type: "unchanged", title: "Resto", before: "x", after: "x", position: 2 }],
+    });
+
+    expect(html).toContain("unchangedCount");
+    expect(html).not.toContain("Resto");
+  });
+});
+
+describe("SuggestionReviewBody: selection", () => {
+  it("renders the checkbox checked for a selected section and unchecked otherwise", () => {
+    const html = render({ stale: false, changes: [CHANGED] }, new Set());
+
+    expect(html).toMatch(/role="checkbox" aria-checked="false"/);
+    expect(html).not.toMatch(/role="checkbox" aria-checked="true"/);
+  });
+});
+
+const V1_TITLE_SLIDE = JSON.stringify({
+  id: "s1",
+  type: "slide",
+  layout: "title",
+  title: "Frações equivalentes",
+  subtitle: "5.º ano",
+});
+
+const V2_SLIDE = JSON.stringify({ id: "s2", layout: "title", background: {}, elements: [{ id: "e1" }, { id: "e2" }] });
+
+describe("SuggestionReviewBody: presentations", () => {
+  it("renders a v1 block as a slide thumbnail instead of the no-slide placeholder", () => {
+    const html = render(
+      {
+        stale: false,
+        changes: [{ key: "s1", type: "changed", title: "Slide 1", before: V1_TITLE_SLIDE, after: V1_TITLE_SLIDE, position: 1 }],
+      },
+      undefined,
+      "json",
+    );
+
+    expect(html).toContain('data-testid="slide-thumb"');
+    expect(html).not.toMatch(/data-element-count="0"/);
+    expect(html).not.toContain("noSlide");
+  });
+
+  it("keeps rendering a v2 canvas slide as it is", () => {
+    const html = render(
+      {
+        stale: false,
+        changes: [{ key: "s2", type: "changed", title: "Slide 2", before: V2_SLIDE, after: V2_SLIDE, position: 1 }],
+      },
+      undefined,
+      "json",
+    );
+
+    expect(html).toContain('data-element-count="2"');
+  });
+
+  it("renders the deck settings section as a text row, not a slide", () => {
+    const html = render(
+      {
+        stale: false,
+        changes: [
+          {
+            key: "_meta",
+            type: "changed",
+            title: "_meta",
+            before: JSON.stringify({ schemaVersion: 1, documentType: "presentation", themeId: "dark" }),
+            after: JSON.stringify({ schemaVersion: 1, documentType: "presentation", themeId: "galaxia" }),
+            position: 0,
+          },
+        ],
+      },
+      undefined,
+      "json",
+    );
+
+    expect(html).toContain("presentationSettings");
+    expect(html).toContain("themeChange");
+    expect(html).not.toContain("slide-thumb");
+    expect(html).not.toContain("noSlide");
+  });
+
+  it("omits the theme line for the settings section when the theme did not change", () => {
+    const same = JSON.stringify({ schemaVersion: 1, documentType: "presentation", themeId: "dark" });
+    const html = render(
+      {
+        stale: false,
+        changes: [{ key: "_meta", type: "changed", title: "_meta", before: same, after: same, position: 0 }],
+      },
+      undefined,
+      "json",
+    );
+
+    expect(html).toContain("presentationSettings");
+    expect(html).not.toContain("themeChange");
+  });
+});
+
+describe("SuggestionReviewBody: refresh offer on a stale suggestion", () => {
+  it("offers Atualizar sugestão next to the stale notice when a refresh handler is given", () => {
+    const html = renderToStaticMarkup(
+      createElement(SuggestionReviewBody, {
+        diff: { stale: true, changes: [CHANGED] },
+        selection: initialSelection([CHANGED]),
+        contentFormat: "markdown",
+        onToggle: () => undefined,
+        onRefresh: () => undefined,
+      }),
+    );
+
+    expect(html).toContain("staleNotice");
+    expect(html).toContain(">refresh<");
+  });
+
+  it("does not offer a refresh without a handler", () => {
+    const html = render({ stale: true, changes: [CHANGED] });
+
+    expect(html).toContain("staleNotice");
+    expect(html).not.toContain(">refresh<");
+  });
+});
+
+describe("SuggestionReviewBody: markdown reading", () => {
+  it("sets the diff text in the app sans font, not a serif fallback", () => {
+    const html = render({ stale: false, changes: [CHANGED] });
+
+    expect(html).toContain("font-sans");
+    expect(html).not.toContain("font-serif");
+  });
+
+  it("does not repeat the section heading line inside the body", () => {
+    const html = render({
+      stale: false,
+      changes: [
+        {
+          key: "objetivos",
+          type: "changed",
+          title: "Objetivos",
+          before: "# Objetivos\nOs alunos conhecem a fração.",
+          after: "# Objetivos\nOs alunos dominam a fração equivalente.",
+          position: 1,
+        },
+      ],
+    });
+
+    // The title appears in the heading and as the checkbox label only; the body does not repeat it.
+    expect(html.match(/Objetivos/g)).toHaveLength(2);
+    expect(html).toContain("conhecem");
+    expect(html).toContain("dominam");
+  });
+});
+
+describe("SuggestionReviewBody: document title row", () => {
+  const TITLE_CHANGE: SectionChange = {
+    key: "_title",
+    type: "changed",
+    title: null,
+    before: "Plano antigo",
+    after: "Plano novo",
+    position: 0,
+  };
+
+  it("renders the title change first, with the old title struck through and then the new one", () => {
+    const html = render({ stale: false, changes: [CHANGED, TITLE_CHANGE] });
+
+    expect(html.indexOf("documentTitle")).toBeLessThan(html.indexOf("Objetivos"));
+    expect(html).toMatch(/<del[^>]*>.*Plano antigo.*<\/del>/);
+    expect(html).toMatch(/Plano novo/);
+    expect(html.indexOf("Plano antigo")).toBeLessThan(html.indexOf("Plano novo"));
+  });
+
+  it("gives the title row a selectable checkbox and no Antes / Depois / Alterações toggle", () => {
+    const html = render({ stale: false, changes: [TITLE_CHANGE] });
+
+    expect(html).toContain('aria-label="documentTitle"');
+    expect(html).toContain('role="checkbox"');
+    expect(html).not.toContain("view.changes");
+  });
+
+  it("is checked by default", () => {
+    const html = render({ stale: false, changes: [TITLE_CHANGE] });
+
+    expect(html).toMatch(/role="checkbox" aria-checked="true"/);
+  });
+});
+
+describe("SuggestionReviewBody: assessment suggestions", () => {
+  const mc = (prompt: string, points: number) =>
+    JSON.stringify({
+      id: "e1", kind: "exercise", type: "multiple_choice", prompt, points,
+      options: [{ id: "a", text: "Golfinho", side: null }, { id: "b", text: "Sardinha", side: null }],
+      answer: { optionIds: ["a"] }, answerSpace: { kind: "none", count: null },
+    });
+  const renderTest = (changes: SectionChange[]) =>
+    renderToStaticMarkup(
+      createElement(SuggestionReviewBody, {
+        diff: { stale: false, changes },
+        selection: initialSelection(changes),
+        contentFormat: "json",
+        documentType: "test",
+        onToggle: () => undefined,
+      }),
+    );
+
+  it("shows a changed exercise before and after, as it prints, with its own checkbox", () => {
+    const html = renderTest([
+      { key: "e1", type: "changed", title: "Qual é um mamífero?", before: mc("Qual é um mamífero?", 10), after: mc("Qual destes é um mamífero?", 10), position: 0 },
+    ]);
+
+    expect(html).toContain('aria-label="assessment.exercise {&quot;number&quot;:1}"');
+    expect(html).toContain("Qual é um mamífero?");
+    expect(html).toContain("Qual destes é um mamífero?");
+    expect(html).toContain("Golfinho");
+    expect(html).not.toContain("optionIds");
+    expect(html).not.toContain("view.changes");
+  });
+
+  it("sums up a points-only rebalance in one line and counts unchanged exercises", () => {
+    const html = renderTest([
+      { key: "_meta", type: "unchanged", title: null, before: "{}", after: "{}", position: 0 },
+      { key: "group:g1", type: "unchanged", title: "Grupo I", before: "{}", after: "{}", position: 1 },
+      { key: "e1", type: "changed", title: "P", before: mc("P", 10), after: mc("P", 8), position: 2 },
+      { key: "e2", type: "unchanged", title: "Q", before: mc("Q", 5), after: mc("Q", 5), position: 3 },
+    ]);
+
+    expect(html).toContain("assessment.pointsOnly {&quot;before&quot;:10,&quot;after&quot;:8}");
+    expect(html).toContain("assessment.unchangedCount {&quot;count&quot;:1}");
+  });
+});

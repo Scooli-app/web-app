@@ -21,8 +21,11 @@ import type {
   CanvasTextElement,
 } from "@/shared/types/canvas-presentation";
 import { renderKatexToPngDataUrl } from "@/components/document-editor-v2/math-render";
+import { getFittedTextBoxHeightPx } from "@/components/document-editor-v2/text-box-fit";
+import { measureWrappedTextHeightPx } from "@/components/document-editor-v2/text-measure";
 import { useEffect, useRef, useState } from "react";
 import { Ellipse, Image as KonvaImage, Layer, Line, Rect, Stage, Text } from "react-konva";
+import { SlideText } from "@/components/document-editor-v2/InlineMathText";
 import { listItemPrefix } from "@/shared/utils/list-markers";
 
 interface Props {
@@ -151,7 +154,7 @@ export function CanvasSlideView({ slide }: Props) {
             if (el.type === "text") {
               const t = el as CanvasTextElement;
               return (
-                <Text
+                <SlideText
                   key={el.id}
                   x={el.x * W + el.w * W / 2}
                   y={el.y * H + el.h * H / 2}
@@ -159,7 +162,15 @@ export function CanvasSlideView({ slide }: Props) {
                   offsetY={el.h * H / 2}
                   rotation={el.rotation ?? 0}
                   width={el.w * W}
-                  height={el.h * H}
+                  height={getFittedTextBoxHeightPx(el.h * H, () =>
+                    measureWrappedTextHeightPx({
+                      text: t.text,
+                      widthPx: el.w * W,
+                      fontSizePx: Math.round(t.fontSize * W),
+                      fontFamily: t.fontFamily ? t.fontFamily : "Lexend, Inter, system-ui, sans-serif",
+                      fontStyle: t.fontStyle,
+                    }),
+                  )}
                   text={t.text}
                   fontSize={Math.round(t.fontSize * W)}
                   fontFamily={
@@ -186,7 +197,7 @@ export function CanvasSlideView({ slide }: Props) {
                 .map((item, i) => `${listItemPrefix(el.type === "ordered_list", l.items, i)}${item}`)
                 .join("\n");
               return (
-                <Text
+                <SlideText
                   key={el.id}
                   x={el.x * W + el.w * W / 2}
                   y={el.y * H + el.h * H / 2}

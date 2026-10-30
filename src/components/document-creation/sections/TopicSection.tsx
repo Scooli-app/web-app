@@ -1,8 +1,8 @@
-import { Card } from "@/components/ui/card";
+import { MAX_LENGTHS } from "@/shared/config/constants";
 import { Input } from "@/components/ui/input";
-import { MessageSquare } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { FormUpdateFn } from "../types";
+import { FieldHeading, FormCard } from "./FormCard";
 
 interface TopicSectionProps {
   topic: string;
@@ -10,33 +10,29 @@ interface TopicSectionProps {
   onUpdate: FormUpdateFn;
 }
 
-export function TopicSection({ topic, placeholder, onUpdate }: TopicSectionProps) {
+export function TopicSection({
+  topic,
+  placeholder,
+  onUpdate,
+}: TopicSectionProps) {
   const t = useTranslations("documentCreation.topic");
 
   return (
-    <Card className="p-4 sm:p-6 md:p-8 border-border shadow-sm hover:shadow-md transition-shadow">
-      <div className="space-y-3 sm:space-y-4">
-        <div className="flex items-center gap-2 sm:gap-3">
-          <div className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-accent shrink-0">
-            <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-          </div>
-          <div className="min-w-0">
-            <h2 className="text-base sm:text-lg font-semibold text-foreground">
-              {t("title")} <span className="text-destructive">*</span>
-            </h2>
-            <p className="text-xs sm:text-sm text-muted-foreground">
-              {t("description")}
-            </p>
-          </div>
+    // Label beside the field, like "Para que aula?": a one-line answer doesn't need a card of its own height.
+    <FormCard>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+        <div className="min-w-0 sm:w-44 sm:shrink-0">
+          <FieldHeading title={t("title")} required className="mb-0" />
         </div>
         <Input
           value={topic}
+          maxLength={MAX_LENGTHS.DOCUMENT_PROMPT}
           onChange={(e) => onUpdate("topic", e.target.value)}
           placeholder={placeholder}
-          className="w-full h-11 sm:h-12 px-3 sm:px-4 text-sm sm:text-base bg-muted border-border rounded-xl placeholder:text-muted-foreground"
+          className="h-10 w-full rounded-lg border-border bg-muted px-3 text-sm placeholder:text-muted-foreground"
           aria-label={t("ariaLabel")}
         />
       </div>
-    </Card>
+    </FormCard>
   );
 }

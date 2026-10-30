@@ -13,13 +13,8 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { SourcesList } from "@/components/ui/sources-list";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import type { RagSource } from "@/shared/types/document";
+import { useKeyboardInset } from "@/hooks/use-keyboard-inset";
 import { cn } from "@/shared/utils/utils";
 import { FileText, Loader2, MessageCircle, Send, Sparkles, X } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -78,9 +73,12 @@ interface ChatMessage {
 }
 
 interface AIChatPanelProps {
-  onChatSubmit: (message: string) => Promise<void>;
+  /** Resolve with false when the message was not sent: the panel then keeps it in the input. */
+  onChatSubmit: (message: string) => Promise<void | boolean>;
   chatHistory: ChatMessage[];
   isStreaming?: boolean;
+  /** Document still generating: chat is locked until it is ready. */
+  disabled?: boolean;
   error?: string;
   placeholder?: string;
   title?: string;
@@ -93,22 +91,26 @@ interface AIChatPanelProps {
   onDismissImageRegen?: () => void;
   /** Document type used to pick contextual suggestion chips */
   documentType?: string;
+  /** Overrides documentType for the suggestion chips only (e.g. "assessment" for block tests). */
+  suggestionsKey?: string;
   /** Document id used for PostHog event properties */
   documentId?: string;
   /** Show post-generation nudge pointing users toward the assistant */
   nudge?: boolean;
   /** Called when the nudge is dismissed (X click or auto-timeout) */
   onNudgeDismiss?: () => void;
+  /** Controls the mobile sheet from outside (e.g. a "Conversa" button in the parent). */
+  mobileOpen?: boolean;
+  onMobileOpenChange?: (open: boolean) => void;
 }
 
+// Below lg the tabs live in the phone/tablet sheet: touch-sized there.
 function Tabs({
   activeTab,
   onTabChange,
-  hasSources = false,
 }: {
   activeTab: "assistant" | "sources";
   onTabChange: (tab: "assistant" | "sources") => void;
-  hasSources?: boolean;
 }) {
   const t = useTranslations("editor.aiChatPanel");
   return (
@@ -116,7 +118,7 @@ function Tabs({
       <button
         onClick={() => onTabChange("assistant")}
         className={cn(
-          "flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium transition-all rounded-lg",
+          "flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium transition-all rounded-lg max-lg:min-h-11",
           activeTab === "assistant"
             ? "bg-background text-foreground shadow-sm"
             : "text-muted-foreground hover:text-foreground",
@@ -130,47 +132,21 @@ function Tabs({
         />
         {t("tabConversation")}
       </button>
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <div
-              className={cn("flex-1 flex", !hasSources && "cursor-not-allowed")}
-            >
-              <button
-                onClick={(e) => {
-                  if (!hasSources) {
-                    e.preventDefault();
-                    return;
-                  }
-                  onTabChange("sources");
-                }}
-                className={cn(
-                  "flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium transition-all rounded-lg w-full",
-                  activeTab === "sources"
-                    ? "bg-background text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground",
-                  !hasSources && "opacity-50 pointer-events-none",
-                )}
-                aria-disabled={!hasSources}
-                type="button"
-              >
-                <FileText
-                  className={cn(
-                    "w-4 h-4",
-                    activeTab === "sources" ? "text-primary" : "",
-                  )}
-                />
-                {t("tabSources")}
-              </button>
-            </div>
-          </TooltipTrigger>
-          {!hasSources && (
-            <TooltipContent>
-              <p>{t("sourcesTooltip")}</p>
-            </TooltipContent>
-          )}
-        </Tooltip>
-      </TooltipProvider>
+      <button
+        onClick={() => onTabChange("sources")}
+        className={cn(
+          "flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium transition-all rounded-lg max-lg:min-h-11",
+          activeTab === "sources"
+            ? "bg-background text-foreground shadow-sm"
+            : "text-muted-foreground hover:text-foreground",
+        )}
+        type="button"
+      >
+        <FileText
+          className={cn("w-4 h-4", activeTab === "sources" ? "text-primary" : "")}
+        />
+        {t("tabSources")}
+      </button>
     </div>
   );
 }
@@ -178,6 +154,7 @@ function Tabs({
 function ChatContent({
   chatHistory,
   isStreaming,
+  disabled = false,
   error,
   placeholder,
   chatMessage,
@@ -197,6 +174,7 @@ function ChatContent({
 }: {
   chatHistory: ChatMessage[];
   isStreaming: boolean;
+  disabled?: boolean;
   error?: string;
   placeholder: string;
   title: string;
@@ -217,7 +195,7 @@ function ChatContent({
 }) {
   const t = useTranslations("editor.aiChatPanel");
   const isDesktop = variant === "desktop";
-  const isInputLocked = isStreaming;
+  const isInputLocked = isStreaming || disabled;
   const [activeTab, setActiveTab] = useState<"assistant" | "sources">(
     "assistant",
   );
@@ -250,13 +228,13 @@ function ChatContent({
         </div>
       )}
 
-      <div className="px-4 py-4 md:px-6">
-        <Tabs
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-          hasSources={sources.length > 0}
-        />
-      </div>
+      {sources.length > 0 ? (
+        <div className="px-4 py-4 md:px-6">
+          <Tabs activeTab={activeTab} onTabChange={setActiveTab} />
+        </div>
+      ) : (
+        <div className="h-4" />
+      )}
 
       <div className="flex-1 overflow-hidden relative flex flex-col px-4 md:px-6">
         {activeTab === "assistant" ? (
@@ -328,7 +306,7 @@ function ChatContent({
               <SuggestionChips
                 documentType={documentType}
                 onChipClick={onSuggestionClick}
-                disabled={isStreaming}
+                disabled={isInputLocked}
               />
             )}
 
@@ -346,14 +324,15 @@ function ChatContent({
                 value={chatMessage}
                 onChange={(e) => setChatMessage(e.target.value)}
                 placeholder={placeholder}
-                className="flex-1 border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 px-3 h-10 text-sm"
+                // Phone: 44 px tall, 16 px text so iOS doesn't zoom in on focus.
+                className={cn("flex-1 border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 px-3", isDesktop ? "h-10 text-sm" : "h-11 text-base")}
                 disabled={isInputLocked}
               />
               <Button
                 type="submit"
                 disabled={!chatMessage.trim() || isInputLocked}
                 size="icon"
-                className="relative h-10 w-10 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground shrink-0 shadow-sm overflow-visible"
+                className={cn("relative rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground shrink-0 shadow-sm overflow-visible", isDesktop ? "h-10 w-10" : "h-11 w-11")}
               >
                 {isStreaming ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -389,6 +368,7 @@ export default function AIChatPanel({
   onChatSubmit,
   chatHistory,
   isStreaming = false,
+  disabled = false,
   error,
   placeholder,
   title,
@@ -397,48 +377,83 @@ export default function AIChatPanel({
   onImageRegen,
   onDismissImageRegen,
   documentType,
+  suggestionsKey,
   documentId,
   nudge = false,
   onNudgeDismiss,
+  mobileOpen,
+  onMobileOpenChange,
 }: AIChatPanelProps) {
   const t = useTranslations("editor.aiChatPanel");
-  const resolvedPlaceholder = placeholder ?? t("defaultPlaceholder");
+  const resolvedPlaceholder = disabled
+    ? t("generatingPlaceholder")
+    : (placeholder ?? t("defaultPlaceholder"));
   const resolvedTitle = title ?? t("defaultTitle");
   const [chatMessage, setChatMessage] = useState("");
   const [lockedMessage, setLockedMessage] = useState<string | null>(null);
-  const [isOpen, setIsOpen] = useState(false);
+  const [ownOpen, setOwnOpen] = useState(false);
+  const isOpen = mobileOpen ?? ownOpen;
+  const setIsOpen = onMobileOpenChange ?? setOwnOpen;
+  const keyboard = useKeyboardInset(isOpen);
+  // The sheet is the below-lg chat: past lg the side panel shows the same chat, so close it.
+  const setIsOpenRef = useRef(setIsOpen);
+  setIsOpenRef.current = setIsOpen;
+  useEffect(() => {
+    const mql = window.matchMedia("(min-width: 1024px)");
+    const onChange = () => mql.matches && setIsOpenRef.current(false);
+    // Also when it is opened (e.g. controlled from outside) while already past lg.
+    if (isOpen) onChange();
+    mql.addEventListener("change", onChange);
+    return () => mql.removeEventListener("change", onChange);
+  }, [isOpen]);
   const [showSuggestions, setShowSuggestions] = useState(true);
   const chatContainerRef = useRef<HTMLDivElement | null>(null);
   const mobileChatContainerRef = useRef<HTMLDivElement | null>(null);
   const isStreamingRef = useRef(isStreaming);
+  // Per typed request: did it fail? Then what the teacher typed stays in the input (even for the same error twice).
+  const typedInFlightRef = useRef(false);
+  const typedFailedRef = useRef(false);
   const wasStreamingRef = useRef(isStreaming);
   const lockedInputValue = isStreaming && lockedMessage !== null ? lockedMessage : chatMessage;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isStreaming || lockedMessage !== null || !chatMessage.trim()) {
+    if (disabled || isStreaming || lockedMessage !== null || !chatMessage.trim()) {
       return;
     }
 
     setShowSuggestions(false);
+    typedInFlightRef.current = true;
+    typedFailedRef.current = false;
     const userMessage = chatMessage.trim();
     setLockedMessage(userMessage);
     setChatMessage(userMessage);
     try {
-      await onChatSubmit(userMessage);
-      if (!isStreamingRef.current) {
-        setChatMessage("");
+      if ((await onChatSubmit(userMessage)) === false) {
+        typedFailedRef.current = true;
+        typedInFlightRef.current = false;
         setLockedMessage(null);
+        setShowSuggestions(true);
+        return;
+      }
+      if (!isStreamingRef.current) {
+        if (!typedFailedRef.current) setChatMessage("");
+        setLockedMessage(null);
+        typedInFlightRef.current = false;
       }
     } catch {
-      setChatMessage("");
+      // The request failed: keep what the teacher typed so they can send it again.
+      typedFailedRef.current = true;
+      typedInFlightRef.current = false;
       setLockedMessage(null);
     }
   };
 
   const handleSuggestionClick = async (chip: SuggestionChip) => {
-    if (isStreaming || lockedMessage !== null) return;
+    if (disabled || isStreaming || lockedMessage !== null) return;
     setShowSuggestions(false);
+    typedInFlightRef.current = false;
+    typedFailedRef.current = false;
     setLockedMessage(chip.message);
     setChatMessage(chip.message);
     posthog.capture("ai_chat_suggestion_clicked", {
@@ -448,7 +463,11 @@ export default function AIChatPanel({
       document_id: documentId,
     });
     try {
-      await onChatSubmit(chip.message);
+      if ((await onChatSubmit(chip.message)) === false) {
+        setLockedMessage(null);
+        setShowSuggestions(true);
+        return;
+      }
       if (!isStreamingRef.current) {
         setChatMessage("");
         setLockedMessage(null);
@@ -459,11 +478,19 @@ export default function AIChatPanel({
     }
   };
 
+  // An error shown while a typed request is in flight is that request failing (declared before the effect below,
+  // so it runs first when both change in one render).
+  useEffect(() => {
+    if (error && typedInFlightRef.current) typedFailedRef.current = true;
+  }, [error]);
+
   useEffect(() => {
     isStreamingRef.current = isStreaming;
     if (wasStreamingRef.current && !isStreaming) {
-      setChatMessage("");
+      // A failed request keeps what the teacher typed, next to the error, so it can be sent again.
+      if (!typedFailedRef.current) setChatMessage("");
       setLockedMessage(null);
+      typedInFlightRef.current = false;
     }
     wasStreamingRef.current = isStreaming;
   }, [isStreaming]);
@@ -487,6 +514,7 @@ export default function AIChatPanel({
         <ChatContent
           chatHistory={chatHistory}
           isStreaming={isStreaming}
+          disabled={disabled}
           error={error}
           placeholder={resolvedPlaceholder}
           title={resolvedTitle}
@@ -500,7 +528,7 @@ export default function AIChatPanel({
           onImageRegen={onImageRegen}
           onDismissImageRegen={onDismissImageRegen}
           showSuggestions={showSuggestions}
-          documentType={documentType}
+          documentType={suggestionsKey ?? documentType}
           onSuggestionClick={handleSuggestionClick}
           nudge={nudge}
           onNudgeDismiss={onNudgeDismiss}
@@ -543,7 +571,9 @@ export default function AIChatPanel({
           </SheetTrigger>
           <SheetContent
             side="right"
+            largeClose
             className="flex w-full max-w-none flex-col border-l border-border/50 p-0 sm:max-w-md"
+            style={keyboard ? { paddingBottom: keyboard } : undefined}
           >
             <SheetHeader className="px-6 py-6 border-b border-border/50 bg-muted/20">
               <SheetTitle className="text-xl font-bold text-foreground tracking-tight">
@@ -554,6 +584,7 @@ export default function AIChatPanel({
               <ChatContent
                 chatHistory={chatHistory}
                 isStreaming={isStreaming}
+                disabled={disabled}
                 error={error}
                 placeholder={resolvedPlaceholder}
                 title={resolvedTitle}
@@ -567,7 +598,7 @@ export default function AIChatPanel({
                 onImageRegen={onImageRegen}
                 onDismissImageRegen={onDismissImageRegen}
                 showSuggestions={showSuggestions}
-                documentType={documentType}
+                documentType={suggestionsKey ?? documentType}
                 onSuggestionClick={handleSuggestionClick}
               />
             </div>

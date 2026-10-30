@@ -8,6 +8,7 @@
 // Document service
 export * from "./document.service";
 export * from "./document-images.service";
+export * from "./document-versions.service";
 
 // Template service
 export * from "./template.service";
@@ -15,9 +16,6 @@ export * from "./template.service";
 // Subscription service
 export * from "./subscription.service";
 export * from "./entitlement.service";
-
-// Assistant service
-export * from "./assistant.service";
 
 // Health service
 export * from "./health.service";

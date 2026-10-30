@@ -18,6 +18,7 @@
  */
 "use client";
 
+import { isPresentationDoc } from "@/lib/documents/kind";
 import { parsePresentationDocument, type PresentationDocument } from "@/shared/types/blocks";
 import { CanvasSlideView } from "@/components/document-editor-v2/CanvasSlideView";
 import { presentationToCanvas } from "@/components/document-editor-v2/canvas-layout";
@@ -60,7 +61,7 @@ export function PresentView({ documentId }: Props) {
     canvasPresentation: CanvasPresentation | null;
     parsed: PresentationDocument | null;
   }>(() => {
-    if (!document || document.contentFormat !== "json" || !document.content) {
+    if (!document || !isPresentationDoc(document) || !document.content) {
       return { canvasPresentation: null, parsed: null };
     }
     try {

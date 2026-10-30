@@ -28,6 +28,7 @@ import type {
 } from "@/shared/types/document";
 import { isUsableDocumentContent } from "@/shared/utils/documentContent";
 import { translate } from "@/i18n/translate";
+import { ApiRequestError } from "@/services/api/client";
 import { fetchEntitlements } from "@/store/entitlements/entitlementsSlice";
 import { fetchUsage } from "@/store/subscription/subscriptionSlice";
 import { createAsyncThunk, createSlice, type PayloadAction } from "@reduxjs/toolkit";
@@ -38,14 +39,21 @@ interface UpdateDocumentData {
   id: string;
   title?: string;
   content?: string;
+  /** The stored content the edit starts from; omitted, the save overwrites whatever is stored. */
+  baseContentVersion?: string;
 }
 
 type UpdateDocumentResult = {
   id: string;
   title?: string;
   content?: string;
+  contentVersion?: string;
+  metadata?: Document["metadata"];
   updatedAt?: string;
 };
+
+/** `rejectedMeta` of `updateDocument`: true when another tab or device saved the document first (409). */
+type UpdateDocumentRejectedMeta = { conflict: boolean };
 
 interface DocumentState {
   documents: Document[];
@@ -61,6 +69,8 @@ interface DocumentState {
   isLoading: boolean;
   /** ID of the document currently being fetched, to deduplicate concurrent requests. */
   loadingDocumentId: string | null;
+  /** The last document that failed to load and the HTTP status (0: no answer), to tell "not found" from "unreachable". */
+  documentLoadError: { id: string; status: number } | null;
   isSaving: boolean;
   isChatting: boolean;
   lastChatAnswer: string | null;
@@ -92,6 +102,7 @@ const initialState: DocumentState = {
   filters: {},
   isLoading: false,
   loadingDocumentId: null,
+  documentLoadError: null,
   isSaving: false,
   isChatting: false,
   lastChatAnswer: null,
@@ -191,7 +202,11 @@ const fetchDocuments = createAsyncThunk(
   }
 );
 
-export const fetchDocument = createAsyncThunk(
+export const fetchDocument = createAsyncThunk<
+  Document,
+  string,
+  { rejectValue: string; rejectedMeta: { status: number } }
+>(
   "documents/fetchDocument",
   async (id: string, { rejectWithValue }) => {
     try {
@@ -199,7 +214,8 @@ export const fetchDocument = createAsyncThunk(
       return document;
     } catch (error) {
       return rejectWithValue(
-        error instanceof Error ? error.message : translate("errors.documents.notFound")
+        error instanceof Error ? error.message : translate("errors.documents.notFound"),
+        { status: error instanceof ApiRequestError ? error.status : 0 },
       );
     }
   },
@@ -260,20 +276,28 @@ export const createDocument = createAsyncThunk(
   }
 );
 
-export const updateDocument = createAsyncThunk(
+export const updateDocument = createAsyncThunk<
+  UpdateDocumentResult,
+  UpdateDocumentData,
+  { rejectValue: string; rejectedMeta: UpdateDocumentRejectedMeta }
+>(
   "documents/updateDocument",
-  async ({ id, title, content }: UpdateDocumentData, { rejectWithValue }) => {
+  async ({ id, title, content, baseContentVersion }, { rejectWithValue }) => {
     try {
-      const document = await updateDocumentService(id, { title, content });
+      const document = await updateDocumentService(id, { title, content, baseContentVersion });
       return {
         id: document?.id ?? id,
         title: document?.title ?? title,
         content: document?.content ?? content,
+        contentVersion: document?.contentVersion,
+        metadata: document?.metadata,
         updatedAt: document?.updatedAt,
       } satisfies UpdateDocumentResult;
     } catch (error) {
+      const conflict = error instanceof ApiRequestError && error.status === 409;
       return rejectWithValue(
-        error instanceof Error ? error.message : translate("errors.documents.updateFailed")
+        error instanceof Error ? error.message : translate("errors.documents.updateFailed"),
+        { conflict },
       );
     }
   }
@@ -501,6 +525,7 @@ const documentSlice = createSlice({
         state.error = null;
       })
       .addCase(fetchDocument.fulfilled, (state, action) => {
+        state.documentLoadError = null;
         state.currentDocument = action.payload;
         state.isLoading = false;
         state.loadingDocumentId = null;
@@ -509,6 +534,7 @@ const documentSlice = createSlice({
         state.error = action.payload as string;
         state.isLoading = false;
         state.loadingDocumentId = null;
+        state.documentLoadError = { id: action.meta.arg, status: action.meta.status ?? 0 };
       })
       // Create Document (returns stream info, not full document)
       .addCase(createDocument.pending, (state) => {
@@ -546,6 +572,10 @@ const documentSlice = createSlice({
           if (updatedData.content !== undefined) {
             state.currentDocument.content = updatedData.content;
           }
+          // Unknown (no body) clears it, so the next save doesn't claim a version it never saw.
+          state.currentDocument.contentVersion = updatedData.contentVersion;
+          // A save can clear answer-key flags (the teacher edited the exercise).
+          if (updatedData.metadata !== undefined) state.currentDocument.metadata = updatedData.metadata;
           if (updatedData.updatedAt) {
             state.currentDocument.updatedAt = updatedData.updatedAt;
           }
@@ -588,6 +618,7 @@ const documentSlice = createSlice({
           ...(isUsableDocumentContent(response.content)
             ? { content: response.content }
             : {}),
+          contentVersion: response.contentVersion,
           ...(response.sources && { sources: response.sources }),
           ...(response.updatedAt ? { updatedAt: response.updatedAt } : {}),
         };
@@ -685,6 +716,7 @@ const documentSlice = createSlice({
 
 export const {
   setPendingInitialPrompt,
+  setCurrentDocument,
   clearStreamInfo,
   clearLastChatAnswer,
   updateDocumentOptimistic,

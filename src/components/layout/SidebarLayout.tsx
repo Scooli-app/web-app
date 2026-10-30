@@ -1,18 +1,12 @@
 "use client";
 
-import { AssistantProvider } from "@/components/assistant";
 import { AppFeedbackSurveyGate } from "@/components/feedback-survey/AppFeedbackSurveyGate";
 import { FeatureFeedbackGate } from "@/components/feature-feedback/FeatureFeedbackGate";
 import { OnboardingV2Gate } from "@/components/onboarding-v2/OnboardingV2Gate";
 import { PromoGate } from "@/components/promo/PromoGate";
 import { PromoNavCta } from "@/components/promo/PromoNavCta";
-import { TutorialOverlay } from "@/components/tutorial/TutorialOverlay";
-import {
-  TUTORIAL_ROUTE,
-  TutorialProvider,
-  useTutorial,
-} from "@/contexts/TutorialContext";
 import { AppBootstrapGate } from "@/components/layout/AppBootstrapGate";
+import { CreateMenu } from "@/components/layout/CreateMenu";
 import { PostHogPersonSync } from "@/components/providers/PostHogPersonSync";
 import { LanguageToggle } from "@/components/layout/LanguageToggle";
 import { SourceIngestionTracker } from "@/components/layout/SourceIngestionTracker";
@@ -67,24 +61,17 @@ import {
   useUser,
 } from "@clerk/nextjs";
 import {
-  BookOpen,
   Building2,
   CalendarRange,
-  ClipboardList,
   Clock,
-  ExternalLink,
-  FileCheck,
   FileText,
   FolderArchiveIcon,
   GanttChart,
-  GraduationCap,
-  HelpCircle,
   Home,
   Library,
   LogOut,
   Menu,
   MessageSquare,
-  Presentation,
   Settings,
   Shield,
   Sparkles,
@@ -116,6 +103,27 @@ function isDocumentReadingRoute(pathname: string): boolean {
   return DOCUMENT_READING_ROUTE_PATTERN.test(pathname);
 }
 
+// Document pages have no sidebar entry of their own (they start from "Criar"),
+// so an open document lights up "Os meus documentos"; planificações and calendar
+// sub-pages light up their own section.
+function isNavItemActive(href: string, pathname: string): boolean {
+  if (pathname === href) return true;
+  if (href === Routes.CALENDAR) {
+    // Turmas (/calendar/planos-letivos) has its own item; a turma's own calendar still counts as Calendário.
+    return pathname.startsWith(`${href}/`) && !pathname.startsWith(Routes.CALENDAR_SEQUENCES);
+  }
+  if (href === Routes.CURRICULUM_PLAN || href === Routes.CALENDAR_SEQUENCES) {
+    return pathname.startsWith(`${href}/`);
+  }
+  if (href === Routes.DOCUMENTS) {
+    return (
+      isDocumentReadingRoute(pathname) &&
+      !pathname.startsWith(`${Routes.CURRICULUM_PLAN}/`)
+    );
+  }
+  return false;
+}
+
 interface NavItem {
   /**
    * Key under `nav.items` in the message bundles. The title and description are
@@ -125,15 +133,36 @@ interface NavItem {
   key: string;
   href: string;
   icon: LucideIcon;
-  external?: boolean;
 }
 
-const NAVIGATION: NavItem[] = [
-  {
-    key: "dashboard",
-    href: Routes.DASHBOARD,
-    icon: Home,
-  },
+const HOME_NAV_ITEM: NavItem = {
+  key: "dashboard",
+  href: Routes.DASHBOARD,
+  icon: Home,
+};
+
+// Calendário and Planificações are the teacher's week and year, so they sit right
+// under Início — each added only when its feature flag is on (SidebarNavigationContent).
+const CALENDAR_NAV_ITEM: NavItem = {
+  key: "calendar",
+  href: Routes.CALENDAR,
+  icon: CalendarRange,
+};
+
+// Turmas had no way in but a menu inside the calendar.
+const CLASSES_NAV_ITEM: NavItem = {
+  key: "classes",
+  href: Routes.CALENDAR_SEQUENCES,
+  icon: Users,
+};
+
+const CURRICULUM_PLAN_NAV_ITEM: NavItem = {
+  key: "curriculumPlan",
+  href: Routes.CURRICULUM_PLAN,
+  icon: GanttChart,
+};
+
+const LIBRARY_NAVIGATION: NavItem[] = [
   {
     key: "documents",
     href: Routes.DOCUMENTS,
@@ -143,46 +172,6 @@ const NAVIGATION: NavItem[] = [
     key: "community",
     href: Routes.COMMUNITY,
     icon: FolderArchiveIcon,
-  },
-];
-
-// Calendário is a nav-level item (after "As minhas fontes") — added conditionally in SidebarNavigationContent
-const CALENDAR_NAV_ITEM: NavItem = {
-  key: "calendar",
-  href: Routes.CALENDAR,
-  icon: CalendarRange,
-};
-
-const CONTENT_CREATION: NavItem[] = [
-  {
-    key: "curriculumPlan",
-    href: Routes.CURRICULUM_PLAN,
-    icon: GanttChart,
-  },
-  {
-    key: "lessonPlan",
-    href: Routes.LESSON_PLAN,
-    icon: BookOpen,
-  },
-  {
-    key: "test",
-    href: Routes.TEST,
-    icon: FileCheck,
-  },
-  {
-    key: "quiz",
-    href: Routes.QUIZ,
-    icon: HelpCircle,
-  },
-  {
-    key: "worksheet",
-    href: Routes.WORKSHEET,
-    icon: ClipboardList,
-  },
-  {
-    key: "presentation",
-    href: Routes.PRESENTATION,
-    icon: Presentation,
   },
 ];
 
@@ -196,12 +185,6 @@ const SECONDARY_NAVIGATION: NavItem[] = [
     key: "settings",
     href: Routes.SETTINGS,
     icon: Settings,
-  },
-  {
-    key: "recommendSchool",
-    href: `${MARKETING_SITE_URL}/recomendar-instituicao`,
-    icon: Building2,
-    external: true,
   },
 ];
 
@@ -252,7 +235,6 @@ const NavMenuItem = memo(function NavMenuItem({
         href={item.href}
         onClick={onClick}
         className="w-full"
-        prefetch={false}
       >
         <SidebarMenuButton
           isActive={isActive}
@@ -268,35 +250,6 @@ const NavMenuItem = memo(function NavMenuItem({
           {badge}
         </SidebarMenuButton>
       </Link>
-    </SidebarMenuItem>
-  );
-});
-
-const ExternalNavMenuItem = memo(function ExternalNavMenuItem({
-  item,
-  onClick,
-}: {
-  item: NavItem;
-  onClick?: () => void;
-}) {
-  const t = useTranslations("nav");
-  const Icon = item.icon;
-
-  return (
-    <SidebarMenuItem>
-      <a
-        href={item.href}
-        target="_blank"
-        rel="noreferrer"
-        onClick={onClick}
-        className="w-full"
-      >
-        <SidebarMenuButton className="h-10 px-4 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground">
-          <Icon className="h-4 w-4 shrink-0" />
-          <span className="flex-1">{t(`items.${item.key}.title`)}</span>
-          <ExternalLink className="h-3 w-3 shrink-0 text-muted-foreground" />
-        </SidebarMenuButton>
-      </a>
     </SidebarMenuItem>
   );
 });
@@ -330,76 +283,41 @@ const DisabledNavMenuItem = memo(function DisabledNavMenuItem({
   );
 });
 
-const TutorialNavMenuItem = memo(function TutorialNavMenuItem({
-  onClick,
-}: {
-  onClick?: () => void;
-}) {
-  const t = useTranslations("nav");
-  const router = useRouter();
-  const { startTutorial } = useTutorial();
-
-  const handleClick = () => {
-    onClick?.();
-    router.push(TUTORIAL_ROUTE);
-    startTutorial("sidebar");
-  };
-
-  return (
-    <SidebarMenuItem>
-      <SidebarMenuButton
-        onClick={handleClick}
-        className="h-10 px-4 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-      >
-        <GraduationCap className="h-4 w-4" />
-        <span className="flex-1 truncate">{t("viewTutorial")}</span>
-      </SidebarMenuButton>
-    </SidebarMenuItem>
-  );
-});
-
 const NavGroup = memo(function NavGroup({
   label,
   items,
   pathname,
   onItemClick,
   disabledKeys = [],
-  trailing,
 }: {
-  label: string;
+  label?: string;
   items: readonly NavItem[];
   pathname: string;
   onItemClick?: () => void;
   disabledKeys?: string[];
-  trailing?: React.ReactNode;
 }) {
   return (
     <SidebarGroup>
-      <SidebarGroupLabel className="px-4 text-xs font-semibold uppercase tracking-tight text-muted-foreground">
-        {label}
-      </SidebarGroupLabel>
+      {label && (
+        <SidebarGroupLabel className="px-4 text-xs font-semibold uppercase tracking-tight text-muted-foreground">
+          {label}
+        </SidebarGroupLabel>
+      )}
       <SidebarGroupContent>
         <SidebarMenu>
           {items.map((item) =>
             disabledKeys.includes(item.href) ? (
               <DisabledNavMenuItem key={item.href} item={item} />
-            ) : item.external ? (
-              <ExternalNavMenuItem
-                key={item.href}
-                item={item}
-                onClick={onItemClick}
-              />
             ) : (
               <NavMenuItem
                 key={item.href}
                 item={item}
-                isActive={pathname === item.href}
+                isActive={isNavItemActive(item.href, pathname)}
                 onClick={onItemClick}
                 badge={item.href === Routes.SOURCES ? <SourcesPendingBadge /> : undefined}
               />
             ),
           )}
-          {trailing}
         </SidebarMenu>
       </SidebarGroupContent>
     </SidebarGroup>
@@ -503,34 +421,29 @@ const SidebarNavigationContent = memo(function SidebarNavigationContent({
   const router = useRouter();
   const { isAdmin } = useAdmin();
   const features = useSelector((state: RootState) => state.features.flags);
+  // A failed flag fetch must not turn real features into "Em breve": with no
+  // flags at all, show every item enabled and let each page report its own error.
+  const flagsUnavailable = useSelector(
+    (state: RootState) =>
+      state.features.error !== null && Object.keys(state.features.flags).length === 0,
+  );
   const workspace = useSelector(selectWorkspaceContext);
   const hasOrganizationWorkspace = useSelector(selectHasOrganizationWorkspace);
   const isOrganizationAdmin = useSelector(selectIsOrganizationAdmin);
   const isCommunityEnabled = features[FeatureFlag.COMMUNITY_LIBRARY] === true;
-  const isPresentationCreationEnabled =
-    features[FeatureFlag.PRESENTATION_CREATION] === true;
-  const isWorksheetCreationEnabled =
-    features[FeatureFlag.WORKSHEET_CREATION] === true;
   const isUserSourcesEnabled = features[FeatureFlag.USER_SOURCES] === true;
   const isCurriculumPlanEnabled =
     features[FeatureFlag.CURRICULUM_PLAN_ENABLED] === true;
   const isHorarioPlanosEnabled =
     features[FeatureFlag.HORARIO_PLANOS_ENABLED] === true;
 
-  const contentCreationItems = CONTENT_CREATION.filter((item) => {
-    if (item.href === Routes.CURRICULUM_PLAN && !isCurriculumPlanEnabled) return false;
-    return true;
-  });
-
-  const disabledContentCreationKeys = [
-    ...(isWorksheetCreationEnabled ? [] : [Routes.WORKSHEET]),
-    ...(isPresentationCreationEnabled ? [] : [Routes.PRESENTATION]),
+  const planItems: NavItem[] = [
+    ...(isHorarioPlanosEnabled ? [CALENDAR_NAV_ITEM, CLASSES_NAV_ITEM] : []),
+    ...(isCurriculumPlanEnabled ? [CURRICULUM_PLAN_NAV_ITEM] : []),
   ];
-
-  const navigationItems: NavItem[] = [
-    ...NAVIGATION,
+  const libraryItems: NavItem[] = [
+    ...LIBRARY_NAVIGATION,
     ...(isUserSourcesEnabled ? [SOURCES_NAV_ITEM] : []),
-    ...(isHorarioPlanosEnabled ? [CALENDAR_NAV_ITEM] : []),
   ];
 
   return (
@@ -548,31 +461,37 @@ const SidebarNavigationContent = memo(function SidebarNavigationContent({
       </SidebarHeader>
       <SidebarContent className="py-4">
         <NavGroup
-          label={t("groups.navigation")}
-          items={navigationItems}
+          items={[HOME_NAV_ITEM]}
           pathname={pathname}
           onItemClick={onItemClick}
-          disabledKeys={isCommunityEnabled ? [] : [Routes.COMMUNITY]}
+        />
+        <CreateMenu onNavigate={onItemClick} />
+
+        {planItems.length > 0 && (
+          <NavGroup
+            label={t("groups.plan")}
+            items={planItems}
+            pathname={pathname}
+            onItemClick={onItemClick}
+          />
+        )}
+
+        <NavGroup
+          label={t("groups.library")}
+          items={libraryItems}
+          pathname={pathname}
+          onItemClick={onItemClick}
+          disabledKeys={
+            isCommunityEnabled || flagsUnavailable ? [] : [Routes.COMMUNITY]
+          }
         />
 
         <Separator className="my-4" />
 
         <NavGroup
-          label={t("groups.contentCreation")}
-          items={contentCreationItems}
-          pathname={pathname}
-          onItemClick={onItemClick}
-          disabledKeys={disabledContentCreationKeys}
-        />
-
-        <Separator className="my-4" />
-
-        <NavGroup
-          label={t("groups.system")}
           items={SECONDARY_NAVIGATION}
           pathname={pathname}
           onItemClick={onItemClick}
-          trailing={<TutorialNavMenuItem onClick={onItemClick} />}
         />
         <SignedIn>
           <SidebarProfileCard onClick={onItemClick} />
@@ -654,7 +573,7 @@ function GenerationsIndicator() {
             : t("generations.proAccess")
         }
         className={cn(
-          "flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors",
+          "flex h-9 items-center gap-1.5 rounded-full border px-3 text-sm font-medium transition-colors",
           "border-primary/10 bg-primary/5 text-primary hover:bg-primary/10",
         )}
       >
@@ -671,10 +590,10 @@ function GenerationsIndicator() {
     return (
       <Link href={Routes.CHECKOUT}>
         <Button
-          size="sm"
+          size="bar"
           className="bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-sm transition-all hover:scale-105 hover:from-amber-600 hover:to-orange-700 active:scale-95"
         >
-          <Sparkles className="mr-1.5 h-4 w-4" />
+          <Sparkles />
           {t("generations.upgradeToPro")}
         </Button>
       </Link>
@@ -685,7 +604,7 @@ function GenerationsIndicator() {
     <Link
       href={Routes.SETTINGS}
       className={cn(
-        "flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors",
+        "flex h-9 items-center gap-1.5 rounded-full border px-3 text-sm font-medium transition-colors",
         isLow
           ? "border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 dark:border-amber-900/30 dark:bg-amber-900/20 dark:text-amber-400"
           : "border-primary/10 bg-primary/5 text-primary hover:bg-primary/10",
@@ -776,7 +695,6 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
   );
 
   return (
-    <TutorialProvider>
     <SidebarProvider open={desktopSidebarOpen} onOpenChange={setDesktopSidebarOpen}>
       <div className="flex h-dvh w-full">
         <AppBootstrapGate />
@@ -791,7 +709,6 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
         <FeatureFeedbackGate />
         <OnboardingV2Gate />
         <PromoGate />
-        <TutorialOverlay />
 
         <div className="hidden md:block md:h-dvh">
           {desktopSidebarContent}
@@ -805,9 +722,10 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
                   <SheetTrigger asChild>
                     <Button
                       variant="ghost"
-                      className="h-9 w-9 px-0 text-base hover:bg-accent hover:text-primary md:hidden"
+                      size="bar-icon"
+                      className="text-foreground hover:bg-accent hover:text-primary md:hidden"
                     >
-                      <Menu className="h-6 w-6" />
+                      <Menu />
                       <span className="sr-only">{tCommon("toggle")}</span>
                     </Button>
                   </SheetTrigger>
@@ -823,12 +741,30 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
                     </ScrollArea>
                   </SheetContent>
                 </Sheet>
-                <SidebarTrigger className="hidden md:flex" />
+                <SidebarTrigger className="hidden size-9 rounded-full text-foreground hover:text-primary md:flex" />
               </div>
 
               <div className="flex items-center gap-2">
                 <SignedIn>
                   <div className="flex items-center gap-2">
+                    <Button
+                      asChild
+                      variant="outline"
+                      size="bar"
+                      className="border-primary/40 text-primary hover:bg-primary/10 hover:text-primary"
+                    >
+                      <a
+                        href={`${MARKETING_SITE_URL}/recomendar-instituicao`}
+                        target="_blank"
+                        rel="noreferrer"
+                        aria-label={t("items.recommendSchool.title")}
+                      >
+                        <Building2 />
+                        <span className="hidden sm:inline">
+                          {t("items.recommendSchool.title")}
+                        </span>
+                      </a>
+                    </Button>
                     <PromoNavCta />
                     <GenerationsIndicator />
                   </div>
@@ -839,6 +775,7 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
                   <SignInButton mode="modal">
                     <Button
                       variant="default"
+                      size="bar"
                       className="bg-primary hover:bg-primary/90"
                     >
                       {t("signIn")}
@@ -860,10 +797,7 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
             </div>
           </main>
         </div>
-
-        <AssistantProvider />
       </div>
     </SidebarProvider>
-    </TutorialProvider>
   );
 }

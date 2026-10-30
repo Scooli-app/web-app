@@ -9,7 +9,7 @@ export type QuickCreateDocumentType =
 
 export interface QuickCreateParse {
   documentType: QuickCreateDocumentType;
-  /** Full original text — used as the Tema field, never mangled */
+  /** Full original text, as typed — the Tema field gets stripParsedTokens(topic) */
   topic: string;
   schoolYear?: number;
   subjectId?: string;
@@ -163,10 +163,82 @@ export function parseQuickCreate(input: string): QuickCreateParse {
   return { documentType, topic, schoolYear, subjectId };
 }
 
+/**
+ * The topic without the parts the parser already turned into fields — the
+ * document type ("plano de aula sobre"), the year ("para o 5.º ano") and an
+ * explicitly named subject ("de Matemática") — so the Tema field doesn't repeat
+ * what the form already shows. It only strips what reads as a request, never
+ * part of the topic: "Plano inclinado", "Teste de hipóteses" and "A história de
+ * Portugal" stay whole. Falls back to the original text when nothing would be left.
+ */
+export function stripParsedTokens(text: string, parse: QuickCreateParse): string {
+  // Normalize char by char so indices in `norm` match indices in `text`.
+  const norm = Array.from(text, (ch) => normalize(ch).charAt(0) || " ").join("");
+  const patterns: RegExp[] = [];
+  const subject = parse.subjectId
+    ? SUBJECTS.find((s) => s.id === parse.subjectId)
+    : undefined;
+  const subjectLabel = subject ? escapeRegExp(normalize(subject.label)) : null;
+  const yearPhrase = String.raw`(?:(?:para|do|da|de|no|na)\s+(?:o\s+|a\s+)?)?\d{1,2}\s*(?:\.\s*)?(?:[ºo°]\s*)?ano\b`;
+
+  for (const { type, keywords } of TYPE_KEYWORDS) {
+    if (type !== parse.documentType) continue;
+    for (const keyword of [...keywords].sort((a, b) => b.length - a.length)) {
+      const word = String.raw`^\s*${escapeRegExp(keyword)}(?:e?s)?(?![a-z0-9])`;
+      if (keyword.includes(" ")) {
+        // "plano de aula", "ficha de trabalho": unambiguous at the start.
+        patterns.push(new RegExp(String.raw`${word}(?:\s+(?:sobre|acerca\s+de|de|do|da|para))?`));
+      } else {
+        // "plano", "teste", "ficha": only when what follows makes it a request
+        // ("Teste sobre…", "Teste de Matemática", "Quiz: …", or nothing at all).
+        const requestFollows = [
+          String.raw`\s*[:·–-]`,
+          String.raw`\s*$`,
+          String.raw`\s+(?:sobre|acerca\s+de|para)\b`,
+          String.raw`\s+${yearPhrase}`,
+          ...(subjectLabel ? [String.raw`\s+(?:de|da|do)\s+${subjectLabel}(?![a-z0-9])`] : []),
+        ].join("|");
+        patterns.push(
+          new RegExp(String.raw`${word}(?=${requestFollows})(?:\s+(?:sobre|acerca\s+de|para))?`),
+        );
+      }
+    }
+  }
+  if (parse.schoolYear) {
+    patterns.push(new RegExp(String.raw`\b${yearPhrase}`));
+  }
+  if (subjectLabel) {
+    // The subject as a field ("de Matemática", "frações matemática"), not as a
+    // word in the topic ("A história de Portugal").
+    patterns.push(
+      new RegExp(
+        String.raw`(?:\b(?:de|da|do|em)\s+${subjectLabel}(?![a-z0-9])|(?<![a-z0-9])${subjectLabel}(?=\s*(?:$|[,.;:·–-]|\s${yearPhrase})))`,
+      ),
+    );
+  }
+
+  const removed = Array.from(text, () => false);
+  for (const pattern of patterns) {
+    const match = pattern.exec(norm);
+    if (!match) continue;
+    for (let i = match.index; i < match.index + match[0].length; i++) removed[i] = true;
+  }
+
+  const result = Array.from(text)
+    .filter((_, i) => !removed[i])
+    .join("")
+    .replace(/\s+/g, " ")
+    .replace(/^[\s,.:;·–-]+|[\s,.:;·–-]+$/g, "")
+    // A connector left at the start once its keyword is gone ("sobre frações").
+    .replace(/^(?:sobre|acerca\s+de|de|do|da|para)\s+/i, "")
+    .trim();
+  return result || text.trim();
+}
+
 /** Build the creation-page URL with prefill query params */
 export function buildQuickCreateUrl(parse: QuickCreateParse): string {
   const params = new URLSearchParams();
-  params.set("topic", parse.topic);
+  params.set("topic", stripParsedTokens(parse.topic, parse));
   if (parse.schoolYear) params.set("year", String(parse.schoolYear));
   if (parse.subjectId) params.set("subject", parse.subjectId);
   return `${CREATION_ROUTES[parse.documentType]}?${params.toString()}`;

@@ -15,6 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { EmptyState } from "@/components/ui/empty-state";
 import { ResponsiveDataView } from "@/components/ui/responsive-data-view";
 import {
   Table,
@@ -25,6 +26,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
+import { AssessmentPreview } from "@/components/assessment-editor/AssessmentPreview";
 import type { SharedResource } from "@/services/api/community.service";
 import type { ModerationActionRequest } from "@/services/api/moderation.service";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
@@ -78,6 +80,30 @@ function SortableHead({
   );
 }
 import { toast } from "sonner";
+
+/**
+ * The submitted content: a structured test/worksheet/quiz is rendered read-only, never injected as HTML, in the
+ * teacher view, so the moderator checks the answers too.
+ */
+export function ResourceContentPreview({ resource }: { resource: Pick<SharedResource, "content" | "contentFormat"> }) {
+  if (resource.contentFormat === "json") {
+    return (
+      <div className="max-h-[28rem] overflow-y-auto rounded-lg border bg-muted/30 p-2 sm:p-3">
+        <AssessmentPreview content={resource.content} studentView={false} />
+      </div>
+    );
+  }
+  return (
+    <div className="max-h-80 overflow-y-auto rounded-lg border bg-muted/30 p-4">
+      <div
+        className="prose prose-sm max-w-none"
+        dangerouslySetInnerHTML={{
+          __html: resource.content,
+        }}
+      />
+    </div>
+  );
+}
 
 export function ModerationQueue() {
   const t = useTranslations("community.moderationQueue");
@@ -167,27 +193,15 @@ export function ModerationQueue() {
       <div className="space-y-4">
         {Array.from({ length: 5 }, (_, i) => (
           <Card key={i} className="animate-pulse p-4">
-            <div className="mb-2 h-6 w-3/4 rounded bg-muted" />
-            <div className="mb-4 h-4 w-1/2 rounded bg-muted" />
+            <div className="mb-2 h-6 w-3/4 rounded bg-muted-foreground/15" />
+            <div className="mb-4 h-4 w-1/2 rounded bg-muted-foreground/15" />
             <div className="flex gap-2">
-              <div className="h-8 w-20 rounded bg-muted" />
-              <div className="h-8 w-20 rounded bg-muted" />
+              <div className="h-8 w-20 rounded bg-muted-foreground/15" />
+              <div className="h-8 w-20 rounded bg-muted-foreground/15" />
             </div>
           </Card>
         ))}
       </div>
-    );
-  }
-
-  if (pendingResources.length === 0) {
-    return (
-      <Card className="p-8 text-center">
-        <Clock className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-        <h3 className="mb-2 text-lg font-semibold">{t("emptyTitle")}</h3>
-        <p className="text-sm text-muted-foreground">
-          {t("emptyDescription")}
-        </p>
-      </Card>
     );
   }
 
@@ -322,10 +336,18 @@ export function ModerationQueue() {
           </div>
         </Card>
 
-        <ResponsiveDataView
-          mobileCardView={mobileCards}
-          desktopTableView={desktopTable}
-        />
+        {pendingResources.length === 0 ? (
+          <EmptyState
+            icon={Clock}
+            title={t("emptyTitle")}
+            description={t("emptyDescription")}
+          />
+        ) : (
+          <ResponsiveDataView
+            mobileCardView={mobileCards}
+            desktopTableView={desktopTable}
+          />
+        )}
       </div>
 
       <Dialog open={isReviewModalOpen} onOpenChange={setIsReviewModalOpen}>
@@ -381,14 +403,7 @@ export function ModerationQueue() {
 
               <div>
                 <h4 className="mb-2 font-semibold">{t("contentHeading")}</h4>
-                <div className="max-h-80 overflow-y-auto rounded-lg border bg-muted/30 p-4">
-                  <div
-                    className="prose prose-sm max-w-none"
-                    dangerouslySetInnerHTML={{
-                      __html: selectedResource.content,
-                    }}
-                  />
-                </div>
+                <ResourceContentPreview resource={selectedResource} />
               </div>
 
               <div>

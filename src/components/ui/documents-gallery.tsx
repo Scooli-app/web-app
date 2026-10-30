@@ -1,25 +1,54 @@
 "use client";
 
+import { DocumentGridSkeleton, DocumentSectionsSkeleton } from "@/components/ui/document-card-skeleton";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { DocumentCard } from "@/components/ui/document-card";
-import { DocumentFilters, type DocumentOriginFilter } from "@/components/ui/document-filters";
+import { DocumentsByClass } from "@/components/ui/documents-by-class";
+import {
+  DocumentFilters,
+  type DocumentClassOption,
+  type DocumentOriginFilter,
+} from "@/components/ui/document-filters";
+import { listTimetables } from "@/services/api/timetable.service";
+import { translateSubject } from "@/components/document-creation/constants";
+import { formatClassName } from "@/shared/utils/className";
+import { LoadError } from "@/components/ui/load-error";
 import { DocumentsEmptyState } from "@/components/ui/documents-empty-state";
 import {
   deleteDocument,
   deleteDocuments,
   getDocuments,
-  getDocumentStats,
 } from "@/services/api/document.service";
 import type { Document } from "@/shared/types";
 
 import { UploadDocumentModal } from "@/components/modals/upload-document-modal";
 import { useAuth } from "@clerk/nextjs";
-import { CheckSquare, Loader2, Search, Square, Trash2, UploadCloud, X } from "lucide-react";
+import { CheckSquare, Loader2, Square, Trash2, UploadCloud, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useInView } from "react-intersection-observer";
 import { Button } from "./button";
-import { Input } from "./input";
+
+const GROUP_BY_CLASS_KEY = "scooli.documents.groupByClass";
+
+/** The teacher's "Agrupar por turma" choice (on unless they turned it off on this browser). */
+function readGroupPreference(userId: string | null | undefined): boolean {
+  if (!userId) return true;
+  try {
+    return window.localStorage.getItem(`${GROUP_BY_CLASS_KEY}.${userId}`) !== "off";
+  } catch {
+    return true;
+  }
+}
+
+function writeGroupPreference(userId: string | null | undefined, grouped: boolean) {
+  if (!userId) return;
+  try {
+    window.localStorage.setItem(`${GROUP_BY_CLASS_KEY}.${userId}`, grouped ? "on" : "off");
+  } catch {
+    /* private mode: the choice lasts this visit only */
+  }
+}
 
 // Debounce hook for search
 function useDebouncedValue<T>(value: T, delay: number): T {
@@ -40,13 +69,23 @@ function useDebouncedValue<T>(value: T, delay: number): T {
 
 export function DocumentsGallery() {
   const t = useTranslations("documents.gallery");
-  const { isLoaded: isAuthLoaded, isSignedIn } = useAuth();
+  const tTimetable = useTranslations("timetable");
+  const { isLoaded: isAuthLoaded, isSignedIn, userId } = useAuth();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
+  // True once an unfiltered, unsearched fetch came back with nothing: the library is truly empty.
+  const [libraryEmpty, setLibraryEmpty] = useState(false);
   const [selectedType, setSelectedType] = useState<string>("all");
   const [selectedSubject, setSelectedSubject] = useState<string>("");
   const [selectedGrade, setSelectedGrade] = useState<string>("");
   const [selectedOrigin, setSelectedOrigin] = useState<DocumentOriginFilter>("all");
+  const [selectedClass, setSelectedClass] = useState<string>("");
+  const [classes, setClasses] = useState<DocumentClassOption[]>([]);
+  const [groupByClass, setGroupByClass] = useState(true);
+  const [classesReady, setClassesReady] = useState(false);
+  // Sections refetch after a delete or an import.
+  const [refreshKey, setRefreshKey] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedDocuments, setSelectedDocuments] = useState<Set<string>>(
@@ -62,9 +101,6 @@ export function DocumentsGallery() {
     total: 0,
     hasMore: false,
   });
-  const [documentCounts, setDocumentCounts] = useState<Record<string, number>>(
-    {}
-  );
 
   // Debounce search query for performance
   const debouncedSearchQuery = useDebouncedValue(searchQuery, 300);
@@ -73,18 +109,18 @@ export function DocumentsGallery() {
   const initialLoadRef = useRef(false);
   const isAuthReady = isAuthLoaded && Boolean(isSignedIn);
 
-  const fetchDocumentCounts = useCallback(async () => {
-    if (!isAuthReady) {
-      return;
-    }
+  useEffect(() => {
+    setGroupByClass(readGroupPreference(userId));
+  }, [userId]);
 
-    try {
-      const stats = await getDocumentStats();
-      setDocumentCounts(stats.byType);
-    } catch (error) {
-      console.error("Error fetching document stats:", error);
-    }
-  }, [isAuthReady]);
+  const handleGroupedChange = useCallback(
+    (grouped: boolean) => {
+      setGroupByClass(grouped);
+      writeGroupPreference(userId, grouped);
+      if (grouped) setSelectedClass("");
+    },
+    [userId]
+  );
 
   const fetchDocuments = useCallback(
     async (page = 1, reset = false) => {
@@ -94,6 +130,7 @@ export function DocumentsGallery() {
 
       try {
         setLoading(true);
+        setLoadFailed(false);
 
         const result = await getDocuments({
           page,
@@ -102,9 +139,21 @@ export function DocumentsGallery() {
             documentType: selectedType !== "all" ? selectedType : undefined,
             subject: selectedSubject || undefined,
             gradeLevel: selectedGrade || undefined,
+            timetableId: selectedClass || undefined,
+            search: debouncedSearchQuery || undefined,
           },
         });
 
+        if (page === 1) {
+          setLibraryEmpty(
+            result.pagination.total === 0 &&
+              selectedType === "all" &&
+              !selectedSubject &&
+              !selectedGrade &&
+              !selectedClass &&
+              !debouncedSearchQuery
+          );
+        }
         setDocuments((prev) =>
           reset ? result.documents : [...prev, ...result.documents]
         );
@@ -116,12 +165,13 @@ export function DocumentsGallery() {
         }));
       } catch (error) {
         console.error("Error fetching documents:", error);
+        setLoadFailed(true);
       } finally {
         setLoading(false);
         initialLoadRef.current = true;
       }
     },
-    [isAuthReady, selectedType, selectedSubject, selectedGrade, pagination.limit]
+    [isAuthReady, selectedType, selectedSubject, selectedGrade, selectedClass, debouncedSearchQuery, pagination.limit]
   );
 
   // Selection handlers - memoized
@@ -137,18 +187,9 @@ export function DocumentsGallery() {
     });
   }, []);
 
-  // Memoize filtered documents (search + origin are client-side; type/subject/grade go to backend)
+  // Origin is the only client-side filter; type, subject, grade, turma and search go to the backend
   const filteredDocuments = useMemo(() => {
     let result = documents;
-
-    if (debouncedSearchQuery) {
-      const query = debouncedSearchQuery.toLowerCase();
-      result = result.filter(
-        (doc) =>
-          doc.title.toLowerCase().includes(query) ||
-          doc.content.toLowerCase().includes(query)
-      );
-    }
 
     if (selectedOrigin === "imported") {
       result = result.filter((doc) => !!doc.originalFormat);
@@ -157,7 +198,7 @@ export function DocumentsGallery() {
     }
 
     return result;
-  }, [documents, debouncedSearchQuery, selectedOrigin]);
+  }, [documents, selectedOrigin]);
 
   const handleSelectAll = useCallback(() => {
     if (selectedDocuments.size === filteredDocuments.length) {
@@ -197,14 +238,15 @@ export function DocumentsGallery() {
         setSelectedDocuments(new Set());
         setSelectionMode(false);
       }
-      await Promise.all([fetchDocuments(1, true), fetchDocumentCounts()]);
+      await fetchDocuments(1, true);
+      setRefreshKey((n) => n + 1);
     } catch (error) {
       console.error("Error deleting documents:", error);
     } finally {
       setDeleting(false);
       setPendingDeleteId(null);
     }
-  }, [pendingDeleteId, selectedDocuments, fetchDocuments, fetchDocumentCounts]);
+  }, [pendingDeleteId, selectedDocuments, fetchDocuments]);
 
   const getDeleteDialogContent = useMemo(() => {
     if (pendingDeleteId) {
@@ -231,38 +273,14 @@ export function DocumentsGallery() {
     setSelectionMode(true);
   }, []);
 
-  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(e.target.value);
-  }, []);
-
-  // Initial load
-  useEffect(() => {
-    if (!isAuthReady) {
-      return;
-    }
-
-    let isActive = true;
-    const loadCounts = async () => {
-      await new Promise((resolve) => setTimeout(resolve, 0));
-      if (!isActive) {
-        return;
-      }
-      await fetchDocumentCounts();
-    };
-
-    void loadCounts();
-
-    return () => {
-      isActive = false;
-    };
-  }, [fetchDocumentCounts, isAuthReady]);
-
   useEffect(() => {
     if (!isAuthReady) {
       return;
     }
 
     setPagination((prev) => ({ ...prev, page: 1 }));
+    // Another filter's results must not show while this one loads.
+    setDocuments([]);
     let isActive = true;
     const loadDocuments = async () => {
       await new Promise((resolve) => setTimeout(resolve, 0));
@@ -278,13 +296,37 @@ export function DocumentsGallery() {
       isActive = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedType, selectedSubject, selectedGrade, isAuthReady]);
+  }, [selectedType, selectedSubject, selectedGrade, selectedClass, debouncedSearchQuery, isAuthReady]);
+
+  // The teacher's turmas, for the turma filter. Archived ones still own documents, so keep them.
+  useEffect(() => {
+    if (!isAuthReady) return;
+    let cancelled = false;
+    listTimetables()
+      .then((list) => {
+        if (cancelled) return;
+        const labels = {
+          gradeShort: (grade: number) => tTimetable("gradeShort", { grade }),
+          subject: translateSubject,
+        };
+        setClasses(list.map((tt) => ({ id: tt.id, title: formatClassName(tt, labels), color: tt.color })));
+      })
+      .catch(() => {
+        /* no turma filter without the list; the rest of the page still works */
+      })
+      .finally(() => {
+        if (!cancelled) setClassesReady(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthReady, tTimetable]);
 
   const loadMore = useCallback(() => {
-    if (pagination.hasMore && !loading) {
+    if (pagination.hasMore && !loading && !loadFailed) {
       fetchDocuments(pagination.page + 1, false);
     }
-  }, [pagination.hasMore, pagination.page, loading, fetchDocuments]);
+  }, [pagination.hasMore, pagination.page, loading, loadFailed, fetchDocuments]);
 
   const { ref: loadMoreRef, inView } = useInView({
     threshold: 0,
@@ -297,6 +339,34 @@ export function DocumentsGallery() {
       loadMore();
     }
   }, [inView, pagination.hasMore, loading, loadMore]);
+
+  // Grouped is for browsing; picking documents to delete, or one turma's list, is a single grid.
+  const showGrouped = groupByClass && classes.length > 0 && !selectedClass && !selectionMode;
+
+  const hasFilters =
+    selectedType !== "all" ||
+    !!selectedSubject ||
+    !!selectedGrade ||
+    !!selectedClass ||
+    selectedOrigin !== "all";
+  const onlyTypeFilter =
+    selectedType !== "all" && !selectedSubject && !selectedGrade && !selectedClass && selectedOrigin === "all";
+  const clearFilters = () => {
+    setSearchQuery("");
+    setSelectedType("all");
+    setSelectedSubject("");
+    setSelectedGrade("");
+    setSelectedClass("");
+    setSelectedOrigin("all");
+  };
+  const emptyState = (
+    <DocumentsEmptyState
+      variant={debouncedSearchQuery ? "no-search-results" : hasFilters ? "no-filter-results" : "no-documents"}
+      searchQuery={debouncedSearchQuery}
+      filterType={onlyTypeFilter ? selectedType : undefined}
+      onClearFilters={clearFilters}
+    />
+  );
 
   // Memoize selection info
   const selectionInfo = useMemo(() => ({
@@ -385,64 +455,73 @@ export function DocumentsGallery() {
               </div>
             )}
 
-            {!selectionMode && (
-              <div className="flex items-center space-x-2 w-full sm:w-auto">
-                <div className="relative flex-1 sm:flex-initial">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                  <Input
-                    placeholder={t("searchPlaceholder")}
-                    value={searchQuery}
-                    onChange={handleSearchChange}
-                    className="pl-10 w-full sm:w-64"
-                  />
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleEnterSelectionMode}
-                  className="flex-shrink-0"
-                >
-                  {t("select")}
-                </Button>
-              </div>
+            {!selectionMode && !libraryEmpty && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleEnterSelectionMode}
+                className="flex-shrink-0"
+              >
+                {t("select")}
+              </Button>
             )}
           </div>{/* /inner search+selection div */}
           </div>{/* /right-side actions */}
         </div>
 
         {/* Filters */}
+        {!libraryEmpty && (
         <DocumentFilters
+          search={searchQuery}
+          onSearchChange={setSearchQuery}
           selectedType={selectedType}
           onTypeChange={setSelectedType}
-          documentCounts={documentCounts}
+          grouped={groupByClass}
+          onGroupedChange={handleGroupedChange}
+          showClassFilter={!showGrouped}
           selectedSubject={selectedSubject}
           onSubjectChange={setSelectedSubject}
           selectedGrade={selectedGrade}
           onGradeChange={setSelectedGrade}
           selectedOrigin={selectedOrigin}
           onOriginChange={setSelectedOrigin}
+          classes={classes}
+          selectedClass={selectedClass}
+          onClassChange={setSelectedClass}
         />
+        )}
 
-        {/* Documents Grid */}
-        {loading && documents.length === 0 ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="flex items-center space-x-2">
-              <Loader2 className="w-5 h-5 animate-spin text-primary" />
-              <span className="text-muted-foreground">{t("loadingDocuments")}</span>
-            </div>
-          </div>
-        ) : filteredDocuments.length === 0 ? (
-          <DocumentsEmptyState
-            variant={
-              debouncedSearchQuery
-                ? "no-search-results"
-                : selectedType === "all"
-                ? "no-documents"
-                : "no-filter-results"
-            }
-            searchQuery={debouncedSearchQuery}
-            filterType={selectedType !== "all" ? selectedType : undefined}
+        {/* Grouped by turma (the default), or one grid newest first */}
+        {showGrouped ? (
+          <DocumentsByClass
+            classes={classes}
+            filters={{
+              documentType: selectedType !== "all" ? selectedType : undefined,
+              subject: selectedSubject || undefined,
+              gradeLevel: selectedGrade || undefined,
+              search: debouncedSearchQuery || undefined,
+              origin: selectedOrigin,
+            }}
+            refreshKey={refreshKey}
+            onSeeAll={setSelectedClass}
+            onDelete={handleRequestDelete}
+            empty={emptyState}
           />
+        ) : groupByClass && !classesReady ? (
+          <DocumentSectionsSkeleton />
+        ) : loading && documents.length === 0 ? (
+          <DocumentGridSkeleton count={8} />
+        ) : loadFailed && documents.length === 0 ? (
+          <LoadError onRetry={() => fetchDocuments(1, true)} />
+        ) : filteredDocuments.length === 0 ? (
+          // Origin filters client-side, so more pages may still hold matches.
+          pagination.hasMore ? (
+            <div ref={loadMoreRef} className="flex justify-center py-12">
+              <Loader2 className="w-5 h-5 animate-spin text-primary" />
+            </div>
+          ) : (
+            emptyState
+          )
         ) : (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
@@ -457,6 +536,10 @@ export function DocumentsGallery() {
                 />
               ))}
             </div>
+
+            {loadFailed && (
+              <LoadError onRetry={() => fetchDocuments(pagination.page + 1, false)} />
+            )}
 
             {/* Infinite Scroll Trigger */}
             {pagination.hasMore && (
@@ -491,6 +574,7 @@ export function DocumentsGallery() {
         onClose={() => {
           setShowUploadModal(false);
           fetchDocuments(1, true); // Refresh list
+          setRefreshKey((n) => n + 1);
         }}
       />
     </div>

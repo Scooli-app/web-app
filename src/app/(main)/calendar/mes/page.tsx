@@ -1,24 +1,32 @@
 "use client";
 
-import { isListableSlot } from "@/shared/utils/lessonTopic";
+import CalendarMonthLoading from "./loading";
+import { MonthGridSkeleton } from "@/components/calendar/CalendarGridSkeleton";
+import { isVisibleSlot } from "@/shared/utils/lessonTopic";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { LoadError } from "@/components/ui/load-error";
 import { Routes } from "@/shared/types";
-import { selectIsHorarioPlanosEnabled } from "@/store/features/selectors";
+import { selectIsClassStateEnabled, selectIsHorarioPlanosEnabled } from "@/store/features/selectors";
+import { TeachingMarkBadge } from "@/components/calendar/TeachingMarkBadge";
+import { teachingMark } from "@/shared/utils/teachingStatus";
 import { useFeatureAccess } from "@/components/feature/useFeatureAccess";
 import { FeatureUnavailable } from "@/components/feature/FeatureUnavailable";
 import { fetchTimetables } from "@/store/timetable/timetableSlice";
 import { useAppDispatch } from "@/store/hooks";
-import { useNewClassGate } from "@/hooks/usePlanLimits";
+import { useNewClassGate, usePlanLimits } from "@/hooks/usePlanLimits";
+import { freePeriodBounds } from "@/lib/freePlanWindow";
+import { setUpgradeModalOpen } from "@/store/ui/uiSlice";
 import type { RootState } from "@/store/store";
 import { listLessons, type LessonSlot, type Timetable } from "@/services/api/timetable.service";
 import { ArrowLeft, ArrowRight, CalendarDays, Plus } from "lucide-react";
 import { toIso, addDays, getWeekStart as getIsoWeekStart, getDayLabels, toIntlLocale } from "@/shared/utils/calendar";
-import { useLocale, useTranslations } from "next-intl";
+import { useFormatter, useLocale, useTranslations } from "next-intl";
 import { isSupportedLocale, defaultLocale, type Locale } from "@/i18n/locales";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -53,16 +61,21 @@ export default function CalendarMonthPage() {
   const locale = isSupportedLocale(rawLocale) ? rawLocale : defaultLocale;
   const dayLabels = useMemo(() => getDayLabels(locale), [locale]);
   const { loaded: featuresLoaded, enabled } = useFeatureAccess(selectIsHorarioPlanosEnabled);
-  const { timetables, isLoading: timetablesLoading } = useSelector(
+  const { timetables, isLoading: timetablesLoading, error: timetablesError } = useSelector(
     (state: RootState) => state.timetable,
   );
   const dispatch = useAppDispatch();
   const newClassGate = useNewClassGate();
+  const { limits } = usePlanLimits();
+  const format = useFormatter();
   const router = useRouter();
+  const checkInEnabled = useSelector(selectIsClassStateEnabled);
+  const todayIso = toIso(new Date());
 
   const [monthStart, setMonthStart] = useState<Date>(() => getMonthStart());
   const [slotsByDate, setSlotsByDate] = useState<Map<string, Array<{ timetable: Timetable; slot: LessonSlot }>>>(new Map());
   const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
 
   useEffect(() => {
     if (!enabled) return; // gated users get the FeatureUnavailable screen below
@@ -93,6 +106,7 @@ export default function CalendarMonthPage() {
       return;
     }
     setLoading(true);
+    setLoadFailed(false);
     try {
       const map = new Map<string, Array<{ timetable: Timetable; slot: LessonSlot }>>();
       const results = await Promise.all(
@@ -102,6 +116,7 @@ export default function CalendarMonthPage() {
               const slots = await listLessons(t.id, ws);
               return { timetable: t, slots };
             } catch {
+              setLoadFailed(true);
               return { timetable: t, slots: [] as LessonSlot[] };
             }
           }),
@@ -109,7 +124,7 @@ export default function CalendarMonthPage() {
       );
       for (const { timetable, slots } of results) {
         for (const slot of slots) {
-          if (!isListableSlot(slot)) continue; // lessons without a topic are never shown
+          if (!isVisibleSlot(slot)) continue; // lessons without a topic are never shown, except a not-held one
           if (!map.has(slot.slotDate)) map.set(slot.slotDate, []);
           const dayEntries = map.get(slot.slotDate);
           if (dayEntries) dayEntries.push({ timetable, slot });
@@ -152,12 +167,16 @@ export default function CalendarMonthPage() {
     return rows;
   }, [monthStart, slotsByDate, today]);
 
+  // Free plan: months past the planning window have no lessons by design.
+  const freeMax = freePeriodBounds(limits).max;
+  const beyondFreeWindow = !!freeMax && toIso(monthStart) > freeMax;
+
   const handleDayClick = (day: DayInfo) => {
     const weekStart = toIso(getIsoWeekStart(day.date));
     router.push(`${Routes.CALENDAR}?week=${weekStart}`);
   };
 
-  if (!featuresLoaded) return null;
+  if (!featuresLoaded) return <CalendarMonthLoading />;
   if (!enabled)
     return (
       <FeatureUnavailable
@@ -171,7 +190,8 @@ export default function CalendarMonthPage() {
       {/* Top bar */}
       <div className="sticky top-0 z-10 border-b bg-card/95 backdrop-blur px-4 pt-2.5 pb-2">
         <div className="mx-auto max-w-[1400px] space-y-2">
-          <div className="flex items-center gap-2">
+          {/* Wraps on narrow screens: in one row "Nova turma" ran off the edge below ~720px. */}
+          <div className="flex flex-wrap items-center gap-2">
             <h1 className="mr-2 text-lg font-semibold">{t("shared.pageTitle")}</h1>
 
             {/* View toggle */}
@@ -196,7 +216,7 @@ export default function CalendarMonthPage() {
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setMonthStart((p) => addMonths(p, 1))}>
               <ArrowRight className="h-4 w-4" />
             </Button>
-            <span className="min-w-[160px] text-sm font-medium">
+            <span className="text-sm font-medium">
               {formatMonthHeader(monthStart, locale)}
             </span>
 
@@ -223,48 +243,35 @@ export default function CalendarMonthPage() {
         {timetablesLoading || (loading && slotsByDate.size === 0) ? (
           // Full grid skeleton on first load (before any lesson data has arrived).
           // Subsequent month navigation reuses the lighter per-day skeleton below instead.
-          <div className="overflow-hidden rounded-lg border border-border">
-            <div className="grid grid-cols-7 divide-x divide-border border-b bg-muted/20">
-              {dayLabels.map((d) => (
-                <div key={d} className="py-2 text-center">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{d}</p>
-                </div>
-              ))}
-            </div>
-            {Array.from({ length: 5 }, (_, rowIdx) => (
-              <div key={rowIdx} className="grid grid-cols-7 divide-x divide-border border-b last:border-b-0">
-                {Array.from({ length: 7 }, (_, colIdx) => (
-                  <div key={colIdx} className="min-h-[100px] animate-pulse p-2">
-                    <div className="mb-2 h-5 w-5 rounded-full bg-muted" />
-                    {colIdx < 5 && rowIdx < 3 && (
-                      <div className="space-y-1">
-                        <div className="flex gap-0.5">
-                          <div className="h-2 w-2 rounded-full bg-muted/60" />
-                          <div className="h-2 w-2 rounded-full bg-muted/40" />
-                        </div>
-                        <div className="h-2.5 w-12 rounded bg-muted/60" />
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ))}
-          </div>
+          <MonthGridSkeleton dayLabels={dayLabels} />
+        ) : timetablesError && timetables.length === 0 ? (
+          <LoadError onRetry={() => void dispatch(fetchTimetables())} />
         ) : activeTimetables.length === 0 && !timetablesLoading ? (
-          <div className="py-20 text-center">
-            <CalendarDays className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-            <p className="text-lg font-medium">{t("shared.emptyTitle")}</p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {t("shared.emptyDescription")}
-            </p>
-            <Button asChild className="mt-5">
-              <Link href={Routes.CALENDAR_NEW} onClick={newClassGate.onClick}>
-                <Plus className="mr-2 h-4 w-4" />
-                {t("shared.createClass")}
-              </Link>
-            </Button>
-          </div>
+          <EmptyState
+            icon={CalendarDays}
+            title={timetables.length > 0 ? t("shared.noActiveTitle") : t("shared.emptyTitle")}
+            description={
+              timetables.length > 0 ? t("shared.noActiveDescription") : t("shared.emptyDescription")
+            }
+            actions={
+              <>
+                {timetables.length > 0 && (
+                  <Button variant="outline" asChild>
+                    <Link href={Routes.CALENDAR_SEQUENCES}>{t("shared.classesLink")}</Link>
+                  </Button>
+                )}
+                <Button asChild>
+                  <Link href={Routes.CALENDAR_NEW} onClick={newClassGate.onClick}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    {t("shared.createClass")}
+                  </Link>
+                </Button>
+              </>
+            }
+          />
         ) : (
+          <>
+          {loadFailed && <LoadError className="mb-3" onRetry={() => void load()} />}
           <div className="overflow-hidden rounded-lg border border-border">
             {/* Day-of-week header */}
             <div className="grid grid-cols-7 divide-x divide-border border-b bg-muted/20">
@@ -289,6 +296,14 @@ export default function CalendarMonthPage() {
 
                   // Collect unique timetable colors for this day
                   const colors = [...new Set(day.slots.map((s) => s.timetable.color || "#7F77DD"))];
+
+                  // Check-in marks for the past lessons of this day (class_state_enabled only)
+                  const dayMarks = checkInEnabled
+                    ? day.slots.flatMap((s) => {
+                        const mark = teachingMark(s.slot, todayIso);
+                        return mark ? [mark] : [];
+                      })
+                    : [];
 
                   const isWeekday = day.date.getDay() >= 1 && day.date.getDay() <= 5;
 
@@ -320,11 +335,11 @@ export default function CalendarMonthPage() {
                       {loading && isWeekday && day.isCurrentMonth && (
                         <div className="animate-pulse space-y-1.5">
                           <div className="flex gap-1">
-                            <div className="h-2 w-2 rounded-full bg-muted" />
-                            <div className="h-2 w-2 rounded-full bg-muted/70" />
+                            <div className="h-2 w-2 rounded-full bg-muted-foreground/15" />
+                            <div className="h-2 w-2 rounded-full bg-muted-foreground/10" />
                           </div>
-                          <div className="h-2.5 w-14 rounded bg-muted" />
-                          <div className="h-2 w-10 rounded bg-muted/60" />
+                          <div className="h-2.5 w-14 rounded bg-muted-foreground/15" />
+                          <div className="h-2 w-10 rounded bg-muted-foreground/10" />
                         </div>
                       )}
 
@@ -358,6 +373,13 @@ export default function CalendarMonthPage() {
                               )}
                             </p>
                           )}
+                          {dayMarks.length > 0 && (
+                            <div className="flex flex-wrap gap-1">
+                              {dayMarks.map((mark, mi) => (
+                                <TeachingMarkBadge key={mi} mark={mark} />
+                              ))}
+                            </div>
+                          )}
                         </div>
                       )}
                     </button>
@@ -366,6 +388,37 @@ export default function CalendarMonthPage() {
               </div>
             ))}
           </div>
+          {!loading && !loadFailed && slotsByDate.size === 0 && (
+            <EmptyState
+              size="inline"
+              icon={CalendarDays}
+              className="mt-3"
+              title={t("month.emptyTitle")}
+              description={
+                beyondFreeWindow && freeMax
+                  ? t("novo.period.freeLimitNote", {
+                      date: format.dateTime(new Date(`${freeMax}T00:00:00`), {
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                      }),
+                    })
+                  : t("month.emptyDescription")
+              }
+              actions={
+                beyondFreeWindow ? (
+                  <Button size="sm" onClick={() => dispatch(setUpgradeModalOpen(true))}>
+                    {t("novo.period.freeLimitUpgrade")}
+                  </Button>
+                ) : (
+                  <Button size="sm" asChild>
+                    <Link href={Routes.CALENDAR}>{t("month.goToWeek")}</Link>
+                  </Button>
+                )
+              }
+            />
+          )}
+          </>
         )}
       </div>
     </div>

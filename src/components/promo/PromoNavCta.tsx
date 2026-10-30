@@ -70,13 +70,13 @@ export function PromoNavCta() {
   };
 
   return (
-    <div className="hidden items-center gap-1 rounded-full border border-dashed border-primary/30 bg-primary/10 py-1 pl-3 pr-1 sm:flex">
+    <div className="hidden h-9 items-center gap-1 rounded-full border border-dashed border-primary/30 bg-primary/10 pl-3 pr-1.5 sm:flex">
       <button
         type="button"
         onClick={handleClick}
-        className="flex items-center gap-1.5 whitespace-nowrap text-xs font-semibold text-primary hover:text-primary/80"
+        className="flex items-center gap-1.5 whitespace-nowrap text-sm font-semibold text-primary hover:text-primary/80"
       >
-        <Zap className="h-3.5 w-3.5" />
+        <Zap className="h-4 w-4" />
         {t("label")}
       </button>
       <button

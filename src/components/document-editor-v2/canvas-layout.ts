@@ -22,7 +22,7 @@ import type {
   CanvasSlide,
   CanvasTextElement,
 } from "@/shared/types/canvas-presentation";
-import { getThemeById } from "@/shared/types/presentation-theme";
+import { getThemeById, THEMES } from "@/shared/types/presentation-theme";
 
 const BG_DEFAULT = "#16171e";
 
@@ -472,11 +472,13 @@ export function clampCanvasSlide(cs: CanvasSlide): CanvasSlide {
 }
 
 export function presentationToCanvas(doc: PresentationDocument): CanvasPresentation {
-  return {
+  const canvas: CanvasPresentation = {
     schemaVersion: 2,
     documentType: "presentation",
     slides: doc.blocks.map(slideToCanvas),
   };
+  // The theme the model picked at generation (lesson decks); unknown ids are ignored.
+  return doc.themeId && THEMES.some((t) => t.id === doc.themeId) ? applyTheme(canvas, doc.themeId) : canvas;
 }
 
 export function canvasToPresentation(cp: CanvasPresentation): PresentationDocument {

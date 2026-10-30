@@ -1,12 +1,18 @@
 "use client";
 
+import { Routes } from "@/shared/types";
 import { Button } from "@/components/ui/button";
-import { selectIsPresentationCreationEnabled, selectIsWorksheetCreationEnabled } from "@/store/features/selectors";
+import {
+  selectIsCurriculumPlanEnabled,
+  selectIsPresentationCreationEnabled,
+  selectIsWorksheetCreationEnabled,
+} from "@/store/features/selectors";
 import { useAppSelector } from "@/store/hooks";
 import {
   ClipboardList,
   FileText,
   FolderOpen,
+  GanttChart,
   GraduationCap,
   Plus,
   Search,
@@ -22,9 +28,19 @@ interface DocumentsEmptyStateProps {
   variant: EmptyStateVariant;
   searchQuery?: string;
   filterType?: string;
+  /** Resets the search and every filter; shown for the filter and search variants. */
+  onClearFilters?: () => void;
 }
 
-const quickActions = [
+const quickActions: {
+  key: string;
+  href: string;
+  icon: typeof FileText;
+  gradient: string;
+  bgLight: string;
+  /** Only offered when its type is the active filter, not in the first-run grid. */
+  singleOnly?: boolean;
+}[] = [
   {
     key: "lessonPlan",
     href: "/lesson-plan",
@@ -60,12 +76,21 @@ const quickActions = [
     gradient: "from-rose-500 to-pink-600",
     bgLight: "bg-rose-50 dark:bg-rose-950/30",
   },
+  {
+    key: "curriculumPlan",
+    href: Routes.CURRICULUM_PLAN,
+    icon: GanttChart,
+    gradient: "from-violet-500 to-purple-600",
+    bgLight: "bg-violet-50 dark:bg-violet-950/30",
+    singleOnly: true,
+  },
 ];
 
 export function DocumentsEmptyState({
   variant,
   searchQuery,
   filterType,
+  onClearFilters,
 }: DocumentsEmptyStateProps) {
   const t = useTranslations("documents.emptyState");
   const tFilters = useTranslations("documents.filters");
@@ -77,6 +102,8 @@ export function DocumentsEmptyState({
     selectIsWorksheetCreationEnabled
   );
 
+  const isCurriculumPlanEnabled = useAppSelector(selectIsCurriculumPlanEnabled);
+
   const availableQuickActions = useMemo(
     () =>
       quickActions.filter((action) => {
@@ -86,9 +113,12 @@ export function DocumentsEmptyState({
         if (action.key === "worksheet") {
           return isWorksheetCreationEnabled;
         }
+        if (action.key === "curriculumPlan") {
+          return isCurriculumPlanEnabled;
+        }
         return true;
       }),
-    [isPresentationCreationEnabled, isWorksheetCreationEnabled]
+    [isPresentationCreationEnabled, isWorksheetCreationEnabled, isCurriculumPlanEnabled]
   );
 
   const content = useMemo(() => {
@@ -104,6 +134,14 @@ export function DocumentsEmptyState({
           showQuickActions: false,
         };
       case "no-filter-results":
+        if (!filterType) {
+          return {
+            icon: FolderOpen,
+            title: t("noFilterMatch.title"),
+            description: t("noFilterMatch.description"),
+            showQuickActions: false,
+          };
+        }
         return {
           icon: FolderOpen,
           title: t("noFilterResults.title", { type: filterLabel }),
@@ -122,9 +160,12 @@ export function DocumentsEmptyState({
   }, [variant, searchQuery, filterType, t, tFilters]);
 
   const Icon = content.icon;
+  const gridActions = availableQuickActions.filter((action) => !action.singleOnly);
+
   const singleActionData = content.singleAction
     ? availableQuickActions.find((action) => action.key === content.singleAction)
     : null;
+  const showActions = content.showQuickActions && (!!singleActionData || gridActions.length > 0);
 
   return (
     <div className="flex flex-col items-center justify-center px-4 py-16">
@@ -158,7 +199,7 @@ export function DocumentsEmptyState({
         )}
       </div>
 
-      <div className="mb-8 max-w-md text-center">
+      <div className={`max-w-md text-center ${showActions || onClearFilters ? "mb-8" : ""}`}>
         <h3 className="mb-2 text-xl font-semibold text-foreground">
           {content.title}
         </h3>
@@ -167,7 +208,7 @@ export function DocumentsEmptyState({
         </p>
       </div>
 
-      {content.showQuickActions && availableQuickActions.length > 0 && (
+      {showActions && (
         <div className="w-full max-w-2xl">
           {singleActionData ? (
             <div className="flex justify-center">
@@ -187,7 +228,7 @@ export function DocumentsEmptyState({
                 {t("chooseType")}
               </p>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                {availableQuickActions.map((action) => {
+                {gridActions.map((action) => {
                   const ActionIcon = action.icon;
                   return (
                     <Link
@@ -226,6 +267,12 @@ export function DocumentsEmptyState({
             </>
           )}
         </div>
+      )}
+
+      {variant !== "no-documents" && onClearFilters && (
+        <Button variant="outline" onClick={onClearFilters} className={showActions ? "mt-6" : ""}>
+          {t("clearFilters")}
+        </Button>
       )}
 
       {variant === "no-search-results" && (

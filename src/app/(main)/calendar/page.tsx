@@ -1,6 +1,8 @@
 "use client";
 
-import { isListableSlot } from "@/shared/utils/lessonTopic";
+import CalendarLoading from "./loading";
+import { toast } from "sonner";
+import { hasTopic, isListableSlot, isVisibleSlot } from "@/shared/utils/lessonTopic";
 import { useAuth } from "@clerk/nextjs";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -16,6 +18,8 @@ import {
 import { useSelector } from "react-redux";
 import { selectPlanGeneration } from "@/store/planGeneration/selectors";
 
+import { EmptyState } from "@/components/ui/empty-state";
+import { LoadError } from "@/components/ui/load-error";
 import { PlanGenerationBanner } from "@/components/plan-generation/PlanGenerationBanner";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,11 +31,11 @@ import {
 
 import { translateSubject } from "@/components/document-creation/constants";
 import { Routes } from "@/shared/types";
-import { selectIsHorarioPlanosEnabled } from "@/store/features/selectors";
+import { selectIsClassStateEnabled, selectIsHorarioPlanosEnabled } from "@/store/features/selectors";
 import { useFeatureAccess } from "@/components/feature/useFeatureAccess";
 import { FeatureUnavailable } from "@/components/feature/FeatureUnavailable";
 import { generationStore } from "@/store/generationStore";
-import { useAppDispatch } from "@/store/hooks";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { openUpgradeModalForReason, setUpgradeModalOpen } from "@/store/ui/uiSlice";
 import { isUpgradeReason } from "@/shared/types/plan-limits";
 import { useNewClassGate } from "@/hooks/usePlanLimits";
@@ -43,7 +47,6 @@ import {
   generateWeek as generateWeekStream,
   listLessons,
   regenerateLesson as regenerateLessonStream,
-  skipLesson as skipLessonService,
   updateLesson as updateLessonService,
   type LessonSlot,
   type LessonSlotType,
@@ -63,81 +66,22 @@ import {
 
 import { SLOT_STATUS_CONFIG } from "@/shared/constants/lessonSlotStatus";
 import { SlotDialog } from "@/components/calendar/SlotDialog";
+import { TeachingMarkBadge, TeachingMarkLegend } from "@/components/calendar/TeachingMarkBadge";
+import { formatClassName } from "@/shared/utils/className";
 import { SlotSkeleton } from "@/components/calendar/SlotSkeleton";
+import { Skeleton } from "@/components/ui/skeleton";
+import { CalendarGridSkeleton, EVEN_WEEK_COLUMNS, NARROW_WEEKEND_COLUMNS } from "@/components/calendar/CalendarGridSkeleton";
 import type { SlotWithTimetable, DayMap } from "@/shared/types/calendar";
-import { toIso, addDays, getWeekStart, formatWeekLabel, hexToRgb, getDayLabels } from "@/shared/utils/calendar";
+import type { CheckInRecord } from "@/shared/types/check-in";
+import { teachingMark, type SlotCheckInAnswer } from "@/shared/utils/teachingStatus";
+import { toIso, addDays, compactWeekLabel, defaultCalendarWeek, getWeekStart, formatWeekLabel, hexToRgb, getDayLabels, readableTextOn, toIntlLocale } from "@/shared/utils/calendar";
 import { useLocale, useTranslations } from "next-intl";
 import { isSupportedLocale, defaultLocale } from "@/i18n/locales";
+import { slotStatusKey } from "@/shared/utils/week";
 
 // ─────────────────────── Local helpers ───────────────────────────────────────
 
 const STATUS_CONFIG = SLOT_STATUS_CONFIG;
-
-/**
- * Full week-grid skeleton shown while timetables are still loading.
- * Uses the real week-day dates so it looks contextual, not generic.
- */
-function CalendarGridSkeleton({
-  weekDays,
-  today,
-  dayLabels,
-}: {
-  weekDays: Date[];
-  today: string;
-  dayLabels: string[];
-}) {
-  return (
-    <div className="overflow-x-auto rounded-lg border border-border w-full">
-      <div className="min-w-[640px] w-full">
-        {/* Real day headers */}
-        <div className="grid grid-cols-7 divide-x divide-border border-b bg-muted/20">
-          {weekDays.map((day, i) => {
-            const iso = toIso(day);
-            const isToday = iso === today;
-            return (
-              <div
-                key={iso}
-                className={`px-2 py-2 text-center ${isToday ? "bg-primary/5" : ""}`}
-              >
-                <p
-                  className={`text-xs font-semibold uppercase tracking-wider ${
-                    isToday ? "text-primary" : "text-muted-foreground"
-                  }`}
-                >
-                  {dayLabels[i]}
-                </p>
-                <div className="mt-0.5 flex justify-center">
-                  <span
-                    className={`flex h-7 w-7 items-center justify-center text-sm font-bold leading-none ${
-                      isToday
-                        ? "rounded-full bg-primary text-primary-foreground"
-                        : "text-foreground"
-                    }`}
-                  >
-                    {day.getDate()}
-                  </span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-        {/* Skeleton slot cells — only weekdays (index 0–4) get cards */}
-        <div className="grid grid-cols-7 divide-x divide-border">
-          {weekDays.map((day, i) => (
-            <div key={toIso(day)} className="min-h-[180px] p-2 space-y-1.5">
-              {i < 5 && (
-                <>
-                  <SlotSkeleton />
-                  {i % 3 !== 1 && <SlotSkeleton />}
-                </>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // ─────────────────────── Lesson card ─────────────────────────────────────────
 
@@ -167,6 +111,9 @@ function LessonCard({
   const rgb = hexToRgb(color);
   const tintBg = rgb ? `rgba(${rgb.r},${rgb.g},${rgb.b},0.07)` : undefined;
   const [isDropTarget, setIsDropTarget] = useState(false);
+  const checkInEnabled = useAppSelector(selectIsClassStateEnabled);
+  // Only with class_state_enabled: with the flag off the card looks as it always did.
+  const mark = checkInEnabled ? teachingMark(slot, toIso(new Date())) : null;
 
   return (
     <div
@@ -198,7 +145,7 @@ function LessonCard({
       }}
       className={`group rounded-md border text-left transition-all ${
         isDropTarget ? "ring-2 ring-primary/50 ring-offset-1" : ""
-      } ${
+      } ${mark?.key === "notHeld" ? "opacity-60" : ""} ${
         highlightPending && slot.status === "pending" && !isHoliday
           ? "ring-2 ring-primary/40 ring-offset-1 animate-pulse"
           : ""
@@ -225,11 +172,8 @@ function LessonCard({
       >
         <div className="px-2 py-1.5">
           <div className="flex items-start gap-1">
-            <span className="shrink-0 font-mono text-[10px] text-muted-foreground/50 mt-0.5">
-              {slot.sequenceNumber}
-            </span>
             <p
-              className={`line-clamp-1 sm:line-clamp-2 text-xs font-medium leading-tight ${
+              className={`line-clamp-1 min-w-0 wrap-anywhere sm:line-clamp-2 text-xs font-medium leading-tight ${
                 isHoliday
                   ? "line-through text-muted-foreground"
                   : "text-foreground"
@@ -237,16 +181,14 @@ function LessonCard({
             >
               {isHoliday
                 ? tTimetable("slotType.holiday")
-                : isAssessment
-                  ? `📋 ${slot.topicTitle}`
-                  : slot.topicTitle}
+                : hasTopic(slot)
+                  ? slot.topicTitle
+                  : t("shared.notHeldTitle")}
             </p>
           </div>
           {!isHoliday && (
-            <p
-              className="mt-0.5 truncate text-[11px] font-medium"
-              style={{ color }}
-            >
+            // The left border carries the turma colour; as text a dark or pale colour was unreadable.
+            <p className="mt-0.5 truncate text-[11px] font-medium text-muted-foreground">
               {timetable.gradeLevel ? `${tTimetable("gradeShort", { grade: timetable.gradeLevel })} ` : ""}
               {translateSubject(timetable.subject)}
               {timetable.classLabel ? ` · ${timetable.classLabel}` : ""}
@@ -258,8 +200,20 @@ function LessonCard({
                 className={`h-1.5 w-1.5 shrink-0 rounded-full ${cfg.dotCls}`}
               />
               <span className="text-[10px] text-muted-foreground">
-                {tTimetable(`status.${slot.status}`)}
+                {tTimetable(`status.${slotStatusKey(slot.status, slot.slotDate)}`)}
               </span>
+              {mark && <TeachingMarkBadge mark={mark} className="ml-1" />}
+              {slot.pendingProposal && (
+                <span className="ml-1 rounded bg-primary/10 px-1 text-[10px] font-medium text-primary">
+                  {t("slotDialog.proposal.badge")}
+                </span>
+              )}
+              {/* The lesson number reads as "Aula 3", not a loose digit glued to the title. */}
+              {slot.sequenceNumber > 0 && (
+                <span className="ml-1 text-[10px] text-muted-foreground/60">
+                  · {t("slotDialog.lessonNumber", { number: slot.sequenceNumber })}
+                </span>
+              )}
               {slot.durationMinutes > 0 && (
                 <span className="text-[10px] text-muted-foreground/60 ml-1">
                   · {t("week.durationCompact", { count: slot.durationMinutes })}
@@ -278,7 +232,7 @@ function LessonCard({
 /** Suspense wrapper required by useSearchParams in Next.js App Router. */
 export default function CalendarPage() {
   return (
-    <Suspense>
+    <Suspense fallback={<CalendarLoading />}>
       <CalendarPageInner />
     </Suspense>
   );
@@ -291,7 +245,7 @@ function CalendarPageInner() {
   const locale = isSupportedLocale(rawLocale) ? rawLocale : defaultLocale;
   const dayLabels = useMemo(() => getDayLabels(locale), [locale]);
   const { loaded: featuresLoaded, enabled } = useFeatureAccess(selectIsHorarioPlanosEnabled);
-  const { timetables, isLoading: isLoadingTimetables } = useSelector(
+  const { timetables, isLoading: isLoadingTimetables, error: timetablesError } = useSelector(
     (state: RootState) => state.timetable,
   );
   const dispatch = useAppDispatch();
@@ -306,7 +260,7 @@ function CalendarPageInner() {
       const d = new Date(`${param}T00:00:00`);
       if (!isNaN(d.getTime())) return d;
     }
-    return getWeekStart();
+    return defaultCalendarWeek();
   });
 
   // Reactively update when the ?week param changes (e.g. widget → calendar navigation)
@@ -323,10 +277,13 @@ function CalendarPageInner() {
     Map<string, LessonSlot[]>
   >(new Map());
   const [isSlotsLoading, setIsSlotsLoading] = useState(false);
+  const [slotsFailed, setSlotsFailed] = useState(false);
+  const [slotsRetry, setSlotsRetry] = useState(0);
   const [selectedSlot, setSelectedSlot] = useState<SlotWithTimetable | null>(
     null,
   );
   const [filterIds, setFilterIds] = useState<Set<string>>(new Set());
+  const classStateEnabled = useAppSelector(selectIsClassStateEnabled);
   /** Local generations started from THIS page. */
   const [localGeneratingSlots, setLocalGeneratingSlots] = useState<Set<string>>(
     new Set(),
@@ -371,12 +328,14 @@ function CalendarPageInner() {
       return;
     }
     setIsSlotsLoading(true);
+    setSlotsFailed(false);
     Promise.all(
       active.map(async (t) => {
         try {
           const slots = await listLessons(t.id, weekIso);
           return { timetableId: t.id, slots };
         } catch {
+          setSlotsFailed(true);
           return { timetableId: t.id, slots: [] as LessonSlot[] };
         }
       }),
@@ -391,7 +350,7 @@ function CalendarPageInner() {
       })
       .finally(() => setIsSlotsLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [timetableKey, weekIso]); // timetableKey is stable — prevents duplicate requests
+  }, [timetableKey, weekIso, slotsRetry]); // timetableKey is stable — prevents duplicate requests
 
   // Background plan generation (started in onboarding): when it produces new topics or
   // finishes a lesson, reload this week's slots once so they appear on their own.
@@ -438,7 +397,7 @@ function CalendarPageInner() {
       if (filterIds.size > 0 && !filterIds.has(t.id)) continue;
       const slots = slotsByTimetable.get(t.id) ?? [];
       for (const s of slots) {
-        if (!isListableSlot(s)) continue; // lessons without a topic are never shown
+        if (!isVisibleSlot(s)) continue; // lessons without a topic are never shown, except a not-held one
         const status = generatingSlots.has(s.id) ? "generating" : s.status;
         result.push({ ...s, status, timetable: t });
       }
@@ -463,6 +422,18 @@ function CalendarPageInner() {
         .length,
     [allSlots],
   );
+
+  // ?lesson=<id> (from an editor's context line): open that lesson's pop-up once its week is loaded.
+  const lessonParam = searchParams.get("lesson");
+  const openedLessonRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!lessonParam || openedLessonRef.current === lessonParam) return;
+    const found = allSlots.find((s) => s.id === lessonParam);
+    if (found) {
+      openedLessonRef.current = lessonParam;
+      setSelectedSlot(found);
+    }
+  }, [lessonParam, allSlots]);
 
   // Keep selectedSlot in sync with store updates
   useEffect(() => {
@@ -532,6 +503,26 @@ function CalendarPageInner() {
       return new Map(prev).set(timetableId, slots);
     });
   };
+
+  /** A check-in saved from the slot dialog: the card's mark follows without reloading the week. */
+  const handleCheckedIn = useCallback((target: SlotWithTimetable, record: CheckInRecord, answer: SlotCheckInAnswer) => {
+    setSlotsByTimetable((prev) => {
+      const slots = (prev.get(target.timetable.id) ?? []).map((s) =>
+        s.id === target.id
+          ? {
+              ...s,
+              teachingStatus: record.teachingStatus,
+              checkedInAt: record.checkedInAt,
+              checkInResult: answer.checkInResult,
+              checkInOutcomeIds: answer.checkInOutcomeIds,
+              missingAmount: answer.missingAmount,
+              teachingNote: answer.teachingNote,
+            }
+          : s,
+      );
+      return new Map(prev).set(target.timetable.id, slots);
+    });
+  }, []);
 
   // ── Drag and drop ─────────────────────────────────────────────────────────
   const handleDragStart = useCallback(
@@ -701,7 +692,6 @@ function CalendarPageInner() {
             onDone: () => {
               patchSlotStatus(slot.timetable.id, slot.id, "completed");
               void refreshTimetable(slot.timetable.id);
-              setSelectedSlot(null);
             },
             onError: () =>
               patchSlotStatus(slot.timetable.id, slot.id, "failed"),
@@ -737,7 +727,6 @@ function CalendarPageInner() {
             onDone: () => {
               patchSlotStatus(slot.timetable.id, slot.id, "completed");
               void refreshTimetable(slot.timetable.id);
-              setSelectedSlot(null);
             },
             onError: () =>
               patchSlotStatus(slot.timetable.id, slot.id, "failed"),
@@ -812,21 +801,6 @@ function CalendarPageInner() {
   }, [timetables, slotsByTimetable, weekIso, getToken, refreshTimetable, dispatch]);
 
   // ── Mutations ─────────────────────────────────────────────────────────────
-  const handleSkip = useCallback(async (slot: SlotWithTimetable) => {
-    setSelectedSlot(null);
-    try {
-      const updated = await skipLessonService(slot.timetable.id, slot.id);
-      setSlotsByTimetable((prev) => {
-        const slots = (prev.get(slot.timetable.id) ?? []).map((s) =>
-          s.id === slot.id ? updated : s,
-        );
-        return new Map(prev).set(slot.timetable.id, slots);
-      });
-    } catch {
-      /* ignore */
-    }
-  }, []);
-
   const handleTypeChange = useCallback(
     async (slot: SlotWithTimetable, type: LessonSlotType) => {
       try {
@@ -845,10 +819,10 @@ function CalendarPageInner() {
             : prev,
         );
       } catch {
-        /* ignore */
+        toast.error(t("shared.saveError"));
       }
     },
-    [],
+    [t],
   );
 
   const handleTitleChange = useCallback(
@@ -869,17 +843,30 @@ function CalendarPageInner() {
             : prev,
         );
       } catch {
-        /* ignore */
+        toast.error(t("shared.saveError"));
       }
     },
-    [],
+    [t],
   );
 
   // ── Render ────────────────────────────────────────────────────────────────
   const today = toIso(new Date());
+  // An empty weekend (the usual case) shrinks to two narrow columns so the school
+  // days get the width; the columns stay so a lesson can still be dropped there.
+  // While loading, assume the usual case so the grid doesn't jump when slots arrive.
+  const narrowWeekend =
+    isSlotsLoading ||
+    weekDays.slice(5).every((day) => (dayMap.get(toIso(day)) ?? []).length === 0);
+  const weekGridColumns = narrowWeekend ? NARROW_WEEKEND_COLUMNS : EVEN_WEEK_COLUMNS;
   const activeTimetables = timetables.filter((t) => t.status === "active");
+  // Past lessons carry check-in marks: say once what they mean.
+  const checkInLegend = classStateEnabled && allSlots.some((slot) => slot.slotDate < today);
+  // Week arrows / Hoje / class chips do nothing without an active class.
+  const hideNav = !isLoadingTimetables && activeTimetables.length === 0;
+  const weekIsEmpty =
+    !isSlotsLoading && weekDays.every((day) => (dayMap.get(toIso(day)) ?? []).length === 0);
 
-  if (!featuresLoaded) return null;
+  if (!featuresLoaded) return <CalendarLoading />;
   if (!enabled)
     return (
       <FeatureUnavailable
@@ -896,7 +883,7 @@ function CalendarPageInner() {
           <PlanGenerationBanner />
 
           {/* ── Mobile header: single compact row ── */}
-          <div className="flex md:hidden items-center gap-1.5">
+          <div className="flex md:hidden flex-wrap items-center gap-1.5">
             {/* View toggle */}
             <div className="flex shrink-0 items-center rounded-md border border-border overflow-hidden">
               <span className="px-2.5 py-1 text-xs font-medium bg-primary text-primary-foreground">
@@ -910,19 +897,24 @@ function CalendarPageInner() {
               </Link>
             </div>
 
+            {!hideNav && (
+              <>
             <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={prevWeek}>
               <ArrowLeft className="h-3.5 w-3.5" />
             </Button>
-            <button
-              type="button"
-              onClick={goToday}
-              className="flex-1 min-w-0 truncate text-center text-sm font-medium text-foreground"
-            >
-              {formatWeekLabel(weekStart, locale)}
-            </button>
+            {/* Narrow phones: "26 out – 1 nov" was cut to "26 out – 1 …" at 14 px. */}
+            <span className="flex-1 min-w-0 truncate text-center text-sm font-medium tracking-tight text-foreground max-[420px]:text-xs">
+              {compactWeekLabel(weekStart, toIntlLocale(locale))}
+            </span>
             <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={nextWeek}>
               <ArrowRight className="h-3.5 w-3.5" />
             </Button>
+            {/* "Hoje" stays visible on a phone, not behind the week label. */}
+            <Button variant="outline" size="sm" className="h-7 shrink-0 px-2 text-xs" onClick={goToday}>
+              {t("shared.today")}
+            </Button>
+              </>
+            )}
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -949,7 +941,8 @@ function CalendarPageInner() {
             {pendingThisWeek > 0 && (
               <Button
                 size="sm"
-                className="h-7 shrink-0 gap-1 px-2 text-xs"
+                // Its own row on a phone: next to the week controls it ran past the screen edge.
+                className="h-7 w-full shrink-0 gap-1 px-2 text-xs"
                 onClick={() => { setPreviewGenerating(false); void handleGenerateWeek(); }}
                 disabled={generatingWeek}
               >
@@ -979,6 +972,8 @@ function CalendarPageInner() {
               </Link>
             </div>
 
+            {!hideNav && (
+              <>
             <Button variant="outline" size="sm" onClick={goToday} className="h-8">
               {t("shared.today")}
             </Button>
@@ -991,6 +986,8 @@ function CalendarPageInner() {
             <span className="min-w-[160px] text-sm font-medium text-foreground">
               {formatWeekLabel(weekStart, locale)}
             </span>
+              </>
+            )}
 
             <div className="flex-1" />
 
@@ -1028,64 +1025,121 @@ function CalendarPageInner() {
           </div>
 
           {/* Filter chips — shared ── */}
-          <div className="flex flex-wrap items-center gap-1.5 min-h-[28px]">
+          {/* One row that scrolls sideways: with many turmas the chips used to fill half the header. */}
+          <div className="-mx-1 flex min-h-[28px] items-center gap-1.5 overflow-x-auto px-1 pb-0.5 [scrollbar-width:none]">
             {isLoadingTimetables ? (
               <>
-                <div className="h-7 w-20 animate-pulse rounded-full bg-muted" />
-                <div className="h-7 w-28 animate-pulse rounded-full bg-muted" />
-                <div className="h-7 w-24 animate-pulse rounded-full bg-muted" />
+                <Skeleton className="h-7 w-20 rounded-full" />
+                <Skeleton className="h-7 w-28 rounded-full" />
+                <Skeleton className="h-7 w-24 rounded-full" />
               </>
             ) : (
-              activeTimetables.map((tt) => {
+              <>
+              {filterIds.size > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setFilterIds(new Set())}
+                  className="flex h-7 shrink-0 items-center rounded-full border border-border px-2.5 text-xs font-medium text-muted-foreground hover:text-foreground"
+                >
+                  {t("shared.allClasses")}
+                </button>
+              )}
+              {activeTimetables.map((tt) => {
                 const isActive = filterIds.size === 0 || filterIds.has(tt.id);
                 return (
                   <button
                     key={tt.id}
                     type="button"
                     onClick={() => toggleFilter(tt.id)}
-                    className={`flex h-7 items-center gap-1.5 rounded-full border px-2.5 text-xs font-medium transition-all ${
+                    title={formatClassName(tt, {
+                      gradeShort: (grade) => tTimetable("gradeShort", { grade }),
+                      subject: translateSubject,
+                    })}
+                    className={`flex h-7 max-w-[14rem] shrink-0 items-center gap-1.5 rounded-full border px-2.5 text-xs font-medium transition-all ${
                       isActive
-                        ? "border-transparent text-white shadow-sm"
+                        ? "border-transparent shadow-sm"
                         : "border-border bg-transparent text-muted-foreground/50 hover:text-muted-foreground hover:border-border/80"
                     }`}
-                    style={isActive ? { backgroundColor: tt.color || "#7F77DD" } : {}}
+                    style={
+                      isActive
+                        ? { backgroundColor: tt.color || "#7F77DD", color: readableTextOn(tt.color || "#7F77DD") }
+                        : {}
+                    }
                   >
                     <span
                       className="h-1.5 w-1.5 shrink-0 rounded-full"
                       style={{ backgroundColor: tt.color || "#7F77DD" }}
                     />
-                    {tt.gradeLevel ? `${tTimetable("gradeShort", { grade: tt.gradeLevel })} ` : ""}
-                    {translateSubject(tt.subject)}
-                    {tt.classLabel ? ` · ${tt.classLabel}` : ""}
+                    <span className="truncate">
+                      {formatClassName(tt, {
+                        gradeShort: (grade) => tTimetable("gradeShort", { grade }),
+                        subject: translateSubject,
+                      })}
+                    </span>
                   </button>
                 );
-              })
+              })}
+              </>
             )}
           </div>
         </div>
       </div>
 
       {/* ── Calendar grid ─────────────────────────────────────────────── */}
-      {/* pb-24 on mobile: room to scroll the last lesson clear of the floating assistant button. */}
       <div className="mx-auto w-full max-w-[1400px] px-4 pb-24 pt-4 md:pb-8">
         {isLoadingTimetables && timetables.length === 0 ? (
           <CalendarGridSkeleton weekDays={weekDays} today={today} dayLabels={dayLabels} />
+        ) : timetablesError && timetables.length === 0 ? (
+          <LoadError onRetry={() => void dispatch(fetchTimetables())} />
         ) : activeTimetables.length === 0 ? (
-          <div className="py-20 text-center">
-            <CalendarDays className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-            <p className="text-lg font-medium">{t("shared.emptyTitle")}</p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {t("shared.emptyDescription")}
-            </p>
-            <Button asChild className="mt-5">
-              <Link href={Routes.CALENDAR_NEW} onClick={newClassGate.onClick}>
-                <Plus className="mr-2 h-4 w-4" />
-                {t("shared.createClass")}
-              </Link>
-            </Button>
-          </div>
+          <EmptyState
+            icon={CalendarDays}
+            title={timetables.length > 0 ? t("shared.noActiveTitle") : t("shared.emptyTitle")}
+            description={
+              timetables.length > 0 ? t("shared.noActiveDescription") : t("shared.emptyDescription")
+            }
+            actions={
+              <>
+                {timetables.length > 0 && (
+                  <Button variant="outline" asChild>
+                    <Link href={Routes.CALENDAR_SEQUENCES}>{t("shared.classesLink")}</Link>
+                  </Button>
+                )}
+                <Button asChild>
+                  <Link href={Routes.CALENDAR_NEW} onClick={newClassGate.onClick}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    {t("shared.createClass")}
+                  </Link>
+                </Button>
+              </>
+            }
+          />
         ) : (
           <>
+            {checkInLegend && <TeachingMarkLegend className="mb-3" />}
+            {slotsFailed && (
+              <LoadError className="mb-3" onRetry={() => setSlotsRetry((n) => n + 1)} />
+            )}
+            {!slotsFailed && weekIsEmpty && (
+              <EmptyState
+                size="inline"
+                icon={CalendarDays}
+                title={t("week.emptyTitle")}
+                description={filterIds.size > 0 ? t("week.emptyFiltered") : t("week.emptyHint")}
+                className="mb-3"
+                actions={
+                  filterIds.size > 0 ? (
+                    <Button variant="outline" size="sm" onClick={() => setFilterIds(new Set())}>
+                      {t("week.showAllClasses")}
+                    </Button>
+                  ) : (
+                    <Button variant="outline" size="sm" asChild>
+                      <Link href={Routes.CALENDAR_SEQUENCES}>{t("shared.classesLink")}</Link>
+                    </Button>
+                  )
+                }
+              />
+            )}
             {/* ── Mobile: vertical day list (hidden on md+) ────────── */}
             <div className="md:hidden space-y-3">
               {weekDays.map((day, i) => {
@@ -1134,6 +1188,8 @@ function CalendarPageInner() {
                             ))
                         : daySlots.map((slot, slotIdx) => (
                             <div key={slot.id} className="flex items-stretch gap-1">
+                              {/* Reordering only means something when the day has more than one lesson. */}
+                              {daySlots.length > 1 && (
                               <div className="flex flex-col">
                                 <button
                                   type="button"
@@ -1160,7 +1216,8 @@ function CalendarPageInner() {
                                   <ChevronDown className="h-4 w-4" />
                                 </button>
                               </div>
-                              <div className="flex-1">
+                              )}
+                              <div className="min-w-0 flex-1">
                                 <LessonCard
                                   slot={slot}
                                   onOpen={setSelectedSlot}
@@ -1175,25 +1232,20 @@ function CalendarPageInner() {
                   </div>
                 );
               })}
-              {/* Days without lessons are hidden above, so an empty week needs saying. */}
-              {!isSlotsLoading &&
-                weekDays.every((day) => (dayMap.get(toIso(day)) ?? []).length === 0) && (
-                  <div className="rounded-lg border border-dashed border-border px-4 py-10 text-center">
-                    <CalendarDays className="mx-auto mb-3 h-8 w-8 text-muted-foreground" aria-hidden />
-                    <p className="text-sm font-medium">{t("week.emptyTitle")}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">{t("week.emptyHint")}</p>
-                  </div>
-                )}
             </div>
 
             {/* ── Desktop: 7-column grid (hidden on mobile) ────────── */}
             <div className="hidden md:block overflow-x-auto rounded-lg border border-border w-full">
               <div className="min-w-[640px] w-full">
                 {/* Day headers */}
-                <div className="grid grid-cols-7 divide-x divide-border border-b bg-muted/20">
+                <div
+                  className="grid divide-x divide-border border-b bg-muted/20"
+                  style={{ gridTemplateColumns: weekGridColumns }}
+                >
                   {weekDays.map((day, i) => {
                     const iso = toIso(day);
                     const isToday = iso === today;
+                    const isNarrow = narrowWeekend && i >= 5;
                     return (
                       <div
                         key={iso}
@@ -1202,7 +1254,7 @@ function CalendarPageInner() {
                         <p
                           className={`text-xs font-semibold uppercase tracking-wider ${isToday ? "text-primary" : "text-muted-foreground"}`}
                         >
-                          {dayLabels[i]}
+                          {isNarrow ? dayLabels[i].slice(0, 3) : dayLabels[i]}
                         </p>
                         <div className="mt-0.5 flex justify-center">
                           <span
@@ -1217,7 +1269,10 @@ function CalendarPageInner() {
                 </div>
 
                 {/* Slot cells */}
-                <div className="grid grid-cols-7 divide-x divide-border">
+                <div
+                  className="grid divide-x divide-border"
+                  style={{ gridTemplateColumns: weekGridColumns }}
+                >
                   {weekDays.map((day) => {
                     const iso = toIso(day);
                     const isToday = iso === today;
@@ -1284,9 +1339,14 @@ function CalendarPageInner() {
         onClose={() => setSelectedSlot(null)}
         onGenerate={handleGenerateLesson}
         onRegenerate={handleRegenerateLesson}
-        onSkip={handleSkip}
         onTypeChange={handleTypeChange}
         onTitleChange={handleTitleChange}
+        onCheckedIn={handleCheckedIn}
+        onLessonsShifted={(shifted) => void refreshTimetable(shifted.timetable.id)}
+        onPreviousCheckedIn={() => {
+          if (selectedSlot) void refreshTimetable(selectedSlot.timetable.id);
+        }}
+        onProposalResolved={(resolved) => void refreshTimetable(resolved.timetable.id)}
       />
     </div>
   );

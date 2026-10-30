@@ -14,6 +14,8 @@ interface RichTextEditorProps {
   onEditorActivity?: () => void;
   onImageUpload?: (file: File) => Promise<void> | void;
   isImageUploading?: boolean;
+  /** Drawn as a page on the editor's grey desk (shared editor frame). */
+  page?: boolean;
 }
 
 // Loading fallback
@@ -21,13 +23,13 @@ function EditorSkeleton() {
   const t = useTranslations("editor.richTextEditor");
   return (
     <div className="border border-border rounded-xl bg-card w-full">
-      <div className="border-b border-border p-2 h-12 bg-muted animate-pulse rounded-t-xl flex justify-between items-center">
+      <div className="border-b border-border p-2 h-12 animate-pulse rounded-t-xl flex justify-between items-center">
         <div className="flex gap-2">
            {[...Array(5)].map((_, i) => (
-             <div key={i} className="w-8 h-8 bg-muted-foreground/10 rounded" />
+             <div key={i} className="w-8 h-8 bg-muted-foreground/15 rounded" />
            ))}
         </div>
-        <div className="w-24 h-8 bg-muted-foreground/10 rounded mr-2" />
+        <div className="w-24 h-8 bg-muted-foreground/15 rounded mr-2" />
       </div>
       <div className="flex min-h-[55dvh] items-center justify-center p-3 sm:min-h-[600px] sm:p-4">
         <div className="text-muted-foreground">{t("loadingEditor")}</div>
@@ -55,6 +57,7 @@ function RichTextEditorComponent({
   onEditorActivity,
   onImageUpload,
   isImageUploading = false,
+  page = false,
 }: RichTextEditorProps) {
   return (
     <TipTapEditor
@@ -67,6 +70,7 @@ function RichTextEditorComponent({
       onEditorActivity={onEditorActivity}
       onImageUpload={onImageUpload}
       isImageUploading={isImageUploading}
+      page={page}
     />
   );
 }

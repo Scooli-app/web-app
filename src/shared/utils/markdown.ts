@@ -1,4 +1,6 @@
 import * as showdown from "showdown";
+import { normalizeMathMarkdown } from "./math-markdown";
+import { stripHtmlTags } from "./stripHtmlTags";
 
 // Configure showdown converter with appropriate options for TipTap
 const converterOptions: showdown.ConverterOptions = {
@@ -27,6 +29,9 @@ const converterOptions: showdown.ConverterOptions = {
 const converter = new showdown.Converter(converterOptions);
 const MARKDOWN_CODE_FENCE_PATTERN = /```[\s\S]*?```/g;
 const MCQ_OPTION_LINE_PATTERN = /^\s*\([A-Ea-e]\)\s/;
+const MCQ_OPTION_LABEL_PATTERN = /^\s*\(([A-Ea-e])\)\s/;
+/** A line that only refers to other options, e.g. "(A) e (C)" or "(B) or (D).". */
+const OPTION_REFERENCE_LINE_PATTERN = /^\s*\(([A-Ea-e])\)\s+(?:e|ou|and|or)\s+\(([A-Ea-e])\)\s*[.)]?\s*$/i;
 const HTML_PRE_BLOCK_PATTERN = /<pre[\s\S]*?<\/pre>/gi;
 const HTML_IMAGE_TAG_PATTERN = /<img\b[^>]*>/gi;
 // Math protection patterns
@@ -235,13 +240,42 @@ function escapeAnswerBlanks(markdown: string): string {
   return markdown.replace(/_{5,}/g, (match) => match.split("").map(() => "\\_").join(""));
 }
 
+/**
+ * Puts back an option's cross-reference that ended up on its own line ("(D) Ambas" / "(A) e (C)").
+ * Its first label comes before the previous option's, so it cannot be the next option.
+ */
+export function rejoinSplitOptionReferences(markdown: string): string {
+  const out: string[] = [];
+  for (const line of markdown.split("\n")) {
+    const reference = OPTION_REFERENCE_LINE_PATTERN.exec(line);
+    const previousLine = out[out.length - 1];
+    const previousLabel = previousLine ? MCQ_OPTION_LABEL_PATTERN.exec(previousLine)?.[1] : undefined;
+    if (reference && previousLabel && reference[1].toUpperCase() < previousLabel.toUpperCase()) {
+      out[out.length - 1] = `${previousLine.trimEnd()} ${line.trim()}`;
+    } else {
+      out.push(line);
+    }
+  }
+  return out.join("\n");
+}
+
 function normalizeMultipleChoiceOptions(markdown: string): string {
   const optionRegex = /(?:\(([A-Ea-e])\)|\b([A-Ea-e])\))\s+/g;
   const questionPrefixRegex = /^\s*(?:\d+[\).:-]|[-*])\s+/;
 
   const lines = markdown.split("\n");
   const rewrittenLines = lines.map((line) => {
-    const matches = [...line.matchAll(optionRegex)];
+    // A marker only starts a new option when it is the next letter in sequence. Otherwise it is a
+    // reference to other options inside an option's text: "(D) Ambas (A) e (C)".
+    const matches: RegExpExecArray[] = [];
+    for (const match of line.matchAll(optionRegex)) {
+      const label = (match[1] ?? match[2] ?? "").toUpperCase();
+      const previous = matches[matches.length - 1];
+      const previousLabel = previous ? (previous[1] ?? previous[2] ?? "").toUpperCase() : undefined;
+      if (!previousLabel || label.charCodeAt(0) === previousLabel.charCodeAt(0) + 1) {
+        matches.push(match);
+      }
+    }
     if (matches.length === 0) {
       return line;
     }
@@ -285,8 +319,8 @@ function normalizeMultipleChoiceOptions(markdown: string): string {
   // Pass 1 may produce elements with embedded \n (inline-split path); flatMap flattens them first.
   // Also strip any <br> HTML tags the AI may have injected — these cause double line-breaks
   // when combined with the hard-break markers we add at the end.
-  const flatLines = rewrittenLines
-    .flatMap((l) => l.split("\n"))
+  const flatLines = rejoinSplitOptionReferences(rewrittenLines.join("\n"))
+    .split("\n")
     .map((l) => l.replace(/<br\s*\/?>/gi, "").trimEnd());
   const collapsed: string[] = [];
   for (let i = 0; i < flatLines.length; i++) {
@@ -388,7 +422,8 @@ export function markdownToHtml(markdown: string): string {
 
   try {
     const codeProtected = protectSegments(
-      markdown.replace(/\r\n/g, "\n").replace(/\r/g, "\n"),
+      // Repair broken maths markup first, so documents saved before the backend repaired it render too.
+      normalizeMathMarkdown(markdown.replace(/\r\n/g, "\n").replace(/\r/g, "\n")),
       MARKDOWN_CODE_FENCE_PATTERN
     );
 
@@ -524,9 +559,10 @@ export function htmlToMarkdown(html: string): string {
       // TipTap adds <colgroup> which showdown's makeMarkdown doesn't need.
       .replace(/<colgroup[\s\S]*?<\/colgroup>/g, "")
       // Move the first <tr> whose cells are all <th> from <tbody> into <thead>
-      // so showdown knows to emit a separator row.
+      // so showdown knows to emit a separator row. A cell's content may not contain another
+      // <th> or </th>, so each cell can be matched only one way (no exponential backtracking).
       .replace(
-        /<tbody>(<tr>(?:<th[^>]*>[\s\S]*?<\/th>)+<\/tr>)([\s\S]*?)<\/tbody>/g,
+        /<tbody>(<tr>(?:<th[^>]*>(?:(?!<\/?th\b)[\s\S])*<\/th>)+<\/tr>)([\s\S]*?)<\/tbody>/g,
         "<thead>$1</thead><tbody>$2</tbody>",
       )
       // ───────────────────────────────────────────────────────────────────
@@ -585,8 +621,7 @@ export function htmlToMarkdown(html: string): string {
   } catch (error) {
     console.error("Error converting HTML to markdown:", error);
     // Fallback: strip HTML tags and return plain text
-    return html
-      .replace(/<[^>]*>/g, "")
+    return stripHtmlTags(html)
       .replace(/\s+/g, " ")
       .trim();
   }
@@ -696,12 +731,13 @@ function protectMathHtml(input: string): {
       let result = value.replace(MATH_BLOCK_TOKEN_RESTORE_PATTERN, (_match, rawId) => {
         const index = Number(rawId);
         const latex = blockSegments[index] ?? "";
-        return `\n\n$$${latex}$$\n\n`;
+        // An empty formula (closed unwritten, or the formula editor failed) is nothing, not "$$".
+        return latex.trim() ? `\n\n$$${latex}$$\n\n` : "";
       });
       result = result.replace(MATH_INLINE_TOKEN_RESTORE_PATTERN, (_match, rawId) => {
         const index = Number(rawId);
         const latex = inlineSegments[index] ?? "";
-        return `$${latex}$`;
+        return latex.trim() ? `$${latex}$` : "";
       });
       return result;
     },

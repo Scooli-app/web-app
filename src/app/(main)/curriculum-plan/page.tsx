@@ -1,14 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import CurriculumPlansLoading from "./loading";
+import { SkeletonRows } from "@/components/ui/page-skeleton";
+import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { LoadError } from "@/components/ui/load-error";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { selectIsCurriculumPlanEnabled } from "@/store/features/selectors";
 import { useFeatureAccess } from "@/components/feature/useFeatureAccess";
 import { FeatureUnavailable } from "@/components/feature/FeatureUnavailable";
 import { Routes, type Document } from "@/shared/types";
 import { getDocuments } from "@/services/api/document.service";
-import { CalendarDays, ChevronRight, Loader2, Sparkles, Upload } from "lucide-react";
+import { CalendarDays, ChevronRight, Sparkles, Upload } from "lucide-react";
 import { translateSubject } from "@/components/document-creation/constants";
 import { toIntlLocale } from "@/shared/utils/calendar";
 import { isSupportedLocale, defaultLocale } from "@/i18n/locales";
@@ -25,16 +29,22 @@ export default function CurriculumPlanLandingPage() {
   const [plans, setPlans] = useState<Document[]>([]);
   const [plansLoading, setPlansLoading] = useState(true);
 
-  useEffect(() => {
-    if (!enabled) return;
+  const [plansFailed, setPlansFailed] = useState(false);
+
+  const loadPlans = useCallback(() => {
     setPlansLoading(true);
+    setPlansFailed(false);
     getDocuments({ page: 1, limit: 50, filters: { documentType: "curriculum_plan" } })
       .then((res) => setPlans(res.documents ?? []))
-      .catch(() => setPlans([]))
+      .catch(() => setPlansFailed(true))
       .finally(() => setPlansLoading(false));
-  }, [enabled]);
+  }, []);
 
-  if (!featuresLoaded) return null;
+  useEffect(() => {
+    if (enabled) loadPlans();
+  }, [enabled, loadPlans]);
+
+  if (!featuresLoaded) return <CurriculumPlansLoading />;
   if (!enabled)
     return (
       <FeatureUnavailable
@@ -98,13 +108,11 @@ export default function CurriculumPlanLandingPage() {
         <h2 className="text-base font-semibold">{t("existingTitle")}</h2>
 
         {plansLoading ? (
-          <div className="flex items-center justify-center py-10">
-            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-          </div>
+          <SkeletonRows rows={5} />
+        ) : plansFailed ? (
+          <LoadError onRetry={loadPlans} />
         ) : plans.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-border py-10 text-center text-sm text-muted-foreground">
-            {t("empty")}
-          </div>
+          <EmptyState size="inline" icon={CalendarDays} title={t("empty")} />
         ) : (
           <div className="space-y-2">
             {plans.map((plan) => (

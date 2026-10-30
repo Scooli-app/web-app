@@ -1,6 +1,10 @@
 "use client";
 
+import { SkeletonRows } from "@/components/ui/page-skeleton";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { LoadError } from "@/components/ui/load-error";
 import type { UploadSourceParams } from "@/shared/types/sources";
 import { cn } from "@/shared/utils/utils";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
@@ -61,7 +65,7 @@ export default function SourcesPage() {
   const tStatus = useTranslations("sources.status");
   const tList = useTranslations("sources.list");
   const dispatch = useAppDispatch();
-  const { sources, loading, uploading, uploadError } = useAppSelector(
+  const { sources, loading, error, uploading, uploadError } = useAppSelector(
     (state) => state.sources,
   );
 
@@ -209,19 +213,24 @@ export default function SourcesPage() {
           )}
         </div>
 
-        {loading && sources.length === 0 && (
-          <div className="flex items-center gap-2 py-8 text-sm text-muted-foreground">
-            <Loader2 className="w-4 h-4 animate-spin" />{t("loadingSources")}
-          </div>
+        {loading && sources.length === 0 && <SkeletonRows rows={3} />}
+
+        {!loading && sources.length === 0 && error && (
+          <LoadError onRetry={() => dispatch(fetchSources())} />
         )}
 
-        {!loading && sources.length === 0 && (
-          <Card className="flex flex-col items-center gap-3 p-10 text-center">
-            <FileText className="w-10 h-10 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">
-              {t("emptyState")}
-            </p>
-          </Card>
+        {!loading && sources.length === 0 && !error && (
+          <EmptyState
+            icon={FileText}
+            title={t("emptyState")}
+            description={t("emptyDescription")}
+            actions={
+              <Button type="button" size="sm" onClick={() => fileInputRef.current?.click()}>
+                <Upload className="mr-1.5 h-4 w-4" />
+                {t("emptyAction")}
+              </Button>
+            }
+          />
         )}
 
         {sources.map((source) => (

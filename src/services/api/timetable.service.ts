@@ -1,9 +1,11 @@
+import type { CompanionType } from "@/components/dashboard/weekWindow";
 /**
  * Timetable Service — Feature 2: Horário & Planos Letivos
  */
 
 import apiClient from "./client";
 import { featureFeedbackTrigger } from "@/store/featureFeedbackTrigger";
+import type { CheckInOutcome, CheckInResult, CheckInSlotType, MissingAmount, TeachingStatus } from "@/shared/types/check-in";
 
 export interface RecurringSlot {
   dayOfWeek: number; // 1=Mon..7=Sun (ISO)
@@ -79,6 +81,33 @@ export interface LessonSlot {
   durationMinutes: number;
   status: LessonSlotStatus;
   errorMessage: string;
+  /** Set by the teacher's check-in ("Como correu a aula?"); `planned` until then. */
+  teachingStatus?: TeachingStatus;
+  /** ISO timestamp of the latest check-in, null until the teacher checks in. */
+  checkedInAt?: string | null;
+  /**
+   * The latest answer's own result. "Com dificuldades" is stored as `taught`, so this is what tells it apart.
+   * Null until the teacher checks in, and when the backend has no result for the slot.
+   */
+  checkInResult?: CheckInResult | null;
+  /** Difficult outcome ids ("com dificuldades") or uncovered ones ("ficou a meio"); empty for the other answers. */
+  checkInOutcomeIds?: string[];
+  /** How much was left to teach, for a "ficou a meio" answer (ENG-253). Null otherwise. */
+  missingAmount?: MissingAmount | null;
+  /** The note the teacher wrote on the check-in (ENG-253). Null when blank or not given. */
+  teachingNote?: string | null;
+  /** Outcomes (AE) this lesson covers, offered as chips in the check-in card. */
+  outcomes?: CheckInOutcome[];
+  /** A topic a regeneration proposed for this lesson, kept until the teacher accepts or rejects it (ENG-247). */
+  pendingProposal?: PendingProposal | null;
+}
+
+/** The topic a regeneration proposed for a lesson that already has documents (ENG-247). */
+export interface PendingProposal {
+  topicTitle: string;
+  description: string;
+  outcomes: CheckInOutcome[];
+  createdAt: string;
 }
 
 export interface UpdateSlotParams {
@@ -97,6 +126,9 @@ export interface LessonDocument {
   documentId: string;
   documentRole: string;
   title: string;
+  documentType?: string;
+  /** generating | processing | completed | failed */
+  status?: string;
 }
 
 export interface GenerateLessonStreamCallbacks {
@@ -179,6 +211,47 @@ export async function skipLesson(timetableId: string, lessonId: string): Promise
   return response.data;
 }
 
+/** Accepts the lesson's pending topic proposal: the new topic applies and the old one is kept as a version (ENG-247). */
+export async function acceptProposal(timetableId: string, lessonId: string): Promise<LessonSlot> {
+  const response = await apiClient.post<LessonSlot>(
+    `/timetable/${timetableId}/lessons/${lessonId}/proposal/accept`
+  );
+  return response.data;
+}
+
+/** Rejects the lesson's pending topic proposal: the lesson keeps its topic (ENG-247). */
+export async function rejectProposal(timetableId: string, lessonId: string): Promise<LessonSlot> {
+  const response = await apiClient.post<LessonSlot>(
+    `/timetable/${timetableId}/lessons/${lessonId}/proposal/reject`
+  );
+  return response.data;
+}
+
+/** The lesson before a slot, when it still needs its "Como correu?" answer (ENG-224). */
+export interface PreviousLessonCheckIn {
+  slotId: string;
+  /** YYYY-MM-DD */
+  date: string;
+  topicTitle: string;
+  slotType: CheckInSlotType;
+  outcomes: CheckInOutcome[];
+}
+
+/**
+ * Null when there is nothing to ask: no previous lesson, already answered, or the class-state flag is off
+ * (the backend answers 204 for all of these).
+ */
+export async function getPreviousCheckIn(
+  timetableId: string,
+  lessonId: string
+): Promise<PreviousLessonCheckIn | null> {
+  const response = await apiClient.get<PreviousLessonCheckIn | "">(
+    `/timetable/${timetableId}/lessons/${lessonId}/previous-check-in`
+  );
+  if (response.status === 204 || !response.data) return null;
+  return response.data;
+}
+
 export async function listLessonDocuments(
   timetableId: string,
   lessonId: string
@@ -187,6 +260,85 @@ export async function listLessonDocuments(
     `/timetable/${timetableId}/lessons/${lessonId}/documents`
   );
   return response.data;
+}
+
+/**
+ * One-click lesson document ("+ Ficha", "+ Quiz", …): the backend creates it from the lesson's
+ * data and generates it server-side, so it finishes even if the teacher leaves the page.
+ * 402 / free-plan 403 open the upgrade modal in the API client; 409 = already being prepared.
+ */
+/**
+ * `outcomeIds` (ENG-209) is only sent for a test: the outcomes it must assess, chosen from the assessment's scope.
+ * Left out, the backend uses the whole scope. `instruction` is the lesson dialog's "Instrução adicional", for any type.
+ */
+export async function generateLessonDocument(
+  timetableId: string,
+  lessonId: string,
+  documentType: CompanionType,
+  outcomeIds?: string[],
+  instruction?: string,
+): Promise<{ id: string }> {
+  const body = {
+    documentType,
+    ...(outcomeIds ? { outcomeIds } : {}),
+    ...(instruction?.trim() ? { instruction: instruction.trim() } : {}),
+  };
+  const response = await apiClient.post<{ id: string; status: string }>(
+    `/timetable/${timetableId}/lessons/${lessonId}/documents/generate`,
+    body,
+  );
+  return { id: response.data.id };
+}
+
+/** One learning outcome an assessment can cover (ENG-209). `lessons` is how many lessons since the last test teach it. */
+/**
+ * How well a scope outcome is attested (ENG-239): confirmed by the teacher, partly, or only by lessons nobody answered
+ * (assumed). Optional: a backend without it gives no evidence, and every outcome is then treated as confirmed.
+ */
+export type AssessmentScopeEvidence = "confirmed" | "partial" | "assumed";
+
+export interface AssessmentScopeOutcome {
+  id: string;
+  text: string;
+  topicPath: string[];
+  lessons: number;
+  evidence?: AssessmentScopeEvidence;
+}
+
+/** A lesson between the previous assessment and this one; planned ones are still ahead of the test. */
+export interface AssessmentScopeLesson {
+  id: string;
+  date: string;
+  topicTitle: string | null;
+  teachingStatus: TeachingStatus;
+}
+
+/** What "Vai avaliar" shows for an assessment: the outcomes taught since `fromDate` (YYYY-MM-DD, or null). */
+export interface AssessmentScope {
+  fromDate: string | null;
+  outcomes: AssessmentScopeOutcome[];
+  /** The lessons the test covers, by date. Absent from an older backend. */
+  lessons?: AssessmentScopeLesson[];
+}
+
+/**
+ * The outcomes a test for this assessment should cover (ENG-209). Rejects when the flag is off (403), the slot is not
+ * an assessment (400) or it is not the teacher's (404); callers treat a rejection as "no scope to show".
+ */
+export async function getAssessmentScope(timetableId: string, lessonId: string): Promise<AssessmentScope> {
+  const response = await apiClient.get<AssessmentScope>(
+    `/timetable/${timetableId}/lessons/${lessonId}/assessment-scope`
+  );
+  return response.data;
+}
+
+/** Puts a document made from the create form into one of the teacher's lessons (no credit). */
+export async function linkLessonDocument(
+  timetableId: string,
+  lessonId: string,
+  documentId: string,
+): Promise<void> {
+  await apiClient.post(`/timetable/${timetableId}/lessons/${lessonId}/documents/${documentId}/link`);
 }
 
 // ─── TOPIC GENERATION ─────────────────────────────────────────────────

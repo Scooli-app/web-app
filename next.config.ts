@@ -82,6 +82,10 @@ const nextConfig: NextConfig = {
 
   // Enable experimental optimizations
   experimental: {
+    // Pages are client components that fetch their own data, so a visited
+    // route's RSC payload can be reused: back/forth navigation skips the server.
+    // Locale changes call router.refresh(), which clears this cache.
+    staleTimes: { dynamic: 60 },
     // Optimize package imports for smaller bundles
     optimizePackageImports: [
       "lucide-react",

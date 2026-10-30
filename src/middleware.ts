@@ -64,7 +64,9 @@ export default clerkMiddleware(async (auth, req) => {
         maxAge: 60 * 15, // 15 minutes; refreshed on navigation
       });
     } catch {
-      // keep middleware resilient; auth cookie will simply not be set
+      // keep middleware resilient; auth cookie will simply not be set. Drop
+      // any old one too, or it would keep a previous user's token alive.
+      res.cookies.delete(TOKEN_COOKIE_NAME);
     }
   };
 

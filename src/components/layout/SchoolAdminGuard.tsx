@@ -10,7 +10,14 @@ import {
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
-export function SchoolAdminGuard({ children }: { children: React.ReactNode }) {
+export function SchoolAdminGuard({
+  children,
+  fallback = null,
+}: {
+  children: React.ReactNode;
+  /** Shown until the workspace is known. */
+  fallback?: React.ReactNode;
+}) {
   const router = useRouter();
   const workspaceReady = useAppSelector(selectWorkspaceReady);
   const hasOrganizationWorkspace = useAppSelector(
@@ -28,9 +35,8 @@ export function SchoolAdminGuard({ children }: { children: React.ReactNode }) {
     }
   }, [hasOrganizationWorkspace, isOrganizationAdmin, router, workspaceReady]);
 
-  if (!workspaceReady || !hasOrganizationWorkspace || !isOrganizationAdmin) {
-    return null;
-  }
+  if (!workspaceReady) return fallback;
+  if (!hasOrganizationWorkspace || !isOrganizationAdmin) return null;
 
   return children;
 }

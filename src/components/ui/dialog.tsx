@@ -5,6 +5,7 @@ import { XIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import * as React from "react";
 
+import { keepOpenOnToastClick } from "@/components/ui/sonner";
 import { cn } from "@/shared/utils/utils";
 
 function Dialog({
@@ -43,6 +44,7 @@ function DialogContent({
   className,
   children,
   hideCloseButton = false,
+  onInteractOutside,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
   hideCloseButton?: boolean;
@@ -58,6 +60,10 @@ function DialogContent({
           className
         )}
         {...props}
+        onInteractOutside={(event) => {
+          keepOpenOnToastClick(event);
+          onInteractOutside?.(event);
+        }}
       >
         {children}
         {!hideCloseButton && (

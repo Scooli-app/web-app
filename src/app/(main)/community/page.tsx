@@ -12,11 +12,13 @@ import { ResourceGrid } from "@/components/community/ResourceGrid";
 import { ShareResourceModal } from "@/components/community/ShareResourceModal";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { AssessmentPreview } from "@/components/assessment-editor/AssessmentPreview";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
-  getLibraryStats,
   type LibraryScope,
   type DiscoverResourcesParams,
+  type SharedResource,
   type ShareResourceRequest,
 } from "@/services/api/community.service";
 import {
@@ -40,7 +42,7 @@ import {
   selectHasAccessibleOrganization,
   selectWorkspaceContext,
 } from "@/store/workspace/selectors";
-import { BarChart3, Plus, Users } from "lucide-react";
+import { BarChart3, Users } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -63,24 +65,16 @@ function CommunityLibraryPage() {
   const activeScope = (filters.scope ?? "community") as LibraryScope;
 
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
-  const [totalLibraryCount, setTotalLibraryCount] = useState<number | null>(null);
+  const [previewResource, setPreviewResource] = useState<SharedResource | null>(null);
 
   useEffect(() => {
     dispatch(fetchResources({ scope: activeScope }));
     dispatch(fetchReusedResourceIds());
-    getLibraryStats(activeScope)
-      .then((stats) => setTotalLibraryCount(stats.totalApprovedResources))
-      .catch(() => {
-        // stats are non-critical
-      });
   }, [activeScope, dispatch]);
 
   const handleScopeChange = (scope: LibraryScope) => {
     dispatch(setFilters({ scope }));
     dispatch(fetchResources({ scope, page: 0 }));
-    getLibraryStats(scope)
-      .then((stats) => setTotalLibraryCount(stats.totalApprovedResources))
-      .catch(() => undefined);
   };
 
   const handleFiltersChange = (newFilters: DiscoverResourcesParams) => {
@@ -102,6 +96,26 @@ function CommunityLibraryPage() {
     );
   };
 
+  const hasActiveFilters = Boolean(
+    filters.grade || filters.subject || filters.resourceType || filters.search,
+  );
+
+  const handleClearFilters = () =>
+    handleFiltersChange({
+      ...filters,
+      grade: undefined,
+      subject: undefined,
+      resourceType: undefined,
+      search: undefined,
+    });
+
+  // A page past the end (e.g. after the last item went away) comes back empty: go back to the first page.
+  useEffect(() => {
+    if (!isLoading && resources.length === 0 && pagination.page > 0) {
+      dispatch(fetchResources({ ...filters, page: 0 }));
+    }
+  }, [isLoading, resources.length, pagination.page, filters, dispatch]);
+
   const handlePageChange = (page: number) => {
     dispatch(fetchResources({ ...filters, page }));
   };
@@ -119,18 +133,23 @@ function CommunityLibraryPage() {
     }
   };
 
-  const handlePreview = (_resourceId: string) => {
-    toast.info(t("previewComingSoon"));
+  // Structured tests/worksheets/quizzes have a read-only preview; other resources don't yet.
+  const handlePreview = (resourceId: string) => {
+    const resource = resources.find((r) => r.id === resourceId);
+    if (resource?.contentFormat === "json") setPreviewResource(resource);
+    else toast.info(t("previewComingSoon"));
   };
 
   const handleShareResource = async (request: ShareResourceRequest) => {
     try {
-      await dispatch(submitResource({ ...request, libraryScope: activeScope })).unwrap();
+      const shared = await dispatch(submitResource({ ...request, libraryScope: activeScope })).unwrap();
       setIsShareModalOpen(false);
       toast.success(
         activeScope === "organization"
           ? t("shareOrgSuccess")
-          : t("shareCommunitySuccess"),
+          : shared.status === "APPROVED"
+            ? t("sharePublished")
+            : t("shareCommunitySuccess"),
       );
     } catch (error) {
       toast.error(
@@ -143,7 +162,7 @@ function CommunityLibraryPage() {
     <>
       <Button
         onClick={() => router.push("/community/dashboard")}
-        variant="outline"
+        variant="ghost"
         size="sm"
         className="w-full sm:w-auto"
       >
@@ -152,20 +171,11 @@ function CommunityLibraryPage() {
       </Button>
       <Button
         onClick={() => setIsShareModalOpen(true)}
-        variant="outline"
         size="sm"
         className="w-full sm:w-auto"
       >
         <Users className="mr-2 h-4 w-4" />
         {t("share")}
-      </Button>
-      <Button
-        onClick={() => router.push("/lesson-plan")}
-        size="sm"
-        className="w-full sm:w-auto"
-      >
-        <Plus className="mr-2 h-4 w-4" />
-        {t("createNew")}
       </Button>
     </>
   );
@@ -199,21 +209,6 @@ function CommunityLibraryPage() {
           ) : null}
         </div>
 
-        <div className="grid grid-cols-1 gap-1 text-xs text-muted-foreground sm:grid-cols-2 lg:flex lg:flex-wrap lg:items-center lg:gap-x-5 lg:gap-y-1">
-          <span>
-            <span className="font-medium text-foreground">
-              {totalLibraryCount !== null ? totalLibraryCount : "--"}
-            </span>{" "}
-            {t("resourcesAvailable")}
-          </span>
-          <span>
-            {activeScope === "organization"
-              ? t("internalShares", { org: workspace?.organization?.name ?? t("schoolFallback") })
-              : t("teacherCommunity")}
-          </span>
-          <span>{t("alignedResources")}</span>
-        </div>
-
         <CommunityFiltersComponent
           filters={filters}
           onFiltersChange={handleFiltersChange}
@@ -230,7 +225,20 @@ function CommunityLibraryPage() {
           isLoading={isLoading}
           isReusing={isReusing}
           reusedResourceIds={reusedResourceIds}
+          hasActiveFilters={hasActiveFilters}
+          onClearFilters={handleClearFilters}
+          onShare={() => setIsShareModalOpen(true)}
         />
+
+        <Dialog open={previewResource !== null} onOpenChange={(open) => !open && setPreviewResource(null)}>
+          <DialogContent className="max-h-[90dvh] max-w-3xl overflow-y-auto">
+            <DialogHeader className="pr-8 text-left">
+              <DialogTitle>{previewResource?.title}</DialogTitle>
+              <DialogDescription>{t("previewDescription", { name: previewResource?.contributorName ?? "" })}</DialogDescription>
+            </DialogHeader>
+            {previewResource && <AssessmentPreview content={previewResource.content} />}
+          </DialogContent>
+        </Dialog>
 
         <ShareResourceModal
           isOpen={isShareModalOpen}

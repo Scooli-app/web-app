@@ -46,6 +46,8 @@ interface ShareButtonProps {
   title: string;
   content: string;
   disabled?: boolean;
+  /** Tooltip explaining why the button is disabled. */
+  disabledReason?: string;
   documentId?: string;
   grade?: string;
   subject?: string;
@@ -74,6 +76,7 @@ function ShareButtonComponent({
   title,
   content,
   disabled = false,
+  disabledReason,
   documentId,
   grade = "",
   subject = "",
@@ -266,7 +269,8 @@ function ShareButtonComponent({
             >
               {statusIcon}
               <span className="hidden sm:inline">{statusLabel}</span>
-              <ChevronDown className="h-3.5 w-3.5 opacity-70" />
+              {/* Phone: icon only, like the other header actions. */}
+              <ChevronDown className="h-3.5 w-3.5 opacity-70 max-md:hidden" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
@@ -311,18 +315,22 @@ function ShareButtonComponent({
 
   return (
     <>
-      <Button
-        variant="outline"
-        size="sm"
-        disabled={isDisabled}
-        onClick={openShareModal}
-        className={`flex items-center gap-2 ${className}`}
-      >
-        <Share2 className="h-4 w-4" />
-        <span className="hidden sm:inline">
-          {isSharing ? t("sharing") : t("share")}
-        </span>
-      </Button>
+      {/* span: disabled buttons swallow pointer events, so the tooltip lives here */}
+      <span title={isDisabled ? disabledReason : undefined} className="inline-flex">
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={isDisabled}
+          onClick={openShareModal}
+          aria-label={isSharing ? t("sharing") : t("share")}
+          className={`flex items-center gap-2 ${className}`}
+        >
+          <Share2 className="h-4 w-4" />
+          <span className="hidden sm:inline">
+            {isSharing ? t("sharing") : t("share")}
+          </span>
+        </Button>
+      </span>
 
       {shareModal}
     </>

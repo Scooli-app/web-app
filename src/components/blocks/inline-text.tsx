@@ -21,7 +21,25 @@
 
 import katex from "katex";
 import "katex/dist/katex.min.css";
-import { Fragment, type ReactNode } from "react";
+import { Fragment, memo, type ReactNode } from "react";
+
+// KaTeX is the cost of a re-render: an editor with hundreds of formulas re-ran it for every keystroke.
+const MATH_CACHE_MAX = 2000;
+const mathCache = new Map<string, string>();
+function renderMath(tex: string): string {
+  const cached = mathCache.get(tex);
+  if (cached !== undefined) return cached;
+  const html = katex.renderToString(tex, {
+    throwOnError: false,
+    displayMode: false,
+    // Caps on what one formula may cost: \rule/\kern sizes (em) and macro expansions.
+    maxSize: 10,
+    maxExpand: 100,
+  });
+  if (mathCache.size >= MATH_CACHE_MAX) mathCache.clear();
+  mathCache.set(tex, html);
+  return html;
+}
 
 /** Inline markdown tokens recognised by the parser. */
 type Token =
@@ -163,10 +181,7 @@ function renderTokens(tokens: Token[]): ReactNode[] {
       case "math": {
         let html: string;
         try {
-          html = katex.renderToString(token.tex, {
-            throwOnError: false,
-            displayMode: false,
-          });
+          html = renderMath(token.tex);
         } catch {
           // Fall back to raw text rather than crashing the slide.
           return (
@@ -192,7 +207,7 @@ function renderTokens(tokens: Token[]): ReactNode[] {
  * carries inline text (paragraph.text, bullet_list.items[], heading.text,
  * slide.title, slide.subtitle).
  */
-export function InlineText({ value }: { value: string }) {
+export const InlineText = memo(function InlineText({ value }: { value: string }) {
   if (!value) return null;
   return <>{renderTokens(tokenize(value))}</>;
-}
+});

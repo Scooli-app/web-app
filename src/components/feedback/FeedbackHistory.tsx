@@ -1,5 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { feedbackService } from "@/services/api/feedback.service";
 import {
@@ -15,10 +16,11 @@ import {
   Clock,
   Lightbulb,
   Loader2,
+  MessageSquare,
   Shield,
   XCircle,
 } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 
 interface FeedbackHistoryProps {
@@ -27,6 +29,7 @@ interface FeedbackHistoryProps {
 
 export function FeedbackHistory({ refreshTrigger }: FeedbackHistoryProps) {
   const t = useTranslations("feedback.history");
+  const locale = useLocale();
   const [feedbackList, setFeedbackList] = useState<Feedback[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -127,7 +130,7 @@ export function FeedbackHistory({ refreshTrigger }: FeedbackHistoryProps) {
             {[1, 2, 3].map((i) => (
               <div
                 key={i}
-                className="flex items-start justify-between p-4 rounded-xl border border-white/5 bg-card/50"
+                className="flex items-start justify-between p-4 rounded-xl border border-border/50 bg-card/50"
               >
                 <div className="flex gap-4 w-full">
                   <Skeleton className="h-10 w-10 rounded-full" />
@@ -146,14 +149,17 @@ export function FeedbackHistory({ refreshTrigger }: FeedbackHistoryProps) {
             <span>{error}</span>
           </div>
         ) : feedbackList.length === 0 ? (
-          <div className="text-center py-12 text-muted-foreground border border-dashed border-white/10 rounded-xl">
-            {t("emptyState")}
-          </div>
+          <EmptyState
+            size="inline"
+            icon={MessageSquare}
+            title={t("emptyState")}
+            description={t("emptyStateHint")}
+          />
         ) : (
           <div className="space-y-4">
             {feedbackList.map((item) => (
               <div key={item.id}>
-                <div className="group flex flex-col sm:flex-row sm:items-start justify-between p-4 rounded-xl border border-white/5 bg-card/50 hover:bg-card hover:border-white/10 transition-all gap-4">
+                <div className="group flex flex-col sm:flex-row sm:items-start justify-between p-4 rounded-xl border border-border/50 bg-card/50 hover:bg-card hover:border-border transition-all gap-4">
                   <div className="flex gap-4">
                     {renderIcon(item.type)}
                     <div>
@@ -165,7 +171,7 @@ export function FeedbackHistory({ refreshTrigger }: FeedbackHistoryProps) {
                       </p>
                       <div className="flex items-center gap-2 mt-3 text-xs text-muted-foreground/60">
                         <span>
-                          {new Intl.DateTimeFormat("pt-PT", {
+                          {new Intl.DateTimeFormat(locale, {
                             day: "numeric",
                             month: "long",
                             year: "numeric",
@@ -216,7 +222,7 @@ export function FeedbackHistory({ refreshTrigger }: FeedbackHistoryProps) {
                                 •
                               </span>
                               <span className="text-[10px] text-muted-foreground/60">
-                                {new Intl.DateTimeFormat("pt-PT", {
+                                {new Intl.DateTimeFormat(locale, {
                                   day: "numeric",
                                   month: "short",
                                   hour: "2-digit",

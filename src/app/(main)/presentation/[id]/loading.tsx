@@ -1,16 +1,10 @@
-"use client";
-
-import { Loader2 } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { PresentationEditorSkeleton } from "@/components/document-editor-v2/PresentationEditorSkeleton";
 
 export default function PresentationEditorLoading() {
-  const t = useTranslations("editor.blockEditor");
+  // Same full-bleed wrapper as the page.
   return (
-    <div className="flex min-h-[400px] w-full items-center justify-center">
-      <div className="flex items-center gap-2">
-        <Loader2 className="h-6 w-6 animate-spin text-primary" />
-        <span className="text-lg text-muted-foreground">{t("loadingPresentation")}</span>
-      </div>
+    <div className="-m-3 flex w-full flex-1 min-h-0 sm:-m-4 md:-m-6">
+      <PresentationEditorSkeleton />
     </div>
   );
 }

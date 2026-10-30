@@ -42,6 +42,8 @@ import {
 import { cn } from "@/shared/utils/utils";
 import { ArrowLeft, Building2, Globe2, Share2, Sparkles } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { selectIsDocumentReviewEnabled } from "@/store/features/selectors";
+import { useAppSelector } from "@/store/hooks";
 import { useEffect, useMemo, useState } from "react";
 
 interface ShareResourceModalProps {
@@ -84,6 +86,7 @@ type ShareModalTranslate = (key: string, values?: Record<string, string | number
 function getDestinationOptions(
   organizationName: string | null,
   t: ShareModalTranslate,
+  review: boolean,
 ): DestinationOption[] {
   const orgLabel = organizationName
     ? t("orgLibraryLabel", { name: organizationName })
@@ -103,7 +106,7 @@ function getDestinationOptions(
     {
       value: "community",
       title: t("destinationCommunity"),
-      hint: t("destinationCommunityHint"),
+      hint: t(review ? "destinationCommunityHint" : "destinationCommunityInstantHint"),
       icon: Globe2,
       cardClassName:
         "border-teal-500/30 bg-teal-500/10 hover:border-teal-500/45 hover:bg-teal-500/14",
@@ -139,6 +142,8 @@ export function ShareResourceModal({
   documentId,
 }: ShareResourceModalProps) {
   const t = useTranslations("community.shareModal");
+  // Off, a community share is published at once: no "revisto em 24-48h" promise.
+  const review = useAppSelector(selectIsDocumentReviewEnabled);
   const tResourceTypes = useTranslations("community.resourceCard.resourceTypes");
   const tFilters = useTranslations("community.filters");
   const defaultDestination: ShareDestination = allowOrganizationScope
@@ -160,8 +165,8 @@ export function ShareResourceModal({
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const destinationOptions = useMemo(
-    () => getDestinationOptions(organizationName, t),
-    [organizationName, t],
+    () => getDestinationOptions(organizationName, t, review),
+    [organizationName, t, review],
   );
 
   useEffect(() => {
@@ -278,14 +283,15 @@ export function ShareResourceModal({
       return t("shareWithOrgDescription", { name: organizationName ?? t("schoolFallbackPossessive") });
     }
     if (currentDestination === "both") {
-      return t("shareAllDescription");
+      return t(review ? "shareAllDescription" : "shareAllInstantDescription");
     }
-    return t("shareCommunityDescription");
+    return t(review ? "shareCommunityDescription" : "shareCommunityInstantDescription");
   })();
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-h-[90dvh] max-w-2xl overflow-y-auto p-0">
+      {/* Phone: 44 px touch targets (checkboxes keep their size) and 16 px field text, so iOS doesn't zoom on focus. */}
+      <DialogContent className="max-h-[90dvh] max-w-2xl overflow-y-auto p-0 max-md:[&_button:not([role=checkbox])]:min-h-11 max-md:[&_button:not([role=checkbox])]:min-w-11 max-md:[&_input]:min-h-11 max-md:[&_input]:text-base max-md:[&_textarea]:text-base">
         <DialogHeader className="border-b border-border/70 bg-muted/40 px-6 py-5 pr-14">
           <div className="flex items-center gap-3">
             {allowOrganizationScope && (
@@ -295,7 +301,7 @@ export function ShareResourceModal({
             )}
             <DialogTitle className="flex min-w-0 items-center gap-2 text-lg">
               <Share2 className="h-5 w-5 shrink-0" />
-              <span className="truncate">{modalTitle}</span>
+              <span className="truncate max-md:whitespace-normal">{modalTitle}</span>
             </DialogTitle>
           </div>
           <DialogDescription className="mt-1 text-sm leading-5 text-muted-foreground">
@@ -312,7 +318,7 @@ export function ShareResourceModal({
         </DialogHeader>
 
         {allowOrganizationScope && step === 1 ? (
-          <div className="space-y-3 px-6 pb-6 pt-4 pr-14">
+          <div className="space-y-3 px-6 pb-6 pt-4 pr-14 max-md:pr-6">
             {destinationOptions.map((option) => {
               const Icon = option.icon;
               const isSelected = currentDestination === option.value;
@@ -353,7 +359,7 @@ export function ShareResourceModal({
             </div>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-5 px-6 pb-6 pt-4 pr-14">
+          <form onSubmit={handleSubmit} className="space-y-5 px-6 pb-6 pt-4 pr-14 max-md:pr-6">
             <div className="space-y-1.5">
               <Label htmlFor="share-title">
                 {t("titleLabel")} <span className="text-destructive">*</span>
@@ -408,7 +414,7 @@ export function ShareResourceModal({
                   <SelectTrigger className={errors.grade ? "border-destructive" : ""}>
                     <SelectValue placeholder={t("gradePlaceholder")} />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="max-md:[&_[role=option]]:min-h-11">
                     {GRADE_OPTIONS.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
                         {tFilters("gradeOption", { n: option.value })}
@@ -434,7 +440,7 @@ export function ShareResourceModal({
                   <SelectTrigger className={errors.subject ? "border-destructive" : ""}>
                     <SelectValue placeholder={t("subjectPlaceholder")} />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="max-md:[&_[role=option]]:min-h-11">
                     {SUBJECT_OPTIONS.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
                         {translateSubject(option.value)}
@@ -462,7 +468,7 @@ export function ShareResourceModal({
                   >
                     <SelectValue placeholder={t("typePlaceholder")} />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="max-md:[&_[role=option]]:min-h-11">
                     {RESOURCE_TYPE_OPTIONS.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
                         {tResourceTypes(`${option.value}`)}
@@ -482,7 +488,7 @@ export function ShareResourceModal({
                   ? t("orgLibraryHeading")
                   : currentDestination === "both"
                     ? t("combinedShareHeading")
-                    : t("reviewProcessHeading")}
+                    : review ? t("reviewProcessHeading") : t("instantHeading")}
               </p>
               {currentDestination === "organization" ? (
                 <ul className="space-y-1 text-xs text-muted-foreground">
@@ -492,13 +498,13 @@ export function ShareResourceModal({
                 </ul>
               ) : currentDestination === "both" ? (
                 <ul className="space-y-1 text-xs text-muted-foreground">
-                  {(t.raw("bothBullets") as string[]).map((bullet) => (
+                  {(t.raw(review ? "bothBullets" : "bothInstantBullets") as string[]).map((bullet) => (
                     <li key={bullet}>{bullet}</li>
                   ))}
                 </ul>
               ) : (
                 <ul className="space-y-1 text-xs text-muted-foreground">
-                  {(t.raw("communityBullets") as string[]).map((bullet) => (
+                  {(t.raw(review ? "communityBullets" : "communityInstantBullets") as string[]).map((bullet) => (
                     <li key={bullet}>{bullet}</li>
                   ))}
                 </ul>

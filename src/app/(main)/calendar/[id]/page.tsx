@@ -1,20 +1,25 @@
 "use client";
 
-import { isListableSlot } from "@/shared/utils/lessonTopic";
+import ClassDetailLoading from "./loading";
+import { WeekSlotListSkeleton } from "@/components/calendar/ClassListSkeleton";
+import { formatClassName, sameClassWords } from "@/shared/utils/className";
+import { hasTopic, isVisibleSlot } from "@/shared/utils/lessonTopic";
 import { Badge } from "@/components/ui/badge";
 import { PlanGenerationBanner } from "@/components/plan-generation/PlanGenerationBanner";
 import { Button } from "@/components/ui/button";
-import { selectIsHorarioPlanosEnabled } from "@/store/features/selectors";
+import { EmptyState } from "@/components/ui/empty-state";
+import { LoadError } from "@/components/ui/load-error";
+import { selectIsClassStateEnabled, selectIsHorarioPlanosEnabled } from "@/store/features/selectors";
 import { useFeatureAccess } from "@/components/feature/useFeatureAccess";
 import { FeatureUnavailable } from "@/components/feature/FeatureUnavailable";
 import {
   fetchTimetable,
   fetchLessons,
-  skipLesson,
+  setSlotCheckIn,
   setSlotStatus,
   updateLesson,
 } from "@/store/timetable/timetableSlice";
-import { useAppDispatch } from "@/store/hooks";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { openUpgradeModalForReason, setUpgradeModalOpen } from "@/store/ui/uiSlice";
 import { isUpgradeReason } from "@/shared/types/plan-limits";
 import type { RootState } from "@/store/store";
@@ -38,8 +43,16 @@ import {
 import { SLOT_STATUS_CONFIG } from "@/shared/constants/lessonSlotStatus";
 import { translateSubject } from "@/components/document-creation/constants";
 import { SlotDialog } from "@/components/calendar/SlotDialog";
+import { TeachingMarkBadge, TeachingMarkLegend } from "@/components/calendar/TeachingMarkBadge";
+import { NextStepsCard } from "@/components/next-steps/NextStepsCard";
+import { ReviewFeedSection } from "@/components/review-feed/ReviewFeedSection";
+import { ReplanRequestDialog } from "@/components/replan/ReplanRequestDialog";
+import { useReplan } from "@/hooks/useReplan";
+import { TurmaProgressPanel } from "@/components/calendar/TurmaProgressPanel";
 import type { SlotWithTimetable } from "@/shared/types/calendar";
-import { toIso, getWeekStart, addDays, formatWeekLabel, toIntlLocale } from "@/shared/utils/calendar";
+import type { CheckInRecord } from "@/shared/types/check-in";
+import { teachingMark, type SlotCheckInAnswer } from "@/shared/utils/teachingStatus";
+import { toIso, defaultCalendarWeek, getWeekStart, addDays, formatWeekLabel, toIntlLocale } from "@/shared/utils/calendar";
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -49,6 +62,7 @@ import { useAuth } from "@clerk/nextjs";
 import posthog from "posthog-js";
 import { useLocale, useTranslations } from "next-intl";
 import { isSupportedLocale, defaultLocale } from "@/i18n/locales";
+import { slotStatusKey } from "@/shared/utils/week";
 
 // ─────────────────────── Types / helpers ─────────────────────────────────────
 
@@ -61,19 +75,21 @@ const STATUS_CONFIG = SLOT_STATUS_CONFIG;
 interface SlotCardProps {
   slot: LessonSlot;
   color: string;
-  subject: string;
-  classLabel: string;
   onOpen: (slot: LessonSlot) => void;
 }
 
-function SlotCard({ slot, color, subject, classLabel, onOpen }: SlotCardProps) {
+function SlotCard({ slot, color, onOpen }: SlotCardProps) {
   const t = useTranslations("calendar");
   const tTimetable = useTranslations("timetable");
+  const tReview = useTranslations("reviewFeed");
   const rawLocale = useLocale();
   const locale = isSupportedLocale(rawLocale) ? rawLocale : defaultLocale;
   const isHoliday = slot.slotType === "HOLIDAY";
   const isFailed = slot.status === "failed";
   const cfg = STATUS_CONFIG[slot.status];
+  const checkInEnabled = useAppSelector(selectIsClassStateEnabled);
+  // Only with class_state_enabled: with the flag off the card looks as it always did.
+  const mark = checkInEnabled ? teachingMark(slot, toIso(new Date())) : null;
   const borderColor = isFailed ? "#ef4444" : color;
   const rgb = color.replace("#", "").match(/.{2}/g);
   const tintBg = rgb
@@ -89,7 +105,7 @@ function SlotCard({ slot, color, subject, classLabel, onOpen }: SlotCardProps) {
         isHoliday
           ? "cursor-default opacity-50"
           : "cursor-pointer hover:shadow-sm hover:border-primary/40"
-      } ${isFailed ? "bg-red-50 dark:bg-red-950/20" : ""}`}
+      } ${isFailed ? "bg-red-50 dark:bg-red-950/20" : ""} ${mark?.key === "notHeld" ? "opacity-60" : ""}`}
       style={{
         borderLeft: `4px solid ${borderColor}`,
         backgroundColor: !isFailed && !isHoliday ? tintBg : undefined,
@@ -101,7 +117,7 @@ function SlotCard({ slot, color, subject, classLabel, onOpen }: SlotCardProps) {
         </span>
         <div className="min-w-0 flex-1">
           <p className={`truncate text-sm font-medium ${isHoliday ? "line-through text-muted-foreground" : ""}`}>
-            {isHoliday ? t("shared.holidayNoLesson") : slot.topicTitle}
+            {isHoliday ? t("shared.holidayNoLesson") : hasTopic(slot) ? slot.topicTitle : t("shared.notHeldTitle")}
           </p>
           <p className="text-xs text-muted-foreground">
             {new Date(`${slot.slotDate}T00:00:00`).toLocaleDateString(toIntlLocale(locale), {
@@ -111,9 +127,6 @@ function SlotCard({ slot, color, subject, classLabel, onOpen }: SlotCardProps) {
             })}
             {" · "}{t("shared.minutesSuffix", { count: slot.durationMinutes })}
           </p>
-          <p className="text-xs text-muted-foreground/70">
-            {subject}{classLabel ? ` · ${t("shared.classInline", { label: classLabel })}` : ""}
-          </p>
           {isFailed && (
             <p className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400 mt-0.5">
               <AlertTriangle className="h-3 w-3" />
@@ -121,10 +134,17 @@ function SlotCard({ slot, color, subject, classLabel, onOpen }: SlotCardProps) {
             </p>
           )}
         </div>
+        {/* ENG-247: a regeneration proposed a new topic for this prepared lesson; the dialog shows it. */}
+        {slot.pendingProposal && (
+          <span className="shrink-0 rounded bg-primary/10 px-1.5 py-0.5 text-xs font-medium text-primary">
+            {tReview("topicBadge")}
+          </span>
+        )}
+        {mark && <TeachingMarkBadge mark={mark} className="text-sm" />}
         {!isHoliday && (
           <Badge className={`shrink-0 gap-1 border text-xs ${cfg.badgeCls}`}>
             {cfg.icon}
-            {tTimetable(`status.${slot.status}`)}
+            {tTimetable(`status.${slotStatusKey(slot.status, slot.slotDate)}`)}
           </Badge>
         )}
       </div>
@@ -142,7 +162,7 @@ export default function CalendarViewPage() {
   const params = useParams();
   const id = params.id as string;
   const { loaded: featuresLoaded, enabled } = useFeatureAccess(selectIsHorarioPlanosEnabled);
-  const { currentTimetable, slots, isSlotsLoading } =
+  const { currentTimetable, slots, isSlotsLoading, isLoading, error } =
     useSelector((state: RootState) => state.timetable);
   const dispatch = useAppDispatch();
   const { getToken } = useAuth();
@@ -155,7 +175,7 @@ export default function CalendarViewPage() {
       const d = new Date(`${weekParam}T00:00:00`);
       if (!isNaN(d.getTime())) return getWeekStart(d);
     }
-    return getWeekStart(new Date());
+    return defaultCalendarWeek();
   });
 
   // Follow the ?week param when it changes (client-side navigation to the same page).
@@ -165,6 +185,16 @@ export default function CalendarViewPage() {
     if (!isNaN(d.getTime())) setWeekStart(getWeekStart(d));
   }, [weekParam]);
   const [selectedSlot, setSelectedSlot] = useState<LessonSlot | null>(null);
+  // ?lesson=<id> (the "Abrir" of a reinforcement worksheet) opens that lesson once its week has loaded, once.
+  const lessonParam = searchParams.get("lesson");
+  const openedLessonRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!lessonParam || openedLessonRef.current === lessonParam) return;
+    const found = slots.find((s) => s.id === lessonParam);
+    if (!found) return;
+    openedLessonRef.current = lessonParam;
+    setSelectedSlot(found);
+  }, [lessonParam, slots]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatingWeek, setGeneratingWeek] = useState(false);
   const [streamContent, setStreamContent] = useState("");
@@ -224,7 +254,7 @@ export default function CalendarViewPage() {
   const slotsByWeek: WeekMap = useMemo(() => {
     const map: WeekMap = new Map();
     for (const slot of slots) {
-      if (!isListableSlot(slot)) continue; // lessons without a topic are never shown
+      if (!isVisibleSlot(slot)) continue; // lessons without a topic are never shown, except a not-held one
       const d = new Date(`${slot.slotDate}T00:00:00`);
       const ws = toIso(getWeekStart(d));
       if (!map.has(ws)) map.set(ws, []);
@@ -247,6 +277,48 @@ export default function CalendarViewPage() {
     setWeekStart((p) => addDays(p, -7));
   const nextWeek = () =>
     setWeekStart((p) => addDays(p, 7));
+
+  // A check-in saved from the slot dialog: the card's mark follows without reloading the lessons,
+  // and the turma progress panel reloads its figures.
+  const [progressRefreshKey, setProgressRefreshKey] = useState(0);
+  const { isPro } = useReplan();
+  const tReplan = useTranslations("replan");
+  const replanEnabled = useAppSelector(selectIsClassStateEnabled);
+  const [replanOpen, setReplanOpen] = useState(false);
+  const handleCheckedIn = useCallback(
+    (target: SlotWithTimetable, record: CheckInRecord, answer: SlotCheckInAnswer) => {
+      dispatch(
+        setSlotCheckIn({
+          slotId: target.id,
+          teachingStatus: record.teachingStatus,
+          checkedInAt: record.checkedInAt,
+          checkInResult: answer.checkInResult,
+          checkInOutcomeIds: answer.checkInOutcomeIds,
+          missingAmount: answer.missingAmount,
+          teachingNote: answer.teachingNote,
+        })
+      );
+      setProgressRefreshKey((key) => key + 1);
+    },
+    [dispatch]
+  );
+
+  // A check-in saved on the previous lesson (asked at the top of the dialog), a reinforcement worksheet or
+  // carry-over started after a check-in, or the following lessons moved after "não houve aula": the progress
+  // panel, the next steps and the lessons reload from the server.
+  const reloadClassState = useCallback(() => {
+    setProgressRefreshKey((key) => key + 1);
+    dispatch(fetchLessons({ timetableId: id }));
+  }, [dispatch, id]);
+
+  // "Por rever": a topic proposal opens its lesson in the dialog, where the proposal is.
+  const openLessonById = useCallback(
+    (slotId: string) => {
+      const found = slots.find((s) => s.id === slotId);
+      if (found) setSelectedSlot(found);
+    },
+    [slots]
+  );
 
   // Wrap the selected slot with the current timetable for the shared SlotDialog
   const selectedSlotWithTimetable = useMemo<SlotWithTimetable | null>(() => {
@@ -433,17 +505,12 @@ export default function CalendarViewPage() {
     }
   }, [id, currentWeekIso, dispatch, getToken, currentTimetable?.subject, currentTimetable?.gradeLevel]);
 
-  const handleSkip = useCallback(
-    (slotOrWrapped: SlotWithTimetable | LessonSlot) => {
-      dispatch(skipLesson({ timetableId: id, lessonId: slotOrWrapped.id }));
-      setSelectedSlot(null);
-    },
-    [dispatch, id]
-  );
-
+  // The type decides what the progress panel counts (e.g. "Próximo teste") and what the next steps offer.
   const handleTypeChange = useCallback(
     (slotOrWrapped: SlotWithTimetable | LessonSlot, type: LessonSlotType) => {
-      dispatch(updateLesson({ timetableId: id, lessonId: slotOrWrapped.id, params: { slotType: type } }));
+      void dispatch(updateLesson({ timetableId: id, lessonId: slotOrWrapped.id, params: { slotType: type } })).then(
+        () => setProgressRefreshKey((key) => key + 1)
+      );
     },
     [dispatch, id]
   );
@@ -457,11 +524,25 @@ export default function CalendarViewPage() {
 
   const pendingThisWeek = currentWeekSlots.filter((s) => s.status === "pending").length;
 
-  const timetableColor = currentTimetable?.color ?? "#7F77DD";
-  const timetableSubject = currentTimetable?.subject ?? "";
-  const timetableClassLabel = currentTimetable?.classLabel ?? "";
+  const timetableFailed = !!error && !isLoading && currentTimetable?.id !== id;
+  const retryLoad = () => {
+    dispatch(fetchTimetable(id));
+    dispatch(fetchLessons({ timetableId: id }));
+  };
+  // Nearest week that has lessons, for the "no lessons this week" way out.
+  const nearestWeekIso = useMemo(() => {
+    const cur = new Date(`${currentWeekIso}T00:00:00`).getTime();
+    let best: string | null = null;
+    for (const ws of slotsByWeek.keys()) {
+      const dist = Math.abs(new Date(`${ws}T00:00:00`).getTime() - cur);
+      if (best === null || dist < Math.abs(new Date(`${best}T00:00:00`).getTime() - cur)) best = ws;
+    }
+    return best;
+  }, [slotsByWeek, currentWeekIso]);
 
-  if (!featuresLoaded) return null;
+  const timetableColor = currentTimetable?.color ?? "#7F77DD";
+
+  if (!featuresLoaded) return <ClassDetailLoading />;
   if (!enabled)
     return (
       <FeatureUnavailable
@@ -474,44 +555,76 @@ export default function CalendarViewPage() {
     <div className="mx-auto w-full max-w-5xl space-y-4 px-4 pb-24 pt-6 md:pb-6">
       {/* Header */}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" asChild>
+        <div className="flex min-w-0 items-center gap-3">
+          <Button variant="ghost" size="icon" asChild className="shrink-0">
             <Link href={Routes.CALENDAR}><ArrowLeft className="h-4 w-4" /></Link>
           </Button>
           <div
             className="h-4 w-4 rounded-full shrink-0"
             style={{ background: timetableColor }}
           />
-          <div>
-            <h1 className="font-semibold leading-tight">
-              {currentTimetable?.title ?? t("detail.loading")}
+          {/* The short turma name everywhere else uses ("9.º Português · B"); the teacher's own
+              name, which can be long, goes on one line under it. */}
+          <div className="min-w-0">
+            <h1 className="truncate font-semibold leading-tight" title={currentTimetable?.title}>
+              {currentTimetable
+                ? formatClassName(currentTimetable, {
+                    gradeShort: (grade) => tTimetable("gradeShort", { grade }),
+                    subject: translateSubject,
+                  })
+                : t("detail.loading")}
             </h1>
-            {currentTimetable && (
-              <p className="text-sm text-muted-foreground">
-                {translateSubject(currentTimetable.subject)} · {tTimetable("gradeYear", { grade: currentTimetable.gradeLevel })}
-                {currentTimetable.classLabel ? ` · ${t("shared.classInline", { label: currentTimetable.classLabel })}` : ""}
+            {currentTimetable?.title && currentTimetable.title !== translateSubject(currentTimetable.subject)
+              && !sameClassWords(currentTimetable.title, formatClassName(currentTimetable, {
+                gradeShort: (grade) => tTimetable("gradeShort", { grade }),
+                subject: translateSubject,
+              })) && (
+              <p className="truncate text-sm text-muted-foreground" title={currentTimetable.title}>
+                {currentTimetable.title}
               </p>
             )}
           </div>
         </div>
 
-        {pendingThisWeek > 0 && (
-          <Button
-            size="sm"
-            onClick={handleGenerateWeek}
-            disabled={generatingWeek || isGenerating}
-          >
-            {generatingWeek ? (
-              <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-            ) : (
-              <Sparkles className="mr-1 h-3 w-3" />
-            )}
-            {t("shared.generateWeek", { count: pendingThisWeek })}
-          </Button>
-        )}
+        <div className="flex flex-wrap items-center gap-2">
+          {isPro && replanEnabled && currentTimetable && (
+            <Button variant="outline" size="sm" onClick={() => setReplanOpen(true)}>
+              {tReplan("action")}
+            </Button>
+          )}
+          {pendingThisWeek > 0 && (
+            <Button
+              size="sm"
+              onClick={handleGenerateWeek}
+              disabled={generatingWeek || isGenerating}
+            >
+              {generatingWeek ? (
+                <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+              ) : (
+                <Sparkles className="mr-1 h-3 w-3" />
+              )}
+              {t("shared.generateWeek", { count: pendingThisWeek })}
+            </Button>
+          )}
+        </div>
       </div>
 
+      {timetableFailed && <LoadError onRetry={retryLoad} />}
+
       <PlanGenerationBanner timetableId={id} />
+
+      {replanEnabled && (
+        <ReviewFeedSection
+          key={id}
+          timetableId={id}
+          refreshKey={progressRefreshKey}
+          onOpenLesson={openLessonById}
+          onChanged={reloadClassState}
+        />
+      )}
+
+      <TurmaProgressPanel timetableId={id} refreshKey={progressRefreshKey} />
+      <NextStepsCard timetableId={id} refreshKey={progressRefreshKey} />
 
       {/* Week navigator */}
       <div className="flex items-center justify-between rounded-lg border bg-card px-4 py-2">
@@ -529,22 +642,44 @@ export default function CalendarViewPage() {
           <ArrowRight className="h-4 w-4" />
         </Button>
       </div>
+      {replanEnabled && <TeachingMarkLegend className="px-1" />}
 
       {/* Week slot list */}
       {isSlotsLoading ? (
-        <div className="py-12 text-center text-muted-foreground">
-          <Loader2 className="mx-auto h-6 w-6 animate-spin" />
-        </div>
+        <WeekSlotListSkeleton />
       ) : currentWeekSlots.length === 0 ? (
-        <div className="py-12 text-center text-muted-foreground">
-          <CalendarDays className="mx-auto mb-3 h-10 w-10" />
-          <p>{t("detail.noLessonsThisWeek")}</p>
-          <p className="mt-1 text-sm">
-            {!slots.some(isListableSlot)
-              ? t("detail.noLessonsYet")
-              : t("detail.navigateOtherWeek")}
-          </p>
-        </div>
+        nearestWeekIso ? (
+          <EmptyState
+            size="inline"
+            icon={CalendarDays}
+            title={t("detail.noLessonsThisWeek")}
+            description={t("detail.navigateOtherWeek")}
+            actions={
+              <Button size="sm" onClick={() => setWeekStart(new Date(`${nearestWeekIso}T00:00:00`))}>
+                {t("detail.goToNearestWeek")}
+              </Button>
+            }
+          />
+        ) : pendingTopics ? (
+          <EmptyState
+            size="inline"
+            icon={CalendarDays}
+            title={t("detail.preparingTitle")}
+            description={t("detail.preparingDescription")}
+          />
+        ) : (
+          <EmptyState
+            size="inline"
+            icon={CalendarDays}
+            title={t("detail.noLessonsYet")}
+            description={t("detail.noLessonsYetHint")}
+            actions={
+              <Button size="sm" variant="outline" asChild>
+                <Link href={Routes.CALENDAR_SEQUENCES}>{t("shared.classesLink")}</Link>
+              </Button>
+            }
+          />
+        )
       ) : (
         <div className="space-y-2">
           {currentWeekSlots.map((slot) => (
@@ -552,12 +687,14 @@ export default function CalendarViewPage() {
               key={slot.id}
               slot={slot}
               color={timetableColor}
-              subject={timetableSubject}
-              classLabel={timetableClassLabel}
               onOpen={setSelectedSlot}
             />
           ))}
         </div>
+      )}
+
+      {isPro && replanEnabled && (
+        <ReplanRequestDialog timetableId={id} open={replanOpen} onOpenChange={setReplanOpen} />
       )}
 
       {/* Shared slot dialog */}
@@ -568,9 +705,13 @@ export default function CalendarViewPage() {
         onClose={() => setSelectedSlot(null)}
         onGenerate={handleGenerateLesson}
         onRegenerate={handleRegenerateLesson}
-        onSkip={handleSkip}
         onTypeChange={handleTypeChange}
         onTitleChange={handleTitleChange}
+        onCheckedIn={handleCheckedIn}
+        onLessonsShifted={reloadClassState}
+        onPreviousCheckedIn={reloadClassState}
+        onFollowUpStarted={reloadClassState}
+        onProposalResolved={reloadClassState}
       />
     </div>
   );

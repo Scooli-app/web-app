@@ -87,6 +87,8 @@ const eslintConfig = [
       "tailwind.config.js",
       "postcss.config.mjs",
       "next.config.ts",
+      "playwright-report/**",
+      "test-results/**",
     ],
   },
 ];

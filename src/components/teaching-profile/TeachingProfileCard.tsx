@@ -1,6 +1,8 @@
 "use client";
 
+import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import { LoadError } from "@/components/ui/load-error";
 import { ChoiceChip } from "@/components/ui/choice-chip";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { teachingProfileService } from "@/services/api/teaching-profile.service";
@@ -94,11 +96,10 @@ export function TeachingProfileCard() {
       applyBaseline(loaded, deriveTeachingScope(loaded));
     } catch {
       setProfileLoadFailed(true);
-      toast.error(t("loadError"));
     } finally {
       setIsLoading(false);
     }
-  }, [applyBaseline, t]);
+  }, [applyBaseline]);
 
   useEffect(() => {
     void loadProfile();
@@ -179,11 +180,11 @@ export function TeachingProfileCard() {
   if (isLoading) {
     return (
       <div className="rounded-2xl border border-border bg-card p-4 shadow-md sm:p-6 md:p-8">
-        <div className="mb-4 h-6 w-48 animate-pulse rounded-lg bg-muted" />
-        <div className="mb-6 h-4 w-72 animate-pulse rounded-lg bg-muted" />
+        <Skeleton className="mb-4 h-6 w-48 rounded-lg" />
+        <Skeleton className="mb-6 h-4 w-72 rounded-lg" />
         <div className="grid gap-3 sm:grid-cols-2">
-          <div className="h-20 animate-pulse rounded-xl bg-muted" />
-          <div className="h-20 animate-pulse rounded-xl bg-muted" />
+          <Skeleton className="h-20 rounded-xl" />
+          <Skeleton className="h-20 rounded-xl" />
         </div>
       </div>
     );
@@ -202,19 +203,11 @@ export function TeachingProfileCard() {
       </div>
       <p className="mb-6 text-sm text-muted-foreground">{t("subtitle")}</p>
 
-      {profileLoadFailed && (
-        <div
-          role="alert"
-          className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-destructive/10 p-4"
-        >
-          <p className="text-sm text-destructive">{t("loadError")}</p>
-          <Button type="button" variant="outline" onClick={() => void loadProfile()}>
-            {t("retryLoad")}
-          </Button>
-        </div>
-      )}
-
-      <fieldset className="mb-6 space-y-3" disabled={profileLoadFailed}>
+      {profileLoadFailed ? (
+        <LoadError message={t("loadError")} onRetry={() => void loadProfile()} />
+      ) : (
+        <>
+      <fieldset className="mb-6 space-y-3">
         <legend className="mb-3">
           <span className="block font-semibold text-foreground">{t("scopeLabel")}</span>
           <span className="block text-sm text-muted-foreground">{t("scopeHint")}</span>
@@ -290,6 +283,8 @@ export function TeachingProfileCard() {
             </ProfileBlock>
           )}
         </div>
+        </>
+      )}
 
       {isDirty && (
         <div

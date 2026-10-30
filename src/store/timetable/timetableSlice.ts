@@ -1,4 +1,5 @@
 import { dashboardCache, CACHE_KEYS } from "@/lib/dashboardCache";
+import type { CheckInResult, MissingAmount, TeachingStatus } from "@/shared/types/check-in";
 import { resolveEffectiveContentLanguage } from "@/i18n/clientLocale";
 import {
   type ContentLanguagePreference,
@@ -176,6 +177,29 @@ const timetableSlice = createSlice({
       const slot = state.slots.find((s) => s.id === action.payload.slotId);
       if (slot) slot.topicTitle = action.payload.topicTitle;
     },
+    /** A check-in saved from the calendar dialog: the badge follows without a reload. */
+    setSlotCheckIn(
+      state,
+      action: PayloadAction<{
+        slotId: string;
+        teachingStatus: TeachingStatus;
+        checkedInAt: string;
+        checkInResult?: CheckInResult | null;
+        checkInOutcomeIds?: string[];
+        missingAmount?: MissingAmount | null;
+        teachingNote?: string | null;
+      }>
+    ) {
+      const slot = state.slots.find((s) => s.id === action.payload.slotId);
+      if (slot) {
+        slot.teachingStatus = action.payload.teachingStatus;
+        slot.checkedInAt = action.payload.checkedInAt;
+        slot.checkInResult = action.payload.checkInResult ?? null;
+        slot.checkInOutcomeIds = action.payload.checkInOutcomeIds ?? [];
+        slot.missingAmount = action.payload.missingAmount ?? null;
+        slot.teachingNote = action.payload.teachingNote ?? null;
+      }
+    },
     clearError(state) {
       state.error = null;
     },
@@ -266,5 +290,5 @@ const timetableSlice = createSlice({
   },
 });
 
-export const { setSlotStatus, setSlotTopicTitle, clearError } = timetableSlice.actions;
+export const { setSlotStatus, setSlotTopicTitle, setSlotCheckIn, clearError } = timetableSlice.actions;
 export default timetableSlice.reducer;

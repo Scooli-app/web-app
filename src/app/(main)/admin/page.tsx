@@ -5,7 +5,7 @@ import { PageContainer } from "@/components/layout/PageContainer";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAdmin } from "@/hooks/useAdmin";
-import { DollarSign, LayoutDashboard, Library, MapPin, MessageSquare, Shield, ToggleLeft, Users } from "lucide-react";
+import { Activity, DollarSign, LayoutDashboard, Library, MapPin, MessageSquare, Shield, ToggleLeft, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
@@ -164,6 +164,26 @@ export default function AdminPage() {
             <CardContent>
               <div className="text-sm text-muted-foreground">
                 Custo total, média por utilizador e breakdown detalhado por modelo, ferramenta e tipo de evento.
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card
+            className="group cursor-pointer border-border transition-colors hover:bg-muted/50"
+            onClick={() => router.push("/admin/pilot")}
+          >
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 transition-colors group-hover:text-primary">
+                <Activity className="h-5 w-5" />
+                Piloto
+              </CardTitle>
+              <CardDescription>
+                Respostas aos check-ins, propostas aceites e ciclo de reforço por professor.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-sm text-muted-foreground">
+                Taxa de resposta, professores ativos e métricas do piloto Class State por turma e semana.
               </div>
             </CardContent>
           </Card>

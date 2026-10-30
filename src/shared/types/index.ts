@@ -35,3 +35,6 @@ export type {
 
 // Sources types
 export type { UserSource, UploadSourceParams, SourceStatus, SourceScope, SourceFileKind } from "./sources";
+
+// Turma progress types (ENG-204)
+export type { FlaggedOutcomeState, TurmaProgress, TurmaProgressBehindItem, TurmaProgressBehindSchedule, TurmaProgressCoverage, TurmaProgressFlaggedOutcome, TurmaProgressNextAssessment, TurmaProgressSlotCounts, TurmaProgressSlots } from "./progress";
