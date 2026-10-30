@@ -1,5 +1,6 @@
 import * as showdown from "showdown";
 import { normalizeMathMarkdown } from "./math-markdown";
+import { stripHtmlTags } from "./stripHtmlTags";
 
 // Configure showdown converter with appropriate options for TipTap
 const converterOptions: showdown.ConverterOptions = {
@@ -558,9 +559,10 @@ export function htmlToMarkdown(html: string): string {
       // TipTap adds <colgroup> which showdown's makeMarkdown doesn't need.
       .replace(/<colgroup[\s\S]*?<\/colgroup>/g, "")
       // Move the first <tr> whose cells are all <th> from <tbody> into <thead>
-      // so showdown knows to emit a separator row.
+      // so showdown knows to emit a separator row. A cell's content may not contain another
+      // <th> or </th>, so each cell can be matched only one way (no exponential backtracking).
       .replace(
-        /<tbody>(<tr>(?:<th[^>]*>[\s\S]*?<\/th>)+<\/tr>)([\s\S]*?)<\/tbody>/g,
+        /<tbody>(<tr>(?:<th[^>]*>(?:(?!<\/?th\b)[\s\S])*<\/th>)+<\/tr>)([\s\S]*?)<\/tbody>/g,
         "<thead>$1</thead><tbody>$2</tbody>",
       )
       // ───────────────────────────────────────────────────────────────────
@@ -619,8 +621,7 @@ export function htmlToMarkdown(html: string): string {
   } catch (error) {
     console.error("Error converting HTML to markdown:", error);
     // Fallback: strip HTML tags and return plain text
-    return html
-      .replace(/<[^>]*>/g, "")
+    return stripHtmlTags(html)
       .replace(/\s+/g, " ")
       .trim();
   }

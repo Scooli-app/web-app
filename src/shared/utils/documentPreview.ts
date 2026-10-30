@@ -1,9 +1,10 @@
+import { stripHtmlTags } from "./stripHtmlTags";
+
 const MAX_LENGTH = 160;
 
 /** Markdown to plain text: no tags, emphasis, links, images or backslash escapes. */
 function toPlainText(markdown: string): string {
-  return markdown
-    .replace(/<[^>]*>/g, "")
+  return stripHtmlTags(markdown)
     .replace(/!\[([^\]]*)\]\([^)]+\)/g, "")
     .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
     .replace(/\*\*(.*?)\*\*/g, "$1")

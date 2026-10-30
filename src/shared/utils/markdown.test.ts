@@ -103,3 +103,21 @@ describe("htmlToMarkdown: empty formulas", () => {
     expect(md).toContain("a");
   });
 });
+
+describe("htmlToMarkdown: tables whose header row sits in <tbody>", () => {
+  it("still moves the header row into <thead>, so the table keeps its separator row", () => {
+    const html =
+      "<table><tbody><tr><th><p>Nome</p></th><th><p>Idade</p></th></tr>" +
+      "<tr><td><p>Ana</p></td><td><p>10</p></td></tr></tbody></table>";
+    const markdown = htmlToMarkdown(html);
+    expect(markdown).toMatch(/\|\s*Nome\s*\|\s*Idade\s*\|/);
+    expect(markdown).toMatch(/\|\s*-+\s*\|\s*-+\s*\|/);
+  });
+
+  it("handles a long run of header cells with no closing </tbody> quickly", () => {
+    const html = `<tbody><tr><th>${"a</th><th>".repeat(5000)}`;
+    const started = performance.now();
+    htmlToMarkdown(html);
+    expect(performance.now() - started).toBeLessThan(2000);
+  });
+});
