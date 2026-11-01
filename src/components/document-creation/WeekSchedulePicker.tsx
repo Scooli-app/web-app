@@ -122,7 +122,7 @@ export function WeekSchedulePicker({
                 }
               }}
               className={cn(
-                "min-w-0 cursor-pointer space-y-2 rounded-lg border px-4 py-3 transition-colors",
+                "min-w-0 cursor-pointer space-y-2 rounded-lg border px-3 py-3 transition-colors sm:px-4",
                 "focus-visible:outline-none focus-visible:ring-ring/50 focus-visible:ring-[3px]",
                 day.enabled
                   ? "border-primary/40 bg-primary/5"
@@ -155,13 +155,13 @@ export function WeekSchedulePicker({
 
               {day.enabled && (
                 <div
-                  className="min-w-0 space-y-1.5 pl-8"
+                  className="min-w-0 space-y-1.5 sm:pl-8"
                   onClick={(e) => e.stopPropagation()}
                   onKeyDown={(e) => e.stopPropagation()}
                 >
                   {day.periods.map((period, index) => (
                     <div key={index} className="flex min-w-0 items-center gap-2">
-                      <span className="w-4 shrink-0 text-xs text-muted-foreground">{index + 1}.</span>
+                      <span className="hidden w-4 shrink-0 text-xs text-muted-foreground sm:inline">{index + 1}.</span>
                       <Select
                         value={period.type}
                         onValueChange={(v) => setPeriodType(key, index, v as SlotTypeOrAuto)}
@@ -187,7 +187,7 @@ export function WeekSchedulePicker({
                           if (v !== CUSTOM) setPeriodDuration(key, index, Number(v));
                         }}
                       >
-                        <SelectTrigger className="h-8 w-32 shrink-0">
+                        <SelectTrigger className="h-8 w-24 shrink-0 sm:w-32">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>

@@ -193,7 +193,7 @@ export function SlideThumbnail({ slide, index, isActive, onClick, w = THUMB_W, h
                   rotation={el.rotation ?? 0}
                   width={el.w * w}
                   height={el.h * h}
-                  fill="#2a2a3a"
+                  fill="rgba(0,0,0,0.08)"
                   cornerRadius={2}
                   listening={false}
                 />

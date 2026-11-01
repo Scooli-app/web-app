@@ -42,7 +42,7 @@ export function SheetTabs({ value, onChange, pendingChecks }: { value: SheetTab;
             onClick={() => onChange(id)}
             onKeyDown={onKeyDown}
             className={cn(
-              "flex min-h-11 min-w-0 items-center gap-2 rounded-t-lg border px-4 py-2 text-left transition-colors",
+              "flex min-h-11 min-w-0 items-center gap-2 rounded-t-lg border px-3 py-2 text-left transition-colors sm:px-4",
               selected
                 ? "border-neutral-200 border-b-white bg-white text-neutral-900 dark:border-neutral-700 dark:border-b-white"
                 : "border-transparent bg-neutral-200/70 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700",
@@ -50,11 +50,13 @@ export function SheetTabs({ value, onChange, pendingChecks }: { value: SheetTab;
           >
             <Icon className={cn("h-4 w-4 shrink-0", selected && (id === "answers" ? "text-emerald-600" : "text-primary"))} aria-hidden />
             <span className="flex min-w-0 flex-col leading-tight">
-              <span className="flex items-center gap-1.5 text-sm font-semibold">
+              <span className="flex items-center gap-1.5 whitespace-nowrap text-sm font-semibold">
                 {t(`${id}.title`)}
                 {id === "answers" && pendingChecks > 0 && (
-                  <span className="rounded-full bg-amber-100 px-1.5 py-px text-[11px] font-semibold text-amber-800">
-                    {t("toCheck", { count: pendingChecks })}
+                  <span className="rounded-full bg-amber-100 px-1.5 py-px text-[11px] font-semibold text-amber-800" title={t("toCheck", { count: pendingChecks })}>
+                    {/* Phones: just the number, so the tab label stays on one line. */}
+                    <span className="max-sm:hidden">{t("toCheck", { count: pendingChecks })}</span>
+                    <span className="sm:hidden">{pendingChecks}</span>
                   </span>
                 )}
               </span>

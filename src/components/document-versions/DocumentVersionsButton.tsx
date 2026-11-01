@@ -36,6 +36,9 @@ interface Props {
   documentType?: DocumentType;
   /** Called with the restored document; the editor swaps its content for it. */
   onRestored: (document: Document) => void;
+  /** Lets another control (e.g. a phone menu) open the sheet. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 type LoadStatus = "loading" | "error" | "ready";
@@ -55,11 +58,13 @@ function parsePresentationVersion(content: string): CanvasPresentation | null {
  * "Versões" button for the document editors. Opens a sheet with the history,
  * a read-only preview of the selected version and the restore action.
  */
-export function DocumentVersionsButton({ documentId, documentType, onRestored }: Props) {
+export function DocumentVersionsButton({ documentId, documentType, onRestored, open: openProp, onOpenChange }: Props) {
   const t = useTranslations("editor.documentVersions");
   const format = useFormatter();
 
-  const [open, setOpen] = useState(false);
+  const [ownOpen, setOwnOpen] = useState(false);
+  const open = openProp ?? ownOpen;
+  const setOpen = onOpenChange ?? setOwnOpen;
   const [versions, setVersions] = useState<DocumentVersionSummary[]>([]);
   const [listStatus, setListStatus] = useState<LoadStatus>("loading");
   const [listAttempt, setListAttempt] = useState(0);
@@ -121,7 +126,7 @@ export function DocumentVersionsButton({ documentId, documentType, onRestored }:
   const handleOpenChange = useCallback((next: boolean) => {
     setOpen(next);
     if (!next) setSelectedId(null);
-  }, []);
+  }, [setOpen]);
 
   const handleRestore = useCallback(async () => {
     if (!restoreTarget || restoringRef.current) return;

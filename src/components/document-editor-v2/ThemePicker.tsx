@@ -33,11 +33,16 @@ import { useId, useState } from "react";
 interface Props {
   currentThemeId?: string;
   onSelect: (themeId: string) => void;
+  /** Lets another control (e.g. the phone action bar) open the gallery. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-export function ThemePicker({ currentThemeId, onSelect }: Props) {
+export function ThemePicker({ currentThemeId, onSelect, open: openProp, onOpenChange }: Props) {
   const t = useTranslations("editor.themePicker");
-  const [open, setOpen] = useState(false);
+  const [ownOpen, setOwnOpen] = useState(false);
+  const open = openProp ?? ownOpen;
+  const setOpen = onOpenChange ?? setOwnOpen;
 
   const handleSelect = (themeId: string) => {
     onSelect(themeId);
@@ -46,9 +51,9 @@ export function ThemePicker({ currentThemeId, onSelect }: Props) {
 
   return (
     <>
-      <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
-        <Palette className="mr-2 h-4 w-4" />
-        {t("themeButtonLabel")}
+      <Button variant="outline" size="sm" onClick={() => setOpen(true)} title={t("themeButtonLabel")}>
+        <Palette className="h-4 w-4 sm:mr-2" />
+        <span className="hidden sm:inline">{t("themeButtonLabel")}</span>
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>

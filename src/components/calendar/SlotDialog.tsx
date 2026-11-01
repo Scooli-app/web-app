@@ -31,7 +31,7 @@ import { Routes } from "@/shared/types";
 import { LessonDocumentChips } from "@/components/dashboard/LessonDocumentChips";
 import { PreviousLessonCheckIn } from "@/components/check-in/PreviousLessonCheckIn";
 import { usePrepareLessonSet } from "@/components/dashboard/usePrepareLessonSet";
-import { isDocumentInProgress } from "@/components/dashboard/weekWindow";
+import { isDocumentInProgress, objectiveItems } from "@/components/dashboard/weekWindow";
 import { CheckInCard } from "@/components/check-in/CheckInCard";
 import { MISSING_AMOUNTS } from "@/components/check-in/CheckInChoices";
 import { TeachingMarkBadge } from "@/components/calendar/TeachingMarkBadge";
@@ -594,9 +594,11 @@ export function SlotDialog({
                     {t("objectivesTitle")}
                   </p>
                   {slot.description ? (
-                    <p className="text-sm leading-relaxed text-foreground/80 whitespace-pre-line">
-                      {slot.description}
-                    </p>
+                    <ul className="list-disc space-y-1 pl-5 text-sm leading-relaxed text-foreground/80 marker:text-muted-foreground">
+                      {objectiveItems(slot.description).map((item, i) => (
+                        <li key={i}>{item}</li>
+                      ))}
+                    </ul>
                   ) : (
                     <p className="text-sm italic text-muted-foreground/60">
                       {isSlotGenerating
@@ -844,10 +846,11 @@ export function SlotDialog({
 
         {/* Footer actions */}
         {!isHoliday && (
-          <DialogFooter className="border-t bg-muted/30 px-6 py-4 gap-2">
-            {(canGenerate || isCompleted) && <AiDisclaimer className="sm:mr-auto sm:self-center sm:text-left" />}
+          // Phones: a two-column grid, main action first, so four stacked buttons don't hide the lesson.
+          <DialogFooter className="border-t bg-muted/30 px-6 py-4 gap-2 max-sm:grid max-sm:grid-cols-2">
+            {(canGenerate || isCompleted) && <AiDisclaimer className="max-sm:order-4 max-sm:col-span-2 sm:mr-auto sm:self-center sm:text-left" />}
             {showReplanRequest && (
-              <Button variant="outline" onClick={() => setReplanOpen(true)} className="h-9 rounded-lg">
+              <Button variant="outline" onClick={() => setReplanOpen(true)} className={cn("h-9 rounded-lg max-sm:order-3", !isCompleted && "max-sm:col-span-2")}>
                 {tReplan("action")}
               </Button>
             )}
@@ -857,7 +860,7 @@ export function SlotDialog({
                   variant="outline"
                   onClick={() => onRegenerate(slot, customMessage || undefined)}
                   disabled={isSlotGenerating || preparing}
-                  className="h-9 rounded-lg"
+                  className={cn("h-9 rounded-lg max-sm:order-3", !showReplanRequest && "max-sm:col-span-2")}
                 >
                   <RotateCcw className="mr-1.5 h-4 w-4" />
                   {t("regenerate")}
@@ -871,7 +874,7 @@ export function SlotDialog({
                       plan ? docUrl(plan.documentRole, plan.documentId) : Routes.DOCUMENTS,
                     );
                   }}
-                  className="h-9 rounded-lg"
+                  className="h-9 rounded-lg max-sm:order-2 max-sm:col-span-2"
                 >
                   <FileText className="mr-1.5 h-4 w-4" />
                   {t("openLessonPlan")}
@@ -879,13 +882,13 @@ export function SlotDialog({
               </>
             )}
             {isSlotGenerating || preparing ? (
-              <Button disabled className="h-9 rounded-lg">
+              <Button disabled className="h-9 rounded-lg max-sm:order-1 max-sm:col-span-2">
                 <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
                 {t("generating")}
               </Button>
             ) : suggested.length > 0 ? (
               // A past lesson's main business is its check-in: preparing documents for it stays possible, not primary.
-              <Button onClick={() => void handlePrepare()} variant={slot.slotDate < todayIso ? "outline" : "default"} className="h-9 rounded-lg">
+              <Button onClick={() => void handlePrepare()} variant={slot.slotDate < todayIso ? "outline" : "default"} className="h-9 rounded-lg max-sm:order-1 max-sm:col-span-2">
                 <Sparkles className="mr-1.5 h-4 w-4" />
                 {prepareLabel}
               </Button>

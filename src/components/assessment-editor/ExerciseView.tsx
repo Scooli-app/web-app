@@ -444,6 +444,12 @@ function AnswerSpace({ ex }: { ex: AssessmentExercise }) {
  * The picture of a label_image exercise with its numbered pins (where placed). With `onPlace`, a click or tap
  * on the picture reports its position (0–1) so the editor can place the selected target there.
  */
+/** True once `src` failed to load (an image that failed to generate), so callers show the placeholder instead of a broken icon. */
+function useImageFailed(src: string | null): [boolean, () => void] {
+  const [failed, setFailed] = useState<string | null>(null);
+  return [src !== null && failed === src, () => setFailed(src)];
+}
+
 export function LabelImage({ media, labels, teacher, onPlace, activeId, placeLabel }: {
   media: AssessmentMedia;
   labels: AssessmentLabel[];
@@ -453,12 +459,13 @@ export function LabelImage({ media, labels, teacher, onPlace, activeId, placeLab
   placeLabel?: string;
 }) {
   const t = useTranslations("assessmentEditor.item");
-  if (!media.imageRef) return <div className="mt-2"><MediaBox media={media} teacher={teacher} /></div>;
+  const [failed, onError] = useImageFailed(media.imageRef);
+  if (!media.imageRef || failed) return <div className="mt-2"><MediaBox media={{ ...media, imageRef: null }} teacher={teacher} /></div>;
   const pins = labels.filter((l) => l.x !== null && l.y !== null);
   const picture = (
     <>
       {/* eslint-disable-next-line @next/next/no-img-element -- data URIs and arbitrary hosts; next/image adds nothing here */}
-      <img src={media.imageRef} alt={media.placeholder?.alt ?? t("imageAlt")} className="block max-h-80 max-w-full rounded object-contain" draggable={false} />
+      <img src={media.imageRef} alt={media.placeholder?.alt ?? t("imageAlt")} onError={onError} className="block max-h-80 max-w-full rounded object-contain" draggable={false} />
       {pins.map((l) => (
         <span
           key={l.id}
@@ -493,11 +500,20 @@ export function LabelImage({ media, labels, teacher, onPlace, activeId, placeLab
 
 export function MediaBox({ media, teacher }: { media: AssessmentMedia; teacher: boolean }) {
   const t = useTranslations("assessmentEditor.item");
-  if (media.imageRef) {
+  const [failed, onError] = useImageFailed(media.imageRef);
+  if (media.imageRef && !failed) {
     // eslint-disable-next-line @next/next/no-img-element -- data URIs and arbitrary hosts; next/image adds nothing here
-    return <img src={media.imageRef} alt={media.placeholder?.alt ?? t("imageAlt")} className="max-h-44 w-40 rounded object-contain" />;
+    return <img src={media.imageRef} alt={media.placeholder?.alt ?? t("imageAlt")} onError={onError} className="max-h-44 w-40 rounded object-contain" />;
   }
-  if (!teacher) return null;
+  // Student tab: say the picture is missing rather than leaving an exercise that points at nothing.
+  if (!teacher) {
+    return (
+      <div role="note" className="flex h-28 w-40 flex-col items-center justify-center gap-1 rounded border border-dashed border-amber-400 bg-amber-50 p-2 text-center font-sans text-[11px] text-amber-800">
+        <ImageIcon className="h-4 w-4" />
+        {t("imageMissing")}
+      </div>
+    );
+  }
   return (
     <div className="flex h-28 w-40 flex-col items-center justify-center gap-1 rounded border border-dashed border-neutral-300 p-2 text-center font-sans text-[11px] text-neutral-500">
       <ImageIcon className="h-4 w-4" />

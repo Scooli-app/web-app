@@ -258,7 +258,13 @@ export function AppBootstrapGate() {
         return;
       }
 
-      await getFreshClerkToken(getToken);
+      // Clerk's cached token is enough unless it still carries another organization;
+      // forcing a fresh one on every load held this screen for about a second.
+      const template = process.env.NEXT_PUBLIC_CLERK_JWT_TEMPLATE;
+      const cachedToken = await getToken(template ? { template } : undefined);
+      if (!cachedToken || getOrganizationIdFromToken(cachedToken) !== (effectiveOrgId ?? null)) {
+        await getFreshClerkToken(getToken);
+      }
 
       if (!isActive || bootstrapRunIdRef.current !== runId) {
         return;
