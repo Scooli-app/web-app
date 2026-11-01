@@ -1526,6 +1526,13 @@
       "share": "Share"
     },
     "blockEditor": {
+      "askAiLabel": "Ask AI",
+      "moreActions": "More actions",
+      "undoLabel": "Undo",
+      "redoLabel": "Redo",
+      "editSection": "Edit",
+      "documentSection": "Document",
+      "chatButton": "Chat",
       "photoCredit": "Image: {credit}",
       "fontDefault": "Default",
       "loadingPresentation": "Loading presentation...",
@@ -1844,7 +1851,8 @@
     "presentView": {
       "prevSlideAriaLabel": "Previous slide",
       "nextSlideAriaLabel": "Next slide",
-      "exitAriaLabel": "Exit presentation"
+      "exitAriaLabel": "Exit presentation",
+      "rotateHint": "Turn your phone sideways for a bigger slide"
     },
     "generationProgress": {
       "title": "Creating your presentation…",
@@ -3045,6 +3053,8 @@
       "emptyDescription": "Create your first class to start planning.",
       "viewWeek": "Week",
       "viewWeekShort": "Wk",
+      "prevWeek": "Previous week",
+      "nextWeek": "Next week",
       "viewMonth": "Month",
       "today": "Today",
       "tomorrow": "Tomorrow",
@@ -3120,7 +3130,8 @@
       "card": {
         "active": "Active",
         "inactive": "Inactive",
-        "editTitle": "Edit class"
+        "editTitle": "Edit class",
+        "deleteTitle": "Delete class"
       }
     },
     "assessmentScope": {
@@ -3730,6 +3741,7 @@
       "readingTitle": "Title (optional)",
       "readingBody": "Text",
       "imageAlt": "Exercise image",
+      "imageMissing": "Image missing: students won't see it",
       "more": "More actions"
     },
     "types": {

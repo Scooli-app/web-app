@@ -883,15 +883,15 @@ function CalendarPageInner() {
           <PlanGenerationBanner />
 
           {/* ── Mobile header: single compact row ── */}
-          <div className="flex md:hidden flex-wrap items-center gap-1.5">
-            {/* View toggle */}
-            <div className="flex shrink-0 items-center rounded-md border border-border overflow-hidden">
-              <span className="px-2.5 py-1 text-xs font-medium bg-primary text-primary-foreground">
+          <div className="flex md:hidden flex-wrap items-center gap-1">
+            {/* View toggle — under 380 px it moves into "⋯" so the week label isn't cut */}
+            <div className="flex shrink-0 items-center rounded-md border border-border overflow-hidden max-[380px]:hidden">
+              <span className="px-2 py-1 text-xs font-medium bg-primary text-primary-foreground">
                 {t("shared.viewWeekShort")}
               </span>
               <Link
                 href={Routes.CALENDAR_MONTH}
-                className="px-2.5 py-1 text-xs font-medium text-muted-foreground hover:bg-muted transition-colors"
+                className="px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-muted transition-colors"
               >
                 {t("shared.viewMonth")}
               </Link>
@@ -899,14 +899,14 @@ function CalendarPageInner() {
 
             {!hideNav && (
               <>
-            <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={prevWeek}>
+            <Button variant="ghost" size="icon" className="h-7 w-6 shrink-0" onClick={prevWeek} aria-label={t("shared.prevWeek")}>
               <ArrowLeft className="h-3.5 w-3.5" />
             </Button>
-            {/* Narrow phones: "26 out – 1 nov" was cut to "26 out – 1 …" at 14 px. */}
-            <span className="flex-1 min-w-0 truncate text-center text-sm font-medium tracking-tight text-foreground max-[420px]:text-xs">
+            {/* Phones: at 14 px "26 Oct – 1 Nov" was cut to "26 Oct – 1 …" up to ~480 px. */}
+            <span className="flex-1 min-w-0 truncate text-center text-xs font-medium tracking-tight text-foreground">
               {compactWeekLabel(weekStart, toIntlLocale(locale))}
             </span>
-            <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={nextWeek}>
+            <Button variant="ghost" size="icon" className="h-7 w-6 shrink-0" onClick={nextWeek} aria-label={t("shared.nextWeek")}>
               <ArrowRight className="h-3.5 w-3.5" />
             </Button>
             {/* "Hoje" stays visible on a phone, not behind the week label. */}
@@ -923,6 +923,12 @@ function CalendarPageInner() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                <DropdownMenuItem asChild className="min-[381px]:hidden">
+                  <Link href={Routes.CALENDAR_MONTH} className="flex items-center gap-2">
+                    <CalendarDays className="h-4 w-4" />
+                    {t("shared.viewMonth")}
+                  </Link>
+                </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link href={Routes.CALENDAR_SEQUENCES} className="flex items-center gap-2">
                     <CalendarDays className="h-4 w-4" />
@@ -977,10 +983,10 @@ function CalendarPageInner() {
             <Button variant="outline" size="sm" onClick={goToday} className="h-8">
               {t("shared.today")}
             </Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={prevWeek}>
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={prevWeek} aria-label={t("shared.prevWeek")}>
               <ArrowLeft className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={nextWeek}>
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={nextWeek} aria-label={t("shared.nextWeek")}>
               <ArrowRight className="h-4 w-4" />
             </Button>
             <span className="min-w-[160px] text-sm font-medium text-foreground">

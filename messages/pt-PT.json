@@ -1526,6 +1526,13 @@
       "share": "Partilhar"
     },
     "blockEditor": {
+      "askAiLabel": "Pedir à IA",
+      "moreActions": "Mais ações",
+      "undoLabel": "Desfazer",
+      "redoLabel": "Refazer",
+      "editSection": "Editar",
+      "documentSection": "Documento",
+      "chatButton": "Conversa",
       "photoCredit": "Imagem: {credit}",
       "fontDefault": "Padrão",
       "loadingPresentation": "A carregar apresentação...",
@@ -1844,7 +1851,8 @@
     "presentView": {
       "prevSlideAriaLabel": "Slide anterior",
       "nextSlideAriaLabel": "Próximo slide",
-      "exitAriaLabel": "Sair da apresentação"
+      "exitAriaLabel": "Sair da apresentação",
+      "rotateHint": "Roda o telemóvel para ver o slide maior"
     },
     "generationProgress": {
       "title": "A criar a tua apresentação…",
@@ -3045,6 +3053,8 @@
       "emptyDescription": "Cria a tua primeira turma para começar a planificar.",
       "viewWeek": "Semana",
       "viewWeekShort": "Sem",
+      "prevWeek": "Semana anterior",
+      "nextWeek": "Semana seguinte",
       "viewMonth": "Mês",
       "today": "Hoje",
       "tomorrow": "Amanhã",
@@ -3120,7 +3130,8 @@
       "card": {
         "active": "Ativa",
         "inactive": "Inativa",
-        "editTitle": "Editar turma"
+        "editTitle": "Editar turma",
+        "deleteTitle": "Eliminar turma"
       }
     },
     "assessmentScope": {
@@ -3730,6 +3741,7 @@
       "readingTitle": "Título (opcional)",
       "readingBody": "Texto",
       "imageAlt": "Imagem do exercício",
+      "imageMissing": "Imagem em falta: os alunos não a vão ver",
       "more": "Mais ações"
     },
     "types": {

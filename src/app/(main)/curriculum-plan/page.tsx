@@ -123,7 +123,7 @@ export default function CurriculumPlanLandingPage() {
               >
                 <CalendarDays className="h-4 w-4 shrink-0 text-primary" />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate font-medium text-foreground">
+                  <p className="line-clamp-2 font-medium text-foreground">
                     {plan.title}
                   </p>
                   {(plan.subject ?? plan.gradeLevel) && (
@@ -137,7 +137,8 @@ export default function CurriculumPlanLandingPage() {
                     </p>
                   )}
                 </div>
-                <p className="shrink-0 text-xs text-muted-foreground">
+                {/* Phones: no date column, the title needs the width */}
+                <p className="hidden shrink-0 text-xs text-muted-foreground sm:block">
                   {new Date(plan.createdAt).toLocaleDateString(toIntlLocale(locale), {
                     day: "numeric",
                     month: "short",

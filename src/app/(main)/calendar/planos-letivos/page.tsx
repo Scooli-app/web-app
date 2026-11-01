@@ -327,7 +327,7 @@ function SequenceCard({ timetable, onDelete, onEdit }: SequenceCardProps) {
 
   return (
     <div
-      className="group flex items-center gap-4 rounded-lg border border-border bg-card p-4 transition-shadow hover:shadow-sm"
+      className="group flex items-center gap-3 rounded-lg border border-border bg-card p-3 transition-shadow hover:shadow-sm sm:gap-4 sm:p-4"
     >
       <div
         className="h-3 w-3 shrink-0 rounded-full"
@@ -346,11 +346,15 @@ function SequenceCard({ timetable, onDelete, onEdit }: SequenceCardProps) {
           {timetable.title && timetable.title !== translateSubject(timetable.subject) && (
             <p className="truncate text-sm text-muted-foreground">{timetable.title}</p>
           )}
-          <p className="text-xs text-muted-foreground/70">{periodLabel}</p>
+          <p className="text-xs text-muted-foreground/70">
+            {periodLabel}
+            {/* Phones: the status sits here so the name keeps the row's width. */}
+            <span className="sm:hidden"> · {isActive ? t("card.active") : t("card.inactive")}</span>
+          </p>
         </div>
       </Link>
 
-      <Badge variant={isActive ? "default" : "secondary"} className="shrink-0 text-xs">
+      <Badge variant={isActive ? "default" : "secondary"} className="hidden shrink-0 text-xs sm:inline-flex">
         {isActive ? t("card.active") : t("card.inactive")}
       </Badge>
 
@@ -375,10 +379,12 @@ function SequenceCard({ timetable, onDelete, onEdit }: SequenceCardProps) {
             e.preventDefault();
             onDelete(timetable);
           }}
+          title={t("card.deleteTitle")}
+          aria-label={t("card.deleteTitle")}
         >
           <Trash2 className="h-4 w-4" />
         </Button>
-        <Link href={`${Routes.CALENDAR}/${timetable.id}`}>
+        <Link href={`${Routes.CALENDAR}/${timetable.id}`} className="hidden sm:block">
           <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
             <ChevronRight className="h-4 w-4" />
           </Button>
