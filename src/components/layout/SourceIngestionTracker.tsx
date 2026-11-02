@@ -60,8 +60,7 @@ export function SourceIngestionTracker() {
         if (after === "indexed") {
           toast.success(t("ready", { name: source.name }));
         } else if (after === "failed") {
-          const detail = source.lastError ? ` (${source.lastError})` : "";
-          toast.error(t("failed", { name: source.name, detail }));
+          toast.error(t("failed", { name: source.name }));
         }
       }
       prev.set(source.id, after);

@@ -1305,6 +1305,9 @@ export default function DocumentEditor({
     : !content
       ? t("actionsDisabledNoContent")
       : undefined;
+  // Only curriculum-plan imports carry an original format.
+  const isFailedImport =
+    !isGenerating && isDocumentFailed && Boolean(activeDocument?.originalFormat);
   const isCompletedEmpty =
     !isGenerating &&
     activeDocument?.status === "completed" &&
@@ -1457,6 +1460,19 @@ export default function DocumentEditor({
                     />
                   )}
                 </div>
+              ) : isFailedImport ? (
+                // The content of a failed import is the server's error sentence, not a document.
+                <EmptyState
+                  size="inline"
+                  icon={FileX}
+                  title={t("importFailedTitle")}
+                  description={t("importFailedDescription")}
+                  actions={
+                    <Button asChild size="sm">
+                      <Link href={Routes.CURRICULUM_PLAN_IMPORT}>{t("importFailedRetry")}</Link>
+                    </Button>
+                  }
+                />
               ) : (
                 <>
                   {isCompletedEmpty && (

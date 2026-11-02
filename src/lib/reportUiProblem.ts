@@ -25,11 +25,19 @@ export type UiProblemKind =
   /** A document in `failed` state was opened. */
   | "document_opened_failed"
   /** A document marked `completed` was opened with no content. */
-  | "document_opened_empty";
+  | "document_opened_empty"
+  /** An API call was still refused (401) after retrying with a fresh Clerk token. */
+  | "auth_rejected_after_refresh";
 
 export function reportUiProblem(
   kind: UiProblemKind,
-  context: { documentId?: string | null; documentType?: string | null; message?: string | null } = {},
+  context: {
+    documentId?: string | null;
+    documentType?: string | null;
+    message?: string | null;
+    /** API path without the query string. */
+    endpoint?: string | null;
+  } = {},
 ): void {
   try {
     posthog.capture("ui_problem", {
@@ -38,6 +46,7 @@ export function reportUiProblem(
       document_type: context.documentType ?? null,
       // Server-provided, user-facing error text; truncated defensively.
       message: context.message ? context.message.slice(0, 200) : null,
+      endpoint: context.endpoint ?? null,
     });
   } catch {
     // Reporting must never break the UI.

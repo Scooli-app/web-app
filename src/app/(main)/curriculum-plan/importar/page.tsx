@@ -15,11 +15,11 @@ import {
 } from "@/components/ui/select";
 import { SUBJECTS, translateSubjectLabel } from "@/components/document-creation/constants";
 import apiClient from "@/services/api/client";
-import { getUploadUrl, waitForDocument } from "@/services/api/document.service";
+import { DocumentStillProcessingError, getUploadUrl, waitForDocument } from "@/services/api/document.service";
 import { selectIsCurriculumPlanEnabled } from "@/store/features/selectors";
 import { useFeatureAccess } from "@/components/feature/useFeatureAccess";
 import { FeatureUnavailable } from "@/components/feature/FeatureUnavailable";
-import { type CurriculumPlanningType } from "@/shared/types";
+import { Routes, type CurriculumPlanningType } from "@/shared/types";
 import { cn } from "@/shared/utils/utils";
 import { CheckCircle2, Circle, Loader2 } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -190,6 +190,12 @@ export default function CurriculumPlanImportPage() {
       await new Promise((resolve) => setTimeout(resolve, 600));
       router.push(`/curriculum-plan/${docId}`);
     } catch (err) {
+      if (err instanceof DocumentStillProcessingError) {
+        // Not a failure: the plan shows up in the list when the server finishes.
+        toast.info(err.message);
+        router.push(Routes.CURRICULUM_PLAN);
+        return;
+      }
       const message =
         err instanceof Error
           ? err.message

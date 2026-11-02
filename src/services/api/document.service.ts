@@ -420,6 +420,12 @@ export async function importDocument(
 }
 
 /**
+ * The client stopped waiting but the server job is still running: the document appears in the
+ * teacher's list once it finishes, so callers should say that rather than report a failure.
+ */
+export class DocumentStillProcessingError extends Error {}
+
+/**
  * Poll the backend until the document is available (status 200 OK)
  * Used to wait for background jobs (like import) to finish.
  */
@@ -458,7 +464,7 @@ export async function waitForDocument(id: string, maxAttempts = 60): Promise<voi
     // Wait before next attempt
     await new Promise((resolve) => setTimeout(resolve, delayMs));
   }
-  throw new Error(translate("errors.documents.importTimeout"));
+  throw new DocumentStillProcessingError(translate("errors.documents.importTimeout"));
 }
 
 /**

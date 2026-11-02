@@ -2114,7 +2114,8 @@ export function BlockDocumentEditor({ documentId }: Props) {
     );
   }
   if (!canvas) {
-    if (isFetchingThisDoc || isLoading) {
+    // canvasFromDoc set but canvas not yet: the effect copying it runs after this render.
+    if (isFetchingThisDoc || isLoading || canvasFromDoc) {
       return <PresentationEditorSkeleton />;
     }
     return (
