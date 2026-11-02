@@ -31,6 +31,7 @@ export class ApiRequestError extends Error {
 import { openUpgradeModalForReason, setUpgradeModalOpen } from "@/store/ui/uiSlice";
 import type { UpgradeReason } from "@/shared/types/plan-limits";
 import { translate } from "@/i18n/translate";
+import { reportUiProblem } from "@/lib/reportUiProblem";
 import type { UnknownAction } from "@reduxjs/toolkit";
 import axios, { type AxiosError, type AxiosInstance } from "axios";
 import posthog from "posthog-js";
@@ -149,6 +150,11 @@ apiClient.interceptors.response.use(undefined, async (error: AxiosError) => {
     if (typeof window !== "undefined") {
       window.location.href = "/sign-in";
     }
+  } else if (error.response?.status === 401 && originalRequest?._retried) {
+    // A fresh token was refused too: a backend/auth mismatch, not an expired session.
+    reportUiProblem("auth_rejected_after_refresh", {
+      endpoint: originalRequest.url?.split("?")[0] ?? null,
+    });
   }
   return Promise.reject(error);
 });

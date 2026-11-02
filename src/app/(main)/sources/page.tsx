@@ -5,20 +5,28 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { LoadError } from "@/components/ui/load-error";
-import type { UploadSourceParams } from "@/shared/types/sources";
+import { usePlanLimits } from "@/hooks/usePlanLimits";
+import { listRegulatorySources } from "@/services/api/sources.service";
+import type { UploadSourceParams, UserSource } from "@/shared/types/sources";
 import { cn } from "@/shared/utils/utils";
+import { selectIsContextPipelineV2Enabled } from "@/store/features/selectors";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
   deleteUserSource,
   fetchSources,
   uploadUserSource,
 } from "@/store/sources/sourcesSlice";
+import { openUpgradeModalForReason } from "@/store/ui/uiSlice";
 import {
   AlertCircle,
+  BookOpen,
   CheckCircle2,
   Clock,
+  ExternalLink,
   FileText,
   Loader2,
+  Lock,
+  Scale,
   Trash2,
   Upload,
 } from "lucide-react";
@@ -72,11 +80,31 @@ export default function SourcesPage() {
   const [name, setName] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [regulatorySources, setRegulatorySources] = useState<UserSource[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const isContextPipelineV2Enabled = useAppSelector(selectIsContextPipelineV2Enabled);
+  const { limits, loading: limitsLoading } = usePlanLimits();
+  // Fail open like usePlanLimits: unknown limits show the form, the server still enforces Pro.
+  const isFree = limits ? !limits.isPro : false;
 
   useEffect(() => {
     dispatch(fetchSources());
   }, [dispatch]);
+
+  // Regulatory documents only reach generation with context_pipeline_v2, so only list them then.
+  useEffect(() => {
+    if (!isContextPipelineV2Enabled) return;
+    let cancelled = false;
+    listRegulatorySources()
+      .then((data) => {
+        if (!cancelled) setRegulatorySources(data);
+      })
+      // The Aprendizagens Essenciais card still shows; a failed list just hides the regulatory ones.
+      .catch(() => setRegulatorySources([]));
+    return () => {
+      cancelled = true;
+    };
+  }, [isContextPipelineV2Enabled]);
 
   const validateAndSetFile = useCallback(
     (selectedFile: File): boolean => {
@@ -128,7 +156,72 @@ export default function SourcesPage() {
         </p>
       </div>
 
-      {/* Upload card */}
+      {/* Scooli-managed sources, used by default in every document */}
+      <div className="space-y-3">
+        <div>
+          <h2 className="text-base font-semibold">{t("scooliSources")}</h2>
+          <p className="mt-0.5 text-xs text-muted-foreground">{t("scooliSourcesDescription")}</p>
+        </div>
+        <Card className="p-4">
+          <div className="flex items-start gap-3">
+            <BookOpen className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+            <div className="min-w-0">
+              <p className="text-sm font-medium">{t("aeName")}</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">{t("aeDescription")}</p>
+            </div>
+          </div>
+        </Card>
+        {regulatorySources.map((source) => (
+          <Card key={source.id} className="p-4">
+            <div className="flex items-start gap-3">
+              <Scale className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <p className="truncate text-sm font-medium">{source.name}</p>
+                  {source.externalUrl && (
+                    <a
+                      href={source.externalUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="shrink-0 text-primary hover:text-primary/80"
+                      aria-label={t("openOfficialText", { name: source.name })}
+                    >
+                      <ExternalLink className="h-3.5 w-3.5" />
+                    </a>
+                  )}
+                </div>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  {t("regulatoryDescription")}
+                  {source.chunkCount > 0 &&
+                    ` · ${tList("excerptCount", { count: source.chunkCount })}`}
+                </p>
+              </div>
+            </div>
+          </Card>
+        ))}
+      </div>
+
+      {/* Upload card: Pro only. Free teachers see what Pro unlocks instead of a form the server refuses. */}
+      {limitsLoading ? null : isFree ? (
+        <Card className="p-6">
+          <div className="flex items-start gap-3">
+            <Lock className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground" />
+            <div className="min-w-0 space-y-3">
+              <div>
+                <h2 className="text-base font-semibold">{t("proTitle")}</h2>
+                <p className="mt-1 text-sm text-muted-foreground">{t("proDescription")}</p>
+              </div>
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => dispatch(openUpgradeModalForReason("sources_pro"))}
+              >
+                {t("proAction")}
+              </Button>
+            </div>
+          </div>
+        </Card>
+      ) : (
       <Card className="p-6 space-y-4">
         <h2 className="text-base font-semibold">{t("addSource")}</h2>
 
@@ -194,8 +287,10 @@ export default function SourcesPage() {
           </p>
         )}
       </Card>
+      )}
 
-      {/* Sources list */}
+      {/* Sources list (free teachers only see it if they still have sources from a past Pro plan) */}
+      {(!isFree || sources.length > 0) && (
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-base font-semibold">
@@ -264,10 +359,9 @@ export default function SourcesPage() {
                         })}
                       </p>
                     )}
-                  {source.status === "failed" && source.lastError && (
-                    <p className="mt-1 truncate text-xs text-destructive">
-                      {source.lastError}
-                    </p>
+                  {/* The raw parser error stays in the server logs; teachers get the next step. */}
+                  {source.status === "failed" && (
+                    <p className="mt-1 text-xs text-destructive">{t("failedHint")}</p>
                   )}
                 </div>
               </div>
@@ -307,11 +401,14 @@ export default function SourcesPage() {
           </Card>
         ))}
       </div>
+      )}
 
       {/* Pro info note */}
-      <p className="text-xs text-muted-foreground">
-        {t("proNote")}
-      </p>
+      {!isFree && (
+        <p className="text-xs text-muted-foreground">
+          {t("proNote")}
+        </p>
+      )}
     </div>
   );
 }

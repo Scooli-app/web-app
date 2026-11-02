@@ -27,6 +27,7 @@ import { CheckSquare, Loader2, Square, Trash2, UploadCloud, X } from "lucide-rea
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useInView } from "react-intersection-observer";
+import { toast } from "sonner";
 import { Button } from "./button";
 
 const GROUP_BY_CLASS_KEY = "scooli.documents.groupByClass";
@@ -242,11 +243,12 @@ export function DocumentsGallery() {
       setRefreshKey((n) => n + 1);
     } catch (error) {
       console.error("Error deleting documents:", error);
+      toast.error(t("deleteFailed"));
     } finally {
       setDeleting(false);
       setPendingDeleteId(null);
     }
-  }, [pendingDeleteId, selectedDocuments, fetchDocuments]);
+  }, [pendingDeleteId, selectedDocuments, fetchDocuments, t]);
 
   const getDeleteDialogContent = useMemo(() => {
     if (pendingDeleteId) {

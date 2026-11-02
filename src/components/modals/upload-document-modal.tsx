@@ -31,6 +31,7 @@ import {
 import {
   getUploadUrl,
   importDocument,
+  DocumentStillProcessingError,
   waitForDocument,
 } from "@/services/api/document.service";
 import type { DocumentType, WorksheetVariant } from "@/shared/types";
@@ -235,16 +236,24 @@ export function UploadDocumentModal({
           usageIntent,
         });
 
-        await waitForDocument(id);
+        try {
+          await waitForDocument(id);
+          return null;
+        } catch (e) {
+          // Still running server-side: say so instead of reporting a failure.
+          if (e instanceof DocumentStillProcessingError) return e.message;
+          throw e;
+        }
       })();
 
       toast.promise(
-        importPromise.then(() => {
-          window.location.reload();
+        importPromise.then((stillProcessing) => {
+          if (!stillProcessing) window.location.reload();
+          return stillProcessing;
         }),
         {
           loading: t("toastLoading"),
-          success: t("toastSuccess"),
+          success: (stillProcessing) => stillProcessing ?? t("toastSuccess"),
           error: (err: Error) => err.message || t("toastError"),
         }
       );

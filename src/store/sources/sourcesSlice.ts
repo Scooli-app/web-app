@@ -35,8 +35,11 @@ export const uploadUserSource = createAsyncThunk(
   async (params: UploadSourceParams, { rejectWithValue }) => {
     try {
       return await uploadSource(params);
-    } catch {
-      return rejectWithValue(translate("errors.sources.uploadSource"));
+    } catch (error) {
+      // The server explains quota, size and plan refusals; keep its message.
+      return rejectWithValue(
+        error instanceof Error && error.message ? error.message : translate("errors.sources.uploadSource"),
+      );
     }
   }
 );

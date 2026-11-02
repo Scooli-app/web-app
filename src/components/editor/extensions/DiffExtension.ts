@@ -403,7 +403,7 @@ export const DiffExtension = Extension.create({
 
       rejectAllChanges:
         () =>
-        ({ editor, state, tr, dispatch }) => {
+        ({ editor, state, tr, dispatch, commands }) => {
           const pluginState = diffPluginKey.getState(state);
           const remaining = pluginState?.changes ?? [];
           const storage = (
@@ -423,7 +423,12 @@ export const DiffExtension = Extension.create({
             !!originalContent && !pluginState?.hasResolvedChange;
 
           if (dispatch) {
-            if (!canRestoreSnapshot) {
+            if (canRestoreSnapshot && originalContent) {
+              // Same transaction as the clear. Tiptap only dispatches `tr` after this
+              // command returns, so a nested editor.commands call would land first
+              // and leave `tr` mismatched ("Applying a mismatched transaction").
+              commands.setContent(originalContent, { emitUpdate: false });
+            } else {
               // Walk backwards so each edit leaves the earlier positions intact.
               const ordered = [...remaining].sort((a, b) => b.fromB - a.fromB);
               for (const change of ordered) {
@@ -432,13 +437,6 @@ export const DiffExtension = Extension.create({
             }
             tr.setMeta(CLEAR_META, true);
             dispatch(tr);
-          }
-
-          // Restore original content in a separate command so it uses a fresh
-          // transaction built from the post-clear state, avoiding a mismatched
-          // transaction on devices where React re-renders between dispatches.
-          if (canRestoreSnapshot && originalContent) {
-            editor.commands.setContent(originalContent, { emitUpdate: false });
           }
 
           return true;
