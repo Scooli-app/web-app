@@ -1,4 +1,6 @@
 import posthog from "posthog-js";
+import { toast } from "sonner";
+import { translate } from "@/i18n/translate";
 
 // Stale deployment chunks produce ChunkLoadError when a new deploy invalidates
 // old hashes while the user still has the previous version loaded. The only
@@ -8,16 +10,31 @@ if (typeof window !== "undefined") {
     typeof msg === "string" &&
     (msg.includes("ChunkLoadError") || msg.includes("Loading chunk"));
 
+  // While the page is still loading nothing has been typed yet, so reload at once.
+  // Later, an instant reload wiped half-filled forms (7 Oct): offer it and let the
+  // teacher pick the moment.
+  const recover = () => {
+    if (document.readyState !== "complete") {
+      window.location.reload();
+      return;
+    }
+    toast(translate("errors.appUpdate.message"), {
+      id: "app-update",
+      duration: Infinity,
+      action: { label: translate("errors.appUpdate.action"), onClick: () => window.location.reload() },
+    });
+  };
+
   window.addEventListener("error", (event) => {
     if (isChunkError(event.message)) {
-      window.location.reload();
+      recover();
     }
   });
 
   window.addEventListener("unhandledrejection", (event) => {
     const reason = event.reason as { name?: string; message?: string } | null;
     if (isChunkError(reason?.name) || isChunkError(reason?.message)) {
-      window.location.reload();
+      recover();
     }
   });
 }

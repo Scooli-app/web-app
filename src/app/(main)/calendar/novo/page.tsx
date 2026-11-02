@@ -81,7 +81,7 @@ import {
   X,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import Link from "next/link";
 import { useFormatter, useLocale, useTranslations } from "next-intl";
 import { clampPeriodToFreeWindow, freePeriodBounds } from "@/lib/freePlanWindow";
@@ -104,6 +104,19 @@ type WizardStep =
   | "generating";
 
 // ─────────────────────── Step metadata ────────────────────────────────────────
+
+/** A clickable card that keyboards and screen readers also treat as a button. */
+const pressable = (onPress: () => void) => ({
+  role: "button" as const,
+  tabIndex: 0,
+  onClick: onPress,
+  onKeyDown: (e: KeyboardEvent) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      onPress();
+    }
+  },
+});
 
 const STEP_INDICATOR_ICONS = [
   { id: "mode_a_select_plan", icon: BookOpen },
@@ -176,7 +189,7 @@ function StepChooseMode({ onSelect }: { onSelect: (mode: "from_plan" | "custom")
       <div className="grid gap-4 sm:grid-cols-2">
         <Card
           className="cursor-pointer border-2 transition hover:border-primary hover:shadow-md"
-          onClick={() => onSelect("from_plan")}
+          {...pressable(() => onSelect("from_plan"))}
         >
           <CardHeader className="pb-3">
             <div className="flex items-center gap-2">
@@ -193,7 +206,7 @@ function StepChooseMode({ onSelect }: { onSelect: (mode: "from_plan" | "custom")
         </Card>
         <Card
           className="cursor-pointer border-2 transition hover:border-primary hover:shadow-md"
-          onClick={() => onSelect("custom")}
+          {...pressable(() => onSelect("custom"))}
         >
           <CardHeader className="pb-3">
             <div className="flex items-center gap-2">
@@ -297,7 +310,7 @@ function StepSelectPlan({
             <Card
               key={plan.id}
               className="cursor-pointer transition hover:border-primary hover:shadow-sm"
-              onClick={() => onSelect(plan)}
+              {...pressable(() => onSelect(plan))}
             >
               <CardContent className="flex items-center gap-3 py-3">
                 <CalendarDays className="h-4 w-4 shrink-0 text-primary" />

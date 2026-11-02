@@ -25,10 +25,15 @@ interface Props {
   onChange: (color: string) => void;
   /** The trigger element (e.g. a small coloured circle button) */
   children: React.ReactNode;
+  /** Lets another control (e.g. a phone menu) open the picker at this trigger. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-export function ColorPickerPopover({ color, onChange, children }: Props) {
-  const [open, setOpen] = useState(false);
+export function ColorPickerPopover({ color, onChange, children, open: openProp, onOpenChange }: Props) {
+  const [ownOpen, setOwnOpen] = useState(false);
+  const open = openProp ?? ownOpen;
+  const setOpen = onOpenChange ?? setOwnOpen;
   // AI-generated elements may return non-string color values — guard against it
   const safeColor = typeof color === "string" ? color : "";
 

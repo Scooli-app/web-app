@@ -630,7 +630,7 @@ function ImagesTab({
                       rel="noopener noreferrer"
                       aria-label={t("imagesOpenSource", { provider: image.providerName })}
                       title={t("imagesOpenSource", { provider: image.providerName })}
-                      className="absolute right-1 top-1 rounded bg-background/90 p-1 text-foreground opacity-0 shadow-sm transition-opacity hover:bg-background focus:opacity-100 group-hover:opacity-100"
+                      className="absolute right-1 top-1 rounded bg-background/90 p-1 text-foreground opacity-0 shadow-sm transition-opacity hover:bg-background focus:opacity-100 group-hover:opacity-100 pointer-coarse:opacity-100"
                     >
                       <ExternalLink className="h-3 w-3" />
                     </a>

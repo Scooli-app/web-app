@@ -184,7 +184,7 @@ const MenuBar = memo(function MenuBar({
 
   return (
     <div className="sticky top-0 z-10 flex w-full items-center gap-2 overflow-hidden rounded-t-xl border-b border-border bg-card p-2">
-      <div className="flex min-w-0 flex-1 gap-1 overflow-x-auto pb-0.5 pr-1">
+      <div className="flex min-w-0 flex-1 gap-1 overflow-x-auto pr-1 [scrollbar-width:none]">
         <button
           onClick={handleBold}
           disabled={!editorState.canBold}

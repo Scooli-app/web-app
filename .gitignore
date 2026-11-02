@@ -56,3 +56,4 @@ graphify-out/cost.json
 
 # graphify generated output
 graphify-out/
+.superpowers/

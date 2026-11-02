@@ -111,12 +111,13 @@ function SlotCard({ slot, color, onOpen }: SlotCardProps) {
         backgroundColor: !isFailed && !isHoliday ? tintBg : undefined,
       }}
     >
-      <div className="flex items-center gap-3 px-3 py-3">
-        <span className="w-7 shrink-0 text-right text-xs font-mono text-muted-foreground">
+      <div className="flex items-center gap-2 px-3 py-3 sm:gap-3">
+        <span className="w-5 shrink-0 text-right text-xs font-mono text-muted-foreground sm:w-7">
           {slot.sequenceNumber}
         </span>
         <div className="min-w-0 flex-1">
-          <p className={`truncate text-sm font-medium ${isHoliday ? "line-through text-muted-foreground" : ""}`}>
+          {/* Two lines: on phones the status badge leaves too little room for one. */}
+          <p className={`line-clamp-2 text-sm font-medium ${isHoliday ? "line-through text-muted-foreground" : ""}`}>
             {isHoliday ? t("shared.holidayNoLesson") : hasTopic(slot) ? slot.topicTitle : t("shared.notHeldTitle")}
           </p>
           <p className="text-xs text-muted-foreground">
@@ -142,9 +143,15 @@ function SlotCard({ slot, color, onOpen }: SlotCardProps) {
         )}
         {mark && <TeachingMarkBadge mark={mark} className="text-sm" />}
         {!isHoliday && (
-          <Badge className={`shrink-0 gap-1 border text-xs ${cfg.badgeCls}`}>
+          <Badge
+            title={tTimetable(`status.${slotStatusKey(slot.status, slot.slotDate)}`)}
+            className={`shrink-0 gap-1 border text-xs max-sm:px-1.5 ${cfg.badgeCls}`}
+          >
             {cfg.icon}
-            {tTimetable(`status.${slotStatusKey(slot.status, slot.slotDate)}`)}
+            {/* Icon-only on phones so the lesson title gets the width. */}
+            <span className="max-sm:sr-only">
+              {tTimetable(`status.${slotStatusKey(slot.status, slot.slotDate)}`)}
+            </span>
           </Badge>
         )}
       </div>

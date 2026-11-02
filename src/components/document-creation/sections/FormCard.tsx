@@ -23,8 +23,8 @@ interface FieldHeadingProps {
 export function FieldHeading({ title, required, optional, aside, id, className }: FieldHeadingProps) {
   const t = useTranslations("documentCreation.form");
   return (
-    <div className={cn("mb-2 flex min-w-0 items-center justify-between gap-2", className)}>
-      <h2 id={id} className="text-sm font-semibold text-foreground">
+    <div className={cn("mb-2 flex min-w-0 flex-wrap items-center justify-between gap-2", className)}>
+      <h2 id={id} className="whitespace-nowrap text-sm font-semibold text-foreground">
         {title}
         {required && <span className="ml-0.5 text-destructive">*</span>}
         {optional && <span className="ml-1.5 text-xs font-normal text-muted-foreground">{t("optional")}</span>}

@@ -1,5 +1,6 @@
 "use client";
 
+import { AdminBackButton } from "@/components/admin/AdminBackButton";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/badge";
@@ -466,15 +467,19 @@ export default function AdminUsersPage() {
             </div>
           }
           actions={
-            <Button
-              variant="outline"
-              onClick={() => void loadInsights()}
-              disabled={loading}
-              className="min-w-[8.5rem]"
-            >
-              <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
-              Atualizar
-            </Button>
+            <>
+              <AdminBackButton />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => void loadInsights()}
+                disabled={loading}
+                className="min-w-[8.5rem]"
+              >
+                <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
+                Atualizar
+              </Button>
+            </>
           }
         />
 

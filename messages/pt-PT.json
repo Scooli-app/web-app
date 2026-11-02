@@ -1498,7 +1498,10 @@
       "actionsDisabledGenerating": "Disponível quando o documento estiver pronto.",
       "actionsDisabledNoContent": "O documento ainda está vazio.",
       "emptyDocumentTitle": "Este documento ficou vazio",
-      "emptyDocumentDescription": "A geração terminou sem conteúdo. Podes escrever aqui ou voltar aos documentos e criar outro."
+      "emptyDocumentDescription": "A geração terminou sem conteúdo. Podes escrever aqui ou voltar aos documentos e criar outro.",
+      "importFailedTitle": "A importação falhou",
+      "importFailedDescription": "Algo correu mal ao importar este ficheiro. Importa-o de novo; se voltar a falhar, experimenta em PDF ou DOCX.",
+      "importFailedRetry": "Importar de novo"
     },
     "documentTitle": {
       "placeholder": "Título do documento...",
@@ -1526,6 +1529,13 @@
       "share": "Partilhar"
     },
     "blockEditor": {
+      "askAiLabel": "Pedir à IA",
+      "moreActions": "Mais ações",
+      "undoLabel": "Desfazer",
+      "redoLabel": "Refazer",
+      "editSection": "Editar",
+      "documentSection": "Documento",
+      "chatButton": "Conversa",
       "photoCredit": "Imagem: {credit}",
       "fontDefault": "Padrão",
       "loadingPresentation": "A carregar apresentação...",
@@ -1844,7 +1854,8 @@
     "presentView": {
       "prevSlideAriaLabel": "Slide anterior",
       "nextSlideAriaLabel": "Próximo slide",
-      "exitAriaLabel": "Sair da apresentação"
+      "exitAriaLabel": "Sair da apresentação",
+      "rotateHint": "Roda o telemóvel para ver o slide maior"
     },
     "generationProgress": {
       "title": "A criar a tua apresentação…",
@@ -2314,7 +2325,8 @@
         "cancel": "Cancelar"
       },
       "seeAll": "Ver todos",
-      "sectionCount": "{count, plural, one {# documento} other {# documentos}}"
+      "sectionCount": "{count, plural, one {# documento} other {# documentos}}",
+      "deleteFailed": "Não foi possível eliminar. Tenta novamente."
     },
     "export": {
       "exercisePlaceholder": "[Exercício interativo ({kind}) — visível apenas na aplicação]",
@@ -2371,6 +2383,10 @@
         "presentation_pro": {
           "title": "As apresentações são do plano Pro",
           "description": "No plano gratuito preparas planos, fichas, quizzes e testes. Atualiza para Pro para criares também apresentações."
+        },
+        "sources_pro": {
+          "title": "As tuas fontes são do plano Pro",
+          "description": "No plano gratuito, a Scooli usa as fontes da Scooli. Atualiza para Pro para carregares o manual ou os materiais da tua escola."
         }
       }
     },
@@ -2387,7 +2403,7 @@
       },
       "free": {
         "name": "Plano gratuito",
-        "description": "20 créditos por mês"
+        "description": "20 créditos"
       }
     },
     "nifCard": {
@@ -2412,8 +2428,8 @@
       "excerptCount": "{count, plural, one {# excerto} other {# excertos}}"
     },
     "page": {
-      "title": "As minhas fontes",
-      "description": "Carrega o manual ou os materiais da tua escola (PDF, DOCX). Os planos e fichas que crias passam a seguir essa matéria, além das Aprendizagens Essenciais.",
+      "title": "Fontes",
+      "description": "O que a Scooli consulta quando crias materiais: as fontes da Scooli e os materiais que carregas.",
       "addSource": "Adicionar fonte",
       "dropzoneEmpty": "Clica ou arrasta um ficheiro",
       "dropzoneHint": "PDF ou DOCX",
@@ -2433,7 +2449,17 @@
       "sectionFallback": "final",
       "backMatterFallback": "back-matter",
       "emptyDescription": "Carrega o manual ou os materiais da tua escola e a Scooli usa-os nos documentos que crias.",
-      "emptyAction": "Carregar uma fonte"
+      "emptyAction": "Carregar uma fonte",
+      "scooliSources": "Fontes da Scooli",
+      "scooliSourcesDescription": "Já estão incluídas. A Scooli usa-as por defeito em todos os materiais que crias, e podes desligá-las em cada documento.",
+      "aeName": "Aprendizagens Essenciais",
+      "aeDescription": "O currículo nacional, por disciplina e ano de escolaridade.",
+      "regulatoryDescription": "Documento regulatório",
+      "openOfficialText": "Abrir o texto oficial de {name}",
+      "proTitle": "Carrega as tuas fontes com o Pro",
+      "proDescription": "Com o Pro, carregas o manual ou os materiais da tua escola (PDF ou DOCX), e os planos e fichas que crias passam a seguir essa matéria.",
+      "proAction": "Ver planos Pro",
+      "failedHint": "Não conseguimos ler este ficheiro. Se for digitalizado, usa uma versão com texto; senão, guarda-o de novo como PDF ou DOCX e volta a carregar."
     },
     "status": {
       "uploaded": "A processar",
@@ -2445,7 +2471,7 @@
     },
     "toast": {
       "ready": "Fonte \"{name}\" pronta a usar.",
-      "failed": "Falha ao processar \"{name}\"{detail}."
+      "failed": "Não conseguimos ler \"{name}\". Guarda-o de novo como PDF ou DOCX e volta a carregar."
     }
   },
   "modals": {
@@ -2925,7 +2951,7 @@
       "chatFailed": "Não foi possível enviar a mensagem ao chat",
       "processingFormatFailed": "Erro ao processar o formato do ficheiro.",
       "importServerError": "Erro de servidor ao importar o documento. ({status})",
-      "importTimeout": "Tempo limite excedido a aguardar pela formatação do documento."
+      "importTimeout": "A importação está a demorar mais do que o normal e continua em segundo plano. O documento aparece na tua lista quando estiver pronto."
     },
     "templates": {
       "loadFailed": "Não foi possível carregar os modelos (HTTP {status})",
@@ -2956,6 +2982,10 @@
       "createFailed": "Não foi possível criar a planificação.",
       "uploadFailed": "Falha ao enviar o ficheiro para o armazenamento.",
       "importFailed": "Não foi possível importar a planificação."
+    },
+    "appUpdate": {
+      "message": "Há uma versão nova da Scooli. Atualiza a página quando terminares o que estás a fazer.",
+      "action": "Atualizar"
     }
   },
   "ui": {
@@ -3045,6 +3075,8 @@
       "emptyDescription": "Cria a tua primeira turma para começar a planificar.",
       "viewWeek": "Semana",
       "viewWeekShort": "Sem",
+      "prevWeek": "Semana anterior",
+      "nextWeek": "Semana seguinte",
       "viewMonth": "Mês",
       "today": "Hoje",
       "tomorrow": "Amanhã",
@@ -3120,7 +3152,8 @@
       "card": {
         "active": "Ativa",
         "inactive": "Inativa",
-        "editTitle": "Editar turma"
+        "editTitle": "Editar turma",
+        "deleteTitle": "Eliminar turma"
       }
     },
     "assessmentScope": {
@@ -3730,6 +3763,7 @@
       "readingTitle": "Título (opcional)",
       "readingBody": "Texto",
       "imageAlt": "Imagem do exercício",
+      "imageMissing": "Imagem em falta: os alunos não a vão ver",
       "more": "Mais ações"
     },
     "types": {

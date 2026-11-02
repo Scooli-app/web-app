@@ -9,6 +9,7 @@
  *   - Fullscreen on mount (release on unmount / Esc)
  *   - Arrow Right / Space / PageDown / click → next slide
  *   - Arrow Left / PageUp → previous
+ *   - Swipe left / right on a phone → next / previous
  *   - Home / End → first / last
  *   - Esc → exit fullscreen + navigate back
  *   - Slide counter ("3 / 10") in the bottom corner, auto-hides after 2s
@@ -28,7 +29,7 @@ import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { ChevronLeft, ChevronRight, Loader2, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
 import { SlideRenderer } from "./SlideRenderer";
 
 interface Props {
@@ -44,6 +45,7 @@ export function PresentView({ documentId }: Props) {
   const [currentIdx, setCurrentIdx] = useState(0);
   const [hudVisible, setHudVisible] = useState(true);
   const hudTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const touchStartXRef = useRef<number | null>(null);
 
   // Fetch the document.
   useEffect(() => {
@@ -193,6 +195,17 @@ export function PresentView({ documentId }: Props) {
     };
   }, [showHud]);
 
+  // Warm the browser cache with the next slide's images so moving on doesn't show empty boxes.
+  useEffect(() => {
+    const upcoming = canvasPresentation?.slides.filter((sl) => !sl.hidden)[currentIdx + 1];
+    for (const el of upcoming?.elements ?? []) {
+      if (el.type !== "image_placeholder" || !el.url) continue;
+      const img = new window.Image();
+      img.crossOrigin = "anonymous"; // same mode as CanvasSlideView, so the cached copy is reused
+      img.src = el.url;
+    }
+  }, [canvasPresentation, currentIdx]);
+
   /* Render branches ----------------------------------------------------- */
 
   if (!canvasPresentation && !parsed) {
@@ -207,17 +220,35 @@ export function PresentView({ documentId }: Props) {
   const currentCanvasSlide = visibleCanvasSlides?.[currentIdx] ?? null;
   const currentV1Slide = parsed?.blocks[currentIdx] ?? null;
 
+  // Tap or click: left third goes back, the rest goes forward (the usual presenter convention).
+  const onSurfaceClick = (e: ReactMouseEvent<HTMLDivElement>) => {
+    showHud();
+    if (e.clientX < window.innerWidth / 3) prev();
+    else next();
+  };
+
   return (
     <div
-      className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black"
-      onClick={next}
+      className="fixed inset-0 z-50 flex select-none flex-col items-center justify-center bg-black"
+      onClick={onSurfaceClick}
       onMouseMove={showHud}
+      onTouchStart={(e) => {
+        touchStartXRef.current = e.touches[0]?.clientX ?? null;
+      }}
+      onTouchEnd={(e) => {
+        const start = touchStartXRef.current;
+        const end = e.changedTouches[0]?.clientX;
+        touchStartXRef.current = null;
+        if (start === null || end === undefined || Math.abs(end - start) < 50) return;
+        // A swipe: don't let the synthetic click that may follow navigate a second time.
+        e.preventDefault();
+        showHud();
+        if (end < start) next();
+        else prev();
+      }}
     >
-      {/* Slide — clicked area = next slide. Stop propagation in nested links/buttons. */}
-      <div
-        className="w-[min(96vw,calc(96vh*16/9))] max-h-[96vh]"
-        onClick={(e) => e.stopPropagation()}
-      >
+      {/* Slide: full width on a phone held upright, otherwise the largest 16:9 box that fits. */}
+      <div className="w-[min(96vw,calc(96dvh*16/9))] portrait:w-screen">
         {currentCanvasSlide ? (
           /* v2 canvas presentation — rendered with exact background + styling */
           <CanvasSlideView slide={currentCanvasSlide} />
@@ -227,55 +258,62 @@ export function PresentView({ documentId }: Props) {
         ) : null}
       </div>
 
-      {/* HUD: counter + controls. Shown for 5s after any mouse move, stays
-          visible while the cursor is over it so teachers can click the buttons. */}
+      {/* Phone held upright: the slide is small, suggest turning it. */}
+      <p className="pointer-events-none mt-6 hidden rounded-full bg-white/10 px-3 py-1.5 text-xs text-white/80 pointer-coarse:portrait:block">
+        {t("rotateHint")}
+      </p>
+
+      {/* Exit: top-right, where people look for it. Fades with the rest of the HUD. */}
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          exit();
+        }}
+        className={`fixed right-[max(1rem,env(safe-area-inset-right))] top-[max(1rem,env(safe-area-inset-top))] rounded-full bg-white/10 p-2.5 text-white backdrop-blur-sm transition-[opacity,background-color] duration-300 hover:bg-white/20 ${
+          hudVisible ? "opacity-100" : "pointer-events-none opacity-0"
+        }`}
+        aria-label={t("exitAriaLabel")}
+      >
+        <X className="h-5 w-5" />
+      </button>
+
+      {/* HUD: counter + arrows. Shown for 5s after any mouse move or tap. */}
       <div
-        className={`pointer-events-none fixed inset-x-0 bottom-0 flex items-end justify-between p-4 transition-opacity duration-300 ${
+        className={`pointer-events-none fixed inset-x-0 bottom-0 flex items-center justify-center gap-3 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] transition-opacity duration-300 ${
           hudVisible ? "opacity-100" : "opacity-0"
         }`}
         onMouseEnter={showHud}
       >
-        {/* Left: slide counter */}
-        <div className="pointer-events-auto rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur-sm">
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); prev(); showHud(); }}
+          disabled={currentIdx === 0}
+          className={`${hudVisible ? "pointer-events-auto" : ""} rounded-full bg-white/10 p-2.5 text-white backdrop-blur-sm transition-colors hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-30`}
+          aria-label={t("prevSlideAriaLabel")}
+        >
+          <ChevronLeft className="h-5 w-5" />
+        </button>
+        <div className="min-w-16 rounded-full bg-white/10 px-3 py-1.5 text-center text-xs font-semibold tabular-nums text-white backdrop-blur-sm">
           {currentIdx + 1} / {total}
         </div>
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); next(); showHud(); }}
+          disabled={currentIdx === total - 1}
+          className={`${hudVisible ? "pointer-events-auto" : ""} rounded-full bg-white/10 p-2.5 text-white backdrop-blur-sm transition-colors hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-30`}
+          aria-label={t("nextSlideAriaLabel")}
+        >
+          <ChevronRight className="h-5 w-5" />
+        </button>
+      </div>
 
-        {/* Centre: ← → navigation arrows */}
-        <div className="pointer-events-auto flex gap-2">
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); prev(); }}
-            disabled={currentIdx === 0}
-            className="rounded-full bg-white/10 p-2 text-white backdrop-blur-sm transition-colors hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed"
-            aria-label={t("prevSlideAriaLabel")}
-          >
-            <ChevronLeft className="h-5 w-5" />
-          </button>
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); next(); }}
-            disabled={currentIdx === total - 1}
-            className="rounded-full bg-white/10 p-2 text-white backdrop-blur-sm transition-colors hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed"
-            aria-label={t("nextSlideAriaLabel")}
-          >
-            <ChevronRight className="h-5 w-5" />
-          </button>
-        </div>
-
-        {/* Right: exit */}
-        <div className="pointer-events-auto flex gap-2">
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              exit();
-            }}
-            className="rounded-full bg-white/10 p-2 text-white backdrop-blur-sm transition-colors hover:bg-white/20"
-            aria-label={t("exitAriaLabel")}
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
+      {/* Progress: always there, faint, so the class sees how far along the lesson is. */}
+      <div aria-hidden className="pointer-events-none fixed inset-x-0 bottom-0 h-0.5 bg-white/10">
+        <div
+          className="h-full bg-white/50 transition-[width] duration-300"
+          style={{ width: `${total > 0 ? ((currentIdx + 1) / total) * 100 : 0}%` }}
+        />
       </div>
     </div>
   );

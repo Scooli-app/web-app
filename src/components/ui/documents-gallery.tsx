@@ -27,6 +27,7 @@ import { CheckSquare, Loader2, Square, Trash2, UploadCloud, X } from "lucide-rea
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useInView } from "react-intersection-observer";
+import { toast } from "sonner";
 import { Button } from "./button";
 
 const GROUP_BY_CLASS_KEY = "scooli.documents.groupByClass";
@@ -242,11 +243,12 @@ export function DocumentsGallery() {
       setRefreshKey((n) => n + 1);
     } catch (error) {
       console.error("Error deleting documents:", error);
+      toast.error(t("deleteFailed"));
     } finally {
       setDeleting(false);
       setPendingDeleteId(null);
     }
-  }, [pendingDeleteId, selectedDocuments, fetchDocuments]);
+  }, [pendingDeleteId, selectedDocuments, fetchDocuments, t]);
 
   const getDeleteDialogContent = useMemo(() => {
     if (pendingDeleteId) {
@@ -379,7 +381,7 @@ export function DocumentsGallery() {
     <div className="w-full">
       <div className="flex flex-col space-y-6">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-xl font-semibold text-foreground sm:text-2xl">
               {t("heading")}
@@ -387,7 +389,7 @@ export function DocumentsGallery() {
           </div>
 
           {/* Right side: actions */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-2 w-full sm:w-auto">
+          <div className="flex flex-wrap items-center gap-2">
             {/* Upload button – visible on all screen sizes */}
             {!selectionMode && (
               <Button
@@ -402,9 +404,9 @@ export function DocumentsGallery() {
             )}
 
             {/* Search and Selection */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-2 w-full sm:w-auto">
+            <div className="flex flex-wrap items-center gap-2">
             {selectionMode && (
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+              <div className="flex flex-wrap items-center gap-2">
                 <Button
                   variant="outline"
                   size="sm"

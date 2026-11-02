@@ -47,6 +47,8 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
@@ -82,6 +84,10 @@ import {
   ChevronDown,
   ChevronUp,
   Circle,
+  History,
+  MessageCircle,
+  MoreVertical,
+  Palette,
   Minus,
   Copy,
   Download,
@@ -536,6 +542,8 @@ export function BlockDocumentEditor({ documentId }: Props) {
   const tChat = useTranslations("editor.aiChatPanel");
   const tDoc = useTranslations("editor.documentEditor");
   const tLoad = useTranslations("common.loadError");
+  const tVersions = useTranslations("editor.documentVersions");
+  const tTheme = useTranslations("editor.themePicker");
   const dispatch = useAppDispatch();
   const rawDocument = useAppSelector((s) => s.documents.currentDocument);
   const document = rawDocument?.id === documentId ? rawDocument : null;
@@ -630,6 +638,13 @@ export function BlockDocumentEditor({ documentId }: Props) {
   /** true = replacing an existing selected image; false = inserting a new one */
   const [imageModalReplacing, setImageModalReplacing] = useState(false);
   const [addSlideMenuOpen, setAddSlideMenuOpen] = useState(false);
+  // Below lg the chat is a sheet opened from the toolbar (the side panel is hidden there).
+  const [chatOpen, setChatOpen] = useState(false);
+  // Phone layout: the theme gallery, versions and slide background open from the bottom bar / ⋮ menu.
+  const [themeOpen, setThemeOpen] = useState(false);
+  const [versionsOpen, setVersionsOpen] = useState(false);
+  const [bgPickerOpen, setBgPickerOpen] = useState(false);
+  const moreButtonRef = useRef<HTMLButtonElement>(null);
   const [generateSlideDialogOpen, setGenerateSlideDialogOpen] = useState(false);
   const [generateSlideTopic, setGenerateSlideTopic] = useState("");
   const [isGeneratingSlide, setIsGeneratingSlide] = useState(false);
@@ -2099,7 +2114,8 @@ export function BlockDocumentEditor({ documentId }: Props) {
     );
   }
   if (!canvas) {
-    if (isFetchingThisDoc || isLoading) {
+    // canvasFromDoc set but canvas not yet: the effect copying it runs after this render.
+    if (isFetchingThisDoc || isLoading || canvasFromDoc) {
       return <PresentationEditorSkeleton />;
     }
     return (
@@ -2137,7 +2153,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
       {/* ── Main toolbar ───────────────────────────────────────────────── */}
       <div className="flex flex-shrink-0 flex-wrap items-center gap-1.5 border-b border-border bg-background px-3 py-2">
         {/* Title + auto-save status */}
-        <div className={titleDisplay.containerClassName}>
+        <div className={`${titleDisplay.containerClassName} max-md:flex-1`}>
           <p className={titleDisplay.textClassName} title={titleDisplay.titleAttr}>{titleDisplay.text}</p>
           <p className="text-[10px] text-muted-foreground">
             {canvas.slides.length} slide{canvas.slides.length !== 1 ? "s" : ""}
@@ -2147,6 +2163,70 @@ export function BlockDocumentEditor({ documentId }: Props) {
           </p>
         </div>
 
+        {/* Phone: hand-editing tools live in ⋮; the everyday actions are in the bottom bar. */}
+        <div className="relative ml-auto md:hidden">
+          {activeSlide && (
+            <ColorPickerPopover color={activeSlide.background} onChange={patchSlideBackground} open={bgPickerOpen} onOpenChange={setBgPickerOpen}>
+              {/* Anchor only: the picker is opened from the ⋮ menu. */}
+              <span aria-hidden className="pointer-events-none absolute right-2 top-full h-0 w-0" />
+            </ColorPickerPopover>
+          )}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button ref={moreButtonRef} variant="ghost" size="icon" className="h-9 w-9" aria-label={t("moreActions")}>
+                <MoreVertical className="h-5 w-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel className="text-xs text-muted-foreground">{t("editSection")}</DropdownMenuLabel>
+              <DropdownMenuItem disabled={!canUndo} onClick={undo} className="gap-2">
+                <Undo2 className="h-4 w-4" />{t("undoLabel")}
+              </DropdownMenuItem>
+              <DropdownMenuItem disabled={!canRedo} onClick={redo} className="gap-2">
+                <Redo2 className="h-4 w-4" />{t("redoLabel")}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem disabled={!activeSlide} onClick={() => editorRef.current?.addText()} className="gap-2">
+                <Plus className="h-4 w-4" />{t("addTextLabel")}
+              </DropdownMenuItem>
+              <DropdownMenuItem disabled={!activeSlide} onClick={() => { setImageModalReplacing(false); setImageModalOpen(true); }} className="gap-2">
+                <ImageIcon className="h-4 w-4" />{t("addImageLabel")}
+              </DropdownMenuItem>
+              <DropdownMenuItem disabled={!activeSlide} onClick={() => insertShapeElement("rect")} className="gap-2">
+                <Square className="h-4 w-4" />{t("shapeRect")}
+              </DropdownMenuItem>
+              <DropdownMenuItem disabled={!activeSlide} onClick={() => insertShapeElement("ellipse")} className="gap-2">
+                <Circle className="h-4 w-4" />{t("shapeEllipse")}
+              </DropdownMenuItem>
+              <DropdownMenuItem disabled={!activeSlide} onClick={() => insertShapeElement("line")} className="gap-2">
+                <Minus className="h-4 w-4" />{t("shapeLine")}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                disabled={!activeSlide}
+                className="gap-2"
+                onClick={() => {
+                  const r = moreButtonRef.current?.getBoundingClientRect();
+                  setEditingMathId(null);
+                  setFormulaAnchor({ x: r ? r.left : 16, y: r ? r.bottom : 64 });
+                }}
+              >
+                <Sigma className="h-4 w-4" />{t("formulaLabel")}
+              </DropdownMenuItem>
+              <DropdownMenuItem disabled={!activeSlide} onClick={() => setBgPickerOpen(true)} className="gap-2">
+                <span className="h-4 w-4 rounded-sm border border-border" style={{ background: activeSlide?.background }} />
+                {t("slideBackgroundTooltip")}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel className="text-xs text-muted-foreground">{t("documentSection")}</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => setVersionsOpen(true)} className="gap-2">
+                <History className="h-4 w-4" />{tVersions("buttonLabel")}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        {/* Desktop/tablet toolbar (hidden on phones) */}
+        <div className="contents max-md:hidden">
         {/* Undo / Redo */}
         <Button variant="ghost" size="icon" className="h-8 w-8" disabled={!canUndo} onClick={undo} title={t("undoTooltip")}>
           <Undo2 className="h-4 w-4" />
@@ -2167,7 +2247,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
           title={t("addTextTooltip")}
         >
           <Plus className="h-3.5 w-3.5" />
-          {t("addTextLabel")}
+          <span className="hidden sm:inline">{t("addTextLabel")}</span>
         </Button>
 
         {/* Add image — opens the image picker modal */}
@@ -2180,7 +2260,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
           onClick={() => { setImageModalReplacing(false); setImageModalOpen(true); }}
         >
           <ImageIcon className="h-3.5 w-3.5" />
-          {t("addImageLabel")}
+          <span className="hidden sm:inline">{t("addImageLabel")}</span>
         </Button>
 
         <DropdownMenu>
@@ -2193,7 +2273,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
               title={t("addShapeTooltip")}
             >
               <Shapes className="h-3.5 w-3.5" />
-              {t("shapesLabel")}
+              <span className="hidden sm:inline">{t("shapesLabel")}</span>
               <ChevronDown className="h-3 w-3 opacity-70" />
             </Button>
           </DropdownMenuTrigger>
@@ -2230,25 +2310,29 @@ export function BlockDocumentEditor({ documentId }: Props) {
           }}
         >
           <Sigma className="h-3.5 w-3.5" />
-          {t("formulaLabel")}
+          <span className="hidden sm:inline">{t("formulaLabel")}</span>
         </Button>
 
         <div className="h-5 w-px bg-border" />
 
-        <ThemePicker currentThemeId={canvas.themeId} onSelect={handleThemeSelect} />
+        <ThemePicker currentThemeId={canvas.themeId} onSelect={handleThemeSelect} open={themeOpen} onOpenChange={setThemeOpen} />
 
         {/* ── Right side: Export dropdown + Present ──────────────────── */}
         <div className="ml-auto flex items-center gap-1.5">
-          <DocumentVersionsButton documentId={documentId} documentType={document?.documentType} onRestored={handleVersionRestored} />
+          <Button variant="outline" size="sm" className="h-8 gap-1.5 lg:hidden" onClick={() => setChatOpen(true)} title={t("chatButton")}>
+            <MessageCircle className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">{t("chatButton")}</span>
+          </Button>
+          <DocumentVersionsButton documentId={documentId} documentType={document?.documentType} onRestored={handleVersionRestored} open={versionsOpen} onOpenChange={setVersionsOpen} />
           {canvas.slides.length > 0 && (
           <>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="h-8 gap-1" disabled={exporting}>
+              <Button variant="outline" size="sm" className="h-8 gap-1" disabled={exporting} title={t("exportLabel")}>
                 {exporting
                   ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
                   : <Download className="h-3.5 w-3.5" />}
-                {t("exportLabel")}
+                <span className="hidden sm:inline">{t("exportLabel")}</span>
                 <ChevronDown className="h-3 w-3 opacity-70" />
               </Button>
             </DropdownMenuTrigger>
@@ -2281,11 +2365,12 @@ export function BlockDocumentEditor({ documentId }: Props) {
           </>
           )}
         </div>
+        </div>
       </div>
 
       {/* ── Contextual toolbar — always rendered to prevent layout shift.
            Fixed h-9, no wrapping, horizontal scroll if needed.          */}
-      <div className={`flex flex-shrink-0 items-center gap-1 border-b border-border px-3 h-11 overflow-x-auto${selectedElement ? " bg-muted/30" : ""}`}>
+      <div className={`flex flex-shrink-0 items-center gap-1 border-b border-border px-3 h-11 overflow-x-auto${selectedElement ? " bg-muted/30" : " max-md:hidden"}`}>
       {selectedElement && (
         <>
 
@@ -2589,11 +2674,11 @@ export function BlockDocumentEditor({ documentId }: Props) {
       </div>
 
       {/* ── Editor body: slide sidebar | canvas | AI chat ─────────────── */}
-      <div className="flex flex-1 min-h-0 overflow-hidden">
+      <div className="flex flex-1 min-h-0 flex-col overflow-hidden md:flex-row">
 
-        {/* Slide sidebar */}
-        <aside className="flex w-44 flex-shrink-0 flex-col overflow-y-auto overflow-x-hidden border-r border-border bg-muted/20">
-          <div className="flex flex-col items-center gap-3 p-3">
+        {/* Slide sidebar — on phones a horizontal strip under the canvas */}
+        <aside className="order-last flex w-full flex-shrink-0 flex-row items-center overflow-x-auto overflow-y-hidden border-t border-border bg-muted/20 md:order-none md:w-44 md:flex-col md:items-stretch md:overflow-y-auto md:overflow-x-hidden md:border-r md:border-t-0">
+          <div className="flex flex-row items-center gap-3 p-3 md:flex-col">
             {canvas.slides.map((cs, idx) => (
               <SlideItem
                 key={cs.id}
@@ -2612,10 +2697,10 @@ export function BlockDocumentEditor({ documentId }: Props) {
               />
             ))}
           </div>
-          <div className="sticky bottom-0 mt-auto p-3 pt-0">
+          <div className="shrink-0 p-3 pl-0 md:sticky md:bottom-0 md:mt-auto md:pl-3 md:pt-0">
             <DropdownMenu open={addSlideMenuOpen} onOpenChange={setAddSlideMenuOpen}>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="w-full border-dashed text-xs">
+                <Button variant="outline" size="sm" className="w-full whitespace-nowrap border-dashed text-xs">
                   {t("addSlide")}
                 </Button>
               </DropdownMenuTrigger>
@@ -2647,7 +2732,6 @@ export function BlockDocumentEditor({ documentId }: Props) {
             <div className="relative flex w-full flex-1 min-h-0 flex-col items-center justify-center">
               <p className="mb-1 shrink-0 text-center text-xs text-muted-foreground">
                 {t("slideCounter", { current: activeSlideIdx + 1, total: canvas.slides.length })}
-                {selectedElement ? ` · ${selectedElement.type}` : ""}
                 {activeSlide.hidden ? t("hiddenSuffix") : ""}
               </p>
               {/* Canvas with padding so the slide has breathing room */}
@@ -2674,7 +2758,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
               </div>
 
               {/* Zoom — bottom-right overlay, like Teachy */}
-              <div className="absolute bottom-3 right-3 flex items-center gap-1 rounded-lg border border-border bg-background/90 px-2 py-1 shadow-sm backdrop-blur-sm">
+              <div className="absolute bottom-3 right-3 hidden items-center gap-1 rounded-lg border md:flex border-border bg-background/90 px-2 py-1 shadow-sm backdrop-blur-sm">
                 <button
                   type="button"
                   title={t("zoomOutTooltip")}
@@ -2747,6 +2831,8 @@ export function BlockDocumentEditor({ documentId }: Props) {
         {/* AI Chat panel — desktop: fixed right column; mobile: floating button */}
         <aside className="hidden lg:flex w-80 flex-shrink-0 flex-col border-l border-border bg-background overflow-hidden">
           <AIChatPanel
+            mobileOpen={chatOpen}
+            onMobileOpenChange={setChatOpen}
             onChatSubmit={handleChatSubmit}
             chatHistory={chatHistory}
             isStreaming={isChatting}
@@ -2762,6 +2848,44 @@ export function BlockDocumentEditor({ documentId }: Props) {
           />
         </aside>
       </div>
+
+      {/* Phone action bar: the four things people do with a deck on a phone, under the thumb. */}
+      <nav className="flex flex-shrink-0 items-center gap-1 border-t border-border bg-background px-2 pt-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))] md:hidden">
+        <button type="button" onClick={() => setChatOpen(true)} className="flex min-h-12 flex-1 flex-col items-center justify-center gap-0.5 rounded-lg text-[11px] font-medium text-muted-foreground active:bg-muted">
+          <Sparkles className="h-5 w-5 text-primary" />
+          {t("askAiLabel")}
+        </button>
+        <button type="button" onClick={() => setThemeOpen(true)} className="flex min-h-12 flex-1 flex-col items-center justify-center gap-0.5 rounded-lg text-[11px] font-medium text-muted-foreground active:bg-muted">
+          <Palette className="h-5 w-5" />
+          {tTheme("themeButtonLabel")}
+        </button>
+        {canvas.slides.length > 0 && (
+          <>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button type="button" disabled={exporting} className="flex min-h-12 flex-1 flex-col items-center justify-center gap-0.5 rounded-lg text-[11px] font-medium text-muted-foreground active:bg-muted disabled:opacity-50">
+                  {exporting ? <Loader2 className="h-5 w-5 animate-spin" /> : <Download className="h-5 w-5" />}
+                  {t("exportLabel")}
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="center" side="top" className="w-52">
+                <DropdownMenuItem onClick={handleExportPPTX} disabled={exporting} className="gap-2">
+                  <FileText className="h-4 w-4 text-blue-500" />{t("exportPptx")}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleExportPDF} disabled={exporting} className="gap-2">
+                  <FileText className="h-4 w-4 text-red-500" />{t("exportPdf")}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <Link href={`${Routes.PRESENTATION_EDITOR.replace(":id", documentId)}/present?slide=${presentSlideIndex}`} className="flex-[1.4]">
+              <Button className="h-11 w-full gap-1.5 text-sm font-semibold">
+                <Play className="h-4 w-4" />
+                {t("present")}
+              </Button>
+            </Link>
+          </>
+        )}
+      </nav>
 
       {/* Image picker modal */}
       {document && (
@@ -2881,7 +3005,7 @@ function SlideItem({
           <button
             type="button"
             onClick={(e) => e.stopPropagation()}
-            className="absolute right-1 top-1 rounded bg-black/50 p-0.5 text-white opacity-0 transition-opacity hover:bg-black/80 group-hover:opacity-100"
+            className="absolute right-1 top-1 rounded bg-black/50 p-1 text-white opacity-0 transition-opacity hover:bg-black/80 group-hover:opacity-100 focus-visible:opacity-100 pointer-coarse:opacity-100"
             title={t("slideActionsTooltip")}
           >
             <MoreHorizontal className="h-3 w-3" />

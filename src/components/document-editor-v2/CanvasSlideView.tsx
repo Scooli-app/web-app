@@ -55,7 +55,7 @@ export function CanvasSlideView({ slide }: Props) {
   const [size, setSize] = useState({ w: 1280, h: 720 });
 
   /* Image cache: url → loaded HTMLImageElement | "loading" */
-  const imgCacheRef = useRef<Record<string, HTMLImageElement | "loading">>({});
+  const imgCacheRef = useRef<Record<string, HTMLImageElement | "loading" | "failed">>({});
   const mathCacheRef = useRef<Record<string, HTMLImageElement | "loading">>({});
   const [, setImgRevision] = useState(0);
 
@@ -89,7 +89,8 @@ export function CanvasSlideView({ slide }: Props) {
         setImgRevision((r) => r + 1);
       };
       i.onerror = () => {
-        delete imgCacheRef.current[url];
+        imgCacheRef.current[url] = "failed";
+        setImgRevision((r) => r + 1);
       };
       i.src = url;
     }
@@ -271,6 +272,8 @@ export function CanvasSlideView({ slide }: Props) {
             if (el.type === "image_placeholder") {
               const img = el as CanvasImageElement;
               const cached = img.url ? imgCacheRef.current[img.url] : undefined;
+              // Presenting to the class: an image that never generated or failed to load is left out, not drawn as a box.
+              if (!img.url || cached === "failed") return null;
               if (cached && cached !== "loading") {
                 return (
                   <KonvaImage
@@ -288,7 +291,7 @@ export function CanvasSlideView({ slide }: Props) {
                   />
                 );
               }
-              /* Placeholder while loading or no URL */
+              /* Faint placeholder while loading */
               return (
                 <Rect
                   key={el.id}
@@ -299,7 +302,7 @@ export function CanvasSlideView({ slide }: Props) {
                   rotation={el.rotation ?? 0}
                   width={el.w * W}
                   height={el.h * H}
-                  fill="#2a2a3a"
+                  fill="rgba(0,0,0,0.06)"
                   cornerRadius={4}
                   listening={false}
                 />

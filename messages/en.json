@@ -1498,7 +1498,10 @@
       "actionsDisabledGenerating": "Available once the document is ready.",
       "actionsDisabledNoContent": "This document has no content yet.",
       "emptyDocumentTitle": "This document came out empty",
-      "emptyDocumentDescription": "Generation finished without any content. You can write here or go back to your documents and create another."
+      "emptyDocumentDescription": "Generation finished without any content. You can write here or go back to your documents and create another.",
+      "importFailedTitle": "The import failed",
+      "importFailedDescription": "Something went wrong importing this file. Import it again, and if it fails again, try a PDF or DOCX.",
+      "importFailedRetry": "Import again"
     },
     "documentTitle": {
       "placeholder": "Document title...",
@@ -1526,6 +1529,13 @@
       "share": "Share"
     },
     "blockEditor": {
+      "askAiLabel": "Ask AI",
+      "moreActions": "More actions",
+      "undoLabel": "Undo",
+      "redoLabel": "Redo",
+      "editSection": "Edit",
+      "documentSection": "Document",
+      "chatButton": "Chat",
       "photoCredit": "Image: {credit}",
       "fontDefault": "Default",
       "loadingPresentation": "Loading presentation...",
@@ -1844,7 +1854,8 @@
     "presentView": {
       "prevSlideAriaLabel": "Previous slide",
       "nextSlideAriaLabel": "Next slide",
-      "exitAriaLabel": "Exit presentation"
+      "exitAriaLabel": "Exit presentation",
+      "rotateHint": "Turn your phone sideways for a bigger slide"
     },
     "generationProgress": {
       "title": "Creating your presentation…",
@@ -2314,7 +2325,8 @@
         "cancel": "Cancel"
       },
       "seeAll": "See all",
-      "sectionCount": "{count, plural, one {# document} other {# documents}}"
+      "sectionCount": "{count, plural, one {# document} other {# documents}}",
+      "deleteFailed": "Couldn't delete. Please try again."
     },
     "export": {
       "exercisePlaceholder": "[Interactive exercise ({kind}) — visible only in the app]",
@@ -2371,6 +2383,10 @@
         "presentation_pro": {
           "title": "Slides are part of Pro",
           "description": "On the free plan you can prepare lesson plans, worksheets, quizzes and tests. Upgrade to Pro to create slides too."
+        },
+        "sources_pro": {
+          "title": "Your own sources are part of Pro",
+          "description": "On the free plan, Scooli uses Scooli sources. Upgrade to Pro to upload a textbook or your school’s materials."
         }
       }
     },
@@ -2387,7 +2403,7 @@
       },
       "free": {
         "name": "Free Plan",
-        "description": "20 credits a month"
+        "description": "20 credits"
       }
     },
     "nifCard": {
@@ -2412,8 +2428,8 @@
       "excerptCount": "{count, plural, one {# excerpt} other {# excerpts}}"
     },
     "page": {
-      "title": "My Sources",
-      "description": "Upload documents (PDF, DOCX) to enrich content generation with your own curriculum context.",
+      "title": "Sources",
+      "description": "What Scooli draws on when you create materials: Scooli sources and the materials you upload.",
       "addSource": "Add Source",
       "dropzoneEmpty": "Click or drag a file",
       "dropzoneHint": "PDF or DOCX",
@@ -2433,7 +2449,17 @@
       "sectionFallback": "final",
       "backMatterFallback": "back matter",
       "emptyDescription": "Upload a textbook or your own materials and Scooli will use them in the documents you create.",
-      "emptyAction": "Upload a source"
+      "emptyAction": "Upload a source",
+      "scooliSources": "Scooli sources",
+      "scooliSourcesDescription": "Already included. Scooli uses them by default in everything you create, and you can turn them off for each document.",
+      "aeName": "Aprendizagens Essenciais",
+      "aeDescription": "Portugal’s national curriculum, by subject and school year.",
+      "regulatoryDescription": "Regulatory document",
+      "openOfficialText": "Open the official text of {name}",
+      "proTitle": "Upload your own sources with Pro",
+      "proDescription": "With Pro, you upload a textbook or your school’s materials (PDF or DOCX), and the lesson plans and worksheets you create follow that content.",
+      "proAction": "See Pro plans",
+      "failedHint": "We couldn’t read this file. If it’s a scan, use a version with selectable text; otherwise save it again as PDF or DOCX and upload it again."
     },
     "status": {
       "uploaded": "Processing",
@@ -2445,7 +2471,7 @@
     },
     "toast": {
       "ready": "Source \"{name}\" ready to use.",
-      "failed": "Failed to process \"{name}\"{detail}."
+      "failed": "We couldn’t read \"{name}\". Save it again as PDF or DOCX and upload it again."
     }
   },
   "modals": {
@@ -2925,7 +2951,7 @@
       "chatFailed": "We couldn't send the chat message",
       "processingFormatFailed": "Error processing the file format.",
       "importServerError": "Server error while importing the document. ({status})",
-      "importTimeout": "Timed out waiting for the document to finish formatting."
+      "importTimeout": "The import is taking longer than usual and keeps running in the background. The document will appear in your list when it's ready."
     },
     "templates": {
       "loadFailed": "We couldn't load the templates (HTTP {status})",
@@ -2956,6 +2982,10 @@
       "createFailed": "Couldn't create the curriculum plan.",
       "uploadFailed": "Failed to upload the file to storage.",
       "importFailed": "Couldn't import the curriculum plan."
+    },
+    "appUpdate": {
+      "message": "A new version of Scooli is available. Refresh the page when you've finished what you're doing.",
+      "action": "Refresh"
     }
   },
   "ui": {
@@ -3045,6 +3075,8 @@
       "emptyDescription": "Create your first class to start planning.",
       "viewWeek": "Week",
       "viewWeekShort": "Wk",
+      "prevWeek": "Previous week",
+      "nextWeek": "Next week",
       "viewMonth": "Month",
       "today": "Today",
       "tomorrow": "Tomorrow",
@@ -3120,7 +3152,8 @@
       "card": {
         "active": "Active",
         "inactive": "Inactive",
-        "editTitle": "Edit class"
+        "editTitle": "Edit class",
+        "deleteTitle": "Delete class"
       }
     },
     "assessmentScope": {
@@ -3730,6 +3763,7 @@
       "readingTitle": "Title (optional)",
       "readingBody": "Text",
       "imageAlt": "Exercise image",
+      "imageMissing": "Image missing: students won't see it",
       "more": "More actions"
     },
     "types": {

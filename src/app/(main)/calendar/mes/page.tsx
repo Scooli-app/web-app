@@ -312,7 +312,7 @@ export default function CalendarMonthPage() {
                       key={day.iso}
                       type="button"
                       onClick={() => handleDayClick(day)}
-                      className={`min-h-[100px] p-2 text-left transition-colors hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                      className={`min-h-[64px] p-1 text-left transition-colors sm:min-h-[100px] sm:p-2 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
                         !day.isCurrentMonth ? "bg-muted/20" : ""
                       } ${day.isToday ? "bg-primary/[0.04]" : ""}`}
                     >
@@ -333,7 +333,7 @@ export default function CalendarMonthPage() {
 
                       {/* Skeleton while loading lesson slots */}
                       {loading && isWeekday && day.isCurrentMonth && (
-                        <div className="animate-pulse space-y-1.5">
+                        <div className="animate-pulse space-y-1.5 overflow-hidden">
                           <div className="flex gap-1">
                             <div className="h-2 w-2 rounded-full bg-muted-foreground/15" />
                             <div className="h-2 w-2 rounded-full bg-muted-foreground/10" />
@@ -355,11 +355,12 @@ export default function CalendarMonthPage() {
                               />
                             ))}
                           </div>
-                          <p className="text-[11px] font-medium text-foreground">
+                          {/* Phones show only the dots: seven columns leave no room for words. */}
+                          <p className="hidden text-[11px] font-medium text-foreground sm:block">
                             {t("month.lessonsCount", { count: lessonCount })}
                           </p>
                           {(pendingCount > 0 || completedCount > 0) && (
-                            <p className="text-[10px] text-muted-foreground">
+                            <p className="hidden text-[10px] text-muted-foreground sm:block">
                               {completedCount > 0 && (
                                 <span className="text-green-600 dark:text-green-400">
                                   {t("month.completedCount", { count: completedCount })}

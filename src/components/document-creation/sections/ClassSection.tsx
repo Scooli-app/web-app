@@ -226,7 +226,7 @@ export function ClassSection({
                       aria-checked={active}
                       onClick={() => handleModeChange(value)}
                       className={cn(
-                        "rounded px-2 py-0.5 font-medium transition-colors",
+                        "rounded px-2 py-1 font-medium transition-colors",
                         active ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground",
                       )}
                     >
