@@ -1,5 +1,6 @@
 "use client";
 
+import { AdminBackButton } from "@/components/admin/AdminBackButton";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/badge";
@@ -206,6 +207,7 @@ export default function AdminCostsPage() {
             <DollarSign className="h-5 w-5 text-primary sm:h-6 sm:w-6" />
           </div>
         }
+        actions={<AdminBackButton />}
       />
 
       {/* Controls */}

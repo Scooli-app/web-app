@@ -1,5 +1,6 @@
 "use client";
 
+import { AdminBackButton } from "@/components/admin/AdminBackButton";
 import { useDateFnsLocale } from "@/i18n/dateFns";
 import { FeedbackSeverityBadge } from "@/components/admin/feedback/FeedbackSeverityBadge";
 import { FeedbackStatusBadge } from "@/components/admin/feedback/FeedbackStatusBadge";
@@ -391,6 +392,7 @@ export default function AdminFeedbackPage() {
           description="Gerir erros reportados e sugestões dos utilizadores."
           actions={
             <>
+              <AdminBackButton />
               <Button
                 onClick={() => router.push("/admin/feedback/surveys")}
                 variant="outline"

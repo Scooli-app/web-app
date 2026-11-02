@@ -40,7 +40,10 @@ export interface AdminOnboardingOverview {
   summary: AdminOnboardingSummary;
   acquisitionSourceBreakdown: AdminOnboardingBreakdownItem[];
   subjectAreaBreakdown: AdminOnboardingBreakdownItem[];
+  /** Cycles: v1 answers plus v2 school years mapped to their cycle. */
   teachingLevelBreakdown: AdminOnboardingBreakdownItem[];
+  /** v2 only, keyed like "5º ano", in school-year order. */
+  schoolYearBreakdown?: AdminOnboardingBreakdownItem[];
   goalsBreakdown: AdminOnboardingBreakdownItem[];
   prepHoursBreakdown?: AdminOnboardingBreakdownItem[];
   currentToolsBreakdown?: AdminOnboardingBreakdownItem[];
@@ -62,6 +65,8 @@ export interface AdminSchool {
   teacherCount: number;
   variants: { name: string; count: number }[];
   teachers: AdminSchoolTeacher[];
+  /** The bucket of answers that name no school ("escola", "sem escola"). */
+  vague?: boolean;
 }
 
 export interface AdminSchoolsOverview {
