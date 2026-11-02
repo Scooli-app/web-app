@@ -34,8 +34,11 @@ import {
   getGoalLabel,
   getLevelLabel,
   getSubjectLabel,
+  getYearCycle,
+  mergeByLabel,
   parseCommaSeparated,
 } from "@/components/admin/onboarding/labels";
+import { OnboardingTimeline } from "@/components/admin/onboarding/OnboardingTimeline";
 import {
   BaselineCell,
   ProfileCell,
@@ -78,7 +81,7 @@ function EmptyChartState({ message }: { message: string }) {
   );
 }
 
-type FilterKind = "source" | "subject" | "level" | "goal" | "school";
+type FilterKind = "source" | "subject" | "level" | "year" | "goal" | "school";
 
 interface ActiveFilter {
   kind: FilterKind;
@@ -91,7 +94,8 @@ interface ActiveFilter {
 const FILTER_KIND_LABELS: Record<FilterKind, string> = {
   source: "Fonte",
   subject: "Disciplina",
-  level: "Nível",
+  level: "Ciclo",
+  year: "Ano",
   goal: "Objetivo",
   school: "Escola",
 };
@@ -101,8 +105,15 @@ function matchesFilter(response: AdminOnboardingResponse, filter: ActiveFilter) 
     case "source":
       return response.acquisitionSource === filter.key;
     case "subject":
-      return parseCommaSeparated(response.subjectArea).includes(filter.key);
+      // Subject filters are keyed by display label, which merges v1 and v2 keys.
+      return parseCommaSeparated(response.subjectArea).some(
+        (s) => getSubjectLabel(s) === filter.key,
+      );
     case "level":
+      return parseCommaSeparated(response.teachingLevel).some(
+        (l) => l === filter.key || getYearCycle(l) === filter.key,
+      );
+    case "year":
       return parseCommaSeparated(response.teachingLevel).includes(filter.key);
     case "goal":
       return parseCommaSeparated(response.goals).includes(filter.key);
@@ -233,17 +244,24 @@ export default function AdminOnboardingPage() {
       label: getAcquisitionLabel(item.key),
     })) ?? [];
 
-  const subjectData =
-    overview?.subjectAreaBreakdown.map((item) => ({
-      ...item,
-      label: getSubjectLabel(item.key),
-    })) ?? [];
+  const subjectData = mergeByLabel(overview?.subjectAreaBreakdown ?? [], getSubjectLabel);
 
   const levelData =
     overview?.teachingLevelBreakdown.map((item) => ({
       ...item,
       label: getLevelLabel(item.key),
     })) ?? [];
+
+  const yearData =
+    overview?.schoolYearBreakdown
+      ?.map((item) => ({ ...item, label: item.key }))
+      .sort((a, b) => Number.parseInt(a.key, 10) - Number.parseInt(b.key, 10)) ?? [];
+
+  // v2 subjects and years count teachers, not response rows, so share is over everyone tracked.
+  const teacherTotal = Math.max(
+    overview?.summary.trackedUsers ?? 0,
+    overview?.summary.responses ?? 0,
+  );
 
   const goalsData =
     overview?.goalsBreakdown?.map((item) => ({
@@ -634,6 +652,8 @@ export default function AdminOnboardingPage() {
               </Card>
             </div>
 
+            <OnboardingTimeline responses={allResponses ?? []} />
+
             <SchoolsCard
               data={schools}
               activeSchool={filter?.kind === "school" ? filter.key : null}
@@ -672,11 +692,11 @@ export default function AdminOnboardingPage() {
                   ) : (
                     <RankedBars
                       items={subjectData}
-                      total={overview.summary.responses}
+                      total={teacherTotal}
                       color="var(--chart-2)"
                       sortDesc
                       activeKey={filter?.kind === "subject" ? filter.key : null}
-                      onItemClick={(key) => toggleFilter("subject", key, getSubjectLabel(key))}
+                      onItemClick={(key) => toggleFilter("subject", key, key)}
                     />
                   )}
                 </CardContent>
@@ -684,7 +704,7 @@ export default function AdminOnboardingPage() {
 
               <Card>
                 <CardHeader>
-                  <CardTitle>Nível de Ensino</CardTitle>
+                  <CardTitle>Ciclo de Ensino</CardTitle>
                 </CardHeader>
                 <CardContent>
                   {levelData.length === 0 ? (
@@ -692,7 +712,7 @@ export default function AdminOnboardingPage() {
                   ) : (
                     <RankedBars
                       items={levelData}
-                      total={overview.summary.responses}
+                      total={teacherTotal}
                       color="var(--chart-3)"
                       sortDesc
                       activeKey={filter?.kind === "level" ? filter.key : null}
@@ -703,25 +723,46 @@ export default function AdminOnboardingPage() {
               </Card>
             </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>O que Procuram na Scooli</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {goalsData.length === 0 ? (
-                  <EmptyChartState message="Nenhum objetivo registado ainda." />
-                ) : (
-                  <RankedBars
-                    items={goalsData}
-                    total={overview.summary.responses}
-                    color="var(--chart-4)"
-                    sortDesc
-                    activeKey={filter?.kind === "goal" ? filter.key : null}
-                    onItemClick={(key) => toggleFilter("goal", key, getGoalLabel(key))}
-                  />
-                )}
-              </CardContent>
-            </Card>
+            <div className="grid gap-6 xl:grid-cols-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Ano de Escolaridade</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {yearData.length === 0 ? (
+                    <EmptyChartState message="Nenhum ano registado ainda (só no onboarding v2)." />
+                  ) : (
+                    <RankedBars
+                      items={yearData}
+                      total={teacherTotal}
+                      color="var(--chart-3)"
+                      activeKey={filter?.kind === "year" ? filter.key : null}
+                      onItemClick={(key) => toggleFilter("year", key, key)}
+                    />
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>O que Procuram na Scooli</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {goalsData.length === 0 ? (
+                    <EmptyChartState message="Nenhum objetivo registado ainda." />
+                  ) : (
+                    <RankedBars
+                      items={goalsData}
+                      total={overview.summary.responses}
+                      color="var(--chart-4)"
+                      sortDesc
+                      activeKey={filter?.kind === "goal" ? filter.key : null}
+                      onItemClick={(key) => toggleFilter("goal", key, getGoalLabel(key))}
+                    />
+                  )}
+                </CardContent>
+              </Card>
+            </div>
 
             <div className="grid gap-6 xl:grid-cols-3">
               {baselineCards.map((card) => (

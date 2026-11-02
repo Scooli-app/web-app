@@ -13,7 +13,7 @@ import { ChevronDown, ChevronRight, Filter, School, Search } from "lucide-react"
 import { useMemo, useState } from "react";
 import { TEACHER_ROLE_LABELS } from "./labels";
 
-const INITIAL_VISIBLE = 12;
+const PAGE_SIZE = 15;
 
 function normalize(value: string) {
   return value
@@ -38,13 +38,13 @@ export function SchoolsCard({
 }: SchoolsCardProps) {
   const [query, setQuery] = useState("");
   const [multiOnly, setMultiOnly] = useState(false);
-  const [showAll, setShowAll] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [expanded, setExpanded] = useState<string | null>(null);
 
   const schools = useMemo(() => {
     const needle = normalize(query.trim());
     return (data?.schools ?? []).filter((school) => {
-      if (multiOnly && school.teacherCount < 2) return false;
+      if (multiOnly && (school.vague || school.teacherCount < 2)) return false;
       if (!needle) return true;
       return (
         normalize(school.name).includes(needle) ||
@@ -59,11 +59,11 @@ export function SchoolsCard({
   }, [data, query, multiOnly]);
 
   const multiTeacherSchools = (data?.schools ?? []).filter(
-    (s) => s.teacherCount >= 2,
+    (s) => !s.vague && s.teacherCount >= 2,
   ).length;
-  const filtering = Boolean(query) || multiOnly;
-  const visible =
-    showAll || filtering ? schools : schools.slice(0, INITIAL_VISIBLE);
+  const vagueCount = data?.schools.find((s) => s.vague)?.teacherCount ?? 0;
+  // Search runs over every school; paging only limits how many matches are drawn.
+  const visible = schools.slice(0, visibleCount);
 
   return (
     <Card>
@@ -75,7 +75,7 @@ export function SchoolsCard({
           </CardTitle>
           {data && (
             <p className="text-xs text-muted-foreground">
-              {`${data.schools.length} escolas · ${multiTeacherSchools} com 2+ professores · ${data.teachersWithoutSchool} sem escola`}
+              {`${data.schools.filter((s) => !s.vague).length} escolas · ${multiTeacherSchools} com 2+ professores · ${data.teachersWithoutSchool} sem escola · ${vagueCount} respostas vagas`}
             </p>
           )}
         </div>
@@ -84,7 +84,10 @@ export function SchoolsCard({
             <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                setVisibleCount(PAGE_SIZE);
+              }}
               placeholder="Procurar escola, professor ou email"
               className="pl-8"
             />
@@ -92,7 +95,10 @@ export function SchoolsCard({
           <Button
             variant={multiOnly ? "default" : "outline"}
             size="sm"
-            onClick={() => setMultiOnly((v) => !v)}
+            onClick={() => {
+              setMultiOnly((v) => !v);
+              setVisibleCount(PAGE_SIZE);
+            }}
           >
             2+ professores
           </Button>
@@ -126,16 +132,25 @@ export function SchoolsCard({
                       <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
                     )}
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-medium">
+                      <span
+                        className={cn(
+                          "block truncate text-sm font-medium",
+                          school.vague && "italic text-muted-foreground",
+                        )}
+                      >
                         {school.name}
                       </span>
-                      {school.variants.length > 1 && (
+                      {school.vague ? (
+                        <span className="block truncate text-xs text-muted-foreground">
+                          {`Respostas como "escola" ou "sem escola" · ${school.variants.length} formas diferentes`}
+                        </span>
+                      ) : school.variants.length > 1 && (
                         <span className="block truncate text-xs text-muted-foreground">
                           {`${school.variants.length} grafias agrupadas`}
                         </span>
                       )}
                     </span>
-                    {school.teacherCount >= 2 && (
+                    {!school.vague && school.teacherCount >= 2 && (
                       <Badge className="shrink-0 text-xs">Multi-professor</Badge>
                     )}
                     <span className="shrink-0 text-sm font-semibold tabular-nums">
@@ -148,7 +163,7 @@ export function SchoolsCard({
                       {school.variants.length > 1 && (
                         <div>
                           <p className="mb-1 text-xs font-medium text-muted-foreground">
-                            Como escreveram
+                            {school.vague ? "Respostas" : "Como escreveram"}
                           </p>
                           <div className="flex flex-wrap gap-1.5">
                             {school.variants.map((v) => (
@@ -183,6 +198,11 @@ export function SchoolsCard({
                                     {teacher.email}
                                   </span>
                                 )}
+                                {school.variants.length > 1 && (
+                                  <span className="text-xs italic text-muted-foreground">
+                                    {`"${teacher.schoolNameAsTyped}"`}
+                                  </span>
+                                )}
                                 {teacher.teacherRole && (
                                   <span className="text-xs text-muted-foreground">
                                     {TEACHER_ROLE_LABELS[teacher.teacherRole] ??
@@ -211,14 +231,14 @@ export function SchoolsCard({
             })}
           </ul>
         )}
-        {data && !showAll && !filtering && schools.length > INITIAL_VISIBLE && (
+        {data && schools.length > visibleCount && (
           <Button
             variant="ghost"
             size="sm"
             className="mt-3"
-            onClick={() => setShowAll(true)}
+            onClick={() => setVisibleCount((n) => n + PAGE_SIZE)}
           >
-            {`Ver todas (${schools.length})`}
+            {`Mostrar mais (${visibleCount} de ${schools.length})`}
           </Button>
         )}
       </CardContent>

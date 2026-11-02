@@ -1,5 +1,6 @@
 "use client";
 
+import { AdminBackButton } from "@/components/admin/AdminBackButton";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/badge";
@@ -130,10 +131,13 @@ export function PilotMetricsPage() {
           </div>
         }
         actions={
-          <Button variant="outline" size="sm" onClick={handleExport} disabled={!report || report.rows.length === 0}>
-            <Download className="mr-2 h-4 w-4" />
-            {t("exportCsv")}
-          </Button>
+          <>
+            <AdminBackButton />
+            <Button variant="outline" size="sm" onClick={handleExport} disabled={!report || report.rows.length === 0}>
+              <Download className="mr-2 h-4 w-4" />
+              {t("exportCsv")}
+            </Button>
+          </>
         }
       />
 

@@ -1,13 +1,24 @@
 "use client";
 
+import { ActivityPanel } from "@/components/admin/ActivityPanel";
 import StatusCard from "@/components/admin/StatusCard";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { useAdmin } from "@/hooks/useAdmin";
-import { Activity, DollarSign, LayoutDashboard, Library, MapPin, MessageSquare, Shield, ToggleLeft, Users } from "lucide-react";
+import { Activity, DollarSign, Library, MapPin, MessageSquare, Shield, ToggleLeft, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+
+const SECTIONS = [
+  { href: "/admin/users", label: "Utilizadores", icon: Users },
+  { href: "/admin/onboarding", label: "Onboarding", icon: MapPin },
+  { href: "/admin/feedback", label: "Opiniões", icon: MessageSquare },
+  { href: "/admin/pilot", label: "Piloto", icon: Activity },
+  { href: "/admin/costs", label: "Custos AI", icon: DollarSign },
+  { href: "/admin/features", label: "Funcionalidades", icon: ToggleLeft },
+  { href: "/admin/moderation", label: "Moderação", icon: Library },
+];
 
 export default function AdminPage() {
   const { isAdmin, isLoaded } = useAdmin();
@@ -35,7 +46,7 @@ export default function AdminPage() {
     <PageContainer size="xl" contentClassName="py-4 sm:py-8">
       <PageHeader
         title="Consola de Administração"
-        description="Gerir a plataforma Scooli e os utilizadores."
+        description="Atividade da plataforma e acesso às ferramentas de gestão."
         icon={
           <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 sm:h-12 sm:w-12">
             <Shield className="h-5 w-5 text-primary sm:h-6 sm:w-6" />
@@ -43,170 +54,19 @@ export default function AdminPage() {
         }
       />
 
-      <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
-        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
-          <div className="mb-4 flex items-center gap-2 text-muted-foreground">
-            <Users className="h-4 w-4" />
-            <span className="text-sm font-medium uppercase tracking-wider">Total de Utilizadores</span>
-          </div>
-          <p className="text-3xl font-bold">1,284</p>
-          <p className="mt-1 text-xs font-medium text-emerald-500">+12% esta semana</p>
-        </div>
+      <nav aria-label="Secções de administração" className="mb-6 flex flex-wrap gap-2">
+        {SECTIONS.map(({ href, label, icon: Icon }) => (
+          <Button key={href} variant="outline" size="sm" onClick={() => router.push(href)}>
+            <Icon className="mr-2 h-4 w-4" />
+            {label}
+          </Button>
+        ))}
+      </nav>
 
-        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
-          <div className="mb-4 flex items-center gap-2 text-muted-foreground">
-            <LayoutDashboard className="h-4 w-4" />
-            <span className="text-sm font-medium uppercase tracking-wider">Sessões Ativas</span>
-          </div>
-          <p className="text-3xl font-bold">86</p>
-          <p className="mt-1 text-xs text-muted-foreground">Monitorização em tempo real ativa</p>
-        </div>
-
-        <StatusCard />
-      </div>
-
-      <div className="mt-8 sm:mt-10">
-        <h2 className="mb-4 text-xl font-bold sm:mb-6 sm:text-2xl">Gestão</h2>
-        <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
-          <Card
-            className="group cursor-pointer border-border transition-colors hover:bg-muted/50"
-            onClick={() => router.push("/admin/users")}
-          >
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 transition-colors group-hover:text-primary">
-                <Users className="h-5 w-5" />
-                Utilizadores
-              </CardTitle>
-              <CardDescription>
-                Ver e gerir os utilizadores da plataforma.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-sm text-muted-foreground">
-                Consultar atividade, subscrições e dados de cada utilizador.
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card
-            className="group cursor-pointer border-border transition-colors hover:bg-muted/50"
-            onClick={() => router.push("/admin/feedback")}
-          >
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 transition-colors group-hover:text-primary">
-                <MessageSquare className="h-5 w-5" />
-                Opiniões
-              </CardTitle>
-              <CardDescription>
-                Gerir opiniões dos utilizadores, erros reportados e sugestões.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-sm text-muted-foreground">
-                Ver tickets submetidos, atualizar estados e responder aos utilizadores.
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card
-            className="group cursor-pointer border-border transition-colors hover:bg-muted/50"
-            onClick={() => router.push("/admin/moderation")}
-          >
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 transition-colors group-hover:text-primary">
-                <Library className="h-5 w-5" />
-                Moderação da Comunidade
-              </CardTitle>
-              <CardDescription>
-                Rever e aprovar recursos partilhados pela comunidade.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-sm text-muted-foreground">
-                Gerir recursos pedagógicos alinhados com o currículo antes da publicação.
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card
-            className="group cursor-pointer border-border transition-colors hover:bg-muted/50"
-            onClick={() => router.push("/admin/features")}
-          >
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 transition-colors group-hover:text-primary">
-                <ToggleLeft className="h-5 w-5" />
-                Controlo de Funcionalidades
-              </CardTitle>
-              <CardDescription>
-                Controlar a disponibilidade de funcionalidades por utilizador e plano.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-sm text-muted-foreground">
-                Ativar funcionalidades globalmente, por percentagem, ou por exceções de utilizador/perfil.
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card
-            className="group cursor-pointer border-border transition-colors hover:bg-muted/50"
-            onClick={() => router.push("/admin/costs")}
-          >
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 transition-colors group-hover:text-primary">
-                <DollarSign className="h-5 w-5" />
-                Custos AI
-              </CardTitle>
-              <CardDescription>
-                Gastos com OpenAI e OpenRouter por utilizador e ferramenta.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-sm text-muted-foreground">
-                Custo total, média por utilizador e breakdown detalhado por modelo, ferramenta e tipo de evento.
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card
-            className="group cursor-pointer border-border transition-colors hover:bg-muted/50"
-            onClick={() => router.push("/admin/pilot")}
-          >
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 transition-colors group-hover:text-primary">
-                <Activity className="h-5 w-5" />
-                Piloto
-              </CardTitle>
-              <CardDescription>
-                Respostas aos check-ins, propostas aceites e ciclo de reforço por professor.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-sm text-muted-foreground">
-                Taxa de resposta, professores ativos e métricas do piloto Class State por turma e semana.
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card
-            className="group cursor-pointer border-border transition-colors hover:bg-muted/50"
-            onClick={() => router.push("/admin/onboarding")}
-          >
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 transition-colors group-hover:text-primary">
-                <MapPin className="h-5 w-5" />
-                Onboarding
-              </CardTitle>
-              <CardDescription>
-                Respostas do onboarding de novos utilizadores.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-sm text-muted-foreground">
-                Fontes de aquisição, disciplinas e níveis de ensino dos professores que se registaram.
-              </div>
-            </CardContent>
-          </Card>
+      <div className="space-y-6">
+        <ActivityPanel />
+        <div className="max-w-md">
+          <StatusCard />
         </div>
       </div>
     </PageContainer>
