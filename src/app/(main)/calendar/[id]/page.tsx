@@ -1,5 +1,6 @@
 "use client";
 
+import { useAccountAccess } from "@/hooks/useAccountAccess";
 import ClassDetailLoading from "./loading";
 import { WeekSlotListSkeleton } from "@/components/calendar/ClassListSkeleton";
 import { formatClassName, sameClassWords } from "@/shared/utils/className";
@@ -172,6 +173,7 @@ export default function CalendarViewPage() {
   const { currentTimetable, slots, isSlotsLoading, isLoading, error } =
     useSelector((state: RootState) => state.timetable);
   const dispatch = useAppDispatch();
+  const { guard } = useAccountAccess();
   const { getToken } = useAuth();
 
   const searchParams = useSearchParams();
@@ -357,6 +359,7 @@ export default function CalendarViewPage() {
 
   const handleGenerateLesson = useCallback(
     async (slotOrWrapped: SlotWithTimetable | LessonSlot, message?: string) => {
+      if (!guard("generate")) return;
       const slot = slotOrWrapped as LessonSlot;
       const previousStatus = slot.status;
       setSelectedSlot(null);
@@ -402,11 +405,12 @@ export default function CalendarViewPage() {
         streamRef.current = "";
       }
     },
-    [id, dispatch, getToken, trackLessonMaterial]
+    [id, dispatch, getToken, trackLessonMaterial, guard]
   );
 
   const handleRegenerateLesson = useCallback(
     async (slotOrWrapped: SlotWithTimetable | LessonSlot, message?: string) => {
+      if (!guard("generate")) return;
       const slot = slotOrWrapped as LessonSlot;
       const previousStatus = slot.status;
       setSelectedSlot(null);
@@ -452,7 +456,7 @@ export default function CalendarViewPage() {
         streamRef.current = "";
       }
     },
-    [id, dispatch, getToken, trackLessonMaterial]
+    [id, dispatch, getToken, trackLessonMaterial, guard]
   );
 
   const handleGenerateWeek = useCallback(async () => {

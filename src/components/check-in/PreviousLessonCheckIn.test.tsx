@@ -19,6 +19,8 @@ vi.mock("@/store/entitlements/selectors", () => ({
   selectHasEffectivePro: () => false,
 }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
+// Not about the read-only lock (ENG-321): an account that may do everything.
+vi.mock("@/hooks/useAccountAccess", () => ({ useAccountAccess: () => ({ isLocked: false, guard: () => true }) }));
 vi.mock("@/services/api/check-in.service", () => ({
   checkInService: { submit: vi.fn(), shiftFollowing: vi.fn() },
 }));

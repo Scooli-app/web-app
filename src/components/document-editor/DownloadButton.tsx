@@ -7,11 +7,12 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useAccountAccess } from "@/hooks/useAccountAccess";
 import { UpgradeLimitError } from "@/services/api/client";
 import { downloadDocument, type DownloadFormat } from "@/services/download/documentDownload";
 import { Routes } from "@/shared/types";
 import type { DocumentImage } from "@/shared/types/document";
-import { Crown, Download, FileText, Loader2 } from "lucide-react";
+import { Crown, Download, FileText, Loader2, Lock } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { memo, useCallback, useRef, useState } from "react";
@@ -36,7 +37,9 @@ function DownloadButtonComponent({
   disabledReason,
 }: DownloadButtonProps) {
   const t = useTranslations("editor.downloadButton");
+  const tLock = useTranslations("billing.lock");
   const router = useRouter();
+  const { isLocked, guard } = useAccountAccess();
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadFormat, setDownloadFormat] = useState<DownloadFormat | null>(null);
   // React state updates are batched/async, so a user clicking (or hitting Enter on a
@@ -52,6 +55,9 @@ function DownloadButtonComponent({
         return;
       }
       if (format === "docx" && !isProUser) {
+        return;
+      }
+      if (!guard("export")) {
         return;
       }
       if (inFlightRef.current) {
@@ -76,7 +82,7 @@ function DownloadButtonComponent({
         setDownloadFormat(null);
       }
     },
-    [title, content, images, isProUser]
+    [title, content, images, isProUser, guard]
   );
 
   const handlePdfDownload = useCallback(() => handleDownload("pdf"), [handleDownload]);
@@ -90,6 +96,23 @@ function DownloadButtonComponent({
 
   const isDisabled = disabled || isDownloading || !title || !content;
   const isDocxDisabled = isDownloading;
+
+  // Read-only account (ENG-321): the export button stays, with a lock, and opens the paywall.
+  if (isLocked) {
+    return (
+      <Button
+        variant="default"
+        size="sm"
+        onClick={() => guard("export")}
+        aria-label={`${t("export")} (${tLock("lockedHint")})`}
+        title={tLock("lockedHint")}
+        className="flex items-center gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
+      >
+        <Lock className="h-4 w-4" aria-hidden />
+        <span className="hidden sm:inline">{t("export")}</span>
+      </Button>
+    );
+  }
 
   return (
     <span title={isDisabled ? disabledReason : undefined} className="inline-flex">
