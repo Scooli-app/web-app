@@ -207,14 +207,21 @@
     "title": "Stop getting the weekly email?",
     "hint": "You can turn it back on any time in settings.",
     "confirm": "Yes, unsubscribe",
-    "confirming": "Unsubscribing…"
+    "confirming": "Unsubscribing…",
+    "proTrial": {
+      "title": "Stop getting the emails about your Pro month?",
+      "hint": "You'll stop getting the reminders and offers about your free Pro month."
+    }
   },
   "emailUnsubscribed": {
     "done": "You won't get the weekly email anymore.",
     "hint": "If you change your mind, you can turn it back on in settings.",
     "turnOn": "Turn it on in settings",
     "invalid": "This link is no longer valid.",
-    "openApp": "Open Scooli"
+    "openApp": "Open Scooli",
+    "proTrial": {
+      "done": "You won't get the emails about your Pro month anymore."
+    }
   },
   "nav": {
     "groups": {
