@@ -28,6 +28,17 @@ export class AccountLockedError extends UpgradeLimitError {
 }
 
 /**
+ * True for an upgrade limit or a read-only lock, also once a Redux thunk has serialised the
+ * error to `{name, message}` (thunks rethrow these instead of turning them into a message).
+ * The paywall is already open: callers show no error of their own.
+ */
+export function isUpgradeLimitFailure(error: unknown): boolean {
+  if (error instanceof UpgradeLimitError) return true;
+  const name = error && typeof error === "object" ? (error as { name?: unknown }).name : null;
+  return name === "UpgradeLimitError" || name === "AccountLockedError";
+}
+
+/**
  * A failed API call. The message is the same as before (backend message or a
  * translated fallback); `status` and the backend's `code` (its `code` field,
  * else its `error` field) are kept so callers can pick a specific message. `status` is 0 when no

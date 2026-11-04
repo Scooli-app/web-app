@@ -6,7 +6,13 @@ vi.mock("@/lib/reportUiProblem", () => ({ reportUiProblem: vi.fn() }));
 vi.mock("@/i18n/translate", () => ({ translate: (key: string) => key }));
 
 import { onPlanLimitsStale } from "@/hooks/planLimitsEvents";
-import apiClient, { AccountLockedError, ApiRequestError, UpgradeLimitError, injectStore } from "./client";
+import apiClient, {
+  AccountLockedError,
+  ApiRequestError,
+  UpgradeLimitError,
+  injectStore,
+  isUpgradeLimitFailure,
+} from "./client";
 
 function respondWith(status: number, data: unknown) {
   apiClient.defaults.adapter = async (config: InternalAxiosRequestConfig) => {
@@ -105,5 +111,17 @@ describe("API client: 403 account_locked (ENG-321)", () => {
     const error = await apiClient.post("/x").catch((e: unknown) => e);
 
     expect(error).toMatchObject({ status: 409, code: "ja_existe", message: "Já existe" });
+  });
+});
+
+describe("isUpgradeLimitFailure", () => {
+  it("recognises the lock and plan limits, also once a Redux thunk serialised them", () => {
+    expect(isUpgradeLimitFailure(new AccountLockedError("x", "trial_expired", "generate"))).toBe(true);
+    expect(isUpgradeLimitFailure(new UpgradeLimitError("x"))).toBe(true);
+    expect(isUpgradeLimitFailure({ name: "AccountLockedError", message: "x" })).toBe(true);
+    expect(isUpgradeLimitFailure({ name: "UpgradeLimitError", message: "x" })).toBe(true);
+    expect(isUpgradeLimitFailure(new ApiRequestError("x", 500, null))).toBe(false);
+    expect(isUpgradeLimitFailure("Failed")).toBe(false);
+    expect(isUpgradeLimitFailure(undefined)).toBe(false);
   });
 });
