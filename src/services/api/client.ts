@@ -11,9 +11,26 @@ export class UpgradeLimitError extends Error {
 }
 
 /**
+ * The account is read-only (Pro trial ended or never activated, ENG-314) and the server refused
+ * a locked action. The paywall is already open; callers treat it like any other upgrade limit
+ * (no error toast).
+ */
+export class AccountLockedError extends UpgradeLimitError {
+  readonly reason: LockReason | null;
+  readonly action: LockedAction | null;
+
+  constructor(message: string, reason: LockReason | null, action: LockedAction | null) {
+    super(message);
+    this.name = "AccountLockedError";
+    this.reason = reason;
+    this.action = action;
+  }
+}
+
+/**
  * A failed API call. The message is the same as before (backend message or a
- * translated fallback); `status` and the backend's `code` (its `error` field)
- * are kept so callers can pick a specific message. `status` is 0 when no
+ * translated fallback); `status` and the backend's `code` (its `code` field,
+ * else its `error` field) are kept so callers can pick a specific message. `status` is 0 when no
  * response arrived (offline, timeout, CORS).
  */
 export class ApiRequestError extends Error {
@@ -29,7 +46,15 @@ export class ApiRequestError extends Error {
 }
 
 import { openUpgradeModalForReason, setUpgradeModalOpen } from "@/store/ui/uiSlice";
-import type { UpgradeReason } from "@/shared/types/plan-limits";
+import {
+  isAccountLockedPayload,
+  isLockReason,
+  lockUpgradeReason,
+  type LockReason,
+  type LockedAction,
+  type UpgradeReason,
+} from "@/shared/types/plan-limits";
+import { markPlanLimitsStale } from "@/hooks/planLimitsEvents";
 import { translate } from "@/i18n/translate";
 import { reportUiProblem } from "@/lib/reportUiProblem";
 import type { UnknownAction } from "@reduxjs/toolkit";
@@ -49,6 +74,30 @@ let storeDispatch: ((action: UnknownAction) => void) | null = null;
 export const injectStore = (dispatch: (action: UnknownAction) => void) => {
   storeDispatch = dispatch;
 };
+
+const LOCKED_ACTIONS: readonly LockedAction[] = ["generate", "create", "export", "duplicate", "share"];
+
+/**
+ * A blocked action while the account is read-only (403 `{code: "account_locked", reason, action}`,
+ * or the same code on a stream): opens the paywall for that reason, re-reads the plan limits so
+ * the rest of the UI shows the lock, and returns the error to reject with. Never an error toast.
+ */
+export function handleAccountLocked(payload: unknown): AccountLockedError {
+  const body = (payload && typeof payload === "object" ? payload : {}) as {
+    reason?: unknown;
+    action?: unknown;
+    error?: unknown;
+  };
+  const reason = isLockReason(body.reason) ? body.reason : null;
+  const action = LOCKED_ACTIONS.includes(body.action as LockedAction) ? (body.action as LockedAction) : null;
+  if (storeDispatch) {
+    storeDispatch(openUpgradeModalForReason(lockUpgradeReason(reason)));
+  }
+  markPlanLimitsStale();
+  const message =
+    typeof body.error === "string" && body.error ? body.error : translate("billing.lock.blockedMessage");
+  return new AccountLockedError(message, reason, action);
+}
 
 type GetTokenFn = () => Promise<string | null>;
 
@@ -189,6 +238,9 @@ apiClient.interceptors.response.use(
     // a second class, or a lesson outside the 4-week window). Open the upgrade
     // modal with the matching reason, then reject like the 402 case.
     if (error.response?.status === 403) {
+      if (isAccountLockedPayload(error.response.data)) {
+        return Promise.reject(handleAccountLocked(error.response.data));
+      }
       const code = (error.response.data as { error?: unknown } | undefined)?.error;
       if (isUpgradeReason(code)) {
         if (storeDispatch) {
@@ -234,10 +286,12 @@ apiClient.interceptors.response.use(
         message = translate("errors.api.httpError", { status: error.response.status });
       }
 
-      const code =
+      // Newer endpoints (Pro trial) send `{code, error: message}`; older ones put the code in `error`.
+      const body =
         error.response.data && typeof error.response.data === "object"
-          ? (error.response.data as { error?: unknown }).error
+          ? (error.response.data as { code?: unknown; error?: unknown })
           : null;
+      const code = typeof body?.code === "string" ? body.code : body?.error;
       return Promise.reject(
         new ApiRequestError(message, error.response.status, typeof code === "string" ? code : null)
       );

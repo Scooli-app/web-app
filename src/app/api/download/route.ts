@@ -994,6 +994,39 @@ async function resolveIsProUser(): Promise<boolean> {
   }
 }
 
+/**
+ * The read-only lock (ENG-314): a LOCKED account cannot export. This route builds the files itself,
+ * so it checks the backend's plan limits like the backend's own export endpoint does. Fails open
+ * (no lock) when the limits cannot be read, and an older backend without `status` never locks.
+ */
+async function resolveAccountLock(): Promise<{ reason: string | null } | null> {
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_API_URL;
+  if (!baseUrl) {
+    return null;
+  }
+  try {
+    const token = await resolveBackendAuthToken(await auth());
+    if (!token) {
+      return null;
+    }
+    const response = await fetch(`${normalizeBackendBaseUrl(baseUrl)}/users/me/plan-limits`, {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    });
+    if (!response.ok) {
+      return null;
+    }
+    const limits = (await response.json()) as { status?: unknown; lockReason?: unknown } | null;
+    if (limits?.status !== "LOCKED") {
+      return null;
+    }
+    return { reason: typeof limits.lockReason === "string" ? limits.lockReason : null };
+  } catch (error) {
+    console.warn("Failed to resolve the account lock for download:", error);
+    return null;
+  }
+}
+
 function normalizeContentType(contentType?: string | null): string | null {
   if (!contentType) {
     return null;
@@ -2654,7 +2687,15 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     const distinctId = await resolveDownloadDistinctId(request);
     const sessionId = request.headers.get("x-posthog-session-id");
-    const isProUser = await resolveIsProUser();
+    const [isProUser, lock] = await Promise.all([resolveIsProUser(), resolveAccountLock()]);
+
+    if (lock) {
+      const t = await getTranslations("billing.lock");
+      return NextResponse.json(
+        { code: "account_locked", reason: lock.reason, action: "export", error: t("blockedMessage") },
+        { status: 403 },
+      );
+    }
 
     if (format === "pdf") {
       const pdfBuffer = await generatePdfWithPuppeteer(

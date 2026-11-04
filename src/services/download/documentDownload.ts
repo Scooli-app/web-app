@@ -4,6 +4,7 @@
  */
 
 import posthog from "posthog-js";
+import { handleAccountLocked } from "@/services/api/client";
 import type { DocumentImage } from "@/shared/types/document";
 
 export type DownloadFormat = "pdf" | "docx";
@@ -50,6 +51,10 @@ export async function downloadDocument(
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
+    // Read-only account (ENG-314): /api/download refuses exports; open the paywall, no error toast.
+    if (response.status === 403 && error?.code === "account_locked") {
+      throw handleAccountLocked(error);
+    }
     throw new Error(error.error || "Falha ao gerar documento");
   }
 
