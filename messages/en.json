@@ -294,6 +294,34 @@
         "title": "Members",
         "description": "See your school's members and seats"
       },
+      "schoolDirection": {
+        "title": "School overview",
+        "description": "How each class is doing"
+      },
+      "schoolLearning": {
+        "title": "Learning",
+        "description": "Learning outcomes classes find hard"
+      },
+      "schoolAssessments": {
+        "title": "Assessments",
+        "description": "Assessments scheduled, week by week"
+      },
+      "schoolSubstitutions": {
+        "title": "Cover",
+        "description": "Prepare cover for a lesson"
+      },
+      "schoolReports": {
+        "title": "Reports",
+        "description": "Class status reports"
+      },
+      "schoolUsage": {
+        "title": "Usage",
+        "description": "How your school uses Scooli"
+      },
+      "schoolSettings": {
+        "title": "Settings",
+        "description": "Your school's settings"
+      },
       "classes": {
         "title": "Classes",
         "description": "Your classes and timetables"
@@ -2694,12 +2722,150 @@
       "loadError": "We couldn't load the school settings",
       "currentRole": "Current role:",
       "contractStatus": "Contract status:"
+    }
+  },
+  "schoolDirection": {
+    "states": {
+      "on_track": "On track",
+      "watch": "Watch",
+      "behind": "Behind",
+      "no_records": "No records",
+      "not_started": "No lessons yet",
+      "lessonsBehind": "{count, plural, one {# lesson behind} other {# lessons behind}}"
     },
-    "usage": {
-      "title": "School usage",
-      "description": "Initial view of the organization's aggregated usage.",
-      "loadError": "We couldn't load the school usage",
-      "generationsThisMonth": "Generations this month"
+    "departments": {
+      "languages": "Languages",
+      "maths_science": "Maths and Science",
+      "humanities": "Humanities and Social Sciences",
+      "arts_pe": "Arts and PE",
+      "primary": "Primary",
+      "other": "Other"
+    },
+    "area": {
+      "label": "Leadership view",
+      "overviewTab": "Overview",
+      "manage": "Manage"
+    },
+    "homeCard": {
+      "fallbackName": "Your school",
+      "figures": "{percent}% of plan delivered · {behind, plural, =0 {no classes behind} one {# class behind} other {# classes behind}}",
+      "hint": "See where every class stands in its curriculum.",
+      "open": "Open school overview"
+    },
+    "dashboard": {
+      "title": "Curriculum progress",
+      "subtitle": "{year} school year · updated just now",
+      "subtitleNoYear": "Updated just now",
+      "emptyTitle": "No classes yet",
+      "empty": "This fills in as your teachers plan their classes in Scooli."
+    },
+    "kpis": {
+      "execution": "Curriculum delivered",
+      "executionHint": "of what was planned to date",
+      "onTrack": "On track",
+      "watch": "Watch",
+      "behind": "Behind",
+      "noRecords": "No records",
+      "classes": "{count, plural, one {class} other {classes}}"
+    },
+    "grid": {
+      "title": "Where every class stands",
+      "subtitle": "% of the curriculum planned to date",
+      "allYears": "All years",
+      "year": "Year {grade}",
+      "department": "Department",
+      "allDepartments": "All departments",
+      "noMatch": "No classes match these filters.",
+      "classColumn": "Class"
+    },
+    "drawer": {
+      "fallbackTitle": "Class details",
+      "execution": "Progress: {percent}% of the plan to date",
+      "executionUnknown": "Progress: —",
+      "why": "Why",
+      "missedTitle": "Missed or unfinished lessons",
+      "lessonNumber": "Lesson {n}",
+      "notHeld": "Not held",
+      "leftHalfway": "Left halfway",
+      "behindTitle": "Topics behind",
+      "plannedFor": "planned for {date}",
+      "difficultiesTitle": "Where the class struggled",
+      "flagged": "{count, plural, one {flagged once} other {flagged # times}}",
+      "planTitle": "Plan adjustment",
+      "planAdjusted": "Adjusted on {date}",
+      "planPending": "Proposal awaiting review since {date}",
+      "nextTest": "Next test"
+    },
+    "learning": {
+      "title": "Where the school needs reinforcement",
+      "subtitle": "What most classes flagged as hard in the last 4 weeks",
+      "allSubjects": "All subjects",
+      "summary": "{subject} · Year {grade} · {flagged} of {total, plural, one {# class} other {# classes}} flagged it",
+      "reinforcement": "Reinforcement sheet created",
+      "empty": "No class flagged anything as hard in the last 4 weeks."
+    },
+    "assessments": {
+      "title": "Assessment calendar",
+      "subtitle": "Week of {range}",
+      "subtitleYear": "Week of {range} · Year {grade}",
+      "previous": "Previous week",
+      "next": "Next week",
+      "test": "Test · {subject}",
+      "clash": "{class} has {n} tests in the same week",
+      "teachers": "Teachers",
+      "empty": "No tests this week."
+    },
+    "substitutions": {
+      "title": "Cover",
+      "subtitle": "Who is away, who is covering and where each class left off",
+      "absencesTitle": "Reported absences",
+      "register": "Report an absence",
+      "emptyAbsences": "No absences reported yet.",
+      "covered": "Covered",
+      "absenceSummary": "{day} · {count, plural, =0 {no lessons} one {# lesson} other {# lessons}}",
+      "dialog": {
+        "title": "Report an absence",
+        "description": "Who is away, on which day and who covers the lessons.",
+        "teacher": "Absent teacher",
+        "date": "Date",
+        "substitute": "Substitute",
+        "choose": "Choose a teacher",
+        "cancel": "Cancel",
+        "confirm": "Report an absence",
+        "error": "We couldn’t load the lessons for that day. Try again."
+      },
+      "ready": "Ready for the substitute",
+      "sent": "Sent",
+      "lessonHeading": "{class} · {subject} · Lesson {n}",
+      "substitute": "Substitute: {name}",
+      "leftOff": "Where the class left off",
+      "leftOffNone": "No lessons have been recorded for this class yet.",
+      "status": {
+        "taught": "Taught",
+        "partially_taught": "Left halfway",
+        "not_held": "Not held"
+      },
+      "topic": "Lesson topic",
+      "documents": "Lesson documents",
+      "noDocuments": "No documents attached to this lesson.",
+      "send": "Send to {name}",
+      "sentToast": "Sent to {name}",
+      "noLessons": "{name} has no lessons on this day."
+    },
+    "reports": {
+      "title": "Reports",
+      "subtitle": "Curriculum progress report · {label}",
+      "subtitleNoYear": "Curriculum progress report",
+      "export": "Export PDF",
+      "sheetTitle": "Curriculum progress report",
+      "sheetYear": "School year {label}",
+      "generated": "Generated on {date}",
+      "audience": "",
+      "byDepartment": "1. Progress by department",
+      "byDepartmentEmpty": "There are no lesson records yet to work out progress.",
+      "followUp": "2. Classes to follow up",
+      "followUpEmpty": "No classes to follow up: every class with records is on track.",
+      "reinforce": "3. Learning to reinforce"
     }
   },
   "checkout": {
