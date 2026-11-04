@@ -1,4 +1,5 @@
 ﻿import { BACKEND_TOKEN_COOKIE, cookieTokenForUser } from "@/lib/backendTokenCookie";
+import { downloadAccessDenial, resolveDownloadAccess, type DownloadAccess } from "@/lib/downloadAccess";
 import { getPostHogClient } from "@/lib/posthog-server";
 import { markdownToHtml, rejoinSplitOptionReferences } from "@/shared/utils/markdown";
 import { normalizeMathMarkdown } from "@/shared/utils/math-markdown";
@@ -48,10 +49,6 @@ interface DownloadRequestBody {
   content: string;
   format: DownloadFormat;
   images?: DownloadImagePayload[];
-}
-
-interface CurrentEntitlementResponse {
-  isPro?: boolean;
 }
 
 type TextBlockType =
@@ -952,79 +949,31 @@ async function resolveBackendAuthToken(
   }
 }
 
-async function resolveIsProUser(): Promise<boolean> {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_API_URL;
-  if (!baseUrl) {
-    return false;
-  }
-
-  const normalizedBaseUrl = normalizeBackendBaseUrl(baseUrl);
-
-  try {
-    const authContext = await auth();
-    const isActiveOrganizationMember = Boolean(authContext.orgId);
-    const token = await resolveBackendAuthToken(authContext);
-    if (!token) {
-      return isActiveOrganizationMember;
-    }
-
-    const response = await fetch(`${normalizedBaseUrl}/entitlements/current`, {
-      headers: { Authorization: `Bearer ${token}` },
-      cache: "no-store",
-    });
-    if (!response.ok) {
-      console.warn(
-        `Entitlements lookup failed in download route with status ${response.status}; falling back to Clerk org context.`,
-      );
-      return isActiveOrganizationMember;
-    }
-
-    const entitlement =
-      (await response.json()) as CurrentEntitlementResponse | null;
-
-    return entitlement?.isPro === true || isActiveOrganizationMember;
-  } catch (error) {
-    console.warn("Failed to resolve entitlements for download:", error);
-    try {
-      const authContext = await auth();
-      return Boolean(authContext.orgId);
-    } catch {
-      return false;
-    }
-  }
-}
-
 /**
- * The read-only lock (ENG-314): a LOCKED account cannot export. This route builds the files itself,
- * so it checks the backend's plan limits like the backend's own export endpoint does. Fails open
- * (no lock) when the limits cannot be read, and an older backend without `status` never locks.
+ * Pro (for DOCX) and the read-only lock (ENG-321) from one plan-limits read; see downloadAccess.
+ * Fails closed when the Clerk session cannot be read.
  */
-async function resolveAccountLock(): Promise<{ reason: string | null } | null> {
+async function resolveAccess(): Promise<DownloadAccess> {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_API_URL;
   if (!baseUrl) {
-    return null;
+    return { kind: "allowed", isPro: false };
   }
+  let authContext: Awaited<ReturnType<typeof auth>>;
   try {
-    const token = await resolveBackendAuthToken(await auth());
-    if (!token) {
-      return null;
-    }
-    const response = await fetch(`${normalizeBackendBaseUrl(baseUrl)}/users/me/plan-limits`, {
-      headers: { Authorization: `Bearer ${token}` },
-      cache: "no-store",
-    });
-    if (!response.ok) {
-      return null;
-    }
-    const limits = (await response.json()) as { status?: unknown; lockReason?: unknown } | null;
-    if (limits?.status !== "LOCKED") {
-      return null;
-    }
-    return { reason: typeof limits.lockReason === "string" ? limits.lockReason : null };
+    authContext = await auth();
   } catch (error) {
-    console.warn("Failed to resolve the account lock for download:", error);
-    return null;
+    console.warn("Failed to read the session for download:", error);
+    return { kind: "unavailable" };
   }
+  const access = await resolveDownloadAccess({
+    baseUrl: normalizeBackendBaseUrl(baseUrl),
+    token: await resolveBackendAuthToken(authContext),
+    isOrganizationMember: Boolean(authContext.orgId),
+  });
+  if (access.kind === "unavailable") {
+    console.warn("Could not read the account's plan limits in the download route; refusing the export.");
+  }
+  return access;
 }
 
 function normalizeContentType(contentType?: string | null): string | null {
@@ -2687,15 +2636,16 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     const distinctId = await resolveDownloadDistinctId(request);
     const sessionId = request.headers.get("x-posthog-session-id");
-    const [isProUser, lock] = await Promise.all([resolveIsProUser(), resolveAccountLock()]);
-
-    if (lock) {
-      const t = await getTranslations("billing.lock");
-      return NextResponse.json(
-        { code: "account_locked", reason: lock.reason, action: "export", error: t("blockedMessage") },
-        { status: 403 },
-      );
+    const access = await resolveAccess();
+    const tLock = await getTranslations("billing.lock");
+    const denial = downloadAccessDenial(access, {
+      locked: tLock("blockedMessage"),
+      unavailable: tLock("statusUnavailable"),
+    });
+    if (denial) {
+      return NextResponse.json(denial.body, { status: denial.status });
     }
+    const isProUser = access.kind === "allowed" && access.isPro;
 
     if (format === "pdf") {
       const pdfBuffer = await generatePdfWithPuppeteer(

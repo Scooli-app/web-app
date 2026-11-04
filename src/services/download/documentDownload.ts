@@ -4,7 +4,7 @@
  */
 
 import posthog from "posthog-js";
-import { handleAccountLocked } from "@/services/api/client";
+import { ApiRequestError, handleAccountLocked } from "@/services/api/client";
 import type { DocumentImage } from "@/shared/types/document";
 
 export type DownloadFormat = "pdf" | "docx";
@@ -54,6 +54,10 @@ export async function downloadDocument(
     // Read-only account (ENG-314): /api/download refuses exports; open the paywall, no error toast.
     if (response.status === 403 && error?.code === "account_locked") {
       throw handleAccountLocked(error);
+    }
+    // The account could not be checked (the route fails closed): a retryable error, not the paywall.
+    if (response.status === 503 && error?.code === "account_status_unavailable") {
+      throw new ApiRequestError(error.error || "Falha ao gerar documento", 503, "account_status_unavailable");
     }
     throw new Error(error.error || "Falha ao gerar documento");
   }

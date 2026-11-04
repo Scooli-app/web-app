@@ -2463,7 +2463,9 @@
       "blockedMessage": "Your account is read-only. Upgrade to Pro to continue.",
       "lockedHint": "Available on Pro",
       "printMessage": "Upgrade to Pro to print",
-      "chatPlaceholder": "Your account is read-only"
+      "chatPlaceholder": "Your account is read-only",
+      "statusUnavailable": "We couldn't check your account. Please try again.",
+      "retry": "Try again"
     },
     "trialStatusCard": {
       "title": "Your Pro month",

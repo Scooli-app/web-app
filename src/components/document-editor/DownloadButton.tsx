@@ -8,7 +8,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAccountAccess } from "@/hooks/useAccountAccess";
-import { UpgradeLimitError } from "@/services/api/client";
+import { ApiRequestError, UpgradeLimitError } from "@/services/api/client";
 import { downloadDocument, type DownloadFormat } from "@/services/download/documentDownload";
 import { Routes } from "@/shared/types";
 import type { DocumentImage } from "@/shared/types/document";
@@ -16,6 +16,7 @@ import { Crown, Download, FileText, Loader2, Lock } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { memo, useCallback, useRef, useState } from "react";
+import { toast } from "sonner";
 import posthog from "posthog-js";
 
 interface DownloadButtonProps {
@@ -73,7 +74,12 @@ function DownloadButtonComponent({
         await downloadDocument({ title, content, format, images });
       } catch (error) {
         console.error(`Failed to download as ${format}:`, error);
-        if (!(error instanceof UpgradeLimitError)) {
+        if (error instanceof ApiRequestError && error.code === "account_status_unavailable") {
+          // The export route could not check the account (it fails closed): say so, with a retry.
+          toast.error(error.message, {
+            action: { label: tLock("retry"), onClick: () => void retryRef.current(format) },
+          });
+        } else if (!(error instanceof UpgradeLimitError)) {
           posthog.captureException(error);
         }
       } finally {
@@ -82,8 +88,11 @@ function DownloadButtonComponent({
         setDownloadFormat(null);
       }
     },
-    [title, content, images, isProUser, guard]
+    [title, content, images, isProUser, guard, tLock]
   );
+  // The retry toast outlives this render: it calls the latest handler.
+  const retryRef = useRef(handleDownload);
+  retryRef.current = handleDownload;
 
   const handlePdfDownload = useCallback(() => handleDownload("pdf"), [handleDownload]);
   const handleDocxDownload = useCallback(() => handleDownload("docx"), [handleDownload]);

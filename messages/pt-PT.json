@@ -2463,7 +2463,9 @@
       "blockedMessage": "A tua conta está em modo de leitura. Atualiza para Pro para continuares.",
       "lockedHint": "Disponível no Pro",
       "printMessage": "Atualiza para Pro para imprimir",
-      "chatPlaceholder": "A tua conta está em modo de leitura"
+      "chatPlaceholder": "A tua conta está em modo de leitura",
+      "statusUnavailable": "Não foi possível verificar a tua conta. Tenta novamente.",
+      "retry": "Tentar novamente"
     },
     "trialStatusCard": {
       "title": "O teu mês Pro",
