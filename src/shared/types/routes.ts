@@ -28,4 +28,5 @@ export enum Routes {
   SOURCES = "/sources",
   ADMIN = "/admin",
   SUPPORT = "/support",
+  TRIAL_ACTIVATE = "/trial/activate",
 }

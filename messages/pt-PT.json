@@ -2387,6 +2387,19 @@
         "sources_pro": {
           "title": "As tuas fontes são do plano Pro",
           "description": "No plano gratuito, a Scooli usa as fontes da Scooli. Atualiza para Pro para carregares o manual ou os materiais da tua escola."
+        },
+        "account_locked": {
+          "title": "A tua conta está em modo de leitura",
+          "description": "Continuas a ver e a editar os teus documentos. Atualiza para Pro para voltares a criar e gerar documentos, exportar, duplicar e partilhar."
+        },
+        "trial_expired": {
+          "title": "O teu mês Pro terminou",
+          "description": "A tua conta está agora em modo de leitura. Atualiza para Pro para voltares a criar e gerar documentos, exportar, duplicar e partilhar."
+        },
+        "trial_not_activated": {
+          "title": "Ativa o teu mês Pro",
+          "description": "Ainda não ativaste o teu mês Pro gratuito. Ativa-o agora e tens 30 dias com tudo o que o Pro oferece.",
+          "descriptionNoTrial": "A tua conta está em modo de leitura. Atualiza para Pro para voltares a criar e gerar documentos, exportar, duplicar e partilhar."
         }
       }
     },
@@ -2415,6 +2428,70 @@
       "removedSuccess": "NIF removido. As próximas faturas saem como consumidor final.",
       "savedSuccess": "NIF guardado. Será usado nas próximas faturas.",
       "hint": "O NIF aparece nas tuas faturas. Podes deixá-lo vazio e as faturas saem sem NIF."
+    },
+    "trial": {
+      "activateCta": "Ativar o meu mês Pro",
+      "activating": "A ativar…",
+      "startedToast": "O teu mês Pro começou — termina a {date}",
+      "startedToastNoDate": "O teu mês Pro começou",
+      "errors": {
+        "trial_link_expired": "Este link de ativação já expirou.",
+        "trial_not_eligible": "O mês Pro gratuito já não está disponível para esta conta.",
+        "trial_token_invalid": "Este link de ativação não é válido para esta conta.",
+        "trial_not_available": "O mês Pro gratuito não está disponível neste momento.",
+        "generic": "Não foi possível ativar o teu mês Pro. Tenta novamente."
+      }
+    },
+    "banner": {
+      "regionLabel": "Estado da conta",
+      "trialDiscreet": "{days, plural, one {Falta # dia do teu mês Pro} other {Faltam # dias do teu mês Pro}}",
+      "trialActive": "Estás no teu mês Pro",
+      "trialEndingTitle": "{days, plural, one {O teu mês Pro termina em # dia} other {O teu mês Pro termina em # dias}}",
+      "trialEndingDescription": "Depois, a tua conta passa a modo de leitura. Atualiza para Pro para continuares a gerar, exportar e partilhar.",
+      "upgradeCta": "Atualizar para Pro",
+      "seePlans": "Ver planos",
+      "lockedTitle": "A tua conta está em modo de leitura",
+      "lockedReason": {
+        "trial_expired": "O teu mês Pro terminou. Continuas a ver e a editar os teus documentos, mas criar e gerar documentos, exportar, duplicar e partilhar precisam do Pro.",
+        "trial_not_activated": "Não ativaste o teu mês Pro gratuito a tempo. Continuas a ver e a editar os teus documentos, mas criar e gerar documentos, exportar, duplicar e partilhar precisam do Pro.",
+        "unknown": "Continuas a ver e a editar os teus documentos, mas criar e gerar documentos, exportar, duplicar e partilhar precisam do Pro."
+      },
+      "offerTitle": "Tens um mês Pro gratuito à tua espera",
+      "offerDescription": "30 dias com todas as funcionalidades Pro."
+    },
+    "lock": {
+      "blockedMessage": "A tua conta está em modo de leitura. Atualiza para Pro para continuares.",
+      "lockedHint": "Disponível no Pro",
+      "printMessage": "Atualiza para Pro para imprimir",
+      "chatPlaceholder": "A tua conta está em modo de leitura"
+    },
+    "trialStatusCard": {
+      "title": "O teu mês Pro",
+      "endsOn": "Termina a {date}",
+      "daysLeft": "{days, plural, one {Falta # dia} other {Faltam # dias}}"
+    },
+    "trialActivation": {
+      "activatingTitle": "A ativar o teu mês Pro…",
+      "successTitle": "O teu mês Pro começou — termina a {date}",
+      "successTitleNoDate": "O teu mês Pro começou",
+      "successDescription": "Tens 30 dias com todas as funcionalidades Pro. Aproveita!",
+      "alreadyActiveTitle": "O teu mês Pro já está ativo — termina a {date}",
+      "alreadyActiveTitleNoDate": "O teu mês Pro já está ativo",
+      "alreadyProTitle": "Já tens o Scooli Pro",
+      "alreadyProDescription": "A tua conta já tem acesso a todas as funcionalidades Pro.",
+      "dashboardCta": "Ir para o painel",
+      "upgradeCta": "Ver planos Pro",
+      "retry": "Tentar novamente",
+      "expiredCanStart": "Mas ainda podes ativar o teu mês Pro aqui.",
+      "expiredUpgrade": "Atualiza para Pro para continuares a usar todas as funcionalidades.",
+      "notEligibleDescription": "O mês Pro gratuito só pode ser usado uma vez e não está disponível para contas que já tiveram uma subscrição paga ou que têm acesso Pro através de uma escola.",
+      "invalidCanStart": "Podes ativar o teu mês Pro diretamente aqui.",
+      "invalidNoStart": "Confirma que entraste com a conta que recebeu o email.",
+      "notAvailableDescription": "Tenta mais tarde ou fala connosco se precisares de ajuda.",
+      "genericErrorTitle": "Não foi possível ativar o teu mês Pro",
+      "genericErrorDescription": "Verifica a tua ligação e tenta novamente.",
+      "noTokenTitle": "Ativa o teu mês Pro",
+      "noTokenDescription": "30 dias com todas as funcionalidades Pro."
     }
   },
   "sources": {

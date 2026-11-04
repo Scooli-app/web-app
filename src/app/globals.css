@@ -724,3 +724,23 @@ math-field::part(menu-toggle) {
 .tiptap.math-text-input p {
   margin: 0;
 }
+
+/*
+ * Read-only account (ENG-321): printing is a Pro action. While locked, <body> carries
+ * data-print-locked (set by AccountPrintLock) and a printout shows only that message.
+ */
+@media print {
+  body[data-print-locked] > * {
+    display: none !important;
+  }
+
+  body[data-print-locked]::before {
+    content: attr(data-print-locked);
+    display: block;
+    padding: 4rem 2rem;
+    text-align: center;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #000;
+  }
+}
