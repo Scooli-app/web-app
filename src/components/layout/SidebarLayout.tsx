@@ -43,6 +43,7 @@ import {
   selectEffectiveAccessSource,
   selectEntitlementUsage,
 } from "@/store/entitlements/selectors";
+import { selectIsClassStateEnabled } from "@/store/features/selectors";
 import { useAppDispatch } from "@/store/hooks";
 import type { RootState } from "@/store/store";
 import { selectIsPro } from "@/store/subscription/selectors";
@@ -72,6 +73,7 @@ import {
   LogOut,
   Menu,
   MessageSquare,
+  School,
   Settings,
   Shield,
   Sparkles,
@@ -436,6 +438,7 @@ const SidebarNavigationContent = memo(function SidebarNavigationContent({
     features[FeatureFlag.CURRICULUM_PLAN_ENABLED] === true;
   const isHorarioPlanosEnabled =
     features[FeatureFlag.HORARIO_PLANOS_ENABLED] === true;
+  const isClassStateEnabled = features[FeatureFlag.CLASS_STATE_ENABLED] === true;
 
   const planItems: NavItem[] = [
     ...(isHorarioPlanosEnabled ? [CALENDAR_NAV_ITEM, CLASSES_NAV_ITEM] : []),
@@ -497,7 +500,8 @@ const SidebarNavigationContent = memo(function SidebarNavigationContent({
           <SidebarProfileCard onClick={onItemClick} />
         </SignedIn>
 
-        {hasOrganizationWorkspace && isOrganizationAdmin && (
+        {/* With class_state_enabled the school is reached from the top bar and has its own tabs. */}
+        {hasOrganizationWorkspace && isOrganizationAdmin && !isClassStateEnabled && (
           <>
             <Separator className="my-4" />
             <NavGroup
@@ -630,6 +634,11 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
   const isUpgradeModalOpen = useSelector(
     (state: RootState) => state.ui.isUpgradeModalOpen,
   );
+  const hasOrganizationWorkspace = useSelector(selectHasOrganizationWorkspace);
+  const isOrganizationAdmin = useSelector(selectIsOrganizationAdmin);
+  const isClassStateEnabled = useSelector(selectIsClassStateEnabled);
+  const showSchoolEntry = hasOrganizationWorkspace && isOrganizationAdmin && isClassStateEnabled;
+  const inSchoolArea = pathname === Routes.SCHOOL || pathname.startsWith(`${Routes.SCHOOL}/`);
 
   // Desktop sidebar open/collapsed state, lifted out of SidebarProvider so it
   // can be driven by the route (see DOCUMENT_READING_ROUTE_PATTERN) while the
@@ -696,7 +705,8 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
 
   return (
     <SidebarProvider open={desktopSidebarOpen} onOpenChange={setDesktopSidebarOpen}>
-      <div className="flex h-dvh w-full">
+      {/* print:h-auto, with print:overflow-visible on <main>, lets a long page print past the first sheet. */}
+      <div className="flex h-dvh w-full print:h-auto">
         <AppBootstrapGate />
         <PostHogPersonSync />
         <SourceIngestionTracker />
@@ -710,12 +720,12 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
         <OnboardingV2Gate />
         <PromoGate />
 
-        <div className="hidden md:block md:h-dvh">
+        <div className="hidden md:block md:h-dvh print:hidden">
           {desktopSidebarContent}
         </div>
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <header className="flex h-14 w-full shrink-0 items-center gap-2 border-b border-border bg-background/70 backdrop-blur-md sm:h-16">
+          <header className="flex h-14 w-full shrink-0 items-center gap-2 border-b border-border bg-background/70 backdrop-blur-md sm:h-16 print:hidden">
             <div className="flex w-full items-center justify-between gap-2 px-3 sm:px-4">
               <div className="flex items-center gap-1">
                 <Sheet open={open} onOpenChange={handleSheetOpenChange}>
@@ -747,6 +757,14 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
               <div className="flex items-center gap-2">
                 <SignedIn>
                   <div className="flex items-center gap-2">
+                    {showSchoolEntry && (
+                      <Button asChild variant={inSchoolArea ? "default" : "outline"} size="bar">
+                        <Link href={Routes.SCHOOL} aria-label={t("items.schoolDirection.title")}>
+                          <School />
+                          <span className="hidden sm:inline">{t("items.schoolDirection.title")}</span>
+                        </Link>
+                      </Button>
+                    )}
                     <Button
                       asChild
                       variant="outline"
@@ -788,11 +806,11 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
 
           <main
             className={cn(
-              "w-full flex-1 overflow-y-auto overflow-x-hidden bg-slate-50 dark:bg-background",
+              "w-full flex-1 overflow-y-auto overflow-x-hidden bg-slate-50 dark:bg-background print:overflow-visible",
               className,
             )}
           >
-            <div className="flex h-full w-full min-w-0 flex-col items-center p-3 sm:p-4 md:p-6">
+            <div className="flex h-full w-full min-w-0 flex-col items-center p-3 sm:p-4 md:p-6 print:p-0">
               {children}
             </div>
           </main>
