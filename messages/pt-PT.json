@@ -3532,6 +3532,8 @@
       "class": {
         "title": "Detalhes da turma",
         "subtitle": "Indica a disciplina e o ano de escolaridade.",
+        "unitHoursLabel": "Carga horária da UC (horas)",
+        "unitHoursHint": "Opcional. Está no referencial do curso; sem ela, a planificação diz «a definir».",
         "gradeLabel": "Ano de escolaridade *",
         "gradePlaceholder": "Seleciona o ano",
         "subjectLabel": "Disciplina *",
@@ -3546,6 +3548,8 @@
       "review": {
         "title": "Resumo",
         "subtitle": "Confirma os dados antes de gerar a planificação.",
+        "unitHours": "Carga horária da UC",
+        "unitHoursValue": "{count} h",
         "period": "Período",
         "type": "Tipo",
         "subject": "Disciplina",
