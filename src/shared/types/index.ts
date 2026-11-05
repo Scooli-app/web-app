@@ -28,7 +28,6 @@ export type {
     OrganizationDashboard,
     OrganizationDocumentTypeBreakdown,
     OrganizationMember,
-    OrganizationMemberActivity,
     WorkspaceContext,
     WorkspaceType
 } from "./workspace";

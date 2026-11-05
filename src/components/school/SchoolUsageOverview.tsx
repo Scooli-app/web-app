@@ -47,11 +47,6 @@ function formatDocumentType(documentType: string, tEnums: Translator): string {
   return tEnums.has(key) ? tEnums(key) : documentType;
 }
 
-function formatRole(role: string, t: Translator): string {
-  const key = `roles.${role}` as Parameters<Translator["has"]>[0];
-  return t.has(key) ? t(key) : role;
-}
-
 function formatSubscriptionStatus(status: string | null | undefined, t: Translator): string {
   if (!status) {
     return t("common.notSet");
@@ -337,67 +332,6 @@ export function SchoolUsageOverview({ title }: { title?: string }) {
               </CardContent>
             </Card>
           </div>
-
-          <Card className="mt-6">
-            <CardHeader>
-              <CardTitle>{t("dashboard.activeUsersCard.title")}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {dashboard?.topActiveMembers?.length ? (
-                dashboard.topActiveMembers.map((member) => (
-                  <div
-                    key={member.userId}
-                    className="flex flex-col gap-4 rounded-2xl border border-border/80 p-4 xl:flex-row xl:items-center xl:justify-between"
-                  >
-                    <div className="min-w-0">
-                      <p className="truncate font-medium text-foreground">
-                        {member.name || member.email || t("common.unnamedUser")}
-                      </p>
-                      <p className="truncate text-sm text-muted-foreground">
-                        {member.email ?? t("dashboard.activeUsersCard.noEmail")} ·{" "}
-                        {formatRole(member.role, t)}
-                      </p>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {t("dashboard.activeUsersCard.lastActive", {
-                          date: formatDate(member.lastActiveAt, locale, t),
-                        })}
-                      </p>
-                    </div>
-
-                    <div className="flex flex-wrap gap-2 text-sm">
-                      <Badge variant="secondary">
-                        {t("dashboard.activeUsersCard.aiRequestsBadge", {
-                          count: member.generationsThisMonth,
-                        })}
-                      </Badge>
-                      <Badge variant="secondary">
-                        {t("dashboard.activeUsersCard.documentsThisMonthBadge", {
-                          count: member.documentsCreatedThisMonth,
-                        })}
-                      </Badge>
-                      <Badge variant="outline">
-                        {t("dashboard.activeUsersCard.totalDocumentsBadge", {
-                          count: member.totalDocuments,
-                        })}
-                      </Badge>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <EmptyState
-                  size="inline"
-                  icon={Users}
-                  title={t("dashboard.activeUsersCard.emptyTitle")}
-                  description={t("dashboard.activeUsersCard.empty")}
-                  actions={
-                    <Button asChild size="sm" variant="outline">
-                      <Link href={Routes.SCHOOL_MEMBERS}>{t("dashboard.viewMembers")}</Link>
-                    </Button>
-                  }
-                />
-              )}
-            </CardContent>
-          </Card>
         </>
       )}
     </PageContainer>
