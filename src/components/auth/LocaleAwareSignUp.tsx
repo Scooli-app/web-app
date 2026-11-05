@@ -29,7 +29,7 @@ import { useEffect, useState } from "react";
  * existing Portuguese user to disturb, so the browser's language is a safe
  * signal instead of a risky one.
  */
-export function LocaleAwareSignUp() {
+export function LocaleAwareSignUp(props: React.ComponentProps<typeof SignUp>) {
   // Resolved after mount: query string and cookies are browser state, and
   // guessing during SSR would just produce a hydration mismatch.
   const [locale, setLocale] = useState<Locale | null>(null);
@@ -57,5 +57,5 @@ export function LocaleAwareSignUp() {
     return <div className="min-h-[28rem]" aria-hidden="true" />;
   }
 
-  return <SignUp unsafeMetadata={{ locale }} />;
+  return <SignUp {...props} unsafeMetadata={{ ...props.unsafeMetadata, locale }} />;
 }
