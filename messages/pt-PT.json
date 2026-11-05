@@ -1142,7 +1142,9 @@
     "planning": {
       "title": "Email semanal",
       "digestTitle": "Email com a minha semana",
-      "digestDescription": "Recebes ao fim de semana um resumo das aulas da semana seguinte.",
+      "digestDescription": "Recebes um resumo das aulas da semana seguinte no dia que escolheres.",
+      "dayTitle": "Dia do email",
+      "dayDescription": "Chega a partir das 18h.",
       "loadError": "Não foi possível carregar esta preferência.",
       "retry": "Tentar novamente",
       "saveError": "Não conseguimos guardar a alteração."

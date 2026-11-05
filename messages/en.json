@@ -1142,7 +1142,9 @@
     "planning": {
       "title": "Weekly email",
       "digestTitle": "Email with my week",
-      "digestDescription": "At the weekend you get a summary of next week's lessons.",
+      "digestDescription": "You get a summary of next week's lessons on the day you choose.",
+      "dayTitle": "Email day",
+      "dayDescription": "It arrives from 6 pm.",
       "loadError": "Couldn't load this setting.",
       "retry": "Try again",
       "saveError": "We couldn't save that change."
