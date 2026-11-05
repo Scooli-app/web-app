@@ -1529,7 +1529,10 @@
       "emptyDocumentDescription": "Generation finished without any content. You can write here or go back to your documents and create another.",
       "importFailedTitle": "The import failed",
       "importFailedDescription": "Something went wrong importing this file. Import it again, and if it fails again, try a PDF or DOCX.",
-      "importFailedRetry": "Import again"
+      "importFailedRetry": "Import again",
+      "generationFailedTitle": "This document wasn't generated",
+      "generationFailedDescription": "The generation failed and used no credit. You can ask for it again from Home.",
+      "generationFailedRetry": "Go to Home"
     },
     "documentTitle": {
       "placeholder": "Document title...",

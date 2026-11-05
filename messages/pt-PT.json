@@ -1529,7 +1529,10 @@
       "emptyDocumentDescription": "A geração terminou sem conteúdo. Podes escrever aqui ou voltar aos documentos e criar outro.",
       "importFailedTitle": "A importação falhou",
       "importFailedDescription": "Algo correu mal ao importar este ficheiro. Importa-o de novo; se voltar a falhar, experimenta em PDF ou DOCX.",
-      "importFailedRetry": "Importar de novo"
+      "importFailedRetry": "Importar de novo",
+      "generationFailedTitle": "Este documento não foi gerado",
+      "generationFailedDescription": "A geração falhou e não gastou nenhum crédito. Volta a pedi-lo no Início.",
+      "generationFailedRetry": "Ir para o Início"
     },
     "documentTitle": {
       "placeholder": "Título do documento...",

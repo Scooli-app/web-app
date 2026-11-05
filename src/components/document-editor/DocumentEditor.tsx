@@ -1308,6 +1308,9 @@ export default function DocumentEditor({
   // Only curriculum-plan imports carry an original format.
   const isFailedImport =
     !isGenerating && isDocumentFailed && Boolean(activeDocument?.originalFormat);
+  // A generation that died left nothing to edit: say so instead of opening a blank page.
+  const isFailedGeneration =
+    !isGenerating && isDocumentFailed && !isFailedImport && !isUsableDocumentContent(content);
   const isCompletedEmpty =
     !isGenerating &&
     activeDocument?.status === "completed" &&
@@ -1470,6 +1473,19 @@ export default function DocumentEditor({
                   actions={
                     <Button asChild size="sm">
                       <Link href={Routes.CURRICULUM_PLAN_IMPORT}>{t("importFailedRetry")}</Link>
+                    </Button>
+                  }
+                />
+              ) : isFailedGeneration ? (
+                // Same footprint as the generating card it replaces, centred in it.
+                <EmptyState
+                  icon={FileX}
+                  title={t("generationFailedTitle")}
+                  description={t("generationFailedDescription")}
+                  className="min-h-[50dvh] w-full justify-center bg-card sm:min-h-[600px]"
+                  actions={
+                    <Button asChild>
+                      <Link href={Routes.DASHBOARD}>{t("generationFailedRetry")}</Link>
                     </Button>
                   }
                 />
