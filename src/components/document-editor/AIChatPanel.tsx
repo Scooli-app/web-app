@@ -314,7 +314,7 @@ function ChatContent({
             <form
               onSubmit={handleSubmit}
               className={cn(
-                "mt-auto flex gap-2 rounded-2xl border border-border/50 bg-background/50 p-1.5 transition-colors focus-within:border-primary/50",
+                "mt-auto flex gap-2 rounded-2xl border border-input bg-card p-1.5 transition-colors focus-within:border-primary/50",
                 isDesktop
                   ? "mb-6"
                   : "mb-3 pb-[max(env(safe-area-inset-bottom),0.5rem)]",
@@ -325,7 +325,7 @@ function ChatContent({
                 onChange={(e) => setChatMessage(e.target.value)}
                 placeholder={placeholder}
                 // Phone: 44 px tall, 16 px text so iOS doesn't zoom in on focus.
-                className={cn("flex-1 border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 px-3", isDesktop ? "h-10 text-sm" : "h-11 text-base")}
+                className={cn("flex-1 border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 px-3", isDesktop ? "h-10 text-sm" : "h-11 text-base")}
                 disabled={isInputLocked}
               />
               <Button

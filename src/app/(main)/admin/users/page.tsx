@@ -655,7 +655,7 @@ export default function AdminUsersPage() {
                     value={query}
                     onChange={(event) => setQuery(event.target.value)}
                     placeholder="Pesquisar por email, nome ou Clerk ID"
-                    className="h-11 rounded-xl border-border/70 bg-background pl-10"
+                    className="h-11 rounded-xl pl-10"
                   />
                 </div>
 

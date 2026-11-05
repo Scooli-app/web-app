@@ -316,7 +316,7 @@ export default function AdminFeedbackDetailArgsPage() {
                   </h4>
                   <Textarea
                     placeholder="Adicionar nota técnica ou observação..."
-                    className="mb-2 border-yellow-500/10 bg-background focus-visible:ring-yellow-500/20"
+                    className="mb-2 focus-visible:ring-yellow-500/20"
                     value={noteContent}
                     onChange={(e) => setNoteContent(e.target.value)}
                   />
@@ -345,7 +345,7 @@ export default function AdminFeedbackDetailArgsPage() {
                   </p>
                   <Textarea
                     placeholder="Escrever resposta para o utilizador..."
-                    className="mb-2 border-blue-500/10 bg-background focus-visible:ring-blue-500/20"
+                    className="mb-2 focus-visible:ring-blue-500/20"
                     value={responseContent}
                     onChange={(e) => setResponseContent(e.target.value)}
                   />
@@ -465,7 +465,7 @@ export default function AdminFeedbackDetailArgsPage() {
                       setSelectedStatus(val as FeedbackStatus)
                     }
                   >
-                    <SelectTrigger className="w-full border-white/10 bg-muted/50">
+                    <SelectTrigger className="w-full">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -497,7 +497,7 @@ export default function AdminFeedbackDetailArgsPage() {
                         setSelectedSeverity(val as BugSeverity)
                       }
                     >
-                      <SelectTrigger className="w-full border-white/10 bg-muted/50">
+                      <SelectTrigger className="w-full">
                         <SelectValue placeholder="Selecionar..." />
                       </SelectTrigger>
                       <SelectContent>

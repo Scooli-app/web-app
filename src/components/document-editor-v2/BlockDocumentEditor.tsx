@@ -2431,7 +2431,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
 
               {/* Font family selector */}
               <select
-                className="h-7 rounded border border-border bg-background px-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
+                className="h-7 rounded border border-input bg-card px-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
                 value={selectedTextEl.fontFamily ?? ""}
                 onChange={(e) => applyElementPatch({ fontFamily: e.target.value || undefined })}
                 title={t("fontFamilyTooltip")}

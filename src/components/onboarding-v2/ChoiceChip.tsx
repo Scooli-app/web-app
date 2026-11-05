@@ -44,7 +44,7 @@ export function ChoiceChip({
         "disabled:pointer-events-none disabled:opacity-50",
         selected
           ? "border-primary bg-primary text-primary-foreground shadow-sm shadow-primary/20"
-          : "border-border bg-card text-foreground hover:border-primary/60 hover:bg-accent",
+          : "border-input bg-card text-foreground hover:border-primary/60 hover:bg-accent",
         className,
       )}
     >

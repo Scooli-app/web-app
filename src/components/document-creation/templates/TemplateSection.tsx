@@ -157,7 +157,7 @@ export function TemplateSection({
         <button
           type="button"
           onClick={() => setIsModalOpen(true)}
-          className="flex w-full min-w-0 items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-left text-sm transition-colors hover:border-primary/50 hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+          className="flex w-full min-w-0 items-center gap-2 rounded-lg border border-input bg-card px-3 py-2 text-left text-sm transition-colors hover:border-primary/50 hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
           aria-label={selectedTemplate ? t("selectedAriaLabel", { name: selectedTemplate.name }) : t("selectAriaLabel")}
         >
           <span className="min-w-0 flex-1 truncate">

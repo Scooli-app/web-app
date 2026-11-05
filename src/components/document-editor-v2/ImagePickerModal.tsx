@@ -125,7 +125,7 @@ function GenerateTab({
           onKeyDown={(e) => {
             if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) handleGenerate();
           }}
-          className="w-full resize-none rounded-lg border border-border bg-muted/30 px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+          className="w-full resize-none rounded-lg border border-input bg-card px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
         />
         <p className="text-xs text-muted-foreground">
           {t("generateHint")}
@@ -513,7 +513,7 @@ function ImagesTab({
             onChange={(e) => setQuery(e.target.value)}
             placeholder={t("imagesSearchPlaceholder")}
             aria-label={t("tabImages")}
-            className="w-full rounded-lg border border-border bg-muted/30 py-2 pl-9 pr-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+            className="w-full rounded-lg border border-input bg-card py-2 pl-9 pr-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
           />
         </div>
         <Button type="submit" disabled={searching} className="gap-2">
@@ -899,8 +899,8 @@ function UrlTab({ onInsert }: { onInsert: (r: ImageInsertResult) => void }) {
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? "image-url-error" : undefined}
           className={cn(
-            "w-full rounded-lg border bg-muted/30 px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary",
-            error ? "border-destructive" : "border-border",
+            "w-full rounded-lg border bg-card px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary",
+            error ? "border-destructive" : "border-input",
           )}
         />
         {error && (

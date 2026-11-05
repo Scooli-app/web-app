@@ -72,7 +72,7 @@ export function CourseSearchField({
             if (event.key === "Escape") onTermChange("");
           }}
           placeholder={t("coursesSearchPlaceholder")}
-          className="bg-background pl-9"
+          className="pl-9"
           autoComplete="off"
           autoFocus={autoFocus}
         />

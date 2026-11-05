@@ -50,7 +50,7 @@ export function AlreadyCoveredSection({ notes, onNotesChange, className }: Alrea
         </Label>
         <textarea
           id={textareaId}
-          className="min-h-[90px] w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+          className="min-h-[90px] w-full rounded-lg border border-input bg-card px-3 py-2 text-sm"
           placeholder={t("placeholder")}
           maxLength={MAX_LENGTH}
           value={notes}
