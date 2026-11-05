@@ -2,9 +2,26 @@ import { describe, expect, it } from "vitest";
 import {
   canGoBackFrom,
   isStepOneComplete,
+  onboardingSteps,
   resolveStartStep,
   type StartStepInput,
 } from "@/components/onboarding-v2/resumeStep";
+
+describe("onboardingSteps", () => {
+  it("runs every step for a teacher who signed up alone", () => {
+    expect(onboardingSteps("full", false)).toEqual([1, 2, 3, 4]);
+    expect(onboardingSteps("profile", false)).toEqual([1, 2]);
+  });
+  it("skips 'Onde dás aulas?' for a teacher invited by the school", () => {
+    expect(onboardingSteps("full", true)).toEqual([2, 3, 4]);
+    expect(onboardingSteps("profile", true)).toEqual([2]);
+  });
+  it("starts the invited teacher at step 2 with no Back to the school step", () => {
+    // The server prefills the school and role from the invitation, so step 1 counts as answered.
+    expect(resolveStartStep({ ...base, step1Complete: true })).toBe(2);
+    expect(canGoBackFrom({ stepIndex: 0, step: 2, classExists: false })).toBe(false);
+  });
+});
 
 const base: StartStepInput = {
   mode: "full",
@@ -28,13 +45,13 @@ describe("resolveStartStep truth table", () => {
     ["not done, skippedClass never 3+", { skippedClass: true, step1Complete: true }, 2],
     ["profile done, no class", { profileDone: true }, 3],
     ["profile done, no class, lastStep 3", { profileDone: true, lastStep: 3 }, 3],
-    ["profile done, no class, lastStep 4", { profileDone: true, lastStep: 4 }, 3],
-    ["profile done, no class, lastStep 5 (skipped class)", { profileDone: true, lastStep: 5 }, 5],
-    ["profile done, no class, skippedClass", { profileDone: true, skippedClass: true }, 5],
-    ["profile done, no class, lastStep 6 (skipped class, at the ritual)", { profileDone: true, lastStep: 6 }, 6],
-    ["profile done, has class", { profileDone: true, hasClass: true }, 5],
-    ["profile done, has class, lastStep 5", { profileDone: true, hasClass: true, lastStep: 5 }, 5],
-    ["profile done, has class, lastStep 6", { profileDone: true, hasClass: true, lastStep: 6 }, 6],
+    ["profile done, no class, lastStep 4 (skipped class or pre-school)", { profileDone: true, lastStep: 4 }, 4],
+    ["profile done, no class, old flow's lastStep 5", { profileDone: true, lastStep: 5 }, 4],
+    ["profile done, no class, skippedClass", { profileDone: true, skippedClass: true }, 4],
+    ["profile done, no class, old flow's lastStep 6", { profileDone: true, lastStep: 6 }, 4],
+    ["profile done, has class", { profileDone: true, hasClass: true }, 4],
+    ["profile done, has class, old flow's lastStep 5", { profileDone: true, hasClass: true, lastStep: 5 }, 4],
+    ["profile done, has class, old flow's lastStep 6", { profileDone: true, hasClass: true, lastStep: 6 }, 4],
     ["profile mode, step 1 incomplete", { mode: "profile" }, 1],
     ["profile mode, step 1 complete", { mode: "profile", step1Complete: true }, 2],
     ["profile mode, profile done is still capped at 2", { mode: "profile", profileDone: true, step1Complete: true }, 2],
@@ -77,17 +94,13 @@ describe("canGoBackFrom", () => {
   it("allows Back from step 3 while no class exists (F1b)", () => {
     expect(canGoBackFrom({ stepIndex: 2, step: 3, classExists: false })).toBe(true);
   });
-  it("hides Back on the first screen, once a class exists, and on the week step", () => {
+  it("hides Back on the first screen and, once a class exists, on the class and wait steps", () => {
     expect(canGoBackFrom({ stepIndex: 0, step: 1, classExists: false })).toBe(false);
+    expect(canGoBackFrom({ stepIndex: 2, step: 3, classExists: true })).toBe(false);
     expect(canGoBackFrom({ stepIndex: 3, step: 4, classExists: true })).toBe(false);
-    expect(canGoBackFrom({ stepIndex: 4, step: 5, classExists: true })).toBe(false);
   });
-  it("allows Back from the baseline step when the class was skipped", () => {
-    expect(canGoBackFrom({ stepIndex: 4, step: 5, classExists: false })).toBe(true);
-  });
-  it("always allows Back from the ritual step to the baseline step", () => {
-    expect(canGoBackFrom({ stepIndex: 5, step: 6, classExists: true })).toBe(true);
-    expect(canGoBackFrom({ stepIndex: 5, step: 6, classExists: false })).toBe(true);
+  it("allows Back from the wait step when the class was skipped", () => {
+    expect(canGoBackFrom({ stepIndex: 3, step: 4, classExists: false })).toBe(true);
   });
   it("allows Back from step 2", () => {
     expect(canGoBackFrom({ stepIndex: 1, step: 2, classExists: false })).toBe(true);

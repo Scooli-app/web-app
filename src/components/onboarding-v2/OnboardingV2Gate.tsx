@@ -29,6 +29,7 @@ type PendingFlow = {
   hasClass: boolean;
   lastStep: number | null;
   draft: OnboardingV2DraftAnswers | null;
+  invitedTeacher: boolean;
 };
 
 function toPendingFlow(status: OnboardingV2Status): PendingFlow | null {
@@ -40,6 +41,7 @@ function toPendingFlow(status: OnboardingV2Status): PendingFlow | null {
         hasClass: status.hasClass ?? false,
         lastStep: status.lastStep ?? null,
         draft: status.draft ?? null,
+        invitedTeacher: status.school?.role === "teacher",
       };
 }
 
@@ -134,6 +136,7 @@ export function OnboardingV2Gate() {
       hasClass={pending.hasClass}
       lastStep={pending.lastStep}
       draft={pending.draft}
+      invitedTeacher={pending.invitedTeacher}
       suspended={suspended}
       onClose={handleClose}
     />

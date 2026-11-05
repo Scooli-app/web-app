@@ -32,10 +32,10 @@ export function isoWeekday(date: Date = new Date()): number {
  * Week shown by default: next week once today reaches the planning day, otherwise this
  * week — UNLESS the teacher's onboarding free week (the week lessons were actually
  * generated for, from `PlanLimits.freeWeekStart`) is still current or upcoming, in which
- * case that week wins. The free week follows its own fixed rule (this week Mon–Thu,
- * otherwise next Monday — see `onboardingFreeWeek`/`FreePlanRules.onboardingFreeWeek`)
- * which disagrees with the planning-day rule on some weekdays (e.g. default planning day
- * 7 shows "this week" on Fri/Sat while the free week generated lessons for next week).
+ * case that week wins. The free week is the week of the first lesson onboarding prepared
+ * (onboarding prepares the 7 days from sign-up), which disagrees with the planning-day rule
+ * on some weekdays (e.g. a Saturday sign-up's first lesson is next Monday while planning
+ * day 7 still shows "this week").
  * Once the free week is in the past it stops overriding so normal planning-day behaviour
  * resumes for every later week.
  */
