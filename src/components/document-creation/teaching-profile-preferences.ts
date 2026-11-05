@@ -67,6 +67,11 @@ export function getDefaultSchoolYear(preferredSchoolYears: number[]): number | n
   return Math.min(...preferredSchoolYears);
 }
 
+/** The subject to preselect: only when the teacher teaches exactly one subject in the chosen year. */
+export function getDefaultSubjectId(preferredSubjectIds: string[]): string | null {
+  return preferredSubjectIds.length === 1 ? preferredSubjectIds[0] : null;
+}
+
 /** Cursos profissionais run from the 10.º to the 12.º ano only. */
 export const VOCATIONAL_SCHOOL_YEARS = [10, 11, 12] as const;
 
