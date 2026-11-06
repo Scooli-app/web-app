@@ -2,6 +2,7 @@
 
 import { meService } from "@/services/api/me.service";
 import { createPlanLimitsCache } from "@/hooks/planLimitsCache";
+import { onPlanLimitsStale } from "@/hooks/planLimitsEvents";
 import { useAuth } from "@clerk/nextjs";
 import type { PlanLimits } from "@/shared/types/plan-limits";
 import { useAppDispatch } from "@/store/hooks";
@@ -14,11 +15,20 @@ const cache = createPlanLimitsCache(() => meService.getPlanLimits());
 
 const listeners = new Set<() => void>();
 
-/** Call after something changes the limits (a class was created or deleted). */
+/** Call after something changes the limits (a class was created or deleted, an upgrade, a lock). */
 export function invalidatePlanLimits() {
   cache.invalidate();
   listeners.forEach((refresh) => refresh());
 }
+
+/** Stores limits the server just returned (trial activation) and updates every reader. */
+export function setPlanLimits(userId: string | null | undefined, limits: PlanLimits) {
+  cache.set(userId, limits);
+  listeners.forEach((refresh) => refresh());
+}
+
+// The API client signals a 403 `account_locked`: the account became read-only mid-session.
+onPlanLimitsStale(invalidatePlanLimits);
 
 export function usePlanLimits(): { limits: PlanLimits | null; loading: boolean } {
   const { userId } = useAuth();

@@ -9,6 +9,7 @@ import { LoadError } from "@/components/ui/load-error";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { selectIsCurriculumPlanEnabled } from "@/store/features/selectors";
 import { useFeatureAccess } from "@/components/feature/useFeatureAccess";
+import { useAccountAccess } from "@/hooks/useAccountAccess";
 import { FeatureUnavailable } from "@/components/feature/FeatureUnavailable";
 import { Routes, type Document } from "@/shared/types";
 import { getDocuments } from "@/services/api/document.service";
@@ -26,6 +27,8 @@ export default function CurriculumPlanLandingPage() {
   const rawLocale = useLocale();
   const locale = isSupportedLocale(rawLocale) ? rawLocale : defaultLocale;
   const { loaded: featuresLoaded, enabled } = useFeatureAccess(selectIsCurriculumPlanEnabled);
+  // Read-only account (ENG-321): generating or importing a plan opens the paywall.
+  const { guard } = useAccountAccess();
   const [plans, setPlans] = useState<Document[]>([]);
   const [plansLoading, setPlansLoading] = useState(true);
 
@@ -80,7 +83,9 @@ export default function CurriculumPlanLandingPage() {
               {t("generateCard.description")}
             </p>
             <Button asChild className="w-full">
-              <Link href={Routes.CURRICULUM_PLAN_NEW}>{t("generateCard.cta")}</Link>
+              <Link href={Routes.CURRICULUM_PLAN_NEW} onClick={(e) => { if (!guard("generate")) e.preventDefault(); }}>
+                {t("generateCard.cta")}
+              </Link>
             </Button>
           </CardContent>
         </Card>
@@ -97,7 +102,9 @@ export default function CurriculumPlanLandingPage() {
               {t("importCard.description")}
             </p>
             <Button asChild variant="outline" className="w-full">
-              <Link href={Routes.CURRICULUM_PLAN_IMPORT}>{t("importCard.cta")}</Link>
+              <Link href={Routes.CURRICULUM_PLAN_IMPORT} onClick={(e) => { if (!guard("create")) e.preventDefault(); }}>
+                {t("importCard.cta")}
+              </Link>
             </Button>
           </CardContent>
         </Card>

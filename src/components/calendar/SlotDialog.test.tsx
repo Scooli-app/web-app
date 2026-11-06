@@ -11,6 +11,8 @@ vi.mock("next-intl", () => ({
   useLocale: () => "pt-PT",
 }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
+// Not about the read-only lock (ENG-321): an account that may do everything.
+vi.mock("@/hooks/useAccountAccess", () => ({ useAccountAccess: () => ({ isLocked: false, guard: () => true }) }));
 vi.mock("@/store/entitlements/selectors", () => ({ selectHasEffectivePro: () => false }));
 vi.mock("@/store/hooks", () => ({
   useAppSelector: (selector: () => boolean) => selector(),

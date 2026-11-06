@@ -31,6 +31,7 @@ import { Routes } from "@/shared/types";
 import { LessonDocumentChips } from "@/components/dashboard/LessonDocumentChips";
 import { PreviousLessonCheckIn } from "@/components/check-in/PreviousLessonCheckIn";
 import { usePrepareLessonSet } from "@/components/dashboard/usePrepareLessonSet";
+import { useAccountAccess } from "@/hooks/useAccountAccess";
 import { isDocumentInProgress, objectiveItems } from "@/components/dashboard/weekWindow";
 import { CheckInCard } from "@/components/check-in/CheckInCard";
 import { MISSING_AMOUNTS } from "@/components/check-in/CheckInChoices";
@@ -75,6 +76,7 @@ import {
   Loader2,
   RotateCcw,
   Sparkles,
+  Lock,
   Target,
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
@@ -156,6 +158,8 @@ export function SlotDialog({
   const tTimetable = useTranslations("timetable");
   const tCheckIn = useTranslations("checkIns");
   const { isPro, requestReplan, watchAfterNotHeld, shift: shiftFollowing } = useReplan();
+  // Read-only account (ENG-321): generation buttons show a lock; the handlers open the paywall.
+  const { isLocked: accountLocked } = useAccountAccess();
   const tReplan = useTranslations("replan");
   const { reinforce, carry } = useCheckInFollowUps();
   const rawLocale = useLocale();
@@ -862,7 +866,7 @@ export function SlotDialog({
                   disabled={isSlotGenerating || preparing}
                   className={cn("h-9 rounded-lg max-sm:order-3", !showReplanRequest && "max-sm:col-span-2")}
                 >
-                  <RotateCcw className="mr-1.5 h-4 w-4" />
+                  {accountLocked ? <Lock className="mr-1.5 h-4 w-4" aria-hidden /> : <RotateCcw className="mr-1.5 h-4 w-4" />}
                   {t("regenerate")}
                 </Button>
                 <Button
@@ -889,7 +893,7 @@ export function SlotDialog({
             ) : suggested.length > 0 ? (
               // A past lesson's main business is its check-in: preparing documents for it stays possible, not primary.
               <Button onClick={() => void handlePrepare()} variant={slot.slotDate < todayIso ? "outline" : "default"} className="h-9 rounded-lg max-sm:order-1 max-sm:col-span-2">
-                <Sparkles className="mr-1.5 h-4 w-4" />
+                {accountLocked ? <Lock className="mr-1.5 h-4 w-4" aria-hidden /> : <Sparkles className="mr-1.5 h-4 w-4" />}
                 {prepareLabel}
               </Button>
             ) : null}
