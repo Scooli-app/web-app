@@ -1,3 +1,4 @@
+import { UpgradeLimitError } from "@/services/api/client";
 import { dashboardCache, CACHE_KEYS } from "@/lib/dashboardCache";
 import type { CheckInResult, MissingAmount, TeachingStatus } from "@/shared/types/check-in";
 import { resolveEffectiveContentLanguage } from "@/i18n/clientLocale";
@@ -156,7 +157,9 @@ export const generateTopics = createAsyncThunk(
       const contentLanguage = resolveEffectiveContentLanguage(ui.contentLanguage, ui.interfaceLocale);
 
       return await generateTopicsService(timetableId, contentLanguage);
-    } catch (_error) {
+    } catch (error) {
+      // Lock / plan limit: the paywall is open; keep the error's name so callers show no failure.
+      if (error instanceof UpgradeLimitError) throw error;
       return rejectWithValue(translate("errors.timetable.generateTopics"));
     }
   }
@@ -285,7 +288,8 @@ const timetableSlice = createSlice({
       })
       .addCase(generateTopics.rejected, (state, action) => {
         state.isGeneratingTopics = false;
-        state.error = action.payload as string;
+        // A lock / plan limit rejects without a payload: the paywall says it, not an error line.
+        state.error = (action.payload as string | undefined) ?? null;
       });
   },
 });

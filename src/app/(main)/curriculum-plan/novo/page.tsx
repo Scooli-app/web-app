@@ -33,6 +33,7 @@ import { selectIsCurriculumPlanEnabled } from "@/store/features/selectors";
 import { useFeatureAccess } from "@/components/feature/useFeatureAccess";
 import { FeatureUnavailable } from "@/components/feature/FeatureUnavailable";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { useAccountAccess } from "@/hooks/useAccountAccess";
 import { resolveEffectiveContentLanguage } from "@/i18n/clientLocale";
 import {
   buildSchoolPeriodPresets,
@@ -158,6 +159,7 @@ export default function CurriculumPlanNewPage() {
   const { loaded: featuresLoaded, enabled } = useFeatureAccess(selectIsCurriculumPlanEnabled);
   const router = useRouter();
   const dispatch = useAppDispatch();
+  const { guard } = useAccountAccess();
 
   const [step, setStep] = useState<StepId>("period");
   const [planningType, setPlanningType] = useState<CurriculumPlanningType>("trimester");
@@ -222,6 +224,7 @@ export default function CurriculumPlanNewPage() {
 
   async function handleSubmit() {
     if (!step1Valid || !step2Valid || !step3Valid) return;
+    if (!guard("generate")) return;
     setSubmitting(true);
 
     // Resolved at submit time (it reads localStorage and the locale cookie), with

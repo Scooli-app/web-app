@@ -1,5 +1,6 @@
 "use client";
 
+import { emailCategory } from "@/app/email/emailCategory";
 import { AuthLayout } from "@/components/auth/AuthLayout";
 import { Button } from "@/components/ui/button";
 import { Loader2, MailX } from "lucide-react";
@@ -9,11 +10,15 @@ import { Suspense, useEffect, useState } from "react";
 
 const INVALID_URL = "/email/unsubscribed?error=invalid";
 const DONE_URL = "/email/unsubscribed?category=weekly_digest";
+const PRO_TRIAL_DONE_URL = "/email/unsubscribed?category=pro_trial";
 
 function UnsubscribeContent() {
   const t = useTranslations("emailUnsubscribe");
   const router = useRouter();
-  const token = useSearchParams().get("token");
+  const searchParams = useSearchParams();
+  const token = searchParams.get("token");
+  // The Pro trial emails (ENG-318/319) word the question for themselves; anything else is the weekly email.
+  const proTrial = emailCategory(searchParams.get("category")) === "pro_trial";
   const [busy, setBusy] = useState(false);
 
   // A missing token can never succeed: show the invalid state straight away.
@@ -30,7 +35,7 @@ function UnsubscribeContent() {
         `${base}/email/unsubscribe?token=${encodeURIComponent(token)}`,
         { method: "POST" },
       );
-      router.replace(response.ok ? DONE_URL : INVALID_URL);
+      router.replace(response.ok ? (proTrial ? PRO_TRIAL_DONE_URL : DONE_URL) : INVALID_URL);
     } catch {
       router.replace(INVALID_URL);
     }
@@ -43,8 +48,12 @@ function UnsubscribeContent() {
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
             <MailX className="h-7 w-7" aria-hidden />
           </div>
-          <h1 className="text-2xl font-semibold text-foreground">{t("title")}</h1>
-          <p className="text-sm leading-6 text-muted-foreground">{t("hint")}</p>
+          <h1 className="text-2xl font-semibold text-foreground">
+            {proTrial ? t("proTrial.title") : t("title")}
+          </h1>
+          <p className="text-sm leading-6 text-muted-foreground">
+            {proTrial ? t("proTrial.hint") : t("hint")}
+          </p>
           <Button onClick={confirm} disabled={busy || !token}>
             {busy && <Loader2 className="animate-spin" aria-hidden />}
             {busy ? t("confirming") : t("confirm")}

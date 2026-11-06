@@ -154,7 +154,7 @@ export interface CreateDocumentStreamResponse {
 }
 
 export interface StreamEvent {
-  type: "content" | "title" | "sources" | "done" | "error" | "status" | "visuals_generating" | "image_ready" | "image_failed" | "image_progress";
+  type: "content" | "title" | "sources" | "done" | "error" | "status" | "visuals_generating" | "image_ready" | "image_failed" | "image_progress" | "account_locked";
   data: string;
 }
 
