@@ -8,7 +8,8 @@ import { NextStepsCard } from "@/components/next-steps/NextStepsCard";
 import { YourWeekCard } from "@/components/dashboard/YourWeekCard";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { SchoolHomeCard } from "@/components/school/SchoolHomeCard";
-import { usePlanLimits } from "@/hooks/usePlanLimits";
+import { useAccountAccess } from "@/hooks/useAccountAccess";
+import { invalidatePlanLimits, usePlanLimits } from "@/hooks/usePlanLimits";
 import { PaymentSuccessModal } from "@/components/ui/payment-success-modal";
 import { isPromoPlanCode } from "@/shared/utils/promo";
 import { fetchEntitlements } from "@/store/entitlements/entitlementsSlice";
@@ -25,6 +26,7 @@ import {
 import { useTranslations } from "next-intl";
 import { useRouter, useSearchParams } from "next/navigation";
 import posthog from "posthog-js";
+import { Lock } from "lucide-react";
 import { Suspense, useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
 
@@ -44,6 +46,8 @@ function DashboardContent() {
     (state) => state.features.error !== null && Object.keys(state.features.flags).length === 0,
   );
   const visibleActions = useVisibleDocTypeActions();
+  // Read-only account (ENG-321): no new documents; the quick actions open the paywall.
+  const { isLocked, guard } = useAccountAccess();
   const { limits } = usePlanLimits();
   // limits is null while loading or after a failed fetch: only show examples once we know there are no classes.
   const showExamples = limits !== null && limits.activeClasses === 0;
@@ -80,6 +84,8 @@ function DashboardContent() {
       dispatch(fetchSubscription());
       dispatch(fetchUsage());
       dispatch(fetchEntitlements());
+      // Upgrading lifts the read-only lock (ENG-321): re-read it without a reload.
+      invalidatePlanLimits();
 
       window.history.replaceState({}, "", "/dashboard");
     }
@@ -129,11 +135,12 @@ function DashboardContent() {
                     posthog.capture("dashboard_quick_action_clicked", {
                       action: action.id,
                     });
+                    if (!guard("create")) return;
                     router.push(action.route);
                   }}
                   className="flex shrink-0 items-center gap-1.5 rounded-full bg-card px-3 py-1.5 text-sm font-medium text-foreground shadow-sm transition-colors hover:bg-accent"
                 >
-                  <Icon className="h-3.5 w-3.5 text-primary" />
+                  {isLocked ? <Lock className="h-3.5 w-3.5 text-muted-foreground" aria-hidden /> : <Icon className="h-3.5 w-3.5 text-primary" />}
                   {tEnums(`documentType.${action.id}`)}
                 </button>
               );

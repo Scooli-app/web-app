@@ -118,6 +118,13 @@ const planGenerationSlice = createSlice({
     planGenerationRefreshRequested(state) {
       state.refreshKey += 1;
     },
+    /**
+     * The read-only lock stopped the generation (ENG-321): the paywall says so, so no failed
+     * banner or retry is left behind. Pages still re-fetch what was written before the stop.
+     */
+    planGenerationStoppedByLock(state) {
+      return { ...initialState, refreshKey: state.refreshKey + 1 };
+    },
   },
 });
 
@@ -130,6 +137,7 @@ export const {
   lessonStatusChanged,
   firstLessonHrefSet,
   planGenerationRefreshRequested,
+  planGenerationStoppedByLock,
 } = planGenerationSlice.actions;
 
 export default planGenerationSlice.reducer;

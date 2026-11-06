@@ -110,7 +110,7 @@ export function SourcePickerSection({
             aria-checked={includeAe}
             className={cn(
               "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors",
-              includeAe ? "border-primary bg-primary/10 text-primary" : "border-border bg-card text-foreground hover:bg-accent",
+              includeAe ? "border-primary bg-primary/10 text-primary" : "border-input bg-card text-foreground hover:bg-accent",
             )}
           >
             {includeAe && <Check className="h-3 w-3" aria-hidden />}

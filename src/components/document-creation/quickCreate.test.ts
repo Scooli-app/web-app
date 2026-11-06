@@ -41,6 +41,26 @@ describe("stripParsedTokens", () => {
     expect(strip("Plano: A fotossíntese · 3.º ano")).toBe("A fotossíntese");
   });
 
+  it("collapses the separators left where the year was removed", () => {
+    expect(strip("Teste sobre equações do 1.º grau · 7.º ano, com problemas")).toBe(
+      "equações do 1.º grau, com problemas",
+    );
+    expect(strip("Plano de aula sobre a população, 8.º ano, aula de 50 minutos")).toBe(
+      "a população, aula de 50 minutos",
+    );
+  });
+
+  it("leaves no space before a comma where 'para o 7.º ano' was removed", () => {
+    // Tiago's saved request read "equações do 1.º grau , com critérios".
+    expect(
+      strip("Teste de 45 minutos sobre equações do 1.º grau para o 7.º ano, com critérios de correção e cotações"),
+    ).toBe("Teste de 45 minutos sobre equações do 1.º grau, com critérios de correção e cotações");
+  });
+
+  it("keeps ordinals that are part of the topic", () => {
+    expect(strip("Ficha sobre D. Dinis e o 3.º ciclo, 5.º ano")).toBe("D. Dinis e o 3.º ciclo");
+  });
+
   it("falls back to the original text when stripping leaves nothing", () => {
     expect(strip("Plano de aula")).toBe("Plano de aula");
   });

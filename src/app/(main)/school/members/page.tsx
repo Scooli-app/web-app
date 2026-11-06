@@ -58,7 +58,11 @@ export default function SchoolMembersPage() {
 
   const totalMembers = members.length;
   const activeMembers = members.filter((member) => member.status === "active").length;
-  const activeThisMonth = members.filter((member) => member.generationsThisMonth > 0).length;
+  // Active = used Scooli this month (lastActiveAt is the latest successful interaction); no per-teacher counts.
+  const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+  const activeThisMonth = members.filter(
+    (member) => !!member.lastActiveAt && new Date(member.lastActiveAt) >= monthStart,
+  ).length;
   const totalInternalShares = members.reduce((sum, member) => sum + member.sharedResourcesCount, 0);
 
   return (
@@ -159,17 +163,8 @@ export default function SchoolMembersPage() {
                   </p>
                 </div>
 
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 xl:min-w-[34rem]">
-                  <div className="rounded-xl border border-border/70 px-4 py-3">
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Sparkles className="h-3.5 w-3.5" />
-                      {t("members.aiRequestsLabel")}
-                    </div>
-                    <p className="mt-2 text-lg font-semibold text-foreground">
-                      {t("members.aiRequestsCount", { count: member.generationsThisMonth })}
-                    </p>
-                  </div>
-
+                {/* No AI-request count per teacher: the school sees totals, never a teacher's usage. */}
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:min-w-[24rem]">
                   <div className="rounded-xl border border-border/70 px-4 py-3">
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <FileText className="h-3.5 w-3.5" />

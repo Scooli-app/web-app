@@ -32,7 +32,7 @@ export function TeachingMethodSection({ teachingMethod, onUpdate }: TeachingMeth
                 "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
                 isSelected
                   ? "border-primary bg-primary text-primary-foreground"
-                  : "border-border bg-card text-foreground hover:border-primary hover:bg-accent",
+                  : "border-input bg-card text-foreground hover:border-primary hover:bg-accent",
               )}
             >
               {tMethods(`${method.id}.label`)}

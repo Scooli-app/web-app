@@ -156,7 +156,7 @@ export function SuggestionForm({ onSuccess, onCancel }: SuggestionFormProps) {
           {t("categoryLabel")} <span className="text-red-500">*</span>
         </Label>
         <Select value={category} onValueChange={setCategory}>
-          <SelectTrigger className="border-white/10 bg-muted/50">
+          <SelectTrigger>
             <SelectValue placeholder={t("categoryPlaceholder")} />
           </SelectTrigger>
           <SelectContent>
@@ -176,7 +176,6 @@ export function SuggestionForm({ onSuccess, onCancel }: SuggestionFormProps) {
           placeholder={t("titlePlaceholder")}
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          className="border-white/10 bg-muted/50"
         />
       </div>
 
@@ -187,7 +186,7 @@ export function SuggestionForm({ onSuccess, onCancel }: SuggestionFormProps) {
         <Textarea
           id="description"
           placeholder={t("descriptionPlaceholder")}
-          className="min-h-[100px] border-white/10 bg-muted/50"
+          className="min-h-[100px]"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
         />

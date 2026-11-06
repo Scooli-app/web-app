@@ -1,6 +1,7 @@
 "use client";
 
 import { AuthLayout } from "@/components/auth/AuthLayout";
+import { LocaleAwareSignUp } from "@/components/auth/LocaleAwareSignUp";
 import { Button } from "@/components/ui/button";
 import {
   SignIn,
@@ -110,11 +111,16 @@ function AcceptOrganizationInvitationContent() {
     searchParams.get("organization_name") ?? t("fallbackOrganizationName");
   const invitedEmail = normalizeEmail(searchParams.get("email"));
   const roleLabel = formatRoleLabel(searchParams.get("role"), t);
-  const currentSearch = searchParams.toString();
+  // The Scooli team adds a school's teachers, who mostly have no account yet: the page opens on sign-up,
+  // and `auth=sign-in` (the form's own "sign in" link) switches it to sign-in for someone who already has one.
+  const wantsSignIn = searchParams.get("auth") === "sign-in";
+  const inviteParams = new URLSearchParams(searchParams.toString());
+  inviteParams.delete("auth");
+  const currentSearch = inviteParams.toString();
   const currentInvitationUrl = currentSearch
     ? `/accept-organization-invitation?${currentSearch}`
     : "/accept-organization-invitation";
-  const signUpUrl = `/sign-up?redirect_url=${encodeURIComponent(currentInvitationUrl)}`;
+  const signInInvitationUrl = `${currentInvitationUrl}${currentSearch ? "&" : "?"}auth=sign-in`;
   const currentUserEmail = normalizeEmail(
     user?.primaryEmailAddress?.emailAddress ??
       user?.emailAddresses?.[0]?.emailAddress,
@@ -303,14 +309,25 @@ function AcceptOrganizationInvitationContent() {
           </div>
 
           <div className="flex justify-center">
-            <SignIn
-              path="/accept-organization-invitation"
-              routing="path"
-              signInUrl={currentInvitationUrl}
-              signUpUrl={signUpUrl}
-              forceRedirectUrl={currentInvitationUrl}
-              fallbackRedirectUrl={currentInvitationUrl}
-            />
+            {wantsSignIn ? (
+              <SignIn
+                path="/accept-organization-invitation"
+                routing="path"
+                signInUrl={signInInvitationUrl}
+                signUpUrl={currentInvitationUrl}
+                forceRedirectUrl={currentInvitationUrl}
+                fallbackRedirectUrl={currentInvitationUrl}
+              />
+            ) : (
+              // Hash routing keeps the invitation's query string through the verification steps.
+              <LocaleAwareSignUp
+                routing="hash"
+                signInUrl={signInInvitationUrl}
+                forceRedirectUrl={currentInvitationUrl}
+                fallbackRedirectUrl={currentInvitationUrl}
+                initialValues={invitedEmail ? { emailAddress: invitedEmail } : undefined}
+              />
+            )}
           </div>
         </div>
       </AuthLayout>

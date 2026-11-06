@@ -25,5 +25,10 @@ export function createPlanLimitsCache(fetcher: () => Promise<PlanLimits | null>)
     invalidate() {
       cached = null;
     },
+    /** Stores a value the server just returned (e.g. trial activation), so no re-read is needed. */
+    set(userId: string | null | undefined, value: PlanLimits) {
+      cachedFor = userId ?? "";
+      cached = Promise.resolve(value);
+    },
   };
 }

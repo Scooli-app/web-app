@@ -111,7 +111,7 @@ export function FeatureFeedbackCard({
             autoGrow(e.currentTarget);
           }}
           placeholder={t("commentPlaceholder")}
-          className="placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 min-h-[96px] w-full resize-none rounded-xl border border-border bg-muted/40 px-3 py-2 text-sm outline-none transition-[color,box-shadow] focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50"
+          className="placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 min-h-[96px] w-full resize-none rounded-xl border border-input bg-card px-3 py-2 text-sm outline-none transition-[color,box-shadow] focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50"
         />
         {comment.length > COMMENT_MAX * 0.8 && (
           <p className="mt-1 text-right text-[11px] text-muted-foreground">

@@ -71,6 +71,7 @@ import { getThemeById } from "@/shared/types/presentation-theme";
 import { translate } from "@/i18n/translate";
 import { Routes, type Document } from "@/shared/types";
 import { fetchDocument, setCurrentDocument, updateDocument, chatWithDocument } from "@/store/documents/documentSlice";
+import { useAccountAccess } from "@/hooks/useAccountAccess";
 import { DocumentVersionsButton } from "@/components/document-versions/DocumentVersionsButton";
 import { regenerateDocumentImage as regenerateDocumentImageApi, generateDocumentImage as generateDocumentImageApi } from "@/services/api/document-images.service";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
@@ -97,6 +98,7 @@ import {
   Image as ImageIcon,
   Italic,
   Loader2,
+  Lock,
   MoreHorizontal,
   Play,
   Plus,
@@ -545,6 +547,8 @@ export function BlockDocumentEditor({ documentId }: Props) {
   const tVersions = useTranslations("editor.documentVersions");
   const tTheme = useTranslations("editor.themePicker");
   const dispatch = useAppDispatch();
+  // Read-only account (ENG-321): exports open the paywall.
+  const { isLocked: accountLocked, guard } = useAccountAccess();
   const rawDocument = useAppSelector((s) => s.documents.currentDocument);
   const document = rawDocument?.id === documentId ? rawDocument : null;
 
@@ -989,6 +993,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
   const handleGenerateImageFromModal = useCallback(
     async (prompt: string) => {
       if (!document?.id) return;
+      if (!guard("generate")) return;
 
       const loadingToastId = toast.loading(t("generatingImage"));
       try {
@@ -1021,7 +1026,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
         toast.error(err instanceof Error ? err.message : t("imageGenError"));
       }
     },
-    [document?.id, imageModalReplacing, applyElementPatch, insertImageElement, t],
+    [document?.id, imageModalReplacing, applyElementPatch, insertImageElement, t, guard],
   );
 
   /** Called from the floating change-image button on the Konva canvas. */
@@ -1179,6 +1184,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
 
   const handleGenerateSlide = useCallback(async () => {
     if (!document?.id || !canvas) return;
+    if (!guard("generate")) return;
 
     setIsGeneratingSlide(true);
     const loadingToastId = toast.loading(t("generatingSlide"));
@@ -1208,7 +1214,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
     } finally {
       setIsGeneratingSlide(false);
     }
-  }, [activeSlideId, canvas, document?.id, generateSlideTopic, insertGeneratedSlide, t]);
+  }, [activeSlideId, canvas, document?.id, generateSlideTopic, insertGeneratedSlide, t, guard]);
 
   const deleteSlide = useCallback(
     (slideId: string) => {
@@ -1635,6 +1641,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
   /* ── Export PPTX (native — programmatic, text editable in PowerPoint) ── */
   const handleExportPPTX = async () => {
     if (!canvas || !document) return;
+    if (!guard("export")) return;
     setExporting(true);
     try {
       const PptxGenJS = (await import("pptxgenjs")).default;
@@ -1847,6 +1854,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
   /* ── Export PDF (pdf-lib, vector — text is selectable) ──────────────── */
   const handleExportPDF = async () => {
     if (!canvas || !document) return;
+    if (!guard("export")) return;
     setExporting(true);
     try {
       const { PDFDocument, StandardFonts, degrees, rgb } = await import("pdf-lib");
@@ -2342,7 +2350,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
                 disabled={exporting}
                 className="cursor-pointer gap-2"
               >
-                <FileText className="h-4 w-4 text-blue-500" />
+                {accountLocked ? <Lock className="h-4 w-4" aria-hidden /> : <FileText className="h-4 w-4 text-blue-500" />}
                 {t("exportPptx")}
               </DropdownMenuItem>
               <DropdownMenuItem
@@ -2350,7 +2358,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
                 disabled={exporting}
                 className="cursor-pointer gap-2"
               >
-                <FileText className="h-4 w-4 text-red-500" />
+                {accountLocked ? <Lock className="h-4 w-4" aria-hidden /> : <FileText className="h-4 w-4 text-red-500" />}
                 {t("exportPdf")}
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -2431,7 +2439,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
 
               {/* Font family selector */}
               <select
-                className="h-7 rounded border border-border bg-background px-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
+                className="h-7 rounded border border-input bg-card px-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
                 value={selectedTextEl.fontFamily ?? ""}
                 onChange={(e) => applyElementPatch({ fontFamily: e.target.value || undefined })}
                 title={t("fontFamilyTooltip")}
@@ -2870,10 +2878,10 @@ export function BlockDocumentEditor({ documentId }: Props) {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="center" side="top" className="w-52">
                 <DropdownMenuItem onClick={handleExportPPTX} disabled={exporting} className="gap-2">
-                  <FileText className="h-4 w-4 text-blue-500" />{t("exportPptx")}
+                  {accountLocked ? <Lock className="h-4 w-4" aria-hidden /> : <FileText className="h-4 w-4 text-blue-500" />}{t("exportPptx")}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleExportPDF} disabled={exporting} className="gap-2">
-                  <FileText className="h-4 w-4 text-red-500" />{t("exportPdf")}
+                  {accountLocked ? <Lock className="h-4 w-4" aria-hidden /> : <FileText className="h-4 w-4 text-red-500" />}{t("exportPdf")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
