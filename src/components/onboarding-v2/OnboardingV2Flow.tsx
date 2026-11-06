@@ -5,15 +5,15 @@ import {
   flushDraftKeepalive,
   isDraftLocked,
   lockDrafts,
+  queueDraft,
   refreshDraftToken,
 } from "@/components/onboarding-v2/onboardingDraft";
 import { ProgressRail } from "@/components/onboarding-v2/ProgressRail";
 import { FirstClassStep } from "@/components/onboarding-v2/steps/FirstClassStep";
-import { FirstWeekStep } from "@/components/onboarding-v2/steps/FirstWeekStep";
-import { BaselineStep } from "@/components/onboarding-v2/steps/BaselineStep";
-import { RitualStep } from "@/components/onboarding-v2/steps/RitualStep";
 import { SchoolRoleStep } from "@/components/onboarding-v2/steps/SchoolRoleStep";
 import { TeachingStep } from "@/components/onboarding-v2/steps/TeachingStep";
+import { WaitStep } from "@/components/onboarding-v2/steps/WaitStep";
+import { skipsClassStep } from "@/components/onboarding-v2/teachingRules";
 import {
   useOnboardingV2,
   type OnboardingMode,
@@ -51,6 +51,8 @@ interface OnboardingV2FlowProps {
   hasClass: boolean;
   lastStep?: number | null;
   draft?: OnboardingV2DraftAnswers | null;
+  /** Invited by a school as a teacher: the school step is skipped. */
+  invitedTeacher?: boolean;
   /** Hidden but kept alive (route suppressed, or the upgrade modal is on top). */
   suspended: boolean;
   onClose: (result: OnboardingFlowResult) => void;
@@ -62,12 +64,13 @@ export function OnboardingV2Flow({
   hasClass,
   lastStep,
   draft,
+  invitedTeacher = false,
   suspended,
   onClose,
 }: OnboardingV2FlowProps) {
   const t = useTranslations("onboardingV2");
   const { step: stepVariants } = useMotionSafe();
-  const flow = useOnboardingV2({ mode, profileDone, hasClass, lastStep, draft });
+  const flow = useOnboardingV2({ mode, profileDone, hasClass, lastStep, draft, invitedTeacher });
   const { step, direction, steps, stepIndex, canGoBack, back } = flow;
 
   const [footer, setFooter] = useState<FooterDisplay | null>(null);
@@ -84,11 +87,6 @@ export function OnboardingV2Flow({
     handlers.onContinue();
   }, [step]);
 
-  const handleSecondary = useCallback(() => {
-    const handlers = handlersRef.current;
-    if (!handlers || handlers.stepId !== step) return;
-    handlers.onSecondary?.();
-  }, [step]);
 
   const canContinue = !!currentFooter && currentFooter.canContinue && !currentFooter.busy;
 
@@ -137,6 +135,11 @@ export function OnboardingV2Flow({
     if (mode === "profile") {
       void lockDrafts();
       onClose({ mode, skippedClass: false });
+    } else if (skipsClassStep(flow.answers.role)) {
+      // Pre-school: no curriculum to plan a class from, so straight to the last questions.
+      queueDraft({ step: 4, skippedClass: true }, { immediate: true });
+      flow.update({ skippedClass: true });
+      flow.goTo(4);
     } else flow.next();
   };
 
@@ -149,11 +152,7 @@ export function OnboardingV2Flow({
       case 3:
         return <FirstClassStep flow={flow} />;
       case 4:
-        return <FirstWeekStep flow={flow} />;
-      case 5:
-        return <BaselineStep flow={flow} />;
-      case 6:
-        return <RitualStep flow={flow} onFinished={finish} />;
+        return <WaitStep flow={flow} onFinished={finish} />;
     }
   };
 
@@ -183,15 +182,14 @@ export function OnboardingV2Flow({
           )}
         </header>
 
-        {/* Steps never scroll: each one is sized to fit between the header and footer. */}
-        <main className="relative min-h-0 flex-1 overflow-hidden">
-          <div className="mx-auto h-full w-full max-w-2xl px-4 py-3 sm:py-6">
+        {/* Steps are sized to fit; the longer branches (vocational courses, "O que já deste?") scroll on small screens. */}
+        <main className="relative min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
+          <div className="mx-auto min-h-full w-full max-w-2xl px-4 py-3 sm:py-6">
             {celebrating ? (
               <Celebration onDone={handleCelebrated} />
             ) : (
               // No exit phase: waiting for the old step to animate out (AnimatePresence
-              // mode="wait") left the screen blank for seconds while step 4's
-              // streaming rows were still animating. The new step enters immediately.
+              // mode="wait") left the screen blank for seconds. The new step enters immediately.
               <motion.div
                 className="h-full"
                 key={step}
@@ -224,17 +222,6 @@ export function OnboardingV2Flow({
                 </div>
               )}
               <div className="ml-auto flex min-w-0 items-center gap-2">
-                {currentFooter?.secondaryLabel && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="h-10 px-4"
-                    onClick={handleSecondary}
-                    disabled={currentFooter.busy}
-                  >
-                    {currentFooter.secondaryLabel}
-                  </Button>
-                )}
                 <Button
                   type="button"
                   className="h-auto min-h-10 min-w-32 whitespace-normal px-5 py-2 text-base"

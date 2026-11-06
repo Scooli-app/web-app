@@ -9,7 +9,7 @@ import type {
   PrepHoursPerWeek,
 } from "@/shared/types/onboarding-v2";
 
-/** Steps 5 (baseline) and 6 (ritual) answers. Owned by the flow hook so they survive the step unmounting. */
+/** The wait screen's answers (the old steps 5 and 6). Owned by the flow hook so they survive the step unmounting. */
 export interface RitualState {
   planningDay: number;
   /** null = the teacher never chose; the toggle shows ON but nothing is saved until touched. */
@@ -17,7 +17,7 @@ export interface RitualState {
   goals: OnboardingGoal[];
   source: AcquisitionSource | null;
   sourceOther: string;
-  /** Optional baseline questions (step 5). null / [] = not answered. */
+  /** Optional baseline questions. null / [] = not answered. */
   prepHours: PrepHoursPerWeek | null;
   currentTools: CurrentTool[];
   classCount: ClassCount | null;
@@ -76,10 +76,10 @@ export function applyRitualPatch(state: RitualState, patch: Partial<RitualState>
   return { ...state, ...patch };
 }
 
-/** Autosave payload of the whole steps 5-6 state; `step` is the step being edited. */
+/** Autosave payload of the whole wait-screen state; `step` is the step being edited. */
 export function ritualDraftPatch(
   state: RitualState,
-  step: OnboardingV2Step = 6,
+  step: OnboardingV2Step = 4,
 ): OnboardingV2DraftPatch {
   return {
     step,

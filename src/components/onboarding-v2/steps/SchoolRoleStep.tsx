@@ -9,12 +9,11 @@ import { useStepFooter } from "@/components/onboarding-v2/useStepFooter";
 import { Input } from "@/components/ui/input";
 import { useMotionSafe } from "@/lib/motion/useMotionSafe";
 import { onboardingV2Service } from "@/services/api/onboarding-v2.service";
-import type { TeacherRole } from "@/shared/types/onboarding-v2";
+import { ROLE_ORDER } from "@/components/onboarding-v2/teachingRules";
 import { motion } from "motion/react";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 
-const ROLES: TeacherRole[] = ["teacher", "coordinator", "director", "tutor", "other"];
 const SUGGEST_DEBOUNCE_MS = 250;
 const MIN_QUERY_LENGTH = 2;
 
@@ -167,7 +166,7 @@ export function SchoolRoleStep({ flow }: SchoolRoleStepProps) {
         <div className="space-y-2">
           <p className="text-sm font-medium text-foreground">{t("roleLabel")}</p>
           <div className="flex flex-wrap gap-2">
-            {ROLES.map((value) => (
+            {ROLE_ORDER.map((value) => (
               <ChoiceChip
                 key={value}
                 selected={role === value}

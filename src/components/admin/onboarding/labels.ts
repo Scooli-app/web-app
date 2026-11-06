@@ -79,6 +79,9 @@ export const CLASS_COUNT_LABELS: Record<string, string> = {
 
 export const TEACHER_ROLE_LABELS: Record<string, string> = {
   teacher: "Professor(a)",
+  special_ed: "Educação Especial",
+  vocational: "Ensino Profissional",
+  preschool: "Educação pré-escolar",
   coordinator: "Coordenador(a)",
   director: "Direção",
   tutor: "Explicador(a)",

@@ -1,6 +1,14 @@
 import type { TeachingItem } from "./teaching-profile";
 
-export type TeacherRole = "teacher" | "coordinator" | "director" | "tutor" | "other";
+export type TeacherRole =
+  | "teacher"
+  | "special_ed"
+  | "vocational"
+  | "preschool"
+  | "coordinator"
+  | "director"
+  | "tutor"
+  | "other";
 
 /** Optional baseline answers (single choice, except the tools which are multi-select). */
 export type PrepHoursPerWeek = "LT2" | "H2_5" | "H5_10" | "GT10";
@@ -18,6 +26,8 @@ export interface OnboardingV2Status {
   lastStep?: number | null;
   /** Partial answers saved while the teacher was still going through the flow. */
   draft?: OnboardingV2DraftAnswers | null;
+  /** The school the user was invited into, with the membership role (teacher, director, school_admin). */
+  school?: { name: string; role: string } | null;
 }
 
 export interface OnboardingV2DraftAnswers {
@@ -58,6 +68,8 @@ export interface OnboardingV2Profile {
   teacherRole: TeacherRole;
   schoolYears: number[];
   items: TeachingItem[];
+  /** Vocational teachers: the courses whose UCs are in `items`. */
+  courses?: string[];
 }
 
 export interface OnboardingV2Complete {
