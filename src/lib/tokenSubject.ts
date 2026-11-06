@@ -8,6 +8,12 @@ export function getTokenSubject(token: string): string | null {
   return typeof claims?.sub === "string" ? claims.sub : null;
 }
 
+/** The `exp` claim (seconds since the epoch), or null when the token has none. */
+export function getTokenExpiry(token: string): number | null {
+  const exp = readClaims(token)?.exp;
+  return typeof exp === "number" ? exp : null;
+}
+
 /** The active organization (`org_id`, or `o.id` in v2 tokens) a JWT was issued for. */
 export function getTokenOrgId(token: string): string | null {
   const claims = readClaims(token);
