@@ -3,6 +3,8 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useAccountAccess } from "@/hooks/useAccountAccess";
+import { isUpgradeLimitFailure } from "@/services/api/client";
 import { createTemplateFromDocument } from "@/services/api/template.service";
 import type { DocumentTemplate, DocumentType } from "@/shared/types";
 import { cn } from "@/shared/utils/utils";
@@ -35,6 +37,7 @@ export function TemplateFromDocumentCreator({
   onTemplateSaved,
 }: TemplateFromDocumentCreatorProps) {
   const t = useTranslations("documentCreation.templateFromDocument");
+  const { guard } = useAccountAccess();
   const [file, setFile] = useState<File | null>(null);
   const [name, setName] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
@@ -77,6 +80,8 @@ export function TemplateFromDocumentCreator({
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!file || !name.trim()) return;
+    // Read-only account (ENG-321): no new templates; the paywall opens instead.
+    if (!guard("create")) return;
 
     try {
       setIsProcessing(true);
@@ -90,6 +95,8 @@ export function TemplateFromDocumentCreator({
 
       onTemplateSaved(template, false);
     } catch (err: unknown) {
+      // Plan limit or read-only lock: the API client opened the paywall; no error line next to it.
+      if (isUpgradeLimitFailure(err)) return;
       setError(
         err instanceof Error
           ? err.message
