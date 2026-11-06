@@ -20,7 +20,7 @@ export function AdditionalDetailsSection({ additionalDetails, onUpdate }: Additi
         onChange={(e) => onUpdate("additionalDetails", e.target.value)}
         placeholder={t("placeholder")}
         rows={2}
-        className="min-h-0 rounded-lg border-border bg-muted px-3 py-2 text-sm placeholder:text-muted-foreground"
+        className="min-h-0 rounded-lg px-3 py-2 text-sm"
         aria-label={t("ariaLabel")}
       />
     </OptionRow>

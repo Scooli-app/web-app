@@ -1,3 +1,4 @@
+import { toLocalIso } from "@/components/onboarding-v2/freeWeek";
 import { hasTopic } from "@/shared/utils/lessonTopic";
 
 export interface WeekSlotLike {
@@ -50,4 +51,27 @@ export async function retryFailedLessons(
     if (options.shouldStop?.()) break;
   }
   return { problem };
+}
+
+/**
+ * The class's first lesson after the free week (its Sunday is weekStart + 6), for when that week has none left:
+ * onboarding then prepares this one so the teacher always lands with the next lesson ready.
+ */
+export function nextLessonAfter<T extends WeekSlotLike & { slotDate: string }>(
+  slots: T[],
+  weekStart: string,
+): T | null {
+  const start = new Date(`${weekStart}T00:00:00`);
+  const weekEnd = toLocalIso(new Date(start.getFullYear(), start.getMonth(), start.getDate() + 6));
+  return (
+    slots
+      .filter(
+        (slot) =>
+          slot.slotType === "LESSON" &&
+          slot.status !== "skipped" &&
+          hasTopic(slot) &&
+          slot.slotDate > weekEnd,
+      )
+      .sort((a, b) => a.slotDate.localeCompare(b.slotDate))[0] ?? null
+  );
 }

@@ -1,5 +1,7 @@
 "use client";
 
+import { currentTopic, profileExamplePairs } from "@/components/dashboard/profileExamples";
+import { SUBJECTS } from "@/components/document-creation/constants";
 import {
   buildQuickCreateUrl,
   parseQuickCreate,
@@ -7,11 +9,17 @@ import {
 } from "@/components/document-creation/quickCreate";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { teachingProfileService } from "@/services/api/teaching-profile.service";
+import { getTopicDomains } from "@/services/api/timetable.service";
+import { useAppSelector } from "@/store/hooks";
 import { ArrowRight, Sparkles } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import posthog from "posthog-js";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
+const EXAMPLE_CHIP_CLASS =
+  "rounded-full border border-input bg-card px-2.5 py-1 text-left text-xs font-medium text-foreground transition-colors hover:bg-accent";
 
 interface QuickStartExample {
   id: string;
@@ -50,6 +58,37 @@ const QUICK_START_EXAMPLES: QuickStartExample[] = [
   },
 ];
 
+/** An example built from what the teacher teaches: the topic usually next at this point of the year. */
+interface ProfileExample {
+  documentType: "lessonPlan" | "test" | "quiz";
+  subjectId: string;
+  year: number;
+  topic: string;
+}
+
+const PROFILE_EXAMPLE_TYPES: ProfileExample["documentType"][] = ["lessonPlan", "test", "quiz"];
+
+/** Examples from the teacher's years and subjects; empty when the profile gives none (the fixed ones show then). */
+async function loadProfileExamples(): Promise<ProfileExample[]> {
+  const pairs = profileExamplePairs(await teachingProfileService.get());
+  const today = new Date();
+  const found = await Promise.all(
+    pairs.map(async (pair) => {
+      const subject = SUBJECTS.find((s) => s.id === pair.subjectId);
+      if (!subject) return null;
+      const topics = await getTopicDomains(subject.value, pair.year).catch(() => []);
+      const topic = currentTopic(
+        topics.map((t) => t.label),
+        today,
+      );
+      return topic ? { ...pair, topic } : null;
+    }),
+  );
+  return found
+    .filter((example) => example !== null)
+    .map((example, index) => ({ ...example, documentType: PROFILE_EXAMPLE_TYPES[index] }));
+}
+
 interface QuickCreateCardProps {
   isWorksheetCreationEnabled: boolean;
   /** Examples help a new teacher start; one with turmas already has a week to work from. */
@@ -64,6 +103,39 @@ export function QuickCreateCard({
   const t = useTranslations("dashboard.quickCreate");
   const tQuickStart = useTranslations("documentCreation.quickStart");
   const [text, setText] = useState("");
+  // null while loading, so the fixed examples never flash before the teacher's own.
+  const [profileExamples, setProfileExamples] = useState<ProfileExample[] | null>(null);
+  // The card sits under the onboarding overlay: read the profile once onboarding has saved it.
+  const onboardingOpen = useAppSelector((state) => state.ui.isOnboardingModalOpen);
+
+  useEffect(() => {
+    if (!showExamples || onboardingOpen) return;
+    let cancelled = false;
+    loadProfileExamples()
+      .catch(() => [])
+      .then((examples) => {
+        if (!cancelled) setProfileExamples(examples);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [showExamples, onboardingOpen]);
+
+  const handleProfileExampleClick = (example: ProfileExample) => {
+    posthog.capture("dashboard_quick_start_clicked", {
+      example_id: `profile_${example.documentType}`,
+      document_type: example.documentType,
+      source: "profile",
+    });
+    router.push(
+      buildQuickCreateUrl({
+        documentType: example.documentType,
+        topic: example.topic,
+        schoolYear: example.year,
+        subjectId: example.subjectId,
+      }),
+    );
+  };
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
@@ -126,19 +198,34 @@ export function QuickCreateCard({
         </Button>
       </form>
 
-      {showExamples && (
+      {showExamples && profileExamples !== null && (
       <div className="mt-3 flex flex-wrap items-center gap-1.5">
         <span className="text-xs text-muted-foreground">{t("examplesLabel")}</span>
-        {QUICK_START_EXAMPLES.map((example) => (
-          <button
-            key={example.id}
-            type="button"
-            onClick={() => handleExampleClick(example)}
-            className="rounded-full border border-border bg-background px-2.5 py-1 text-xs font-medium text-foreground transition-colors hover:bg-accent"
-          >
-            {t(`examples.${example.labelKey}`)}
-          </button>
-        ))}
+        {profileExamples.length > 0
+          ? profileExamples.map((example) => (
+              <button
+                key={`${example.documentType}-${example.subjectId}-${example.year}`}
+                type="button"
+                onClick={() => handleProfileExampleClick(example)}
+                className={EXAMPLE_CHIP_CLASS}
+              >
+                {t("exampleLabel", {
+                  type: t(`exampleTypes.${example.documentType}`),
+                  topic: example.topic,
+                  year: example.year,
+                })}
+              </button>
+            ))
+          : QUICK_START_EXAMPLES.map((example) => (
+              <button
+                key={example.id}
+                type="button"
+                onClick={() => handleExampleClick(example)}
+                className={EXAMPLE_CHIP_CLASS}
+              >
+                {t(`examples.${example.labelKey}`)}
+              </button>
+            ))}
       </div>
       )}
     </div>

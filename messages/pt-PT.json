@@ -941,6 +941,12 @@
         "lessonPlanFotossintese": "Plano: A fotossíntese · 3.º ano",
         "testFracoes": "Teste: Frações · 5.º ano",
         "quizDescobrimentos": "Quiz: Os Descobrimentos · 5.º ano"
+      },
+      "exampleLabel": "{type}: {topic} · {year}.º ano",
+      "exampleTypes": {
+        "lessonPlan": "Plano",
+        "test": "Teste",
+        "quiz": "Quiz"
       }
     }
   },
@@ -949,7 +955,6 @@
     "progress": "Passo {step} de {total}",
     "back": "Voltar",
     "continue": "Continuar",
-    "later": "Mais tarde",
     "retry": "Tentar novamente",
     "saveFailed": "Não conseguimos guardar. Tenta outra vez.",
     "school": {
@@ -960,6 +965,9 @@
       "roleLabel": "O teu papel",
       "roles": {
         "teacher": "Professor/a",
+        "special_ed": "Educação Especial",
+        "vocational": "Ensino Profissional",
+        "preschool": "Educador/a de infância",
         "coordinator": "Coordenador/a",
         "director": "Direção",
         "tutor": "Explicador/a",
@@ -980,12 +988,19 @@
       "subjectsLabel": "Disciplinas",
       "subjectsEmpty": "Escolhe primeiro os anos para veres as disciplinas.",
       "subjectsPlaceholder": "Escolhe as disciplinas",
-      "subjectsCount": "{count, plural, one {# disciplina} other {# disciplinas}}"
+      "subjectsCount": "{count, plural, one {# disciplina} other {# disciplinas}}",
+      "vocationalSubtitle": "Escolhe o ano, os cursos e as UC que dás. Podes mudar isto depois nas Definições.",
+      "coursesLabel": "Cursos e UC",
+      "subjectsOptional": "Disciplinas (opcional)",
+      "specialEdHint": "Se apoias os alunos em várias disciplinas, podes deixar em branco.",
+      "titular": "Sou titular de turma (todas as disciplinas)",
+      "preschoolNote": "A Scooli é feita para o 1.º ao 12.º ano: as Orientações Curriculares do pré-escolar ainda não estão incluídas. Podes usá-la para criar materiais e fichas para os teus grupos."
     },
     "class": {
       "title": "Cria a tua primeira turma",
       "subtitle": "Com isto, a Scooli monta o teu plano de aulas.",
       "subjectLabel": "Disciplina",
+      "unitLabel": "UC",
       "yearLabel": "Ano",
       "yearOption": "{year}.º ano",
       "labelLabel": "Turma",
@@ -1006,48 +1021,20 @@
       "capNote": "No plano gratuito planeias até 4 semanas.",
       "capLink": "Ver planos",
       "create": "Criar turma",
-      "createFailed": "Não foi possível criar a turma. Tenta outra vez."
-    },
-    "plan": {
-      "title": "A montar o teu plano",
-      "titleDone": "O teu plano está pronto",
-      "subtitle": "Podes continuar quando quiseres: nós acabamos em segundo plano.",
-      "allDone": "Tudo pronto para continuares.",
-      "progressLabel": "Progresso do plano",
-      "stages": {
-        "created": "Turma criada",
-        "topics": "A planear os temas do ano",
-        "topicsDone": "Temas do ano planeados",
-        "week": "A escrever as aulas da primeira semana",
-        "weekDone": "Aulas da primeira semana prontas"
-      },
-      "topicsHints": {
-        "1": "A ler as Aprendizagens Essenciais…",
-        "2": "A distribuir os temas pelo ano letivo…",
-        "3": "A descontar feriados e interrupções…",
-        "4": "A ordenar os conteúdos por período…"
-      },
-      "weekHints": {
-        "1": "A escrever objetivos e atividades…",
-        "2": "A montar o guião de cada aula…",
-        "3": "A afinar os últimos detalhes…"
-      },
-      "moreLessons": "+{count} mais",
-      "weekRange": "Semana de {range}",
-      "topicsFailed": "Não conseguimos planear os temas agora.",
-      "weekFailed": "Algumas aulas não ficaram prontas."
-    },
-    "week": {
-      "noLessons": "Não há aulas para preparar nesta semana. Podes gerar as outras no calendário.",
-      "lessonFallback": "Aula {number}",
-      "pending": "Em espera",
-      "generating": "A escrever",
-      "ready": "Pronta",
-      "failed": "Falhou",
-      "openLesson": "Abrir a primeira aula"
+      "noTimetable": "Ainda não tenho horário",
+      "createFailed": "Não foi possível criar a turma. Tenta outra vez.",
+      "titularHint": "Começa por uma disciplina; juntas as outras depois em Turmas.",
+      "yearLetter": "{year}.º {label}",
+      "taught": {
+        "title": "O que já deste com o {label}?",
+        "titleNoLabel": "O que já deste com esta turma?",
+        "placeholder": "Por palavras tuas, ex.: frações, e comecei os ângulos",
+        "count": "{count} de {total} matérias",
+        "suggestion": "sugestão para {date}",
+        "notStarted": "Ainda não comecei"
+      }
     },
     "baseline": {
-      "title": "Para te mostrarmos quanto tempo poupas",
       "prepTitle": "Quantas horas por semana passas a preparar aulas e materiais?",
       "toolsTitle": "O que usas hoje para preparar aulas?",
       "classTitle": "Quantas turmas tens este ano?",
@@ -1071,32 +1058,50 @@
         "C5_PLUS": "5+"
       }
     },
-    "ritual": {
-      "title": "Quando planeias a tua semana?",
-      "subtitle": "Escolhe o dia em que queres ter tudo pronto para a semana seguinte.",
-      "days": {
-        "1": "Seg",
-        "2": "Ter",
-        "3": "Qua",
-        "4": "Qui",
-        "5": "Sex",
-        "6": "Sáb",
-        "7": "Dom"
+    "wait": {
+      "title": "A preparar a tua semana",
+      "titleReady": "A tua semana está pronta",
+      "titleNoClass": "Só mais umas perguntas",
+      "subtitleNoClass": "Todas opcionais. Ajudam-nos a mostrar-te quanto tempo poupas.",
+      "progressLabel": "Progresso do plano",
+      "term": "{term}.º período, semana {week}",
+      "classOf": "{subject}, {year}.º ano",
+      "lines": {
+        "reading": "A ler as Aprendizagens Essenciais de {subject}, {year}.º ano",
+        "readingUnit": "A ler o referencial de {subject}",
+        "readingGeneric": "A ler as Aprendizagens Essenciais da tua turma",
+        "skipping": "A saltar o que já deste: {topics}",
+        "planning": "A distribuir as matérias pelas aulas até ao fim do ano",
+        "weekStarting": "A preparar as próximas aulas",
+        "week": "A preparar as próximas aulas: {days}",
+        "done": "As tuas próximas aulas estão prontas",
+        "empty": "Não há aulas para preparar nas próximas semanas",
+        "topicsFailed": "Não conseguimos planear as matérias agora",
+        "weekFailed": "Algumas aulas não ficaram prontas"
       },
-      "emailLabel": "Enviar-me um email com a minha semana",
-      "emailHint": "Chega ao fim da tarde do dia que escolheste. Podes desligar quando quiseres.",
-      "planStatus": {
-        "working": "A tua semana ainda está a ser preparada…",
-        "done": "Pronta",
-        "failed": "Não conseguimos terminar a tua semana agora. Podes retomá-la no teu painel."
-      },
-      "goalsTitle": "O que procuras na Scooli?",
+      "meanwhile": "Enquanto preparamos",
+      "optional": "Perguntas opcionais",
       "sourceTitle": "Como nos conheceste?",
-      "goalsPlaceholder": "Escolhe os objetivos",
-      "selectedCount": "{count, plural, one {# escolhido} other {# escolhidos}}",
       "sourcePlaceholder": "Escolhe uma opção",
       "sourceOtherPlaceholder": "Conta-nos onde (opcional)",
-      "finish": "Concluir"
+      "emailTitle": "Email com a tua semana",
+      "emailSunday": "Domingo",
+      "emailOtherDay": "Outro dia",
+      "emailNo": "Não",
+      "emailDay": "Dia do email",
+      "days": {
+        "1": "Segunda",
+        "2": "Terça",
+        "3": "Quarta",
+        "4": "Quinta",
+        "5": "Sexta",
+        "6": "Sábado"
+      },
+      "ready": "Pronto: {count, plural, one {# aula para {dates}} other {# aulas para {dates}}}",
+      "finish": "Concluir",
+      "seeWeek": "Ver a minha semana",
+      "continueAnyway": "Continuar sem esperar",
+      "goHome": "Ir para o Início"
     },
     "celebration": {
       "title": "Está tudo pronto",
@@ -1149,7 +1154,9 @@
     "planning": {
       "title": "Email semanal",
       "digestTitle": "Email com a minha semana",
-      "digestDescription": "Recebes ao fim de semana um resumo das aulas da semana seguinte.",
+      "digestDescription": "Recebes um resumo das aulas da semana seguinte no dia que escolheres.",
+      "dayTitle": "Dia do email",
+      "dayDescription": "Chega a partir das 18h.",
       "loadError": "Não foi possível carregar esta preferência.",
       "retry": "Tentar novamente",
       "saveError": "Não conseguimos guardar a alteração."
@@ -2731,7 +2738,7 @@
     },
     "dashboard": {
       "description": "Visão operacional da organização, utilização da equipa e atividade recente.",
-      "loadError": "Não foi possível carregar o dashboard da escola",
+      "loadError": "Não foi possível carregar o painel da escola",
       "stats": {
         "activeSeats": "Lugares ativos",
         "availableSeats": "Lugares disponíveis",
@@ -2768,16 +2775,6 @@
         "empty": "Os tipos de documento mais criados aparecem aqui.",
         "emptyTitle": "Ainda sem documentos"
       },
-      "activeUsersCard": {
-        "title": "Utilizadores mais ativos",
-        "noEmail": "Sem email",
-        "lastActive": "Última atividade: {date}",
-        "aiRequestsBadge": "{count, plural, one {# pedido à IA} other {# pedidos à IA}}",
-        "documentsThisMonthBadge": "{count, plural, one {# documento no mês} other {# documentos no mês}}",
-        "totalDocumentsBadge": "{count, plural, one {# documento total} other {# documentos totais}}",
-        "empty": "Os professores mais ativos aparecem aqui assim que a equipa começar a usar a Scooli.",
-        "emptyTitle": "Ainda sem professores ativos"
-      },
       "viewMembers": "Ver membros"
     },
     "members": {
@@ -2796,8 +2793,6 @@
       "unnamedMember": "Utilizador sem nome",
       "noEmail": "Sem email disponível",
       "joinedAndLastActive": "Entrou em: {joinedDate} · Última atividade: {lastActiveDate}",
-      "aiRequestsLabel": "Pedidos à IA",
-      "aiRequestsCount": "{count, plural, one {# pedido} other {# pedidos}}",
       "documentsLabel": "Documentos",
       "documentsCount": "{count, plural, one {# documento} other {# documentos}}",
       "createdThisMonth": "{count, plural, one {# criado este mês} other {# criados este mês}}",
@@ -2807,9 +2802,9 @@
     },
     "settings": {
       "title": "Definições da escola",
-      "description": "Resumo inicial do workspace organizacional.",
+      "description": "Resumo da tua escola.",
       "loadError": "Não foi possível carregar as definições da escola",
-      "currentRole": "Role atual:",
+      "currentRole": "O teu papel:",
       "contractStatus": "Estado do contrato:"
     }
   },
@@ -2845,8 +2840,9 @@
       "title": "Execução curricular",
       "subtitle": "Ano letivo {year} · atualizado agora",
       "subtitleNoYear": "Atualizado agora",
+      "coverage": "Com base em {turmas, plural, one {# turma} other {# turmas}} de {teachers, plural, one {# professor} other {# professores}} que planeiam na Scooli.",
       "emptyTitle": "Ainda sem turmas",
-      "empty": "A vista enche-se à medida que os professores planeiam as turmas na Scooli."
+      "empty": "Os professores que a Scooli adicionar à escola aparecem aqui quando planearem as primeiras turmas."
     },
     "kpis": {
       "execution": "Execução do currículo",
@@ -3073,13 +3069,13 @@
       "title": "Esta conta não corresponde ao convite",
       "description": "O convite foi enviado para <strong>{invitedEmail}</strong>, mas neste momento estás autenticado como <strong>{currentUserEmail}</strong>.",
       "signOut": "Terminar sessão",
-      "goToDashboard": "Ir para o dashboard"
+      "goToDashboard": "Ir para o Início"
     },
     "error": {
       "title": "Não foi possível concluir o convite",
-      "notFound": "Não encontrámos um convite pendente para esta conta. Se já aceitaste o convite, podes abrir o dashboard. Caso contrário, confirma que entraste com o email certo.",
+      "notFound": "Não encontrámos um convite pendente para esta conta. Se já aceitaste o convite, podes abrir o Início. Caso contrário, confirma que entraste com o email certo.",
       "acceptFailed": "Não foi possível aceitar o convite agora. Tenta novamente dentro de instantes.",
-      "openDashboard": "Abrir dashboard",
+      "openDashboard": "Abrir o Início",
       "switchAccount": "Trocar de conta"
     },
     "accepted": {
@@ -3134,8 +3130,8 @@
       "fetchFailed": "Não foi possível carregar os acessos da conta"
     },
     "workspace": {
-      "fetchContextFailed": "Não foi possível carregar o contexto de workspace",
-      "fetchDashboardFailed": "Não foi possível carregar o dashboard da escola",
+      "fetchContextFailed": "Não foi possível carregar os dados da escola",
+      "fetchDashboardFailed": "Não foi possível carregar o painel da escola",
       "fetchMembersFailed": "Não foi possível carregar os membros da escola"
     },
     "onboarding": {
@@ -3621,6 +3617,8 @@
       "class": {
         "title": "Detalhes da turma",
         "subtitle": "Indica a disciplina e o ano de escolaridade.",
+        "unitHoursLabel": "Carga horária da UC (horas)",
+        "unitHoursHint": "Opcional. Está no referencial do curso; sem ela, a planificação diz «a definir».",
         "gradeLabel": "Ano de escolaridade *",
         "gradePlaceholder": "Seleciona o ano",
         "subjectLabel": "Disciplina *",
@@ -3635,6 +3633,8 @@
       "review": {
         "title": "Resumo",
         "subtitle": "Confirma os dados antes de gerar a planificação.",
+        "unitHours": "Carga horária da UC",
+        "unitHoursValue": "{count} h",
         "period": "Período",
         "type": "Tipo",
         "subject": "Disciplina",

@@ -100,7 +100,7 @@ describe("lifted step-5 state (F7)", () => {
 
   it("builds a draft patch with the whole step-5 state", () => {
     expect(ritualDraftPatch(state({ goals: [], source: null }))).toEqual({
-      step: 6,
+      step: 4,
       planningDay: 7,
       weeklyEmail: true,
       goals: [],

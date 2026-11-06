@@ -215,7 +215,7 @@ export function MathTextInput({
     <div
       className={cn(
         "relative w-full min-w-0 cursor-text",
-        !plain && "rounded-md border border-input bg-transparent px-3 text-base shadow-xs transition-[color,box-shadow] focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50 dark:bg-input/30 md:text-sm",
+        !plain && "rounded-md border border-input bg-card px-3 text-base shadow-xs transition-[color,box-shadow] focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50 md:text-sm",
         !plain && (multiline ? "min-h-16 py-2" : "flex min-h-9 items-center py-1"),
         "[&_.tiptap-mathematics-render]:cursor-pointer [&_.tiptap-mathematics-render]:rounded [&_.tiptap-mathematics-render]:px-0.5 [&_.tiptap-mathematics-render:hover]:bg-primary/10",
         className,

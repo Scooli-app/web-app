@@ -215,7 +215,7 @@ export function ClassSection({
           aside={
             isVocationalFeatureEnabled ? (
               // The kind of teaching as a small switch beside the heading, not a full-width bar.
-              <div className="flex shrink-0 rounded-md border border-border p-0.5 text-xs" role="radiogroup" aria-label={t("modeLabel")}>
+              <div className="flex shrink-0 rounded-md border border-input bg-card p-0.5 text-xs" role="radiogroup" aria-label={t("modeLabel")}>
                 {(["regular", "vocational"] as const).map((value) => {
                   const active = (isVocational ? "vocational" : "regular") === value;
                   return (
@@ -250,7 +250,7 @@ export function ClassSection({
               ) : (
                 <Select value={selectedCourse.code} onValueChange={onCourseChange}>
                   <SelectTrigger
-                    className="h-11 rounded-xl border-border bg-background px-4 text-sm"
+                    className="h-11 rounded-xl px-4 text-sm"
                     aria-label={t("courseSelectAriaLabel")}
                   >
                     <SelectValue placeholder={t("coursePlaceholder")} />

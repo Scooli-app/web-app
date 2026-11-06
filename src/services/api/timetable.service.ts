@@ -33,6 +33,8 @@ export interface CreateTimetableParams {
   reviewDates?: string[];   // ISO dates — REVIEW slots (explicit, overrides auto-cadence)
   /** What the teacher says was already taught, so the topics pick up from there (needs already_covered_enabled). */
   alreadyCoveredNotes?: string;
+  /** AE topics ticked as already taught: `key` values from getTopicDomains (needs already_covered_enabled). */
+  alreadyCoveredDomains?: string[];
   /** Formação específica (true) / geral (false), for subjects the AE splits that way. */
   isSpecificComponent?: boolean;
   /** Curso profissional, with either a UC code or a sociocultural/científica subject name — as on document creation. */
@@ -159,6 +161,20 @@ export interface GenerateLessonStreamCallbacks {
 export async function createTimetable(params: CreateTimetableParams): Promise<Timetable> {
   const response = await apiClient.post<Timetable>("/timetable", params);
   return response.data;
+}
+
+/** One AE topic of a subject and year, in programme order ("O que já deste?"). */
+export interface CurriculumTopic {
+  key: string;
+  domain: string;
+  label: string;
+}
+
+export async function getTopicDomains(subject: string, gradeLevel: number): Promise<CurriculumTopic[]> {
+  const response = await apiClient.get<{ topics: CurriculumTopic[] }>("/timetable/topic-domains", {
+    params: { subject, gradeLevel },
+  });
+  return response.data.topics ?? [];
 }
 
 export async function listTimetables(): Promise<Timetable[]> {

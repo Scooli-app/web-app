@@ -150,7 +150,7 @@ export function DocumentFilters({
       )}
 
       {classes.length > 0 && (
-        <div className="flex h-9 items-center gap-2 rounded-md border border-input px-3">
+        <div className="flex h-9 items-center gap-2 rounded-md border border-input bg-card px-3 shadow-xs">
           <Switch id="documents-group-by-class" checked={grouped} onCheckedChange={onGroupedChange} />
           <Label htmlFor="documents-group-by-class" className="cursor-pointer whitespace-nowrap text-sm font-normal">
             {t("groupByClass")}

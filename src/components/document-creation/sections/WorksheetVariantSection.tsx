@@ -39,7 +39,7 @@ export function WorksheetVariantSection({ worksheetVariant, onVariantChange }: W
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
                 isSelected
                   ? "border-primary bg-primary/10 text-primary"
-                  : "border-border bg-card text-foreground hover:border-primary/40 hover:bg-accent/40",
+                  : "border-input bg-card text-foreground hover:border-primary/40 hover:bg-accent/40",
               )}
             >
               {/* Short on the button; the full name and what it does are spelled out below. */}

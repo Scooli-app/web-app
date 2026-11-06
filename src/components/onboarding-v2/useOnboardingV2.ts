@@ -3,8 +3,12 @@
 import {
   canGoBackFrom,
   isStepOneComplete,
+  onboardingSteps,
   resolveStartStep,
+  WAIT_STEP,
+  type StepId,
 } from "@/components/onboarding-v2/resumeStep";
+import { skipsClassStep } from "@/components/onboarding-v2/teachingRules";
 import { usePlanGeneration } from "@/components/onboarding-v2/usePlanGeneration";
 import { flushDraft, queueDraft, resetDraft } from "@/components/onboarding-v2/onboardingDraft";
 import {
@@ -23,12 +27,21 @@ import type {
   OnboardingV2Status,
   TeacherRole,
 } from "@/shared/types/onboarding-v2";
+import type { TeachingItem } from "@/shared/types/teaching-profile";
 import { useAuth } from "@clerk/nextjs";
 import posthog from "posthog-js";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-export type OnboardingStepId = 1 | 2 | 3 | 4 | 5 | 6;
+export type OnboardingStepId = StepId;
 export type OnboardingMode = Exclude<OnboardingV2Status["mode"], "none">;
+
+/** What the wait screen narrates about the class just created. */
+export interface FirstClassSummary {
+  subjectLabel: string;
+  year: number;
+  /** Topics the teacher ticked as already taught. */
+  taught: string[];
+}
 
 export interface OnboardingAnswers {
   schoolName: string;
@@ -36,8 +49,12 @@ export interface OnboardingAnswers {
   role: TeacherRole | null;
   years: number[];
   subjectIds: string[];
+  /** Vocational teachers: the courses and the UCs picked in step 2. */
+  courses: string[];
+  units: TeachingItem[];
   /** Set once the first class exists: from then on Back is hidden. */
   timetableId: string | null;
+  firstClass: FirstClassSummary | null;
   skippedClass: boolean;
 }
 
@@ -47,7 +64,10 @@ const INITIAL_ANSWERS: OnboardingAnswers = {
   role: null,
   years: [],
   subjectIds: [],
+  courses: [],
+  units: [],
   timetableId: null,
+  firstClass: null,
   skippedClass: false,
 };
 
@@ -55,11 +75,13 @@ interface UseOnboardingV2Options {
   mode: OnboardingMode;
   /** Mandatory profile already saved (reload after step 2): resume at step 3. */
   profileDone: boolean;
-  /** A class already exists (reload after step 3/4): resume at the ritual step. */
+  /** A class already exists (reload after step 3): resume at the wait screen. */
   hasClass?: boolean;
   /** Last step the server saw, and the answers saved so far. */
   lastStep?: number | null;
   draft?: OnboardingV2DraftAnswers | null;
+  /** Invited by a school as a teacher: school and role come from the invitation. */
+  invitedTeacher?: boolean;
 }
 
 /** Step navigation, answers and analytics for the onboarding flow. */
@@ -69,10 +91,11 @@ export function useOnboardingV2({
   hasClass = false,
   lastStep = null,
   draft = null,
+  invitedTeacher = false,
 }: UseOnboardingV2Options) {
   const steps = useMemo<OnboardingStepId[]>(
-    () => (mode === "profile" ? [1, 2] : [1, 2, 3, 4, 5, 6]),
-    [mode],
+    () => onboardingSteps(mode, invitedTeacher),
+    [mode, invitedTeacher],
   );
   // Steps 1–2 are only "done" once the profile is saved (a draft role doesn't count), so
   // until then the flow starts at step 1 or 2 and never past it. See resolveStartStep.
@@ -88,8 +111,8 @@ export function useOnboardingV2({
       noSchool: draft?.noSchool ?? false,
     }),
   });
-  // Reloaded past the class step without a class: the class was skipped (Back leads to step 3).
-  const resumeAtRitual = mode === "full" && startStep >= 5 && !hasClass;
+  // Reloaded on the wait screen without a class: the class was skipped (or pre-school).
+  const resumeAtWait = mode === "full" && startStep === WAIT_STEP && !hasClass;
   const startIndex = steps.indexOf(startStep);
 
   const [index, setIndex] = useState(Math.max(startIndex, 0));
@@ -105,7 +128,7 @@ export function useOnboardingV2({
     schoolName: draft?.schoolName ?? "",
     noSchool: draft?.noSchool ?? false,
     role: draft?.teacherRole ?? null,
-    skippedClass: resumeAtRitual,
+    skippedClass: resumeAtWait,
     };
   });
 
@@ -125,19 +148,19 @@ export function useOnboardingV2({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Step-5 answers live here so Back → return never loses them, and every change is queued
+  // The wait screen's answers live here so Back → return never loses them, and every change is queued
   // for autosave from the handler (not from an effect that unmounting would skip).
   const [ritual, setRitual] = useState<RitualState>(() => initialRitualState(draft));
   const ritualRef = useRef(ritual);
-  const updateRitual = useCallback((patch: Partial<RitualState>, draftStep: 5 | 6 = 6) => {
+  const updateRitual = useCallback((patch: Partial<RitualState>) => {
     const nextState = applyRitualPatch(ritualRef.current, patch);
     ritualRef.current = nextState;
     setRitual(nextState);
-    queueDraft(ritualDraftPatch(nextState, draftStep));
+    queueDraft(ritualDraftPatch(nextState, WAIT_STEP));
   }, []);
 
   const step = steps[index];
-  // Owned here so leaving step 4 never cancels the topic/week generation.
+  // Owned here so leaving the wait screen never cancels the topic/week generation.
   const generation = usePlanGeneration();
 
   const update = useCallback((patch: Partial<OnboardingAnswers>) => {
@@ -161,6 +184,8 @@ export function useOnboardingV2({
           subjectIds: profile.items
             .filter((item) => item.kind === "subject" && item.qualificationCode === null)
             .map((item) => item.code),
+          courses: profile.courses,
+          units: profile.items.filter((item) => item.kind === "unit" && item.qualificationCode !== null),
         });
       })
       .catch(() => {
@@ -195,15 +220,18 @@ export function useOnboardingV2({
 
   const back = useCallback(() => {
     if (index <= 0) return;
-    // After a skipped class the previous screen is step 3, not the (skipped) step 4.
-    const target = step === 5 && answers.skippedClass ? steps.indexOf(3) : index - 1;
-    // Leaving the baseline / ritual step: send its debounced draft now.
-    if (step === 5 || step === 6) void flushDraft();
+    // Without a class the wait screen goes back to the class step (pre-school: to what they teach).
+    const target =
+      step === WAIT_STEP && answers.skippedClass
+        ? steps.indexOf(skipsClassStep(answers.role) ? 2 : 3)
+        : index - 1;
+    // Leaving the wait screen: send its debounced draft now.
+    if (step === WAIT_STEP) void flushDraft();
     setDirection(-1);
     setIndex(target);
-  }, [index, step, answers.skippedClass, steps]);
+  }, [index, step, answers.skippedClass, answers.role, steps]);
 
-  /** Back is hidden on the first screen, once a class exists, and on the week step. */
+  /** Back is hidden on the first screen and, once a class exists, on the class and wait steps. */
   const canGoBack = canGoBackFrom({
     stepIndex: index,
     step,

@@ -29,7 +29,7 @@ export function TopicSection({
           maxLength={MAX_LENGTHS.DOCUMENT_PROMPT}
           onChange={(e) => onUpdate("topic", e.target.value)}
           placeholder={placeholder}
-          className="h-10 w-full rounded-lg border-border bg-muted px-3 text-sm placeholder:text-muted-foreground"
+          className="h-10 w-full rounded-lg px-3 text-sm"
           aria-label={t("ariaLabel")}
         />
       </div>

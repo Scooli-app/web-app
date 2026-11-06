@@ -13,6 +13,7 @@ import {
 } from "./constants";
 import {
   getDefaultSchoolYear,
+  getDefaultSubjectId,
   getDefaultTeachingMode,
   getDefaultVocationalSchoolYear,
   getPreferredRegularSubjectIds,
@@ -182,6 +183,18 @@ export function useSubjectChoice({ choice, update, prefilledRef }: UseSubjectCho
     prefilledRef,
     update,
   ]);
+
+  // Then the subject, once the year is known: a teacher with a single subject in that year gets it preselected
+  // (a prefilled subject, or one already picked, wins). Decided once, so clearing it later sticks.
+  const hasAppliedSubjectDefaultRef = useRef(false);
+  useEffect(() => {
+    if (hasAppliedSubjectDefaultRef.current || !teachingProfile || !choice.schoolYear) return;
+    if (teachingMode !== "regular") return;
+    hasAppliedSubjectDefaultRef.current = true;
+    if (prefilledRef?.current.subject || choice.subject) return;
+    const subjectId = getDefaultSubjectId(preferredSubjectIds);
+    if (subjectId) update("subject", subjectId);
+  }, [teachingProfile, choice.schoolYear, choice.subject, teachingMode, preferredSubjectIds, prefilledRef, update]);
 
   const clearSubjectChoice = useCallback(() => {
     update("subject", "");

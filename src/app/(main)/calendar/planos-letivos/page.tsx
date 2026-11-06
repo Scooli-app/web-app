@@ -256,7 +256,7 @@ function EditDialog({ timetable, isSaving, onSave, onCancel }: EditDialogProps) 
                 </p>
               ) : (
                 <select
-                  className="h-9 w-full rounded-lg border border-input bg-background px-2 text-sm"
+                  className="h-9 w-full rounded-lg border border-input bg-card px-2 text-sm"
                   value={linkedPlanId}
                   onChange={(e) => setLinkedPlanId(e.target.value)}
                 >

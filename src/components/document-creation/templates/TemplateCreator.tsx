@@ -266,7 +266,7 @@ export function TemplateCreator({
                   value={name}
                   onChange={(e) => handleNameChange(e.target.value)}
                   placeholder={tPlaceholders(`${documentType}.name`)}
-                  className="h-11 rounded-xl border-input bg-input px-4 text-sm placeholder:text-muted-foreground"
+                  className="h-11 rounded-xl px-4 text-sm"
                 />
               </div>
 
@@ -286,7 +286,7 @@ export function TemplateCreator({
                   onChange={(e) => handleDescriptionChange(e.target.value)}
                   placeholder={tPlaceholders(`${documentType}.description`)}
                   rows={2}
-                  className="min-h-0 rounded-xl border-input bg-input px-4 py-3 text-sm placeholder:text-muted-foreground"
+                  className="min-h-0 rounded-xl px-4 py-3 text-sm"
                 />
               </div>
             </div>

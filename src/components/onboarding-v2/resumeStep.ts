@@ -1,5 +1,6 @@
 /** Pure decisions for where the onboarding flow starts and when Back is available. */
-export type StepId = 1 | 2 | 3 | 4 | 5 | 6;
+/** 1 school and role, 2 what you teach, 3 first class, 4 the wait screen (plan progress + last questions). */
+export type StepId = 1 | 2 | 3 | 4;
 
 export interface StartStepInput {
   mode: "full" | "profile";
@@ -27,37 +28,39 @@ export function isStepOneComplete(answers: {
   );
 }
 
-/** Steps 5 (baseline questions) and 6 (weekly ritual) come after the first class. */
-export const BASELINE_STEP = 5;
-export const RITUAL_STEP = 6;
+/**
+ * The steps a flow shows. A teacher the school invited already has the school and role from the
+ * invitation, so "Onde dás aulas?" (step 1) is left out.
+ */
+export function onboardingSteps(mode: "full" | "profile", invitedTeacher: boolean): StepId[] {
+  const steps: StepId[] = mode === "profile" ? [1, 2] : [1, 2, 3, 4];
+  return invitedTeacher ? steps.filter((step) => step !== 1) : steps;
+}
+
+/** The wait screen: the plan's progress and the last questions (the old steps 4–6). */
+export const WAIT_STEP = 4;
 
 /**
  * While the profile is not saved the flow can only start at step 1 or 2, whatever the
- * draft says. Afterwards it resumes at the class step, or at the baseline / ritual step when a
- * class exists or was skipped (the ritual only when the server saw the teacher reach it).
+ * draft says. Afterwards it resumes at the class step, or at the wait screen once a class exists,
+ * was skipped, or the server saw the teacher get there (old flows' steps 5–6 included).
  */
 export function resolveStartStep(input: StartStepInput): StepId {
   if (!input.profileDone || input.mode === "profile") return input.step1Complete ? 2 : 1;
-  if (input.lastStep === RITUAL_STEP && (input.hasClass || input.skippedClass)) return RITUAL_STEP;
-  if (input.hasClass) return BASELINE_STEP;
-  if (input.skippedClass || (input.lastStep !== null && input.lastStep >= BASELINE_STEP)) {
-    return input.lastStep === RITUAL_STEP ? RITUAL_STEP : BASELINE_STEP;
+  if (input.hasClass || input.skippedClass || (input.lastStep !== null && input.lastStep >= WAIT_STEP)) {
+    return WAIT_STEP;
   }
   return 3;
 }
 
 /**
- * Back is hidden on the first screen, on the week step, and (once a class exists) on the baseline
- * step, whose previous screen is the week step. The ritual step can always go back to the baseline.
+ * Back is hidden on the first screen and, once a class exists, on the class and wait steps (the
+ * class can't be un-created). Without a class the wait screen goes back to the class step.
  */
 export function canGoBackFrom(input: {
   stepIndex: number;
   step: StepId;
   classExists: boolean;
 }): boolean {
-  return (
-    input.stepIndex > 0 &&
-    !(input.step >= 3 && input.step <= BASELINE_STEP && input.classExists) &&
-    input.step !== 4
-  );
+  return input.stepIndex > 0 && !(input.step >= 3 && input.classExists);
 }
