@@ -35,6 +35,7 @@ import {
   submitResource,
   type CommunityFilters as CommunityFiltersType,
 } from "@/store/community";
+import { useAccountAccess } from "@/hooks/useAccountAccess";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { selectIsPro } from "@/store/subscription/selectors";
 import { setUpgradeModalOpen } from "@/store/ui/uiSlice";
@@ -52,6 +53,8 @@ import posthog from "posthog-js";
 function CommunityLibraryPage() {
   const t = useTranslations("community.page");
   const dispatch = useAppDispatch();
+  // Read-only account (ENG-321): reusing (a copy) and sharing open the paywall.
+  const { guard } = useAccountAccess();
   const router = useRouter();
 
   const resources = useAppSelector(selectResources);
@@ -121,6 +124,7 @@ function CommunityLibraryPage() {
   };
 
   const handleReuse = async (resourceId: string) => {
+    if (!guard("duplicate")) return;
     try {
       await dispatch(reuseSharedResource({ resourceId })).unwrap();
       posthog.capture("community_resource_reused", { resource_id: resourceId });
@@ -227,7 +231,9 @@ function CommunityLibraryPage() {
           reusedResourceIds={reusedResourceIds}
           hasActiveFilters={hasActiveFilters}
           onClearFilters={handleClearFilters}
-          onShare={() => setIsShareModalOpen(true)}
+          onShare={() => {
+            if (guard("share")) setIsShareModalOpen(true);
+          }}
         />
 
         <Dialog open={previewResource !== null} onOpenChange={(open) => !open && setPreviewResource(null)}>

@@ -18,6 +18,7 @@ import apiClient from "@/services/api/client";
 import { DocumentStillProcessingError, getUploadUrl, waitForDocument } from "@/services/api/document.service";
 import { selectIsCurriculumPlanEnabled } from "@/store/features/selectors";
 import { useFeatureAccess } from "@/components/feature/useFeatureAccess";
+import { useAccountAccess } from "@/hooks/useAccountAccess";
 import { FeatureUnavailable } from "@/components/feature/FeatureUnavailable";
 import { Routes, type CurriculumPlanningType } from "@/shared/types";
 import { cn } from "@/shared/utils/utils";
@@ -112,6 +113,8 @@ export default function CurriculumPlanImportPage() {
   }));
   const { loaded: featuresLoaded, enabled } = useFeatureAccess(selectIsCurriculumPlanEnabled);
   const router = useRouter();
+  // Read-only account (ENG-321): an import creates a new document.
+  const { guard } = useAccountAccess();
 
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState("");
@@ -140,6 +143,7 @@ export default function CurriculumPlanImportPage() {
 
   async function handleSubmit() {
     if (!canSubmit || !file) return;
+    if (!guard("create")) return;
     setSubmitting(true);
     setSteps(INITIAL_STEPS.map((s) => ({ ...s, status: "pending" as StepStatus })));
 
