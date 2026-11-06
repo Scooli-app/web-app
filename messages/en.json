@@ -2831,8 +2831,9 @@
       "title": "Curriculum progress",
       "subtitle": "{year} school year · updated just now",
       "subtitleNoYear": "Updated just now",
+      "coverage": "Based on {turmas, plural, one {# class} other {# classes}} planned in Scooli by {teachers, plural, one {# teacher} other {# teachers}}.",
       "emptyTitle": "No classes yet",
-      "empty": "This fills in as your teachers plan their classes in Scooli."
+      "empty": "Teachers show up here once Scooli has added them to your school and they plan their first classes."
     },
     "kpis": {
       "execution": "Curriculum delivered",

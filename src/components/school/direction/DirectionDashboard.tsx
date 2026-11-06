@@ -14,6 +14,7 @@ import { cn } from "@/shared/utils/utils";
 import { LayoutGrid } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
+import { coverageCounts } from "./coverage";
 import { DirectionGrid, GridLegend } from "./DirectionGrid";
 import { DEPARTMENTS } from "./format";
 import { TurmaDrawer } from "./TurmaDrawer";
@@ -136,11 +137,21 @@ export function DirectionDashboard() {
     };
   }, [attempt]);
 
-  const description = overview
+  const subtitle = overview
     ? overview.schoolYearLabel
       ? t("dashboard.subtitle", { year: overview.schoolYearLabel })
       : t("dashboard.subtitleNoYear")
     : undefined;
+  // Directors doubted the numbers when nothing said which turmas and teachers they come from.
+  const description =
+    overview && overview.turmas.length > 0 ? (
+      <>
+        {subtitle}
+        <span className="block">{t("dashboard.coverage", coverageCounts(overview.turmas))}</span>
+      </>
+    ) : (
+      subtitle
+    );
 
   return (
     <PageContainer size="xl" contentClassName="py-4 sm:py-8">

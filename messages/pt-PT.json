@@ -2831,8 +2831,9 @@
       "title": "Execução curricular",
       "subtitle": "Ano letivo {year} · atualizado agora",
       "subtitleNoYear": "Atualizado agora",
+      "coverage": "Com base em {turmas, plural, one {# turma} other {# turmas}} de {teachers, plural, one {# professor} other {# professores}} que planeiam na Scooli.",
       "emptyTitle": "Ainda sem turmas",
-      "empty": "A vista enche-se à medida que os professores planeiam as turmas na Scooli."
+      "empty": "Os professores que a Scooli adicionar à escola aparecem aqui quando planearem as primeiras turmas."
     },
     "kpis": {
       "execution": "Execução do currículo",
