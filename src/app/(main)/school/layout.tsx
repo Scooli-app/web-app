@@ -1,4 +1,5 @@
 import { SchoolAdminGuard } from "@/components/layout/SchoolAdminGuard";
+import { SchoolAreaNav } from "@/components/school/SchoolAreaNav";
 import SchoolLoading from "./loading";
 
 export default function SchoolLayout({
@@ -6,5 +7,10 @@ export default function SchoolLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <SchoolAdminGuard fallback={<SchoolLoading />}>{children}</SchoolAdminGuard>;
+  return (
+    <SchoolAdminGuard fallback={<SchoolLoading />}>
+      <SchoolAreaNav />
+      {children}
+    </SchoolAdminGuard>
+  );
 }

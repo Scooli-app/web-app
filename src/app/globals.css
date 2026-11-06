@@ -45,6 +45,15 @@
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
 
+  --color-direction-ok: var(--direction-ok);
+  --color-direction-ok-bg: var(--direction-ok-bg);
+  --color-direction-watch: var(--direction-watch);
+  --color-direction-watch-bg: var(--direction-watch-bg);
+  --color-direction-late: var(--direction-late);
+  --color-direction-late-bg: var(--direction-late-bg);
+  --color-direction-idle: var(--direction-idle);
+  --color-direction-idle-bg: var(--direction-idle-bg);
+
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
   --radius-sm: calc(var(--radius) - 4px);
@@ -106,6 +115,18 @@
   --sidebar-accent-foreground: #6753FF;
   --sidebar-border: #C7C9D9;
   --sidebar-ring: #6753FF;
+
+  /* School direction - class states (on track / watch / behind / no data).
+     Pale backgrounds are the film's; the text colours are darkened so each pair reaches WCAG AA (4.5:1) at 12px:
+     ok 4.81, watch 5.43, late 5.23, idle 6.92. */
+  --direction-ok: #0B7A5A;
+  --direction-ok-bg: #E7F7F1;
+  --direction-watch: #8A5A00;
+  --direction-watch-bg: #FDF4E3;
+  --direction-late: #B3362B;
+  --direction-late-bg: #FCEBEA;
+  --direction-idle: #475569;
+  --direction-idle-bg: #F1F5F9;
 }
 
 /* The utilities read the --color-* tokens, resolved once at the root: the scope sets those. */
@@ -181,6 +202,17 @@
   --sidebar-accent-foreground: #F4F5F8;
   --sidebar-border: #1E293B;
   --sidebar-ring: #6753FF;
+
+  /* School direction - class states: lighter text on a tinted dark background.
+     Worst case over card #161927: ok 6.70, watch 6.79, late 5.85, idle 5.58 (all above 4.5:1). */
+  --direction-ok: #34C99B;
+  --direction-ok-bg: #12A37A29;
+  --direction-watch: #E3AC49;
+  --direction-watch-bg: #C98A1229;
+  --direction-late: #F0867B;
+  --direction-late-bg: #DC5A4E29;
+  --direction-idle: #94A3B8;
+  --direction-idle-bg: #94A3B81F;
 }
 
 @layer base {

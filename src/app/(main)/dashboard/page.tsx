@@ -7,6 +7,7 @@ import { LoadError } from "@/components/ui/load-error";
 import { NextStepsCard } from "@/components/next-steps/NextStepsCard";
 import { YourWeekCard } from "@/components/dashboard/YourWeekCard";
 import { PageContainer } from "@/components/layout/PageContainer";
+import { SchoolHomeCard } from "@/components/school/SchoolHomeCard";
 import { useAccountAccess } from "@/hooks/useAccountAccess";
 import { invalidatePlanLimits, usePlanLimits } from "@/hooks/usePlanLimits";
 import { PaymentSuccessModal } from "@/components/ui/payment-success-modal";
@@ -105,6 +106,8 @@ function DashboardContent() {
         {flagsFailed && (
           <LoadError onRetry={() => void dispatch(fetchFeatureFlags())} />
         )}
+
+        <SchoolHomeCard />
 
         {isHorarioPlanosEnabled && (
           <div className="shrink-0 space-y-3">

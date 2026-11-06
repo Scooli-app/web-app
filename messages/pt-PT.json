@@ -301,6 +301,34 @@
         "title": "Membros",
         "description": "Ver membros e lugares da escola"
       },
+      "schoolDirection": {
+        "title": "Painel da direção",
+        "description": "O estado de cada turma da escola"
+      },
+      "schoolLearning": {
+        "title": "Aprendizagens",
+        "description": "Aprendizagens em que as turmas têm dificuldades"
+      },
+      "schoolAssessments": {
+        "title": "Avaliações",
+        "description": "As avaliações marcadas, semana a semana"
+      },
+      "schoolSubstitutions": {
+        "title": "Substituições",
+        "description": "Preparar a substituição de uma aula"
+      },
+      "schoolReports": {
+        "title": "Relatórios",
+        "description": "Relatório do estado das turmas"
+      },
+      "schoolUsage": {
+        "title": "Utilização",
+        "description": "Como a escola usa a Scooli"
+      },
+      "schoolSettings": {
+        "title": "Definições",
+        "description": "Definições da escola"
+      },
       "classes": {
         "title": "Turmas",
         "description": "As tuas turmas e horários"
@@ -2780,12 +2808,150 @@
       "loadError": "Não foi possível carregar as definições da escola",
       "currentRole": "Role atual:",
       "contractStatus": "Estado do contrato:"
+    }
+  },
+  "schoolDirection": {
+    "states": {
+      "on_track": "Em dia",
+      "watch": "A acompanhar",
+      "behind": "Atrasada",
+      "no_records": "Sem registos",
+      "not_started": "Ainda sem aulas",
+      "lessonsBehind": "{count, plural, one {# aula atrás} other {# aulas atrás}}"
     },
-    "usage": {
-      "title": "Utilização da escola",
-      "description": "Vista inicial da utilização agregada da organização.",
-      "loadError": "Não foi possível carregar a utilização da escola",
-      "generationsThisMonth": "Gerações deste mês"
+    "departments": {
+      "languages": "Línguas",
+      "maths_science": "Matemática e Ciências Experimentais",
+      "humanities": "Ciências Sociais e Humanas",
+      "arts_pe": "Expressões",
+      "primary": "1.º ciclo",
+      "other": "Outras"
+    },
+    "area": {
+      "label": "Vista da direção",
+      "overviewTab": "Painel",
+      "manage": "Gestão"
+    },
+    "homeCard": {
+      "fallbackName": "A tua escola",
+      "figures": "{percent}% do previsto · {behind, plural, =0 {nenhuma turma atrasada} one {# turma atrasada} other {# turmas atrasadas}}",
+      "hint": "Vê em que ponto do currículo está cada turma.",
+      "open": "Abrir painel da direção"
+    },
+    "dashboard": {
+      "title": "Execução curricular",
+      "subtitle": "Ano letivo {year} · atualizado agora",
+      "subtitleNoYear": "Atualizado agora",
+      "emptyTitle": "Ainda sem turmas",
+      "empty": "A vista enche-se à medida que os professores planeiam as turmas na Scooli."
+    },
+    "kpis": {
+      "execution": "Execução do currículo",
+      "executionHint": "do previsto para hoje",
+      "onTrack": "Em dia",
+      "watch": "A acompanhar",
+      "behind": "Atrasadas",
+      "noRecords": "Sem registos",
+      "classes": "{count, plural, one {turma} other {turmas}}"
+    },
+    "grid": {
+      "title": "Onde está cada turma",
+      "subtitle": "% do currículo previsto até hoje",
+      "allYears": "Todos os anos",
+      "year": "{grade}.º",
+      "department": "Departamento",
+      "allDepartments": "Todos os departamentos",
+      "noMatch": "Nenhuma turma com estes filtros.",
+      "classColumn": "Turma"
+    },
+    "drawer": {
+      "fallbackTitle": "Detalhe da turma",
+      "execution": "Execução: {percent}% do previsto",
+      "executionUnknown": "Execução: —",
+      "why": "Porquê",
+      "missedTitle": "Aulas não dadas ou a meio",
+      "lessonNumber": "Aula {n}",
+      "notHeld": "Não dada",
+      "leftHalfway": "Ficou a meio",
+      "behindTitle": "Conteúdos atrasados",
+      "plannedFor": "previsto para {date}",
+      "difficultiesTitle": "Dificuldades da turma",
+      "flagged": "{count, plural, one {assinalada # vez} other {assinalada # vezes}}",
+      "planTitle": "Ajuste ao plano",
+      "planAdjusted": "Reajustado a {date}",
+      "planPending": "Proposta por rever desde {date}",
+      "nextTest": "Próximo teste"
+    },
+    "learning": {
+      "title": "Onde a escola precisa de reforço",
+      "subtitle": "Aprendizagens que mais turmas assinalaram nas últimas 4 semanas",
+      "allSubjects": "Todas as disciplinas",
+      "summary": "{subject} · {grade}.º ano · {flagged} de {total, plural, one {# turma} other {# turmas}} {flagged, plural, one {assinalou} other {assinalaram}} dificuldades",
+      "reinforcement": "Ficha de reforço criada",
+      "empty": "Nenhuma turma assinalou dificuldades nas últimas 4 semanas."
+    },
+    "assessments": {
+      "title": "Calendário de avaliações",
+      "subtitle": "Semana de {range}",
+      "subtitleYear": "Semana de {range} · {grade}.º ano",
+      "previous": "Semana anterior",
+      "next": "Semana seguinte",
+      "test": "Teste · {subject}",
+      "clash": "{class} tem {n} testes na mesma semana",
+      "teachers": "Docentes",
+      "empty": "Sem testes marcados nesta semana."
+    },
+    "substitutions": {
+      "title": "Substituições",
+      "subtitle": "Quem falta, quem substitui e onde cada turma ficou",
+      "absencesTitle": "Ausências comunicadas",
+      "register": "Registar ausência",
+      "emptyAbsences": "Ainda não há ausências registadas.",
+      "covered": "Coberta",
+      "absenceSummary": "{day} · {count, plural, =0 {sem aulas} one {# aula} other {# aulas}}",
+      "dialog": {
+        "title": "Registar ausência",
+        "description": "Quem falta, em que dia e quem fica com as aulas.",
+        "teacher": "Docente ausente",
+        "date": "Dia",
+        "substitute": "Quem substitui",
+        "choose": "Escolher docente",
+        "cancel": "Cancelar",
+        "confirm": "Registar ausência",
+        "error": "Não conseguimos carregar as aulas desse dia. Tenta de novo."
+      },
+      "ready": "Pronta para quem substitui",
+      "sent": "Enviada",
+      "lessonHeading": "{class} · {subject} · Aula {n}",
+      "substitute": "Quem substitui: {name}",
+      "leftOff": "Onde a turma ficou",
+      "leftOffNone": "Ainda não há aulas registadas nesta turma.",
+      "status": {
+        "taught": "Lecionada",
+        "partially_taught": "Ficou a meio",
+        "not_held": "Não dada"
+      },
+      "topic": "Tema da aula",
+      "documents": "Documentos da aula",
+      "noDocuments": "Sem documentos associados a esta aula.",
+      "send": "Enviar a {name}",
+      "sentToast": "Enviado a {name}",
+      "noLessons": "{name} não tem aulas neste dia."
+    },
+    "reports": {
+      "title": "Relatórios",
+      "subtitle": "Relatório de execução curricular · ano letivo {label}",
+      "subtitleNoYear": "Relatório de execução curricular",
+      "export": "Exportar PDF",
+      "sheetTitle": "Relatório de execução curricular",
+      "sheetYear": "Ano letivo {label}",
+      "generated": "Gerado a {date}",
+      "audience": "Para o Conselho Pedagógico",
+      "byDepartment": "1. Execução por departamento",
+      "byDepartmentEmpty": "Ainda não há registos de aulas para calcular a execução.",
+      "followUp": "2. Turmas a acompanhar",
+      "followUpEmpty": "Nenhuma turma a acompanhar: todas as turmas com registos estão em dia.",
+      "reinforce": "3. Aprendizagens a reforçar"
     }
   },
   "checkout": {
