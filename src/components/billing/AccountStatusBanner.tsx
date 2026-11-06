@@ -50,13 +50,14 @@ export function AccountStatusBanner({ className }: { className?: string }) {
     banner = (
       <div
         role="status"
-        className="flex flex-col gap-3 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-amber-950 sm:flex-row sm:items-center sm:justify-between dark:border-amber-800/60 dark:bg-amber-950/30 dark:text-amber-100"
+        className="flex flex-col gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-2.5 text-amber-950 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:py-3 dark:border-amber-800/60 dark:bg-amber-950/30 dark:text-amber-100"
       >
         <div className="flex min-w-0 items-start gap-3">
           <Lock className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" aria-hidden />
           <div className="min-w-0">
             <p className="text-sm font-semibold">{t("lockedTitle")}</p>
-            <p className="text-sm text-amber-900/80 dark:text-amber-200/80">
+            {/* Phones get title + button only (the reason stays for screen readers): the full notice, shown on every page, took a quarter of the editor. */}
+            <p className="sr-only text-sm text-amber-900/80 sm:not-sr-only dark:text-amber-200/80">
               {t(`lockedReason.${lockReason ?? "unknown"}`)}
             </p>
           </div>
@@ -90,7 +91,7 @@ export function AccountStatusBanner({ className }: { className?: string }) {
       >
         <span className="flex min-w-0 items-center gap-2 text-sm text-foreground">
           <Sparkles className="h-4 w-4 shrink-0 text-primary" aria-hidden />
-          <span className="min-w-0 truncate">
+          <span className="min-w-0">
             {trialDaysLeft !== null ? t("trialDiscreet", { days: trialDaysLeft }) : t("trialActive")}
           </span>
         </span>

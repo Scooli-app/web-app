@@ -82,7 +82,10 @@ export function MonthGridSkeleton({ dayLabels }: { dayLabels: string[] }) {
       <div className="grid grid-cols-7 divide-x divide-border border-b bg-muted/20">
         {dayLabels.map((d) => (
           <div key={d} className="py-2 text-center">
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{d}</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              <span className="lg:hidden">{d.slice(0, 3)}</span>
+              <span className="hidden lg:inline">{d}</span>
+            </p>
           </div>
         ))}
       </div>
