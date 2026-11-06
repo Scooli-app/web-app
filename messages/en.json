@@ -3608,6 +3608,8 @@
       "class": {
         "title": "Class details",
         "subtitle": "State the subject and year.",
+        "unitHoursLabel": "Unit hours",
+        "unitHoursHint": "Optional. It's in the course's reference framework; without it, the plan says \"to be set\".",
         "gradeLabel": "Year *",
         "gradePlaceholder": "Select the year",
         "subjectLabel": "Subject *",
@@ -3622,6 +3624,8 @@
       "review": {
         "title": "Summary",
         "subtitle": "Confirm the details before generating the plan.",
+        "unitHours": "Unit hours",
+        "unitHoursValue": "{count} h",
         "period": "Period",
         "type": "Type",
         "subject": "Subject",
