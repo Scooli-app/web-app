@@ -31,4 +31,14 @@ describe("createPlanLimitsCache", () => {
     await cache.get("u");
     expect(fetcher).toHaveBeenCalledTimes(3);
   });
+
+  it("serves a value the server just returned (trial activation) without asking again", async () => {
+    const fetcher = vi.fn().mockResolvedValue({ isPro: false, status: "LOCKED" });
+    const cache = createPlanLimitsCache(fetcher);
+
+    await cache.get("u");
+    cache.set("u", { isPro: true, status: "TRIAL" } as never);
+    expect(await cache.get("u")).toEqual({ isPro: true, status: "TRIAL" });
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
 });

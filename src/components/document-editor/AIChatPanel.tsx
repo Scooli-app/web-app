@@ -15,8 +15,9 @@ import {
 import { SourcesList } from "@/components/ui/sources-list";
 import type { RagSource } from "@/shared/types/document";
 import { useKeyboardInset } from "@/hooks/use-keyboard-inset";
+import { useAccountAccess } from "@/hooks/useAccountAccess";
 import { cn } from "@/shared/utils/utils";
-import { FileText, Loader2, MessageCircle, Send, Sparkles, X } from "lucide-react";
+import { FileText, Loader2, Lock, MessageCircle, Send, Sparkles, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import posthog from "posthog-js";
 import { useEffect, useRef, useState } from "react";
@@ -171,6 +172,7 @@ function ChatContent({
   onSuggestionClick,
   nudge,
   onNudgeDismiss,
+  accountLocked = false,
 }: {
   chatHistory: ChatMessage[];
   isStreaming: boolean;
@@ -192,8 +194,11 @@ function ChatContent({
   onSuggestionClick?: (chip: SuggestionChip) => void;
   nudge?: boolean;
   onNudgeDismiss?: () => void;
+  /** Read-only account: the send button shows a lock and opens the paywall. */
+  accountLocked?: boolean;
 }) {
   const t = useTranslations("editor.aiChatPanel");
+  const tLock = useTranslations("billing.lock");
   const isDesktop = variant === "desktop";
   const isInputLocked = isStreaming || disabled;
   const [activeTab, setActiveTab] = useState<"assistant" | "sources">(
@@ -336,6 +341,11 @@ function ChatContent({
               >
                 {isStreaming ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
+                ) : accountLocked ? (
+                  <>
+                    <Lock className="h-4 w-4" aria-hidden />
+                    <span className="sr-only">{tLock("lockedHint")}</span>
+                  </>
                 ) : (
                   <Send className="h-4 w-4" />
                 )}
@@ -385,9 +395,14 @@ export default function AIChatPanel({
   onMobileOpenChange,
 }: AIChatPanelProps) {
   const t = useTranslations("editor.aiChatPanel");
+  const tLock = useTranslations("billing.lock");
+  // Read-only account (ENG-321): the chat stays visible; sending opens the paywall instead.
+  const { isLocked: accountLocked, guard } = useAccountAccess();
   const resolvedPlaceholder = disabled
     ? t("generatingPlaceholder")
-    : (placeholder ?? t("defaultPlaceholder"));
+    : accountLocked
+      ? tLock("chatPlaceholder")
+      : (placeholder ?? t("defaultPlaceholder"));
   const resolvedTitle = title ?? t("defaultTitle");
   const [chatMessage, setChatMessage] = useState("");
   const [lockedMessage, setLockedMessage] = useState<string | null>(null);
@@ -421,6 +436,7 @@ export default function AIChatPanel({
     if (disabled || isStreaming || lockedMessage !== null || !chatMessage.trim()) {
       return;
     }
+    if (!guard("generate")) return;
 
     setShowSuggestions(false);
     typedInFlightRef.current = true;
@@ -451,6 +467,7 @@ export default function AIChatPanel({
 
   const handleSuggestionClick = async (chip: SuggestionChip) => {
     if (disabled || isStreaming || lockedMessage !== null) return;
+    if (!guard("generate")) return;
     setShowSuggestions(false);
     typedInFlightRef.current = false;
     typedFailedRef.current = false;
@@ -477,6 +494,12 @@ export default function AIChatPanel({
       setLockedMessage(null);
     }
   };
+
+  const guardedImageRegen = onImageRegen
+    ? () => {
+        if (guard("generate")) onImageRegen();
+      }
+    : undefined;
 
   // An error shown while a typed request is in flight is that request failing (declared before the effect below,
   // so it runs first when both change in one render).
@@ -525,7 +548,8 @@ export default function AIChatPanel({
           variant="desktop"
           sources={sources}
           showGenerationHint={showGenerationHint}
-          onImageRegen={onImageRegen}
+          onImageRegen={guardedImageRegen}
+          accountLocked={accountLocked}
           onDismissImageRegen={onDismissImageRegen}
           showSuggestions={showSuggestions}
           documentType={suggestionsKey ?? documentType}
@@ -595,7 +619,8 @@ export default function AIChatPanel({
                 variant="mobile"
                 sources={sources}
                 showGenerationHint={showGenerationHint}
-                onImageRegen={onImageRegen}
+                onImageRegen={guardedImageRegen}
+                accountLocked={accountLocked}
                 onDismissImageRegen={onDismissImageRegen}
                 showSuggestions={showSuggestions}
                 documentType={suggestionsKey ?? documentType}

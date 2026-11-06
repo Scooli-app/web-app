@@ -5,6 +5,7 @@ import SettingsLoading from "./loading";
 import { BillingNifCard } from "@/components/billing/BillingNifCard";
 import { LanguagePreferences } from "@/components/settings/LanguagePreferences";
 import { PlanningRitualPreferences } from "@/components/settings/PlanningRitualPreferences";
+import { TrialStatusCard } from "@/components/billing/TrialStatusCard";
 import { Button } from "@/components/ui/button";
 import { TeachingProfileCard } from "@/components/teaching-profile/TeachingProfileCard";
 import {
@@ -392,6 +393,7 @@ function SettingsContent() {
             </div>
           ) : isFreeUser ? (
             <>
+              <TrialStatusCard />
               <div className="mb-6 rounded-xl border border-border bg-muted/40 p-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
