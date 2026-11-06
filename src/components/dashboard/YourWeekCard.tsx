@@ -1,5 +1,6 @@
 "use client";
 
+import { useAccountAccess } from "@/hooks/useAccountAccess";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CheckInStrip } from "@/components/dashboard/CheckInStrip";
 import { FocusDayList } from "@/components/dashboard/FocusDayList";
@@ -61,6 +62,7 @@ export function YourWeekCard() {
   const tTimetable = useTranslations("timetable");
   const locale = useLocale();
   const dispatch = useAppDispatch();
+  const { guard } = useAccountAccess();
   const { getToken } = useAuth();
   const newClassGate = useNewClassGate();
   const { limits } = usePlanLimits();
@@ -225,6 +227,7 @@ export function YourWeekCard() {
   const handlePrepare = async () => {
     setConfirmingPrepare(false);
     if (preparing || pending.length === 0) return;
+    if (!guard("generate")) return;
     posthog.capture("your_week_prepare_clicked", { lessons: pending.length });
     setPreparing(true);
     let problem = false;

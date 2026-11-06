@@ -5,6 +5,8 @@ import { useAppDispatch } from "@/store/hooks";
 import { createTimetable, generateTopics } from "@/store/timetable/timetableSlice";
 import { useCallback, useEffect, useState } from "react";
 import { invalidatePlanLimits } from "@/hooks/usePlanLimits";
+import { useAccountAccess } from "@/hooks/useAccountAccess";
+import { isUpgradeLimitFailure } from "@/services/api/client";
 
 export type ClassCreationPhase = "idle" | "creating" | "topics" | "done" | "failed";
 
@@ -24,6 +26,7 @@ export type CreateClassResult =
  */
 export function useCreateClassWithTopics() {
   const dispatch = useAppDispatch();
+  const { guard } = useAccountAccess();
   const [phase, setPhase] = useState<ClassCreationPhase>("idle");
   const [timetableId, setTimetableId] = useState<string | null>(null);
 
@@ -41,14 +44,25 @@ export function useCreateClassWithTopics() {
 
   const generate = useCallback(
     async (id: string) => {
+      // Read-only account (ENG-321): the turma is created (allowed), its AI topics are not.
+      // The paywall opens and the teacher carries on to the turma instead of a failure screen.
+      if (!guard("generate")) {
+        setPhase("done");
+        return true;
+      }
       setPhase("topics");
       const result = await dispatch(generateTopics(id));
+      if (generateTopics.rejected.match(result) && isUpgradeLimitFailure(result.error)) {
+        // The lock (or a plan limit) started mid-session: the API client opened the paywall.
+        setPhase("done");
+        return true;
+      }
       // 0 titles written means the model's answer was unusable — as good as a failure.
       const ready = generateTopics.fulfilled.match(result) && result.payload.updated > 0;
       setPhase(ready ? "done" : "failed");
       return ready;
     },
-    [dispatch]
+    [dispatch, guard]
   );
 
   const create = useCallback(

@@ -9,6 +9,7 @@ import { onboardingFreeWeek } from "@/components/onboarding-v2/freeWeek";
 import type { WeekRow } from "@/components/onboarding-v2/steps/WeekLessonRow";
 import { invalidatePlanLimits } from "@/hooks/usePlanLimits";
 import { resolveEffectiveContentLanguage } from "@/i18n/clientLocale";
+import { AccountLockedError } from "@/services/api/client";
 import { meService } from "@/services/api/me.service";
 import { classifyWeek, retryFailedLessons } from "@/components/onboarding-v2/weekWork";
 import {
@@ -26,6 +27,7 @@ import {
   lessonStatusChanged,
   planGenerationRefreshRequested,
   planGenerationStarted,
+  planGenerationStoppedByLock,
   topicsLoaded,
   topicsStatusChanged,
   weekLessonsLoaded,
@@ -111,6 +113,8 @@ async function runWeek(c: PlanGenerationRunnerContext, id: string, weekStart: st
     const initial = classifyWeek(klass?.lessons ?? []);
     let problem = false;
     let limitHit = false;
+    // The read-only lock (ENG-321): the paywall is open; stop without a "failed" banner.
+    let locked = false;
     if (initial.pendingIds.length > 0 || initial.failedIds.length === 0) {
       await generateWeek(
         id,
@@ -135,6 +139,10 @@ async function runWeek(c: PlanGenerationRunnerContext, id: string, weekStart: st
             problem = true;
             limitHit = true;
             dispatch(setUpgradeModalOpen(true));
+          },
+          onAccountLocked: () => {
+            limitHit = true;
+            locked = true;
           },
           onError: () => {
             problem = true;
@@ -161,6 +169,10 @@ async function runWeek(c: PlanGenerationRunnerContext, id: string, weekStart: st
                 limitHit = true;
                 if (isUpgradeReason(code)) dispatch(openUpgradeModalForReason(code));
               },
+              onAccountLocked: () => {
+                limitHit = true;
+                locked = true;
+              },
               onQuotaExceeded: () => {
                 limitHit = true;
                 dispatch(setUpgradeModalOpen(true));
@@ -178,6 +190,13 @@ async function runWeek(c: PlanGenerationRunnerContext, id: string, weekStart: st
         { shouldStop: () => limitHit },
       );
       if (retried.problem) problem = true;
+    }
+
+    if (locked) {
+      // The marker stays, so the plan resumes after the upgrade (a reload or the next visit).
+      dispatch(planGenerationStoppedByLock());
+      track("plan_generation_failed", "week", startedAt, { lessons_ready: lessonsReady });
+      return;
     }
 
     // The first lesson that now has a document can be opened straight away.
@@ -238,8 +257,13 @@ async function runTopics(c: PlanGenerationRunnerContext, id: string, weekStart: 
       topics_count: result.updated,
     });
   } catch (err) {
-    posthog.captureException(err);
-    dispatch(topicsStatusChanged({ status: "failed" }));
+    if (err instanceof AccountLockedError) {
+      // Read-only lock (ENG-321): the API client opened the paywall; no failed banner next to it.
+      dispatch(planGenerationStoppedByLock());
+    } else {
+      posthog.captureException(err);
+      dispatch(topicsStatusChanged({ status: "failed" }));
+    }
     track("plan_generation_failed", "topics", startedAt, { topics_count: 0 });
   } finally {
     running.topics = false;
