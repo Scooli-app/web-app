@@ -2730,7 +2730,7 @@
     },
     "dashboard": {
       "description": "Visão operacional da organização, utilização da equipa e atividade recente.",
-      "loadError": "Não foi possível carregar o dashboard da escola",
+      "loadError": "Não foi possível carregar o painel da escola",
       "stats": {
         "activeSeats": "Lugares ativos",
         "availableSeats": "Lugares disponíveis",
@@ -2794,9 +2794,9 @@
     },
     "settings": {
       "title": "Definições da escola",
-      "description": "Resumo inicial do workspace organizacional.",
+      "description": "Resumo da tua escola.",
       "loadError": "Não foi possível carregar as definições da escola",
-      "currentRole": "Role atual:",
+      "currentRole": "O teu papel:",
       "contractStatus": "Estado do contrato:"
     }
   },
@@ -3060,13 +3060,13 @@
       "title": "Esta conta não corresponde ao convite",
       "description": "O convite foi enviado para <strong>{invitedEmail}</strong>, mas neste momento estás autenticado como <strong>{currentUserEmail}</strong>.",
       "signOut": "Terminar sessão",
-      "goToDashboard": "Ir para o dashboard"
+      "goToDashboard": "Ir para o Início"
     },
     "error": {
       "title": "Não foi possível concluir o convite",
-      "notFound": "Não encontrámos um convite pendente para esta conta. Se já aceitaste o convite, podes abrir o dashboard. Caso contrário, confirma que entraste com o email certo.",
+      "notFound": "Não encontrámos um convite pendente para esta conta. Se já aceitaste o convite, podes abrir o Início. Caso contrário, confirma que entraste com o email certo.",
       "acceptFailed": "Não foi possível aceitar o convite agora. Tenta novamente dentro de instantes.",
-      "openDashboard": "Abrir dashboard",
+      "openDashboard": "Abrir o Início",
       "switchAccount": "Trocar de conta"
     },
     "accepted": {
@@ -3121,8 +3121,8 @@
       "fetchFailed": "Não foi possível carregar os acessos da conta"
     },
     "workspace": {
-      "fetchContextFailed": "Não foi possível carregar o contexto de workspace",
-      "fetchDashboardFailed": "Não foi possível carregar o dashboard da escola",
+      "fetchContextFailed": "Não foi possível carregar os dados da escola",
+      "fetchDashboardFailed": "Não foi possível carregar o painel da escola",
       "fetchMembersFailed": "Não foi possível carregar os membros da escola"
     },
     "onboarding": {
