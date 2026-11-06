@@ -782,7 +782,7 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
             </div>
           </header>
 
-          {/* Applies a fair promo code captured before sign-up (ENG-360), on every workspace page. */}
+          {/* Applies a promo code captured before sign-up (ENG-360), on every workspace page. */}
           <SignedIn>
             <TrialPromoApplier />
           </SignedIn>

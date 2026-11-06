@@ -42,7 +42,7 @@ const BASE: PlanLimits = {
   freeWeekStart: null,
 };
 const TRIAL: PlanLimits = { ...BASE, status: "TRIAL", trialEndsAt: "2026-12-14T10:00:00Z", trialPromoCode: null };
-const EXTENDED: PlanLimits = { ...TRIAL, trialEndsAt: "2027-01-13T10:00:00Z", trialPromoCode: "FEIRA" };
+const EXTENDED: PlanLimits = { ...TRIAL, trialEndsAt: "2027-01-13T10:00:00Z", trialPromoCode: "LIS2026" };
 
 let root: Root | null = null;
 
@@ -72,46 +72,46 @@ afterEach(() => {
 
 describe("TrialPromoApplier (ENG-360)", () => {
   it("applies once under strict mode, updates the plan-limits cache and shows the DD/MM toast", async () => {
-    writeStoredPromo({ code: "FEIRA", capturedAt: Date.now(), attempts: 0 });
+    writeStoredPromo({ code: "LIS2026", capturedAt: Date.now(), attempts: 0 });
     m.apply.mockResolvedValue(EXTENDED);
 
     await mount(TRIAL);
 
     expect(m.apply).toHaveBeenCalledTimes(1);
-    expect(m.apply).toHaveBeenCalledWith("FEIRA");
+    expect(m.apply).toHaveBeenCalledWith("LIS2026");
     expect(m.setPlanLimits).toHaveBeenCalledWith("user_1", EXTENDED);
-    expect(m.capture).toHaveBeenCalledWith("promo_applied", { code: "FEIRA" });
+    expect(m.capture).toHaveBeenCalledWith("promo_applied", { code: "LIS2026" });
     expect(m.toastSuccess).toHaveBeenCalledTimes(1);
     expect(m.toastSuccess).toHaveBeenCalledWith('billing.trialPromo.appliedToast {"date":"13/01"}');
     expect(readStoredPromo()).toBeNull();
   });
 
   it("is silent on a 403 refusal: no toast, only the analytics event", async () => {
-    writeStoredPromo({ code: "FEIRA", capturedAt: Date.now(), attempts: 0 });
+    writeStoredPromo({ code: "LIS2026", capturedAt: Date.now(), attempts: 0 });
     m.apply.mockRejectedValue(new ApiRequestError("no", 403, "promo_not_eligible"));
 
     await mount(TRIAL);
 
-    expect(m.capture).toHaveBeenCalledWith("promo_refused", { code: "FEIRA", reason: "promo_not_eligible" });
+    expect(m.capture).toHaveBeenCalledWith("promo_refused", { code: "LIS2026", reason: "promo_not_eligible" });
     expect(m.toastSuccess).not.toHaveBeenCalled();
     expect(m.toastError).not.toHaveBeenCalled();
     expect(readStoredPromo()).toBeNull();
   });
 
   it("reports the retry cap as a refusal once the third attempt fails", async () => {
-    writeStoredPromo({ code: "FEIRA", capturedAt: Date.now(), attempts: 2 });
+    writeStoredPromo({ code: "LIS2026", capturedAt: Date.now(), attempts: 2 });
     m.apply.mockRejectedValue(new ApiRequestError("not found", 404, null));
 
     await mount(TRIAL);
 
-    expect(m.capture).toHaveBeenCalledWith("promo_refused", { code: "FEIRA", reason: "max_attempts" });
+    expect(m.capture).toHaveBeenCalledWith("promo_refused", { code: "LIS2026", reason: "max_attempts" });
     expect(m.toastError).not.toHaveBeenCalled();
   });
 
   it("does not call while the account is not on the trial yet", async () => {
-    writeStoredPromo({ code: "FEIRA", capturedAt: Date.now(), attempts: 0 });
+    writeStoredPromo({ code: "LIS2026", capturedAt: Date.now(), attempts: 0 });
     await mount({ ...BASE, isPro: false, status: "LEGACY_FREE" });
     expect(m.apply).not.toHaveBeenCalled();
-    expect(readStoredPromo()?.code).toBe("FEIRA");
+    expect(readStoredPromo()?.code).toBe("LIS2026");
   });
 });

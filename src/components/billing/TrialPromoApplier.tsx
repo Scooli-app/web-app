@@ -11,7 +11,7 @@ import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 
 /**
- * Applies the fair promo code captured before sign-up (ENG-360) as soon as the signed-in account's
+ * Applies the promo code captured before sign-up (ENG-360) as soon as the signed-in account's
  * plan limits say TRIAL. Mounted inside `<SignedIn>` in the workspace layout. Refusals (an existing
  * teacher scanning the QR) are silent; network errors retry on the next load, at most 3 times.
  */

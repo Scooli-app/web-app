@@ -46,7 +46,7 @@ export interface PlanLimits {
   trialDaysLeft?: number | null;
   canStartTrial?: boolean;
   lockReason?: LockReason | null;
-  /** The fair promo code applied to this trial (ENG-360); null when none. Optional: older backends omit it. */
+  /** The promo code applied to this trial (ENG-360); null when none. Optional: older backends omit it. */
   trialPromoCode?: string | null;
 }
 

@@ -41,8 +41,8 @@ afterEach(() => {
 });
 
 describe("TrialStatusCard promo line (ENG-360)", () => {
-  it("says the trial includes the fair promo's extra month", () => {
-    expect(render("FEIRA").textContent).toContain('billing.trialStatusCard.promoIncluded {"code":"FEIRA"}');
+  it("says the trial includes the promo offer", () => {
+    expect(render("LIS2026").textContent).toContain('billing.trialStatusCard.promoIncluded {"code":"LIS2026"}');
   });
 
   it("has no promo line without a promo", () => {

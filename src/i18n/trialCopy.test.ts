@@ -27,9 +27,9 @@ describe("Pro trial copy", () => {
     expect(pt.billing.trialActivation.successTitle).toBe("O teu mês Pro começou — termina a {date}");
     expect(pt.billing.lock.printMessage).toBe("Atualiza para Pro para imprimir");
     expect(pt.billing.trialPromo.signUpBanner).toBe(
-      "Oferta especial: cria a tua conta e ganha <strong>2 meses de Pro grátis</strong>",
+      "Oferta {name}: cria a tua conta e ganha <strong>{duration}</strong> de Pro grátis",
     );
-    expect(pt.billing.trialPromo.appliedToast).toBe("Ganhaste mais um mês: o teu Pro vai até {date}");
-    expect(pt.billing.trialStatusCard.promoIncluded).toBe("Inclui 1 mês extra da oferta {code}");
+    expect(pt.billing.trialPromo.appliedToast).toBe("Oferta aplicada: o teu Pro vai até {date}");
+    expect(pt.billing.trialStatusCard.promoIncluded).toBe("Inclui a oferta {code}");
   });
 });

@@ -1,5 +1,5 @@
 /**
- * Fair promo links (ENG-360). The public check needs no session: the sign-up page asks it before
+ * Promo links (ENG-360). The public check needs no session: the sign-up page asks it before
  * the account exists, to decide whether to show the offer.
  */
 import apiClient from "./client";

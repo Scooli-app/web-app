@@ -22,7 +22,7 @@ function firstOpenInTab(code: string): boolean {
 }
 
 /**
- * Mounted app-wide (root layout): any page opened with `?promo=CODE` — the fair QR's `/sign-up`,
+ * Mounted app-wide (root layout): any page opened with `?promo=CODE` — a promo QR's `/sign-up`,
  * `/sign-in`, the landing redirect — stores the code (ENG-360). `TrialPromoApplier` applies it once
  * the teacher is signed in and on the trial.
  */

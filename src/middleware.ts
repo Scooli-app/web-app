@@ -49,7 +49,7 @@ export default clerkMiddleware(async (auth, req) => {
 
   const authObj = await auth();
 
-  // Fair promo link (ENG-360): remember `?promo=` in a first-party cookie on whatever response this
+  // Promo link (ENG-360): remember `?promo=` in a first-party cookie on whatever response this
   // request gets, redirects included, so it survives Clerk's sign-up hops. Readable by the client
   // (not httpOnly), which applies it after sign-up. A re-scan of the same code keeps the cookie.
   const promoCode = promoCodeFromSearch(req.nextUrl.searchParams);

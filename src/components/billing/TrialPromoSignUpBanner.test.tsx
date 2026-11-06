@@ -9,8 +9,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const api = vi.hoisted(() => ({ check: vi.fn(), pathname: "/sign-up" }));
 vi.mock("next-intl", () => {
   const t = (ns: string) => {
-    const fn = (key: string) => `${ns}.${key}`;
-    fn.rich = (key: string, tags: { strong: (chunks: ReactNode) => ReactNode }) => [`${ns}.${key} `, tags.strong("bold")];
+    const fn = (key: string, values?: Record<string, unknown>) => `${ns}.${key}${values ? ` ${JSON.stringify(values)}` : ""}`;
+    fn.rich = (key: string, values: { strong: (chunks: ReactNode) => ReactNode } & Record<string, unknown>) => {
+      const { strong, ...plain } = values;
+      return [`${ns}.${key} ${JSON.stringify(plain)} `, strong("bold")];
+    };
     return fn;
   };
   return { useTranslations: t };
@@ -54,23 +57,40 @@ afterEach(() => {
   host = null;
 });
 
-const VALID = { code: "FEIRA", valid: true, extraDays: 30, validUntil: "2026-12-31T23:59:59Z" };
+const VALID = { code: "LIS2026", valid: true, name: "Learning Innovation Summit", extraDays: 30, totalTrialDays: 60, validUntil: "2026-12-31T23:59:59Z" };
 
 describe("TrialPromoSignUpBanner (ENG-360)", () => {
   it("shows the offer above the form for a valid code on the URL, checking the normalized code", async () => {
     api.check.mockResolvedValue(VALID);
-    const view = await render("/sign-up?promo=feira");
-    expect(api.check).toHaveBeenCalledWith("FEIRA");
+    const view = await render("/sign-up?promo=lis2026");
+    expect(api.check).toHaveBeenCalledWith("LIS2026");
     const banner = view.querySelector('[data-testid="trial-promo-banner"]');
     expect(banner?.textContent).toContain("billing.trialPromo.signUpBanner");
+    expect(banner?.textContent).toContain('"name":"Learning Innovation Summit"');
+    expect(banner?.textContent).toContain('"duration":"billing.trialPromo.durationMonths {\\"count\\":2}"');
     expect(banner?.querySelector("strong")?.textContent).toBe("bold");
   });
 
+  it("says months for multiples of 30 days and days otherwise, from the promo's own name and length", async () => {
+    api.check.mockResolvedValue({ ...VALID, name: "Escola Aberta", totalTrialDays: 45 });
+    const view = await render("/sign-up?promo=lis2026");
+    const text = view.querySelector('[data-testid="trial-promo-banner"]')?.textContent ?? "";
+    expect(text).toContain('"name":"Escola Aberta"');
+    expect(text).toContain("durationDays");
+    expect(text).toContain('\\"count\\":45');
+    expect(text).not.toContain("Learning Innovation Summit");
+  });
+
+  it("shows nothing for a valid code without a usable name or trial length", async () => {
+    api.check.mockResolvedValue({ ...VALID, totalTrialDays: undefined });
+    expect((await render("/sign-up?promo=lis2026")).innerHTML).toBe("");
+  });
+
   it("uses the stored code on /sign-in when the URL no longer has it", async () => {
-    writeStoredPromo({ code: "FEIRA", capturedAt: Date.now(), attempts: 0 });
+    writeStoredPromo({ code: "LIS2026", capturedAt: Date.now(), attempts: 0 });
     api.check.mockResolvedValue(VALID);
     const view = await render("/sign-in");
-    expect(api.check).toHaveBeenCalledWith("FEIRA");
+    expect(api.check).toHaveBeenCalledWith("LIS2026");
     expect(view.querySelector('[data-testid="trial-promo-banner"]')).not.toBeNull();
   });
 
@@ -82,14 +102,14 @@ describe("TrialPromoSignUpBanner (ENG-360)", () => {
 
   it("shows nothing when the check fails (backend not deployed yet)", async () => {
     api.check.mockRejectedValue(new Error("404"));
-    const view = await render("/sign-up?promo=feira");
+    const view = await render("/sign-up?promo=lis2026");
     expect(view.innerHTML).toBe("");
   });
 
   it("shows nothing and checks nothing without a code, or on the SSO callback", async () => {
     expect((await render("/sign-up")).innerHTML).toBe("");
     act(() => root?.unmount());
-    writeStoredPromo({ code: "FEIRA", capturedAt: Date.now(), attempts: 0 });
+    writeStoredPromo({ code: "LIS2026", capturedAt: Date.now(), attempts: 0 });
     expect((await render("/sign-up/sso-callback")).innerHTML).toBe("");
     expect(api.check).not.toHaveBeenCalled();
   });

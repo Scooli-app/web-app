@@ -73,10 +73,10 @@ describe("parsePlanLimits (ENG-320)", () => {
 describe("parsePlanLimits trialPromoCode (ENG-360)", () => {
   it("keeps the applied promo code, and reads a missing or empty one as null", () => {
     const trial = { ...OLD_FREE, isPro: true, status: "TRIAL" as const, trialEndsAt: "2027-01-03T10:00:00Z" };
-    expect(parsePlanLimits({ ...trial, trialPromoCode: "FEIRA" }).trialPromoCode).toBe("FEIRA");
+    expect(parsePlanLimits({ ...trial, trialPromoCode: "LIS2026" }).trialPromoCode).toBe("LIS2026");
     expect(parsePlanLimits(trial).trialPromoCode).toBeNull();
     expect(parsePlanLimits({ ...trial, trialPromoCode: "" }).trialPromoCode).toBeNull();
-    expect(resolveAccountAccess({ ...trial, trialPromoCode: "FEIRA" }).trialPromoCode).toBe("FEIRA");
+    expect(resolveAccountAccess({ ...trial, trialPromoCode: "LIS2026" }).trialPromoCode).toBe("LIS2026");
   });
 });
 

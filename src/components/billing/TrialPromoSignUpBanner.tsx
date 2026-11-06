@@ -1,5 +1,6 @@
 "use client";
 
+import { trialDuration } from "@/lib/trialPromo/formatTrialDuration";
 import { promoCodeFromSearch, readStoredPromo } from "@/lib/trialPromo/promoStorage";
 import { trialPromoService } from "@/services/api/trial-promo.service";
 import type { TrialPromoCheck } from "@/shared/types/trial-promo";
@@ -26,9 +27,10 @@ export function resetTrialPromoChecks() {
 }
 
 /**
- * "Oferta especial: cria a tua conta e ganha 2 meses de Pro grátis" above Clerk's form on
- * `/sign-up` and `/sign-in` when the visitor came through a valid fair promo link (ENG-360).
- * Nothing for an invalid or unknown code, or while the check is pending.
+ * "Oferta {name}: cria a tua conta e ganha {duration} de Pro grátis" above Clerk's form on
+ * `/sign-up` and `/sign-in` when the visitor came through a valid promo link (ENG-360). Name and
+ * duration come from the promo itself. Nothing for an invalid or unknown code, a promo without a
+ * usable name or length, or while the check is pending.
  */
 export function TrialPromoSignUpBanner() {
   const t = useTranslations("billing.trialPromo");
@@ -49,7 +51,12 @@ export function TrialPromoSignUpBanner() {
     };
   }, [onCallback]);
 
-  if (onCallback || !offer) return null;
+  const duration = trialDuration(offer?.totalTrialDays);
+  const name = offer?.name?.trim();
+  if (onCallback || !offer || !duration || !name) return null;
+
+  const durationText =
+    duration.unit === "months" ? t("durationMonths", { count: duration.count }) : t("durationDays", { count: duration.count });
 
   return (
     <div
@@ -58,7 +65,7 @@ export function TrialPromoSignUpBanner() {
       className="flex w-full max-w-[25rem] items-start gap-3 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 text-sm text-foreground"
     >
       <Gift className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden />
-      <p>{t.rich("signUpBanner", { strong: (chunks) => <strong className="font-semibold">{chunks}</strong> })}</p>
+      <p>{t.rich("signUpBanner", { name, duration: durationText, strong: (chunks) => <strong className="font-semibold">{chunks}</strong> })}</p>
     </div>
   );
 }

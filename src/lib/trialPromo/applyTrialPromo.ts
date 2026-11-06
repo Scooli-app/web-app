@@ -93,7 +93,7 @@ export function resetTrialPromoApplyGuard() {
 }
 
 /**
- * Applies the stored fair promo code once the account is on its trial (ENG-360). Call it whenever
+ * Applies the stored promo code once the account is on its trial (ENG-360). Call it whenever
  * the plan limits change; it decides whether there is anything to do. Only the caller that started
  * the request gets the final outcome; concurrent callers get `busy`, so side effects (toast,
  * analytics) happen once.

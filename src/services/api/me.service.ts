@@ -25,7 +25,7 @@ export const meService = {
       .post<PlanLimits>("/users/me/trial/activate", token ? { token } : {})
       .then((r) => parsePlanLimits(r.data)),
   /**
-   * Adds a fair promo code's extra days to the running trial (ENG-360). Idempotent for the same
+   * Adds a promo code's extra days to the running trial (ENG-360). Idempotent for the same
    * code. Resolves to the updated plan limits (with `trialPromoCode`); a 403 rejects with an
    * ApiRequestError whose `code` is a TrialPromoErrorCode.
    */

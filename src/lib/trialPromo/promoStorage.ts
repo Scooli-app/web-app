@@ -1,5 +1,5 @@
 /**
- * The fair promo code (`?promo=FEIRA`, ENG-360) between the QR scan and the first signed-in page.
+ * The promo code (`?promo=LIS2026`, ENG-360) between the QR scan and the first signed-in page.
  *
  * Kept twice: in localStorage (`scooli_trial_promo`) and in a first-party cookie of the same name.
  * The cookie is what survives the trips Clerk's sign-up takes — Google/Microsoft SSO, the email

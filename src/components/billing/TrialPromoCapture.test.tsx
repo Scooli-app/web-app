@@ -35,21 +35,21 @@ afterEach(() => {
 });
 
 describe("TrialPromoCapture (ENG-360)", () => {
-  it("stores the upper-cased code from the fair link and reports the open once", () => {
-    mount("/sign-up?promo=feira");
-    expect(readStoredPromo()?.code).toBe("FEIRA");
+  it("stores the upper-cased code from the promo link and reports the open once", () => {
+    mount("/sign-up?promo=lis2026");
+    expect(readStoredPromo()?.code).toBe("LIS2026");
     expect(m.capture).toHaveBeenCalledTimes(1);
-    expect(m.capture).toHaveBeenCalledWith("promo_link_opened", { code: "FEIRA", path: "/sign-up" });
+    expect(m.capture).toHaveBeenCalledWith("promo_link_opened", { code: "LIS2026", path: "/sign-up" });
 
     // Clerk's next step (or a reload) in the same tab: still stored, not reported again.
     act(() => root?.unmount());
-    mount("/sign-up/verify-email-address?promo=FEIRA");
+    mount("/sign-up/verify-email-address?promo=LIS2026");
     expect(m.capture).toHaveBeenCalledTimes(1);
   });
 
   it("captures the code inside redirect_url on the sign-in page", () => {
-    mount(`/sign-in?redirect_url=${encodeURIComponent("/checkout?promo=Feira")}`);
-    expect(readStoredPromo()?.code).toBe("FEIRA");
+    mount(`/sign-in?redirect_url=${encodeURIComponent("/checkout?promo=Lis2026")}`);
+    expect(readStoredPromo()?.code).toBe("LIS2026");
   });
 
   it("stores nothing without a usable code", () => {

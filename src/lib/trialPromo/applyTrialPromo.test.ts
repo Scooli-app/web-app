@@ -20,13 +20,13 @@ const BASE: PlanLimits = {
   freeWeekStart: null,
 };
 const TRIAL: PlanLimits = { ...BASE, status: "TRIAL", trialEndsAt: "2026-12-14T10:00:00Z", trialDaysLeft: 30, trialPromoCode: null };
-const EXTENDED: PlanLimits = { ...TRIAL, trialEndsAt: "2027-01-13T10:00:00Z", trialDaysLeft: 60, trialPromoCode: "FEIRA" };
+const EXTENDED: PlanLimits = { ...TRIAL, trialEndsAt: "2027-01-13T10:00:00Z", trialDaysLeft: 60, trialPromoCode: "LIS2026" };
 
 const now = () => NOW;
 const noLock = <T,>(fn: () => Promise<T>) => fn();
 
 function store(attempts = 0) {
-  writeStoredPromo({ code: "FEIRA", capturedAt: NOW, attempts }, NOW);
+  writeStoredPromo({ code: "LIS2026", capturedAt: NOW, attempts }, NOW);
 }
 
 beforeEach(() => {
@@ -50,8 +50,8 @@ describe("maybeApplyTrialPromo (ENG-360)", () => {
     store();
     const apply = vi.fn().mockResolvedValue(EXTENDED);
     const outcome = await maybeApplyTrialPromo(TRIAL, { apply, now, lock: noLock });
-    expect(outcome).toEqual({ kind: "applied", code: "FEIRA", limits: EXTENDED });
-    expect(apply).toHaveBeenCalledWith("FEIRA");
+    expect(outcome).toEqual({ kind: "applied", code: "LIS2026", limits: EXTENDED });
+    expect(apply).toHaveBeenCalledWith("LIS2026");
     expect(readStoredPromo(NOW)).toBeNull();
   });
 
@@ -62,7 +62,7 @@ describe("maybeApplyTrialPromo (ENG-360)", () => {
       const apply = vi.fn().mockRejectedValue(new ApiRequestError("no", 403, code));
       expect(await maybeApplyTrialPromo(TRIAL, { apply, now, lock: noLock })).toEqual({
         kind: "refused",
-        code: "FEIRA",
+        code: "LIS2026",
         reason: code,
       });
       expect(readStoredPromo(NOW)).toBeNull();
@@ -78,10 +78,10 @@ describe("maybeApplyTrialPromo (ENG-360)", () => {
     const apply = vi.fn().mockRejectedValue(error);
     expect(await maybeApplyTrialPromo(TRIAL, { apply, now, lock: noLock })).toEqual({
       kind: "retryLater",
-      code: "FEIRA",
+      code: "LIS2026",
       attempts: 1,
     });
-    expect(readStoredPromo(NOW)).toEqual({ code: "FEIRA", capturedAt: NOW, attempts: 1 });
+    expect(readStoredPromo(NOW)).toEqual({ code: "LIS2026", capturedAt: NOW, attempts: 1 });
   });
 
   it("retries on the next load only, and gives up after 3 failed attempts (no 404 spam)", async () => {
@@ -98,7 +98,7 @@ describe("maybeApplyTrialPromo (ENG-360)", () => {
     resetTrialPromoApplyGuard(); // next load
     expect(await maybeApplyTrialPromo(TRIAL, { apply, now, lock: noLock })).toEqual({
       kind: "gaveUp",
-      code: "FEIRA",
+      code: "LIS2026",
       attempts: TRIAL_PROMO_MAX_ATTEMPTS,
     });
     expect(readStoredPromo(NOW)).toBeNull();
@@ -117,7 +117,7 @@ describe("maybeApplyTrialPromo (ENG-360)", () => {
     );
     expect((await maybeApplyTrialPromo({ ...BASE, status: "PRO" }, { apply, now, lock: noLock })).kind).toBe("waiting");
     expect(apply).not.toHaveBeenCalled();
-    expect(readStoredPromo(NOW)?.code).toBe("FEIRA");
+    expect(readStoredPromo(NOW)?.code).toBe("LIS2026");
 
     // The next refresh says TRIAL: now it applies.
     expect((await maybeApplyTrialPromo(TRIAL, { apply, now, lock: noLock })).kind).toBe("applied");
@@ -126,7 +126,7 @@ describe("maybeApplyTrialPromo (ENG-360)", () => {
   it("drops the code without a call when the trial already carries a promo", async () => {
     store();
     const apply = vi.fn();
-    expect(await maybeApplyTrialPromo(EXTENDED, { apply, now, lock: noLock })).toEqual({ kind: "alreadyApplied", code: "FEIRA" });
+    expect(await maybeApplyTrialPromo(EXTENDED, { apply, now, lock: noLock })).toEqual({ kind: "alreadyApplied", code: "LIS2026" });
     expect(apply).not.toHaveBeenCalled();
     expect(readStoredPromo(NOW)).toBeNull();
   });
