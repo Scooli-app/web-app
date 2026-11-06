@@ -6,7 +6,7 @@ import { PageContainer } from "@/components/layout/PageContainer";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { useAdmin } from "@/hooks/useAdmin";
-import { Activity, DollarSign, Library, MapPin, MessageSquare, Shield, ToggleLeft, Users } from "lucide-react";
+import { Activity, DollarSign, Gift, Library, MapPin, MessageSquare, Shield, ToggleLeft, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
@@ -17,6 +17,7 @@ const SECTIONS = [
   { href: "/admin/pilot", label: "Piloto", icon: Activity },
   { href: "/admin/costs", label: "Custos AI", icon: DollarSign },
   { href: "/admin/features", label: "Funcionalidades", icon: ToggleLeft },
+  { href: "/admin/promos", label: "Ofertas", icon: Gift },
   { href: "/admin/moderation", label: "Moderação", icon: Library },
 ];
 

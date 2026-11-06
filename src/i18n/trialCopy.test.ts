@@ -9,7 +9,7 @@ function keys(node: unknown, prefix = ""): string[] {
 }
 
 describe("Pro trial copy", () => {
-  it.each(["trial", "banner", "lock", "trialStatusCard", "trialActivation"] as const)("has the same billing.%s keys in pt-PT and en", (ns) => {
+  it.each(["trial", "banner", "lock", "trialStatusCard", "trialActivation", "trialPromo"] as const)("has the same billing.%s keys in pt-PT and en", (ns) => {
     expect(keys(en.billing[ns]).sort()).toEqual(keys(pt.billing[ns]).sort());
   });
 
@@ -26,5 +26,10 @@ describe("Pro trial copy", () => {
     expect(pt.billing.upgradePlanModal.reasons.trial_expired.title).toBe("O teu mês Pro terminou");
     expect(pt.billing.trialActivation.successTitle).toBe("O teu mês Pro começou — termina a {date}");
     expect(pt.billing.lock.printMessage).toBe("Atualiza para Pro para imprimir");
+    expect(pt.billing.trialPromo.signUpBanner).toBe(
+      "Oferta {name}: cria a tua conta e ganha <strong>{duration}</strong> de Pro grátis",
+    );
+    expect(pt.billing.trialPromo.appliedToast).toBe("Oferta aplicada: o teu Pro vai até {date}");
+    expect(pt.billing.trialStatusCard.promoIncluded).toBe("Inclui a oferta {code}");
   });
 });

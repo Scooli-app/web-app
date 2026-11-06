@@ -1,6 +1,14 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { Routes } from "@/shared/types/routes";
 import { isClerkOrganizationAdminRole } from "@/shared/utils/clerkOrganizationRole";
+import {
+  TRIAL_PROMO_COOKIE_MAX_AGE_S,
+  TRIAL_PROMO_COOKIE_NAME,
+  TRIAL_PROMO_QUERY_PARAM,
+  encodePromoCookie,
+  parsePromoCookie,
+  promoCodeFromSearch,
+} from "@/lib/trialPromo/promoStorage";
 import { NextResponse } from "next/server";
 
 const isPublicRoute = createRouteMatcher([
@@ -40,6 +48,27 @@ export default clerkMiddleware(async (auth, req) => {
   }
 
   const authObj = await auth();
+
+  // Promo link (ENG-360): remember `?promo=` in a first-party cookie on whatever response this
+  // request gets, redirects included, so it survives Clerk's sign-up hops. Readable by the client
+  // (not httpOnly), which applies it after sign-up. A re-scan of the same code keeps the cookie.
+  const promoCode = promoCodeFromSearch(req.nextUrl.searchParams);
+  const rememberPromo = (res: NextResponse): NextResponse => {
+    if (!promoCode) return res;
+    if (parsePromoCookie(req.cookies.get(TRIAL_PROMO_COOKIE_NAME)?.value)?.code === promoCode) return res;
+    res.cookies.set(
+      TRIAL_PROMO_COOKIE_NAME,
+      encodePromoCookie({ code: promoCode, capturedAt: Date.now(), attempts: 0 }),
+      {
+        httpOnly: false,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        maxAge: TRIAL_PROMO_COOKIE_MAX_AGE_S,
+      },
+    );
+    return res;
+  };
 
   const setTokenCookie = async (res: NextResponse) => {
     try {
@@ -87,9 +116,12 @@ export default clerkMiddleware(async (auth, req) => {
 
     if (!redirectPath) {
       redirectUrl.search = req.nextUrl.search;
+    } else if (promoCode && !redirectUrl.searchParams.has(TRIAL_PROMO_QUERY_PARAM)) {
+      // Keep the promo on the way to redirect_url (ENG-360).
+      redirectUrl.searchParams.set(TRIAL_PROMO_QUERY_PARAM, promoCode);
     }
 
-    const res = NextResponse.redirect(redirectUrl);
+    const res = rememberPromo(NextResponse.redirect(redirectUrl));
     await setTokenCookie(res);
     return res;
   }
@@ -98,7 +130,7 @@ export default clerkMiddleware(async (auth, req) => {
     const destination = authObj.userId ? "/dashboard" : "/sign-in";
     const redirectUrl = new URL(destination, req.url);
     redirectUrl.search = req.nextUrl.search;
-    const res = NextResponse.redirect(redirectUrl);
+    const res = rememberPromo(NextResponse.redirect(redirectUrl));
     await setTokenCookie(res);
     return res;
   }
@@ -111,14 +143,14 @@ export default clerkMiddleware(async (auth, req) => {
       "redirect_url",
       `${req.nextUrl.pathname}${req.nextUrl.search}`,
     );
-    return NextResponse.redirect(signInUrl);
+    return rememberPromo(NextResponse.redirect(signInUrl));
   }
 
   if (!authObj.userId && req.nextUrl.pathname === "/checkout") {
     const signUpUrl = new URL("/sign-up", req.url);
     const returnUrl = `${req.nextUrl.pathname}${req.nextUrl.search}`;
     signUpUrl.searchParams.set("redirect_url", returnUrl);
-    return NextResponse.redirect(signUpUrl);
+    return rememberPromo(NextResponse.redirect(signUpUrl));
   }
 
   if (!isPublicRoute(req)) {
@@ -153,7 +185,7 @@ export default clerkMiddleware(async (auth, req) => {
     }
   }
 
-  const res = NextResponse.next();
+  const res = rememberPromo(NextResponse.next());
   await setTokenCookie(res);
   return res;
 });

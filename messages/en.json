@@ -2513,7 +2513,15 @@
     "trialStatusCard": {
       "title": "Your Pro month",
       "endsOn": "Ends on {date}",
-      "daysLeft": "{days, plural, one {# day left} other {# days left}}"
+      "daysLeft": "{days, plural, one {# day left} other {# days left}}",
+      "promoIncluded": "Includes the {code} offer"
+    },
+    "trialPromo": {
+      "signUpBanner": "{name} offer: create your account and get <strong>{duration}</strong> of Pro for free",
+      "appliedToast": "Offer applied: your Pro now runs until {date}",
+      "appliedToastNoDate": "Offer applied: you got extra days of Pro",
+      "durationMonths": "{count, plural, one {# month} other {# months}}",
+      "durationDays": "{count, plural, one {# day} other {# days}}"
     },
     "trialActivation": {
       "activatingTitle": "Activating your Pro month…",
@@ -3836,6 +3844,66 @@
     "applied": "Changes applied",
     "rejected": "Proposal rejected",
     "actionError": "Could not save the proposal."
+  },
+  "adminPromos": {
+    "title": "Promo links",
+    "description": "Create links that add trial days at sign-up, and print their QR codes.",
+    "loadFailed": "Could not load the promo links.",
+    "empty": "No promo links yet. Create the first one above.",
+    "create": {
+      "title": "New promo link",
+      "submit": "Create promo",
+      "created": "Promo created"
+    },
+    "fields": {
+      "name": "Name",
+      "code": "Code (optional)",
+      "codeHint": "Generated from the name if left empty.",
+      "extraDays": "Extra days",
+      "validUntil": "Valid until",
+      "maxRedemptions": "Max redemptions (optional)",
+      "maxPlaceholder": "No limit"
+    },
+    "table": {
+      "code": "Code",
+      "name": "Name",
+      "extraDays": "Extra days",
+      "validUntil": "Valid until",
+      "active": "Active",
+      "redemptions": "Redemptions",
+      "actions": "Actions",
+      "noExpiry": "No expiry",
+      "toggleActive": "Toggle {code} active"
+    },
+    "row": {
+      "link": "Sign-up link",
+      "copy": "Copy the sign-up link of {code}",
+      "copyLabel": "Copy",
+      "copied": "Link copied",
+      "copyFailed": "Could not copy the link",
+      "edit": "Edit {code}"
+    },
+    "qr": {
+      "alt": "QR code of the {code} sign-up link",
+      "downloadPng": "Download PNG",
+      "downloadSvg": "Download SVG",
+      "downloadFailed": "Could not generate the QR code"
+    },
+    "edit": {
+      "title": "Edit {code}",
+      "description": "The code and the extra days cannot be changed.",
+      "cancel": "Cancel",
+      "save": "Save"
+    },
+    "errors": {
+      "nameRequired": "Enter a name.",
+      "extraDaysInvalid": "Extra days must be a whole number of at least 1.",
+      "maxInvalid": "Max redemptions must be a whole number of at least 1, or empty.",
+      "codeTaken": "That code is already in use. Choose another or leave it empty.",
+      "invalid": "The promo is not valid: {detail}",
+      "generic": "Something went wrong. Try again.",
+      "toggleFailed": "Could not change the promo. Try again."
+    }
   },
   "adminPilot": {
     "title": "Pilot",

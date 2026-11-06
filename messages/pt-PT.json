@@ -2513,7 +2513,15 @@
     "trialStatusCard": {
       "title": "O teu mês Pro",
       "endsOn": "Termina a {date}",
-      "daysLeft": "{days, plural, one {Falta # dia} other {Faltam # dias}}"
+      "daysLeft": "{days, plural, one {Falta # dia} other {Faltam # dias}}",
+      "promoIncluded": "Inclui a oferta {code}"
+    },
+    "trialPromo": {
+      "signUpBanner": "Oferta {name}: cria a tua conta e ganha <strong>{duration}</strong> de Pro grátis",
+      "appliedToast": "Oferta aplicada: o teu Pro vai até {date}",
+      "appliedToastNoDate": "Oferta aplicada: ganhaste dias extra de Pro",
+      "durationMonths": "{count, plural, one {# mês} other {# meses}}",
+      "durationDays": "{count, plural, one {# dia} other {# dias}}"
     },
     "trialActivation": {
       "activatingTitle": "A ativar o teu mês Pro…",
@@ -3836,6 +3844,66 @@
     "applied": "Alterações aplicadas",
     "rejected": "Proposta rejeitada",
     "actionError": "Não foi possível guardar a proposta."
+  },
+  "adminPromos": {
+    "title": "Links de oferta",
+    "description": "Cria links que somam dias de teste ao registo e imprime os respetivos códigos QR.",
+    "loadFailed": "Não foi possível carregar os links de oferta.",
+    "empty": "Ainda não há links de oferta. Cria o primeiro acima.",
+    "create": {
+      "title": "Novo link de oferta",
+      "submit": "Criar oferta",
+      "created": "Oferta criada"
+    },
+    "fields": {
+      "name": "Nome",
+      "code": "Código (opcional)",
+      "codeHint": "Se deixares vazio, é gerado a partir do nome.",
+      "extraDays": "Dias extra",
+      "validUntil": "Válido até",
+      "maxRedemptions": "Máximo de utilizações (opcional)",
+      "maxPlaceholder": "Sem limite"
+    },
+    "table": {
+      "code": "Código",
+      "name": "Nome",
+      "extraDays": "Dias extra",
+      "validUntil": "Válido até",
+      "active": "Ativo",
+      "redemptions": "Utilizações",
+      "actions": "Ações",
+      "noExpiry": "Sem fim",
+      "toggleActive": "Ativar ou desativar {code}"
+    },
+    "row": {
+      "link": "Link de registo",
+      "copy": "Copiar o link de registo de {code}",
+      "copyLabel": "Copiar",
+      "copied": "Link copiado",
+      "copyFailed": "Não foi possível copiar o link",
+      "edit": "Editar {code}"
+    },
+    "qr": {
+      "alt": "Código QR do link de registo {code}",
+      "downloadPng": "Descarregar PNG",
+      "downloadSvg": "Descarregar SVG",
+      "downloadFailed": "Não foi possível gerar o código QR"
+    },
+    "edit": {
+      "title": "Editar {code}",
+      "description": "O código e os dias extra não podem ser alterados.",
+      "cancel": "Cancelar",
+      "save": "Guardar"
+    },
+    "errors": {
+      "nameRequired": "Indica um nome.",
+      "extraDaysInvalid": "Os dias extra têm de ser um número inteiro, no mínimo 1.",
+      "maxInvalid": "O máximo de utilizações tem de ser um número inteiro, no mínimo 1, ou ficar vazio.",
+      "codeTaken": "Esse código já existe. Escolhe outro ou deixa vazio.",
+      "invalid": "A oferta não é válida: {detail}",
+      "generic": "Algo correu mal. Tenta novamente.",
+      "toggleFailed": "Não foi possível alterar a oferta. Tenta novamente."
+    }
   },
   "adminPilot": {
     "title": "Piloto",
