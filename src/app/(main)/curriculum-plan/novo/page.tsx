@@ -344,7 +344,7 @@ export default function CurriculumPlanNewPage() {
                         "flex flex-col items-start gap-0.5 rounded-lg border px-3 py-2.5 text-left transition-colors hover:border-primary/60",
                         isActive
                           ? "border-primary bg-primary/5 text-foreground"
-                          : "border-border bg-card text-foreground"
+                          : "border-input bg-card text-foreground"
                       )}
                     >
                       <span className={cn("text-sm font-medium", isActive && "text-primary")}>

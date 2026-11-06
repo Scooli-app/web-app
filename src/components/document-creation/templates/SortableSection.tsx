@@ -103,7 +103,7 @@ export function SortableSection({
             value={section.title}
             onChange={(e) => onUpdate(section.id, "title", e.target.value)}
             placeholder={t("titlePlaceholder")}
-            className="h-10 rounded-lg border-input bg-input px-3 text-sm font-medium placeholder:text-muted-foreground"
+            className="h-10 rounded-lg px-3 text-sm font-medium"
             aria-label={t("titleAriaLabel")}
           />
           <Textarea
@@ -111,7 +111,7 @@ export function SortableSection({
             onChange={(e) => onUpdate(section.id, "description", e.target.value)}
             placeholder={t("descriptionPlaceholder")}
             rows={2}
-            className="min-h-0 rounded-lg border-input bg-input px-3 py-2 text-sm placeholder:text-muted-foreground"
+            className="min-h-0 rounded-lg px-3 py-2 text-sm"
             aria-label={t("descriptionAriaLabel")}
           />
         </div>

@@ -75,7 +75,7 @@ export function DurationSection({
                 "inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium transition-colors",
                 lessonTime === time.value
                   ? "bg-primary text-primary-foreground border-primary"
-                  : "bg-card text-foreground border-border hover:border-primary hover:bg-accent"
+                  : "bg-card text-foreground border-input hover:border-primary hover:bg-accent"
               )}
               aria-pressed={lessonTime === time.value}
               aria-label={t("selectAriaLabel", { label: time.label })}
@@ -112,7 +112,7 @@ export function DurationSection({
                     }
                   }}
                   placeholder="75"
-                  className="h-8 w-16 rounded-lg border-primary bg-muted px-2 text-sm placeholder:text-muted-foreground"
+                  className="h-8 w-16 rounded-lg border-primary px-2 text-sm"
                   aria-label={t("customAriaLabel")}
                   autoFocus
                 />
@@ -150,7 +150,7 @@ export function DurationSection({
               }}
               className={cn(
                 "inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium transition-colors",
-                "bg-card text-foreground border-border hover:border-primary hover:bg-accent"
+                "bg-card text-foreground border-input hover:border-primary hover:bg-accent"
               )}
               aria-label={t("otherAriaLabel")}
             >

@@ -348,7 +348,7 @@ export function AppFeedbackSurveyModal({
                   value={comment}
                   onChange={(event) => setComment(event.target.value)}
                   placeholder={t("commentPlaceholder")}
-                  className="min-h-[110px] rounded-2xl border-border bg-muted/50 px-4 py-3 text-foreground placeholder:text-muted-foreground"
+                  className="min-h-[110px] rounded-2xl px-4 py-3"
                   disabled={isBusy}
                 />
               </div>

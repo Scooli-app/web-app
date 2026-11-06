@@ -32,7 +32,7 @@ export function SlideCountSection({ slideCount, onUpdate }: SlideCountSectionPro
               "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
               slideCount === count
                 ? "border-primary bg-primary text-primary-foreground"
-                : "border-border bg-card text-foreground hover:border-primary hover:bg-accent",
+                : "border-input bg-card text-foreground hover:border-primary hover:bg-accent",
             )}
             aria-pressed={slideCount === count}
             aria-label={t("generateAriaLabel", { count })}
