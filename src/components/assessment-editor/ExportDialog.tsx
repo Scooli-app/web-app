@@ -6,6 +6,7 @@ import { SegmentedControl } from "@/components/ui/segmented-control";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { AccountLockedError } from "@/services/api/client";
 import { ExportError, exportDocument } from "@/services/export/documentExport";
 import { Routes } from "@/shared/types";
 import { cn } from "@/shared/utils/utils";
@@ -132,6 +133,11 @@ export function ExportDialog({ open, onOpenChange, documentId, documentType, tit
       if (openRef.current) setCache((c) => ({ ...c, [fmt]: { files, at: Date.now() } }));
       return files;
     } catch (error) {
+      // Read-only account (ENG-321): the API client opened the paywall; close this dialog under it.
+      if (error instanceof AccountLockedError) {
+        onOpenChange(false);
+        return null;
+      }
       const status = error instanceof ExportError ? error.status : 0;
       if (status === 403) setProblem("upsell");
       // A background revision or a generation still running: try again in a minute (the chat case is caught above).

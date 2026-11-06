@@ -2,6 +2,7 @@
 
 import type { WeekLessonTarget } from "@/components/dashboard/WeekLessonDialog";
 import { weekStartOf } from "@/components/next-steps/nextSteps";
+import { useAccountAccess } from "@/hooks/useAccountAccess";
 import { ApiRequestError, UpgradeLimitError } from "@/services/api/client";
 import { checkInService } from "@/services/api/check-in.service";
 import type { CheckInSubmission, CarryOverResult, ReinforcementRequested } from "@/shared/types/check-in";
@@ -74,6 +75,7 @@ export function useCheckInFollowUps() {
   const locale = useLocale();
   const router = useRouter();
   const dispatch = useAppDispatch();
+  const { guard } = useAccountAccess();
 
   const openCalendar = useCallback(
     (timetableId: string) => {
@@ -84,6 +86,7 @@ export function useCheckInFollowUps() {
 
   const reportFailure = useCallback(
     (err: unknown, fallbackKey: "reinforcementError" | "carryOverError") => {
+      // Plan limit or read-only lock (AccountLockedError): the API client opened the paywall.
       if (err instanceof UpgradeLimitError) return;
       if (err instanceof ApiRequestError && err.status === 409) {
         toast.error(err.code === "sem_proxima_aula" ? t("noNextLesson") : t("followUpInProgress"));
@@ -109,6 +112,8 @@ export function useCheckInFollowUps() {
       outcomeIds: string[],
       onOpen?: (target: WeekLessonTarget) => void,
     ): Promise<ReinforcementRequested | null> => {
+      // Read-only account (ENG-321): the worksheet is an AI generation; the paywall opens instead.
+      if (!guard("generate")) return null;
       try {
         const started = await checkInService.requestReinforcement(timetableId, lessonId, outcomeIds);
         const target = reinforcementTarget(timetableId, started.targetSlotId, started.targetDate);
@@ -125,7 +130,7 @@ export function useCheckInFollowUps() {
         return null;
       }
     },
-    [locale, reportFailure, router, t],
+    [guard, locale, reportFailure, router, t],
   );
 
   const carry = useCallback(
