@@ -1,5 +1,6 @@
 "use client";
 
+import { useAccountAccess } from "@/hooks/useAccountAccess";
 import { useTranslations } from "next-intl";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -53,6 +54,7 @@ export function WeekLessonDialog({
   onLoadFailed,
 }: WeekLessonDialogProps) {
   const dispatch = useAppDispatch();
+  const { guard } = useAccountAccess();
   const tShared = useTranslations("calendar.shared");
   const { getToken } = useAuth();
   const [slot, setSlot] = useState<SlotWithTimetable | null>(null);
@@ -99,6 +101,7 @@ export function WeekLessonDialog({
 
   const runGeneration = useCallback(
     async (current: SlotWithTimetable, mode: "generate" | "regenerate", message?: string) => {
+      if (!guard("generate")) return;
       const stream = mode === "generate" ? generateLessonStream : regenerateLessonStream;
       const setStatus = (status: LessonSlot["status"]) =>
         setSlot((prev) => patchOpenSlot(prev, current.id, { status }));
@@ -133,7 +136,7 @@ export function WeekLessonDialog({
         onChanged();
       }
     },
-    [dispatch, getToken, onChanged],
+    [dispatch, getToken, onChanged, guard],
   );
 
   const handleUpdate = useCallback(

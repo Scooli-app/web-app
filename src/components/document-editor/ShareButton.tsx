@@ -10,6 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useAccountAccess } from "@/hooks/useAccountAccess";
 import { UpgradeLimitError } from "@/services/api/client";
 import type { ShareResourceRequest } from "@/services/api/community.service";
 import type {
@@ -32,6 +33,7 @@ import {
   CheckCircle2,
   ChevronDown,
   Clock,
+  Lock,
   Pencil,
   Share2,
   Trash2,
@@ -95,6 +97,8 @@ function ShareButtonComponent({
     SharedResourceStatus | "UNSHARED" | null
   >(null);
   const workspace = useAppSelector(selectWorkspaceContext);
+  // Read-only account (ENG-321): sharing opens the paywall; stopping a share stays possible.
+  const { isLocked, guard } = useAccountAccess();
   const hasAccessibleOrganization = useAppSelector(selectHasAccessibleOrganization);
 
   // Check feature flag — if community library is OFF, hide the button entirely
@@ -112,12 +116,13 @@ function ShareButtonComponent({
   }, [documentId]);
 
   const openShareModal = useCallback(() => {
+    if (!guard("share")) return;
     if (!title || !content) {
       toast.error(t("needTitleContent"));
       return;
     }
     setIsModalOpen(true);
-  }, [title, content, t]);
+  }, [title, content, t, guard]);
 
   const handleShareSubmit = useCallback(
     async (request: ShareResourceRequest) => {
@@ -325,7 +330,7 @@ function ShareButtonComponent({
           aria-label={isSharing ? t("sharing") : t("share")}
           className={`flex items-center gap-2 ${className}`}
         >
-          <Share2 className="h-4 w-4" />
+          {isLocked ? <Lock className="h-4 w-4" aria-hidden /> : <Share2 className="h-4 w-4" />}
           <span className="hidden sm:inline">
             {isSharing ? t("sharing") : t("share")}
           </span>

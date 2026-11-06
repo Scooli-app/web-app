@@ -207,14 +207,21 @@
     "title": "Stop getting the weekly email?",
     "hint": "You can turn it back on any time in settings.",
     "confirm": "Yes, unsubscribe",
-    "confirming": "Unsubscribing…"
+    "confirming": "Unsubscribing…",
+    "proTrial": {
+      "title": "Stop getting the emails about your Pro month?",
+      "hint": "You'll stop getting the reminders and offers about your free Pro month."
+    }
   },
   "emailUnsubscribed": {
     "done": "You won't get the weekly email anymore.",
     "hint": "If you change your mind, you can turn it back on in settings.",
     "turnOn": "Turn it on in settings",
     "invalid": "This link is no longer valid.",
-    "openApp": "Open Scooli"
+    "openApp": "Open Scooli",
+    "proTrial": {
+      "done": "You won't get the emails about your Pro month anymore."
+    }
   },
   "nav": {
     "groups": {
@@ -2418,6 +2425,19 @@
         "sources_pro": {
           "title": "Your own sources are part of Pro",
           "description": "On the free plan, Scooli uses Scooli sources. Upgrade to Pro to upload a textbook or your school’s materials."
+        },
+        "account_locked": {
+          "title": "Your account is read-only",
+          "description": "You can still view and edit your documents. Upgrade to Pro to create and generate documents, export, duplicate and share again."
+        },
+        "trial_expired": {
+          "title": "Your Pro month has ended",
+          "description": "Your account is now read-only. Upgrade to Pro to create and generate documents, export, duplicate and share again."
+        },
+        "trial_not_activated": {
+          "title": "Activate your Pro month",
+          "description": "You haven't activated your free Pro month yet. Activate it now and get 30 days with everything Pro offers.",
+          "descriptionNoTrial": "Your account is read-only. Upgrade to Pro to create and generate documents, export, duplicate and share again."
         }
       }
     },
@@ -2446,6 +2466,72 @@
       "removedSuccess": "Tax ID removed. Future invoices will be issued as a private consumer.",
       "savedSuccess": "Tax ID saved. It will be used on future invoices.",
       "hint": "Your tax ID is printed on your invoices. Leave it empty and invoices are issued without one."
+    },
+    "trial": {
+      "activateCta": "Activate my Pro month",
+      "activating": "Activating…",
+      "startedToast": "Your Pro month has started — it ends on {date}",
+      "startedToastNoDate": "Your Pro month has started",
+      "errors": {
+        "trial_link_expired": "This activation link has expired.",
+        "trial_not_eligible": "The free Pro month is no longer available for this account.",
+        "trial_token_invalid": "This activation link isn't valid for this account.",
+        "trial_not_available": "The free Pro month isn't available right now.",
+        "generic": "We couldn't activate your Pro month. Please try again."
+      }
+    },
+    "banner": {
+      "regionLabel": "Account status",
+      "trialDiscreet": "{days, plural, one {# day left in your Pro month} other {# days left in your Pro month}}",
+      "trialActive": "You're on your Pro month",
+      "trialEndingTitle": "{days, plural, one {Your Pro month ends in # day} other {Your Pro month ends in # days}}",
+      "trialEndingDescription": "After that, your account becomes read-only. Upgrade to Pro to keep generating, exporting and sharing.",
+      "upgradeCta": "Upgrade to Pro",
+      "seePlans": "See plans",
+      "lockedTitle": "Your account is read-only",
+      "lockedReason": {
+        "trial_expired": "Your Pro month has ended. You can still view and edit your documents, but creating and generating documents, exporting, duplicating and sharing need Pro.",
+        "trial_not_activated": "You didn't activate your free Pro month in time. You can still view and edit your documents, but creating and generating documents, exporting, duplicating and sharing need Pro.",
+        "unknown": "You can still view and edit your documents, but creating and generating documents, exporting, duplicating and sharing need Pro."
+      },
+      "offerTitle": "A free Pro month is waiting for you",
+      "offerDescription": "30 days with every Pro feature."
+    },
+    "lock": {
+      "blockedMessage": "Your account is read-only. Upgrade to Pro to continue.",
+      "lockedHint": "Available on Pro",
+      "printMessage": "Upgrade to Pro to print",
+      "chatPlaceholder": "Your account is read-only",
+      "statusUnavailable": "We couldn't check your account. Please try again.",
+      "retry": "Try again"
+    },
+    "trialStatusCard": {
+      "title": "Your Pro month",
+      "endsOn": "Ends on {date}",
+      "daysLeft": "{days, plural, one {# day left} other {# days left}}"
+    },
+    "trialActivation": {
+      "activatingTitle": "Activating your Pro month…",
+      "successTitle": "Your Pro month has started — it ends on {date}",
+      "successTitleNoDate": "Your Pro month has started",
+      "successDescription": "You have 30 days with every Pro feature. Enjoy!",
+      "alreadyActiveTitle": "Your Pro month is already active — it ends on {date}",
+      "alreadyActiveTitleNoDate": "Your Pro month is already active",
+      "alreadyProTitle": "You already have Scooli Pro",
+      "alreadyProDescription": "Your account already has every Pro feature.",
+      "dashboardCta": "Go to the dashboard",
+      "upgradeCta": "See Pro plans",
+      "retry": "Try again",
+      "expiredCanStart": "But you can still activate your Pro month here.",
+      "expiredUpgrade": "Upgrade to Pro to keep using every feature.",
+      "notEligibleDescription": "The free Pro month can only be used once and isn't available to accounts that have had a paid subscription or that get Pro through a school.",
+      "invalidCanStart": "You can activate your Pro month right here.",
+      "invalidNoStart": "Check that you're signed in with the account that received the email.",
+      "notAvailableDescription": "Try again later, or contact us if you need help.",
+      "genericErrorTitle": "We couldn't activate your Pro month",
+      "genericErrorDescription": "Check your connection and try again.",
+      "noTokenTitle": "Activate your Pro month",
+      "noTokenDescription": "30 days with every Pro feature."
     }
   },
   "sources": {
