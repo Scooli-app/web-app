@@ -20,11 +20,12 @@ export function PageHeader({
     <div
       className={cn(
         "mb-5 flex flex-col gap-4 sm:mb-6 md:mb-8",
-        actions && "sm:flex-row sm:items-start sm:justify-between",
+        // Wraps instead of squeezing: at 768 px with the sidebar open the title was crushed under the actions.
+        actions && "sm:flex-row sm:flex-wrap sm:items-start sm:justify-between",
         className,
       )}
     >
-      <div className="min-w-0">
+      <div className={cn("min-w-0", actions && "sm:flex-1 sm:basis-80")}>
         <div className="flex items-start gap-2.5 sm:gap-3">
           {icon && <div className="mt-0.5 shrink-0">{icon}</div>}
           <div className="min-w-0">
