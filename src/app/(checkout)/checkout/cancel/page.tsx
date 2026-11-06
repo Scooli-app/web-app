@@ -46,10 +46,10 @@ export default function CheckoutCancelPage() {
               </div>
               <div>
                 <span className="text-foreground font-medium">
-                  {t("unlimitedGenerations.title")}
+                  {t("wholeYear.title")}
                 </span>
                 <p className="text-sm text-muted-foreground">
-                  {t("unlimitedGenerations.description")}
+                  {t("wholeYear.description")}
                 </p>
               </div>
             </li>

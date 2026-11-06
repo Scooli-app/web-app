@@ -39,12 +39,11 @@ export function FormActions({
   const tUpgrade = useTranslations("nav.generations");
   const dispatch = useAppDispatch();
   const usage = useAppSelector(selectEntitlementUsage);
-  // Only free users see the cost hint, so the same flag says whose credits can run out.
-  const outOfCredits = showGenerationHint && usage?.remaining === 0;
+  // Read-only account (ENG-321): the button stays clickable and opens the paywall instead.
+  const { isLocked, guard, hasCredits } = useAccountAccess();
+  const outOfCredits = hasCredits && usage?.remaining === 0;
   const locale = useLocale();
   const typeLabel = typeNameInSentence(tEnums(`documentType.${documentType.id}`), locale);
-  // Read-only account (ENG-321): the button stays clickable and opens the paywall instead.
-  const { isLocked, guard } = useAccountAccess();
   const handleClick = () => {
     if (!guard("generate")) return;
     onSubmit();

@@ -33,6 +33,7 @@ function access(over: Partial<AccountAccessState>): AccountAccessState {
     canStartTrial: false,
     trialEndsAt: null,
     trialDaysLeft: null,
+    hasCredits: false,
     loading: false,
     guard: () => true,
     ...over,

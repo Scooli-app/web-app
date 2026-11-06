@@ -84,6 +84,8 @@ export interface AccountAccess {
   canStartTrial: boolean;
   trialEndsAt: string | null;
   trialDaysLeft: number | null;
+  /** An old free account, still on generation credits: the only one that sees a credit count. */
+  hasCredits: boolean;
 }
 
 /** Trial days left at or under which the trial banner becomes prominent. */
@@ -104,6 +106,8 @@ export function resolveAccountAccess(limits: PlanLimits | null): AccountAccess {
     canStartTrial: parsed?.canStartTrial ?? false,
     trialEndsAt: parsed?.trialEndsAt ?? null,
     trialDaysLeft: parsed?.trialDaysLeft ?? null,
+    // Not while the limits are unknown, so a trial account never flashes a count.
+    hasCredits: parsed?.status === "LEGACY_FREE",
   };
 }
 
