@@ -2765,16 +2765,6 @@
         "empty": "The most-created document types will show up here.",
         "emptyTitle": "No documents yet"
       },
-      "activeUsersCard": {
-        "title": "Most active users",
-        "noEmail": "No email",
-        "lastActive": "Last active: {date}",
-        "aiRequestsBadge": "{count, plural, one {# AI request} other {# AI requests}}",
-        "documentsThisMonthBadge": "{count, plural, one {# document this month} other {# documents this month}}",
-        "totalDocumentsBadge": "{count, plural, one {# document total} other {# documents total}}",
-        "empty": "The most active teachers appear here once the team starts using Scooli.",
-        "emptyTitle": "No active teachers yet"
-      },
       "viewMembers": "View members"
     },
     "members": {
@@ -2793,8 +2783,6 @@
       "unnamedMember": "Unnamed user",
       "noEmail": "No email available",
       "joinedAndLastActive": "Joined: {joinedDate} · Last active: {lastActiveDate}",
-      "aiRequestsLabel": "AI requests",
-      "aiRequestsCount": "{count, plural, one {# request} other {# requests}}",
       "documentsLabel": "Documents",
       "documentsCount": "{count, plural, one {# document} other {# documents}}",
       "createdThisMonth": "{count, plural, one {# created this month} other {# created this month}}",
