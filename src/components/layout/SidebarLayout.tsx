@@ -35,19 +35,16 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { UpgradePlanModal } from "@/components/ui/upgrade-plan-modal";
+import { useAccountAccess } from "@/hooks/useAccountAccess";
 import { useAdmin } from "@/hooks/useAdmin";
 import { MARKETING_SITE_URL } from "@/shared/config/constants";
 import { Routes } from "@/shared/types";
 import { FeatureFlag } from "@/shared/types/featureFlags";
 import { cn } from "@/shared/utils/utils";
-import {
-  selectEffectiveAccessSource,
-  selectEntitlementUsage,
-} from "@/store/entitlements/selectors";
+import { selectEntitlementUsage } from "@/store/entitlements/selectors";
 import { selectIsClassStateEnabled } from "@/store/features/selectors";
 import { useAppDispatch } from "@/store/hooks";
 import type { RootState } from "@/store/store";
-import { selectIsPro } from "@/store/subscription/selectors";
 import { setUpgradeModalOpen } from "@/store/ui/uiSlice";
 import {
   selectHasOrganizationWorkspace,
@@ -58,7 +55,6 @@ import {
   SignInButton,
   SignedIn,
   SignedOut,
-  useAuth,
   useClerk,
   useUser,
 } from "@clerk/nextjs";
@@ -558,35 +554,13 @@ const SidebarMobileContent = memo(function SidebarMobileContent({
   );
 });
 
-function GenerationsIndicator() {
+/** Credits left, for old free accounts only: trial, Pro and read-only accounts see no count. */
+function CreditsIndicator() {
   const t = useTranslations("nav");
-  const { isSignedIn } = useAuth();
-
   const usage = useSelector(selectEntitlementUsage);
-  const isProUser = useSelector(selectIsPro);
-  const accessSource = useSelector(selectEffectiveAccessSource);
+  const { hasCredits } = useAccountAccess();
 
-  if (!isSignedIn || !usage) return null;
-
-  if (isProUser) {
-    return (
-      <Link
-        href={Routes.SETTINGS}
-        title={
-          accessSource === "organization" || accessSource === "both"
-            ? t("generations.proAccessOrg")
-            : t("generations.proAccess")
-        }
-        className={cn(
-          "flex h-9 items-center gap-1.5 rounded-full border px-3 text-sm font-medium transition-colors",
-          "border-primary/10 bg-primary/5 text-primary hover:bg-primary/10",
-        )}
-      >
-        <Sparkles className="h-4 w-4" />
-        <span className="text-lg leading-none">∞</span>
-      </Link>
-    );
-  }
+  if (!hasCredits || !usage) return null;
 
   const isLow = usage.limit > 0 && usage.remaining / usage.limit <= 0.2;
   const isOut = usage.remaining === 0;
@@ -787,7 +761,7 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
                       </a>
                     </Button>
                     <PromoNavCta />
-                    <GenerationsIndicator />
+                    <CreditsIndicator />
                   </div>
                 </SignedIn>
                 <LanguageToggle />

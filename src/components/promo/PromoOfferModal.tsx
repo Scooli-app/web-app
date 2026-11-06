@@ -73,10 +73,10 @@ export function PromoOfferModal({ open, onOpenChange }: PromoOfferModalProps) {
             </div>
             <div>
               <p className="font-semibold text-sm text-foreground">
-                {t("unlimitedGenerations.title")}
+                {t("wholeYear.title")}
               </p>
               <p className="text-xs text-muted-foreground">
-                {t("unlimitedGenerations.description")}
+                {t("wholeYear.description")}
               </p>
             </div>
           </div>

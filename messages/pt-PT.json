@@ -343,8 +343,6 @@
       "signingOut": "A terminar sessão..."
     },
     "generations": {
-      "proAccessOrg": "Acesso Pro através da organização",
-      "proAccess": "Acesso Pro",
       "upgradeToPro": "Atualizar para Pro",
       "credits": "{count, plural, one {# crédito} other {# créditos}}"
     },
@@ -1255,7 +1253,7 @@
       "saveError": "Não foi possível guardar. Tenta novamente."
     },
     "subscriptionCard": {
-      "title": "Plano e créditos",
+      "title": "Plano",
       "yourPlan": "O teu plano",
       "orgAccessTitle": "Tens acesso Pro através da tua organização.",
       "orgAccessDescription": "O teu acesso é gerido pela escola — não precisas de uma subscrição pessoal.",
@@ -1545,7 +1543,7 @@
       "importFailedDescription": "Algo correu mal ao importar este ficheiro. Importa-o de novo; se voltar a falhar, experimenta em PDF ou DOCX.",
       "importFailedRetry": "Importar de novo",
       "generationFailedTitle": "Este documento não foi gerado",
-      "generationFailedDescription": "A geração falhou e não gastou nenhum crédito. Volta a pedi-lo no Início.",
+      "generationFailedDescription": "A geração falhou. Volta a pedi-lo no Início.",
       "generationFailedRetry": "Ir para o Início"
     },
     "documentTitle": {
@@ -2384,9 +2382,9 @@
       "title": "Bem-vindo à Scooli Pro! 🎉",
       "subtitle": "A tua subscrição foi ativada",
       "unlockedLabel": "O que desbloqueou",
-      "unlimitedGenerations": {
-        "title": "Gerações ilimitadas",
-        "description": "Cria sem limites"
+      "wholeYear": {
+        "title": "O ano letivo inteiro",
+        "description": "Todas as tuas turmas, semana a semana"
       },
       "customTemplates": {
         "title": "Modelos personalizados",
@@ -2400,11 +2398,11 @@
     },
     "upgradePlanModal": {
       "title": "Limite do plano grátis atingido",
-      "description": "Chegaste ao limite de créditos do teu plano gratuito.",
+      "description": "Chegaste ao limite do teu plano gratuito.",
       "unlockLabel": "Desbloqueia o Pro para continuar",
-      "unlimitedGenerations": {
-        "title": "Gerações ilimitadas",
-        "description": "Nunca deixes de criar conteúdos"
+      "wholeYear": {
+        "title": "O ano letivo inteiro",
+        "description": "Todas as tuas turmas, semana a semana"
       },
       "advancedCustomization": {
         "title": "Personalização avançada",
@@ -2461,7 +2459,7 @@
       },
       "free": {
         "name": "Plano gratuito",
-        "description": "20 créditos"
+        "description": "1 turma e 4 semanas de planeamento"
       }
     },
     "nifCard": {
@@ -2650,9 +2648,9 @@
     "offerModal": {
       "title": "Regresso às Aulas 2026",
       "description": "Scooli Pro por apenas 4,99€/mês se ativar durante a promoção - fica com este preço para sempre.",
-      "unlimitedGenerations": {
-        "title": "Gerações ilimitadas",
-        "description": "Acesso a todas as funcionalidades Pro"
+      "wholeYear": {
+        "title": "O ano letivo inteiro",
+        "description": "Todas as turmas e todas as funcionalidades Pro"
       },
       "lockedPrice": {
         "title": "Preço bloqueado para sempre",
@@ -3020,9 +3018,9 @@
       "title": "Lamentamos vê-lo partir...",
       "description": "O processo de pagamento foi cancelado e não foi efetuada nenhuma cobrança.",
       "whatYoureLosingTitle": "O que vais perder:",
-      "unlimitedGenerations": {
-        "title": "Gerações ilimitadas",
-        "description": "Cria quantos documentos precisares, sem limites"
+      "wholeYear": {
+        "title": "O ano letivo inteiro",
+        "description": "Todas as tuas turmas, semana a semana"
       },
       "saveTime": {
         "title": "Poupe horas de trabalho",

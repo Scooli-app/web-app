@@ -62,7 +62,7 @@ export function YourWeekCard() {
   const tTimetable = useTranslations("timetable");
   const locale = useLocale();
   const dispatch = useAppDispatch();
-  const { guard } = useAccountAccess();
+  const { guard, hasCredits } = useAccountAccess();
   const { getToken } = useAuth();
   const newClassGate = useNewClassGate();
   const { limits } = usePlanLimits();
@@ -220,10 +220,13 @@ export function YourWeekCard() {
     setOpenLesson({ timetableId: item.klass.timetableId, lessonId: item.lesson.id, weekStart: weekStartOf(item.lesson.slotDate) });
 
   // Prepare only the pending lessons the teacher can see, one at a time.
-  const prepareCost = preparationCost(
-    pending.map(({ lesson }) => ({ slotDate: lesson.slotDate, types: ["lessonPlan"] })),
-    limits,
-  );
+  // Only old free accounts still run on credits: nobody else sees a cost.
+  const prepareCost = hasCredits
+    ? preparationCost(
+        pending.map(({ lesson }) => ({ slotDate: lesson.slotDate, types: ["lessonPlan"] })),
+        limits,
+      )
+    : null;
   const handlePrepare = async () => {
     setConfirmingPrepare(false);
     if (preparing || pending.length === 0) return;

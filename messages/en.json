@@ -343,8 +343,6 @@
       "signingOut": "Signing out..."
     },
     "generations": {
-      "proAccessOrg": "Pro access through your organization",
-      "proAccess": "Pro access",
       "upgradeToPro": "Upgrade to Pro",
       "credits": "{count, plural, one {# credit} other {# credits}}"
     },
@@ -1255,7 +1253,7 @@
       "saveError": "We couldn't save. Try again."
     },
     "subscriptionCard": {
-      "title": "Plan and credits",
+      "title": "Plan",
       "yourPlan": "Your plan",
       "orgAccessTitle": "You have Pro access through your organization.",
       "orgAccessDescription": "Your access is managed by the school — you don't need a personal subscription.",
@@ -1545,7 +1543,7 @@
       "importFailedDescription": "Something went wrong importing this file. Import it again, and if it fails again, try a PDF or DOCX.",
       "importFailedRetry": "Import again",
       "generationFailedTitle": "This document wasn't generated",
-      "generationFailedDescription": "The generation failed and used no credit. You can ask for it again from Home.",
+      "generationFailedDescription": "The generation failed. You can ask for it again from Home.",
       "generationFailedRetry": "Go to Home"
     },
     "documentTitle": {
@@ -2384,9 +2382,9 @@
       "title": "Welcome to Scooli Pro! 🎉",
       "subtitle": "Your subscription has been activated successfully",
       "unlockedLabel": "What you've unlocked",
-      "unlimitedGenerations": {
-        "title": "Unlimited generations",
-        "description": "Create without limits"
+      "wholeYear": {
+        "title": "The whole school year",
+        "description": "All your classes, week by week"
       },
       "customTemplates": {
         "title": "Custom templates",
@@ -2400,11 +2398,11 @@
     },
     "upgradePlanModal": {
       "title": "Free Plan Limit Reached",
-      "description": "You've reached the credit limit of your free plan.",
+      "description": "You've reached the limit of your free plan.",
       "unlockLabel": "Unlock Pro to continue",
-      "unlimitedGenerations": {
-        "title": "Unlimited Generations",
-        "description": "Never stop creating content"
+      "wholeYear": {
+        "title": "The whole school year",
+        "description": "All your classes, week by week"
       },
       "advancedCustomization": {
         "title": "Advanced Customization",
@@ -2461,7 +2459,7 @@
       },
       "free": {
         "name": "Free Plan",
-        "description": "20 credits"
+        "description": "1 class and 4 weeks of planning"
       }
     },
     "nifCard": {
@@ -2650,9 +2648,9 @@
     "offerModal": {
       "title": "Back to School 2026",
       "description": "Scooli Pro for just €4.99/month if you activate during the promotion — keep this price forever.",
-      "unlimitedGenerations": {
-        "title": "Unlimited generations",
-        "description": "Access to all Pro features"
+      "wholeYear": {
+        "title": "The whole school year",
+        "description": "Every class and every Pro feature"
       },
       "lockedPrice": {
         "title": "Price locked forever",
@@ -3020,9 +3018,9 @@
       "title": "Sorry to see you go...",
       "description": "The payment process was canceled and you have not been charged.",
       "whatYoureLosingTitle": "What you're missing out on:",
-      "unlimitedGenerations": {
-        "title": "Unlimited generations",
-        "description": "Create as many documents as you need, with no limits"
+      "wholeYear": {
+        "title": "The whole school year",
+        "description": "All your classes, week by week"
       },
       "saveTime": {
         "title": "Save hours of work",

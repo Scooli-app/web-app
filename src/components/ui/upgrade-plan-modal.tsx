@@ -10,7 +10,7 @@ import {
 import { useAccountAccess } from "@/hooks/useAccountAccess";
 import { Routes } from "@/shared/types";
 import type { UpgradeReason } from "@/shared/types/plan-limits";
-import { AlertCircle, ArrowRight, Crown, Infinity, Lock, Sparkles } from "lucide-react";
+import { AlertCircle, ArrowRight, CalendarRange, Crown, Lock, Sparkles } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
@@ -85,11 +85,11 @@ export function UpgradePlanModal({
 
           <div className="flex items-center gap-4 p-3 bg-muted/50 rounded-xl border border-border/50">
             <div className="w-10 h-10 bg-emerald-500 dark:bg-emerald-600 rounded-lg flex items-center justify-center flex-shrink-0 shadow-sm">
-              <Infinity className="w-5 h-5 text-white" />
+              <CalendarRange className="w-5 h-5 text-white" />
             </div>
             <div>
-              <p className="font-semibold text-sm text-foreground">{t("unlimitedGenerations.title")}</p>
-              <p className="text-xs text-muted-foreground">{t("unlimitedGenerations.description")}</p>
+              <p className="font-semibold text-sm text-foreground">{t("wholeYear.title")}</p>
+              <p className="text-xs text-muted-foreground">{t("wholeYear.description")}</p>
             </div>
           </div>
 

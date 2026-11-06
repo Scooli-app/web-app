@@ -84,6 +84,15 @@ describe("resolveAccountAccess", () => {
     ).toMatchObject({ isLocked: true, isTrial: false, lockReason: "trial_not_activated", canStartTrial: true });
   });
 
+  it("shows credits only to a known free account, never on the trial, Pro or locked", () => {
+    expect(resolveAccountAccess(null).hasCredits).toBe(false);
+    expect(resolveAccountAccess(OLD_FREE).hasCredits).toBe(true);
+    expect(resolveAccountAccess({ ...OLD_FREE, status: "LEGACY_FREE", canStartTrial: true }).hasCredits).toBe(true);
+    expect(resolveAccountAccess({ ...OLD_FREE, isPro: true, status: "TRIAL" }).hasCredits).toBe(false);
+    expect(resolveAccountAccess({ ...OLD_FREE, isPro: true, status: "PRO" }).hasCredits).toBe(false);
+    expect(resolveAccountAccess({ ...OLD_FREE, status: "LOCKED", lockReason: "trial_expired" }).hasCredits).toBe(false);
+  });
+
   it("reports the trial's end and days left", () => {
     expect(
       resolveAccountAccess({ ...OLD_FREE, isPro: true, status: "TRIAL", trialEndsAt: "2026-12-04T10:00:00Z", trialDaysLeft: 4 }),

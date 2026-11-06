@@ -6,7 +6,7 @@ import {
   DialogDescription,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ArrowRight, CheckCircle2, Infinity, Sparkles, Zap } from "lucide-react";
+import { ArrowRight, CalendarRange, CheckCircle2, Sparkles, Zap } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 
@@ -97,11 +97,11 @@ export function PaymentSuccessModal({
 
           <div className="flex items-center gap-4 p-4 bg-muted rounded-xl">
             <div className="w-11 h-11 bg-emerald-500 dark:bg-emerald-600 rounded-xl flex items-center justify-center flex-shrink-0">
-              <Infinity className="w-5 h-5 text-white" />
+              <CalendarRange className="w-5 h-5 text-white" />
             </div>
             <div>
-              <p className="font-semibold text-foreground">{t("unlimitedGenerations.title")}</p>
-              <p className="text-sm text-muted-foreground">{t("unlimitedGenerations.description")}</p>
+              <p className="font-semibold text-foreground">{t("wholeYear.title")}</p>
+              <p className="text-sm text-muted-foreground">{t("wholeYear.description")}</p>
             </div>
           </div>
 

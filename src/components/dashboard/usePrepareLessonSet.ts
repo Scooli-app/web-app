@@ -66,7 +66,7 @@ export function usePrepareLessonSet({
   const isPro = useAppSelector(selectHasEffectivePro);
   const presentation = presentationFlag && isPro;
   const { limits } = usePlanLimits();
-  const { guard } = useAccountAccess();
+  const { guard, hasCredits } = useAccountAccess();
   const [preparing, setPreparing] = useState(false);
   // Types of this run that haven't started on the server yet: shown as "A preparar…" right away.
   const [inFlight, setInFlight] = useState<CompanionType[]>([]);
@@ -76,7 +76,8 @@ export function usePrepareLessonSet({
         (type) => !(type === "test" && testBlocked),
       )
     : [];
-  const cost = preparationCost([{ slotDate, types: suggested }], limits);
+  // Only old free accounts still run on credits: nobody else sees a cost.
+  const cost = hasCredits ? preparationCost([{ slotDate, types: suggested }], limits) : null;
   const label = [
     t("prepareSet", { items: suggested.map((type) => t(`shortTypes.${type}`)).join(" + ") }),
     cost === null ? null : t("cost", { count: cost }),
