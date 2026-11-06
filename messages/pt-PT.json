@@ -941,6 +941,12 @@
         "lessonPlanFotossintese": "Plano: A fotossíntese · 3.º ano",
         "testFracoes": "Teste: Frações · 5.º ano",
         "quizDescobrimentos": "Quiz: Os Descobrimentos · 5.º ano"
+      },
+      "exampleLabel": "{type}: {topic} · {year}.º ano",
+      "exampleTypes": {
+        "lessonPlan": "Plano",
+        "test": "Teste",
+        "quiz": "Quiz"
       }
     }
   },

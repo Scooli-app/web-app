@@ -941,6 +941,12 @@
         "lessonPlanFotossintese": "Plan: Photosynthesis · 3rd grade",
         "testFracoes": "Test: Fractions · 5th grade",
         "quizDescobrimentos": "Quiz: The Portuguese Discoveries · 5th grade"
+      },
+      "exampleLabel": "{type}: {topic} · {year, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} grade",
+      "exampleTypes": {
+        "lessonPlan": "Plan",
+        "test": "Test",
+        "quiz": "Quiz"
       }
     }
   },

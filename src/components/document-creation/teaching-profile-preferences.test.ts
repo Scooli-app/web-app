@@ -3,6 +3,7 @@ import type { TeachingProfile } from "@/shared/types/teaching-profile";
 import {
   buildRegularTeachingItems,
   getDefaultSchoolYear,
+  getDefaultSubjectId,
   getDefaultTeachingMode,
   getDefaultVocationalSchoolYear,
   getPreferredRegularSubjectIds,
@@ -87,6 +88,17 @@ describe("getDefaultSchoolYear", () => {
 
   it("returns null when there are no preferred years", () => {
     expect(getDefaultSchoolYear([])).toBeNull();
+  });
+});
+
+describe("getDefaultSubjectId", () => {
+  it("picks the teacher's subject when they teach only one in that year", () => {
+    expect(getDefaultSubjectId(["matematica"])).toBe("matematica");
+  });
+
+  it("leaves the choice open with several subjects or none", () => {
+    expect(getDefaultSubjectId(["matematica", "portugues"])).toBeNull();
+    expect(getDefaultSubjectId([])).toBeNull();
   });
 });
 
