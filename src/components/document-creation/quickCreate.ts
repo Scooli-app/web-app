@@ -228,6 +228,11 @@ export function stripParsedTokens(text: string, parse: QuickCreateParse): string
     .filter((_, i) => !removed[i])
     .join("")
     .replace(/\s+/g, " ")
+    // A removed year between separators leaves "grau · , com": keep only the last one.
+    // Spaced runs only, so an ellipsis or "1–4" inside the topic stays.
+    .replace(/\s*[,.:;·–-](?:\s+[,.:;·–-])+/g, (run) => run.trim().slice(-1))
+    // "grau , com" when "para o 7.º ano" sat just before the comma.
+    .replace(/\s+([,.;:])/g, "$1")
     .replace(/^[\s,.:;·–-]+|[\s,.:;·–-]+$/g, "")
     // A connector left at the start once its keyword is gone ("sobre frações").
     .replace(/^(?:sobre|acerca\s+de|de|do|da|para)\s+/i, "")
