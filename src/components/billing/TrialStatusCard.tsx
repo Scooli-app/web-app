@@ -11,7 +11,7 @@ export function TrialStatusCard() {
   const t = useTranslations("billing.trialStatusCard");
   const tBanner = useTranslations("billing.banner");
   const locale = useLocale();
-  const { status, isLocked, lockReason, canStartTrial, trialEndsAt, trialDaysLeft } = useAccountAccess();
+  const { status, isLocked, lockReason, canStartTrial, trialEndsAt, trialDaysLeft, trialPromoCode } = useAccountAccess();
 
   if (status === "TRIAL") {
     const date = formatTrialEndDate(trialEndsAt, locale);
@@ -23,6 +23,9 @@ export function TrialStatusCard() {
             <div>
               <p className="text-sm font-medium text-foreground">{t("title")}</p>
               {date && <p className="text-sm text-muted-foreground">{t("endsOn", { date })}</p>}
+              {trialPromoCode && (
+                <p className="text-sm text-muted-foreground">{t("promoIncluded", { code: trialPromoCode })}</p>
+              )}
             </div>
           </div>
           {trialDaysLeft !== null && (

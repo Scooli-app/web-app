@@ -2513,7 +2513,13 @@
     "trialStatusCard": {
       "title": "Your Pro month",
       "endsOn": "Ends on {date}",
-      "daysLeft": "{days, plural, one {# day left} other {# days left}}"
+      "daysLeft": "{days, plural, one {# day left} other {# days left}}",
+      "promoIncluded": "Includes 1 extra month from the {code} offer"
+    },
+    "trialPromo": {
+      "signUpBanner": "Special offer: create your account and get <strong>2 months of Pro for free</strong>",
+      "appliedToast": "You got an extra month: your Pro now runs until {date}",
+      "appliedToastNoDate": "You got an extra month of Pro"
     },
     "trialActivation": {
       "activatingTitle": "Activating your Pro month…",

@@ -2513,7 +2513,13 @@
     "trialStatusCard": {
       "title": "O teu mês Pro",
       "endsOn": "Termina a {date}",
-      "daysLeft": "{days, plural, one {Falta # dia} other {Faltam # dias}}"
+      "daysLeft": "{days, plural, one {Falta # dia} other {Faltam # dias}}",
+      "promoIncluded": "Inclui 1 mês extra da oferta {code}"
+    },
+    "trialPromo": {
+      "signUpBanner": "Oferta especial: cria a tua conta e ganha <strong>2 meses de Pro grátis</strong>",
+      "appliedToast": "Ganhaste mais um mês: o teu Pro vai até {date}",
+      "appliedToastNoDate": "Ganhaste mais um mês de Pro"
     },
     "trialActivation": {
       "activatingTitle": "A ativar o teu mês Pro…",

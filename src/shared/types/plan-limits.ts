@@ -46,6 +46,8 @@ export interface PlanLimits {
   trialDaysLeft?: number | null;
   canStartTrial?: boolean;
   lockReason?: LockReason | null;
+  /** The fair promo code applied to this trial (ENG-360); null when none. Optional: older backends omit it. */
+  trialPromoCode?: string | null;
 }
 
 const ACCOUNT_STATUSES: readonly AccountStatus[] = ["PRO", "TRIAL", "LOCKED", "LEGACY_FREE"];
@@ -72,6 +74,8 @@ export function parsePlanLimits(raw: PlanLimits): PlanLimits {
       known && status === "TRIAL" && typeof raw.trialDaysLeft === "number" ? raw.trialDaysLeft : null,
     canStartTrial: known && raw.canStartTrial === true,
     lockReason: status === "LOCKED" && isLockReason(raw.lockReason) ? raw.lockReason : null,
+    trialPromoCode:
+      known && typeof raw.trialPromoCode === "string" && raw.trialPromoCode.trim() ? raw.trialPromoCode : null,
   };
 }
 
@@ -84,6 +88,8 @@ export interface AccountAccess {
   canStartTrial: boolean;
   trialEndsAt: string | null;
   trialDaysLeft: number | null;
+  /** The promo code that extended the trial (ENG-360), or null. */
+  trialPromoCode: string | null;
   /** An old free account, still on generation credits: the only one that sees a credit count. */
   hasCredits: boolean;
 }
@@ -106,6 +112,7 @@ export function resolveAccountAccess(limits: PlanLimits | null): AccountAccess {
     canStartTrial: parsed?.canStartTrial ?? false,
     trialEndsAt: parsed?.trialEndsAt ?? null,
     trialDaysLeft: parsed?.trialDaysLeft ?? null,
+    trialPromoCode: parsed?.trialPromoCode ?? null,
     // Not while the limits are unknown, so a trial account never flashes a count.
     hasCredits: parsed?.status === "LEGACY_FREE",
   };

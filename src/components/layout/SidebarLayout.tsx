@@ -6,6 +6,7 @@ import { OnboardingV2Gate } from "@/components/onboarding-v2/OnboardingV2Gate";
 import { PromoGate } from "@/components/promo/PromoGate";
 import { PromoNavCta } from "@/components/promo/PromoNavCta";
 import { AccountStatusBanner } from "@/components/billing/AccountStatusBanner";
+import { TrialPromoApplier } from "@/components/billing/TrialPromoApplier";
 import { AppBootstrapGate } from "@/components/layout/AppBootstrapGate";
 import { CreateMenu } from "@/components/layout/CreateMenu";
 import { PostHogPersonSync } from "@/components/providers/PostHogPersonSync";
@@ -780,6 +781,11 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
               </div>
             </div>
           </header>
+
+          {/* Applies a fair promo code captured before sign-up (ENG-360), on every workspace page. */}
+          <SignedIn>
+            <TrialPromoApplier />
+          </SignedIn>
 
           {/* The trial activation page shows the trial state itself: no second message there. */}
           {!pathname.startsWith(TRIAL_ROUTE_PREFIX) && (
