@@ -1,7 +1,8 @@
 "use client";
 
 import { REPLAN_MAX_POLLS, REPLAN_POLL_MS, REPLAN_CHANGED_EVENT, pollUntilSettled, settledToast } from "@/components/replan/replanLogic";
-import { ApiRequestError } from "@/services/api/client";
+import { useAccountAccess } from "@/hooks/useAccountAccess";
+import { ApiRequestError, UpgradeLimitError } from "@/services/api/client";
 import { replanService } from "@/services/api/replan.service";
 import { useShiftFollowing } from "@/hooks/useShiftFollowing";
 import { Routes } from "@/shared/types/routes";
@@ -36,6 +37,7 @@ export function useReplan() {
   const router = useRouter();
   const isPro = useAppSelector(selectHasEffectivePro);
   const { shift, offer } = useShiftFollowing();
+  const { guard } = useAccountAccess();
   const watches = useRef(new Set<AbortController>());
 
   useEffect(() => {
@@ -108,18 +110,22 @@ export function useReplan() {
       body: { triggerSlotId?: string; note?: string } = {},
       onSettled?: () => void,
     ): Promise<boolean> => {
+      // Read-only account (ENG-321): a replan is an AI generation; the paywall opens instead.
+      if (!guard("generate")) return false;
       const skipId = await settledProposalId(timetableId);
       try {
         const started = await replanService.start(timetableId, body);
         watch(timetableId, skipId, onSettled);
         return started.status === "generating";
       } catch (error) {
+        // The API client already opened the upgrade modal (lock, free-plan limit).
+        if (error instanceof UpgradeLimitError) return false;
         const proRequired = error instanceof ApiRequestError && error.code === "pro_required";
         toast.error(t(proRequired ? "proRequired" : "requestError"));
         return false;
       }
     },
-    [t, watch],
+    [guard, t, watch],
   );
 
   /** "Não houve aula" without Pro: the existing shift offer; with Pro: the replanning agent. */

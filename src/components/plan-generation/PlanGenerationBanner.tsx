@@ -2,6 +2,7 @@
 
 import { retryPlanGeneration } from "@/components/onboarding-v2/planGenerationRunner";
 import { Button } from "@/components/ui/button";
+import { useAccountAccess } from "@/hooks/useAccountAccess";
 import { useAppSelector } from "@/store/hooks";
 import { selectPlanGeneration } from "@/store/planGeneration/selectors";
 import { cn } from "@/shared/utils/utils";
@@ -21,6 +22,8 @@ interface PlanGenerationBannerProps {
 export function PlanGenerationBanner({ timetableId, className }: PlanGenerationBannerProps) {
   const t = useTranslations("planGeneration");
   const gen = useAppSelector(selectPlanGeneration);
+  // Read-only account (ENG-321): retrying is a generation; the paywall opens instead.
+  const { guard } = useAccountAccess();
 
   if (gen.status === "idle" || gen.status === "done") return null;
   if (timetableId && gen.timetableId !== timetableId) return null;
@@ -45,7 +48,9 @@ export function PlanGenerationBanner({ timetableId, className }: PlanGenerationB
           size="sm"
           variant="outline"
           className="shrink-0"
-          onClick={retryPlanGeneration}
+          onClick={() => {
+            if (guard("generate")) retryPlanGeneration();
+          }}
         >
           {t("retry")}
         </Button>

@@ -24,7 +24,8 @@ import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { selectIsPro } from "@/store/subscription/selectors";
 import { fetchSubscription } from "@/store/subscription/subscriptionSlice";
 import type { AssessmentDocument } from "@/types/assessment";
-import { AlertTriangle, Download, X } from "lucide-react";
+import { AlertTriangle, Download, Lock, X } from "lucide-react";
+import { useAccountAccess } from "@/hooks/useAccountAccess";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -55,6 +56,7 @@ export default function AssessmentEditor({ documentId, defaultTitle, chatTitle, 
   const t = useTranslations("assessmentEditor");
   const tDoc = useTranslations("editor.documentEditor");
   const dispatch = useAppDispatch();
+  const { isLocked: accountLocked, guard } = useAccountAccess();
   const rawDocument = useAppSelector((s) => s.documents.currentDocument);
   const document = rawDocument?.id === documentId ? rawDocument : null;
   const isLoading = useAppSelector((s) => s.documents.isLoading);
@@ -482,8 +484,16 @@ export default function AssessmentEditor({ documentId, defaultTitle, chatTitle, 
               className="h-8"
             />
             {/* Phone: icon only, so the actions (with Partilhar) stay on one row. */}
-            <Button size="sm" className="h-8 gap-1.5" disabled={!ready} onClick={() => setExportOpen(true)}>
-              <Download className="h-3.5 w-3.5" />
+            <Button
+              size="sm"
+              className="h-8 gap-1.5"
+              disabled={!ready}
+              onClick={() => {
+                // Read-only account (ENG-321): the paywall instead of the export dialog.
+                if (guard("export")) setExportOpen(true);
+              }}
+            >
+              {accountLocked ? <Lock className="h-3.5 w-3.5" aria-hidden /> : <Download className="h-3.5 w-3.5" />}
               <span className="max-md:sr-only">{t("export")}</span>
             </Button>
           </>
