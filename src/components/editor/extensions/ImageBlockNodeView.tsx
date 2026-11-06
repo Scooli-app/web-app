@@ -7,7 +7,8 @@ import { selectIsPro } from "@/store/subscription/selectors";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useState } from "react";
 import posthog from "posthog-js";
-import { UpgradeLimitError } from "@/services/api/client";
+import { isUpgradeLimitFailure, UpgradeLimitError } from "@/services/api/client";
+import { useAccountAccess } from "@/hooks/useAccountAccess";
 import { toast } from "sonner";
 import { cn } from "@/shared/utils/utils";
 
@@ -83,6 +84,7 @@ function hasImageReferenceInDocument(
 export default function ImageBlockNodeView({ node, deleteNode, editor, getPos, updateAttributes }: NodeViewProps) {
   const t = useTranslations("editor.imageBlock");
   const dispatch = useAppDispatch();
+  const { guard } = useAccountAccess();
   const { currentDocument, images, isGeneratingImages } = useAppSelector(selectEditorState);
   const isPremium = useAppSelector(selectIsPro);
 
@@ -224,6 +226,8 @@ export default function ImageBlockNodeView({ node, deleteNode, editor, getPos, u
       toast.error(t("userUploadNoRegen"));
       return;
     }
+    // Read-only account (ENG-321): the paywall, not the "Pro only" toast.
+    if (!guard("generate")) return;
     if (!isPremium) {
       toast.error(t("proOnly"));
       return;
@@ -236,12 +240,12 @@ export default function ImageBlockNodeView({ node, deleteNode, editor, getPos, u
       toast.success(t("regeneratingToast"));
     } catch (error) {
       posthog.capture("document_image_regeneration_failed", imageEventProps);
-      if (!(error instanceof UpgradeLimitError)) {
-        posthog.captureException(error);
-      }
+      // Lock / plan limit: the API client opened the paywall; no error toast next to it.
+      if (isUpgradeLimitFailure(error)) return;
+      posthog.captureException(error);
       toast.error(t("regenerateFailed"));
     }
-  }, [currentDocument, imageEventProps, imageId, dispatch, isCurrentImageGenerating, isPremium, isUserUploadedImage, t]);
+  }, [currentDocument, imageEventProps, imageId, dispatch, isCurrentImageGenerating, isPremium, isUserUploadedImage, t, guard]);
 
   const handleResize = useCallback(
     (delta: number) => {

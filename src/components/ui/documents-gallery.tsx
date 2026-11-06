@@ -23,7 +23,8 @@ import type { Document } from "@/shared/types";
 
 import { UploadDocumentModal } from "@/components/modals/upload-document-modal";
 import { useAuth } from "@clerk/nextjs";
-import { CheckSquare, Loader2, Square, Trash2, UploadCloud, X } from "lucide-react";
+import { CheckSquare, Loader2, Lock, Square, Trash2, UploadCloud, X } from "lucide-react";
+import { useAccountAccess } from "@/hooks/useAccountAccess";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useInView } from "react-intersection-observer";
@@ -95,6 +96,8 @@ export function DocumentsGallery() {
   const [deleting, setDeleting] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
+  // Read-only account (ENG-321): importing creates a new document; the paywall opens instead.
+  const { isLocked: accountLocked, guard } = useAccountAccess();
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [pagination, setPagination] = useState({
     page: 1,
@@ -393,12 +396,14 @@ export function DocumentsGallery() {
             {/* Upload button – visible on all screen sizes */}
             {!selectionMode && (
               <Button
-                onClick={() => setShowUploadModal(true)}
+                onClick={() => {
+                  if (guard("create")) setShowUploadModal(true);
+                }}
                 variant="outline"
                 size="sm"
                 className="flex flex-shrink-0"
               >
-                <UploadCloud className="w-4 h-4 mr-2" />
+                {accountLocked ? <Lock className="w-4 h-4 mr-2" aria-hidden /> : <UploadCloud className="w-4 h-4 mr-2" />}
                 <span>{t("import")}</span>
               </Button>
             )}

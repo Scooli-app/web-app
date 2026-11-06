@@ -1,14 +1,16 @@
 "use client";
 
+import { TrialActivateButton } from "@/components/billing/TrialActivateButton";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useAccountAccess } from "@/hooks/useAccountAccess";
 import { Routes } from "@/shared/types";
 import type { UpgradeReason } from "@/shared/types/plan-limits";
-import { AlertCircle, ArrowRight, Crown, Infinity, Sparkles } from "lucide-react";
+import { AlertCircle, ArrowRight, Crown, Infinity, Lock, Sparkles } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
@@ -18,7 +20,7 @@ import { Button } from "./button";
 interface UpgradePlanModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** Set when a free-plan limit blocked an action; shows that reason's copy. */
+  /** Set when a free-plan limit or the read-only lock blocked an action; shows that reason's copy. */
   reason?: UpgradeReason | null;
 }
 
@@ -29,12 +31,23 @@ export function UpgradePlanModal({
 }: UpgradePlanModalProps) {
   const t = useTranslations("billing.upgradePlanModal");
   const router = useRouter();
+  // Eligible accounts are offered the free Pro month next to the paid plans (ENG-320).
+  const { canStartTrial } = useAccountAccess();
 
   useEffect(() => {
     if (open) {
-      posthog.capture("upgrade_modal_viewed");
+      posthog.capture("upgrade_modal_viewed", { reason: reason ?? null, can_start_trial: canStartTrial });
     }
-  }, [open]);
+    // Once per opening, not when the eligibility loads.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, reason]);
+
+  const isLockReason = reason === "account_locked" || reason === "trial_expired" || reason === "trial_not_activated";
+  const description = !reason
+    ? t("description")
+    : reason === "trial_not_activated" && !canStartTrial
+      ? t("reasons.trial_not_activated.descriptionNoTrial")
+      : t(`reasons.${reason}.description`);
 
   const handleUpgrade = () => {
     posthog.capture("upgrade_modal_cta_clicked");
@@ -48,7 +61,11 @@ export function UpgradePlanModal({
         {/* Header with gradient background */}
         <div className="bg-gradient-to-b from-amber-50 to-transparent px-8 pb-6 pt-8 pr-16 text-center dark:from-amber-900/10">
           <div className="w-14 h-14 bg-amber-100 dark:bg-amber-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-amber-200 dark:border-amber-800">
-            <AlertCircle className="w-7 h-7 text-amber-600 dark:text-amber-400" />
+            {isLockReason ? (
+              <Lock className="w-7 h-7 text-amber-600 dark:text-amber-400" aria-hidden />
+            ) : (
+              <AlertCircle className="w-7 h-7 text-amber-600 dark:text-amber-400" aria-hidden />
+            )}
           </div>
 
           <DialogTitle className="text-2xl font-bold text-foreground mb-1">
@@ -56,7 +73,7 @@ export function UpgradePlanModal({
           </DialogTitle>
 
           <DialogDescription className="text-muted-foreground">
-            {reason ? t(`reasons.${reason}.description`) : t("description")}
+            {description}
           </DialogDescription>
         </div>
 
@@ -99,14 +116,24 @@ export function UpgradePlanModal({
 
         {/* CTA */}
         <div className="px-6 pb-6 pt-2 pr-14">
+          {canStartTrial && (
+            <TrialActivateButton
+              source="paywall"
+              size="lg"
+              className="mb-3 h-12 w-full rounded-xl font-bold"
+              onActivated={() => onOpenChange(false)}
+            />
+          )}
           <Button
             onClick={handleUpgrade}
-            className="w-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white h-12 rounded-xl font-bold shadow-md transition-all flex items-center justify-center gap-2 group"
+            variant={canStartTrial ? "outline" : "default"}
+            className={canStartTrial ? "w-full h-12 rounded-xl font-semibold flex items-center justify-center gap-2 group" : "w-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white h-12 rounded-xl font-bold shadow-md transition-all flex items-center justify-center gap-2 group"}
           >
             {t("cta")}
             <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
           </Button>
           <button
+            type="button"
             onClick={() => onOpenChange(false)}
             className="w-full mt-3 text-sm text-muted-foreground hover:text-foreground transition-colors py-1"
           >

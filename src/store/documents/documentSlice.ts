@@ -28,7 +28,7 @@ import type {
 } from "@/shared/types/document";
 import { isUsableDocumentContent } from "@/shared/utils/documentContent";
 import { translate } from "@/i18n/translate";
-import { ApiRequestError } from "@/services/api/client";
+import { ApiRequestError, UpgradeLimitError } from "@/services/api/client";
 import { fetchEntitlements } from "@/store/entitlements/entitlementsSlice";
 import { fetchUsage } from "@/store/subscription/subscriptionSlice";
 import { createAsyncThunk, createSlice, type PayloadAction } from "@reduxjs/toolkit";
@@ -369,6 +369,8 @@ export const regenerateDocumentImage = createAsyncThunk(
       dispatch(fetchEntitlements());
       return result;
     } catch (error) {
+      // Lock / plan limit: the paywall is open; keep the error's name so callers show no failure.
+      if (error instanceof UpgradeLimitError) throw error;
       return rejectWithValue(
         error instanceof Error ? error.message : "Failed to regenerate document image"
       );
@@ -703,7 +705,8 @@ const documentSlice = createSlice({
       })
       .addCase(regenerateDocumentImage.rejected, (state, action) => {
         state.isGeneratingImages = false;
-        state.imageError = action.payload as string;
+        // A lock / plan limit rejects without a payload: the paywall says it, not an error line.
+        state.imageError = (action.payload as string | undefined) ?? null;
       })
       .addCase(deleteDocumentImage.fulfilled, (state, action) => {
         state.images = state.images.filter(img => img.id !== action.payload);
