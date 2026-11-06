@@ -9,7 +9,7 @@ import { isFailedDocumentStatus, type DocumentImage, type RagSource } from "@/sh
 import type { DocumentVersionDetail, DocumentVersionSummary } from "@/shared/types/document-versions";
 import { translate } from "@/i18n/translate";
 import axios, { type AxiosError } from "axios";
-import apiClient from "./client";
+import apiClient, { handleAccountLocked } from "./client";
 
 export type { DocumentFilters };
 
@@ -164,6 +164,16 @@ export async function streamDocumentContent(
       if (response.ok) {
         return;
       }
+      if (response.status === 403) {
+        const body = await response.json().catch(() => null);
+        if ((body as { code?: unknown } | null)?.code === "account_locked") {
+          // Read-only account: the paywall opens; the editor shows the lock, not an HTTP error.
+          const locked = handleAccountLocked(body);
+          callbacks.onError?.(locked.message);
+          abortController.abort();
+          throw locked;
+        }
+      }
       if (
         response.status >= 400 &&
         response.status < 500 &&
@@ -281,6 +291,19 @@ export async function streamDocumentContent(
             callbacks.onError?.(parsed.data);
             abortController.abort();
             break;
+          case "account_locked": {
+            let payload: unknown = { reason: parsed.data };
+            try {
+              const body = JSON.parse(parsed.data);
+              if (body && typeof body === "object") payload = body;
+            } catch {
+              // A plain reason string.
+            }
+            const locked = handleAccountLocked(payload);
+            callbacks.onError?.(locked.message);
+            abortController.abort();
+            break;
+          }
         }
       } catch (e) {
         console.error("[SSE] Parse error:", e, "Raw data:", event.data);

@@ -1,4 +1,5 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { Routes } from "@/shared/types/routes";
 import { isClerkOrganizationAdminRole } from "@/shared/utils/clerkOrganizationRole";
 import { NextResponse } from "next/server";
 
@@ -100,6 +101,17 @@ export default clerkMiddleware(async (auth, req) => {
     const res = NextResponse.redirect(redirectUrl);
     await setTokenCookie(res);
     return res;
+  }
+
+  // Campaign email link (ENG-320): sign in first, then come back with the token
+  // (`auth.protect` below would drop the return URL).
+  if (!authObj.userId && req.nextUrl.pathname === Routes.TRIAL_ACTIVATE) {
+    const signInUrl = new URL("/sign-in", req.url);
+    signInUrl.searchParams.set(
+      "redirect_url",
+      `${req.nextUrl.pathname}${req.nextUrl.search}`,
+    );
+    return NextResponse.redirect(signInUrl);
   }
 
   if (!authObj.userId && req.nextUrl.pathname === "/checkout") {
