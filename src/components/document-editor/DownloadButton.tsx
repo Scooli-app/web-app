@@ -7,14 +7,16 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { UpgradeLimitError } from "@/services/api/client";
+import { useAccountAccess } from "@/hooks/useAccountAccess";
+import { ApiRequestError, UpgradeLimitError } from "@/services/api/client";
 import { downloadDocument, type DownloadFormat } from "@/services/download/documentDownload";
 import { Routes } from "@/shared/types";
 import type { DocumentImage } from "@/shared/types/document";
-import { Crown, Download, FileText, Loader2 } from "lucide-react";
+import { Crown, Download, FileText, Loader2, Lock } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { memo, useCallback, useRef, useState } from "react";
+import { toast } from "sonner";
 import posthog from "posthog-js";
 
 interface DownloadButtonProps {
@@ -36,7 +38,9 @@ function DownloadButtonComponent({
   disabledReason,
 }: DownloadButtonProps) {
   const t = useTranslations("editor.downloadButton");
+  const tLock = useTranslations("billing.lock");
   const router = useRouter();
+  const { isLocked, guard } = useAccountAccess();
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadFormat, setDownloadFormat] = useState<DownloadFormat | null>(null);
   // React state updates are batched/async, so a user clicking (or hitting Enter on a
@@ -54,6 +58,9 @@ function DownloadButtonComponent({
       if (format === "docx" && !isProUser) {
         return;
       }
+      if (!guard("export")) {
+        return;
+      }
       if (inFlightRef.current) {
         return;
       }
@@ -67,7 +74,12 @@ function DownloadButtonComponent({
         await downloadDocument({ title, content, format, images });
       } catch (error) {
         console.error(`Failed to download as ${format}:`, error);
-        if (!(error instanceof UpgradeLimitError)) {
+        if (error instanceof ApiRequestError && error.code === "account_status_unavailable") {
+          // The export route could not check the account (it fails closed): say so, with a retry.
+          toast.error(error.message, {
+            action: { label: tLock("retry"), onClick: () => void retryRef.current(format) },
+          });
+        } else if (!(error instanceof UpgradeLimitError)) {
           posthog.captureException(error);
         }
       } finally {
@@ -76,8 +88,11 @@ function DownloadButtonComponent({
         setDownloadFormat(null);
       }
     },
-    [title, content, images, isProUser]
+    [title, content, images, isProUser, guard, tLock]
   );
+  // The retry toast outlives this render: it calls the latest handler.
+  const retryRef = useRef(handleDownload);
+  retryRef.current = handleDownload;
 
   const handlePdfDownload = useCallback(() => handleDownload("pdf"), [handleDownload]);
   const handleDocxDownload = useCallback(() => handleDownload("docx"), [handleDownload]);
@@ -90,6 +105,23 @@ function DownloadButtonComponent({
 
   const isDisabled = disabled || isDownloading || !title || !content;
   const isDocxDisabled = isDownloading;
+
+  // Read-only account (ENG-321): the export button stays, with a lock, and opens the paywall.
+  if (isLocked) {
+    return (
+      <Button
+        variant="default"
+        size="sm"
+        onClick={() => guard("export")}
+        aria-label={`${t("export")} (${tLock("lockedHint")})`}
+        title={tLock("lockedHint")}
+        className="flex items-center gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
+      >
+        <Lock className="h-4 w-4" aria-hidden />
+        <span className="hidden sm:inline">{t("export")}</span>
+      </Button>
+    );
+  }
 
   return (
     <span title={isDisabled ? disabledReason : undefined} className="inline-flex">

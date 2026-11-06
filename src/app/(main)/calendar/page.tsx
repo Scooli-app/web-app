@@ -1,5 +1,6 @@
 "use client";
 
+import { useAccountAccess } from "@/hooks/useAccountAccess";
 import CalendarLoading from "./loading";
 import { toast } from "sonner";
 import { hasTopic, isListableSlot, isVisibleSlot } from "@/shared/utils/lessonTopic";
@@ -249,6 +250,7 @@ function CalendarPageInner() {
     (state: RootState) => state.timetable,
   );
   const dispatch = useAppDispatch();
+  const { guard } = useAccountAccess();
   const newClassGate = useNewClassGate();
   const { getToken } = useAuth();
 
@@ -680,6 +682,7 @@ function CalendarPageInner() {
 
   const handleGenerateLesson = useCallback(
     async (slot: SlotWithTimetable, message?: string) => {
+      if (!guard("generate")) return;
       const previousStatus = slot.status;
       startSlotGenerating(slot.id);
       patchSlotStatus(slot.timetable.id, slot.id, "generating");
@@ -710,11 +713,12 @@ function CalendarPageInner() {
         stopSlotGenerating(slot.id);
       }
     },
-    [dispatch, getToken, refreshTimetable, startSlotGenerating, stopSlotGenerating],
+    [dispatch, getToken, refreshTimetable, startSlotGenerating, stopSlotGenerating, guard],
   );
 
   const handleRegenerateLesson = useCallback(
     async (slot: SlotWithTimetable, message?: string) => {
+      if (!guard("generate")) return;
       const previousStatus = slot.status;
       startSlotGenerating(slot.id);
       patchSlotStatus(slot.timetable.id, slot.id, "generating");
@@ -745,7 +749,7 @@ function CalendarPageInner() {
         stopSlotGenerating(slot.id);
       }
     },
-    [dispatch, getToken, refreshTimetable, startSlotGenerating, stopSlotGenerating],
+    [dispatch, getToken, refreshTimetable, startSlotGenerating, stopSlotGenerating, guard],
   );
 
   // ── Generate whole week ───────────────────────────────────────────────────

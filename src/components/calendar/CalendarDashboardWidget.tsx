@@ -6,6 +6,7 @@
  * Spec: Feature 2, Phase 6 — only shown to Pro / Institucional users.
  */
 
+import { useAccountAccess } from "@/hooks/useAccountAccess";
 import { isListableSlot } from "@/shared/utils/lessonTopic";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -92,6 +93,7 @@ export function CalendarDashboardWidget() {
   const router = useRouter();
   const { getToken, userId } = useAuth();
   const dispatch = useAppDispatch();
+  const { guard } = useAccountAccess();
   const newClassGate = useNewClassGate();
   const [upcoming, setUpcoming] = useState<UpcomingLesson[]>([]);
   const [loading, setLoading] = useState(true);
@@ -142,6 +144,7 @@ export function CalendarDashboardWidget() {
 
   const handleGenerate = useCallback(
     async (lesson: UpcomingLesson) => {
+      if (!guard("generate")) return;
       generationStore.start(lesson.id);
       patchStatus(lesson.id, "generating");
       dashboardCache.invalidate(CACHE_KEYS.UPCOMING_LESSONS);
@@ -162,7 +165,7 @@ export function CalendarDashboardWidget() {
         generationStore.finish(lesson.id);
       }
     },
-    [getToken, patchStatus]
+    [getToken, patchStatus, guard]
   );
 
   const load = useCallback(async (isCurrent: () => boolean) => {

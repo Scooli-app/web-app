@@ -1,5 +1,6 @@
 "use client";
 
+import { emailCategory } from "@/app/email/emailCategory";
 import { AuthLayout } from "@/components/auth/AuthLayout";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, CheckCircle2 } from "lucide-react";
@@ -10,7 +11,10 @@ import { Suspense } from "react";
 
 function UnsubscribedContent() {
   const t = useTranslations("emailUnsubscribed");
-  const invalid = useSearchParams().get("error") === "invalid";
+  const searchParams = useSearchParams();
+  const invalid = searchParams.get("error") === "invalid";
+  // The Pro trial emails have no switch in settings: say they stopped, and open the app.
+  const proTrial = !invalid && emailCategory(searchParams.get("category")) === "pro_trial";
 
   return (
     <AuthLayout>
@@ -24,12 +28,12 @@ function UnsubscribedContent() {
             )}
           </div>
           <h1 className="text-2xl font-semibold text-foreground">
-            {invalid ? t("invalid") : t("done")}
+            {invalid ? t("invalid") : proTrial ? t("proTrial.done") : t("done")}
           </h1>
-          {!invalid && <p className="text-sm leading-6 text-muted-foreground">{t("hint")}</p>}
+          {!invalid && !proTrial && <p className="text-sm leading-6 text-muted-foreground">{t("hint")}</p>}
           <Button asChild>
-            <Link href={invalid ? "/dashboard" : "/settings#planning"}>
-              {invalid ? t("openApp") : t("turnOn")}
+            <Link href={invalid || proTrial ? "/dashboard" : "/settings#planning"}>
+              {invalid || proTrial ? t("openApp") : t("turnOn")}
             </Link>
           </Button>
         </div>

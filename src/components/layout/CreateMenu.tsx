@@ -6,7 +6,8 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { ChevronDown, Plus } from "lucide-react";
+import { useAccountAccess } from "@/hooks/useAccountAccess";
+import { ChevronDown, Lock, Plus } from "lucide-react";
 import { cn } from "@/shared/utils/utils";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
@@ -21,6 +22,8 @@ export function CreateMenu({ onNavigate }: { onNavigate?: () => void }) {
   // Planificações already have their own sidebar entry.
   const actions = useVisibleDocTypeActions().filter((a) => a.id !== "curriculumPlan");
   const [expanded, setExpanded] = useState(false);
+  // Read-only account (ENG-321): no new documents; each entry opens the paywall instead.
+  const { isLocked, guard } = useAccountAccess();
 
   return (
     <SidebarMenu className="px-2">
@@ -52,12 +55,13 @@ export function CreateMenu({ onNavigate }: { onNavigate?: () => void }) {
                   key={action.id}
                   onClick={() => {
                     posthog.capture("sidebar_create_clicked", { action: action.id });
+                    if (!guard("create")) return;
                     onNavigate?.();
                     router.push(action.route);
                   }}
                   className="h-9 gap-2.5 px-4 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                 >
-                  <Icon className="h-4 w-4 text-primary" />
+                  {isLocked ? <Lock className="h-4 w-4 text-muted-foreground" aria-hidden /> : <Icon className="h-4 w-4 text-primary" />}
                   {tEnums(`documentType.${action.id}`)}
                 </SidebarMenuButton>
               );
