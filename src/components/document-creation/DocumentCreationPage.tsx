@@ -12,11 +12,12 @@ import {
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { selectIsPro } from "@/store/subscription/selectors";
 import { FeatureFlag } from "@/shared/types/featureFlags";
+import { cn } from "@/shared/utils/utils";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { LessonChoice } from "./lessonPicker";
-import { getMissingField } from "./missingField";
+import { getMissingFields, type MissingField } from "./missingField";
 import { SUBJECTS, SUBJECTS_BY_GRADE } from "./constants";
 import {
   AdditionalDetailsSection,
@@ -39,6 +40,25 @@ import { TemplateSection } from "./templates";
 import type { DocumentTypeConfig, FormState, FormUpdateFn } from "./types";
 import { ThemeGallery } from "@/components/document-editor-v2/ThemePicker";
 import { useSubjectChoice } from "./useSubjectChoice";
+
+// Most specific control first: the year card starts with the regular/vocational switch, not a year.
+const FIELD_FOCUS_SELECTORS = [
+  "input:not(:disabled)",
+  "[aria-pressed]:not(:disabled)",
+  "[role=radio]:not(:disabled)",
+  "[role=combobox]:not(:disabled)",
+  "button:not(:disabled)",
+];
+
+function focusFirstControl(container: HTMLElement) {
+  for (const selector of FIELD_FOCUS_SELECTORS) {
+    const control = container.querySelector<HTMLElement>(selector);
+    if (control) {
+      control.focus({ preventScroll: true });
+      return;
+    }
+  }
+}
 
 interface DocumentCreationPageProps {
   documentType: DocumentTypeConfig;
@@ -205,7 +225,7 @@ export default function DocumentCreationPage({
   const showWorksheetVariantSection = documentType.id === "worksheet";
   const isPresentation = documentType.id === "presentation";
 
-  const missingField = getMissingField(
+  const missingFields = getMissingFields(
     {
       topic: formState.topic,
       schoolYear: formState.schoolYear,
@@ -215,6 +235,40 @@ export default function DocumentCreationPage({
     },
     { needsTemplate: usesTemplate, needsWorksheetVariant: showWorksheetVariantSection },
   );
+  const missingField = missingFields[0] ?? null;
+
+  const fieldRefs = useRef<Partial<Record<MissingField, HTMLDivElement | null>>>({});
+  const [highlightedField, setHighlightedField] = useState<MissingField | null>(null);
+  useEffect(() => {
+    if (!highlightedField) return;
+    const timeout = window.setTimeout(() => setHighlightedField(null), 1600);
+    return () => window.clearTimeout(timeout);
+  }, [highlightedField]);
+
+  // Tapping the "Falta: …" hint scrolls to the field, focuses it and rings it for a moment.
+  const goToMissingField = (field: MissingField) => {
+    posthog.capture("document_missing_field_hint_clicked", {
+      document_type: documentType.id,
+      field,
+      missing_count: missingFields.length,
+    });
+    const container = fieldRefs.current[field];
+    if (!container) return;
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    container.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center" });
+    focusFirstControl(container);
+    setHighlightedField(field);
+  };
+  const fieldTarget = (field: MissingField, className?: string) => ({
+    ref: (el: HTMLDivElement | null) => {
+      fieldRefs.current[field] = el;
+    },
+    className: cn(
+      "rounded-xl transition-shadow duration-300",
+      highlightedField === field && "ring-2 ring-primary/70",
+      className,
+    ),
+  });
 
   const moreOptionsSummary = [
     usesTemplate && formState.template?.name
@@ -391,7 +445,7 @@ export default function DocumentCreationPage({
             />
           )}
 
-          <div>
+          <div {...fieldTarget("topic")}>
             <TopicSection
               topic={formState.topic}
               placeholder={t(`types.${documentType.id}.placeholder`)}
@@ -400,10 +454,12 @@ export default function DocumentCreationPage({
           </div>
 
           {showWorksheetVariantSection && (
-            <WorksheetVariantSection
-              worksheetVariant={formState.worksheetVariant}
-              onVariantChange={(value) => handleWorksheetVariantChange(value)}
-            />
+            <div {...fieldTarget("worksheetVariant")}>
+              <WorksheetVariantSection
+                worksheetVariant={formState.worksheetVariant}
+                onVariantChange={(value) => handleWorksheetVariantChange(value)}
+              />
+            </div>
           )}
 
           {showFilledSummary && formState.schoolYear && formState.subject ? (
@@ -414,7 +470,7 @@ export default function DocumentCreationPage({
             />
           ) : (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div>
+            <div {...fieldTarget("schoolYear")}>
               <ClassSection
                 mode={teachingMode}
                 onModeChange={handleTeachingModeChange}
@@ -430,7 +486,7 @@ export default function DocumentCreationPage({
               />
             </div>
 
-            <div className="h-full">
+            <div {...fieldTarget("subject", "h-full")}>
                 <SubjectSection
                   subject={formState.subject}
                   isSpecificComponent={formState.isSpecificComponent}
@@ -464,12 +520,15 @@ export default function DocumentCreationPage({
             )}
 
             {usesTemplate && (
-              <TemplateSection
-                documentType={documentType.id}
-                selectedTemplateId={formState.templateId || null}
-                onTemplateSelect={handleTemplateSelect}
-                onTemplateCountChange={setTemplateCount}
-              />
+              // Carries the row divider itself: the OptionRow inside is now its wrapper's last child.
+              <div {...fieldTarget("template", "border-b border-border/60 last:border-b-0")}>
+                <TemplateSection
+                  documentType={documentType.id}
+                  selectedTemplateId={formState.templateId || null}
+                  onTemplateSelect={handleTemplateSelect}
+                  onTemplateCountChange={setTemplateCount}
+                />
+              </div>
             )}
 
             {showTeachingMethodSection && (
@@ -505,7 +564,8 @@ export default function DocumentCreationPage({
               error={error}
               onSubmit={handleCreateDocument}
               showGenerationHint={!isEntitlementLoading && !isProUser}
-              missingField={missingField}
+              missingFields={missingFields}
+              onMissingFieldClick={goToMissingField}
               noTemplates={templateCount === 0}
             />
           </div>
