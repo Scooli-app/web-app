@@ -43,6 +43,7 @@ export function UpgradePlanModal({
   }, [open, reason]);
 
   const isLockReason = reason === "account_locked" || reason === "trial_expired" || reason === "trial_not_activated";
+  const ReasonIcon = isLockReason ? Lock : reason === "see_plans" ? Crown : AlertCircle;
   const description = !reason
     ? t("description")
     : reason === "trial_not_activated" && !canStartTrial
@@ -61,13 +62,7 @@ export function UpgradePlanModal({
         {/* Header with gradient background */}
         <div className="bg-gradient-to-b from-amber-50 to-transparent px-8 pb-6 pt-8 pr-16 text-center dark:from-amber-900/10">
           <div className="w-14 h-14 bg-amber-100 dark:bg-amber-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-amber-200 dark:border-amber-800">
-            {isLockReason ? (
-              <Lock className="w-7 h-7 text-amber-600 dark:text-amber-400" aria-hidden />
-            ) : reason === "see_plans" ? (
-              <Crown className="w-7 h-7 text-amber-600 dark:text-amber-400" aria-hidden />
-            ) : (
-              <AlertCircle className="w-7 h-7 text-amber-600 dark:text-amber-400" aria-hidden />
-            )}
+            <ReasonIcon className="w-7 h-7 text-amber-600 dark:text-amber-400" aria-hidden />
           </div>
 
           <DialogTitle className="text-2xl font-bold text-foreground mb-1">
