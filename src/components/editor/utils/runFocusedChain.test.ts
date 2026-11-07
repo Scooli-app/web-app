@@ -20,7 +20,6 @@ const emptyRects = () => [] as unknown as DOMRectList;
 const emptyRect = () => new DOMRect();
 Range.prototype.getClientRects ??= emptyRects;
 Range.prototype.getBoundingClientRect ??= emptyRect;
-Element.prototype.getClientRects ??= emptyRects;
 
 function mountEditor(content: string) {
   element = document.createElement("div");

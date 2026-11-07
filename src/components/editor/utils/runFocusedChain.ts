@@ -13,6 +13,7 @@ export function runFocusedChain(
   editor: Editor,
   command: (chain: ChainedCommands) => ChainedCommands,
 ): boolean {
-  if (!editor.view.hasFocus()) editor.view.focus();
-  return command(editor.chain()).run();
+  if (editor.view.hasFocus()) return command(editor.chain()).run();
+  editor.view.focus();
+  return command(editor.chain()).scrollIntoView().run();
 }
