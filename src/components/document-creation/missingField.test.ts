@@ -1,40 +1,47 @@
 import { describe, expect, it } from "vitest";
-import { getMissingField } from "./missingField";
+import { getMissingFields } from "./missingField";
 
 const plain = { needsTemplate: false, needsWorksheetVariant: false };
 
-describe("getMissingField", () => {
+describe("getMissingFields", () => {
   it("asks for the subject when topic and year are set", () => {
-    expect(getMissingField({ topic: "x", schoolYear: 5 }, plain)).toBe("subject");
+    expect(getMissingFields({ topic: "x", schoolYear: 5 }, plain)).toEqual(["subject"]);
   });
 
-  it("asks for the topic first, even when it is only whitespace", () => {
-    expect(getMissingField({ topic: "  ", schoolYear: 5, subject: "matematica" }, plain)).toBe("topic");
+  it("counts a whitespace-only topic as missing", () => {
+    expect(getMissingFields({ topic: "  ", schoolYear: 5, subject: "matematica" }, plain)).toEqual(["topic"]);
   });
 
-  it("asks for the year before the subject", () => {
-    expect(getMissingField({ topic: "x" }, plain)).toBe("schoolYear");
+  it("lists every missing field in form order", () => {
+    expect(getMissingFields({}, { needsTemplate: true, needsWorksheetVariant: true })).toEqual([
+      "topic",
+      "schoolYear",
+      "subject",
+      "template",
+      "worksheetVariant",
+    ]);
   });
 
   it("asks for the template only when the type needs one", () => {
     const state = { topic: "x", schoolYear: 5, subject: "matematica" };
-    expect(getMissingField(state, plain)).toBeNull();
-    expect(getMissingField(state, { ...plain, needsTemplate: true })).toBe("template");
+    expect(getMissingFields(state, plain)).toEqual([]);
+    expect(getMissingFields(state, { ...plain, needsTemplate: true })).toEqual(["template"]);
   });
 
   it("asks for the worksheet goal last", () => {
-    const state = { topic: "x", schoolYear: 5, subject: "matematica", templateId: "t" };
-    expect(
-      getMissingField(state, { needsTemplate: true, needsWorksheetVariant: true }),
-    ).toBe("worksheetVariant");
+    const state = { topic: "x", schoolYear: 5, subject: "matematica" };
+    expect(getMissingFields(state, { needsTemplate: true, needsWorksheetVariant: true })).toEqual([
+      "template",
+      "worksheetVariant",
+    ]);
   });
 
-  it("returns null when everything is filled", () => {
+  it("returns an empty list when everything is filled", () => {
     expect(
-      getMissingField(
+      getMissingFields(
         { topic: "x", schoolYear: 5, subject: "matematica", templateId: "t", worksheetVariant: "practice" },
         { needsTemplate: true, needsWorksheetVariant: true },
       ),
-    ).toBeNull();
+    ).toEqual([]);
   });
 });
