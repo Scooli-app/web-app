@@ -6,6 +6,9 @@ import { memo } from "react";
 import { getDiffState } from "./extensions/DiffExtension";
 import posthog from "posthog-js";
 
+/** From this many changes on, the bulk actions get a bigger, filled style. */
+const MANY_CHANGES = 5;
+
 interface DiffToolbarProps {
   editor: Editor;
   onExitDiffMode: () => void;
@@ -24,6 +27,9 @@ export const DiffToolbar = memo(function DiffToolbar({
   const changesCount = diffState?.changes.length ?? 0;
 
   if (!diffState?.active) return null;
+
+  const bulkClass =
+    changesCount >= MANY_CHANGES ? " diff-toolbar-btn-strong" : "";
 
   const handleAcceptAll = () => {
     posthog.capture("ai_suggestion_accepted_all", { changes_count: changesCount });
@@ -56,14 +62,14 @@ export const DiffToolbar = memo(function DiffToolbar({
       <div className="diff-toolbar-actions">
         <button
           onClick={handleAcceptAll}
-          className="diff-toolbar-btn diff-toolbar-btn-accept"
+          className={`diff-toolbar-btn diff-toolbar-btn-accept${bulkClass}`}
           type="button"
         >
           {t("acceptAll")}
         </button>
         <button
           onClick={handleRejectAll}
-          className="diff-toolbar-btn diff-toolbar-btn-reject"
+          className={`diff-toolbar-btn diff-toolbar-btn-reject${bulkClass}`}
           type="button"
         >
           {t("rejectAll")}

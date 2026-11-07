@@ -96,6 +96,8 @@ function buildDecorations(
       decorations.push(
         Decoration.widget(pos, createDeleteWidget(change), {
           id: `del-${change.id}`,
+          // Same key = same DOM across rebuilds, so an expanded block stays open.
+          key: `del-${change.id}`,
           side: -1,
         }),
       );
@@ -116,7 +118,9 @@ function buildDecorations(
 
 /**
  * Create a DOM element showing deleted content with strikethrough styling.
- * For large deletions (e.g. entire chapters), shows a prominent block.
+ * Large deletions (e.g. entire chapters) collapse to a one-line marker, so a
+ * suggestion with many of them does not bury the document; a toggle shows the
+ * deleted content.
  */
 function createDeleteWidget(
   change: DiffChange,
@@ -134,18 +138,34 @@ function createDeleteWidget(
       wrapper.setAttribute("data-diff-id", change.id);
       wrapper.contentEditable = "false";
 
-      const label = document.createElement("div");
+      const header = document.createElement("div");
+      header.className = "diff-delete-header";
+
+      const label = document.createElement("span");
       label.className = "diff-delete-label";
       label.textContent = translate("editor.diffExtension.contentRemoved");
 
+      const excerpt = document.createElement("span");
+      excerpt.className = "diff-delete-excerpt";
+      excerpt.textContent = text;
+
+      const toggle = document.createElement("button");
+      toggle.className = "diff-delete-toggle";
+      toggle.type = "button";
+      toggle.setAttribute("aria-expanded", "false");
+      toggle.textContent = translate("editor.diffExtension.showRemoved");
+
+      header.append(label, excerpt, toggle);
+
       const preview = document.createElement("div");
       preview.className = "diff-delete-content";
+      preview.hidden = true;
 
       // Render the deleted slice with full editor formatting
       const fragment = renderSlice(change.deletedSlice, view.state.schema);
       preview.appendChild(fragment);
 
-      wrapper.appendChild(label);
+      wrapper.appendChild(header);
       wrapper.appendChild(preview);
       return wrapper;
     } else {
@@ -163,6 +183,26 @@ function createDeleteWidget(
       return wrapper;
     }
   };
+}
+
+/**
+ * Show or hide the deleted content of a collapsed large-deletion block.
+ * DOM only: widget mutations do not reach ProseMirror's document.
+ */
+function toggleDeleteBlock(toggle: Element): void {
+  const content = toggle
+    .closest(".diff-delete-block")
+    ?.querySelector<HTMLElement>(".diff-delete-content");
+  if (!content) return;
+
+  const expanded = toggle.getAttribute("aria-expanded") !== "true";
+  content.hidden = !expanded;
+  toggle.setAttribute("aria-expanded", String(expanded));
+  toggle.textContent = translate(
+    expanded
+      ? "editor.diffExtension.hideRemoved"
+      : "editor.diffExtension.showRemoved",
+  );
 }
 
 /**
@@ -570,10 +610,19 @@ export const DiffExtension = Extension.create({
             );
           },
 
-          // Handle clicks on accept/reject buttons
+          // Handle clicks on accept/reject buttons and deletion toggles
           handleDOMEvents: {
             click(_view, event) {
               const target = event.target as HTMLElement;
+
+              const toggle = target.closest(".diff-delete-toggle");
+              if (toggle) {
+                event.preventDefault();
+                event.stopPropagation();
+                toggleDeleteBlock(toggle);
+                return true;
+              }
+
               const btn = target.closest(".diff-action-btn");
               if (!btn) return false;
 

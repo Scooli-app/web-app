@@ -1841,6 +1841,8 @@
     },
     "diffExtension": {
       "contentRemoved": "🗑 Content removed",
+      "showRemoved": "Show",
+      "hideRemoved": "Hide",
       "acceptChange": "Accept change",
       "rejectChange": "Reject change"
     },
