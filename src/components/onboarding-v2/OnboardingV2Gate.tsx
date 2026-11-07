@@ -4,6 +4,7 @@ import {
   OnboardingV2Flow,
   type OnboardingFlowResult,
 } from "@/components/onboarding-v2/OnboardingV2Flow";
+import { routeAfterOnboarding } from "@/components/onboarding-v2/closeRoute";
 import {
   resumePlanGenerationIfNeeded,
   setPlanGenerationContext,
@@ -122,9 +123,10 @@ export function OnboardingV2Gate() {
       dispatch(setOnboardingStatus(null));
       if (result.mode !== "full") return;
       // With or without a class, the dashboard is next: its week card asks for a first class.
-      router.push(Routes.DASHBOARD);
+      const next = routeAfterOnboarding(pathname);
+      if (next) router.push(next);
     },
-    [dispatch, router],
+    [dispatch, router, pathname],
   );
 
   if (!isSignedIn || !pending || !running) return null;
