@@ -544,7 +544,6 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  min-width: 0;
 }
 
 .diff-delete-label {
@@ -597,10 +596,6 @@
   opacity: 0.8;
   text-decoration: line-through;
   font-style: italic;
-}
-
-.diff-delete-content[hidden] {
-  display: none;
 }
 
 .diff-delete-content * {
