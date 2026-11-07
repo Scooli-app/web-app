@@ -19,10 +19,40 @@ import { useEffect, type ReactNode } from "react";
 const UPGRADE_CLASS =
   "shrink-0 bg-gradient-to-r from-amber-500 to-orange-600 text-white hover:from-amber-600 hover:to-orange-700";
 
+function isTrialEndingSoon(daysLeft: number | null): daysLeft is number {
+  return daysLeft !== null && daysLeft <= TRIAL_ENDING_SOON_DAYS;
+}
+
 /**
- * The account's Pro-trial state at the top of the workspace (ENG-320/321): days left while on
- * the trial (prominent in the last days), the persistent read-only notice while locked, and the
- * in-app activation offer for eligible free users. Renders nothing for Pro and plain free users.
+ * Days left of the trial as a small pill in the header ("60 dias"), linking to the plans; the full
+ * sentence is its tooltip and accessible name. Only before the last days: then the prominent
+ * banner below takes over.
+ */
+export function TrialDaysChip() {
+  const t = useTranslations("billing.banner");
+  const { status, trialDaysLeft } = useAccountAccess();
+  if (status !== "TRIAL" || isTrialEndingSoon(trialDaysLeft)) return null;
+
+  const full = trialDaysLeft !== null ? t("trialDiscreet", { days: trialDaysLeft }) : t("trialActive");
+  return (
+    <Link
+      href={Routes.CHECKOUT}
+      title={full}
+      aria-label={`${full}. ${t("seePlans")}`}
+      onClick={() => posthog.capture("trial_banner_upgrade_clicked", { source: "trial_chip" })}
+      className="flex h-9 shrink-0 items-center gap-1.5 rounded-full border border-primary/10 bg-primary/5 px-3 text-sm font-medium text-primary transition-colors hover:bg-primary/10"
+    >
+      <Sparkles className="h-4 w-4" aria-hidden />
+      <span>{trialDaysLeft !== null ? t("trialChip", { days: trialDaysLeft }) : t("trialChipActive")}</span>
+    </Link>
+  );
+}
+
+/**
+ * The account's Pro-trial state at the top of the workspace (ENG-320/321): the prominent notice in
+ * the last days of the trial (earlier, only {@link TrialDaysChip} in the header), the persistent
+ * read-only notice while locked, and the in-app activation offer for eligible free users. Renders
+ * nothing for Pro and plain free users.
  */
 export function AccountStatusBanner({ className }: { className?: string }) {
   const t = useTranslations("billing.banner");
@@ -68,9 +98,9 @@ export function AccountStatusBanner({ className }: { className?: string }) {
         </div>
       </div>
     );
-  } else if (status === "TRIAL") {
-    const endingSoon = trialDaysLeft !== null && trialDaysLeft <= TRIAL_ENDING_SOON_DAYS;
-    banner = endingSoon ? (
+  } else if (status === "TRIAL" && isTrialEndingSoon(trialDaysLeft)) {
+    // Earlier in the trial there's no banner: the header shows TrialDaysChip instead.
+    banner = (
       <div
         role="status"
         className="flex flex-col gap-3 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-amber-950 sm:flex-row sm:items-center sm:justify-between dark:border-amber-800/60 dark:bg-amber-950/30 dark:text-amber-100"
@@ -83,23 +113,6 @@ export function AccountStatusBanner({ className }: { className?: string }) {
           </div>
         </div>
         {upgradeLink(t("upgradeCta"), "trial_ending")}
-      </div>
-    ) : (
-      <div
-        role="status"
-        className="flex items-center justify-between gap-3 rounded-xl border border-primary/20 bg-primary/5 px-3 py-1.5"
-      >
-        <span className="flex min-w-0 items-center gap-2 text-sm text-foreground">
-          <Sparkles className="h-4 w-4 shrink-0 text-primary" aria-hidden />
-          <span className="min-w-0">
-            {trialDaysLeft !== null ? t("trialDiscreet", { days: trialDaysLeft }) : t("trialActive")}
-          </span>
-        </span>
-        <Button asChild size="sm" variant="link" className="h-7 shrink-0 px-1">
-          <Link href={Routes.CHECKOUT} onClick={() => posthog.capture("trial_banner_upgrade_clicked", { source: "trial" })}>
-            {t("seePlans")}
-          </Link>
-        </Button>
       </div>
     );
   } else if (canStartTrial && status !== "PRO") {

@@ -5,7 +5,7 @@ import { FeatureFeedbackGate } from "@/components/feature-feedback/FeatureFeedba
 import { OnboardingV2Gate } from "@/components/onboarding-v2/OnboardingV2Gate";
 import { PromoGate } from "@/components/promo/PromoGate";
 import { PromoNavCta } from "@/components/promo/PromoNavCta";
-import { AccountStatusBanner } from "@/components/billing/AccountStatusBanner";
+import { AccountStatusBanner, TrialDaysChip } from "@/components/billing/AccountStatusBanner";
 import { TrialPromoApplier } from "@/components/billing/TrialPromoApplier";
 import { AppBootstrapGate } from "@/components/layout/AppBootstrapGate";
 import { CreateMenu } from "@/components/layout/CreateMenu";
@@ -762,6 +762,7 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
                       </a>
                     </Button>
                     <PromoNavCta />
+                    <TrialDaysChip />
                     <CreditsIndicator />
                   </div>
                 </SignedIn>

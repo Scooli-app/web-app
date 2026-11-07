@@ -1,6 +1,7 @@
 import { SignIn } from "@clerk/nextjs";
 import { AuthLayout } from "@/components/auth/AuthLayout";
 import { SsoCallbackGuard } from "@/components/auth/SsoCallbackGuard";
+import { TrialPromoCodeFieldInClerk } from "@/components/billing/TrialPromoCodeField";
 import { TrialPromoSignUpBanner } from "@/components/billing/TrialPromoSignUpBanner";
 
 export default function SignInPage() {
@@ -11,6 +12,7 @@ export default function SignInPage() {
         <SsoCallbackGuard>
           <SignIn />
         </SsoCallbackGuard>
+        <TrialPromoCodeFieldInClerk />
       </div>
     </AuthLayout>
   );
