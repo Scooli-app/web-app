@@ -53,8 +53,6 @@ interface AssessmentEditorProps {
 }
 
 const AUTOSAVE_MS = 1500;
-// A chat edit can take well over a minute: say so, so the teacher does not think it hung.
-const CHAT_SLOW_MS = [15_000, 45_000] as const;
 
 /** Editor for tests, worksheets and quizzes stored as assessment block JSON. */
 export default function AssessmentEditor({ documentId, defaultTitle, chatTitle, chatPlaceholder }: AssessmentEditorProps) {
@@ -320,13 +318,9 @@ export default function AssessmentEditor({ documentId, defaultTitle, chatTitle, 
     setChatError("");
   }, [documentId]);
 
-  const [chatWait, setChatWait] = useState(0);
-  useEffect(() => {
-    setChatWait(0);
-    if (!isChatting) return;
-    const timers = CHAT_SLOW_MS.map((ms, i) => setTimeout(() => setChatWait(i + 1), ms));
-    return () => timers.forEach(clearTimeout);
-  }, [isChatting]);
+  // A chat edit can take well over a minute: say so, so the teacher does not think it hung.
+  const chatSlow = useGenerationStalled(isChatting, null, 15_000);
+  const chatSlower = useGenerationStalled(isChatting, null, 45_000);
 
   useEffect(() => {
     const raw = document?.metadata?.prompt ?? document?.metadata?.initialPrompt;
@@ -592,7 +586,7 @@ export default function AssessmentEditor({ documentId, defaultTitle, chatTitle, 
             onChatSubmit={handleChatSubmit}
             chatHistory={chatHistory}
             isStreaming={isChatting}
-            pendingHint={chatWait === 2 ? t("chatSlowLonger") : chatWait === 1 ? t("chatSlow") : undefined}
+            pendingHint={chatSlower ? t("chatSlowLonger") : chatSlow ? t("chatSlow") : undefined}
             disabled={!ready}
             error={chatError}
             retryable

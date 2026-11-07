@@ -457,7 +457,7 @@ export default function AIChatPanel({
   const lockedInputValue = isStreaming && lockedMessage !== null ? lockedMessage : chatMessage;
 
   // The last message sent, typed or from a chip: what "Try again" sends.
-  const lastSentRef = useRef<string | null>(null);
+  const lastSentRef = useRef("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -528,7 +528,7 @@ export default function AIChatPanel({
     }
   };
 
-  const retry = retryable ? () => void send(lastSentRef.current ?? "") : undefined;
+  const retry = retryable ? () => void send(lastSentRef.current) : undefined;
 
   const guardedImageRegen = onImageRegen
     ? () => {
