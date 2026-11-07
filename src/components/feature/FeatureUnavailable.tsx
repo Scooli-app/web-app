@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { LoadError } from "@/components/ui/load-error";
 import { fetchFeatureFlags } from "@/store/features/featuresSlice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { setUpgradeModalOpen } from "@/store/ui/uiSlice";
+import { openUpgradeModalForReason } from "@/store/ui/uiSlice";
 import { useTranslations } from "next-intl";
 
 interface FeatureUnavailableProps {
@@ -49,7 +49,7 @@ export function FeatureUnavailable({ title, description }: FeatureUnavailablePro
         <Button
           size="lg"
           className="w-full"
-          onClick={() => dispatch(setUpgradeModalOpen(true))}
+          onClick={() => dispatch(openUpgradeModalForReason("see_plans"))}
         >
           <Zap className="mr-2 h-4 w-4" />
           {t("upgradeCta")}

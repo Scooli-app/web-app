@@ -2439,6 +2439,10 @@
           "title": "O teu mês Pro terminou",
           "description": "A tua conta está agora em modo de leitura. Atualiza para Pro para voltares a criar e gerar documentos, exportar, duplicar e partilhar."
         },
+        "see_plans": {
+          "title": "Conhece o plano Pro",
+          "description": "Vê o que o Pro te dá e escolhe o plano certo para ti."
+        },
         "trial_not_activated": {
           "title": "Ativa o teu mês Pro",
           "description": "Ainda não ativaste o teu mês Pro gratuito. Ativa-o agora e tens 30 dias com tudo o que o Pro oferece.",

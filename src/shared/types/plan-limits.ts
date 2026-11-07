@@ -19,14 +19,16 @@ export type GuardedAction = LockedAction | "print";
 
 /**
  * Why the upgrade modal opened: a free-plan limit, a Pro-only feature (presentations, own sources),
- * or the read-only lock (by lock reason; `account_locked` when the reason is unknown).
+ * the read-only lock (by lock reason; `account_locked` when the reason is unknown), or `see_plans`
+ * when the teacher asked to see the plans and nothing was blocked.
  */
 export type UpgradeReason =
   | FreePlanLimitCode
   | "presentation_pro"
   | "sources_pro"
   | "account_locked"
-  | LockReason;
+  | LockReason
+  | "see_plans";
 
 export function isUpgradeReason(code: string): code is FreePlanLimitCode {
   return code === "free_class_limit" || code === "free_period_limit";
