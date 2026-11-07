@@ -1231,6 +1231,7 @@
       "coursesEmpty": "Procura o curso onde dás aulas. Se lecionas em vários, adiciona-os um a um.",
       "coursesSearchPlaceholder": "Nome ou área do curso — ex.: informática, turismo",
       "coursesLoading": "A carregar cursos…",
+      "coursesPartialMatch": "Nenhum curso tem todas estas palavras. Estes são os mais parecidos:",
       "noCoursesFound": "Nenhum curso encontrado. As escolas às vezes usam nomes diferentes do catálogo — procura por uma palavra só.",
       "courseAdded": "Adicionado",
       "removeCourse": "Remover {course}",
