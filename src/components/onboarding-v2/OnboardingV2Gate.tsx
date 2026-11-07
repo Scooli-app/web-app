@@ -123,7 +123,6 @@ export function OnboardingV2Gate() {
       dispatch(setOnboardingStatus(null));
       if (result.mode !== "full") return;
       // With or without a class, the dashboard is next: its week card asks for a first class.
-      // A teacher who opened a document through a link stays on it.
       const next = routeAfterOnboarding(pathname);
       if (next) router.push(next);
     },
