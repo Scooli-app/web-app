@@ -38,6 +38,7 @@ import {
 import { UpgradePlanModal } from "@/components/ui/upgrade-plan-modal";
 import { useAccountAccess } from "@/hooks/useAccountAccess";
 import { useAdmin } from "@/hooks/useAdmin";
+import { useSchoolAdminAccess } from "@/hooks/useSchoolAdminAccess";
 import { MARKETING_SITE_URL } from "@/shared/config/constants";
 import { Routes } from "@/shared/types";
 import { FeatureFlag } from "@/shared/types/featureFlags";
@@ -47,11 +48,7 @@ import { selectIsClassStateEnabled } from "@/store/features/selectors";
 import { useAppDispatch } from "@/store/hooks";
 import type { RootState } from "@/store/store";
 import { setUpgradeModalOpen } from "@/store/ui/uiSlice";
-import {
-  selectHasOrganizationWorkspace,
-  selectIsOrganizationAdmin,
-  selectWorkspaceContext,
-} from "@/store/workspace/selectors";
+import { selectWorkspaceContext } from "@/store/workspace/selectors";
 import {
   SignInButton,
   SignedIn,
@@ -428,8 +425,7 @@ const SidebarNavigationContent = memo(function SidebarNavigationContent({
       state.features.error !== null && Object.keys(state.features.flags).length === 0,
   );
   const workspace = useSelector(selectWorkspaceContext);
-  const hasOrganizationWorkspace = useSelector(selectHasOrganizationWorkspace);
-  const isOrganizationAdmin = useSelector(selectIsOrganizationAdmin);
+  const { canAccess: canAccessSchoolArea } = useSchoolAdminAccess();
   const isCommunityEnabled = features[FeatureFlag.COMMUNITY_LIBRARY] === true;
   const isUserSourcesEnabled = features[FeatureFlag.USER_SOURCES] === true;
   const isCurriculumPlanEnabled =
@@ -499,7 +495,7 @@ const SidebarNavigationContent = memo(function SidebarNavigationContent({
         </SignedIn>
 
         {/* With class_state_enabled the school is reached from the top bar and has its own tabs. */}
-        {hasOrganizationWorkspace && isOrganizationAdmin && !isClassStateEnabled && (
+        {canAccessSchoolArea && !isClassStateEnabled && (
           <>
             <Separator className="my-4" />
             <NavGroup
@@ -612,10 +608,9 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
   const isUpgradeModalOpen = useSelector(
     (state: RootState) => state.ui.isUpgradeModalOpen,
   );
-  const hasOrganizationWorkspace = useSelector(selectHasOrganizationWorkspace);
-  const isOrganizationAdmin = useSelector(selectIsOrganizationAdmin);
+  const { canAccess: canAccessSchoolArea } = useSchoolAdminAccess();
   const isClassStateEnabled = useSelector(selectIsClassStateEnabled);
-  const showSchoolEntry = hasOrganizationWorkspace && isOrganizationAdmin && isClassStateEnabled;
+  const showSchoolEntry = canAccessSchoolArea && isClassStateEnabled;
   const inSchoolArea = pathname === Routes.SCHOOL || pathname.startsWith(`${Routes.SCHOOL}/`);
 
   // Desktop sidebar open/collapsed state, lifted out of SidebarProvider so it
