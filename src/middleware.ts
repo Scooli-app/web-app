@@ -179,7 +179,8 @@ export default clerkMiddleware(async (auth, req) => {
     const activeOrgRole = authObj.orgRole;
     const isOrganizationAdmin = isClerkOrganizationAdminRole(activeOrgRole);
 
-    if (activeOrgId && !isOrganizationAdmin) {
+    // No active org in the session: the backend's /organizations/current/* calls would all 404.
+    if (!activeOrgId || !isOrganizationAdmin) {
       const dashboardUrl = new URL("/dashboard", req.url);
       return NextResponse.redirect(dashboardUrl);
     }

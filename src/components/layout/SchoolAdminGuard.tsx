@@ -1,12 +1,7 @@
 "use client";
 
+import { useSchoolAdminAccess } from "@/hooks/useSchoolAdminAccess";
 import { Routes } from "@/shared/types";
-import { useAppSelector } from "@/store/hooks";
-import {
-  selectHasOrganizationWorkspace,
-  selectIsOrganizationAdmin,
-  selectWorkspaceReady,
-} from "@/store/workspace/selectors";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
@@ -15,28 +10,20 @@ export function SchoolAdminGuard({
   fallback = null,
 }: {
   children: React.ReactNode;
-  /** Shown until the workspace is known. */
+  /** Shown until the workspace and the Clerk session are known. */
   fallback?: React.ReactNode;
 }) {
   const router = useRouter();
-  const workspaceReady = useAppSelector(selectWorkspaceReady);
-  const hasOrganizationWorkspace = useAppSelector(
-    selectHasOrganizationWorkspace,
-  );
-  const isOrganizationAdmin = useAppSelector(selectIsOrganizationAdmin);
+  const { ready, canAccess } = useSchoolAdminAccess();
 
   useEffect(() => {
-    if (!workspaceReady) {
-      return;
-    }
-
-    if (!hasOrganizationWorkspace || !isOrganizationAdmin) {
+    if (ready && !canAccess) {
       router.replace(Routes.DASHBOARD);
     }
-  }, [hasOrganizationWorkspace, isOrganizationAdmin, router, workspaceReady]);
+  }, [ready, canAccess, router]);
 
-  if (!workspaceReady) return fallback;
-  if (!hasOrganizationWorkspace || !isOrganizationAdmin) return null;
+  if (!ready) return fallback;
+  if (!canAccess) return null;
 
   return children;
 }
