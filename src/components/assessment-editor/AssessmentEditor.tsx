@@ -26,9 +26,11 @@ import { fetchSubscription } from "@/store/subscription/subscriptionSlice";
 import type { AssessmentDocument } from "@/types/assessment";
 import { AlertTriangle, Download, Lock, X } from "lucide-react";
 import { useAccountAccess } from "@/hooks/useAccountAccess";
+import { reportUiProblem } from "@/lib/reportUiProblem";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import posthog from "posthog-js";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { AssessmentWorkspace } from "./AssessmentWorkspace";
@@ -40,6 +42,7 @@ interface ChatMessage {
   role: "user" | "assistant";
   content: string;
   hasUpdate?: boolean;
+  noChange?: boolean;
 }
 
 interface AssessmentEditorProps {
@@ -315,6 +318,10 @@ export default function AssessmentEditor({ documentId, defaultTitle, chatTitle, 
     setChatError("");
   }, [documentId]);
 
+  // A chat edit can take well over a minute: say so, so the teacher does not think it hung.
+  const chatSlow = useGenerationStalled(isChatting, null, 15_000);
+  const chatSlower = useGenerationStalled(isChatting, null, 45_000);
+
   useEffect(() => {
     const raw = document?.metadata?.prompt ?? document?.metadata?.initialPrompt;
     const prompt = typeof raw === "string" ? raw.trim() : "";
@@ -343,6 +350,14 @@ export default function AssessmentEditor({ documentId, defaultTitle, chatTitle, 
         return false;
       }
       setIsChatting(true);
+      const problem = { documentId: document.id, documentType: document.documentType };
+      posthog.capture("ai_chat_message_sent", {
+        document_id: document.id,
+        document_type: document.documentType,
+        message_length: message.length,
+        editor: "assessment",
+      });
+      const startedAt = Date.now();
       try {
         setChatHistory((prev) => [...prev, { role: "user", content: message }]);
         const response = await dispatch(chatWithDocument({ id: document.id, message })).unwrap();
@@ -350,10 +365,20 @@ export default function AssessmentEditor({ documentId, defaultTitle, chatTitle, 
         if (updated) {
           needsLoadRef.current = true;
           await dispatch(fetchDocument(document.id));
+        } else {
+          reportUiProblem(response.chatAnswer ? "chat_reply_without_edit" : "chat_empty_reply", { ...problem, durationMs: Date.now() - startedAt });
         }
-        setChatHistory((prev) => [...prev, { role: "assistant", content: response.chatAnswer || t("chatUpdated"), hasUpdate: updated }]);
+        setChatHistory((prev) => [
+          ...prev,
+          { role: "assistant", content: response.chatAnswer || (updated ? t("chatUpdated") : t("chatEmpty")), hasUpdate: updated, noChange: !updated && !!response.chatAnswer },
+        ]);
         return true;
-      } catch {
+      } catch (err) {
+        reportUiProblem("chat_error_shown", {
+          ...problem,
+          message: err instanceof Error ? err.message : typeof err === "string" ? err : null,
+          durationMs: Date.now() - startedAt,
+        });
         setChatError(t("chatError"));
         return true;
       } finally {
@@ -561,8 +586,10 @@ export default function AssessmentEditor({ documentId, defaultTitle, chatTitle, 
             onChatSubmit={handleChatSubmit}
             chatHistory={chatHistory}
             isStreaming={isChatting}
+            pendingHint={chatSlower ? t("chatSlowLonger") : chatSlow ? t("chatSlow") : undefined}
             disabled={!ready}
             error={chatError}
+            retryable
             placeholder={chatPlaceholder}
             title={chatTitle}
             sources={sources}
