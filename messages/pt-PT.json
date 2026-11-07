@@ -2488,6 +2488,8 @@
     "banner": {
       "regionLabel": "Estado da conta",
       "trialDiscreet": "{days, plural, one {Falta # dia do teu mês Pro} other {Faltam # dias do teu mês Pro}}",
+      "trialChip": "{days, plural, one {# dia} other {# dias}}",
+      "trialChipActive": "Período experimental",
       "trialActive": "Estás no teu mês Pro",
       "trialEndingTitle": "{days, plural, one {O teu mês Pro termina em # dia} other {O teu mês Pro termina em # dias}}",
       "trialEndingDescription": "Depois, a tua conta passa a modo de leitura. Atualiza para Pro para continuares a gerar, exportar e partilhar.",
@@ -2521,7 +2523,14 @@
       "appliedToast": "Oferta aplicada: o teu Pro vai até {date}",
       "appliedToastNoDate": "Oferta aplicada: ganhaste dias extra de Pro",
       "durationMonths": "{count, plural, one {# mês} other {# meses}}",
-      "durationDays": "{count, plural, one {# dia} other {# dias}}"
+      "durationDays": "{count, plural, one {# dia} other {# dias}}",
+      "codeToggle": "Tens um código de oferta?",
+      "codeLabel": "Código de oferta",
+      "codeSubmit": "Aplicar",
+      "codeChecking": "A verificar…",
+      "codeInvalid": "Este código não é válido ou já expirou.",
+      "codeError": "Não foi possível verificar o código. Tenta outra vez.",
+      "codeSaved": "Código {code} guardado: a oferta é adicionada à tua conta assim que entrares."
     },
     "trialActivation": {
       "activatingTitle": "A ativar o teu mês Pro…",

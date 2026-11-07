@@ -21,6 +21,7 @@ vi.mock("next-intl", () => {
 vi.mock("next/navigation", () => ({ usePathname: () => api.pathname }));
 vi.mock("@/services/api/trial-promo.service", () => ({ trialPromoService: { check: api.check } }));
 
+import { TRIAL_PROMO_ENTERED_EVENT } from "./TrialPromoCodeField";
 import { resetTrialPromoChecks, TrialPromoSignUpBanner } from "./TrialPromoSignUpBanner";
 
 let root: Root | null = null;
@@ -104,6 +105,20 @@ describe("TrialPromoSignUpBanner (ENG-360)", () => {
     api.check.mockRejectedValue(new Error("404"));
     const view = await render("/sign-up?promo=lis2026");
     expect(view.innerHTML).toBe("");
+  });
+
+  it("shows the offer of a code typed by hand, replacing the link's", async () => {
+    api.check.mockResolvedValue({ code: "NOPE", valid: false });
+    const view = await render("/sign-up?promo=nope");
+    expect(view.innerHTML).toBe("");
+
+    await act(async () => {
+      window.dispatchEvent(new CustomEvent(TRIAL_PROMO_ENTERED_EVENT, { detail: VALID }));
+    });
+
+    expect(view.querySelector('[data-testid="trial-promo-banner"]')?.textContent).toContain(
+      '"name":"Learning Innovation Summit"',
+    );
   });
 
   it("shows nothing and checks nothing without a code, or on the SSO callback", async () => {

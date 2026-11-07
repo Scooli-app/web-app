@@ -2488,6 +2488,8 @@
     "banner": {
       "regionLabel": "Account status",
       "trialDiscreet": "{days, plural, one {# day left in your Pro month} other {# days left in your Pro month}}",
+      "trialChip": "{days, plural, one {# day} other {# days}}",
+      "trialChipActive": "Free trial",
       "trialActive": "You're on your Pro month",
       "trialEndingTitle": "{days, plural, one {Your Pro month ends in # day} other {Your Pro month ends in # days}}",
       "trialEndingDescription": "After that, your account becomes read-only. Upgrade to Pro to keep generating, exporting and sharing.",
@@ -2521,7 +2523,14 @@
       "appliedToast": "Offer applied: your Pro now runs until {date}",
       "appliedToastNoDate": "Offer applied: you got extra days of Pro",
       "durationMonths": "{count, plural, one {# month} other {# months}}",
-      "durationDays": "{count, plural, one {# day} other {# days}}"
+      "durationDays": "{count, plural, one {# day} other {# days}}",
+      "codeToggle": "Have an offer code?",
+      "codeLabel": "Offer code",
+      "codeSubmit": "Apply",
+      "codeChecking": "Checking…",
+      "codeInvalid": "This code isn't valid or has expired.",
+      "codeError": "We couldn't check the code. Please try again.",
+      "codeSaved": "Code {code} saved: the offer is added to your account as soon as you're in."
     },
     "trialActivation": {
       "activatingTitle": "Activating your Pro month…",

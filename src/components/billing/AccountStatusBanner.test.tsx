@@ -12,7 +12,8 @@ vi.mock("next-intl", () => ({
     `${ns}.${key}${values ? ` ${JSON.stringify(values)}` : ""}`,
 }));
 vi.mock("next/link", () => ({
-  default: ({ href, children }: { href: string; children: unknown }) => createElement("a", { href }, children as never),
+  default: ({ href, children, onClick: _onClick, ...rest }: { href: string; children: unknown; onClick?: unknown }) =>
+    createElement("a", { href, ...rest }, children as never),
 }));
 vi.mock("posthog-js", () => ({ default: { capture: vi.fn() } }));
 vi.mock("@/hooks/useAccountAccess", () => ({ useAccountAccess: () => state.access }));
@@ -22,7 +23,7 @@ vi.mock("@/components/billing/TrialActivateButton", () => ({
   TrialActivateButton: ({ source }: { source: string }) => createElement("button", { "data-testid": "activate", "data-source": source }),
 }));
 
-import { AccountStatusBanner } from "./AccountStatusBanner";
+import { AccountStatusBanner, TrialDaysChip } from "./AccountStatusBanner";
 
 function access(over: Partial<AccountAccessState>): AccountAccessState {
   return {
@@ -44,16 +45,19 @@ function access(over: Partial<AccountAccessState>): AccountAccessState {
 let root: Root | null = null;
 let host: HTMLDivElement | null = null;
 
-function render(value: AccountAccessState): HTMLDivElement {
+function mount(component: typeof AccountStatusBanner | typeof TrialDaysChip, value: AccountAccessState): HTMLDivElement {
   state.access = value;
   const el = document.createElement("div");
   document.body.appendChild(el);
   const created = createRoot(el);
-  act(() => created.render(createElement(AccountStatusBanner)));
+  act(() => created.render(createElement(component)));
   root = created;
   host = el;
   return el;
 }
+
+const render = (value: AccountAccessState) => mount(AccountStatusBanner, value);
+const renderChip = (value: AccountAccessState) => mount(TrialDaysChip, value);
 
 afterEach(() => {
   act(() => root?.unmount());
@@ -65,12 +69,26 @@ afterEach(() => {
 const NS = "billing.banner";
 
 describe("AccountStatusBanner (ENG-320/321)", () => {
-  it("shows the discreet days-left line while more than 5 days of the trial are left", () => {
+  it("shows no banner while more than 5 days of the trial are left (the header chip has it)", () => {
     const view = render(access({ status: "TRIAL", isTrial: true, trialDaysLeft: 12 }));
-    expect(view.textContent).toContain(`${NS}.trialDiscreet {"days":12}`);
-    expect(view.textContent).toContain(`${NS}.seePlans`);
-    expect(view.textContent).not.toContain(`${NS}.trialEndingTitle`);
+    expect(view.querySelector("section")).toBeNull();
     expect(view.querySelector('[data-testid="activate"]')).toBeNull();
+  });
+
+  it("the header chip says the days left, links to the plans and has the full sentence as its name", () => {
+    const view = renderChip(access({ status: "TRIAL", isTrial: true, trialDaysLeft: 60 }));
+    const link = view.querySelector('a[href="/checkout"]');
+    expect(link?.textContent).toBe(`${NS}.trialChip {"days":60}`);
+    expect(link?.getAttribute("title")).toBe(`${NS}.trialDiscreet {"days":60}`);
+    expect(link?.getAttribute("aria-label")).toBe(`${NS}.trialDiscreet {"days":60}. ${NS}.seePlans`);
+  });
+
+  it("the header chip steps aside in the last 5 days, and outside the trial", () => {
+    expect(renderChip(access({ status: "TRIAL", isTrial: true, trialDaysLeft: 5 })).innerHTML).toBe("");
+    act(() => root?.unmount());
+    expect(renderChip(access({ status: "PRO" })).innerHTML).toBe("");
+    act(() => root?.unmount());
+    expect(renderChip(access({ status: "LOCKED", isLocked: true })).innerHTML).toBe("");
   });
 
   it("becomes prominent, with the upgrade button, in the last 5 days", () => {
