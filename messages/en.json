@@ -2439,6 +2439,10 @@
           "title": "Your Pro month has ended",
           "description": "Your account is now read-only. Upgrade to Pro to create and generate documents, export, duplicate and share again."
         },
+        "see_plans": {
+          "title": "Discover Scooli Pro",
+          "description": "See what Pro gives you and choose the plan that fits you."
+        },
         "trial_not_activated": {
           "title": "Activate your Pro month",
           "description": "You haven't activated your free Pro month yet. Activate it now and get 30 days with everything Pro offers.",

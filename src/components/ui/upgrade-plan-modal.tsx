@@ -20,7 +20,7 @@ import { Button } from "./button";
 interface UpgradePlanModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** Set when a free-plan limit or the read-only lock blocked an action; shows that reason's copy. */
+  /** Why the modal opened; shows that reason's copy. Without one, the generic free-plan limit copy. */
   reason?: UpgradeReason | null;
 }
 
@@ -63,6 +63,8 @@ export function UpgradePlanModal({
           <div className="w-14 h-14 bg-amber-100 dark:bg-amber-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-amber-200 dark:border-amber-800">
             {isLockReason ? (
               <Lock className="w-7 h-7 text-amber-600 dark:text-amber-400" aria-hidden />
+            ) : reason === "see_plans" ? (
+              <Crown className="w-7 h-7 text-amber-600 dark:text-amber-400" aria-hidden />
             ) : (
               <AlertCircle className="w-7 h-7 text-amber-600 dark:text-amber-400" aria-hidden />
             )}
