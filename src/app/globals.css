@@ -525,13 +525,13 @@
   text-decoration: line-through !important;
 }
 
-/* Block-level deletion (for chapters, sections) */
+/* Block-level deletion (for chapters, sections) — one line until expanded */
 .diff-delete-block {
   background-color: rgba(239, 68, 68, 0.04);
-  border-left: 4px solid #ef4444;
-  margin: 12px 0;
-  padding: 12px 16px;
-  border-radius: 0 8px 8px 0;
+  border-left: 3px solid #ef4444;
+  margin: 4px 0;
+  padding: 4px 12px;
+  border-radius: 0 6px 6px 0;
   position: relative;
   transition: all 0.2s ease;
 }
@@ -540,25 +540,67 @@
   background-color: rgba(239, 68, 68, 0.08);
 }
 
-.diff-delete-label {
+.diff-delete-header {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+  min-width: 0;
+}
+
+.diff-delete-label {
+  flex-shrink: 0;
   font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
   color: #ef4444;
-  margin-bottom: 8px;
   letter-spacing: 0.05em;
 }
 
+.diff-delete-excerpt {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 0.8rem;
+  font-style: italic;
+  color: var(--muted-foreground);
+  opacity: 0.8;
+  text-decoration: line-through;
+}
+
+.diff-delete-toggle {
+  flex-shrink: 0;
+  padding: 0 4px;
+  border: none;
+  background: none;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--muted-foreground);
+  user-select: none;
+}
+
+.diff-delete-toggle:hover {
+  color: var(--foreground);
+  text-decoration: underline;
+}
+
+.diff-delete-block:has(.diff-delete-toggle[aria-expanded="true"]) .diff-delete-excerpt {
+  visibility: hidden;
+}
+
 .diff-delete-content {
+  margin-top: 6px;
   font-size: 0.9rem;
   line-height: 1.6;
   color: var(--muted-foreground);
   opacity: 0.8;
   text-decoration: line-through;
   font-style: italic;
+}
+
+.diff-delete-content[hidden] {
+  display: none;
 }
 
 .diff-delete-content * {
@@ -712,6 +754,33 @@
 
 .diff-toolbar-btn-reject:hover {
   background-color: rgba(239, 68, 68, 0.1);
+}
+
+/* Bigger, filled bulk actions when resolving one change at a time is tedious */
+.diff-toolbar-btn-strong {
+  padding: 7px 16px;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.diff-toolbar-btn-accept.diff-toolbar-btn-strong {
+  background-color: #22c55e;
+  border-color: #22c55e;
+  color: #fff;
+}
+
+.diff-toolbar-btn-accept.diff-toolbar-btn-strong:hover {
+  background-color: #16a34a;
+}
+
+.diff-toolbar-btn-reject.diff-toolbar-btn-strong {
+  background-color: #ef4444;
+  border-color: #ef4444;
+  color: #fff;
+}
+
+.diff-toolbar-btn-reject.diff-toolbar-btn-strong:hover {
+  background-color: #dc2626;
 }
 
 .diff-toolbar-btn-exit {
