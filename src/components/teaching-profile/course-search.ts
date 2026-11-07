@@ -3,6 +3,9 @@ import { teachingProfileService } from "@/services/api/teaching-profile.service"
 import type { Qualification } from "@/shared/types/teaching-profile";
 import { normalizeSearch } from "./search";
 
+/** Minimum characters before searching — short terms match too many of the 161 courses to be useful. */
+export const COURSE_SEARCH_MIN_CHARS = 3;
+
 export interface UseCourseSearchResult {
   /** The full level-4 catalogue, loaded once. Empty while still loading. */
   catalog: Qualification[];
@@ -13,7 +16,7 @@ export interface UseCourseSearchResult {
   retryCatalog: () => void;
   term: string;
   setTerm: (term: string) => void;
-  /** Local matches for `term`, capped like the Settings course search. */
+  /** Local matches for `term`, capped like the Settings course search. Empty below `COURSE_SEARCH_MIN_CHARS`. */
   results: Qualification[];
 }
 
@@ -60,7 +63,7 @@ export function useCourseSearch(catalogErrorFallback: string): UseCourseSearchRe
 
   const results = useMemo(() => {
     const key = normalizeSearch(term);
-    if (!key) return [];
+    if (key.length < COURSE_SEARCH_MIN_CHARS) return [];
     return catalog
       .filter(
         (qualification) =>
