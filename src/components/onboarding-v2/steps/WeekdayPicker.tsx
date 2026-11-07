@@ -43,7 +43,7 @@ export function WeekdayPicker({ value, onChange, disabled }: WeekdayPickerProps)
         {CLASS_DAYS.filter((day) => value[day] > 0).map((day) => (
           <li
             key={day}
-            className="flex items-center justify-between rounded-xl border border-border bg-card py-0.5 pl-3 pr-1"
+            className="flex items-center justify-between rounded-xl border border-input bg-card py-0.5 pl-3 pr-1"
           >
             <span className="text-sm font-medium text-foreground">{t(`days.${day}`)}</span>
             <div className="flex items-center gap-1">

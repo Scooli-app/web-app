@@ -5,12 +5,16 @@ import {
   readMarker,
   releaseLease,
 } from "@/components/onboarding-v2/planGenerationMarker";
-import { onboardingFreeWeek } from "@/components/onboarding-v2/freeWeek";
-import type { WeekRow } from "@/components/onboarding-v2/steps/WeekLessonRow";
+import { toLocalIso } from "@/components/onboarding-v2/freeWeek";
 import { invalidatePlanLimits } from "@/hooks/usePlanLimits";
 import { resolveEffectiveContentLanguage } from "@/i18n/clientLocale";
+import { AccountLockedError } from "@/services/api/client";
 import { meService } from "@/services/api/me.service";
-import { classifyWeek, retryFailedLessons } from "@/components/onboarding-v2/weekWork";
+import {
+  classifyWeek,
+  nextLessonAfter,
+  retryFailedLessons,
+} from "@/components/onboarding-v2/weekWork";
 import {
   generateLesson,
   generateTopics,
@@ -26,10 +30,12 @@ import {
   lessonStatusChanged,
   planGenerationRefreshRequested,
   planGenerationStarted,
+  planGenerationStoppedByLock,
   topicsLoaded,
   topicsStatusChanged,
   weekLessonsLoaded,
   weekStatusChanged,
+  type WeekRow,
 } from "@/store/planGeneration/planGenerationSlice";
 import type { AppDispatch, RootState } from "@/store/store";
 import { openUpgradeModalForReason, setUpgradeModalOpen } from "@/store/ui/uiSlice";
@@ -72,6 +78,10 @@ function refresh(c: PlanGenerationRunnerContext) {
   c.dispatch(planGenerationRefreshRequested());
 }
 
+/**
+ * Prepares the lessons of the 7 days from `weekStart` (today, at creation): a rolling window rather than the
+ * calendar week, so a Thursday sign-up gets Friday, Monday and Wednesday instead of Friday alone.
+ */
 async function runWeek(c: PlanGenerationRunnerContext, id: string, weekStart: string) {
   if (running.week) return;
   running.week = true;
@@ -83,15 +93,55 @@ async function runWeek(c: PlanGenerationRunnerContext, id: string, weekStart: st
     dispatch(lessonStatusChanged({ id: slotId, status }));
   dispatch(weekStatusChanged("loading"));
   try {
-    const week = await meService.getWeek(weekStart);
+    const week = await meService.getWindow(weekStart);
     const klass = week.classes.find((k) => k.timetableId === id);
     const lessons = (klass?.lessons ?? [])
       .filter((l) => l.slotType !== "HOLIDAY" && l.status !== "skipped" && hasTopic(l))
       .sort((a, b) => a.slotDate.localeCompare(b.slotDate));
     if (lessons.length === 0) {
-      dispatch(weekStatusChanged("empty"));
+      // Nothing left this week (e.g. Thursday, after the class's last lesson): prepare the next one instead,
+      // so the teacher always lands with a lesson ready.
+      const next = nextLessonAfter(await listLessons(id), weekStart);
       clearMarker(c.userId);
-      track("plan_generation_completed", "week", startedAt, { lessons_ready: 0 });
+      if (!next) {
+        dispatch(weekStatusChanged("empty"));
+        track("plan_generation_completed", "week", startedAt, { lessons_ready: 0 });
+        return;
+      }
+      let ok = next.status === "completed";
+      dispatch(
+        weekLessonsLoaded([
+          { id: next.id, slotDate: next.slotDate, title: next.topicTitle, status: ok ? "ready" : "pending" },
+        ]),
+      );
+      dispatch(weekStatusChanged("generating"));
+      if (!ok) {
+        patch(next.id, "generating");
+        // No limit handlers: a limit here isn't worth the upgrade modal mid-onboarding, the lesson just waits.
+        await generateLesson(
+          id,
+          next.id,
+          undefined,
+          {
+            onDocumentId: (documentId) =>
+              dispatch(firstLessonHrefSet(`${Routes.LESSON_PLAN}/${documentId}`)),
+            onDone: () => {
+              ok = true;
+            },
+          },
+          c.getToken,
+        ).catch(() => undefined);
+      }
+      patch(next.id, ok ? "ready" : "failed");
+      if (ok) {
+        lessonsReady = 1;
+        refresh(c);
+      }
+      dispatch(weekStatusChanged(ok ? "done" : "failed"));
+      track(ok ? "plan_generation_completed" : "plan_generation_failed", "week", startedAt, {
+        lessons_ready: lessonsReady,
+        next_lesson_fallback: 1,
+      });
       return;
     }
     dispatch(
@@ -111,6 +161,8 @@ async function runWeek(c: PlanGenerationRunnerContext, id: string, weekStart: st
     const initial = classifyWeek(klass?.lessons ?? []);
     let problem = false;
     let limitHit = false;
+    // The read-only lock (ENG-321): the paywall is open; stop without a "failed" banner.
+    let locked = false;
     if (initial.pendingIds.length > 0 || initial.failedIds.length === 0) {
       await generateWeek(
         id,
@@ -135,6 +187,10 @@ async function runWeek(c: PlanGenerationRunnerContext, id: string, weekStart: st
             problem = true;
             limitHit = true;
             dispatch(setUpgradeModalOpen(true));
+          },
+          onAccountLocked: () => {
+            limitHit = true;
+            locked = true;
           },
           onError: () => {
             problem = true;
@@ -161,6 +217,10 @@ async function runWeek(c: PlanGenerationRunnerContext, id: string, weekStart: st
                 limitHit = true;
                 if (isUpgradeReason(code)) dispatch(openUpgradeModalForReason(code));
               },
+              onAccountLocked: () => {
+                limitHit = true;
+                locked = true;
+              },
               onQuotaExceeded: () => {
                 limitHit = true;
                 dispatch(setUpgradeModalOpen(true));
@@ -180,8 +240,15 @@ async function runWeek(c: PlanGenerationRunnerContext, id: string, weekStart: st
       if (retried.problem) problem = true;
     }
 
+    if (locked) {
+      // The marker stays, so the plan resumes after the upgrade (a reload or the next visit).
+      dispatch(planGenerationStoppedByLock());
+      track("plan_generation_failed", "week", startedAt, { lessons_ready: lessonsReady });
+      return;
+    }
+
     // The first lesson that now has a document can be opened straight away.
-    const refreshed = await meService.getWeek(weekStart).catch(() => null);
+    const refreshed = await meService.getWindow(weekStart).catch(() => null);
     const firstDocument = refreshed?.classes
       .find((k) => k.timetableId === id)
       ?.lessons.find((l) => l.documentId);
@@ -238,8 +305,13 @@ async function runTopics(c: PlanGenerationRunnerContext, id: string, weekStart: 
       topics_count: result.updated,
     });
   } catch (err) {
-    posthog.captureException(err);
-    dispatch(topicsStatusChanged({ status: "failed" }));
+    if (err instanceof AccountLockedError) {
+      // Read-only lock (ENG-321): the API client opened the paywall; no failed banner next to it.
+      dispatch(planGenerationStoppedByLock());
+    } else {
+      posthog.captureException(err);
+      dispatch(topicsStatusChanged({ status: "failed" }));
+    }
     track("plan_generation_failed", "topics", startedAt, { topics_count: 0 });
   } finally {
     running.topics = false;
@@ -259,7 +331,7 @@ export function startPlanGeneration(
   ctx = c;
   // Never run twice for the same class (double click, resume racing the flow).
   if (running.topics || running.week) return;
-  const weekStart = weekStartOverride ?? onboardingFreeWeek(new Date());
+  const weekStart = weekStartOverride ?? toLocalIso(new Date());
   // Cross-tab lease: another live tab already generates this plan.
   if (!claimLease(c.userId, { timetableId, weekStart })) return;
   c.dispatch(planGenerationStarted({ timetableId, weekStart }));
@@ -324,24 +396,15 @@ export async function resumePlanGenerationIfNeeded(
       (s) => s.slotType === "LESSON" && s.status !== "skipped" && !hasTopic(s),
     );
 
-    const now = new Date();
-    const current = onboardingFreeWeek(now);
-    const previous = onboardingFreeWeek(new Date(now.getTime() - 7 * 86400000));
-    const weekOf = async (weekStart: string) => {
-      const week = await meService.getWeek(weekStart).catch(() => null);
+    const windowOf = async (from: string) => {
+      const week = await meService.getWindow(from).catch(() => null);
       return week?.classes.find((k) => k.timetableId === klass.id)?.lessons ?? [];
     };
 
-    // The free week is fixed once chosen: the marker remembers it; without a marker keep
-    // finishing an earlier week if it was already started (created Wed, reloaded Fri).
-    let weekStart = marker?.weekStart ?? current;
-    if (!marker && !topicsMissing && previous !== current) {
-      const earlier = await weekOf(previous);
-      if (earlier.some((l) => l.status === "completed") && classifyWeek(earlier).needsWork) {
-        weekStart = previous;
-      }
-    }
-    if (!topicsMissing && !classifyWeek(await weekOf(weekStart)).needsWork) {
+    // The 7-day window is fixed once chosen (the marker remembers its start); without a marker
+    // (another device) it is the 7 days from today.
+    const weekStart = marker?.weekStart ?? toLocalIso(new Date());
+    if (!topicsMissing && !classifyWeek(await windowOf(weekStart)).needsWork) {
       if (marker) clearMarker(c.userId);
       return;
     }

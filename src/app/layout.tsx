@@ -4,6 +4,7 @@ import StoreProvider from "@/components/providers/StoreProvider";
 import ThemeProvider from "@/components/providers/ThemeProvider";
 import { Toaster } from "@/components/ui/sonner";
 import { ClerkLocaleStamp } from "@/components/providers/ClerkLocaleStamp";
+import { TrialPromoCapture } from "@/components/billing/TrialPromoCapture";
 import LocaleProvider from "@/components/providers/LocaleProvider";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
@@ -96,6 +97,7 @@ export default async function RootLayout({
                 <AuthProvider>
                   <LocaleProvider>
                     <ClerkLocaleStamp />
+                    <TrialPromoCapture />
                     {children}
                     <Toaster position="bottom-right" />
                   </LocaleProvider>

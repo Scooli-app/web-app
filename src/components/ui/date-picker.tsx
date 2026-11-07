@@ -5,7 +5,6 @@ import { CalendarIcon } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import * as React from "react";
 
-import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/shared/utils/utils";
@@ -39,16 +38,17 @@ export function DatePicker({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button
-          variant="outline"
+        {/* Styled as a form field (same look as SelectTrigger), not as a button. */}
+        <button
+          type="button"
           disabled={disabled}
           className={cn(
-            "w-full min-w-0 justify-start text-left font-normal",
+            "flex h-9 w-full min-w-0 items-center gap-2 rounded-md border border-input bg-card px-3 py-2 text-left text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50",
             !value && "text-muted-foreground",
             className
           )}
         >
-          <CalendarIcon className="mr-2 h-4 w-4 shrink-0" />
+          <CalendarIcon className="h-4 w-4 shrink-0" />
           <span className="truncate">
             {value
               ? // The value is a calendar day at local midnight. The formatter runs in the app's
@@ -60,7 +60,7 @@ export function DatePicker({
                 )
               : (placeholder ?? t("selectDate"))}
           </span>
-        </Button>
+        </button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">
         <Calendar

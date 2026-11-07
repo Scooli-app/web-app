@@ -1,5 +1,6 @@
 "use client";
 
+import { useAccountAccess } from "@/hooks/useAccountAccess";
 import { cn } from "@/shared/utils/utils";
 import { Sparkles } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -10,13 +11,16 @@ interface GenerationCostHintProps {
 }
 
 /**
- * Small visual hint that an action consumes 1 generation.
+ * Small visual hint that an action consumes 1 credit. Only old free accounts still run on credits;
+ * trial, Pro and read-only accounts never see it.
  */
 export function GenerationCostHint({
   className,
   compact = false,
 }: GenerationCostHintProps) {
   const t = useTranslations("common.generationCostHint");
+  const { hasCredits } = useAccountAccess();
+  if (!hasCredits) return null;
   return (
     <span
       className={cn(

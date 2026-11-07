@@ -5,6 +5,8 @@ import { FeatureFeedbackGate } from "@/components/feature-feedback/FeatureFeedba
 import { OnboardingV2Gate } from "@/components/onboarding-v2/OnboardingV2Gate";
 import { PromoGate } from "@/components/promo/PromoGate";
 import { PromoNavCta } from "@/components/promo/PromoNavCta";
+import { AccountStatusBanner } from "@/components/billing/AccountStatusBanner";
+import { TrialPromoApplier } from "@/components/billing/TrialPromoApplier";
 import { AppBootstrapGate } from "@/components/layout/AppBootstrapGate";
 import { CreateMenu } from "@/components/layout/CreateMenu";
 import { PostHogPersonSync } from "@/components/providers/PostHogPersonSync";
@@ -34,18 +36,16 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { UpgradePlanModal } from "@/components/ui/upgrade-plan-modal";
+import { useAccountAccess } from "@/hooks/useAccountAccess";
 import { useAdmin } from "@/hooks/useAdmin";
 import { MARKETING_SITE_URL } from "@/shared/config/constants";
 import { Routes } from "@/shared/types";
 import { FeatureFlag } from "@/shared/types/featureFlags";
 import { cn } from "@/shared/utils/utils";
-import {
-  selectEffectiveAccessSource,
-  selectEntitlementUsage,
-} from "@/store/entitlements/selectors";
+import { selectEntitlementUsage } from "@/store/entitlements/selectors";
+import { selectIsClassStateEnabled } from "@/store/features/selectors";
 import { useAppDispatch } from "@/store/hooks";
 import type { RootState } from "@/store/store";
-import { selectIsPro } from "@/store/subscription/selectors";
 import { setUpgradeModalOpen } from "@/store/ui/uiSlice";
 import {
   selectHasOrganizationWorkspace,
@@ -56,7 +56,6 @@ import {
   SignInButton,
   SignedIn,
   SignedOut,
-  useAuth,
   useClerk,
   useUser,
 } from "@clerk/nextjs";
@@ -72,6 +71,7 @@ import {
   LogOut,
   Menu,
   MessageSquare,
+  School,
   Settings,
   Shield,
   Sparkles,
@@ -436,6 +436,7 @@ const SidebarNavigationContent = memo(function SidebarNavigationContent({
     features[FeatureFlag.CURRICULUM_PLAN_ENABLED] === true;
   const isHorarioPlanosEnabled =
     features[FeatureFlag.HORARIO_PLANOS_ENABLED] === true;
+  const isClassStateEnabled = features[FeatureFlag.CLASS_STATE_ENABLED] === true;
 
   const planItems: NavItem[] = [
     ...(isHorarioPlanosEnabled ? [CALENDAR_NAV_ITEM, CLASSES_NAV_ITEM] : []),
@@ -497,7 +498,8 @@ const SidebarNavigationContent = memo(function SidebarNavigationContent({
           <SidebarProfileCard onClick={onItemClick} />
         </SignedIn>
 
-        {hasOrganizationWorkspace && isOrganizationAdmin && (
+        {/* With class_state_enabled the school is reached from the top bar and has its own tabs. */}
+        {hasOrganizationWorkspace && isOrganizationAdmin && !isClassStateEnabled && (
           <>
             <Separator className="my-4" />
             <NavGroup
@@ -553,35 +555,13 @@ const SidebarMobileContent = memo(function SidebarMobileContent({
   );
 });
 
-function GenerationsIndicator() {
+/** Credits left, for old free accounts only: trial, Pro and read-only accounts see no count. */
+function CreditsIndicator() {
   const t = useTranslations("nav");
-  const { isSignedIn } = useAuth();
-
   const usage = useSelector(selectEntitlementUsage);
-  const isProUser = useSelector(selectIsPro);
-  const accessSource = useSelector(selectEffectiveAccessSource);
+  const { hasCredits } = useAccountAccess();
 
-  if (!isSignedIn || !usage) return null;
-
-  if (isProUser) {
-    return (
-      <Link
-        href={Routes.SETTINGS}
-        title={
-          accessSource === "organization" || accessSource === "both"
-            ? t("generations.proAccessOrg")
-            : t("generations.proAccess")
-        }
-        className={cn(
-          "flex h-9 items-center gap-1.5 rounded-full border px-3 text-sm font-medium transition-colors",
-          "border-primary/10 bg-primary/5 text-primary hover:bg-primary/10",
-        )}
-      >
-        <Sparkles className="h-4 w-4" />
-        <span className="text-lg leading-none">∞</span>
-      </Link>
-    );
-  }
+  if (!hasCredits || !usage) return null;
 
   const isLow = usage.limit > 0 && usage.remaining / usage.limit <= 0.2;
   const isOut = usage.remaining === 0;
@@ -618,6 +598,8 @@ function GenerationsIndicator() {
   );
 }
 
+const TRIAL_ROUTE_PREFIX = "/trial";
+
 export function SidebarLayout({ children, className }: SidebarLayoutProps) {
   const t = useTranslations("nav");
   const tCommon = useTranslations("common.sidebar");
@@ -630,6 +612,11 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
   const isUpgradeModalOpen = useSelector(
     (state: RootState) => state.ui.isUpgradeModalOpen,
   );
+  const hasOrganizationWorkspace = useSelector(selectHasOrganizationWorkspace);
+  const isOrganizationAdmin = useSelector(selectIsOrganizationAdmin);
+  const isClassStateEnabled = useSelector(selectIsClassStateEnabled);
+  const showSchoolEntry = hasOrganizationWorkspace && isOrganizationAdmin && isClassStateEnabled;
+  const inSchoolArea = pathname === Routes.SCHOOL || pathname.startsWith(`${Routes.SCHOOL}/`);
 
   // Desktop sidebar open/collapsed state, lifted out of SidebarProvider so it
   // can be driven by the route (see DOCUMENT_READING_ROUTE_PATTERN) while the
@@ -696,7 +683,8 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
 
   return (
     <SidebarProvider open={desktopSidebarOpen} onOpenChange={setDesktopSidebarOpen}>
-      <div className="flex h-dvh w-full">
+      {/* print:h-auto, with print:overflow-visible on <main>, lets a long page print past the first sheet. */}
+      <div className="flex h-dvh w-full print:h-auto">
         <AppBootstrapGate />
         <PostHogPersonSync />
         <SourceIngestionTracker />
@@ -710,12 +698,12 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
         <OnboardingV2Gate />
         <PromoGate />
 
-        <div className="hidden md:block md:h-dvh">
+        <div className="hidden md:block md:h-dvh print:hidden">
           {desktopSidebarContent}
         </div>
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <header className="flex h-14 w-full shrink-0 items-center gap-2 border-b border-border bg-background/70 backdrop-blur-md sm:h-16">
+          <header className="flex h-14 w-full shrink-0 items-center gap-2 border-b border-border bg-background/70 backdrop-blur-md sm:h-16 print:hidden">
             <div className="flex w-full items-center justify-between gap-2 px-3 sm:px-4">
               <div className="flex items-center gap-1">
                 <Sheet open={open} onOpenChange={handleSheetOpenChange}>
@@ -747,6 +735,14 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
               <div className="flex items-center gap-2">
                 <SignedIn>
                   <div className="flex items-center gap-2">
+                    {showSchoolEntry && (
+                      <Button asChild variant={inSchoolArea ? "default" : "outline"} size="bar">
+                        <Link href={Routes.SCHOOL} aria-label={t("items.schoolDirection.title")}>
+                          <School />
+                          <span className="hidden sm:inline">{t("items.schoolDirection.title")}</span>
+                        </Link>
+                      </Button>
+                    )}
                     <Button
                       asChild
                       variant="outline"
@@ -766,7 +762,7 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
                       </a>
                     </Button>
                     <PromoNavCta />
-                    <GenerationsIndicator />
+                    <CreditsIndicator />
                   </div>
                 </SignedIn>
                 <LanguageToggle />
@@ -786,13 +782,25 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
             </div>
           </header>
 
+          {/* Applies a promo code captured before sign-up (ENG-360), on every workspace page. */}
+          <SignedIn>
+            <TrialPromoApplier />
+          </SignedIn>
+
+          {/* The trial activation page shows the trial state itself: no second message there. */}
+          {!pathname.startsWith(TRIAL_ROUTE_PREFIX) && (
+            <SignedIn>
+              <AccountStatusBanner className="shrink-0 px-3 pt-3 sm:px-4 md:px-6" />
+            </SignedIn>
+          )}
+
           <main
             className={cn(
-              "w-full flex-1 overflow-y-auto overflow-x-hidden bg-slate-50 dark:bg-background",
+              "w-full flex-1 overflow-y-auto overflow-x-hidden bg-slate-50 dark:bg-background print:overflow-visible",
               className,
             )}
           >
-            <div className="flex h-full w-full min-w-0 flex-col items-center p-3 sm:p-4 md:p-6">
+            <div className="flex h-full w-full min-w-0 flex-col items-center p-3 sm:p-4 md:p-6 print:p-0">
               {children}
             </div>
           </main>

@@ -222,18 +222,21 @@ export default function CalendarMonthPage() {
 
             <div className="flex-1" />
 
-            <Button variant="outline" size="sm" asChild className="h-8">
-              <Link href={Routes.CALENDAR_SEQUENCES}>
-                <CalendarDays className="mr-1 h-3.5 w-3.5" />
-                {t("shared.classesLink")}
-              </Link>
-            </Button>
-            <Button variant="outline" size="sm" asChild className="h-8">
-              <Link href={Routes.CALENDAR_NEW} onClick={newClassGate.onClick}>
-                <Plus className="mr-1 h-3.5 w-3.5" />
-                {t("shared.newClassLink")}
-              </Link>
-            </Button>
+            {/* Together, so "Nova turma" doesn't wrap alone onto its own line. */}
+            <div className="flex flex-wrap items-center gap-2">
+              <Button variant="outline" size="sm" asChild className="h-8">
+                <Link href={Routes.CALENDAR_SEQUENCES}>
+                  <CalendarDays className="mr-1 h-3.5 w-3.5" />
+                  {t("shared.classesLink")}
+                </Link>
+              </Button>
+              <Button variant="outline" size="sm" asChild className="h-8">
+                <Link href={Routes.CALENDAR_NEW} onClick={newClassGate.onClick}>
+                  <Plus className="mr-1 h-3.5 w-3.5" />
+                  {t("shared.newClassLink")}
+                </Link>
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -277,8 +280,10 @@ export default function CalendarMonthPage() {
             <div className="grid grid-cols-7 divide-x divide-border border-b bg-muted/20">
               {dayLabels.map((label) => (
                 <div key={label} className="py-2 text-center">
+                  {/* pt-PT "short" weekdays are whole words: below lg they overlapped in 7 narrow columns. */}
                   <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    {label}
+                    <span className="lg:hidden">{label.slice(0, 3)}</span>
+                    <span className="hidden lg:inline">{label}</span>
                   </p>
                 </div>
               ))}

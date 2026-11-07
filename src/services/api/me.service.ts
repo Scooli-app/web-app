@@ -1,6 +1,6 @@
 import apiClient from "./client";
 import type { MyWeek } from "@/shared/types/my-week";
-import type { PlanLimits } from "@/shared/types/plan-limits";
+import { parsePlanLimits, type PlanLimits } from "@/shared/types/plan-limits";
 
 export const meService = {
   getWeek: (weekStart: string) =>
@@ -13,7 +13,26 @@ export const meService = {
       .get<MyWeek>("/users/me/week", { params: { from, days } })
       .then((r) => r.data),
   getPlanLimits: () =>
-    apiClient.get<PlanLimits>("/users/me/plan-limits").then((r) => r.data),
+    apiClient.get<PlanLimits>("/users/me/plan-limits").then((r) => parsePlanLimits(r.data)),
+  /**
+   * Starts the 30-day Pro trial: with the campaign email's token, or from an in-app button without
+   * one. Idempotent on the server (an active trial is returned, not restarted). Resolves to the
+   * account's plan limits; a 403 rejects with an ApiRequestError whose `code` is a
+   * TrialActivationErrorCode. Callers refresh the plan-limits cache with the result.
+   */
+  activateTrial: (token?: string) =>
+    apiClient
+      .post<PlanLimits>("/users/me/trial/activate", token ? { token } : {})
+      .then((r) => parsePlanLimits(r.data)),
+  /**
+   * Adds a promo code's extra days to the running trial (ENG-360). Idempotent for the same
+   * code. Resolves to the updated plan limits (with `trialPromoCode`); a 403 rejects with an
+   * ApiRequestError whose `code` is a TrialPromoErrorCode.
+   */
+  applyTrialPromo: (code: string) =>
+    apiClient
+      .post<PlanLimits>("/users/me/trial/promo", { code })
+      .then((r) => parsePlanLimits(r.data)),
   getEmailPreferences: () =>
     apiClient
       .get<{ weeklyDigest: boolean }>("/users/me/email-preferences")

@@ -28,4 +28,22 @@ describe("cookieTokenForUser", () => {
     expect(cookieTokenForUser(tokenForA, null)).toBeNull();
     expect(cookieTokenForUser(undefined, "user_a")).toBeNull();
   });
+
+  it("rejects an expired cookie token so the caller asks Clerk for a fresh one", () => {
+    const now = Date.parse("2026-11-06T12:00:00Z");
+    const expired = fakeJwt({ sub: "user_a", exp: now / 1000 - 30 });
+    expect(cookieTokenForUser(expired, "user_a", now)).toBeNull();
+  });
+
+  it("rejects a cookie token that expires within the next few seconds", () => {
+    const now = Date.parse("2026-11-06T12:00:00Z");
+    const expiring = fakeJwt({ sub: "user_a", exp: now / 1000 + 2 });
+    expect(cookieTokenForUser(expiring, "user_a", now)).toBeNull();
+  });
+
+  it("keeps a cookie token that is still valid", () => {
+    const now = Date.parse("2026-11-06T12:00:00Z");
+    const valid = fakeJwt({ sub: "user_a", exp: now / 1000 + 45 });
+    expect(cookieTokenForUser(valid, "user_a", now)).toBe(valid);
+  });
 });

@@ -5,8 +5,10 @@ import SettingsLoading from "./loading";
 import { BillingNifCard } from "@/components/billing/BillingNifCard";
 import { LanguagePreferences } from "@/components/settings/LanguagePreferences";
 import { PlanningRitualPreferences } from "@/components/settings/PlanningRitualPreferences";
+import { TrialStatusCard } from "@/components/billing/TrialStatusCard";
 import { Button } from "@/components/ui/button";
 import { TeachingProfileCard } from "@/components/teaching-profile/TeachingProfileCard";
+import { useAccountAccess } from "@/hooks/useAccountAccess";
 import {
   createPortalSession,
   getCurrentSubscription,
@@ -250,22 +252,14 @@ function SettingsContent() {
     usage && usage.limit > 0
       ? Math.min((usage.used / usage.limit) * 100, 100)
       : 0;
-  const effectiveUsage = entitlement?.usage ?? null;
   const effectiveIsPro = entitlement?.isPro ?? false;
-  const _effectiveCreditsUsedPercent =
-    !effectiveIsPro && effectiveUsage && effectiveUsage.limit > 0
-      ? Math.min((effectiveUsage.used / effectiveUsage.limit) * 100, 100)
-      : 0;
+  // Only old free accounts still run on credits; trial, Pro and read-only accounts see no count.
+  const { hasCredits } = useAccountAccess();
   const effectiveAccessLabel = getEffectiveAccessDisplayLabel(
     entitlement?.source,
     effectiveIsPro,
     t,
   );
-  const effectiveUsageBadge = effectiveIsPro
-    ? "∞"
-    : effectiveUsage
-      ? `${effectiveUsage.remaining} / ${effectiveUsage.limit}`
-      : "--";
   const hasOrganizationBackedAccess =
     entitlement?.source === "organization" || entitlement?.source === "both";
   const showPersonalUpgradeOptions = isFreeUser && !hasOrganizationBackedAccess;
@@ -363,7 +357,7 @@ function SettingsContent() {
         {/* Teaching Profile Card */}
         {isTeacherProfileEnabled && <TeachingProfileCard />}
 
-        {/* Subscription & Generations Card */}
+        {/* Subscription Card */}
         <div className="bg-card p-4 sm:p-6 md:p-8 rounded-2xl shadow-md border border-border">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center">
@@ -392,6 +386,7 @@ function SettingsContent() {
             </div>
           ) : isFreeUser ? (
             <>
+              <TrialStatusCard />
               <div className="mb-6 rounded-xl border border-border bg-muted/40 p-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
@@ -404,14 +399,11 @@ function SettingsContent() {
                         : effectiveAccessLabel}
                     </p>
                   </div>
-                  <span className="inline-flex rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
-                    {effectiveUsageBadge}
-                  </span>
                 </div>
               </div>
 
-              {/* Free Trial Usage */}
-              {showPersonalUpgradeOptions && usage && (
+              {/* Credits left (old free accounts) */}
+              {showPersonalUpgradeOptions && hasCredits && usage && (
                 <div className="mb-6">
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-sm font-medium text-foreground">
@@ -568,9 +560,6 @@ function SettingsContent() {
                         : effectiveAccessLabel}
                     </p>
                   </div>
-                  <span className="inline-flex rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
-                    {effectiveUsageBadge}
-                  </span>
                 </div>
               </div>
 

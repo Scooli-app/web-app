@@ -9,6 +9,8 @@ import { ClassIllustration } from "@/components/onboarding-v2/illustrations/Step
 import { toLocalIso } from "@/components/onboarding-v2/freeWeek";
 import { queueDraft } from "@/components/onboarding-v2/onboardingDraft";
 import { StepHeading } from "@/components/onboarding-v2/StepHeading";
+import { AlreadyTaughtField } from "@/components/onboarding-v2/steps/AlreadyTaughtField";
+import { isFirstCycleOnly } from "@/components/onboarding-v2/teachingRules";
 import type { OnboardingFlowController } from "@/components/onboarding-v2/useOnboardingV2";
 import { useStepFooter } from "@/components/onboarding-v2/useStepFooter";
 import {
@@ -32,9 +34,7 @@ import {
 } from "@/lib/timetable/planToTimetable";
 import { UpgradeLimitError } from "@/services/api/client";
 import { meService } from "@/services/api/me.service";
-import {
-  createTimetable,
-} from "@/services/api/timetable.service";
+import { createTimetable, type CurriculumTopic } from "@/services/api/timetable.service";
 import type { PlanLimits } from "@/shared/types/plan-limits";
 import { useAppDispatch } from "@/store/hooks";
 import { setUpgradeModalOpen } from "@/store/ui/uiSlice";
@@ -70,6 +70,9 @@ function buildSchedule(lessons: LessonsByDay): Partial<WeekSchedule> {
   return schedule;
 }
 
+const unitValue = (item: { qualificationCode: string | null; code: string }) =>
+  `${item.qualificationCode}::${item.code}`;
+
 const selectTriggerClassName = "w-full min-w-0";
 // The onboarding overlay sits at z-[9999]; the menu is portalled to <body> and must clear it.
 const selectContentClassName = "z-[10000]";
@@ -95,6 +98,8 @@ export function FirstClassStep({ flow }: FirstClassStepProps) {
   const [chosenSubject, setChosenSubject] = useState<string | null>(null);
   const [classLabel, setClassLabel] = useState("");
   const [lessons, setLessons] = useState<LessonsByDay>(NO_LESSONS);
+  const [taughtNotes, setTaughtNotes] = useState("");
+  const [taught, setTaught] = useState<CurriculumTopic[]>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -114,17 +119,25 @@ export function FirstClassStep({ flow }: FirstClassStepProps) {
     };
   }, []);
 
+  // A vocational teacher plans one of the UCs picked in step 2 (value "course::unit"), in 10.º–12.º.
+  const vocational = answers.role === "vocational" && answers.units.length > 0;
+
   // A year with no mapped subjects would leave the subject select empty and the form stuck.
-  const hasSubjects = (y: number) => (SUBJECTS_BY_GRADE[String(y)] ?? []).length > 0;
+  const hasSubjects = (y: number) => vocational || (SUBJECTS_BY_GRADE[String(y)] ?? []).length > 0;
   const preferredYears = answers.years.filter(hasSubjects);
   const yearOptions = preferredYears.length > 0 ? preferredYears : ALL_YEARS.filter(hasSubjects);
   const year = chosenYear !== null && yearOptions.includes(chosenYear) ? chosenYear : yearOptions[0];
 
   const subjectOptions = useMemo(() => {
+    if (vocational) return answers.units.map(unitValue);
     const forYear = SUBJECTS_BY_GRADE[String(year)] ?? [];
     const preferred = answers.subjectIds.filter((id) => forYear.includes(id));
     return preferred.length > 0 ? preferred : forYear;
-  }, [year, answers.subjectIds]);
+  }, [vocational, year, answers.subjectIds, answers.units]);
+  const optionLabel = (id: string) =>
+    vocational
+      ? (answers.units.find((unit) => unitValue(unit) === id)?.label ?? id)
+      : translateSubjectLabel(id);
   const subjectId =
     chosenSubject !== null && subjectOptions.includes(chosenSubject)
       ? chosenSubject
@@ -148,15 +161,18 @@ export function FirstClassStep({ flow }: FirstClassStepProps) {
   const handleCreate = async () => {
     if (!formValid || phase !== "form" || !subjectId || creatingRef.current) return;
     const subject = SUBJECTS.find((s) => s.id === subjectId);
-    if (!subject) return;
+    const unit = vocational ? answers.units.find((item) => unitValue(item) === subjectId) : undefined;
+    if (!subject && !unit) return;
     creatingRef.current = true;
     setError(false);
     setPhase("creating");
     try {
       const label = classLabel.trim();
+      const subjectLabel = optionLabel(subjectId);
+      const notes = taughtNotes.trim();
       const created = await createTimetable({
-        title: `${translateSubjectLabel(subjectId)} ${label}`.trim(),
-        subject: subject.value,
+        title: `${subjectLabel} ${label}`.trim(),
+        subject: unit ? unit.label : (subject?.value ?? subjectId),
         gradeLevel: year,
         classLabel: label || undefined,
         periodStart,
@@ -164,16 +180,27 @@ export function FirstClassStep({ flow }: FirstClassStepProps) {
         recurringSlots: weekScheduleToRecurringSlots(buildSchedule(lessons)),
         creationMode: "custom",
         source: "onboarding",
+        ...(unit
+          ? { vocationalCourseCode: unit.qualificationCode ?? undefined, vocationalUnitCode: unit.code }
+          : {}),
+        ...(taught.length > 0 ? { alreadyCoveredDomains: taught.map((topic) => topic.key) } : {}),
+        ...(notes ? { alreadyCoveredNotes: notes } : {}),
       });
       // The dashboard's plan-limits cache still says 0 classes.
       invalidatePlanLimits();
-      update({ timetableId: created.id, skippedClass: false });
-      // Topics and the first week are generated in the background (step 4 shows it live).
+      update({
+        timetableId: created.id,
+        skippedClass: false,
+        firstClass: { subjectLabel, year, taught: taught.map((topic) => topic.label) },
+      });
+      // Topics and the first week are generated in the background (the wait screen shows it live).
       generation.start(created.id);
       trackCompleted(3, {
         grade_level: year,
         lessons_per_week: lessonsPerWeek,
         capped,
+        taught_topics: taught.length,
+        taught_notes: notes.length > 0,
       });
       next();
     } catch (err) {
@@ -190,11 +217,10 @@ export function FirstClassStep({ flow }: FirstClassStepProps) {
   const handleLater = () => {
     if (creatingRef.current) return;
     posthog.capture("onboarding_v2_skipped_class");
-    posthog.capture("onboarding_v2_step_skipped", { step: 3, reason: "later" });
-    posthog.capture("onboarding_v2_step_skipped", { step: 4, reason: "no_class" });
-    queueDraft({ step: 3, skippedClass: true }, { immediate: true });
+    posthog.capture("onboarding_v2_step_skipped", { step: 3, reason: "no_timetable" });
+    queueDraft({ step: 4, skippedClass: true }, { immediate: true });
     update({ skippedClass: true });
-    goTo(5);
+    goTo(4);
   };
 
   useStepFooter({
@@ -203,9 +229,7 @@ export function FirstClassStep({ flow }: FirstClassStepProps) {
     busy: phase === "creating",
     hideBack: phase !== "form",
     continueLabel: t("class.create"),
-    secondaryLabel: t("later"),
     onContinue: () => void handleCreate(),
-    onSecondary: handleLater,
   });
 
   return (
@@ -234,7 +258,7 @@ export function FirstClassStep({ flow }: FirstClassStepProps) {
             </Select>
           </div>
           <div className="order-last col-span-2 space-y-1.5 sm:order-none sm:col-span-1">
-            <Label htmlFor="onboarding-class-subject">{t("class.subjectLabel")}</Label>
+            <Label htmlFor="onboarding-class-subject">{vocational ? t("class.unitLabel") : t("class.subjectLabel")}</Label>
             <Select value={subjectId ?? ""} onValueChange={setChosenSubject}>
               <SelectTrigger id="onboarding-class-subject" className={selectTriggerClassName}>
                 <SelectValue />
@@ -242,7 +266,7 @@ export function FirstClassStep({ flow }: FirstClassStepProps) {
               <SelectContent className={selectContentClassName}>
                 {subjectOptions.map((id) => (
                   <SelectItem key={id} value={id} className={selectItemClassName}>
-                    {translateSubjectLabel(id)}
+                    {optionLabel(id)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -261,10 +285,31 @@ export function FirstClassStep({ flow }: FirstClassStepProps) {
           </div>
         </div>
 
+        {isFirstCycleOnly(answers.years) && answers.subjectIds.length > 1 && (
+          <p className="text-xs text-muted-foreground sm:text-sm">{t("class.titularHint")}</p>
+        )}
+
         <div className="space-y-2">
           <p className="text-sm font-medium text-foreground">{t("class.daysLabel")}</p>
           <WeekdayPicker value={lessons} onChange={setLessons} />
         </div>
+
+        {year !== undefined && (
+          <AlreadyTaughtField
+            subject={vocational ? null : (SUBJECTS.find((s) => s.id === subjectId)?.value ?? null)}
+            gradeLevel={year}
+            classLabel={
+              // "B" reads as "o 5.º B"; a label that already names the year is kept as typed.
+              classLabel.trim() && !/^\d/.test(classLabel.trim())
+                ? t("class.yearLetter", { year, label: classLabel.trim() })
+                : classLabel.trim()
+            }
+            notes={taughtNotes}
+            onNotesChange={setTaughtNotes}
+            taught={taught}
+            onTaughtChange={setTaught}
+          />
+        )}
 
         <div className="space-y-0.5 text-xs text-muted-foreground sm:text-sm">
           <p>{t("class.period", { start: formatDay(periodStart), end: formatDay(periodEnd) })}</p>
@@ -286,6 +331,17 @@ export function FirstClassStep({ flow }: FirstClassStepProps) {
           <p role="alert" className="text-sm text-destructive">
             {t("class.createFailed")}
           </p>
+        )}
+
+        {/* A real reason, and a quiet one: skipping means no week ready and no Sunday email. */}
+        {phase === "form" && (
+          <button
+            type="button"
+            onClick={handleLater}
+            className="text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            {t("class.noTimetable")}
+          </button>
         )}
       </div>
     </div>

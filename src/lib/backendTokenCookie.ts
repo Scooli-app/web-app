@@ -1,4 +1,4 @@
-import { getTokenSubject } from "./tokenSubject";
+import { getTokenExpiry, getTokenSubject } from "./tokenSubject";
 
 /**
  * The middleware mirrors the Clerk session token into the `scooli_token`
@@ -9,14 +9,22 @@ import { getTokenSubject } from "./tokenSubject";
  */
 export const BACKEND_TOKEN_COOKIE = "scooli_token";
 
+/** A token this close to `exp` could expire before the backend reads it. */
+const EXPIRY_MARGIN_MS = 5_000;
+
 /**
  * The cookie token when it was issued for `userId` (the Clerk user signed in
- * on this request), otherwise null so the caller asks Clerk for a fresh token.
+ * on this request) and has not expired, otherwise null so the caller asks
+ * Clerk for a fresh token. Clerk session tokens last about a minute but the
+ * cookie lives 15: an expired one gets a 401, which the download route reads
+ * as "not Pro, not locked".
  */
 export function cookieTokenForUser(
   token: string | undefined,
   userId: string | null | undefined,
+  now: number = Date.now(),
 ): string | null {
-  if (!token || !userId) return null;
-  return getTokenSubject(token) === userId ? token : null;
+  if (!token || !userId || getTokenSubject(token) !== userId) return null;
+  const exp = getTokenExpiry(token);
+  return exp === null || exp * 1000 > now + EXPIRY_MARGIN_MS ? token : null;
 }

@@ -3,7 +3,7 @@ import type { CompanionType } from "@/components/dashboard/weekWindow";
  * Timetable Service — Feature 2: Horário & Planos Letivos
  */
 
-import apiClient from "./client";
+import apiClient, { handleAccountLocked } from "./client";
 import { featureFeedbackTrigger } from "@/store/featureFeedbackTrigger";
 import type { CheckInOutcome, CheckInResult, CheckInSlotType, MissingAmount, TeachingStatus } from "@/shared/types/check-in";
 
@@ -33,6 +33,8 @@ export interface CreateTimetableParams {
   reviewDates?: string[];   // ISO dates — REVIEW slots (explicit, overrides auto-cadence)
   /** What the teacher says was already taught, so the topics pick up from there (needs already_covered_enabled). */
   alreadyCoveredNotes?: string;
+  /** AE topics ticked as already taught: `key` values from getTopicDomains (needs already_covered_enabled). */
+  alreadyCoveredDomains?: string[];
   /** Formação específica (true) / geral (false), for subjects the AE splits that way. */
   isSpecificComponent?: boolean;
   /** Curso profissional, with either a UC code or a sociocultural/científica subject name — as on document creation. */
@@ -147,6 +149,11 @@ export interface GenerateLessonStreamCallbacks {
   onFreeLimit?: (code: string) => void;
   /** The generation quota is used up. */
   onQuotaExceeded?: () => void;
+  /**
+   * The account is read-only (ENG-314): the paywall is already open. Without this callback the
+   * stop is reported through `onQuotaExceeded`, which callers already treat as "a limit stopped it".
+   */
+  onAccountLocked?: () => void;
 }
 
 // ─── CRUD ────────────────────────────────────────────────────────────
@@ -154,6 +161,20 @@ export interface GenerateLessonStreamCallbacks {
 export async function createTimetable(params: CreateTimetableParams): Promise<Timetable> {
   const response = await apiClient.post<Timetable>("/timetable", params);
   return response.data;
+}
+
+/** One AE topic of a subject and year, in programme order ("O que já deste?"). */
+export interface CurriculumTopic {
+  key: string;
+  domain: string;
+  label: string;
+}
+
+export async function getTopicDomains(subject: string, gradeLevel: number): Promise<CurriculumTopic[]> {
+  const response = await apiClient.get<{ topics: CurriculumTopic[] }>("/timetable/topic-domains", {
+    params: { subject, gradeLevel },
+  });
+  return response.data.topics ?? [];
 }
 
 export async function listTimetables(): Promise<Timetable[]> {
@@ -367,6 +388,24 @@ function parseSseEvent(data: string): { event: string; data: string } | null {
   }
 }
 
+/** The `data` of an `account_locked` event: the lock reason, or a JSON `{reason, action}` body. */
+function parseAccountLockedData(data: string): unknown {
+  try {
+    const parsed = JSON.parse(data);
+    if (parsed && typeof parsed === "object") return parsed;
+  } catch {
+    // A plain reason string.
+  }
+  return { reason: data };
+}
+
+function stopForAccountLock(payload: unknown, callbacks: GenerateLessonStreamCallbacks) {
+  if (callbacks.onAccountLocked) callbacks.onAccountLocked();
+  else callbacks.onQuotaExceeded?.();
+  // After the callback: a generic upgrade modal opened by `onQuotaExceeded` gets the lock's copy.
+  handleAccountLocked(payload);
+}
+
 async function streamTimetableEndpoint(
   url: string,
   body: object | null,
@@ -382,6 +421,14 @@ async function streamTimetableEndpoint(
     },
     body: body ? JSON.stringify(body) : undefined,
   });
+
+  if (response.status === 403) {
+    const body = await response.json().catch(() => null);
+    if ((body as { code?: unknown } | null)?.code === "account_locked") {
+      stopForAccountLock(body, callbacks);
+      return;
+    }
+  }
 
   if (!response.ok || !response.body) {
     callbacks.onError?.(`HTTP ${response.status}`);
@@ -423,6 +470,7 @@ async function streamTimetableEndpoint(
         case "info": callbacks.onInfo?.(evt.data); break;
         case "free_limit": callbacks.onFreeLimit?.(evt.data); break;
         case "quota_exceeded": callbacks.onQuotaExceeded?.(); break;
+        case "account_locked": stopForAccountLock(parseAccountLockedData(evt.data), callbacks); break;
       }
     }
   }

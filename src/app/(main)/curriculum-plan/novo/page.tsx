@@ -5,6 +5,7 @@ import { AiDisclaimer } from "@/components/ui/ai-disclaimer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { DatePicker } from "@/components/ui/date-picker";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -33,6 +34,7 @@ import { selectIsCurriculumPlanEnabled } from "@/store/features/selectors";
 import { useFeatureAccess } from "@/components/feature/useFeatureAccess";
 import { FeatureUnavailable } from "@/components/feature/FeatureUnavailable";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { useAccountAccess } from "@/hooks/useAccountAccess";
 import { resolveEffectiveContentLanguage } from "@/i18n/clientLocale";
 import {
   buildSchoolPeriodPresets,
@@ -158,6 +160,7 @@ export default function CurriculumPlanNewPage() {
   const { loaded: featuresLoaded, enabled } = useFeatureAccess(selectIsCurriculumPlanEnabled);
   const router = useRouter();
   const dispatch = useAppDispatch();
+  const { guard } = useAccountAccess();
 
   const [step, setStep] = useState<StepId>("period");
   const [planningType, setPlanningType] = useState<CurriculumPlanningType>("trimester");
@@ -169,6 +172,10 @@ export default function CurriculumPlanNewPage() {
   const isVocational = subjectPicker.teachingMode === "vocational";
   const [schedule, setSchedule] = useState<WeekSchedule>(DEFAULT_WEEK_SCHEDULE);
   const [alreadyCoveredNotes, setAlreadyCoveredNotes] = useState("");
+  // A UC's hours come from the course's framework; without them the plan must not guess (it used the lesson count).
+  const [unitHours, setUnitHours] = useState("");
+  const unitHoursNumber = Number.parseInt(unitHours, 10) > 0 ? Number.parseInt(unitHours, 10) : undefined;
+  const showUnitHours = isVocational && Boolean(choice.vocationalUnitCode);
   const [submitting, setSubmitting] = useState(false);
 
   const PRESETS = useMemo(() => buildSchoolPeriodPresets(), []);
@@ -222,6 +229,7 @@ export default function CurriculumPlanNewPage() {
 
   async function handleSubmit() {
     if (!step1Valid || !step2Valid || !step3Valid) return;
+    if (!guard("generate")) return;
     setSubmitting(true);
 
     // Resolved at submit time (it reads localStorage and the locale cookie), with
@@ -269,6 +277,7 @@ export default function CurriculumPlanNewPage() {
             periodEnd: periodEndISO,
             lessonsPerWeek: lpw,
             totalLessonsEstimate: totalLessons,
+            unitHours: showUnitHours ? unitHoursNumber : undefined,
             weekSchedule: schedule,
             alreadyCoveredNotes: alreadyCoveredNotes.trim() || undefined,
           }),
@@ -335,7 +344,7 @@ export default function CurriculumPlanNewPage() {
                         "flex flex-col items-start gap-0.5 rounded-lg border px-3 py-2.5 text-left transition-colors hover:border-primary/60",
                         isActive
                           ? "border-primary bg-primary/5 text-foreground"
-                          : "border-border bg-card text-foreground"
+                          : "border-input bg-card text-foreground"
                       )}
                     >
                       <span className={cn("text-sm font-medium", isActive && "text-primary")}>
@@ -443,6 +452,23 @@ export default function CurriculumPlanNewPage() {
                 disabled={!choice.schoolYear}
               />
 
+              {showUnitHours && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="unit-hours">{t("class.unitHoursLabel")}</Label>
+                  <Input
+                    id="unit-hours"
+                    type="number"
+                    inputMode="numeric"
+                    min={1}
+                    max={1000}
+                    value={unitHours}
+                    onChange={(event) => setUnitHours(event.target.value)}
+                    className="w-32"
+                  />
+                  <p className="text-xs text-muted-foreground">{t("class.unitHoursHint")}</p>
+                </div>
+              )}
+
               {/* Decides where the plan starts, so it sits right after the subject. */}
               <AlreadyCoveredSection
                 notes={alreadyCoveredNotes}
@@ -513,6 +539,12 @@ export default function CurriculumPlanNewPage() {
                   <span className="text-sm text-muted-foreground">{t("review.grade")}</span>
                   <span className="text-sm font-medium">{tTimetable("gradeYear", { grade: schoolYear })}</span>
                 </div>
+                {showUnitHours && unitHoursNumber !== undefined && (
+                  <div className="flex items-center justify-between px-4 py-3">
+                    <span className="text-sm text-muted-foreground">{t("review.unitHours")}</span>
+                    <span className="text-sm font-medium">{t("review.unitHoursValue", { count: unitHoursNumber })}</span>
+                  </div>
+                )}
                 <div className="flex items-center justify-between px-4 py-3">
                   <span className="text-sm text-muted-foreground">{t("review.lessonsPerWeek")}</span>
                   <span className="text-sm font-medium">{lpw}</span>

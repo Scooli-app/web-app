@@ -1,14 +1,22 @@
-import type { WeekRow } from "@/components/onboarding-v2/steps/WeekLessonRow";
 import type { LessonSlot } from "@/services/api/timetable.service";
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
 export type PlanGenerationStatus = "idle" | "topics" | "lessons" | "done" | "error";
 export type TopicsStatus = "idle" | "running" | "done" | "failed";
+/** One lesson of the first week, with its live generation status. */
+export interface WeekRow {
+  id: string;
+  slotDate: string;
+  title: string;
+  status: "pending" | "generating" | "ready" | "failed";
+}
+
 export type WeekStatus = "idle" | "loading" | "generating" | "done" | "failed" | "empty";
 
 export interface PlanGenerationState {
   status: PlanGenerationStatus;
   timetableId: string | null;
+  /** First day of the onboarding window (the sign-up day): the 7 days from it get their lessons prepared. */
   weekStart: string | null;
   topicsStatus: TopicsStatus;
   weekStatus: WeekStatus;
@@ -110,6 +118,13 @@ const planGenerationSlice = createSlice({
     planGenerationRefreshRequested(state) {
       state.refreshKey += 1;
     },
+    /**
+     * The read-only lock stopped the generation (ENG-321): the paywall says so, so no failed
+     * banner or retry is left behind. Pages still re-fetch what was written before the stop.
+     */
+    planGenerationStoppedByLock(state) {
+      return { ...initialState, refreshKey: state.refreshKey + 1 };
+    },
   },
 });
 
@@ -122,6 +137,7 @@ export const {
   lessonStatusChanged,
   firstLessonHrefSet,
   planGenerationRefreshRequested,
+  planGenerationStoppedByLock,
 } = planGenerationSlice.actions;
 
 export default planGenerationSlice.reducer;

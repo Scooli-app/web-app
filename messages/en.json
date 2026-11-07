@@ -207,14 +207,21 @@
     "title": "Stop getting the weekly email?",
     "hint": "You can turn it back on any time in settings.",
     "confirm": "Yes, unsubscribe",
-    "confirming": "Unsubscribing…"
+    "confirming": "Unsubscribing…",
+    "proTrial": {
+      "title": "Stop getting the emails about your Pro month?",
+      "hint": "You'll stop getting the reminders and offers about your free Pro month."
+    }
   },
   "emailUnsubscribed": {
     "done": "You won't get the weekly email anymore.",
     "hint": "If you change your mind, you can turn it back on in settings.",
     "turnOn": "Turn it on in settings",
     "invalid": "This link is no longer valid.",
-    "openApp": "Open Scooli"
+    "openApp": "Open Scooli",
+    "proTrial": {
+      "done": "You won't get the emails about your Pro month anymore."
+    }
   },
   "nav": {
     "groups": {
@@ -294,6 +301,34 @@
         "title": "Members",
         "description": "See your school's members and seats"
       },
+      "schoolDirection": {
+        "title": "School overview",
+        "description": "How each class is doing"
+      },
+      "schoolLearning": {
+        "title": "Learning",
+        "description": "Learning outcomes classes find hard"
+      },
+      "schoolAssessments": {
+        "title": "Assessments",
+        "description": "Assessments scheduled, week by week"
+      },
+      "schoolSubstitutions": {
+        "title": "Cover",
+        "description": "Prepare cover for a lesson"
+      },
+      "schoolReports": {
+        "title": "Reports",
+        "description": "Class status reports"
+      },
+      "schoolUsage": {
+        "title": "Usage",
+        "description": "How your school uses Scooli"
+      },
+      "schoolSettings": {
+        "title": "Settings",
+        "description": "Your school's settings"
+      },
       "classes": {
         "title": "Classes",
         "description": "Your classes and timetables"
@@ -308,8 +343,6 @@
       "signingOut": "Signing out..."
     },
     "generations": {
-      "proAccessOrg": "Pro access through your organization",
-      "proAccess": "Pro access",
       "upgradeToPro": "Upgrade to Pro",
       "credits": "{count, plural, one {# credit} other {# credits}}"
     },
@@ -906,6 +939,12 @@
         "lessonPlanFotossintese": "Plan: Photosynthesis · 3rd grade",
         "testFracoes": "Test: Fractions · 5th grade",
         "quizDescobrimentos": "Quiz: The Portuguese Discoveries · 5th grade"
+      },
+      "exampleLabel": "{type}: {topic} · {year, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} grade",
+      "exampleTypes": {
+        "lessonPlan": "Plan",
+        "test": "Test",
+        "quiz": "Quiz"
       }
     }
   },
@@ -914,7 +953,6 @@
     "progress": "Step {step} of {total}",
     "back": "Back",
     "continue": "Continue",
-    "later": "Later",
     "retry": "Try again",
     "saveFailed": "We couldn't save that. Please try again.",
     "school": {
@@ -925,6 +963,9 @@
       "roleLabel": "Your role",
       "roles": {
         "teacher": "Teacher",
+        "special_ed": "Special education",
+        "vocational": "Vocational education",
+        "preschool": "Preschool",
         "coordinator": "Coordinator",
         "director": "School leader",
         "tutor": "Tutor",
@@ -945,12 +986,19 @@
       "subjectsLabel": "Subjects",
       "subjectsEmpty": "Pick your grades first to see the subjects.",
       "subjectsPlaceholder": "Choose subjects",
-      "subjectsCount": "{count, plural, one {# subject} other {# subjects}}"
+      "subjectsCount": "{count, plural, one {# subject} other {# subjects}}",
+      "vocationalSubtitle": "Pick the year, the courses and the units you teach. You can change this later in Settings.",
+      "coursesLabel": "Courses and units",
+      "subjectsOptional": "Subjects (optional)",
+      "specialEdHint": "If you support students across several subjects, you can leave this empty.",
+      "titular": "I teach every subject to my class",
+      "preschoolNote": "Scooli is built for school years 1 to 12 and doesn't cover preschool yet. You can still use it to create materials and activities for your groups."
     },
     "class": {
       "title": "Create your first class",
       "subtitle": "Scooli builds your lesson plan from this.",
       "subjectLabel": "Subject",
+      "unitLabel": "Unit",
       "yearLabel": "Grade",
       "yearOption": "Grade {year}",
       "labelLabel": "Class",
@@ -971,48 +1019,20 @@
       "capNote": "On the free plan you can plan up to 4 weeks.",
       "capLink": "See plans",
       "create": "Create class",
-      "createFailed": "We couldn't create the class. Please try again."
-    },
-    "plan": {
-      "title": "Building your plan",
-      "titleDone": "Your plan is ready",
-      "subtitle": "Continue whenever you like: we'll finish in the background.",
-      "allDone": "All set, you can continue.",
-      "progressLabel": "Plan progress",
-      "stages": {
-        "created": "Class created",
-        "topics": "Planning the topics for the year",
-        "topicsDone": "Topics for the year planned",
-        "week": "Writing the lessons for your first week",
-        "weekDone": "First week's lessons ready"
-      },
-      "topicsHints": {
-        "1": "Mapping topics across the year…",
-        "2": "Spreading the topics over your school year…",
-        "3": "Skipping holidays and school breaks…",
-        "4": "Putting the content in a sensible order…"
-      },
-      "weekHints": {
-        "1": "Writing objectives and activities…",
-        "2": "Putting together each lesson's outline…",
-        "3": "Polishing the last details…"
-      },
-      "moreLessons": "+{count} more",
-      "weekRange": "Week of {range}",
-      "topicsFailed": "We couldn't plan the topics right now.",
-      "weekFailed": "Some lessons didn't finish."
-    },
-    "week": {
-      "noLessons": "There are no lessons to prepare this week. You can generate the others from the calendar.",
-      "lessonFallback": "Lesson {number}",
-      "pending": "Waiting",
-      "generating": "Writing",
-      "ready": "Ready",
-      "failed": "Failed",
-      "openLesson": "Open the first lesson"
+      "noTimetable": "I don't have my timetable yet",
+      "createFailed": "We couldn't create the class. Please try again.",
+      "titularHint": "Start with one subject; add the others later in Classes.",
+      "yearLetter": "{year}{label}",
+      "taught": {
+        "title": "What have you already covered with {label}?",
+        "titleNoLabel": "What have you already covered with this class?",
+        "placeholder": "In your own words, e.g. fractions, and I've started angles",
+        "count": "{count} of {total} topics",
+        "suggestion": "suggested for {date}",
+        "notStarted": "I haven't started yet"
+      }
     },
     "baseline": {
-      "title": "So we can show you how much time you save",
       "prepTitle": "How many hours a week do you spend preparing lessons and materials?",
       "toolsTitle": "What do you use today to prepare lessons?",
       "classTitle": "How many classes do you teach this year?",
@@ -1036,32 +1056,50 @@
         "C5_PLUS": "5+"
       }
     },
-    "ritual": {
-      "title": "When do you plan your week?",
-      "subtitle": "Pick the day you like to have the coming week ready.",
-      "days": {
-        "1": "Mon",
-        "2": "Tue",
-        "3": "Wed",
-        "4": "Thu",
-        "5": "Fri",
-        "6": "Sat",
-        "7": "Sun"
+    "wait": {
+      "title": "Preparing your week",
+      "titleReady": "Your week is ready",
+      "titleNoClass": "Just a few more questions",
+      "subtitleNoClass": "All optional. They help us show you how much time you save.",
+      "progressLabel": "Plan progress",
+      "term": "Term {term}, week {week}",
+      "classOf": "{subject}, year {year}",
+      "lines": {
+        "reading": "Reading the curriculum for {subject}, year {year}",
+        "readingUnit": "Reading the reference guide for {subject}",
+        "readingGeneric": "Reading your class's curriculum",
+        "skipping": "Skipping what you've already covered: {topics}",
+        "planning": "Spreading the topics across your lessons until the end of the year",
+        "weekStarting": "Preparing your next lessons",
+        "week": "Preparing your next lessons: {days}",
+        "done": "Your next lessons are ready",
+        "empty": "There are no lessons to prepare in the coming weeks",
+        "topicsFailed": "We couldn't plan the topics right now",
+        "weekFailed": "Some lessons weren't prepared"
       },
-      "emailLabel": "Email me my week",
-      "emailHint": "It arrives in the evening of the day you picked. Turn it off any time.",
-      "planStatus": {
-        "working": "Your week is still being prepared…",
-        "done": "Ready",
-        "failed": "We couldn't finish your week right now. You can resume it from your dashboard."
-      },
-      "goalsTitle": "What are you looking for in Scooli?",
+      "meanwhile": "While we prepare it",
+      "optional": "Optional questions",
       "sourceTitle": "How did you find us?",
-      "goalsPlaceholder": "Choose goals",
-      "selectedCount": "{count, plural, other {# selected}}",
       "sourcePlaceholder": "Choose one",
       "sourceOtherPlaceholder": "Tell us where (optional)",
-      "finish": "Finish"
+      "emailTitle": "An email with your week",
+      "emailSunday": "Sunday",
+      "emailOtherDay": "Another day",
+      "emailNo": "No",
+      "emailDay": "Email day",
+      "days": {
+        "1": "Monday",
+        "2": "Tuesday",
+        "3": "Wednesday",
+        "4": "Thursday",
+        "5": "Friday",
+        "6": "Saturday"
+      },
+      "ready": "Ready: {count, plural, one {# lesson for {dates}} other {# lessons for {dates}}}",
+      "finish": "Finish",
+      "seeWeek": "See my week",
+      "continueAnyway": "Continue without waiting",
+      "goHome": "Go to Home"
     },
     "celebration": {
       "title": "You're all set",
@@ -1114,7 +1152,9 @@
     "planning": {
       "title": "Weekly email",
       "digestTitle": "Email with my week",
-      "digestDescription": "At the weekend you get a summary of next week's lessons.",
+      "digestDescription": "You get a summary of next week's lessons on the day you choose.",
+      "dayTitle": "Email day",
+      "dayDescription": "It arrives from 6 pm.",
       "loadError": "Couldn't load this setting.",
       "retry": "Try again",
       "saveError": "We couldn't save that change."
@@ -1213,7 +1253,7 @@
       "saveError": "We couldn't save. Try again."
     },
     "subscriptionCard": {
-      "title": "Plan and credits",
+      "title": "Plan",
       "yourPlan": "Your plan",
       "orgAccessTitle": "You have Pro access through your organization.",
       "orgAccessDescription": "Your access is managed by the school — you don't need a personal subscription.",
@@ -1501,7 +1541,10 @@
       "emptyDocumentDescription": "Generation finished without any content. You can write here or go back to your documents and create another.",
       "importFailedTitle": "The import failed",
       "importFailedDescription": "Something went wrong importing this file. Import it again, and if it fails again, try a PDF or DOCX.",
-      "importFailedRetry": "Import again"
+      "importFailedRetry": "Import again",
+      "generationFailedTitle": "This document wasn't generated",
+      "generationFailedDescription": "The generation failed. You can ask for it again from Home.",
+      "generationFailedRetry": "Go to Home"
     },
     "documentTitle": {
       "placeholder": "Document title...",
@@ -2339,9 +2382,9 @@
       "title": "Welcome to Scooli Pro! 🎉",
       "subtitle": "Your subscription has been activated successfully",
       "unlockedLabel": "What you've unlocked",
-      "unlimitedGenerations": {
-        "title": "Unlimited generations",
-        "description": "Create without limits"
+      "wholeYear": {
+        "title": "The whole school year",
+        "description": "All your classes, week by week"
       },
       "customTemplates": {
         "title": "Custom templates",
@@ -2355,11 +2398,11 @@
     },
     "upgradePlanModal": {
       "title": "Free Plan Limit Reached",
-      "description": "You've reached the credit limit of your free plan.",
+      "description": "You've reached the limit of your free plan.",
       "unlockLabel": "Unlock Pro to continue",
-      "unlimitedGenerations": {
-        "title": "Unlimited Generations",
-        "description": "Never stop creating content"
+      "wholeYear": {
+        "title": "The whole school year",
+        "description": "All your classes, week by week"
       },
       "advancedCustomization": {
         "title": "Advanced Customization",
@@ -2387,6 +2430,19 @@
         "sources_pro": {
           "title": "Your own sources are part of Pro",
           "description": "On the free plan, Scooli uses Scooli sources. Upgrade to Pro to upload a textbook or your school’s materials."
+        },
+        "account_locked": {
+          "title": "Your account is read-only",
+          "description": "You can still view and edit your documents. Upgrade to Pro to create and generate documents, export, duplicate and share again."
+        },
+        "trial_expired": {
+          "title": "Your Pro month has ended",
+          "description": "Your account is now read-only. Upgrade to Pro to create and generate documents, export, duplicate and share again."
+        },
+        "trial_not_activated": {
+          "title": "Activate your Pro month",
+          "description": "You haven't activated your free Pro month yet. Activate it now and get 30 days with everything Pro offers.",
+          "descriptionNoTrial": "Your account is read-only. Upgrade to Pro to create and generate documents, export, duplicate and share again."
         }
       }
     },
@@ -2403,7 +2459,7 @@
       },
       "free": {
         "name": "Free Plan",
-        "description": "20 credits"
+        "description": "1 class and 4 weeks of planning"
       }
     },
     "nifCard": {
@@ -2415,6 +2471,80 @@
       "removedSuccess": "Tax ID removed. Future invoices will be issued as a private consumer.",
       "savedSuccess": "Tax ID saved. It will be used on future invoices.",
       "hint": "Your tax ID is printed on your invoices. Leave it empty and invoices are issued without one."
+    },
+    "trial": {
+      "activateCta": "Activate my Pro month",
+      "activating": "Activating…",
+      "startedToast": "Your Pro month has started — it ends on {date}",
+      "startedToastNoDate": "Your Pro month has started",
+      "errors": {
+        "trial_link_expired": "This activation link has expired.",
+        "trial_not_eligible": "The free Pro month is no longer available for this account.",
+        "trial_token_invalid": "This activation link isn't valid for this account.",
+        "trial_not_available": "The free Pro month isn't available right now.",
+        "generic": "We couldn't activate your Pro month. Please try again."
+      }
+    },
+    "banner": {
+      "regionLabel": "Account status",
+      "trialDiscreet": "{days, plural, one {# day left in your Pro month} other {# days left in your Pro month}}",
+      "trialActive": "You're on your Pro month",
+      "trialEndingTitle": "{days, plural, one {Your Pro month ends in # day} other {Your Pro month ends in # days}}",
+      "trialEndingDescription": "After that, your account becomes read-only. Upgrade to Pro to keep generating, exporting and sharing.",
+      "upgradeCta": "Upgrade to Pro",
+      "seePlans": "See plans",
+      "lockedTitle": "Your account is read-only",
+      "lockedReason": {
+        "trial_expired": "Your Pro month has ended. You can still view and edit your documents, but creating and generating documents, exporting, duplicating and sharing need Pro.",
+        "trial_not_activated": "You didn't activate your free Pro month in time. You can still view and edit your documents, but creating and generating documents, exporting, duplicating and sharing need Pro.",
+        "unknown": "You can still view and edit your documents, but creating and generating documents, exporting, duplicating and sharing need Pro."
+      },
+      "offerTitle": "A free Pro month is waiting for you",
+      "offerDescription": "30 days with every Pro feature."
+    },
+    "lock": {
+      "blockedMessage": "Your account is read-only. Upgrade to Pro to continue.",
+      "lockedHint": "Available on Pro",
+      "printMessage": "Upgrade to Pro to print",
+      "chatPlaceholder": "Your account is read-only",
+      "statusUnavailable": "We couldn't check your account. Please try again.",
+      "retry": "Try again"
+    },
+    "trialStatusCard": {
+      "title": "Your Pro month",
+      "endsOn": "Ends on {date}",
+      "daysLeft": "{days, plural, one {# day left} other {# days left}}",
+      "promoIncluded": "Includes the {code} offer"
+    },
+    "trialPromo": {
+      "signUpBanner": "{name} offer: create your account and get <strong>{duration}</strong> of Pro for free",
+      "appliedToast": "Offer applied: your Pro now runs until {date}",
+      "appliedToastNoDate": "Offer applied: you got extra days of Pro",
+      "durationMonths": "{count, plural, one {# month} other {# months}}",
+      "durationDays": "{count, plural, one {# day} other {# days}}"
+    },
+    "trialActivation": {
+      "activatingTitle": "Activating your Pro month…",
+      "successTitle": "Your Pro month has started — it ends on {date}",
+      "successTitleNoDate": "Your Pro month has started",
+      "successDescription": "You have 30 days with every Pro feature. Enjoy!",
+      "alreadyActiveTitle": "Your Pro month is already active — it ends on {date}",
+      "alreadyActiveTitleNoDate": "Your Pro month is already active",
+      "alreadyProTitle": "You already have Scooli Pro",
+      "alreadyProDescription": "Your account already has every Pro feature.",
+      "dashboardCta": "Go to the dashboard",
+      "upgradeCta": "See Pro plans",
+      "retry": "Try again",
+      "expiredCanStart": "But you can still activate your Pro month here.",
+      "expiredUpgrade": "Upgrade to Pro to keep using every feature.",
+      "notEligibleDescription": "The free Pro month can only be used once and isn't available to accounts that have had a paid subscription or that get Pro through a school.",
+      "invalidCanStart": "You can activate your Pro month right here.",
+      "invalidNoStart": "Check that you're signed in with the account that received the email.",
+      "notAvailableDescription": "Try again later, or contact us if you need help.",
+      "genericErrorTitle": "We couldn't activate your Pro month",
+      "genericErrorDescription": "Check your connection and try again.",
+      "noTokenTitle": "Activate your Pro month",
+      "noTokenDescription": "30 days with every Pro feature."
     }
   },
   "sources": {
@@ -2526,9 +2656,9 @@
     "offerModal": {
       "title": "Back to School 2026",
       "description": "Scooli Pro for just €4.99/month if you activate during the promotion — keep this price forever.",
-      "unlimitedGenerations": {
-        "title": "Unlimited generations",
-        "description": "Access to all Pro features"
+      "wholeYear": {
+        "title": "The whole school year",
+        "description": "Every class and every Pro feature"
       },
       "lockedPrice": {
         "title": "Price locked forever",
@@ -2651,16 +2781,6 @@
         "empty": "The most-created document types will show up here.",
         "emptyTitle": "No documents yet"
       },
-      "activeUsersCard": {
-        "title": "Most active users",
-        "noEmail": "No email",
-        "lastActive": "Last active: {date}",
-        "aiRequestsBadge": "{count, plural, one {# AI request} other {# AI requests}}",
-        "documentsThisMonthBadge": "{count, plural, one {# document this month} other {# documents this month}}",
-        "totalDocumentsBadge": "{count, plural, one {# document total} other {# documents total}}",
-        "empty": "The most active teachers appear here once the team starts using Scooli.",
-        "emptyTitle": "No active teachers yet"
-      },
       "viewMembers": "View members"
     },
     "members": {
@@ -2679,8 +2799,6 @@
       "unnamedMember": "Unnamed user",
       "noEmail": "No email available",
       "joinedAndLastActive": "Joined: {joinedDate} · Last active: {lastActiveDate}",
-      "aiRequestsLabel": "AI requests",
-      "aiRequestsCount": "{count, plural, one {# request} other {# requests}}",
       "documentsLabel": "Documents",
       "documentsCount": "{count, plural, one {# document} other {# documents}}",
       "createdThisMonth": "{count, plural, one {# created this month} other {# created this month}}",
@@ -2694,12 +2812,151 @@
       "loadError": "We couldn't load the school settings",
       "currentRole": "Current role:",
       "contractStatus": "Contract status:"
+    }
+  },
+  "schoolDirection": {
+    "states": {
+      "on_track": "On track",
+      "watch": "Watch",
+      "behind": "Behind",
+      "no_records": "No records",
+      "not_started": "No lessons yet",
+      "lessonsBehind": "{count, plural, one {# lesson behind} other {# lessons behind}}"
     },
-    "usage": {
-      "title": "School usage",
-      "description": "Initial view of the organization's aggregated usage.",
-      "loadError": "We couldn't load the school usage",
-      "generationsThisMonth": "Generations this month"
+    "departments": {
+      "languages": "Languages",
+      "maths_science": "Maths and Science",
+      "humanities": "Humanities and Social Sciences",
+      "arts_pe": "Arts and PE",
+      "primary": "Primary",
+      "other": "Other"
+    },
+    "area": {
+      "label": "Leadership view",
+      "overviewTab": "Overview",
+      "manage": "Manage"
+    },
+    "homeCard": {
+      "fallbackName": "Your school",
+      "figures": "{percent}% of plan delivered · {behind, plural, =0 {no classes behind} one {# class behind} other {# classes behind}}",
+      "hint": "See where every class stands in its curriculum.",
+      "open": "Open school overview"
+    },
+    "dashboard": {
+      "title": "Curriculum progress",
+      "subtitle": "{year} school year · updated just now",
+      "subtitleNoYear": "Updated just now",
+      "coverage": "Based on {turmas, plural, one {# class} other {# classes}} planned in Scooli by {teachers, plural, one {# teacher} other {# teachers}}.",
+      "emptyTitle": "No classes yet",
+      "empty": "Teachers show up here once Scooli has added them to your school and they plan their first classes."
+    },
+    "kpis": {
+      "execution": "Curriculum delivered",
+      "executionHint": "of what was planned to date",
+      "onTrack": "On track",
+      "watch": "Watch",
+      "behind": "Behind",
+      "noRecords": "No records",
+      "classes": "{count, plural, one {class} other {classes}}"
+    },
+    "grid": {
+      "title": "Where every class stands",
+      "subtitle": "% of the curriculum planned to date",
+      "allYears": "All years",
+      "year": "Year {grade}",
+      "department": "Department",
+      "allDepartments": "All departments",
+      "noMatch": "No classes match these filters.",
+      "classColumn": "Class"
+    },
+    "drawer": {
+      "fallbackTitle": "Class details",
+      "execution": "Progress: {percent}% of the plan to date",
+      "executionUnknown": "Progress: —",
+      "why": "Why",
+      "missedTitle": "Missed or unfinished lessons",
+      "lessonNumber": "Lesson {n}",
+      "notHeld": "Not held",
+      "leftHalfway": "Left halfway",
+      "behindTitle": "Topics behind",
+      "plannedFor": "planned for {date}",
+      "difficultiesTitle": "Where the class struggled",
+      "flagged": "{count, plural, one {flagged once} other {flagged # times}}",
+      "planTitle": "Plan adjustment",
+      "planAdjusted": "Adjusted on {date}",
+      "planPending": "Proposal awaiting review since {date}",
+      "nextTest": "Next test"
+    },
+    "learning": {
+      "title": "Where the school needs reinforcement",
+      "subtitle": "What most classes flagged as hard in the last 4 weeks",
+      "allSubjects": "All subjects",
+      "summary": "{subject} · Year {grade} · {flagged} of {total, plural, one {# class} other {# classes}} flagged it",
+      "reinforcement": "Reinforcement sheet created",
+      "empty": "No class flagged anything as hard in the last 4 weeks."
+    },
+    "assessments": {
+      "title": "Assessment calendar",
+      "subtitle": "Week of {range}",
+      "subtitleYear": "Week of {range} · Year {grade}",
+      "previous": "Previous week",
+      "next": "Next week",
+      "test": "Test · {subject}",
+      "clash": "{class} has {n} tests in the same week",
+      "teachers": "Teachers",
+      "empty": "No tests this week."
+    },
+    "substitutions": {
+      "title": "Cover",
+      "subtitle": "Who is away, who is covering and where each class left off",
+      "absencesTitle": "Reported absences",
+      "register": "Report an absence",
+      "emptyAbsences": "No absences reported yet.",
+      "covered": "Covered",
+      "absenceSummary": "{day} · {count, plural, =0 {no lessons} one {# lesson} other {# lessons}}",
+      "dialog": {
+        "title": "Report an absence",
+        "description": "Who is away, on which day and who covers the lessons.",
+        "teacher": "Absent teacher",
+        "date": "Date",
+        "substitute": "Substitute",
+        "choose": "Choose a teacher",
+        "cancel": "Cancel",
+        "confirm": "Report an absence",
+        "error": "We couldn’t load the lessons for that day. Try again."
+      },
+      "ready": "Ready for the substitute",
+      "sent": "Sent",
+      "lessonHeading": "{class} · {subject} · Lesson {n}",
+      "substitute": "Substitute: {name}",
+      "leftOff": "Where the class left off",
+      "leftOffNone": "No lessons have been recorded for this class yet.",
+      "status": {
+        "taught": "Taught",
+        "partially_taught": "Left halfway",
+        "not_held": "Not held"
+      },
+      "topic": "Lesson topic",
+      "documents": "Lesson documents",
+      "noDocuments": "No documents attached to this lesson.",
+      "send": "Send to {name}",
+      "sentToast": "Sent to {name}",
+      "noLessons": "{name} has no lessons on this day."
+    },
+    "reports": {
+      "title": "Reports",
+      "subtitle": "Curriculum progress report · {label}",
+      "subtitleNoYear": "Curriculum progress report",
+      "export": "Export PDF",
+      "sheetTitle": "Curriculum progress report",
+      "sheetYear": "School year {label}",
+      "generated": "Generated on {date}",
+      "audience": "",
+      "byDepartment": "1. Progress by department",
+      "byDepartmentEmpty": "There are no lesson records yet to work out progress.",
+      "followUp": "2. Classes to follow up",
+      "followUpEmpty": "No classes to follow up: every class with records is on track.",
+      "reinforce": "3. Learning to reinforce"
     }
   },
   "checkout": {
@@ -2769,9 +3026,9 @@
       "title": "Sorry to see you go...",
       "description": "The payment process was canceled and you have not been charged.",
       "whatYoureLosingTitle": "What you're missing out on:",
-      "unlimitedGenerations": {
-        "title": "Unlimited generations",
-        "description": "Create as many documents as you need, with no limits"
+      "wholeYear": {
+        "title": "The whole school year",
+        "description": "All your classes, week by week"
       },
       "saveTime": {
         "title": "Save hours of work",
@@ -3366,6 +3623,8 @@
       "class": {
         "title": "Class details",
         "subtitle": "State the subject and year.",
+        "unitHoursLabel": "Unit hours",
+        "unitHoursHint": "Optional. It's in the course's reference framework; without it, the plan says \"to be set\".",
         "gradeLabel": "Year *",
         "gradePlaceholder": "Select the year",
         "subjectLabel": "Subject *",
@@ -3380,6 +3639,8 @@
       "review": {
         "title": "Summary",
         "subtitle": "Confirm the details before generating the plan.",
+        "unitHours": "Unit hours",
+        "unitHoursValue": "{count} h",
         "period": "Period",
         "type": "Type",
         "subject": "Subject",
@@ -3583,6 +3844,66 @@
     "applied": "Changes applied",
     "rejected": "Proposal rejected",
     "actionError": "Could not save the proposal."
+  },
+  "adminPromos": {
+    "title": "Promo links",
+    "description": "Create links that add trial days at sign-up, and print their QR codes.",
+    "loadFailed": "Could not load the promo links.",
+    "empty": "No promo links yet. Create the first one above.",
+    "create": {
+      "title": "New promo link",
+      "submit": "Create promo",
+      "created": "Promo created"
+    },
+    "fields": {
+      "name": "Name",
+      "code": "Code (optional)",
+      "codeHint": "Generated from the name if left empty.",
+      "extraDays": "Extra days",
+      "validUntil": "Valid until",
+      "maxRedemptions": "Max redemptions (optional)",
+      "maxPlaceholder": "No limit"
+    },
+    "table": {
+      "code": "Code",
+      "name": "Name",
+      "extraDays": "Extra days",
+      "validUntil": "Valid until",
+      "active": "Active",
+      "redemptions": "Redemptions",
+      "actions": "Actions",
+      "noExpiry": "No expiry",
+      "toggleActive": "Toggle {code} active"
+    },
+    "row": {
+      "link": "Sign-up link",
+      "copy": "Copy the sign-up link of {code}",
+      "copyLabel": "Copy",
+      "copied": "Link copied",
+      "copyFailed": "Could not copy the link",
+      "edit": "Edit {code}"
+    },
+    "qr": {
+      "alt": "QR code of the {code} sign-up link",
+      "downloadPng": "Download PNG",
+      "downloadSvg": "Download SVG",
+      "downloadFailed": "Could not generate the QR code"
+    },
+    "edit": {
+      "title": "Edit {code}",
+      "description": "The code and the extra days cannot be changed.",
+      "cancel": "Cancel",
+      "save": "Save"
+    },
+    "errors": {
+      "nameRequired": "Enter a name.",
+      "extraDaysInvalid": "Extra days must be a whole number of at least 1.",
+      "maxInvalid": "Max redemptions must be a whole number of at least 1, or empty.",
+      "codeTaken": "That code is already in use. Choose another or leave it empty.",
+      "invalid": "The promo is not valid: {detail}",
+      "generic": "Something went wrong. Try again.",
+      "toggleFailed": "Could not change the promo. Try again."
+    }
   },
   "adminPilot": {
     "title": "Pilot",

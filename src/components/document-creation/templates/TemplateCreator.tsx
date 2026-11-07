@@ -26,6 +26,8 @@ import { ArrowLeft, Loader2, Plus, Sparkles } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useState } from "react";
 import { createTemplate, updateTemplate } from "@/services/api/template.service";
+import { useAccountAccess } from "@/hooks/useAccountAccess";
+import { isUpgradeLimitFailure } from "@/services/api/client";
 import { SortableSection, type SectionItem } from "./SortableSection";
 
 interface TemplateCreatorProps {
@@ -45,6 +47,7 @@ export function TemplateCreator({
 }: TemplateCreatorProps) {
   const t = useTranslations("documentCreation.templateCreator");
   const tPlaceholders = useTranslations("documentCreation.templatePlaceholders");
+  const { guard } = useAccountAccess();
   const isEditing = !!editingTemplate;
 
   const [name, setName] = useState("");
@@ -170,6 +173,8 @@ export function TemplateCreator({
       setError(t("validationError"));
       return;
     }
+    // Read-only account (ENG-321): a new template is a create; editing an existing one stays allowed.
+    if (!(isEditing && editingTemplate) && !guard("create")) return;
 
     setIsLoading(true);
     setError("");
@@ -197,6 +202,8 @@ export function TemplateCreator({
 
       onTemplateSaved(template, isUpdate);
     } catch (err) {
+      // Plan limit or read-only lock: the API client opened the paywall; no error line next to it.
+      if (isUpgradeLimitFailure(err)) return;
       console.error("Failed to save template:", err);
       setError(
         isEditing
@@ -259,7 +266,7 @@ export function TemplateCreator({
                   value={name}
                   onChange={(e) => handleNameChange(e.target.value)}
                   placeholder={tPlaceholders(`${documentType}.name`)}
-                  className="h-11 rounded-xl border-input bg-input px-4 text-sm placeholder:text-muted-foreground"
+                  className="h-11 rounded-xl px-4 text-sm"
                 />
               </div>
 
@@ -279,7 +286,7 @@ export function TemplateCreator({
                   onChange={(e) => handleDescriptionChange(e.target.value)}
                   placeholder={tPlaceholders(`${documentType}.description`)}
                   rows={2}
-                  className="min-h-0 rounded-xl border-input bg-input px-4 py-3 text-sm placeholder:text-muted-foreground"
+                  className="min-h-0 rounded-xl px-4 py-3 text-sm"
                 />
               </div>
             </div>

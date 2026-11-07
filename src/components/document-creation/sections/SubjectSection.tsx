@@ -34,7 +34,7 @@ import type { SubjectChoiceUpdateFn } from "../useSubjectChoice";
 const SECTION_LABEL_CLASS =
   "mb-1.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground sm:mb-2 sm:text-xs";
 const SELECT_TRIGGER_CLASS =
-  "h-11 sm:h-12 px-4 text-sm sm:text-base bg-background border-border rounded-xl";
+  "h-11 sm:h-12 px-4 text-sm sm:text-base rounded-xl";
 const SELECT_ITEM_CLASS =
   "py-2.5 px-3 text-sm cursor-pointer rounded-lg focus:bg-accent focus:text-primary";
 const SELECT_GROUP_LABEL_CLASS =

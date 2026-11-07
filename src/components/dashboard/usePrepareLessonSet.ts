@@ -3,6 +3,7 @@
 import { startCompanionDocument } from "@/components/dashboard/LessonDocumentChips";
 import { preparationCost, suggestedDocuments } from "@/components/dashboard/lessonSuggestions";
 import type { CompanionType } from "@/components/dashboard/weekWindow";
+import { useAccountAccess } from "@/hooks/useAccountAccess";
 import { invalidatePlanLimits, usePlanLimits } from "@/hooks/usePlanLimits";
 import type { MyWeekLessonDocument } from "@/shared/types/my-week";
 import { selectIsPresentationCreationEnabled, selectIsWorksheetCreationEnabled } from "@/store/features/selectors";
@@ -65,6 +66,7 @@ export function usePrepareLessonSet({
   const isPro = useAppSelector(selectHasEffectivePro);
   const presentation = presentationFlag && isPro;
   const { limits } = usePlanLimits();
+  const { guard, hasCredits } = useAccountAccess();
   const [preparing, setPreparing] = useState(false);
   // Types of this run that haven't started on the server yet: shown as "A preparar…" right away.
   const [inFlight, setInFlight] = useState<CompanionType[]>([]);
@@ -74,7 +76,8 @@ export function usePrepareLessonSet({
         (type) => !(type === "test" && testBlocked),
       )
     : [];
-  const cost = preparationCost([{ slotDate, types: suggested }], limits);
+  // Only old free accounts still run on credits: nobody else sees a cost.
+  const cost = hasCredits ? preparationCost([{ slotDate, types: suggested }], limits) : null;
   const label = [
     t("prepareSet", { items: suggested.map((type) => t(`shortTypes.${type}`)).join(" + ") }),
     cost === null ? null : t("cost", { count: cost }),
@@ -84,6 +87,7 @@ export function usePrepareLessonSet({
 
   const prepare = async () => {
     if (preparing || suggested.length === 0) return;
+    if (!guard("generate")) return;
     const types = suggested;
     posthog.capture("lesson_prepare_set_clicked", { surface, types, slot_type: slotType });
     setPreparing(true);

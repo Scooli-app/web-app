@@ -15,8 +15,9 @@ import {
 import { SourcesList } from "@/components/ui/sources-list";
 import type { RagSource } from "@/shared/types/document";
 import { useKeyboardInset } from "@/hooks/use-keyboard-inset";
+import { useAccountAccess } from "@/hooks/useAccountAccess";
 import { cn } from "@/shared/utils/utils";
-import { FileText, Loader2, MessageCircle, Send, Sparkles, X } from "lucide-react";
+import { FileText, Loader2, Lock, MessageCircle, Send, Sparkles, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import posthog from "posthog-js";
 import { useEffect, useRef, useState } from "react";
@@ -171,6 +172,7 @@ function ChatContent({
   onSuggestionClick,
   nudge,
   onNudgeDismiss,
+  accountLocked = false,
 }: {
   chatHistory: ChatMessage[];
   isStreaming: boolean;
@@ -192,8 +194,11 @@ function ChatContent({
   onSuggestionClick?: (chip: SuggestionChip) => void;
   nudge?: boolean;
   onNudgeDismiss?: () => void;
+  /** Read-only account: the send button shows a lock and opens the paywall. */
+  accountLocked?: boolean;
 }) {
   const t = useTranslations("editor.aiChatPanel");
+  const tLock = useTranslations("billing.lock");
   const isDesktop = variant === "desktop";
   const isInputLocked = isStreaming || disabled;
   const [activeTab, setActiveTab] = useState<"assistant" | "sources">(
@@ -314,7 +319,7 @@ function ChatContent({
             <form
               onSubmit={handleSubmit}
               className={cn(
-                "mt-auto flex gap-2 rounded-2xl border border-border/50 bg-background/50 p-1.5 transition-colors focus-within:border-primary/50",
+                "mt-auto flex gap-2 rounded-2xl border border-input bg-card p-1.5 transition-colors focus-within:border-primary/50",
                 isDesktop
                   ? "mb-6"
                   : "mb-3 pb-[max(env(safe-area-inset-bottom),0.5rem)]",
@@ -325,7 +330,7 @@ function ChatContent({
                 onChange={(e) => setChatMessage(e.target.value)}
                 placeholder={placeholder}
                 // Phone: 44 px tall, 16 px text so iOS doesn't zoom in on focus.
-                className={cn("flex-1 border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 px-3", isDesktop ? "h-10 text-sm" : "h-11 text-base")}
+                className={cn("flex-1 border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 px-3", isDesktop ? "h-10 text-sm" : "h-11 text-base")}
                 disabled={isInputLocked}
               />
               <Button
@@ -336,6 +341,11 @@ function ChatContent({
               >
                 {isStreaming ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
+                ) : accountLocked ? (
+                  <>
+                    <Lock className="h-4 w-4" aria-hidden />
+                    <span className="sr-only">{tLock("lockedHint")}</span>
+                  </>
                 ) : (
                   <Send className="h-4 w-4" />
                 )}
@@ -385,9 +395,14 @@ export default function AIChatPanel({
   onMobileOpenChange,
 }: AIChatPanelProps) {
   const t = useTranslations("editor.aiChatPanel");
+  const tLock = useTranslations("billing.lock");
+  // Read-only account (ENG-321): the chat stays visible; sending opens the paywall instead.
+  const { isLocked: accountLocked, guard } = useAccountAccess();
   const resolvedPlaceholder = disabled
     ? t("generatingPlaceholder")
-    : (placeholder ?? t("defaultPlaceholder"));
+    : accountLocked
+      ? tLock("chatPlaceholder")
+      : (placeholder ?? t("defaultPlaceholder"));
   const resolvedTitle = title ?? t("defaultTitle");
   const [chatMessage, setChatMessage] = useState("");
   const [lockedMessage, setLockedMessage] = useState<string | null>(null);
@@ -421,6 +436,7 @@ export default function AIChatPanel({
     if (disabled || isStreaming || lockedMessage !== null || !chatMessage.trim()) {
       return;
     }
+    if (!guard("generate")) return;
 
     setShowSuggestions(false);
     typedInFlightRef.current = true;
@@ -451,6 +467,7 @@ export default function AIChatPanel({
 
   const handleSuggestionClick = async (chip: SuggestionChip) => {
     if (disabled || isStreaming || lockedMessage !== null) return;
+    if (!guard("generate")) return;
     setShowSuggestions(false);
     typedInFlightRef.current = false;
     typedFailedRef.current = false;
@@ -477,6 +494,12 @@ export default function AIChatPanel({
       setLockedMessage(null);
     }
   };
+
+  const guardedImageRegen = onImageRegen
+    ? () => {
+        if (guard("generate")) onImageRegen();
+      }
+    : undefined;
 
   // An error shown while a typed request is in flight is that request failing (declared before the effect below,
   // so it runs first when both change in one render).
@@ -525,7 +548,8 @@ export default function AIChatPanel({
           variant="desktop"
           sources={sources}
           showGenerationHint={showGenerationHint}
-          onImageRegen={onImageRegen}
+          onImageRegen={guardedImageRegen}
+          accountLocked={accountLocked}
           onDismissImageRegen={onDismissImageRegen}
           showSuggestions={showSuggestions}
           documentType={suggestionsKey ?? documentType}
@@ -595,7 +619,8 @@ export default function AIChatPanel({
                 variant="mobile"
                 sources={sources}
                 showGenerationHint={showGenerationHint}
-                onImageRegen={onImageRegen}
+                onImageRegen={guardedImageRegen}
+                accountLocked={accountLocked}
                 onDismissImageRegen={onDismissImageRegen}
                 showSuggestions={showSuggestions}
                 documentType={suggestionsKey ?? documentType}

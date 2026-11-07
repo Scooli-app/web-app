@@ -6,6 +6,7 @@ import {
   visibleDocuments,
   type CompanionType,
 } from "@/components/dashboard/weekWindow";
+import { useAccountAccess } from "@/hooks/useAccountAccess";
 import { ApiRequestError, UpgradeLimitError } from "@/services/api/client";
 import { generateLesson, generateLessonDocument } from "@/services/api/timetable.service";
 import { Routes } from "@/shared/types";
@@ -18,7 +19,7 @@ import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { openUpgradeModalForReason, setUpgradeModalOpen } from "@/store/ui/uiSlice";
 import type { AppDispatch } from "@/store/store";
 import { useAuth } from "@clerk/nextjs";
-import { Check, Loader2, Plus, Target } from "lucide-react";
+import { Check, Loader2, Lock, Plus, Target } from "lucide-react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import posthog from "posthog-js";
@@ -156,6 +157,7 @@ export function LessonDocumentChips({
   const tVersions = useTranslations("documentVersions");
   const dispatch = useAppDispatch();
   const { getToken } = useAuth();
+  const { isLocked, guard } = useAccountAccess();
   const worksheet = useAppSelector(selectIsWorksheetCreationEnabled);
   const presentation = useAppSelector(selectIsPresentationCreationEnabled);
   // Types clicked here whose document the server hasn't reported yet: keeps the chip busy.
@@ -175,6 +177,7 @@ export function LessonDocumentChips({
 
   const handleAdd = async (type: CompanionType) => {
     if (starting.has(type)) return;
+    if (!guard("generate")) return;
     markStarting(type, true);
     posthog.capture("your_week_companion_generate_clicked", { document_type: type });
     try {
@@ -264,7 +267,13 @@ export function LessonDocumentChips({
               size,
             )}
           >
-            {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : <Plus className="h-3.5 w-3.5" aria-hidden />}
+            {busy ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+            ) : isLocked ? (
+              <Lock className="h-3.5 w-3.5" aria-hidden />
+            ) : (
+              <Plus className="h-3.5 w-3.5" aria-hidden />
+            )}
             {busy ? t("documentGenerating") : isPlan ? t("preparePlan") : t(`types.${type}`)}
           </button>
         );

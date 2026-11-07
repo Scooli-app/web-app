@@ -1,5 +1,6 @@
 "use client";
 
+import { useAccountAccess } from "@/hooks/useAccountAccess";
 import CalendarLoading from "./loading";
 import { toast } from "sonner";
 import { hasTopic, isListableSlot, isVisibleSlot } from "@/shared/utils/lessonTopic";
@@ -249,6 +250,7 @@ function CalendarPageInner() {
     (state: RootState) => state.timetable,
   );
   const dispatch = useAppDispatch();
+  const { guard } = useAccountAccess();
   const newClassGate = useNewClassGate();
   const { getToken } = useAuth();
 
@@ -680,6 +682,7 @@ function CalendarPageInner() {
 
   const handleGenerateLesson = useCallback(
     async (slot: SlotWithTimetable, message?: string) => {
+      if (!guard("generate")) return;
       const previousStatus = slot.status;
       startSlotGenerating(slot.id);
       patchSlotStatus(slot.timetable.id, slot.id, "generating");
@@ -710,11 +713,12 @@ function CalendarPageInner() {
         stopSlotGenerating(slot.id);
       }
     },
-    [dispatch, getToken, refreshTimetable, startSlotGenerating, stopSlotGenerating],
+    [dispatch, getToken, refreshTimetable, startSlotGenerating, stopSlotGenerating, guard],
   );
 
   const handleRegenerateLesson = useCallback(
     async (slot: SlotWithTimetable, message?: string) => {
+      if (!guard("generate")) return;
       const previousStatus = slot.status;
       startSlotGenerating(slot.id);
       patchSlotStatus(slot.timetable.id, slot.id, "generating");
@@ -745,7 +749,7 @@ function CalendarPageInner() {
         stopSlotGenerating(slot.id);
       }
     },
-    [dispatch, getToken, refreshTimetable, startSlotGenerating, stopSlotGenerating],
+    [dispatch, getToken, refreshTimetable, startSlotGenerating, stopSlotGenerating, guard],
   );
 
   // ── Generate whole week ───────────────────────────────────────────────────
@@ -963,10 +967,11 @@ function CalendarPageInner() {
           </div>
 
           {/* ── Desktop header: full layout ── */}
-          <div className="hidden md:flex items-center gap-2">
+          {/* Wraps on tablets (768–1200 px with the sidebar open): one row cut off "Turmas"/"Nova turma" and crushed the toggle. */}
+          <div className="hidden md:flex flex-wrap items-center gap-2">
             <h1 className="mr-2 text-lg font-semibold">{t("shared.pageTitle")}</h1>
 
-            <div className="flex items-center rounded-lg border border-border overflow-hidden">
+            <div className="flex shrink-0 items-center rounded-lg border border-border overflow-hidden">
               <span className="px-3 py-1 text-xs font-medium bg-primary text-primary-foreground">
                 {t("shared.viewWeek")}
               </span>
@@ -997,37 +1002,39 @@ function CalendarPageInner() {
 
             <div className="flex-1" />
 
-            <Button variant="outline" size="sm" asChild className="h-8">
-              <Link href={Routes.CALENDAR_SEQUENCES}>
-                <CalendarDays className="mr-1 h-3.5 w-3.5" />
-                {t("shared.classesLink")}
-              </Link>
-            </Button>
-
-            <Button variant="outline" size="sm" asChild className="h-8">
-              <Link href={Routes.CALENDAR_NEW} onClick={newClassGate.onClick}>
-                <Plus className="mr-1 h-3.5 w-3.5" />
-                {t("shared.newClassLink")}
-              </Link>
-            </Button>
-
-            {pendingThisWeek > 0 && (
-              <Button
-                size="sm"
-                className="h-8"
-                onClick={() => { setPreviewGenerating(false); void handleGenerateWeek(); }}
-                onMouseEnter={() => setPreviewGenerating(true)}
-                onMouseLeave={() => setPreviewGenerating(false)}
-                disabled={generatingWeek}
-              >
-                {generatingWeek ? (
-                  <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Sparkles className="mr-1 h-3.5 w-3.5" />
-                )}
-                {t("shared.generateWeek", { count: pendingThisWeek })}
+            <div className="flex flex-wrap items-center gap-2">
+              <Button variant="outline" size="sm" asChild className="h-8">
+                <Link href={Routes.CALENDAR_SEQUENCES}>
+                  <CalendarDays className="mr-1 h-3.5 w-3.5" />
+                  {t("shared.classesLink")}
+                </Link>
               </Button>
-            )}
+
+              <Button variant="outline" size="sm" asChild className="h-8">
+                <Link href={Routes.CALENDAR_NEW} onClick={newClassGate.onClick}>
+                  <Plus className="mr-1 h-3.5 w-3.5" />
+                  {t("shared.newClassLink")}
+                </Link>
+              </Button>
+
+              {pendingThisWeek > 0 && (
+                <Button
+                  size="sm"
+                  className="h-8"
+                  onClick={() => { setPreviewGenerating(false); void handleGenerateWeek(); }}
+                  onMouseEnter={() => setPreviewGenerating(true)}
+                  onMouseLeave={() => setPreviewGenerating(false)}
+                  disabled={generatingWeek}
+                >
+                  {generatingWeek ? (
+                    <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Sparkles className="mr-1 h-3.5 w-3.5" />
+                  )}
+                  {t("shared.generateWeek", { count: pendingThisWeek })}
+                </Button>
+              )}
+            </div>
           </div>
 
           {/* Filter chips — shared ── */}
