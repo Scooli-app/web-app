@@ -127,7 +127,6 @@ export function TrialPromoCodeField() {
             setValue(e.target.value);
             if (failed) setStatus("idle");
           }}
-          placeholder={t("codePlaceholder")}
           autoComplete="off"
           autoCapitalize="characters"
           spellCheck={false}

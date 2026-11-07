@@ -2488,6 +2488,8 @@
     "banner": {
       "regionLabel": "Estado da conta",
       "trialDiscreet": "{days, plural, one {Falta # dia do teu mês Pro} other {Faltam # dias do teu mês Pro}}",
+      "trialChip": "{days, plural, one {# dia} other {# dias}}",
+      "trialChipActive": "Período experimental",
       "trialActive": "Estás no teu mês Pro",
       "trialEndingTitle": "{days, plural, one {O teu mês Pro termina em # dia} other {O teu mês Pro termina em # dias}}",
       "trialEndingDescription": "Depois, a tua conta passa a modo de leitura. Atualiza para Pro para continuares a gerar, exportar e partilhar.",
@@ -2524,7 +2526,6 @@
       "durationDays": "{count, plural, one {# dia} other {# dias}}",
       "codeToggle": "Tens um código de oferta?",
       "codeLabel": "Código de oferta",
-      "codePlaceholder": "Ex.: LIS2026",
       "codeSubmit": "Aplicar",
       "codeChecking": "A verificar…",
       "codeInvalid": "Este código não é válido ou já expirou.",
