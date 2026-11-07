@@ -1,9 +1,8 @@
 "use client";
 
-import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/shared/utils/utils";
-import { ChevronDown } from "lucide-react";
+import { Check, ChevronDown } from "lucide-react";
 
 export interface MultiSelectOption {
   id: string;
@@ -64,10 +63,28 @@ export function MultiSelectPopover({
             const isSelected = values.includes(option.id);
             return (
               <li key={option.id}>
-                <label className="flex min-h-10 w-full cursor-pointer items-center gap-3 rounded-md px-3 py-1.5 text-left text-sm transition-colors hover:bg-accent has-[:focus-visible]:bg-accent">
-                  <Checkbox checked={isSelected} onCheckedChange={() => onToggle(option.id)} />
+                {/* One button per row, so a click registers once (a label around a checkbox fires two). */}
+                <button
+                  type="button"
+                  role="checkbox"
+                  aria-checked={isSelected}
+                  onClick={() => onToggle(option.id)}
+                  className={cn(
+                    "flex min-h-10 w-full cursor-pointer items-center gap-3 rounded-md px-3 py-1.5 text-left text-sm outline-none transition-colors hover:bg-accent focus-visible:bg-accent",
+                    isSelected && "bg-primary/5 font-medium"
+                  )}
+                >
+                  <span
+                    aria-hidden
+                    className={cn(
+                      "flex h-4 w-4 shrink-0 items-center justify-center rounded border shadow-xs transition-colors",
+                      isSelected ? "border-primary bg-primary text-primary-foreground" : "border-input bg-card"
+                    )}
+                  >
+                    {isSelected && <Check className="h-3 w-3" />}
+                  </span>
                   <span className="min-w-0">{option.label}</span>
-                </label>
+                </button>
               </li>
             );
           })}
