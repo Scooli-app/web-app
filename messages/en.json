@@ -2521,7 +2521,15 @@
       "appliedToast": "Offer applied: your Pro now runs until {date}",
       "appliedToastNoDate": "Offer applied: you got extra days of Pro",
       "durationMonths": "{count, plural, one {# month} other {# months}}",
-      "durationDays": "{count, plural, one {# day} other {# days}}"
+      "durationDays": "{count, plural, one {# day} other {# days}}",
+      "codeToggle": "Have an offer code?",
+      "codeLabel": "Offer code",
+      "codePlaceholder": "e.g. LIS2026",
+      "codeSubmit": "Apply",
+      "codeChecking": "Checking…",
+      "codeInvalid": "This code isn't valid or has expired.",
+      "codeError": "We couldn't check the code. Please try again.",
+      "codeSaved": "Code {code} saved: the offer is added to your account as soon as you're in."
     },
     "trialActivation": {
       "activatingTitle": "Activating your Pro month…",

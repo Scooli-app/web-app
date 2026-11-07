@@ -2521,7 +2521,15 @@
       "appliedToast": "Oferta aplicada: o teu Pro vai até {date}",
       "appliedToastNoDate": "Oferta aplicada: ganhaste dias extra de Pro",
       "durationMonths": "{count, plural, one {# mês} other {# meses}}",
-      "durationDays": "{count, plural, one {# dia} other {# dias}}"
+      "durationDays": "{count, plural, one {# dia} other {# dias}}",
+      "codeToggle": "Tens um código de oferta?",
+      "codeLabel": "Código de oferta",
+      "codePlaceholder": "Ex.: LIS2026",
+      "codeSubmit": "Aplicar",
+      "codeChecking": "A verificar…",
+      "codeInvalid": "Este código não é válido ou já expirou.",
+      "codeError": "Não foi possível verificar o código. Tenta outra vez.",
+      "codeSaved": "Código {code} guardado: a oferta é adicionada à tua conta assim que entrares."
     },
     "trialActivation": {
       "activatingTitle": "A ativar o teu mês Pro…",

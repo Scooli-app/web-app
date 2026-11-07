@@ -2,6 +2,7 @@
 
 import { trialDuration } from "@/lib/trialPromo/formatTrialDuration";
 import { promoCodeFromSearch, readStoredPromo } from "@/lib/trialPromo/promoStorage";
+import { TRIAL_PROMO_ENTERED_EVENT } from "@/components/billing/TrialPromoCodeField";
 import { trialPromoService } from "@/services/api/trial-promo.service";
 import type { TrialPromoCheck } from "@/shared/types/trial-promo";
 import { Gift } from "lucide-react";
@@ -40,14 +41,25 @@ export function TrialPromoSignUpBanner() {
 
   useEffect(() => {
     if (onCallback) return;
-    const code = promoCodeFromSearch(window.location.search) ?? readStoredPromo()?.code ?? null;
-    if (!code) return;
     let cancelled = false;
-    void checkPromo(code).then((result) => {
-      if (!cancelled && result?.valid === true) setOffer(result);
-    });
+    // A code typed in TrialPromoCodeField replaces whatever the link said.
+    const onEntered = (event: Event) => {
+      const check = (event as CustomEvent<TrialPromoCheck>).detail;
+      if (check?.valid === true) {
+        cancelled = true;
+        setOffer(check);
+      }
+    };
+    window.addEventListener(TRIAL_PROMO_ENTERED_EVENT, onEntered);
+    const code = promoCodeFromSearch(window.location.search) ?? readStoredPromo()?.code ?? null;
+    if (code) {
+      void checkPromo(code).then((result) => {
+        if (!cancelled && result?.valid === true) setOffer(result);
+      });
+    }
     return () => {
       cancelled = true;
+      window.removeEventListener(TRIAL_PROMO_ENTERED_EVENT, onEntered);
     };
   }, [onCallback]);
 
