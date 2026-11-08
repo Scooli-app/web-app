@@ -2608,7 +2608,7 @@
       "proTitle": "Upload your own sources with Pro",
       "proDescription": "With Pro, you upload a textbook or your school’s materials (PDF or DOCX), and the lesson plans and worksheets you create follow that content.",
       "proAction": "See Pro plans",
-      "failedHint": "We couldn’t read this file. If it’s a scan, use a version with selectable text; otherwise save it again as PDF or DOCX and upload it again."
+      "failedHint": "We couldn’t read this file. Save it again as PDF or DOCX and upload it again; for a scan, use a sharper copy."
     },
     "status": {
       "uploaded": "Processing",
