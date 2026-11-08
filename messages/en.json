@@ -1843,6 +1843,9 @@
     },
     "diffExtension": {
       "contentRemoved": "🗑 Content removed",
+      "showRemoved": "Show",
+      "hideRemoved": "Hide",
+      "paragraphCount": "{count, plural, one {# paragraph} other {# paragraphs}}",
       "acceptChange": "Accept change",
       "rejectChange": "Reject change"
     },
