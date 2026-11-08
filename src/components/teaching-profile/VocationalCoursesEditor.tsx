@@ -30,7 +30,8 @@ export function VocationalCoursesEditor({
   onChange,
 }: VocationalCoursesEditorProps) {
   const t = useTranslations("settings.teachingProfileCard");
-  const { catalog, catalogError, catalogLoaded, retryCatalog, term, setTerm, results } = useCourseSearch(t("catalogError"));
+  const { catalog, catalogError, catalogLoaded, retryCatalog, term, setTerm, results, partialMatch } =
+    useCourseSearch(t("catalogError"));
   const [unitsByCourse, setUnitsByCourse] = useState<Record<string, VocationalUnit[] | "error">>({});
   const requestedRef = useRef(new Set<string>());
 
@@ -113,6 +114,7 @@ export function VocationalCoursesEditor({
           catalogLoaded={catalogLoaded}
           onRetryCatalog={retryCatalog}
           results={results}
+          partialMatch={partialMatch}
           addedCodes={new Set(courses)}
           onSelect={addCourse}
         />
