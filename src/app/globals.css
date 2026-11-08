@@ -565,7 +565,11 @@
   font-style: italic;
   color: var(--muted-foreground);
   opacity: 0.8;
-  text-decoration: line-through;
+}
+
+.diff-delete-header .diff-actions {
+  flex-shrink: 0;
+  margin-left: 0;
 }
 
 .diff-delete-toggle {

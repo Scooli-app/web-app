@@ -1843,6 +1843,7 @@
       "contentRemoved": "🗑 Conteúdo removido",
       "showRemoved": "Mostrar",
       "hideRemoved": "Ocultar",
+      "paragraphCount": "{count, plural, one {# parágrafo} other {# parágrafos}}",
       "acceptChange": "Aceitar alteração",
       "rejectChange": "Rejeitar alteração"
     },

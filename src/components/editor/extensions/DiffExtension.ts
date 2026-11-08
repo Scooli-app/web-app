@@ -103,6 +103,9 @@ function buildDecorations(
       );
     }
 
+    // A large pure deletion carries its ✓ ✗ in its own one-line header.
+    if (change.type === "delete" && isLargeDeletion(change)) continue;
+
     // Action buttons widget — positioned at the end of the change
     const actionPos = Math.max(0, Math.min(change.toB, docSize));
     decorations.push(
@@ -126,12 +129,7 @@ function createDeleteWidget(
   change: DiffChange,
 ): (view: import("@tiptap/pm/view").EditorView) => HTMLElement {
   return (view) => {
-    const text = change.deletedSlice ? sliceToText(change.deletedSlice) : "";
-    const isLargeDeletion =
-      text.length > 100 ||
-      (change.deletedSlice && change.deletedSlice.content.childCount > 1);
-
-    if (isLargeDeletion && change.deletedSlice) {
+    if (isLargeDeletion(change) && change.deletedSlice) {
       // Block-level deletion indicator for large chunks (chapters, sections)
       const wrapper = document.createElement("div");
       wrapper.className = "diff-delete-block";
@@ -147,7 +145,7 @@ function createDeleteWidget(
 
       const excerpt = document.createElement("span");
       excerpt.className = "diff-delete-excerpt";
-      excerpt.textContent = text;
+      excerpt.textContent = describeDeletion(change.deletedSlice);
 
       const toggle = document.createElement("button");
       toggle.className = "diff-delete-toggle";
@@ -156,6 +154,7 @@ function createDeleteWidget(
       toggle.textContent = translate("editor.diffExtension.showRemoved");
 
       header.append(label, excerpt, toggle);
+      if (change.type === "delete") header.append(createActionWidget(change.id)(view));
 
       const preview = document.createElement("div");
       preview.className = "diff-delete-content";
@@ -249,6 +248,30 @@ function createActionWidget(
 
     return wrapper;
   };
+}
+
+/** Longer than 100 characters or more than one block: shown as a collapsed one-line block. */
+function isLargeDeletion(change: DiffChange): boolean {
+  if (!change.deletedSlice) return false;
+  return change.deletedSlice.content.childCount > 1 || sliceToText(change.deletedSlice).length > 100;
+}
+
+/**
+ * One line saying what a large deletion takes out, so its size is clear while collapsed:
+ * the removed section titles and paragraph count ("Leitura, Análise · 4 parágrafos"),
+ * or the paragraph count and the start of the text when no title is removed.
+ */
+function describeDeletion(slice: import("@tiptap/pm/model").Slice): string {
+  const headings: string[] = [];
+  let paragraphs = 0;
+  slice.content.descendants((node) => {
+    if (node.type.name === "heading") headings.push(node.textContent);
+    else if (node.type.name === "paragraph" && node.textContent.trim()) paragraphs++;
+    return node.type.name !== "heading" && node.type.name !== "paragraph";
+  });
+  const count = translate("editor.diffExtension.paragraphCount", { count: paragraphs });
+  if (headings.length === 0) return paragraphs > 1 ? `${count}: ${sliceToText(slice)}` : sliceToText(slice);
+  return paragraphs > 0 ? `${headings.join(", ")} · ${count}` : headings.join(", ");
 }
 
 /**
