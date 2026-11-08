@@ -25,12 +25,20 @@ const STOPWORDS = new Set(["das", "dos", "para", "com"]);
 
 const words = (value: string): string[] => normalizeSearch(value).split(/[^\p{L}\p{N}]+/u).filter(Boolean);
 
-const matchesWord = (titleWords: string[], queryWord: string) =>
-  titleWords.some((word) => word.startsWith(queryWord));
+/**
+ * A long query word drops its last letters (keeping at least 5), so Portuguese word forms
+ * match each other: "turismo" → "turis" finds "Turística", "informatica" finds "Informáticos".
+ */
+const stem = (word: string) => (word.length >= 6 ? word.slice(0, Math.max(5, word.length - 3)) : word);
+
+const matchesWord = (titleWords: string[], queryWord: string) => {
+  const prefix = stem(queryWord);
+  return titleWords.some((word) => word.startsWith(prefix));
+};
 
 /**
- * Ranks courses for a search term. Each query word must start a word of the title, so
- * "tecnico de informatica" finds "Técnico/a de Informática - Sistemas" in any word order.
+ * Ranks courses for a search term. Each query word (or its stem) must start a word of the
+ * title, so "tecnico de informatica" finds "Técnico/a de Informática - Sistemas" in any word order.
  * Title matches come before code matches, and code matches before CNAEF area matches. Within a
  * rank the shorter title comes first, because the term covers more of it.
  * When no course matches every word, the courses that match the most words come back as a
@@ -53,7 +61,8 @@ export function rankCourses(
     else if (queryWords.every((word) => matchesWord(titleWords, word))) rank = 1;
     else if (title.includes(key)) rank = 2;
     else if (normalizeSearch(qualification.code).includes(key)) rank = 3;
-    else if (queryWords.every((word) => matchesWord(words(qualification.cnaefLabel ?? ""), word))) rank = 4;
+    // Area labels match without the stem: "programacao" must not hit "Programas não classificados".
+    else if (queryWords.every((word) => words(qualification.cnaefLabel ?? "").some((w) => w.startsWith(word)))) rank = 4;
     if (rank !== null) scored.push({ qualification, rank });
   }
   if (scored.length > 0) {
@@ -73,7 +82,7 @@ export function rankCourses(
       return { qualification, hits: meaningful.filter((word) => matchesWord(titleWords, word)).length };
     })
     .filter(({ hits }) => hits > 0)
-    .sort((a, b) => b.hits - a.hits)
+    .sort((a, b) => b.hits - a.hits || a.qualification.title.length - b.qualification.title.length)
     .slice(0, MAX_RESULTS)
     .map(({ qualification }) => qualification);
   return { results: partial, partialMatch: partial.length > 0 };

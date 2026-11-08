@@ -18,13 +18,19 @@ const CATALOG = [
   course("481039", "Técnico/a de Informática - Sistemas", "Ciências informáticas"),
   course("811003", "Técnico/a de Turismo", "Turismo e lazer"),
   course("341001", "Técnico/a de Comércio", "Comércio"),
+  course("811004", "Técnico/a de Animação Turística", "Turismo e lazer"),
+  course("811005", "Técnico/a de Manutenção de Equipamentos Turísticos", "Turismo e lazer"),
+  course("621001", "Técnico/a de Viticultura, Enologia e Enoturismo", "Produção agrícola e animal"),
 ];
 
 const titles = (term: string) => rankCourses(CATALOG, term).results.map((result) => result.title);
 
 describe("rankCourses", () => {
   it("finds a multi-word name across the /a gender form", () => {
-    expect(titles("tecnico de informatica")).toEqual(["Técnico/a de Informática - Sistemas"]);
+    expect(titles("tecnico de informatica")).toEqual([
+      "Técnico/a de Informática - Sistemas",
+      "Técnico/a de Gestão e Programação de Sistemas Informáticos",
+    ]);
   });
 
   it("matches the words in any order", () => {
@@ -39,6 +45,16 @@ describe("rankCourses", () => {
     expect(titles("seguranca")).toEqual(["Bombeiro/a"]);
   });
 
+  it("matches other forms of a word, before a word that only contains it", () => {
+    expect(titles("turismo")).toEqual([
+      "Técnico/a de Turismo",
+      "Técnico/a de Animação Turística",
+      "Técnico/a de Manutenção de Equipamentos Turísticos",
+      "Técnico/a de Viticultura, Enologia e Enoturismo",
+    ]);
+    expect(titles("informatica")).toContain("Técnico/a de Gestão e Programação de Sistemas Informáticos");
+  });
+
   it("puts a title that starts with the term first", () => {
     expect(titles("tecnico de t")[0]).toBe("Técnico/a de Turismo");
   });
@@ -50,7 +66,11 @@ describe("rankCourses", () => {
   it("falls back to the closest courses when no course has every word", () => {
     const { results, partialMatch } = rankCourses(CATALOG, "curso profissional de turismo e hotelaria");
     expect(partialMatch).toBe(true);
-    expect(results.map((result) => result.title)).toEqual(["Técnico/a de Turismo"]);
+    expect(results.map((result) => result.title).slice(0, 3)).toEqual([
+      "Técnico/a de Turismo",
+      "Técnico/a de Animação Turística",
+      "Técnico/a de Manutenção de Equipamentos Turísticos",
+    ]);
   });
 
   it("ranks the fallback by the number of words that match", () => {
