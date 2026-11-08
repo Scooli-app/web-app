@@ -2608,7 +2608,7 @@
       "proTitle": "Carrega as tuas fontes com o Pro",
       "proDescription": "Com o Pro, carregas o manual ou os materiais da tua escola (PDF ou DOCX), e os planos e fichas que crias passam a seguir essa matéria.",
       "proAction": "Ver planos Pro",
-      "failedHint": "Não conseguimos ler este ficheiro. Se for digitalizado, usa uma versão com texto; senão, guarda-o de novo como PDF ou DOCX e volta a carregar."
+      "failedHint": "Não conseguimos ler este ficheiro. Guarda-o de novo como PDF ou DOCX e volta a carregar; se for digitalizado, usa uma cópia mais nítida."
     },
     "status": {
       "uploaded": "A processar",
