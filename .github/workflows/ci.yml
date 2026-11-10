@@ -18,6 +18,9 @@
 # Optional variable:
 #   CHALKBOARD_REF                     chalkboard branch/tag/sha to test against (default: main)
 #
+# A pull request whose branch also exists on chalkboard (a paired change) is tested against that
+# branch instead, so a web-app change and the backend change it needs run together.
+#
 # Pull requests from forks get no secrets, so their E2E job fails: the web-app
 # is public, but its e2e tests need the private backend and Clerk keys.
 # =============================================================================
@@ -114,11 +117,27 @@ jobs:
       - uses: actions/checkout@v4
 
       # ── chalkboard API, built with fake AI ─────────────────────────────────
+      - name: Pick the chalkboard ref
+        id: chalkboard-ref
+        env:
+          CHALKBOARD_READ_TOKEN: ${{ secrets.CHALKBOARD_READ_TOKEN }}
+          HEAD_REF: ${{ github.head_ref }}
+          DEFAULT_REF: ${{ vars.CHALKBOARD_REF || 'main' }}
+        run: |
+          ref="$DEFAULT_REF"
+          if [ -n "$HEAD_REF" ] && git ls-remote --exit-code --heads \
+              "https://x-access-token:${CHALKBOARD_READ_TOKEN}@github.com/Scooli-app/chalkboard.git" \
+              "refs/heads/$HEAD_REF" > /dev/null 2>&1; then
+            ref="$HEAD_REF"
+          fi
+          echo "Testing against chalkboard ref: $ref"
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+
       - name: Check out chalkboard
         uses: actions/checkout@v4
         with:
           repository: Scooli-app/chalkboard
-          ref: ${{ vars.CHALKBOARD_REF || 'main' }}
+          ref: ${{ steps.chalkboard-ref.outputs.ref }}
           token: ${{ secrets.CHALKBOARD_READ_TOKEN }}
           path: chalkboard
 
