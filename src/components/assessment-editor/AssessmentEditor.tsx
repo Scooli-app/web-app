@@ -34,6 +34,7 @@ import posthog from "posthog-js";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { AssessmentWorkspace } from "./AssessmentWorkspace";
+import { AssessmentStreamingPreview } from "./AssessmentStreamingPreview";
 import { ExportDialog } from "./ExportDialog";
 import { adoptGrids, adoptStudentOrder, exerciseNumbers, missingAnswer, parseAssessment } from "./model";
 import { createSerialRunner } from "./serialRunner";
@@ -471,6 +472,16 @@ export default function AssessmentEditor({ documentId, defaultTitle, chatTitle, 
     <>
       <AssessmentWorkspace
         doc={inProgress ? null : doc}
+        generating={
+          inProgress && progress.partial ? (
+            <AssessmentStreamingPreview
+              partial={progress.partial}
+              phase={progress.phase}
+              imageProgress={progress.imageProgress}
+              error={progress.error}
+            />
+          ) : undefined
+        }
         onChange={handleChange}
         readOnly={isChatting || flushing}
         lookupAe={lookupAe}

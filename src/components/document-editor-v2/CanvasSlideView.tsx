@@ -30,6 +30,8 @@ import { listItemPrefix } from "@/shared/utils/list-markers";
 
 interface Props {
   slide: CanvasSlide;
+  /** Draw a dashed box where an image is still being generated (the generation preview), instead of leaving it out. */
+  pendingImages?: boolean;
 }
 
 const SHAPE_FILL = "rgba(103, 83, 255, 0.22)";
@@ -50,7 +52,7 @@ function gradientProps(g: CanvasGradient, W: number, H: number) {
   };
 }
 
-export function CanvasSlideView({ slide }: Props) {
+export function CanvasSlideView({ slide, pendingImages = false }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 1280, h: 720 });
 
@@ -272,6 +274,26 @@ export function CanvasSlideView({ slide }: Props) {
             if (el.type === "image_placeholder") {
               const img = el as CanvasImageElement;
               const cached = img.url ? imgCacheRef.current[img.url] : undefined;
+              if (!img.url && pendingImages) {
+                return (
+                  <Rect
+                    key={el.id}
+                    x={el.x * W + el.w * W / 2}
+                    y={el.y * H + el.h * H / 2}
+                    offsetX={el.w * W / 2}
+                    offsetY={el.h * H / 2}
+                    rotation={el.rotation ?? 0}
+                    width={el.w * W}
+                    height={el.h * H}
+                    fill="rgba(0,0,0,0.05)"
+                    stroke="rgba(0,0,0,0.25)"
+                    strokeWidth={Math.max(1, W * 0.0015)}
+                    dash={[W * 0.008, W * 0.006]}
+                    cornerRadius={4}
+                    listening={false}
+                  />
+                );
+              }
               // Presenting to the class: an image that never generated or failed to load is left out, not drawn as a box.
               if (!img.url || cached === "failed") return null;
               if (cached && cached !== "loading") {

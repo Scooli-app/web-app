@@ -16,6 +16,7 @@ const STEP_INDEX: Record<GenerationPhase, number> = {
   preparing: 0,
   generating: 1,
   reviewing: 2,
+  images: 2,
   done: 3,
 };
 
@@ -30,7 +31,7 @@ export function GenerationProgress({
 }) {
   const t = useTranslations("blocks.generationProgress");
   const STEPS: Array<{
-    key: Exclude<GenerationPhase, "done">;
+    key: Exclude<GenerationPhase, "done" | "images">;
     label: string;
     caption: string;
   }> = [

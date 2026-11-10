@@ -63,12 +63,14 @@ export interface AssessmentWorkspaceProps {
   onConfirmCheck?: (exerciseId: string) => void;
   /** The document is in English (its printed labels follow it). */
   english?: boolean;
+  /** Shown instead of the skeleton pages while the document is generated (the streamed preview). */
+  generating?: ReactNode;
 }
 
 const AE_RETRY_MS = 10000;
 
 /** Presentational editor: everything except loading, saving and chat transport. */
-export function AssessmentWorkspace({ doc, onChange: onChangeProp, readOnly = false, title, actions, chat, onOpenChat, banner, lessonContext, lookupAe, showAe = true, searchAe, requestImage, onEditingChange, answerChecks, onConfirmCheck, english }: AssessmentWorkspaceProps) {
+export function AssessmentWorkspace({ doc, onChange: onChangeProp, readOnly = false, title, actions, chat, onOpenChat, banner, lessonContext, lookupAe, showAe = true, searchAe, requestImage, onEditingChange, answerChecks, onConfirmCheck, english, generating }: AssessmentWorkspaceProps) {
   const t = useTranslations("assessmentEditor");
   const phone = useIsMobile();
   const [tab, setTab] = useState<SheetTab>("answers");
@@ -165,7 +167,7 @@ export function AssessmentWorkspace({ doc, onChange: onChangeProp, readOnly = fa
               {lessonContext}
               {doc && <SheetTabs value={tab} onChange={changeTab} pendingChecks={pendingChecks} />}
               <div className={cn(readOnly && "pointer-events-none select-none opacity-60 transition-opacity")} inert={readOnly || undefined}>
-                {doc ? renderPages(doc) : <GeneratingPages />}
+                {doc ? renderPages(doc) : (generating ?? <GeneratingPages />)}
               </div>
             </div>
             {doc && (
