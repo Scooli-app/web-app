@@ -123,12 +123,20 @@ jobs:
           CHALKBOARD_READ_TOKEN: ${{ secrets.CHALKBOARD_READ_TOKEN }}
           HEAD_REF: ${{ github.head_ref }}
           DEFAULT_REF: ${{ vars.CHALKBOARD_REF || 'main' }}
+        # Asked through the API with the chalkboard token: a git command here would pick up the web-app
+        # checkout's own auth header and never see the other repository.
         run: |
           ref="$DEFAULT_REF"
-          if [ -n "$HEAD_REF" ] && git ls-remote --exit-code --heads \
-              "https://x-access-token:${CHALKBOARD_READ_TOKEN}@github.com/Scooli-app/chalkboard.git" \
-              "refs/heads/$HEAD_REF" > /dev/null 2>&1; then
-            ref="$HEAD_REF"
+          if [ -n "$HEAD_REF" ]; then
+            status=$(curl -sS -o /dev/null -w '%{http_code}' \
+              -H "Authorization: Bearer $CHALKBOARD_READ_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/Scooli-app/chalkboard/git/ref/heads/$HEAD_REF" || true)
+            if [ "$status" = "200" ]; then
+              ref="$HEAD_REF"
+            else
+              echo "No chalkboard branch $HEAD_REF (HTTP $status), using $DEFAULT_REF"
+            fi
           fi
           echo "Testing against chalkboard ref: $ref"
           echo "ref=$ref" >> "$GITHUB_OUTPUT"
