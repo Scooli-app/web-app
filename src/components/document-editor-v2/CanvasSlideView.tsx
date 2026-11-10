@@ -24,12 +24,16 @@ import { renderKatexToPngDataUrl } from "@/components/document-editor-v2/math-re
 import { getFittedTextBoxHeightPx } from "@/components/document-editor-v2/text-box-fit";
 import { measureWrappedTextHeightPx } from "@/components/document-editor-v2/text-measure";
 import { useEffect, useRef, useState } from "react";
-import { Ellipse, Image as KonvaImage, Layer, Line, Rect, Stage, Text } from "react-konva";
+import { Ellipse, Group, Image as KonvaImage, Layer, Line, Rect, Stage, Text } from "react-konva";
 import { SlideText } from "@/components/document-editor-v2/InlineMathText";
 import { listItemPrefix } from "@/shared/utils/list-markers";
 
 interface Props {
   slide: CanvasSlide;
+  /** Draw a dashed box where an image is still being generated (the generation preview), instead of leaving it out. */
+  pendingImages?: boolean;
+  /** Caption inside that box (e.g. "Imagem em geração"). */
+  pendingImageLabel?: string;
 }
 
 const SHAPE_FILL = "rgba(103, 83, 255, 0.22)";
@@ -50,7 +54,7 @@ function gradientProps(g: CanvasGradient, W: number, H: number) {
   };
 }
 
-export function CanvasSlideView({ slide }: Props) {
+export function CanvasSlideView({ slide, pendingImages = false, pendingImageLabel }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 1280, h: 720 });
 
@@ -272,6 +276,41 @@ export function CanvasSlideView({ slide }: Props) {
             if (el.type === "image_placeholder") {
               const img = el as CanvasImageElement;
               const cached = img.url ? imgCacheRef.current[img.url] : undefined;
+              if (!img.url && pendingImages) {
+                // Mid-grey reads on light and dark themes alike.
+                const box = {
+                  x: el.x * W + el.w * W / 2,
+                  y: el.y * H + el.h * H / 2,
+                  offsetX: el.w * W / 2,
+                  offsetY: el.h * H / 2,
+                  rotation: el.rotation ?? 0,
+                  width: el.w * W,
+                  height: el.h * H,
+                  listening: false,
+                };
+                return (
+                  <Group key={el.id} listening={false}>
+                    <Rect
+                      {...box}
+                      fill="rgba(128,128,128,0.14)"
+                      stroke="rgba(128,128,128,0.65)"
+                      strokeWidth={Math.max(1, W * 0.0015)}
+                      dash={[W * 0.008, W * 0.006]}
+                      cornerRadius={4}
+                    />
+                    {pendingImageLabel ? (
+                      <Text
+                        {...box}
+                        text={pendingImageLabel}
+                        align="center"
+                        verticalAlign="middle"
+                        fontSize={Math.round(W * 0.016)}
+                        fill="rgba(128,128,128,0.95)"
+                      />
+                    ) : null}
+                  </Group>
+                );
+              }
               // Presenting to the class: an image that never generated or failed to load is left out, not drawn as a box.
               if (!img.url || cached === "failed") return null;
               if (cached && cached !== "loading") {

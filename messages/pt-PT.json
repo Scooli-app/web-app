@@ -1915,7 +1915,13 @@
       "stepGeneratingCaption": "A IA está a escrever os teus slides.",
       "stepReviewingLabel": "A rever",
       "stepReviewingCaption": "A validar a estrutura e a qualidade do resultado.",
-      "imagesLabel": "Imagens"
+      "imagesLabel": "Imagens",
+      "slidesWritten": "{count, plural, one {# slide pronto} other {# slides prontos}}",
+      "imagesStatus": "A criar as imagens: {completed} de {total}",
+      "finishing": "A finalizar a apresentação",
+      "previewHint": "Podes ir vendo; o editor abre quando terminar.",
+      "writingNextSlide": "A escrever o próximo slide…",
+      "slideNumber": "Slide {number}"
     }
   },
   "community": {
@@ -4021,6 +4027,15 @@
     "dismiss": "Fechar",
     "generatingTitle": "A criar o teu documento…",
     "generatingSubtitle": "Demora cerca de 30 a 60 segundos. Podes esperar aqui.",
+    "streaming": {
+      "writingTitle": "A escrever o teu documento…",
+      "writingSubtitle": "{count, plural, one {# questão pronta} other {# questões prontas}}. Podes ir lendo.",
+      "reviewingTitle": "A verificar as soluções…",
+      "reviewingSubtitle": "Já podes ler o enunciado. As soluções aparecem quando a verificação terminar.",
+      "imagesTitle": "A criar as imagens…",
+      "imagesSubtitle": "{completed} de {total}. O editor abre quando terminar.",
+      "writingNext": "A escrever a próxima questão…"
+    },
     "generationFailedTitle": "Não foi possível criar este documento.",
     "generationFailedSubtitle": "Tenta criá-lo outra vez a partir dos documentos.",
     "loadFailedTitle": "Não foi possível abrir este documento.",

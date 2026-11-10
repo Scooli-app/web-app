@@ -32,6 +32,7 @@ import { SuggestionBar } from "@/components/document-versions/SuggestionBar";
 import AIChatPanel from "@/components/document-editor/AIChatPanel";
 import { AiDisclaimer } from "@/components/ui/ai-disclaimer";
 import { GenerationProgress } from "@/components/blocks/GenerationProgress";
+import { PresentationStreamingPreview } from "@/components/document-editor-v2/PresentationStreamingPreview";
 import { GenerationStalledNotice } from "@/components/ui/generation-stalled-notice";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -2100,6 +2101,17 @@ export function BlockDocumentEditor({ documentId }: Props) {
         <div className="flex h-full min-h-[60dvh] w-full items-center justify-center p-8">
           <GenerationStalledNotice />
         </div>
+      );
+    }
+    // Slides show as soon as they are written; before the first one, the step overlay.
+    if (progress.partial) {
+      return (
+        <PresentationStreamingPreview
+          partial={progress.partial}
+          phase={progress.phase}
+          imageProgress={progress.imageProgress}
+          error={progress.error}
+        />
       );
     }
     return (
