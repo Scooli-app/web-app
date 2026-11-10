@@ -24,6 +24,7 @@ export function PresentationStreamingPreview({
   error: string | null;
 }) {
   const t = useTranslations("blocks.generationProgress");
+  const tBlocks = useTranslations("blocks");
   const canvas = useMemo(() => partialPresentationToCanvas(partial), [partial]);
   const slides = canvas?.slides ?? [];
   const writing = phase === "preparing" || phase === "generating";
@@ -36,7 +37,8 @@ export function PresentationStreamingPreview({
       : t("finishing");
 
   return (
-    <div className="flex h-full min-h-0 w-full flex-col overflow-y-auto bg-muted/30" aria-busy>
+    // Sized like the editor it stands in for: the page locks <html> scrolling, so this box scrolls itself.
+    <div className="flex w-full min-h-0 flex-1 flex-col overflow-y-auto bg-muted/30" aria-busy>
       <div className="sticky top-0 z-10 border-b border-border bg-background/95 px-4 py-3 backdrop-blur sm:px-6">
         <div className="mx-auto flex max-w-4xl items-center gap-3">
           <Loader2 className="h-4 w-4 shrink-0 animate-spin text-primary" />
@@ -68,7 +70,7 @@ export function PresentationStreamingPreview({
       <ol className="mx-auto flex w-full max-w-4xl flex-col gap-4 px-4 py-6 sm:px-6">
         {slides.map((slide, i) => (
           <li key={slide.id} className="overflow-hidden rounded-lg border border-border bg-card shadow-sm">
-            <CanvasSlideView slide={slide} pendingImages />
+            <CanvasSlideView slide={slide} pendingImages pendingImageLabel={tBlocks("imageGenerating")} />
             <p className="border-t border-border px-3 py-1.5 text-xs text-muted-foreground">
               {t("slideNumber", { number: i + 1 })}
             </p>
