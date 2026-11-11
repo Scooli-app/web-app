@@ -9,6 +9,8 @@
 #               Postgres (pgvector) + chalkboard API built with fake AI
 #               (CHALKBOARD_AI_FAKE=true: no OpenAI calls, no credits) + this
 #               web-app (next build / next start). See README → "Testes e2e".
+#               Caches: node_modules, .next/cache and the chalkboard build (keyed
+#               by its commit); on a miss chalkboard builds alongside the web-app.
 #
 # Secrets (Settings → Secrets and variables → Actions):
 #   CHALKBOARD_READ_TOKEN              fine-grained PAT, read-only "Contents" on Scooli-app/chalkboard
@@ -57,7 +59,16 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
 
-      - run: npm ci
+      - name: Cache node_modules
+        id: node-modules-cache
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: node-modules-${{ runner.os }}-node${{ env.NODE_VERSION }}-${{ hashFiles('package-lock.json') }}
+
+      - name: Install dependencies
+        if: steps.node-modules-cache.outputs.cache-hit != 'true'
+        run: npm ci
 
       - name: Run unit tests
         run: npm test
@@ -149,26 +160,35 @@ jobs:
           token: ${{ secrets.CHALKBOARD_READ_TOKEN }}
           path: chalkboard
 
+      - name: Resolve chalkboard commit
+        id: chalkboard-sha
+        run: echo "sha=$(git -C chalkboard rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      # The fake-AI build depends only on the chalkboard commit: most web-app PRs reuse it.
+      - name: Cache chalkboard build
+        id: chalkboard-cache
+        uses: actions/cache@v4
+        with:
+          path: chalkboard/server/target/quarkus-app
+          key: chalkboard-fake-ai-java${{ env.JAVA_VERSION }}-${{ steps.chalkboard-sha.outputs.sha }}
+
       - uses: actions/setup-java@v4
         with:
           java-version: ${{ env.JAVA_VERSION }}
           distribution: temurin
-          cache: maven
+          cache: ${{ steps.chalkboard-cache.outputs.cache-hit != 'true' && 'maven' || '' }}
           cache-dependency-path: chalkboard/**/pom.xml
 
-      - name: Build chalkboard (fake AI)
+      - name: Build chalkboard in the background (fake AI)
+        if: steps.chalkboard-cache.outputs.cache-hit != 'true'
         working-directory: chalkboard
         env:
           # Build-time switch: swaps OpenAiClient/EmbeddingService for the fakes.
           CHALKBOARD_AI_FAKE: "true"
-        run: mvn -B -q -DskipTests package
-
-      - name: Start chalkboard
-        # The dev profile carries the local defaults (Clerk dev instance, CORS for
-        # localhost:3000, storage stubs); the database is the service above.
+        # Runs alongside npm ci and next build; "Start chalkboard" waits for it.
         run: |
-          nohup java -Dquarkus.profile=dev -jar chalkboard/server/target/quarkus-app/quarkus-run.jar \
-            > chalkboard.log 2>&1 &
+          nohup bash -c 'mvn -B -q -DskipTests package > ../chalkboard-build.log 2>&1; echo $? > ../chalkboard-build.exit' \
+            > /dev/null 2>&1 &
 
       # ── web-app ────────────────────────────────────────────────────────────
       - uses: actions/setup-node@v4
@@ -176,7 +196,16 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
 
-      - run: npm ci
+      - name: Cache node_modules
+        id: node-modules-cache
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: node-modules-${{ runner.os }}-node${{ env.NODE_VERSION }}-${{ hashFiles('package-lock.json') }}
+
+      - name: Install dependencies
+        if: steps.node-modules-cache.outputs.cache-hit != 'true'
+        run: npm ci
 
       - name: Cache Playwright browsers
         id: playwright-cache
@@ -193,8 +222,29 @@ jobs:
         if: steps.playwright-cache.outputs.cache-hit == 'true'
         run: npx playwright install-deps chromium
 
+      - name: Cache Next.js build
+        uses: actions/cache@v4
+        with:
+          path: .next/cache
+          key: nextjs-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-${{ hashFiles('src/**', 'messages/**', 'public/**', 'next.config.ts', 'tailwind.config.js', 'postcss.config.mjs', 'tsconfig.json') }}
+          restore-keys: |
+            nextjs-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-
+
       - name: Build web-app
         run: npm run build
+
+      - name: Start chalkboard
+        # The dev profile carries the local defaults (Clerk dev instance, CORS for
+        # localhost:3000, storage stubs); the database is the service above.
+        run: |
+          if [ "${{ steps.chalkboard-cache.outputs.cache-hit }}" != "true" ]; then
+            for _ in $(seq 1 300); do [ -f chalkboard-build.exit ] && break; sleep 2; done
+            if [ "$(cat chalkboard-build.exit 2>/dev/null)" != "0" ]; then
+              echo "::error::chalkboard build failed"; cat chalkboard-build.log; exit 1
+            fi
+          fi
+          nohup java -Dquarkus.profile=dev -jar chalkboard/server/target/quarkus-app/quarkus-run.jar \
+            > chalkboard.log 2>&1 &
 
       - name: Start web-app
         run: nohup npm run start -- -p 3000 > web-app.log 2>&1 &
@@ -230,6 +280,7 @@ jobs:
         with:
           name: server-logs
           path: |
+            chalkboard-build.log
             chalkboard.log
             web-app.log
           retention-days: 7
