@@ -5,6 +5,7 @@ import { InlineTitle } from "@/components/document-editor/InlineTitle";
 import { DocumentEditorSkeleton } from "@/components/document-editor/DocumentEditorSkeleton";
 import { DocumentLessonContext } from "@/components/document-editor/DocumentLessonContext";
 import { ImagePickerModal, type ImageInsertResult } from "@/components/document-editor-v2/ImagePickerModal";
+import { DocumentNotFound } from "@/components/document-editor/DocumentNotFound";
 import ShareButton from "@/components/document-editor/ShareButton";
 import { DocumentVersionsButton } from "@/components/document-versions/DocumentVersionsButton";
 import { SuggestionBar } from "@/components/document-versions/SuggestionBar";
@@ -63,12 +64,12 @@ const AUTOSAVE_MS = 1500;
 /** Editor for tests, worksheets and quizzes stored as assessment block JSON. */
 export default function AssessmentEditor({ documentId, defaultTitle, chatTitle, chatPlaceholder }: AssessmentEditorProps) {
   const t = useTranslations("assessmentEditor");
-  const tDoc = useTranslations("editor.documentEditor");
   const dispatch = useAppDispatch();
   const { isLocked: accountLocked, guard } = useAccountAccess();
   const rawDocument = useAppSelector((s) => s.documents.currentDocument);
   const document = rawDocument?.id === documentId ? rawDocument : null;
   const isLoading = useAppSelector((s) => s.documents.isLoading);
+  const loadFailed = useAppSelector((s) => s.documents.documentLoadError?.id === documentId);
   const isPremium = useAppSelector(selectIsPro);
   const isEntitlementLoading = useAppSelector(selectEntitlementLoading);
   const entitlement = useAppSelector(selectCurrentEntitlement);
@@ -148,6 +149,14 @@ export default function AssessmentEditor({ documentId, defaultTitle, chatTitle, 
     setDoc(parsed);
     setDirty(false);
   }, [document, inProgress]);
+  const contentUnreadable = useMemo(
+    () => !!document && !inProgress && !doc && !parseAssessment(document.content),
+    [document, inProgress, doc],
+  );
+  const unreadableShown = contentUnreadable && !isLoading;
+  useEffect(() => {
+    if (unreadableShown) reportUiProblem("document_unreadable_shown", { documentId, documentType: documentRef.current?.documentType });
+  }, [unreadableShown, documentId]);
 
   // The server's maths check flags (metadata); a confirmed one hides at once, before the request returns.
   const [confirmedChecks, setConfirmedChecks] = useState<string[]>([]);
@@ -481,13 +490,8 @@ export default function AssessmentEditor({ documentId, defaultTitle, chatTitle, 
 
   /* ── Render ──────────────────────────────────────────────────────── */
   if (!document) {
-    if (isLoading) return <DocumentEditorSkeleton />;
-    return (
-      <div className="flex h-[60vh] w-full flex-col items-center justify-center gap-3 text-muted-foreground">
-        {tDoc("documentNotFound")}
-        <Link href={Routes.DOCUMENTS} className="text-primary hover:underline">{t("backToDocuments")}</Link>
-      </div>
-    );
+    if (isLoading || !loadFailed) return <DocumentEditorSkeleton />;
+    return <DocumentNotFound documentId={documentId} />;
   }
   if (isFailedDocumentStatus(document.status)) {
     return (
@@ -506,7 +510,8 @@ export default function AssessmentEditor({ documentId, defaultTitle, chatTitle, 
     );
   }
   if (!inProgress && !doc) {
-    if (isLoading) return <DocumentEditorSkeleton />;
+    // The working copy is set by an effect after this render: only content that does not parse is a failure.
+    if (isLoading || !contentUnreadable) return <DocumentEditorSkeleton />;
     return (
       <div className="mx-auto max-w-md p-8 text-center">
         <h2 className="text-lg font-semibold text-foreground">{t("loadFailedTitle")}</h2>

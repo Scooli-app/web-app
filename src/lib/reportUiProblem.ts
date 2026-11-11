@@ -32,7 +32,11 @@ export type UiProblemKind =
   /** A document marked `completed` was opened with no content. */
   | "document_opened_empty"
   /** An API call was still refused (401) after retrying with a fresh Clerk token. */
-  | "auth_rejected_after_refresh";
+  | "auth_rejected_after_refresh"
+  /** An editor showed "not found" or "could not open" because the document fetch failed. */
+  | "document_load_failed_shown"
+  /** The assessment editor showed "could not open" because the stored content did not parse. */
+  | "document_unreadable_shown";
 
 export function reportUiProblem(
   kind: UiProblemKind,
@@ -44,6 +48,8 @@ export function reportUiProblem(
     endpoint?: string | null;
     /** How long the teacher waited before seeing the problem. */
     durationMs?: number | null;
+    /** HTTP status of the failed request; 0 when the server did not answer. */
+    status?: number | null;
   } = {},
 ): void {
   try {
@@ -55,6 +61,7 @@ export function reportUiProblem(
       message: context.message ? context.message.slice(0, 200) : null,
       endpoint: context.endpoint ?? null,
       duration_ms: context.durationMs ?? null,
+      http_status: context.status ?? null,
     });
   } catch {
     // Reporting must never break the UI.

@@ -27,6 +27,9 @@ export function useDocumentManager(documentId: string) {
 
   // Track previous document ID to avoid unnecessary fetches
   const prevDocumentIdRef = useRef<string | null>(null);
+  // The route document fetched and not yet seen in the store. Cleared once it arrives, so if another
+  // document later replaces it in the store, it is fetched again.
+  const requestedIdRef = useRef<string | null>(null);
   // Track previous content to avoid unnecessary remounts and update loops
   const prevContentRef = useRef<string | null>(null);
   // When set to true, the next content change will not bump editorKey
@@ -48,6 +51,7 @@ export function useDocumentManager(documentId: string) {
     // If the current document already matches, mark as synced and stop.
     if (currentDocument?.id === documentId) {
       prevDocumentIdRef.current = documentId;
+      requestedIdRef.current = null;
       return;
     }
 
@@ -56,9 +60,10 @@ export function useDocumentManager(documentId: string) {
       return;
     }
 
-    // Dispatch only once per target document ID.
-    if (documentId !== prevDocumentIdRef.current) {
+    // Dispatch once per arrival: a failed fetch is not retried here (the error screen offers a retry).
+    if (documentId !== requestedIdRef.current) {
       dispatch(fetchDocument(documentId));
+      requestedIdRef.current = documentId;
       prevDocumentIdRef.current = documentId;
     }
   }, [documentId, dispatch, currentDocument?.id, storeLoading]);
