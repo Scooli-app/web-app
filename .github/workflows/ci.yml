@@ -214,13 +214,12 @@ jobs:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
 
+      # No --with-deps / install-deps: the ubuntu-latest image already ships every library
+      # Chromium needs; apt would only add CJK/Thai fonts the tests don't use, and it ties
+      # the job to the Ubuntu mirrors (a DNS outage there stalled it for 10 minutes).
       - name: Install Playwright browser
         if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: npx playwright install --with-deps chromium
-
-      - name: Install Playwright system dependencies
-        if: steps.playwright-cache.outputs.cache-hit == 'true'
-        run: npx playwright install-deps chromium
+        run: npx playwright install chromium
 
       - name: Cache Next.js build
         uses: actions/cache@v4
