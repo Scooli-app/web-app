@@ -7,13 +7,14 @@
  *   - status        {phase: "preparing"|"generating"|"reviewing"|"images"|"retrying"}
  *   - partial       the document generated so far (same JSON shape as the stored content, whole slides or
  *                   exercises only); the last one before "done" is the full document
- *   - image_progress {completed, total, blockId, status}
+ *   - image_progress {completed, total, blockId, status, url} — "started" once with the total, then one per image
+ *                   as it lands ("completed" with its url, or "failed"); completed counts failures too
  *   - heartbeat     {} — every ~10s, ignored on the client
  *   - done          {documentId} — final
  *   - error         {message}
  *
- * "retrying" means the first attempt failed validation and a second one starts from scratch: the preview is
- * dropped. Once the hook reports {@code isDone}, the caller fetches the document via {@code GET /documents/:id}
+ * While the images are made, each one that lands comes with a new "partial" that has it in place. "retrying" means
+ * the first attempt failed validation and a second one starts from scratch: the preview is dropped. Once the hook reports {@code isDone}, the caller fetches the document via {@code GET /documents/:id}
  * and opens the editor; until then the preview is read-only (the editor must not autosave while answer keys and
  * images are still being written into the document).
  */
@@ -34,9 +35,14 @@ export interface ImageProgress {
 /** The JSON document streamed so far (presentation or assessment), or null before the first whole item. */
 export type PartialDocument = Record<string, unknown>;
 
+/** What became of each image that is done, by the id of its slide image or exercise. */
+export type ImageOutcomes = Readonly<Record<string, "completed" | "failed">>;
+
 export interface GenerationState {
   phase: GenerationPhase;
+  /** Set once the images start: how many of them are done. */
   imageProgress: ImageProgress | null;
+  imageOutcomes: ImageOutcomes;
   partial: PartialDocument | null;
   /** 1 for the first attempt, 2 after a "retrying" status. */
   attempt: number;
@@ -45,6 +51,7 @@ export interface GenerationState {
 export const INITIAL_GENERATION_STATE: GenerationState = {
   phase: "preparing",
   imageProgress: null,
+  imageOutcomes: {},
   partial: null,
   attempt: 1,
 };
@@ -79,7 +86,7 @@ export function applyGenerationEvent(
     case "status": {
       const phase = String(payload.phase ?? "");
       if (phase === "retrying") {
-        return { ...state, phase: "generating", partial: null, attempt: state.attempt + 1 };
+        return { ...INITIAL_GENERATION_STATE, phase: "generating", attempt: state.attempt + 1 };
       }
       if (PHASES.has(phase) && phase !== state.phase) {
         return { ...state, phase: phase as GenerationPhase };
@@ -88,11 +95,15 @@ export function applyGenerationEvent(
     }
     case "partial":
       return isDocumentSnapshot(payload) ? { ...state, partial: payload } : state;
-    case "image_progress":
+    case "image_progress": {
+      const blockId = typeof payload.blockId === "string" ? payload.blockId : null;
+      const status = payload.status === "completed" || payload.status === "failed" ? payload.status : null;
       return {
         ...state,
         imageProgress: { completed: Number(payload.completed ?? 0), total: Number(payload.total ?? 0) },
+        imageOutcomes: blockId && status ? { ...state.imageOutcomes, [blockId]: status } : state.imageOutcomes,
       };
+    }
     case "done":
       return { ...state, phase: "done" };
     default:

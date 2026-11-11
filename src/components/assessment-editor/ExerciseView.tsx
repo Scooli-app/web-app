@@ -3,11 +3,12 @@
 import { InlineText } from "@/components/blocks/inline-text";
 import { cn } from "@/shared/utils/utils";
 import type { AssessmentExercise, AssessmentLabel, AssessmentMedia, AssessmentReadingBox } from "@/types/assessment";
-import { AlertTriangle, Check, ImageIcon } from "lucide-react";
+import { PENDING_ATTRIBUTE } from "@/hooks/useFollowGeneration";
+import { AlertTriangle, Check, ImageIcon, Loader2 } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
+import { Fragment, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { AeChip } from "./AeChip";
-import { useAssessmentEditor } from "./context";
+import { AssessmentEditorContext, useAssessmentEditor } from "./context";
 import { boxedGap, cellAnswer, gapText, gridStale, hasTextAnswer, isBlankCell, listedWords, missingAnswer, optionLetter, placedCells, printLabel, splitBlanks, type PrintLabel } from "./model";
 
 const correctCls = "rounded bg-emerald-50 px-1 text-emerald-900 ring-1 ring-emerald-200";
@@ -51,7 +52,7 @@ export function ExerciseView({ exercise: ex, number, points }: { exercise: Asses
             <p className="leading-relaxed">{prompt}</p>
             {renderBody()}
           </div>
-          {sideMedia && <MediaBox media={sideMedia} teacher={teacher} />}
+          {sideMedia && <MediaBox media={sideMedia} teacher={teacher} itemId={ex.id} />}
         </div>
 
         <AnswerSpace ex={ex} />
@@ -207,7 +208,7 @@ export function ExerciseView({ exercise: ex, number, points }: { exercise: Asses
         const hints = labels.some((l) => l.hint);
         return (
           <>
-            {ex.media && <LabelImage media={ex.media} labels={labels} teacher={teacher} />}
+            {ex.media && <LabelImage media={ex.media} labels={labels} teacher={teacher} itemId={ex.id} />}
             <ol className="mt-2 flex flex-col gap-1.5">
               {labels.map((l) => {
                 const answer = teacher ? ex.answer.labels?.find((x) => x.labelId === l.id)?.text : null;
@@ -450,17 +451,19 @@ function useImageFailed(src: string | null): [boolean, () => void] {
   return [src !== null && failed === src, () => setFailed(src)];
 }
 
-export function LabelImage({ media, labels, teacher, onPlace, activeId, placeLabel }: {
+export function LabelImage({ media, labels, teacher, onPlace, activeId, placeLabel, itemId }: {
   media: AssessmentMedia;
   labels: AssessmentLabel[];
   teacher: boolean;
   onPlace?: (x: number, y: number) => void;
   activeId?: string | null;
   placeLabel?: string;
+  /** The exercise's id: in the generation preview, whether its picture is still coming. */
+  itemId?: string;
 }) {
   const t = useTranslations("assessmentEditor.item");
   const [failed, onError] = useImageFailed(media.imageRef);
-  if (!media.imageRef || failed) return <div className="mt-2"><MediaBox media={{ ...media, imageRef: null }} teacher={teacher} /></div>;
+  if (!media.imageRef || failed) return <div className="mt-2"><MediaBox media={{ ...media, imageRef: null }} teacher={teacher} itemId={itemId} /></div>;
   const pins = labels.filter((l) => l.x !== null && l.y !== null);
   const picture = (
     <>
@@ -498,12 +501,37 @@ export function LabelImage({ media, labels, teacher, onPlace, activeId, placeLab
   );
 }
 
-export function MediaBox({ media, teacher }: { media: AssessmentMedia; teacher: boolean }) {
+/** `itemId`: the exercise or reading box it belongs to (the generation preview tells a coming picture from a failed one). */
+export function MediaBox({ media, teacher, itemId }: { media: AssessmentMedia; teacher: boolean; itemId?: string }) {
   const t = useTranslations("assessmentEditor.item");
+  const pending = useContext(AssessmentEditorContext)?.pendingImages;
   const [failed, onError] = useImageFailed(media.imageRef);
   if (media.imageRef && !failed) {
-    // eslint-disable-next-line @next/next/no-img-element -- data URIs and arbitrary hosts; next/image adds nothing here
-    return <img src={media.imageRef} alt={media.placeholder?.alt ?? t("imageAlt")} onError={onError} className="max-h-44 w-40 rounded object-contain" />;
+    return (
+      // eslint-disable-next-line @next/next/no-img-element -- data URIs and arbitrary hosts; next/image adds nothing here
+      <img
+        src={media.imageRef}
+        alt={media.placeholder?.alt ?? t("imageAlt")}
+        onError={onError}
+        className={cn("max-h-44 w-40 rounded object-contain", pending && "animate-in fade-in duration-500")}
+      />
+    );
+  }
+  // The generation preview: the picture is still coming (queued while the questions are written, then being made).
+  if (pending && !media.imageRef && !(itemId && pending.outcomes[itemId] === "failed")) {
+    return (
+      <div
+        role="status"
+        {...(pending.active ? { [PENDING_ATTRIBUTE]: "" } : {})}
+        className={cn(
+          "flex h-28 w-40 flex-col items-center justify-center gap-1 rounded border border-dashed border-neutral-300 bg-neutral-50 p-2 text-center font-sans text-[11px] text-neutral-500",
+          pending.active && "animate-pulse border-solid",
+        )}
+      >
+        {pending.active ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <ImageIcon className="h-4 w-4" aria-hidden />}
+        {pending.active ? t("imageGenerating") : t("imageQueued")}
+      </div>
+    );
   }
   // Student tab: say the picture is missing rather than leaving an exercise that points at nothing.
   if (!teacher) {
@@ -532,7 +560,7 @@ export function ReadingView({ item }: { item: AssessmentReadingBox }) {
         <div className="flex flex-col gap-1.5 leading-relaxed">
           {item.body.split(/\n+/).map((p, i) => <p key={i}><InlineText value={p} /></p>)}
         </div>
-        {item.media && <MediaBox media={item.media} teacher={!studentView} />}
+        {item.media && <MediaBox media={item.media} teacher={!studentView} itemId={item.id} />}
       </div>
     </div>
   );

@@ -23,17 +23,29 @@ import type {
 import { renderKatexToPngDataUrl } from "@/components/document-editor-v2/math-render";
 import { getFittedTextBoxHeightPx } from "@/components/document-editor-v2/text-box-fit";
 import { measureWrappedTextHeightPx } from "@/components/document-editor-v2/text-measure";
-import { useEffect, useRef, useState } from "react";
-import { Ellipse, Group, Image as KonvaImage, Layer, Line, Rect, Stage, Text } from "react-konva";
+import { cn } from "@/shared/utils/utils";
+import Konva from "konva";
+import { ImageIcon, Loader2 } from "lucide-react";
+import { useEffect, useRef, useState, type ComponentProps } from "react";
+import { Ellipse, Image as KonvaImage, Layer, Line, Rect, Stage, Text } from "react-konva";
 import { SlideText } from "@/components/document-editor-v2/InlineMathText";
 import { listItemPrefix } from "@/shared/utils/list-markers";
 
+/** The generation preview's stand-in for an image that is not there yet. */
+export interface PendingImage {
+  /** Caption inside the box ("Imagem a seguir", "A gerar a imagem…"). */
+  label: string;
+  /** The images are being made now (animated, and the screen follows it), not just queued. */
+  active: boolean;
+}
+
 interface Props {
   slide: CanvasSlide;
-  /** Draw a dashed box where an image is still being generated (the generation preview), instead of leaving it out. */
-  pendingImages?: boolean;
-  /** Caption inside that box (e.g. "Imagem em geração"). */
-  pendingImageLabel?: string;
+  /**
+   * The generation preview: an image without its picture yet (or still downloading) is drawn as a labelled box over
+   * the slide instead of being left out, and the picture fades in once it is there.
+   */
+  pendingImage?: PendingImage;
 }
 
 const SHAPE_FILL = "rgba(103, 83, 255, 0.22)";
@@ -54,7 +66,21 @@ function gradientProps(g: CanvasGradient, W: number, H: number) {
   };
 }
 
-export function CanvasSlideView({ slide, pendingImages = false, pendingImageLabel }: Props) {
+/** An image that fades in when it first appears (the preview: it replaces its pending box). */
+function FadeInImage(props: ComponentProps<typeof KonvaImage>) {
+  const ref = useRef<Konva.Image>(null);
+  useEffect(() => {
+    const node = ref.current;
+    if (!node) return;
+    node.opacity(0);
+    const tween = new Konva.Tween({ node, opacity: 1, duration: 0.4 });
+    tween.play();
+    return () => tween.destroy();
+  }, []);
+  return <KonvaImage ref={ref} {...props} />;
+}
+
+export function CanvasSlideView({ slide, pendingImage }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 1280, h: 720 });
 
@@ -140,8 +166,46 @@ export function CanvasSlideView({ slide, pendingImages = false, pendingImageLabe
     };
   }, [H, slide.elements]);
 
+  // Images still to come (or still downloading): a box with a caption, over the canvas.
+  const pendingBoxes = pendingImage
+    ? slide.elements.filter((el): el is CanvasImageElement => {
+        if (el.type !== "image_placeholder") return false;
+        const { url } = el as CanvasImageElement;
+        if (!url) return true;
+        const cached = imgCacheRef.current[url];
+        return cached === undefined || cached === "loading";
+      })
+    : [];
+
   return (
-    <div ref={containerRef} style={{ width: "100%", aspectRatio: "16/9" }}>
+    <div ref={containerRef} className="relative" style={{ width: "100%", aspectRatio: "16/9" }}>
+      {pendingImage
+        ? pendingBoxes.map((el) => (
+            <div
+              key={el.id}
+              className={cn(
+                "absolute z-10 flex flex-col items-center justify-center gap-1.5 overflow-hidden rounded border border-dashed p-2 text-center text-[11px] font-medium leading-tight sm:text-xs",
+                // Mid-grey reads on light and dark slide themes alike.
+                "border-neutral-400/70 bg-neutral-500/15 text-neutral-500",
+                pendingImage.active && "animate-pulse border-solid",
+              )}
+              style={{
+                left: `${el.x * 100}%`,
+                top: `${el.y * 100}%`,
+                width: `${el.w * 100}%`,
+                height: `${el.h * 100}%`,
+                transform: el.rotation ? `rotate(${el.rotation}deg)` : undefined,
+              }}
+            >
+              {pendingImage.active ? (
+                <Loader2 className="h-4 w-4 shrink-0 animate-spin" aria-hidden />
+              ) : (
+                <ImageIcon className="h-4 w-4 shrink-0" aria-hidden />
+              )}
+              <span className="line-clamp-2">{pendingImage.label}</span>
+            </div>
+          ))
+        : null}
       <Stage width={W} height={H} listening={false}>
         <Layer listening={false}>
           {/* Background */}
@@ -276,46 +340,12 @@ export function CanvasSlideView({ slide, pendingImages = false, pendingImageLabe
             if (el.type === "image_placeholder") {
               const img = el as CanvasImageElement;
               const cached = img.url ? imgCacheRef.current[img.url] : undefined;
-              if (!img.url && pendingImages) {
-                // Mid-grey reads on light and dark themes alike.
-                const box = {
-                  x: el.x * W + el.w * W / 2,
-                  y: el.y * H + el.h * H / 2,
-                  offsetX: el.w * W / 2,
-                  offsetY: el.h * H / 2,
-                  rotation: el.rotation ?? 0,
-                  width: el.w * W,
-                  height: el.h * H,
-                  listening: false,
-                };
-                return (
-                  <Group key={el.id} listening={false}>
-                    <Rect
-                      {...box}
-                      fill="rgba(128,128,128,0.14)"
-                      stroke="rgba(128,128,128,0.65)"
-                      strokeWidth={Math.max(1, W * 0.0015)}
-                      dash={[W * 0.008, W * 0.006]}
-                      cornerRadius={4}
-                    />
-                    {pendingImageLabel ? (
-                      <Text
-                        {...box}
-                        text={pendingImageLabel}
-                        align="center"
-                        verticalAlign="middle"
-                        fontSize={Math.round(W * 0.016)}
-                        fill="rgba(128,128,128,0.95)"
-                      />
-                    ) : null}
-                  </Group>
-                );
-              }
               // Presenting to the class: an image that never generated or failed to load is left out, not drawn as a box.
               if (!img.url || cached === "failed") return null;
               if (cached && cached !== "loading") {
+                const Picture = pendingImage ? FadeInImage : KonvaImage;
                 return (
-                  <KonvaImage
+                  <Picture
                     key={el.id}
                     image={cached}
                     x={el.x * W + el.w * W / 2}
@@ -330,6 +360,8 @@ export function CanvasSlideView({ slide, pendingImages = false, pendingImageLabe
                   />
                 );
               }
+              // The preview draws its own box over the slide.
+              if (pendingImage) return null;
               /* Faint placeholder while loading */
               return (
                 <Rect

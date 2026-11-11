@@ -69,6 +69,20 @@ describe("applyGenerationEvent", () => {
     expect(s.imageProgress).toEqual({ completed: 2, total: 5 });
   });
 
+  it("remembers what became of each image, and forgets it on a retry", () => {
+    const s = run([
+      ["image_progress", { completed: 0, total: 3, status: "started" }],
+      ["image_progress", { completed: 1, total: 3, blockId: "i2", status: "completed", url: "https://img/2.png" }],
+      ["image_progress", { completed: 2, total: 3, blockId: "e1", status: "failed" }],
+    ]);
+    expect(s.imageProgress).toEqual({ completed: 2, total: 3 });
+    expect(s.imageOutcomes).toEqual({ i2: "completed", e1: "failed" });
+    const retried = applyGenerationEvent(s, "status", { phase: "retrying" });
+    expect(retried.imageOutcomes).toEqual({});
+    expect(retried.imageProgress).toBeNull();
+    expect(retried.attempt).toBe(2);
+  });
+
   it("ends on done", () => {
     expect(run([["done", { documentId: "d1" }]]).phase).toBe("done");
   });
