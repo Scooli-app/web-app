@@ -279,12 +279,16 @@ function WordSearchView({ ex, teacher }: { ex: AssessmentExercise; teacher: bool
   );
 }
 
-const Dot = ({ id }: { id: string }) => <span data-dot={id} aria-hidden className="h-2 w-2 shrink-0 rounded-full bg-neutral-900" />;
+// Dots only side by side (md+): stacked on a phone they point at nothing.
+const Dot = ({ id }: { id: string }) => <span data-dot={id} aria-hidden className="hidden h-2 w-2 shrink-0 rounded-full bg-neutral-900 md:block" />;
+// Phone-only answer slot: the student writes the matching letter here instead of drawing a line.
+const AnswerSlot = () => <span aria-hidden className="h-6 w-7 shrink-0 rounded border border-neutral-400 md:hidden" />;
 
 /**
  * Matching as a printed worksheet: left items numbered with a dot after them, right items lettered with a dot before
- * them, a wide gap between for the student's lines (stacked on phones). The teacher view draws the pairs as lines
- * between the dots (side by side only) and lists them under the columns.
+ * them, a wide gap between for the student's lines. On phones the columns stack: the dots give way to a box after
+ * each numbered item for the letter, and the lettered list sits below a divider. The teacher view draws the pairs as
+ * lines between the dots (side by side only) and lists them under the columns.
  */
 function MatchingView({ ex, teacher }: { ex: AssessmentExercise; teacher: boolean }) {
   const options = ex.options ?? [];
@@ -328,17 +332,18 @@ function MatchingView({ ex, teacher }: { ex: AssessmentExercise; teacher: boolea
         <div className="flex flex-col gap-3 md:grid md:grid-cols-[minmax(0,1fr)_6rem_minmax(0,1fr)] md:gap-0">
           <ol className="flex flex-col gap-1.5">
             {left.map((o, i) => (
-              <li key={o.id} className="flex items-center gap-2">
+              <li key={o.id} className="flex items-start gap-2 md:items-center">
                 <span className="shrink-0 font-bold">{i + 1}.</span>
                 <span className="min-w-0 flex-1 break-words"><InlineText value={o.text} /></span>
+                <AnswerSlot />
                 <Dot id={`l${i}`} />
               </li>
             ))}
           </ol>
           <span aria-hidden className="hidden md:block" />
-          <ol className="flex flex-col gap-1.5">
+          <ol className="flex flex-col gap-1.5 border-t border-neutral-200 pt-3 md:border-0 md:pt-0">
             {right.map((o, i) => (
-              <li key={o.id} className="flex items-center gap-2">
+              <li key={o.id} className="flex items-baseline gap-2 md:items-center">
                 <Dot id={`r${i}`} />
                 <span className="shrink-0 font-bold">{optionLetter(i)}.</span>
                 <span className="min-w-0 flex-1 break-words"><InlineText value={o.text} /></span>
