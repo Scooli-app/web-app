@@ -25,7 +25,7 @@ import { cn } from "@/shared/utils/utils";
 import { CheckCircle2, Circle, Loader2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 const PLANNING_TYPE_VALUES: CurriculumPlanningType[] = ["annual", "semester", "trimester", "custom"];
@@ -125,6 +125,10 @@ export default function CurriculumPlanImportPage() {
   const [periodEnd, setPeriodEnd] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [steps, setSteps] = useState<ImportStep[]>(INITIAL_STEPS);
+  // Aborted on unmount so an import the user walked away from does not navigate them later.
+  const importAbortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => () => importAbortRef.current?.abort(), []);
 
   const detectedFormat = useMemo(() => (file ? detectFormat(file.name) : ""), [file]);
 
@@ -144,6 +148,8 @@ export default function CurriculumPlanImportPage() {
   async function handleSubmit() {
     if (!canSubmit || !file) return;
     if (!guard("create")) return;
+    importAbortRef.current = new AbortController();
+    const { signal } = importAbortRef.current;
     setSubmitting(true);
     setSteps(INITIAL_STEPS.map((s) => ({ ...s, status: "pending" as StepStatus })));
 
@@ -186,14 +192,17 @@ export default function CurriculumPlanImportPage() {
 
       // Step 3: Wait for AI normalisation
       setStepStatus("normalize", "active");
-      await waitForDocument(docId);
+      await waitForDocument(docId, undefined, signal);
       setStepStatus("normalize", "done");
 
       // Step 4: Done — brief pause then redirect
       setStepStatus("done", "done");
       await new Promise((resolve) => setTimeout(resolve, 600));
+      if (signal.aborted) return;
       router.push(`/curriculum-plan/${docId}`);
     } catch (err) {
+      // The user left the page: the plan still shows up in the list when it is ready.
+      if (signal.aborted) return;
       if (err instanceof DocumentStillProcessingError) {
         // Not a failure: the plan shows up in the list when the server finishes.
         toast.info(err.message);

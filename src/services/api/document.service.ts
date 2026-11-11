@@ -578,10 +578,16 @@ export class DocumentStillProcessingError extends Error {}
 /**
  * Poll the backend until the document is available (status 200 OK)
  * Used to wait for background jobs (like import) to finish.
+ * Stops with the signal's abort reason once `signal` aborts.
  */
-export async function waitForDocument(id: string, maxAttempts = 60): Promise<void> {
+export async function waitForDocument(
+  id: string,
+  maxAttempts = 60,
+  signal?: AbortSignal
+): Promise<void> {
   const delayMs = 3000;
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    signal?.throwIfAborted();
     try {
       const doc = await getDocument(id);
       if (doc.status === "completed") {
@@ -614,6 +620,7 @@ export async function waitForDocument(id: string, maxAttempts = 60): Promise<voi
     // Wait before next attempt
     await new Promise((resolve) => setTimeout(resolve, delayMs));
   }
+  signal?.throwIfAborted();
   throw new DocumentStillProcessingError(translate("errors.documents.importTimeout"));
 }
 
