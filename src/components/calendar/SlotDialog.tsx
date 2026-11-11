@@ -121,7 +121,7 @@ export interface SlotDialogProps {
   /** The lesson plan streamed so far, when the parent follows the stream: moves the progress indicator on. */
   streamContent?: string;
   onClose: () => void;
-  /** Writes the lesson plan; resolves once the stream has ended (the parent may close the pop-up). */
+  /** Writes the lesson plan; resolves once the stream has ended. The pop-up stays open meanwhile. */
   onGenerate: (slot: SlotWithTimetable, message?: string) => void | Promise<void>;
   onRegenerate: (slot: SlotWithTimetable, message?: string) => void;
   onTypeChange: (slot: SlotWithTimetable, type: LessonSlotType) => void;
