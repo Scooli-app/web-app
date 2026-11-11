@@ -331,7 +331,7 @@ function MatchingView({ ex, teacher }: { ex: AssessmentExercise; teacher: boolea
         <div className="flex flex-col gap-3 md:grid md:grid-cols-[minmax(0,1fr)_6rem_minmax(0,1fr)] md:gap-0">
           <ol className="flex flex-col gap-1.5">
             {left.map((o, i) => (
-              <li key={o.id} className="flex items-center gap-2">
+              <li key={o.id} className="flex items-start gap-2 md:items-center">
                 <span className="shrink-0 font-bold">{i + 1}.</span>
                 <span className="min-w-0 flex-1 break-words"><InlineText value={o.text} /></span>
                 <AnswerSlot />
