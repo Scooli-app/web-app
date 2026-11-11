@@ -17,7 +17,7 @@ import type { RagSource } from "@/shared/types/document";
 import { useKeyboardInset } from "@/hooks/use-keyboard-inset";
 import { useAccountAccess } from "@/hooks/useAccountAccess";
 import { cn } from "@/shared/utils/utils";
-import { FilePlus2, FileText, Loader2, Lock, MessageCircle, MinusCircle, PenLine, PlusCircle, RotateCcw, Send, Sparkles, ThumbsDown, ThumbsUp, X } from "lucide-react";
+import { FilePlus2, FileText, Loader2, Lock, MessageCircle, MinusCircle, Paperclip, PenLine, PlusCircle, RotateCcw, Send, Sparkles, ThumbsDown, ThumbsUp, X } from "lucide-react";
 import type { ChatChange, ChatNewDocument, ChatOutcome } from "@/shared/types";
 import { useTranslations } from "next-intl";
 import posthog from "posthog-js";
@@ -92,6 +92,8 @@ export interface ChatMessage {
   feedback?: "up" | "down";
   /** The excerpt the teacher selected when asking (ENG-403). */
   quote?: string;
+  /** Name of a file attached to this message (ENG-410). */
+  attachmentName?: string;
 }
 
 interface AIChatPanelProps {
@@ -135,6 +137,11 @@ interface AIChatPanelProps {
   /** Text selected in the editor that the next message is about (ENG-403). */
   selection?: string | null;
   onClearSelection?: () => void;
+  /** Attach a file for the next message (ENG-410). Absent: no paperclip. */
+  onAttach?: (file: File) => Promise<void>;
+  /** The file waiting to go with the next message. */
+  attachment?: { name: string; truncated: boolean } | null;
+  onClearAttachment?: () => void;
 }
 
 const CHANGE_ICONS = { added: PlusCircle, changed: PenLine, removed: MinusCircle } as const;
@@ -270,6 +277,9 @@ function ChatContent({
   onNewConversation,
   selection,
   onClearSelection,
+  onAttach,
+  attachment,
+  onClearAttachment,
 }: {
   chatHistory: ChatMessage[];
   isStreaming: boolean;
@@ -300,6 +310,9 @@ function ChatContent({
   onNewConversation?: () => void;
   selection?: string | null;
   onClearSelection?: () => void;
+  onAttach?: (file: File) => Promise<void>;
+  attachment?: { name: string; truncated: boolean } | null;
+  onClearAttachment?: () => void;
 }) {
   const t = useTranslations("editor.aiChatPanel");
   const tLock = useTranslations("billing.lock");
@@ -309,6 +322,8 @@ function ChatContent({
     "assistant",
   );
   const [creatingDocument, setCreatingDocument] = useState(false);
+  const [attaching, setAttaching] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const lastIndex = chatHistory.length - 1;
 
   return (
@@ -404,6 +419,12 @@ function ChatContent({
                     </span>
                   )}
                   {message.content}
+                  {message.attachmentName && (
+                    <span className="mt-1 flex items-center gap-1 text-xs opacity-90">
+                      <Paperclip className="h-3 w-3" aria-hidden />
+                      {message.attachmentName}
+                    </span>
+                  )}
                   {message.hasUpdate && !message.changes?.length && (
                     <div className="mt-2 pt-2 border-t border-border/30 flex items-center gap-1.5 text-[10px] font-semibold text-primary uppercase tracking-wider">
                       <Sparkles className="w-3 h-3" />
@@ -571,6 +592,29 @@ function ChatContent({
               </div>
             )}
 
+            {attachment && (
+              <div
+                className="mb-2 flex items-center gap-2 rounded-xl border border-border bg-muted/60 px-3 py-2 text-xs"
+                data-testid="chat-attachment"
+              >
+                <Paperclip className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden />
+                <span className="min-w-0 flex-1 truncate font-medium">
+                  {attachment.name}
+                  {attachment.truncated && <span className="font-normal text-muted-foreground"> · {t("attachmentTruncated")}</span>}
+                </span>
+                {onClearAttachment && (
+                  <button
+                    type="button"
+                    onClick={onClearAttachment}
+                    aria-label={t("selectionClear")}
+                    className="shrink-0 rounded p-0.5 text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
+            )}
+
             {/* Chat Input */}
             <form
               onSubmit={handleSubmit}
@@ -581,6 +625,41 @@ function ChatContent({
                   : "mb-3 pb-[max(env(safe-area-inset-bottom),0.5rem)]",
               )}
             >
+              {onAttach && (
+                <>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".pdf,.doc,.docx,.odt,.rtf,.txt,.md"
+                    className="hidden"
+                    data-testid="chat-attach-input"
+                    onChange={async (event) => {
+                      const file = event.target.files?.[0];
+                      event.target.value = "";
+                      if (!file) return;
+                      setAttaching(true);
+                      try {
+                        await onAttach(file);
+                      } finally {
+                        setAttaching(false);
+                      }
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    disabled={isInputLocked || attaching}
+                    onClick={() => fileInputRef.current?.click()}
+                    aria-label={attaching ? t("attaching") : t("attach")}
+                    title={attaching ? t("attaching") : t("attach")}
+                    className={cn("shrink-0 rounded-xl text-muted-foreground", isDesktop ? "h-10 w-9" : "h-11 w-10")}
+                    data-testid="chat-attach"
+                  >
+                    {attaching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Paperclip className="h-4 w-4" />}
+                  </Button>
+                </>
+              )}
               <Input
                 value={chatMessage}
                 onChange={(e) => setChatMessage(e.target.value)}
@@ -656,6 +735,9 @@ export default function AIChatPanel({
   onFeedback,
   selection,
   onClearSelection,
+  onAttach,
+  attachment,
+  onClearAttachment,
 }: AIChatPanelProps) {
   const t = useTranslations("editor.aiChatPanel");
   const tLock = useTranslations("billing.lock");
@@ -855,6 +937,9 @@ export default function AIChatPanel({
           onNewConversation={onNewConversation}
           selection={selection}
           onClearSelection={onClearSelection}
+          onAttach={onAttach}
+          attachment={attachment}
+          onClearAttachment={onClearAttachment}
         />
       </div>
 
@@ -934,6 +1019,9 @@ export default function AIChatPanel({
                 onNewConversation={onNewConversation}
                 selection={selection}
                 onClearSelection={onClearSelection}
+                onAttach={onAttach}
+                attachment={attachment}
+                onClearAttachment={onClearAttachment}
               />
             </div>
           </SheetContent>

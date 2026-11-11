@@ -5,7 +5,8 @@ import { useDocumentManager } from "@/hooks/useDocumentManager";
 import { useEditorAnalytics } from "@/hooks/useEditorAnalytics";
 import { useGenerationStalled } from "@/hooks/useGenerationStalled";
 import { uploadDocumentImage } from "@/services/api/document-images.service";
-import { discardPendingAiEdit, streamDocumentContent } from "@/services/api/document.service";
+import { type ChatAttachment, discardPendingAiEdit, streamDocumentContent, uploadChatAttachment } from "@/services/api/document.service";
+import { ApiRequestError } from "@/services/api/client";
 import { AUTO_SAVE_DELAY } from "@/shared/config/constants";
 import { Routes, type ChatChange, type ChatNewDocument, type Document } from "@/shared/types";
 import { isFailedDocumentStatus, type RagSource } from "@/shared/types/document";
@@ -317,6 +318,8 @@ export default function DocumentEditor({
   // ENG-403: text selected in the page, offered to the assistant ("Pedir à IA"), and the one the next message is about.
   const [selectionAsk, setSelectionAsk] = useState<{ text: string; top: number; left: number } | null>(null);
   const [chatSelection, setChatSelection] = useState<string | null>(null);
+  // ENG-410: a file read on the server, sent with the next message as source material.
+  const [chatAttachment, setChatAttachment] = useState<ChatAttachment | null>(null);
   const historyLoadedForRef = useRef<string | null>(null);
   const chatFailureText = useChatFailureText();
   const createDocumentFromChat = useCreateDocumentFromChat();
@@ -1220,9 +1223,15 @@ export default function DocumentEditor({
 
       dismissChatNudge();
       const selection = chatSelection ?? undefined;
+      const attachment = chatAttachment ?? undefined;
       setChatHistory((prev) => [
         ...prev,
-        { role: "user", content: userMessage, ...(selection ? { quote: selection } : {}) },
+        {
+          role: "user",
+          content: userMessage,
+          ...(selection ? { quote: selection } : {}),
+          ...(attachment ? { attachmentName: attachment.name } : {}),
+        },
       ]);
       setError("");
       registerChatMessage(userMessage);
@@ -1255,9 +1264,10 @@ export default function DocumentEditor({
 
       try {
         const response = await dispatch(
-          chatWithDocument({ id: currentDocument.id, message: userMessage, pendingReview: true, selection }),
+          chatWithDocument({ id: currentDocument.id, message: userMessage, pendingReview: true, selection, attachment }),
         ).unwrap();
         setChatSelection(null);
+        setChatAttachment(null);
         captureChatResponse({
           turnId,
           documentId: currentDocument.id,
@@ -1347,6 +1357,7 @@ export default function DocumentEditor({
       }
     },
     [
+      chatAttachment,
       chatFailureText,
       chatSelection,
       currentDocument?.documentType,
@@ -1452,6 +1463,27 @@ export default function DocumentEditor({
       window.removeEventListener("scroll", hide, true);
     };
   }, [editorInstance, isSuggestionsMode]);
+
+  const handleAttach = useCallback(
+    async (file: File) => {
+      setError("");
+      try {
+        const attachment = await uploadChatAttachment(documentId, file);
+        setChatAttachment(attachment);
+        posthog.capture("ai_chat_attachment_added", {
+          document_id: documentId,
+          kind: file.name.split(".").pop()?.toLowerCase() ?? null,
+          truncated: attachment.truncated,
+        });
+      } catch (failure) {
+        const code = failure instanceof ApiRequestError ? failure.code : null;
+        const known = ["unsupported_type", "too_large", "no_text", "unreadable"];
+        setError(tChat(`attachErrors.${code && known.includes(code) ? code : "unreadable"}`));
+        posthog.capture("ai_chat_attachment_failed", { document_id: documentId, reason: code ?? "unknown" });
+      }
+    },
+    [documentId, tChat],
+  );
 
   const handleAskAboutSelection = useCallback(() => {
     if (!selectionAsk) return;
@@ -1634,6 +1666,9 @@ export default function DocumentEditor({
       onFeedback={handleChatFeedback}
       selection={chatSelection}
       onClearSelection={() => setChatSelection(null)}
+      onAttach={handleAttach}
+      attachment={chatAttachment}
+      onClearAttachment={() => setChatAttachment(null)}
     />
   );
   // Curriculum plans carry wide tables: their page takes the desk's width instead of a reading width.

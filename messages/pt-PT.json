@@ -1500,7 +1500,16 @@
       "askAiSelection": "Pedir à IA",
       "selectionLabel": "Selecionado",
       "selectionClear": "Retirar seleção",
-      "selectionPlaceholder": "O que queres fazer com este excerto?"
+      "selectionPlaceholder": "O que queres fazer com este excerto?",
+      "attach": "Anexar ficheiro (PDF, Word ou texto)",
+      "attaching": "A ler o ficheiro…",
+      "attachmentTruncated": "só a primeira parte",
+      "attachErrors": {
+        "unsupported_type": "Este tipo de ficheiro ainda não é lido no chat. Usa PDF, Word ou texto — ou cola o texto na mensagem.",
+        "too_large": "O ficheiro é demasiado grande (máximo 10 MB).",
+        "no_text": "Não encontrei texto neste ficheiro (pode ser uma digitalização). Cola o texto na mensagem.",
+        "unreadable": "Não consegui ler este ficheiro. Tenta outro formato ou cola o texto na mensagem."
+      }
     },
     "calendarButton": {
       "viewClass": "Ver turma",

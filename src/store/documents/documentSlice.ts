@@ -5,6 +5,7 @@ import {
   type InterfaceLocalePreference,
 } from "@/i18n/preferences";
 import {
+  type ChatAttachment,
   chatWithDocument as chatWithDocumentService,
   createDocument as createDocumentService,
   deleteDocumentImage as deleteDocumentImageService,
@@ -313,11 +314,19 @@ export const chatWithDocument = createAsyncThunk(
       canvasState,
       pendingReview,
       selection,
-    }: { id: string; message: string; canvasState?: string; pendingReview?: boolean; selection?: string },
+      attachment,
+    }: {
+      id: string;
+      message: string;
+      canvasState?: string;
+      pendingReview?: boolean;
+      selection?: string;
+      attachment?: ChatAttachment;
+    },
     { rejectWithValue, dispatch }
   ) => {
     try {
-      const response = await chatWithDocumentService(id, message, canvasState, { pendingReview, selection });
+      const response = await chatWithDocumentService(id, message, canvasState, { pendingReview, selection, attachment });
 
       dispatch(fetchUsage());
       dispatch(fetchEntitlements());

@@ -350,7 +350,7 @@ export async function chatWithDocument(
   id: string,
   message: string,
   canvasState?: string,
-  options: { pendingReview?: boolean; selection?: string } = {},
+  options: { pendingReview?: boolean; selection?: string; attachment?: ChatAttachment } = {},
 ): Promise<ChatResponse> {
   const response = await apiClient.post<ChatResponse>(
     `/documents/${id}/chat`,
@@ -359,9 +359,27 @@ export async function chatWithDocument(
       ...(canvasState ? { canvasState } : {}),
       ...(options.pendingReview ? { pendingReview: true } : {}),
       ...(options.selection ? { selection: options.selection } : {}),
+      ...(options.attachment ? { attachmentName: options.attachment.name, attachmentText: options.attachment.text } : {}),
     },
     { timeout: CHAT_REQUEST_TIMEOUT_MS },
   );
+  return response.data;
+}
+
+/** A file attached in the chat, read on the server (ENG-410). */
+export interface ChatAttachment {
+  name: string;
+  text: string;
+  truncated: boolean;
+}
+
+/** Reads a PDF/Word/text file's text for the next chat message. Rejects with ApiRequestError (code: why). */
+export async function uploadChatAttachment(id: string, file: File): Promise<ChatAttachment> {
+  const form = new FormData();
+  form.append("file", file);
+  const response = await apiClient.post<ChatAttachment>(`/documents/${id}/chat/attachments`, form, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
   return response.data;
 }
 
