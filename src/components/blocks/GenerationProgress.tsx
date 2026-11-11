@@ -24,10 +24,13 @@ export function GenerationProgress({
   phase,
   imageProgress,
   error,
+  attempt = 1,
 }: {
   phase: GenerationPhase;
   imageProgress: ImageProgress | null;
   error: string | null;
+  /** Above 1 once the first draft failed its checks and another is being written. */
+  attempt?: number;
 }) {
   const t = useTranslations("blocks.generationProgress");
   const STEPS: Array<{
@@ -50,6 +53,11 @@ export function GenerationProgress({
         <p className="mt-1 text-sm text-muted-foreground">
           {t("subtitle")}
         </p>
+        {attempt > 1 ? (
+          <p className="mt-3 rounded-lg border border-border bg-muted/50 p-3 text-xs text-muted-foreground" aria-live="polite">
+            {t("retrying")}
+          </p>
+        ) : null}
 
         <ol className="mt-6 space-y-4">
           {STEPS.map((step, i) => {

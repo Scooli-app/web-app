@@ -473,11 +473,13 @@ export default function AssessmentEditor({ documentId, defaultTitle, chatTitle, 
       <AssessmentWorkspace
         doc={inProgress ? null : doc}
         generating={
-          inProgress && progress.partial ? (
+          inProgress ? (
             <AssessmentStreamingPreview
               partial={progress.partial}
               phase={progress.phase}
               imageProgress={progress.imageProgress}
+              imageOutcomes={progress.imageOutcomes}
+              attempt={progress.attempt}
               error={progress.error}
             />
           ) : undefined

@@ -1,5 +1,7 @@
+import type { FollowTarget } from "@/hooks/useFollowGeneration";
+import type { GenerationPhase, ImageProgress } from "@/hooks/useGenerationProgress";
 import { slideBlockSchema, type PresentationDocument, type SlideBlock } from "@/shared/types/blocks";
-import type { CanvasPresentation } from "@/shared/types/canvas-presentation";
+import type { CanvasImageElement, CanvasPresentation, CanvasSlide } from "@/shared/types/canvas-presentation";
 import { presentationToCanvas } from "./canvas-layout";
 
 /**
@@ -28,4 +30,19 @@ export function partialPresentationToCanvas(partial: Record<string, unknown> | n
   } catch {
     return null;
   }
+}
+
+/** True when a slide still has an image without its picture. */
+export function slideHasPendingImage(slide: CanvasSlide): boolean {
+  return slide.elements.some((el) => el.type === "image_placeholder" && !(el as CanvasImageElement).url);
+}
+
+/** What the screen follows: the newest slide while writing, then the next picture to come, then nothing. */
+export function presentationFollowTarget(
+  phase: GenerationPhase,
+  imageProgress: ImageProgress | null,
+): FollowTarget {
+  if (phase === "preparing" || phase === "generating") return "end";
+  if (imageProgress && imageProgress.total > 0 && imageProgress.completed < imageProgress.total) return "pending";
+  return null;
 }
