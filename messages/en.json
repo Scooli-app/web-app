@@ -3459,7 +3459,6 @@
       "typeLabel": "Type:",
       "objectivesTitle": "Learning Objectives",
       "objectivesProcessing": "Processing…",
-      "streamPreviewTitle": "Writing the lesson plan",
       "objectivesEmpty": "The objectives appear once the lesson plan is ready.",
       "documentsTitle": "Generated documents",
       "loadingDocuments": "Loading documents…",
@@ -3494,7 +3493,20 @@
         "presentation": "slides",
         "test": "test"
       },
-      "reinforcementBadge": "Reinforcement"
+      "reinforcementBadge": "Reinforcement",
+      "progress": {
+        "planTitle": "Preparing the lesson plan",
+        "setTitle": "Preparing {items}",
+        "steps": {
+          "s1": "Reading the national curriculum",
+          "s2": "Consulting curriculum sources",
+          "s3": "Setting the lesson objectives",
+          "s4": "Structuring the lesson",
+          "s5": "Creating activities and exercises",
+          "s6": "Reviewing and polishing the details"
+        },
+        "hint": "You can close this window — we'll keep preparing in the background."
+      }
     },
     "dashboardWidget": {
       "title": "Upcoming lessons",

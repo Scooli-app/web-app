@@ -3459,7 +3459,6 @@
       "typeLabel": "Tipo:",
       "objectivesTitle": "Objetivos de aprendizagem",
       "objectivesProcessing": "A processar…",
-      "streamPreviewTitle": "A escrever o plano de aula",
       "objectivesEmpty": "Os objetivos aparecem quando o plano de aula estiver pronto.",
       "documentsTitle": "Documentos gerados",
       "loadingDocuments": "A carregar documentos…",
@@ -3494,7 +3493,20 @@
         "presentation": "apresentação",
         "test": "teste"
       },
-      "reinforcementBadge": "Reforço"
+      "reinforcementBadge": "Reforço",
+      "progress": {
+        "planTitle": "A preparar o plano de aula",
+        "setTitle": "A preparar {items}",
+        "steps": {
+          "s1": "A ler as Aprendizagens Essenciais",
+          "s2": "A consultar fontes do currículo",
+          "s3": "A definir os objetivos da aula",
+          "s4": "A estruturar os momentos da aula",
+          "s5": "A criar atividades e exercícios",
+          "s6": "A rever e afinar os detalhes"
+        },
+        "hint": "Podes fechar esta janela — continuamos a preparar em segundo plano."
+      }
     },
     "dashboardWidget": {
       "title": "Próximas aulas",
