@@ -510,9 +510,10 @@ function ChatContent({
                     <Button
                       type="button"
                       size="sm"
-                      variant="outline"
                       disabled={creatingDocument || isInputLocked}
-                      className="mt-2 h-8 gap-1.5 text-xs"
+                      // The offer is the whole point of the reply: a full-width primary button, wrapping instead of
+                      // overflowing the narrow panel, so nobody waits for a document that needs this click.
+                      className="mt-2 h-auto min-h-9 w-full justify-start gap-1.5 whitespace-normal py-2 text-left text-xs"
                       data-testid="chat-new-document"
                       onClick={async () => {
                         const request = message.newDocument;
@@ -525,7 +526,7 @@ function ChatContent({
                         }
                       }}
                     >
-                      {creatingDocument ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FilePlus2 className="h-3.5 w-3.5" />}
+                      {creatingDocument ? <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" /> : <FilePlus2 className="h-3.5 w-3.5 shrink-0" />}
                       {creatingDocument
                         ? t("newDocumentCreating")
                         : t("newDocumentAction", {
