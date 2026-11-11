@@ -183,8 +183,9 @@ const MenuBar = memo(function MenuBar({
     onUploadImage?.();
   }, [onEditorActivity, onUploadImage]);
 
+  // Sticks flush to the top of the document scroller (padding py-6, py-3 on phones): nothing shows above it.
   return (
-    <div className="sticky top-0 z-10 flex w-full items-center gap-2 overflow-hidden rounded-t-xl border-b border-border bg-card p-2">
+    <div className="sticky -top-6 z-10 flex w-full items-center gap-2 overflow-hidden rounded-t-xl border-b border-border bg-card p-2 max-md:-top-3">
       <div className="flex min-w-0 flex-1 gap-1 overflow-x-auto pr-1 [scrollbar-width:none]">
         <button
           onClick={handleBold}

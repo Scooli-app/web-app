@@ -11,7 +11,7 @@
  * 2. Prose inside a maths span is moved out of it: `$\frac{2}{3} é maior que \frac{3}{4}$`
  *    becomes `$\frac{2}{3}$ é maior que $\frac{3}{4}$`.
  * 3. LaTeX written without delimiters (`\frac{1}{2} = \frac{___}{4}`) is wrapped in `$...$`.
- * 4. Fill-in blanks inside maths (`___`, `\_\_`) become `\square`. An underscore is LaTeX's
+ * 4. Fill-in blanks inside maths (`___`, `\_\_`, or drawn as \triangle, \circ, ○) become `\square`. An underscore is LaTeX's
  *    subscript operator, so KaTeX cannot render a blank made of them.
  *
  * Well-formed maths comes back unchanged, and the repair is idempotent.
@@ -55,6 +55,12 @@ const ESCAPED_UNDERSCORE_BLANK = /\\_(?:\s*\\_)*/g;
 const UNDERSCORE_BLANK = /_{2,}/g;
 const DANGLING_UNDERSCORE = /_(?=\s*(?:\}|$))/g;
 const REPEATED_SQUARE = /\\square(?:\s*\\square)+(?![A-Za-z])/g;
+/**
+ * Other shapes the model uses as a fill-in box (`36 : 4 = \triangle : 2`). Not a degree sign (`90^\circ`),
+ * composition (`f \circ g`) or a named triangle (`\triangle ABC`): a shape after `^` or before a letter stays.
+ */
+const PLACEHOLDER_SHAPE =
+  /(?<!\^\s{0,3})(?<!\^\{\s{0,3})(?:\\(?:triangle|bigtriangleup|vartriangle|bigcirc|circ|Box|diamond|Diamond|lozenge|star|bigstar)(?![A-Za-z])|[\u25B3\u25B2\u25B5\u25CB\u25EF\u25CF\u25C7\u25C6\u25CA\u2606\u2605\u25A1\u25A0\u2B1C\u25A2])(?!\s*[A-Za-z])/g;
 const SENTENCE_PUNCTUATION = ",.;:?!";
 
 type SegmentType = "text" | "inline" | "display";
@@ -435,7 +441,9 @@ function isMathSymbol(tokens: Token[], t: number): boolean {
 }
 
 /** Replaces fill-in blanks written with underscores by `\square`, which KaTeX can render. */
-function fixBlanks(math: string): string {
+function fixBlanks(input: string): string {
+  // A fill-in box is always a square, whatever shape it was drawn as.
+  const math = input.replace(PLACEHOLDER_SHAPE, "\\square");
   if (!math.includes("_")) return math;
   return math
     .replace(ESCAPED_UNDERSCORE_BLANK, "\\square")
