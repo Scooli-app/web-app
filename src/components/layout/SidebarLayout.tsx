@@ -59,7 +59,6 @@ import {
 import {
   Building2,
   CalendarRange,
-  Clock,
   FileText,
   FolderArchiveIcon,
   GanttChart,
@@ -165,12 +164,13 @@ const LIBRARY_NAVIGATION: NavItem[] = [
     href: Routes.DOCUMENTS,
     icon: FileText,
   },
-  {
-    key: "community",
-    href: Routes.COMMUNITY,
-    icon: FolderArchiveIcon,
-  },
 ];
+
+const COMMUNITY_NAV_ITEM: NavItem = {
+  key: "community",
+  href: Routes.COMMUNITY,
+  icon: FolderArchiveIcon,
+};
 
 const SECONDARY_NAVIGATION: NavItem[] = [
   {
@@ -251,47 +251,16 @@ const NavMenuItem = memo(function NavMenuItem({
   );
 });
 
-const DisabledNavMenuItem = memo(function DisabledNavMenuItem({
-  item,
-}: {
-  item: NavItem;
-}) {
-  const t = useTranslations("nav");
-  const Icon = item.icon;
-
-  return (
-    <SidebarMenuItem>
-      <SidebarMenuButton
-        disabled
-        className="h-auto min-h-10 cursor-not-allowed items-start px-4 py-2 text-sidebar-foreground opacity-50"
-      >
-        <Icon className="mt-0.5 h-4 w-4 shrink-0" />
-        <div className="min-w-0 flex-1 space-y-1">
-          <p className="whitespace-normal break-words text-left leading-tight">
-            {t(`items.${item.key}.title`)}
-          </p>
-          <div className="inline-flex items-center gap-1 rounded-full border border-border bg-muted px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide whitespace-nowrap text-muted-foreground">
-            <Clock className="h-2.5 w-2.5 shrink-0" />
-            {t("comingSoon")}
-          </div>
-        </div>
-      </SidebarMenuButton>
-    </SidebarMenuItem>
-  );
-});
-
 const NavGroup = memo(function NavGroup({
   label,
   items,
   pathname,
   onItemClick,
-  disabledKeys = [],
 }: {
   label?: string;
   items: readonly NavItem[];
   pathname: string;
   onItemClick?: () => void;
-  disabledKeys?: string[];
 }) {
   return (
     <SidebarGroup>
@@ -302,19 +271,15 @@ const NavGroup = memo(function NavGroup({
       )}
       <SidebarGroupContent>
         <SidebarMenu>
-          {items.map((item) =>
-            disabledKeys.includes(item.href) ? (
-              <DisabledNavMenuItem key={item.href} item={item} />
-            ) : (
-              <NavMenuItem
-                key={item.href}
-                item={item}
-                isActive={isNavItemActive(item.href, pathname)}
-                onClick={onItemClick}
-                badge={item.href === Routes.SOURCES ? <SourcesPendingBadge /> : undefined}
-              />
-            ),
-          )}
+          {items.map((item) => (
+            <NavMenuItem
+              key={item.href}
+              item={item}
+              isActive={isNavItemActive(item.href, pathname)}
+              onClick={onItemClick}
+              badge={item.href === Routes.SOURCES ? <SourcesPendingBadge /> : undefined}
+            />
+          ))}
         </SidebarMenu>
       </SidebarGroupContent>
     </SidebarGroup>
@@ -418,12 +383,6 @@ const SidebarNavigationContent = memo(function SidebarNavigationContent({
   const router = useRouter();
   const { isAdmin } = useAdmin();
   const features = useSelector((state: RootState) => state.features.flags);
-  // A failed flag fetch must not turn real features into "Em breve": with no
-  // flags at all, show every item enabled and let each page report its own error.
-  const flagsUnavailable = useSelector(
-    (state: RootState) =>
-      state.features.error !== null && Object.keys(state.features.flags).length === 0,
-  );
   const workspace = useSelector(selectWorkspaceContext);
   const { canAccess: canAccessSchoolArea } = useSchoolAdminAccess();
   const isCommunityEnabled = features[FeatureFlag.COMMUNITY_LIBRARY] === true;
@@ -440,6 +399,7 @@ const SidebarNavigationContent = memo(function SidebarNavigationContent({
   ];
   const libraryItems: NavItem[] = [
     ...LIBRARY_NAVIGATION,
+    ...(isCommunityEnabled ? [COMMUNITY_NAV_ITEM] : []),
     ...(isUserSourcesEnabled ? [SOURCES_NAV_ITEM] : []),
   ];
 
@@ -478,9 +438,6 @@ const SidebarNavigationContent = memo(function SidebarNavigationContent({
           items={libraryItems}
           pathname={pathname}
           onItemClick={onItemClick}
-          disabledKeys={
-            isCommunityEnabled || flagsUnavailable ? [] : [Routes.COMMUNITY]
-          }
         />
 
         <Separator className="my-4" />

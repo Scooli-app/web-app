@@ -80,3 +80,9 @@ export const selectIsAlreadyCoveredEnabled = createSelector(
 
 
 
+
+/** The community library (browse, share, contributor dashboard). Off: hidden everywhere. */
+export const selectIsCommunityLibraryEnabled = createSelector(
+  [selectEnabledFeatureFlags],
+  (enabledFeatures) => enabledFeatures.includes(FeatureFlag.COMMUNITY_LIBRARY)
+);
