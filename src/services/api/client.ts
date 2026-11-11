@@ -308,8 +308,10 @@ apiClient.interceptors.response.use(
       );
     }
     if (error.request) {
+      // A client-side timeout is not a dropped connection: callers that can say so (the chat) need the difference.
+      const timedOut = error.code === "ECONNABORTED" || error.code === "ETIMEDOUT";
       return Promise.reject(
-        new ApiRequestError(translate("errors.api.networkError"), 0, null)
+        new ApiRequestError(translate("errors.api.networkError"), 0, timedOut ? "timeout" : null)
       );
     }
     return Promise.reject(error);

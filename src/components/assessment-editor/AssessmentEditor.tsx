@@ -1,6 +1,6 @@
 "use client";
 
-import AIChatPanel from "@/components/document-editor/AIChatPanel";
+import AIChatPanel, { type ChatMessage } from "@/components/document-editor/AIChatPanel";
 import { InlineTitle } from "@/components/document-editor/InlineTitle";
 import { DocumentEditorSkeleton } from "@/components/document-editor/DocumentEditorSkeleton";
 import { DocumentLessonContext } from "@/components/document-editor/DocumentLessonContext";
@@ -15,9 +15,21 @@ import { useGenerationStalled } from "@/hooks/useGenerationStalled";
 import { generateDocumentImage } from "@/services/api/document-images.service";
 import { dismissAnswerCheck } from "@/services/api/document.service";
 import { searchAeOutcomes } from "@/services/export/documentExport";
-import { Routes, type Document } from "@/shared/types";
+import { Routes, type ChatNewDocument, type Document } from "@/shared/types";
 import { isFailedDocumentStatus, type RagSource } from "@/shared/types/document";
 import { chatWithDocument, fetchDocument, setCurrentDocument, updateDocument } from "@/store/documents/documentSlice";
+import {
+  assistantMessageFromResponse,
+  captureChatFeedback,
+  captureChatMessageSent,
+  captureChatResponse,
+  loadChatHistory,
+  newChatTurnId,
+  startNewConversation,
+  useChatFailureText,
+  useCreateDocumentFromChat,
+} from "@/hooks/useDocumentChat";
+
 import { fetchEntitlements } from "@/store/entitlements/entitlementsSlice";
 import { selectCurrentEntitlement, selectEntitlementError, selectEntitlementLoading } from "@/store/entitlements/selectors";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
@@ -35,12 +47,6 @@ import { AssessmentWorkspace } from "./AssessmentWorkspace";
 import { ExportDialog } from "./ExportDialog";
 import { adoptGrids, adoptStudentOrder, exerciseNumbers, missingAnswer, parseAssessment } from "./model";
 import { createSerialRunner } from "./serialRunner";
-
-interface ChatMessage {
-  role: "user" | "assistant";
-  content: string;
-  hasUpdate?: boolean;
-}
 
 interface AssessmentEditorProps {
   documentId: string;
@@ -310,9 +316,20 @@ export default function AssessmentEditor({ documentId, defaultTitle, chatTitle, 
   const [chatError, setChatError] = useState("");
   const [chatOpen, setChatOpen] = useState(false);
 
+  const chatFailureText = useChatFailureText();
+  const createDocumentFromChat = useCreateDocumentFromChat();
+
   useEffect(() => {
     setChatHistory([]);
     setChatError("");
+    // ENG-396: show the stored conversation (the assistant already reads it).
+    let cancelled = false;
+    void loadChatHistory(documentId).then((messages) => {
+      if (!cancelled && messages.length > 0) setChatHistory(messages);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [documentId]);
 
   useEffect(() => {
@@ -343,24 +360,71 @@ export default function AssessmentEditor({ documentId, defaultTitle, chatTitle, 
         return false;
       }
       setIsChatting(true);
+      const turnId = newChatTurnId();
+      const startedAt = Date.now();
+      const analytics = { turnId, documentId: document.id, documentType: document.documentType, editor: "assessment" as const };
+      captureChatMessageSent({ ...analytics, message });
       try {
         setChatHistory((prev) => [...prev, { role: "user", content: message }]);
         const response = await dispatch(chatWithDocument({ id: document.id, message })).unwrap();
+        captureChatResponse({ ...analytics, startedAt, response });
         const updated = !!parseAssessment(response.content);
         if (updated) {
           needsLoadRef.current = true;
           await dispatch(fetchDocument(document.id));
         }
-        setChatHistory((prev) => [...prev, { role: "assistant", content: response.chatAnswer || t("chatUpdated"), hasUpdate: updated }]);
+        setChatHistory((prev) => [
+          ...prev,
+          assistantMessageFromResponse(
+            { ...response, chatAnswer: response.chatAnswer || t("chatUpdated") },
+            { hasUpdate: updated },
+          ),
+        ]);
         return true;
-      } catch {
-        setChatError(t("chatError"));
+      } catch (failure) {
+        captureChatResponse({ ...analytics, startedAt, failure });
+        setChatError(chatFailureText(failure));
         return true;
       } finally {
         setIsChatting(false);
       }
     },
-    [dispatch, document, save, saveFailed, t],
+    [chatFailureText, dispatch, document, save, saveFailed, t],
+  );
+
+  const handleNewConversation = useCallback(async () => {
+    if (await startNewConversation(documentId)) {
+      setChatHistory([]);
+      setChatError("");
+    }
+  }, [documentId]);
+
+  const handleChatFeedback = useCallback(
+    (index: number, rating: "up" | "down") => {
+      setChatHistory((prev) =>
+        prev.map((m, i) => {
+          if (i !== index) return m;
+          captureChatFeedback({ documentId, documentType: document?.documentType, editor: "assessment", rating, message: m });
+          return { ...m, feedback: rating };
+        }),
+      );
+    },
+    [document?.documentType, documentId],
+  );
+
+  const handleNewDocumentFromChat = useCallback(
+    async (request: ChatNewDocument) => {
+      if (!document) return;
+      await createDocumentFromChat(request, {
+        id: document.id,
+        title: document.title,
+        subject: document.subject,
+        gradeLevel: document.gradeLevel,
+        content: null,
+        documentType: document.documentType,
+      });
+    },
+    [createDocumentFromChat, document],
   );
 
   /* ── Images ──────────────────────────────────────────────────────── */
@@ -570,6 +634,9 @@ export default function AssessmentEditor({ documentId, defaultTitle, chatTitle, 
             documentType={document.documentType}
             suggestionsKey={document.documentType === "worksheet" ? "assessmentWorksheet" : document.documentType === "quiz" ? "assessmentQuiz" : "assessment"}
             documentId={documentId}
+            onNewConversation={handleNewConversation}
+            onFeedback={handleChatFeedback}
+            onNewDocument={handleNewDocumentFromChat}
           />
         }
       />

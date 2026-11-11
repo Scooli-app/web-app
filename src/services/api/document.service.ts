@@ -4,7 +4,7 @@
  * Based on Chalkboard backend API (Quarkus)
  */
 
-import type { BackendPaginatedResponse, ChatResponse, CreateDocumentParams, CreateDocumentStreamResponse, Document, DocumentFilters, DocumentStatsResponse, DocumentStreamCallbacks, DocumentType, GenerateSlideResponse, GetDocumentsParams, GetDocumentsResponse, StreamedResponse, StreamEvent, WorksheetVariant } from "@/shared/types";
+import type { BackendPaginatedResponse, ChatHistoryMessage, ChatResponse, CreateDocumentParams, CreateDocumentStreamResponse, Document, DocumentFilters, DocumentStatsResponse, DocumentStreamCallbacks, DocumentType, GenerateSlideResponse, GetDocumentsParams, GetDocumentsResponse, StreamedResponse, StreamEvent, WorksheetVariant } from "@/shared/types";
 import { isFailedDocumentStatus, type DocumentImage, type RagSource } from "@/shared/types/document";
 import type { DocumentVersionDetail, DocumentVersionSummary } from "@/shared/types/document-versions";
 import { translate } from "@/i18n/translate";
@@ -343,16 +343,41 @@ export async function dismissAnswerCheck(id: string, exerciseId: string): Promis
  * Send a chat message to update a document via AI
  * Returns updated document with chatAnswer
  */
+/** Above the server's own AI timeout (180 s), so the server's typed timeout answer wins over a client abort. */
+export const CHAT_REQUEST_TIMEOUT_MS = 200_000;
+
 export async function chatWithDocument(
   id: string,
   message: string,
-  canvasState?: string
+  canvasState?: string,
+  options: { pendingReview?: boolean } = {},
 ): Promise<ChatResponse> {
-  const response = await apiClient.post<ChatResponse>(`/documents/${id}/chat`, {
-    chatMessage: message,
-    ...(canvasState ? { canvasState } : {}),
-  });
+  const response = await apiClient.post<ChatResponse>(
+    `/documents/${id}/chat`,
+    {
+      chatMessage: message,
+      ...(canvasState ? { canvasState } : {}),
+      ...(options.pendingReview ? { pendingReview: true } : {}),
+    },
+    { timeout: CHAT_REQUEST_TIMEOUT_MS },
+  );
   return response.data;
+}
+
+/** The document's stored conversation, oldest first (ENG-396). */
+export async function getChatHistory(id: string): Promise<ChatHistoryMessage[]> {
+  const response = await apiClient.get<{ messages: ChatHistoryMessage[] }>(`/documents/${id}/chat`);
+  return response.data.messages ?? [];
+}
+
+/** "Nova conversa": the assistant stops seeing the previous turns. */
+export async function clearChatHistory(id: string): Promise<void> {
+  await apiClient.delete(`/documents/${id}/chat`);
+}
+
+/** The teacher finished reviewing the AI's proposed changes (ENG-408). */
+export async function discardPendingAiEdit(id: string): Promise<void> {
+  await apiClient.delete(`/documents/${id}/chat/pending`);
 }
 
 export async function generateSlide(

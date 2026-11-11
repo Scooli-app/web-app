@@ -1454,7 +1454,49 @@
           }
         ]
       },
-      "generatingPlaceholder": "Chat is available once the document is ready."
+      "generatingPlaceholder": "Chat is available once the document is ready.",
+      "errors": {
+        "timeout": "The request took too long and was stopped. The document was not changed. Try again, or ask for the change in parts (one section at a time).",
+        "network": "No connection to the server. Check your internet and send again — your message is still in the text box.",
+        "notFound": "This document no longer exists or you don't have access to it.",
+        "server": "I couldn't answer right now and the document was not changed. Try again in a moment — your message is still in the text box.",
+        "upgrade": "You've reached your plan's generation limit.",
+        "locked": "Your account is in read-only mode."
+      },
+      "progress": [
+        "Reading the document…",
+        "Preparing the answer…",
+        "Still working — long documents take longer…"
+      ],
+      "changesTitle": "Changes",
+      "changeKinds": {
+        "added": "New",
+        "changed": "Changed",
+        "removed": "Removed"
+      },
+      "wholeDocument": "Document",
+      "noChangeBadge": "No changes to the document",
+      "freeTurn": "Did not count as a generation",
+      "newDocumentAction": "Create a {type} from this document",
+      "newDocumentCreating": "Creating…",
+      "documentTypes": {
+        "worksheet": "worksheet",
+        "test": "test",
+        "quiz": "quiz",
+        "presentation": "presentation",
+        "lessonPlan": "lesson plan",
+        "curriculumPlan": "curriculum plan"
+      },
+      "feedbackUp": "Helpful answer",
+      "feedbackDown": "Not helpful",
+      "feedbackThanks": "Thanks for the feedback!",
+      "newConversation": "New conversation",
+      "newConversationHint": "Start over: the assistant stops taking the previous messages into account.",
+      "previousConversation": "Previous conversation",
+      "pendingReviewTitle": "You have AI changes to review",
+      "pendingReviewReview": "Review",
+      "pendingReviewDiscard": "Discard",
+      "leaveWithPending": "You have AI changes to accept or reject. If you leave now, they won't be saved."
     },
     "calendarButton": {
       "viewClass": "View class",

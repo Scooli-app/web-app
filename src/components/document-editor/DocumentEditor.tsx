@@ -5,9 +5,9 @@ import { useDocumentManager } from "@/hooks/useDocumentManager";
 import { useEditorAnalytics } from "@/hooks/useEditorAnalytics";
 import { useGenerationStalled } from "@/hooks/useGenerationStalled";
 import { uploadDocumentImage } from "@/services/api/document-images.service";
-import { streamDocumentContent } from "@/services/api/document.service";
+import { discardPendingAiEdit, streamDocumentContent } from "@/services/api/document.service";
 import { AUTO_SAVE_DELAY } from "@/shared/config/constants";
-import { Routes, type Document } from "@/shared/types";
+import { Routes, type ChatChange, type ChatNewDocument, type Document } from "@/shared/types";
 import { isFailedDocumentStatus, type RagSource } from "@/shared/types/document";
 import { isUsableDocumentContent } from "@/shared/utils/documentContent";
 import { escapeMarkdownImageAlt, htmlToMarkdown, markdownToHtml } from "@/shared/utils/markdown";
@@ -55,7 +55,19 @@ import { cn } from "@/shared/utils/utils";
 import { EmptyState } from "../ui/empty-state";
 import RichTextEditor from "../ui/rich-text-editor";
 import { GenerationStalledNotice } from "../ui/generation-stalled-notice";
-import AIChatPanel from "./AIChatPanel";
+import AIChatPanel, { type ChatMessage } from "./AIChatPanel";
+import {
+  assistantMessageFromResponse,
+  captureChatFeedback,
+  captureChatMessageSent,
+  captureChatResponse,
+  loadChatHistory,
+  newChatTurnId,
+  startNewConversation,
+  useChatFailureText,
+  useCreateDocumentFromChat,
+} from "@/hooks/useDocumentChat";
+
 import { DocumentLessonContext } from "./DocumentLessonContext";
 import { SuggestionBar } from "@/components/document-versions/SuggestionBar";
 import { InlineTitle } from "./InlineTitle";
@@ -64,11 +76,6 @@ import DownloadButton from "./DownloadButton";
 import ShareButton from "./ShareButton";
 import { DocumentVersionsButton } from "@/components/document-versions/DocumentVersionsButton";
 
-interface ChatMessage {
-  role: "user" | "assistant";
-  content: string;
-  hasUpdate?: boolean;
-}
 
 interface DocumentEditorProps {
   documentId: string;
@@ -302,6 +309,13 @@ export default function DocumentEditor({
 
   // Diff / Suggestions mode state
   const [isSuggestionsMode, setIsSuggestionsMode] = useState(false);
+  // An AI proposal stored on the server and not reviewed yet (ENG-408): offered again when the document reopens.
+  const [pendingProposal, setPendingProposal] = useState<string | null>(null);
+  // The proposal can only be shown as suggestions once the page's editor exists.
+  const [editorReady, setEditorReady] = useState(false);
+  const historyLoadedForRef = useRef<string | null>(null);
+  const chatFailureText = useChatFailureText();
+  const createDocumentFromChat = useCreateDocumentFromChat();
 
   const [showChatNudge, setShowChatNudge] = useState(false);
   const prevIsGeneratingRef = useRef(false);
@@ -322,6 +336,8 @@ export default function DocumentEditor({
     hasStreamingSourcesRef.current = false;
     setIsStreaming(false);
     setChatHistory([]);
+    setPendingProposal(null);
+    historyLoadedForRef.current = null;
     setSources([]);
     setError("");
     setDisplayContent("");
@@ -362,6 +378,7 @@ export default function DocumentEditor({
 
   const handleEditorReady = useCallback((editor: Editor) => {
     editorRef.current = editor;
+    setEditorReady(true);
   }, []);
 
   const normalizePendingTitle = useCallback((rawTitle: string): string => {
@@ -956,6 +973,12 @@ export default function DocumentEditor({
     };
   }, []);
 
+  // ENG-408: once the teacher has reviewed a proposal (whatever they kept was autosaved), the server copy goes.
+  const finishProposalReview = useCallback(() => {
+    setPendingProposal(null);
+    void discardPendingAiEdit(documentId).catch(() => undefined);
+  }, [documentId]);
+
   // Register callback to auto-exit suggestions mode when all changes are resolved
   useEffect(() => {
     const editor = editorRef.current;
@@ -984,13 +1007,14 @@ export default function DocumentEditor({
         const markdown = htmlToMarkdown(html);
         setContent(markdown);
         void handleTrackedAutosave(markdown);
+        finishProposalReview();
       }
     };
 
     return () => {
       storage.onDiffStateChange = null;
     };
-  }, [handleTrackedAutosave, isSuggestionsMode, setContent]);
+  }, [finishProposalReview, handleTrackedAutosave, isSuggestionsMode, setContent]);
 
   // Handle chat answer from Redux (for non-chat paths or fallback)
   useEffect(() => {
@@ -1130,10 +1154,64 @@ export default function DocumentEditor({
     if (nudgeTimerRef.current) clearTimeout(nudgeTimerRef.current);
   }, []);
 
+  /**
+   * Shows an AI version of the document as suggestions against what the editor has now. With pending review
+   * (ENG-408) nothing is stored yet: accepting saves through the normal autosave, so when the diff engine finds
+   * nothing to review the content is saved straight away instead of silently dropped.
+   */
+  const presentAiProposal = useCallback(
+    (
+      aiMarkdown: string,
+      options: { pendingReview: boolean; baseDoc?: Editor["state"]["doc"] | null; originalHtml?: string | null },
+    ): number => {
+      const editor = editorRef.current;
+      const aiContent = aiMarkdown.trim();
+      if (!editor) {
+        setContent(aiContent);
+        if (options.pendingReview) void handleTrackedAutosave(aiContent);
+        else syncContent(aiContent);
+        return 0;
+      }
+      try {
+        const aiNode = markdownToNode(aiContent, editor.schema);
+        const diffChanges = computeDiff(options.baseDoc || editor.state.doc, aiNode);
+        if (diffChanges.length > 0) {
+          const storage = (
+            editor.storage as unknown as Record<string, { originalContent?: string | null }>
+          ).diff;
+          if (storage) {
+            storage.originalContent = options.originalHtml || editor.getHTML();
+          }
+          // Replace editor content with AI content and apply diff decorations as a single atomic transaction
+          // (see matching comment in the SSE onComplete handler above).
+          editor
+            .chain()
+            .setContent(markdownToHtml(aiContent), { emitUpdate: false })
+            .setDiffChanges(diffChanges)
+            .run();
+          setIsSuggestionsMode(true);
+          return diffChanges.length;
+        }
+        setContent(aiContent);
+        if (options.pendingReview) void handleTrackedAutosave(aiContent);
+        else syncContent(aiContent);
+        return 0;
+      } catch (err) {
+        console.error("Error computing diff:", err);
+        setContent(aiContent);
+        if (options.pendingReview) void handleTrackedAutosave(aiContent);
+        else syncContent(aiContent);
+        return 0;
+      }
+    },
+    [handleTrackedAutosave, setContent, syncContent],
+  );
+
+  /** Resolves false when the request failed: the panel then keeps the text in the input to send again. */
   const handleChatSubmit = useCallback(
-    async (userMessage: string) => {
+    async (userMessage: string): Promise<boolean> => {
       if (!currentDocument?.id || currentDocument.id !== documentId) {
-        return;
+        return false;
       }
 
       dismissChatNudge();
@@ -1143,12 +1221,16 @@ export default function DocumentEditor({
       ]);
       setError("");
       registerChatMessage(userMessage);
-      posthog.capture("ai_chat_message_sent", {
-        document_id: currentDocument.id,
-        document_type: currentDocument.documentType,
-        message_length: userMessage.trim().length,
-        current_image_count: images.length,
-        editor_session_id: getSessionId(),
+      const turnId = newChatTurnId();
+      const startedAt = Date.now();
+      captureChatMessageSent({
+        turnId,
+        documentId: currentDocument.id,
+        documentType: currentDocument.documentType ?? undefined,
+        editor: "markdown",
+        editorSessionId: getSessionId(),
+        message: userMessage,
+        imageCount: images.length,
       });
 
       const editor = editorRef.current;
@@ -1167,8 +1249,17 @@ export default function DocumentEditor({
 
       try {
         const response = await dispatch(
-          chatWithDocument({ id: currentDocument.id, message: userMessage }),
+          chatWithDocument({ id: currentDocument.id, message: userMessage, pendingReview: true }),
         ).unwrap();
+        captureChatResponse({
+          turnId,
+          documentId: currentDocument.id,
+          documentType: currentDocument.documentType ?? undefined,
+          editor: "markdown",
+          editorSessionId: getSessionId(),
+          startedAt,
+          response,
+        });
         // Await the refreshed image list so any images the new content
         // references are already in the store by the time that content is
         // rendered — otherwise ImageBlockNodeView can find no match yet and
@@ -1191,87 +1282,57 @@ export default function DocumentEditor({
           });
         }
 
-        // Add chat answer to history
         if (response.chatAnswer) {
           setChatHistory((prev) => [
             ...prev,
-            {
-              role: "assistant" as const,
-              content: response.chatAnswer,
-              hasUpdate: !!editedContent,
-            },
+            assistantMessageFromResponse(response, { hasUpdate: !!editedContent }),
           ]);
         }
 
-        // Handle content update with diff mode
-        if (editedContent && editor) {
-          try {
-            const aiContent = editedContent.trim();
-            const aiNode = markdownToNode(aiContent, editor.schema);
-            // Use baseDocBefore to ensure we compare with the document BEFORE the API updated Redux
-            const diffChanges = computeDiff(
-              baseDocBefore || editor.state.doc,
-              aiNode,
-            );
-
-            if (diffChanges.length > 0) {
-              registerAiSuggestionReceived(diffChanges.length);
-              // Store original content for "Reject All"
-              const storage = (
-                editor.storage as unknown as Record<
-                  string,
-                  { originalContent?: string | null }
-                >
-              ).diff;
-              if (storage) {
-                storage.originalContent =
-                  originalHtmlBefore || editor.getHTML();
-              }
-
-              // Replace editor content with AI content and apply diff
-              // decorations as a single atomic transaction (see matching
-              // comment in the SSE onComplete handler above).
-              const aiHtml = markdownToHtml(aiContent);
-              editor
-                .chain()
-                .setContent(aiHtml, { emitUpdate: false })
-                .setDiffChanges(diffChanges)
-                .run();
-              setIsSuggestionsMode(true);
-            } else {
-              // No differences — just sync normally
-              setContent(aiContent);
-              syncContent(aiContent);
-            }
-          } catch (err) {
-            console.error("Error computing diff:", err);
-            setContent(editedContent);
-            syncContent(editedContent);
-          }
-        } else if (editedContent) {
-          // No editor ref — direct update
-          setContent(editedContent);
-          syncContent(editedContent);
+        if (editedContent) {
+          const count = presentAiProposal(editedContent, {
+            pendingReview: !!response.pendingReview,
+            baseDoc: baseDocBefore,
+            originalHtml: originalHtmlBefore,
+          });
+          if (count > 0) registerAiSuggestionReceived(count);
+          // The proposal now lives in the editor; the reopen banner is for proposals left behind.
+          setPendingProposal(null);
         }
 
         // Update sources if available
         if (response.sources && response.sources.length > 0) {
           setSources(response.sources);
         }
-      } catch (err) {
+        return true;
+      } catch (failure) {
+        captureChatResponse({
+          turnId,
+          documentId: currentDocument.id,
+          documentType: currentDocument.documentType ?? undefined,
+          editor: "markdown",
+          editorSessionId: getSessionId(),
+          startedAt,
+          failure,
+        });
+        const text = chatFailureText(failure);
         reportUiProblem("chat_error_shown", {
           documentId: currentDocument.id,
           documentType: currentDocument.documentType,
-          message: err instanceof Error ? err.message : null,
+          message: text,
         });
-        setError(t("chatErrorGeneric"));
-        // The backend runs text + image generation synchronously in one
-        // request, which can outlast a client-side network hiccup or proxy
-        // timeout. Resync from the server so a transient client error here
-        // doesn't leave the editor stuck on stale content when the backend
-        // actually finished and persisted the edit.
-        dispatch(fetchDocument(currentDocument.id));
+        setError(text);
+        // The message goes back to the input (the panel keeps it): drop its bubble so a resend isn't shown twice.
+        setChatHistory((prev) =>
+          prev.length > 0 && prev[prev.length - 1].role === "user" && prev[prev.length - 1].content === userMessage
+            ? prev.slice(0, -1)
+            : prev,
+        );
+        // No document resync: with pending review (ENG-408) the server never stores a chat edit before the
+        // teacher accepts it, so a failed or abandoned request cannot have changed the stored document. (A resync
+        // also remounted the panel and lost the message kept in the input.) Images may still have been made.
         dispatch(fetchDocumentImages(currentDocument.id));
+        return false;
       } finally {
         dispatch(setGeneratingImages(false));
         isChatInProgressRef.current = false;
@@ -1279,6 +1340,7 @@ export default function DocumentEditor({
       }
     },
     [
+      chatFailureText,
       currentDocument?.documentType,
       currentDocument?.id,
       dismissChatNudge,
@@ -1286,13 +1348,148 @@ export default function DocumentEditor({
       documentId,
       getSessionId,
       images.length,
+      presentAiProposal,
       registerAiSuggestionReceived,
       registerChatMessage,
       skipNextEditorKeyBumpRef,
-      syncContent,
-      setContent,
-      t,
     ],
+  );
+
+  // ENG-396: the stored conversation is shown when the document opens (the model already reads it).
+  useEffect(() => {
+    if (currentDocument?.id !== documentId || historyLoadedForRef.current === documentId) {
+      return;
+    }
+    historyLoadedForRef.current = documentId;
+    let cancelled = false;
+    void loadChatHistory(documentId).then((messages) => {
+      if (!cancelled && messages.length > 0) {
+        setChatHistory((current) =>
+          // Something was sent meanwhile: keep it after the stored turns.
+          current.some((m) => !m.fromHistory && m.role === "assistant") ? [...messages, ...current] : messages,
+        );
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [currentDocument?.id, documentId]);
+
+  // ENG-408: a proposal left unreviewed is offered again when the document reopens.
+  useEffect(() => {
+    if (currentDocument?.id !== documentId) return;
+    const pending = (currentDocument?.metadata as { pendingAiEdit?: { content?: unknown } } | undefined)
+      ?.pendingAiEdit?.content;
+    if (typeof pending === "string" && pending.trim() && pending.trim() !== (currentDocument?.content ?? "").trim()) {
+      setPendingProposal(pending);
+    }
+    // Only on load: later metadata refreshes must not resurrect a proposal the teacher already handled.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentDocument?.id, documentId]);
+
+  const handleReviewPendingProposal = useCallback(() => {
+    if (!pendingProposal) return;
+    posthog.capture("ai_pending_proposal_reviewed", { document_id: documentId });
+    const count = presentAiProposal(pendingProposal, { pendingReview: true });
+    setPendingProposal(null);
+    if (count === 0) finishProposalReview();
+  }, [documentId, finishProposalReview, pendingProposal, presentAiProposal]);
+
+  const handleDiscardPendingProposal = useCallback(() => {
+    posthog.capture("ai_pending_proposal_discarded", { document_id: documentId });
+    finishProposalReview();
+  }, [documentId, finishProposalReview]);
+
+  // ENG-408: leaving with unresolved suggestions loses them; say so before the tab closes.
+  useEffect(() => {
+    if (!isSuggestionsMode) return;
+    const onBeforeUnload = (event: BeforeUnloadEvent) => {
+      const pendingCount = editorRef.current
+        ? ((editorRef.current.storage as unknown as Record<string, { changes?: unknown[] }>).diff?.changes?.length ?? 1)
+        : 1;
+      posthog.capture("ai_suggestion_left_pending", { document_id: documentId, pending_count: pendingCount });
+      event.preventDefault();
+      event.returnValue = tChat("leaveWithPending");
+      return tChat("leaveWithPending");
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [documentId, isSuggestionsMode, tChat]);
+
+  const handleNewConversation = useCallback(async () => {
+    if (await startNewConversation(documentId)) {
+      setChatHistory([]);
+      setError("");
+    }
+  }, [documentId]);
+
+  const handleChatFeedback = useCallback(
+    (index: number, rating: "up" | "down") => {
+      setChatHistory((prev) =>
+        prev.map((m, i) => {
+          if (i !== index) return m;
+          captureChatFeedback({
+            documentId,
+            documentType: currentDocument?.documentType ?? undefined,
+            editor: "markdown",
+            rating,
+            message: m,
+          });
+          return { ...m, feedback: rating };
+        }),
+      );
+    },
+    [currentDocument?.documentType, documentId],
+  );
+
+  // ENG-404: a change in the list scrolls the page to its section.
+  const handleChangeClick = useCallback((change: ChatChange) => {
+    const root = editorRef.current?.view.dom as HTMLElement | undefined;
+    if (!root) return;
+    const wanted = (change.section ?? "").trim().toLowerCase();
+    const headings = Array.from(root.querySelectorAll("h1, h2, h3, h4, h5, h6")) as HTMLElement[];
+    const target =
+      (wanted && headings.find((h) => h.textContent?.trim().toLowerCase() === wanted)) ||
+      (wanted && headings.find((h) => h.textContent?.trim().toLowerCase().includes(wanted))) ||
+      (root.querySelector(".diff-inserted, .diff-deleted, [data-diff-change-id]") as HTMLElement | null) ||
+      null;
+    if (!target) return;
+    target.scrollIntoView({ behavior: "auto", block: "center" });
+    // ProseMirror owns its DOM and drops classes added to it, so the flash is an overlay above the section.
+    const rect = target.getBoundingClientRect();
+    const flash = window.document.createElement("div");
+    flash.className = "chat-change-highlight";
+    Object.assign(flash.style, {
+      position: "fixed",
+      left: `${rect.left - 6}px`,
+      top: `${rect.top - 4}px`,
+      width: `${rect.width + 12}px`,
+      height: `${rect.height + 8}px`,
+      pointerEvents: "none",
+      zIndex: "40",
+    });
+    window.document.body.appendChild(flash);
+    window.setTimeout(() => flash.remove(), 1600);
+    posthog.capture("ai_chat_change_clicked", { document_id: documentId, kind: change.kind });
+  }, [documentId]);
+
+  const handleNewDocumentFromChat = useCallback(
+    async (request: ChatNewDocument) => {
+      if (!currentDocument) return;
+      const problem = await createDocumentFromChat(request, {
+        id: currentDocument.id,
+        title: currentDocument.title,
+        subject: currentDocument.subject,
+        gradeLevel: currentDocument.gradeLevel,
+        duration: (currentDocument as { duration?: number | null }).duration ?? null,
+        content: currentDocument.content,
+        documentType: currentDocument.documentType,
+      });
+      if (problem) {
+        toast.error(tChat("errors.server"));
+      }
+    },
+    [createDocumentFromChat, currentDocument, tChat],
   );
 
   const isGenerating =
@@ -1342,7 +1539,8 @@ export default function DocumentEditor({
       setContent(markdown);
       void handleTrackedAutosave(markdown);
     }
-  }, [handleTrackedAutosave, setContent]);
+    finishProposalReview();
+  }, [finishProposalReview, handleTrackedAutosave, setContent]);
 
   if (isLoading && !isGenerating) return <DocumentEditorSkeleton />;
 
@@ -1386,6 +1584,10 @@ export default function DocumentEditor({
       documentId={documentId}
       nudge={showChatNudge}
       onNudgeDismiss={dismissChatNudge}
+      onChangeClick={handleChangeClick}
+      onNewDocument={handleNewDocumentFromChat}
+      onNewConversation={handleNewConversation}
+      onFeedback={handleChatFeedback}
     />
   );
   // Curriculum plans carry wide tables: their page takes the desk's width instead of a reading width.
@@ -1504,6 +1706,20 @@ export default function DocumentEditor({
                         </Button>
                       }
                     />
+                  )}
+                  {pendingProposal && editorReady && !isSuggestionsMode && !isGenerating && (
+                    <div
+                      className="mb-3 flex flex-wrap items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 px-4 py-2.5"
+                      data-testid="pending-ai-proposal"
+                    >
+                      <p className="flex-1 text-sm font-medium text-foreground">{tChat("pendingReviewTitle")}</p>
+                      <Button size="sm" onClick={handleReviewPendingProposal}>
+                        {tChat("pendingReviewReview")}
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={handleDiscardPendingProposal}>
+                        {tChat("pendingReviewDiscard")}
+                      </Button>
+                    </div>
                   )}
                   {isSuggestionsMode && editorRef.current && (
                     <DiffToolbar

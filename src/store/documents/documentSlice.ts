@@ -28,6 +28,7 @@ import type {
 } from "@/shared/types/document";
 import { isUsableDocumentContent } from "@/shared/utils/documentContent";
 import { translate } from "@/i18n/translate";
+import { isChatFailure, toChatFailure } from "@/lib/chatErrors";
 import { ApiRequestError, UpgradeLimitError } from "@/services/api/client";
 import { fetchEntitlements } from "@/store/entitlements/entitlementsSlice";
 import { fetchUsage } from "@/store/subscription/subscriptionSlice";
@@ -306,20 +307,24 @@ export const updateDocument = createAsyncThunk<
 export const chatWithDocument = createAsyncThunk(
   "documents/chatWithDocument",
   async (
-    { id, message, canvasState }: { id: string; message: string; canvasState?: string },
+    {
+      id,
+      message,
+      canvasState,
+      pendingReview,
+    }: { id: string; message: string; canvasState?: string; pendingReview?: boolean },
     { rejectWithValue, dispatch }
   ) => {
     try {
-      const response = await chatWithDocumentService(id, message, canvasState);
-      
+      const response = await chatWithDocumentService(id, message, canvasState, { pendingReview });
+
       dispatch(fetchUsage());
       dispatch(fetchEntitlements());
-      
+
       return response;
     } catch (error) {
-      return rejectWithValue(
-        error instanceof Error ? error.message : translate("errors.documents.chatFailed")
-      );
+      // Typed, so the panel can say what happened and what to do next (ENG-399).
+      return rejectWithValue(toChatFailure(error));
     }
   }
 );
@@ -615,12 +620,14 @@ const documentSlice = createSlice({
         // A chat turn that only answers a question returns no content. Overwriting the
         // stored document in that case wipes it, so only patch fields the server
         // actually sent back.
+        // A proposal awaiting review (ENG-408) is not the stored document: the store keeps the saved
+        // content and version, so accepting the suggestions saves them like any other edit.
+        const storedContentChanged =
+          !response.pendingReview && isUsableDocumentContent(response.content);
         const chatPatch = {
           ...(response.title ? { title: response.title } : {}),
-          ...(isUsableDocumentContent(response.content)
-            ? { content: response.content }
-            : {}),
-          contentVersion: response.contentVersion,
+          ...(storedContentChanged ? { content: response.content } : {}),
+          ...(response.pendingReview ? {} : { contentVersion: response.contentVersion }),
           ...(response.sources && { sources: response.sources }),
           ...(response.updatedAt ? { updatedAt: response.updatedAt } : {}),
         };
@@ -639,7 +646,10 @@ const documentSlice = createSlice({
         state.isChatting = false;
       })
       .addCase(chatWithDocument.rejected, (state, action) => {
-        state.error = action.payload as string;
+        const failure = action.payload;
+        state.error = isChatFailure(failure)
+          ? (failure.message ?? translate("errors.documents.chatFailed"))
+          : translate("errors.documents.chatFailed");
         state.isChatting = false;
       })
     // // Delete Document

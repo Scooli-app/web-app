@@ -777,3 +777,16 @@ math-field::part(menu-toggle) {
     color: #000;
   }
 }
+
+/* Chat change list (ENG-404): the section the teacher clicked flashes once. */
+.chat-change-highlight {
+  animation: chat-change-flash 1.6s ease-out;
+  border-radius: 0.375rem;
+}
+@keyframes chat-change-flash {
+  0%, 30% { background-color: color-mix(in srgb, var(--primary) 18%, transparent); }
+  100% { background-color: transparent; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .chat-change-highlight { animation: none; outline: 2px solid color-mix(in srgb, var(--primary) 50%, transparent); }
+}
