@@ -50,7 +50,7 @@ async function render(history: ChatMessage[], props: Partial<Parameters<typeof A
     );
   });
   // Desktop and mobile both render the chat content; the desktop copy comes first.
-  return { onChatSubmit, panel: container.querySelector(".lg\\:block") as HTMLElement };
+  return { onChatSubmit, panel: container.querySelector('[data-chat-panel="desktop"]') as HTMLElement };
 }
 
 function click(el: Element | null | undefined) {

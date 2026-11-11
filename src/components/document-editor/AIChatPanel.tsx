@@ -374,7 +374,8 @@ function ChatContent({
       className={cn(
         "flex flex-col transition-all duration-300",
         isDesktop
-          ? "h-[min(70dvh,760px)] border-border bg-card/50 backdrop-blur-sm lg:h-[calc(100dvh-12rem)]"
+          ? // The editors put the panel in a full-height side column: fill it, so the input sits at the bottom.
+            "min-h-0 flex-1 rounded-none border-0 bg-background shadow-none"
           : "h-full border-0 shadow-none bg-transparent",
       )}
     >
@@ -974,7 +975,7 @@ export default function AIChatPanel({
   return (
     <>
       {/* Desktop: Grid-integrated sidebar panel */}
-      <div className="hidden h-full min-h-0 w-full lg:block">
+      <div className="hidden min-h-0 w-full flex-1 flex-col lg:flex" data-chat-panel="desktop">
         <ChatContent
           chatHistory={chatHistory}
           isStreaming={isStreaming}
