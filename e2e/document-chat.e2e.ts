@@ -10,13 +10,13 @@ import { expect, test } from "./support/fixtures";
 const ADDED = "Atividade extra (e2e)";
 
 function chat(page: Page) {
-  // Desktop: the side panel. Its input is the only one with the assistant's placeholder.
-  return page.locator("aside").filter({ has: page.getByPlaceholder(/pergunta|ajuda/i) });
+  // Desktop: the side panel that holds the desktop chat input (the placeholder differs per document type).
+  return page.locator("aside").filter({ has: page.locator('[data-chat-input="desktop"]') });
 }
 
 async function send(page: Page, text: string) {
   const panel = chat(page);
-  const input = panel.getByRole("textbox");
+  const input = panel.locator('[data-chat-input="desktop"]');
   await input.fill(text);
   await input.press("Enter");
 }
