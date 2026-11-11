@@ -82,6 +82,7 @@ import {
   startNewConversation,
   useChatFailureText,
   useCreateDocumentFromChat,
+  lessonOf,
 } from "@/hooks/useDocumentChat";
 import { useAccountAccess } from "@/hooks/useAccountAccess";
 import { DocumentVersionsButton } from "@/components/document-versions/DocumentVersionsButton";
@@ -1537,6 +1538,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
         gradeLevel: document.gradeLevel,
         content: null,
         documentType: document.documentType,
+        lesson: lessonOf(document),
       });
       if (problem) toast.error(tChat("errors.server"));
     },

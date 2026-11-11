@@ -32,6 +32,10 @@ interface SuggestionChip {
   message: string;
 }
 
+/** One look for every chip in the chat: a small tinted pill, left-aligned, wrapping on narrow panels. */
+const CHIP_CLASS =
+  "inline-flex max-w-full items-center rounded-full border border-primary/25 bg-primary/5 px-3 py-1 text-left text-xs font-medium leading-snug text-primary transition-colors hover:border-primary/50 hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-50";
+
 function SuggestionChips({
   documentType,
   onChipClick,
@@ -48,14 +52,14 @@ function SuggestionChips({
     : suggestionsByType.default;
 
   return (
-    <div className="grid grid-cols-2 gap-1.5 mb-3">
+    <div className="mb-3 flex flex-wrap gap-1.5" data-testid="chat-suggestions">
       {chips.map((chip) => (
         <button
           key={chip.label}
           type="button"
           disabled={disabled}
           onClick={() => onChipClick(chip)}
-          className="w-full px-3 py-1.5 text-xs font-medium rounded-xl bg-muted hover:bg-primary/10 text-foreground border border-border/50 hover:border-primary/40 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-center leading-snug"
+          className={CHIP_CLASS}
         >
           {chip.label}
         </button>
@@ -230,7 +234,7 @@ function ChipRow({
           type="button"
           disabled={disabled}
           onClick={() => onPick(item)}
-          className="px-2.5 py-1 text-xs font-medium rounded-full bg-background hover:bg-primary/10 text-foreground border border-border hover:border-primary/40 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-left"
+          className={cn(CHIP_CLASS, "bg-background")}
         >
           {item}
         </button>
@@ -368,6 +372,10 @@ function ChatContent({
   const [attaching, setAttaching] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const lastIndex = chatHistory.length - 1;
+  // The reply's own follow-ups / options already offer next steps: the generic starters would only repeat them.
+  const lastReply = chatHistory[lastIndex];
+  const lastReplyHasChips =
+    lastReply?.role === "assistant" && !!(lastReply.followUps?.length || lastReply.clarifyOptions?.length);
 
   return (
     <Card
@@ -612,7 +620,7 @@ function ChatContent({
             </div>
 
             {/* Suggestion chips — visible until user sends their first follow-up */}
-            {showSuggestions && onSuggestionClick && (
+            {showSuggestions && onSuggestionClick && !lastReplyHasChips && (
               <SuggestionChips
                 documentType={documentType}
                 onChipClick={onSuggestionClick}

@@ -28,6 +28,7 @@ import {
   startNewConversation,
   useChatFailureText,
   useCreateDocumentFromChat,
+  lessonOf,
 } from "@/hooks/useDocumentChat";
 
 import { fetchEntitlements } from "@/store/entitlements/entitlementsSlice";
@@ -437,6 +438,7 @@ export default function AssessmentEditor({ documentId, defaultTitle, chatTitle, 
         gradeLevel: document.gradeLevel,
         content: null,
         documentType: document.documentType,
+        lesson: lessonOf(document),
       });
     },
     [createDocumentFromChat, document],
