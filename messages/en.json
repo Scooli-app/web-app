@@ -723,7 +723,8 @@
       "description": "Choose the days and the number of periods per day.",
       "lessonsPerWeek": "{count, plural, one {# lesson/week} other {# lessons/week}}",
       "addPeriod": "period",
-      "customDuration": "Custom"
+      "customDuration": "Custom",
+      "copyToOtherDays": "Copy to other days"
     },
     "weekScheduleTypeOptions": {
       "auto": "Automatic",
@@ -3645,6 +3646,10 @@
         "selectAll": "Select all",
         "markAs": "Mark as:",
         "remove": "Remove",
+        "selectMonth": "Select month",
+        "deselectMonth": "Deselect month",
+        "byWeekday": "By weekday:",
+        "rangeHint": "Hold Shift to select a range",
         "emptyLine1": "No lessons were generated for this period with the current schedule.",
         "emptyLine2": "Go back and confirm the dates and class days.",
         "backToPeriod": "Back to the period"
