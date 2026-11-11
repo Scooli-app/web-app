@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { partialPresentationToCanvas } from "./streaming-preview";
+import { partialPresentationToCanvas, presentationFollowTarget, slideHasPendingImage } from "./streaming-preview";
 
 const slide = (id: string, title: string) => ({
   id,
@@ -40,5 +40,31 @@ describe("partialPresentationToCanvas", () => {
   it("is null before the first slide", () => {
     expect(partialPresentationToCanvas(null)).toBeNull();
     expect(partialPresentationToCanvas({ blocks: [] })).toBeNull();
+  });
+});
+
+describe("following the presentation", () => {
+  const withImage = (image: Record<string, unknown>) => ({ ...slide("s1", "Causas"), layout: "image-right", image });
+
+  const firstSlide = (block: Record<string, unknown>) => {
+    const canvas = partialPresentationToCanvas({ blocks: [block] });
+    if (!canvas) throw new Error("the slide did not convert");
+    return canvas.slides[0];
+  };
+
+  it("knows which slides still wait for their picture", () => {
+    const pending = firstSlide(withImage({ id: "i1", type: "visual_placeholder", prompt: "Mapa da Europa em 1914 com as alianças" }));
+    const done = firstSlide(withImage({ id: "i1", type: "image", url: "https://img/i1.png", alt: "Mapa" }));
+    expect(slideHasPendingImage(pending)).toBe(true);
+    expect(slideHasPendingImage(done)).toBe(false);
+    expect(slideHasPendingImage(firstSlide(slide("s2", "Sem imagem")))).toBe(false);
+  });
+
+  it("follows the newest slide, then the next picture, then stays put", () => {
+    expect(presentationFollowTarget("preparing", null)).toBe("end");
+    expect(presentationFollowTarget("generating", null)).toBe("end");
+    expect(presentationFollowTarget("reviewing", null)).toBeNull();
+    expect(presentationFollowTarget("reviewing", { completed: 0, total: 4 })).toBe("pending");
+    expect(presentationFollowTarget("images", { completed: 4, total: 4 })).toBeNull();
   });
 });

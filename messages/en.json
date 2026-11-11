@@ -1920,8 +1920,11 @@
       "imagesStatus": "Creating the images: {completed} of {total}",
       "finishing": "Finishing the presentation",
       "previewHint": "You can look through it; the editor opens when it is done.",
-      "writingNextSlide": "Writing the next slide…",
-      "slideNumber": "Slide {number}"
+      "slideNumber": "Slide {number}",
+      "writingSlide": "Writing slide {number}…",
+      "imageQueued": "Image comes next",
+      "follow": "Follow along",
+      "retrying": "The first draft did not pass our checks. Writing another one."
     }
   },
   "community": {
@@ -4034,7 +4037,10 @@
       "reviewingSubtitle": "You can already read the questions. The answers appear once the check is done.",
       "imagesTitle": "Creating the images…",
       "imagesSubtitle": "{completed} of {total}. The editor opens when it is done.",
-      "writingNext": "Writing the next question…"
+      "writingNext": "Writing the next question…",
+      "startingSubtitle": "The first question will appear here shortly.",
+      "retrying": "The first draft did not pass our checks. Writing another one.",
+      "follow": "Follow along"
     },
     "generationFailedTitle": "We couldn't create this document.",
     "generationFailedSubtitle": "Try creating it again from your documents.",
@@ -4122,7 +4128,9 @@
       "readingBody": "Text",
       "imageAlt": "Exercise image",
       "imageMissing": "Image missing: students won't see it",
-      "more": "More actions"
+      "more": "More actions",
+      "imageQueued": "Image comes next",
+      "imageGenerating": "Generating the image…"
     },
     "types": {
       "multiple_choice": "Multiple choice",

@@ -1920,8 +1920,11 @@
       "imagesStatus": "A criar as imagens: {completed} de {total}",
       "finishing": "A finalizar a apresentação",
       "previewHint": "Podes ir vendo; o editor abre quando terminar.",
-      "writingNextSlide": "A escrever o próximo slide…",
-      "slideNumber": "Slide {number}"
+      "slideNumber": "Slide {number}",
+      "writingSlide": "A escrever o slide {number}…",
+      "imageQueued": "Imagem a seguir",
+      "follow": "Acompanhar a geração",
+      "retrying": "A primeira versão não passou na verificação. Estamos a escrever outra."
     }
   },
   "community": {
@@ -4034,7 +4037,10 @@
       "reviewingSubtitle": "Já podes ler o enunciado. As soluções aparecem quando a verificação terminar.",
       "imagesTitle": "A criar as imagens…",
       "imagesSubtitle": "{completed} de {total}. O editor abre quando terminar.",
-      "writingNext": "A escrever a próxima questão…"
+      "writingNext": "A escrever a próxima questão…",
+      "startingSubtitle": "A primeira questão aparece aqui daqui a pouco.",
+      "retrying": "A primeira versão não passou na verificação. Estamos a escrever outra.",
+      "follow": "Acompanhar a geração"
     },
     "generationFailedTitle": "Não foi possível criar este documento.",
     "generationFailedSubtitle": "Tenta criá-lo outra vez a partir dos documentos.",
@@ -4122,7 +4128,9 @@
       "readingBody": "Texto",
       "imageAlt": "Imagem do exercício",
       "imageMissing": "Imagem em falta: os alunos não a vão ver",
-      "more": "Mais ações"
+      "more": "Mais ações",
+      "imageQueued": "Imagem a seguir",
+      "imageGenerating": "A gerar a imagem…"
     },
     "types": {
       "multiple_choice": "Escolha múltipla",

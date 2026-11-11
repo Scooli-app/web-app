@@ -7,7 +7,7 @@ vi.mock("next-intl", () => ({
     values ? `${key}:${Object.values(values).join(",")}` : key,
 }));
 
-const { AssessmentStreamingPreview, streamedExerciseCount } = await import("./AssessmentStreamingPreview");
+const { AssessmentStreamingPreview, assessmentFollowTarget, streamedExerciseCount } = await import("./AssessmentStreamingPreview");
 
 const partial = {
   schemaVersion: 1,
@@ -57,5 +57,71 @@ describe("AssessmentStreamingPreview", () => {
     );
     expect(html).toContain("reviewingTitle");
     expect(html).not.toContain("writingNext");
+  });
+
+  const withPicture = {
+    ...partial,
+    sections: [
+      {
+        ...partial.sections[0],
+        items: [
+          partial.sections[0].items[0],
+          {
+            id: "r2", kind: "reading", title: "Imagem", body: "Observa a figura.",
+            media: { imageRef: null, placeholder: { query: "Esquema do sistema digestivo humano", alt: "Sistema digestivo" } },
+          },
+        ],
+      },
+    ],
+  };
+
+  it("shows a picture still to come as queued while writing, not as missing", () => {
+    const html = renderToStaticMarkup(
+      createElement(AssessmentStreamingPreview, { partial: withPicture, phase: "generating", imageProgress: null, error: null }),
+    );
+    expect(html).toContain("imageQueued");
+    expect(html).not.toContain("imageMissing");
+    expect(html).not.toContain("data-generation-pending");
+  });
+
+  it("marks the pictures being made, so the screen can follow them, and shows the progress", () => {
+    const html = renderToStaticMarkup(
+      createElement(AssessmentStreamingPreview, {
+        partial: withPicture, phase: "images", imageProgress: { completed: 0, total: 1 }, error: null,
+      }),
+    );
+    expect(html).toContain("imageGenerating");
+    expect(html).toContain("data-generation-pending");
+    expect(html).toContain("imagesSubtitle:0,1");
+    expect(html).toContain('role="progressbar"');
+  });
+
+  it("says a picture that failed is missing", () => {
+    const html = renderToStaticMarkup(
+      createElement(AssessmentStreamingPreview, {
+        partial: withPicture, phase: "images", imageProgress: { completed: 1, total: 2 }, imageOutcomes: { r2: "failed" }, error: null,
+      }),
+    );
+    expect(html).toContain("imageMissing");
+    expect(html).not.toContain("imageGenerating");
+  });
+
+  it("stands in empty pages before the first question, and says when it is writing a second draft", () => {
+    const first = renderToStaticMarkup(
+      createElement(AssessmentStreamingPreview, { partial: null, phase: "preparing", imageProgress: null, error: null }),
+    );
+    expect(first).toContain("startingSubtitle");
+    expect(first).toContain("aspect-ratio:210 / 297");
+    const retry = renderToStaticMarkup(
+      createElement(AssessmentStreamingPreview, { partial: null, phase: "generating", imageProgress: null, attempt: 2, error: null }),
+    );
+    expect(retry).toContain("retrying");
+  });
+
+  it("follows the newest question, then the next picture, then stays put", () => {
+    expect(assessmentFollowTarget("generating", null)).toBe("end");
+    expect(assessmentFollowTarget("reviewing", null)).toBeNull();
+    expect(assessmentFollowTarget("reviewing", { completed: 1, total: 3 })).toBe("pending");
+    expect(assessmentFollowTarget("images", { completed: 3, total: 3 })).toBeNull();
   });
 });
