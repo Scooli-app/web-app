@@ -7,6 +7,7 @@ import { clearChatHistory, getChatHistory } from "@/services/api/document.servic
 import { Routes, type ChatNewDocument, type ChatResponse, type DocumentType } from "@/shared/types";
 import { useAppDispatch } from "@/store/hooks";
 import { createDocument, setPendingInitialPrompt } from "@/store/documents/documentSlice";
+import { DEFAULT_PRESENTATION_THEME } from "@/shared/types/presentation-theme";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import posthog from "posthog-js";
@@ -244,7 +245,9 @@ export function useCreateDocumentFromChat() {
         source_document_id: source.id,
       });
       dispatch(setPendingInitialPrompt({ documentId: created.id, prompt }));
-      router.push(config.redirectPath.replace(":id", created.id));
+      const path = config.redirectPath.replace(":id", created.id);
+      // A deck made from the chat gets the default theme, like one made from the creation page.
+      router.push(request.type === "presentation" ? `${path}?theme=${DEFAULT_PRESENTATION_THEME}` : path);
       return null;
     },
     [dispatch, router],

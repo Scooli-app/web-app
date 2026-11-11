@@ -70,7 +70,7 @@ import {
 } from "@/shared/types/canvas-presentation";
 import { getThemeById } from "@/shared/types/presentation-theme";
 import { translate } from "@/i18n/translate";
-import { Routes, type Document } from "@/shared/types";
+import { Routes, type ChatNewDocument, type Document } from "@/shared/types";
 import { fetchDocument, setCurrentDocument, updateDocument, chatWithDocument } from "@/store/documents/documentSlice";
 import {
   assistantMessageFromResponse,
@@ -81,6 +81,7 @@ import {
   newChatTurnId,
   startNewConversation,
   useChatFailureText,
+  useCreateDocumentFromChat,
 } from "@/hooks/useDocumentChat";
 import { useAccountAccess } from "@/hooks/useAccountAccess";
 import { DocumentVersionsButton } from "@/components/document-versions/DocumentVersionsButton";
@@ -1411,7 +1412,12 @@ export function BlockDocumentEditor({ documentId }: Props) {
         }
 
         const response = await dispatch(
-          chatWithDocument({ id: document.id, message: enrichedMessage, canvasState: canvas ? JSON.stringify(canvas) : undefined }),
+          chatWithDocument({
+            id: document.id,
+            message: enrichedMessage,
+            canvasState: canvas ? JSON.stringify(canvas) : undefined,
+            elementAction: pendingAIActionRef.current !== null,
+          }),
         ).unwrap();
         captureChatResponse({ ...analytics, startedAt, response });
         baseVersionRef.current = response.contentVersion;
@@ -1518,6 +1524,24 @@ export function BlockDocumentEditor({ documentId }: Props) {
       cancelled = true;
     };
   }, [chatDocumentId]);
+
+  // "Cria um quiz a partir desta apresentação" (ENG-409): a separate document, made from this deck's details.
+  const createDocumentFromChat = useCreateDocumentFromChat();
+  const handleNewDocumentFromChat = useCallback(
+    async (request: ChatNewDocument) => {
+      if (!document) return;
+      const problem = await createDocumentFromChat(request, {
+        id: document.id,
+        title: document.title,
+        subject: document.subject,
+        gradeLevel: document.gradeLevel,
+        content: null,
+        documentType: document.documentType,
+      });
+      if (problem) toast.error(tChat("errors.server"));
+    },
+    [createDocumentFromChat, document, tChat],
+  );
 
   const handleNewConversation = useCallback(async () => {
     if (chatDocumentId && (await startNewConversation(chatDocumentId))) {
@@ -2952,6 +2976,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
           documentId={document?.id}
           onNewConversation={handleNewConversation}
           onFeedback={handleChatFeedback}
+          onNewDocument={handleNewDocumentFromChat}
         />
       </aside>
       </div>

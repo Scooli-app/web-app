@@ -350,7 +350,7 @@ export async function chatWithDocument(
   id: string,
   message: string,
   canvasState?: string,
-  options: { pendingReview?: boolean; selection?: string; attachment?: ChatAttachment } = {},
+  options: { pendingReview?: boolean; selection?: string; attachment?: ChatAttachment; elementAction?: boolean } = {},
 ): Promise<ChatResponse> {
   const response = await apiClient.post<ChatResponse>(
     `/documents/${id}/chat`,
@@ -360,6 +360,8 @@ export async function chatWithDocument(
       ...(options.pendingReview ? { pendingReview: true } : {}),
       ...(options.selection ? { selection: options.selection } : {}),
       ...(options.attachment ? { attachmentName: options.attachment.name, attachmentText: options.attachment.text } : {}),
+      // A slide quick action: the reply becomes the selected element's text, so the backend skips intent routing.
+      ...(options.elementAction ? { elementAction: true } : {}),
     },
     { timeout: CHAT_REQUEST_TIMEOUT_MS },
   );
