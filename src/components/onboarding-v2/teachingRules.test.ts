@@ -10,7 +10,7 @@ const answer = (over: Partial<Parameters<typeof isTeachingValid>[0]>) => ({
   role: "teacher" as const,
   years: [5],
   subjectIds: ["matematica"],
-  unitCount: 0,
+  courseCount: 0,
   ...over,
 });
 
@@ -28,10 +28,10 @@ describe("isTeachingValid (same rules as the server's saveProfile)", () => {
     expect(isTeachingValid(answer({ role: "special_ed", years: [3], subjectIds: [] }))).toBe(true);
     expect(isTeachingValid(answer({ role: "special_ed", years: [], subjectIds: [] }))).toBe(false);
   });
-  it("needs years and at least one UC from a vocational teacher", () => {
-    expect(isTeachingValid(answer({ role: "vocational", years: [10], subjectIds: [], unitCount: 2 }))).toBe(true);
-    expect(isTeachingValid(answer({ role: "vocational", years: [10], subjectIds: ["matematica"], unitCount: 0 }))).toBe(false);
-    expect(isTeachingValid(answer({ role: "vocational", years: [], subjectIds: [], unitCount: 1 }))).toBe(false);
+  it("needs years and a course, but no UC, from a vocational teacher", () => {
+    expect(isTeachingValid(answer({ role: "vocational", years: [10], subjectIds: [], courseCount: 1 }))).toBe(true);
+    expect(isTeachingValid(answer({ role: "vocational", years: [10], subjectIds: ["matematica"], courseCount: 0 }))).toBe(false);
+    expect(isTeachingValid(answer({ role: "vocational", years: [], subjectIds: [], courseCount: 1 }))).toBe(false);
   });
 });
 

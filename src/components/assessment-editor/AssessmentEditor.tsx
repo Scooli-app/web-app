@@ -38,12 +38,14 @@ import { fetchSubscription } from "@/store/subscription/subscriptionSlice";
 import type { AssessmentDocument } from "@/types/assessment";
 import { AlertTriangle, Download, Lock, X } from "lucide-react";
 import { useAccountAccess } from "@/hooks/useAccountAccess";
+import { reportUiProblem } from "@/lib/reportUiProblem";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { AssessmentWorkspace } from "./AssessmentWorkspace";
+import { AssessmentStreamingPreview } from "./AssessmentStreamingPreview";
 import { ExportDialog } from "./ExportDialog";
 import { adoptGrids, adoptStudentOrder, exerciseNumbers, missingAnswer, parseAssessment } from "./model";
 import { createSerialRunner } from "./serialRunner";
@@ -332,6 +334,10 @@ export default function AssessmentEditor({ documentId, defaultTitle, chatTitle, 
     };
   }, [documentId]);
 
+  // A chat edit can take well over a minute: say so, so the teacher does not think it hung.
+  const chatSlow = useGenerationStalled(isChatting, null, 15_000);
+  const chatSlower = useGenerationStalled(isChatting, null, 45_000);
+
   useEffect(() => {
     const raw = document?.metadata?.prompt ?? document?.metadata?.initialPrompt;
     const prompt = typeof raw === "string" ? raw.trim() : "";
@@ -364,6 +370,7 @@ export default function AssessmentEditor({ documentId, defaultTitle, chatTitle, 
       const startedAt = Date.now();
       const analytics = { turnId, documentId: document.id, documentType: document.documentType, editor: "assessment" as const };
       captureChatMessageSent({ ...analytics, message });
+      const problem = { documentId: document.id, documentType: document.documentType };
       try {
         setChatHistory((prev) => [...prev, { role: "user", content: message }]);
         const response = await dispatch(chatWithDocument({ id: document.id, message })).unwrap();
@@ -372,17 +379,24 @@ export default function AssessmentEditor({ documentId, defaultTitle, chatTitle, 
         if (updated) {
           needsLoadRef.current = true;
           await dispatch(fetchDocument(document.id));
+        } else {
+          reportUiProblem(response.chatAnswer ? "chat_reply_without_edit" : "chat_empty_reply", { ...problem, durationMs: Date.now() - startedAt });
         }
         setChatHistory((prev) => [
           ...prev,
           assistantMessageFromResponse(
-            { ...response, chatAnswer: response.chatAnswer || t("chatUpdated") },
+            { ...response, chatAnswer: response.chatAnswer || (updated ? t("chatUpdated") : t("chatEmpty")) },
             { hasUpdate: updated },
           ),
         ]);
         return true;
       } catch (failure) {
         captureChatResponse({ ...analytics, startedAt, failure });
+        reportUiProblem("chat_error_shown", {
+          ...problem,
+          message: failure instanceof Error ? failure.message : typeof failure === "string" ? failure : null,
+          durationMs: Date.now() - startedAt,
+        });
         setChatError(chatFailureText(failure));
         return true;
       } finally {
@@ -510,6 +524,18 @@ export default function AssessmentEditor({ documentId, defaultTitle, chatTitle, 
     <>
       <AssessmentWorkspace
         doc={inProgress ? null : doc}
+        generating={
+          inProgress ? (
+            <AssessmentStreamingPreview
+              partial={progress.partial}
+              phase={progress.phase}
+              imageProgress={progress.imageProgress}
+              imageOutcomes={progress.imageOutcomes}
+              attempt={progress.attempt}
+              error={progress.error}
+            />
+          ) : undefined
+        }
         onChange={handleChange}
         readOnly={isChatting || flushing}
         lookupAe={lookupAe}
@@ -625,8 +651,10 @@ export default function AssessmentEditor({ documentId, defaultTitle, chatTitle, 
             onChatSubmit={handleChatSubmit}
             chatHistory={chatHistory}
             isStreaming={isChatting}
+            pendingHint={chatSlower ? t("chatSlowLonger") : chatSlow ? t("chatSlow") : undefined}
             disabled={!ready}
             error={chatError}
+            retryable
             placeholder={chatPlaceholder}
             title={chatTitle}
             sources={sources}

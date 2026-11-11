@@ -13,6 +13,6 @@ export const selectWorkspaceError = (state: RootState) => state.workspace.error;
 export const selectHasOrganizationWorkspace = (state: RootState) =>
   state.workspace.context?.workspaceType === "organization";
 export const selectHasAccessibleOrganization = (state: RootState) =>
-  state.workspace.context?.organization !== null;
+  Boolean(state.workspace.context?.organization);
 export const selectIsOrganizationAdmin = (state: RootState) =>
   state.workspace.context?.organizationAdmin === true;

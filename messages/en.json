@@ -1231,6 +1231,7 @@
       "coursesEmpty": "Search for the course you teach. If you teach several, add them one by one.",
       "coursesSearchPlaceholder": "Course name or area — e.g. computing, tourism",
       "coursesLoading": "Loading courses…",
+      "coursesPartialMatch": "No course has all of these words. These are the closest:",
       "noCoursesFound": "No course found. Schools sometimes use different names than the catalogue — try a single word.",
       "courseAdded": "Added",
       "removeCourse": "Remove {course}",
@@ -1283,6 +1284,8 @@
       "sourcesTooltip": "This document was generated without using external sources.",
       "emptyStateHeading": "How can I help today?",
       "documentRefined": "Document Refined",
+      "documentUnchanged": "The document was not changed.",
+      "retry": "Try again",
       "imageRegenYes": "Yes, regenerate",
       "imageRegenNo": "No",
       "nudgeReady": "Document ready! Use the Assistant to refine or adapt the content.",
@@ -1902,6 +1905,9 @@
     },
     "diffExtension": {
       "contentRemoved": "🗑 Content removed",
+      "showRemoved": "Show",
+      "hideRemoved": "Hide",
+      "paragraphCount": "{count, plural, one {# paragraph} other {# paragraphs}}",
       "acceptChange": "Accept change",
       "rejectChange": "Reject change"
     },
@@ -1970,7 +1976,16 @@
       "stepGeneratingCaption": "The AI is writing your slides.",
       "stepReviewingLabel": "Reviewing",
       "stepReviewingCaption": "Checking the structure and quality of the result.",
-      "imagesLabel": "Images"
+      "imagesLabel": "Images",
+      "slidesWritten": "{count, plural, one {# slide ready} other {# slides ready}}",
+      "imagesStatus": "Creating the images: {completed} of {total}",
+      "finishing": "Finishing the presentation",
+      "previewHint": "You can look through it; the editor opens when it is done.",
+      "slideNumber": "Slide {number}",
+      "writingSlide": "Writing slide {number}…",
+      "imageQueued": "Image comes next",
+      "follow": "Follow along",
+      "retrying": "The first draft did not pass our checks. Writing another one."
     }
   },
   "community": {
@@ -2500,6 +2515,10 @@
           "title": "Your Pro month has ended",
           "description": "Your account is now read-only. Upgrade to Pro to create and generate documents, export, duplicate and share again."
         },
+        "see_plans": {
+          "title": "Discover Scooli Pro",
+          "description": "See what Pro gives you and choose the plan that fits you."
+        },
         "trial_not_activated": {
           "title": "Activate your Pro month",
           "description": "You haven't activated your free Pro month yet. Activate it now and get 30 days with everything Pro offers.",
@@ -2659,7 +2678,7 @@
       "proTitle": "Upload your own sources with Pro",
       "proDescription": "With Pro, you upload a textbook or your school’s materials (PDF or DOCX), and the lesson plans and worksheets you create follow that content.",
       "proAction": "See Pro plans",
-      "failedHint": "We couldn’t read this file. If it’s a scan, use a version with selectable text; otherwise save it again as PDF or DOCX and upload it again."
+      "failedHint": "We couldn’t read this file. Save it again as PDF or DOCX and upload it again; for a scan, use a sharper copy."
     },
     "status": {
       "uploaded": "Processing",
@@ -3501,7 +3520,6 @@
       "typeLabel": "Type:",
       "objectivesTitle": "Learning Objectives",
       "objectivesProcessing": "Processing…",
-      "streamPreviewTitle": "Writing the lesson plan",
       "objectivesEmpty": "The objectives appear once the lesson plan is ready.",
       "documentsTitle": "Generated documents",
       "loadingDocuments": "Loading documents…",
@@ -3536,7 +3554,20 @@
         "presentation": "slides",
         "test": "test"
       },
-      "reinforcementBadge": "Reinforcement"
+      "reinforcementBadge": "Reinforcement",
+      "progress": {
+        "planTitle": "Preparing the lesson plan",
+        "setTitle": "Preparing {items}",
+        "steps": {
+          "s1": "Reading the national curriculum",
+          "s2": "Consulting curriculum sources",
+          "s3": "Setting the lesson objectives",
+          "s4": "Structuring the lesson",
+          "s5": "Creating activities and exercises",
+          "s6": "Reviewing and polishing the details"
+        },
+        "hint": "You can close this window — we'll keep preparing in the background."
+      }
     },
     "dashboardWidget": {
       "title": "Upcoming lessons",
@@ -4072,6 +4103,18 @@
     "dismiss": "Dismiss",
     "generatingTitle": "Creating your document…",
     "generatingSubtitle": "This takes about 30 to 60 seconds. You can wait here.",
+    "streaming": {
+      "writingTitle": "Writing your document…",
+      "writingSubtitle": "{count, plural, one {# question ready} other {# questions ready}}. You can read along.",
+      "reviewingTitle": "Checking the answers…",
+      "reviewingSubtitle": "You can already read the questions. The answers appear once the check is done.",
+      "imagesTitle": "Creating the images…",
+      "imagesSubtitle": "{completed} of {total}. The editor opens when it is done.",
+      "writingNext": "Writing the next question…",
+      "startingSubtitle": "The first question will appear here shortly.",
+      "retrying": "The first draft did not pass our checks. Writing another one.",
+      "follow": "Follow along"
+    },
     "generationFailedTitle": "We couldn't create this document.",
     "generationFailedSubtitle": "Try creating it again from your documents.",
     "loadFailedTitle": "We couldn't open this document.",
@@ -4079,6 +4122,9 @@
     "retry": "Try again",
     "chatError": "The assistant couldn't reply. Try again.",
     "chatUpdated": "I've updated the document.",
+    "chatEmpty": "The assistant did not change the document. Try again with other words.",
+    "chatSlow": "Still working on your document…",
+    "chatSlowLonger": "Big changes can take up to 2 minutes. Keep this page open.",
     "imageGenerating": "Generating the image…",
     "imageFailed": "Couldn't get the image. Try again.",
     "page": "page {page} of {total}",
@@ -4155,7 +4201,9 @@
       "readingBody": "Text",
       "imageAlt": "Exercise image",
       "imageMissing": "Image missing: students won't see it",
-      "more": "More actions"
+      "more": "More actions",
+      "imageQueued": "Image comes next",
+      "imageGenerating": "Generating the image…"
     },
     "types": {
       "multiple_choice": "Multiple choice",

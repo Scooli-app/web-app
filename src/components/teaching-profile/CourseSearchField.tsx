@@ -17,6 +17,8 @@ interface CourseSearchFieldProps {
   /** Shows a retry button on the catalogue error. */
   onRetryCatalog?: () => void;
   results: Qualification[];
+  /** `results` match only some words of the term: say so above the list. */
+  partialMatch?: boolean;
   /** Courses already picked — shown with a check mark and disabled. */
   addedCodes: Set<string>;
   onSelect: (code: string) => void;
@@ -40,6 +42,7 @@ export function CourseSearchField({
   catalogLoaded = false,
   onRetryCatalog,
   results,
+  partialMatch = false,
   addedCodes,
   onSelect,
   disabled = false,
@@ -88,33 +91,40 @@ export function CourseSearchField({
           ) : results.length === 0 ? (
             <p className="p-3 text-sm text-muted-foreground">{t("noCoursesFound")}</p>
           ) : (
-            results.map((qualification) => {
-              const alreadyAdded = addedCodes.has(qualification.code);
-              return (
-                <button
-                  key={qualification.code}
-                  type="button"
-                  onClick={() => onSelect(qualification.code)}
-                  disabled={alreadyAdded || disabled}
-                  className="flex w-full items-start justify-between gap-3 border-b border-border px-3 py-2.5 text-left last:border-0 hover:bg-accent focus-visible:bg-accent focus-visible:outline-none disabled:cursor-default disabled:hover:bg-transparent disabled:opacity-60"
-                >
-                  <span className="min-w-0">
-                    <span className="block text-sm text-foreground">{qualification.title}</span>
-                    {qualification.cnaefLabel && (
-                      <span className="block text-xs text-muted-foreground">
-                        {qualification.cnaefLabel}
+            <>
+              {partialMatch && (
+                <p className="border-b border-border p-3 text-xs text-muted-foreground">
+                  {t("coursesPartialMatch")}
+                </p>
+              )}
+              {results.map((qualification) => {
+                const alreadyAdded = addedCodes.has(qualification.code);
+                return (
+                  <button
+                    key={qualification.code}
+                    type="button"
+                    onClick={() => onSelect(qualification.code)}
+                    disabled={alreadyAdded || disabled}
+                    className="flex w-full items-start justify-between gap-3 border-b border-border px-3 py-2.5 text-left last:border-0 hover:bg-accent focus-visible:bg-accent focus-visible:outline-none disabled:cursor-default disabled:hover:bg-transparent disabled:opacity-60"
+                  >
+                    <span className="min-w-0">
+                      <span className="block text-sm text-foreground">{qualification.title}</span>
+                      {qualification.cnaefLabel && (
+                        <span className="block text-xs text-muted-foreground">
+                          {qualification.cnaefLabel}
+                        </span>
+                      )}
+                    </span>
+                    {alreadyAdded && (
+                      <span className="flex shrink-0 items-center gap-1 text-xs text-primary">
+                        <Check className="h-3.5 w-3.5" aria-hidden />
+                        {t("courseAdded")}
                       </span>
                     )}
-                  </span>
-                  {alreadyAdded && (
-                    <span className="flex shrink-0 items-center gap-1 text-xs text-primary">
-                      <Check className="h-3.5 w-3.5" aria-hidden />
-                      {t("courseAdded")}
-                    </span>
-                  )}
-                </button>
-              );
-            })
+                  </button>
+                );
+              })}
+            </>
           )}
         </div>
       )}

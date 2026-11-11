@@ -68,6 +68,8 @@ export interface ChatMessage {
   role: "user" | "assistant";
   content: string;
   hasUpdate?: boolean;
+  /** The reply left the document as it was. */
+  noChange?: boolean;
   /** When true, render Sim/Não quick-action buttons below the message */
   imageRegenOffer?: boolean;
   /** Set to true after user clicks Sim or Não to hide the buttons */
@@ -101,9 +103,13 @@ interface AIChatPanelProps {
   onChatSubmit: (message: string) => Promise<void | boolean>;
   chatHistory: ChatMessage[];
   isStreaming?: boolean;
+  /** Shown under the typing indicator, e.g. when a request takes long. */
+  pendingHint?: string;
   /** Document still generating: chat is locked until it is ready. */
   disabled?: boolean;
   error?: string;
+  /** Next to an error: a button that sends the last message again. */
+  retryable?: boolean;
   placeholder?: string;
   title?: string;
   sources?: RagSource[];
@@ -159,7 +165,7 @@ export interface ChatLiveProgress {
  * Status while the request runs: the stream's real stage and reply text when the turn is streamed (ENG-402), else
  * honest timed hints — what is happening, never a fake percentage.
  */
-function ProgressIndicator({ live }: { live?: ChatLiveProgress | null }) {
+function ProgressIndicator({ live, hint }: { live?: ChatLiveProgress | null; hint?: string }) {
   const t = useTranslations("editor.aiChatPanel");
   const steps = t.raw("progress") as string[];
   const [step, setStep] = useState(0);
@@ -200,6 +206,7 @@ function ProgressIndicator({ live }: { live?: ChatLiveProgress | null }) {
         </div>
         <span className="text-xs text-muted-foreground">{label}</span>
       </div>
+      {hint && <p className="mt-2 text-xs text-muted-foreground">{hint}</p>}
     </div>
   );
 }
@@ -282,8 +289,10 @@ function Tabs({
 function ChatContent({
   chatHistory,
   isStreaming,
+  pendingHint,
   disabled = false,
   error,
+  onRetry,
   placeholder,
   chatMessage,
   setChatMessage,
@@ -314,8 +323,10 @@ function ChatContent({
 }: {
   chatHistory: ChatMessage[];
   isStreaming: boolean;
+  pendingHint?: string;
   disabled?: boolean;
   error?: string;
+  onRetry?: () => void;
   placeholder: string;
   title: string;
   chatMessage: string;
@@ -566,6 +577,11 @@ function ChatContent({
                       )}
                     </div>
                   )}
+                  {message.noChange && message.outcome !== "no_change" && (
+                    <div className="mt-2 pt-2 border-t border-border/30 text-[11px] text-muted-foreground">
+                      {t("documentUnchanged")}
+                    </div>
+                  )}
                   {message.imageRegenOffer && !message.imageRegenResolved && onImageRegen && (
                     <div className="mt-2 pt-2 border-t border-border/30">
                       <div className="flex gap-2">
@@ -590,7 +606,7 @@ function ChatContent({
               })}
 
               {/* Progress while the request runs */}
-              {isStreaming && <ProgressIndicator live={liveProgress} />}
+              {isStreaming && <ProgressIndicator live={liveProgress} hint={pendingHint} />}
             </div>
 
             {/* Suggestion chips — visible until user sends their first follow-up */}
@@ -733,8 +749,13 @@ function ChatContent({
           </div>
         )}
         {error && (
-          <div className="p-3 bg-destructive/5 border border-destructive/20 rounded-xl text-destructive text-xs font-medium animate-in shake-1">
-            {error}
+          <div role="alert" className="flex items-center gap-3 p-3 bg-destructive/5 border border-destructive/20 rounded-xl text-destructive text-xs font-medium animate-in shake-1">
+            <span className="flex-1">{error}</span>
+            {onRetry && !isInputLocked && (
+              <Button type="button" size="sm" variant="outline" className="h-7 shrink-0 bg-background" onClick={onRetry}>
+                {t("retry")}
+              </Button>
+            )}
           </div>
         )}
       </div>
@@ -746,8 +767,10 @@ export default function AIChatPanel({
   onChatSubmit,
   chatHistory,
   isStreaming = false,
+  pendingHint,
   disabled = false,
   error,
+  retryable = false,
   placeholder,
   title,
   sources = [],
@@ -812,9 +835,16 @@ export default function AIChatPanel({
   const submitPendingRef = useRef(false);
   const lockedInputValue = isStreaming && lockedMessage !== null ? lockedMessage : chatMessage;
 
+  // The last message sent, typed or from a chip: what "Try again" sends.
+  const lastSentRef = useRef("");
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (disabled || isStreaming || lockedMessage !== null || !chatMessage.trim()) {
+    await send(chatMessage.trim());
+  };
+
+  const send = async (userMessage: string) => {
+    if (disabled || isStreaming || lockedMessage !== null || !userMessage) {
       return;
     }
     if (!guard("generate")) return;
@@ -822,7 +852,7 @@ export default function AIChatPanel({
     setShowSuggestions(false);
     typedInFlightRef.current = true;
     typedFailedRef.current = false;
-    const userMessage = chatMessage.trim();
+    lastSentRef.current = userMessage;
     setLockedMessage(userMessage);
     setChatMessage(userMessage);
     submitPendingRef.current = true;
@@ -866,6 +896,7 @@ export default function AIChatPanel({
     setShowSuggestions(false);
     typedInFlightRef.current = false;
     typedFailedRef.current = false;
+    lastSentRef.current = message;
     setLockedMessage(message);
     setChatMessage(message);
     posthog.capture("ai_chat_suggestion_clicked", {
@@ -890,6 +921,8 @@ export default function AIChatPanel({
       setLockedMessage(null);
     }
   };
+
+  const retry = retryable ? () => void send(lastSentRef.current) : undefined;
 
   const guardedImageRegen = onImageRegen
     ? () => {
@@ -944,8 +977,10 @@ export default function AIChatPanel({
         <ChatContent
           chatHistory={chatHistory}
           isStreaming={isStreaming}
+          pendingHint={pendingHint}
           disabled={disabled}
           error={error}
+          onRetry={retry}
           placeholder={resolvedPlaceholder}
           title={resolvedTitle}
           chatMessage={lockedInputValue}
@@ -1026,8 +1061,10 @@ export default function AIChatPanel({
               <ChatContent
                 chatHistory={chatHistory}
                 isStreaming={isStreaming}
+                pendingHint={pendingHint}
                 disabled={disabled}
                 error={error}
+                onRetry={retry}
                 placeholder={resolvedPlaceholder}
                 title={resolvedTitle}
                 chatMessage={lockedInputValue}

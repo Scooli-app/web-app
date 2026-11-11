@@ -1729,7 +1729,9 @@ export default function DocumentEditor({
   // The same frame as the exercise and presentation editors: top bar, grey desk with the page, full-height chat.
   return (
     <>
-      <div className="-m-3 flex w-full min-h-0 flex-1 flex-col overflow-hidden bg-muted/40 sm:-m-4 md:-m-6">
+      {/* The chat takes the whole height on the right; the title bar spans only the document column. */}
+      <div className="-m-3 flex w-full min-h-0 flex-1 overflow-hidden bg-muted/40 sm:-m-4 md:-m-6">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         <div className="flex flex-shrink-0 flex-wrap items-center gap-2 border-b border-border bg-background px-4 py-2 max-md:gap-1.5 max-md:px-3">
           <div className="flex min-w-0 flex-1 items-center gap-3 max-md:basis-full">
             <InlineTitle title={resolvedTitle || resolvedDefaultTitle} onSave={handleTitleSave} disabled={isGenerating || isSaving} />
@@ -1893,10 +1895,11 @@ export default function DocumentEditor({
               )}
             </div>
           </div>
-          <aside className="hidden w-80 flex-shrink-0 flex-col overflow-hidden border-l border-border bg-background lg:flex">
-            {chatPanel}
-          </aside>
         </div>
+        </div>
+        <aside className="hidden w-80 flex-shrink-0 flex-col overflow-hidden border-l border-border bg-background lg:flex">
+          {chatPanel}
+        </aside>
       </div>
 
       <div className="lg:hidden pb-[max(env(safe-area-inset-bottom),0px)]">

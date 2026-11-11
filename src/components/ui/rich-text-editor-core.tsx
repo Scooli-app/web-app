@@ -5,6 +5,7 @@ import {
   diffPluginKey,
 } from "@/components/editor/extensions/DiffExtension";
 import { ImageBlockExtension } from "@/components/editor/extensions/ImageBlockExtension";
+import { runFocusedChain } from "@/components/editor/utils/runFocusedChain";
 import { MathFieldPopover } from "@/components/math/MathFieldPopover";
 import { AUTO_SAVE_DELAY } from "@/shared/config/constants";
 import { htmlToMarkdown, markdownToHtml } from "@/shared/utils/markdown";
@@ -113,57 +114,57 @@ const MenuBar = memo(function MenuBar({
   );
 
   const handleBold = useCallback(
-    () => runEditorCommand(() => editor.chain().focus().toggleBold().run()),
+    () => runEditorCommand(() => runFocusedChain(editor, (chain) => chain.toggleBold())),
     [editor, runEditorCommand],
   );
   const handleItalic = useCallback(
-    () => runEditorCommand(() => editor.chain().focus().toggleItalic().run()),
+    () => runEditorCommand(() => runFocusedChain(editor, (chain) => chain.toggleItalic())),
     [editor, runEditorCommand],
   );
   const handleH1 = useCallback(
     () =>
       runEditorCommand(() =>
-        editor.chain().focus().toggleHeading({ level: 1 }).run(),
+        runFocusedChain(editor, (chain) => chain.toggleHeading({ level: 1 })),
       ),
     [editor, runEditorCommand],
   );
   const handleH2 = useCallback(
     () =>
       runEditorCommand(() =>
-        editor.chain().focus().toggleHeading({ level: 2 }).run(),
+        runFocusedChain(editor, (chain) => chain.toggleHeading({ level: 2 })),
       ),
     [editor, runEditorCommand],
   );
   const handleH3 = useCallback(
     () =>
       runEditorCommand(() =>
-        editor.chain().focus().toggleHeading({ level: 3 }).run(),
+        runFocusedChain(editor, (chain) => chain.toggleHeading({ level: 3 })),
       ),
     [editor, runEditorCommand],
   );
   const handleBullet = useCallback(
     () =>
-      runEditorCommand(() => editor.chain().focus().toggleBulletList().run()),
+      runEditorCommand(() => runFocusedChain(editor, (chain) => chain.toggleBulletList())),
     [editor, runEditorCommand],
   );
   const handleOrdered = useCallback(
     () =>
-      runEditorCommand(() => editor.chain().focus().toggleOrderedList().run()),
+      runEditorCommand(() => runFocusedChain(editor, (chain) => chain.toggleOrderedList())),
     [editor, runEditorCommand],
   );
   const handleHighlight = useCallback(
     () =>
-      runEditorCommand(() => editor.chain().focus().toggleHighlight().run()),
+      runEditorCommand(() => runFocusedChain(editor, (chain) => chain.toggleHighlight())),
     [editor, runEditorCommand],
   );
   const handleBlockquote = useCallback(
     () =>
-      runEditorCommand(() => editor.chain().focus().toggleBlockquote().run()),
+      runEditorCommand(() => runFocusedChain(editor, (chain) => chain.toggleBlockquote())),
     [editor, runEditorCommand],
   );
   const handleCodeBlock = useCallback(
     () =>
-      runEditorCommand(() => editor.chain().focus().toggleCodeBlock().run()),
+      runEditorCommand(() => runFocusedChain(editor, (chain) => chain.toggleCodeBlock())),
     [editor, runEditorCommand],
   );
   const handleInsertMath = useCallback(
@@ -172,7 +173,7 @@ const MenuBar = memo(function MenuBar({
   );
   const handleInsertTable = useCallback(
     () => runEditorCommand(() =>
-      editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()
+      runFocusedChain(editor, (chain) => chain.insertTable({ rows: 3, cols: 3, withHeaderRow: true }))
     ),
     [editor, runEditorCommand],
   );
@@ -182,8 +183,9 @@ const MenuBar = memo(function MenuBar({
     onUploadImage?.();
   }, [onEditorActivity, onUploadImage]);
 
+  // Sticks flush to the top of the document scroller (padding py-6, py-3 on phones): nothing shows above it.
   return (
-    <div className="sticky top-0 z-10 flex w-full items-center gap-2 overflow-hidden rounded-t-xl border-b border-border bg-card p-2">
+    <div className="sticky -top-6 z-10 flex w-full items-center gap-2 overflow-hidden rounded-t-xl border-b border-border bg-card p-2 max-md:-top-3">
       <div className="flex min-w-0 flex-1 gap-1 overflow-x-auto pr-1 [scrollbar-width:none]">
         <button
           onClick={handleBold}
@@ -403,7 +405,7 @@ export function TipTapEditorCore({
       if (!editor || !mathEdit) return;
       const node = editor.state.doc.nodeAt(mathEdit.pos);
       if ((tex === null && !mathEdit.latex) || (tex !== null && !tex.trim())) {
-        if (node) editor.chain().focus().deleteRange({ from: mathEdit.pos, to: mathEdit.pos + node.nodeSize }).run();
+        if (node) runFocusedChain(editor, (chain) => chain.deleteRange({ from: mathEdit.pos, to: mathEdit.pos + node.nodeSize }));
         return;
       }
       if (tex === null || tex === mathEdit.latex) return;
@@ -416,7 +418,7 @@ export function TipTapEditorCore({
   // "Fórmula": an empty formula at the cursor, opened straight away.
   const handleFormulaInsert = useCallback(() => {
     if (!editor) return;
-    editor.chain().focus().insertContent({ type: "inlineMath", attrs: { latex: "" } }).run();
+    runFocusedChain(editor, (chain) => chain.insertContent({ type: "inlineMath", attrs: { latex: "" } }));
     const pos = editor.state.selection.from - 1;
     const coords = editor.view.coordsAtPos(pos);
     setMathEdit({ latex: "", pos, type: "inline", x: coords.left, y: coords.bottom });
@@ -550,15 +552,15 @@ export function TipTapEditorCore({
     | { label: string; icon: React.ElementType; run: () => void; destructive?: boolean };
 
   const tableCtxActions: CtxAction[] = [
-    { label: t("insertRowAbove"),   icon: ArrowUpToLine,    run: () => editor.chain().focus().addRowBefore().run() },
-    { label: t("insertRowBelow"),   icon: ArrowDownToLine,  run: () => editor.chain().focus().addRowAfter().run() },
-    { label: t("deleteRow"),        icon: Rows2,            run: () => editor.chain().focus().deleteRow().run() },
+    { label: t("insertRowAbove"),   icon: ArrowUpToLine,    run: () => runFocusedChain(editor, (chain) => chain.addRowBefore()) },
+    { label: t("insertRowBelow"),   icon: ArrowDownToLine,  run: () => runFocusedChain(editor, (chain) => chain.addRowAfter()) },
+    { label: t("deleteRow"),        icon: Rows2,            run: () => runFocusedChain(editor, (chain) => chain.deleteRow()) },
     { divider: true },
-    { label: t("insertColumnLeft"), icon: ArrowLeftToLine,  run: () => editor.chain().focus().addColumnBefore().run() },
-    { label: t("insertColumnRight"),icon: ArrowRightToLine, run: () => editor.chain().focus().addColumnAfter().run() },
-    { label: t("deleteColumn"),     icon: Columns2,         run: () => editor.chain().focus().deleteColumn().run() },
+    { label: t("insertColumnLeft"), icon: ArrowLeftToLine,  run: () => runFocusedChain(editor, (chain) => chain.addColumnBefore()) },
+    { label: t("insertColumnRight"),icon: ArrowRightToLine, run: () => runFocusedChain(editor, (chain) => chain.addColumnAfter()) },
+    { label: t("deleteColumn"),     icon: Columns2,         run: () => runFocusedChain(editor, (chain) => chain.deleteColumn()) },
     { divider: true },
-    { label: t("deleteTable"),      icon: Trash2,           run: () => editor.chain().focus().deleteTable().run(), destructive: true },
+    { label: t("deleteTable"),      icon: Trash2,           run: () => runFocusedChain(editor, (chain) => chain.deleteTable()), destructive: true },
   ];
 
   return (

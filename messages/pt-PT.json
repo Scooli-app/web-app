@@ -1231,6 +1231,7 @@
       "coursesEmpty": "Procura o curso onde dás aulas. Se lecionas em vários, adiciona-os um a um.",
       "coursesSearchPlaceholder": "Nome ou área do curso — ex.: informática, turismo",
       "coursesLoading": "A carregar cursos…",
+      "coursesPartialMatch": "Nenhum curso tem todas estas palavras. Estes são os mais parecidos:",
       "noCoursesFound": "Nenhum curso encontrado. As escolas às vezes usam nomes diferentes do catálogo — procura por uma palavra só.",
       "courseAdded": "Adicionado",
       "removeCourse": "Remover {course}",
@@ -1283,6 +1284,8 @@
       "sourcesTooltip": "Este documento foi gerado sem recurso a fontes externas.",
       "emptyStateHeading": "Como posso ajudar hoje?",
       "documentRefined": "Documento refinado",
+      "documentUnchanged": "O documento não foi alterado.",
+      "retry": "Tentar outra vez",
       "imageRegenYes": "Sim, regenerar",
       "imageRegenNo": "Não",
       "nudgeReady": "Documento pronto! Usa o Assistente para refinar ou adaptar o conteúdo.",
@@ -1902,6 +1905,9 @@
     },
     "diffExtension": {
       "contentRemoved": "🗑 Conteúdo removido",
+      "showRemoved": "Mostrar",
+      "hideRemoved": "Ocultar",
+      "paragraphCount": "{count, plural, one {# parágrafo} other {# parágrafos}}",
       "acceptChange": "Aceitar alteração",
       "rejectChange": "Rejeitar alteração"
     },
@@ -1970,7 +1976,16 @@
       "stepGeneratingCaption": "A IA está a escrever os teus slides.",
       "stepReviewingLabel": "A rever",
       "stepReviewingCaption": "A validar a estrutura e a qualidade do resultado.",
-      "imagesLabel": "Imagens"
+      "imagesLabel": "Imagens",
+      "slidesWritten": "{count, plural, one {# slide pronto} other {# slides prontos}}",
+      "imagesStatus": "A criar as imagens: {completed} de {total}",
+      "finishing": "A finalizar a apresentação",
+      "previewHint": "Podes ir vendo; o editor abre quando terminar.",
+      "slideNumber": "Slide {number}",
+      "writingSlide": "A escrever o slide {number}…",
+      "imageQueued": "Imagem a seguir",
+      "follow": "Acompanhar a geração",
+      "retrying": "A primeira versão não passou na verificação. Estamos a escrever outra."
     }
   },
   "community": {
@@ -2500,6 +2515,10 @@
           "title": "O teu mês Pro terminou",
           "description": "A tua conta está agora em modo de leitura. Atualiza para Pro para voltares a criar e gerar documentos, exportar, duplicar e partilhar."
         },
+        "see_plans": {
+          "title": "Conhece o plano Pro",
+          "description": "Vê o que o Pro te dá e escolhe o plano certo para ti."
+        },
         "trial_not_activated": {
           "title": "Ativa o teu mês Pro",
           "description": "Ainda não ativaste o teu mês Pro gratuito. Ativa-o agora e tens 30 dias com tudo o que o Pro oferece.",
@@ -2659,7 +2678,7 @@
       "proTitle": "Carrega as tuas fontes com o Pro",
       "proDescription": "Com o Pro, carregas o manual ou os materiais da tua escola (PDF ou DOCX), e os planos e fichas que crias passam a seguir essa matéria.",
       "proAction": "Ver planos Pro",
-      "failedHint": "Não conseguimos ler este ficheiro. Se for digitalizado, usa uma versão com texto; senão, guarda-o de novo como PDF ou DOCX e volta a carregar."
+      "failedHint": "Não conseguimos ler este ficheiro. Guarda-o de novo como PDF ou DOCX e volta a carregar; se for digitalizado, usa uma cópia mais nítida."
     },
     "status": {
       "uploaded": "A processar",
@@ -3501,7 +3520,6 @@
       "typeLabel": "Tipo:",
       "objectivesTitle": "Objetivos de aprendizagem",
       "objectivesProcessing": "A processar…",
-      "streamPreviewTitle": "A escrever o plano de aula",
       "objectivesEmpty": "Os objetivos aparecem quando o plano de aula estiver pronto.",
       "documentsTitle": "Documentos gerados",
       "loadingDocuments": "A carregar documentos…",
@@ -3536,7 +3554,20 @@
         "presentation": "apresentação",
         "test": "teste"
       },
-      "reinforcementBadge": "Reforço"
+      "reinforcementBadge": "Reforço",
+      "progress": {
+        "planTitle": "A preparar o plano de aula",
+        "setTitle": "A preparar {items}",
+        "steps": {
+          "s1": "A ler as Aprendizagens Essenciais",
+          "s2": "A consultar fontes do currículo",
+          "s3": "A definir os objetivos da aula",
+          "s4": "A estruturar os momentos da aula",
+          "s5": "A criar atividades e exercícios",
+          "s6": "A rever e afinar os detalhes"
+        },
+        "hint": "Podes fechar esta janela — continuamos a preparar em segundo plano."
+      }
     },
     "dashboardWidget": {
       "title": "Próximas aulas",
@@ -4072,6 +4103,18 @@
     "dismiss": "Fechar",
     "generatingTitle": "A criar o teu documento…",
     "generatingSubtitle": "Demora cerca de 30 a 60 segundos. Podes esperar aqui.",
+    "streaming": {
+      "writingTitle": "A escrever o teu documento…",
+      "writingSubtitle": "{count, plural, one {# questão pronta} other {# questões prontas}}. Podes ir lendo.",
+      "reviewingTitle": "A verificar as soluções…",
+      "reviewingSubtitle": "Já podes ler o enunciado. As soluções aparecem quando a verificação terminar.",
+      "imagesTitle": "A criar as imagens…",
+      "imagesSubtitle": "{completed} de {total}. O editor abre quando terminar.",
+      "writingNext": "A escrever a próxima questão…",
+      "startingSubtitle": "A primeira questão aparece aqui daqui a pouco.",
+      "retrying": "A primeira versão não passou na verificação. Estamos a escrever outra.",
+      "follow": "Acompanhar a geração"
+    },
     "generationFailedTitle": "Não foi possível criar este documento.",
     "generationFailedSubtitle": "Tenta criá-lo outra vez a partir dos documentos.",
     "loadFailedTitle": "Não foi possível abrir este documento.",
@@ -4079,6 +4122,9 @@
     "retry": "Tentar outra vez",
     "chatError": "O assistente não conseguiu responder. Tenta outra vez.",
     "chatUpdated": "Atualizei o documento.",
+    "chatEmpty": "O assistente não alterou o documento. Tenta outra vez com outras palavras.",
+    "chatSlow": "Ainda a trabalhar no teu documento…",
+    "chatSlowLonger": "Alterações grandes podem demorar até 2 minutos. Mantém esta página aberta.",
     "imageGenerating": "A gerar a imagem…",
     "imageFailed": "Não foi possível obter a imagem. Tenta outra vez.",
     "page": "página {page} de {total}",
@@ -4155,7 +4201,9 @@
       "readingBody": "Texto",
       "imageAlt": "Imagem do exercício",
       "imageMissing": "Imagem em falta: os alunos não a vão ver",
-      "more": "Mais ações"
+      "more": "Mais ações",
+      "imageQueued": "Imagem a seguir",
+      "imageGenerating": "A gerar a imagem…"
     },
     "types": {
       "multiple_choice": "Escolha múltipla",

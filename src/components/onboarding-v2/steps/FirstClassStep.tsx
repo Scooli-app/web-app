@@ -37,7 +37,7 @@ import { meService } from "@/services/api/me.service";
 import { createTimetable, type CurriculumTopic } from "@/services/api/timetable.service";
 import type { PlanLimits } from "@/shared/types/plan-limits";
 import { useAppDispatch } from "@/store/hooks";
-import { setUpgradeModalOpen } from "@/store/ui/uiSlice";
+import { openUpgradeModalForReason } from "@/store/ui/uiSlice";
 import { useLocale, useTranslations } from "next-intl";
 import posthog from "posthog-js";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -318,7 +318,7 @@ export function FirstClassStep({ flow }: FirstClassStepProps) {
               {t("class.capNote")}{" "}
               <button
                 type="button"
-                onClick={() => dispatch(setUpgradeModalOpen(true))}
+                onClick={() => dispatch(openUpgradeModalForReason("see_plans"))}
                 className="font-medium text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 {t("class.capLink")}

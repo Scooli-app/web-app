@@ -32,6 +32,7 @@ import { SuggestionBar } from "@/components/document-versions/SuggestionBar";
 import AIChatPanel, { type ChatMessage } from "@/components/document-editor/AIChatPanel";
 import { AiDisclaimer } from "@/components/ui/ai-disclaimer";
 import { GenerationProgress } from "@/components/blocks/GenerationProgress";
+import { PresentationStreamingPreview } from "@/components/document-editor-v2/PresentationStreamingPreview";
 import { GenerationStalledNotice } from "@/components/ui/generation-stalled-notice";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -2142,11 +2143,23 @@ export function BlockDocumentEditor({ documentId }: Props) {
         </div>
       );
     }
+    // Slides show as soon as they are written; before the first one, the step overlay.
+    if (progress.partial) {
+      return (
+        <PresentationStreamingPreview
+          partial={progress.partial}
+          phase={progress.phase}
+          imageProgress={progress.imageProgress}
+          error={progress.error}
+        />
+      );
+    }
     return (
       <GenerationProgress
         phase={progress.phase}
         imageProgress={progress.imageProgress}
         error={progress.error}
+        attempt={progress.attempt}
       />
     );
   }
@@ -2185,6 +2198,9 @@ export function BlockDocumentEditor({ documentId }: Props) {
 
   return (
     <div className="flex w-full flex-1 min-h-0 flex-col overflow-hidden">
+      {/* The chat takes the whole height on the right; the toolbars span only the slide editor. */}
+      <div className="flex min-h-0 flex-1 overflow-hidden">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
       <div className="flex-shrink-0 px-3 pt-3">
         <SuggestionBar
           documentId={documentId}
@@ -2721,7 +2737,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
       )}
       </div>
 
-      {/* ── Editor body: slide sidebar | canvas | AI chat ─────────────── */}
+      {/* ── Editor body: slide sidebar | canvas ─────────────────────────── */}
       <div className="flex flex-1 min-h-0 flex-col overflow-hidden md:flex-row">
 
         {/* Slide sidebar — on phones a horizontal strip under the canvas */}
@@ -2876,27 +2892,6 @@ export function BlockDocumentEditor({ documentId }: Props) {
           )}
         </main>
 
-        {/* AI Chat panel — desktop: fixed right column; mobile: floating button */}
-        <aside className="hidden lg:flex w-80 flex-shrink-0 flex-col border-l border-border bg-background overflow-hidden">
-          <AIChatPanel
-            mobileOpen={chatOpen}
-            onMobileOpenChange={setChatOpen}
-            onChatSubmit={handleChatSubmit}
-            chatHistory={chatHistory}
-            isStreaming={isChatting}
-            error={chatError}
-            placeholder={t("chatPlaceholder")}
-            title={tChat("defaultTitle")}
-            showGenerationHint={!isEntitlementLoading && !isPremium}
-            sources={sources}
-            onImageRegen={handleImageRegen}
-            onDismissImageRegen={handleImageRegenDismiss}
-            documentType={document?.documentType}
-            documentId={document?.id}
-            onNewConversation={handleNewConversation}
-            onFeedback={handleChatFeedback}
-          />
-        </aside>
       </div>
 
       {/* Phone action bar: the four things people do with a deck on a phone, under the thumb. */}
@@ -2936,6 +2931,30 @@ export function BlockDocumentEditor({ documentId }: Props) {
           </>
         )}
       </nav>
+      </div>
+
+      {/* AI Chat panel — desktop: fixed right column; mobile: floating button */}
+      <aside className="hidden lg:flex w-80 flex-shrink-0 flex-col border-l border-border bg-background overflow-hidden">
+        <AIChatPanel
+          mobileOpen={chatOpen}
+          onMobileOpenChange={setChatOpen}
+          onChatSubmit={handleChatSubmit}
+          chatHistory={chatHistory}
+          isStreaming={isChatting}
+          error={chatError}
+          placeholder={t("chatPlaceholder")}
+          title={tChat("defaultTitle")}
+          showGenerationHint={!isEntitlementLoading && !isPremium}
+          sources={sources}
+          onImageRegen={handleImageRegen}
+          onDismissImageRegen={handleImageRegenDismiss}
+          documentType={document?.documentType}
+          documentId={document?.id}
+          onNewConversation={handleNewConversation}
+          onFeedback={handleChatFeedback}
+        />
+      </aside>
+      </div>
 
       {/* Image picker modal */}
       {document && (

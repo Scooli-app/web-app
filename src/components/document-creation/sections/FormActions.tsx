@@ -5,7 +5,7 @@ import { useAccountAccess } from "@/hooks/useAccountAccess";
 import { selectEntitlementUsage } from "@/store/entitlements/selectors";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setUpgradeModalOpen } from "@/store/ui/uiSlice";
-import { Loader2, Lock, Sparkles } from "lucide-react";
+import { ArrowUp, Loader2, Lock, Sparkles } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { MissingField } from "../missingField";
 import { typeNameInSentence } from "../typeNameInSentence";
@@ -18,8 +18,10 @@ interface FormActionsProps {
   error: string;
   onSubmit: () => void;
   showGenerationHint?: boolean;
-  /** First required field still empty; shown under the disabled button. */
-  missingField?: MissingField | null;
+  /** Required fields still empty, in form order; listed under the disabled button. */
+  missingFields?: MissingField[];
+  /** Takes the teacher to a missing field when they tap the list. */
+  onMissingFieldClick?: (field: MissingField) => void;
   /** The teacher has no templates for this type, so the missing one has to be created. */
   noTemplates?: boolean;
 }
@@ -31,7 +33,8 @@ export function FormActions({
   error,
   onSubmit,
   showGenerationHint = false,
-  missingField = null,
+  missingFields = [],
+  onMissingFieldClick,
   noTemplates = false,
 }: FormActionsProps) {
   const t = useTranslations("documentCreation");
@@ -44,6 +47,11 @@ export function FormActions({
   const outOfCredits = hasCredits && usage?.remaining === 0;
   const locale = useLocale();
   const typeLabel = typeNameInSentence(tEnums(`documentType.${documentType.id}`), locale);
+  const missingList = new Intl.ListFormat(locale, { type: "conjunction" }).format(
+    missingFields.map((field) =>
+      field === "template" && noTemplates ? t("missing.templateNone") : t(`missing.${field}`),
+    ),
+  );
   const handleClick = () => {
     if (!guard("generate")) return;
     onSubmit();
@@ -95,11 +103,19 @@ export function FormActions({
               {tUpgrade("upgradeToPro")}
             </Button>
           </div>
-        ) : missingField && !isLoading ? (
-          <p className="text-center text-sm font-medium text-muted-foreground" aria-live="polite">
-            {t("missing.prefix")}{" "}
-            {missingField === "template" && noTemplates ? t("missing.templateNone") : t(`missing.${missingField}`)}
-          </p>
+        ) : missingFields.length > 0 && !isLoading ? (
+          <div aria-live="polite">
+            <button
+              type="button"
+              onClick={() => onMissingFieldClick?.(missingFields[0])}
+              className="flex w-full items-center justify-center gap-1.5 rounded-lg px-2 py-1 text-center text-sm font-medium text-amber-700 underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:text-amber-400"
+            >
+              <ArrowUp className="h-4 w-4 shrink-0" aria-hidden />
+              <span>
+                {t("missing.prefix")} {missingList}
+              </span>
+            </button>
+          </div>
         ) : (
           <AiDisclaimer />
         )}

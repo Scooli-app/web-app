@@ -97,10 +97,15 @@ function buildDecorations(
       decorations.push(
         Decoration.widget(pos, createDeleteWidget(change), {
           id: `del-${change.id}`,
+          // Same key = same DOM across rebuilds, so an expanded block stays open.
+          key: `del-${change.id}`,
           side: -1,
         }),
       );
     }
+
+    // A large pure deletion carries its ✓ ✗ in its own one-line header.
+    if (change.type === "delete" && isLargeDeletion(change)) continue;
 
     // Action buttons widget — positioned at the end of the change
     const actionPos = Math.max(0, Math.min(change.toB, docSize));
@@ -117,36 +122,50 @@ function buildDecorations(
 
 /**
  * Create a DOM element showing deleted content with strikethrough styling.
- * For large deletions (e.g. entire chapters), shows a prominent block.
+ * Large deletions (e.g. entire chapters) collapse to a one-line marker, so a
+ * suggestion with many of them does not bury the document; a toggle shows the
+ * deleted content.
  */
 function createDeleteWidget(
   change: DiffChange,
 ): (view: import("@tiptap/pm/view").EditorView) => HTMLElement {
   return (view) => {
-    const text = change.deletedSlice ? sliceToText(change.deletedSlice) : "";
-    const isLargeDeletion =
-      text.length > 100 ||
-      (change.deletedSlice && change.deletedSlice.content.childCount > 1);
-
-    if (isLargeDeletion && change.deletedSlice) {
+    if (isLargeDeletion(change) && change.deletedSlice) {
       // Block-level deletion indicator for large chunks (chapters, sections)
       const wrapper = document.createElement("div");
       wrapper.className = "diff-delete-block";
       wrapper.setAttribute("data-diff-id", change.id);
       wrapper.contentEditable = "false";
 
-      const label = document.createElement("div");
+      const header = document.createElement("div");
+      header.className = "diff-delete-header";
+
+      const label = document.createElement("span");
       label.className = "diff-delete-label";
       label.textContent = translate("editor.diffExtension.contentRemoved");
 
+      const excerpt = document.createElement("span");
+      excerpt.className = "diff-delete-excerpt";
+      excerpt.textContent = describeDeletion(change.deletedSlice);
+
+      const toggle = document.createElement("button");
+      toggle.className = "diff-delete-toggle";
+      toggle.type = "button";
+      toggle.setAttribute("aria-expanded", "false");
+      toggle.textContent = translate("editor.diffExtension.showRemoved");
+
+      header.append(label, excerpt, toggle);
+      if (change.type === "delete") header.append(createActionWidget(change.id)(view));
+
       const preview = document.createElement("div");
       preview.className = "diff-delete-content";
+      preview.hidden = true;
 
       // Render the deleted slice with full editor formatting
       const fragment = renderSlice(change.deletedSlice, view.state.schema);
       preview.appendChild(fragment);
 
-      wrapper.appendChild(label);
+      wrapper.appendChild(header);
       wrapper.appendChild(preview);
       return wrapper;
     } else {
@@ -164,6 +183,26 @@ function createDeleteWidget(
       return wrapper;
     }
   };
+}
+
+/**
+ * Show or hide the deleted content of a collapsed large-deletion block.
+ * DOM only: widget mutations do not reach ProseMirror's document.
+ */
+function toggleDeleteBlock(toggle: Element): void {
+  const content = toggle
+    .closest(".diff-delete-block")
+    ?.querySelector<HTMLElement>(".diff-delete-content");
+  if (!content) return;
+
+  const expanded = toggle.getAttribute("aria-expanded") !== "true";
+  content.hidden = !expanded;
+  toggle.setAttribute("aria-expanded", String(expanded));
+  toggle.textContent = translate(
+    expanded
+      ? "editor.diffExtension.hideRemoved"
+      : "editor.diffExtension.showRemoved",
+  );
 }
 
 /**
@@ -210,6 +249,30 @@ function createActionWidget(
 
     return wrapper;
   };
+}
+
+/** Longer than 100 characters or more than one block: shown as a collapsed one-line block. */
+function isLargeDeletion(change: DiffChange): boolean {
+  if (!change.deletedSlice) return false;
+  return change.deletedSlice.content.childCount > 1 || sliceToText(change.deletedSlice).length > 100;
+}
+
+/**
+ * One line saying what a large deletion takes out, so its size is clear while collapsed:
+ * the removed section titles and paragraph count ("Leitura, Análise · 4 parágrafos"),
+ * or the paragraph count and the start of the text when no title is removed.
+ */
+function describeDeletion(slice: import("@tiptap/pm/model").Slice): string {
+  const headings: string[] = [];
+  let paragraphs = 0;
+  slice.content.descendants((node) => {
+    if (node.type.name === "heading") headings.push(node.textContent);
+    else if (node.type.name === "paragraph" && node.textContent.trim()) paragraphs++;
+    return node.type.name !== "heading" && node.type.name !== "paragraph";
+  });
+  const count = translate("editor.diffExtension.paragraphCount", { count: paragraphs });
+  if (headings.length === 0) return paragraphs > 1 ? `${count}: ${sliceToText(slice)}` : sliceToText(slice);
+  return paragraphs > 0 ? `${headings.join(", ")} · ${count}` : headings.join(", ");
 }
 
 /**
@@ -571,10 +634,19 @@ export const DiffExtension = Extension.create({
             );
           },
 
-          // Handle clicks on accept/reject buttons
+          // Handle clicks on accept/reject buttons and deletion toggles
           handleDOMEvents: {
             click(_view, event) {
               const target = event.target as HTMLElement;
+
+              const toggle = target.closest(".diff-delete-toggle");
+              if (toggle) {
+                event.preventDefault();
+                event.stopPropagation();
+                toggleDeleteBlock(toggle);
+                return true;
+              }
+
               const btn = target.closest(".diff-action-btn");
               if (!btn) return false;
 
