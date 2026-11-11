@@ -65,12 +65,14 @@ export function DatePicker({
       <PopoverContent className="w-auto p-0" align="start">
         <Calendar
           mode="single"
+          required
+          captionLayout="dropdown"
           selected={value}
           onSelect={(date) => {
             onChange?.(date);
             setOpen(false);
           }}
-          defaultMonth={value}
+          defaultMonth={value ?? fromDate}
           startMonth={fromDate}
           endMonth={toDate}
           disabled={[

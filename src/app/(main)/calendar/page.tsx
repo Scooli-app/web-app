@@ -67,6 +67,7 @@ import {
 
 import { SLOT_STATUS_CONFIG } from "@/shared/constants/lessonSlotStatus";
 import { SlotDialog } from "@/components/calendar/SlotDialog";
+import { WeekJumpPicker } from "@/components/calendar/WeekJumpPicker";
 import { TeachingMarkBadge, TeachingMarkLegend } from "@/components/calendar/TeachingMarkBadge";
 import { formatClassName } from "@/shared/utils/className";
 import { SlotSkeleton } from "@/components/calendar/SlotSkeleton";
@@ -462,7 +463,9 @@ function CalendarPageInner() {
         target.tagName === "INPUT" ||
         target.tagName === "TEXTAREA" ||
         target.tagName === "SELECT" ||
-        target.isContentEditable
+        target.isContentEditable ||
+        // Arrow keys inside the week picker move its own focus, not the week behind it.
+        target.closest("[role='dialog']")
       )
         return;
       if (e.key === "ArrowLeft") { e.preventDefault(); prevWeek(); }
@@ -907,9 +910,13 @@ function CalendarPageInner() {
               <ArrowLeft className="h-3.5 w-3.5" />
             </Button>
             {/* Phones: at 14 px "26 Oct – 1 Nov" was cut to "26 Oct – 1 …" up to ~480 px. */}
-            <span className="flex-1 min-w-0 truncate text-center text-xs font-medium tracking-tight text-foreground">
-              {compactWeekLabel(weekStart, toIntlLocale(locale))}
-            </span>
+            <WeekJumpPicker
+              weekStart={weekStart}
+              onJump={setWeekStart}
+              className="flex-1 min-w-0 justify-center text-xs font-medium tracking-tight text-foreground"
+            >
+              <span className="truncate">{compactWeekLabel(weekStart, toIntlLocale(locale))}</span>
+            </WeekJumpPicker>
             <Button variant="ghost" size="icon" className="h-7 w-6 shrink-0" onClick={nextWeek} aria-label={t("shared.nextWeek")}>
               <ArrowRight className="h-3.5 w-3.5" />
             </Button>
@@ -994,9 +1001,13 @@ function CalendarPageInner() {
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={nextWeek} aria-label={t("shared.nextWeek")}>
               <ArrowRight className="h-4 w-4" />
             </Button>
-            <span className="min-w-[160px] text-sm font-medium text-foreground">
+            <WeekJumpPicker
+              weekStart={weekStart}
+              onJump={setWeekStart}
+              className="min-w-[160px] text-sm font-medium text-foreground"
+            >
               {formatWeekLabel(weekStart, locale)}
-            </span>
+            </WeekJumpPicker>
               </>
             )}
 
