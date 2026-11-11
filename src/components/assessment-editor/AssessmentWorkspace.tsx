@@ -147,16 +147,15 @@ export function AssessmentWorkspace({ doc, onChange: onChangeProp, readOnly = fa
 
   return (
     <AssessmentEditorContext.Provider value={ctx}>
-      <div className={cn("flex min-h-0 w-full flex-1 flex-col overflow-hidden bg-muted/40", PHONE_TOUCH)}>
-        <div className="flex flex-shrink-0 flex-wrap items-center gap-2 border-b border-border bg-background px-4 py-2 max-md:gap-1.5 max-md:px-3">
-          <div className="flex min-w-0 flex-1 items-center gap-3 max-md:basis-full">{title}</div>
-          {actions}
-        </div>
-        {banner}
-
-        {/* The chat runs the full height, as in the other editors; the totals bar belongs to the sheet column. */}
-        <div className="flex min-h-0 flex-1">
+      {/* The chat takes the whole height on the right, as in the other editors; the title bar, banner and totals bar
+          belong to the sheet column. */}
+      <div className={cn("flex min-h-0 w-full flex-1 overflow-hidden bg-muted/40", PHONE_TOUCH)}>
           <div className="flex min-w-0 flex-1 flex-col">
+            <div className="flex flex-shrink-0 flex-wrap items-center gap-2 border-b border-border bg-background px-4 py-2 max-md:gap-1.5 max-md:px-3">
+              <div className="flex min-w-0 flex-1 items-center gap-3 max-md:basis-full">{title}</div>
+              {actions}
+            </div>
+            {banner}
             {/* A new box once the generated document opens: it starts at the top, not where the preview was followed to. */}
             <div key={doc ? "document" : "generating"} className="relative min-h-0 flex-1 overflow-y-auto px-4 py-6 sm:px-6 max-md:px-0 max-md:py-3" onClick={() => setSelectedId(null)} aria-busy={readOnly || undefined}>
               {readOnly && doc && (
@@ -186,7 +185,6 @@ export function AssessmentWorkspace({ doc, onChange: onChangeProp, readOnly = fa
             )}
           </div>
           <aside className="hidden w-80 flex-shrink-0 flex-col overflow-hidden border-l border-border bg-background lg:flex">{chat}</aside>
-        </div>
       </div>
     </AssessmentEditorContext.Provider>
   );
