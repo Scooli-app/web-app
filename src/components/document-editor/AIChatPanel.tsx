@@ -90,6 +90,8 @@ export interface ChatMessage {
   fromHistory?: boolean;
   /** The teacher's rating of this reply (ENG-387). */
   feedback?: "up" | "down";
+  /** The excerpt the teacher selected when asking (ENG-403). */
+  quote?: string;
 }
 
 interface AIChatPanelProps {
@@ -130,6 +132,9 @@ interface AIChatPanelProps {
   onNewConversation?: () => void;
   /** The teacher rated an assistant reply (ENG-387). */
   onFeedback?: (messageIndex: number, rating: "up" | "down") => void;
+  /** Text selected in the editor that the next message is about (ENG-403). */
+  selection?: string | null;
+  onClearSelection?: () => void;
 }
 
 const CHANGE_ICONS = { added: PlusCircle, changed: PenLine, removed: MinusCircle } as const;
@@ -263,6 +268,8 @@ function ChatContent({
   onFeedback,
   onChipPick,
   onNewConversation,
+  selection,
+  onClearSelection,
 }: {
   chatHistory: ChatMessage[];
   isStreaming: boolean;
@@ -291,6 +298,8 @@ function ChatContent({
   onFeedback?: (messageIndex: number, rating: "up" | "down") => void;
   onChipPick?: (text: string, kind: "clarify" | "followup") => void;
   onNewConversation?: () => void;
+  selection?: string | null;
+  onClearSelection?: () => void;
 }) {
   const t = useTranslations("editor.aiChatPanel");
   const tLock = useTranslations("billing.lock");
@@ -389,6 +398,11 @@ function ChatContent({
                         : "bg-muted text-foreground mr-auto rounded-tl-none border border-border/50",
                   )}
                 >
+                  {message.quote && (
+                    <span className="mb-1.5 block border-l-2 border-primary-foreground/50 pl-2 text-xs italic opacity-90 line-clamp-3">
+                      {message.quote}
+                    </span>
+                  )}
                   {message.content}
                   {message.hasUpdate && !message.changes?.length && (
                     <div className="mt-2 pt-2 border-t border-border/30 flex items-center gap-1.5 text-[10px] font-semibold text-primary uppercase tracking-wider">
@@ -535,6 +549,28 @@ function ChatContent({
               />
             )}
 
+            {selection && (
+              <div
+                className="mb-2 flex items-start gap-2 rounded-xl border border-primary/30 bg-primary/5 px-3 py-2 text-xs"
+                data-testid="chat-selection"
+              >
+                <div className="min-w-0 flex-1">
+                  <span className="font-semibold text-primary">{t("selectionLabel")}: </span>
+                  <span className="italic text-foreground line-clamp-2">«{selection}»</span>
+                </div>
+                {onClearSelection && (
+                  <button
+                    type="button"
+                    onClick={onClearSelection}
+                    aria-label={t("selectionClear")}
+                    className="shrink-0 rounded p-0.5 text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
+            )}
+
             {/* Chat Input */}
             <form
               onSubmit={handleSubmit}
@@ -548,7 +584,8 @@ function ChatContent({
               <Input
                 value={chatMessage}
                 onChange={(e) => setChatMessage(e.target.value)}
-                placeholder={placeholder}
+                placeholder={selection ? t("selectionPlaceholder") : placeholder}
+                data-chat-input={variant}
                 // Phone: 44 px tall, 16 px text so iOS doesn't zoom in on focus.
                 className={cn("flex-1 border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 px-3", isDesktop ? "h-10 text-sm" : "h-11 text-base")}
                 disabled={isInputLocked}
@@ -617,6 +654,8 @@ export default function AIChatPanel({
   onNewDocument,
   onNewConversation,
   onFeedback,
+  selection,
+  onClearSelection,
 }: AIChatPanelProps) {
   const t = useTranslations("editor.aiChatPanel");
   const tLock = useTranslations("billing.lock");
@@ -760,6 +799,17 @@ export default function AIChatPanel({
     wasStreamingRef.current = isStreaming;
   }, [isStreaming]);
 
+  // A selection to ask about (ENG-403): bring the input into view and focus it.
+  useEffect(() => {
+    if (!selection) return;
+    const desktop = window.matchMedia("(min-width: 1024px)").matches;
+    if (!desktop) setIsOpenRef.current(true);
+    const focus = () =>
+      (document.querySelector(`[data-chat-input="${desktop ? "desktop" : "mobile"}"]`) as HTMLInputElement | null)?.focus();
+    const timer = window.setTimeout(focus, desktop ? 0 : 250);
+    return () => window.clearTimeout(timer);
+  }, [selection]);
+
   // Scroll chat to bottom when chatHistory changes
   useEffect(() => {
     if (chatContainerRef.current) {
@@ -803,6 +853,8 @@ export default function AIChatPanel({
           onFeedback={onFeedback}
           onChipPick={handleChipPick}
           onNewConversation={onNewConversation}
+          selection={selection}
+          onClearSelection={onClearSelection}
         />
       </div>
 
@@ -880,6 +932,8 @@ export default function AIChatPanel({
                 onFeedback={onFeedback}
                 onChipPick={handleChipPick}
                 onNewConversation={onNewConversation}
+                selection={selection}
+                onClearSelection={onClearSelection}
               />
             </div>
           </SheetContent>

@@ -38,7 +38,7 @@ import {
 } from "@/store/subscription/subscriptionSlice";
 import { useAuth } from "@clerk/nextjs";
 import type { Editor } from "@tiptap/react";
-import { CheckCircle2, Crown, FileX, Loader2 } from "lucide-react";
+import { CheckCircle2, Crown, FileX, Loader2, Sparkles } from "lucide-react";
 import { DocumentEditorSkeleton } from "@/components/document-editor/DocumentEditorSkeleton";
 import { DocumentNotFound } from "@/components/document-editor/DocumentNotFound";
 import { useTranslations } from "next-intl";
@@ -312,7 +312,11 @@ export default function DocumentEditor({
   // An AI proposal stored on the server and not reviewed yet (ENG-408): offered again when the document reopens.
   const [pendingProposal, setPendingProposal] = useState<string | null>(null);
   // The proposal can only be shown as suggestions once the page's editor exists.
-  const [editorReady, setEditorReady] = useState(false);
+  const [editorInstance, setEditorInstance] = useState<Editor | null>(null);
+  const editorReady = editorInstance !== null;
+  // ENG-403: text selected in the page, offered to the assistant ("Pedir à IA"), and the one the next message is about.
+  const [selectionAsk, setSelectionAsk] = useState<{ text: string; top: number; left: number } | null>(null);
+  const [chatSelection, setChatSelection] = useState<string | null>(null);
   const historyLoadedForRef = useRef<string | null>(null);
   const chatFailureText = useChatFailureText();
   const createDocumentFromChat = useCreateDocumentFromChat();
@@ -378,7 +382,7 @@ export default function DocumentEditor({
 
   const handleEditorReady = useCallback((editor: Editor) => {
     editorRef.current = editor;
-    setEditorReady(true);
+    setEditorInstance(editor);
   }, []);
 
   const normalizePendingTitle = useCallback((rawTitle: string): string => {
@@ -1215,9 +1219,10 @@ export default function DocumentEditor({
       }
 
       dismissChatNudge();
+      const selection = chatSelection ?? undefined;
       setChatHistory((prev) => [
         ...prev,
-        { role: "user", content: userMessage },
+        { role: "user", content: userMessage, ...(selection ? { quote: selection } : {}) },
       ]);
       setError("");
       registerChatMessage(userMessage);
@@ -1231,6 +1236,7 @@ export default function DocumentEditor({
         editorSessionId: getSessionId(),
         message: userMessage,
         imageCount: images.length,
+        ...(selection ? { source: "selection" as const } : {}),
       });
 
       const editor = editorRef.current;
@@ -1249,8 +1255,9 @@ export default function DocumentEditor({
 
       try {
         const response = await dispatch(
-          chatWithDocument({ id: currentDocument.id, message: userMessage, pendingReview: true }),
+          chatWithDocument({ id: currentDocument.id, message: userMessage, pendingReview: true, selection }),
         ).unwrap();
+        setChatSelection(null);
         captureChatResponse({
           turnId,
           documentId: currentDocument.id,
@@ -1341,6 +1348,7 @@ export default function DocumentEditor({
     },
     [
       chatFailureText,
+      chatSelection,
       currentDocument?.documentType,
       currentDocument?.id,
       dismissChatNudge,
@@ -1415,6 +1423,42 @@ export default function DocumentEditor({
     window.addEventListener("beforeunload", onBeforeUnload);
     return () => window.removeEventListener("beforeunload", onBeforeUnload);
   }, [documentId, isSuggestionsMode, tChat]);
+
+  // ENG-403: a non-trivial text selection in the page offers "Pedir à IA" next to it.
+  useEffect(() => {
+    const editor = editorInstance;
+    if (!editor || editor.isDestroyed) return;
+    const update = () => {
+      const { from, to, empty } = editor.state.selection;
+      if (empty || isSuggestionsMode || !editor.isFocused) {
+        setSelectionAsk(null);
+        return;
+      }
+      const text = editor.state.doc.textBetween(from, to, " ").trim();
+      if (text.length < 3) {
+        setSelectionAsk(null);
+        return;
+      }
+      const end = editor.view.coordsAtPos(to);
+      setSelectionAsk({ text: text.slice(0, 1500), top: end.bottom + 6, left: end.left });
+    };
+    const hide = () => window.setTimeout(() => setSelectionAsk(null), 150);
+    editor.on("selectionUpdate", update);
+    editor.on("blur", hide);
+    window.addEventListener("scroll", hide, true);
+    return () => {
+      editor.off("selectionUpdate", update);
+      editor.off("blur", hide);
+      window.removeEventListener("scroll", hide, true);
+    };
+  }, [editorInstance, isSuggestionsMode]);
+
+  const handleAskAboutSelection = useCallback(() => {
+    if (!selectionAsk) return;
+    setChatSelection(selectionAsk.text);
+    setSelectionAsk(null);
+    posthog.capture("ai_chat_selection_asked", { document_id: documentId, length: selectionAsk.text.length });
+  }, [documentId, selectionAsk]);
 
   const handleNewConversation = useCallback(async () => {
     if (await startNewConversation(documentId)) {
@@ -1588,6 +1632,8 @@ export default function DocumentEditor({
       onNewDocument={handleNewDocumentFromChat}
       onNewConversation={handleNewConversation}
       onFeedback={handleChatFeedback}
+      selection={chatSelection}
+      onClearSelection={() => setChatSelection(null)}
     />
   );
   // Curriculum plans carry wide tables: their page takes the desk's width instead of a reading width.
@@ -1726,6 +1772,23 @@ export default function DocumentEditor({
                       editor={editorRef.current}
                       onExitDiffMode={handleExitDiffMode}
                     />
+                  )}
+                  {selectionAsk && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="fixed z-50 h-8 gap-1.5 rounded-full px-3 text-xs shadow-lg"
+                      style={{ top: selectionAsk.top, left: selectionAsk.left }}
+                      // Keep the editor's selection: act before it blurs.
+                      onMouseDown={(event) => {
+                        event.preventDefault();
+                        handleAskAboutSelection();
+                      }}
+                      data-testid="ask-ai-selection"
+                    >
+                      <Sparkles className="h-3.5 w-3.5" />
+                      {tChat("askAiSelection")}
+                    </Button>
                   )}
                   <RichTextEditor
                     key={editorKey}

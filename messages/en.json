@@ -1496,7 +1496,11 @@
       "pendingReviewTitle": "You have AI changes to review",
       "pendingReviewReview": "Review",
       "pendingReviewDiscard": "Discard",
-      "leaveWithPending": "You have AI changes to accept or reject. If you leave now, they won't be saved."
+      "leaveWithPending": "You have AI changes to accept or reject. If you leave now, they won't be saved.",
+      "askAiSelection": "Ask AI",
+      "selectionLabel": "Selected",
+      "selectionClear": "Remove selection",
+      "selectionPlaceholder": "What should I do with this excerpt?"
     },
     "calendarButton": {
       "viewClass": "View class",

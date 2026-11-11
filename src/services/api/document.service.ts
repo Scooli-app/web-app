@@ -350,7 +350,7 @@ export async function chatWithDocument(
   id: string,
   message: string,
   canvasState?: string,
-  options: { pendingReview?: boolean } = {},
+  options: { pendingReview?: boolean; selection?: string } = {},
 ): Promise<ChatResponse> {
   const response = await apiClient.post<ChatResponse>(
     `/documents/${id}/chat`,
@@ -358,6 +358,7 @@ export async function chatWithDocument(
       chatMessage: message,
       ...(canvasState ? { canvasState } : {}),
       ...(options.pendingReview ? { pendingReview: true } : {}),
+      ...(options.selection ? { selection: options.selection } : {}),
     },
     { timeout: CHAT_REQUEST_TIMEOUT_MS },
   );

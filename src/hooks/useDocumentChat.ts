@@ -90,6 +90,8 @@ export function captureChatMessageSent(params: {
   editorSessionId?: string | null;
   message: string;
   imageCount?: number;
+  /** "selection" when the teacher asked about selected text (ENG-403). */
+  source?: "selection";
 }) {
   try {
     posthog.capture("ai_chat_message_sent", {
@@ -99,6 +101,7 @@ export function captureChatMessageSent(params: {
       editor: params.editor,
       message_length: params.message.trim().length,
       current_image_count: params.imageCount ?? null,
+      source: params.source ?? null,
       editor_session_id: params.editorSessionId ?? null,
     });
   } catch {

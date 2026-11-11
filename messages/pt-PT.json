@@ -1496,7 +1496,11 @@
       "pendingReviewTitle": "Tens alterações da IA por rever",
       "pendingReviewReview": "Rever",
       "pendingReviewDiscard": "Descartar",
-      "leaveWithPending": "Tens alterações da IA por aceitar ou rejeitar. Se saíres agora, não serão guardadas."
+      "leaveWithPending": "Tens alterações da IA por aceitar ou rejeitar. Se saíres agora, não serão guardadas.",
+      "askAiSelection": "Pedir à IA",
+      "selectionLabel": "Selecionado",
+      "selectionClear": "Retirar seleção",
+      "selectionPlaceholder": "O que queres fazer com este excerto?"
     },
     "calendarButton": {
       "viewClass": "Ver turma",
