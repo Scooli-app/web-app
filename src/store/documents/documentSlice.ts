@@ -525,6 +525,7 @@ const documentSlice = createSlice({
         state.isLoading = true;
         state.loadingDocumentId = action.meta.arg;
         state.error = null;
+        if (state.documentLoadError?.id === action.meta.arg) state.documentLoadError = null;
       })
       .addCase(fetchDocument.fulfilled, (state, action) => {
         state.documentLoadError = null;

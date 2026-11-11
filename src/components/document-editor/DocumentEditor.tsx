@@ -237,6 +237,7 @@ export default function DocumentEditor({
   } = useAppSelector(selectEditorState);
   const isPremium = useAppSelector(selectIsPro);
   const isEntitlementLoading = useAppSelector(selectEntitlementLoading);
+  const loadFailed = useAppSelector((s) => s.documents.documentLoadError?.id === documentId);
   const {
     content,
     setContent,
@@ -1346,7 +1347,10 @@ export default function DocumentEditor({
 
   if (isLoading && !isGenerating) return <DocumentEditorSkeleton />;
 
-  if (!activeDocument?.id && !isGenerating) return <DocumentNotFound documentId={documentId} />;
+  // Not in the store yet (just navigated here, or another document replaced it): the fetch is on its way.
+  if (!activeDocument?.id && !isGenerating) {
+    return loadFailed ? <DocumentNotFound documentId={documentId} /> : <DocumentEditorSkeleton />;
+  }
 
   const shareButton = (
     <ShareButton
