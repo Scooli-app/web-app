@@ -1,6 +1,5 @@
 "use client";
 import { MAX_LENGTHS } from "@/shared/config/constants";
-import { AiDisclaimer } from "@/components/ui/ai-disclaimer";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -862,7 +861,6 @@ export function SlotDialog({
         {!isHoliday && (
           // Phones: a two-column grid, main action first, so four stacked buttons don't hide the lesson.
           <DialogFooter className="border-t bg-muted/30 px-6 py-4 gap-2 max-sm:grid max-sm:grid-cols-2">
-            {(canGenerate || isCompleted) && <AiDisclaimer className="max-sm:order-4 max-sm:col-span-2 sm:mr-auto sm:self-center sm:text-left" />}
             {showReplanRequest && (
               <Button variant="outline" onClick={() => setReplanOpen(true)} className={cn("h-9 rounded-lg max-sm:order-3", !isCompleted && "max-sm:col-span-2")}>
                 {tReplan("action")}

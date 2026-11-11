@@ -7,6 +7,7 @@ import { clearChatHistory, getChatHistory } from "@/services/api/document.servic
 import { Routes, type ChatNewDocument, type ChatResponse, type DocumentType } from "@/shared/types";
 import { useAppDispatch } from "@/store/hooks";
 import { createDocument, setPendingInitialPrompt } from "@/store/documents/documentSlice";
+import { linkLessonDocument } from "@/services/api/timetable.service";
 import { DEFAULT_PRESENTATION_THEME } from "@/shared/types/presentation-theme";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
@@ -190,6 +191,16 @@ export interface ChatSourceDocument {
   duration?: number | null;
   content?: string | null;
   documentType?: string | null;
+  /** The lesson the source document belongs to: the new document joins it too. */
+  lesson?: { timetableId: string; lessonId: string } | null;
+}
+
+/** The lesson a document belongs to (from its classInfo), or null. */
+export function lessonOf(document: {
+  classInfo?: { timetableId: string; lessonId?: string | null } | null;
+}): { timetableId: string; lessonId: string } | null {
+  const info = document.classInfo;
+  return info?.timetableId && info.lessonId ? { timetableId: info.timetableId, lessonId: info.lessonId } : null;
 }
 
 /**
@@ -244,6 +255,12 @@ export function useCreateDocumentFromChat() {
         created_from: "ai_chat",
         source_document_id: source.id,
       });
+      if (source.lesson) {
+        // Made from a lesson's document: it belongs to that lesson as well. If linking fails the document still opens.
+        await linkLessonDocument(source.lesson.timetableId, source.lesson.lessonId, created.id).catch((err) =>
+          posthog.captureException(err),
+        );
+      }
       dispatch(setPendingInitialPrompt({ documentId: created.id, prompt }));
       const path = config.redirectPath.replace(":id", created.id);
       // A deck made from the chat gets the default theme, like one made from the creation page.
