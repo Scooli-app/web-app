@@ -16,7 +16,9 @@
 #   CLERK_SECRET_KEY                   Clerk *dev* instance secret key (sk_test_…)
 #   E2E_CLERK_USER_EMAIL               the dedicated e2e test user in the Clerk dev instance
 # Optional variable:
-#   CHALKBOARD_REF                     chalkboard branch/tag/sha to test against (default: main)
+#   CHALKBOARD_REF                     chalkboard branch/tag/sha to test against. When unset, a
+#                                      chalkboard branch with the same name as this branch is used
+#                                      if it exists, otherwise main.
 #
 # Pull requests from forks get no secrets, so their E2E job fails: the web-app
 # is public, but its e2e tests need the private backend and Clerk keys.
@@ -114,11 +116,32 @@ jobs:
       - uses: actions/checkout@v4
 
       # ── chalkboard API, built with fake AI ─────────────────────────────────
+      # Which chalkboard to test against: CHALKBOARD_REF if set, else the
+      # chalkboard branch with the same name as this web-app branch (so paired
+      # PRs test together), else main.
+      - name: Resolve chalkboard ref
+        id: chalkboard_ref
+        env:
+          OVERRIDE: ${{ vars.CHALKBOARD_REF }}
+          BRANCH: ${{ github.head_ref || github.ref_name }}
+          TOKEN: ${{ secrets.CHALKBOARD_READ_TOKEN }}
+        run: |
+          if [ -n "$OVERRIDE" ]; then
+            ref="$OVERRIDE"; why="CHALKBOARD_REF"
+          elif git ls-remote --exit-code --heads \
+              "https://x-access-token:${TOKEN}@github.com/Scooli-app/chalkboard.git" "$BRANCH" >/dev/null 2>&1; then
+            ref="$BRANCH"; why="same branch name"
+          else
+            ref="main"; why="default"
+          fi
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+          echo "Testing against chalkboard '$ref' ($why)"
+
       - name: Check out chalkboard
         uses: actions/checkout@v4
         with:
           repository: Scooli-app/chalkboard
-          ref: ${{ vars.CHALKBOARD_REF || 'main' }}
+          ref: ${{ steps.chalkboard_ref.outputs.ref }}
           token: ${{ secrets.CHALKBOARD_READ_TOKEN }}
           path: chalkboard
 
