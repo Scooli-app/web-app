@@ -4,12 +4,12 @@
  * Based on Chalkboard backend API (Quarkus)
  */
 
-import type { BackendPaginatedResponse, ChatResponse, CreateDocumentParams, CreateDocumentStreamResponse, Document, DocumentFilters, DocumentStatsResponse, DocumentStreamCallbacks, DocumentType, GenerateSlideResponse, GetDocumentsParams, GetDocumentsResponse, StreamedResponse, StreamEvent, WorksheetVariant } from "@/shared/types";
+import type { BackendPaginatedResponse, ChatHistoryMessage, ChatResponse, CreateDocumentParams, CreateDocumentStreamResponse, Document, DocumentFilters, DocumentStatsResponse, DocumentStreamCallbacks, DocumentType, GenerateSlideResponse, GetDocumentsParams, GetDocumentsResponse, StreamedResponse, StreamEvent, WorksheetVariant } from "@/shared/types";
 import { isFailedDocumentStatus, type DocumentImage, type RagSource } from "@/shared/types/document";
 import type { DocumentVersionDetail, DocumentVersionSummary } from "@/shared/types/document-versions";
 import { translate } from "@/i18n/translate";
 import axios, { type AxiosError } from "axios";
-import apiClient, { handleAccountLocked } from "./client";
+import apiClient, { ApiRequestError, getApiToken, handleAccountLocked } from "./client";
 
 export type { DocumentFilters };
 
@@ -343,16 +343,143 @@ export async function dismissAnswerCheck(id: string, exerciseId: string): Promis
  * Send a chat message to update a document via AI
  * Returns updated document with chatAnswer
  */
+/** Above the server's own AI timeout (180 s), so the server's typed timeout answer wins over a client abort. */
+export const CHAT_REQUEST_TIMEOUT_MS = 200_000;
+
 export async function chatWithDocument(
   id: string,
   message: string,
-  canvasState?: string
+  canvasState?: string,
+  options: { pendingReview?: boolean; selection?: string; attachment?: ChatAttachment } = {},
 ): Promise<ChatResponse> {
-  const response = await apiClient.post<ChatResponse>(`/documents/${id}/chat`, {
-    chatMessage: message,
-    ...(canvasState ? { canvasState } : {}),
+  const response = await apiClient.post<ChatResponse>(
+    `/documents/${id}/chat`,
+    {
+      chatMessage: message,
+      ...(canvasState ? { canvasState } : {}),
+      ...(options.pendingReview ? { pendingReview: true } : {}),
+      ...(options.selection ? { selection: options.selection } : {}),
+      ...(options.attachment ? { attachmentName: options.attachment.name, attachmentText: options.attachment.text } : {}),
+    },
+    { timeout: CHAT_REQUEST_TIMEOUT_MS },
+  );
+  return response.data;
+}
+
+/** Progress of a streamed chat turn (ENG-402). */
+export interface ChatStreamProgress {
+  stage: "reading" | "editing" | "answering";
+  section?: string;
+}
+
+/** Thrown when the stream could not start: the caller falls back to the plain request. */
+export class ChatStreamUnavailableError extends Error {}
+
+/**
+ * The chat turn streamed (POST /documents/{id}/chat/stream): status and reply text as they arrive, then the same
+ * response as {@link chatWithDocument}. A failure before the first frame throws ChatStreamUnavailableError.
+ */
+export async function streamChatWithDocument(
+  id: string,
+  message: string,
+  options: { pendingReview?: boolean; selection?: string; attachment?: ChatAttachment },
+  callbacks: { onProgress?: (p: ChatStreamProgress) => void; onAnswer?: (delta: string) => void },
+): Promise<ChatResponse> {
+  const token = await getApiToken();
+  const base = process.env.NEXT_PUBLIC_BASE_API_URL || "";
+  let response: Response;
+  try {
+    response = await fetch(`${base}/documents/${id}/chat/stream`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "text/event-stream",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({
+        chatMessage: message,
+        ...(options.pendingReview ? { pendingReview: true } : {}),
+        ...(options.selection ? { selection: options.selection } : {}),
+        ...(options.attachment ? { attachmentName: options.attachment.name, attachmentText: options.attachment.text } : {}),
+      }),
+    });
+  } catch {
+    throw new ChatStreamUnavailableError("network");
+  }
+  if (!response.ok || !response.body) {
+    throw new ChatStreamUnavailableError(`http_${response.status}`);
+  }
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let sawFrame = false;
+  for (;;) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    let cut: number;
+    while ((cut = buffer.indexOf("\n\n")) >= 0) {
+      const raw = buffer.slice(0, cut);
+      buffer = buffer.slice(cut + 2);
+      const data = raw
+        .split("\n")
+        .filter((line) => line.startsWith("data:"))
+        .map((line) => line.slice(5).trimStart())
+        .join("\n");
+      if (!data) continue;
+      let frame: { type?: string; stage?: string; section?: string; data?: unknown; code?: string };
+      try {
+        frame = JSON.parse(data);
+      } catch {
+        continue;
+      }
+      sawFrame = true;
+      if (frame.type === "status" && frame.stage) {
+        callbacks.onProgress?.({ stage: frame.stage as ChatStreamProgress["stage"], section: frame.section });
+      } else if (frame.type === "answer" && typeof frame.data === "string") {
+        callbacks.onAnswer?.(frame.data);
+      } else if (frame.type === "done") {
+        return frame.data as ChatResponse;
+      } else if (frame.type === "error" || frame.type === "account_locked") {
+        throw new ApiRequestError(frame.code ?? "chat_failed", frame.code === "not_found" ? 404 : 500, frame.code ?? null);
+      }
+    }
+  }
+  if (!sawFrame) throw new ChatStreamUnavailableError("empty");
+  throw new ApiRequestError("stream_ended", 500, "upstream_unavailable");
+}
+
+/** A file attached in the chat, read on the server (ENG-410). */
+export interface ChatAttachment {
+  name: string;
+  text: string;
+  truncated: boolean;
+}
+
+/** Reads a PDF/Word/text file's text for the next chat message. Rejects with ApiRequestError (code: why). */
+export async function uploadChatAttachment(id: string, file: File): Promise<ChatAttachment> {
+  const form = new FormData();
+  form.append("file", file);
+  const response = await apiClient.post<ChatAttachment>(`/documents/${id}/chat/attachments`, form, {
+    headers: { "Content-Type": "multipart/form-data" },
   });
   return response.data;
+}
+
+/** The document's stored conversation, oldest first (ENG-396). */
+export async function getChatHistory(id: string): Promise<ChatHistoryMessage[]> {
+  const response = await apiClient.get<{ messages: ChatHistoryMessage[] }>(`/documents/${id}/chat`);
+  return response.data.messages ?? [];
+}
+
+/** "Nova conversa": the assistant stops seeing the previous turns. */
+export async function clearChatHistory(id: string): Promise<void> {
+  await apiClient.delete(`/documents/${id}/chat`);
+}
+
+/** The teacher finished reviewing the AI's proposed changes (ENG-408). */
+export async function discardPendingAiEdit(id: string): Promise<void> {
+  await apiClient.delete(`/documents/${id}/chat/pending`);
 }
 
 export async function generateSlide(

@@ -1,6 +1,6 @@
 "use client";
 
-import AIChatPanel from "@/components/document-editor/AIChatPanel";
+import AIChatPanel, { type ChatMessage } from "@/components/document-editor/AIChatPanel";
 import { InlineTitle } from "@/components/document-editor/InlineTitle";
 import { DocumentEditorSkeleton } from "@/components/document-editor/DocumentEditorSkeleton";
 import { DocumentLessonContext } from "@/components/document-editor/DocumentLessonContext";
@@ -15,9 +15,21 @@ import { useGenerationStalled } from "@/hooks/useGenerationStalled";
 import { generateDocumentImage } from "@/services/api/document-images.service";
 import { dismissAnswerCheck } from "@/services/api/document.service";
 import { searchAeOutcomes } from "@/services/export/documentExport";
-import { Routes, type Document } from "@/shared/types";
+import { Routes, type ChatNewDocument, type Document } from "@/shared/types";
 import { isFailedDocumentStatus, type RagSource } from "@/shared/types/document";
 import { chatWithDocument, fetchDocument, setCurrentDocument, updateDocument } from "@/store/documents/documentSlice";
+import {
+  assistantMessageFromResponse,
+  captureChatFeedback,
+  captureChatMessageSent,
+  captureChatResponse,
+  loadChatHistory,
+  newChatTurnId,
+  startNewConversation,
+  useChatFailureText,
+  useCreateDocumentFromChat,
+} from "@/hooks/useDocumentChat";
+
 import { fetchEntitlements } from "@/store/entitlements/entitlementsSlice";
 import { selectCurrentEntitlement, selectEntitlementError, selectEntitlementLoading } from "@/store/entitlements/selectors";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
@@ -30,7 +42,6 @@ import { reportUiProblem } from "@/lib/reportUiProblem";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import posthog from "posthog-js";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { AssessmentWorkspace } from "./AssessmentWorkspace";
@@ -38,13 +49,6 @@ import { AssessmentStreamingPreview } from "./AssessmentStreamingPreview";
 import { ExportDialog } from "./ExportDialog";
 import { adoptGrids, adoptStudentOrder, exerciseNumbers, missingAnswer, parseAssessment } from "./model";
 import { createSerialRunner } from "./serialRunner";
-
-interface ChatMessage {
-  role: "user" | "assistant";
-  content: string;
-  hasUpdate?: boolean;
-  noChange?: boolean;
-}
 
 interface AssessmentEditorProps {
   documentId: string;
@@ -314,9 +318,20 @@ export default function AssessmentEditor({ documentId, defaultTitle, chatTitle, 
   const [chatError, setChatError] = useState("");
   const [chatOpen, setChatOpen] = useState(false);
 
+  const chatFailureText = useChatFailureText();
+  const createDocumentFromChat = useCreateDocumentFromChat();
+
   useEffect(() => {
     setChatHistory([]);
     setChatError("");
+    // ENG-396: show the stored conversation (the assistant already reads it).
+    let cancelled = false;
+    void loadChatHistory(documentId).then((messages) => {
+      if (!cancelled && messages.length > 0) setChatHistory(messages);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [documentId]);
 
   // A chat edit can take well over a minute: say so, so the teacher does not think it hung.
@@ -351,17 +366,15 @@ export default function AssessmentEditor({ documentId, defaultTitle, chatTitle, 
         return false;
       }
       setIsChatting(true);
-      const problem = { documentId: document.id, documentType: document.documentType };
-      posthog.capture("ai_chat_message_sent", {
-        document_id: document.id,
-        document_type: document.documentType,
-        message_length: message.length,
-        editor: "assessment",
-      });
+      const turnId = newChatTurnId();
       const startedAt = Date.now();
+      const analytics = { turnId, documentId: document.id, documentType: document.documentType, editor: "assessment" as const };
+      captureChatMessageSent({ ...analytics, message });
+      const problem = { documentId: document.id, documentType: document.documentType };
       try {
         setChatHistory((prev) => [...prev, { role: "user", content: message }]);
         const response = await dispatch(chatWithDocument({ id: document.id, message })).unwrap();
+        captureChatResponse({ ...analytics, startedAt, response });
         const updated = !!parseAssessment(response.content);
         if (updated) {
           needsLoadRef.current = true;
@@ -371,22 +384,61 @@ export default function AssessmentEditor({ documentId, defaultTitle, chatTitle, 
         }
         setChatHistory((prev) => [
           ...prev,
-          { role: "assistant", content: response.chatAnswer || (updated ? t("chatUpdated") : t("chatEmpty")), hasUpdate: updated, noChange: !updated && !!response.chatAnswer },
+          assistantMessageFromResponse(
+            { ...response, chatAnswer: response.chatAnswer || (updated ? t("chatUpdated") : t("chatEmpty")) },
+            { hasUpdate: updated },
+          ),
         ]);
         return true;
-      } catch (err) {
+      } catch (failure) {
+        captureChatResponse({ ...analytics, startedAt, failure });
         reportUiProblem("chat_error_shown", {
           ...problem,
-          message: err instanceof Error ? err.message : typeof err === "string" ? err : null,
+          message: failure instanceof Error ? failure.message : typeof failure === "string" ? failure : null,
           durationMs: Date.now() - startedAt,
         });
-        setChatError(t("chatError"));
+        setChatError(chatFailureText(failure));
         return true;
       } finally {
         setIsChatting(false);
       }
     },
-    [dispatch, document, save, saveFailed, t],
+    [chatFailureText, dispatch, document, save, saveFailed, t],
+  );
+
+  const handleNewConversation = useCallback(async () => {
+    if (await startNewConversation(documentId)) {
+      setChatHistory([]);
+      setChatError("");
+    }
+  }, [documentId]);
+
+  const handleChatFeedback = useCallback(
+    (index: number, rating: "up" | "down") => {
+      setChatHistory((prev) =>
+        prev.map((m, i) => {
+          if (i !== index) return m;
+          captureChatFeedback({ documentId, documentType: document?.documentType, editor: "assessment", rating, message: m });
+          return { ...m, feedback: rating };
+        }),
+      );
+    },
+    [document?.documentType, documentId],
+  );
+
+  const handleNewDocumentFromChat = useCallback(
+    async (request: ChatNewDocument) => {
+      if (!document) return;
+      await createDocumentFromChat(request, {
+        id: document.id,
+        title: document.title,
+        subject: document.subject,
+        gradeLevel: document.gradeLevel,
+        content: null,
+        documentType: document.documentType,
+      });
+    },
+    [createDocumentFromChat, document],
   );
 
   /* ── Images ──────────────────────────────────────────────────────── */
@@ -610,6 +662,9 @@ export default function AssessmentEditor({ documentId, defaultTitle, chatTitle, 
             documentType={document.documentType}
             suggestionsKey={document.documentType === "worksheet" ? "assessmentWorksheet" : document.documentType === "quiz" ? "assessmentQuiz" : "assessment"}
             documentId={documentId}
+            onNewConversation={handleNewConversation}
+            onFeedback={handleChatFeedback}
+            onNewDocument={handleNewDocumentFromChat}
           />
         }
       />

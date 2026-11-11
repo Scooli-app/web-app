@@ -1457,7 +1457,68 @@
           }
         ]
       },
-      "generatingPlaceholder": "O chat fica disponível quando o documento estiver pronto."
+      "generatingPlaceholder": "O chat fica disponível quando o documento estiver pronto.",
+      "errors": {
+        "timeout": "O pedido demorou demasiado e foi interrompido. O documento não foi alterado. Tenta outra vez, ou pede a alteração por partes (uma secção de cada vez).",
+        "network": "Sem ligação ao servidor. Verifica a internet e envia outra vez — a tua mensagem ficou na caixa de texto.",
+        "notFound": "Este documento já não existe ou não tens acesso a ele.",
+        "server": "Não consegui responder agora e o documento não foi alterado. Tenta outra vez dentro de momentos — a tua mensagem ficou na caixa de texto.",
+        "upgrade": "Atingiste o limite de gerações do teu plano.",
+        "locked": "A tua conta está em modo de leitura."
+      },
+      "progress": [
+        "A ler o documento…",
+        "A preparar a resposta…",
+        "Ainda a trabalhar — documentos longos demoram mais…"
+      ],
+      "changesTitle": "Alterações",
+      "changeKinds": {
+        "added": "Novo",
+        "changed": "Alterado",
+        "removed": "Removido"
+      },
+      "wholeDocument": "Documento",
+      "noChangeBadge": "Sem alterações ao documento",
+      "freeTurn": "Não contou como geração",
+      "newDocumentAction": "Criar {type} a partir deste documento",
+      "newDocumentCreating": "A criar…",
+      "documentTypes": {
+        "worksheet": "ficha de trabalho",
+        "test": "teste",
+        "quiz": "quiz",
+        "presentation": "apresentação",
+        "lessonPlan": "plano de aula",
+        "curriculumPlan": "planificação"
+      },
+      "feedbackUp": "Resposta útil",
+      "feedbackDown": "Resposta pouco útil",
+      "feedbackThanks": "Obrigado pelo feedback!",
+      "newConversation": "Nova conversa",
+      "newConversationHint": "Começa do zero: o assistente deixa de ter em conta as mensagens anteriores.",
+      "previousConversation": "Conversa anterior",
+      "pendingReviewTitle": "Tens alterações da IA por rever",
+      "pendingReviewReview": "Rever",
+      "pendingReviewDiscard": "Descartar",
+      "leaveWithPending": "Tens alterações da IA por aceitar ou rejeitar. Se saíres agora, não serão guardadas.",
+      "askAiSelection": "Pedir à IA",
+      "selectionLabel": "Selecionado",
+      "selectionClear": "Retirar seleção",
+      "selectionPlaceholder": "O que queres fazer com este excerto?",
+      "attach": "Anexar ficheiro (PDF, Word ou texto)",
+      "attaching": "A ler o ficheiro…",
+      "attachmentTruncated": "só a primeira parte",
+      "attachErrors": {
+        "unsupported_type": "Este tipo de ficheiro ainda não é lido no chat. Usa PDF, Word ou texto — ou cola o texto na mensagem.",
+        "too_large": "O ficheiro é demasiado grande (máximo 10 MB).",
+        "no_text": "Não encontrei texto neste ficheiro (pode ser uma digitalização). Cola o texto na mensagem.",
+        "unreadable": "Não consegui ler este ficheiro. Tenta outro formato ou cola o texto na mensagem."
+      },
+      "stages": {
+        "reading": "A ler o documento…",
+        "editing": "A preparar as alterações…",
+        "editingSection": "A editar «{section}»…",
+        "answering": "A escrever a resposta…"
+      }
     },
     "calendarButton": {
       "viewClass": "Ver turma",

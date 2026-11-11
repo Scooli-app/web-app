@@ -22,6 +22,7 @@ import {
 } from "@tiptap/pm/state";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
 import type { DiffChange } from "../utils/diffEngine";
+import posthog from "posthog-js";
 
 // ---------------------------------------------------------------------------
 // Plugin key & meta
@@ -663,6 +664,15 @@ export const DiffExtension = Extension.create({
                 tiptapEditor.commands.acceptChange(changeId);
               } else if (action === "reject") {
                 tiptapEditor.commands.rejectChange(changeId);
+              }
+              // ENG-387: which proposed changes teachers keep, one by one.
+              try {
+                posthog.capture(
+                  action === "accept" ? "ai_suggestion_change_accepted" : "ai_suggestion_change_rejected",
+                  { change_id: changeId },
+                );
+              } catch {
+                // Analytics must never break the editor.
               }
 
               return true;

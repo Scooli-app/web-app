@@ -92,6 +92,38 @@ export class Api {
     return this.call("POST", `/timetable/${timetableId}/lessons/${lessonId}/documents/generate`, { documentType });
   }
 
+  /**
+   * A lesson plan made by the API and generated to the end (fake AI: a couple of seconds), ready for the editor.
+   * Reading the generation stream to its end is what runs the generation.
+   */
+  async createLessonPlan(topic: string): Promise<string> {
+    const created = await this.call<{ id: string }>("POST", "/documents", {
+      documentType: "lessonPlan",
+      prompt: `${E2E_PREFIX} ${topic}`,
+      subject: "Matemática",
+      schoolYear: 5,
+      duration: 50,
+      isSpecificComponent: false,
+    });
+    await this.request.fetch(`${API_URL}/documents/${created.id}/stream`, {
+      headers: { Authorization: `Bearer ${await this.token()}`, Accept: "text/event-stream" },
+      timeout: 60_000,
+    });
+    return created.id;
+  }
+
+  getDocument(id: string): Promise<{ id: string; content: string; metadata?: Record<string, unknown> }> {
+    return this.call("GET", `/documents/${id}`);
+  }
+
+  getChatHistory(id: string): Promise<{ messages: { role: string; text: string }[] }> {
+    return this.call("GET", `/documents/${id}/chat`);
+  }
+
+  deleteDocument(id: string): Promise<void> {
+    return this.call("DELETE", `/documents/${id}`);
+  }
+
   /** Deletes every turma the tests made (and their documents). */
   async cleanup(): Promise<void> {
     for (const timetable of await this.listTimetables()) {

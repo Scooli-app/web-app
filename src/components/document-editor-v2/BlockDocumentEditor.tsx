@@ -29,7 +29,7 @@
 import { isPresentationDoc } from "@/lib/documents/kind";
 import { PresentationEditorSkeleton } from "@/components/document-editor-v2/PresentationEditorSkeleton";
 import { SuggestionBar } from "@/components/document-versions/SuggestionBar";
-import AIChatPanel from "@/components/document-editor/AIChatPanel";
+import AIChatPanel, { type ChatMessage } from "@/components/document-editor/AIChatPanel";
 import { AiDisclaimer } from "@/components/ui/ai-disclaimer";
 import { GenerationProgress } from "@/components/blocks/GenerationProgress";
 import { PresentationStreamingPreview } from "@/components/document-editor-v2/PresentationStreamingPreview";
@@ -72,6 +72,16 @@ import { getThemeById } from "@/shared/types/presentation-theme";
 import { translate } from "@/i18n/translate";
 import { Routes, type Document } from "@/shared/types";
 import { fetchDocument, setCurrentDocument, updateDocument, chatWithDocument } from "@/store/documents/documentSlice";
+import {
+  assistantMessageFromResponse,
+  captureChatFeedback,
+  captureChatMessageSent,
+  captureChatResponse,
+  loadChatHistory,
+  newChatTurnId,
+  startNewConversation,
+  useChatFailureText,
+} from "@/hooks/useDocumentChat";
 import { useAccountAccess } from "@/hooks/useAccountAccess";
 import { DocumentVersionsButton } from "@/components/document-versions/DocumentVersionsButton";
 import { regenerateDocumentImage as regenerateDocumentImageApi, generateDocumentImage as generateDocumentImageApi } from "@/services/api/document-images.service";
@@ -137,16 +147,6 @@ import { formatImageCredit } from "@/shared/utils/photo-credit";
 
 interface Props {
   documentId: string;
-}
-
-interface ChatMessage {
-  role: "user" | "assistant";
-  content: string;
-  /** Show Sim/Não image-regen offer buttons below this message */
-  imageRegenOffer?: boolean;
-  /** Set after user clicks Sim or Não to hide buttons */
-  imageRegenResolved?: boolean;
-  hasUpdate?: boolean;
 }
 
 /* --------------------------------------------------------------------------
@@ -1369,6 +1369,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [isChatting, setIsChatting] = useState(false);
   const [chatError, setChatError] = useState("");
+  const chatFailureText = useChatFailureText();
 
   /**
    * When an AI quick-action button (Simplificar / Expandir / Melhorar) is
@@ -1383,6 +1384,10 @@ export function BlockDocumentEditor({ documentId }: Props) {
       setChatHistory((prev) => [...prev, { role: "user", content: userMessage }]);
       setChatError("");
       setIsChatting(true);
+      const turnId = newChatTurnId();
+      const startedAt = Date.now();
+      const analytics = { turnId, documentId: document.id, documentType: "presentation", editor: "presentation" as const };
+      captureChatMessageSent({ ...analytics, message: userMessage });
       try {
         // Build a slide-aware message so the AI knows which slide the teacher is looking at.
         const slides = canvas?.slides ?? [];
@@ -1408,7 +1413,12 @@ export function BlockDocumentEditor({ documentId }: Props) {
         const response = await dispatch(
           chatWithDocument({ id: document.id, message: enrichedMessage, canvasState: canvas ? JSON.stringify(canvas) : undefined }),
         ).unwrap();
+        captureChatResponse({ ...analytics, startedAt, response });
         baseVersionRef.current = response.contentVersion;
+        // A failed turn's text is an explanation for the teacher, never content for the slide.
+        if (response.outcome === "error") {
+          pendingAIActionRef.current = null;
+        }
         if (response.chatAnswer) {
           // If this was a quick-action (Simplificar / Expandir / Melhorar),
           // apply the AI text directly to the targeted canvas element.
@@ -1472,10 +1482,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
         if (response.chatAnswer) {
           setChatHistory((prev) => [
             ...prev,
-            {
-              role: "assistant",
-              content: response.chatAnswer ?? (canvasWasUpdated ? t("slideUpdated") : ""),
-            },
+            assistantMessageFromResponse(response, { hasUpdate: canvasWasUpdated }),
           ]);
         }
         // Proactively offer image regeneration when the AI detected a context change on a slide with an image
@@ -1489,14 +1496,47 @@ export function BlockDocumentEditor({ documentId }: Props) {
             },
           ]);
         }
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : t("chatError");
-        setChatError(msg);
+      } catch (failure) {
+        captureChatResponse({ ...analytics, startedAt, failure });
+        setChatError(chatFailureText(failure));
       } finally {
         setIsChatting(false);
       }
     },
-    [dispatch, document?.id, pushHistory, canvas, activeSlideId, t],
+    [dispatch, document?.id, pushHistory, canvas, activeSlideId, t, chatFailureText],
+  );
+
+  const chatDocumentId = document?.id;
+  // ENG-396: show the stored conversation when the presentation opens.
+  useEffect(() => {
+    if (!chatDocumentId) return;
+    let cancelled = false;
+    void loadChatHistory(chatDocumentId).then((messages) => {
+      if (!cancelled && messages.length > 0) setChatHistory((current) => (current.length === 0 ? messages : current));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [chatDocumentId]);
+
+  const handleNewConversation = useCallback(async () => {
+    if (chatDocumentId && (await startNewConversation(chatDocumentId))) {
+      setChatHistory([]);
+      setChatError("");
+    }
+  }, [chatDocumentId]);
+
+  const handleChatFeedback = useCallback(
+    (index: number, rating: "up" | "down") => {
+      setChatHistory((prev) =>
+        prev.map((m, i) => {
+          if (i !== index || !chatDocumentId) return m;
+          captureChatFeedback({ documentId: chatDocumentId, documentType: "presentation", editor: "presentation", rating, message: m });
+          return { ...m, feedback: rating };
+        }),
+      );
+    },
+    [chatDocumentId],
   );
 
   /** Marks all pending image-regen offers as resolved in chat history */
@@ -2910,6 +2950,8 @@ export function BlockDocumentEditor({ documentId }: Props) {
           onDismissImageRegen={handleImageRegenDismiss}
           documentType={document?.documentType}
           documentId={document?.id}
+          onNewConversation={handleNewConversation}
+          onFeedback={handleChatFeedback}
         />
       </aside>
       </div>
