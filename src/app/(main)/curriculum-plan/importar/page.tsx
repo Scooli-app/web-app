@@ -125,7 +125,6 @@ export default function CurriculumPlanImportPage() {
   const [periodEnd, setPeriodEnd] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [steps, setSteps] = useState<ImportStep[]>(INITIAL_STEPS);
-  // Aborted on unmount so an import the user walked away from does not navigate them later.
   const importAbortRef = useRef<AbortController | null>(null);
 
   useEffect(() => () => importAbortRef.current?.abort(), []);
