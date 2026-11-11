@@ -1,3 +1,10 @@
+## Branching and pull requests (BINDING)
+
+- **Every pull request targets `develop`.** Never open a PR against `main`, and never merge into `main`, unless the user explicitly asks for a release or promotion to `main` in this conversation.
+- Start feature/fix branches from `origin/develop`, not `main`. If a branch was cut from `main`, rebase or cherry-pick it onto `develop` before opening the PR.
+- "Merge it" / "merge when ready" means merge the PR into `develop`. It is never permission to merge into `main`.
+- Before calling `create_pull_request` or `merge_pull_request`, check that `base` is `develop`. If it is `main`, stop and ask the user.
+
 ## graphify
 
 This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
