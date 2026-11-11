@@ -52,6 +52,7 @@ import { getDocument, getDocuments } from "@/services/api/document.service";
 import { cn } from "@/shared/utils/utils";
 import {
   applyExerciseAndReviewCadence,
+  DAY_ORDER,
   DEFAULT_WEEK_SCHEDULE,
   expandSlotsLocally,
   inferSchoolYearLabel,
@@ -65,12 +66,15 @@ import {
   type SlotType,
   type WeekSchedule,
 } from "@/lib/timetable/planToTimetable";
+import { allSelected, slotDayKey, slotIdsBetween, withSelection } from "@/lib/timetable/slotSelection";
 import { WeekSchedulePicker } from "@/components/document-creation/WeekSchedulePicker";
 import { toast } from "sonner";
+import posthog from "posthog-js";
 import {
   ArrowRight,
   BookOpen,
   CalendarDays,
+  Check,
   ChevronLeft,
   ChevronRight,
   ListChecks,
@@ -588,9 +592,12 @@ interface StepReverDatasProps {
 function StepReverDatas({ slots, onSlotsChange, onBack }: StepReverDatasProps) {
   const t = useTranslations("calendar.novo");
   const tTimetable = useTranslations("timetable");
+  const tDays = useTranslations("documentCreation.days");
   const rawLocale = useLocale();
   const locale = isSupportedLocale(rawLocale) ? rawLocale : defaultLocale;
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  // Last row clicked, the start of a shift-click range.
+  const anchorRef = useRef<string | null>(null);
 
   const changeType = (id: string, type: SlotType) => {
     let updated = slots.map((s) => (s.id === id ? { ...s, slotType: type } : s));
@@ -603,30 +610,55 @@ function StepReverDatas({ slots, onSlotsChange, onBack }: StepReverDatasProps) {
     onSlotsChange(slots.filter((s) => s.id !== id));
   };
 
-  const toggleSelect = (id: string) =>
-    setSelected((prev) => {
-      const n = new Set(prev);
-      if (n.has(id)) n.delete(id);
-      else n.add(id);
-      return n;
-    });
+  const grouped = groupByMonth(slots);
+  const ordered = grouped.flatMap((g) => g.slots);
+  const weekdays = DAY_ORDER
+    .map((day) => ({ day, ids: slots.filter((s) => slotDayKey(s) === day).map((s) => s.id) }))
+    .filter((w) => w.ids.length > 0);
 
-  const selectAll = () => setSelected(new Set(slots.map((s) => s.id)));
+  const trackBulk = (action: string, count: number, extra?: Record<string, unknown>) =>
+    posthog.capture("schedule_bulk_action", { step: "review_dates", action, count, ...extra });
+
+  const clickRow = (id: string, shiftKey: boolean) => {
+    const anchor = anchorRef.current;
+    anchorRef.current = id;
+    const on = !selected.has(id);
+    if (shiftKey && anchor && anchor !== id) {
+      const ids = slotIdsBetween(ordered, anchor, id);
+      setSelected(withSelection(selected, ids, on));
+      trackBulk("select_range", ids.length, { selected: on });
+      return;
+    }
+    setSelected(withSelection(selected, [id], on));
+  };
+
+  /** Selects the whole group, or clears it when every slot in it is already selected. */
+  const toggleGroup = (ids: string[], action: string) => {
+    const on = !allSelected(selected, ids);
+    setSelected(withSelection(selected, ids, on));
+    trackBulk(action, ids.length, { selected: on });
+  };
+
+  const selectAll = () => {
+    setSelected(new Set(slots.map((s) => s.id)));
+    trackBulk("select_all", slots.length);
+  };
   const clearSelection = () => setSelected(new Set());
 
+  // The selection stays, so the teacher can mark the same dates again or remove them next.
   const applyBulkType = (type: SlotType) => {
     let updated = slots.map((s) => selected.has(s.id) ? { ...s, slotType: type } : s);
     if (type === "ASSESSMENT") updated = suggestReviewsBeforeAssessments(updated, new Set(selected));
     onSlotsChange(updated);
-    clearSelection();
+    trackBulk("mark_as", selected.size, { slot_type: type });
   };
 
   const removeBulk = () => {
     onSlotsChange(slots.filter((s) => !selected.has(s.id)));
+    trackBulk("remove", selected.size);
     clearSelection();
   };
 
-  const grouped = groupByMonth(slots);
   const lessons = slots.filter((s) => s.slotType === "LESSON").length;
   const assessments = slots.filter((s) => s.slotType === "ASSESSMENT").length;
   const holidays = slots.filter((s) => s.slotType === "HOLIDAY").length;
@@ -692,6 +724,24 @@ function StepReverDatas({ slots, onSlotsChange, onBack }: StepReverDatasProps) {
           </>
         )}
       </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-xs text-muted-foreground">{t("reviewDates.byWeekday")}</span>
+        {weekdays.map(({ day, ids }) => (
+          <Button
+            key={day}
+            type="button"
+            size="sm"
+            variant="outline"
+            aria-pressed={allSelected(selected, ids)}
+            className={cn("h-7 text-xs", allSelected(selected, ids) && "border-primary bg-primary/5 text-primary")}
+            onClick={() => toggleGroup(ids, "select_weekday")}
+          >
+            {tDays(`${day}.short`)}
+          </Button>
+        ))}
+        <span className="hidden text-xs text-muted-foreground sm:inline">{t("reviewDates.rangeHint")}</span>
+      </div>
       </>
       )}
 
@@ -709,18 +759,32 @@ function StepReverDatas({ slots, onSlotsChange, onBack }: StepReverDatasProps) {
         />
       ) : (
         <div className="max-h-[440px] space-y-4 overflow-y-auto pr-1">
-          {grouped.map(({ month, slots: monthSlots }) => (
+          {grouped.map(({ month, slots: monthSlots }) => {
+            const monthIds = monthSlots.map((s) => s.id);
+            const monthSelected = allSelected(selected, monthIds);
+            return (
             <div key={month}>
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                {formatMonthLabel(month, locale)}
-              </p>
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  {formatMonthLabel(month, locale)}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => toggleGroup(monthIds, "select_month")}
+                  className="rounded px-1.5 py-0.5 text-xs font-medium text-primary hover:bg-primary/10"
+                >
+                  {monthSelected ? t("reviewDates.deselectMonth") : t("reviewDates.selectMonth")}
+                </button>
+              </div>
               <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
-                {monthSlots.map((slot) => (
+                {monthSlots.map((slot) => {
+                  const isSelected = selected.has(slot.id);
+                  return (
                   <div
                     key={slot.id}
                     className={cn(
                       "flex items-center gap-2 rounded-lg border px-3 py-2 transition-colors",
-                      selected.has(slot.id) ? "border-primary bg-primary/5" :
+                      isSelected ? "border-primary bg-primary/5" :
                       slot.slotType === "HOLIDAY"
                         ? "border-muted bg-muted/40 opacity-60"
                         : slot.slotType === "ASSESSMENT"
@@ -732,15 +796,27 @@ function StepReverDatas({ slots, onSlotsChange, onBack }: StepReverDatasProps) {
                         : "bg-card"
                     )}
                   >
-                    <input
-                      type="checkbox"
-                      checked={selected.has(slot.id)}
-                      onChange={() => toggleSelect(slot.id)}
-                      className="h-3.5 w-3.5 shrink-0 accent-primary"
-                    />
-                    <span className="min-w-0 flex-1 text-xs font-medium">
-                      {formatDayLabel(slot.date, locale)}
-                    </span>
+                    {/* One button for the box and the date: a bigger target, and one click event per click. */}
+                    <button
+                      type="button"
+                      role="checkbox"
+                      aria-checked={isSelected}
+                      onClick={(e) => clickRow(slot.id, e.shiftKey)}
+                      className="-my-1 flex min-w-0 flex-1 select-none items-center gap-2 self-stretch rounded py-1 text-left focus-visible:outline-none focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+                    >
+                      <span
+                        aria-hidden
+                        className={cn(
+                          "flex h-4 w-4 shrink-0 items-center justify-center rounded border shadow-xs transition-colors",
+                          isSelected ? "border-primary bg-primary text-primary-foreground" : "border-input bg-card"
+                        )}
+                      >
+                        {isSelected && <Check className="h-3 w-3" />}
+                      </span>
+                      <span className="min-w-0 flex-1 text-xs font-medium">
+                        {formatDayLabel(slot.date, locale)}
+                      </span>
+                    </button>
                     <Select
                       value={slot.slotType}
                       onValueChange={(v) => changeType(slot.id, v as SlotType)}
@@ -764,10 +840,12 @@ function StepReverDatas({ slots, onSlotsChange, onBack }: StepReverDatasProps) {
                       <X className="h-3 w-3" />
                     </button>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

@@ -723,7 +723,8 @@
       "description": "Seleciona os dias e o número de tempos letivos por dia.",
       "lessonsPerWeek": "{count, plural, one {# aula/semana} other {# aulas/semana}}",
       "addPeriod": "tempo",
-      "customDuration": "Personalizado"
+      "customDuration": "Personalizado",
+      "copyToOtherDays": "Copiar para os outros dias"
     },
     "weekScheduleTypeOptions": {
       "auto": "Automático",
@@ -3645,6 +3646,10 @@
         "selectAll": "Selecionar tudo",
         "markAs": "Marcar como:",
         "remove": "Remover",
+        "selectMonth": "Selecionar mês",
+        "deselectMonth": "Desselecionar mês",
+        "byWeekday": "Por dia da semana:",
+        "rangeHint": "Mantém Shift premido para selecionar um intervalo",
         "emptyLine1": "Não há aulas geradas para este período com o horário definido.",
         "emptyLine2": "Volta atrás e confirma as datas e os dias de aula.",
         "backToPeriod": "Voltar ao período"
