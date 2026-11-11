@@ -885,6 +885,9 @@ const baixaEstimulacao: PresentationTheme = {
  * Export
  * ─────────────────────────────────────────────────────────────────────────── */
 
+/** The theme a new presentation gets when the teacher did not pick one (what the creation gallery shows). */
+export const DEFAULT_PRESENTATION_THEME = "clean";
+
 export const THEMES: PresentationTheme[] = [
   branco,
   dislexia,

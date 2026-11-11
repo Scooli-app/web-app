@@ -315,6 +315,7 @@ export const chatWithDocument = createAsyncThunk(
       pendingReview,
       selection,
       attachment,
+      elementAction,
     }: {
       id: string;
       message: string;
@@ -322,11 +323,17 @@ export const chatWithDocument = createAsyncThunk(
       pendingReview?: boolean;
       selection?: string;
       attachment?: ChatAttachment;
+      elementAction?: boolean;
     },
     { rejectWithValue, dispatch }
   ) => {
     try {
-      const response = await chatWithDocumentService(id, message, canvasState, { pendingReview, selection, attachment });
+      const response = await chatWithDocumentService(id, message, canvasState, {
+        pendingReview,
+        selection,
+        attachment,
+        elementAction,
+      });
 
       dispatch(fetchUsage());
       dispatch(fetchEntitlements());
