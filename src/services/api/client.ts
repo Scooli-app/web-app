@@ -147,6 +147,12 @@ const apiClient: AxiosInstance = axios.create({
   validateStatus: (status) => status < 400,
 });
 
+/** A fresh API token for requests made outside axios (fetch-based streams). Null when signed out. */
+export async function getApiToken(): Promise<string | null> {
+  const getter = await waitForTokenGetter();
+  return getter ? getter() : null;
+}
+
 /**
  * Set the token getter function for all API requests
  * This allows fetching a fresh token for each request

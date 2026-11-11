@@ -1509,6 +1509,12 @@
         "too_large": "O ficheiro é demasiado grande (máximo 10 MB).",
         "no_text": "Não encontrei texto neste ficheiro (pode ser uma digitalização). Cola o texto na mensagem.",
         "unreadable": "Não consegui ler este ficheiro. Tenta outro formato ou cola o texto na mensagem."
+      },
+      "stages": {
+        "reading": "A ler o documento…",
+        "editing": "A preparar as alterações…",
+        "editingSection": "A editar «{section}»…",
+        "answering": "A escrever a resposta…"
       }
     },
     "calendarButton": {

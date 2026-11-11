@@ -5,10 +5,18 @@ import { useDocumentManager } from "@/hooks/useDocumentManager";
 import { useEditorAnalytics } from "@/hooks/useEditorAnalytics";
 import { useGenerationStalled } from "@/hooks/useGenerationStalled";
 import { uploadDocumentImage } from "@/services/api/document-images.service";
-import { type ChatAttachment, discardPendingAiEdit, streamDocumentContent, uploadChatAttachment } from "@/services/api/document.service";
+import {
+  type ChatAttachment,
+  ChatStreamUnavailableError,
+  discardPendingAiEdit,
+  streamChatWithDocument,
+  streamDocumentContent,
+  uploadChatAttachment,
+} from "@/services/api/document.service";
+import { toChatFailure } from "@/lib/chatErrors";
 import { ApiRequestError } from "@/services/api/client";
 import { AUTO_SAVE_DELAY } from "@/shared/config/constants";
-import { Routes, type ChatChange, type ChatNewDocument, type Document } from "@/shared/types";
+import { Routes, type ChatChange, type ChatNewDocument, type ChatResponse, type Document } from "@/shared/types";
 import { isFailedDocumentStatus, type RagSource } from "@/shared/types/document";
 import { isUsableDocumentContent } from "@/shared/utils/documentContent";
 import { escapeMarkdownImageAlt, htmlToMarkdown, markdownToHtml } from "@/shared/utils/markdown";
@@ -56,7 +64,7 @@ import { cn } from "@/shared/utils/utils";
 import { EmptyState } from "../ui/empty-state";
 import RichTextEditor from "../ui/rich-text-editor";
 import { GenerationStalledNotice } from "../ui/generation-stalled-notice";
-import AIChatPanel, { type ChatMessage } from "./AIChatPanel";
+import AIChatPanel, { type ChatLiveProgress, type ChatMessage } from "./AIChatPanel";
 import {
   assistantMessageFromResponse,
   captureChatFeedback,
@@ -77,6 +85,9 @@ import DownloadButton from "./DownloadButton";
 import ShareButton from "./ShareButton";
 import { DocumentVersionsButton } from "@/components/document-versions/DocumentVersionsButton";
 
+
+/** ENG-402: stream chat turns (with fallback to the plain request). Off until validated against the real stack. */
+const CHAT_STREAMING = process.env.NEXT_PUBLIC_CHAT_STREAMING === "1";
 
 interface DocumentEditorProps {
   documentId: string;
@@ -320,6 +331,9 @@ export default function DocumentEditor({
   const [chatSelection, setChatSelection] = useState<string | null>(null);
   // ENG-410: a file read on the server, sent with the next message as source material.
   const [chatAttachment, setChatAttachment] = useState<ChatAttachment | null>(null);
+  // ENG-402: a streamed turn's stage and reply text, and whether one is running (it bypasses the Redux thunk).
+  const [liveProgress, setLiveProgress] = useState<ChatLiveProgress | null>(null);
+  const [isStreamingTurn, setIsStreamingTurn] = useState(false);
   const historyLoadedForRef = useRef<string | null>(null);
   const chatFailureText = useChatFailureText();
   const createDocumentFromChat = useCreateDocumentFromChat();
@@ -1214,6 +1228,44 @@ export default function DocumentEditor({
     [handleTrackedAutosave, setContent, syncContent],
   );
 
+  /**
+   * One chat turn. Streamed when NEXT_PUBLIC_CHAT_STREAMING=1 (ENG-402): the panel shows the real stage and the
+   * reply as it arrives. A stream that cannot start falls back to the plain request; failures reject with a
+   * ChatFailure either way.
+   */
+  const sendChatTurn = useCallback(
+    async (id: string, message: string, selection?: string, attachment?: ChatAttachment): Promise<ChatResponse> => {
+      if (CHAT_STREAMING) {
+        setIsStreamingTurn(true);
+        setLiveProgress({ stage: "reading" });
+        try {
+          const response = await streamChatWithDocument(
+            id,
+            message,
+            { pendingReview: true, selection, attachment },
+            {
+              onProgress: (progress) => setLiveProgress((prev) => ({ ...prev, ...progress })),
+              onAnswer: (delta) => setLiveProgress((prev) => ({ ...prev, answer: (prev?.answer ?? "") + delta })),
+            },
+          );
+          dispatch(fetchUsage());
+          dispatch(fetchEntitlements());
+          return response;
+        } catch (err) {
+          if (!(err instanceof ChatStreamUnavailableError)) throw toChatFailure(err);
+          posthog.capture("ai_chat_stream_fallback", { document_id: id, reason: err.message });
+        } finally {
+          setIsStreamingTurn(false);
+          setLiveProgress(null);
+        }
+      }
+      return dispatch(
+        chatWithDocument({ id, message, pendingReview: true, selection, attachment }),
+      ).unwrap();
+    },
+    [dispatch],
+  );
+
   /** Resolves false when the request failed: the panel then keeps the text in the input to send again. */
   const handleChatSubmit = useCallback(
     async (userMessage: string): Promise<boolean> => {
@@ -1263,9 +1315,7 @@ export default function DocumentEditor({
       dispatch(setGeneratingImages(true));
 
       try {
-        const response = await dispatch(
-          chatWithDocument({ id: currentDocument.id, message: userMessage, pendingReview: true, selection, attachment }),
-        ).unwrap();
+        const response = await sendChatTurn(currentDocument.id, userMessage, selection, attachment);
         setChatSelection(null);
         setChatAttachment(null);
         captureChatResponse({
@@ -1370,6 +1420,7 @@ export default function DocumentEditor({
       presentAiProposal,
       registerAiSuggestionReceived,
       registerChatMessage,
+      sendChatTurn,
       skipNextEditorKeyBumpRef,
     ],
   );
@@ -1649,7 +1700,8 @@ export default function DocumentEditor({
     <AIChatPanel
       onChatSubmit={handleChatSubmit}
       chatHistory={chatHistory}
-      isStreaming={isStreaming || isChatting}
+      isStreaming={isStreaming || isChatting || isStreamingTurn}
+      liveProgress={liveProgress}
       disabled={isGenerating}
       error={error}
       placeholder={resolvedChatPlaceholder}

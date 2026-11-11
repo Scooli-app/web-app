@@ -1509,6 +1509,12 @@
         "too_large": "The file is too large (10 MB max).",
         "no_text": "I found no text in this file (it may be a scan). Paste the text into the message.",
         "unreadable": "I couldn't read this file. Try another format or paste the text into the message."
+      },
+      "stages": {
+        "reading": "Reading the document…",
+        "editing": "Preparing the changes…",
+        "editingSection": "Editing “{section}”…",
+        "answering": "Writing the answer…"
       }
     },
     "calendarButton": {

@@ -139,6 +139,8 @@ interface AIChatPanelProps {
   onClearSelection?: () => void;
   /** Attach a file for the next message (ENG-410). Absent: no paperclip. */
   onAttach?: (file: File) => Promise<void>;
+  /** What a streamed turn has revealed so far (ENG-402). */
+  liveProgress?: ChatLiveProgress | null;
   /** The file waiting to go with the next message. */
   attachment?: { name: string; truncated: boolean } | null;
   onClearAttachment?: () => void;
@@ -146,8 +148,18 @@ interface AIChatPanelProps {
 
 const CHANGE_ICONS = { added: PlusCircle, changed: PenLine, removed: MinusCircle } as const;
 
-/** Honest staged status while the request runs: what is happening, never a fake percentage (ENG-402 interim). */
-function ProgressIndicator() {
+/** What a streamed turn has said so far (ENG-402). */
+export interface ChatLiveProgress {
+  stage?: "reading" | "editing" | "answering";
+  section?: string;
+  answer?: string;
+}
+
+/**
+ * Status while the request runs: the stream's real stage and reply text when the turn is streamed (ENG-402), else
+ * honest timed hints — what is happening, never a fake percentage.
+ */
+function ProgressIndicator({ live }: { live?: ChatLiveProgress | null }) {
   const t = useTranslations("editor.aiChatPanel");
   const steps = t.raw("progress") as string[];
   const [step, setStep] = useState(0);
@@ -155,6 +167,24 @@ function ProgressIndicator() {
     const timers = [setTimeout(() => setStep(1), 4000), setTimeout(() => setStep(2), 20000)];
     return () => timers.forEach(clearTimeout);
   }, []);
+  if (live?.answer) {
+    return (
+      <div
+        className="bg-muted text-foreground mr-auto max-w-[85%] whitespace-pre-line p-3 rounded-2xl rounded-tl-none border border-border/50 text-sm leading-relaxed"
+        role="status"
+        aria-live="polite"
+        data-testid="chat-progress"
+      >
+        {live.answer}
+        <span className="ml-0.5 inline-block h-3.5 w-1.5 animate-pulse bg-primary/50 align-middle" />
+      </div>
+    );
+  }
+  const label = live?.stage
+    ? live.stage === "editing" && live.section
+      ? t("stages.editingSection", { section: live.section })
+      : t(`stages.${live.stage}`)
+    : steps[Math.min(step, steps.length - 1)];
   return (
     <div
       className="bg-muted text-foreground mr-auto p-3 rounded-2xl rounded-tl-none border border-border/50 animate-in fade-in duration-300"
@@ -168,7 +198,7 @@ function ProgressIndicator() {
           <div className="w-1.5 h-1.5 bg-primary/40 rounded-full animate-bounce [animation-delay:-0.15s]" />
           <div className="w-1.5 h-1.5 bg-primary/40 rounded-full animate-bounce" />
         </div>
-        <span className="text-xs text-muted-foreground">{steps[Math.min(step, steps.length - 1)]}</span>
+        <span className="text-xs text-muted-foreground">{label}</span>
       </div>
     </div>
   );
@@ -280,6 +310,7 @@ function ChatContent({
   onAttach,
   attachment,
   onClearAttachment,
+  liveProgress,
 }: {
   chatHistory: ChatMessage[];
   isStreaming: boolean;
@@ -313,6 +344,7 @@ function ChatContent({
   onAttach?: (file: File) => Promise<void>;
   attachment?: { name: string; truncated: boolean } | null;
   onClearAttachment?: () => void;
+  liveProgress?: ChatLiveProgress | null;
 }) {
   const t = useTranslations("editor.aiChatPanel");
   const tLock = useTranslations("billing.lock");
@@ -558,7 +590,7 @@ function ChatContent({
               })}
 
               {/* Progress while the request runs */}
-              {isStreaming && <ProgressIndicator />}
+              {isStreaming && <ProgressIndicator live={liveProgress} />}
             </div>
 
             {/* Suggestion chips — visible until user sends their first follow-up */}
@@ -738,6 +770,7 @@ export default function AIChatPanel({
   onAttach,
   attachment,
   onClearAttachment,
+  liveProgress,
 }: AIChatPanelProps) {
   const t = useTranslations("editor.aiChatPanel");
   const tLock = useTranslations("billing.lock");
@@ -940,6 +973,7 @@ export default function AIChatPanel({
           onAttach={onAttach}
           attachment={attachment}
           onClearAttachment={onClearAttachment}
+          liveProgress={liveProgress}
         />
       </div>
 
@@ -1022,6 +1056,7 @@ export default function AIChatPanel({
                 onAttach={onAttach}
                 attachment={attachment}
                 onClearAttachment={onClearAttachment}
+                liveProgress={liveProgress}
               />
             </div>
           </SheetContent>
