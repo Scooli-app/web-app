@@ -379,7 +379,8 @@ export default function AssessmentEditor({ documentId, defaultTitle, chatTitle, 
         if (updated) {
           needsLoadRef.current = true;
           await dispatch(fetchDocument(document.id));
-        } else {
+        } else if (!response.outcome || response.outcome === "no_change") {
+          // Answers, clarifications and new-document offers are meant to leave the document as it is.
           reportUiProblem(response.chatAnswer ? "chat_reply_without_edit" : "chat_empty_reply", { ...problem, durationMs: Date.now() - startedAt });
         }
         setChatHistory((prev) => [
