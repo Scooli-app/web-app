@@ -5,6 +5,7 @@ import {
   bannerState,
   initialSelection,
   newOutcomes,
+  offersAdjustNextLessons,
   pollUntilSettled,
   settledToast,
   timelineOrder,
@@ -136,5 +137,18 @@ describe("no_change proposals", () => {
     expect(settledToast({ ...base, status: "no_change", summary: null })).toBe("noChange");
     expect(settledToast({ ...base, status: "pending", summary: null })).toBe("ready");
     expect(settledToast({ ...base, status: "failed", summary: null })).toBe("failed");
+  });
+});
+
+describe("offersAdjustNextLessons", () => {
+  it("offers it after a partial lesson or one with difficulties", () => {
+    expect(offersAdjustNextLessons("PARTIAL")).toBe(true);
+    expect(offersAdjustNextLessons("TAUGHT_WITH_DIFFICULTIES", "LESSON")).toBe(true);
+  });
+
+  it("not after a lesson that went well, one not held (it has its own path), or a test", () => {
+    expect(offersAdjustNextLessons("TAUGHT")).toBe(false);
+    expect(offersAdjustNextLessons("NOT_HELD")).toBe(false);
+    expect(offersAdjustNextLessons("PARTIAL", "ASSESSMENT")).toBe(false);
   });
 });

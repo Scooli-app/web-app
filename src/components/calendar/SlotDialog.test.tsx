@@ -485,6 +485,17 @@ describe("SlotDialog: offering a reinforcement worksheet or a carry-over after a
     expect(document.body.textContent).toContain("reinforcementQuestion");
   });
 
+  it("offers to adjust the next lessons after a partial lesson, and not after one that went well", async () => {
+    await answer("resultPartial", "ticked");
+    expect(document.body.textContent).toContain("adjustQuestion");
+    expect(buttonWith("adjustAction")).toBeDefined();
+  });
+
+  it("does not offer to adjust after a lesson that went well", async () => {
+    await answer("resultTaught", "ticked");
+    expect(document.body.textContent).not.toContain("adjustQuestion");
+  });
+
   it("hides the offer on \"Agora não\" without calling the API", async () => {
     await answer("resultPartial", "ticked");
     await act(async () => {

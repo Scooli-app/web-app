@@ -1,6 +1,6 @@
 import { Routes } from "@/shared/types/routes";
 import { describe, expect, it } from "vitest";
-import { followUpAfterSave, followUpFor, formatLessonDay, lessonCalendarHref, reinforcementTarget } from "./useCheckInFollowUps";
+import { followUpFor, formatLessonDay, lessonCalendarHref, reinforcementTarget } from "./useCheckInFollowUps";
 
 describe("reinforcementTarget and lessonCalendarHref", () => {
   it("opens the lesson's week, on the Monday that holds it", () => {
@@ -55,22 +55,5 @@ describe("formatLessonDay", () => {
     expect(formatLessonDay("2020-03-10", "pt-PT")).toContain("10");
     expect(formatLessonDay("2020-03-10", "pt-PT")).toContain("março");
     expect(formatLessonDay("2020-03-10", "en")).toContain("Tuesday");
-  });
-});
-
-describe("followUpAfterSave", () => {
-  it("drops the carry-over when a replan already picks the outcomes up", () => {
-    expect(followUpAfterSave({ kind: "carryOver", outcomeIds: ["o1"] }, { replanStarted: true })).toBeNull();
-  });
-
-  it("keeps the reinforcement worksheet offer, a new document, even with a replan", () => {
-    const followUp = { kind: "reinforcement" as const, outcomeIds: ["o1"] };
-    expect(followUpAfterSave(followUp, { replanStarted: true })).toBe(followUp);
-  });
-
-  it("keeps every offer when no replan started", () => {
-    const followUp = { kind: "carryOver" as const, outcomeIds: ["o1"] };
-    expect(followUpAfterSave(followUp, { replanStarted: false })).toBe(followUp);
-    expect(followUpAfterSave(null, { replanStarted: false })).toBeNull();
   });
 });

@@ -5,9 +5,11 @@ import { WeekLessonDialog, type WeekLessonTarget } from "@/components/dashboard/
 import { Button } from "@/components/ui/button";
 import { confirmableCount, shouldShowCheckInStrip } from "@/hooks/checkInQueue";
 import { CHECK_INS_CHANGED_EVENT, SHOW_CHECK_INS_EVENT, announceVisibleCheckIns, writeAsked } from "@/hooks/checkInSession";
-import { followUpAfterSave, followUpFor, lessonTarget, useCheckInFollowUps, type CheckInFollowUp } from "@/hooks/useCheckInFollowUps";
+import { followUpFor, lessonTarget, useCheckInFollowUps, type CheckInFollowUp } from "@/hooks/useCheckInFollowUps";
 import { usePendingCheckIns } from "@/hooks/usePendingCheckIns";
 import { useReplan } from "@/hooks/useReplan";
+import { offersAdjustNextLessons } from "@/components/replan/replanLogic";
+import { useAdjustNextLessons } from "@/components/replan/useAdjustNextLessons";
 import type { CheckInSubmission, PendingCheckIn } from "@/shared/types/check-in";
 import { Routes } from "@/shared/types/routes";
 import { selectIsClassStateEnabled } from "@/store/features/selectors";
@@ -50,6 +52,9 @@ export function CheckInStrip() {
     return () => window.removeEventListener(SHOW_CHECK_INS_EVENT, onShow);
   }, [show]);
   const { offerAfterCheckIn } = useReplan();
+  const tReplan = useTranslations("replan");
+  /** "Ajustar próximas aulas" from a toast: the request dialog lives here, so it outlives the card that moved on. */
+  const { adjust, dialog: adjustDialog } = useAdjustNextLessons();
   const { reinforce, carry } = useCheckInFollowUps();
   /** The lesson a reinforcement worksheet's "Abrir" opens. Mounted outside the strip, so it outlives the last card. */
   const [openTarget, setOpenTarget] = useState<WeekLessonTarget | null>(null);
@@ -109,7 +114,14 @@ export function CheckInStrip() {
       replanStarted: saved.replanStarted,
       notHeld: body.result === "NOT_HELD",
     });
-    const followUp = followUpAfterSave(followUpFor(body), saved);
+    if (!saved.replanStarted && offersAdjustNextLessons(body.result, item.slotType)) {
+      toast(tReplan("adjustQuestion"), {
+        description: checkInTurmaName(item, (grade) => tTimetable("gradeShort", { grade })),
+        duration: 15000,
+        action: { label: tReplan("adjustAction"), onClick: () => adjust(item.timetableId, item.slotId) },
+      });
+    }
+    const followUp = followUpFor(body);
     if (followUp) {
       offerFollowUp(item, followUp);
     } else if (body.result === "TAUGHT_WITH_DIFFICULTIES" || body.result === "PARTIAL") {
@@ -168,6 +180,7 @@ export function CheckInStrip() {
         </section>
       )}
       <WeekLessonDialog target={openTarget} onClose={() => setOpenTarget(null)} onChanged={() => undefined} />
+      {adjustDialog}
     </>
   );
 }

@@ -1,3 +1,4 @@
+import type { CheckInResult } from "@/shared/types/check-in";
 import type { ReplanChange, ReplanItem, ReplanProposal } from "@/shared/types/replan";
 
 /** Message key (under `replan`) of each change label. */
@@ -99,3 +100,13 @@ export const REPLAN_MAX_POLLS = 60;
 
 /** Fired on the window when a proposal is requested or settles, with `detail.timetableId`: the turma banner reloads. */
 export const REPLAN_CHANGED_EVENT = "scooli:replan-changed";
+
+/**
+ * Whether a saved check-in offers "Ajustar próximas aulas": after a partial lesson or one with difficulties. A lesson
+ * not held already has its own path (the automatic replan on Pro, the offer to move the lessons otherwise), and one
+ * that went well needs no adjustment.
+ */
+export function offersAdjustNextLessons(result: CheckInResult, slotType?: string): boolean {
+  if (slotType === "ASSESSMENT") return false;
+  return result === "PARTIAL" || result === "TAUGHT_WITH_DIFFICULTIES";
+}

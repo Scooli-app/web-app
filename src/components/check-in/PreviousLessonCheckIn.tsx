@@ -11,6 +11,8 @@ import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { readAsked } from "@/hooks/checkInSession";
 import { useReplan } from "@/hooks/useReplan";
+import { offersAdjustNextLessons } from "@/components/replan/replanLogic";
+import { useAdjustNextLessons } from "@/components/replan/useAdjustNextLessons";
 import { buildSubmission, initialOutcomeSelection, needsDetailStep } from "@/hooks/checkInQueue";
 import { CheckInOutcomeStep, CheckInResultOptions, type OutcomeStepExtras } from "./CheckInChoices";
 import {
@@ -61,13 +63,20 @@ export function PreviousLessonCheckIn({
   const [shiftAsk, setShiftAsk] = useState(false);
   /** Pro: the check-in started a replan of the following lessons; the question about moving lessons is not asked. */
   const [replanning, setReplanning] = useState(false);
+  /** After a partial or difficult previous lesson: offers to adjust the lessons after it. */
+  const [adjustAsk, setAdjustAsk] = useState(false);
   const { shift, watchAfterCheckIn } = useReplan();
+  const { adjust, dialog: adjustDialog } = useAdjustNextLessons({
+    onStarted: () => setReplanning(true),
+    onSettled: () => setReplanning(false),
+  });
 
   useEffect(() => {
     let cancelled = false;
     setPending(null);
     setShiftAsk(false);
     setReplanning(false);
+    setAdjustAsk(false);
     setHidden(false);
     setSaved(null);
     setSaveFailed(false);
@@ -97,10 +106,11 @@ export function PreviousLessonCheckIn({
     if (saved && phase) {
       setSaved(phase);
       setSaveFailed(false);
-      // Pro: a lesson not held, partly taught or with difficulties starts a replan of the following lessons.
+      // Not held: Pro replans by itself, otherwise the move offer. Partial or difficulties: the offer to adjust.
       const notHeld = body.result === "NOT_HELD" && pending.slotType !== "ASSESSMENT";
       setShiftAsk(notHeld && !saved.replanStarted);
       setReplanning(saved.replanStarted);
+      setAdjustAsk(!saved.replanStarted && offersAdjustNextLessons(body.result, pending.slotType));
       if (saved.replanStarted) void watchAfterCheckIn(timetableId);
       onCheckedIn?.();
     } else {
@@ -109,39 +119,48 @@ export function PreviousLessonCheckIn({
   };
 
   return (
-    <PreviousLessonCheckInView
-      question={pending.topicTitle ? t("questionWithTopic", { topic: pending.topicTitle }) : t("question")}
-      saved={saved}
-      shiftAsk={shiftAsk}
-      replanning={replanning}
-      onShift={() => {
-        setShiftAsk(false);
-        void shift(timetableId, pending.slotId).then((result) => {
-          if (result) onShifted?.();
-        });
-      }}
-      onKeep={() => setShiftAsk(false)}
-      saveFailed={saveFailed}
-      outcomeResult={outcomeResult}
-      outcomes={pending.outcomes}
-      selected={selected}
-      onChoose={(result: CheckInResult) => {
-        if (needsDetailStep(result)) {
-          setSelected(initialOutcomeSelection(pending.outcomes));
-          setOutcomeResult(result as OutcomeResult);
-          return;
+    <>
+      <PreviousLessonCheckInView
+        question={pending.topicTitle ? t("questionWithTopic", { topic: pending.topicTitle }) : t("question")}
+        saved={saved}
+        shiftAsk={shiftAsk}
+        replanning={replanning}
+        adjustAsk={adjustAsk}
+        onAdjust={() => {
+          setAdjustAsk(false);
+          adjust(timetableId, pending.slotId);
+        }}
+        onKeepPlan={() => setAdjustAsk(false)}
+        onShift={() => {
+          setShiftAsk(false);
+          void shift(timetableId, pending.slotId).then((result) => {
+            if (result) onShifted?.();
+          });
+        }}
+        onKeep={() => setShiftAsk(false)}
+        saveFailed={saveFailed}
+        outcomeResult={outcomeResult}
+        outcomes={pending.outcomes}
+        selected={selected}
+        onChoose={(result: CheckInResult) => {
+          if (needsDetailStep(result)) {
+            setSelected(initialOutcomeSelection(pending.outcomes));
+            setOutcomeResult(result as OutcomeResult);
+            return;
+          }
+          void answer(buildSubmission(result));
+        }}
+        onToggle={(id) =>
+          setSelected((current) => (current.includes(id) ? current.filter((x) => x !== id) : [...current, id]))
         }
-        void answer(buildSubmission(result));
-      }}
-      onToggle={(id) =>
-        setSelected((current) => (current.includes(id) ? current.filter((x) => x !== id) : [...current, id]))
-      }
-      onConfirm={(extras) => {
-        if (outcomeResult) void answer(buildSubmission(outcomeResult, selected, extras));
-      }}
-      onBackOutcomes={() => setOutcomeResult(null)}
-      onNotNow={() => setHidden(true)}
-    />
+        onConfirm={(extras) => {
+          if (outcomeResult) void answer(buildSubmission(outcomeResult, selected, extras));
+        }}
+        onBackOutcomes={() => setOutcomeResult(null)}
+        onNotNow={() => setHidden(true)}
+      />
+      {adjustDialog}
+    </>
   );
 }
 
@@ -155,6 +174,9 @@ export function PreviousLessonCheckInView({
   saved,
   shiftAsk = false,
   replanning = false,
+  adjustAsk = false,
+  onAdjust,
+  onKeepPlan,
   onShift,
   onKeep,
   saveFailed,
@@ -173,6 +195,10 @@ export function PreviousLessonCheckInView({
   shiftAsk?: boolean;
   /** Pro: the replanning agent is preparing the lessons after it. */
   replanning?: boolean;
+  /** After "ficou a meio" or "dificuldades" was saved: offers to adjust the lessons after it. */
+  adjustAsk?: boolean;
+  onAdjust?: () => void;
+  onKeepPlan?: () => void;
   onShift?: () => void;
   onKeep?: () => void;
   saveFailed: boolean;
@@ -192,7 +218,7 @@ export function PreviousLessonCheckInView({
 
   if (saved) {
     const savedText = saved === "savedWithContext" ? t("savedWithContext") : t("saved");
-    if (!shiftAsk && !replanning) {
+    if (!shiftAsk && !replanning && !adjustAsk) {
       return (
         <p role="status" className="text-sm text-muted-foreground">
           {savedText}
@@ -206,6 +232,16 @@ export function PreviousLessonCheckInView({
         </span>
         {replanning ? (
           <span className="text-sm text-foreground">{tr("notHeldInProgress")}</span>
+        ) : adjustAsk ? (
+          <>
+            <span className="text-sm text-foreground">{tr("adjustQuestion")}</span>
+            <Button size="sm" className="h-8" onClick={onAdjust}>
+              {tr("adjustAction")}
+            </Button>
+            <Button size="sm" variant="outline" className="h-8" onClick={onKeepPlan}>
+              {tc("shiftKeep")}
+            </Button>
+          </>
         ) : (
           <>
             <span className="text-sm text-foreground">{tc("shiftQuestion")}</span>

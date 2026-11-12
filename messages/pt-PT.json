@@ -3852,7 +3852,9 @@
     "reject": "Rejeitar",
     "applied": "Alterações aplicadas",
     "rejected": "Proposta rejeitada",
-    "actionError": "Não foi possível guardar a proposta."
+    "actionError": "Não foi possível guardar a proposta.",
+    "adjustQuestion": "Queres ajustar as próximas aulas a isto?",
+    "adjustAction": "Ajustar próximas aulas"
   },
   "adminPromos": {
     "title": "Links de oferta",

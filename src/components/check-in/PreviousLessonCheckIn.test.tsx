@@ -11,6 +11,7 @@ vi.mock("next-intl", () => ({
 }));
 vi.mock("@/store/hooks", () => ({
   useAppSelector: (selector: () => boolean) => selector(),
+  useAppDispatch: () => vi.fn(),
 }));
 vi.mock("@/store/features/selectors", () => ({
   selectIsClassStateEnabled: () => store.enabled,

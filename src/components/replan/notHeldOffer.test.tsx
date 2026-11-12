@@ -10,7 +10,7 @@ vi.mock("@/store/hooks", () => ({ useAppSelector: (selector: () => unknown) => s
 vi.mock("@/store/entitlements/selectors", () => ({ selectHasEffectivePro: () => true }));
 
 /** The previous-lesson prompt after a "Não houve aula" answer: the same view for Pro and non-Pro, the flag decides the line. */
-function renderAfterNotHeld(props: { shiftAsk?: boolean; replanning?: boolean }) {
+function renderAfterNotHeld(props: { shiftAsk?: boolean; replanning?: boolean; adjustAsk?: boolean }) {
   return renderToStaticMarkup(
     createElement(PreviousLessonCheckInView, {
       question: "question",
@@ -51,5 +51,20 @@ describe("after 'não houve aula' on the previous lesson", () => {
     expect(html).toContain("saved");
     expect(html).not.toContain("shiftQuestion");
     expect(html).not.toContain("notHeldInProgress");
+  });
+});
+
+describe("after 'ficou a meio' or 'dificuldades' on the previous lesson", () => {
+  it("offers to adjust the next lessons", () => {
+    const html = renderAfterNotHeld({ adjustAsk: true });
+    expect(html).toContain("adjustQuestion");
+    expect(html).toContain("adjustAction");
+    expect(html).not.toContain("shiftQuestion");
+  });
+
+  it("shows the replan in progress, not the offer, once one was asked for", () => {
+    const html = renderAfterNotHeld({ adjustAsk: true, replanning: true });
+    expect(html).toContain("notHeldInProgress");
+    expect(html).not.toContain("adjustAction");
   });
 });

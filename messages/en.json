@@ -3852,7 +3852,9 @@
     "reject": "Reject",
     "applied": "Changes applied",
     "rejected": "Proposal rejected",
-    "actionError": "Could not save the proposal."
+    "actionError": "Could not save the proposal.",
+    "adjustQuestion": "Adjust the next lessons to this?",
+    "adjustAction": "Adjust next lessons"
   },
   "adminPromos": {
     "title": "Promo links",

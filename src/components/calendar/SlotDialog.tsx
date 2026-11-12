@@ -54,7 +54,6 @@ import {
 } from "@/services/api/timetable.service";
 import { checkInService } from "@/services/api/check-in.service";
 import {
-  followUpAfterSave,
   followUpFor,
   formatLessonDay,
   lessonCalendarHref,
@@ -65,8 +64,10 @@ import {
 import type { WeekLessonTarget } from "@/components/dashboard/WeekLessonDialog";
 import { useReplan } from "@/hooks/useReplan";
 import { ReplanRequestDialog } from "@/components/replan/ReplanRequestDialog";
+import { offersAdjustNextLessons } from "@/components/replan/replanLogic";
+import { setUpgradeModalOpen } from "@/store/ui/uiSlice";
 import { selectIsClassStateEnabled } from "@/store/features/selectors";
-import { useAppSelector } from "@/store/hooks";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { toast } from "sonner";
 
 import {
@@ -182,6 +183,9 @@ export function SlotDialog({
   const [shiftAsk, setShiftAsk] = useState(false);
   /** Pro: the replanning agent is preparing the following lessons, so the shift question is not asked. */
   const [replanning, setReplanning] = useState(false);
+  /** After feedback that left the plan behind (partial, difficulties): offers to adjust the next lessons. */
+  const [adjustAsk, setAdjustAsk] = useState(false);
+  const dispatch = useAppDispatch();
   const [replanOpen, setReplanOpen] = useState(false);
   /** After a check-in with outcomes picked: offers a reinforcement worksheet or the carry-over, inline. */
   const [followUp, setFollowUp] = useState<CheckInFollowUp | null>(null);
@@ -203,6 +207,7 @@ export function SlotDialog({
       setShiftAsk(false);
       setReplanning(false);
       setFollowUp(null);
+      setAdjustAsk(false);
       setProposalHandled(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -326,7 +331,8 @@ export function SlotDialog({
     } else if (body.result === "NOT_HELD") {
       setShiftAsk(true);
     }
-    setFollowUp(followUpAfterSave(followUpFor(body), saved));
+    setFollowUp(followUpFor(body));
+    setAdjustAsk(!saved.replanStarted && offersAdjustNextLessons(body.result, slot.slotType));
     if (body.result === "TAUGHT") {
       toast.success(tCheckIn("taughtToast"), {
         action: {
@@ -711,6 +717,26 @@ export function SlotDialog({
                     <p className="rounded-md border border-primary/25 bg-primary/5 px-3 py-2 text-sm text-foreground">
                       {tReplan("notHeldInProgress")}
                     </p>
+                  )}
+                  {adjustAsk && !replanning && (
+                    <div className="flex flex-wrap items-center gap-2 rounded-md border border-primary/25 bg-primary/5 px-3 py-2">
+                      <span className="text-sm text-foreground">{tReplan("adjustQuestion")}</span>
+                      <Button
+                        size="sm"
+                        className="h-8"
+                        onClick={() => {
+                          setAdjustAsk(false);
+                          // Pro: the request dialog (with an optional note); otherwise the upgrade.
+                          if (isPro) setReplanOpen(true);
+                          else dispatch(setUpgradeModalOpen(true));
+                        }}
+                      >
+                        {tReplan("adjustAction")}
+                      </Button>
+                      <Button size="sm" variant="outline" className="h-8" onClick={() => setAdjustAsk(false)}>
+                        {tCheckIn("shiftKeep")}
+                      </Button>
+                    </div>
                   )}
                   {followUp && (
                     <div className="flex flex-wrap items-center gap-2 rounded-md border border-primary/25 bg-primary/5 px-3 py-2">
