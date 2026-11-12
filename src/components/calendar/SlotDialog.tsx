@@ -162,7 +162,7 @@ export function SlotDialog({
   const tCheckIn = useTranslations("checkIns");
   const { isPro, requestReplan, watchAfterCheckIn, shift: shiftFollowing } = useReplan();
   // Read-only account (ENG-321): generation buttons show a lock; the handlers open the paywall.
-  const { isLocked: accountLocked } = useAccountAccess();
+  const { isLocked: accountLocked, guard: guardAccount } = useAccountAccess();
   const tReplan = useTranslations("replan");
   const { reinforce, carry } = useCheckInFollowUps();
   const rawLocale = useLocale();
@@ -726,7 +726,9 @@ export function SlotDialog({
                         className="h-8"
                         onClick={() => {
                           setAdjustAsk(false);
-                          // Pro: the request dialog (with an optional note); otherwise the upgrade.
+                          // Pro: the request dialog (with an optional note). A locked account: its read-only
+                          // paywall. Otherwise: the upgrade.
+                          if (!guardAccount("generate")) return;
                           if (isPro) setReplanOpen(true);
                           else dispatch(setUpgradeModalOpen(true));
                         }}
