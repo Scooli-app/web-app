@@ -49,6 +49,16 @@ export interface CheckInRecord {
   timetableId: string;
   teachingStatus: TeachingStatus;
   checkedInAt: string;
+  /**
+   * Pro: the answer (not held, partial, or difficulties) started a replan of the following lessons. The proposal is
+   * written in the background and waits for the teacher; absent on older servers.
+   */
+  replanStarted?: boolean;
+}
+
+/** What a saved check-in tells the screen that saved it. */
+export interface SavedCheckIn {
+  replanStarted: boolean;
 }
 
 export interface ConfirmAllCheckInsResult {

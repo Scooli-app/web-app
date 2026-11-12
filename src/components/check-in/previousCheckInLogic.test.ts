@@ -81,8 +81,15 @@ describe("answerPreviousLesson", () => {
   it("saves a normal check-in on the previous lesson's slot", async () => {
     const save = vi.fn().mockResolvedValue({ id: "c1" });
     const ok = await answerPreviousLesson("tt", pending, { result: "TAUGHT" }, save);
-    expect(ok).toBe(true);
+    expect(ok).toEqual({ replanStarted: false });
     expect(save).toHaveBeenCalledWith("tt", "slot-9", { result: "TAUGHT" });
+  });
+
+  it("says when the save started a replan of the following lessons", async () => {
+    const save = vi.fn().mockResolvedValue({ id: "c3", replanStarted: true });
+    await expect(answerPreviousLesson("tt", pending, { result: "PARTIAL" }, save)).resolves.toEqual({
+      replanStarted: true,
+    });
   });
 
   it("reports a failed save so the prompt can say so", async () => {
@@ -98,7 +105,7 @@ describe("answerPreviousLesson", () => {
       teachingStatus: "taught",
       checkedInAt: "x",
     });
-    await expect(answerPreviousLesson("tt", pending, { result: "TAUGHT" })).resolves.toBe(true);
+    await expect(answerPreviousLesson("tt", pending, { result: "TAUGHT" })).resolves.toEqual({ replanStarted: false });
     expect(checkInService.submit).toHaveBeenCalledWith("tt", "slot-9", { result: "TAUGHT" });
   });
 });

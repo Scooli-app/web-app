@@ -36,6 +36,19 @@ export function followUpFor(body: CheckInSubmission): CheckInFollowUp | null {
   return null;
 }
 
+/**
+ * The follow-up to offer once the answer is saved. A started replan already picks up the uncovered outcomes in the
+ * following lessons, so "carry over" is not offered on top of it; a reinforcement worksheet is a new document and
+ * still is.
+ */
+export function followUpAfterSave(
+  followUp: CheckInFollowUp | null,
+  saved: { replanStarted: boolean },
+): CheckInFollowUp | null {
+  if (followUp?.kind === "carryOver" && saved.replanStarted) return null;
+  return followUp;
+}
+
 /** "terça-feira, 20 de outubro" for a YYYY-MM-DD date, in the interface locale. */
 export function formatLessonDay(isoDate: string, locale: string): string {
   const [year, month, day] = isoDate.split("-").map(Number);

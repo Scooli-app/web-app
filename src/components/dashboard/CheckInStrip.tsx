@@ -5,7 +5,7 @@ import { WeekLessonDialog, type WeekLessonTarget } from "@/components/dashboard/
 import { Button } from "@/components/ui/button";
 import { confirmableCount, shouldShowCheckInStrip } from "@/hooks/checkInQueue";
 import { CHECK_INS_CHANGED_EVENT, SHOW_CHECK_INS_EVENT, announceVisibleCheckIns, writeAsked } from "@/hooks/checkInSession";
-import { followUpFor, lessonTarget, useCheckInFollowUps, type CheckInFollowUp } from "@/hooks/useCheckInFollowUps";
+import { followUpAfterSave, followUpFor, lessonTarget, useCheckInFollowUps, type CheckInFollowUp } from "@/hooks/useCheckInFollowUps";
 import { usePendingCheckIns } from "@/hooks/usePendingCheckIns";
 import { useReplan } from "@/hooks/useReplan";
 import type { CheckInSubmission, PendingCheckIn } from "@/shared/types/check-in";
@@ -49,7 +49,7 @@ export function CheckInStrip() {
     window.addEventListener(SHOW_CHECK_INS_EVENT, onShow);
     return () => window.removeEventListener(SHOW_CHECK_INS_EVENT, onShow);
   }, [show]);
-  const { offerAfterNotHeld } = useReplan();
+  const { offerAfterCheckIn } = useReplan();
   const { reinforce, carry } = useCheckInFollowUps();
   /** The lesson a reinforcement worksheet's "Abrir" opens. Mounted outside the strip, so it outlives the last card. */
   const [openTarget, setOpenTarget] = useState<WeekLessonTarget | null>(null);
@@ -105,10 +105,11 @@ export function CheckInStrip() {
         },
       });
     }
-    if (body.result === "NOT_HELD") {
-      offerAfterNotHeld(item.timetableId, item.slotId);
-    }
-    const followUp = followUpFor(body);
+    offerAfterCheckIn(item.timetableId, item.slotId, {
+      replanStarted: saved.replanStarted,
+      notHeld: body.result === "NOT_HELD",
+    });
+    const followUp = followUpAfterSave(followUpFor(body), saved);
     if (followUp) {
       offerFollowUp(item, followUp);
     } else if (body.result === "TAUGHT_WITH_DIFFICULTIES" || body.result === "PARTIAL") {

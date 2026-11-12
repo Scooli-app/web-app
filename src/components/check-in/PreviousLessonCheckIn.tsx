@@ -59,9 +59,9 @@ export function PreviousLessonCheckIn({
   const [selected, setSelected] = useState<string[]>([]);
   /** The previous lesson was not held: asks whether to move the lessons after it, as the lesson's own dialog does. */
   const [shiftAsk, setShiftAsk] = useState(false);
-  /** Pro: the backend is replanning after "Não houve aula"; the question about moving lessons is not asked. */
+  /** Pro: the check-in started a replan of the following lessons; the question about moving lessons is not asked. */
   const [replanning, setReplanning] = useState(false);
-  const { isPro, shift, watchAfterNotHeld } = useReplan();
+  const { shift, watchAfterCheckIn } = useReplan();
 
   useEffect(() => {
     let cancelled = false;
@@ -92,15 +92,16 @@ export function PreviousLessonCheckIn({
   if (!visible || !pending) return null;
 
   const answer = async (body: CheckInSubmission) => {
-    const ok = await answerPreviousLesson(timetableId, pending, body);
-    const phase = phaseAfterSave(ok, body.result);
-    if (phase) {
+    const saved = await answerPreviousLesson(timetableId, pending, body);
+    const phase = phaseAfterSave(saved !== false, body.result);
+    if (saved && phase) {
       setSaved(phase);
       setSaveFailed(false);
+      // Pro: a lesson not held, partly taught or with difficulties starts a replan of the following lessons.
       const notHeld = body.result === "NOT_HELD" && pending.slotType !== "ASSESSMENT";
-      setShiftAsk(notHeld && !isPro);
-      setReplanning(notHeld && isPro);
-      if (notHeld && isPro) void watchAfterNotHeld(timetableId);
+      setShiftAsk(notHeld && !saved.replanStarted);
+      setReplanning(saved.replanStarted);
+      if (saved.replanStarted) void watchAfterCheckIn(timetableId);
       onCheckedIn?.();
     } else {
       setSaveFailed(true);

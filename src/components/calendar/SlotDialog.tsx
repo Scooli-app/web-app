@@ -42,7 +42,8 @@ import { useAssessmentScope } from "@/components/calendar/useAssessmentScope";
 import { testBlocked, testRequestOutcomeIds } from "@/components/calendar/assessmentScopeLogic";
 import { SLOT_STATUS_CONFIG } from "@/shared/constants/lessonSlotStatus";
 import { translateSubject } from "@/components/document-creation/constants";
-import type { CheckInRecord, CheckInSlotType, CheckInSubmission } from "@/shared/types/check-in";
+import type { CheckInRecord, CheckInSlotType, CheckInSubmission, SavedCheckIn } from "@/shared/types/check-in";
+import { savedCheckIn } from "@/shared/utils/savedCheckIn";
 import type { SlotWithTimetable } from "@/shared/types/calendar";
 import {
   acceptProposal,
@@ -53,6 +54,7 @@ import {
 } from "@/services/api/timetable.service";
 import { checkInService } from "@/services/api/check-in.service";
 import {
+  followUpAfterSave,
   followUpFor,
   formatLessonDay,
   lessonCalendarHref,
@@ -157,7 +159,7 @@ export function SlotDialog({
   const tShared = useTranslations("calendar.shared");
   const tTimetable = useTranslations("timetable");
   const tCheckIn = useTranslations("checkIns");
-  const { isPro, requestReplan, watchAfterNotHeld, shift: shiftFollowing } = useReplan();
+  const { isPro, requestReplan, watchAfterCheckIn, shift: shiftFollowing } = useReplan();
   // Read-only account (ENG-321): generation buttons show a lock; the handlers open the paywall.
   const { isLocked: accountLocked } = useAccountAccess();
   const tReplan = useTranslations("replan");
@@ -306,8 +308,10 @@ export function SlotDialog({
 
   // Same saving and toasts as the dashboard strip (CheckInStrip).
   const handleCheckIn = async (body: CheckInSubmission) => {
+    let saved: SavedCheckIn;
     try {
       const record = await checkInService.submit(slot.timetable.id, slot.id, body);
+      saved = savedCheckIn(record);
       setCheckInEditing(false);
       onCheckedIn?.(slot, record, slotCheckInAnswer(body));
     } catch {
@@ -315,13 +319,14 @@ export function SlotDialog({
       return;
     }
     // Inline, not a toast: the toast sits under this dialog's overlay and would expire unseen.
-    if (body.result === "NOT_HELD" && isPro) {
+    // Pro: not held, partial or difficulties may have started a replan of the following lessons.
+    if (saved.replanStarted) {
       setReplanning(true);
-      void watchAfterNotHeld(slot.timetable.id);
+      void watchAfterCheckIn(slot.timetable.id);
     } else if (body.result === "NOT_HELD") {
       setShiftAsk(true);
     }
-    setFollowUp(followUpFor(body));
+    setFollowUp(followUpAfterSave(followUpFor(body), saved));
     if (body.result === "TAUGHT") {
       toast.success(tCheckIn("taughtToast"), {
         action: {

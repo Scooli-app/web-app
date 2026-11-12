@@ -1,7 +1,8 @@
 import { buildSubmission, needsDetailStep } from "@/hooks/checkInQueue";
 import { checkInService } from "@/services/api/check-in.service";
 import { getPreviousCheckIn, type PreviousLessonCheckIn } from "@/services/api/timetable.service";
-import type { CheckInResult, CheckInSubmission } from "@/shared/types/check-in";
+import type { CheckInRecord, CheckInResult, CheckInSubmission, SavedCheckIn } from "@/shared/types/check-in";
+import { savedCheckIn } from "@/shared/utils/savedCheckIn";
 
 /**
  * The prompt shows only with the flag on, a previous lesson to ask about, no "Agora não" yet, and when
@@ -43,17 +44,22 @@ export async function loadPreviousCheckIn(
   }
 }
 
-/** Saves the answer as a normal check-in on the previous lesson. Resolves false when the save fails. */
+/**
+ * Saves the answer as a normal check-in on the previous lesson. Resolves what the save started (a replan, Pro), or
+ * false when the save fails.
+ */
 export async function answerPreviousLesson(
   timetableId: string,
   pending: PreviousLessonCheckIn,
   body: CheckInSubmission,
-  save: (timetableId: string, slotId: string, body: CheckInSubmission) => Promise<unknown> = (...args) =>
-    checkInService.submit(...args),
-): Promise<boolean> {
+  save: (
+    timetableId: string,
+    slotId: string,
+    body: CheckInSubmission,
+  ) => Promise<Partial<CheckInRecord> | null | undefined> = (...args) => checkInService.submit(...args),
+): Promise<SavedCheckIn | false> {
   try {
-    await save(timetableId, pending.slotId, body);
-    return true;
+    return savedCheckIn(await save(timetableId, pending.slotId, body));
   } catch {
     return false;
   }

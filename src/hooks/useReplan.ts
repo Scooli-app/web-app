@@ -28,8 +28,9 @@ async function settledProposalId(timetableId: string): Promise<string | null> {
 }
 
 /**
- * The replanning agent for the Pro plan (ENG-257). After "não houve aula" the backend starts a proposal by itself;
- * `requestReplan` asks for one on demand; `watchAfterNotHeld` waits for the one that follows a check-in. A watch
+ * The replanning agent for the Pro plan (ENG-257). After a check-in "não houve aula", "ficou a meio" or "alguns tiveram
+ * dificuldades" the backend may start a proposal by itself (the check-in answer says so with `replanStarted`);
+ * `requestReplan` asks for one on demand; `watchAfterCheckIn` waits for the one that follows a check-in. A watch
  * toasts when the proposal is ready (or failed) and stops polling when the screen unmounts.
  */
 export function useReplan() {
@@ -94,8 +95,8 @@ export function useReplan() {
     [router, shift, t],
   );
 
-  /** Pro, after a check-in said "não houve aula": the backend is already replanning, so only wait for it. */
-  const watchAfterNotHeld = useCallback(
+  /** Pro, after a check-in that started a replan: the backend is already replanning, so only wait for it. */
+  const watchAfterCheckIn = useCallback(
     async (timetableId: string) => {
       const skipId = await settledProposalId(timetableId);
       watch(timetableId, skipId);
@@ -128,18 +129,26 @@ export function useReplan() {
     [guard, t, watch],
   );
 
-  /** "Não houve aula" without Pro: the existing shift offer; with Pro: the replanning agent. */
-  const offerAfterNotHeld = useCallback(
-    (timetableId: string, slotId: string, onShifted?: () => void) => {
-      if (!isPro) {
+  /**
+   * After a saved check-in: when it started a replan, say so and wait for it; otherwise, after "não houve aula", the
+   * offer to move the following lessons (no Pro, or no replan could start).
+   */
+  const offerAfterCheckIn = useCallback(
+    (
+      timetableId: string,
+      slotId: string,
+      { replanStarted, notHeld }: { replanStarted: boolean; notHeld: boolean },
+      onShifted?: () => void,
+    ) => {
+      if (replanStarted) {
+        toast(t("notHeldInProgress"));
+        void watchAfterCheckIn(timetableId);
+      } else if (notHeld) {
         offer(timetableId, slotId, onShifted);
-        return;
       }
-      toast(t("notHeldInProgress"));
-      void watchAfterNotHeld(timetableId);
     },
-    [isPro, offer, t, watchAfterNotHeld],
+    [offer, t, watchAfterCheckIn],
   );
 
-  return { isPro, requestReplan, watchAfterNotHeld, offerAfterNotHeld, shift };
+  return { isPro, requestReplan, watchAfterCheckIn, offerAfterCheckIn, shift };
 }
