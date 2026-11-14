@@ -253,13 +253,14 @@ export function NextStepsView({ items, showTurma, isPro = false, busyKey, onActi
             <li
               key={key}
               className={cn(
-                "flex items-center justify-between gap-3 border-l-2 py-2 pl-3 first:pt-0 last:pb-0",
+                // Wraps on narrow cards: a button that says what it does is long, and must not hide the step.
+                "flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-l-2 py-2 pl-3 first:pt-0 last:pb-0",
                 style.accent,
               )}
             >
               <p className="flex min-w-0 items-center gap-2 text-sm">
                 <Icon className={cn("h-4 w-4 shrink-0", style.tone)} aria-hidden />
-                <span className="min-w-0 truncate">
+                <span className="min-w-0 line-clamp-2">
                   {text(item)}
                   {showTurma && item.turmaTitle ? (
                     <span className="text-muted-foreground"> · {item.turmaTitle}</span>

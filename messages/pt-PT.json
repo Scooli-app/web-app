@@ -115,7 +115,7 @@
     "title": "O que fazer a seguir",
     "loading": "A carregar sugestões",
     "prepareNext": "Prepara a aula de {day}",
-    "replanNotHeld": "Não houve aula: a IA propõe ajustes às aulas seguintes",
+    "replanNotHeld": "Não houve aula",
     "replanNotHeldShift": "Não houve aula: mover as aulas seguintes",
     "reinforce": "Gera ficha de reforço para {outcome}",
     "checkIn": "Confirma {count, plural, one {# aula} other {# aulas}}",

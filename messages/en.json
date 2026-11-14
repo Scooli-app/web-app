@@ -115,7 +115,7 @@
     "title": "What to do next",
     "loading": "Loading suggestions",
     "prepareNext": "Prepare the lesson for {day}",
-    "replanNotHeld": "Not held: the AI suggests changes to the following lessons",
+    "replanNotHeld": "Lesson not held",
     "replanNotHeldShift": "Not held: move the following lessons",
     "reinforce": "Create a reinforcement sheet for {outcome}",
     "checkIn": "Confirm {count, plural, one {# lesson} other {# lessons}}",
