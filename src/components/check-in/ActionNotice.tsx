@@ -8,37 +8,45 @@ import type { ReactNode } from "react";
 export interface NoticeAction {
   label: string;
   onClick: () => void;
-  /** The main action is filled; the others are outlined. */
+  /** The confirming action is filled; the one that declines is outlined. */
   primary?: boolean;
   busy?: boolean;
 }
 
 /**
- * A next step shown where the teacher is looking, in the app's colours: a short message, an optional hint that says
- * what the action does, and its buttons. Important actions live here, never in a toast.
+ * The one next step of a check-in, where the teacher is looking, in the app's colours: one line with a short message
+ * and at most a confirm and a decline button. Never in a toast. `waiting` shows a spinner instead of buttons.
  */
 export function ActionNotice({
   message,
   hint,
   actions = [],
+  waiting = false,
   className,
 }: {
   message: ReactNode;
   hint?: ReactNode;
   actions?: NoticeAction[];
+  waiting?: boolean;
   className?: string;
 }) {
   return (
     <div
       role="status"
-      className={cn("space-y-2 rounded-md border border-primary/25 bg-primary/5 px-3 py-2", className)}
+      className={cn(
+        "flex flex-wrap items-center justify-between gap-x-3 gap-y-2 rounded-md border border-primary/25 bg-primary/5 px-3 py-2",
+        className,
+      )}
     >
-      <div className="space-y-0.5">
-        <p className="text-sm text-foreground">{message}</p>
+      <div className="min-w-0 flex-1">
+        <p className="flex items-center gap-2 text-sm text-foreground">
+          {waiting && <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-primary" aria-hidden />}
+          <span>{message}</span>
+        </p>
         {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
       </div>
       {actions.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           {actions.map((action) => (
             <Button
               key={action.label}

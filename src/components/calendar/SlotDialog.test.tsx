@@ -268,12 +268,12 @@ describe("SlotDialog: offering a reinforcement worksheet or a carry-over after a
     expect(document.body.textContent).not.toContain("carryOverQuestion");
   });
 
-  it("offers the carry-over after \"half done\" with an outcome picked", async () => {
+  it("asks nothing after \"half done\": the outcomes go to the next lesson by themselves", async () => {
     await answer("resultPartial", "ticked");
 
-    expect(document.body.textContent).toContain("carryOverQuestion");
-    expect(buttonWith("carryOverAction")).toBeDefined();
+    expect(document.body.textContent).not.toContain("carryOverQuestion");
     expect(document.body.textContent).not.toContain("reinforcementQuestion");
+    expect(checkInService.carryOver).not.toHaveBeenCalled();
   });
 
   it("sends the amount and the trimmed note with 'ficou a meio' (ENG-253)", async () => {
@@ -455,18 +455,8 @@ describe("SlotDialog: offering a reinforcement worksheet or a carry-over after a
     expect(onFollowUpStarted).toHaveBeenCalledTimes(1);
   });
 
-  it("tells the parent after a carry-over, and not when the worksheet request fails", async () => {
-    vi.mocked(checkInService.carryOver).mockResolvedValue({ targetSlotId: "slot-4", targetDate: "2020-03-11", carried: 1 });
+  it("does not tell the parent when the worksheet request fails", async () => {
     const onFollowUpStarted = vi.fn();
-    await answer("resultPartial", "ticked", { onFollowUpStarted });
-    await act(async () => {
-      buttonWith("carryOverAction")?.click();
-    });
-    expect(onFollowUpStarted).toHaveBeenCalledTimes(1);
-
-    act(() => root.unmount());
-    root = createRoot(container);
-    onFollowUpStarted.mockClear();
     vi.mocked(checkInService.requestReinforcement).mockRejectedValue(new Error("boom"));
     await answer("resultDifficulties", "ticked", { onFollowUpStarted });
     await act(async () => {
@@ -485,25 +475,14 @@ describe("SlotDialog: offering a reinforcement worksheet or a carry-over after a
     expect(document.body.textContent).toContain("reinforcementQuestion");
   });
 
-  it("offers to adjust the next lessons after a partial lesson, and not after one that went well", async () => {
-    await answer("resultPartial", "ticked");
-    expect(document.body.textContent).toContain("adjustQuestion");
-    expect(buttonWith("adjustAction")).toBeDefined();
-  });
-
-  it("does not offer to adjust after a lesson that went well", async () => {
-    await answer("resultTaught", "ticked");
-    expect(document.body.textContent).not.toContain("adjustQuestion");
-  });
-
   it("hides the offer on \"Agora não\" without calling the API", async () => {
-    await answer("resultPartial", "ticked");
+    await answer("resultDifficulties", "ticked");
     await act(async () => {
       buttonWith("followUpKeep")?.click();
     });
 
-    expect(checkInService.carryOver).not.toHaveBeenCalled();
-    expect(document.body.textContent).not.toContain("carryOverQuestion");
+    expect(checkInService.requestReinforcement).not.toHaveBeenCalled();
+    expect(document.body.textContent).not.toContain("reinforcementQuestion");
   });
 });
 

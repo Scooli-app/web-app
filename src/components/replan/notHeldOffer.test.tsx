@@ -6,15 +6,14 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("next-intl", () => ({ useTranslations: () => (key: string) => key }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
 vi.mock("sonner", () => ({ toast: Object.assign(vi.fn(), { success: vi.fn(), error: vi.fn() }) }));
-vi.mock("@/store/hooks", () => ({ useAppSelector: (selector: () => unknown) => selector() }));
-vi.mock("@/store/entitlements/selectors", () => ({ selectHasEffectivePro: () => true }));
 
-/** The previous-lesson prompt after a "Não houve aula" answer: the same view for Pro and non-Pro, the flag decides the line. */
-function renderAfterNotHeld(props: { shiftAsk?: boolean; replanning?: boolean; adjustAsk?: boolean }) {
+/** The previous-lesson prompt once its answer is saved: the saved line, then the one step line, if any. */
+function renderSaved(step: string | null) {
   return renderToStaticMarkup(
     createElement(PreviousLessonCheckInView, {
       question: "question",
       saved: "saved",
+      step: step ? createElement("p", null, step) : null,
       saveFailed: false,
       outcomeResult: null,
       outcomes: [],
@@ -24,47 +23,20 @@ function renderAfterNotHeld(props: { shiftAsk?: boolean; replanning?: boolean; a
       onConfirm: vi.fn(),
       onBackOutcomes: vi.fn(),
       onNotNow: vi.fn(),
-      onShift: vi.fn(),
-      onKeep: vi.fn(),
-      ...props,
     }),
   );
 }
 
-describe("after 'não houve aula' on the previous lesson", () => {
-  it("non-Pro: keeps the offer to move the following lessons", () => {
-    const html = renderAfterNotHeld({ shiftAsk: true, replanning: false });
-    expect(html).toContain("shiftQuestion");
-    expect(html).toContain("shiftAction");
-    expect(html).not.toContain("notHeldInProgress");
-  });
-
-  it("Pro: shows that the lessons are being replanned instead of the move offer", () => {
-    const html = renderAfterNotHeld({ shiftAsk: false, replanning: true });
-    expect(html).toContain("notHeldInProgress");
-    expect(html).not.toContain("shiftQuestion");
-    expect(html).not.toContain("shiftAction");
-  });
-
-  it("a plain save with no decision shows only the saved line", () => {
-    const html = renderAfterNotHeld({});
+describe("the previous-lesson prompt after its answer", () => {
+  it("shows the saved line and the one step under it", () => {
+    const html = renderSaved("step-line");
     expect(html).toContain("saved");
-    expect(html).not.toContain("shiftQuestion");
-    expect(html).not.toContain("notHeldInProgress");
-  });
-});
-
-describe("after 'ficou a meio' or 'dificuldades' on the previous lesson", () => {
-  it("offers to adjust the next lessons", () => {
-    const html = renderAfterNotHeld({ adjustAsk: true });
-    expect(html).toContain("adjustQuestion");
-    expect(html).toContain("adjustAction");
-    expect(html).not.toContain("shiftQuestion");
+    expect(html).toContain("step-line");
   });
 
-  it("shows the replan in progress, not the offer, once one was asked for", () => {
-    const html = renderAfterNotHeld({ adjustAsk: true, replanning: true });
-    expect(html).toContain("notHeldInProgress");
-    expect(html).not.toContain("adjustAction");
+  it("with nothing to decide, shows only the saved line", () => {
+    const html = renderSaved(null);
+    expect(html).toContain("saved");
+    expect(html).not.toContain("step-line");
   });
 });

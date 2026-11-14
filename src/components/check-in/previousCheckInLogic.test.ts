@@ -81,7 +81,7 @@ describe("answerPreviousLesson", () => {
   it("saves a normal check-in on the previous lesson's slot", async () => {
     const save = vi.fn().mockResolvedValue({ id: "c1" });
     const ok = await answerPreviousLesson("tt", pending, { result: "TAUGHT" }, save);
-    expect(ok).toEqual({ replanStarted: false });
+    expect(ok).toEqual({ replanStarted: false, carriedTo: null });
     expect(save).toHaveBeenCalledWith("tt", "slot-9", { result: "TAUGHT" });
   });
 
@@ -89,6 +89,7 @@ describe("answerPreviousLesson", () => {
     const save = vi.fn().mockResolvedValue({ id: "c3", replanStarted: true });
     await expect(answerPreviousLesson("tt", pending, { result: "PARTIAL" }, save)).resolves.toEqual({
       replanStarted: true,
+      carriedTo: null,
     });
   });
 
@@ -105,7 +106,7 @@ describe("answerPreviousLesson", () => {
       teachingStatus: "taught",
       checkedInAt: "x",
     });
-    await expect(answerPreviousLesson("tt", pending, { result: "TAUGHT" })).resolves.toEqual({ replanStarted: false });
+    await expect(answerPreviousLesson("tt", pending, { result: "TAUGHT" })).resolves.toEqual({ replanStarted: false, carriedTo: null });
     expect(checkInService.submit).toHaveBeenCalledWith("tt", "slot-9", { result: "TAUGHT" });
   });
 });

@@ -8,6 +8,7 @@ const store = vi.hoisted(() => ({ enabled: false }));
 
 vi.mock("next-intl", () => ({
   useTranslations: () => (key: string) => key,
+  useLocale: () => "pt-PT",
 }));
 vi.mock("@/store/hooks", () => ({
   useAppSelector: (selector: () => boolean) => selector(),
