@@ -3848,7 +3848,7 @@
     "lessonCheck": "Apply lesson {number}",
     "addition": "Adds: {text}",
     "newOutcome": "New",
-    "documentsNote": "The documents of this lesson will get a new suggested version",
+    "documentsNote": "This lesson's materials are updated by themselves when you apply (the previous version is kept)",
     "applyLabel": "{count, plural, =0 {No change selected} one {Apply # change} other {Apply # changes}}",
     "reject": "Reject",
     "applied": "Changes applied",

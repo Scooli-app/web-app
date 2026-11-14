@@ -3848,7 +3848,7 @@
     "lessonCheck": "Aplicar a aula {number}",
     "addition": "Acrescenta: {text}",
     "newOutcome": "Novo",
-    "documentsNote": "Os documentos desta aula vão receber uma nova versão sugerida",
+    "documentsNote": "Os materiais desta aula são atualizados sozinhos ao aplicar (a versão anterior fica guardada)",
     "applyLabel": "{count, plural, =0 {Nenhuma alteração selecionada} one {Aplicar # alteração} other {Aplicar # alterações}}",
     "reject": "Rejeitar",
     "applied": "Alterações aplicadas",
