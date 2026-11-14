@@ -600,7 +600,7 @@ export default function CalendarViewPage() {
         <div className="flex flex-wrap items-center gap-2">
           {isPro && replanEnabled && currentTimetable && (
             <Button variant="outline" size="sm" onClick={() => setReplanOpen(true)}>
-              {tReplan("action")}
+              {tReplan("actionTurma")}
             </Button>
           )}
           {pendingThisWeek > 0 && (

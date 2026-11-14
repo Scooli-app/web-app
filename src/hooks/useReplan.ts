@@ -5,15 +5,14 @@ import { useAccountAccess } from "@/hooks/useAccountAccess";
 import { ApiRequestError, UpgradeLimitError } from "@/services/api/client";
 import { replanService } from "@/services/api/replan.service";
 import { useShiftFollowing } from "@/hooks/useShiftFollowing";
-import { Routes } from "@/shared/types/routes";
+import type { ReplanProposal } from "@/shared/types/replan";
 import { selectHasEffectivePro } from "@/store/entitlements/selectors";
 import { useAppSelector } from "@/store/hooks";
 import { useTranslations } from "next-intl";
-import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
 
-/** The outcome arrives while the teacher may be elsewhere in the dialog; the default 4 s hides its "Ver" too soon. */
+/** The outcome arrives while the teacher may be elsewhere; the default 4 s is too short to notice it. */
 const OUTCOME_TOAST_MS = 15000;
 
 /** Tells the turma banner (if open) to reload its state. */
@@ -35,9 +34,8 @@ async function settledProposalId(timetableId: string): Promise<string | null> {
  */
 export function useReplan() {
   const t = useTranslations("replan");
-  const router = useRouter();
   const isPro = useAppSelector(selectHasEffectivePro);
-  const { shift, offer } = useShiftFollowing();
+  const { shift } = useShiftFollowing();
   const { guard } = useAccountAccess();
   const watches = useRef(new Set<AbortController>());
 
@@ -49,9 +47,12 @@ export function useReplan() {
     };
   }, []);
 
-  /** Polls until a proposal other than `skipId` settles, then toasts the outcome. */
+  /**
+   * Polls until a proposal other than `skipId` settles, then tells `onSettled` (the screen that asked shows the
+   * outcome and its next step in place) and says it in a toast with no action, for a teacher who moved on.
+   */
   const watch = useCallback(
-    (timetableId: string, skipId: string | null, onSettled?: () => void) => {
+    (timetableId: string, skipId: string | null, onSettled?: (proposal: ReplanProposal) => void) => {
       notifyChanged(timetableId);
       const controller = new AbortController();
       watches.current.add(controller);
@@ -64,26 +65,14 @@ export function useReplan() {
           );
           if (!proposal) return;
           notifyChanged(timetableId);
-          onSettled?.();
+          onSettled?.(proposal);
           const outcome = settledToast(proposal);
           if (outcome === "ready") {
-            toast.success(t("readyToast"), {
-              duration: OUTCOME_TOAST_MS,
-              action: {
-                label: t("readyAction"),
-                onClick: () => router.push(`${Routes.CALENDAR}/${timetableId}`),
-              },
-            });
+            toast.success(t("readyToast"), { duration: OUTCOME_TOAST_MS });
           } else if (outcome === "noChange") {
             toast.info(t("noChangeToast"), { duration: OUTCOME_TOAST_MS });
           } else {
-            const { triggerSlotId } = proposal;
-            toast.error(t("failedToast"), {
-              duration: OUTCOME_TOAST_MS,
-              action: triggerSlotId
-                ? { label: t("shiftFallback"), onClick: () => void shift(timetableId, triggerSlotId) }
-                : undefined,
-            });
+            toast.error(t("failedToast"), { duration: OUTCOME_TOAST_MS });
           }
         } catch {
           // The banner on the turma page shows the latest state on its next load.
@@ -92,24 +81,24 @@ export function useReplan() {
         }
       })();
     },
-    [router, shift, t],
+    [t],
   );
 
   /** Pro, after a check-in that started a replan: the backend is already replanning, so only wait for it. */
   const watchAfterCheckIn = useCallback(
-    async (timetableId: string) => {
+    async (timetableId: string, onSettled?: (proposal: ReplanProposal) => void) => {
       const skipId = await settledProposalId(timetableId);
-      watch(timetableId, skipId);
+      watch(timetableId, skipId, onSettled);
     },
     [watch],
   );
 
-  /** Asks for a proposal now (the lesson dialog's "Reajustar", the turma header, next steps). Resolves true when started; the caller says so. */
+  /** Asks for a proposal now (the lesson dialog, the turma header, next steps, "Propor ajustes" after feedback). Resolves true when started; the caller says so. */
   const requestReplan = useCallback(
     async (
       timetableId: string,
       body: { triggerSlotId?: string; note?: string } = {},
-      onSettled?: () => void,
+      onSettled?: (proposal: ReplanProposal) => void,
     ): Promise<boolean> => {
       // Read-only account (ENG-321): a replan is an AI generation; the paywall opens instead.
       if (!guard("generate")) return false;
@@ -129,26 +118,5 @@ export function useReplan() {
     [guard, t, watch],
   );
 
-  /**
-   * After a saved check-in: when it started a replan, say so and wait for it; otherwise, after "não houve aula", the
-   * offer to move the following lessons (no Pro, or no replan could start).
-   */
-  const offerAfterCheckIn = useCallback(
-    (
-      timetableId: string,
-      slotId: string,
-      { replanStarted, notHeld }: { replanStarted: boolean; notHeld: boolean },
-      onShifted?: () => void,
-    ) => {
-      if (replanStarted) {
-        toast(t("notHeldInProgress"));
-        void watchAfterCheckIn(timetableId);
-      } else if (notHeld) {
-        offer(timetableId, slotId, onShifted);
-      }
-    },
-    [offer, t, watchAfterCheckIn],
-  );
-
-  return { isPro, requestReplan, watchAfterCheckIn, offerAfterCheckIn, shift };
+  return { isPro, requestReplan, watchAfterCheckIn, shift };
 }

@@ -2,6 +2,7 @@
 
 import { ReplanRequestDialog } from "@/components/replan/ReplanRequestDialog";
 import { useAccountAccess } from "@/hooks/useAccountAccess";
+import type { ReplanProposal } from "@/shared/types/replan";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { selectHasEffectivePro } from "@/store/entitlements/selectors";
 import { setUpgradeModalOpen } from "@/store/ui/uiSlice";
@@ -19,7 +20,7 @@ interface Target {
  * the caller lives; `adjust` opens it for a lesson.
  */
 export function useAdjustNextLessons(
-  callbacks: { onStarted?: () => void; onSettled?: () => void } = {},
+  callbacks: { onStarted?: () => void; onSettled?: (proposal: ReplanProposal) => void } = {},
 ): {
   adjust: (timetableId: string, slotId: string) => void;
   dialog: ReactNode;

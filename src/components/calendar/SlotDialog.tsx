@@ -64,7 +64,9 @@ import {
 import type { WeekLessonTarget } from "@/components/dashboard/WeekLessonDialog";
 import { useReplan } from "@/hooks/useReplan";
 import { ReplanRequestDialog } from "@/components/replan/ReplanRequestDialog";
-import { offersAdjustNextLessons } from "@/components/replan/replanLogic";
+import { offersAdjustNextLessons, settledToast } from "@/components/replan/replanLogic";
+import { ActionNotice } from "@/components/check-in/ActionNotice";
+import type { ReplanProposal } from "@/shared/types/replan";
 import { setUpgradeModalOpen } from "@/store/ui/uiSlice";
 import { selectIsClassStateEnabled } from "@/store/features/selectors";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
@@ -185,6 +187,10 @@ export function SlotDialog({
   const [replanning, setReplanning] = useState(false);
   /** After feedback that left the plan behind (partial, difficulties): offers to adjust the next lessons. */
   const [adjustAsk, setAdjustAsk] = useState(false);
+  /** How the replan asked from here ended, shown in place with its next step. */
+  const [replanResult, setReplanResult] = useState<"ready" | "noChange" | "failed" | null>(null);
+  /** "Correu bem" was just saved: offers to prepare the next lesson, in place. */
+  const [taughtNext, setTaughtNext] = useState(false);
   const dispatch = useAppDispatch();
   const [replanOpen, setReplanOpen] = useState(false);
   /** After a check-in with outcomes picked: offers a reinforcement worksheet or the carry-over, inline. */
@@ -208,6 +214,8 @@ export function SlotDialog({
       setReplanning(false);
       setFollowUp(null);
       setAdjustAsk(false);
+      setReplanResult(null);
+      setTaughtNext(false);
       setProposalHandled(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -323,24 +331,18 @@ export function SlotDialog({
       toast.error(tCheckIn("saveError"));
       return;
     }
-    // Inline, not a toast: the toast sits under this dialog's overlay and would expire unseen.
-    // Pro: not held, partial or difficulties may have started a replan of the following lessons.
+    // Every next step shows in place, never in a toast: a toast sits under this dialog's overlay.
+    // Pro: "não houve aula" starts a replan of the following lessons by itself.
+    setReplanResult(null);
     if (saved.replanStarted) {
       setReplanning(true);
-      void watchAfterCheckIn(slot.timetable.id);
+      void watchAfterCheckIn(slot.timetable.id, settleReplan);
     } else if (body.result === "NOT_HELD") {
       setShiftAsk(true);
     }
     setFollowUp(followUpFor(body));
     setAdjustAsk(!saved.replanStarted && offersAdjustNextLessons(body.result, slot.slotType));
-    if (body.result === "TAUGHT") {
-      toast.success(tCheckIn("taughtToast"), {
-        action: {
-          label: tCheckIn("prepareNext"),
-          onClick: () => router.push(`${Routes.CALENDAR}/${slot.timetable.id}`),
-        },
-      });
-    }
+    setTaughtNext(body.result === "TAUGHT");
   };
 
   const color = slot.timetable.color || "#7F77DD";
@@ -359,9 +361,18 @@ export function SlotDialog({
   /** Pro, for a lesson that is past or today: asks for a proposal from here. A not-held lesson has its own button. */
   const showReplanRequest = isPro && checkInEnabled && slot.slotDate <= todayIso && !canShiftLater;
 
+  /** The replan asked from here settled: its outcome replaces the wait. A failure after "não houve aula" offers the move. */
+  function settleReplan(proposal: ReplanProposal) {
+    const outcome = settledToast(proposal);
+    setReplanning(false);
+    setReplanResult(outcome);
+    if (outcome === "failed" && proposal.trigger === "not_held") setShiftAsk(true);
+  }
+
   /** Pro: asks the replanning agent for the lessons after this one. The wait shows inline: toasts sit under this dialog. */
   const handleReplanRequest = async (triggerSlotId: string) => {
-    const started = await requestReplan(slot.timetable.id, { triggerSlotId }, () => setReplanning(false));
+    setReplanResult(null);
+    const started = await requestReplan(slot.timetable.id, { triggerSlotId }, settleReplan);
     if (started) setReplanning(true);
   };
 
@@ -668,7 +679,7 @@ export function SlotDialog({
                         {canShiftLater && !shiftAsk && !replanning &&
                           (isPro ? (
                             <Button size="sm" className="h-8" onClick={() => void handleReplanRequest(slot.id)}>
-                              {tReplan("action")}
+                              {tReplan("actionLesson")}
                             </Button>
                           ) : (
                             <Button size="sm" className="h-8" onClick={() => void handleShift()}>
@@ -718,27 +729,58 @@ export function SlotDialog({
                       {tReplan("notHeldInProgress")}
                     </p>
                   )}
+                  {replanResult === "ready" && (
+                    <ActionNotice
+                      message={tReplan("readyNotice")}
+                      actions={[
+                        {
+                          label: tReplan("readyAction"),
+                          primary: true,
+                          onClick: () => {
+                            onClose();
+                            router.push(`${Routes.CALENDAR}/${slot.timetable.id}`);
+                          },
+                        },
+                      ]}
+                    />
+                  )}
+                  {replanResult === "noChange" && <ActionNotice message={tReplan("noChangeToast")} />}
+                  {replanResult === "failed" && <ActionNotice message={tReplan("failedToast")} />}
                   {adjustAsk && !replanning && (
-                    <div className="flex flex-wrap items-center gap-2 rounded-md border border-primary/25 bg-primary/5 px-3 py-2">
-                      <span className="text-sm text-foreground">{tReplan("adjustQuestion")}</span>
-                      <Button
-                        size="sm"
-                        className="h-8"
-                        onClick={() => {
-                          setAdjustAsk(false);
-                          // Pro: the request dialog (with an optional note). A locked account: its read-only
-                          // paywall. Otherwise: the upgrade.
-                          if (!guardAccount("generate")) return;
-                          if (isPro) setReplanOpen(true);
-                          else dispatch(setUpgradeModalOpen(true));
-                        }}
-                      >
-                        {tReplan("adjustAction")}
-                      </Button>
-                      <Button size="sm" variant="outline" className="h-8" onClick={() => setAdjustAsk(false)}>
-                        {tCheckIn("shiftKeep")}
-                      </Button>
-                    </div>
+                    <ActionNotice
+                      message={tReplan("adjustQuestion")}
+                      hint={tReplan("adjustHint")}
+                      actions={[
+                        {
+                          label: tReplan("adjustAction"),
+                          primary: true,
+                          onClick: () => {
+                            setAdjustAsk(false);
+                            // Pro: the request dialog (with an optional note). A locked account: its read-only
+                            // paywall. Otherwise: the upgrade.
+                            if (!guardAccount("generate")) return;
+                            if (isPro) setReplanOpen(true);
+                            else dispatch(setUpgradeModalOpen(true));
+                          },
+                        },
+                        { label: tCheckIn("shiftKeep"), onClick: () => setAdjustAsk(false) },
+                      ]}
+                    />
+                  )}
+                  {taughtNext && (
+                    <ActionNotice
+                      message={tCheckIn("taughtToast")}
+                      actions={[
+                        {
+                          label: tCheckIn("prepareNext"),
+                          primary: true,
+                          onClick: () => {
+                            onClose();
+                            router.push(`${Routes.CALENDAR}/${slot.timetable.id}`);
+                          },
+                        },
+                      ]}
+                    />
                   )}
                   {followUp && (
                     <div className="flex flex-wrap items-center gap-2 rounded-md border border-primary/25 bg-primary/5 px-3 py-2">
@@ -888,7 +930,7 @@ export function SlotDialog({
             {(canGenerate || isCompleted) && <AiDisclaimer className="max-sm:order-4 max-sm:col-span-2 sm:mr-auto sm:self-center sm:text-left" />}
             {showReplanRequest && (
               <Button variant="outline" onClick={() => setReplanOpen(true)} className={cn("h-9 rounded-lg max-sm:order-3", !isCompleted && "max-sm:col-span-2")}>
-                {tReplan("action")}
+                {tReplan("actionLesson")}
               </Button>
             )}
             {isCompleted && (
@@ -938,8 +980,11 @@ export function SlotDialog({
             triggerSlotId={slot.id}
             open={replanOpen}
             onOpenChange={setReplanOpen}
-            onStarted={() => setReplanning(true)}
-            onSettled={() => setReplanning(false)}
+            onStarted={() => {
+              setReplanResult(null);
+              setReplanning(true);
+            }}
+            onSettled={settleReplan}
           />
         )}
       </DialogContent>

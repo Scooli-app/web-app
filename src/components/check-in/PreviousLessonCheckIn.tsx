@@ -11,7 +11,8 @@ import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { readAsked } from "@/hooks/checkInSession";
 import { useReplan } from "@/hooks/useReplan";
-import { offersAdjustNextLessons } from "@/components/replan/replanLogic";
+import { offersAdjustNextLessons, settledToast } from "@/components/replan/replanLogic";
+import type { ReplanProposal } from "@/shared/types/replan";
 import { useAdjustNextLessons } from "@/components/replan/useAdjustNextLessons";
 import { buildSubmission, initialOutcomeSelection, needsDetailStep } from "@/hooks/checkInQueue";
 import { CheckInOutcomeStep, CheckInResultOptions, type OutcomeStepExtras } from "./CheckInChoices";
@@ -66,9 +67,15 @@ export function PreviousLessonCheckIn({
   /** After a partial or difficult previous lesson: offers to adjust the lessons after it. */
   const [adjustAsk, setAdjustAsk] = useState(false);
   const { shift, watchAfterCheckIn } = useReplan();
+  /** How the replan ended, said in place of the wait ("pronta: revê-a na página da turma"). */
+  const [replanResult, setReplanResult] = useState<"ready" | "noChange" | "failed" | null>(null);
+  const settleReplan = (proposal: ReplanProposal) => {
+    setReplanning(false);
+    setReplanResult(settledToast(proposal));
+  };
   const { adjust, dialog: adjustDialog } = useAdjustNextLessons({
     onStarted: () => setReplanning(true),
-    onSettled: () => setReplanning(false),
+    onSettled: settleReplan,
   });
 
   useEffect(() => {
@@ -77,6 +84,7 @@ export function PreviousLessonCheckIn({
     setShiftAsk(false);
     setReplanning(false);
     setAdjustAsk(false);
+    setReplanResult(null);
     setHidden(false);
     setSaved(null);
     setSaveFailed(false);
@@ -111,7 +119,7 @@ export function PreviousLessonCheckIn({
       setShiftAsk(notHeld && !saved.replanStarted);
       setReplanning(saved.replanStarted);
       setAdjustAsk(!saved.replanStarted && offersAdjustNextLessons(body.result, pending.slotType));
-      if (saved.replanStarted) void watchAfterCheckIn(timetableId);
+      if (saved.replanStarted) void watchAfterCheckIn(timetableId, settleReplan);
       onCheckedIn?.();
     } else {
       setSaveFailed(true);
@@ -125,6 +133,7 @@ export function PreviousLessonCheckIn({
         saved={saved}
         shiftAsk={shiftAsk}
         replanning={replanning}
+        replanResult={replanResult}
         adjustAsk={adjustAsk}
         onAdjust={() => {
           setAdjustAsk(false);
@@ -174,6 +183,7 @@ export function PreviousLessonCheckInView({
   saved,
   shiftAsk = false,
   replanning = false,
+  replanResult = null,
   adjustAsk = false,
   onAdjust,
   onKeepPlan,
@@ -195,6 +205,8 @@ export function PreviousLessonCheckInView({
   shiftAsk?: boolean;
   /** Pro: the replanning agent is preparing the lessons after it. */
   replanning?: boolean;
+  /** How that replan ended, once it did. */
+  replanResult?: "ready" | "noChange" | "failed" | null;
   /** After "ficou a meio" or "dificuldades" was saved: offers to adjust the lessons after it. */
   adjustAsk?: boolean;
   onAdjust?: () => void;
@@ -218,7 +230,7 @@ export function PreviousLessonCheckInView({
 
   if (saved) {
     const savedText = saved === "savedWithContext" ? t("savedWithContext") : t("saved");
-    if (!shiftAsk && !replanning && !adjustAsk) {
+    if (!shiftAsk && !replanning && !adjustAsk && !replanResult) {
       return (
         <p role="status" className="text-sm text-muted-foreground">
           {savedText}
@@ -232,9 +244,16 @@ export function PreviousLessonCheckInView({
         </span>
         {replanning ? (
           <span className="text-sm text-foreground">{tr("notHeldInProgress")}</span>
+        ) : replanResult ? (
+          <span className="text-sm text-foreground">
+            {tr(replanResult === "ready" ? "readyToast" : replanResult === "noChange" ? "noChangeToast" : "failedToast")}
+          </span>
         ) : adjustAsk ? (
           <>
-            <span className="text-sm text-foreground">{tr("adjustQuestion")}</span>
+            <span className="basis-full text-sm text-foreground">
+              {tr("adjustQuestion")}
+              <span className="block text-xs text-muted-foreground">{tr("adjustHint")}</span>
+            </span>
             <Button size="sm" className="h-8" onClick={onAdjust}>
               {tr("adjustAction")}
             </Button>

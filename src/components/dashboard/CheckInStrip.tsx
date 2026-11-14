@@ -5,10 +5,11 @@ import { WeekLessonDialog, type WeekLessonTarget } from "@/components/dashboard/
 import { Button } from "@/components/ui/button";
 import { confirmableCount, shouldShowCheckInStrip } from "@/hooks/checkInQueue";
 import { CHECK_INS_CHANGED_EVENT, SHOW_CHECK_INS_EVENT, announceVisibleCheckIns, writeAsked } from "@/hooks/checkInSession";
-import { followUpFor, lessonTarget, useCheckInFollowUps, type CheckInFollowUp } from "@/hooks/useCheckInFollowUps";
+import { formatLessonDay, lessonTarget, reinforcementTarget, useCheckInFollowUps } from "@/hooks/useCheckInFollowUps";
+import { AfterSaveSteps, afterSaveFor, withReplanOutcome, type AfterSave } from "@/components/check-in/afterSave";
+import type { ReplanProposal } from "@/shared/types/replan";
 import { usePendingCheckIns } from "@/hooks/usePendingCheckIns";
 import { useReplan } from "@/hooks/useReplan";
-import { offersAdjustNextLessons } from "@/components/replan/replanLogic";
 import { useAdjustNextLessons } from "@/components/replan/useAdjustNextLessons";
 import type { CheckInSubmission, PendingCheckIn } from "@/shared/types/check-in";
 import { Routes } from "@/shared/types/routes";
@@ -51,10 +52,17 @@ export function CheckInStrip() {
     window.addEventListener(SHOW_CHECK_INS_EVENT, onShow);
     return () => window.removeEventListener(SHOW_CHECK_INS_EVENT, onShow);
   }, [show]);
-  const { offerAfterCheckIn } = useReplan();
-  const tReplan = useTranslations("replan");
-  /** "Ajustar próximas aulas" from a toast: the request dialog lives here, so it outlives the card that moved on. */
-  const { adjust, dialog: adjustDialog } = useAdjustNextLessons();
+  const { watchAfterCheckIn, shift } = useReplan();
+  /** What the teacher can do after the answer just saved; shown in place of the next card. */
+  const [afterSave, setAfterSave] = useState<AfterSave | null>(null);
+  /** "Propor ajustes às aulas seguintes": the request dialog, with an optional note. */
+  const { adjust, dialog: adjustDialog } = useAdjustNextLessons({
+    onStarted: () => setAfterSave((current) => current && { ...current, adjustAsk: false, replan: "generating" }),
+    onSettled: (proposal) =>
+      setAfterSave((current) =>
+        current && current.item.slotId === proposal.triggerSlotId ? withReplanOutcome(current, proposal) : current,
+      ),
+  });
   const { reinforce, carry } = useCheckInFollowUps();
   /** The lesson a reinforcement worksheet's "Abrir" opens. Mounted outside the strip, so it outlives the last card. */
   const [openTarget, setOpenTarget] = useState<WeekLessonTarget | null>(null);
@@ -75,25 +83,12 @@ export function CheckInStrip() {
     setScrollRequested(false);
   }, [scrollRequested, showStrip]);
 
-  /** ENG-236/237: after "some had difficulties" or "half done" with outcomes picked, asks as a toast with an action. */
-  const offerFollowUp = (item: PendingCheckIn, followUp: CheckInFollowUp) => {
-    const reinforcement = followUp.kind === "reinforcement";
-    toast(t(reinforcement ? "reinforcementQuestion" : "carryOverQuestion"), {
-      duration: 15000,
-      // The question is long and has two buttons: put the buttons on their own row so the text keeps the width.
-      classNames: { toast: "flex-wrap", content: "basis-full pr-4" },
-      action: {
-        label: t(reinforcement ? "reinforcementAction" : "carryOverAction"),
-        onClick: () => {
-          const started: Promise<unknown> = reinforcement
-            ? reinforce(item.timetableId, item.slotId, followUp.outcomeIds, setOpenTarget)
-            : carry(item.timetableId, item.slotId, followUp.outcomeIds);
-          void started.then((result) => result && notifyChanged());
-        },
-      },
-      cancel: { label: t("followUpKeep"), onClick: () => undefined },
-    });
-  };
+  /** Marks the panel's step done or busy, if the panel is still about that lesson. */
+  const patchAfterSave = (slotId: string, patch: Partial<AfterSave>) =>
+    setAfterSave((current) => (current && current.item.slotId === slotId ? { ...current, ...patch } : current));
+
+  const watchReplan = (item: PendingCheckIn) => (proposal: ReplanProposal) =>
+    setAfterSave((current) => (current && current.item.slotId === item.slotId ? withReplanOutcome(current, proposal) : current));
 
   const handleSubmit = async (item: PendingCheckIn, body: CheckInSubmission) => {
     const saved = await submit(item, body);
@@ -103,38 +98,55 @@ export function CheckInStrip() {
     }
     notifyChanged();
     if (body.result === "TAUGHT") {
-      toast.success(t("taughtToast"), {
-        action: {
-          label: t("prepareNext"),
-          onClick: () => router.push(`${Routes.CALENDAR}/${item.timetableId}`),
-        },
-      });
+      // Nothing to decide: the strip goes on to the next lesson ("O que fazer a seguir" offers to prepare the next).
+      toast.success(t("taughtToast"));
+      return;
     }
-    offerAfterCheckIn(item.timetableId, item.slotId, {
-      replanStarted: saved.replanStarted,
-      notHeld: body.result === "NOT_HELD",
+    // Every other answer has a next step: the strip shows it in place of the next card until the teacher goes on.
+    setAfterSave(afterSaveFor(item, body, saved));
+    if (saved.replanStarted) void watchAfterCheckIn(item.timetableId, watchReplan(item));
+  };
+
+  const runFollowUp = async (panel: AfterSave) => {
+    const { item, followUp } = panel;
+    if (!followUp) return;
+    patchAfterSave(item.slotId, { busy: "followUp" });
+    if (followUp.kind === "reinforcement") {
+      const started = await reinforce(item.timetableId, item.slotId, followUp.outcomeIds);
+      patchAfterSave(item.slotId, {
+        busy: null,
+        ...(started && {
+          followUp: null,
+          followUpDone: {
+            kind: "reinforcement",
+            day: formatLessonDay(started.targetDate, locale),
+            target: reinforcementTarget(item.timetableId, started.targetSlotId, started.targetDate),
+          },
+        }),
+      });
+      if (started) notifyChanged();
+      return;
+    }
+    const carried = await carry(item.timetableId, item.slotId, followUp.outcomeIds);
+    patchAfterSave(item.slotId, {
+      busy: null,
+      ...(carried && {
+        followUp: null,
+        followUpDone: {
+          kind: "carryOver",
+          day: formatLessonDay(carried.targetDate, locale),
+          target: lessonTarget(item.timetableId, carried.targetSlotId, carried.targetDate),
+        },
+      }),
     });
-    if (!saved.replanStarted && offersAdjustNextLessons(body.result, item.slotType)) {
-      toast(tReplan("adjustQuestion"), {
-        description: checkInTurmaName(item, (grade) => tTimetable("gradeShort", { grade })),
-        duration: 15000,
-        action: { label: tReplan("adjustAction"), onClick: () => adjust(item.timetableId, item.slotId) },
-      });
-    }
-    const followUp = followUpFor(body);
-    if (followUp) {
-      offerFollowUp(item, followUp);
-    } else if (body.result === "TAUGHT_WITH_DIFFICULTIES" || body.result === "PARTIAL") {
-      // The card moves on to the next lesson: say what was saved, and how to change it.
-      toast.success(t("savedToast", { result: t(body.result === "PARTIAL" ? "resultPartial" : "resultDifficulties") }), {
-        description: checkInTurmaName(item, (grade) => tTimetable("gradeShort", { grade })),
-        duration: 10000,
-        action: {
-          label: t("change"),
-          onClick: () => setOpenTarget(lessonTarget(item.timetableId, item.slotId, item.slotDate)),
-        },
-      });
-    }
+    if (carried) notifyChanged();
+  };
+
+  const runShift = async (panel: AfterSave) => {
+    patchAfterSave(panel.item.slotId, { busy: "shift" });
+    const result = await shift(panel.item.timetableId, panel.item.slotId);
+    patchAfterSave(panel.item.slotId, { busy: null, ...(result && { shiftAsk: false }) });
+    if (result) notifyChanged();
   };
 
   const handleConfirmAll = async () => {
@@ -147,9 +159,49 @@ export function CheckInStrip() {
     }
   };
 
+  const turmaName = (item: PendingCheckIn) => checkInTurmaName(item, (grade) => tTimetable("gradeShort", { grade }));
+  const resultLabel = (result: CheckInSubmission["result"]) =>
+    t(result === "PARTIAL" ? "resultPartial" : result === "NOT_HELD" ? "resultNotHeld" : "resultDifficulties");
+
   return (
     <>
-      {showStrip && (
+      {afterSave && (
+        <section aria-label={t("title")} className="mb-3 space-y-2 rounded-xl border border-primary/30 bg-primary/5 p-3">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-foreground">{t("afterSaveTitle", { result: resultLabel(afterSave.result) })}</p>
+              <p className="truncate text-xs text-muted-foreground">
+                {[turmaName(afterSave.item), afterSave.item.topicTitle].filter(Boolean).join(" · ")}
+              </p>
+            </div>
+            <Button
+              variant="link"
+              size="sm"
+              className="h-auto p-0 text-xs"
+              onClick={() => setOpenTarget(lessonTarget(afterSave.item.timetableId, afterSave.item.slotId, afterSave.item.slotDate))}
+            >
+              {t("changeAnswer")}
+            </Button>
+          </div>
+          <AfterSaveSteps
+            panel={afterSave}
+            onAdjust={() => adjust(afterSave.item.timetableId, afterSave.item.slotId)}
+            onSkipAdjust={() => patchAfterSave(afterSave.item.slotId, { adjustAsk: false })}
+            onReview={() => router.push(`${Routes.CALENDAR}/${afterSave.item.timetableId}`)}
+            onShift={() => void runShift(afterSave)}
+            onSkipShift={() => patchAfterSave(afterSave.item.slotId, { shiftAsk: false })}
+            onFollowUp={() => void runFollowUp(afterSave)}
+            onSkipFollowUp={() => patchAfterSave(afterSave.item.slotId, { followUp: null })}
+            onOpenLesson={(target) => setOpenTarget(target)}
+          />
+          <div className="flex justify-end">
+            <Button size="sm" variant="outline" className="h-8" onClick={() => setAfterSave(null)}>
+              {showStrip ? t("afterSaveNext") : t("afterSaveClose")}
+            </Button>
+          </div>
+        </section>
+      )}
+      {showStrip && !afterSave && (
         <section
           ref={sectionRef}
           aria-label={t("title")}
