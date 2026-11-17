@@ -32,7 +32,7 @@ export function ChoiceChip({
         selected
           ? "border-primary bg-primary text-primary-foreground shadow-sm shadow-primary/20"
           : highlighted
-            ? "border-primary/40 bg-primary/10 text-primary hover:border-primary hover:bg-primary/15"
+            ? "border-primary/40 bg-primary/5 text-foreground hover:border-primary hover:bg-primary/10"
             : "border-input bg-card text-foreground hover:border-primary hover:bg-accent",
         className
       )}

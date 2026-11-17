@@ -22,6 +22,16 @@ export interface AssessmentEditorContextValue {
   confirmCheck?: (exerciseId: string) => void;
   /** The document's language, for what is printed on the page (as in its files). Unknown: the interface's. */
   english?: boolean;
+  /**
+   * The generation preview: a picture that is not there yet is still coming, not missing. `active` once the images
+   * are being made; `outcomes` says which are done (by exercise or reading box id).
+   */
+  pendingImages?: PendingImages;
+}
+
+export interface PendingImages {
+  active: boolean;
+  outcomes: Readonly<Record<string, "completed" | "failed">>;
 }
 
 /** Below md, every button, input and menu/select item inside gets a 44 px touch target and 16 px text (no iOS focus zoom); textareas grow with their text instead of clipping it

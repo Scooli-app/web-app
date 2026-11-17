@@ -17,7 +17,8 @@ import type { RagSource } from "@/shared/types/document";
 import { useKeyboardInset } from "@/hooks/use-keyboard-inset";
 import { useAccountAccess } from "@/hooks/useAccountAccess";
 import { cn } from "@/shared/utils/utils";
-import { FileText, Loader2, Lock, MessageCircle, Send, Sparkles, X } from "lucide-react";
+import { FilePlus2, FileText, Loader2, Lock, MessageCircle, MinusCircle, Paperclip, PenLine, PlusCircle, RotateCcw, Send, Sparkles, ThumbsDown, ThumbsUp, X } from "lucide-react";
+import type { ChatChange, ChatNewDocument, ChatOutcome } from "@/shared/types";
 import { useTranslations } from "next-intl";
 import posthog from "posthog-js";
 import { useEffect, useRef, useState } from "react";
@@ -30,6 +31,10 @@ interface SuggestionChip {
   label: string;
   message: string;
 }
+
+/** One look for every chip in the chat: a small tinted pill, left-aligned, wrapping on narrow panels. */
+const CHIP_CLASS =
+  "inline-flex max-w-full items-center rounded-full border border-primary/25 bg-primary/5 px-3 py-1 text-left text-xs font-medium leading-snug text-primary transition-colors hover:border-primary/50 hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-50";
 
 function SuggestionChips({
   documentType,
@@ -47,14 +52,14 @@ function SuggestionChips({
     : suggestionsByType.default;
 
   return (
-    <div className="grid grid-cols-2 gap-1.5 mb-3">
+    <div className="mb-3 flex flex-wrap gap-1.5" data-testid="chat-suggestions">
       {chips.map((chip) => (
         <button
           key={chip.label}
           type="button"
           disabled={disabled}
           onClick={() => onChipClick(chip)}
-          className="w-full px-3 py-1.5 text-xs font-medium rounded-xl bg-muted hover:bg-primary/10 text-foreground border border-border/50 hover:border-primary/40 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-center leading-snug"
+          className={CHIP_CLASS}
         >
           {chip.label}
         </button>
@@ -63,14 +68,38 @@ function SuggestionChips({
   );
 }
 
-interface ChatMessage {
+export interface ChatMessage {
   role: "user" | "assistant";
   content: string;
   hasUpdate?: boolean;
+  /** The reply left the document as it was. */
+  noChange?: boolean;
   /** When true, render Sim/Não quick-action buttons below the message */
   imageRegenOffer?: boolean;
   /** Set to true after user clicks Sim or Não to hide the buttons */
   imageRegenResolved?: boolean;
+  /** What the turn did, decided by the server (ENG-394). */
+  outcome?: ChatOutcome | null;
+  /** False when the turn did not count as a generation (ENG-400). */
+  charged?: boolean | null;
+  /** Section-level changes of an edit, clickable to scroll to them (ENG-404). */
+  changes?: ChatChange[] | null;
+  /** Options of a clarifying question (ENG-406). */
+  clarifyOptions?: string[] | null;
+  /** Next-step chips (ENG-405). */
+  followUps?: string[] | null;
+  /** Offer to create a separate document (ENG-409). */
+  newDocument?: ChatNewDocument | null;
+  /** The reply describes a failure; styled as a warning. */
+  isError?: boolean;
+  /** Loaded from the stored conversation (ENG-396). */
+  fromHistory?: boolean;
+  /** The teacher's rating of this reply (ENG-387). */
+  feedback?: "up" | "down";
+  /** The excerpt the teacher selected when asking (ENG-403). */
+  quote?: string;
+  /** Name of a file attached to this message (ENG-410). */
+  attachmentName?: string;
 }
 
 interface AIChatPanelProps {
@@ -78,9 +107,13 @@ interface AIChatPanelProps {
   onChatSubmit: (message: string) => Promise<void | boolean>;
   chatHistory: ChatMessage[];
   isStreaming?: boolean;
+  /** Shown under the typing indicator, e.g. when a request takes long. */
+  pendingHint?: string;
   /** Document still generating: chat is locked until it is ready. */
   disabled?: boolean;
   error?: string;
+  /** Next to an error: a button that sends the last message again. */
+  retryable?: boolean;
   placeholder?: string;
   title?: string;
   sources?: RagSource[];
@@ -103,6 +136,111 @@ interface AIChatPanelProps {
   /** Controls the mobile sheet from outside (e.g. a "Conversa" button in the parent). */
   mobileOpen?: boolean;
   onMobileOpenChange?: (open: boolean) => void;
+  /** Scroll the editor to a changed section (ENG-404). */
+  onChangeClick?: (change: ChatChange) => void;
+  /** Create the offered document (ENG-409). Resolves when navigation started. */
+  onNewDocument?: (request: ChatNewDocument) => Promise<void>;
+  /** "Nova conversa" (ENG-396). */
+  onNewConversation?: () => void;
+  /** The teacher rated an assistant reply (ENG-387). */
+  onFeedback?: (messageIndex: number, rating: "up" | "down") => void;
+  /** Text selected in the editor that the next message is about (ENG-403). */
+  selection?: string | null;
+  onClearSelection?: () => void;
+  /** Attach a file for the next message (ENG-410). Absent: no paperclip. */
+  onAttach?: (file: File) => Promise<void>;
+  /** What a streamed turn has revealed so far (ENG-402). */
+  liveProgress?: ChatLiveProgress | null;
+  /** The file waiting to go with the next message. */
+  attachment?: { name: string; truncated: boolean } | null;
+  onClearAttachment?: () => void;
+}
+
+const CHANGE_ICONS = { added: PlusCircle, changed: PenLine, removed: MinusCircle } as const;
+
+/** What a streamed turn has said so far (ENG-402). */
+export interface ChatLiveProgress {
+  stage?: "reading" | "editing" | "answering";
+  section?: string;
+  answer?: string;
+}
+
+/**
+ * Status while the request runs: the stream's real stage and reply text when the turn is streamed (ENG-402), else
+ * honest timed hints — what is happening, never a fake percentage.
+ */
+function ProgressIndicator({ live, hint }: { live?: ChatLiveProgress | null; hint?: string }) {
+  const t = useTranslations("editor.aiChatPanel");
+  const steps = t.raw("progress") as string[];
+  const [step, setStep] = useState(0);
+  useEffect(() => {
+    const timers = [setTimeout(() => setStep(1), 4000), setTimeout(() => setStep(2), 20000)];
+    return () => timers.forEach(clearTimeout);
+  }, []);
+  if (live?.answer) {
+    return (
+      <div
+        className="bg-muted text-foreground mr-auto max-w-[85%] whitespace-pre-line p-3 rounded-2xl rounded-tl-none border border-border/50 text-sm leading-relaxed"
+        role="status"
+        aria-live="polite"
+        data-testid="chat-progress"
+      >
+        {live.answer}
+        <span className="ml-0.5 inline-block h-3.5 w-1.5 animate-pulse bg-primary/50 align-middle" />
+      </div>
+    );
+  }
+  const label = live?.stage
+    ? live.stage === "editing" && live.section
+      ? t("stages.editingSection", { section: live.section })
+      : t(`stages.${live.stage}`)
+    : steps[Math.min(step, steps.length - 1)];
+  return (
+    <div
+      className="bg-muted text-foreground mr-auto p-3 rounded-2xl rounded-tl-none border border-border/50 animate-in fade-in duration-300"
+      role="status"
+      aria-live="polite"
+      data-testid="chat-progress"
+    >
+      <div className="flex items-center gap-2">
+        <div className="flex space-x-1">
+          <div className="w-1.5 h-1.5 bg-primary/40 rounded-full animate-bounce [animation-delay:-0.3s]" />
+          <div className="w-1.5 h-1.5 bg-primary/40 rounded-full animate-bounce [animation-delay:-0.15s]" />
+          <div className="w-1.5 h-1.5 bg-primary/40 rounded-full animate-bounce" />
+        </div>
+        <span className="text-xs text-muted-foreground">{label}</span>
+      </div>
+      {hint && <p className="mt-2 text-xs text-muted-foreground">{hint}</p>}
+    </div>
+  );
+}
+
+function ChipRow({
+  items,
+  onPick,
+  disabled,
+  testId,
+}: {
+  items: string[];
+  onPick: (text: string) => void;
+  disabled?: boolean;
+  testId: string;
+}) {
+  return (
+    <div className="mt-2 flex flex-wrap gap-1.5" data-testid={testId}>
+      {items.map((item) => (
+        <button
+          key={item}
+          type="button"
+          disabled={disabled}
+          onClick={() => onPick(item)}
+          className={cn(CHIP_CLASS, "bg-background")}
+        >
+          {item}
+        </button>
+      ))}
+    </div>
+  );
 }
 
 // Below lg the tabs live in the phone/tablet sheet: touch-sized there.
@@ -155,8 +293,10 @@ function Tabs({
 function ChatContent({
   chatHistory,
   isStreaming,
+  pendingHint,
   disabled = false,
   error,
+  onRetry,
   placeholder,
   chatMessage,
   setChatMessage,
@@ -173,11 +313,24 @@ function ChatContent({
   nudge,
   onNudgeDismiss,
   accountLocked = false,
+  onChangeClick,
+  onNewDocument,
+  onFeedback,
+  onChipPick,
+  onNewConversation,
+  selection,
+  onClearSelection,
+  onAttach,
+  attachment,
+  onClearAttachment,
+  liveProgress,
 }: {
   chatHistory: ChatMessage[];
   isStreaming: boolean;
+  pendingHint?: string;
   disabled?: boolean;
   error?: string;
+  onRetry?: () => void;
   placeholder: string;
   title: string;
   chatMessage: string;
@@ -196,6 +349,17 @@ function ChatContent({
   onNudgeDismiss?: () => void;
   /** Read-only account: the send button shows a lock and opens the paywall. */
   accountLocked?: boolean;
+  onChangeClick?: (change: ChatChange) => void;
+  onNewDocument?: (request: ChatNewDocument) => Promise<void>;
+  onFeedback?: (messageIndex: number, rating: "up" | "down") => void;
+  onChipPick?: (text: string, kind: "clarify" | "followup") => void;
+  onNewConversation?: () => void;
+  selection?: string | null;
+  onClearSelection?: () => void;
+  onAttach?: (file: File) => Promise<void>;
+  attachment?: { name: string; truncated: boolean } | null;
+  onClearAttachment?: () => void;
+  liveProgress?: ChatLiveProgress | null;
 }) {
   const t = useTranslations("editor.aiChatPanel");
   const tLock = useTranslations("billing.lock");
@@ -204,13 +368,22 @@ function ChatContent({
   const [activeTab, setActiveTab] = useState<"assistant" | "sources">(
     "assistant",
   );
+  const [creatingDocument, setCreatingDocument] = useState(false);
+  const [attaching, setAttaching] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const lastIndex = chatHistory.length - 1;
+  // The reply's own follow-ups / options already offer next steps: the generic starters would only repeat them.
+  const lastReply = chatHistory[lastIndex];
+  const lastReplyHasChips =
+    lastReply?.role === "assistant" && !!(lastReply.followUps?.length || lastReply.clarifyOptions?.length);
 
   return (
     <Card
       className={cn(
         "flex flex-col transition-all duration-300",
         isDesktop
-          ? "h-[min(70dvh,760px)] border-border bg-card/50 backdrop-blur-sm lg:h-[calc(100dvh-12rem)]"
+          ? // The editors put the panel in a full-height side column: fill it, so the input sits at the bottom.
+            "min-h-0 flex-1 rounded-none border-0 bg-background shadow-none"
           : "h-full border-0 shadow-none bg-transparent",
       )}
     >
@@ -255,21 +428,168 @@ function ChatContent({
                   <p className="text-sm font-medium">{t("emptyStateHeading")}</p>
                 </div>
               )}
-              {chatHistory.map((message, index) => (
+              {chatHistory.length > 0 && onNewConversation && !isInputLocked && (
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={onNewConversation}
+                    title={t("newConversationHint")}
+                    className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                    data-testid="chat-new-conversation"
+                  >
+                    <RotateCcw className="h-3 w-3" />
+                    {t("newConversation")}
+                  </button>
+                </div>
+              )}
+              {chatHistory[0]?.fromHistory && (
+                <p className="text-center text-[11px] font-medium uppercase tracking-wider text-muted-foreground/70">
+                  {t("previousConversation")}
+                </p>
+              )}
+              {chatHistory.map((message, index) => {
+                const isLast = index === lastIndex;
+                const isAssistant = message.role === "assistant";
+                const showChips = isAssistant && isLast && !isInputLocked && !!onChipPick;
+                return (
                 <div
                   key={index}
+                  data-testid={isAssistant ? "chat-assistant-message" : "chat-user-message"}
+                  data-outcome={message.outcome ?? undefined}
                   className={cn(
-                    "p-3 rounded-2xl text-sm leading-relaxed max-w-[85%] animate-in fade-in slide-in-from-bottom-2 duration-300 relative",
+                    "p-3 rounded-2xl text-sm leading-relaxed max-w-[85%] animate-in fade-in slide-in-from-bottom-2 duration-300 relative whitespace-pre-line",
                     message.role === "user"
                       ? "bg-primary text-primary-foreground ml-auto rounded-tr-none"
-                      : "bg-muted text-foreground mr-auto rounded-tl-none border border-border/50",
+                      : message.isError
+                        ? "bg-destructive/5 text-foreground mr-auto rounded-tl-none border border-destructive/30"
+                        : "bg-muted text-foreground mr-auto rounded-tl-none border border-border/50",
                   )}
                 >
+                  {message.quote && (
+                    <span className="mb-1.5 block border-l-2 border-primary-foreground/50 pl-2 text-xs italic opacity-90 line-clamp-3">
+                      {message.quote}
+                    </span>
+                  )}
                   {message.content}
-                  {message.hasUpdate && (
+                  {message.attachmentName && (
+                    <span className="mt-1 flex items-center gap-1 text-xs opacity-90">
+                      <Paperclip className="h-3 w-3" aria-hidden />
+                      {message.attachmentName}
+                    </span>
+                  )}
+                  {message.hasUpdate && !message.changes?.length && (
                     <div className="mt-2 pt-2 border-t border-border/30 flex items-center gap-1.5 text-[10px] font-semibold text-primary uppercase tracking-wider">
                       <Sparkles className="w-3 h-3" />
                       {t("documentRefined")}
+                    </div>
+                  )}
+                  {isAssistant && message.changes && message.changes.length > 0 && (
+                    <div className="mt-2 pt-2 border-t border-border/30" data-testid="chat-change-list">
+                      <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-primary">
+                        {t("changesTitle")}
+                      </p>
+                      <ul className="space-y-0.5">
+                        {message.changes.map((change, i) => {
+                          const Icon = CHANGE_ICONS[change.kind] ?? PenLine;
+                          const label = `${t(`changeKinds.${change.kind}`)}: ${change.section ?? t("wholeDocument")}`;
+                          return (
+                            <li key={i}>
+                              <button
+                                type="button"
+                                disabled={!onChangeClick || change.kind === "removed"}
+                                onClick={() => onChangeClick?.(change)}
+                                className="flex w-full items-center gap-1.5 rounded-md px-1 py-0.5 text-left text-xs hover:bg-background/70 disabled:cursor-default disabled:hover:bg-transparent"
+                              >
+                                <Icon className="h-3 w-3 shrink-0 text-primary" aria-hidden />
+                                <span className="truncate">{label}</span>
+                              </button>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+                  )}
+                  {isAssistant && message.outcome === "no_change" && (
+                    <p className="mt-2 text-[11px] font-medium text-muted-foreground">{t("noChangeBadge")}</p>
+                  )}
+                  {isAssistant && message.charged === false && message.outcome !== "clarify" && (
+                    <p className="mt-1 text-[11px] text-muted-foreground">{t("freeTurn")}</p>
+                  )}
+                  {isAssistant && message.newDocument && onNewDocument && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      disabled={creatingDocument || isInputLocked}
+                      // The offer is the whole point of the reply: a full-width primary button, wrapping instead of
+                      // overflowing the narrow panel, so nobody waits for a document that needs this click.
+                      className="mt-2 h-auto min-h-9 w-full justify-start gap-1.5 whitespace-normal py-2 text-left text-xs"
+                      data-testid="chat-new-document"
+                      onClick={async () => {
+                        const request = message.newDocument;
+                        if (!request) return;
+                        setCreatingDocument(true);
+                        try {
+                          await onNewDocument(request);
+                        } finally {
+                          setCreatingDocument(false);
+                        }
+                      }}
+                    >
+                      {creatingDocument ? <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" /> : <FilePlus2 className="h-3.5 w-3.5 shrink-0" />}
+                      {creatingDocument
+                        ? t("newDocumentCreating")
+                        : t("newDocumentAction", {
+                            type: t.has(`documentTypes.${message.newDocument.type}`)
+                              ? t(`documentTypes.${message.newDocument.type}`)
+                              : message.newDocument.type,
+                          })}
+                    </Button>
+                  )}
+                  {showChips && message.clarifyOptions && message.clarifyOptions.length > 0 && (
+                    <ChipRow
+                      items={message.clarifyOptions}
+                      onPick={(text) => onChipPick?.(text, "clarify")}
+                      testId="chat-clarify-options"
+                    />
+                  )}
+                  {showChips && message.followUps && message.followUps.length > 0 && (
+                    <ChipRow
+                      items={message.followUps}
+                      onPick={(text) => onChipPick?.(text, "followup")}
+                      testId="chat-follow-ups"
+                    />
+                  )}
+                  {isAssistant && !message.isError && !message.fromHistory && onFeedback && (
+                    <div className="mt-1.5 flex justify-end gap-1">
+                      {message.feedback ? (
+                        <span className="text-[11px] text-muted-foreground">{t("feedbackThanks")}</span>
+                      ) : (
+                        <>
+                          <button
+                            type="button"
+                            aria-label={t("feedbackUp")}
+                            title={t("feedbackUp")}
+                            onClick={() => onFeedback(index, "up")}
+                            className="rounded p-1 text-muted-foreground/70 hover:bg-background/70 hover:text-foreground"
+                          >
+                            <ThumbsUp className="h-3 w-3" />
+                          </button>
+                          <button
+                            type="button"
+                            aria-label={t("feedbackDown")}
+                            title={t("feedbackDown")}
+                            onClick={() => onFeedback(index, "down")}
+                            className="rounded p-1 text-muted-foreground/70 hover:bg-background/70 hover:text-foreground"
+                          >
+                            <ThumbsDown className="h-3 w-3" />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  )}
+                  {message.noChange && message.outcome !== "no_change" && (
+                    <div className="mt-2 pt-2 border-t border-border/30 text-[11px] text-muted-foreground">
+                      {t("documentUnchanged")}
                     </div>
                   )}
                   {message.imageRegenOffer && !message.imageRegenResolved && onImageRegen && (
@@ -292,27 +612,65 @@ function ChatContent({
                     </div>
                   )}
                 </div>
-              ))}
+                );
+              })}
 
-              {/* Typing Indicator */}
-              {isStreaming && (
-                <div className="bg-muted text-foreground mr-auto p-3 rounded-2xl rounded-tl-none border border-border/50 animate-in fade-in duration-300">
-                  <div className="flex space-x-1">
-                    <div className="w-1.5 h-1.5 bg-primary/40 rounded-full animate-bounce [animation-delay:-0.3s]" />
-                    <div className="w-1.5 h-1.5 bg-primary/40 rounded-full animate-bounce [animation-delay:-0.15s]" />
-                    <div className="w-1.5 h-1.5 bg-primary/40 rounded-full animate-bounce" />
-                  </div>
-                </div>
-              )}
+              {/* Progress while the request runs */}
+              {isStreaming && <ProgressIndicator live={liveProgress} hint={pendingHint} />}
             </div>
 
             {/* Suggestion chips — visible until user sends their first follow-up */}
-            {showSuggestions && onSuggestionClick && (
+            {showSuggestions && onSuggestionClick && !lastReplyHasChips && (
               <SuggestionChips
                 documentType={documentType}
                 onChipClick={onSuggestionClick}
                 disabled={isInputLocked}
               />
+            )}
+
+            {selection && (
+              <div
+                className="mb-2 flex items-start gap-2 rounded-xl border border-primary/30 bg-primary/5 px-3 py-2 text-xs"
+                data-testid="chat-selection"
+              >
+                <div className="min-w-0 flex-1">
+                  <span className="font-semibold text-primary">{t("selectionLabel")}: </span>
+                  <span className="italic text-foreground line-clamp-2">«{selection}»</span>
+                </div>
+                {onClearSelection && (
+                  <button
+                    type="button"
+                    onClick={onClearSelection}
+                    aria-label={t("selectionClear")}
+                    className="shrink-0 rounded p-0.5 text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
+            )}
+
+            {attachment && (
+              <div
+                className="mb-2 flex items-center gap-2 rounded-xl border border-border bg-muted/60 px-3 py-2 text-xs"
+                data-testid="chat-attachment"
+              >
+                <Paperclip className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden />
+                <span className="min-w-0 flex-1 truncate font-medium">
+                  {attachment.name}
+                  {attachment.truncated && <span className="font-normal text-muted-foreground"> · {t("attachmentTruncated")}</span>}
+                </span>
+                {onClearAttachment && (
+                  <button
+                    type="button"
+                    onClick={onClearAttachment}
+                    aria-label={t("selectionClear")}
+                    className="shrink-0 rounded p-0.5 text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
             )}
 
             {/* Chat Input */}
@@ -325,10 +683,46 @@ function ChatContent({
                   : "mb-3 pb-[max(env(safe-area-inset-bottom),0.5rem)]",
               )}
             >
+              {onAttach && (
+                <>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".pdf,.doc,.docx,.odt,.rtf,.txt,.md"
+                    className="hidden"
+                    data-testid="chat-attach-input"
+                    onChange={async (event) => {
+                      const file = event.target.files?.[0];
+                      event.target.value = "";
+                      if (!file) return;
+                      setAttaching(true);
+                      try {
+                        await onAttach(file);
+                      } finally {
+                        setAttaching(false);
+                      }
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    disabled={isInputLocked || attaching}
+                    onClick={() => fileInputRef.current?.click()}
+                    aria-label={attaching ? t("attaching") : t("attach")}
+                    title={attaching ? t("attaching") : t("attach")}
+                    className={cn("shrink-0 rounded-xl text-muted-foreground", isDesktop ? "h-10 w-9" : "h-11 w-10")}
+                    data-testid="chat-attach"
+                  >
+                    {attaching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Paperclip className="h-4 w-4" />}
+                  </Button>
+                </>
+              )}
               <Input
                 value={chatMessage}
                 onChange={(e) => setChatMessage(e.target.value)}
-                placeholder={placeholder}
+                placeholder={selection ? t("selectionPlaceholder") : placeholder}
+                data-chat-input={variant}
                 // Phone: 44 px tall, 16 px text so iOS doesn't zoom in on focus.
                 className={cn("flex-1 border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 px-3", isDesktop ? "h-10 text-sm" : "h-11 text-base")}
                 disabled={isInputLocked}
@@ -365,8 +759,13 @@ function ChatContent({
           </div>
         )}
         {error && (
-          <div className="p-3 bg-destructive/5 border border-destructive/20 rounded-xl text-destructive text-xs font-medium animate-in shake-1">
-            {error}
+          <div role="alert" className="flex items-center gap-3 p-3 bg-destructive/5 border border-destructive/20 rounded-xl text-destructive text-xs font-medium animate-in shake-1">
+            <span className="flex-1">{error}</span>
+            {onRetry && !isInputLocked && (
+              <Button type="button" size="sm" variant="outline" className="h-7 shrink-0 bg-background" onClick={onRetry}>
+                {t("retry")}
+              </Button>
+            )}
           </div>
         )}
       </div>
@@ -378,8 +777,10 @@ export default function AIChatPanel({
   onChatSubmit,
   chatHistory,
   isStreaming = false,
+  pendingHint,
   disabled = false,
   error,
+  retryable = false,
   placeholder,
   title,
   sources = [],
@@ -393,6 +794,16 @@ export default function AIChatPanel({
   onNudgeDismiss,
   mobileOpen,
   onMobileOpenChange,
+  onChangeClick,
+  onNewDocument,
+  onNewConversation,
+  onFeedback,
+  selection,
+  onClearSelection,
+  onAttach,
+  attachment,
+  onClearAttachment,
+  liveProgress,
 }: AIChatPanelProps) {
   const t = useTranslations("editor.aiChatPanel");
   const tLock = useTranslations("billing.lock");
@@ -429,11 +840,21 @@ export default function AIChatPanel({
   const typedInFlightRef = useRef(false);
   const typedFailedRef = useRef(false);
   const wasStreamingRef = useRef(isStreaming);
+  // While onChatSubmit is still pending, its own continuation decides whether the input is cleared: the request
+  // can stop "streaming" before the parent says it failed, and clearing then would lose what the teacher typed.
+  const submitPendingRef = useRef(false);
   const lockedInputValue = isStreaming && lockedMessage !== null ? lockedMessage : chatMessage;
+
+  // The last message sent, typed or from a chip: what "Try again" sends.
+  const lastSentRef = useRef("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (disabled || isStreaming || lockedMessage !== null || !chatMessage.trim()) {
+    await send(chatMessage.trim());
+  };
+
+  const send = async (userMessage: string) => {
+    if (disabled || isStreaming || lockedMessage !== null || !userMessage) {
       return;
     }
     if (!guard("generate")) return;
@@ -441,11 +862,14 @@ export default function AIChatPanel({
     setShowSuggestions(false);
     typedInFlightRef.current = true;
     typedFailedRef.current = false;
-    const userMessage = chatMessage.trim();
+    lastSentRef.current = userMessage;
     setLockedMessage(userMessage);
     setChatMessage(userMessage);
+    submitPendingRef.current = true;
     try {
-      if ((await onChatSubmit(userMessage)) === false) {
+      const sent = await onChatSubmit(userMessage);
+      submitPendingRef.current = false;
+      if (sent === false) {
         typedFailedRef.current = true;
         typedInFlightRef.current = false;
         setLockedMessage(null);
@@ -458,6 +882,7 @@ export default function AIChatPanel({
         typedInFlightRef.current = false;
       }
     } catch {
+      submitPendingRef.current = false;
       // The request failed: keep what the teacher typed so they can send it again.
       typedFailedRef.current = true;
       typedInFlightRef.current = false;
@@ -465,22 +890,34 @@ export default function AIChatPanel({
     }
   };
 
-  const handleSuggestionClick = async (chip: SuggestionChip) => {
+  const handleSuggestionClick = (chip: SuggestionChip) =>
+    sendQuickMessage(chip.message, { label: chip.label, position: "initial" });
+
+  // Clarification options and follow-ups are sent like the initial chips (ENG-405, ENG-406).
+  const handleChipPick = (text: string, kind: "clarify" | "followup") =>
+    sendQuickMessage(text, { label: text, position: kind });
+
+  const sendQuickMessage = async (
+    message: string,
+    analytics: { label: string; position: "initial" | "clarify" | "followup" },
+  ) => {
     if (disabled || isStreaming || lockedMessage !== null) return;
     if (!guard("generate")) return;
     setShowSuggestions(false);
     typedInFlightRef.current = false;
     typedFailedRef.current = false;
-    setLockedMessage(chip.message);
-    setChatMessage(chip.message);
+    lastSentRef.current = message;
+    setLockedMessage(message);
+    setChatMessage(message);
     posthog.capture("ai_chat_suggestion_clicked", {
-      suggestion_label: chip.label,
-      suggestion_message: chip.message,
+      suggestion_label: analytics.label,
+      suggestion_message: message,
+      position: analytics.position,
       document_type: documentType,
       document_id: documentId,
     });
     try {
-      if ((await onChatSubmit(chip.message)) === false) {
+      if ((await onChatSubmit(message)) === false) {
         setLockedMessage(null);
         setShowSuggestions(true);
         return;
@@ -494,6 +931,8 @@ export default function AIChatPanel({
       setLockedMessage(null);
     }
   };
+
+  const retry = retryable ? () => void send(lastSentRef.current) : undefined;
 
   const guardedImageRegen = onImageRegen
     ? () => {
@@ -509,7 +948,7 @@ export default function AIChatPanel({
 
   useEffect(() => {
     isStreamingRef.current = isStreaming;
-    if (wasStreamingRef.current && !isStreaming) {
+    if (wasStreamingRef.current && !isStreaming && !submitPendingRef.current) {
       // A failed request keeps what the teacher typed, next to the error, so it can be sent again.
       if (!typedFailedRef.current) setChatMessage("");
       setLockedMessage(null);
@@ -517,6 +956,17 @@ export default function AIChatPanel({
     }
     wasStreamingRef.current = isStreaming;
   }, [isStreaming]);
+
+  // A selection to ask about (ENG-403): bring the input into view and focus it.
+  useEffect(() => {
+    if (!selection) return;
+    const desktop = window.matchMedia("(min-width: 1024px)").matches;
+    if (!desktop) setIsOpenRef.current(true);
+    const focus = () =>
+      (document.querySelector(`[data-chat-input="${desktop ? "desktop" : "mobile"}"]`) as HTMLInputElement | null)?.focus();
+    const timer = window.setTimeout(focus, desktop ? 0 : 250);
+    return () => window.clearTimeout(timer);
+  }, [selection]);
 
   // Scroll chat to bottom when chatHistory changes
   useEffect(() => {
@@ -533,12 +983,14 @@ export default function AIChatPanel({
   return (
     <>
       {/* Desktop: Grid-integrated sidebar panel */}
-      <div className="hidden h-full min-h-0 w-full lg:block">
+      <div className="hidden min-h-0 w-full flex-1 flex-col lg:flex" data-chat-panel="desktop">
         <ChatContent
           chatHistory={chatHistory}
           isStreaming={isStreaming}
+          pendingHint={pendingHint}
           disabled={disabled}
           error={error}
+          onRetry={retry}
           placeholder={resolvedPlaceholder}
           title={resolvedTitle}
           chatMessage={lockedInputValue}
@@ -556,6 +1008,17 @@ export default function AIChatPanel({
           onSuggestionClick={handleSuggestionClick}
           nudge={nudge}
           onNudgeDismiss={onNudgeDismiss}
+          onChangeClick={onChangeClick}
+          onNewDocument={onNewDocument}
+          onFeedback={onFeedback}
+          onChipPick={handleChipPick}
+          onNewConversation={onNewConversation}
+          selection={selection}
+          onClearSelection={onClearSelection}
+          onAttach={onAttach}
+          attachment={attachment}
+          onClearAttachment={onClearAttachment}
+          liveProgress={liveProgress}
         />
       </div>
 
@@ -608,8 +1071,10 @@ export default function AIChatPanel({
               <ChatContent
                 chatHistory={chatHistory}
                 isStreaming={isStreaming}
+                pendingHint={pendingHint}
                 disabled={disabled}
                 error={error}
+                onRetry={retry}
                 placeholder={resolvedPlaceholder}
                 title={resolvedTitle}
                 chatMessage={lockedInputValue}
@@ -625,6 +1090,20 @@ export default function AIChatPanel({
                 showSuggestions={showSuggestions}
                 documentType={suggestionsKey ?? documentType}
                 onSuggestionClick={handleSuggestionClick}
+                onChangeClick={(change) => {
+                  setIsOpen(false);
+                  onChangeClick?.(change);
+                }}
+                onNewDocument={onNewDocument}
+                onFeedback={onFeedback}
+                onChipPick={handleChipPick}
+                onNewConversation={onNewConversation}
+                selection={selection}
+                onClearSelection={onClearSelection}
+                onAttach={onAttach}
+                attachment={attachment}
+                onClearAttachment={onClearAttachment}
+                liveProgress={liveProgress}
               />
             </div>
           </SheetContent>

@@ -37,8 +37,8 @@ import {
 } from "@/store/community";
 import { useAccountAccess } from "@/hooks/useAccountAccess";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { selectIsPro } from "@/store/subscription/selectors";
-import { setUpgradeModalOpen } from "@/store/ui/uiSlice";
+import { selectIsAccessKnown, selectIsPro } from "@/store/subscription/selectors";
+import { openUpgradeModalForReason } from "@/store/ui/uiSlice";
 import {
   selectHasAccessibleOrganization,
   selectWorkspaceContext,
@@ -264,11 +264,15 @@ export default function CommunityPage() {
   const isPro = useAppSelector(selectIsPro);
   const dispatch = useAppDispatch();
   const hasAccessibleOrganization = useAppSelector(selectHasAccessibleOrganization);
+  // Until the plan and the school load, show neither page: not the prompt to a Pro or school teacher,
+  // and not the library (its fetch opens the paywall) to a free one.
+  const accessKnown = useAppSelector(selectIsAccessKnown);
 
   if (!isPro && !hasAccessibleOrganization) {
+    if (!accessKnown) return null;
     return (
       <CommunityUpgradePrompt
-        onUpgrade={() => dispatch(setUpgradeModalOpen(true))}
+        onUpgrade={() => dispatch(openUpgradeModalForReason("see_plans"))}
       />
     );
   }

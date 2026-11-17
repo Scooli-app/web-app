@@ -1,0 +1,27 @@
+# Pull requests into main may only come from develop: everything reaches main through develop.
+# Make the "Source branch is develop" check required on main (Settings → Rules) for it to block merges.
+name: Main source branch
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize, edited]
+
+permissions: {}
+
+jobs:
+  source-branch:
+    name: Source branch is develop
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check the source branch
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          BASE_REPO: ${{ github.repository }}
+        run: |
+          if [ "$HEAD_REF" != "develop" ] || [ "$HEAD_REPO" != "$BASE_REPO" ]; then
+            echo "::error::Pull requests into main must come from develop (this one is from $HEAD_REPO:$HEAD_REF). Open it against develop instead."
+            exit 1
+          fi
+          echo "Source branch is develop."

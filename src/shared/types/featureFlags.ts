@@ -50,6 +50,12 @@ export enum FeatureFlag {
 
   /** New tests, worksheets and quizzes are generated as structured questions (server-side); they take no template. */
   STRUCTURED_ASSESSMENTS = "structured_assessments",
+
+  /**
+   * Server-side kill switch: presentations and assessments stream slide by slide / question by question while
+   * generated. The client needs no check: without "partial" events it shows the progress screen.
+   */
+  JSON_DOCUMENT_STREAMING = "json_document_streaming",
 }
 
 export function isTeacherProfileFeatureEnabled(

@@ -70,6 +70,13 @@ describe("UpgradePlanModal trial offer (ENG-320)", () => {
     expect(body.textContent).toContain(`${NS}.reasons.free_class_limit.title`);
   });
 
+  it("uses neutral copy, not the limit copy, when the teacher only asked to see the plans", () => {
+    const body = render("see_plans", false);
+    expect(body.textContent).toContain(`${NS}.reasons.see_plans.title`);
+    expect(body.textContent).toContain(`${NS}.reasons.see_plans.description`);
+    expect(body.textContent).not.toContain(`${NS}.title`);
+  });
+
   it("keeps the generic copy and no activation for a plain upgrade prompt", () => {
     const body = render(null, false);
     expect(body.textContent).toContain(`${NS}.title`);

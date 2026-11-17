@@ -89,6 +89,12 @@ const FEATURE_FLAG_METADATA: Record<
       "Controla se os utilizadores podem fazer upload de um documento e convertê-lo num modelo personalizado.",
     order: 37,
   },
+  [FeatureFlagKey.JSON_DOCUMENT_STREAMING]: {
+    name: "Pré-visualização em streaming",
+    description:
+      "Mostra os slides e as questões à medida que a IA os escreve, e verifica as soluções enquanto as imagens são criadas. Desligada: ecrã de progresso até ao fim.",
+    order: 38,
+  },
   [FeatureFlagKey.DOCUMENT_IMAGES]: {
     name: "Imagens em Documentos",
     description:
