@@ -30,6 +30,7 @@ import {
   setGeneratingImages,
   setImageError,
   setCurrentDocument,
+  setPendingAiEdit,
   setImages,
   upsertImage,
 } from "@/store/documents/documentSlice";
@@ -999,8 +1000,9 @@ export default function DocumentEditor({
   // ENG-408: once the teacher has reviewed a proposal (whatever they kept was autosaved), the server copy goes.
   const finishProposalReview = useCallback(() => {
     setPendingProposal(null);
+    dispatch(setPendingAiEdit({ id: documentId, content: null }));
     void discardPendingAiEdit(documentId).catch(() => undefined);
-  }, [documentId]);
+  }, [dispatch, documentId]);
 
   // Register callback to auto-exit suggestions mode when all changes are resolved
   useEffect(() => {
@@ -1189,6 +1191,8 @@ export default function DocumentEditor({
     ): number => {
       const editor = editorRef.current;
       const aiContent = aiMarkdown.trim();
+      // The server now holds this proposal: if the teacher leaves before resolving it, it is offered on return.
+      if (options.pendingReview) dispatch(setPendingAiEdit({ id: documentId, content: aiContent }));
       if (!editor) {
         setContent(aiContent);
         if (options.pendingReview) void handleTrackedAutosave(aiContent);
@@ -1227,7 +1231,7 @@ export default function DocumentEditor({
         return 0;
       }
     },
-    [handleTrackedAutosave, setContent, syncContent],
+    [dispatch, documentId, handleTrackedAutosave, setContent, syncContent],
   );
 
   /**
