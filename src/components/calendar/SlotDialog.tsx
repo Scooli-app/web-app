@@ -1,6 +1,5 @@
 "use client";
 import { MAX_LENGTHS } from "@/shared/config/constants";
-import { AiDisclaimer } from "@/components/ui/ai-disclaimer";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -36,13 +35,14 @@ import { isDocumentInProgress, objectiveItems } from "@/components/dashboard/wee
 import { CheckInCard } from "@/components/check-in/CheckInCard";
 import { MISSING_AMOUNTS } from "@/components/check-in/CheckInChoices";
 import { TeachingMarkBadge } from "@/components/calendar/TeachingMarkBadge";
-import { streamPreviewTail } from "@/components/calendar/streamPreview";
+import { GenerationProgress } from "@/components/calendar/GenerationProgress";
 import { AssessmentScopePicker } from "@/components/calendar/AssessmentScopePicker";
 import { useAssessmentScope } from "@/components/calendar/useAssessmentScope";
 import { testBlocked, testRequestOutcomeIds } from "@/components/calendar/assessmentScopeLogic";
 import { SLOT_STATUS_CONFIG } from "@/shared/constants/lessonSlotStatus";
 import { translateSubject } from "@/components/document-creation/constants";
-import type { CheckInRecord, CheckInSlotType, CheckInSubmission } from "@/shared/types/check-in";
+import type { CheckInRecord, CheckInSlotType, CheckInSubmission, SavedCheckIn } from "@/shared/types/check-in";
+import { savedCheckIn } from "@/shared/utils/savedCheckIn";
 import type { SlotWithTimetable } from "@/shared/types/calendar";
 import {
   acceptProposal,
@@ -52,14 +52,8 @@ import {
   type LessonSlotType,
 } from "@/services/api/timetable.service";
 import { checkInService } from "@/services/api/check-in.service";
-import {
-  followUpFor,
-  formatLessonDay,
-  lessonCalendarHref,
-  reinforcementTarget,
-  useCheckInFollowUps,
-  type CheckInFollowUp,
-} from "@/hooks/useCheckInFollowUps";
+import { formatLessonDay, lessonCalendarHref, reinforcementTarget } from "@/hooks/useCheckInFollowUps";
+import { useCheckInNextStep } from "@/components/check-in/useCheckInNextStep";
 import type { WeekLessonTarget } from "@/components/dashboard/WeekLessonDialog";
 import { useReplan } from "@/hooks/useReplan";
 import { ReplanRequestDialog } from "@/components/replan/ReplanRequestDialog";
@@ -107,6 +101,9 @@ interface ReinforcementNote {
   day: string;
 }
 
+/** Document roles with a short name under calendar.slotDialog.shortTypes. */
+const SHORT_TYPES = new Set(["lessonPlan", "worksheet", "quiz", "presentation", "test"]);
+
 function docUrl(role: string, documentId: string): string {
   return `${ROLE_ROUTE[role] ?? Routes.LESSON_PLAN}/${documentId}`;
 }
@@ -115,10 +112,10 @@ export interface SlotDialogProps {
   slot: SlotWithTimetable | null;
   /** True when THIS specific slot is being generated. */
   isSlotGenerating: boolean;
-  /** Optional streaming markdown content (shown while generating on sequence detail page). */
+  /** The lesson plan streamed so far, when the parent follows the stream: moves the progress indicator on. */
   streamContent?: string;
   onClose: () => void;
-  /** Writes the lesson plan; resolves once the stream has ended (the parent may close the pop-up). */
+  /** Writes the lesson plan; resolves once the stream has ended. The pop-up stays open meanwhile. */
   onGenerate: (slot: SlotWithTimetable, message?: string) => void | Promise<void>;
   onRegenerate: (slot: SlotWithTimetable, message?: string) => void;
   onTypeChange: (slot: SlotWithTimetable, type: LessonSlotType) => void;
@@ -157,11 +154,10 @@ export function SlotDialog({
   const tShared = useTranslations("calendar.shared");
   const tTimetable = useTranslations("timetable");
   const tCheckIn = useTranslations("checkIns");
-  const { isPro, requestReplan, watchAfterNotHeld, shift: shiftFollowing } = useReplan();
+  const { isPro, requestReplan, shift: shiftFollowing } = useReplan();
   // Read-only account (ENG-321): generation buttons show a lock; the handlers open the paywall.
   const { isLocked: accountLocked } = useAccountAccess();
   const tReplan = useTranslations("replan");
-  const { reinforce, carry } = useCheckInFollowUps();
   const rawLocale = useLocale();
   const locale = isSupportedLocale(rawLocale) ? rawLocale : defaultLocale;
   const router = useRouter();
@@ -176,13 +172,23 @@ export function SlotDialog({
   const [docsOpen, setDocsOpen] = useState(true);
   /** Reopens the check-in card for a lesson that already has an answer ("Alterar"). */
   const [checkInEditing, setCheckInEditing] = useState(false);
-  /** After "Não houve aula" here: asks inline whether to move the lessons after this one. */
-  const [shiftAsk, setShiftAsk] = useState(false);
-  /** Pro: the replanning agent is preparing the following lessons, so the shift question is not asked. */
-  const [replanning, setReplanning] = useState(false);
+  /**
+   * What follows a check-in here: everything that can happen by itself does, and at most one line asks (apply the
+   * AI's proposal, move the following lessons, the reinforcement sheet). The wait for a replan shows on it too.
+   */
+  const nextStep = useCheckInNextStep({
+    onChanged: () => onFollowUpStarted?.(),
+    onShifted: () => slot && onLessonsShifted?.(slot),
+    onReinforced: (started) =>
+      slot &&
+      setReinforcementNote({
+        slotId: slot.id,
+        target: reinforcementTarget(slot.timetable.id, started.targetSlotId, started.targetDate),
+        day: formatLessonDay(started.targetDate, locale),
+      }),
+  });
+  const clearNextStep = nextStep.clear;
   const [replanOpen, setReplanOpen] = useState(false);
-  /** After a check-in with outcomes picked: offers a reinforcement worksheet or the carry-over, inline. */
-  const [followUp, setFollowUp] = useState<CheckInFollowUp | null>(null);
   /** After the reinforcement was asked for here: the line that says where it is. Kept for this lesson. */
   const [reinforcementNote, setReinforcementNote] = useState<ReinforcementNote | null>(null);
   /** The topic proposal is being accepted or rejected. */
@@ -198,9 +204,7 @@ export function SlotDialog({
       setEditingTitle(false);
       setCustomMessage("");
       setCheckInEditing(false);
-      setShiftAsk(false);
-      setReplanning(false);
-      setFollowUp(null);
+      clearNextStep();
       setProposalHandled(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -289,6 +293,14 @@ export function SlotDialog({
 
   if (!slot) return null;
 
+  /** The other documents still being prepared: the ones this run has yet to start, then the ones the server is writing. */
+  const setTypesInProgress = Array.from(
+    new Set<string>([
+      ...preparingTypes,
+      ...slotDocs.filter((d) => isDocumentInProgress(d.status ?? "completed")).map((d) => d.documentRole),
+    ]),
+  ).filter((type) => type !== "lessonPlan" && SHORT_TYPES.has(type));
+
   const todayIso = toIso(new Date());
   const showCheckIn = canCheckIn(checkInEnabled, slot, todayIso);
   const checkInMark = teachingMark(slot, todayIso);
@@ -306,30 +318,18 @@ export function SlotDialog({
 
   // Same saving and toasts as the dashboard strip (CheckInStrip).
   const handleCheckIn = async (body: CheckInSubmission) => {
+    let saved: SavedCheckIn;
     try {
       const record = await checkInService.submit(slot.timetable.id, slot.id, body);
+      saved = savedCheckIn(record);
       setCheckInEditing(false);
       onCheckedIn?.(slot, record, slotCheckInAnswer(body));
     } catch {
       toast.error(tCheckIn("saveError"));
       return;
     }
-    // Inline, not a toast: the toast sits under this dialog's overlay and would expire unseen.
-    if (body.result === "NOT_HELD" && isPro) {
-      setReplanning(true);
-      void watchAfterNotHeld(slot.timetable.id);
-    } else if (body.result === "NOT_HELD") {
-      setShiftAsk(true);
-    }
-    setFollowUp(followUpFor(body));
-    if (body.result === "TAUGHT") {
-      toast.success(tCheckIn("taughtToast"), {
-        action: {
-          label: tCheckIn("prepareNext"),
-          onClick: () => router.push(`${Routes.CALENDAR}/${slot.timetable.id}`),
-        },
-      });
-    }
+    // What is left to decide shows as one line in place, never in a toast (it would sit under this dialog).
+    nextStep.afterSave({ timetableId: slot.timetable.id, slotId: slot.id, slotType: slot.slotType }, body, saved);
   };
 
   const color = slot.timetable.color || "#7F77DD";
@@ -348,34 +348,14 @@ export function SlotDialog({
   /** Pro, for a lesson that is past or today: asks for a proposal from here. A not-held lesson has its own button. */
   const showReplanRequest = isPro && checkInEnabled && slot.slotDate <= todayIso && !canShiftLater;
 
-  /** Pro: asks the replanning agent for the lessons after this one. The wait shows inline: toasts sit under this dialog. */
+  /** Pro: asks the replanning agent for the lessons after this one. The wait and the outcome show on the step line. */
   const handleReplanRequest = async (triggerSlotId: string) => {
-    const started = await requestReplan(slot.timetable.id, { triggerSlotId }, () => setReplanning(false));
-    if (started) setReplanning(true);
-  };
-
-  const handleFollowUp = async () => {
-    if (!followUp) return;
-    if (followUp.kind === "reinforcement") {
-      const started = await reinforce(slot.timetable.id, slot.id, followUp.outcomeIds);
-      if (!started) return;
-      setReinforcementNote({
-        slotId: slot.id,
-        target: reinforcementTarget(slot.timetable.id, started.targetSlotId, started.targetDate),
-        day: formatLessonDay(started.targetDate, locale),
-      });
-      setFollowUp(null);
-      onFollowUpStarted?.();
-      return;
-    }
-    const done = await carry(slot.timetable.id, slot.id, followUp.outcomeIds);
-    if (!done) return;
-    setFollowUp(null);
-    onFollowUpStarted?.();
+    const track = nextStep.trackReplan({ timetableId: slot.timetable.id, slotId: triggerSlotId, slotType: slot.slotType });
+    const started = await requestReplan(slot.timetable.id, { triggerSlotId }, track.onSettled);
+    if (started) track.onStarted();
   };
 
   const handleShift = async () => {
-    setShiftAsk(false);
     const result = await shiftFollowing(slot.timetable.id, slot.id);
     if (result) onLessonsShifted?.(slot);
   };
@@ -615,20 +595,19 @@ export function SlotDialog({
               </>
             )}
 
-            {/* Stream preview (shown while SSE generation is in progress) */}
-            {streamContent && isSlotGenerating && (
-              <>
-                <Separator />
-                <section aria-label={t("streamPreviewTitle")} className="space-y-1.5">
-                  <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
-                    {t("streamPreviewTitle")}
-                  </p>
-                  <p className="max-h-24 overflow-hidden whitespace-pre-line text-sm leading-relaxed text-muted-foreground [mask-image:linear-gradient(to_bottom,transparent,black_40%)]">
-                    {streamPreviewTail(streamContent)}
-                  </p>
-                </section>
-              </>
+            {/* What the AI is doing, while the plan or the rest of the set is being prepared */}
+            {(isSlotGenerating || setTypesInProgress.length > 0) && (
+              <GenerationProgress
+                key={isSlotGenerating ? "plan" : "set"}
+                title={
+                  isSlotGenerating
+                    ? t("progress.planTitle")
+                    : t("progress.setTitle", {
+                        items: setTypesInProgress.map((type) => t(`shortTypes.${type}`)).join(" + "),
+                      })
+                }
+                streamLength={isSlotGenerating ? streamContent?.length ?? 0 : 0}
+              />
             )}
 
             {/* "Como correu?" for a past, checkable lesson (class_state_enabled only) */}
@@ -654,10 +633,10 @@ export function SlotDialog({
                         </span>
                       </p>
                       <div className="flex items-center gap-2">
-                        {canShiftLater && !shiftAsk && !replanning &&
+                        {canShiftLater && !nextStep.active &&
                           (isPro ? (
                             <Button size="sm" className="h-8" onClick={() => void handleReplanRequest(slot.id)}>
-                              {tReplan("action")}
+                              {tReplan("actionLesson")}
                             </Button>
                           ) : (
                             <Button size="sm" className="h-8" onClick={() => void handleShift()}>
@@ -691,35 +670,7 @@ export function SlotDialog({
                       )}
                     </div>
                   )}
-                  {shiftAsk && (
-                    <div className="flex flex-wrap items-center gap-2 rounded-md border border-primary/25 bg-primary/5 px-3 py-2">
-                      <span className="text-sm text-foreground">{tCheckIn("shiftQuestion")}</span>
-                      <Button size="sm" className="h-8" onClick={() => void handleShift()}>
-                        {tCheckIn("shiftAction")}
-                      </Button>
-                      <Button size="sm" variant="outline" className="h-8" onClick={() => setShiftAsk(false)}>
-                        {tCheckIn("shiftKeep")}
-                      </Button>
-                    </div>
-                  )}
-                  {replanning && (
-                    <p className="rounded-md border border-primary/25 bg-primary/5 px-3 py-2 text-sm text-foreground">
-                      {tReplan("notHeldInProgress")}
-                    </p>
-                  )}
-                  {followUp && (
-                    <div className="flex flex-wrap items-center gap-2 rounded-md border border-primary/25 bg-primary/5 px-3 py-2">
-                      <span className="text-sm text-foreground">
-                        {tCheckIn(followUp.kind === "reinforcement" ? "reinforcementQuestion" : "carryOverQuestion")}
-                      </span>
-                      <Button size="sm" className="h-8" onClick={() => void handleFollowUp()}>
-                        {tCheckIn(followUp.kind === "reinforcement" ? "reinforcementAction" : "carryOverAction")}
-                      </Button>
-                      <Button size="sm" variant="outline" className="h-8" onClick={() => setFollowUp(null)}>
-                        {tCheckIn("followUpKeep")}
-                      </Button>
-                    </div>
-                  )}
+                  {nextStep.row}
                   {reinforcementNote?.slotId === slot.id && (
                     <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-rose-500/30 bg-rose-500/5 px-3 py-2">
                       <span className="flex items-center gap-2 text-sm text-foreground">
@@ -852,10 +803,9 @@ export function SlotDialog({
         {!isHoliday && (
           // Phones: a two-column grid, main action first, so four stacked buttons don't hide the lesson.
           <DialogFooter className="border-t bg-muted/30 px-6 py-4 gap-2 max-sm:grid max-sm:grid-cols-2">
-            {(canGenerate || isCompleted) && <AiDisclaimer className="max-sm:order-4 max-sm:col-span-2 sm:mr-auto sm:self-center sm:text-left" />}
             {showReplanRequest && (
               <Button variant="outline" onClick={() => setReplanOpen(true)} className={cn("h-9 rounded-lg max-sm:order-3", !isCompleted && "max-sm:col-span-2")}>
-                {tReplan("action")}
+                {tReplan("actionLesson")}
               </Button>
             )}
             {isCompleted && (
@@ -905,8 +855,7 @@ export function SlotDialog({
             triggerSlotId={slot.id}
             open={replanOpen}
             onOpenChange={setReplanOpen}
-            onStarted={() => setReplanning(true)}
-            onSettled={() => setReplanning(false)}
+            {...nextStep.trackReplan({ timetableId: slot.timetable.id, slotId: slot.id, slotType: slot.slotType })}
           />
         )}
       </DialogContent>

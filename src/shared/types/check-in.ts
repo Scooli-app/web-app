@@ -49,6 +49,20 @@ export interface CheckInRecord {
   timetableId: string;
   teachingStatus: TeachingStatus;
   checkedInAt: string;
+  /**
+   * Pro: the answer (not held, partial, or difficulties) started a replan of the following lessons. The proposal is
+   * written in the background and waits for the teacher; absent on older servers.
+   */
+  replanStarted?: boolean;
+  /** No replan: a partial lesson's uncovered outcomes went to the next lesson, on this date (YYYY-MM-DD). */
+  carriedTo?: string | null;
+}
+
+/** What a saved check-in tells the screen that saved it. */
+export interface SavedCheckIn {
+  replanStarted: boolean;
+  /** YYYY-MM-DD of the lesson the uncovered outcomes went to by themselves, or null. */
+  carriedTo: string | null;
 }
 
 export interface ConfirmAllCheckInsResult {

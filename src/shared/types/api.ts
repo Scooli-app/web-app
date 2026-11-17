@@ -137,6 +137,68 @@ export interface ChatResponse {
   updatedAt: string;
   /** Present (true) when the AI detected a visual context change on a slide that has an image */
   suggestImageRegen?: boolean;
+  /** What the model understood the teacher wanted. */
+  intent?: ChatIntent | null;
+  /** What the turn actually did, decided on the server from the document (ENG-394). */
+  outcome?: ChatOutcome | null;
+  /** Whether the turn consumed a generation (refusals, clarifications, no-change and errors are free). */
+  charged?: boolean | null;
+  /** Section-level changes when the document changed. */
+  changes?: ChatChange[] | null;
+  /** Option chips for a clarifying question. */
+  clarifyOptions?: string[] | null;
+  /** Follow-up suggestion chips. */
+  followUps?: string[] | null;
+  /** Offer to create a separate document from this one. */
+  newDocument?: ChatNewDocument | null;
+  /** Typed failure when outcome is "error". */
+  errorCode?: ChatErrorCode | null;
+  /** True when `content` is a proposal awaiting review, not the stored document yet (ENG-408). */
+  pendingReview?: boolean | null;
+}
+
+export type ChatIntent =
+  | "edit"
+  | "answer"
+  | "edit_and_answer"
+  | "clarify"
+  | "new_document"
+  | "unsupported"
+  | "off_topic";
+
+export type ChatOutcome =
+  | "edit"
+  | "answer"
+  | "edit_and_answer"
+  | "clarify"
+  | "new_document"
+  | "unsupported"
+  | "refused"
+  | "no_change"
+  | "error";
+
+export type ChatErrorCode =
+  | "could_not_apply"
+  | "parse_failed"
+  | "truncated"
+  | "timeout"
+  | "upstream_unavailable";
+
+export interface ChatChange {
+  kind: "added" | "changed" | "removed";
+  section: string | null;
+}
+
+export interface ChatNewDocument {
+  type: string;
+  instructions: string;
+}
+
+export interface ChatHistoryMessage {
+  id: string | null;
+  role: "user" | "assistant";
+  text: string;
+  createdAt: string | null;
 }
 
 export interface GenerateSlideResponse {

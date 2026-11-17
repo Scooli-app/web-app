@@ -115,12 +115,12 @@
     "title": "O que fazer a seguir",
     "loading": "A carregar sugestões",
     "prepareNext": "Prepara a aula de {day}",
-    "replanNotHeld": "Reajusta: move as aulas seguintes",
+    "replanNotHeld": "Não houve aula",
     "replanNotHeldShift": "Não houve aula: mover as aulas seguintes",
     "reinforce": "Gera ficha de reforço para {outcome}",
     "checkIn": "Confirma {count, plural, one {# aula} other {# aulas}}",
     "actionPrepare": "Preparar",
-    "actionReschedule": "Reajustar",
+    "actionReschedule": "Propor ajustes às aulas seguintes",
     "actionShift": "Mover aulas seguintes",
     "actionReinforce": "Gerar ficha",
     "actionView": "Ver"
@@ -151,8 +151,8 @@
     "prepareNext": "Preparar a próxima aula",
     "saveError": "Não foi possível guardar. Tenta novamente.",
     "confirmAllError": "Não foi possível confirmar as aulas. Tenta novamente.",
-    "shiftQuestion": "Mover as aulas seguintes?",
-    "shiftAction": "Mover",
+    "shiftQuestion": "Mover o conteúdo das aulas seguintes uma aula para a frente?",
+    "shiftAction": "Mover aulas seguintes",
     "shiftKeep": "Manter",
     "shiftLaterAction": "Mover aulas seguintes",
     "shiftedToast": "{count, plural, one {# aula movida} other {# aulas movidas}}",
@@ -176,7 +176,7 @@
     "daysAgo": "{count, plural, one {há # dia} other {há # dias}}",
     "cancel": "Cancelar",
     "currentStatus": "Estado",
-    "changeAnswer": "Alterar",
+    "changeAnswer": "Alterar resposta",
     "mark": {
       "taught": "Lecionada",
       "taughtWithDifficulties": "Lecionada · com dificuldades",
@@ -194,7 +194,11 @@
     "missingMost": "Quase tudo",
     "missingAmountShown": "Ficou por dar: {amount}",
     "noteLabel": "O que aconteceu? (opcional)",
-    "notePlaceholder": "Ex.: faltou a parte das cadeias alimentares"
+    "notePlaceholder": "Ex.: faltou a parte das cadeias alimentares",
+    "afterSaveClose": "Fechar",
+    "carryOverDone": "Objetivos passados para a aula de {day}.",
+    "reinforcementDone": "Ficha de reforço a preparar para a aula de {day}.",
+    "openLesson": "Abrir aula"
   },
   "previousCheckIn": {
     "question": "Como correu a aula?",
@@ -723,7 +727,8 @@
       "description": "Seleciona os dias e o número de tempos letivos por dia.",
       "lessonsPerWeek": "{count, plural, one {# aula/semana} other {# aulas/semana}}",
       "addPeriod": "tempo",
-      "customDuration": "Personalizado"
+      "customDuration": "Personalizado",
+      "copyToOtherDays": "Copiar para os outros dias"
     },
     "weekScheduleTypeOptions": {
       "auto": "Automático",
@@ -1231,6 +1236,7 @@
       "coursesEmpty": "Procura o curso onde dás aulas. Se lecionas em vários, adiciona-os um a um.",
       "coursesSearchPlaceholder": "Nome ou área do curso — ex.: informática, turismo",
       "coursesLoading": "A carregar cursos…",
+      "coursesPartialMatch": "Nenhum curso tem todas estas palavras. Estes são os mais parecidos:",
       "noCoursesFound": "Nenhum curso encontrado. As escolas às vezes usam nomes diferentes do catálogo — procura por uma palavra só.",
       "courseAdded": "Adicionado",
       "removeCourse": "Remover {course}",
@@ -1283,6 +1289,8 @@
       "sourcesTooltip": "Este documento foi gerado sem recurso a fontes externas.",
       "emptyStateHeading": "Como posso ajudar hoje?",
       "documentRefined": "Documento refinado",
+      "documentUnchanged": "O documento não foi alterado.",
+      "retry": "Tentar outra vez",
       "imageRegenYes": "Sim, regenerar",
       "imageRegenNo": "Não",
       "nudgeReady": "Documento pronto! Usa o Assistente para refinar ou adaptar o conteúdo.",
@@ -1454,7 +1462,68 @@
           }
         ]
       },
-      "generatingPlaceholder": "O chat fica disponível quando o documento estiver pronto."
+      "generatingPlaceholder": "O chat fica disponível quando o documento estiver pronto.",
+      "errors": {
+        "timeout": "O pedido demorou demasiado e foi interrompido. O documento não foi alterado. Tenta outra vez, ou pede a alteração por partes (uma secção de cada vez).",
+        "network": "Sem ligação ao servidor. Verifica a internet e envia outra vez — a tua mensagem ficou na caixa de texto.",
+        "notFound": "Este documento já não existe ou não tens acesso a ele.",
+        "server": "Não consegui responder agora e o documento não foi alterado. Tenta outra vez dentro de momentos — a tua mensagem ficou na caixa de texto.",
+        "upgrade": "Atingiste o limite de gerações do teu plano.",
+        "locked": "A tua conta está em modo de leitura."
+      },
+      "progress": [
+        "A ler o documento…",
+        "A preparar a resposta…",
+        "Ainda a trabalhar — documentos longos demoram mais…"
+      ],
+      "changesTitle": "Alterações",
+      "changeKinds": {
+        "added": "Novo",
+        "changed": "Alterado",
+        "removed": "Removido"
+      },
+      "wholeDocument": "Documento",
+      "noChangeBadge": "Sem alterações ao documento",
+      "freeTurn": "Não contou como geração",
+      "newDocumentAction": "Criar {type} a partir deste documento",
+      "newDocumentCreating": "A criar…",
+      "documentTypes": {
+        "worksheet": "ficha de trabalho",
+        "test": "teste",
+        "quiz": "quiz",
+        "presentation": "apresentação",
+        "lessonPlan": "plano de aula",
+        "curriculumPlan": "planificação"
+      },
+      "feedbackUp": "Resposta útil",
+      "feedbackDown": "Resposta pouco útil",
+      "feedbackThanks": "Obrigado pelo feedback!",
+      "newConversation": "Nova conversa",
+      "newConversationHint": "Começa do zero: o assistente deixa de ter em conta as mensagens anteriores.",
+      "previousConversation": "Conversa anterior",
+      "pendingReviewTitle": "Tens alterações da IA por rever",
+      "pendingReviewReview": "Rever",
+      "pendingReviewDiscard": "Descartar",
+      "leaveWithPending": "Tens alterações da IA por aceitar ou rejeitar. Se saíres agora, não serão guardadas.",
+      "askAiSelection": "Pedir à IA",
+      "selectionLabel": "Selecionado",
+      "selectionClear": "Retirar seleção",
+      "selectionPlaceholder": "O que queres fazer com este excerto?",
+      "attach": "Anexar ficheiro (PDF, Word ou texto)",
+      "attaching": "A ler o ficheiro…",
+      "attachmentTruncated": "só a primeira parte",
+      "attachErrors": {
+        "unsupported_type": "Este tipo de ficheiro ainda não é lido no chat. Usa PDF, Word ou texto — ou cola o texto na mensagem.",
+        "too_large": "O ficheiro é demasiado grande (máximo 10 MB).",
+        "no_text": "Não encontrei texto neste ficheiro (pode ser uma digitalização). Cola o texto na mensagem.",
+        "unreadable": "Não consegui ler este ficheiro. Tenta outro formato ou cola o texto na mensagem."
+      },
+      "stages": {
+        "reading": "A ler o documento…",
+        "editing": "A preparar as alterações…",
+        "editingSection": "A editar «{section}»…",
+        "answering": "A escrever a resposta…"
+      }
     },
     "calendarButton": {
       "viewClass": "Ver turma",
@@ -1841,6 +1910,9 @@
     },
     "diffExtension": {
       "contentRemoved": "🗑 Conteúdo removido",
+      "showRemoved": "Mostrar",
+      "hideRemoved": "Ocultar",
+      "paragraphCount": "{count, plural, one {# parágrafo} other {# parágrafos}}",
       "acceptChange": "Aceitar alteração",
       "rejectChange": "Rejeitar alteração"
     },
@@ -1909,7 +1981,16 @@
       "stepGeneratingCaption": "A IA está a escrever os teus slides.",
       "stepReviewingLabel": "A rever",
       "stepReviewingCaption": "A validar a estrutura e a qualidade do resultado.",
-      "imagesLabel": "Imagens"
+      "imagesLabel": "Imagens",
+      "slidesWritten": "{count, plural, one {# slide pronto} other {# slides prontos}}",
+      "imagesStatus": "A criar as imagens: {completed} de {total}",
+      "finishing": "A finalizar a apresentação",
+      "previewHint": "Podes ir vendo; o editor abre quando terminar.",
+      "slideNumber": "Slide {number}",
+      "writingSlide": "A escrever o slide {number}…",
+      "imageQueued": "Imagem a seguir",
+      "follow": "Acompanhar a geração",
+      "retrying": "A primeira versão não passou na verificação. Estamos a escrever outra."
     }
   },
   "community": {
@@ -2439,6 +2520,10 @@
           "title": "O teu mês Pro terminou",
           "description": "A tua conta está agora em modo de leitura. Atualiza para Pro para voltares a criar e gerar documentos, exportar, duplicar e partilhar."
         },
+        "see_plans": {
+          "title": "Conhece o plano Pro",
+          "description": "Vê o que o Pro te dá e escolhe o plano certo para ti."
+        },
         "trial_not_activated": {
           "title": "Ativa o teu mês Pro",
           "description": "Ainda não ativaste o teu mês Pro gratuito. Ativa-o agora e tens 30 dias com tudo o que o Pro oferece.",
@@ -2598,7 +2683,7 @@
       "proTitle": "Carrega as tuas fontes com o Pro",
       "proDescription": "Com o Pro, carregas o manual ou os materiais da tua escola (PDF ou DOCX), e os planos e fichas que crias passam a seguir essa matéria.",
       "proAction": "Ver planos Pro",
-      "failedHint": "Não conseguimos ler este ficheiro. Se for digitalizado, usa uma versão com texto; senão, guarda-o de novo como PDF ou DOCX e volta a carregar."
+      "failedHint": "Não conseguimos ler este ficheiro. Guarda-o de novo como PDF ou DOCX e volta a carregar; se for digitalizado, usa uma cópia mais nítida."
     },
     "status": {
       "uploaded": "A processar",
@@ -3343,6 +3428,7 @@
       "viewWeekShort": "Sem",
       "prevWeek": "Semana anterior",
       "nextWeek": "Semana seguinte",
+      "jumpToWeek": "Escolher semana",
       "viewMonth": "Mês",
       "today": "Hoje",
       "tomorrow": "Amanhã",
@@ -3440,7 +3526,6 @@
       "typeLabel": "Tipo:",
       "objectivesTitle": "Objetivos de aprendizagem",
       "objectivesProcessing": "A processar…",
-      "streamPreviewTitle": "A escrever o plano de aula",
       "objectivesEmpty": "Os objetivos aparecem quando o plano de aula estiver pronto.",
       "documentsTitle": "Documentos gerados",
       "loadingDocuments": "A carregar documentos…",
@@ -3475,7 +3560,20 @@
         "presentation": "apresentação",
         "test": "teste"
       },
-      "reinforcementBadge": "Reforço"
+      "reinforcementBadge": "Reforço",
+      "progress": {
+        "planTitle": "A preparar o plano de aula",
+        "setTitle": "A preparar {items}",
+        "steps": {
+          "s1": "A ler as Aprendizagens Essenciais",
+          "s2": "A consultar fontes do currículo",
+          "s3": "A definir os objetivos da aula",
+          "s4": "A estruturar os momentos da aula",
+          "s5": "A criar atividades e exercícios",
+          "s6": "A rever e afinar os detalhes"
+        },
+        "hint": "Podes fechar esta janela — continuamos a preparar em segundo plano."
+      }
     },
     "dashboardWidget": {
       "title": "Próximas aulas",
@@ -3553,6 +3651,10 @@
         "selectAll": "Selecionar tudo",
         "markAs": "Marcar como:",
         "remove": "Remover",
+        "selectMonth": "Selecionar mês",
+        "deselectMonth": "Desselecionar mês",
+        "byWeekday": "Por dia da semana:",
+        "rangeHint": "Mantém Shift premido para selecionar um intervalo",
         "emptyLine1": "Não há aulas geradas para este período com o horário definido.",
         "emptyLine2": "Volta atrás e confirma as datas e os dias de aula.",
         "backToPeriod": "Voltar ao período"
@@ -3692,9 +3794,6 @@
         "fileLabel": "Ficheiro",
         "titleLabel": "Título da planificação",
         "titlePlaceholder": "Ex: Planificação Trimestral Matemática 5.º ano",
-        "subjectLabel": "Disciplina",
-        "subjectPlaceholder": "Seleciona",
-        "schoolYearLabel": "Ano de escolaridade",
         "planningTypeLabel": "Tipo de período",
         "periodStartLabel": "Início (opcional)",
         "periodEndLabel": "Fim (opcional)",
@@ -3818,22 +3917,19 @@
     "bannerGenerating": "A preparar uma proposta de reajuste…",
     "bannerFailed": "Não foi possível propor um reajuste.",
     "noChange": "Não é preciso mudar as próximas aulas.",
-    "noChangeToast": "Não é preciso mudar as próximas aulas",
+    "noChangeToast": "A IA não encontrou nada a ajustar nas aulas seguintes.",
     "dismiss": "Esconder",
     "review": "Rever",
-    "shiftFallback": "Mover aulas seguintes",
-    "action": "Reajustar",
-    "notHeldInProgress": "A reajustar as próximas aulas…",
-    "readyToast": "Proposta de reajuste pronta",
-    "readyAction": "Ver",
-    "failedToast": "Não foi possível propor um reajuste.",
+    "notHeldInProgress": "A IA está a ajustar as aulas seguintes…",
+    "readyToast": "A proposta de ajuste está pronta. Revê-a na página da turma.",
+    "failedToast": "Não foi possível propor ajustes às aulas seguintes.",
     "requestTitle": "O que se passou nesta aula?",
     "requestDescription": "Conta como correu esta aula. Usamos a nota para propor ajustes às aulas seguintes.",
     "requestTitleTurma": "O que mudou na turma?",
     "requestDescriptionTurma": "Conta o que mudou. Usamos a nota para propor ajustes às próximas aulas.",
     "requestNoteLabel": "Nota (opcional)",
     "requestNotePlaceholder": "Ex.: a turma precisou de mais tempo com o tema anterior",
-    "requestSubmit": "Propor reajuste",
+    "requestSubmit": "Pedir proposta",
     "requestCancel": "Cancelar",
     "requestError": "Não foi possível propor um reajuste.",
     "proRequired": "A reorganização automática das aulas é um recurso Pro.",
@@ -3847,12 +3943,20 @@
     "lessonCheck": "Aplicar a aula {number}",
     "addition": "Acrescenta: {text}",
     "newOutcome": "Novo",
-    "documentsNote": "Os documentos desta aula vão receber uma nova versão sugerida",
+    "documentsNote": "Os materiais desta aula são atualizados sozinhos ao aplicar (a versão anterior fica guardada)",
     "applyLabel": "{count, plural, =0 {Nenhuma alteração selecionada} one {Aplicar # alteração} other {Aplicar # alterações}}",
     "reject": "Rejeitar",
     "applied": "Alterações aplicadas",
     "rejected": "Proposta rejeitada",
-    "actionError": "Não foi possível guardar a proposta."
+    "actionError": "Não foi possível guardar a proposta.",
+    "actionLesson": "Propor ajustes às aulas seguintes",
+    "actionTurma": "Propor ajustes às próximas aulas",
+    "shiftFallback": "Mover aulas seguintes",
+    "readyRow": "{count, plural, one {A IA propõe ajustes a # aula seguinte.} other {A IA propõe ajustes a # aulas seguintes.}}",
+    "readyHint": "Ao aplicar, os temas e os materiais já criados dessas aulas são atualizados sozinhos.",
+    "seeChanges": "Ver alterações",
+    "applyAll": "Aplicar",
+    "appliedAll": "Ajustes aplicados. Os materiais dessas aulas estão a ser atualizados."
   },
   "adminPromos": {
     "title": "Links de oferta",
@@ -4011,6 +4115,18 @@
     "dismiss": "Fechar",
     "generatingTitle": "A criar o teu documento…",
     "generatingSubtitle": "Demora cerca de 30 a 60 segundos. Podes esperar aqui.",
+    "streaming": {
+      "writingTitle": "A escrever o teu documento…",
+      "writingSubtitle": "{count, plural, one {# questão pronta} other {# questões prontas}}. Podes ir lendo.",
+      "reviewingTitle": "A verificar as soluções…",
+      "reviewingSubtitle": "Já podes ler o enunciado. As soluções aparecem quando a verificação terminar.",
+      "imagesTitle": "A criar as imagens…",
+      "imagesSubtitle": "{completed} de {total}. O editor abre quando terminar.",
+      "writingNext": "A escrever a próxima questão…",
+      "startingSubtitle": "A primeira questão aparece aqui daqui a pouco.",
+      "retrying": "A primeira versão não passou na verificação. Estamos a escrever outra.",
+      "follow": "Acompanhar a geração"
+    },
     "generationFailedTitle": "Não foi possível criar este documento.",
     "generationFailedSubtitle": "Tenta criá-lo outra vez a partir dos documentos.",
     "loadFailedTitle": "Não foi possível abrir este documento.",
@@ -4018,6 +4134,9 @@
     "retry": "Tentar outra vez",
     "chatError": "O assistente não conseguiu responder. Tenta outra vez.",
     "chatUpdated": "Atualizei o documento.",
+    "chatEmpty": "O assistente não alterou o documento. Tenta outra vez com outras palavras.",
+    "chatSlow": "Ainda a trabalhar no teu documento…",
+    "chatSlowLonger": "Alterações grandes podem demorar até 2 minutos. Mantém esta página aberta.",
     "imageGenerating": "A gerar a imagem…",
     "imageFailed": "Não foi possível obter a imagem. Tenta outra vez.",
     "page": "página {page} de {total}",
@@ -4094,7 +4213,9 @@
       "readingBody": "Texto",
       "imageAlt": "Imagem do exercício",
       "imageMissing": "Imagem em falta: os alunos não a vão ver",
-      "more": "Mais ações"
+      "more": "Mais ações",
+      "imageQueued": "Imagem a seguir",
+      "imageGenerating": "A gerar a imagem…"
     },
     "types": {
       "multiple_choice": "Escolha múltipla",

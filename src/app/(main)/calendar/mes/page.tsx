@@ -21,7 +21,7 @@ import { fetchTimetables } from "@/store/timetable/timetableSlice";
 import { useAppDispatch } from "@/store/hooks";
 import { useNewClassGate, usePlanLimits } from "@/hooks/usePlanLimits";
 import { freePeriodBounds } from "@/lib/freePlanWindow";
-import { setUpgradeModalOpen } from "@/store/ui/uiSlice";
+import { openUpgradeModalForReason } from "@/store/ui/uiSlice";
 import type { RootState } from "@/store/store";
 import { listLessons, type LessonSlot, type Timetable } from "@/services/api/timetable.service";
 import { ArrowLeft, ArrowRight, CalendarDays, Plus } from "lucide-react";
@@ -413,7 +413,7 @@ export default function CalendarMonthPage() {
               }
               actions={
                 beyondFreeWindow ? (
-                  <Button size="sm" onClick={() => dispatch(setUpgradeModalOpen(true))}>
+                  <Button size="sm" onClick={() => dispatch(openUpgradeModalForReason("free_period_limit"))}>
                     {t("novo.period.freeLimitUpgrade")}
                   </Button>
                 ) : (

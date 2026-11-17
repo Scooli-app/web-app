@@ -92,7 +92,7 @@ export function TeachingStep({ flow, onProfileSaved }: TeachingStepProps) {
     role,
     years: chosenYears,
     subjectIds: vocational ? [] : subjectIds,
-    unitCount: units.length,
+    courseCount: courses.length,
   });
 
   const handleContinue = async () => {

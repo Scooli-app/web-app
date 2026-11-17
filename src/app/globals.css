@@ -525,13 +525,13 @@
   text-decoration: line-through !important;
 }
 
-/* Block-level deletion (for chapters, sections) */
+/* Block-level deletion (for chapters, sections) — one line until expanded */
 .diff-delete-block {
   background-color: rgba(239, 68, 68, 0.04);
-  border-left: 4px solid #ef4444;
-  margin: 12px 0;
-  padding: 12px 16px;
-  border-radius: 0 8px 8px 0;
+  border-left: 3px solid #ef4444;
+  margin: 4px 0;
+  padding: 4px 12px;
+  border-radius: 0 6px 6px 0;
   position: relative;
   transition: all 0.2s ease;
 }
@@ -540,19 +540,60 @@
   background-color: rgba(239, 68, 68, 0.08);
 }
 
-.diff-delete-label {
+.diff-delete-header {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+}
+
+.diff-delete-label {
+  flex-shrink: 0;
   font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
   color: #ef4444;
-  margin-bottom: 8px;
   letter-spacing: 0.05em;
 }
 
+.diff-delete-excerpt {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 0.8rem;
+  font-style: italic;
+  color: var(--muted-foreground);
+  opacity: 0.8;
+}
+
+.diff-delete-header .diff-actions {
+  flex-shrink: 0;
+  margin-left: 0;
+}
+
+.diff-delete-toggle {
+  flex-shrink: 0;
+  padding: 0 4px;
+  border: none;
+  background: none;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--muted-foreground);
+  user-select: none;
+}
+
+.diff-delete-toggle:hover {
+  color: var(--foreground);
+  text-decoration: underline;
+}
+
+.diff-delete-block:has(.diff-delete-toggle[aria-expanded="true"]) .diff-delete-excerpt {
+  visibility: hidden;
+}
+
 .diff-delete-content {
+  margin-top: 6px;
   font-size: 0.9rem;
   line-height: 1.6;
   color: var(--muted-foreground);
@@ -625,7 +666,8 @@
   align-items: center;
   justify-content: space-between;
   padding: 10px 20px;
-  background: hsl(var(--card)); /* 100% solid color */
+  /* --card is a hex colour: hsl(var(--card)) was invalid, so the bar was see-through. */
+  background: var(--card);
   border: 1px solid var(--border);
   border-radius: 16px;
   gap: 16px;
@@ -636,7 +678,7 @@
 }
 
 .dark .diff-toolbar {
-  background: #1e1e28; /* Specific solid color for dark mode */
+  background: var(--card);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
@@ -714,6 +756,33 @@
   background-color: rgba(239, 68, 68, 0.1);
 }
 
+/* Bigger, filled bulk actions when resolving one change at a time is tedious */
+.diff-toolbar-btn-strong {
+  padding: 7px 16px;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.diff-toolbar-btn-accept.diff-toolbar-btn-strong {
+  background-color: #22c55e;
+  border-color: #22c55e;
+  color: #fff;
+}
+
+.diff-toolbar-btn-accept.diff-toolbar-btn-strong:hover {
+  background-color: #16a34a;
+}
+
+.diff-toolbar-btn-reject.diff-toolbar-btn-strong {
+  background-color: #ef4444;
+  border-color: #ef4444;
+  color: #fff;
+}
+
+.diff-toolbar-btn-reject.diff-toolbar-btn-strong:hover {
+  background-color: #dc2626;
+}
+
 .diff-toolbar-btn-exit {
   color: var(--muted-foreground);
 }
@@ -776,4 +845,17 @@ math-field::part(menu-toggle) {
     font-weight: 600;
     color: #000;
   }
+}
+
+/* Chat change list (ENG-404): the section the teacher clicked flashes once. */
+.chat-change-highlight {
+  animation: chat-change-flash 1.6s ease-out;
+  border-radius: 0.375rem;
+}
+@keyframes chat-change-flash {
+  0%, 30% { background-color: color-mix(in srgb, var(--primary) 18%, transparent); }
+  100% { background-color: transparent; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .chat-change-highlight { animation: none; outline: 2px solid color-mix(in srgb, var(--primary) 50%, transparent); }
 }

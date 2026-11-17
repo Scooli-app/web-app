@@ -204,10 +204,27 @@ export default function CalendarViewPage() {
     openedLessonRef.current = lessonParam;
     setSelectedSlot(found);
   }, [lessonParam, slots]);
-  const [isGenerating, setIsGenerating] = useState(false);
+  /**
+   * The lesson plans being written here, by slot id, with the text streamed so far. Each lesson keeps its own
+   * buffer: a second lesson started while the first still streams must not share or reset its preview.
+   */
+  const [slotStreams, setSlotStreams] = useState<Record<string, string>>({});
+  const slotStreamsRef = useRef<Record<string, string>>({});
   const [generatingWeek, setGeneratingWeek] = useState(false);
-  const [streamContent, setStreamContent] = useState("");
-  const streamRef = useRef("");
+  const startSlotStream = useCallback((slotId: string) => {
+    slotStreamsRef.current = { ...slotStreamsRef.current, [slotId]: "" };
+    setSlotStreams(slotStreamsRef.current);
+  }, []);
+  const appendSlotStream = useCallback((slotId: string, chunk: string) => {
+    if (!(slotId in slotStreamsRef.current)) return;
+    slotStreamsRef.current = { ...slotStreamsRef.current, [slotId]: slotStreamsRef.current[slotId] + chunk };
+    setSlotStreams(slotStreamsRef.current);
+  }, []);
+  const endSlotStream = useCallback((slotId: string) => {
+    const { [slotId]: _ended, ...rest } = slotStreamsRef.current;
+    slotStreamsRef.current = rest;
+    setSlotStreams(rest);
+  }, []);
 
   useEffect(() => {
     if (!enabled) return; // gated users get the FeatureUnavailable screen below
@@ -362,10 +379,7 @@ export default function CalendarViewPage() {
       if (!guard("generate")) return;
       const slot = slotOrWrapped as LessonSlot;
       const previousStatus = slot.status;
-      setSelectedSlot(null);
-      setIsGenerating(true);
-      streamRef.current = "";
-      setStreamContent("");
+      startSlotStream(slot.id);
       dispatch(setSlotStatus({ slotId: slot.id, status: "generating" }));
 
       try {
@@ -374,15 +388,11 @@ export default function CalendarViewPage() {
           slot.id,
           message,
           {
-            onChunk: (c) => {
-              streamRef.current += c;
-              setStreamContent(streamRef.current);
-            },
+            onChunk: (c) => appendSlotStream(slot.id, c),
             onDone: () => {
               trackLessonMaterial("generate", slot, Boolean(message), "completed");
               dispatch(setSlotStatus({ slotId: slot.id, status: "completed" }));
               dispatch(fetchLessons({ timetableId: id }));
-              setSelectedSlot(null);
             },
             onError: () => {
               trackLessonMaterial("generate", slot, Boolean(message), "failed");
@@ -400,12 +410,10 @@ export default function CalendarViewPage() {
           getToken
         );
       } finally {
-        setIsGenerating(false);
-        setStreamContent("");
-        streamRef.current = "";
+        endSlotStream(slot.id);
       }
     },
-    [id, dispatch, getToken, trackLessonMaterial, guard]
+    [id, dispatch, getToken, trackLessonMaterial, guard, startSlotStream, appendSlotStream, endSlotStream]
   );
 
   const handleRegenerateLesson = useCallback(
@@ -413,10 +421,7 @@ export default function CalendarViewPage() {
       if (!guard("generate")) return;
       const slot = slotOrWrapped as LessonSlot;
       const previousStatus = slot.status;
-      setSelectedSlot(null);
-      setIsGenerating(true);
-      streamRef.current = "";
-      setStreamContent("");
+      startSlotStream(slot.id);
       dispatch(setSlotStatus({ slotId: slot.id, status: "generating" }));
 
       try {
@@ -425,15 +430,11 @@ export default function CalendarViewPage() {
           slot.id,
           message,
           {
-            onChunk: (c) => {
-              streamRef.current += c;
-              setStreamContent(streamRef.current);
-            },
+            onChunk: (c) => appendSlotStream(slot.id, c),
             onDone: () => {
               trackLessonMaterial("regenerate", slot, Boolean(message), "completed");
               dispatch(setSlotStatus({ slotId: slot.id, status: "completed" }));
               dispatch(fetchLessons({ timetableId: id }));
-              setSelectedSlot(null);
             },
             onError: () => {
               trackLessonMaterial("regenerate", slot, Boolean(message), "failed");
@@ -451,12 +452,10 @@ export default function CalendarViewPage() {
           getToken
         );
       } finally {
-        setIsGenerating(false);
-        setStreamContent("");
-        streamRef.current = "";
+        endSlotStream(slot.id);
       }
     },
-    [id, dispatch, getToken, trackLessonMaterial, guard]
+    [id, dispatch, getToken, trackLessonMaterial, guard, startSlotStream, appendSlotStream, endSlotStream]
   );
 
   const handleGenerateWeek = useCallback(async () => {
@@ -600,14 +599,14 @@ export default function CalendarViewPage() {
         <div className="flex flex-wrap items-center gap-2">
           {isPro && replanEnabled && currentTimetable && (
             <Button variant="outline" size="sm" onClick={() => setReplanOpen(true)}>
-              {tReplan("action")}
+              {tReplan("actionTurma")}
             </Button>
           )}
           {pendingThisWeek > 0 && (
             <Button
               size="sm"
               onClick={handleGenerateWeek}
-              disabled={generatingWeek || isGenerating}
+              disabled={generatingWeek || Object.keys(slotStreams).length > 0}
             >
               {generatingWeek ? (
                 <Loader2 className="mr-1 h-3 w-3 animate-spin" />
@@ -711,8 +710,8 @@ export default function CalendarViewPage() {
       {/* Shared slot dialog */}
       <SlotDialog
         slot={selectedSlotWithTimetable}
-        isSlotGenerating={isGenerating}
-        streamContent={streamContent || undefined}
+        isSlotGenerating={!!selectedSlot && selectedSlot.id in slotStreams}
+        streamContent={selectedSlot ? slotStreams[selectedSlot.id] || undefined : undefined}
         onClose={() => setSelectedSlot(null)}
         onGenerate={handleGenerateLesson}
         onRegenerate={handleRegenerateLesson}

@@ -9,15 +9,16 @@ export interface MissingFieldState {
   worksheetVariant?: string | null;
 }
 
-/** The first required field still empty, so the disabled Create button can say what's missing. */
-export function getMissingField(
+/** Every required field still empty, in form order, so the disabled Create button can say what's missing. */
+export function getMissingFields(
   state: MissingFieldState,
   opts: { needsTemplate: boolean; needsWorksheetVariant: boolean },
-): MissingField | null {
-  if (!state.topic?.trim()) return "topic";
-  if (!state.schoolYear) return "schoolYear";
-  if (!state.subject) return "subject";
-  if (opts.needsTemplate && !state.templateId) return "template";
-  if (opts.needsWorksheetVariant && !state.worksheetVariant) return "worksheetVariant";
-  return null;
+): MissingField[] {
+  const missing: MissingField[] = [];
+  if (!state.topic?.trim()) missing.push("topic");
+  if (!state.schoolYear) missing.push("schoolYear");
+  if (!state.subject) missing.push("subject");
+  if (opts.needsTemplate && !state.templateId) missing.push("template");
+  if (opts.needsWorksheetVariant && !state.worksheetVariant) missing.push("worksheetVariant");
+  return missing;
 }

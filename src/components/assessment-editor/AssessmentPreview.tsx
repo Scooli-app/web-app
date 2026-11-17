@@ -4,18 +4,22 @@ import { InlineText } from "@/components/blocks/inline-text";
 import { cn } from "@/shared/utils/utils";
 import type { AssessmentItem } from "@/types/assessment";
 import { useTranslations } from "next-intl";
-import { useMemo, type ReactNode } from "react";
-import { AssessmentEditorContext, type AssessmentEditorContextValue } from "./context";
+import { Fragment, useMemo, type ReactNode } from "react";
+import { AssessmentEditorContext, type AssessmentEditorContextValue, type PendingImages } from "./context";
 import { ExerciseView, ReadingView } from "./ExerciseView";
 import { exerciseNumbers, parseAssessment } from "./model";
 
 const noop = () => undefined;
 
 /** The editor context for read-only rendering outside the editor (reviews, moderation, community). */
-export function ReadOnlyAssessment({ studentView, children }: { studentView: boolean; children: ReactNode }) {
+export function ReadOnlyAssessment({ studentView, pendingImages, children }: {
+  studentView: boolean;
+  pendingImages?: PendingImages;
+  children: ReactNode;
+}) {
   const value = useMemo<AssessmentEditorContextValue>(
-    () => ({ studentView, phone: false, aeLookup: {}, showAe: false, searchAe: null, rememberAe: noop, requestImage: noop }),
-    [studentView],
+    () => ({ studentView, phone: false, aeLookup: {}, showAe: false, searchAe: null, rememberAe: noop, requestImage: noop, pendingImages }),
+    [studentView, pendingImages],
   );
   return <AssessmentEditorContext.Provider value={value}>{children}</AssessmentEditorContext.Provider>;
 }
@@ -48,8 +52,15 @@ export function CompactItem({ item, number, studentView = false }: { item: Asses
 /**
  * A whole stored assessment, read-only: as the student gets it by default (the community preview), or the teacher
  * view (the moderation queue). The JSON is rendered by the exercise views, never injected as HTML.
+ * The generation preview passes `pendingImages` (pictures still to come) and `animateItems` (new items fade in).
  */
-export function AssessmentPreview({ content, studentView = true, className }: { content: string; studentView?: boolean; className?: string }) {
+export function AssessmentPreview({ content, studentView = true, className, pendingImages, animateItems = false }: {
+  content: string;
+  studentView?: boolean;
+  className?: string;
+  pendingImages?: PendingImages;
+  animateItems?: boolean;
+}) {
   const t = useTranslations("assessmentEditor");
   const doc = useMemo(() => parseAssessment(content), [content]);
   if (!doc || doc.sections.every((s) => s.items.length === 0)) {
@@ -57,7 +68,7 @@ export function AssessmentPreview({ content, studentView = true, className }: { 
   }
   const numbers = exerciseNumbers(doc);
   return (
-    <ReadOnlyAssessment studentView={studentView}>
+    <ReadOnlyAssessment studentView={studentView} pendingImages={pendingImages}>
       <div data-assessment-preview className={cn(PAPER, "flex flex-col gap-5 px-4 py-4 text-[14px] sm:px-6", className)}>
         {doc.title && <p className="text-center font-sans text-base font-bold">{doc.title}</p>}
         {doc.sections.map((s) => (
@@ -66,11 +77,15 @@ export function AssessmentPreview({ content, studentView = true, className }: { 
               <InlineText value={s.title} />
             </div>
             {s.instructions && <p className="font-sans text-xs italic text-neutral-600"><InlineText value={s.instructions} /></p>}
-            {s.items.map((item) =>
-              item.kind === "exercise"
-                ? <ExerciseView key={item.id} exercise={shown(item) as typeof item} number={numbers.get(item.id) ?? 0} />
-                : <ReadingView key={item.id} item={item} />,
-            )}
+            {s.items.map((item) => {
+              const view = item.kind === "exercise"
+                ? <ExerciseView exercise={shown(item) as typeof item} number={numbers.get(item.id) ?? 0} />
+                : <ReadingView item={item} />;
+              // Keyed by id, so only an item that just arrived plays the entrance.
+              return animateItems
+                ? <div key={item.id} className="animate-in fade-in slide-in-from-bottom-2 duration-500">{view}</div>
+                : <Fragment key={item.id}>{view}</Fragment>;
+            })}
           </section>
         ))}
       </div>

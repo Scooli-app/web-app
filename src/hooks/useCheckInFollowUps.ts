@@ -10,7 +10,6 @@ import { Routes } from "@/shared/types/routes";
 import { useAppDispatch } from "@/store/hooks";
 import { setUpgradeModalOpen } from "@/store/ui/uiSlice";
 import { useLocale, useTranslations } from "next-intl";
-import { useRouter } from "next/navigation";
 import { useCallback } from "react";
 import { toast } from "sonner";
 
@@ -66,23 +65,15 @@ export function lessonCalendarHref(target: WeekLessonTarget): string {
 }
 
 /**
- * The two follow-ups a check-in can start. Both report their own outcome: a success toast with an action that opens
- * the lesson, or the matching failure. A quota or free-plan refusal opens the upgrade modal (the API client does it),
+ * The two follow-ups a check-in can start. Both report their own outcome: a short success toast (never with an
+ * action: the caller shows the next step in place), or the matching failure. A quota or free-plan refusal opens the upgrade modal (the API client does it),
  * so it is not repeated here. Both resolve to the result, or null when nothing started.
  */
 export function useCheckInFollowUps() {
   const t = useTranslations("checkIns");
   const locale = useLocale();
-  const router = useRouter();
   const dispatch = useAppDispatch();
   const { guard } = useAccountAccess();
-
-  const openCalendar = useCallback(
-    (timetableId: string) => {
-      router.push(`${Routes.CALENDAR}/${timetableId}`);
-    },
-    [router],
-  );
 
   const reportFailure = useCallback(
     (err: unknown, fallbackKey: "reinforcementError" | "carryOverError") => {
@@ -102,27 +93,17 @@ export function useCheckInFollowUps() {
   );
 
   /**
-   * Asks for a reinforcement worksheet on the lesson after {@code lessonId}. The toast's "Abrir" calls {@code onOpen}
-   * with the target lesson when the caller has a pop-up mounted, and otherwise opens the turma's calendar on it.
+   * Asks for a reinforcement worksheet on the lesson after {@code lessonId}. The toast only confirms it; the caller
+   * shows where the worksheet is (and how to open it) in place.
    */
   const reinforce = useCallback(
-    async (
-      timetableId: string,
-      lessonId: string,
-      outcomeIds: string[],
-      onOpen?: (target: WeekLessonTarget) => void,
-    ): Promise<ReinforcementRequested | null> => {
+    async (timetableId: string, lessonId: string, outcomeIds: string[]): Promise<ReinforcementRequested | null> => {
       // Read-only account (ENG-321): the worksheet is an AI generation; the paywall opens instead.
       if (!guard("generate")) return null;
       try {
         const started = await checkInService.requestReinforcement(timetableId, lessonId, outcomeIds);
-        const target = reinforcementTarget(timetableId, started.targetSlotId, started.targetDate);
         toast.success(t("reinforcementToast", { day: formatLessonDay(started.targetDate, locale) }), {
           duration: FOLLOW_UP_TOAST_MS,
-          action: {
-            label: t("followUpOpenLesson"),
-            onClick: () => (onOpen ? onOpen(target) : router.push(lessonCalendarHref(target))),
-          },
         });
         return started;
       } catch (err) {
@@ -130,7 +111,7 @@ export function useCheckInFollowUps() {
         return null;
       }
     },
-    [guard, locale, reportFailure, router, t],
+    [guard, locale, reportFailure, t],
   );
 
   const carry = useCallback(
@@ -139,7 +120,6 @@ export function useCheckInFollowUps() {
         const result = await checkInService.carryOver(timetableId, lessonId, outcomeIds);
         toast.success(t("carryOverToast", { day: formatLessonDay(result.targetDate, locale) }), {
           duration: FOLLOW_UP_TOAST_MS,
-          action: { label: t("followUpOpenCalendar"), onClick: () => openCalendar(timetableId) },
         });
         return result;
       } catch (err) {
@@ -147,7 +127,7 @@ export function useCheckInFollowUps() {
         return null;
       }
     },
-    [locale, openCalendar, reportFailure, t],
+    [locale, reportFailure, t],
   );
 
   return { reinforce, carry };

@@ -1,7 +1,8 @@
 "use client";
 
 import { checkInService } from "@/services/api/check-in.service";
-import type { CheckInSubmission, PendingCheckIn } from "@/shared/types/check-in";
+import type { CheckInSubmission, PendingCheckIn, SavedCheckIn } from "@/shared/types/check-in";
+import { savedCheckIn } from "@/shared/utils/savedCheckIn";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { clearDismissed, readDismissed, readSkipped, writeDismissed, writeSkipped } from "./checkInSession";
 import { afterConfirmAll, loadPendingCheckIns, visibleCheckIns, withCheckInAt, withoutCheckIn } from "./checkInQueue";
@@ -49,12 +50,11 @@ export function usePendingCheckIns(enabled: boolean) {
 
   /** Saves one answer. Resolves false (and restores the item) when the request fails. */
   const submit = useCallback(
-    async (item: PendingCheckIn, body: CheckInSubmission): Promise<boolean> => {
+    async (item: PendingCheckIn, body: CheckInSubmission): Promise<SavedCheckIn | false> => {
       const { items: next, index } = withoutCheckIn(itemsRef.current, item.slotId);
       replaceItems(next);
       try {
-        await checkInService.submit(item.timetableId, item.slotId, body);
-        return true;
+        return savedCheckIn(await checkInService.submit(item.timetableId, item.slotId, body));
       } catch {
         replaceItems(withCheckInAt(itemsRef.current, item, index));
         return false;

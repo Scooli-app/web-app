@@ -13,7 +13,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { SUBJECTS, translateSubjectLabel } from "@/components/document-creation/constants";
+import { SUBJECTS_BY_GRADE } from "@/components/document-creation/constants";
+import { ClassSection, NESTED_SECTION_CLASS, SubjectSection } from "@/components/document-creation/sections";
+import {
+  subjectChoicePayload,
+  useSubjectChoice,
+  useSubjectChoiceState,
+} from "@/components/document-creation/useSubjectChoice";
 import apiClient from "@/services/api/client";
 import { DocumentStillProcessingError, getUploadUrl, waitForDocument } from "@/services/api/document.service";
 import { selectIsCurriculumPlanEnabled } from "@/store/features/selectors";
@@ -25,12 +31,10 @@ import { cn } from "@/shared/utils/utils";
 import { CheckCircle2, Circle, Loader2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 const PLANNING_TYPE_VALUES: CurriculumPlanningType[] = ["annual", "semester", "trimester", "custom"];
-
-const SCHOOL_YEARS = Array.from({ length: 12 }, (_, i) => i + 1);
 
 const ACCEPTED_EXTENSIONS = [".docx", ".xlsx", ".pdf", ".txt"];
 const ACCEPT_ATTR = ACCEPTED_EXTENSIONS.join(",");
@@ -98,7 +102,6 @@ function detectContentType(filename: string): string {
 export default function CurriculumPlanImportPage() {
   const t = useTranslations("curriculumPlan.importar");
   const tShared = useTranslations("curriculumPlan.shared");
-  const tTimetable = useTranslations("timetable");
   const tErrors = useTranslations("errors.curriculumPlan");
   const stepLabels: Record<StepId, string> = {
     upload: t("steps.upload"),
@@ -119,12 +122,16 @@ export default function CurriculumPlanImportPage() {
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState("");
   const [planningType, setPlanningType] = useState<CurriculumPlanningType>("trimester");
-  const [subjectValue, setSubjectValue] = useState("");
-  const [schoolYear, setSchoolYear] = useState<number>(5);
+  // Year and subject (or course and UC) — the same pickers as the planning wizard.
+  const [choice, updateChoice] = useSubjectChoiceState();
+  const subjectPicker = useSubjectChoice({ choice, update: updateChoice });
   const [periodStart, setPeriodStart] = useState("");
   const [periodEnd, setPeriodEnd] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [steps, setSteps] = useState<ImportStep[]>(INITIAL_STEPS);
+  const importAbortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => () => importAbortRef.current?.abort(), []);
 
   const detectedFormat = useMemo(() => (file ? detectFormat(file.name) : ""), [file]);
 
@@ -132,7 +139,8 @@ export default function CurriculumPlanImportPage() {
     !!file &&
     !!detectedFormat &&
     !!title.trim() &&
-    !!subjectValue &&
+    !!choice.subject &&
+    !!choice.schoolYear &&
     !submitting;
 
   function setStepStatus(id: string, status: StepStatus) {
@@ -144,6 +152,8 @@ export default function CurriculumPlanImportPage() {
   async function handleSubmit() {
     if (!canSubmit || !file) return;
     if (!guard("create")) return;
+    importAbortRef.current = new AbortController();
+    const { signal } = importAbortRef.current;
     setSubmitting(true);
     setSteps(INITIAL_STEPS.map((s) => ({ ...s, status: "pending" as StepStatus })));
 
@@ -172,8 +182,7 @@ export default function CurriculumPlanImportPage() {
         message: string;
       }>("/curriculum-plans/import", {
         title: title.trim(),
-        subject: subjectValue,
-        schoolYear,
+        ...subjectChoicePayload(choice),
         planningType,
         periodStart: periodStart || undefined,
         periodEnd: periodEnd || undefined,
@@ -186,14 +195,17 @@ export default function CurriculumPlanImportPage() {
 
       // Step 3: Wait for AI normalisation
       setStepStatus("normalize", "active");
-      await waitForDocument(docId);
+      await waitForDocument(docId, undefined, signal);
       setStepStatus("normalize", "done");
 
       // Step 4: Done — brief pause then redirect
       setStepStatus("done", "done");
       await new Promise((resolve) => setTimeout(resolve, 600));
+      if (signal.aborted) return;
       router.push(`/curriculum-plan/${docId}`);
     } catch (err) {
+      // The user left the page: the plan still shows up in the list when it is ready.
+      if (signal.aborted) return;
       if (err instanceof DocumentStillProcessingError) {
         // Not a failure: the plan shows up in the list when the server finishes.
         toast.info(err.message);
@@ -276,42 +288,33 @@ export default function CurriculumPlanImportPage() {
               />
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="subject">{t("form.subjectLabel")}</Label>
-                <Select value={subjectValue} onValueChange={setSubjectValue}>
-                  <SelectTrigger id="subject">
-                    <SelectValue placeholder={t("form.subjectPlaceholder")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {SUBJECTS.map((s) => (
-                      <SelectItem key={s.id} value={s.value}>
-                        {translateSubjectLabel(s.id)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            <ClassSection
+              mode={subjectPicker.teachingMode}
+              onModeChange={subjectPicker.handleTeachingModeChange}
+              schoolYear={choice.schoolYear}
+              preferredSchoolYears={subjectPicker.preferredSchoolYears}
+              onUpdate={updateChoice}
+              vocationalCourses={subjectPicker.vocationalCourseOptions}
+              vocationalCourseCode={subjectPicker.selectedVocationalCourse?.code}
+              onCourseChange={subjectPicker.handleVocationalCourseChange}
+              onVocationalCourseAdded={subjectPicker.onVocationalCourseAdded}
+              isVocationalFeatureEnabled={subjectPicker.isVocationalFeatureEnabled}
+              className={NESTED_SECTION_CLASS}
+            />
 
-              <div className="space-y-2">
-                <Label htmlFor="schoolYear">{t("form.schoolYearLabel")}</Label>
-                <Select
-                  value={String(schoolYear)}
-                  onValueChange={(v) => setSchoolYear(Number(v))}
-                >
-                  <SelectTrigger id="schoolYear">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {SCHOOL_YEARS.map((y) => (
-                      <SelectItem key={y} value={String(y)}>
-                        {tTimetable("gradeYear", { grade: y })}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+            <SubjectSection
+              subject={choice.subject}
+              isSpecificComponent={choice.isSpecificComponent}
+              onUpdate={updateChoice}
+              availableSubjects={choice.schoolYear ? SUBJECTS_BY_GRADE[String(choice.schoolYear)] : undefined}
+              preferredSubjectIds={subjectPicker.preferredSubjectIds}
+              mode={subjectPicker.teachingMode}
+              vocationalCourse={subjectPicker.selectedVocationalCourse}
+              vocationalUnitCode={choice.vocationalUnitCode}
+              vocationalSchoolSubjectName={choice.vocationalSchoolSubjectName}
+              className={NESTED_SECTION_CLASS}
+              disabled={!choice.schoolYear}
+            />
 
             <div className="space-y-2">
               <Label htmlFor="planningType">{t("form.planningTypeLabel")}</Label>

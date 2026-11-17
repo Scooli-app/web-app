@@ -264,6 +264,7 @@ export function SubjectSection({
                   key={unit.code}
                   selected={selectedVocationalKey === unitKey(unit.code)}
                   highlighted
+                  showCheck
                   disabled={disabled}
                   onClick={() => selectUnit(unit.code, unit.label)}
                 >
@@ -338,6 +339,7 @@ export function SubjectSection({
                   key={option.id}
                   selected={isSelected}
                   highlighted
+                  showCheck
                   disabled={disabled}
                   onClick={() => onUpdate("subject", isSelected ? "" : option.id)}
                 >

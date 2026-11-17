@@ -16,9 +16,12 @@ describe("ENG-313 vocabulary", () => {
     expect(en.calendar.progress.unconfirmedLessons).toBe("Assumed");
   });
 
-  it("uses 'Mover aulas seguintes' for the non-Pro next step, and keeps 'Reajustar' for Pro", () => {
+  it("uses 'Mover aulas seguintes' for the non-Pro next step, and says what the Pro one does", () => {
     expect(pt.nextSteps.actionShift).toBe("Mover aulas seguintes");
-    expect(pt.nextSteps.actionReschedule).toBe("Reajustar");
+    // A bare "Reajustar" did not say what the button does (it asks the AI for a proposal to review).
+    expect(pt.nextSteps.actionReschedule).toBe("Propor ajustes às aulas seguintes");
+    expect(pt.replan.actionLesson).toBe("Propor ajustes às aulas seguintes");
+    expect(pt.replan.actionTurma).toBe("Propor ajustes às próximas aulas");
     expect(pt.nextSteps.replanNotHeldShift).toBe("Não houve aula: mover as aulas seguintes");
     expect(pt.nextSteps.replanNotHeldShift).not.toContain("Reajust");
     expect(en.nextSteps.actionShift).toBe("Move following lessons");

@@ -111,3 +111,23 @@ describe("normalizeMathMarkdown — well-formed content is left alone", () => {
     expect(normalizeMathMarkdown(once)).toBe(once);
   });
 });
+
+describe("normalizeMathMarkdown — a fill-in box is always a square", () => {
+  it.each([
+    ["- $36 : 4 = \\triangle : 2$", "- $36 : 4 = \\square : 2$"],
+    ["- $48 : 6 = 24 : \\circ$", "- $48 : 6 = 24 : \\square$"],
+    ["- $7 \\times 8 = 56 : \\Box$", "- $7 \\times 8 = 56 : \\square$"],
+    ["- $36 : 4 = △ : 2$ e $24 : ○$", "- $36 : 4 = \\square : 2$ e $24 : \\square$"],
+  ])("%s", (input, expected) => {
+    expect(normalizeMathMarkdown(input)).toBe(expected);
+  });
+
+  it.each([
+    "Um ângulo reto mede $90^\\circ$.",
+    "Um ângulo raso mede $180^{\\circ}$.",
+    "A composta $f \\circ g$ é uma função.",
+    "No $\\triangle ABC$, o lado maior é $[AB]$.",
+  ])("leaves real shapes alone: %s", (input) => {
+    expect(normalizeMathMarkdown(input)).toBe(input);
+  });
+});

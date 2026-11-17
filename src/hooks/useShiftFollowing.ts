@@ -12,9 +12,8 @@ export function describeShift(result: ShiftFollowingResult): { count: number; ov
 }
 
 /**
- * "Mover as aulas seguintes?" after a lesson was not held (ENG-194). `offer` shows the question as a toast;
- * the teacher's answer moves the content and reports the result. `shift` moves without asking, for surfaces
- * that already asked (the calendar dialog can reuse either).
+ * "Mover as aulas seguintes" after a lesson was not held (ENG-194). `shift` moves the content and reports the
+ * result; each surface asks the question in place (never in a toast).
  */
 export function useShiftFollowing() {
   const t = useTranslations("checkIns");
@@ -36,21 +35,5 @@ export function useShiftFollowing() {
     [t],
   );
 
-  const offer = useCallback(
-    (timetableId: string, slotId: string, onShifted?: () => void) => {
-      toast(t("shiftQuestion"), {
-        duration: 15000,
-        action: {
-          label: t("shiftAction"),
-          onClick: () => void shift(timetableId, slotId).then((result) => {
-            if (result) onShifted?.();
-          }),
-        },
-        cancel: { label: t("shiftKeep"), onClick: () => undefined },
-      });
-    },
-    [shift, t],
-  );
-
-  return { offer, shift };
+  return { shift };
 }

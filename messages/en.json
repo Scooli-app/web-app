@@ -115,12 +115,12 @@
     "title": "What to do next",
     "loading": "Loading suggestions",
     "prepareNext": "Prepare the lesson for {day}",
-    "replanNotHeld": "Reschedule: move the following lessons",
+    "replanNotHeld": "Lesson not held",
     "replanNotHeldShift": "Not held: move the following lessons",
     "reinforce": "Create a reinforcement sheet for {outcome}",
     "checkIn": "Confirm {count, plural, one {# lesson} other {# lessons}}",
     "actionPrepare": "Prepare",
-    "actionReschedule": "Reschedule",
+    "actionReschedule": "Suggest changes to the following lessons",
     "actionShift": "Move following lessons",
     "actionReinforce": "Create sheet",
     "actionView": "View"
@@ -151,8 +151,8 @@
     "prepareNext": "Prepare the next lesson",
     "saveError": "Could not save. Try again.",
     "confirmAllError": "Could not confirm the lessons. Try again.",
-    "shiftQuestion": "Move the following lessons?",
-    "shiftAction": "Move",
+    "shiftQuestion": "Move the content of the following lessons one lesson forward?",
+    "shiftAction": "Move following lessons",
     "shiftKeep": "Keep",
     "shiftLaterAction": "Move following lessons",
     "shiftedToast": "{count, plural, one {# lesson moved} other {# lessons moved}}",
@@ -176,7 +176,7 @@
     "daysAgo": "{count, plural, one {# day ago} other {# days ago}}",
     "cancel": "Cancel",
     "currentStatus": "Status",
-    "changeAnswer": "Change",
+    "changeAnswer": "Change answer",
     "mark": {
       "taught": "Taught",
       "taughtWithDifficulties": "Taught · some difficulties",
@@ -194,7 +194,11 @@
     "missingMost": "Almost all",
     "missingAmountShown": "Left to teach: {amount}",
     "noteLabel": "What happened? (optional)",
-    "notePlaceholder": "E.g.: the food chains part was missed"
+    "notePlaceholder": "E.g.: the food chains part was missed",
+    "afterSaveClose": "Close",
+    "carryOverDone": "Objectives moved to the lesson on {day}.",
+    "reinforcementDone": "Reinforcement sheet being prepared for the lesson on {day}.",
+    "openLesson": "Open lesson"
   },
   "previousCheckIn": {
     "question": "How did the lesson go?",
@@ -723,7 +727,8 @@
       "description": "Choose the days and the number of periods per day.",
       "lessonsPerWeek": "{count, plural, one {# lesson/week} other {# lessons/week}}",
       "addPeriod": "period",
-      "customDuration": "Custom"
+      "customDuration": "Custom",
+      "copyToOtherDays": "Copy to other days"
     },
     "weekScheduleTypeOptions": {
       "auto": "Automatic",
@@ -1231,6 +1236,7 @@
       "coursesEmpty": "Search for the course you teach. If you teach several, add them one by one.",
       "coursesSearchPlaceholder": "Course name or area — e.g. computing, tourism",
       "coursesLoading": "Loading courses…",
+      "coursesPartialMatch": "No course has all of these words. These are the closest:",
       "noCoursesFound": "No course found. Schools sometimes use different names than the catalogue — try a single word.",
       "courseAdded": "Added",
       "removeCourse": "Remove {course}",
@@ -1283,6 +1289,8 @@
       "sourcesTooltip": "This document was generated without using external sources.",
       "emptyStateHeading": "How can I help today?",
       "documentRefined": "Document Refined",
+      "documentUnchanged": "The document was not changed.",
+      "retry": "Try again",
       "imageRegenYes": "Yes, regenerate",
       "imageRegenNo": "No",
       "nudgeReady": "Document ready! Use the Assistant to refine or adapt the content.",
@@ -1454,7 +1462,68 @@
           }
         ]
       },
-      "generatingPlaceholder": "Chat is available once the document is ready."
+      "generatingPlaceholder": "Chat is available once the document is ready.",
+      "errors": {
+        "timeout": "The request took too long and was stopped. The document was not changed. Try again, or ask for the change in parts (one section at a time).",
+        "network": "No connection to the server. Check your internet and send again — your message is still in the text box.",
+        "notFound": "This document no longer exists or you don't have access to it.",
+        "server": "I couldn't answer right now and the document was not changed. Try again in a moment — your message is still in the text box.",
+        "upgrade": "You've reached your plan's generation limit.",
+        "locked": "Your account is in read-only mode."
+      },
+      "progress": [
+        "Reading the document…",
+        "Preparing the answer…",
+        "Still working — long documents take longer…"
+      ],
+      "changesTitle": "Changes",
+      "changeKinds": {
+        "added": "New",
+        "changed": "Changed",
+        "removed": "Removed"
+      },
+      "wholeDocument": "Document",
+      "noChangeBadge": "No changes to the document",
+      "freeTurn": "Did not count as a generation",
+      "newDocumentAction": "Create a {type} from this document",
+      "newDocumentCreating": "Creating…",
+      "documentTypes": {
+        "worksheet": "worksheet",
+        "test": "test",
+        "quiz": "quiz",
+        "presentation": "presentation",
+        "lessonPlan": "lesson plan",
+        "curriculumPlan": "curriculum plan"
+      },
+      "feedbackUp": "Helpful answer",
+      "feedbackDown": "Not helpful",
+      "feedbackThanks": "Thanks for the feedback!",
+      "newConversation": "New conversation",
+      "newConversationHint": "Start over: the assistant stops taking the previous messages into account.",
+      "previousConversation": "Previous conversation",
+      "pendingReviewTitle": "You have AI changes to review",
+      "pendingReviewReview": "Review",
+      "pendingReviewDiscard": "Discard",
+      "leaveWithPending": "You have AI changes to accept or reject. If you leave now, they won't be saved.",
+      "askAiSelection": "Ask AI",
+      "selectionLabel": "Selected",
+      "selectionClear": "Remove selection",
+      "selectionPlaceholder": "What should I do with this excerpt?",
+      "attach": "Attach a file (PDF, Word or text)",
+      "attaching": "Reading the file…",
+      "attachmentTruncated": "first part only",
+      "attachErrors": {
+        "unsupported_type": "This file type can't be read in the chat yet. Use PDF, Word or text — or paste the text into the message.",
+        "too_large": "The file is too large (10 MB max).",
+        "no_text": "I found no text in this file (it may be a scan). Paste the text into the message.",
+        "unreadable": "I couldn't read this file. Try another format or paste the text into the message."
+      },
+      "stages": {
+        "reading": "Reading the document…",
+        "editing": "Preparing the changes…",
+        "editingSection": "Editing “{section}”…",
+        "answering": "Writing the answer…"
+      }
     },
     "calendarButton": {
       "viewClass": "View class",
@@ -1841,6 +1910,9 @@
     },
     "diffExtension": {
       "contentRemoved": "🗑 Content removed",
+      "showRemoved": "Show",
+      "hideRemoved": "Hide",
+      "paragraphCount": "{count, plural, one {# paragraph} other {# paragraphs}}",
       "acceptChange": "Accept change",
       "rejectChange": "Reject change"
     },
@@ -1909,7 +1981,16 @@
       "stepGeneratingCaption": "The AI is writing your slides.",
       "stepReviewingLabel": "Reviewing",
       "stepReviewingCaption": "Checking the structure and quality of the result.",
-      "imagesLabel": "Images"
+      "imagesLabel": "Images",
+      "slidesWritten": "{count, plural, one {# slide ready} other {# slides ready}}",
+      "imagesStatus": "Creating the images: {completed} of {total}",
+      "finishing": "Finishing the presentation",
+      "previewHint": "You can look through it; the editor opens when it is done.",
+      "slideNumber": "Slide {number}",
+      "writingSlide": "Writing slide {number}…",
+      "imageQueued": "Image comes next",
+      "follow": "Follow along",
+      "retrying": "The first draft did not pass our checks. Writing another one."
     }
   },
   "community": {
@@ -2439,6 +2520,10 @@
           "title": "Your Pro month has ended",
           "description": "Your account is now read-only. Upgrade to Pro to create and generate documents, export, duplicate and share again."
         },
+        "see_plans": {
+          "title": "Discover Scooli Pro",
+          "description": "See what Pro gives you and choose the plan that fits you."
+        },
         "trial_not_activated": {
           "title": "Activate your Pro month",
           "description": "You haven't activated your free Pro month yet. Activate it now and get 30 days with everything Pro offers.",
@@ -2598,7 +2683,7 @@
       "proTitle": "Upload your own sources with Pro",
       "proDescription": "With Pro, you upload a textbook or your school’s materials (PDF or DOCX), and the lesson plans and worksheets you create follow that content.",
       "proAction": "See Pro plans",
-      "failedHint": "We couldn’t read this file. If it’s a scan, use a version with selectable text; otherwise save it again as PDF or DOCX and upload it again."
+      "failedHint": "We couldn’t read this file. Save it again as PDF or DOCX and upload it again; for a scan, use a sharper copy."
     },
     "status": {
       "uploaded": "Processing",
@@ -3343,6 +3428,7 @@
       "viewWeekShort": "Wk",
       "prevWeek": "Previous week",
       "nextWeek": "Next week",
+      "jumpToWeek": "Choose week",
       "viewMonth": "Month",
       "today": "Today",
       "tomorrow": "Tomorrow",
@@ -3440,7 +3526,6 @@
       "typeLabel": "Type:",
       "objectivesTitle": "Learning Objectives",
       "objectivesProcessing": "Processing…",
-      "streamPreviewTitle": "Writing the lesson plan",
       "objectivesEmpty": "The objectives appear once the lesson plan is ready.",
       "documentsTitle": "Generated documents",
       "loadingDocuments": "Loading documents…",
@@ -3475,7 +3560,20 @@
         "presentation": "slides",
         "test": "test"
       },
-      "reinforcementBadge": "Reinforcement"
+      "reinforcementBadge": "Reinforcement",
+      "progress": {
+        "planTitle": "Preparing the lesson plan",
+        "setTitle": "Preparing {items}",
+        "steps": {
+          "s1": "Reading the national curriculum",
+          "s2": "Consulting curriculum sources",
+          "s3": "Setting the lesson objectives",
+          "s4": "Structuring the lesson",
+          "s5": "Creating activities and exercises",
+          "s6": "Reviewing and polishing the details"
+        },
+        "hint": "You can close this window — we'll keep preparing in the background."
+      }
     },
     "dashboardWidget": {
       "title": "Upcoming lessons",
@@ -3553,6 +3651,10 @@
         "selectAll": "Select all",
         "markAs": "Mark as:",
         "remove": "Remove",
+        "selectMonth": "Select month",
+        "deselectMonth": "Deselect month",
+        "byWeekday": "By weekday:",
+        "rangeHint": "Hold Shift to select a range",
         "emptyLine1": "No lessons were generated for this period with the current schedule.",
         "emptyLine2": "Go back and confirm the dates and class days.",
         "backToPeriod": "Back to the period"
@@ -3692,9 +3794,6 @@
         "fileLabel": "File",
         "titleLabel": "Curriculum plan title",
         "titlePlaceholder": "E.g. Term Curriculum Plan, Maths, 5th grade",
-        "subjectLabel": "Subject",
-        "subjectPlaceholder": "Select",
-        "schoolYearLabel": "Year",
         "planningTypeLabel": "Period type",
         "periodStartLabel": "Start (optional)",
         "periodEndLabel": "End (optional)",
@@ -3818,22 +3917,19 @@
     "bannerGenerating": "Preparing a rescheduling proposal…",
     "bannerFailed": "Could not propose a rescheduling.",
     "noChange": "No need to change the next lessons.",
-    "noChangeToast": "No need to change the next lessons",
+    "noChangeToast": "The AI found nothing to change in the following lessons.",
     "dismiss": "Dismiss",
     "review": "Review",
-    "shiftFallback": "Move the next lessons",
-    "action": "Reschedule",
-    "notHeldInProgress": "Rescheduling the next lessons…",
-    "readyToast": "Rescheduling proposal ready",
-    "readyAction": "View",
-    "failedToast": "Could not propose a rescheduling.",
+    "notHeldInProgress": "The AI is adjusting the following lessons…",
+    "readyToast": "The proposal is ready. Review it on the class page.",
+    "failedToast": "Could not suggest changes to the following lessons.",
     "requestTitle": "What happened in this lesson?",
     "requestDescription": "Tell us how this lesson went. We use the note to propose changes to the following lessons.",
     "requestTitleTurma": "What changed in the class?",
     "requestDescriptionTurma": "Tell us what changed. We use the note to propose changes to the upcoming lessons.",
     "requestNoteLabel": "Note (optional)",
     "requestNotePlaceholder": "E.g. the class needed more time on the previous topic",
-    "requestSubmit": "Propose rescheduling",
+    "requestSubmit": "Ask for a proposal",
     "requestCancel": "Cancel",
     "requestError": "Could not propose a rescheduling.",
     "proRequired": "Automatic rescheduling of lessons is a Pro feature.",
@@ -3847,12 +3943,20 @@
     "lessonCheck": "Apply lesson {number}",
     "addition": "Adds: {text}",
     "newOutcome": "New",
-    "documentsNote": "The documents of this lesson will get a new suggested version",
+    "documentsNote": "This lesson's materials are updated by themselves when you apply (the previous version is kept)",
     "applyLabel": "{count, plural, =0 {No change selected} one {Apply # change} other {Apply # changes}}",
     "reject": "Reject",
     "applied": "Changes applied",
     "rejected": "Proposal rejected",
-    "actionError": "Could not save the proposal."
+    "actionError": "Could not save the proposal.",
+    "actionLesson": "Suggest changes to the following lessons",
+    "actionTurma": "Suggest changes to upcoming lessons",
+    "shiftFallback": "Move the next lessons",
+    "readyRow": "{count, plural, one {The AI suggests changes to # following lesson.} other {The AI suggests changes to # following lessons.}}",
+    "readyHint": "Applying updates those lessons' topics and the materials already created, by themselves.",
+    "seeChanges": "See changes",
+    "applyAll": "Apply",
+    "appliedAll": "Changes applied. Those lessons' materials are being updated."
   },
   "adminPromos": {
     "title": "Promo links",
@@ -4011,6 +4115,18 @@
     "dismiss": "Dismiss",
     "generatingTitle": "Creating your document…",
     "generatingSubtitle": "This takes about 30 to 60 seconds. You can wait here.",
+    "streaming": {
+      "writingTitle": "Writing your document…",
+      "writingSubtitle": "{count, plural, one {# question ready} other {# questions ready}}. You can read along.",
+      "reviewingTitle": "Checking the answers…",
+      "reviewingSubtitle": "You can already read the questions. The answers appear once the check is done.",
+      "imagesTitle": "Creating the images…",
+      "imagesSubtitle": "{completed} of {total}. The editor opens when it is done.",
+      "writingNext": "Writing the next question…",
+      "startingSubtitle": "The first question will appear here shortly.",
+      "retrying": "The first draft did not pass our checks. Writing another one.",
+      "follow": "Follow along"
+    },
     "generationFailedTitle": "We couldn't create this document.",
     "generationFailedSubtitle": "Try creating it again from your documents.",
     "loadFailedTitle": "We couldn't open this document.",
@@ -4018,6 +4134,9 @@
     "retry": "Try again",
     "chatError": "The assistant couldn't reply. Try again.",
     "chatUpdated": "I've updated the document.",
+    "chatEmpty": "The assistant did not change the document. Try again with other words.",
+    "chatSlow": "Still working on your document…",
+    "chatSlowLonger": "Big changes can take up to 2 minutes. Keep this page open.",
     "imageGenerating": "Generating the image…",
     "imageFailed": "Couldn't get the image. Try again.",
     "page": "page {page} of {total}",
@@ -4094,7 +4213,9 @@
       "readingBody": "Text",
       "imageAlt": "Exercise image",
       "imageMissing": "Image missing: students won't see it",
-      "more": "More actions"
+      "more": "More actions",
+      "imageQueued": "Image comes next",
+      "imageGenerating": "Generating the image…"
     },
     "types": {
       "multiple_choice": "Multiple choice",
