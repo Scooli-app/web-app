@@ -204,11 +204,27 @@ export default function CalendarViewPage() {
     openedLessonRef.current = lessonParam;
     setSelectedSlot(found);
   }, [lessonParam, slots]);
-  /** The lesson whose plan is being written here (one at a time: they share the stream preview). */
-  const [generatingSlotId, setGeneratingSlotId] = useState<string | null>(null);
+  /**
+   * The lesson plans being written here, by slot id, with the text streamed so far. Each lesson keeps its own
+   * buffer: a second lesson started while the first still streams must not share or reset its preview.
+   */
+  const [slotStreams, setSlotStreams] = useState<Record<string, string>>({});
+  const slotStreamsRef = useRef<Record<string, string>>({});
   const [generatingWeek, setGeneratingWeek] = useState(false);
-  const [streamContent, setStreamContent] = useState("");
-  const streamRef = useRef("");
+  const startSlotStream = useCallback((slotId: string) => {
+    slotStreamsRef.current = { ...slotStreamsRef.current, [slotId]: "" };
+    setSlotStreams(slotStreamsRef.current);
+  }, []);
+  const appendSlotStream = useCallback((slotId: string, chunk: string) => {
+    if (!(slotId in slotStreamsRef.current)) return;
+    slotStreamsRef.current = { ...slotStreamsRef.current, [slotId]: slotStreamsRef.current[slotId] + chunk };
+    setSlotStreams(slotStreamsRef.current);
+  }, []);
+  const endSlotStream = useCallback((slotId: string) => {
+    const { [slotId]: _ended, ...rest } = slotStreamsRef.current;
+    slotStreamsRef.current = rest;
+    setSlotStreams(rest);
+  }, []);
 
   useEffect(() => {
     if (!enabled) return; // gated users get the FeatureUnavailable screen below
@@ -363,9 +379,7 @@ export default function CalendarViewPage() {
       if (!guard("generate")) return;
       const slot = slotOrWrapped as LessonSlot;
       const previousStatus = slot.status;
-      setGeneratingSlotId(slot.id);
-      streamRef.current = "";
-      setStreamContent("");
+      startSlotStream(slot.id);
       dispatch(setSlotStatus({ slotId: slot.id, status: "generating" }));
 
       try {
@@ -374,10 +388,7 @@ export default function CalendarViewPage() {
           slot.id,
           message,
           {
-            onChunk: (c) => {
-              streamRef.current += c;
-              setStreamContent(streamRef.current);
-            },
+            onChunk: (c) => appendSlotStream(slot.id, c),
             onDone: () => {
               trackLessonMaterial("generate", slot, Boolean(message), "completed");
               dispatch(setSlotStatus({ slotId: slot.id, status: "completed" }));
@@ -399,12 +410,10 @@ export default function CalendarViewPage() {
           getToken
         );
       } finally {
-        setGeneratingSlotId((prev) => (prev === slot.id ? null : prev));
-        setStreamContent("");
-        streamRef.current = "";
+        endSlotStream(slot.id);
       }
     },
-    [id, dispatch, getToken, trackLessonMaterial, guard]
+    [id, dispatch, getToken, trackLessonMaterial, guard, startSlotStream, appendSlotStream, endSlotStream]
   );
 
   const handleRegenerateLesson = useCallback(
@@ -412,9 +421,7 @@ export default function CalendarViewPage() {
       if (!guard("generate")) return;
       const slot = slotOrWrapped as LessonSlot;
       const previousStatus = slot.status;
-      setGeneratingSlotId(slot.id);
-      streamRef.current = "";
-      setStreamContent("");
+      startSlotStream(slot.id);
       dispatch(setSlotStatus({ slotId: slot.id, status: "generating" }));
 
       try {
@@ -423,10 +430,7 @@ export default function CalendarViewPage() {
           slot.id,
           message,
           {
-            onChunk: (c) => {
-              streamRef.current += c;
-              setStreamContent(streamRef.current);
-            },
+            onChunk: (c) => appendSlotStream(slot.id, c),
             onDone: () => {
               trackLessonMaterial("regenerate", slot, Boolean(message), "completed");
               dispatch(setSlotStatus({ slotId: slot.id, status: "completed" }));
@@ -448,12 +452,10 @@ export default function CalendarViewPage() {
           getToken
         );
       } finally {
-        setGeneratingSlotId((prev) => (prev === slot.id ? null : prev));
-        setStreamContent("");
-        streamRef.current = "";
+        endSlotStream(slot.id);
       }
     },
-    [id, dispatch, getToken, trackLessonMaterial, guard]
+    [id, dispatch, getToken, trackLessonMaterial, guard, startSlotStream, appendSlotStream, endSlotStream]
   );
 
   const handleGenerateWeek = useCallback(async () => {
@@ -604,7 +606,7 @@ export default function CalendarViewPage() {
             <Button
               size="sm"
               onClick={handleGenerateWeek}
-              disabled={generatingWeek || generatingSlotId !== null}
+              disabled={generatingWeek || Object.keys(slotStreams).length > 0}
             >
               {generatingWeek ? (
                 <Loader2 className="mr-1 h-3 w-3 animate-spin" />
@@ -708,8 +710,8 @@ export default function CalendarViewPage() {
       {/* Shared slot dialog */}
       <SlotDialog
         slot={selectedSlotWithTimetable}
-        isSlotGenerating={!!selectedSlot && generatingSlotId === selectedSlot.id}
-        streamContent={selectedSlot && generatingSlotId === selectedSlot.id ? streamContent || undefined : undefined}
+        isSlotGenerating={!!selectedSlot && selectedSlot.id in slotStreams}
+        streamContent={selectedSlot ? slotStreams[selectedSlot.id] || undefined : undefined}
         onClose={() => setSelectedSlot(null)}
         onGenerate={handleGenerateLesson}
         onRegenerate={handleRegenerateLesson}

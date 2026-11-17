@@ -456,6 +456,18 @@ const documentSlice = createSlice({
     clearLastChatAnswer(state) {
       state.lastChatAnswer = null;
     },
+    /**
+     * ENG-408: mirrors the server's `metadata.pendingAiEdit` (a chat proposal awaiting review) on the open
+     * document. The editor offers a stored proposal again when the document reopens, and reads it from here,
+     * so a proposal made or resolved in this visit must be reflected here too: `null` once it is resolved.
+     */
+    setPendingAiEdit(state, action: { payload: { id: string; content: string | null } }) {
+      const { id, content } = action.payload;
+      const doc = state.currentDocument;
+      if (doc?.id !== id) return;
+      const { pendingAiEdit: _previous, ...rest } = doc.metadata ?? {};
+      doc.metadata = content === null ? rest : { ...rest, pendingAiEdit: { content } };
+    },
     updateDocumentOptimistic(
       state,
       action: { payload: { id: string; title?: string; content?: string } }
@@ -751,6 +763,7 @@ export const {
   clearStreamInfo,
   clearLastChatAnswer,
   updateDocumentOptimistic,
+  setPendingAiEdit,
   setImages,
   upsertImage,
   setGeneratingImages,
