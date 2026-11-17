@@ -204,7 +204,8 @@ export default function CalendarViewPage() {
     openedLessonRef.current = lessonParam;
     setSelectedSlot(found);
   }, [lessonParam, slots]);
-  const [isGenerating, setIsGenerating] = useState(false);
+  /** The lesson whose plan is being written here (one at a time: they share the stream preview). */
+  const [generatingSlotId, setGeneratingSlotId] = useState<string | null>(null);
   const [generatingWeek, setGeneratingWeek] = useState(false);
   const [streamContent, setStreamContent] = useState("");
   const streamRef = useRef("");
@@ -362,8 +363,7 @@ export default function CalendarViewPage() {
       if (!guard("generate")) return;
       const slot = slotOrWrapped as LessonSlot;
       const previousStatus = slot.status;
-      setSelectedSlot(null);
-      setIsGenerating(true);
+      setGeneratingSlotId(slot.id);
       streamRef.current = "";
       setStreamContent("");
       dispatch(setSlotStatus({ slotId: slot.id, status: "generating" }));
@@ -382,7 +382,6 @@ export default function CalendarViewPage() {
               trackLessonMaterial("generate", slot, Boolean(message), "completed");
               dispatch(setSlotStatus({ slotId: slot.id, status: "completed" }));
               dispatch(fetchLessons({ timetableId: id }));
-              setSelectedSlot(null);
             },
             onError: () => {
               trackLessonMaterial("generate", slot, Boolean(message), "failed");
@@ -400,7 +399,7 @@ export default function CalendarViewPage() {
           getToken
         );
       } finally {
-        setIsGenerating(false);
+        setGeneratingSlotId((prev) => (prev === slot.id ? null : prev));
         setStreamContent("");
         streamRef.current = "";
       }
@@ -413,8 +412,7 @@ export default function CalendarViewPage() {
       if (!guard("generate")) return;
       const slot = slotOrWrapped as LessonSlot;
       const previousStatus = slot.status;
-      setSelectedSlot(null);
-      setIsGenerating(true);
+      setGeneratingSlotId(slot.id);
       streamRef.current = "";
       setStreamContent("");
       dispatch(setSlotStatus({ slotId: slot.id, status: "generating" }));
@@ -433,7 +431,6 @@ export default function CalendarViewPage() {
               trackLessonMaterial("regenerate", slot, Boolean(message), "completed");
               dispatch(setSlotStatus({ slotId: slot.id, status: "completed" }));
               dispatch(fetchLessons({ timetableId: id }));
-              setSelectedSlot(null);
             },
             onError: () => {
               trackLessonMaterial("regenerate", slot, Boolean(message), "failed");
@@ -451,7 +448,7 @@ export default function CalendarViewPage() {
           getToken
         );
       } finally {
-        setIsGenerating(false);
+        setGeneratingSlotId((prev) => (prev === slot.id ? null : prev));
         setStreamContent("");
         streamRef.current = "";
       }
@@ -607,7 +604,7 @@ export default function CalendarViewPage() {
             <Button
               size="sm"
               onClick={handleGenerateWeek}
-              disabled={generatingWeek || isGenerating}
+              disabled={generatingWeek || generatingSlotId !== null}
             >
               {generatingWeek ? (
                 <Loader2 className="mr-1 h-3 w-3 animate-spin" />
@@ -711,8 +708,8 @@ export default function CalendarViewPage() {
       {/* Shared slot dialog */}
       <SlotDialog
         slot={selectedSlotWithTimetable}
-        isSlotGenerating={isGenerating}
-        streamContent={streamContent || undefined}
+        isSlotGenerating={!!selectedSlot && generatingSlotId === selectedSlot.id}
+        streamContent={selectedSlot && generatingSlotId === selectedSlot.id ? streamContent || undefined : undefined}
         onClose={() => setSelectedSlot(null)}
         onGenerate={handleGenerateLesson}
         onRegenerate={handleRegenerateLesson}

@@ -14,19 +14,19 @@ export const ROLE_ORDER: TeacherRole[] = [
 
 /**
  * Step 2 can continue: the same rules as the server's saveProfile. Pre-school needs nothing (no curriculum yet),
- * special education needs years but not subjects, vocational needs years and at least one UC.
+ * special education needs years but not subjects, vocational needs years and at least one course (UCs are optional).
  */
 export function isTeachingValid(input: {
   role: TeacherRole | null;
   years: number[];
   subjectIds: string[];
-  unitCount: number;
+  courseCount: number;
 }): boolean {
-  const { role, years, subjectIds, unitCount } = input;
+  const { role, years, subjectIds, courseCount } = input;
   if (role === null) return false;
   if (role === "preschool") return true;
   if (years.length === 0) return false;
-  if (role === "vocational") return unitCount > 0;
+  if (role === "vocational") return courseCount > 0;
   if (role === "special_ed") return true;
   return subjectIds.length > 0;
 }

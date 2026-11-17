@@ -45,6 +45,9 @@ export function AppFeedbackSurveyGate() {
   const [isBusy, setIsBusy] = useState(false);
   const [lastCheckedAt, setLastCheckedAt] = useState<number | null>(null);
   const [uiRevision, setUiRevision] = useState(0);
+  // A teacher who just went through onboarding has barely used the app, so the
+  // survey waits for a later session.
+  const [onboardingShown, setOnboardingShown] = useState(false);
 
   const hasTrackedViewRef = useRef(false);
 
@@ -54,6 +57,10 @@ export function AppFeedbackSurveyGate() {
       pathname.startsWith(Routes.ADMIN),
     [pathname],
   );
+
+  useEffect(() => {
+    if (isOnboardingModalOpen) setOnboardingShown(true);
+  }, [isOnboardingModalOpen]);
 
   const getDaysSinceSignup = useCallback(() => {
     if (!currentUserProfile?.createdAt) {
@@ -68,7 +75,7 @@ export function AppFeedbackSurveyGate() {
       return true;
     }
 
-    if (isRouteSuppressed || isUpgradeModalOpen || isOnboardingModalOpen) {
+    if (isRouteSuppressed || isUpgradeModalOpen || isOnboardingModalOpen || onboardingShown) {
       return true;
     }
 
@@ -89,7 +96,7 @@ export function AppFeedbackSurveyGate() {
     ).some((element) => !element.hasAttribute("data-feedback-survey-modal"));
 
     return otherOpenDialogs;
-  }, [isRouteSuppressed, isUpgradeModalOpen, isOnboardingModalOpen]);
+  }, [isRouteSuppressed, isUpgradeModalOpen, isOnboardingModalOpen, onboardingShown]);
 
   const refreshSurveyStatus = useCallback(async () => {
     if (!isAuthLoaded || !isUserLoaded || !isSignedIn || !user?.id) {

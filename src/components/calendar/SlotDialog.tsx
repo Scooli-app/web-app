@@ -1,6 +1,5 @@
 "use client";
 import { MAX_LENGTHS } from "@/shared/config/constants";
-import { AiDisclaimer } from "@/components/ui/ai-disclaimer";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -36,7 +35,7 @@ import { isDocumentInProgress, objectiveItems } from "@/components/dashboard/wee
 import { CheckInCard } from "@/components/check-in/CheckInCard";
 import { MISSING_AMOUNTS } from "@/components/check-in/CheckInChoices";
 import { TeachingMarkBadge } from "@/components/calendar/TeachingMarkBadge";
-import { streamPreviewTail } from "@/components/calendar/streamPreview";
+import { GenerationProgress } from "@/components/calendar/GenerationProgress";
 import { AssessmentScopePicker } from "@/components/calendar/AssessmentScopePicker";
 import { useAssessmentScope } from "@/components/calendar/useAssessmentScope";
 import { testBlocked, testRequestOutcomeIds } from "@/components/calendar/assessmentScopeLogic";
@@ -102,6 +101,9 @@ interface ReinforcementNote {
   day: string;
 }
 
+/** Document roles with a short name under calendar.slotDialog.shortTypes. */
+const SHORT_TYPES = new Set(["lessonPlan", "worksheet", "quiz", "presentation", "test"]);
+
 function docUrl(role: string, documentId: string): string {
   return `${ROLE_ROUTE[role] ?? Routes.LESSON_PLAN}/${documentId}`;
 }
@@ -110,10 +112,10 @@ export interface SlotDialogProps {
   slot: SlotWithTimetable | null;
   /** True when THIS specific slot is being generated. */
   isSlotGenerating: boolean;
-  /** Optional streaming markdown content (shown while generating on sequence detail page). */
+  /** The lesson plan streamed so far, when the parent follows the stream: moves the progress indicator on. */
   streamContent?: string;
   onClose: () => void;
-  /** Writes the lesson plan; resolves once the stream has ended (the parent may close the pop-up). */
+  /** Writes the lesson plan; resolves once the stream has ended. The pop-up stays open meanwhile. */
   onGenerate: (slot: SlotWithTimetable, message?: string) => void | Promise<void>;
   onRegenerate: (slot: SlotWithTimetable, message?: string) => void;
   onTypeChange: (slot: SlotWithTimetable, type: LessonSlotType) => void;
@@ -290,6 +292,14 @@ export function SlotDialog({
   }, [docsInProgress, slotId]);
 
   if (!slot) return null;
+
+  /** The other documents still being prepared: the ones this run has yet to start, then the ones the server is writing. */
+  const setTypesInProgress = Array.from(
+    new Set<string>([
+      ...preparingTypes,
+      ...slotDocs.filter((d) => isDocumentInProgress(d.status ?? "completed")).map((d) => d.documentRole),
+    ]),
+  ).filter((type) => type !== "lessonPlan" && SHORT_TYPES.has(type));
 
   const todayIso = toIso(new Date());
   const showCheckIn = canCheckIn(checkInEnabled, slot, todayIso);
@@ -585,20 +595,19 @@ export function SlotDialog({
               </>
             )}
 
-            {/* Stream preview (shown while SSE generation is in progress) */}
-            {streamContent && isSlotGenerating && (
-              <>
-                <Separator />
-                <section aria-label={t("streamPreviewTitle")} className="space-y-1.5">
-                  <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
-                    {t("streamPreviewTitle")}
-                  </p>
-                  <p className="max-h-24 overflow-hidden whitespace-pre-line text-sm leading-relaxed text-muted-foreground [mask-image:linear-gradient(to_bottom,transparent,black_40%)]">
-                    {streamPreviewTail(streamContent)}
-                  </p>
-                </section>
-              </>
+            {/* What the AI is doing, while the plan or the rest of the set is being prepared */}
+            {(isSlotGenerating || setTypesInProgress.length > 0) && (
+              <GenerationProgress
+                key={isSlotGenerating ? "plan" : "set"}
+                title={
+                  isSlotGenerating
+                    ? t("progress.planTitle")
+                    : t("progress.setTitle", {
+                        items: setTypesInProgress.map((type) => t(`shortTypes.${type}`)).join(" + "),
+                      })
+                }
+                streamLength={isSlotGenerating ? streamContent?.length ?? 0 : 0}
+              />
             )}
 
             {/* "Como correu?" for a past, checkable lesson (class_state_enabled only) */}
@@ -794,7 +803,6 @@ export function SlotDialog({
         {!isHoliday && (
           // Phones: a two-column grid, main action first, so four stacked buttons don't hide the lesson.
           <DialogFooter className="border-t bg-muted/30 px-6 py-4 gap-2 max-sm:grid max-sm:grid-cols-2">
-            {(canGenerate || isCompleted) && <AiDisclaimer className="max-sm:order-4 max-sm:col-span-2 sm:mr-auto sm:self-center sm:text-left" />}
             {showReplanRequest && (
               <Button variant="outline" onClick={() => setReplanOpen(true)} className={cn("h-9 rounded-lg max-sm:order-3", !isCompleted && "max-sm:col-span-2")}>
                 {tReplan("actionLesson")}

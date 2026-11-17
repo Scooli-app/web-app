@@ -1,7 +1,6 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { computeTotals } from "@/lib/assessment/totals";
 import type { AeOutcome, AssessmentDocument, AssessmentItem, AssessmentSection } from "@/types/assessment";
 import {
@@ -29,6 +28,7 @@ import { HeaderForm } from "./HeaderForm";
 import { MAX_ITEMS, allExercises, exerciseNumbers, newExercise, nextId } from "./model";
 import { SectionBlock, type SectionActions } from "./SectionBlock";
 import { initialSheetTab, readSheetTab, rememberSheetTab, type SheetTab } from "./sheetTab";
+import { PagesSkeleton } from "./PagesSkeleton";
 import { SheetTabs } from "./SheetTabs";
 import { TotalsBar } from "./TotalsBar";
 
@@ -63,12 +63,14 @@ export interface AssessmentWorkspaceProps {
   onConfirmCheck?: (exerciseId: string) => void;
   /** The document is in English (its printed labels follow it). */
   english?: boolean;
+  /** Shown instead of the skeleton pages while the document is generated (the streamed preview). */
+  generating?: ReactNode;
 }
 
 const AE_RETRY_MS = 10000;
 
 /** Presentational editor: everything except loading, saving and chat transport. */
-export function AssessmentWorkspace({ doc, onChange: onChangeProp, readOnly = false, title, actions, chat, onOpenChat, banner, lessonContext, lookupAe, showAe = true, searchAe, requestImage, onEditingChange, answerChecks, onConfirmCheck, english }: AssessmentWorkspaceProps) {
+export function AssessmentWorkspace({ doc, onChange: onChangeProp, readOnly = false, title, actions, chat, onOpenChat, banner, lessonContext, lookupAe, showAe = true, searchAe, requestImage, onEditingChange, answerChecks, onConfirmCheck, english, generating }: AssessmentWorkspaceProps) {
   const t = useTranslations("assessmentEditor");
   const phone = useIsMobile();
   const [tab, setTab] = useState<SheetTab>("answers");
@@ -145,17 +147,17 @@ export function AssessmentWorkspace({ doc, onChange: onChangeProp, readOnly = fa
 
   return (
     <AssessmentEditorContext.Provider value={ctx}>
-      <div className={cn("flex min-h-0 w-full flex-1 flex-col overflow-hidden bg-muted/40", PHONE_TOUCH)}>
-        <div className="flex flex-shrink-0 flex-wrap items-center gap-2 border-b border-border bg-background px-4 py-2 max-md:gap-1.5 max-md:px-3">
-          <div className="flex min-w-0 flex-1 items-center gap-3 max-md:basis-full">{title}</div>
-          {actions}
-        </div>
-        {banner}
-
-        {/* The chat runs the full height, as in the other editors; the totals bar belongs to the sheet column. */}
-        <div className="flex min-h-0 flex-1">
+      {/* The chat takes the whole height on the right, as in the other editors; the title bar, banner and totals bar
+          belong to the sheet column. */}
+      <div className={cn("flex min-h-0 w-full flex-1 overflow-hidden bg-muted/40", PHONE_TOUCH)}>
           <div className="flex min-w-0 flex-1 flex-col">
-            <div className="relative min-h-0 flex-1 overflow-y-auto px-4 py-6 sm:px-6 max-md:px-0 max-md:py-3" onClick={() => setSelectedId(null)} aria-busy={readOnly || undefined}>
+            <div className="flex flex-shrink-0 flex-wrap items-center gap-2 border-b border-border bg-background px-4 py-2 max-md:gap-1.5 max-md:px-3">
+              <div className="flex min-w-0 flex-1 items-center gap-3 max-md:basis-full">{title}</div>
+              {actions}
+            </div>
+            {banner}
+            {/* A new box once the generated document opens: it starts at the top, not where the preview was followed to. */}
+            <div key={doc ? "document" : "generating"} className="relative min-h-0 flex-1 overflow-y-auto px-4 py-6 sm:px-6 max-md:px-0 max-md:py-3" onClick={() => setSelectedId(null)} aria-busy={readOnly || undefined}>
               {readOnly && doc && (
                 <div className="sticky top-0 z-20 mx-auto mb-3 flex w-fit items-center gap-2 rounded-full border border-border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-sm">
                   <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
@@ -165,7 +167,7 @@ export function AssessmentWorkspace({ doc, onChange: onChangeProp, readOnly = fa
               {lessonContext}
               {doc && <SheetTabs value={tab} onChange={changeTab} pendingChecks={pendingChecks} />}
               <div className={cn(readOnly && "pointer-events-none select-none opacity-60 transition-opacity")} inert={readOnly || undefined}>
-                {doc ? renderPages(doc) : <GeneratingPages />}
+                {doc ? renderPages(doc) : (generating ?? <GeneratingPages />)}
               </div>
             </div>
             {doc && (
@@ -183,7 +185,6 @@ export function AssessmentWorkspace({ doc, onChange: onChangeProp, readOnly = fa
             )}
           </div>
           <aside className="hidden w-80 flex-shrink-0 flex-col overflow-hidden border-l border-border bg-background lg:flex">{chat}</aside>
-        </div>
       </div>
     </AssessmentEditorContext.Provider>
   );
@@ -378,30 +379,7 @@ function GeneratingPages() {
           <p className="text-xs text-muted-foreground">{t("generatingSubtitle")}</p>
         </div>
       </div>
-      {[0, 1].map((page) => (
-        <div key={page} className="rounded-md border border-neutral-200 bg-white px-6 pb-14 pt-8 md:px-12 shadow-[0_2px_10px_rgba(0,0,0,0.06)]" style={{ aspectRatio: "210 / 297" }}>
-          {page === 0 && <Skeleton className="mb-6 h-20 w-full rounded bg-neutral-200" />}
-          {[0, 1].map((group) => (
-            <div key={group} className="mb-8">
-              <div className="mb-4 flex justify-between border-b-2 border-neutral-200 pb-1">
-                <Skeleton className="h-4 w-20 bg-neutral-200" />
-                <Skeleton className="h-4 w-12 bg-neutral-200" />
-              </div>
-              {[0, 1, 2].map((row) => (
-                <div key={row} className="mb-5 flex gap-3">
-                  <Skeleton className="h-4 w-4 shrink-0 bg-neutral-200" />
-                  <div className="flex flex-1 flex-col gap-2" style={{ animationDelay: `${row * 150}ms` }}>
-                    <Skeleton className="h-4 w-11/12 bg-neutral-200" />
-                    <Skeleton className="h-4 w-2/3 bg-neutral-200" />
-                    {row !== 1 && <Skeleton className="h-3 w-1/3 bg-neutral-100" />}
-                  </div>
-                  <Skeleton className="h-5 w-12 shrink-0 bg-neutral-200" />
-                </div>
-              ))}
-            </div>
-          ))}
-        </div>
-      ))}
+      <PagesSkeleton />
     </div>
   );
 }

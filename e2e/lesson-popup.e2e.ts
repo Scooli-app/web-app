@@ -35,7 +35,7 @@ test("o pop-up da aula prepara plano + ficha, com o plano primeiro", async ({ pa
   await expect(dialog).toContainText("Números pares e ímpares");
   await dialog.getByRole("button", { name: /^Preparar plano \+ ficha/ }).click();
 
-  // The plan streams first; the pop-up closes when it's written, then the worksheet starts.
+  // The plan streams first, then the worksheet starts.
   await expect.poll(() => calls, { timeout: 45_000 }).toEqual(["lessonPlan", "document:worksheet"]);
   expect(documentStartedBeforePlanFinished).toBe(false);
 
@@ -44,4 +44,10 @@ test("o pop-up da aula prepara plano + ficha, com o plano primeiro", async ({ pa
       timeout: 30_000,
     })
     .toEqual(["lessonPlan", "worksheet"]);
+
+  // The pop-up stays open through the whole set: it used to close when the plan finished.
+  await expect(dialog).toBeVisible();
+  await expect(dialog).toContainText("Números pares e ímpares");
+  // Progress is told in plain phrases, never as the raw text being written.
+  await expect(dialog).not.toContainText("generatedContent");
 });
