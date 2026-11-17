@@ -7,6 +7,9 @@ import { ImagePickerModal } from "./ImagePickerModal";
 import en from "../../../messages/en.json";
 import ptPT from "../../../messages/pt-PT.json";
 
+vi.mock("@/hooks/useAccountAccess", () => ({
+  useAccountAccess: () => ({ aiImagesExhausted: false, aiImagesResetAt: null, isTrial: false }),
+}));
 vi.mock("@/services/api", () => ({ uploadDocumentImage: vi.fn() }));
 // Keep the modal's real content and translation lookup; omit portal/focus traps.
 vi.mock("@/components/ui/dialog", () => ({

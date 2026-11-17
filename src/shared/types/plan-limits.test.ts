@@ -27,6 +27,8 @@ describe("parsePlanLimits (ENG-320)", () => {
       canStartTrial: false,
       lockReason: null,
       trialPromoCode: null,
+      aiImagesExhausted: false,
+      aiImagesResetAt: null,
     });
     expect(parsePlanLimits({ ...OLD_FREE, isPro: true, maxActiveClasses: null }).status).toBe("PRO");
   });

@@ -21,6 +21,7 @@
 "use client";
 
 import { useAuth } from "@clerk/nextjs";
+import { markPlanLimitsStale } from "@/hooks/planLimitsEvents";
 import { reportUiProblem } from "@/lib/reportUiProblem";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
@@ -204,6 +205,8 @@ export function useGenerationProgress({
 
             setState((s) => applyGenerationEvent(s, type, payload));
             if (type === "done") {
+              // Its images may have used up the AI image cap: the editor's notice reads the plan limits.
+              markPlanLimitsStale();
               setIsDone(true);
               ctrl.abort();
             } else if (type === "error") {

@@ -9,6 +9,9 @@ const searchStockImages = vi.fn();
 const importStockImage = vi.fn();
 const uploadDocumentImage = vi.fn();
 
+vi.mock("@/hooks/useAccountAccess", () => ({
+  useAccountAccess: () => ({ aiImagesExhausted: false, aiImagesResetAt: null, isTrial: false }),
+}));
 vi.mock("@/services/api", () => ({
   searchStockImages: (...args: unknown[]) => searchStockImages(...args),
   importStockImage: (...args: unknown[]) => importStockImage(...args),
