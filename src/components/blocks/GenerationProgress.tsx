@@ -7,6 +7,7 @@
  */
 "use client";
 
+import { AiImageQuotaNotice } from "@/components/billing/AiImageQuotaNotice";
 import { Check, Loader2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { cn } from "@/shared/utils/utils";
@@ -119,6 +120,7 @@ export function GenerationProgress({
                 }}
               />
             </div>
+            <AiImageQuotaNotice variant="progress" className="mt-3" />
           </div>
         ) : null}
 

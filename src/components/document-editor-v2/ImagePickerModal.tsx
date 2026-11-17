@@ -1,5 +1,7 @@
 "use client";
+import { AiImageQuotaNotice } from "@/components/billing/AiImageQuotaNotice";
 import { AiDisclaimer } from "@/components/ui/ai-disclaimer";
+import { useAccountAccess } from "@/hooks/useAccountAccess";
 
 /**
  * ImagePickerModal - modal for adding an image to a slide.
@@ -96,12 +98,15 @@ function TabBtn({
 function GenerateTab({
   onClose,
   onGenerate,
+  onSearch,
 }: {
   onClose: () => void;
   onGenerate: (prompt: string) => void;
+  onSearch: () => void;
 }) {
   const t = useTranslations("editor.imagePickerModal");
   const [prompt, setPrompt] = useState("");
+  const { aiImagesExhausted } = useAccountAccess();
 
   const handleGenerate = () => {
     const p = prompt.trim();
@@ -112,6 +117,7 @@ function GenerateTab({
 
   return (
     <div className="flex flex-col gap-4 p-4">
+      <AiImageQuotaNotice variant="picker" onSearch={onSearch} />
       <div className="flex flex-col gap-1.5">
         <label className="text-sm font-medium text-foreground">
           {t("describeImageLabel")}
@@ -135,7 +141,7 @@ function GenerateTab({
       <div className="flex flex-col items-end gap-1.5">
       <Button
         onClick={handleGenerate}
-        disabled={!prompt.trim()}
+        disabled={!prompt.trim() || aiImagesExhausted}
         className="gap-2 self-end"
       >
         <Sparkles className="h-4 w-4" />
@@ -973,7 +979,7 @@ export function ImagePickerModal({ open, documentId, replacing = false, initialS
 
         <div className="min-h-[220px]">
           {tab === "generate" && (
-            <GenerateTab onClose={onClose} onGenerate={onGenerate} />
+            <GenerateTab onClose={onClose} onGenerate={onGenerate} onSearch={() => setTab("images")} />
           )}
           {tab === "images" && (
             <ImagesTab documentId={documentId} initialSearchQuery={initialSearchQuery} onInsert={handleInsert} />

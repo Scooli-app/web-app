@@ -87,6 +87,8 @@ import {
 import { useAccountAccess } from "@/hooks/useAccountAccess";
 import { DocumentVersionsButton } from "@/components/document-versions/DocumentVersionsButton";
 import { regenerateDocumentImage as regenerateDocumentImageApi, generateDocumentImage as generateDocumentImageApi } from "@/services/api/document-images.service";
+import { isUpgradeLimitFailure } from "@/services/api/client";
+import { AiImageQuotaNotice } from "@/components/billing/AiImageQuotaNotice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { selectIsPro } from "@/store/subscription/selectors";
 import { selectEntitlementLoading } from "@/store/entitlements/selectors";
@@ -1026,6 +1028,8 @@ export function BlockDocumentEditor({ documentId }: Props) {
         toast.success(t("imageGenerated"));
       } catch (err) {
         toast.dismiss(loadingToastId);
+        // A limit (e.g. the AI image cap) already explained itself.
+        if (isUpgradeLimitFailure(err)) return;
         toast.error(err instanceof Error ? err.message : t("imageGenError"));
       }
     },
@@ -1628,7 +1632,8 @@ export function BlockDocumentEditor({ documentId }: Props) {
       } else {
         toast.info(t("imageProcessing"));
       }
-    } catch {
+    } catch (err) {
+      if (isUpgradeLimitFailure(err)) return;
       toast.error(t("imageRegenError"));
     }
   }, [resolveImageRegenOffers, document?.id, canvas, activeSlideId, t]);
@@ -2221,6 +2226,9 @@ export function BlockDocumentEditor({ documentId }: Props) {
   }
 
   const titleDisplay = getPresentationToolbarTitleDisplay(document.title);
+  const hasStockImages = canvas.slides.some((slide) =>
+    slide.elements.some((el) => el.type === "image_placeholder" && Boolean((el as CanvasImageElement).attribution)),
+  );
 
   return (
     <div className="flex w-full flex-1 min-h-0 flex-col overflow-hidden">
@@ -2238,6 +2246,8 @@ export function BlockDocumentEditor({ documentId }: Props) {
             canvasRef.current = null;
           }}
         />
+        {/* Only where it explains something on screen: stock photos that stand in for AI images. */}
+        {hasStockImages && <AiImageQuotaNotice variant="editor" className="mb-2" />}
       </div>
 
       {/* ── Main toolbar ───────────────────────────────────────────────── */}
