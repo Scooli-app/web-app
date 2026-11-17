@@ -14,7 +14,8 @@ import {
   type NextStepAction,
 } from "@/components/next-steps/nextSteps";
 import { CHECK_INS_CHANGED_EVENT, CHECK_INS_VISIBLE_EVENT, SHOW_CHECK_INS_EVENT, lastVisibleCheckIns } from "@/hooks/checkInSession";
-import { useCheckInFollowUps } from "@/hooks/useCheckInFollowUps";
+import { formatLessonDay, reinforcementTarget, useCheckInFollowUps } from "@/hooks/useCheckInFollowUps";
+import { ActionNotice } from "@/components/check-in/ActionNotice";
 import { useReplan } from "@/hooks/useReplan";
 import { getSuggestions, getTurmaSuggestions } from "@/services/api/suggestions.service";
 import { isSupportedLocale, defaultLocale } from "@/i18n/locales";
@@ -50,6 +51,10 @@ export function NextStepsCard({ timetableId, refreshKey = 0 }: NextStepsCardProp
   const [failedScope, setFailedScope] = useState<string | null>(null);
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [openLesson, setOpenLesson] = useState<WeekLessonTarget | null>(null);
+  /** The worksheet just requested from a step: where it is, until the teacher opens it or dismisses the note. */
+  const [reinforced, setReinforced] = useState<{ day: string; target: WeekLessonTarget } | null>(null);
+  const tCheckIn = useTranslations("checkIns");
+  const locale = useLocale();
   const scope = timetableId ?? "all";
   const shouldLoad = shouldLoadNextSteps(enabled);
 
@@ -117,9 +122,15 @@ export function NextStepsCard({ timetableId, refreshKey = 0 }: NextStepsCardProp
         const result = await shift(lesson.timetableId, lesson.slotId);
         if (result) reload();
       } else if (action === "reinforce") {
-        // The hook reports its own success (with "Abrir" on the pop-up here) or failure.
-        const started = await reinforce(lesson.timetableId, lesson.slotId, item.outcomeIds, setOpenLesson);
-        if (started) reload();
+        // The hook reports failures; the card says where the worksheet is, with "Abrir aula" in place.
+        const started = await reinforce(lesson.timetableId, lesson.slotId, item.outcomeIds);
+        if (started) {
+          setReinforced({
+            day: formatLessonDay(started.targetDate, locale),
+            target: reinforcementTarget(lesson.timetableId, started.targetSlotId, started.targetDate),
+          });
+          reload();
+        }
       }
     } finally {
       setBusyKey(null);
@@ -140,6 +151,23 @@ export function NextStepsCard({ timetableId, refreshKey = 0 }: NextStepsCardProp
           isPro={isPro}
           busyKey={busyKey}
           onAction={(item) => void onAction(item)}
+        />
+      )}
+      {reinforced && (
+        <ActionNotice
+          className="mt-2"
+          message={tCheckIn("reinforcementDone", { day: reinforced.day })}
+          actions={[
+            {
+              label: tCheckIn("openLesson"),
+              primary: true,
+              onClick: () => {
+                setOpenLesson(reinforced.target);
+                setReinforced(null);
+              },
+            },
+            { label: tCheckIn("afterSaveClose"), onClick: () => setReinforced(null) },
+          ]}
         />
       )}
       {/* Mounted even when the list empties: a finished prepare removes its step while the pop-up is still open. */}
@@ -225,13 +253,14 @@ export function NextStepsView({ items, showTurma, isPro = false, busyKey, onActi
             <li
               key={key}
               className={cn(
-                "flex items-center justify-between gap-3 border-l-2 py-2 pl-3 first:pt-0 last:pb-0",
+                // Wraps on narrow cards: a button that says what it does is long, and must not hide the step.
+                "flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-l-2 py-2 pl-3 first:pt-0 last:pb-0",
                 style.accent,
               )}
             >
               <p className="flex min-w-0 items-center gap-2 text-sm">
                 <Icon className={cn("h-4 w-4 shrink-0", style.tone)} aria-hidden />
-                <span className="min-w-0 truncate">
+                <span className="min-w-0 line-clamp-2">
                   {text(item)}
                   {showTurma && item.turmaTitle ? (
                     <span className="text-muted-foreground"> · {item.turmaTitle}</span>
