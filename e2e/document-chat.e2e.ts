@@ -116,9 +116,12 @@ test.describe("assistente do documento", () => {
 
 /** The document's words, without markdown layout the editor adds when it saves. */
 function sameText(markdown: string | null | undefined): string {
-  return (markdown ?? "")
-    .replace(/<!--\s*-->/g, "")
-    .replace(/<br\s*\/?>/gi, "")
-    .replace(/\s+/g, " ")
-    .trim();
+  // Repeat until nothing changes, so no comment marker can survive a single pass (CodeQL js/incomplete-multi-character-sanitization).
+  let text = markdown ?? "";
+  let previous: string;
+  do {
+    previous = text;
+    text = text.replace(/<!--\s*-->/g, "").replace(/<br\s*\/?>/gi, "");
+  } while (text !== previous);
+  return text.replace(/\s+/g, " ").trim();
 }
