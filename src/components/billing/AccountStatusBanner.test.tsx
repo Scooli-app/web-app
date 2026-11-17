@@ -36,6 +36,8 @@ function access(over: Partial<AccountAccessState>): AccountAccessState {
     trialDaysLeft: null,
     trialPromoCode: null,
     hasCredits: false,
+    aiImagesExhausted: false,
+    aiImagesResetAt: null,
     loading: false,
     guard: () => true,
     ...over,

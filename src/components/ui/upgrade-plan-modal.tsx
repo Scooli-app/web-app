@@ -10,7 +10,7 @@ import {
 import { useAccountAccess } from "@/hooks/useAccountAccess";
 import { Routes } from "@/shared/types";
 import type { UpgradeReason } from "@/shared/types/plan-limits";
-import { AlertCircle, ArrowRight, CalendarRange, Crown, Lock, Sparkles } from "lucide-react";
+import { AlertCircle, ArrowRight, CalendarRange, Crown, Gauge, Lock, Mail, Sparkles } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
@@ -32,11 +32,17 @@ export function UpgradePlanModal({
   const t = useTranslations("billing.upgradePlanModal");
   const router = useRouter();
   // Eligible accounts are offered the free Pro month next to the paid plans (ENG-320).
-  const { canStartTrial } = useAccountAccess();
+  const { canStartTrial, status } = useAccountAccess();
+  // A plain 402 (generation quota) means something different per account: a trial used up what the trial includes,
+  // and a paying Pro account hit the fair-use cap, where "upgrade to Pro" would make no sense.
+  const quotaVariant = reason ? null : status === "PRO" ? "fairUse" : status === "TRIAL" ? "trialLimit" : null;
 
   useEffect(() => {
     if (open) {
-      posthog.capture("upgrade_modal_viewed", { reason: reason ?? null, can_start_trial: canStartTrial });
+      posthog.capture("upgrade_modal_viewed", {
+        reason: reason ?? quotaVariant,
+        can_start_trial: canStartTrial,
+      });
     }
     // Once per opening, not when the eligibility loads.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -44,7 +50,9 @@ export function UpgradePlanModal({
 
   const isLockReason = reason === "account_locked" || reason === "trial_expired" || reason === "trial_not_activated";
   const ReasonIcon = isLockReason ? Lock : reason === "see_plans" ? Crown : AlertCircle;
-  const description = !reason
+  const description = quotaVariant
+    ? t(`${quotaVariant}.description`)
+    : !reason
     ? t("description")
     : reason === "trial_not_activated" && !canStartTrial
       ? t("reasons.trial_not_activated.descriptionNoTrial")
@@ -56,6 +64,38 @@ export function UpgradePlanModal({
     router.push(Routes.CHECKOUT);
   };
 
+  if (quotaVariant === "fairUse") {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-md p-0 overflow-y-auto">
+          <div className="px-8 pb-4 pt-8 pr-16 text-center">
+            <div className="w-14 h-14 bg-muted rounded-2xl flex items-center justify-center mx-auto mb-4 border border-border">
+              <Gauge className="w-7 h-7 text-muted-foreground" aria-hidden />
+            </div>
+            <DialogTitle className="text-2xl font-bold text-foreground mb-2">{t("fairUse.title")}</DialogTitle>
+            <DialogDescription className="text-muted-foreground">{description}</DialogDescription>
+            <p className="mt-3 text-sm text-muted-foreground">{t("fairUse.whatNow")}</p>
+          </div>
+          <div className="px-6 pb-6 pt-2 pr-14">
+            <Button asChild variant="outline" className="w-full h-12 rounded-xl font-semibold gap-2">
+              <a href="mailto:suporte@scooli.app">
+                <Mail className="w-4 h-4" aria-hidden />
+                {t("fairUse.contact")}
+              </a>
+            </Button>
+            <button
+              type="button"
+              onClick={() => onOpenChange(false)}
+              className="w-full mt-3 text-sm text-muted-foreground hover:text-foreground transition-colors py-1"
+            >
+              {t("fairUse.close")}
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md p-0 overflow-y-auto">
@@ -66,7 +106,7 @@ export function UpgradePlanModal({
           </div>
 
           <DialogTitle className="text-2xl font-bold text-foreground mb-1">
-            {reason ? t(`reasons.${reason}.title`) : t("title")}
+            {reason ? t(`reasons.${reason}.title`) : quotaVariant ? t(`${quotaVariant}.title`) : t("title")}
           </DialogTitle>
 
           <DialogDescription className="text-muted-foreground">

@@ -2529,6 +2529,17 @@
           "description": "You haven't activated your free Pro month yet. Activate it now and get 30 days with everything Pro offers.",
           "descriptionNoTrial": "Your account is read-only. Upgrade to Pro to create and generate documents, export, duplicate and share again."
         }
+      },
+      "trialLimit": {
+        "title": "You've used your trial's generations",
+        "description": "Your trial includes a set number of AI generations and you've used them all. Your documents are still here. Subscribe to Pro to keep generating."
+      },
+      "fairUse": {
+        "title": "You've reached the fair-use limit",
+        "description": "To keep Scooli fair for everyone, each Pro account has a limit on AI generations per period, and you've reached it.",
+        "whatNow": "You can still view, edit and export your documents. Generations come back at the start of your next period. If you need more, write to us.",
+        "contact": "Contact us",
+        "close": "Close"
       }
     },
     "plans": {
@@ -4413,5 +4424,20 @@
     "insert": "Formula",
     "loadFailed": "The formula editor couldn't open.",
     "retry": "Try again"
+  },
+  "imageQuota": {
+    "monthTitle": "You've used this month's AI images",
+    "trialTitle": "You've used the AI images included in your trial",
+    "editorMonth": "So the images in this presentation come from free photo libraries. AI images are back on {date}.",
+    "editorTrial": "So the images in this presentation come from free photo libraries. Pro includes AI images every month.",
+    "pickerMonth": "They're back on {date}. Until then, search free photos or upload your own.",
+    "pickerTrial": "Search free photos or upload your own. Pro includes AI images every month.",
+    "progressMonth": "This presentation's images come from free photo libraries. AI images are back on {date}.",
+    "progressTrial": "This presentation's images come from free photo libraries. Pro includes AI images every month.",
+    "generateMonth": "They're back on {date}. Until then, use “Search images” to find free photos, or upload your own.",
+    "generateTrial": "Use “Search images” to find free photos, or subscribe to Pro to get AI images again.",
+    "searchFree": "Search free photos",
+    "subscribe": "See Pro plans",
+    "dismiss": "Dismiss"
   }
 }

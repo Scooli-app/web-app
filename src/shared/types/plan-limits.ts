@@ -50,6 +50,10 @@ export interface PlanLimits {
   lockReason?: LockReason | null;
   /** The promo code applied to this trial (ENG-360); null when none. Optional: older backends omit it. */
   trialPromoCode?: string | null;
+  /** The AI image cap ran out: new presentations use free stock photos until `aiImagesResetAt`. */
+  aiImagesExhausted?: boolean;
+  /** ISO instant the AI image cap renews (1st of next month, or the trial's end); null without images. */
+  aiImagesResetAt?: string | null;
 }
 
 const ACCOUNT_STATUSES: readonly AccountStatus[] = ["PRO", "TRIAL", "LOCKED", "LEGACY_FREE"];
@@ -78,6 +82,8 @@ export function parsePlanLimits(raw: PlanLimits): PlanLimits {
     lockReason: status === "LOCKED" && isLockReason(raw.lockReason) ? raw.lockReason : null,
     trialPromoCode:
       known && typeof raw.trialPromoCode === "string" && raw.trialPromoCode.trim() ? raw.trialPromoCode : null,
+    aiImagesExhausted: raw.aiImagesExhausted === true,
+    aiImagesResetAt: typeof raw.aiImagesResetAt === "string" ? raw.aiImagesResetAt : null,
   };
 }
 
@@ -94,6 +100,9 @@ export interface AccountAccess {
   trialPromoCode: string | null;
   /** An old free account, still on generation credits: the only one that sees a credit count. */
   hasCredits: boolean;
+  /** The AI image cap ran out (see `PlanLimits.aiImagesExhausted`). */
+  aiImagesExhausted: boolean;
+  aiImagesResetAt: string | null;
 }
 
 /** Trial days left at or under which the trial banner becomes prominent. */
@@ -117,6 +126,8 @@ export function resolveAccountAccess(limits: PlanLimits | null): AccountAccess {
     trialPromoCode: parsed?.trialPromoCode ?? null,
     // Not while the limits are unknown, so a trial account never flashes a count.
     hasCredits: parsed?.status === "LEGACY_FREE",
+    aiImagesExhausted: parsed?.aiImagesExhausted ?? false,
+    aiImagesResetAt: parsed?.aiImagesResetAt ?? null,
   };
 }
 

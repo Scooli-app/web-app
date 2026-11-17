@@ -70,6 +70,8 @@ import { translate } from "@/i18n/translate";
 import { reportUiProblem } from "@/lib/reportUiProblem";
 import type { UnknownAction } from "@reduxjs/toolkit";
 import axios, { type AxiosError, type AxiosInstance } from "axios";
+import { showImageQuotaToast } from "@/components/billing/showImageQuotaToast";
+import { formatQuotaDate } from "@/lib/formatQuotaDate";
 import posthog from "posthog-js";
 
 const FREE_LIMIT_REASONS: readonly UpgradeReason[] = [
@@ -270,6 +272,22 @@ apiClient.interceptors.response.use(
           (error.response.data as { message?: string })?.message ||
           translate("errors.api.usageLimitExceeded");
         return Promise.reject(new UpgradeLimitError(limitMessage));
+      }
+      // The AI image cap ran out ("Gerar imagem" / "Regenerar"): say why and what to do instead, here once for
+      // every caller; they treat it like a limit (no failure toast of their own).
+      const body = error.response.data as { code?: unknown; trial?: unknown; resetsAt?: unknown } | undefined;
+      if (body?.code === "image_quota_exceeded") {
+        const trial = body.trial === true;
+        const date = typeof body.resetsAt === "string" ? formatQuotaDate(body.resetsAt) : null;
+        const title = translate(trial ? "imageQuota.trialTitle" : "imageQuota.monthTitle");
+        showImageQuotaToast(
+          title,
+          translate(trial ? "imageQuota.generateTrial" : "imageQuota.generateMonth", { date: date ?? "" }),
+          translate("imageQuota.dismiss"),
+        );
+        posthog.capture("ai_image_quota_hit", { trial, where: "generate" });
+        markPlanLimitsStale();
+        return Promise.reject(new UpgradeLimitError(title));
       }
     }
 

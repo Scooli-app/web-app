@@ -2529,6 +2529,17 @@
           "description": "Ainda não ativaste o teu mês Pro gratuito. Ativa-o agora e tens 30 dias com tudo o que o Pro oferece.",
           "descriptionNoTrial": "A tua conta está em modo de leitura. Atualiza para Pro para voltares a criar e gerar documentos, exportar, duplicar e partilhar."
         }
+      },
+      "trialLimit": {
+        "title": "Usaste as gerações do período experimental",
+        "description": "O período experimental inclui um número limitado de gerações com IA e já as usaste todas. Os teus documentos continuam disponíveis. Subscreve o Pro para continuares a gerar."
+      },
+      "fairUse": {
+        "title": "Atingiste o limite de uso justo",
+        "description": "Para a Scooli ser justa para todos, cada conta Pro tem um limite de gerações com IA por período, e chegaste a ele.",
+        "whatNow": "Continuas a ver, editar e exportar os teus documentos. As gerações voltam no início do próximo período. Se precisares de mais, escreve-nos.",
+        "contact": "Falar connosco",
+        "close": "Fechar"
       }
     },
     "plans": {
@@ -4413,5 +4424,20 @@
     "insert": "Fórmula",
     "loadFailed": "Não foi possível abrir o editor de fórmulas.",
     "retry": "Tentar de novo"
+  },
+  "imageQuota": {
+    "monthTitle": "Usaste as imagens geradas por IA deste mês",
+    "trialTitle": "Usaste as imagens geradas por IA do período experimental",
+    "editorMonth": "Por isso, as imagens desta apresentação vêm de bancos de fotos gratuitos. As imagens IA voltam a {date}.",
+    "editorTrial": "Por isso, as imagens desta apresentação vêm de bancos de fotos gratuitos. Com o Pro voltas a ter imagens geradas por IA todos os meses.",
+    "pickerMonth": "Voltam a {date}. Até lá, podes pesquisar fotos gratuitas ou carregar as tuas.",
+    "pickerTrial": "Podes pesquisar fotos gratuitas ou carregar as tuas. Com o Pro voltas a ter imagens geradas por IA todos os meses.",
+    "progressMonth": "As imagens desta apresentação vêm de bancos de fotos gratuitos. As imagens IA voltam a {date}.",
+    "progressTrial": "As imagens desta apresentação vêm de bancos de fotos gratuitos. Com o Pro voltas a ter imagens geradas por IA.",
+    "generateMonth": "Voltam a {date}. Até lá, usa «Pesquisar imagens» para encontrar fotos gratuitas ou carrega as tuas.",
+    "generateTrial": "Usa «Pesquisar imagens» para encontrar fotos gratuitas, ou subscreve o Pro para voltares a ter imagens geradas por IA.",
+    "searchFree": "Pesquisar fotos gratuitas",
+    "subscribe": "Ver planos Pro",
+    "dismiss": "Fechar aviso"
   }
 }
