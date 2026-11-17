@@ -39,6 +39,7 @@ import {
 import { TemplateSection } from "./templates";
 import type { DocumentTypeConfig, FormState, FormUpdateFn } from "./types";
 import { ThemeGallery } from "@/components/document-editor-v2/ThemePicker";
+import { DEFAULT_PRESENTATION_THEME } from "@/shared/types/presentation-theme";
 import { useSubjectChoice } from "./useSubjectChoice";
 
 // Most specific control first: the year card starts with the regular/vocational switch, not a year.
@@ -394,8 +395,9 @@ export default function DocumentCreationPage({
         );
 
         let redirectUrl = documentType.redirectPath.replace(":id", streamResponse.id);
-        if (isPresentation && formState.themeId) {
-          redirectUrl += `?theme=${encodeURIComponent(formState.themeId)}`;
+        if (isPresentation) {
+          // The gallery shows "clean" as selected until the teacher picks another: apply the theme they saw.
+          redirectUrl += `?theme=${encodeURIComponent(formState.themeId ?? DEFAULT_PRESENTATION_THEME)}`;
         }
         router.push(redirectUrl);
       } else {
@@ -515,7 +517,7 @@ export default function DocumentCreationPage({
             {isPresentation && <SlideCountSection slideCount={formState.slideCount} onUpdate={updateForm} />}
             {isPresentation && (
               <OptionRow label={t("presentationTheme.title")} alignTop>
-                <ThemeGallery value={formState.themeId ?? "clean"} onSelect={(id) => updateForm("themeId", id)} />
+                <ThemeGallery value={formState.themeId ?? DEFAULT_PRESENTATION_THEME} onSelect={(id) => updateForm("themeId", id)} />
               </OptionRow>
             )}
 

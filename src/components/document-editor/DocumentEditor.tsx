@@ -75,6 +75,7 @@ import {
   startNewConversation,
   useChatFailureText,
   useCreateDocumentFromChat,
+  lessonOf,
 } from "@/hooks/useDocumentChat";
 
 import { DocumentLessonContext } from "./DocumentLessonContext";
@@ -1611,6 +1612,7 @@ export default function DocumentEditor({
         duration: (currentDocument as { duration?: number | null }).duration ?? null,
         content: currentDocument.content,
         documentType: currentDocument.documentType,
+        lesson: lessonOf(currentDocument),
       });
       if (problem) {
         toast.error(tChat("errors.server"));

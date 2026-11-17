@@ -22,7 +22,7 @@ vi.mock("@/hooks/usePendingCheckIns", () => ({
   usePendingCheckIns: () => ({
     visible: state.visible,
     dismissed: false,
-    submit: async () => true,
+    submit: async () => ({ replanStarted: false }),
     confirmAll: async () => 0,
     skipForSession: vi.fn(),
     dismiss: vi.fn(),

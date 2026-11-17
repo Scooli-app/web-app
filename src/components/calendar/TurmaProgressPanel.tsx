@@ -93,7 +93,7 @@ export function TurmaProgressPanel({ timetableId, refreshKey = 0 }: TurmaProgres
   const requestReinforcement = async (outcome: TurmaProgressFlaggedOutcome) => {
     if (!outcome.lastSignalSlotId) return;
     setBusyOutcomeId(outcome.outcomeId);
-    const started = await reinforce(timetableId, outcome.lastSignalSlotId, [outcome.outcomeId], setOpenTarget);
+    const started = await reinforce(timetableId, outcome.lastSignalSlotId, [outcome.outcomeId]);
     setBusyOutcomeId(null);
     if (started) setReloadTick((n) => n + 1);
   };
