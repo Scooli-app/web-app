@@ -14,12 +14,14 @@ import {
   DAY_ORDER,
   weekScheduleLessonsPerWeek,
   type DayKey,
+  type PeriodConfig,
   type SlotTypeOrAuto,
   type WeekSchedule,
 } from "@/lib/timetable/planToTimetable";
 import { cn } from "@/shared/utils/utils";
-import { Plus, X } from "lucide-react";
+import { Copy, Plus, X } from "lucide-react";
 import { useTranslations } from "next-intl";
+import posthog from "posthog-js";
 import { useState } from "react";
 
 const DURATION_OPTIONS = [30, 45, 50, 90, 120];
@@ -65,11 +67,28 @@ export function WeekSchedulePicker({
     onChange({ ...schedule, [key]: { ...schedule[key], enabled: !schedule[key].enabled } });
   }
 
+  // A new period copies the one above it, so a day of equal periods needs no further edits.
   function addPeriod(key: DayKey) {
-    if (schedule[key].periods.length >= maxPeriodsPerDay) return;
-    onChange({
-      ...schedule,
-      [key]: { ...schedule[key], periods: [...schedule[key].periods, { durationMinutes: 50, type: "AUTO" }] },
+    const periods = schedule[key].periods;
+    if (periods.length >= maxPeriodsPerDay) return;
+    const previous: PeriodConfig = periods[periods.length - 1] ?? { durationMinutes: 50, type: "AUTO" };
+    onChange({ ...schedule, [key]: { ...schedule[key], periods: [...periods, { ...previous }] } });
+  }
+
+  function copyToOtherDays(key: DayKey) {
+    const targets = DAY_ORDER.filter((k) => k !== key && schedule[k].enabled);
+    const next = { ...schedule };
+    for (const k of targets) {
+      next[k] = { ...schedule[k], periods: schedule[key].periods.map((p) => ({ ...p })) };
+    }
+    // Custom-mode flags of the other days point at periods that no longer exist.
+    setCustomPeriods((prev) => new Set([...prev].filter((id) => id.startsWith(`${key}-`))));
+    onChange(next);
+    posthog.capture("schedule_bulk_action", {
+      step: "week_schedule",
+      action: "copy_to_other_days",
+      count: targets.length,
+      periods: schedule[key].periods.length,
     });
   }
 
@@ -91,6 +110,7 @@ export function WeekSchedulePicker({
   }
 
   const total = weekScheduleLessonsPerWeek(schedule);
+  const enabledDays = DAY_ORDER.filter((k) => schedule[k].enabled).length;
 
   return (
     <div className="space-y-4">
@@ -138,18 +158,35 @@ export function WeekSchedulePicker({
                 </span>
 
                 {day.enabled && (
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      addPeriod(key);
-                    }}
-                    disabled={day.periods.length >= maxPeriodsPerDay}
-                    className="ml-auto flex items-center gap-1 rounded-md border px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted disabled:opacity-30"
-                  >
-                    <Plus className="h-3 w-3" />
-                    {t("addPeriod")}
-                  </button>
+                  <div className="ml-auto flex items-center gap-1.5">
+                    {enabledDays > 1 && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          copyToOtherDays(key);
+                        }}
+                        aria-label={t("copyToOtherDays")}
+                        title={t("copyToOtherDays")}
+                        className="flex items-center gap-1 rounded-md border px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted"
+                      >
+                        <Copy className="h-3 w-3" />
+                        <span className="hidden sm:inline">{t("copyToOtherDays")}</span>
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        addPeriod(key);
+                      }}
+                      disabled={day.periods.length >= maxPeriodsPerDay}
+                      className="flex items-center gap-1 rounded-md border px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted disabled:opacity-30"
+                    >
+                      <Plus className="h-3 w-3" />
+                      {t("addPeriod")}
+                    </button>
+                  </div>
                 )}
               </div>
 
@@ -204,6 +241,7 @@ export function WeekSchedulePicker({
                           type="number"
                           min={10}
                           max={300}
+                          step={5}
                           value={period.durationMinutes || ""}
                           onChange={(e) => setPeriodDuration(key, index, Number(e.target.value))}
                           // Clamp on blur so an empty or tiny value never reaches the plan.

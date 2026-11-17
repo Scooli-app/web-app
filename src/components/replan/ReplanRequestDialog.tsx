@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useReplan } from "@/hooks/useReplan";
+import type { ReplanProposal } from "@/shared/types/replan";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 
@@ -20,7 +21,7 @@ interface ReplanRequestDialogProps {
   /** Fires once the proposal is being prepared, so the caller can say so where the teacher is looking. */
   onStarted?: () => void;
   /** Fires when that proposal is ready or failed (the toast that says which may be gone by then). */
-  onSettled?: () => void;
+  onSettled?: (proposal: ReplanProposal) => void;
 }
 
 /** From a lesson, "O que se passou nesta aula?"; for the whole turma, "O que mudou na turma?". Asks for a proposal, with an optional note. Pro only; the entry point hides it otherwise. */

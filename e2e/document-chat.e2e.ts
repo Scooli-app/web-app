@@ -106,6 +106,19 @@ test.describe("assistente do documento", () => {
     await page.getByRole("button", { name: "✗ Rejeitar todas" }).click();
 
     await expect.poll(async () => (await api.getDocument(documentId)).metadata?.pendingAiEdit ?? null).toBeNull();
-    expect((await api.getDocument(documentId)).content).toBe(before);
+    // The editor may save the same text back in its own markdown layout (blank lines, <br>, <!-- -->), so compare
+    // what the document says, not how it is laid out.
+    const after = (await api.getDocument(documentId)).content;
+    expect(after).not.toContain(ADDED);
+    expect(sameText(after)).toBe(sameText(before));
   });
 });
+
+/** The document's words, without markdown layout the editor adds when it saves. */
+function sameText(markdown: string | null | undefined): string {
+  return (markdown ?? "")
+    .replace(/<!--\s*-->/g, "")
+    .replace(/<br\s*\/?>/gi, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}

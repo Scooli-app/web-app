@@ -1,20 +1,16 @@
 "use client";
 
 import { CheckInCard, checkInTurmaName } from "@/components/check-in/CheckInCard";
-import { WeekLessonDialog, type WeekLessonTarget } from "@/components/dashboard/WeekLessonDialog";
+import { useCheckInNextStep } from "@/components/check-in/useCheckInNextStep";
 import { Button } from "@/components/ui/button";
 import { confirmableCount, shouldShowCheckInStrip } from "@/hooks/checkInQueue";
 import { CHECK_INS_CHANGED_EVENT, SHOW_CHECK_INS_EVENT, announceVisibleCheckIns, writeAsked } from "@/hooks/checkInSession";
-import { followUpFor, lessonTarget, useCheckInFollowUps, type CheckInFollowUp } from "@/hooks/useCheckInFollowUps";
 import { usePendingCheckIns } from "@/hooks/usePendingCheckIns";
-import { useReplan } from "@/hooks/useReplan";
 import type { CheckInSubmission, PendingCheckIn } from "@/shared/types/check-in";
-import { Routes } from "@/shared/types/routes";
 import { selectIsClassStateEnabled } from "@/store/features/selectors";
 import { useAppSelector } from "@/store/hooks";
 import { X } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -29,7 +25,6 @@ export function CheckInStrip() {
   const t = useTranslations("checkIns");
   const tTimetable = useTranslations("timetable");
   const locale = useLocale();
-  const router = useRouter();
   const enabled = useAppSelector(selectIsClassStateEnabled);
   const { visible, loaded, dismissed, submit, confirmAll, skipForSession, dismiss, show } = usePendingCheckIns(enabled);
   useEffect(() => {
@@ -49,10 +44,8 @@ export function CheckInStrip() {
     window.addEventListener(SHOW_CHECK_INS_EVENT, onShow);
     return () => window.removeEventListener(SHOW_CHECK_INS_EVENT, onShow);
   }, [show]);
-  const { offerAfterNotHeld } = useReplan();
-  const { reinforce, carry } = useCheckInFollowUps();
-  /** The lesson a reinforcement worksheet's "Abrir" opens. Mounted outside the strip, so it outlives the last card. */
-  const [openTarget, setOpenTarget] = useState<WeekLessonTarget | null>(null);
+  /** The one line left to answer after a check-in (the rest happens by itself), above the next card. */
+  const nextStep = useCheckInNextStep({ onChanged: notifyChanged });
 
   const showStrip = shouldShowCheckInStrip({ enabled, dismissed, visibleCount: visible.length });
   const current = visible[0];
@@ -70,25 +63,7 @@ export function CheckInStrip() {
     setScrollRequested(false);
   }, [scrollRequested, showStrip]);
 
-  /** ENG-236/237: after "some had difficulties" or "half done" with outcomes picked, asks as a toast with an action. */
-  const offerFollowUp = (item: PendingCheckIn, followUp: CheckInFollowUp) => {
-    const reinforcement = followUp.kind === "reinforcement";
-    toast(t(reinforcement ? "reinforcementQuestion" : "carryOverQuestion"), {
-      duration: 15000,
-      // The question is long and has two buttons: put the buttons on their own row so the text keeps the width.
-      classNames: { toast: "flex-wrap", content: "basis-full pr-4" },
-      action: {
-        label: t(reinforcement ? "reinforcementAction" : "carryOverAction"),
-        onClick: () => {
-          const started: Promise<unknown> = reinforcement
-            ? reinforce(item.timetableId, item.slotId, followUp.outcomeIds, setOpenTarget)
-            : carry(item.timetableId, item.slotId, followUp.outcomeIds);
-          void started.then((result) => result && notifyChanged());
-        },
-      },
-      cancel: { label: t("followUpKeep"), onClick: () => undefined },
-    });
-  };
+  const turmaName = (item: PendingCheckIn) => checkInTurmaName(item, (grade) => tTimetable("gradeShort", { grade }));
 
   const handleSubmit = async (item: PendingCheckIn, body: CheckInSubmission) => {
     const saved = await submit(item, body);
@@ -97,31 +72,13 @@ export function CheckInStrip() {
       return;
     }
     notifyChanged();
-    if (body.result === "TAUGHT") {
-      toast.success(t("taughtToast"), {
-        action: {
-          label: t("prepareNext"),
-          onClick: () => router.push(`${Routes.CALENDAR}/${item.timetableId}`),
-        },
-      });
-    }
-    if (body.result === "NOT_HELD") {
-      offerAfterNotHeld(item.timetableId, item.slotId);
-    }
-    const followUp = followUpFor(body);
-    if (followUp) {
-      offerFollowUp(item, followUp);
-    } else if (body.result === "TAUGHT_WITH_DIFFICULTIES" || body.result === "PARTIAL") {
-      // The card moves on to the next lesson: say what was saved, and how to change it.
-      toast.success(t("savedToast", { result: t(body.result === "PARTIAL" ? "resultPartial" : "resultDifficulties") }), {
-        description: checkInTurmaName(item, (grade) => tTimetable("gradeShort", { grade })),
-        duration: 10000,
-        action: {
-          label: t("change"),
-          onClick: () => setOpenTarget(lessonTarget(item.timetableId, item.slotId, item.slotDate)),
-        },
-      });
-    }
+    if (body.result === "TAUGHT") toast.success(t("taughtToast"));
+    // The strip goes straight on to the next lesson; what is left to decide shows as one line above it.
+    nextStep.afterSave(
+      { timetableId: item.timetableId, slotId: item.slotId, slotType: item.slotType, label: turmaName(item) },
+      body,
+      saved,
+    );
   };
 
   const handleConfirmAll = async () => {
@@ -136,6 +93,7 @@ export function CheckInStrip() {
 
   return (
     <>
+      {nextStep.row && !showStrip && <div className="mb-3">{nextStep.row}</div>}
       {showStrip && (
         <section
           ref={sectionRef}
@@ -157,6 +115,7 @@ export function CheckInStrip() {
               </Button>
             </div>
           </div>
+          {nextStep.row && <div className="mb-2">{nextStep.row}</div>}
           <CheckInCard
             key={current.slotId}
             item={current}
@@ -166,7 +125,7 @@ export function CheckInStrip() {
           />
         </section>
       )}
-      <WeekLessonDialog target={openTarget} onClose={() => setOpenTarget(null)} onChanged={() => undefined} />
+      {nextStep.sheet}
     </>
   );
 }

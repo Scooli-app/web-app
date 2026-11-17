@@ -350,7 +350,7 @@ export async function chatWithDocument(
   id: string,
   message: string,
   canvasState?: string,
-  options: { pendingReview?: boolean; selection?: string; attachment?: ChatAttachment } = {},
+  options: { pendingReview?: boolean; selection?: string; attachment?: ChatAttachment; elementAction?: boolean } = {},
 ): Promise<ChatResponse> {
   const response = await apiClient.post<ChatResponse>(
     `/documents/${id}/chat`,
@@ -360,6 +360,8 @@ export async function chatWithDocument(
       ...(options.pendingReview ? { pendingReview: true } : {}),
       ...(options.selection ? { selection: options.selection } : {}),
       ...(options.attachment ? { attachmentName: options.attachment.name, attachmentText: options.attachment.text } : {}),
+      // A slide quick action: the reply becomes the selected element's text, so the backend skips intent routing.
+      ...(options.elementAction ? { elementAction: true } : {}),
     },
     { timeout: CHAT_REQUEST_TIMEOUT_MS },
   );
@@ -578,10 +580,16 @@ export class DocumentStillProcessingError extends Error {}
 /**
  * Poll the backend until the document is available (status 200 OK)
  * Used to wait for background jobs (like import) to finish.
+ * Stops with the signal's abort reason once `signal` aborts.
  */
-export async function waitForDocument(id: string, maxAttempts = 60): Promise<void> {
+export async function waitForDocument(
+  id: string,
+  maxAttempts = 60,
+  signal?: AbortSignal
+): Promise<void> {
   const delayMs = 3000;
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    signal?.throwIfAborted();
     try {
       const doc = await getDocument(id);
       if (doc.status === "completed") {
@@ -614,6 +622,7 @@ export async function waitForDocument(id: string, maxAttempts = 60): Promise<voi
     // Wait before next attempt
     await new Promise((resolve) => setTimeout(resolve, delayMs));
   }
+  signal?.throwIfAborted();
   throw new DocumentStillProcessingError(translate("errors.documents.importTimeout"));
 }
 
