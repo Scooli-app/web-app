@@ -34,18 +34,29 @@ export function EditorSwitch(props: EditorSwitchProps) {
   const dispatch = useAppDispatch();
   const current = useAppSelector((s) => s.documents.currentDocument);
   const loadingId = useAppSelector((s) => s.documents.loadingDocumentId);
+  const loadFailed = useAppSelector((s) => s.documents.documentLoadError?.id === documentId);
   const document = current?.id === documentId ? current : null;
+  // The id fetched and not yet seen in the store. Cleared once it arrives, so if another document later
+  // replaces it in the store, it is fetched again.
   const [attempted, setAttempted] = useState<string | null>(null);
 
   useEffect(() => {
-    if (document || attempted === documentId) return;
+    if (document) {
+      setAttempted(null);
+      return;
+    }
+    if (attempted === documentId) return;
     setAttempted(documentId);
     if (loadingId !== documentId) void dispatch(fetchDocument(documentId));
   }, [attempted, dispatch, document, documentId, loadingId]);
 
-  if (!document && (attempted !== documentId || loadingId === documentId)) return <DocumentEditorSkeleton />;
-  // The fetch failed (deleted, someone else's, bad link): DocumentEditor would refetch on mount and loop.
-  if (!document) return <DocumentNotFound documentId={documentId} />;
+  if (!document) {
+    // The fetch failed (deleted, someone else's, bad link): DocumentEditor would refetch on mount and loop.
+    if (attempted === documentId && loadingId !== documentId && loadFailed) {
+      return <DocumentNotFound documentId={documentId} />;
+    }
+    return <DocumentEditorSkeleton />;
+  }
 
   if (isAssessmentDoc(document)) {
     return (
