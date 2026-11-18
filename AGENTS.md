@@ -450,3 +450,9 @@ Use these checklists:
 - Keep user API (`/feedback`) and admin API (`/admin/feedback`) contracts separated.
 - Reuse existing status/severity enums and badge mapping patterns.
 
+
+## Mapa de funcionalidades
+
+- Antes de fazer brainstorming, planear ou desenhar uma funcionalidade, usa a skill `before-building`; sem ela, segue `../scooli-map/AGENTS.md`. Em sessões remotas, clona `Scooli-app/scooli-map` ao lado deste repo se não existir; se for impossível, diz que o mapa não está disponível e continua.
+- Ao criar uma funcionalidade nova, adiciona o respetivo ficheiro ao `scooli-map` (carimbar, atualizar o índice, correr o check e fazer push para a `main` do `scooli-map`).
+- Nunca leias o `graphify-out/GRAPH_REPORT.md` inteiro; usa `graphify query`, `path` ou `explain`.
