@@ -17,6 +17,7 @@ Rules:
 
 ## Mapa de funcionalidades
 
-- Antes de fazer brainstorming, planear ou desenhar uma funcionalidade, usa a skill `before-building`; sem ela, segue `../scooli-map/AGENTS.md`. Em sessões remotas, clona `Scooli-app/scooli-map` ao lado deste repo se não existir; se for impossível, diz que o mapa não está disponível e continua.
-- Ao criar uma funcionalidade nova, adiciona o respetivo ficheiro ao `scooli-map` (carimbar, atualizar o índice, correr o check e fazer push para a `main` do `scooli-map`).
+- Usa o mapa (skill `before-building`; sem ela, segue `../scooli-map/AGENTS.md`) só para trabalho que cruza repos: impacto entre repos ("o que parte se mudar X"), planear uma funcionalidade que toca mais de um repo, entrada num país novo, ou saber se algo já existe noutro repo. Em sessões remotas, clona `Scooli-app/scooli-map` ao lado deste repo se não existir; se for impossível, diz que o mapa não está disponível e continua.
+- Para trabalho num só repo ou perguntas estreitas, não uses o mapa: pesquisa o código e usa `graphify query`, `path` ou `explain` quando precisares de relações (quem chama, como A liga a B).
+- Ao criar uma funcionalidade nova, ou ao mudar uma que o mapa lista, atualiza o respetivo ficheiro no `scooli-map` (carimbar, atualizar o índice, correr o check e fazer push para a `main` do `scooli-map`).
 - Nunca leias o `graphify-out/GRAPH_REPORT.md` inteiro; usa `graphify query`, `path` ou `explain`.
