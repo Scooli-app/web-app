@@ -6,6 +6,10 @@ export const selectWorkspaceDashboard = (state: RootState) =>
   state.workspace.dashboard;
 export const selectWorkspaceMembers = (state: RootState) =>
   state.workspace.members;
+export const selectWorkspaceInvitations = (state: RootState) =>
+  state.workspace.invitations;
+export const selectWorkspaceInvitationsError = (state: RootState) =>
+  state.workspace.invitationsError;
 export const selectWorkspaceLoading = (state: RootState) =>
   state.workspace.loading;
 export const selectWorkspaceReady = (state: RootState) => state.workspace.ready;

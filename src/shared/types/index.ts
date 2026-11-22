@@ -27,6 +27,8 @@ export type {
     OrganizationActivityPoint,
     OrganizationDashboard,
     OrganizationDocumentTypeBreakdown,
+    OrganizationInvitation,
+    OrganizationInviteRole,
     OrganizationMember,
     WorkspaceContext,
     WorkspaceType

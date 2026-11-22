@@ -52,6 +52,18 @@ export interface OrganizationMember {
   totalDocuments: number;
   sharedResourcesCount: number;
   lastActiveAt?: string | null;
+  /** The caller's own row: never offered for removal or a role change. */
+  currentUser?: boolean;
+}
+
+export type OrganizationInviteRole = "teacher" | "admin";
+
+/** A pending invitation (Clerk). Each one holds a seat until it is accepted or cancelled. */
+export interface OrganizationInvitation {
+  id: string;
+  email: string;
+  role: OrganizationInviteRole;
+  createdAt?: string | null;
 }
 
 export interface OrganizationDocumentTypeBreakdown {
