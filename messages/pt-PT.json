@@ -82,7 +82,6 @@
     "lessonMinutes": "{minutes} min",
     "noObjectivesYet": "Os objetivos aparecem quando o plano de aula estiver pronto.",
     "preparePlan": "Preparar plano de aula",
-    "documentGenerating": "A preparar…",
     "companionError": "Não foi possível criar este documento. Tenta novamente.",
     "companionInProgress": "Este documento já está a ser preparado.",
     "backToToday": "Hoje",
@@ -109,7 +108,14 @@
     "dayToPrepare": "{count, plural, one {# por preparar} other {# por preparar}}",
     "ready": "Pronta",
     "toPrepare": "Por preparar",
-    "seeAllInCalendar": "Ver as {count} aulas no calendário"
+    "seeAllInCalendar": "Ver as {count} aulas no calendário",
+    "docState": {
+      "writing": "a escrever…",
+      "waiting": "usa o plano",
+      "generating": "a gerar…",
+      "failed": "falhou",
+      "retry": "Tentar de novo"
+    }
   },
   "nextSteps": {
     "title": "O que fazer a seguir",
@@ -3044,14 +3050,11 @@
     },
     "drawer": {
       "fallbackTitle": "Detalhe da turma",
-      "execution": "Aulas em dia: {percent}% das previstas",
-      "executionUnknown": "Execução: —",
-      "why": "Porquê",
-      "missedTitle": "Aulas não dadas ou a meio",
+      "missedTitle": "O que aconteceu",
       "lessonNumber": "Aula {n}",
       "notHeld": "Não dada",
       "leftHalfway": "Ficou a meio",
-      "behindTitle": "Conteúdos atrasados",
+      "behindTitle": "Ainda por dar",
       "plannedFor": "previsto para {date}",
       "difficultiesTitle": "Dificuldades da turma",
       "flagged": "{count, plural, one {assinalada # vez} other {assinalada # vezes}}",
@@ -3060,7 +3063,18 @@
       "planPending": "Proposta por rever desde {date}",
       "nextTest": "Próximo teste",
       "partlyLeft": "parte por dar",
-      "planSummaryLabel": "O que a Scooli disse ao professor"
+      "planSummaryLabel": "O que a Scooli disse ao professor",
+      "executionLabel": "Aulas em dia, das previstas",
+      "yearLabel": "{grade}.º ano",
+      "kpiBehind": "{count, plural, one {aula em atraso} other {aulas em atraso}}",
+      "kpiMissed": "{count, plural, one {aula com problemas} other {aulas com problemas}}",
+      "showMore": "Ver mais {count}",
+      "showLess": "Ver menos",
+      "readAll": "Ler tudo",
+      "readLess": "Ler menos",
+      "copyEmail": "Copiar email",
+      "emailCopied": "Email copiado",
+      "copyFailed": "Não foi possível copiar o email."
     },
     "learning": {
       "title": "Onde a escola precisa de reforço",
@@ -3674,7 +3688,12 @@
           "s6": "A rever e afinar os detalhes"
         },
         "hint": "Podes fechar esta janela — continuamos a preparar em segundo plano."
-      }
+      },
+      "prepareLesson": "Preparar aula",
+      "adjustFollowing": "Ajustar seguintes",
+      "moreOptions": "Mais opções",
+      "suggestedSet": "sugerido para esta aula",
+      "openPlanShort": "Abrir plano"
     },
     "dashboardWidget": {
       "title": "Próximas aulas",
@@ -4053,7 +4072,7 @@
     "addition": "Acrescenta: {text}",
     "newOutcome": "Novo",
     "documentsNote": "Os materiais desta aula são atualizados sozinhos ao aplicar (a versão anterior fica guardada)",
-    "applyLabel": "{count, plural, =0 {Nenhuma alteração selecionada} one {Aplicar # alteração} other {Aplicar # alterações}}",
+    "applyLabel": "{count, plural, one {Aplicar a # aula} other {Aplicar a # aulas}}",
     "reject": "Rejeitar",
     "applied": "Alterações aplicadas",
     "rejected": "Proposta rejeitada",
@@ -4065,7 +4084,15 @@
     "readyHint": "Ao aplicar, os temas e os materiais já criados dessas aulas são atualizados sozinhos.",
     "seeChanges": "Ver alterações",
     "applyAll": "Aplicar",
-    "appliedAll": "Ajustes aplicados. Os materiais dessas aulas estão a ser atualizados."
+    "appliedAll": "Ajustes aplicados. Os materiais dessas aulas estão a ser atualizados.",
+    "sheetActionTitle": "{count, plural, one {Ajustar a próxima aula} other {Ajustar # aulas}}",
+    "selectAll": "Todas",
+    "chipOutcomes": "+{count} AE",
+    "detailTopic": "Tema",
+    "detailChange": "Muda",
+    "detailOutcomes": "Aprendizagens",
+    "topicKept": "mantém-se",
+    "outcomeFull": "Ver o texto completo"
   },
   "adminPromos": {
     "title": "Links de oferta",

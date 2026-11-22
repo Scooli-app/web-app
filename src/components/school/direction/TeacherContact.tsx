@@ -6,7 +6,7 @@ export function TeacherContact({ teacher }: { teacher: Teacher }) {
   if (!name && !email) return <span className="text-muted-foreground">—</span>;
 
   return (
-    <span className="inline-flex min-w-0 flex-wrap items-baseline gap-x-2">
+    <span className="inline-flex min-w-0 max-w-full flex-wrap items-baseline gap-x-2">
       {name && name !== email && <span className="font-medium text-foreground">{name}</span>}
       {email && (
         <a href={`mailto:${email}`} className="truncate text-primary hover:underline">

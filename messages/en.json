@@ -82,7 +82,6 @@
     "lessonMinutes": "{minutes} min",
     "noObjectivesYet": "Objectives appear once the lesson plan is ready.",
     "preparePlan": "Prepare lesson plan",
-    "documentGenerating": "Preparing…",
     "companionError": "Couldn’t create this document. Try again.",
     "companionInProgress": "This document is already being prepared.",
     "backToToday": "Today",
@@ -109,7 +108,14 @@
     "dayToPrepare": "{count, plural, one {# to prepare} other {# to prepare}}",
     "ready": "Ready",
     "toPrepare": "To prepare",
-    "seeAllInCalendar": "See all {count} lessons in the calendar"
+    "seeAllInCalendar": "See all {count} lessons in the calendar",
+    "docState": {
+      "writing": "writing…",
+      "waiting": "after the plan",
+      "generating": "generating…",
+      "failed": "failed",
+      "retry": "Retry"
+    }
   },
   "nextSteps": {
     "title": "What to do next",
@@ -3044,14 +3050,11 @@
     },
     "drawer": {
       "fallbackTitle": "Class details",
-      "execution": "On plan: {percent}% of lessons to date",
-      "executionUnknown": "Progress: —",
-      "why": "Why",
-      "missedTitle": "Missed or unfinished lessons",
+      "missedTitle": "What happened",
       "lessonNumber": "Lesson {n}",
       "notHeld": "Not held",
       "leftHalfway": "Left halfway",
-      "behindTitle": "Topics behind",
+      "behindTitle": "Still to teach",
       "plannedFor": "planned for {date}",
       "difficultiesTitle": "Where the class struggled",
       "flagged": "{count, plural, one {flagged once} other {flagged # times}}",
@@ -3060,7 +3063,18 @@
       "planPending": "Proposal awaiting review since {date}",
       "nextTest": "Next test",
       "partlyLeft": "partly left to teach",
-      "planSummaryLabel": "What Scooli told the teacher"
+      "planSummaryLabel": "What Scooli told the teacher",
+      "executionLabel": "On plan, of lessons to date",
+      "yearLabel": "Year {grade}",
+      "kpiBehind": "{count, plural, one {lesson behind} other {lessons behind}}",
+      "kpiMissed": "{count, plural, one {lesson with issues} other {lessons with issues}}",
+      "showMore": "Show {count} more",
+      "showLess": "Show less",
+      "readAll": "Read all",
+      "readLess": "Read less",
+      "copyEmail": "Copy email",
+      "emailCopied": "Email copied",
+      "copyFailed": "Could not copy the email."
     },
     "learning": {
       "title": "Where the school needs reinforcement",
@@ -3674,7 +3688,12 @@
           "s6": "Reviewing and polishing the details"
         },
         "hint": "You can close this window — we'll keep preparing in the background."
-      }
+      },
+      "prepareLesson": "Prepare lesson",
+      "adjustFollowing": "Adjust following",
+      "moreOptions": "More options",
+      "suggestedSet": "suggested for this lesson",
+      "openPlanShort": "Open plan"
     },
     "dashboardWidget": {
       "title": "Upcoming lessons",
@@ -4053,7 +4072,7 @@
     "addition": "Adds: {text}",
     "newOutcome": "New",
     "documentsNote": "This lesson's materials are updated by themselves when you apply (the previous version is kept)",
-    "applyLabel": "{count, plural, =0 {No change selected} one {Apply # change} other {Apply # changes}}",
+    "applyLabel": "{count, plural, one {Apply to # lesson} other {Apply to # lessons}}",
     "reject": "Reject",
     "applied": "Changes applied",
     "rejected": "Proposal rejected",
@@ -4065,7 +4084,15 @@
     "readyHint": "Applying updates those lessons' topics and the materials already created, by themselves.",
     "seeChanges": "See changes",
     "applyAll": "Apply",
-    "appliedAll": "Changes applied. Those lessons' materials are being updated."
+    "appliedAll": "Changes applied. Those lessons' materials are being updated.",
+    "sheetActionTitle": "{count, plural, one {Adjust the next lesson} other {Adjust # lessons}}",
+    "selectAll": "All",
+    "chipOutcomes": "{count, plural, one {+# outcome} other {+# outcomes}}",
+    "detailTopic": "Topic",
+    "detailChange": "What changes",
+    "detailOutcomes": "Outcomes",
+    "topicKept": "unchanged",
+    "outcomeFull": "See the full text"
   },
   "adminPromos": {
     "title": "Promo links",

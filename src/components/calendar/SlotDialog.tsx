@@ -25,6 +25,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 import { Routes } from "@/shared/types";
 import { LessonDocumentChips } from "@/components/dashboard/LessonDocumentChips";
@@ -64,6 +71,7 @@ import { toast } from "sonner";
 import {
   ChevronDown,
   Clock,
+  RefreshCw,
   Edit2,
   ExternalLink,
   FileText,
@@ -252,13 +260,7 @@ export function SlotDialog({
     status: d.status ?? "completed",
   }));
   // While the documents load we don't know what's missing yet, so nothing is suggested.
-  const {
-    suggested,
-    label: prepareLabel,
-    preparing,
-    prepare: handlePrepare,
-    inFlight: preparingTypes,
-  } = usePrepareLessonSet({
+  const { suggested, sets: prepareSets, preparing, prepare: handlePrepare, runStates } = usePrepareLessonSet({
     timetableId: slot?.timetable.id ?? "",
     lessonId: slot?.id ?? "",
     slotDate: slot?.slotDate ?? "",
@@ -296,7 +298,9 @@ export function SlotDialog({
   /** The other documents still being prepared: the ones this run has yet to start, then the ones the server is writing. */
   const setTypesInProgress = Array.from(
     new Set<string>([
-      ...preparingTypes,
+      ...Object.entries(runStates)
+        .filter(([, state]) => state === "waiting" || state === "generating")
+        .map(([type]) => type),
       ...slotDocs.filter((d) => isDocumentInProgress(d.status ?? "completed")).map((d) => d.documentRole),
     ]),
   ).filter((type) => type !== "lessonPlan" && SHORT_TYPES.has(type));
@@ -378,6 +382,15 @@ export function SlotDialog({
     } finally {
       setProposalBusy(false);
     }
+  };
+
+  // A past lesson's main business is its check-in: preparing documents for it stays possible, not primary.
+  const mainOutline = prepareSets.length > 0 && slot.slotDate < todayIso;
+
+  const openLessonPlan = () => {
+    const plan = visibleDocs.find((d) => d.documentRole === "lessonPlan");
+    onClose();
+    router.push(plan ? docUrl(plan.documentRole, plan.documentId) : Routes.DOCUMENTS);
   };
 
   const handleTitleSave = () => {
@@ -673,6 +686,7 @@ export function SlotDialog({
                     </div>
                   )}
                   {nextStep.row}
+                  {nextStep.sheet}
                   {reinforcementNote?.slotId === slot.id && (
                     <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-rose-500/30 bg-rose-500/5 px-3 py-2">
                       <span className="flex items-center gap-2 text-sm text-foreground">
@@ -752,8 +766,13 @@ export function SlotDialog({
                       compact
                       timetableId={slot.timetable.id}
                       onLessonPlan={() => void onGenerate(slot, customMessage || undefined)}
-                      lessonPlanBusy={isSlotGenerating}
-                      busyTypes={preparingTypes}
+                      // The plan streams through the page, so its state comes from there: written now, or its last run failed.
+                      runStates={{
+                        ...runStates,
+                        ...(isSlotGenerating
+                          ? { lessonPlan: "writing" }
+                          : slot.status === "failed" && { lessonPlan: "failed" }),
+                      }}
                       lesson={{ id: slot.id, slotType: slot.slotType, documents: lessonDocuments }}
                       testOutcomeIds={testRequestOutcomeIds(assessment.scope, assessment.selected)}
                       instruction={customMessage || undefined}
@@ -801,54 +820,89 @@ export function SlotDialog({
           </div>
         </div>
 
-        {/* Footer actions */}
-        {!isHoliday && (
-          // Phones: a two-column grid, main action first, so four stacked buttons don't hide the lesson.
-          <DialogFooter className="border-t bg-muted/30 px-6 py-4 gap-2 max-sm:grid max-sm:grid-cols-2">
+        {/* Footer actions: two short buttons that fit a phone in any language; the rest is in the main button's menu. */}
+        {!isHoliday && (showReplanRequest || isCompleted || prepareSets.length > 0 || isSlotGenerating || preparing) && (
+          <DialogFooter className="flex-row items-center gap-2 border-t bg-muted/30 px-3 py-3 sm:px-6 sm:py-4">
             {showReplanRequest && (
-              <Button variant="outline" onClick={() => setReplanOpen(true)} className={cn("h-9 rounded-lg max-sm:order-3", !isCompleted && "max-sm:col-span-2")}>
-                {tReplan("actionLesson")}
+              <Button
+                variant="outline"
+                onClick={() => setReplanOpen(true)}
+                title={tReplan("actionLesson")}
+                aria-label={tReplan("actionLesson")}
+                className="h-9 min-w-0 shrink rounded-lg max-sm:px-2.5"
+              >
+                <RefreshCw className="max-sm:hidden" aria-hidden />
+                <span className="truncate">{t("adjustFollowing")}</span>
               </Button>
             )}
-            {isCompleted && (
-              <>
-                <Button
-                  variant="outline"
-                  onClick={() => onRegenerate(slot, customMessage || undefined)}
-                  disabled={isSlotGenerating || preparing}
-                  className={cn("h-9 rounded-lg max-sm:order-3", !showReplanRequest && "max-sm:col-span-2")}
-                >
-                  {accountLocked ? <Lock className="mr-1.5 h-4 w-4" aria-hidden /> : <RotateCcw className="mr-1.5 h-4 w-4" />}
-                  {t("regenerate")}
+            <div className="ml-auto flex shrink-0">
+              {isSlotGenerating || preparing ? (
+                <Button disabled className="h-9 rounded-lg">
+                  <Loader2 className="motion-safe:animate-spin" aria-hidden />
+                  {t("generating")}
                 </Button>
-                <Button
-                  variant={suggested.length > 0 ? "outline" : "default"}
-                  onClick={() => {
-                    const plan = visibleDocs.find((d) => d.documentRole === "lessonPlan");
-                    onClose();
-                    router.push(
-                      plan ? docUrl(plan.documentRole, plan.documentId) : Routes.DOCUMENTS,
-                    );
-                  }}
-                  className="h-9 rounded-lg max-sm:order-2 max-sm:col-span-2"
-                >
-                  <FileText className="mr-1.5 h-4 w-4" />
-                  {t("openLessonPlan")}
-                </Button>
-              </>
-            )}
-            {isSlotGenerating || preparing ? (
-              <Button disabled className="h-9 rounded-lg max-sm:order-1 max-sm:col-span-2">
-                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-                {t("generating")}
-              </Button>
-            ) : suggested.length > 0 ? (
-              // A past lesson's main business is its check-in: preparing documents for it stays possible, not primary.
-              <Button onClick={() => void handlePrepare()} variant={slot.slotDate < todayIso ? "outline" : "default"} className="h-9 rounded-lg max-sm:order-1 max-sm:col-span-2">
-                {accountLocked ? <Lock className="mr-1.5 h-4 w-4" aria-hidden /> : <Sparkles className="mr-1.5 h-4 w-4" />}
-                {prepareLabel}
-              </Button>
-            ) : null}
+              ) : prepareSets.length > 0 || isCompleted ? (
+                <>
+                  {prepareSets.length > 0 ? (
+                    <Button
+                      onClick={() => void handlePrepare(prepareSets[0].types)}
+                      variant={mainOutline ? "outline" : "default"}
+                      title={prepareSets[0].label}
+                      className="h-9 rounded-lg rounded-r-none max-sm:px-2.5"
+                    >
+                      {accountLocked ? <Lock aria-hidden /> : <Sparkles className="max-sm:hidden" aria-hidden />}
+                      {t("prepareLesson")}
+                    </Button>
+                  ) : (
+                    <Button onClick={openLessonPlan} className="h-9 rounded-lg rounded-r-none">
+                      <FileText aria-hidden />
+                      {t("openPlanShort")}
+                    </Button>
+                  )}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant={mainOutline ? "outline" : "default"}
+                        aria-label={t("moreOptions")}
+                        className={cn(
+                          "h-9 w-8 rounded-lg rounded-l-none px-0",
+                          mainOutline ? "-ml-px" : "border-l border-l-primary-foreground/30",
+                        )}
+                      >
+                        <ChevronDown aria-hidden />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="max-w-[calc(100vw-2rem)]">
+                      {prepareSets.map((set, i) => (
+                        <DropdownMenuItem key={set.types.join()} onSelect={() => void handlePrepare(set.types)}>
+                          <span className="flex flex-col">
+                            <span className={cn(i === 0 && "font-semibold")}>{set.label}</span>
+                            {i === 0 && set.types.join() === suggested.join() && (
+                              <span className="text-xs text-muted-foreground">{t("suggestedSet")}</span>
+                            )}
+                          </span>
+                        </DropdownMenuItem>
+                      ))}
+                      {isCompleted && (
+                        <>
+                          {prepareSets.length > 0 && <DropdownMenuSeparator />}
+                          {prepareSets.length > 0 && (
+                            <DropdownMenuItem onSelect={openLessonPlan}>
+                              <FileText aria-hidden />
+                              {t("openLessonPlan")}
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuItem onSelect={() => onRegenerate(slot, customMessage || undefined)}>
+                            {accountLocked ? <Lock aria-hidden /> : <RotateCcw aria-hidden />}
+                            {t("regenerate")}
+                          </DropdownMenuItem>
+                        </>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </>
+              ) : null}
+            </div>
           </DialogFooter>
         )}
         {isPro && checkInEnabled && (

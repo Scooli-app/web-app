@@ -38,10 +38,11 @@ vi.mock("@/services/api/check-in.service", () => ({
 vi.mock("@/components/dashboard/usePrepareLessonSet", () => ({
   usePrepareLessonSet: () => ({
     suggested: [],
+    sets: [],
     label: "",
     preparing: false,
     prepare: vi.fn(),
-    inFlight: new Set(),
+    runStates: {},
   }),
 }));
 vi.mock("@/components/dashboard/LessonDocumentChips", () => ({ LessonDocumentChips: () => null }));

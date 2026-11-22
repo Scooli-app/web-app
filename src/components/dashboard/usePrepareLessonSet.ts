@@ -2,7 +2,7 @@
 
 import { startCompanionDocument } from "@/components/dashboard/LessonDocumentChips";
 import { preparationCost, suggestedDocuments } from "@/components/dashboard/lessonSuggestions";
-import type { CompanionType } from "@/components/dashboard/weekWindow";
+import { companionTypesFor, type CompanionType } from "@/components/dashboard/weekWindow";
 import { useAccountAccess } from "@/hooks/useAccountAccess";
 import { invalidatePlanLimits, usePlanLimits } from "@/hooks/usePlanLimits";
 import type { MyWeekLessonDocument } from "@/shared/types/my-week";
@@ -12,6 +12,13 @@ import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import posthog from "posthog-js";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
+
+/**
+ * Where a document of a "Preparar …" run is before the server lists it: the plan being written, a companion waiting
+ * for the plan (it is written from the plan's text), started and generating, or failed to start.
+ */
+export type RunState = "writing" | "waiting" | "generating" | "failed";
+export type RunStates = Partial<Record<CompanionType, RunState>>;
 
 interface PrepareLessonSetArgs {
   timetableId: string;
@@ -68,40 +75,68 @@ export function usePrepareLessonSet({
   const { limits } = usePlanLimits();
   const { guard, hasCredits } = useAccountAccess();
   const [preparing, setPreparing] = useState(false);
-  // Types of this run that haven't started on the server yet: shown as "A preparar…" right away.
-  const [inFlight, setInFlight] = useState<CompanionType[]>([]);
+  // Each document of this run until the server lists it; kept per lesson, as the pop-up reuses this hook across lessons.
+  const [run, setRun] = useState<{ lessonId: string; states: RunStates }>({
+    lessonId,
+    states: {},
+  });
+  const runStates = run.lessonId === lessonId ? run.states : {};
+  const setState = (type: CompanionType, state: RunState | null) =>
+    setRun((prev) => {
+      const states = { ...(prev.lessonId === lessonId ? prev.states : {}) };
+      if (state) states[type] = state;
+      else delete states[type];
+      return { lessonId, states };
+    });
 
   const suggested: CompanionType[] = ready
     ? suggestedDocuments(slotType, subject, documents, { worksheet, presentation }).filter(
         (type) => !(type === "test" && testBlocked),
       )
     : [];
+  // Every document the lesson still lacks, for the "all documents" choice of the prepare menu.
+  const allMissing: CompanionType[] = ready
+    ? companionTypesFor(slotType, documents, { worksheet, presentation }).filter(
+        (type) => !(type === "test" && testBlocked),
+      )
+    : [];
   // Only old free accounts still run on credits: nobody else sees a cost.
-  const cost = hasCredits ? preparationCost([{ slotDate, types: suggested }], limits) : null;
-  const label = [
-    t("prepareSet", { items: suggested.map((type) => t(`shortTypes.${type}`)).join(" + ") }),
-    cost === null ? null : t("cost", { count: cost }),
-  ]
-    .filter(Boolean)
-    .join(" · ");
+  const labelFor = (types: CompanionType[]) => {
+    const setCost = hasCredits ? preparationCost([{ slotDate, types }], limits) : null;
+    return [
+      t("prepareSet", { items: types.map((type) => t(`shortTypes.${type}`)).join(" + ") }),
+      setCost === null ? null : t("cost", { count: setCost }),
+    ]
+      .filter(Boolean)
+      .join(" · ");
+  };
+  const label = labelFor(suggested);
+  // The sets the prepare menu offers: the suggestion first, then every missing document, then the plan alone.
+  const sets = [suggested, allMissing, allMissing.includes("lessonPlan") ? (["lessonPlan"] as CompanionType[]) : []]
+    .filter((set, i, all) => set.length > 0 && all.findIndex((other) => other.join() === set.join()) === i)
+    .map((types) => ({ types, label: labelFor(types) }));
 
-  const prepare = async () => {
-    if (preparing || suggested.length === 0) return;
+  const prepare = async (types: CompanionType[] = suggested) => {
+    if (preparing || types.length === 0) return;
     if (!guard("generate")) return;
-    const types = suggested;
     posthog.capture("lesson_prepare_set_clicked", { surface, types, slot_type: slotType });
     setPreparing(true);
-    setInFlight(types);
+    const withPlan = types.includes("lessonPlan");
+    const failed: CompanionType[] = [];
+    const states: RunStates = {};
+    for (const type of types) states[type] = type === "lessonPlan" ? "writing" : withPlan ? "waiting" : "generating";
+    setRun({ lessonId, states });
     try {
-      if (types.includes("lessonPlan")) {
+      if (withPlan) {
         await generatePlan();
         invalidatePlanLimits(); // the first plan claims the free week
-        setInFlight((prev) => prev.filter((x) => x !== "lessonPlan"));
+        for (const type of types) if (type !== "lessonPlan") setState(type, "generating");
+        setState("lessonPlan", null);
         onDone();
       }
       for (const type of types) {
         if (type === "lessonPlan") continue;
-        await startCompanionDocument(
+        const result = await startCompanionDocument(
           timetableId,
           lessonId,
           type,
@@ -110,15 +145,20 @@ export function usePrepareLessonSet({
           type === "test" ? testOutcomeIds : undefined,
           instruction,
         );
-        setInFlight((prev) => prev.filter((x) => x !== type));
+        // Started: the server lists it as generating from now on. Blocked (upgrade, already there): back to "+ Tipo".
+        if (result === "failed") failed.push(type);
+        setState(type, result === "failed" ? "failed" : null);
         onDone(); // the started document shows as written now, not when the whole set is through
       }
     } finally {
-      setInFlight([]);
+      // Only a failure stays, with its "Tentar de novo"; the rest is on the server's list by now.
+      const left: RunStates = {};
+      for (const type of failed) left[type] = "failed";
+      setRun({ lessonId, states: left });
       setPreparing(false);
       onDone();
     }
   };
 
-  return { suggested, label, preparing, prepare, inFlight };
+  return { suggested, sets, label, preparing, prepare, runStates };
 }
