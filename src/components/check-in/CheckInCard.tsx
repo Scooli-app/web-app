@@ -122,7 +122,11 @@ export function CheckInCard({ item, locale, onSubmit, onSkip, onCancel, showMeta
     <div className="flex items-start justify-between gap-2">
       <div className="min-w-0">
         <h3 className="text-base font-semibold leading-snug text-foreground">
-          {isAssessmentCheckIn(item) ? t("assessmentQuestion") : t("title")}
+          {isAssessmentCheckIn(item)
+            ? t("assessmentQuestion")
+            : outcomeResult
+              ? t(outcomeResult === "PARTIAL" ? "resultPartial" : "resultDifficulties")
+              : t("title")}
         </h3>
         {showMeta && (
           <p className="mt-0.5 truncate text-sm text-muted-foreground" title={fullMeta}>

@@ -207,9 +207,14 @@ export function CheckInOutcomeStep({
 
       {offered.outcomes.length > 0 && (
         <div className="space-y-2">
-          <p id={questionId} className="text-sm font-medium text-foreground">
-            {question}
-          </p>
+          <div className="flex items-baseline justify-between gap-2">
+            <p id={questionId} className="text-sm font-medium text-foreground">
+              {question}
+            </p>
+            <span className="shrink-0 text-xs text-muted-foreground">
+              {t("outcomesCount", { count: offered.outcomes.length, source: offered.source ?? "lesson" })}
+            </span>
+          </div>
           {(offered.source === "unit" || offered.source === "catalogue") && (
             <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
               <Info className="mt-0.5 size-3.5 shrink-0" aria-hidden />

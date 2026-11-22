@@ -203,7 +203,8 @@
     "outcomesFromCatalogue": "Esta aula não tinha aprendizagens ligadas. Estas são das Aprendizagens Essenciais da disciplina e do ano; as que escolheres ficam ligadas à aula.",
     "outcomeSearch": "Procurar aprendizagem…",
     "outcomeSearchEmpty": "Nenhuma aprendizagem com “{query}”.",
-    "outcomesShowMore": "Ver mais {count}"
+    "outcomesShowMore": "Ver mais {count}",
+    "outcomesCount": "{count} {source, select, unit {da unidade} catalogue {do programa} other {da aula}}"
   },
   "previousCheckIn": {
     "question": "Como correu a aula?",

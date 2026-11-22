@@ -203,7 +203,8 @@
     "outcomesFromCatalogue": "This lesson had no learning outcomes linked. These are the outcomes for this subject and year; the ones you pick will be linked to the lesson.",
     "outcomeSearch": "Search outcomes…",
     "outcomeSearchEmpty": "No outcome matches “{query}”.",
-    "outcomesShowMore": "Show {count} more"
+    "outcomesShowMore": "Show {count} more",
+    "outcomesCount": "{count} {source, select, unit {from the unit} catalogue {for the subject and year} other {from the lesson}}"
   },
   "previousCheckIn": {
     "question": "How did the lesson go?",

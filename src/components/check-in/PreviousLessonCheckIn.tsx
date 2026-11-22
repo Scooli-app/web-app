@@ -199,7 +199,9 @@ export function PreviousLessonCheckInView({
       {/* Keeps the lesson in view in both steps: the outcome question alone does not say which lesson it is about. */}
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-foreground">{question}</p>
+          <p className="text-sm font-semibold text-foreground">
+            {outcomeResult ? tc(outcomeResult === "PARTIAL" ? "resultPartial" : "resultDifficulties") : question}
+          </p>
           {lessonName && (
             <p className="truncate text-xs text-muted-foreground" title={lessonName}>
               {lessonName}
