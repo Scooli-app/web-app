@@ -4572,6 +4572,7 @@
     "dismiss": "Dismiss"
   },
   "schoolSources": {
+    "title": "School sources",
     "intro": "Every teacher at your school gets these sources. Each teacher can switch them off for themselves.",
     "add": "Add source",
     "addTitle": "Add a school source",

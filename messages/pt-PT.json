@@ -4572,6 +4572,7 @@
     "dismiss": "Fechar aviso"
   },
   "schoolSources": {
+    "title": "Fontes da escola",
     "intro": "Os professores da escola recebem estas fontes. Cada um pode desligá-las para si.",
     "add": "Adicionar fonte",
     "addTitle": "Adicionar fonte da escola",
