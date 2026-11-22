@@ -48,7 +48,10 @@ import { selectIsClassStateEnabled } from "@/store/features/selectors";
 import { useAppDispatch } from "@/store/hooks";
 import type { RootState } from "@/store/store";
 import { setUpgradeModalOpen } from "@/store/ui/uiSlice";
-import { selectWorkspaceContext } from "@/store/workspace/selectors";
+import {
+  selectHasAccessibleOrganization,
+  selectWorkspaceContext,
+} from "@/store/workspace/selectors";
 import {
   SignInButton,
   SignedIn,
@@ -568,6 +571,8 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
   const { canAccess: canAccessSchoolArea } = useSchoolAdminAccess();
   const isClassStateEnabled = useSelector(selectIsClassStateEnabled);
   const showSchoolEntry = canAccessSchoolArea && isClassStateEnabled;
+  // Members of a school are already in an org, so recommending one makes no sense.
+  const hasAccessibleOrganization = useSelector(selectHasAccessibleOrganization);
   const inSchoolArea = pathname === Routes.SCHOOL || pathname.startsWith(`${Routes.SCHOOL}/`);
 
   // Desktop sidebar open/collapsed state, lifted out of SidebarProvider so it
@@ -695,24 +700,26 @@ export function SidebarLayout({ children, className }: SidebarLayoutProps) {
                         </Link>
                       </Button>
                     )}
-                    <Button
-                      asChild
-                      variant="outline"
-                      size="bar"
-                      className="border-primary/40 text-primary hover:bg-primary/10 hover:text-primary"
-                    >
-                      <a
-                        href={`${MARKETING_SITE_URL}/recomendar-instituicao`}
-                        target="_blank"
-                        rel="noreferrer"
-                        aria-label={t("items.recommendSchool.title")}
+                    {!hasAccessibleOrganization && (
+                      <Button
+                        asChild
+                        variant="outline"
+                        size="bar"
+                        className="border-primary/40 text-primary hover:bg-primary/10 hover:text-primary"
                       >
-                        <Building2 />
-                        <span className="hidden sm:inline">
-                          {t("items.recommendSchool.title")}
-                        </span>
-                      </a>
-                    </Button>
+                        <a
+                          href={`${MARKETING_SITE_URL}/recomendar-instituicao`}
+                          target="_blank"
+                          rel="noreferrer"
+                          aria-label={t("items.recommendSchool.title")}
+                        >
+                          <Building2 />
+                          <span className="hidden sm:inline">
+                            {t("items.recommendSchool.title")}
+                          </span>
+                        </a>
+                      </Button>
+                    )}
                     <PromoNavCta />
                     <TrialDaysChip />
                     <CreditsIndicator />
