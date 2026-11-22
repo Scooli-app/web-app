@@ -11,9 +11,9 @@ import { SchoolSourceDialog } from "./SchoolSourceDialog";
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 // Radix checkboxes observe their size; jsdom does not implement ResizeObserver.
 globalThis.ResizeObserver ??= class {
-  observe() {}
-  unobserve() {}
-  disconnect() {}
+  observe = () => undefined;
+  unobserve = () => undefined;
+  disconnect = () => undefined;
 } as unknown as typeof ResizeObserver;
 
 const api = vi.hoisted(() => ({ uploadSchoolSource: vi.fn(), updateSchoolSource: vi.fn() }));
@@ -36,7 +36,8 @@ function mount(locale: "pt-PT" | "en") {
 }
 
 function pick(size: number) {
-  const input = document.querySelector<HTMLInputElement>('input[type="file"]')!;
+  const input = document.querySelector<HTMLInputElement>('input[type="file"]');
+  if (!input) throw new Error("no file input");
   const file = new File(["x"], "Regulamento.pdf", { type: "application/pdf" });
   Object.defineProperty(file, "size", { value: size });
   Object.defineProperty(input, "files", { value: [file], configurable: true });
@@ -44,8 +45,8 @@ function pick(size: number) {
 }
 
 const submit = async () => {
-  await act(async () => document.querySelector<HTMLButtonElement>('button[type="submit"]')!.click());
-} as unknown as typeof ResizeObserver;
+  await act(async () => document.querySelector<HTMLButtonElement>('button[type="submit"]')?.click());
+};
 const alertText = () => document.querySelector('[role="alert"]')?.textContent;
 
 afterEach(() => {
