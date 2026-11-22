@@ -33,7 +33,10 @@ test("o pop-up da aula prepara plano + ficha, com o plano primeiro", async ({ pa
 
   const dialog = page.getByRole("dialog");
   await expect(dialog).toContainText("Números pares e ímpares");
-  await dialog.getByRole("button", { name: /^Preparar plano \+ ficha/ }).click();
+  // The main button says "Preparar aula"; its tooltip names the suggested set.
+  const prepare = dialog.getByRole("button", { name: /^Preparar aula/ });
+  await expect(prepare).toHaveAttribute("title", /^Preparar plano \+ ficha/);
+  await prepare.click();
 
   // The plan streams first, then the worksheet starts.
   await expect.poll(() => calls, { timeout: 45_000 }).toEqual(["lessonPlan", "document:worksheet"]);
