@@ -51,10 +51,6 @@ export async function setSourceDefault(
   return response.data;
 }
 
-export async function resetSourceDefault(sourceRef: string): Promise<void> {
-  await apiClient.delete(`/sources/defaults/${encodeURIComponent(sourceRef)}`);
-}
-
 export async function deleteSource(id: string): Promise<void> {
   await apiClient.delete(`/sources/${id}`);
 }

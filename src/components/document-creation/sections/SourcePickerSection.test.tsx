@@ -45,7 +45,7 @@ async function setup(
   const store = configureStore({
     reducer: rootReducer,
     preloadedState: {
-      sourceDefaults: { status: "loaded", entries: school },
+      sourceDefaults: { status: "loaded", entries: school, pending: {} },
       features: { flags: { [FeatureFlag.USER_SOURCES]: true }, loading: false, loaded: true, error: null },
     } as never,
   });

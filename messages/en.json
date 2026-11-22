@@ -2711,7 +2711,7 @@
       "fromSchool": "From your school · {name}",
       "yours": "Your sources",
       "useByDefault": "Use by default",
-      "aeOffNote": "Without the curriculum source, quick documents no longer follow the curriculum.",
+      "aeOffNote": "Switched off, quick documents stop following the curriculum.",
       "typeRegra": "Rule",
       "typeApoio": "Support",
       "addedBy": "Added by {name}",

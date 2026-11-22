@@ -9,7 +9,9 @@ import en from "../../../messages/en.json";
 import pt from "../../../messages/pt-PT.json";
 import { ApiRequestError } from "@/services/api/client";
 import { listSourceDefaults, setSourceDefault } from "@/services/api/sources.service";
+import { ALL_YEARS, LONG_NAME } from "@/shared/test/longContent";
 import type { SourceDefault } from "@/shared/types/sources";
+import { SUBJECTS } from "@/components/document-creation/constants";
 import { toast } from "sonner";
 import sourceDefaults from "@/store/sources/sourceDefaultsSlice";
 import { DefaultSourcesSections } from "./DefaultSourcesSections";
@@ -23,10 +25,10 @@ const mk = (o: Partial<SourceDefault>): SourceDefault => ({
   uploadedByName: null, summary: null, externalUrl: null, chunkCount: 0, ...o,
 });
 
-function render(locale: "pt-PT" | "en", messages: typeof pt, entries: SourceDefault[], status: "loaded" | "failed" = "loaded") {
+function render(locale: "pt-PT" | "en", messages: typeof pt, entries: SourceDefault[], status: "loaded" | "failed" | "loading" = "loaded") {
   const store = configureStore({
     reducer: { sourceDefaults },
-    preloadedState: { sourceDefaults: { entries, status } },
+    preloadedState: { sourceDefaults: { entries, status, pending: {} } },
   });
   const container = document.createElement("div");
   document.body.appendChild(container);
@@ -52,6 +54,9 @@ const entries = [
   }),
 ];
 
+/** The AE-off note, found by its text rather than by role. */
+const noteOf = (c: HTMLElement, text: string) => [...c.querySelectorAll("p")].find((el) => el.textContent === text) ?? null;
+
 describe.each([["pt-PT", pt], ["en", en]] as const)("DefaultSourcesSections %s", (locale, messages) => {
   it("renders every section with a named switch, the AE-off note and no raw keys", () => {
     const { container: c } = render(locale, messages as typeof pt, entries);
@@ -60,7 +65,7 @@ describe.each([["pt-PT", pt], ["en", en]] as const)("DefaultSourcesSections %s",
     expect(headings).toEqual([p.curriculum, p.regulatory, p.fromSchool.replace("{name}", "Agrupamento A")]);
     const labels = [...c.querySelectorAll('[role="switch"]')].map((s) => s.getAttribute("aria-label"));
     expect(labels).toEqual(entries.map((e) => `${p.useByDefault}: ${e.name}`));
-    expect(c.querySelector('[role="status"]')?.textContent).toBe(p.aeOffNote);
+    expect(noteOf(c, p.aeOffNote)).not.toBeNull();
     expect(c.textContent).toContain(messages.sources.status.embedding); // not indexed: status shown, switch kept
     expect(c.textContent).not.toMatch(/sources\.(page|status)|schoolSources\./);
     expect(c.querySelector("a[download]")).toBeNull();
@@ -68,7 +73,31 @@ describe.each([["pt-PT", pt], ["en", en]] as const)("DefaultSourcesSections %s",
 
   it("hides the AE note while AE is on", () => {
     const { container: c } = render(locale, messages as typeof pt, [mk({ sourceRef: "ae", kind: "ae", name: "AE" })]);
-    expect(c.querySelector('[role="status"]')).toBeNull();
+    expect(noteOf(c, messages.sources.page.aeOffNote)).toBeNull();
+  });
+
+  it("shows placeholder rows while the defaults load, not an empty section", () => {
+    const { container: c } = render(locale, messages as typeof pt, [], "loading");
+    expect(c.querySelector('[aria-hidden="true"], [aria-hidden=""]')).not.toBeNull();
+    expect(c.querySelector('[role="switch"]')).toBeNull();
+  });
+
+  it("clamps very long names and many tags, keeping the full text in the title", () => {
+    const tagged = mk({
+      sourceRef: "o9", kind: "organization", type: "apoio", name: LONG_NAME, organizationId: "A", organizationName: LONG_NAME,
+      subjects: SUBJECTS.map((s) => s.value), schoolYears: ALL_YEARS, uploadedByName: LONG_NAME,
+    });
+    const { container: c } = render(locale, messages as typeof pt, [
+      mk({ sourceRef: "r9", kind: "regulatory", name: LONG_NAME }),
+      tagged,
+    ]);
+    const named = [...c.querySelectorAll<HTMLElement>(`[title="${LONG_NAME}"]`)];
+    expect(named).toHaveLength(2);
+    expect(named.every((el) => /line-clamp-2|truncate/.test(el.className))).toBe(true);
+    const meta = [...c.querySelectorAll<HTMLElement>("p[title]")].find((el) => el.title.includes(" · "));
+    expect(meta?.title).toContain(LONG_NAME); // "Adicionada por <name>" is in it
+    expect(meta?.className).toContain("line-clamp-2");
+    expect(c.querySelectorAll('[role="switch"]')).toHaveLength(2); // the switch stays, whatever the text
   });
 
   it("toasts when a toggle fails and the switch goes back", async () => {

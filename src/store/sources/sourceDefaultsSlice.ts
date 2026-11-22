@@ -7,9 +7,11 @@ import type { RootState } from "../store";
 interface SourceDefaultsState {
   entries: SourceDefault[];
   status: "idle" | "loading" | "loaded" | "failed";
+  /** Toggles still in flight per source: how many, and the last value the server confirmed. */
+  pending: Record<string, { count: number; confirmed: boolean }>;
 }
 
-const initialState: SourceDefaultsState = { entries: [], status: "idle" };
+const initialState: SourceDefaultsState = { entries: [], status: "idle", pending: {} };
 
 export const fetchSourceDefaults = createAsyncThunk("sourceDefaults/fetch", () =>
   listSourceDefaults()
@@ -28,9 +30,15 @@ export const toggleSourceDefault = createAsyncThunk(
   }
 );
 
-const setEnabled = (state: SourceDefaultsState, sourceRef: string, enabled: boolean) => {
+// The switch shows the latest click while toggles are in flight; once the last settles, the last value the server confirmed.
+const settle = (state: SourceDefaultsState, sourceRef: string) => {
+  const p = state.pending[sourceRef];
+  if (!p) return;
+  p.count -= 1;
+  if (p.count > 0) return;
   const entry = state.entries.find((e) => e.sourceRef === sourceRef);
-  if (entry) entry.effectiveDefault = enabled;
+  if (entry) entry.effectiveDefault = p.confirmed;
+  delete state.pending[sourceRef];
 };
 
 const slice = createSlice({
@@ -43,21 +51,38 @@ const slice = createSlice({
         state.status = "loading";
       })
       .addCase(fetchSourceDefaults.fulfilled, (state, action) => {
-        state.entries = action.payload;
+        // A read that started before a toggle landed must not flip that switch back.
+        const optimistic = new Map(state.entries.map((e) => [e.sourceRef, e.effectiveDefault]));
+        state.entries = action.payload.map((e) =>
+          state.pending[e.sourceRef] && optimistic.has(e.sourceRef)
+            ? { ...e, effectiveDefault: optimistic.get(e.sourceRef) as boolean }
+            : e
+        );
         state.status = "loaded";
       })
       .addCase(fetchSourceDefaults.rejected, (state) => {
         state.status = "failed";
       })
       .addCase(toggleSourceDefault.pending, (state, action) => {
-        setEnabled(state, action.meta.arg.sourceRef, action.meta.arg.enabled);
+        const { sourceRef, enabled } = action.meta.arg;
+        const entry = state.entries.find((e) => e.sourceRef === sourceRef);
+        if (!entry) return;
+        const p = state.pending[sourceRef];
+        if (p) p.count += 1;
+        else state.pending[sourceRef] = { count: 1, confirmed: entry.effectiveDefault };
+        entry.effectiveDefault = enabled;
       })
       .addCase(toggleSourceDefault.fulfilled, (state, action) => {
-        const i = state.entries.findIndex((e) => e.sourceRef === action.payload.sourceRef);
-        if (i >= 0) state.entries[i] = action.payload;
+        const { sourceRef } = action.meta.arg;
+        const p = state.pending[sourceRef];
+        if (p) p.confirmed = action.payload.effectiveDefault;
+        // An unknown ref was dropped by a refetch (deleted meanwhile): it is not brought back.
+        const i = state.entries.findIndex((e) => e.sourceRef === sourceRef);
+        if (i >= 0) state.entries[i] = { ...action.payload, effectiveDefault: state.entries[i].effectiveDefault };
+        settle(state, sourceRef);
       })
       .addCase(toggleSourceDefault.rejected, (state, action) => {
-        setEnabled(state, action.meta.arg.sourceRef, !action.meta.arg.enabled);
+        settle(state, action.meta.arg.sourceRef);
       });
   },
 });
