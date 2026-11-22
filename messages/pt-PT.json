@@ -2969,7 +2969,9 @@
           "notEnoughSeats": "{free, plural, =0 {Não há lugares livres} one {Só há # lugar livre} other {Só há # lugares livres}}.",
           "tooMany": "Até {max} emails de cada vez."
         }
-      }
+      },
+      "joinedAndLastActive": "Entrou em: {joinedDate} · Última atividade: {lastActiveDate}",
+      "never": "Ainda sem atividade"
     },
     "settings": {
       "title": "Definições da escola",

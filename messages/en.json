@@ -2969,7 +2969,9 @@
           "notEnoughSeats": "{free, plural, =0 {There are no free seats} one {Only # seat is free} other {Only # seats are free}}.",
           "tooMany": "Up to {max} emails at a time."
         }
-      }
+      },
+      "joinedAndLastActive": "Joined: {joinedDate} · Last active: {lastActiveDate}",
+      "never": "No activity yet"
     },
     "settings": {
       "title": "School settings",

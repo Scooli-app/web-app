@@ -244,6 +244,17 @@ export function SchoolMembersPanel({ members, invitations, seatLimit, invitation
                     <p className="truncate text-sm text-muted-foreground" title={isInvite ? undefined : row.email}>
                       {secondLine}
                     </p>
+                    {row.kind === "member" && (
+                      // ENG-415: last activity counts check-ins too; the direction needs it per teacher.
+                      <p className="truncate text-xs text-muted-foreground">
+                        {tSchool("members.joinedAndLastActive", {
+                          joinedDate: row.member.joinedAt ? formatDay(row.member.joinedAt, locale, true) : "—",
+                          lastActiveDate: row.member.lastActiveAt
+                            ? formatDay(row.member.lastActiveAt, locale, true)
+                            : tSchool("members.never"),
+                        })}
+                      </p>
+                    )}
                     <p className="text-xs text-muted-foreground sm:hidden">{roleLabel}</p>
                   </div>
                   <span className="hidden w-24 shrink-0 text-sm sm:block">{roleLabel}</span>
