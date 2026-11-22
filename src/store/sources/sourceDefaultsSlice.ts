@@ -1,3 +1,4 @@
+import { ApiRequestError } from "@/services/api/client";
 import { listSourceDefaults, setSourceDefault } from "@/services/api/sources.service";
 import type { SourceDefault } from "@/shared/types/sources";
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
@@ -16,8 +17,15 @@ export const fetchSourceDefaults = createAsyncThunk("sourceDefaults/fetch", () =
 
 export const toggleSourceDefault = createAsyncThunk(
   "sourceDefaults/toggle",
-  ({ sourceRef, enabled }: { sourceRef: string; enabled: boolean }) =>
-    setSourceDefault(sourceRef, enabled)
+  async ({ sourceRef, enabled }: { sourceRef: string; enabled: boolean }, { rejectWithValue }) => {
+    try {
+      return await setSourceDefault(sourceRef, enabled);
+    } catch (e) {
+      // A 4xx message is already in the teacher's language; anything else gets the generic toast.
+      if (e instanceof ApiRequestError && e.status >= 400 && e.status < 500) return rejectWithValue(e.message);
+      throw e;
+    }
+  }
 );
 
 const setEnabled = (state: SourceDefaultsState, sourceRef: string, enabled: boolean) => {

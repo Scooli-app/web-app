@@ -7,11 +7,15 @@ import { Provider } from "react-redux";
 import { describe, expect, it, vi } from "vitest";
 import en from "../../../messages/en.json";
 import pt from "../../../messages/pt-PT.json";
+import { ApiRequestError } from "@/services/api/client";
+import { listSourceDefaults, setSourceDefault } from "@/services/api/sources.service";
 import type { SourceDefault } from "@/shared/types/sources";
+import { toast } from "sonner";
 import sourceDefaults from "@/store/sources/sourceDefaultsSlice";
 import { DefaultSourcesSections } from "./DefaultSourcesSections";
 
 vi.mock("@/services/api/sources.service", () => ({ listSourceDefaults: vi.fn(), setSourceDefault: vi.fn() }));
+vi.mock("sonner", () => ({ toast: { error: vi.fn() } }));
 
 const mk = (o: Partial<SourceDefault>): SourceDefault => ({
   sourceRef: "", kind: "personal", type: null, name: "", effectiveDefault: true, startingState: true,
@@ -19,10 +23,10 @@ const mk = (o: Partial<SourceDefault>): SourceDefault => ({
   uploadedByName: null, summary: null, externalUrl: null, chunkCount: 0, ...o,
 });
 
-function render(locale: "pt-PT" | "en", messages: typeof pt, entries: SourceDefault[]) {
+function render(locale: "pt-PT" | "en", messages: typeof pt, entries: SourceDefault[], status: "loaded" | "failed" = "loaded") {
   const store = configureStore({
     reducer: { sourceDefaults },
-    preloadedState: { sourceDefaults: { entries, status: "loaded" as const } },
+    preloadedState: { sourceDefaults: { entries, status } },
   });
   const container = document.createElement("div");
   document.body.appendChild(container);
@@ -35,7 +39,7 @@ function render(locale: "pt-PT" | "en", messages: typeof pt, entries: SourceDefa
       </Provider>,
     );
   });
-  return container;
+  return { container, store };
 }
 
 const entries = [
@@ -50,7 +54,7 @@ const entries = [
 
 describe.each([["pt-PT", pt], ["en", en]] as const)("DefaultSourcesSections %s", (locale, messages) => {
   it("renders every section with a named switch, the AE-off note and no raw keys", () => {
-    const c = render(locale, messages as typeof pt, entries);
+    const { container: c } = render(locale, messages as typeof pt, entries);
     const p = messages.sources.page;
     const headings = [...c.querySelectorAll("h2")].map((h) => h.textContent);
     expect(headings).toEqual([p.curriculum, p.regulatory, p.fromSchool.replace("{name}", "Agrupamento A")]);
@@ -63,7 +67,32 @@ describe.each([["pt-PT", pt], ["en", en]] as const)("DefaultSourcesSections %s",
   });
 
   it("hides the AE note while AE is on", () => {
-    const c = render(locale, messages as typeof pt, [mk({ sourceRef: "ae", kind: "ae", name: "AE" })]);
+    const { container: c } = render(locale, messages as typeof pt, [mk({ sourceRef: "ae", kind: "ae", name: "AE" })]);
     expect(c.querySelector('[role="status"]')).toBeNull();
+  });
+
+  it("toasts when a toggle fails and the switch goes back", async () => {
+    vi.mocked(setSourceDefault).mockRejectedValueOnce(new Error("boom"));
+    const { container: c } = render(locale, messages as typeof pt, [mk({ sourceRef: "ae", kind: "ae", name: "AE" })]);
+    const sw = c.querySelector('[role="switch"]') as HTMLElement;
+    await act(async () => sw.click());
+    expect(toast.error).toHaveBeenLastCalledWith(messages.sources.page.saveError);
+    expect(sw.getAttribute("aria-checked")).toBe("true");
+  });
+
+  it("shows the server message of a 4xx", async () => {
+    vi.mocked(setSourceDefault).mockRejectedValueOnce(new ApiRequestError("Sem acesso", 403, null));
+    const { container: c } = render(locale, messages as typeof pt, [mk({ sourceRef: "ae", kind: "ae", name: "AE" })]);
+    await act(async () => (c.querySelector('[role="switch"]') as HTMLElement).click());
+    expect(toast.error).toHaveBeenLastCalledWith("Sem acesso");
+  });
+
+  it("shows an error with a retry when the defaults failed to load", async () => {
+    vi.mocked(listSourceDefaults).mockClear();
+    vi.mocked(listSourceDefaults).mockResolvedValue([]);
+    const { container: c } = render(locale, messages as typeof pt, [], "failed");
+    expect(c.querySelector('[role="switch"]')).toBeNull();
+    await act(async () => (c.querySelector("button") as HTMLElement).click());
+    expect(listSourceDefaults).toHaveBeenCalledTimes(1);
   });
 });

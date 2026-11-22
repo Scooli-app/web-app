@@ -2714,6 +2714,7 @@
       "typeApoio": "Support",
       "addedBy": "Added by {name}",
       "summary": "Summary",
+      "saveError": "Couldn't save that. Please try again.",
       "openOfficialText": "Open the official text of {name}",
       "proTitle": "Upload your own sources with Pro",
       "proDescription": "With Pro, you upload a textbook or your school’s materials (PDF or DOCX), and the lesson plans and worksheets you create follow that content.",

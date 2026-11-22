@@ -2,13 +2,20 @@
 
 import { formatTags } from "@/components/school/sources/schoolSourceFormat";
 import { Card } from "@/components/ui/card";
+import { LoadError } from "@/components/ui/load-error";
 import { Switch } from "@/components/ui/switch";
 import type { SourceDefault } from "@/shared/types/sources";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { selectSourceDefaults, toggleSourceDefault } from "@/store/sources/sourceDefaultsSlice";
+import {
+  fetchSourceDefaults,
+  selectSourceDefaults,
+  selectSourceDefaultsStatus,
+  toggleSourceDefault,
+} from "@/store/sources/sourceDefaultsSlice";
 import { BookOpen, ExternalLink, Scale } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useMemo } from "react";
+import { toast } from "sonner";
 import { groupSourceDefaults } from "./groupSourceDefaults";
 
 /** The "Usar por omissão" switch of one source; its label names the source. */
@@ -19,7 +26,12 @@ export function DefaultSwitch({ entry }: { entry: SourceDefault }) {
     <Switch
       checked={entry.effectiveDefault}
       aria-label={`${t("useByDefault")}: ${entry.name}`}
-      onCheckedChange={(enabled) => void dispatch(toggleSourceDefault({ sourceRef: entry.sourceRef, enabled }))}
+      onCheckedChange={async (enabled) => {
+        const result = await dispatch(toggleSourceDefault({ sourceRef: entry.sourceRef, enabled }));
+        if (toggleSourceDefault.rejected.match(result)) {
+          toast.error(typeof result.payload === "string" ? result.payload : t("saveError"));
+        }
+      }}
     />
   );
 }
@@ -68,8 +80,12 @@ function SchoolRow({ entry }: { entry: SourceDefault }) {
 /** Curriculum, regulatory and school sources with a default switch each; "As tuas fontes" lives in the page. */
 export function DefaultSourcesSections() {
   const t = useTranslations("sources.page");
+  const dispatch = useAppDispatch();
   const entries = useAppSelector(selectSourceDefaults);
+  const status = useAppSelector(selectSourceDefaultsStatus);
   const { curriculum, regulatory, schools } = useMemo(() => groupSourceDefaults(entries), [entries]);
+
+  if (status === "failed") return <LoadError onRetry={() => void dispatch(fetchSourceDefaults())} />;
 
   return (
     <>

@@ -2714,6 +2714,7 @@
       "typeApoio": "Apoio",
       "addedBy": "Adicionada por {name}",
       "summary": "Resumo",
+      "saveError": "Não foi possível guardar. Tenta outra vez.",
       "openOfficialText": "Abrir o texto oficial de {name}",
       "proTitle": "Carrega as tuas fontes com o Pro",
       "proDescription": "Com o Pro, carregas o manual ou os materiais da tua escola (PDF ou DOCX), e os planos e fichas que crias passam a seguir essa matéria.",
