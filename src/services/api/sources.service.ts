@@ -1,4 +1,4 @@
-import type { SourceQuota, UploadSourceParams, UserSource } from "@/shared/types/sources";
+import type { SourceDefault, SourceQuota, UploadSourceParams, UserSource } from "@/shared/types/sources";
 import { translate } from "@/i18n/translate";
 import apiClient from "./client";
 
@@ -28,12 +28,31 @@ export async function uploadSource(params: UploadSourceParams): Promise<UserSour
   formData.append("name", params.name);
   if (params.subject) formData.append("subject", params.subject);
   if (params.schoolYear !== undefined) formData.append("schoolYear", String(params.schoolYear));
-  formData.append("scope", params.scope ?? "personal");
 
   const response = await apiClient.post<UserSource>("/sources", formData, {
     headers: { "Content-Type": "multipart/form-data" },
   });
   return response.data;
+}
+
+export async function listSourceDefaults(): Promise<SourceDefault[]> {
+  const response = await apiClient.get<SourceDefault[]>("/sources/defaults");
+  return response.data;
+}
+
+export async function setSourceDefault(
+  sourceRef: string,
+  enabled: boolean
+): Promise<SourceDefault> {
+  const response = await apiClient.put<SourceDefault>(
+    `/sources/defaults/${encodeURIComponent(sourceRef)}`,
+    { enabled }
+  );
+  return response.data;
+}
+
+export async function resetSourceDefault(sourceRef: string): Promise<void> {
+  await apiClient.delete(`/sources/defaults/${encodeURIComponent(sourceRef)}`);
 }
 
 export async function deleteSource(id: string): Promise<void> {

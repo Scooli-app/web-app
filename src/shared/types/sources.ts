@@ -3,6 +3,7 @@ export type SourceStatus =
   | "parsing"
   | "chunking"
   | "embedding"
+  | "summarising"
   | "indexed"
   | "failed";
 
@@ -41,7 +42,6 @@ export interface UploadSourceParams {
   name: string;
   subject?: string;
   schoolYear?: number;
-  scope?: SourceScope;
 }
 
 export interface SourceQuota {
@@ -51,3 +51,57 @@ export interface SourceQuota {
   bytesMax: number;
   maxFileBytes: number;
 }
+
+export type SourceDefaultKind = "ae" | "regulatory" | "personal" | "organization";
+export type SchoolSourceType = "regra" | "apoio";
+
+/** One source a teacher can switch on or off as a default (GET /sources/defaults). */
+export interface SourceDefault {
+  sourceRef: string;
+  kind: SourceDefaultKind;
+  type: SchoolSourceType | null;
+  name: string;
+  effectiveDefault: boolean;
+  startingState: boolean;
+  status: SourceStatus | null;
+  subjects: string[];
+  schoolYears: number[];
+  organizationId: string | null;
+  organizationName: string | null;
+  uploadedByName: string | null;
+  summary: string | null;
+  externalUrl: string | null;
+  chunkCount: number;
+}
+
+export interface SchoolSource {
+  id: string;
+  name: string;
+  type: SchoolSourceType;
+  subjects: string[];
+  schoolYears: number[];
+  defaultEnabled: boolean;
+  status: SourceStatus;
+  chunkCount: number;
+  fileSizeBytes: number;
+  fileKind: string;
+  uploadedByName: string | null;
+  createdAt: string;
+  lastError: string | null;
+  hasSummary: boolean;
+}
+
+export type SchoolSourceQuota = SourceQuota;
+
+export interface UploadSchoolSourceParams {
+  file: File;
+  name: string;
+  type: SchoolSourceType;
+  subjects: string[];
+  schoolYears: number[];
+  defaultEnabled: boolean;
+}
+
+export type SchoolSourcePatch = Partial<
+  Pick<SchoolSource, "name" | "type" | "subjects" | "schoolYears" | "defaultEnabled">
+>;

@@ -56,6 +56,12 @@ export enum FeatureFlag {
    * generated. The client needs no check: without "partial" events it shows the progress screen.
    */
   JSON_DOCUMENT_STREAMING = "json_document_streaming",
+
+  /** Shared school sources; off globally, enabled per organization. */
+  ORGANIZATION_SOURCES = "organization_sources",
+
+  /** Server-side only: quick creation paths use the teacher's default sources. */
+  DEFAULT_SOURCES_ROUTING = "default_sources_routing",
 }
 
 export function isTeacherProfileFeatureEnabled(

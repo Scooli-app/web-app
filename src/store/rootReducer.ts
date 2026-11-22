@@ -7,6 +7,7 @@ import featuresReducer from "./features/featuresSlice";
 import { moderationReducer } from "./moderation";
 import onboardingReducer from "./onboarding/onboardingSlice";
 import planGenerationReducer from "./planGeneration/planGenerationSlice";
+import sourceDefaultsReducer from "./sources/sourceDefaultsSlice";
 import sourcesReducer from "./sources/sourcesSlice";
 import subscriptionReducer from "./subscription/subscriptionSlice";
 import timetableReducer from "./timetable/timetableSlice";
@@ -24,6 +25,7 @@ const rootReducer = combineReducers({
   features: featuresReducer,
   workspace: workspaceReducer,
   sources: sourcesReducer,
+  sourceDefaults: sourceDefaultsReducer,
   onboarding: onboardingReducer,
   timetable: timetableReducer,
   planGeneration: planGenerationReducer,

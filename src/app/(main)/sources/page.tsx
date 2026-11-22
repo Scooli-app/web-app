@@ -33,7 +33,7 @@ import {
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-const KNOWN_STATUSES = ["uploaded", "parsing", "chunking", "embedding", "indexed", "failed"];
+const KNOWN_STATUSES = ["uploaded", "parsing", "chunking", "embedding", "summarising", "indexed", "failed"];
 
 /** `t` must be bound to the "sources.status" namespace. */
 function statusLabel(status: string, t: ReturnType<typeof useTranslations>): string {

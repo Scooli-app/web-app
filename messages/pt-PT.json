@@ -2713,6 +2713,7 @@
       "parsing": "A ler ficheiro",
       "chunking": "A segmentar",
       "embedding": "A indexar",
+      "summarising": "A resumir",
       "indexed": "Indexado",
       "failed": "Falhou"
     },
