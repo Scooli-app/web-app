@@ -317,6 +317,10 @@
         "title": "Members",
         "description": "See your school's members and seats"
       },
+      "schoolSources": {
+        "title": "School sources",
+        "description": "Documents every teacher at your school gets"
+      },
       "schoolDirection": {
         "title": "School overview",
         "description": "How each class is doing"
@@ -4566,5 +4570,65 @@
     "searchFree": "Search free photos",
     "subscribe": "See Pro plans",
     "dismiss": "Dismiss"
+  },
+  "schoolSources": {
+    "intro": "Every teacher at your school gets these sources. Each teacher can switch them off for themselves.",
+    "add": "Add source",
+    "addTitle": "Add a school source",
+    "editTitle": "Edit source",
+    "type": {
+      "label": "Type",
+      "regra": {
+        "title": "School rule",
+        "hint": "Always used in documents for these subjects and years"
+      },
+      "apoio": {
+        "title": "Support material",
+        "hint": "Used when the topic matches"
+      }
+    },
+    "defaultEnabled": "On by default for teachers",
+    "onForAll": "On for everyone",
+    "offByDefault": "Off by default",
+    "all": "All",
+    "years": {
+      "single": "{n}",
+      "range": "{from}–{to}",
+      "list": "Year {list}"
+    },
+    "quota": "{files} of {filesMax} files · {used} of {max}",
+    "size": {
+      "mb": "{n} MB",
+      "gb": "{n} GB"
+    },
+    "menu": {
+      "edit": "Edit",
+      "turnOff": "Turn off by default",
+      "turnOn": "Turn on by default",
+      "delete": "Delete",
+      "actions": "Actions for {name}"
+    },
+    "deleteConfirm": "Delete \"{name}\"? Teachers will stop getting it.",
+    "empty": "No school sources yet. Add your assessment criteria or school rules.",
+    "status": {
+      "indexing": "Indexing…",
+      "failed": "Indexing failed"
+    },
+    "form": {
+      "file": "File",
+      "fileHint": "PDF, Word or Markdown.",
+      "name": "Name",
+      "subjects": "Subjects",
+      "subjectsHint": "With none ticked, it applies to every subject.",
+      "years": "Years",
+      "yearsHint": "With none ticked, it applies to every year.",
+      "cancel": "Cancel",
+      "save": "Save",
+      "upload": "Add"
+    },
+    "errors": {
+      "load": "Couldn't load the school sources.",
+      "generic": "Something went wrong. Try again."
+    }
   }
 }

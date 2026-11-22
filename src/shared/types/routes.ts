@@ -27,6 +27,7 @@ export enum Routes {
   SCHOOL_SUBSTITUTIONS = "/school/substitutions",
   SCHOOL_REPORTS = "/school/reports",
   SCHOOL_USAGE = "/school/usage",
+  SCHOOL_SOURCES = "/school/sources",
   SCHOOL_SETTINGS = "/school/settings",
   SETTINGS = "/settings",
   SOURCES = "/sources",
