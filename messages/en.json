@@ -2945,12 +2945,12 @@
     },
     "homeCard": {
       "fallbackName": "Your school",
-      "figures": "{percent}% of plan delivered · {behind, plural, =0 {no classes behind} one {# class behind} other {# classes behind}}",
+      "figures": "{percent}% of lessons on plan · {behind, plural, =0 {no classes behind} one {# class behind} other {# classes behind}}",
       "hint": "See where every class stands in its curriculum.",
       "open": "Open school overview"
     },
     "dashboard": {
-      "title": "Curriculum progress",
+      "title": "Lesson plan progress",
       "subtitle": "{year} school year · updated just now",
       "subtitleNoYear": "Updated just now",
       "coverage": "Based on {turmas, plural, one {# class} other {# classes}} planned in Scooli by {teachers, plural, one {# teacher} other {# teachers}}.",
@@ -2958,8 +2958,8 @@
       "empty": "Teachers show up here once Scooli has added them to your school and they plan their first classes."
     },
     "kpis": {
-      "execution": "Curriculum delivered",
-      "executionHint": "of what was planned to date",
+      "execution": "Lessons on plan",
+      "executionHint": "of those planned to date",
       "onTrack": "On track",
       "watch": "Watch",
       "behind": "Behind",
@@ -2978,7 +2978,7 @@
     },
     "drawer": {
       "fallbackTitle": "Class details",
-      "execution": "Progress: {percent}% of the plan to date",
+      "execution": "On plan: {percent}% of lessons to date",
       "executionUnknown": "Progress: —",
       "why": "Why",
       "missedTitle": "Missed or unfinished lessons",
@@ -3060,18 +3060,24 @@
     },
     "reports": {
       "title": "Reports",
-      "subtitle": "Curriculum progress report · {label}",
-      "subtitleNoYear": "Curriculum progress report",
+      "subtitle": "Progress against lesson plans · {label}",
+      "subtitleNoYear": "Progress against lesson plans",
       "export": "Export PDF",
-      "sheetTitle": "Curriculum progress report",
+      "sheetTitle": "Progress against lesson plans",
       "sheetYear": "School year {label}",
       "generated": "Generated on {date}",
       "audience": "",
-      "byDepartment": "1. Progress by department",
+      "measures": "Percentages count the lessons planned to date whose content is not behind, from teachers' own records. They don't measure what students have mastered.",
+      "coverage": "1. Records",
+      "coverageLine": "Confirmed records for {measured} of {expected, plural, one {# class} other {# classes}} with lessons planned to date.",
+      "coverageMissing": "No records yet (left out of the figures below):",
+      "byDepartment": "2. Lessons on plan, by department",
+      "departmentFigure": "{onPlan} of {past} lessons · {percent}%",
+      "reason": "Reason: {note}",
       "byDepartmentEmpty": "There are no lesson records yet to work out progress.",
-      "followUp": "2. Classes to follow up",
+      "followUp": "3. Classes to follow up",
       "followUpEmpty": "No classes to follow up: every class with records is on track.",
-      "reinforce": "3. Learning to reinforce"
+      "reinforce": "4. Learning to reinforce"
     }
   },
   "checkout": {

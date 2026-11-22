@@ -56,13 +56,21 @@ const COUNTED_STATES: TurmaState[] = ["on_track", "watch", "behind"];
  * Execution per department: the lessons held on plan over the lessons past, summed over its counted turmas (not an
  * average of their percents). A department with no counted turma has no figure and is left out.
  */
-export function departmentExecution(turmas: DirectionTurma[]): { department: Department; percent: number }[] {
+export function departmentExecution(
+  turmas: DirectionTurma[],
+): { department: Department; percent: number; onPlan: number; past: number }[] {
   return DEPARTMENTS.flatMap((department) => {
     const counted = turmas.filter((t) => t.department === department && COUNTED_STATES.includes(t.state));
     const past = counted.reduce((sum, t) => sum + t.lessonsPast, 0);
-    const behind = counted.reduce((sum, t) => sum + t.lessonsBehind, 0);
+    const onPlan = Math.max(0, past - counted.reduce((sum, t) => sum + t.lessonsBehind, 0));
     // As on the backend: with lessons behind, never round up to 100%.
-    const percent = Math.round(((past - behind) * 100) / past);
-    return past > 0 ? [{ department, percent: behind > 0 ? Math.min(99, percent) : percent }] : [];
+    const percent = Math.round((onPlan * 100) / past);
+    return past > 0 ? [{ department, percent: onPlan < past ? Math.min(99, percent) : percent, onPlan, past }] : [];
   });
+}
+
+/** Turmas with lessons past, and how many of them have a confirmed check-in (so their figures can be trusted). */
+export function recordCoverage(turmas: DirectionTurma[]): { measured: number; expected: number } {
+  const expected = turmas.filter((t) => t.state !== "not_started").length;
+  return { measured: turmas.filter((t) => COUNTED_STATES.includes(t.state)).length, expected };
 }
