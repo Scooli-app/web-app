@@ -33,7 +33,7 @@ export type CheckInCardItem = Pick<
   PendingCheckIn,
   "slotDate" | "slotType" | "turmaTitle" | "subject" | "topicTitle" | "outcomes"
 > &
-  Partial<Pick<PendingCheckIn, "gradeLevel" | "classLabel">>;
+  Partial<Pick<PendingCheckIn, "gradeLevel" | "classLabel" | "timetableId" | "slotId">>;
 
 /** Lower-cased, accent-free, single-spaced: "História  e Geografia" compares equal to "historia e geografia". */
 function foldForCompare(text: string): string {
@@ -75,6 +75,7 @@ export function CheckInCard({ item, locale, onSubmit, onSkip, onCancel, showMeta
   const tTimetable = useTranslations("timetable");
   const [outcomeResult, setOutcomeResult] = useState<OutcomeResult | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
+  const [chosen, setChosen] = useState<CheckInResult | null>(null);
 
   const todayIso = toIso(new Date());
   const day = relativeDayLabel(item.slotDate, todayIso, locale, {
@@ -86,20 +87,22 @@ export function CheckInCard({ item, locale, onSubmit, onSkip, onCancel, showMeta
   const turmaName = checkInTurmaName(item, (grade) => tTimetable("gradeShort", { grade }));
   const showSubject = !subjectRepeatsTurma(turmaName, subject);
   // One truncated line: a long turma or topic name would push out which lesson and which day.
-  const turma = clip(turmaName, 40);
-  const topic = item.topicTitle ? clip(item.topicTitle, 60) : null;
-  const meta = showSubject
-    ? topic
-      ? t("meta", { turma, subject, topic, day })
-      : t("metaNoTopic", { turma, subject, day })
-    : topic
-      ? t("metaNoSubject", { turma, topic, day })
-      : t("metaNoSubjectNoTopic", { turma, day });
+  const metaLine = (turma: string, topic: string | null) =>
+    showSubject
+      ? topic
+        ? t("meta", { turma, subject, topic, day })
+        : t("metaNoTopic", { turma, subject, day })
+      : topic
+        ? t("metaNoSubject", { turma, topic, day })
+        : t("metaNoSubjectNoTopic", { turma, day });
+  const meta = metaLine(clip(turmaName, 40), item.topicTitle ? clip(item.topicTitle, 60) : null);
+  const fullMeta = metaLine(turmaName, item.topicTitle || null);
 
   const toggle = (id: string) =>
     setSelected((current) => (current.includes(id) ? current.filter((x) => x !== id) : [...current, id]));
 
   const choose = (result: CheckInResult) => {
+    setChosen(result);
     if (needsDetailStep(result)) {
       setSelected(initialOutcomeSelection(item.outcomes));
       setOutcomeResult(result as OutcomeResult);
@@ -108,21 +111,28 @@ export function CheckInCard({ item, locale, onSubmit, onSkip, onCancel, showMeta
     onSubmit(buildSubmission(result));
   };
 
-  const header = (
-    <div className="min-w-0">
-      <h3 className="text-base font-semibold leading-snug text-foreground">
-        {isAssessmentCheckIn(item) ? t("assessmentQuestion") : t("title")}
-      </h3>
-      {showMeta && <p className="mt-0.5 truncate text-sm text-muted-foreground">{meta}</p>}
-    </div>
-  );
-
   // Cancel belongs to the first step only: once an outcome step is open, "Voltar" is the way back.
   const cancelButton = onCancel ? (
-    <Button size="sm" variant="ghost" onClick={onCancel}>
+    <Button size="sm" variant="ghost" className="shrink-0" onClick={onCancel}>
       {t("cancel")}
     </Button>
   ) : null;
+
+  const header = (
+    <div className="flex items-start justify-between gap-2">
+      <div className="min-w-0">
+        <h3 className="text-base font-semibold leading-snug text-foreground">
+          {isAssessmentCheckIn(item) ? t("assessmentQuestion") : t("title")}
+        </h3>
+        {showMeta && (
+          <p className="mt-0.5 truncate text-sm text-muted-foreground" title={fullMeta}>
+            {meta}
+          </p>
+        )}
+      </div>
+      {!outcomeResult && cancelButton}
+    </div>
+  );
 
   if (isAssessmentCheckIn(item)) {
     return (
@@ -137,7 +147,6 @@ export function CheckInCard({ item, locale, onSubmit, onSkip, onCancel, showMeta
               {t("assessmentNotYet")}
             </Button>
           )}
-          {cancelButton}
         </div>
       </div>
     );
@@ -152,6 +161,7 @@ export function CheckInCard({ item, locale, onSubmit, onSkip, onCancel, showMeta
           question={question}
           result={outcomeResult}
           outcomes={item.outcomes}
+          lesson={item.timetableId && item.slotId ? { timetableId: item.timetableId, slotId: item.slotId } : undefined}
           selected={selected}
           onToggle={toggle}
           onSave={(extras) => onSubmit(buildSubmission(outcomeResult, selected, extras))}
@@ -164,8 +174,7 @@ export function CheckInCard({ item, locale, onSubmit, onSkip, onCancel, showMeta
   return (
     <div className="space-y-3">
       {header}
-      <CheckInResultOptions onChoose={choose} />
-      {cancelButton && <div>{cancelButton}</div>}
+      <CheckInResultOptions onChoose={choose} selected={chosen} />
     </div>
   );
 }

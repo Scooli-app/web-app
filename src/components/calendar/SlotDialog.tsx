@@ -307,6 +307,8 @@ export function SlotDialog({
   const checkInTooltip = [...difficultOutcomeTexts(slot), ...(slot.teachingNote ? [slot.teachingNote] : [])].join("\n");
   const missingAmountLabel = MISSING_AMOUNTS.find((amount) => amount.value === slot.missingAmount);
   const checkInItem = {
+    timetableId: slot.timetable.id,
+    slotId: slot.id,
     slotDate: slot.slotDate,
     // Only shown for checkable types (see showCheckIn), so the cast holds wherever the card renders.
     slotType: slot.slotType as CheckInSlotType,

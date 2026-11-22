@@ -32,6 +32,7 @@ vi.mock("@/services/api/check-in.service", () => ({
     shiftFollowing: vi.fn(),
     requestReinforcement: vi.fn(),
     carryOver: vi.fn(),
+    getOutcomes: vi.fn(() => Promise.resolve({ source: null, outcomes: [] })),
   },
 }));
 vi.mock("@/components/dashboard/usePrepareLessonSet", () => ({
@@ -370,6 +371,38 @@ describe("SlotDialog: offering a reinforcement worksheet or a carry-over after a
       missingAmount: "MOST",
       note: "Faltou a revisão",
     });
+  });
+
+  it("offers the fallback outcomes of a lesson with none, says where they come from, and sends the ticked one (ENG-424)", async () => {
+    vi.mocked(checkInService.getOutcomes).mockResolvedValueOnce({
+      source: "unit",
+      outcomes: [
+        { id: "u1", text: "Comparar frações", topicPath: ["Números"], source: "unit" },
+        { id: "u2", text: "Somar frações", topicPath: ["Números"], source: "unit" },
+      ],
+    });
+    vi.mocked(checkInService.submit).mockResolvedValue({
+      id: "c1",
+      timetableId: "tt",
+      teachingStatus: "partially_taught",
+      checkedInAt: "2020-03-10T10:00:00Z",
+    });
+    await render(dialogProps({ slot }));
+    await act(async () => {
+      buttonWith("resultPartial")?.click();
+    });
+
+    expect(checkInService.getOutcomes).toHaveBeenCalledWith("tt", "slot-3");
+    expect(document.body.textContent).toContain("uncoveredQuestion");
+    expect(document.body.textContent).toContain("outcomesFromUnit");
+    await act(async () => {
+      document.querySelectorAll<HTMLButtonElement>('[role="checkbox"]')[1].click();
+    });
+    await act(async () => {
+      buttonWith("save")?.click();
+    });
+
+    expect(checkInService.submit).toHaveBeenCalledWith("tt", "slot-3", { result: "PARTIAL", uncoveredOutcomeIds: ["u2"] });
   });
 
   it("saves with nothing ticked and offers nothing", async () => {

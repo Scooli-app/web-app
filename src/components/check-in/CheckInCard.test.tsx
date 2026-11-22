@@ -96,16 +96,26 @@ describe("CheckInCard in the calendar dialog", () => {
 });
 
 describe("CheckInResultOptions", () => {
-  it("renders the four results as cards, each with its icon and label", () => {
+  it("renders the four results as equal toggle buttons, each with its icon and label", () => {
     const html = renderToStaticMarkup(createElement(CheckInResultOptions, { onChoose: vi.fn() }));
     expect(html.match(/<button/g)).toHaveLength(4);
+    expect(html.match(/aria-pressed="false"/g)).toHaveLength(4);
     expect(html).toContain("resultTaught");
     expect(html).toContain("resultDifficulties");
     expect(html).toContain("resultPartial");
     expect(html).toContain("resultNotHeld");
-    // Two per row on narrow screens, four on wide ones.
+    // Two by two below 520px, four in a row above; every row the same height.
     expect(html).toContain("grid-cols-2");
-    expect(html).toContain("sm:grid-cols-4");
+    expect(html).toContain("min-[520px]:grid-cols-4");
+    expect(html).toContain("auto-rows-fr");
+  });
+
+  it("marks the chosen result pressed with the brand outline", () => {
+    const html = renderToStaticMarkup(createElement(CheckInResultOptions, { onChoose: vi.fn(), selected: "PARTIAL" }));
+    expect(html.match(/aria-pressed="true"/g)).toHaveLength(1);
+    const pressed = html.split("<button").find((b) => b.includes('aria-pressed="true"'));
+    expect(pressed).toContain("resultPartial");
+    expect(pressed).toContain("border-primary");
   });
 });
 
@@ -222,13 +232,24 @@ describe("CheckInOutcomeStep amount and note (ENG-253)", () => {
     expect(render("TAUGHT_WITH_DIFFICULTIES")).not.toContain("missingAmountQuestion");
   });
 
-  it("has a labelled note field for both results, with the placeholder and no counter when short", () => {
+  it("has a labelled note field for both results, with the placeholder and its counter", () => {
     for (const result of ["TAUGHT_WITH_DIFFICULTIES", "PARTIAL"] as const) {
       const html = render(result);
       expect(html).toContain("noteLabel");
       expect(html).toContain('placeholder="notePlaceholder"');
       expect(html).toContain("<textarea");
-      expect(html).not.toMatch(/\/500/);
+      expect(html).toContain('maxLength="500"');
+      expect(html).toMatch(/>0(<!-- -->)?\/(<!-- -->)?500</);
+    }
+  });
+
+  it("shows each amount as a toggle with a three-segment gauge", () => {
+    const html = render("PARTIAL");
+    const amounts = html.split("<button").filter((b) => b.includes("aria-pressed") && b.includes(">missing"));
+    expect(amounts).toHaveLength(3);
+    for (const amount of amounts) {
+      expect(amount).toContain('aria-pressed="false"');
+      expect(amount.match(/<i /g)).toHaveLength(3);
     }
   });
 });
@@ -253,21 +274,21 @@ describe("subjectRepeatsTurma", () => {
   });
 });
 
-describe("CheckInResultOptions styling (ENG-246)", () => {
-  it("gives each card a tinted fill and a coloured border, with a dark-mode fill of its own", () => {
+describe("CheckInResultOptions styling (ENG-421)", () => {
+  it("keeps colour in the icon's tinted circle, with a dark-mode icon colour of its own", () => {
     const html = renderToStaticMarkup(createElement(CheckInResultOptions, { onChoose: vi.fn() }));
-    expect(html).toContain("bg-emerald-500/[0.08]");
-    expect(html).toContain("dark:bg-emerald-500/10");
-    expect(html).toContain("border-emerald-500/35");
-    expect(html).toContain("dark:border-emerald-500/40");
-    expect(html).toContain("border-amber-500/35");
-    expect(html).toContain("border-sky-500/35");
-    expect(html).toContain("border-rose-500/35");
+    for (const tone of ["emerald", "amber", "sky", "rose"]) {
+      expect(html).toContain(`bg-${tone}-500/15 text-${tone}-700 dark:text-${tone}-300`);
+      expect(html).not.toContain(`border-${tone}-500`);
+    }
   });
 
-  it("keeps the cards equal in height and the accessible names as the visible labels", () => {
-    const html = renderToStaticMarkup(createElement(CheckInResultOptions, { onChoose: vi.fn() }));
-    expect(html.match(/h-full/g)).toHaveLength(4);
-    expect(html).toContain("resultNotHeld");
+  it("does not change the buttons when the lesson title is 255 characters long", () => {
+    const options = (html: string) => html.slice(html.indexOf('<div class="grid'));
+    const short = render({ item: { ...item, topicTitle: "Frações" } });
+    const long = render({ item: { ...item, topicTitle: "Estruturas de coordenação ".repeat(10).slice(0, 255) } });
+    expect(options(long)).toBe(options(short));
+    // The meta line is one truncated line; its full text is in the tooltip.
+    expect(long).toMatch(/<p class="[^"]*truncate[^"]*" title="[^"]*Estruturas de coordenação/);
   });
 });

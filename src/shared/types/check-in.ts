@@ -17,6 +17,16 @@ export interface CheckInOutcome {
   source: string;
 }
 
+/**
+ * The outcomes the check-in's detail step offers (ENG-424): the lesson's own links ("lesson"), or, when it has none,
+ * its curriculum-plan unit's ("unit") or the subject and year catalogue ("catalogue"). Ticked fallback outcomes are
+ * linked to the lesson when the check-in is saved. `source` is null when there is nothing to offer.
+ */
+export interface CheckInOutcomeOptions {
+  source: "lesson" | "unit" | "catalogue" | null;
+  outcomes: CheckInOutcome[];
+}
+
 /** A past lesson still waiting for the teacher to say how it went. */
 export interface PendingCheckIn {
   timetableId: string;
