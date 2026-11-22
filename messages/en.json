@@ -2683,13 +2683,11 @@
     "page": {
       "title": "Sources",
       "description": "What Scooli draws on when you create materials.",
-      "addSource": "Add Source",
       "dropzoneEmpty": "Click or drag a file",
       "dropzoneHint": "PDF or DOCX",
       "namePlaceholder": "Source name *",
       "uploading": "Uploading...",
       "upload": "Upload",
-      "loadedSources": "Loaded sources",
       "processingBadge": "Processing...",
       "loadingSources": "Loading sources...",
       "emptyState": "You don't have any sources uploaded yet.",

@@ -60,6 +60,12 @@ export const selectIsUserSourcesEnabled = createSelector(
   (enabledFeatures) => enabledFeatures.includes(FeatureFlag.USER_SOURCES)
 );
 
+/** The Fontes page and its sidebar item: personal sources or school sources. */
+export const selectIsSourcesPageEnabled = createSelector(
+  [selectIsUserSourcesEnabled, selectIsOrganizationSourcesEnabled],
+  (userSources, organizationSources) => userSources || organizationSources
+);
+
 export const selectIsCurriculumPlanEnabled = createSelector(
   [selectEnabledFeatureFlags],
   (enabledFeatures) => enabledFeatures.includes(FeatureFlag.CURRICULUM_PLAN_ENABLED)

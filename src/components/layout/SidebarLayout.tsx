@@ -44,7 +44,7 @@ import { Routes } from "@/shared/types";
 import { FeatureFlag } from "@/shared/types/featureFlags";
 import { cn } from "@/shared/utils/utils";
 import { selectEntitlementUsage } from "@/store/entitlements/selectors";
-import { selectIsClassStateEnabled } from "@/store/features/selectors";
+import { selectIsClassStateEnabled, selectIsSourcesPageEnabled } from "@/store/features/selectors";
 import { useAppDispatch } from "@/store/hooks";
 import type { RootState } from "@/store/store";
 import { setUpgradeModalOpen } from "@/store/ui/uiSlice";
@@ -389,9 +389,7 @@ const SidebarNavigationContent = memo(function SidebarNavigationContent({
   const workspace = useSelector(selectWorkspaceContext);
   const { canAccess: canAccessSchoolArea } = useSchoolAdminAccess();
   const isCommunityEnabled = features[FeatureFlag.COMMUNITY_LIBRARY] === true;
-  const isSourcesPageEnabled =
-    features[FeatureFlag.USER_SOURCES] === true ||
-    features[FeatureFlag.ORGANIZATION_SOURCES] === true;
+  const isSourcesPageEnabled = useSelector(selectIsSourcesPageEnabled);
   const isCurriculumPlanEnabled =
     features[FeatureFlag.CURRICULUM_PLAN_ENABLED] === true;
   const isHorarioPlanosEnabled =

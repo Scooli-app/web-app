@@ -8,8 +8,9 @@ import { LoadError } from "@/components/ui/load-error";
 import { usePlanLimits } from "@/hooks/usePlanLimits";
 import { DefaultSourcesSections, DefaultSwitch } from "@/components/sources/DefaultSourcesSections";
 import { groupSourceDefaults } from "@/components/sources/groupSourceDefaults";
-import type { UploadSourceParams } from "@/shared/types/sources";
+import { SOURCE_NAME_MAX, type UploadSourceParams } from "@/shared/types/sources";
 import { cn } from "@/shared/utils/utils";
+import { selectIsUserSourcesEnabled } from "@/store/features/selectors";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { fetchSourceDefaults, selectSourceDefaults } from "@/store/sources/sourceDefaultsSlice";
 import {
@@ -84,16 +85,21 @@ export default function SourcesPage() {
   const { limits, loading: limitsLoading } = usePlanLimits();
   // Fail open like usePlanLimits: unknown limits show the form, the server still enforces Pro.
   const isFree = limits ? !limits.isPro : false;
+  // A school member without user_sources gets the school sections only: the personal endpoints follow that flag.
+  const isUserSourcesEnabled = useAppSelector(selectIsUserSourcesEnabled);
 
   useEffect(() => {
-    dispatch(fetchSources());
     dispatch(fetchSourceDefaults());
   }, [dispatch]);
+
+  useEffect(() => {
+    if (isUserSourcesEnabled) dispatch(fetchSources());
+  }, [dispatch, isUserSourcesEnabled]);
 
   const validateAndSetFile = useCallback(
     (selectedFile: File): boolean => {
       setFile(selectedFile);
-      if (!name) setName(selectedFile.name.replace(/\.[^.]+$/, ""));
+      if (!name) setName(selectedFile.name.replace(/\.[^.]+$/, "").slice(0, SOURCE_NAME_MAX));
       return true;
     },
     [name],
@@ -150,6 +156,7 @@ export default function SourcesPage() {
       <DefaultSourcesSections />
 
       {/* One block for the teacher's own sources: heading, then the upload (Pro) or what Pro unlocks, then the list. */}
+      {isUserSourcesEnabled && (
       <section className="space-y-3">
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-base font-semibold">
@@ -210,7 +217,7 @@ export default function SourcesPage() {
         >
           <Upload className="w-8 h-8 text-muted-foreground" />
           <div>
-            <p className="text-sm font-medium">
+            <p className="line-clamp-2 break-all text-sm font-medium" title={file?.name}>
               {file ? file.name : t("dropzoneEmpty")}
             </p>
             <p className="text-xs text-muted-foreground">
@@ -228,19 +235,26 @@ export default function SourcesPage() {
 
         {/* Name + upload — only shown after a file is chosen */}
         {file && (
-          <div className="flex gap-3">
-            <input
-              type="text"
-              placeholder={t("namePlaceholder")}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="flex-1 rounded-lg border border-input bg-card px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-            />
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <div className="min-w-0 flex-1">
+              <input
+                type="text"
+                placeholder={t("namePlaceholder")}
+                aria-label={t("namePlaceholder")}
+                value={name}
+                maxLength={SOURCE_NAME_MAX}
+                onChange={(e) => setName(e.target.value)}
+                className="w-full rounded-lg border border-input bg-card px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+              <p className="mt-1 text-right text-xs tabular-nums text-muted-foreground" aria-hidden>
+                {name.length}/{SOURCE_NAME_MAX}
+              </p>
+            </div>
             <button
               type="button"
               onClick={() => void handleUpload()}
               disabled={uploading || !name.trim()}
-              className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+              className="flex items-center justify-center gap-2 self-start rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
             >
               {uploading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -253,7 +267,7 @@ export default function SourcesPage() {
         )}
 
         {uploadError && (
-          <p className="flex items-center gap-1.5 text-sm text-destructive">
+          <p className="flex items-center gap-1.5 break-words text-sm text-destructive">
             <AlertCircle className="w-4 h-4 shrink-0" />
             {uploadError}
           </p>
@@ -290,7 +304,9 @@ export default function SourcesPage() {
               <div className="flex min-w-0 items-start gap-3">
                 <FileText className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground" />
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-medium">{source.name}</p>
+                  <p className="line-clamp-2 break-words text-sm font-medium" title={source.name}>
+                    {source.name}
+                  </p>
                   <p className="mt-0.5 text-xs text-muted-foreground">
                     {formatSize(source.fileSizeBytes)}
                     {source.chunkCount > 0 &&
@@ -360,6 +376,7 @@ export default function SourcesPage() {
       </>
       )}
       </section>
+      )}
     </div>
   );
 }

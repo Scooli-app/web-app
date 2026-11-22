@@ -2683,13 +2683,11 @@
     "page": {
       "title": "Fontes",
       "description": "O que a Scooli consulta quando crias materiais.",
-      "addSource": "Adicionar fonte",
       "dropzoneEmpty": "Clica ou arrasta um ficheiro",
       "dropzoneHint": "PDF ou DOCX",
       "namePlaceholder": "Nome da fonte *",
       "uploading": "A carregar...",
       "upload": "Carregar",
-      "loadedSources": "Fontes carregadas",
       "processingBadge": "A processar...",
       "loadingSources": "A carregar fontes...",
       "emptyState": "Ainda não tens fontes carregadas.",
