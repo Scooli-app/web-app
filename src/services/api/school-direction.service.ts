@@ -62,6 +62,6 @@ export async function deleteDirectionSubstitution(id: string): Promise<void> {
 
 /** The lessons the signed-in teacher covers for absent colleagues between two days (YYYY-MM-DD, both included). */
 export async function getMyCovers(from: string, to: string): Promise<DirectionSubstitution[]> {
-  const response = await apiClient.get<DirectionSubstitution[]>("/me/covers", { params: { from, to } });
+  const response = await apiClient.get<DirectionSubstitution[]>("/timetable/covers", { params: { from, to } });
   return response.data;
 }

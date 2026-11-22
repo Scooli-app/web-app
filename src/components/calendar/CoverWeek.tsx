@@ -61,7 +61,7 @@ export function CoverWeek({ weekStart }: { weekStart: Date }) {
       </h2>
       <ul className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
         {covers.map((cover) => (
-          <li key={cover.lesson.slotId}>
+          <li key={cover.lesson.slotId} className="min-w-0">
             <button
               type="button"
               onClick={() => setOpen(cover)}
@@ -98,7 +98,7 @@ export function CoverWeek({ weekStart }: { weekStart: Date }) {
                   )}
                 </DialogDescription>
               </DialogHeader>
-              <div className="flex flex-col gap-4 px-6 pb-6">
+              <div className="flex flex-col gap-4 px-6 pb-6 pt-5">
                 {open.lesson.topicTitle && (
                   <div>
                     <p className="text-sm text-muted-foreground">{t("topic")}</p>

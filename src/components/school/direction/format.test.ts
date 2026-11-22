@@ -48,6 +48,12 @@ describe("departmentExecution", () => {
     expect(result).toEqual([{ department: "languages", percent: 95 }]);
   });
 
+  it("never shows 100% while lessons are behind", () => {
+    expect(departmentExecution([turma({ lessonsPast: 500, lessonsBehind: 2 })])).toEqual([
+      { department: "maths_science", percent: 99 },
+    ]);
+  });
+
   it("is empty for no turmas", () => {
     expect(departmentExecution([])).toEqual([]);
   });

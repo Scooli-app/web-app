@@ -61,6 +61,8 @@ export function departmentExecution(turmas: DirectionTurma[]): { department: Dep
     const counted = turmas.filter((t) => t.department === department && COUNTED_STATES.includes(t.state));
     const past = counted.reduce((sum, t) => sum + t.lessonsPast, 0);
     const behind = counted.reduce((sum, t) => sum + t.lessonsBehind, 0);
-    return past > 0 ? [{ department, percent: Math.round(((past - behind) * 100) / past) }] : [];
+    // As on the backend: with lessons behind, never round up to 100%.
+    const percent = Math.round(((past - behind) * 100) / past);
+    return past > 0 ? [{ department, percent: behind > 0 ? Math.min(99, percent) : percent }] : [];
   });
 }
