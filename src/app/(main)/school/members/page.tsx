@@ -15,7 +15,8 @@ import {
   selectWorkspaceMembers,
 } from "@/store/workspace/selectors";
 import { fetchOrganizationMembers } from "@/store/workspace/workspaceSlice";
-import { Activity, Building2, FileText, Share2, Sparkles, Users } from "lucide-react";
+import { formatDay } from "@/components/school/direction/format";
+import { Activity, FileText, Share2, Sparkles, Users } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect } from "react";
 
@@ -32,15 +33,7 @@ function formatStatus(status: string, t: Translator): string {
 }
 
 function formatDate(date: string | null | undefined, locale: string, t: Translator): string {
-  if (!date) {
-    return t("common.notSet");
-  }
-
-  return new Date(date).toLocaleDateString(locale, {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
+  return date ? formatDay(date, locale, true) : t("members.never");
 }
 
 export default function SchoolMembersPage() {
@@ -72,11 +65,6 @@ export default function SchoolMembersPage() {
         description={t("members.description", {
           organizationName: workspace?.organization?.name ?? t("members.fallbackOrganization"),
         })}
-        icon={
-          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 sm:h-12 sm:w-12">
-            <Building2 className="h-5 w-5 text-primary sm:h-6 sm:w-6" />
-          </div>
-        }
       />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">

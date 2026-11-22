@@ -2818,7 +2818,7 @@
     }
   },
   "appMeta": {
-    "title": "Scooli - Plataforma AI para Professores",
+    "title": "Scooli - Plataforma de IA para Professores",
     "description": "Cria conteúdo educativo de qualidade em segundos com inteligência artificial."
   },
   "school": {
@@ -2848,23 +2848,24 @@
       "suspended": "Suspenso"
     },
     "dashboard": {
-      "description": "Visão operacional da organização, utilização da equipa e atividade recente.",
+      "description": "Como a equipa está a usar a Scooli.",
       "loadError": "Não foi possível carregar o painel da escola",
       "stats": {
         "activeSeats": "Lugares ativos",
         "availableSeats": "Lugares disponíveis",
-        "activeTeachers": "Professores ativos",
+        "activeTeachers": "Usaram a IA este mês",
         "aiRequestsThisMonth": "Pedidos à IA este mês",
         "totalDocuments": "Documentos da escola",
         "sharedResources": "Biblioteca interna"
       },
       "planCard": {
-        "title": "Plano e contrato",
+        "title": "Acordo com a Scooli",
         "plan": "Plano",
         "status": "Estado",
         "seatLimit": "Limite de lugares",
         "renewal": "Renovação",
-        "manualFallback": "Manual"
+        "manualFallback": "Acordo direto",
+        "unlimited": "Sem limite"
       },
       "usageCard": {
         "title": "Resumo de utilização",
@@ -2876,10 +2877,10 @@
       "activityCard": {
         "title": "Atividade dos últimos 14 dias",
         "description": "Pedidos à IA concluídos com sucesso pela escola nos últimos catorze dias.",
-        "requestsThisMonthBadge": "{count, plural, one {# pedido} other {# pedidos}} este mês",
         "tooltip": "{day}: {count, plural, one {# pedido} other {# pedidos}}",
         "empty": "O gráfico aparece quando a equipa começar a criar com a Scooli.",
-        "emptyTitle": "Ainda sem atividade"
+        "emptyTitle": "Ainda sem atividade",
+        "requestsInPeriodBadge": "{count, plural, one {# pedido} other {# pedidos}} em 14 dias"
       },
       "documentTypesCard": {
         "title": "Tipos de documento",
@@ -2890,12 +2891,12 @@
     },
     "members": {
       "title": "Membros da escola",
-      "description": "Acompanhe a atividade, os papéis e a participação da equipa em {organizationName}.",
+      "description": "A equipa de {organizationName}: papéis, documentos e última atividade.",
       "fallbackOrganization": "esta organização",
       "stats": {
         "total": "Total de membros",
-        "active": "Membros ativos",
-        "aiActivity": "Com atividade de IA",
+        "active": "Com acesso",
+        "aiActivity": "Ativos este mês",
         "internalShares": "Partilhas internas"
       },
       "listTitle": "Membros",
@@ -2909,14 +2910,15 @@
       "createdThisMonth": "{count, plural, one {# criado este mês} other {# criados este mês}}",
       "statusLabel": "Estado",
       "internalSharesCount": "{count, plural, one {# partilha interna} other {# partilhas internas}}",
-      "emptyTitle": "Ainda não há professores"
+      "emptyTitle": "Ainda não há professores",
+      "never": "Ainda sem atividade"
     },
     "settings": {
       "title": "Definições da escola",
-      "description": "Resumo da tua escola.",
+      "description": "A tua escola na Scooli.",
       "loadError": "Não foi possível carregar as definições da escola",
       "currentRole": "O teu papel:",
-      "contractStatus": "Estado do contrato:"
+      "changes": "Para mudar o nome da escola, os membros ou o acordo, escreve para <email>info@scooli.app</email>."
     }
   },
   "schoolDirection": {
@@ -2926,7 +2928,7 @@
       "behind": "Atrasada",
       "no_records": "Sem registos",
       "not_started": "Ainda sem aulas",
-      "lessonsBehind": "{count, plural, one {# aula atrás} other {# aulas atrás}}"
+      "lessonsBehind": "{count, plural, one {# aula em atraso} other {# aulas em atraso}}"
     },
     "departments": {
       "languages": "Línguas",
@@ -2990,7 +2992,9 @@
       "planTitle": "Ajuste ao plano",
       "planAdjusted": "Reajustado a {date}",
       "planPending": "Proposta por rever desde {date}",
-      "nextTest": "Próximo teste"
+      "nextTest": "Próximo teste",
+      "partlyLeft": "parte por dar",
+      "planSummaryLabel": "O que a Scooli disse ao professor"
     },
     "learning": {
       "title": "Onde a escola precisa de reforço",
@@ -2998,7 +3002,7 @@
       "allSubjects": "Todas as disciplinas",
       "summary": "{subject} · {grade}.º ano · {flagged} de {total, plural, one {# turma} other {# turmas}} {flagged, plural, one {assinalou} other {assinalaram}} dificuldades",
       "reinforcement": "Ficha de reforço criada",
-      "empty": "Nenhuma turma assinalou dificuldades nas últimas 4 semanas."
+      "empty": "Nenhuma turma marcou uma aula como “Com dificuldades” nas últimas 4 semanas. As aulas que ficaram a meio aparecem no Painel."
     },
     "assessments": {
       "title": "Calendário de avaliações",
@@ -3028,13 +3032,11 @@
         "choose": "Escolher docente",
         "cancel": "Cancelar",
         "confirm": "Registar ausência",
-        "error": "Não conseguimos carregar as aulas desse dia. Tenta de novo."
+        "error": "Não foi possível registar a ausência. Tenta de novo.",
+        "substituteHint": "Recebe um email e vê as aulas desse dia na agenda, com o percurso da turma."
       },
-      "ready": "Pronta para quem substitui",
-      "sent": "Enviada",
       "lessonHeading": "{class} · {subject} · Aula {n}",
-      "substitute": "Quem substitui: {name}",
-      "leftOff": "Onde a turma ficou",
+      "leftOff": "Últimas aulas da turma",
       "leftOffNone": "Ainda não há aulas registadas nesta turma.",
       "status": {
         "taught": "Lecionada",
@@ -3044,9 +3046,17 @@
       "topic": "Tema da aula",
       "documents": "Documentos da aula",
       "noDocuments": "Sem documentos associados a esta aula.",
-      "send": "Enviar a {name}",
-      "sentToast": "Enviado a {name}",
-      "noLessons": "{name} não tem aulas neste dia."
+      "noLessons": "{name} não tem aulas neste dia.",
+      "noLessonsPill": "Sem aulas",
+      "shared": "Na agenda de {name}",
+      "sharedHint": "{name} vê esta aula na agenda, com o percurso da turma. Os documentos do professor não são partilhados.",
+      "coveredBy": "{absent} falta · substitui {name}",
+      "remove": "Remover ausência",
+      "removeConfirmTitle": "Remover esta ausência?",
+      "removeConfirmDescription": "{name} deixa de ver estas aulas na agenda.",
+      "registeredToast": "Ausência registada. Enviámos um email a {name}.",
+      "removedToast": "Ausência removida",
+      "removeError": "Não foi possível remover a ausência. Tenta de novo."
     },
     "reports": {
       "title": "Relatórios",
@@ -3348,6 +3358,13 @@
     "appUpdate": {
       "message": "Há uma versão nova da Scooli. Atualiza a página quando terminares o que estás a fazer.",
       "action": "Atualizar"
+    },
+    "notFound": {
+      "title": "Página não encontrada",
+      "description": "A página que procuras não existe ou foi movida.",
+      "home": "Ir para o Início",
+      "back": "Voltar atrás",
+      "support": "Se achas que isto é um erro, fala connosco em info@scooli.app."
     }
   },
   "ui": {
@@ -3702,6 +3719,14 @@
       "semester1": "1.º Semestre",
       "semester2": "2.º Semestre",
       "schoolYear": "Ano letivo {range}"
+    },
+    "covers": {
+      "title": "Substituições desta semana",
+      "lessonHeading": "{class} · {subject} · Aula {n}",
+      "for": "Em substituição de {name}",
+      "description": "Vais substituir {name} nesta aula. Vês o percurso da turma, não os materiais do professor.",
+      "topic": "Tema da aula",
+      "history": "Últimas aulas da turma"
     }
   },
   "curriculumPlan": {

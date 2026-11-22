@@ -90,7 +90,11 @@ function DrawerBody({ detail }: { detail: DirectionTurmaDetail }) {
               {behindTopics.map((topic, i) => (
                 <li key={i} className="py-3">
                   <span className="font-medium text-foreground">{topic.label}</span>{" "}
-                  <span className="text-muted-foreground">· {t("plannedFor", { date: day(topic.plannedDate) })}</span>
+                  <span className="text-muted-foreground">
+                    · {t("plannedFor", { date: day(topic.plannedDate) })}
+                    {/* Behind with no whole lesson missing: part of it was left from a lesson that stopped halfway. */}
+                    {topic.lessonsBehind === 0 && ` · ${t("partlyLeft")}`}
+                  </span>
                 </li>
               ))}
             </WhyGroup>
@@ -115,8 +119,16 @@ function DrawerBody({ detail }: { detail: DirectionTurmaDetail }) {
               ? t("planPending", { date: day(teacherPlan.createdAt) })
               : t("planAdjusted", { date: day(teacherPlan.decidedAt ?? teacherPlan.createdAt) })}
           </p>
+          {/* The summary was written to the teacher ("you ran out of time…"): show it as that message, quoted. */}
           {teacherPlan.summary && (
-            <p className="mt-2 whitespace-pre-line text-sm text-foreground">{teacherPlan.summary}</p>
+            <figure className="mt-3">
+              <figcaption className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                {t("planSummaryLabel")}
+              </figcaption>
+              <blockquote className="mt-1 whitespace-pre-line border-l-2 border-primary/30 pl-3 text-sm text-foreground">
+                {teacherPlan.summary}
+              </blockquote>
+            </figure>
           )}
         </DrawerCard>
       )}

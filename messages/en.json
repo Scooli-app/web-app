@@ -2848,23 +2848,24 @@
       "suspended": "Suspended"
     },
     "dashboard": {
-      "description": "An operational view of the organization, team usage and recent activity.",
+      "description": "How your team is using Scooli.",
       "loadError": "We couldn't load the school dashboard",
       "stats": {
         "activeSeats": "Active seats",
         "availableSeats": "Available seats",
-        "activeTeachers": "Active teachers",
+        "activeTeachers": "Used AI this month",
         "aiRequestsThisMonth": "AI requests this month",
         "totalDocuments": "School documents",
         "sharedResources": "Internal library"
       },
       "planCard": {
-        "title": "Plan and contract",
+        "title": "Agreement with Scooli",
         "plan": "Plan",
         "status": "Status",
         "seatLimit": "Seat limit",
         "renewal": "Renewal",
-        "manualFallback": "Manual"
+        "manualFallback": "Direct agreement",
+        "unlimited": "No limit"
       },
       "usageCard": {
         "title": "Usage summary",
@@ -2876,10 +2877,10 @@
       "activityCard": {
         "title": "Activity in the last 14 days",
         "description": "AI requests the school completed successfully over the last fourteen days.",
-        "requestsThisMonthBadge": "{count, plural, one {# request} other {# requests}} this month",
         "tooltip": "{day}: {count, plural, one {# request} other {# requests}}",
         "empty": "The chart shows up once the team starts creating with Scooli.",
-        "emptyTitle": "No activity yet"
+        "emptyTitle": "No activity yet",
+        "requestsInPeriodBadge": "{count, plural, one {# request} other {# requests}} in 14 days"
       },
       "documentTypesCard": {
         "title": "Document types",
@@ -2890,12 +2891,12 @@
     },
     "members": {
       "title": "School members",
-      "description": "Track the team's activity, roles and participation in {organizationName}.",
+      "description": "Your team at {organizationName}: roles, documents and last activity.",
       "fallbackOrganization": "this organization",
       "stats": {
         "total": "Total members",
-        "active": "Active members",
-        "aiActivity": "With AI activity",
+        "active": "With access",
+        "aiActivity": "Active this month",
         "internalShares": "Internal shares"
       },
       "listTitle": "Members",
@@ -2909,14 +2910,15 @@
       "createdThisMonth": "{count, plural, one {# created this month} other {# created this month}}",
       "statusLabel": "Status",
       "internalSharesCount": "{count, plural, one {# internal share} other {# internal shares}}",
-      "emptyTitle": "No teachers yet"
+      "emptyTitle": "No teachers yet",
+      "never": "No activity yet"
     },
     "settings": {
       "title": "School settings",
-      "description": "Initial overview of the organization workspace.",
+      "description": "Your school on Scooli.",
       "loadError": "We couldn't load the school settings",
       "currentRole": "Current role:",
-      "contractStatus": "Contract status:"
+      "changes": "To change the school’s name, members or agreement, write to <email>info@scooli.app</email>."
     }
   },
   "schoolDirection": {
@@ -2990,7 +2992,9 @@
       "planTitle": "Plan adjustment",
       "planAdjusted": "Adjusted on {date}",
       "planPending": "Proposal awaiting review since {date}",
-      "nextTest": "Next test"
+      "nextTest": "Next test",
+      "partlyLeft": "partly left to teach",
+      "planSummaryLabel": "What Scooli told the teacher"
     },
     "learning": {
       "title": "Where the school needs reinforcement",
@@ -2998,7 +3002,7 @@
       "allSubjects": "All subjects",
       "summary": "{subject} · Year {grade} · {flagged} of {total, plural, one {# class} other {# classes}} flagged it",
       "reinforcement": "Reinforcement sheet created",
-      "empty": "No class flagged anything as hard in the last 4 weeks."
+      "empty": "No class marked a lesson as “Some difficulties” in the last 4 weeks. Lessons left halfway show on the Overview."
     },
     "assessments": {
       "title": "Assessment calendar",
@@ -3028,13 +3032,11 @@
         "choose": "Choose a teacher",
         "cancel": "Cancel",
         "confirm": "Report an absence",
-        "error": "We couldn’t load the lessons for that day. Try again."
+        "error": "We couldn’t register the absence. Try again.",
+        "substituteHint": "They get an email and see that day’s lessons in their calendar, with the class’s history."
       },
-      "ready": "Ready for the substitute",
-      "sent": "Sent",
       "lessonHeading": "{class} · {subject} · Lesson {n}",
-      "substitute": "Substitute: {name}",
-      "leftOff": "Where the class left off",
+      "leftOff": "The class’s recent lessons",
       "leftOffNone": "No lessons have been recorded for this class yet.",
       "status": {
         "taught": "Taught",
@@ -3044,9 +3046,17 @@
       "topic": "Lesson topic",
       "documents": "Lesson documents",
       "noDocuments": "No documents attached to this lesson.",
-      "send": "Send to {name}",
-      "sentToast": "Sent to {name}",
-      "noLessons": "{name} has no lessons on this day."
+      "noLessons": "{name} has no lessons on this day.",
+      "noLessonsPill": "No lessons",
+      "shared": "In {name}’s calendar",
+      "sharedHint": "{name} sees this lesson in their calendar, with the class’s history. The teacher’s documents are not shared.",
+      "coveredBy": "{absent} is away · {name} covers",
+      "remove": "Remove absence",
+      "removeConfirmTitle": "Remove this absence?",
+      "removeConfirmDescription": "{name} will no longer see these lessons in their calendar.",
+      "registeredToast": "Absence registered. We emailed {name}.",
+      "removedToast": "Absence removed",
+      "removeError": "We couldn’t remove the absence. Try again."
     },
     "reports": {
       "title": "Reports",
@@ -3348,6 +3358,13 @@
     "appUpdate": {
       "message": "A new version of Scooli is available. Refresh the page when you've finished what you're doing.",
       "action": "Refresh"
+    },
+    "notFound": {
+      "title": "Page not found",
+      "description": "The page you’re looking for doesn’t exist or has moved.",
+      "home": "Go to Home",
+      "back": "Go back",
+      "support": "If you think this is a mistake, write to info@scooli.app."
     }
   },
   "ui": {
@@ -3702,6 +3719,14 @@
       "semester1": "Semester 1",
       "semester2": "Semester 2",
       "schoolYear": "School year {range}"
+    },
+    "covers": {
+      "title": "Covering this week",
+      "lessonHeading": "{class} · {subject} · Lesson {n}",
+      "for": "Covering for {name}",
+      "description": "You’re covering this lesson for {name}. You see the class’s history, not the teacher’s materials.",
+      "topic": "Lesson topic",
+      "history": "The class’s recent lessons"
     }
   },
   "curriculumPlan": {

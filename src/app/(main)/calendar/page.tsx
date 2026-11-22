@@ -67,6 +67,7 @@ import {
 
 import { SLOT_STATUS_CONFIG } from "@/shared/constants/lessonSlotStatus";
 import { SlotDialog } from "@/components/calendar/SlotDialog";
+import { CoverWeek } from "@/components/calendar/CoverWeek";
 import { WeekJumpPicker } from "@/components/calendar/WeekJumpPicker";
 import { TeachingMarkBadge, TeachingMarkLegend } from "@/components/calendar/TeachingMarkBadge";
 import { formatClassName } from "@/shared/utils/className";
@@ -1111,6 +1112,7 @@ function CalendarPageInner() {
 
       {/* ── Calendar grid ─────────────────────────────────────────────── */}
       <div className="mx-auto w-full max-w-[1400px] px-4 pb-24 pt-4 md:pb-8">
+        {classStateEnabled && <CoverWeek weekStart={weekStart} />}
         {isLoadingTimetables && timetables.length === 0 ? (
           <CalendarGridSkeleton weekDays={weekDays} today={today} dayLabels={dayLabels} />
         ) : timetablesError && timetables.length === 0 ? (

@@ -22,6 +22,13 @@ export function formatDay(iso: string, locale: string, withYear = false): string
   });
 }
 
+/** The next Monday-to-Friday day after `from`: an absence registered on Friday or the weekend defaults to Monday. */
+export function nextSchoolDay(from: Date): Date {
+  const day = new Date(from.getFullYear(), from.getMonth(), from.getDate() + 1);
+  while (day.getDay() === 0 || day.getDay() === 6) day.setDate(day.getDate() + 1);
+  return day;
+}
+
 /** A run of days in one phrase: "16–20 de novembro" / "16 – 20 November". */
 export function formatDayRange(startIso: string, endIso: string, locale: string): string {
   const day = (iso: string) => new Date(`${iso.slice(0, 10)}T00:00:00`);
@@ -54,6 +61,8 @@ export function departmentExecution(turmas: DirectionTurma[]): { department: Dep
     const counted = turmas.filter((t) => t.department === department && COUNTED_STATES.includes(t.state));
     const past = counted.reduce((sum, t) => sum + t.lessonsPast, 0);
     const behind = counted.reduce((sum, t) => sum + t.lessonsBehind, 0);
-    return past > 0 ? [{ department, percent: Math.round(((past - behind) * 100) / past) }] : [];
+    // As on the backend: with lessons behind, never round up to 100%.
+    const percent = Math.round(((past - behind) * 100) / past);
+    return past > 0 ? [{ department, percent: behind > 0 ? Math.min(99, percent) : percent }] : [];
   });
 }

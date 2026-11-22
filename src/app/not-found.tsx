@@ -4,12 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Routes } from "@/shared/types";
 import { ArrowLeft, Home, Search } from "lucide-react";
+import { useTranslations } from "next-intl";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 export default function NotFound() {
   const router = useRouter();
+  const t = useTranslations("errors.notFound");
 
   const handleGoBack = () => {
     if (window.history.length > 1) {
@@ -38,12 +40,8 @@ export default function NotFound() {
             <Search className="h-8 w-8 text-primary-foreground" />
           </div>
           <h1 className="text-4xl font-bold text-foreground mb-2">404</h1>
-          <h2 className="text-xl font-semibold text-foreground mb-2">
-            Página não encontrada
-          </h2>
-          <p className="text-muted-foreground mb-6">
-            A página que está a procurar não existe ou foi movida.
-          </p>
+          <h2 className="text-xl font-semibold text-foreground mb-2">{t("title")}</h2>
+          <p className="text-muted-foreground mb-6">{t("description")}</p>
         </div>
 
         <div className="space-y-3">
@@ -53,7 +51,7 @@ export default function NotFound() {
           >
             <Link href={Routes.DASHBOARD}>
               <Home className="h-4 w-4 mr-2" />
-              Ir para o Dashboard
+              {t("home")}
             </Link>
           </Button>
 
@@ -63,17 +61,14 @@ export default function NotFound() {
             className="w-full border-border text-foreground bg-background hover:bg-accent"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Voltar atrás
+            {t("back")}
           </Button>
         </div>
 
         <div className="mt-8 pt-6 border-t border-border">
-          <p className="text-sm text-muted-foreground">
-            Se acredita que isto é um erro, contacte o suporte.
-          </p>
+          <p className="text-sm text-muted-foreground">{t("support")}</p>
         </div>
       </Card>
     </div>
   );
 }
-

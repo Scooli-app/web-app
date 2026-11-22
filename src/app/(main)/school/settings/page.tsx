@@ -22,11 +22,6 @@ function formatRole(role: string, t: Translator): string {
   return t.has(key) ? t(key) : role;
 }
 
-function formatSubscriptionStatus(status: string, t: Translator): string {
-  const key = `subscriptionStatus.${status}` as Parameters<Translator["has"]>[0];
-  return t.has(key) ? t(key) : status;
-}
-
 export default function SchoolSettingsPage() {
   const dispatch = useAppDispatch();
   const workspace = useAppSelector(selectWorkspaceContext);
@@ -74,10 +69,13 @@ export default function SchoolSettingsPage() {
               </span>
             </p>
             <p>
-              {t("settings.contractStatus")}{" "}
-              <span className="font-medium text-foreground">
-                {formatSubscriptionStatus(dashboard?.subscriptionStatus ?? "draft", t)}
-              </span>
+              {t.rich("settings.changes", {
+                email: (chunks) => (
+                  <a className="font-medium text-primary underline-offset-2 hover:underline" href="mailto:info@scooli.app">
+                    {chunks}
+                  </a>
+                ),
+              })}
             </p>
           </CardContent>
         </Card>
