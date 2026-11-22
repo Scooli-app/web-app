@@ -6,11 +6,12 @@ import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { LoadError } from "@/components/ui/load-error";
 import { usePlanLimits } from "@/hooks/usePlanLimits";
-import { listRegulatorySources } from "@/services/api/sources.service";
-import type { UploadSourceParams, UserSource } from "@/shared/types/sources";
+import { DefaultSourcesSections, DefaultSwitch } from "@/components/sources/DefaultSourcesSections";
+import { groupSourceDefaults } from "@/components/sources/groupSourceDefaults";
+import type { UploadSourceParams } from "@/shared/types/sources";
 import { cn } from "@/shared/utils/utils";
-import { selectIsContextPipelineV2Enabled } from "@/store/features/selectors";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { fetchSourceDefaults, selectSourceDefaults } from "@/store/sources/sourceDefaultsSlice";
 import {
   deleteUserSource,
   fetchSources,
@@ -19,19 +20,16 @@ import {
 import { openUpgradeModalForReason } from "@/store/ui/uiSlice";
 import {
   AlertCircle,
-  BookOpen,
   CheckCircle2,
   Clock,
-  ExternalLink,
   FileText,
   Loader2,
   Lock,
-  Scale,
   Trash2,
   Upload,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 const KNOWN_STATUSES = ["uploaded", "parsing", "chunking", "embedding", "summarising", "indexed", "failed"];
 
@@ -80,31 +78,17 @@ export default function SourcesPage() {
   const [name, setName] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
-  const [regulatorySources, setRegulatorySources] = useState<UserSource[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const isContextPipelineV2Enabled = useAppSelector(selectIsContextPipelineV2Enabled);
+  const defaults = useAppSelector(selectSourceDefaults);
+  const { personalByRef } = useMemo(() => groupSourceDefaults(defaults), [defaults]);
   const { limits, loading: limitsLoading } = usePlanLimits();
   // Fail open like usePlanLimits: unknown limits show the form, the server still enforces Pro.
   const isFree = limits ? !limits.isPro : false;
 
   useEffect(() => {
     dispatch(fetchSources());
+    dispatch(fetchSourceDefaults());
   }, [dispatch]);
-
-  // Regulatory documents only reach generation with context_pipeline_v2, so only list them then.
-  useEffect(() => {
-    if (!isContextPipelineV2Enabled) return;
-    let cancelled = false;
-    listRegulatorySources()
-      .then((data) => {
-        if (!cancelled) setRegulatorySources(data);
-      })
-      // The Aprendizagens Essenciais card still shows; a failed list just hides the regulatory ones.
-      .catch(() => setRegulatorySources([]));
-    return () => {
-      cancelled = true;
-    };
-  }, [isContextPipelineV2Enabled]);
 
   const validateAndSetFile = useCallback(
     (selectedFile: File): boolean => {
@@ -156,50 +140,14 @@ export default function SourcesPage() {
         </p>
       </div>
 
-      {/* Scooli-managed sources, used by default in every document */}
       <div className="space-y-3">
         <div>
-          <h2 className="text-base font-semibold">{t("scooliSources")}</h2>
-          <p className="mt-0.5 text-xs text-muted-foreground">{t("scooliSourcesDescription")}</p>
+          <h2 className="text-base font-semibold">{t("defaultsTitle")}</h2>
+          <p className="mt-0.5 text-xs text-muted-foreground">{t("defaultsDescription")}</p>
         </div>
-        <Card className="p-4">
-          <div className="flex items-start gap-3">
-            <BookOpen className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
-            <div className="min-w-0">
-              <p className="text-sm font-medium">{t("aeName")}</p>
-              <p className="mt-0.5 text-xs text-muted-foreground">{t("aeDescription")}</p>
-            </div>
-          </div>
-        </Card>
-        {regulatorySources.map((source) => (
-          <Card key={source.id} className="p-4">
-            <div className="flex items-start gap-3">
-              <Scale className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
-              <div className="min-w-0">
-                <div className="flex items-center gap-1.5">
-                  <p className="truncate text-sm font-medium">{source.name}</p>
-                  {source.externalUrl && (
-                    <a
-                      href={source.externalUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="shrink-0 text-primary hover:text-primary/80"
-                      aria-label={t("openOfficialText", { name: source.name })}
-                    >
-                      <ExternalLink className="h-3.5 w-3.5" />
-                    </a>
-                  )}
-                </div>
-                <p className="mt-0.5 text-xs text-muted-foreground">
-                  {t("regulatoryDescription")}
-                  {source.chunkCount > 0 &&
-                    ` · ${tList("excerptCount", { count: source.chunkCount })}`}
-                </p>
-              </div>
-            </div>
-          </Card>
-        ))}
       </div>
+
+      <DefaultSourcesSections />
 
       {/* Upload card: Pro only. Free teachers see what Pro unlocks instead of a form the server refuses. */}
       {limitsLoading ? null : isFree ? (
@@ -294,13 +242,19 @@ export default function SourcesPage() {
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-base font-semibold">
-            {t("loadedSources")}
+            {t("yours")}
             {sources.length > 0 && (
               <span className="ml-2 text-sm font-normal text-muted-foreground">
                 ({sources.length})
               </span>
             )}
           </h2>
+          {!isFree && (
+            <Button type="button" size="sm" variant="outline" onClick={() => fileInputRef.current?.click()}>
+              <Upload className="mr-1.5 h-4 w-4" />
+              {t("upload")}
+            </Button>
+          )}
           {sources.some((s) => !["indexed", "failed"].includes(s.status)) && (
             <span className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400">
               <Clock className="w-3.5 h-3.5" />{t("processingBadge")}
@@ -368,6 +322,7 @@ export default function SourcesPage() {
 
               <div className="flex shrink-0 items-center gap-2">
                 <StatusBadge status={source.status} t={tStatus} />
+                {personalByRef[source.id] && <DefaultSwitch entry={personalByRef[source.id]} />}
 
                 {deleteConfirmId === source.id ? (
                   <div className="flex gap-1">
@@ -401,13 +356,6 @@ export default function SourcesPage() {
           </Card>
         ))}
       </div>
-      )}
-
-      {/* Pro info note */}
-      {!isFree && (
-        <p className="text-xs text-muted-foreground">
-          {t("proNote")}
-        </p>
       )}
     </div>
   );

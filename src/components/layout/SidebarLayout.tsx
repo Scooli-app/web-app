@@ -389,7 +389,9 @@ const SidebarNavigationContent = memo(function SidebarNavigationContent({
   const workspace = useSelector(selectWorkspaceContext);
   const { canAccess: canAccessSchoolArea } = useSchoolAdminAccess();
   const isCommunityEnabled = features[FeatureFlag.COMMUNITY_LIBRARY] === true;
-  const isUserSourcesEnabled = features[FeatureFlag.USER_SOURCES] === true;
+  const isSourcesPageEnabled =
+    features[FeatureFlag.USER_SOURCES] === true ||
+    features[FeatureFlag.ORGANIZATION_SOURCES] === true;
   const isCurriculumPlanEnabled =
     features[FeatureFlag.CURRICULUM_PLAN_ENABLED] === true;
   const isHorarioPlanosEnabled =
@@ -403,7 +405,7 @@ const SidebarNavigationContent = memo(function SidebarNavigationContent({
   const libraryItems: NavItem[] = [
     ...LIBRARY_NAVIGATION,
     ...(isCommunityEnabled ? [COMMUNITY_NAV_ITEM] : []),
-    ...(isUserSourcesEnabled ? [SOURCES_NAV_ITEM] : []),
+    ...(isSourcesPageEnabled ? [SOURCES_NAV_ITEM] : []),
   ];
 
   return (
