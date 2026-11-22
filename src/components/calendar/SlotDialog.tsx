@@ -684,6 +684,7 @@ export function SlotDialog({
                     </div>
                   )}
                   {nextStep.row}
+                  {nextStep.sheet}
                   {reinforcementNote?.slotId === slot.id && (
                     <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-rose-500/30 bg-rose-500/5 px-3 py-2">
                       <span className="flex items-center gap-2 text-sm text-foreground">
