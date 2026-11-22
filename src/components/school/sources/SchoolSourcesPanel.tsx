@@ -112,18 +112,24 @@ export function SchoolSourcesPanel() {
             {sources.map((s) => {
               const settled = isSettled(s.status);
               return (
-                <li key={s.id} data-testid="school-source-row" className="flex items-center gap-3 py-3">
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium" title={s.name}>
-                      {s.name}
-                    </p>
-                    <p className="truncate text-sm text-muted-foreground">
-                      {t(`type.${s.type}.title`)} · {formatTags(s.subjects, s.schoolYears, t)}
-                    </p>
+                <li key={s.id} data-testid="school-source-row" className="flex items-start gap-3 py-3">
+                  {/* On a phone the badge drops under the text, so the name and tags keep the width. */}
+                  <div className="flex min-w-0 flex-1 flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="line-clamp-2 break-words font-medium" title={s.name}>
+                        {s.name}
+                      </p>
+                      <p className="break-words text-sm text-muted-foreground">
+                        {t(`type.${s.type}.title`)} · {formatTags(s.subjects, s.schoolYears, t)}
+                      </p>
+                    </div>
+                    <Badge
+                      variant={s.status === "indexed" && s.defaultEnabled ? "default" : "outline"}
+                      className="shrink-0 self-start sm:self-auto"
+                    >
+                      {statusLine(s)}
+                    </Badge>
                   </div>
-                  <Badge variant={s.status === "indexed" && s.defaultEnabled ? "default" : "outline"} className="shrink-0">
-                    {statusLine(s)}
-                  </Badge>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button type="button" variant="ghost" size="icon" disabled={busy} aria-label={t("menu.actions", { name: s.name })}>

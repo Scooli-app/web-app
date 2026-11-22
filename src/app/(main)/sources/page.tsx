@@ -149,14 +149,32 @@ export default function SourcesPage() {
 
       <DefaultSourcesSections />
 
-      {/* Upload card: Pro only. Free teachers see what Pro unlocks instead of a form the server refuses. */}
+      {/* One block for the teacher's own sources: heading, then the upload (Pro) or what Pro unlocks, then the list. */}
+      <section className="space-y-3">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-base font-semibold">
+            {t("yours")}
+            {sources.length > 0 && (
+              <span className="ml-2 text-sm font-normal text-muted-foreground">
+                ({sources.length})
+              </span>
+            )}
+          </h2>
+          {sources.some((s) => !["indexed", "failed"].includes(s.status)) && (
+            <span className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400">
+              <Clock className="w-3.5 h-3.5" />{t("processingBadge")}
+            </span>
+          )}
+        </div>
+
+      {/* Free teachers see what Pro unlocks instead of a form the server refuses. */}
       {limitsLoading ? null : isFree ? (
         <Card className="p-6">
           <div className="flex items-start gap-3">
             <Lock className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground" />
             <div className="min-w-0 space-y-3">
               <div>
-                <h2 className="text-base font-semibold">{t("proTitle")}</h2>
+                <h3 className="text-base font-semibold">{t("proTitle")}</h3>
                 <p className="mt-1 text-sm text-muted-foreground">{t("proDescription")}</p>
               </div>
               <Button
@@ -171,12 +189,18 @@ export default function SourcesPage() {
         </Card>
       ) : (
       <Card className="p-6 space-y-4">
-        <h2 className="text-base font-semibold">{t("addSource")}</h2>
-
-        {/* Drop zone */}
+        {/* Drop zone: the one upload entry, so it is a keyboard control too. */}
         <div
-          className="flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-border p-8 text-center cursor-pointer hover:bg-muted/50 transition-colors"
+          role="button"
+          tabIndex={0}
+          className="flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-border p-8 text-center cursor-pointer hover:bg-muted/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           onClick={() => fileInputRef.current?.click()}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              fileInputRef.current?.click();
+            }
+          }}
           onDragOver={(e) => e.preventDefault()}
           onDrop={(e) => {
             e.preventDefault();
@@ -237,31 +261,9 @@ export default function SourcesPage() {
       </Card>
       )}
 
-      {/* Sources list (free teachers only see it if they still have sources from a past Pro plan) */}
+      {/* The list (free teachers only see it if they still have sources from a past Pro plan) */}
       {(!isFree || sources.length > 0) && (
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-base font-semibold">
-            {t("yours")}
-            {sources.length > 0 && (
-              <span className="ml-2 text-sm font-normal text-muted-foreground">
-                ({sources.length})
-              </span>
-            )}
-          </h2>
-          {!isFree && (
-            <Button type="button" size="sm" variant="outline" onClick={() => fileInputRef.current?.click()}>
-              <Upload className="mr-1.5 h-4 w-4" />
-              {t("upload")}
-            </Button>
-          )}
-          {sources.some((s) => !["indexed", "failed"].includes(s.status)) && (
-            <span className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400">
-              <Clock className="w-3.5 h-3.5" />{t("processingBadge")}
-            </span>
-          )}
-        </div>
-
+      <>
         {loading && sources.length === 0 && <SkeletonRows rows={3} />}
 
         {!loading && sources.length === 0 && error && (
@@ -355,8 +357,9 @@ export default function SourcesPage() {
             </div>
           </Card>
         ))}
-      </div>
+      </>
       )}
+      </section>
     </div>
   );
 }
