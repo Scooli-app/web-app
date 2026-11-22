@@ -24,7 +24,6 @@ import {
   fetchSourceDefaults,
   selectDefaultFormSelection,
   selectSourceDefaults,
-  selectSourceDefaultsStatus,
 } from "@/store/sources/sourceDefaultsSlice";
 import {
   AdditionalDetailsSection,
@@ -161,7 +160,6 @@ export default function DocumentCreationPage({
     useDocumentForm(documentType.id, usesTemplate);
 
   // The picker starts from the teacher's defaults; what changes here applies to this one document and never writes them.
-  const defaultsStatus = useAppSelector(selectSourceDefaultsStatus);
   const defaultEntries = useAppSelector(selectSourceDefaults);
   const defaultSelection = useAppSelector(
     selectDefaultFormSelection,
@@ -413,8 +411,9 @@ export default function DocumentCreationPage({
           vocationalCourseCode: formState.vocationalCourseCode || undefined,
           vocationalUnitCode: formState.vocationalUnitCode || undefined,
           vocationalSchoolSubjectName: formState.vocationalSchoolSubjectName || undefined,
-          // Until the defaults load, a school-only account sends nothing (null = the server applies the defaults).
-          ...((isUserSourcesEnabled || (isOrgSourcesEnabled && defaultsStatus === "loaded")) && {
+          // Only once the defaults are in the form or the teacher picked: otherwise null, so the server applies
+          // the teacher's own defaults (and their "off"), not the form's untouched starting values.
+          ...((defaultsAppliedRef.current || sourcesTouchedRef.current) && {
             sourceIds: formState.sourceIds ?? [],
             includeAe: formState.includeAe ?? true,
             regulatorySourceIds: formState.regulatorySourceIds,
