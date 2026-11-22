@@ -39,7 +39,7 @@ type Translate = (key: string) => string;
 
 /**
  * Starts a one-click document (anything but the lesson plan) and reports failures the same way
- * everywhere. Returns false when it didn't start.
+ * everywhere. "blocked" (plan limit, already there, already running) is not a failure: no retry to offer.
  */
 export async function startCompanionDocument(
   timetableId: string,
@@ -49,23 +49,27 @@ export async function startCompanionDocument(
   dispatch: AppDispatch,
   outcomeIds?: string[],
   instruction?: string,
-): Promise<boolean> {
+): Promise<"started" | "blocked" | "failed"> {
   try {
     await generateLessonDocument(timetableId, lessonId, type, outcomeIds, instruction);
-    return true;
+    return "started";
   } catch (err) {
     if (err instanceof UpgradeLimitError) {
       // The API client already opened the upgrade modal (no credits / free-plan limit).
-    } else if (err instanceof ApiRequestError && err.status === 409) {
+      return "blocked";
+    }
+    if (err instanceof ApiRequestError && err.status === 409) {
       toast.info(err.code === "ja_existe" ? t("companionExists") : t("companionInProgress"));
-    } else if (err instanceof ApiRequestError && err.status === 403) {
+      return "blocked";
+    }
+    if (err instanceof ApiRequestError && err.status === 403) {
       // Presentations are Pro-only: say so, not "out of credits".
       dispatch(type === "presentation" ? openUpgradeModalForReason("presentation_pro") : setUpgradeModalOpen(true));
-    } else {
-      toast.error(t("companionError"));
-      posthog.captureException(err);
+      return "blocked";
     }
-    return false;
+    toast.error(t("companionError"));
+    posthog.captureException(err);
+    return "failed";
   }
 }
 

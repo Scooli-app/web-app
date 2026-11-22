@@ -136,7 +136,7 @@ export function usePrepareLessonSet({
       }
       for (const type of types) {
         if (type === "lessonPlan") continue;
-        const started = await startCompanionDocument(
+        const result = await startCompanionDocument(
           timetableId,
           lessonId,
           type,
@@ -145,9 +145,9 @@ export function usePrepareLessonSet({
           type === "test" ? testOutcomeIds : undefined,
           instruction,
         );
-        // Started: the server lists it as generating from now on.
-        if (!started) failed.push(type);
-        setState(type, started ? null : "failed");
+        // Started: the server lists it as generating from now on. Blocked (upgrade, already there): back to "+ Tipo".
+        if (result === "failed") failed.push(type);
+        setState(type, result === "failed" ? "failed" : null);
         onDone(); // the started document shows as written now, not when the whole set is through
       }
     } finally {

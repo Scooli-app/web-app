@@ -2,6 +2,7 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { UpgradeLimitError } from "@/services/api/client";
 import { LessonDocumentChips } from "./LessonDocumentChips";
 import { usePrepareLessonSet } from "./usePrepareLessonSet";
 
@@ -134,6 +135,20 @@ describe("Preparing a lesson set: each document shows its own state", () => {
     await act(async () => retry?.click());
     expect(api.generateLessonDocument).toHaveBeenCalledTimes(1);
     expect(api.generateLessonDocument.mock.calls[0][2]).toBe("quiz");
+  });
+
+  it("a document blocked by the plan limit goes back to its add chip, with no retry", async () => {
+    api.generateLessonDocument.mockImplementation((_tt: string, _lesson: string, type: string) =>
+      type === "quiz" ? Promise.reject(new UpgradeLimitError("no credits")) : Promise.resolve(),
+    );
+    await act(async () => root.render(<Harness />));
+    await act(async () =>
+      (container.querySelector('[data-set="lessonPlan,worksheet,quiz,presentation"]') as HTMLButtonElement).click(),
+    );
+    await act(async () => plan.resolve());
+
+    expect(chipTexts().some((text) => text?.includes("docState.failed"))).toBe(false);
+    expect(chipTexts()).toContain("types.quiz");
   });
 
   it("generates the companions at once when the plan is not part of the set", async () => {
