@@ -198,11 +198,16 @@
     "afterSaveClose": "Close",
     "carryOverDone": "Objectives moved to the lesson on {day}.",
     "reinforcementDone": "Reinforcement sheet being prepared for the lesson on {day}.",
-    "openLesson": "Open lesson"
+    "openLesson": "Open lesson",
+    "outcomesFromUnit": "This lesson had no learning outcomes linked. These come from the unit in your curriculum plan; the ones you pick will be linked to the lesson.",
+    "outcomesFromCatalogue": "This lesson had no learning outcomes linked. These are the outcomes for this subject and year; the ones you pick will be linked to the lesson.",
+    "outcomeSearch": "Search outcomes…",
+    "outcomeSearchEmpty": "No outcome matches “{query}”.",
+    "outcomesShowMore": "Show {count} more",
+    "outcomesCount": "{count} {source, select, unit {from the unit} catalogue {for the subject and year} other {from the lesson}}"
   },
   "previousCheckIn": {
     "question": "How did the lesson go?",
-    "questionWithTopic": "How did the lesson ({topic}) go?",
     "notNow": "Not now",
     "saved": "Saved.",
     "savedWithContext": "Saved. The next lesson will take this into account."

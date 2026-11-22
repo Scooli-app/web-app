@@ -136,7 +136,7 @@
     "resultDifficulties": "Com dificuldades",
     "resultPartial": "Ficou a meio",
     "resultNotHeld": "Não houve aula",
-    "difficultiesQuestion": "Em que tiveram dificuldades?",
+    "difficultiesQuestion": "Em que teve dificuldades?",
     "uncoveredQuestion": "O que ficou por dar?",
     "back": "Voltar",
     "assessmentQuestion": "Já aplicaste o teste?",
@@ -198,11 +198,16 @@
     "afterSaveClose": "Fechar",
     "carryOverDone": "Objetivos passados para a aula de {day}.",
     "reinforcementDone": "Ficha de reforço a preparar para a aula de {day}.",
-    "openLesson": "Abrir aula"
+    "openLesson": "Abrir aula",
+    "outcomesFromUnit": "Esta aula não tinha aprendizagens ligadas. Estas são da unidade da tua planificação; as que escolheres ficam ligadas à aula.",
+    "outcomesFromCatalogue": "Esta aula não tinha aprendizagens ligadas. Estas são das Aprendizagens Essenciais da disciplina e do ano; as que escolheres ficam ligadas à aula.",
+    "outcomeSearch": "Procurar aprendizagem…",
+    "outcomeSearchEmpty": "Nenhuma aprendizagem com “{query}”.",
+    "outcomesShowMore": "Ver mais {count}",
+    "outcomesCount": "{count} {source, select, unit {da unidade} catalogue {do programa} other {da aula}}"
   },
   "previousCheckIn": {
     "question": "Como correu a aula?",
-    "questionWithTopic": "Como correu a aula ({topic})?",
     "notNow": "Agora não",
     "saved": "Registado.",
     "savedWithContext": "Registado. A próxima aula vai ter isto em conta."

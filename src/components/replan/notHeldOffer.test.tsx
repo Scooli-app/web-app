@@ -11,7 +11,7 @@ vi.mock("sonner", () => ({ toast: Object.assign(vi.fn(), { success: vi.fn(), err
 function renderSaved(step: string | null) {
   return renderToStaticMarkup(
     createElement(PreviousLessonCheckInView, {
-      question: "question",
+      lessonName: "lesson",
       saved: "saved",
       step: step ? createElement("p", null, step) : null,
       saveFailed: false,

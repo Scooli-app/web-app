@@ -47,7 +47,6 @@ export function PreviousLessonCheckIn({
   onCheckedIn,
   onShifted,
 }: PreviousLessonCheckInProps) {
-  const t = useTranslations("previousCheckIn");
   const enabled = useAppSelector(selectIsClassStateEnabled);
   const todayIso = toIso(new Date());
 
@@ -56,6 +55,7 @@ export function PreviousLessonCheckIn({
   const [saved, setSaved] = useState<SavedPhase | null>(null);
   const [saveFailed, setSaveFailed] = useState(false);
   const [outcomeResult, setOutcomeResult] = useState<OutcomeResult | null>(null);
+  const [chosen, setChosen] = useState<CheckInResult | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
   /** What follows the answer: done by itself where it can, at most one line to answer (the same as everywhere). */
   const nextStep = useCheckInNextStep({ onShifted: () => onShifted?.() });
@@ -69,6 +69,7 @@ export function PreviousLessonCheckIn({
     setSaved(null);
     setSaveFailed(false);
     setOutcomeResult(null);
+    setChosen(null);
     setSelected([]);
     void loadPreviousCheckIn(enabled, timetableId, lessonId).then((found) => {
       if (cancelled) return;
@@ -104,14 +105,17 @@ export function PreviousLessonCheckIn({
   return (
     <>
       <PreviousLessonCheckInView
-        question={pending.topicTitle ? t("questionWithTopic", { topic: pending.topicTitle }) : t("question")}
+        lessonName={pending.topicTitle || null}
+        lesson={{ timetableId, slotId: pending.slotId }}
         saved={saved}
         step={nextStep.row}
         saveFailed={saveFailed}
         outcomeResult={outcomeResult}
+        chosen={chosen}
         outcomes={pending.outcomes}
         selected={selected}
         onChoose={(result: CheckInResult) => {
+          setChosen(result);
           if (needsDetailStep(result)) {
             setSelected(initialOutcomeSelection(pending.outcomes));
             setOutcomeResult(result as OutcomeResult);
@@ -135,15 +139,17 @@ export function PreviousLessonCheckIn({
 
 /**
  * The prompt's markup, separate from the container's loading and saving so each phase can be rendered and
- * checked on its own: the one-line question with the four results, the outcome step, the short confirmation
- * that replaces them after a save, and the save error.
+ * checked on its own: the question with the lesson's name under it and the four results, the outcome step, the short
+ * confirmation that replaces them after a save, and the save error.
  */
 export function PreviousLessonCheckInView({
-  question,
+  lessonName,
+  lesson,
   saved,
   step = null,
   saveFailed,
   outcomeResult,
+  chosen = null,
   outcomes,
   selected,
   onChoose,
@@ -152,12 +158,17 @@ export function PreviousLessonCheckInView({
   onBackOutcomes,
   onNotNow,
 }: {
-  question: string;
+  /** The previous lesson's title, on one truncated line under the question. */
+  lessonName: string | null;
+  /** The previous lesson's ids, so the outcome step can offer fallback outcomes. */
+  lesson?: { timetableId: string; slotId: string };
   saved: SavedPhase | null;
   /** The one line that follows the answer (useCheckInNextStep), shown under the saved line. */
   step?: ReactNode;
   saveFailed: boolean;
   outcomeResult: OutcomeResult | null;
+  /** The result last chosen, shown pressed. */
+  chosen?: CheckInResult | null;
   outcomes: CheckInOutcome[];
   selected: readonly string[];
   onChoose: (result: CheckInResult) => void;
@@ -182,30 +193,40 @@ export function PreviousLessonCheckInView({
     );
   }
 
+  const question = t("question");
   return (
-    <section aria-label={question} className="space-y-2 rounded-lg border border-primary/25 bg-primary/5 px-3 py-2">
-      {outcomeResult ? (
-        <>
-          {/* Keeps the lesson in view: the outcome question alone does not say which lesson it is about. */}
-          <span className="text-sm text-muted-foreground">{question}</span>
-          <CheckInOutcomeStep
-            question={outcomeResult === "PARTIAL" ? tc("uncoveredQuestion") : tc("difficultiesQuestion")}
-            result={outcomeResult}
-            outcomes={outcomes}
-            selected={selected}
-            onToggle={onToggle}
-            onSave={onConfirm}
-            onBack={onBackOutcomes}
-          />
-        </>
-      ) : (
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm text-foreground">{question}</span>
-          <CheckInResultOptions onChoose={onChoose} className="flex flex-wrap items-center gap-1.5" />
-          <Button variant="ghost" size="sm" className="ml-auto h-7 px-2 text-xs" onClick={onNotNow}>
+    <section aria-label={question} className="space-y-3 rounded-lg border border-primary/25 bg-primary/5 px-3 py-3">
+      {/* Keeps the lesson in view in both steps: the outcome question alone does not say which lesson it is about. */}
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-foreground">
+            {outcomeResult ? tc(outcomeResult === "PARTIAL" ? "resultPartial" : "resultDifficulties") : question}
+          </p>
+          {lessonName && (
+            <p className="truncate text-xs text-muted-foreground" title={lessonName}>
+              {lessonName}
+            </p>
+          )}
+        </div>
+        {!outcomeResult && (
+          <Button variant="ghost" size="sm" className="h-7 shrink-0 px-2 text-xs" onClick={onNotNow}>
             {t("notNow")}
           </Button>
-        </div>
+        )}
+      </div>
+      {outcomeResult ? (
+        <CheckInOutcomeStep
+          question={outcomeResult === "PARTIAL" ? tc("uncoveredQuestion") : tc("difficultiesQuestion")}
+          result={outcomeResult}
+          outcomes={outcomes}
+          lesson={lesson}
+          selected={selected}
+          onToggle={onToggle}
+          onSave={onConfirm}
+          onBack={onBackOutcomes}
+        />
+      ) : (
+        <CheckInResultOptions onChoose={onChoose} selected={chosen} />
       )}
       {saveFailed && <p className="text-xs text-destructive">{tc("saveError")}</p>}
     </section>
