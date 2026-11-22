@@ -1,12 +1,17 @@
 "use client";
 
 import { OptionRow } from "./FormCard";
+import { formatTags } from "@/components/school/sources/schoolSourceFormat";
+import { SUBJECTS } from "../constants";
+import { orderSchoolSources } from "../sourceSelection";
 import { listRegulatorySources } from "@/services/api/sources.service";
+import { FeatureFlag } from "@/shared/types/featureFlags";
 import { Routes } from "@/shared/types/routes";
-import type { UserSource } from "@/shared/types/sources";
+import type { SourceDefault, UserSource } from "@/shared/types/sources";
 import { cn } from "@/shared/utils/utils";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { selectIsContextPipelineV2Enabled } from "@/store/features/selectors";
+import { selectSourceDefaults, selectSourceDefaultsStatus } from "@/store/sources/sourceDefaultsSlice";
 import { fetchSources } from "@/store/sources/sourcesSlice";
 import { AlertCircle, Check, ExternalLink, Loader2, Scale, Upload } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -35,6 +40,11 @@ export function SourcePickerSection({
   const dispatch = useAppDispatch();
   const { sources, loading } = useAppSelector((state) => state.sources);
   const isContextPipelineV2Enabled = useAppSelector(selectIsContextPipelineV2Enabled);
+  const isUserSourcesEnabled = useAppSelector((state) => state.features.flags[FeatureFlag.USER_SOURCES] === true);
+  const defaults = useAppSelector(selectSourceDefaults);
+  const defaultsStatus = useAppSelector(selectSourceDefaultsStatus);
+  const tSchool = useTranslations("schoolSources");
+  const tPage = useTranslations("sources.page");
 
   const [regulatorySources, setRegulatorySources] = useState<UserSource[]>([]);
   const [regulatoryLoading, setRegulatoryLoading] = useState(true);
@@ -55,14 +65,6 @@ export function SourcePickerSection({
       .then((data) => {
         if (cancelled) return;
         setRegulatorySources(data);
-        // Default: pre-select everything so behavior matches today's auto-injection,
-        // but only if the form hasn't been initialised yet (regulatorySourceIds is undefined).
-        if (regulatorySourceIds === undefined && data.length > 0) {
-          onUpdate(
-            "regulatorySourceIds",
-            data.map((s) => s.id),
-          );
-        }
       })
       .catch(() => {
         if (!cancelled) setRegulatorySources([]);
@@ -73,8 +75,21 @@ export function SourcePickerSection({
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isContextPipelineV2Enabled]);
+
+  // Only when the defaults could not load: fall back to every regulatory document, as before.
+  useEffect(() => {
+    if (defaultsStatus === "failed" && regulatorySourceIds === undefined && regulatorySources.length > 0) {
+      onUpdate("regulatorySourceIds", regulatorySources.map((s) => s.id));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [defaultsStatus, regulatorySources]);
+
+  const { matching: matchingSchool, others: otherSchool } = orderSchoolSources(
+    defaults,
+    SUBJECTS.find((s) => s.id === subject)?.value ?? subject,
+    schoolYear,
+  );
 
   const indexedSources = sources.filter(
     (s) =>
@@ -88,6 +103,19 @@ export function SourcePickerSection({
       ? sourceIds.filter((s) => s !== id)
       : [...sourceIds, id];
     onUpdate("sourceIds", next);
+  };
+
+  const schoolRow = (entry: SourceDefault) => {
+    const selected = sourceIds.includes(entry.sourceRef);
+    return (
+      <PickerRow
+        key={entry.sourceRef}
+        selected={selected}
+        onToggle={() => toggleSource(entry.sourceRef)}
+        title={entry.name}
+        meta={`${entry.type === "regra" ? tPage("typeRegra") : tPage("typeApoio")} · ${formatTags(entry.subjects, entry.schoolYears, tSchool)}`}
+      />
+    );
   };
 
   const toggleRegulatory = (id: string) => {
@@ -195,8 +223,24 @@ export function SourcePickerSection({
           </div>
         ) : null}
 
+        {/* School sources: the ones that fit this subject and year first, the rest under a fold. */}
+        {matchingSchool.length + otherSchool.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">{t("schoolSources")}</p>
+            {matchingSchool.length > 0 && <div className="space-y-1">{matchingSchool.map(schoolRow)}</div>}
+            {otherSchool.length > 0 && (
+              <details className="group">
+                <summary className="cursor-pointer rounded text-xs text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                  {t("otherSchoolSources")} ({otherSchool.length})
+                </summary>
+                <div className="mt-1 space-y-1">{otherSchool.map(schoolRow)}</div>
+              </details>
+            )}
+          </div>
+        )}
+
         {/* User sources */}
-        {loading ? (
+        {!isUserSourcesEnabled ? null : loading ? (
           <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
             <Loader2 className="w-4 h-4 animate-spin" />
             {t("loadingSources")}
@@ -283,5 +327,39 @@ export function SourcePickerSection({
         )}
       </div>
     </OptionRow>
+  );
+}
+
+function PickerRow({ selected, onToggle, title, meta }: { selected: boolean; onToggle: () => void; title: string; meta: string }) {
+  return (
+    <div
+      className={cn(
+        "flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition-colors select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        selected ? "bg-primary/10" : "hover:bg-muted",
+      )}
+      onClick={onToggle}
+      role="checkbox"
+      aria-checked={selected}
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === " " || e.key === "Enter") {
+          e.preventDefault();
+          onToggle();
+        }
+      }}
+    >
+      <div
+        className={cn(
+          "w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors",
+          selected ? "bg-primary border-primary" : "border-border bg-background",
+        )}
+      >
+        {selected && <Check className="w-2.5 h-2.5 text-primary-foreground" />}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium truncate">{title}</p>
+        <p className="text-xs text-muted-foreground">{meta}</p>
+      </div>
+    </div>
   );
 }

@@ -603,7 +603,9 @@
       "openInNewWindow": "Abrir {name} numa nova janela",
       "noneMatch": "Nenhuma das tuas fontes corresponde a esta disciplina e ano.",
       "stillProcessing": "As tuas fontes ainda estão a ser processadas.",
-      "allFailed": "Nenhuma das tuas fontes foi processada."
+      "allFailed": "Nenhuma das tuas fontes foi processada.",
+      "schoolSources": "Fontes da escola",
+      "otherSchoolSources": "Outras fontes da escola"
     },
     "slideCount": {
       "title": "Número de slides",

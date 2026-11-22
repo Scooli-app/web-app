@@ -19,6 +19,13 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { LessonChoice } from "./lessonPicker";
 import { getMissingFields, type MissingField } from "./missingField";
 import { SUBJECTS, SUBJECTS_BY_GRADE } from "./constants";
+import { defaultSourceIds, reconcileSchoolIds } from "./sourceSelection";
+import {
+  fetchSourceDefaults,
+  selectDefaultFormSelection,
+  selectSourceDefaults,
+  selectSourceDefaultsStatus,
+} from "@/store/sources/sourceDefaultsSlice";
 import {
   AdditionalDetailsSection,
   ClassSection,
@@ -133,6 +140,10 @@ export default function DocumentCreationPage({
   const isUserSourcesEnabled = useAppSelector(
     (state) => state.features.flags[FeatureFlag.USER_SOURCES] === true
   );
+  const isOrgSourcesEnabled = useAppSelector(
+    (state) => state.features.flags[FeatureFlag.ORGANIZATION_SOURCES] === true
+  );
+  const showSourcePicker = isUserSourcesEnabled || isOrgSourcesEnabled;
   const [isLoading, setIsLoading] = useState(false);
   // Quick-create already filled year and subject: show them as one line until the teacher asks to change them.
   const [showFilledSummary, setShowFilledSummary] = useState(false);
@@ -148,6 +159,57 @@ export default function DocumentCreationPage({
   const usesTemplate = documentType.id !== "presentation" && !isStructured;
   const { formState, error, setError, updateForm, isFormValid, handleTemplateSelect } =
     useDocumentForm(documentType.id, usesTemplate);
+
+  // The picker starts from the teacher's defaults; what changes here applies to this one document and never writes them.
+  const defaultsStatus = useAppSelector(selectSourceDefaultsStatus);
+  const defaultEntries = useAppSelector(selectSourceDefaults);
+  const defaultSelection = useAppSelector(
+    selectDefaultFormSelection,
+    (a, b) => JSON.stringify(a) === JSON.stringify(b)
+  );
+  const sourcesTouchedRef = useRef(false);
+  const touchedRowsRef = useRef(new Set<string>());
+  const defaultsAppliedRef = useRef(false);
+  const subjectValue = SUBJECTS.find((s) => s.id === formState.subject)?.value ?? formState.subject;
+  const schoolYearValue = formState.schoolYear || undefined;
+
+  useEffect(() => {
+    if (showSourcePicker) dispatch(fetchSourceDefaults());
+  }, [dispatch, showSourcePicker]);
+
+  useEffect(() => {
+    if (!showSourcePicker || !defaultSelection) return;
+    if (!defaultsAppliedRef.current) {
+      defaultsAppliedRef.current = true;
+      if (sourcesTouchedRef.current) return;
+      updateForm("includeAe", defaultSelection.includeAe);
+      updateForm("regulatorySourceIds", defaultSelection.regulatorySourceIds);
+      updateForm("sourceIds", defaultSourceIds(defaultEntries, subjectValue, schoolYearValue));
+    } else {
+      // A new subject or year re-decides the school rows the teacher hasn't touched.
+      updateForm(
+        "sourceIds",
+        reconcileSchoolIds(formState.sourceIds ?? [], defaultEntries, subjectValue, schoolYearValue, touchedRowsRef.current)
+      );
+    }
+    // Re-runs only when the defaults or the subject/year change, not on every tick.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showSourcePicker, defaultSelection, defaultEntries, subjectValue, schoolYearValue]);
+
+  const updateSources: FormUpdateFn = useCallback(
+    (field, value) => {
+      if (field === "sourceIds" || field === "includeAe" || field === "regulatorySourceIds") sourcesTouchedRef.current = true;
+      if (field === "sourceIds") {
+        const before = formState.sourceIds ?? [];
+        const after = value as string[];
+        for (const id of [...before.filter((i) => !after.includes(i)), ...after.filter((i) => !before.includes(i))]) {
+          touchedRowsRef.current.add(id);
+        }
+      }
+      updateForm(field, value);
+    },
+    [formState.sourceIds, updateForm]
+  );
 
   // A year or subject from the URL wins over the profile defaults.
   const prefilledRef = useRef({ year: false, subject: false });
@@ -351,7 +413,8 @@ export default function DocumentCreationPage({
           vocationalCourseCode: formState.vocationalCourseCode || undefined,
           vocationalUnitCode: formState.vocationalUnitCode || undefined,
           vocationalSchoolSubjectName: formState.vocationalSchoolSubjectName || undefined,
-          ...(isUserSourcesEnabled && {
+          // Until the defaults load, a school-only account sends nothing (null = the server applies the defaults).
+          ...((isUserSourcesEnabled || (isOrgSourcesEnabled && defaultsStatus === "loaded")) && {
             sourceIds: formState.sourceIds ?? [],
             includeAe: formState.includeAe ?? true,
             regulatorySourceIds: formState.regulatorySourceIds,
@@ -545,14 +608,14 @@ export default function DocumentCreationPage({
               onUpdate={updateForm}
             />
 
-            {isUserSourcesEnabled && (
+            {showSourcePicker && (
               <SourcePickerSection
                 sourceIds={formState.sourceIds ?? []}
                 includeAe={formState.includeAe ?? true}
                 regulatorySourceIds={formState.regulatorySourceIds}
                 subject={formState.subject}
                 schoolYear={formState.schoolYear || undefined}
-                onUpdate={updateForm}
+                onUpdate={updateSources}
               />
             )}
           </MoreOptions>

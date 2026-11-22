@@ -603,7 +603,9 @@
       "openInNewWindow": "Open {name} in a new window",
       "noneMatch": "None of your sources match this subject and year.",
       "stillProcessing": "Your sources are still being processed.",
-      "allFailed": "None of your sources could be processed."
+      "allFailed": "None of your sources could be processed.",
+      "schoolSources": "School sources",
+      "otherSchoolSources": "Other school sources"
     },
     "slideCount": {
       "title": "Number of slides",
