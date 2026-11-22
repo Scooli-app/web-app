@@ -6,7 +6,11 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { LoadError } from "@/components/ui/load-error";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getDirectionLearning, getDirectionOverview } from "@/services/api/school-direction.service";
+import {
+  getDirectionLearning,
+  getDirectionOverview,
+  getDirectionTurma,
+} from "@/services/api/school-direction.service";
 import type { DirectionLearning, DirectionOverview } from "@/shared/types/school-direction";
 import { cn } from "@/shared/utils/utils";
 import { useAppSelector } from "@/store/hooks";
@@ -14,7 +18,7 @@ import { selectWorkspaceContext } from "@/store/workspace/selectors";
 import { FileText, Printer } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
-import { departmentExecution, formatClass, formatDay, formatSubject } from "./format";
+import { departmentExecution, formatClass, formatDay, formatSubject, recordCoverage } from "./format";
 import { STATE_CLASSES } from "./StatePill";
 
 // The sheet is white paper whatever the theme, so the class-state colours are the light ones (as in globals.css :root).
@@ -44,12 +48,21 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
-function Sheet({ overview, learning }: { overview: DirectionOverview; learning: DirectionLearning }) {
+interface ReportData {
+  overview: DirectionOverview;
+  learning: DirectionLearning;
+  /** Newest check-in note of each class to follow up, by turma id; a class without one has no entry. */
+  reasons: Record<string, string>;
+}
+
+function Sheet({ overview, learning, reasons }: ReportData) {
   const t = useTranslations("schoolDirection");
   const tSchool = useTranslations("school");
   const locale = useLocale();
   const workspace = useAppSelector(selectWorkspaceContext);
   const departments = departmentExecution(overview.turmas);
+  const coverage = recordCoverage(overview.turmas);
+  const noRecords = overview.turmas.filter((turma) => turma.state === "no_records");
   // Most lessons behind first: that puts the red classes before the amber ones.
   const toFollow = overview.turmas
     .filter((turma) => turma.state === "watch" || turma.state === "behind")
@@ -79,18 +92,38 @@ function Sheet({ overview, learning }: { overview: DirectionOverview; learning: 
           {audience && <span className="block">{audience}</span>}
           <span className="block">{t("reports.generated", { date: formatDay(overview.asOf, locale, true) })}</span>
         </p>
+        <p className="mt-4 text-sm text-slate-600">{t("reports.measures")}</p>
       </header>
+
+      <Section title={t("reports.coverage")}>
+        <p className="text-sm">{t("reports.coverageLine", coverage)}</p>
+        {noRecords.length > 0 && (
+          <>
+            <p className="mt-3 text-sm text-slate-600">{t("reports.coverageMissing")}</p>
+            <ul className="mt-1 list-disc pl-5 text-sm">
+              {noRecords.map((turma) => (
+                <li key={turma.id}>
+                  {formatClass(turma.grade, turma.classLabel, locale)} ·{" "}
+                  {formatSubject(turma.subjectKey, turma.subjectLabel)}
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+      </Section>
 
       <Section title={t("reports.byDepartment")}>
         {departments.length === 0 ? (
           <p className="text-sm text-slate-600">{t("reports.byDepartmentEmpty")}</p>
         ) : (
           <ul className="flex flex-col gap-3">
-            {departments.map(({ department, percent }) => (
+            {departments.map(({ department, percent, onPlan, past }) => (
               <li key={department}>
                 <p className="flex items-baseline justify-between gap-3 text-sm">
                   <span className="min-w-0">{t(`departments.${department}`)}</span>
-                  <span className="font-semibold tabular-nums">{percent}%</span>
+                  <span className="shrink-0 font-semibold tabular-nums">
+                    {t("reports.departmentFigure", { onPlan, past, percent })}
+                  </span>
                 </p>
                 <div aria-hidden className="mt-1 h-2.5 overflow-hidden rounded-full bg-slate-100">
                   <div className="h-full rounded-full bg-primary" style={{ width: `${percent}%` }} />
@@ -122,6 +155,7 @@ function Sheet({ overview, learning }: { overview: DirectionOverview; learning: 
                     formatSubject(turma.subjectKey, turma.subjectLabel),
                     t("states.lessonsBehind", { count: turma.lessonsBehind }),
                     turma.behindTopic,
+                    reasons[turma.id] && t("reports.reason", { note: reasons[turma.id] }),
                   ]
                     .filter(Boolean)
                     .join(" · ")}
@@ -160,21 +194,34 @@ function Sheet({ overview, learning }: { overview: DirectionOverview; learning: 
 /** The curriculum progress report for the school, as one sheet that prints (or saves) as a PDF. */
 export function DirectionReport() {
   const t = useTranslations("schoolDirection");
-  const [data, setData] = useState<{ overview: DirectionOverview; learning: DirectionLearning } | null>(null);
+  const [data, setData] = useState<ReportData | null>(null);
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
     setFailed(false);
-    Promise.all([getDirectionOverview(), getDirectionLearning()]).then(
-      ([overview, learning]) => {
-        if (!cancelled) setData({ overview, learning });
-      },
-      () => {
-        if (!cancelled) setFailed(true);
-      },
-    );
+    Promise.all([getDirectionOverview(), getDirectionLearning()])
+      .then(async ([overview, learning]) => {
+        // shortcut: one detail request per class to follow up; move the note into the overview if schools have dozens.
+        const toFollow = overview.turmas.filter((turma) => turma.state === "watch" || turma.state === "behind");
+        const details = await Promise.allSettled(toFollow.map((turma) => getDirectionTurma(turma.id)));
+        const reasons: Record<string, string> = {};
+        details.forEach((result, i) => {
+          // A missing reason is not worth failing the report over.
+          const note = result.status === "fulfilled" && result.value.missedLessons.find((m) => m.note?.trim())?.note;
+          if (note) reasons[toFollow[i].id] = note.trim();
+        });
+        return { overview, learning, reasons };
+      })
+      .then(
+        (report) => {
+          if (!cancelled) setData(report);
+        },
+        () => {
+          if (!cancelled) setFailed(true);
+        },
+      );
     return () => {
       cancelled = true;
     };
@@ -207,7 +254,7 @@ export function DirectionReport() {
       ) : !hasTurmas ? (
         <EmptyState icon={FileText} title={t("dashboard.emptyTitle")} description={t("dashboard.empty")} />
       ) : (
-        <Sheet overview={data.overview} learning={data.learning} />
+        <Sheet {...data} />
       )}
     </PageContainer>
   );

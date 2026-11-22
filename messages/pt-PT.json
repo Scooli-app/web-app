@@ -2945,12 +2945,12 @@
     },
     "homeCard": {
       "fallbackName": "A tua escola",
-      "figures": "{percent}% do previsto · {behind, plural, =0 {nenhuma turma atrasada} one {# turma atrasada} other {# turmas atrasadas}}",
+      "figures": "{percent}% das aulas em dia · {behind, plural, =0 {nenhuma turma atrasada} one {# turma atrasada} other {# turmas atrasadas}}",
       "hint": "Vê em que ponto do currículo está cada turma.",
       "open": "Abrir painel da direção"
     },
     "dashboard": {
-      "title": "Execução curricular",
+      "title": "Cumprimento das planificações",
       "subtitle": "Ano letivo {year} · atualizado agora",
       "subtitleNoYear": "Atualizado agora",
       "coverage": "Com base em {turmas, plural, one {# turma} other {# turmas}} de {teachers, plural, one {# professor} other {# professores}} que planeiam na Scooli.",
@@ -2958,8 +2958,8 @@
       "empty": "Os professores que a Scooli adicionar à escola aparecem aqui quando planearem as primeiras turmas."
     },
     "kpis": {
-      "execution": "Execução do currículo",
-      "executionHint": "do previsto para hoje",
+      "execution": "Aulas em dia",
+      "executionHint": "das previstas até hoje",
       "onTrack": "Em dia",
       "watch": "A acompanhar",
       "behind": "Atrasadas",
@@ -2978,7 +2978,7 @@
     },
     "drawer": {
       "fallbackTitle": "Detalhe da turma",
-      "execution": "Execução: {percent}% do previsto",
+      "execution": "Aulas em dia: {percent}% das previstas",
       "executionUnknown": "Execução: —",
       "why": "Porquê",
       "missedTitle": "Aulas não dadas ou a meio",
@@ -3060,18 +3060,24 @@
     },
     "reports": {
       "title": "Relatórios",
-      "subtitle": "Relatório de execução curricular · ano letivo {label}",
-      "subtitleNoYear": "Relatório de execução curricular",
+      "subtitle": "Balanço do cumprimento das planificações · ano letivo {label}",
+      "subtitleNoYear": "Balanço do cumprimento das planificações",
       "export": "Exportar PDF",
-      "sheetTitle": "Relatório de execução curricular",
+      "sheetTitle": "Balanço do cumprimento das planificações",
       "sheetYear": "Ano letivo {label}",
       "generated": "Gerado a {date}",
       "audience": "Para o Conselho Pedagógico",
-      "byDepartment": "1. Execução por departamento",
+      "measures": "As percentagens contam as aulas previstas até hoje cuja matéria não ficou em atraso, segundo os registos dos professores. Não medem o que os alunos consolidaram.",
+      "coverage": "1. Registos",
+      "coverageLine": "Registos confirmados em {measured} de {expected, plural, one {# turma} other {# turmas}} com aulas previstas até hoje.",
+      "coverageMissing": "Sem registos (ficam fora dos números abaixo):",
+      "byDepartment": "2. Aulas em dia face ao previsto, por departamento",
+      "departmentFigure": "{onPlan} de {past} aulas · {percent}%",
+      "reason": "Motivo: {note}",
       "byDepartmentEmpty": "Ainda não há registos de aulas para calcular a execução.",
-      "followUp": "2. Turmas a acompanhar",
+      "followUp": "3. Turmas a acompanhar",
       "followUpEmpty": "Nenhuma turma a acompanhar: todas as turmas com registos estão em dia.",
-      "reinforce": "3. Aprendizagens a reforçar"
+      "reinforce": "4. Aprendizagens a reforçar"
     }
   },
   "checkout": {
