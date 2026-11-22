@@ -132,9 +132,25 @@ describe("CheckInOutcomeStep fallback outcomes (ENG-424)", () => {
     expect(text()).not.toContain("outcomesFrom");
   });
 
+  it("shows the question with a loader and placeholder cards while the outcomes load", async () => {
+    let resolve: (value: Awaited<ReturnType<typeof checkInService.getOutcomes>>) => void = () => undefined;
+    vi.mocked(checkInService.getOutcomes).mockReturnValue(new Promise((done) => (resolve = done)));
+    await mount({ outcomes: [], lesson });
+    expect(text()).toContain("uncoveredQuestion");
+    expect(container.querySelector("[role=status]")?.textContent).toBe("outcomesLoading");
+    expect(container.querySelectorAll("[data-slot=skeleton]")).toHaveLength(3);
+    expect(cards()).toHaveLength(0);
+
+    await act(async () => resolve({ source: "unit", outcomes: fourteen.slice(0, 2) }));
+    expect(text()).not.toContain("outcomesLoading");
+    expect(container.querySelectorAll("[data-slot=skeleton]")).toHaveLength(0);
+    expect(cards()).toHaveLength(2);
+  });
+
   it("keeps only the amount and the note when nothing comes back, or the server does not know the request", async () => {
     vi.mocked(checkInService.getOutcomes).mockRejectedValue(new Error("404"));
     await mount({ outcomes: [], lesson });
+    expect(text()).not.toContain("outcomesLoading");
     expect(cards()).toHaveLength(0);
     expect(text()).not.toContain("uncoveredQuestion");
     expect(text()).toContain("missingAmountQuestion");
@@ -152,9 +168,10 @@ describe("CheckInOutcomeStep note", () => {
     expect(text()).toContain("16/500");
   });
 
-  it("keeps Voltar and Guardar in a sticky footer", async () => {
+  it("ends the step with Voltar and Guardar, not pinned over the content", async () => {
     await mount();
-    const footer = [...container.querySelectorAll("div")].find((d) => d.className.includes("sticky"));
-    expect(footer?.textContent).toBe("backsave");
+    const step = container.firstElementChild as HTMLElement;
+    expect(step.lastElementChild?.textContent).toBe("backsave");
+    expect(container.querySelector(".sticky")).toBeNull();
   });
 });

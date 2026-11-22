@@ -210,6 +210,7 @@
     "outcomeSearch": "Procurar aprendizagem…",
     "outcomeSearchEmpty": "Nenhuma aprendizagem com “{query}”.",
     "outcomesShowMore": "Ver mais {count}",
+    "outcomesLoading": "A carregar aprendizagens…",
     "outcomesCount": "{count} {source, select, unit {da unidade} catalogue {do programa} other {da aula}}"
   },
   "previousCheckIn": {
@@ -3690,7 +3691,6 @@
         "hint": "Podes fechar esta janela — continuamos a preparar em segundo plano."
       },
       "prepareLesson": "Preparar aula",
-      "adjustFollowing": "Ajustar seguintes",
       "moreOptions": "Mais opções",
       "suggestedSet": "sugerido para esta aula",
       "openPlanShort": "Abrir plano"
@@ -4069,6 +4069,7 @@
     "changeReinforcement": "Reforço",
     "lessonNumber": "Aula {number}",
     "lessonCheck": "Aplicar a aula {number}",
+    "lessonDetails": "Ver detalhes da aula {number}",
     "addition": "Acrescenta: {text}",
     "newOutcome": "Novo",
     "documentsNote": "Os materiais desta aula são atualizados sozinhos ao aplicar (a versão anterior fica guardada)",

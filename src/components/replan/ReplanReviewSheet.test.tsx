@@ -108,6 +108,17 @@ describe("ReplanReviewSheet with 14 lessons", () => {
     expect(applyButton()?.disabled).toBe(true);
   });
 
+  it("selects a lesson from a click anywhere on its card, not only the checkbox", async () => {
+    await renderSheet();
+    const title = [...document.body.querySelectorAll("li span[title]")].find((el) =>
+      el.textContent?.startsWith("Aula 30"),
+    ) as HTMLElement;
+    await act(async () => title.click());
+    expect(applyButton()?.textContent).toBe("Aplicar a 13 aulas");
+    await act(async () => title.click());
+    expect(applyButton()?.textContent).toBe("Aplicar a 14 aulas");
+  });
+
   it("applies all with null, the way the backend reads 'every change'", async () => {
     await renderSheet();
     await act(async () => applyButton()?.click());
@@ -128,8 +139,11 @@ describe("ReplanReviewSheet with 14 lessons", () => {
 
   it("opens a lesson to its topic change, what changes and its outcomes, the new ones marked", async () => {
     await renderSheet();
-    const row = buttons().find((b) => b.getAttribute("aria-expanded") === "false" && b.textContent?.includes("Aula 30"));
-    await act(async () => row?.click());
+    const chevron = document.body.querySelector('button[aria-label="Ver detalhes da aula 30"]') as HTMLButtonElement;
+    expect(chevron.getAttribute("aria-expanded")).toBe("false");
+    await act(async () => chevron.click());
+    // Opening the details does not change the selection.
+    expect(applyButton()?.textContent).toBe("Aplicar a 14 aulas");
     const details = document.body.querySelector("dl");
     expect(details?.textContent).toContain("mantém-se");
     expect(details?.textContent).toContain("Acrescenta: exercício orientadoPassa para a aula seguinte.");
