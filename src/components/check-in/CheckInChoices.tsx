@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -9,7 +10,7 @@ import { NOTE_MAX_LENGTH } from "@/hooks/checkInQueue";
 import { checkInService } from "@/services/api/check-in.service";
 import type { CheckInOutcome, CheckInOutcomeOptions, CheckInResult, MissingAmount } from "@/shared/types/check-in";
 import { cn } from "@/shared/utils/utils";
-import { AlertTriangle, Check, CircleDashed, Info, X, type LucideIcon } from "lucide-react";
+import { AlertTriangle, Check, CircleDashed, Info, Loader2, X, type LucideIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useId, useState } from "react";
 
@@ -102,6 +103,8 @@ const fold = (text: string) => text.normalize("NFD").replace(/\p{M}/gu, "").toLo
  */
 function useOfferedOutcomes(own: CheckInOutcome[], lesson?: { timetableId: string; slotId: string }) {
   const [fallback, setFallback] = useState<CheckInOutcomeOptions | null>(null);
+  /** The lesson whose fallback request has settled, so a new lesson shows the loader again. */
+  const [settledFor, setSettledFor] = useState<string | null>(null);
   const timetableId = lesson?.timetableId;
   const slotId = lesson?.slotId;
   const hasOwn = own.length > 0;
@@ -113,20 +116,25 @@ function useOfferedOutcomes(own: CheckInOutcome[], lesson?: { timetableId: strin
       .then((options) => {
         if (!cancelled) setFallback(options);
       })
-      .catch(() => undefined);
+      .catch(() => undefined)
+      .finally(() => {
+        if (!cancelled) setSettledFor(slotId);
+      });
     return () => {
       cancelled = true;
     };
   }, [hasOwn, timetableId, slotId]);
-  if (hasOwn) return { outcomes: own, source: "lesson" as const };
-  return { outcomes: fallback?.outcomes ?? [], source: fallback?.source ?? null };
+  if (hasOwn) return { outcomes: own, source: "lesson" as const, loading: false };
+  const loading = !!timetableId && !!slotId && settledFor !== slotId;
+  return { outcomes: loading ? [] : (fallback?.outcomes ?? []), source: fallback?.source ?? null, loading };
 }
 
 /**
  * The second step after "com dificuldades" or "ficou a meio". "Ficou a meio" first asks how much was left (optional).
  * Then the outcomes as selectable cards: the lesson's own, or a fallback with a line saying where it comes from; a lone
  * own outcome is already ticked. Past {@link VISIBLE_OUTCOMES} a search box and "Ver mais" keep the list short. Then an
- * optional note with a live counter, and "Voltar" / "Guardar" in a footer that stays in view while the body scrolls.
+ * optional note with a live counter, and "Voltar" / "Guardar" at the end of the step. While fallback outcomes
+ * load, placeholder cards hold their space.
  * With no outcomes at all, only the amount and the note are asked.
  */
 export function CheckInOutcomeStep({
@@ -202,6 +210,22 @@ export function CheckInOutcomeStep({
               );
             })}
           </div>
+        </div>
+      )}
+
+      {offered.loading && (
+        <div className="space-y-2" aria-busy="true">
+          <div className="flex items-baseline justify-between gap-2">
+            <p className="text-sm font-medium text-foreground">{question}</p>
+            <span role="status" className="flex shrink-0 items-center gap-1.5 text-xs text-muted-foreground">
+              <Loader2 className="size-3.5 motion-safe:animate-spin" aria-hidden />
+              {t("outcomesLoading")}
+            </span>
+          </div>
+          {/* Placeholders the size of the cards hold the space, so the note and the buttons don't jump. */}
+          {[0, 1, 2].map((index) => (
+            <Skeleton key={index} className="h-12 rounded-lg" />
+          ))}
         </div>
       )}
 
@@ -287,7 +311,8 @@ export function CheckInOutcomeStep({
         />
       </div>
 
-      <div className="sticky bottom-0 z-10 flex items-center justify-between gap-2 border-t border-border bg-card py-2">
+      {/* The step's own end, not pinned: in the lesson pop-up a pinned bar stacked over the pop-up's footer. */}
+      <div className="flex items-center justify-between gap-2 border-t border-border pt-3">
         <Button size="sm" variant="ghost" onClick={onBack}>
           {t("back")}
         </Button>

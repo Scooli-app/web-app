@@ -188,7 +188,10 @@ interface LessonRowProps {
   defaultOpen: boolean;
 }
 
-/** One lesson in a line (date, number and topic, a summary chip) that opens to what changes in it. */
+/**
+ * One lesson in a line (date, number and topic, a summary chip) that opens to what changes in it. A click anywhere on
+ * the card selects it; only the chevron opens it.
+ */
 function LessonRow({ item, locale, checked, onToggle, defaultOpen }: LessonRowProps) {
   const t = useTranslations("replan");
   const [open, setOpen] = useState(defaultOpen);
@@ -205,19 +208,25 @@ function LessonRow({ item, locale, checked, onToggle, defaultOpen }: LessonRowPr
         : t(CHANGE_LABEL_KEY[item.change]);
 
   return (
-    <li className={cn("rounded-xl border bg-card", !checked && "opacity-60")}>
+    // The whole card selects the lesson (a rule for every selectable card); its own controls keep their click. The
+    // checkbox stays the keyboard control.
+    <li
+      onClick={(event) => {
+        if ((event.target as HTMLElement).closest("button, a, [role='checkbox']")) return;
+        onToggle();
+      }}
+      className={cn(
+        "cursor-pointer rounded-xl border bg-card transition-colors hover:border-primary/60",
+        !checked && "opacity-60",
+      )}
+    >
       <div className="flex items-center gap-2.5 px-3 py-2">
         <Checkbox
           checked={checked}
           onCheckedChange={onToggle}
           aria-label={t("lessonCheck", { number: item.sequenceNumber })}
         />
-        <button
-          type="button"
-          aria-expanded={open}
-          onClick={() => setOpen((value) => !value)}
-          className="flex min-w-0 flex-1 items-center gap-2 rounded-sm py-0.5 text-left text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
+        <div className="flex min-w-0 flex-1 items-center gap-2 py-0.5 text-left text-sm">
           <time dateTime={item.date} className="w-12 shrink-0 text-xs tabular-nums text-muted-foreground max-sm:hidden">
             {dateLabel}
           </time>
@@ -227,10 +236,15 @@ function LessonRow({ item, locale, checked, onToggle, defaultOpen }: LessonRowPr
           <Badge variant="secondary" className="shrink-0">
             {chip}
           </Badge>
-          <ChevronDown
-            className={cn("h-4 w-4 shrink-0 text-muted-foreground transition-transform", open && "rotate-180")}
-            aria-hidden
-          />
+        </div>
+        <button
+          type="button"
+          aria-expanded={open}
+          aria-label={t("lessonDetails", { number: item.sequenceNumber })}
+          onClick={() => setOpen((value) => !value)}
+          className="-m-1 shrink-0 rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <ChevronDown className={cn("h-4 w-4 transition-transform", open && "rotate-180")} aria-hidden />
         </button>
       </div>
 

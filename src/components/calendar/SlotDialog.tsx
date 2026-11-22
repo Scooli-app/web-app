@@ -63,7 +63,6 @@ import { formatLessonDay, lessonCalendarHref, reinforcementTarget } from "@/hook
 import { useCheckInNextStep } from "@/components/check-in/useCheckInNextStep";
 import type { WeekLessonTarget } from "@/components/dashboard/WeekLessonDialog";
 import { useReplan } from "@/hooks/useReplan";
-import { ReplanRequestDialog } from "@/components/replan/ReplanRequestDialog";
 import { selectIsClassStateEnabled } from "@/store/features/selectors";
 import { useAppSelector } from "@/store/hooks";
 import { toast } from "sonner";
@@ -71,7 +70,6 @@ import { toast } from "sonner";
 import {
   ChevronDown,
   Clock,
-  RefreshCw,
   Edit2,
   ExternalLink,
   FileText,
@@ -196,7 +194,6 @@ export function SlotDialog({
       }),
   });
   const clearNextStep = nextStep.clear;
-  const [replanOpen, setReplanOpen] = useState(false);
   /** After the reinforcement was asked for here: the line that says where it is. Kept for this lesson. */
   const [reinforcementNote, setReinforcementNote] = useState<ReinforcementNote | null>(null);
   /** The topic proposal is being accepted or rejected. */
@@ -350,9 +347,6 @@ export function SlotDialog({
   /** Not held and its content never moved (a shift marks it skipped): moving the next lessons stays on offer. */
   const canShiftLater =
     slot.teachingStatus === "not_held" && slot.status !== "skipped" && !isAssessment && !isHoliday;
-
-  /** Pro, for a lesson that is past or today: asks for a proposal from here. A not-held lesson has its own button. */
-  const showReplanRequest = isPro && checkInEnabled && slot.slotDate <= todayIso && !canShiftLater;
 
   /** Pro: asks the replanning agent for the lessons after this one. The wait and the outcome show on the step line. */
   const handleReplanRequest = async (triggerSlotId: string) => {
@@ -820,21 +814,10 @@ export function SlotDialog({
           </div>
         </div>
 
-        {/* Footer actions: two short buttons that fit a phone in any language; the rest is in the main button's menu. */}
-        {!isHoliday && (showReplanRequest || isCompleted || prepareSets.length > 0 || isSlotGenerating || preparing) && (
+        {/* Footer: the lesson's main action and its menu. Adjusting the following lessons comes from the check-in
+            answer (for Pro, any answer other than "correu bem" proposes it), or from the turma page by hand. */}
+        {!isHoliday && (isCompleted || prepareSets.length > 0 || isSlotGenerating || preparing) && (
           <DialogFooter className="flex-row items-center gap-2 border-t bg-muted/30 px-3 py-3 sm:px-6 sm:py-4">
-            {showReplanRequest && (
-              <Button
-                variant="outline"
-                onClick={() => setReplanOpen(true)}
-                title={tReplan("actionLesson")}
-                aria-label={tReplan("actionLesson")}
-                className="h-9 min-w-0 shrink rounded-lg max-sm:px-2.5"
-              >
-                <RefreshCw className="max-sm:hidden" aria-hidden />
-                <span className="truncate">{t("adjustFollowing")}</span>
-              </Button>
-            )}
             <div className="ml-auto flex shrink-0">
               {isSlotGenerating || preparing ? (
                 <Button disabled className="h-9 rounded-lg">
@@ -904,15 +887,6 @@ export function SlotDialog({
               ) : null}
             </div>
           </DialogFooter>
-        )}
-        {isPro && checkInEnabled && (
-          <ReplanRequestDialog
-            timetableId={slot.timetable.id}
-            triggerSlotId={slot.id}
-            open={replanOpen}
-            onOpenChange={setReplanOpen}
-            {...nextStep.trackReplan({ timetableId: slot.timetable.id, slotId: slot.id, slotType: slot.slotType })}
-          />
         )}
       </DialogContent>
     </Dialog>

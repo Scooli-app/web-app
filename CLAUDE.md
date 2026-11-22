@@ -5,6 +5,10 @@
 - "Merge it" / "merge when ready" means merge the PR into `develop`. It is never permission to merge into `main`.
 - Before calling `create_pull_request` or `merge_pull_request`, check that `base` is `develop`. If it is `main`, stop and ask the user.
 
+## UI/UX rules
+
+- Selectable cards (checkbox cards, option cards, lesson or outcome lists) are clickable over their whole area, not only on the checkbox. Inner controls with their own job (an expand chevron, an info tooltip, a link) keep their own click and don't toggle the card. Keep it accessible: one focusable control per card (a `<label>` around the checkbox, or the checkbox kept as the keyboard control), a visible focus ring and a hover state.
+
 ## graphify
 
 This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
