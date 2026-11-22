@@ -37,4 +37,11 @@ describe("formatQuota", () => {
     expect(formatQuota(quota, useLocale("pt-PT"))).toBe("12 de 50 ficheiros · 340 MB de 2 GB");
     expect(formatQuota(quota, useLocale("en"))).toBe("12 of 50 files · 340 MB of 2 GB");
   });
+
+  it("shows KB below 1 MB, so a few small files never read as 0 MB", () => {
+    const small = { ...quota, filesUsed: 1, bytesUsed: 140 * 1024 };
+    expect(formatQuota(small, useLocale("pt-PT"))).toBe("1 de 50 ficheiros · 140 KB de 2 GB");
+    expect(formatQuota({ ...small, bytesUsed: 0 }, useLocale("en"))).toBe("1 of 50 files · 0 MB of 2 GB");
+    expect(formatQuota({ ...small, bytesUsed: 100 }, useLocale("en"))).toBe("1 of 50 files · 1 KB of 2 GB");
+  });
 });

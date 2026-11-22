@@ -58,6 +58,15 @@ describe("sourceDefaults", () => {
     expect(selectSourceDefaults(store.getState() as RootState)[0].effectiveDefault).toBe(true);
   });
 
+  it("rejects without a message when the server's refusal has an empty body", async () => {
+    const { ApiRequestError } = await import("@/services/api/client");
+    api.setSourceDefault.mockRejectedValueOnce(new ApiRequestError("", 404, null));
+    const store = makeStore([row("o1", "organization", true)]);
+    const result = await store.dispatch(toggleSourceDefault({ sourceRef: "o1", enabled: false }));
+    expect(toggleSourceDefault.rejected.match(result)).toBe(true);
+    expect(result.payload).toBeUndefined();
+  });
+
   it("builds the full form's starting selection from the defaults", () => {
     const state = loaded([
       row("ae", "ae", false),

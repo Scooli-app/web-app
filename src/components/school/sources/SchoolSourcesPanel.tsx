@@ -71,7 +71,7 @@ export function SchoolSourcesPanel() {
       await action();
       await load();
     } catch (e) {
-      toast.error(e instanceof ApiRequestError ? e.message : t("errors.generic"));
+      toast.error((e instanceof ApiRequestError && e.message) || t("errors.generic"));
     } finally {
       setBusy(false);
     }
@@ -160,6 +160,7 @@ export function SchoolSourcesPanel() {
         <SchoolSourceDialog
           mode={dialog.mode}
           source={dialog.mode === "edit" ? dialog.source : undefined}
+          maxFileBytes={quota?.maxFileBytes}
           onDone={(changed) => {
             setDialog(null);
             if (changed) void load();

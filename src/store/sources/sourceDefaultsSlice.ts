@@ -21,8 +21,8 @@ export const toggleSourceDefault = createAsyncThunk(
     try {
       return await setSourceDefault(sourceRef, enabled);
     } catch (e) {
-      // A 4xx message is already in the teacher's language; anything else gets the generic toast.
-      if (e instanceof ApiRequestError && e.status >= 400 && e.status < 500) return rejectWithValue(e.message);
+      // A 4xx message is already in the teacher's language; an empty one or anything else gets the generic toast.
+      if (e instanceof ApiRequestError && e.status >= 400 && e.status < 500 && e.message) return rejectWithValue(e.message);
       throw e;
     }
   }

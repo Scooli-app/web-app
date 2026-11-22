@@ -19,7 +19,7 @@ vi.mock("sonner", () => ({ toast: { error: vi.fn() } }));
 
 const FILES = ["SchoolSourcesPanel.tsx", "SchoolSourceDialog.tsx", "SourceTypeCards.tsx", "schoolSourceFormat.ts"];
 // Keys built from a variable: type.<regra|apoio>.title/hint, size.*, years.*, quota, all.
-const DYNAMIC = ["type.regra.title", "type.regra.hint", "type.apoio.title", "type.apoio.hint", "size.mb", "size.gb", "years.range", "years.list", "quota", "all"];
+const DYNAMIC = ["type.regra.title", "type.regra.hint", "type.apoio.title", "type.apoio.hint", "size.kb", "size.mb", "size.gb", "years.range", "years.list", "quota", "all"];
 
 const has = (obj: unknown, path: string) =>
   path.split(".").reduce<unknown>((o, k) => (o && typeof o === "object" ? (o as Record<string, unknown>)[k] : undefined), obj) !== undefined;

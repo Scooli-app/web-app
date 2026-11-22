@@ -7,8 +7,9 @@ export type SchoolSourcesT = (key: string, values?: Record<string, string | numb
 const MB = 2 ** 20;
 const GB = 2 ** 30;
 
-// shortcut: whole MB, and GB only when exact (no decimal separator to localise); upgrade if a school needs "1,5 GB".
-function formatSize(bytes: number, t: SchoolSourcesT): string {
+// shortcut: whole KB/MB, and GB only when exact (no decimal separator to localise); upgrade if a school needs "1,5 GB".
+export function formatSize(bytes: number, t: SchoolSourcesT): string {
+  if (bytes > 0 && bytes < MB) return t("size.kb", { n: Math.max(1, Math.round(bytes / 1024)) });
   return bytes >= GB && bytes % GB === 0
     ? t("size.gb", { n: bytes / GB })
     : t("size.mb", { n: Math.round(bytes / MB) });

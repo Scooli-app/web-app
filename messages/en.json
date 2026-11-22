@@ -4610,6 +4610,7 @@
     },
     "quota": "{files} of {filesMax} files · {used} of {max}",
     "size": {
+      "kb": "{n} KB",
       "mb": "{n} MB",
       "gb": "{n} GB"
     },
@@ -4628,6 +4629,8 @@
     },
     "form": {
       "file": "File",
+      "chooseFile": "Choose file",
+      "noFile": "No file chosen",
       "fileHint": "PDF, Word or Markdown.",
       "name": "Name",
       "subjects": "Subjects",
@@ -4640,7 +4643,8 @@
     },
     "errors": {
       "load": "Couldn't load the school sources.",
-      "generic": "Something went wrong. Try again."
+      "generic": "Something went wrong. Try again.",
+      "fileTooBig": "This file is over {max}. Choose a smaller one."
     }
   }
 }

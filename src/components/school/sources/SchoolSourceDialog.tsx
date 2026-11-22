@@ -17,8 +17,9 @@ import { updateSchoolSource, uploadSchoolSource } from "@/services/api/school-so
 import type { SchoolSource, SchoolSourceType } from "@/shared/types/sources";
 import { Loader2 } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useId, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { SourceTypeCards } from "./SourceTypeCards";
+import { formatSize } from "./schoolSourceFormat";
 
 const YEARS = Array.from({ length: 12 }, (_, i) => i + 1);
 // "Visual Arts" appears twice in SUBJECTS; one row per backend value.
@@ -28,7 +29,7 @@ const toggle = <T,>(list: T[], item: T) => (list.includes(item) ? list.filter((x
 
 function CheckRow({ checked, onChange, children }: { checked: boolean; onChange: () => void; children: React.ReactNode }) {
   return (
-    <label className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-muted/60 has-[:focus-visible]:bg-muted/60">
+    <label className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-muted/60 has-[:focus-visible]:bg-muted/60 has-[[data-state=checked]]:bg-primary/10 has-[[data-state=checked]]:font-medium">
       <Checkbox checked={checked} onCheckedChange={onChange} />
       <span className="min-w-0">{children}</span>
     </label>
@@ -38,15 +39,19 @@ function CheckRow({ checked, onChange, children }: { checked: boolean; onChange:
 interface SchoolSourceDialogProps {
   mode: "create" | "edit";
   source?: SchoolSource;
+  /** The per-file limit from the quota; a bigger file is refused on pick. */
+  maxFileBytes?: number;
   /** Called when the dialog closes; `changed` tells the list to refetch. */
   onDone: (changed: boolean) => void;
 }
 
 /** Mounted only while open, so its fields always start from `source` (or empty). */
-export function SchoolSourceDialog({ mode, source, onDone }: SchoolSourceDialogProps) {
+export function SchoolSourceDialog({ mode, source, maxFileBytes, onDone }: SchoolSourceDialogProps) {
   const t = useTranslations("schoolSources");
   const fileId = useId();
   const nameId = useId();
+  const fileNameId = useId();
+  const fileInput = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [name, setName] = useState(source?.name ?? "");
   const [type, setType] = useState<SchoolSourceType>(source?.type ?? "regra");
@@ -67,8 +72,8 @@ export function SchoolSourceDialog({ mode, source, onDone }: SchoolSourceDialogP
       else if (source) await updateSchoolSource(source.id, fields);
       onDone(true);
     } catch (e) {
-      // 400 (limit) and 409 (duplicate / still indexing) carry the server's own message.
-      setError(e instanceof ApiRequestError ? e.message : t("errors.generic"));
+      // 409 (duplicate / still indexing) carries the server's own message; a 400 can arrive with an empty body.
+      setError((e instanceof ApiRequestError && e.message) || t("errors.generic"));
       setSaving(false);
     }
   };
@@ -89,16 +94,35 @@ export function SchoolSourceDialog({ mode, source, onDone }: SchoolSourceDialogP
           {mode === "create" && (
             <div className="space-y-2">
               <Label htmlFor={fileId}>{t("form.file")}</Label>
-              <Input
+              {/* The native input shows the browser's own (English) button: it stays hidden behind ours. */}
+              <input
+                ref={fileInput}
                 id={fileId}
                 type="file"
                 accept=".pdf,.docx,.md"
+                className="sr-only"
+                tabIndex={-1}
                 onChange={(event) => {
                   const picked = event.target.files?.[0] ?? null;
+                  if (picked && maxFileBytes && picked.size > maxFileBytes) {
+                    setFile(null);
+                    setError(t("errors.fileTooBig", { max: formatSize(maxFileBytes, t) }));
+                    event.target.value = "";
+                    return;
+                  }
+                  setError(null);
                   setFile(picked);
                   if (picked && !name) setName(picked.name.replace(/\.[^.]+$/, ""));
                 }}
               />
+              <div className="flex min-w-0 items-center gap-3">
+                <Button type="button" variant="outline" className="shrink-0" aria-describedby={fileNameId} onClick={() => fileInput.current?.click()}>
+                  {t("form.chooseFile")}
+                </Button>
+                <span id={fileNameId} className="min-w-0 truncate text-sm text-muted-foreground" title={file?.name}>
+                  {file?.name ?? t("form.noFile")}
+                </span>
+              </div>
               <p className="text-xs text-muted-foreground">{t("form.fileHint")}</p>
             </div>
           )}

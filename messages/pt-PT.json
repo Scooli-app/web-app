@@ -4610,6 +4610,7 @@
     },
     "quota": "{files} de {filesMax} ficheiros · {used} de {max}",
     "size": {
+      "kb": "{n} KB",
       "mb": "{n} MB",
       "gb": "{n} GB"
     },
@@ -4628,6 +4629,8 @@
     },
     "form": {
       "file": "Ficheiro",
+      "chooseFile": "Escolher ficheiro",
+      "noFile": "Nenhum ficheiro escolhido",
       "fileHint": "PDF, Word ou Markdown.",
       "name": "Nome",
       "subjects": "Disciplinas",
@@ -4640,7 +4643,8 @@
     },
     "errors": {
       "load": "Não foi possível carregar as fontes da escola.",
-      "generic": "Não foi possível concluir. Tenta outra vez."
+      "generic": "Não foi possível concluir. Tenta outra vez.",
+      "fileTooBig": "O ficheiro tem mais de {max}. Escolhe um ficheiro mais pequeno."
     }
   }
 }
