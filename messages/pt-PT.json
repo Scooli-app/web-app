@@ -2955,7 +2955,8 @@
           "last_admin": "A escola precisa de pelo menos uma pessoa na direção.",
           "self": "Não podes alterar o teu próprio lugar.",
           "invalid_emails": "Há emails inválidos.",
-          "generic": "Não foi possível concluir. Tenta de novo."
+          "generic": "Não foi possível concluir. Tenta de novo.",
+          "member_limit_reached": "A escola chegou ao limite de membros da conta. Fala connosco em info@scooli.app para o aumentar."
         },
         "dialog": {
           "title": "Convidar professores",

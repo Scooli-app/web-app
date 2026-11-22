@@ -1,6 +1,13 @@
 import { ApiRequestError } from "@/services/api/client";
 
-const KNOWN = ["seat_limit_reached", "already_member", "last_admin", "self", "invalid_emails"] as const;
+const KNOWN = [
+  "seat_limit_reached",
+  "member_limit_reached",
+  "already_member",
+  "last_admin",
+  "self",
+  "invalid_emails",
+] as const;
 type KnownCode = (typeof KNOWN)[number];
 
 /** The translated message for a members-management failure: by the backend's error code, else a generic one. */

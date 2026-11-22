@@ -2955,7 +2955,8 @@
           "last_admin": "The school needs at least one admin.",
           "self": "You can't change your own access.",
           "invalid_emails": "Some emails aren't valid.",
-          "generic": "That didn't work. Please try again."
+          "generic": "That didn't work. Please try again.",
+          "member_limit_reached": "Your school has reached its account member limit. Write to info@scooli.app to raise it."
         },
         "dialog": {
           "title": "Invite teachers",
