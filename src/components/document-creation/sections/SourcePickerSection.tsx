@@ -82,12 +82,14 @@ export function SourcePickerSection({
     schoolYear,
   );
 
+  // A ticked source stays listed whatever the subject/year, so the teacher can always see and untick what is sent.
   const indexedSources = sources.filter(
     (s) =>
       s.status === "indexed" &&
-      (!subject || !s.subject || s.subject === subject) &&
-      (!schoolYear || !s.schoolYear || s.schoolYear === schoolYear),
+      (sourceIds.includes(s.id) ||
+        ((!subject || !s.subject || s.subject === subject) && (!schoolYear || !s.schoolYear || s.schoolYear === schoolYear))),
   );
+  const hasSchoolSources = matchingSchool.length + otherSchool.length > 0;
 
   const toggleSource = (id: string) => {
     const next = sourceIds.includes(id)
@@ -215,7 +217,7 @@ export function SourcePickerSection({
         ) : null}
 
         {/* School sources: the ones that fit this subject and year first, the rest under a fold. */}
-        {matchingSchool.length + otherSchool.length > 0 && (
+        {hasSchoolSources && (
           <div className="space-y-2">
             <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">{t("schoolSources")}</p>
             {matchingSchool.length > 0 && <div className="space-y-1">{matchingSchool.map(schoolRow)}</div>}
@@ -230,8 +232,8 @@ export function SourcePickerSection({
           </div>
         )}
 
-        {/* User sources */}
-        {!isUserSourcesEnabled ? null : loading ? (
+        {/* User sources; with none at all but school sources above, no note (it would read as if those were unindexed). */}
+        {!isUserSourcesEnabled || (!loading && sources.length === 0 && hasSchoolSources) ? null : loading ? (
           <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
             <Loader2 className="w-4 h-4 animate-spin" />
             {t("loadingSources")}
