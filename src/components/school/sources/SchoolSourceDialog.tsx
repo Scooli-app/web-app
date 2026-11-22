@@ -12,14 +12,13 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ApiRequestError } from "@/services/api/client";
 import { updateSchoolSource, uploadSchoolSource } from "@/services/api/school-sources.service";
-import type { SchoolSource, SchoolSourceType } from "@/shared/types/sources";
+import { SOURCE_NAME_MAX, type SchoolSource, type SchoolSourceType } from "@/shared/types/sources";
 import { Loader2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useId, useRef, useState } from "react";
 import { SourceTypeCards } from "./SourceTypeCards";
-import { formatSize } from "./schoolSourceFormat";
+import { formatSize, schoolSourceError } from "./schoolSourceFormat";
 
 const YEARS = Array.from({ length: 12 }, (_, i) => i + 1);
 // "Visual Arts" appears twice in SUBJECTS; one row per backend value.
@@ -52,6 +51,8 @@ export function SchoolSourceDialog({ mode, source, maxFileBytes, onDone }: Schoo
   const nameId = useId();
   const fileNameId = useId();
   const fileInput = useRef<HTMLInputElement>(null);
+  // The name taken from the last picked file: a new pick replaces it, a name the admin typed stays.
+  const autoName = useRef<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [name, setName] = useState(source?.name ?? "");
   const [type, setType] = useState<SchoolSourceType>(source?.type ?? "regra");
@@ -72,15 +73,14 @@ export function SchoolSourceDialog({ mode, source, maxFileBytes, onDone }: Schoo
       else if (source) await updateSchoolSource(source.id, fields);
       onDone(true);
     } catch (e) {
-      // 409 (duplicate / still indexing) carries the server's own message; a 400 can arrive with an empty body.
-      setError((e instanceof ApiRequestError && e.message) || t("errors.generic"));
+      setError(schoolSourceError(e, t));
       setSaving(false);
     }
   };
 
   return (
     <Dialog open onOpenChange={(open) => !open && !saving && onDone(false)}>
-      <DialogContent className="max-w-xl">
+      <DialogContent className="max-w-xl" aria-describedby={undefined}>
         <DialogHeader>
           <DialogTitle>{mode === "create" ? t("addTitle") : t("editTitle")}</DialogTitle>
         </DialogHeader>
@@ -112,7 +112,10 @@ export function SchoolSourceDialog({ mode, source, maxFileBytes, onDone }: Schoo
                   }
                   setError(null);
                   setFile(picked);
-                  if (picked && !name) setName(picked.name.replace(/\.[^.]+$/, ""));
+                  if (picked && (!name || name === autoName.current)) {
+                    autoName.current = picked.name.replace(/\.[^.]+$/, "").slice(0, SOURCE_NAME_MAX);
+                    setName(autoName.current);
+                  }
                 }}
               />
               <div className="flex min-w-0 items-center gap-3">
@@ -127,8 +130,19 @@ export function SchoolSourceDialog({ mode, source, maxFileBytes, onDone }: Schoo
             </div>
           )}
           <div className="space-y-2">
-            <Label htmlFor={nameId}>{t("form.name")}</Label>
-            <Input id={nameId} value={name} onChange={(event) => setName(event.target.value)} maxLength={200} autoComplete="off" />
+            <div className="flex items-baseline justify-between gap-2">
+              <Label htmlFor={nameId}>{t("form.name")}</Label>
+              <span className="text-xs tabular-nums text-muted-foreground" aria-hidden>
+                {name.length}/{SOURCE_NAME_MAX}
+              </span>
+            </div>
+            <Input
+              id={nameId}
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              maxLength={SOURCE_NAME_MAX}
+              autoComplete="off"
+            />
           </div>
           <SourceTypeCards value={type} onChange={setType} />
           <fieldset className="space-y-1">
@@ -148,7 +162,7 @@ export function SchoolSourceDialog({ mode, source, maxFileBytes, onDone }: Schoo
             <div className="grid grid-cols-3 gap-x-2 sm:grid-cols-4">
               {YEARS.map((y) => (
                 <CheckRow key={y} checked={years.includes(y)} onChange={() => setYears(toggle(years, y))}>
-                  {t("years.single", { n: y })}
+                  {t("years.option", { n: y })}
                 </CheckRow>
               ))}
             </div>

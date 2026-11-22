@@ -10,6 +10,9 @@ export type SourceStatus =
 export type SourceScope = "personal" | "organization" | "scooli";
 export type SourceFileKind = "pdf" | "docx" | "md";
 
+/** Longest source name the API accepts (school and personal); the inputs stop there. */
+export const SOURCE_NAME_MAX = 200;
+
 export interface UserSource {
   id: string;
   name: string;

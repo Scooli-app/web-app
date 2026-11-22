@@ -64,9 +64,9 @@ export function ConfirmationDialog({
             >
               <AlertTriangle className="w-6 h-6" />
             </div>
-            <div>
-              <DialogTitle>{resolvedTitle}</DialogTitle>
-              <DialogDescription className="mt-1">
+            <div className="min-w-0">
+              <DialogTitle className="[overflow-wrap:anywhere]">{resolvedTitle}</DialogTitle>
+              <DialogDescription className="mt-1 [overflow-wrap:anywhere]">
                 {resolvedDescription}
               </DialogDescription>
             </div>

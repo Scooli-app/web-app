@@ -4606,6 +4606,7 @@
     "years": {
       "single": "{n}",
       "range": "{from}–{to}",
+      "option": "Year {n}",
       "list": "Year {list}"
     },
     "quota": "{files} of {filesMax} files · {used} of {max}",
@@ -4621,11 +4622,12 @@
       "delete": "Delete",
       "actions": "Actions for {name}"
     },
-    "deleteConfirm": "Delete \"{name}\"? Teachers will stop getting it.",
+    "deleteConfirm": "Delete “{name}”? Teachers will stop getting it.",
     "empty": "No school sources yet. Add your assessment criteria or school rules.",
     "status": {
       "indexing": "Indexing…",
-      "failed": "Indexing failed"
+      "failed": "Indexing failed",
+      "failedHint": "We couldn’t read this file. Delete it and upload it again."
     },
     "form": {
       "file": "File",
@@ -4644,7 +4646,9 @@
     "errors": {
       "load": "Couldn't load the school sources.",
       "generic": "Something went wrong. Try again.",
-      "fileTooBig": "This file is over {max}. Choose a smaller one."
+      "fileTooBig": "This file is over {max}. Choose a smaller one.",
+      "duplicate": "This file is already in your school’s sources.",
+      "indexing": "This source is still being indexed. Try again when it’s done."
     }
   }
 }

@@ -3,10 +3,18 @@ import { readFileSync } from "node:fs";
 import { NextIntlClientProvider } from "next-intl";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import en from "../../../../messages/en.json";
 import pt from "../../../../messages/pt-PT.json";
+import { toast } from "sonner";
+import { SUBJECTS } from "@/components/document-creation/constants";
+import { ApiRequestError } from "@/services/api/client";
+import { listSchoolSources, updateSchoolSource } from "@/services/api/school-sources.service";
+import { ALL_YEARS, LONG_NAME } from "@/shared/test/longContent";
+import type { SchoolSource } from "@/shared/types/sources";
 import { SchoolSourcesPanel } from "./SchoolSourcesPanel";
+
+(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 vi.mock("@/services/api/school-sources.service", () => ({
   listSchoolSources: vi.fn().mockResolvedValue([]),
@@ -48,5 +56,75 @@ describe("schoolSources copy", () => {
     });
     expect(container.querySelector("h1")?.textContent).toBe(messages.schoolSources.title);
     expect(container.textContent).not.toContain("schoolSources.");
+  });
+});
+
+const school = (over: Partial<SchoolSource>): SchoolSource => ({
+  id: "s1", name: "Regulamento interno", type: "regra", subjects: [], schoolYears: [], defaultEnabled: true, status: "indexed",
+  chunkCount: 3, fileSizeBytes: 140 * 1024, fileKind: "pdf", uploadedByName: null, createdAt: "2026-11-22T10:00:00Z",
+  lastError: null, hasSummary: false, ...over,
+});
+
+async function mountPanel(list: SchoolSource[]) {
+  vi.mocked(listSchoolSources).mockResolvedValue(list);
+  const container = document.createElement("div");
+  document.body.appendChild(container);
+  await act(async () => {
+    createRoot(container).render(
+      <NextIntlClientProvider locale="pt-PT" messages={pt}>
+        <SchoolSourcesPanel />
+      </NextIntlClientProvider>,
+    );
+  });
+  return container;
+}
+
+const openMenu = async (row: Element) => {
+  const trigger = row.querySelector<HTMLButtonElement>("button[aria-haspopup]");
+  await act(async () => trigger?.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true })));
+  return [...document.querySelectorAll<HTMLElement>('[role="menuitem"]')];
+};
+
+describe("SchoolSourcesPanel rows", () => {
+  afterEach(() => {
+    document.body.innerHTML = "";
+  });
+
+  it("lists 50 sources, clamping long names and all-subject, all-year tags with the full text in the title", async () => {
+    const many = Array.from({ length: 50 }, (_, i) =>
+      school({ id: `s${i}`, name: i === 0 ? LONG_NAME : `Fonte ${i}`, subjects: SUBJECTS.map((s) => s.value), schoolYears: ALL_YEARS }),
+    );
+    const c = await mountPanel(many);
+    expect(c.querySelectorAll('[data-testid="school-source-row"]')).toHaveLength(50);
+    const name = c.querySelector<HTMLElement>(`[title="${LONG_NAME}"]`);
+    expect(name?.className).toContain("line-clamp-2");
+    const tags = name?.nextElementSibling as HTMLElement;
+    expect(tags.className).toContain("line-clamp-2");
+    expect(tags.title).toContain("1.º–12.º");
+    // the menu stays a sibling of the text, never pushed out by it
+    expect(c.querySelector('[data-testid="school-source-row"] > button[aria-haspopup]')).not.toBeNull();
+  });
+
+  it("marks a failed source and says what to do", async () => {
+    const c = await mountPanel([school({ status: "failed" })]);
+    expect(c.textContent).toContain(pt.schoolSources.status.failed);
+    expect(c.textContent).toContain(pt.schoolSources.status.failedHint);
+  });
+
+  it("disables edit, toggle and delete while a source indexes", async () => {
+    const c = await mountPanel([school({ status: "embedding" })]);
+    const items = await openMenu(c.querySelector('[data-testid="school-source-row"]') as Element);
+    expect(items).toHaveLength(3);
+    expect(items.every((i) => i.getAttribute("aria-disabled") === "true")).toBe(true);
+  });
+
+  it("toasts a 409 in the admin's language and reloads the list", async () => {
+    const c = await mountPanel([school({})]);
+    vi.mocked(updateSchoolSource).mockRejectedValueOnce(new ApiRequestError("Esta fonte ainda…", 409, "source_indexing"));
+    vi.mocked(listSchoolSources).mockClear();
+    const items = await openMenu(c.querySelector('[data-testid="school-source-row"]') as Element);
+    await act(async () => items[1].click());
+    expect(toast.error).toHaveBeenLastCalledWith(pt.schoolSources.errors.indexing);
+    expect(listSchoolSources).toHaveBeenCalled();
   });
 });

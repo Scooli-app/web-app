@@ -4606,6 +4606,7 @@
     "years": {
       "single": "{n}.º",
       "range": "{from}.º–{to}.º",
+      "option": "{n}.º",
       "list": "{list}"
     },
     "quota": "{files} de {filesMax} ficheiros · {used} de {max}",
@@ -4618,14 +4619,15 @@
       "edit": "Editar",
       "turnOff": "Desligar por omissão",
       "turnOn": "Ligar por omissão",
-      "delete": "Apagar",
+      "delete": "Eliminar",
       "actions": "Ações de {name}"
     },
-    "deleteConfirm": "Apagar \"{name}\"? Os professores deixam de a receber.",
+    "deleteConfirm": "Eliminar “{name}”? Os professores deixam de a receber.",
     "empty": "Ainda não há fontes da escola. Adiciona os critérios de avaliação ou o regulamento interno.",
     "status": {
       "indexing": "A indexar…",
-      "failed": "Falhou a indexação"
+      "failed": "Falhou a indexação",
+      "failedHint": "Não conseguimos ler este ficheiro. Elimina-o e carrega-o de novo."
     },
     "form": {
       "file": "Ficheiro",
@@ -4644,7 +4646,9 @@
     "errors": {
       "load": "Não foi possível carregar as fontes da escola.",
       "generic": "Não foi possível concluir. Tenta outra vez.",
-      "fileTooBig": "O ficheiro tem mais de {max}. Escolhe um ficheiro mais pequeno."
+      "fileTooBig": "O ficheiro tem mais de {max}. Escolhe um ficheiro mais pequeno.",
+      "duplicate": "Este ficheiro já está nas fontes da escola.",
+      "indexing": "Esta fonte ainda está a ser indexada. Tenta de novo quando terminar."
     }
   }
 }

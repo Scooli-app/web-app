@@ -1,4 +1,5 @@
 import { formatSubject } from "@/components/school/direction/format";
+import { ApiRequestError } from "@/services/api/client";
 import type { SchoolSourceQuota, SourceStatus } from "@/shared/types/sources";
 
 /** A translator scoped to the `schoolSources` namespace. */
@@ -42,6 +43,14 @@ export function formatTags(subjects: string[], schoolYears: number[], t: SchoolS
     parts.push(t("years.list", { list }));
   }
   return parts.length ? parts.join(" · ") : t("all");
+}
+
+/** A refusal in the admin's language: known codes get our own copy, then the server's message, then the generic one. */
+export function schoolSourceError(e: unknown, t: SchoolSourcesT): string {
+  if (!(e instanceof ApiRequestError)) return t("errors.generic");
+  if (e.code === "duplicate_source") return t("errors.duplicate");
+  if (e.code === "source_indexing") return t("errors.indexing");
+  return e.message || t("errors.generic");
 }
 
 export const isSettled = (status: SourceStatus) => status === "indexed" || status === "failed";

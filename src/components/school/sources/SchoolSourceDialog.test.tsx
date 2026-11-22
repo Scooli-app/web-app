@@ -6,6 +6,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import en from "../../../../messages/en.json";
 import pt from "../../../../messages/pt-PT.json";
 import { ApiRequestError } from "@/services/api/client";
+import { LONG_NAME } from "@/shared/test/longContent";
+import { SOURCE_NAME_MAX } from "@/shared/types/sources";
 import { SchoolSourceDialog } from "./SchoolSourceDialog";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -35,10 +37,10 @@ function mount(locale: "pt-PT" | "en") {
   return messages.schoolSources;
 }
 
-function pick(size: number) {
+function pick(size: number, fileName = "Regulamento.pdf") {
   const input = document.querySelector<HTMLInputElement>('input[type="file"]');
   if (!input) throw new Error("no file input");
-  const file = new File(["x"], "Regulamento.pdf", { type: "application/pdf" });
+  const file = new File(["x"], fileName, { type: "application/pdf" });
   Object.defineProperty(file, "size", { value: size });
   Object.defineProperty(input, "files", { value: [file], configurable: true });
   act(() => input.dispatchEvent(new Event("change", { bubbles: true })));
@@ -74,9 +76,44 @@ describe("SchoolSourceDialog errors", () => {
 
   it("shows the server's own message when it has one", async () => {
     mount("pt-PT");
-    api.uploadSchoolSource.mockRejectedValueOnce(new ApiRequestError("Este ficheiro já existe.", 409, "duplicate_source"));
+    api.uploadSchoolSource.mockRejectedValueOnce(new ApiRequestError("Limite de 50 ficheiros atingido.", 400, null));
     pick(MB);
     await submit();
-    expect(alertText()).toBe("Este ficheiro já existe.");
+    expect(alertText()).toBe("Limite de 50 ficheiros atingido.");
+  });
+
+  it("says a duplicate in the admin's language, not the server's teacher-worded Portuguese", async () => {
+    const copy = mount("en");
+    api.uploadSchoolSource.mockRejectedValueOnce(new ApiRequestError("Já carregaste este ficheiro.", 409, "duplicate_source"));
+    pick(MB);
+    await submit();
+    expect(alertText()).toBe(copy.errors.duplicate);
+  });
+});
+
+const nameInput = () => document.querySelector<HTMLInputElement>('input[maxlength]');
+
+describe("SchoolSourceDialog fields", () => {
+  it("names the source after each picked file until the admin types a name", () => {
+    mount("pt-PT");
+    pick(MB, "Regulamento.pdf");
+    expect(nameInput()?.value).toBe("Regulamento");
+    pick(MB, "Critérios 2026.docx");
+    expect(nameInput()?.value).toBe("Critérios 2026");
+  });
+
+  it("caps the name at the API limit and shows the count, even from a very long file name", () => {
+    mount("pt-PT");
+    pick(MB, `${LONG_NAME}${LONG_NAME}.pdf`);
+    expect(nameInput()?.maxLength).toBe(SOURCE_NAME_MAX);
+    expect(nameInput()?.value).toHaveLength(SOURCE_NAME_MAX);
+    expect(document.body.textContent).toContain(`${SOURCE_NAME_MAX}/${SOURCE_NAME_MAX}`);
+    // the chosen file's full name stays reachable on the truncated label
+    expect(document.querySelector(`[title="${LONG_NAME}${LONG_NAME}.pdf"]`)?.className).toContain("truncate");
+  });
+
+  it("labels the year options as years in English", () => {
+    mount("en");
+    expect(document.body.textContent).toContain("Year 7");
   });
 });

@@ -13,7 +13,6 @@ import {
 import { EmptyState } from "@/components/ui/empty-state";
 import { LoadError } from "@/components/ui/load-error";
 import { SkeletonRows } from "@/components/ui/page-skeleton";
-import { ApiRequestError } from "@/services/api/client";
 import {
   deleteSchoolSource,
   getSchoolSourceQuota,
@@ -26,7 +25,7 @@ import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { SchoolSourceDialog } from "./SchoolSourceDialog";
-import { formatQuota, formatTags, isSettled } from "./schoolSourceFormat";
+import { formatQuota, formatTags, isSettled, schoolSourceError } from "./schoolSourceFormat";
 
 const POLL_MS = 5000;
 
@@ -64,14 +63,15 @@ export function SchoolSourcesPanel() {
     return () => clearInterval(id);
   }, [indexing, load]);
 
-  // A 409 (still indexing) answers with a message already in the teacher's language.
+  // On a refusal (409 still indexing, 404 deleted by another admin) the list reloads too, so it shows the real state.
   const run = async (action: () => Promise<unknown>) => {
     setBusy(true);
     try {
       await action();
       await load();
     } catch (e) {
-      toast.error((e instanceof ApiRequestError && e.message) || t("errors.generic"));
+      toast.error(schoolSourceError(e, t));
+      await load();
     } finally {
       setBusy(false);
     }
@@ -111,6 +111,7 @@ export function SchoolSourcesPanel() {
           <ul className="divide-y divide-border/70">
             {sources.map((s) => {
               const settled = isSettled(s.status);
+              const tags = `${t(`type.${s.type}.title`)} · ${formatTags(s.subjects, s.schoolYears, t)}`;
               return (
                 <li key={s.id} data-testid="school-source-row" className="flex items-start gap-3 py-3">
                   {/* On a phone the badge drops under the text, so the name and tags keep the width. */}
@@ -119,12 +120,13 @@ export function SchoolSourcesPanel() {
                       <p className="line-clamp-2 break-words font-medium" title={s.name}>
                         {s.name}
                       </p>
-                      <p className="break-words text-sm text-muted-foreground">
-                        {t(`type.${s.type}.title`)} · {formatTags(s.subjects, s.schoolYears, t)}
+                      <p className="line-clamp-2 break-words text-sm text-muted-foreground" title={tags}>
+                        {tags}
                       </p>
+                      {s.status === "failed" && <p className="mt-0.5 text-xs text-destructive">{t("status.failedHint")}</p>}
                     </div>
                     <Badge
-                      variant={s.status === "indexed" && s.defaultEnabled ? "default" : "outline"}
+                      variant={s.status === "failed" ? "destructive" : s.status === "indexed" && s.defaultEnabled ? "default" : "outline"}
                       className="shrink-0 self-start sm:self-auto"
                     >
                       {statusLine(s)}
