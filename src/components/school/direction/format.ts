@@ -22,6 +22,13 @@ export function formatDay(iso: string, locale: string, withYear = false): string
   });
 }
 
+/** The next Monday-to-Friday day after `from`: an absence registered on Friday or the weekend defaults to Monday. */
+export function nextSchoolDay(from: Date): Date {
+  const day = new Date(from.getFullYear(), from.getMonth(), from.getDate() + 1);
+  while (day.getDay() === 0 || day.getDay() === 6) day.setDate(day.getDate() + 1);
+  return day;
+}
+
 /** A run of days in one phrase: "16–20 de novembro" / "16 – 20 November". */
 export function formatDayRange(startIso: string, endIso: string, locale: string): string {
   const day = (iso: string) => new Date(`${iso.slice(0, 10)}T00:00:00`);

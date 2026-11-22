@@ -28,6 +28,9 @@ import {
 import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import { useEffect } from "react";
+import { formatDay } from "@/components/school/direction/format";
+import type { Locale } from "@/i18n/locales";
+import { toIntlLocale } from "@/shared/utils/calendar";
 
 type Translator = ReturnType<typeof useTranslations>;
 
@@ -47,30 +50,15 @@ function formatDocumentType(documentType: string, tEnums: Translator): string {
   return tEnums.has(key) ? tEnums(key) : documentType;
 }
 
-function formatSubscriptionStatus(status: string | null | undefined, t: Translator): string {
-  if (!status) {
-    return t("common.notSet");
-  }
+function formatSubscriptionStatus(status: string, t: Translator): string {
   const key = `subscriptionStatus.${status}` as Parameters<Translator["has"]>[0];
   return t.has(key) ? t(key) : status;
 }
 
-function formatDate(date: string | null | undefined, locale: string, t: Translator): string {
-  if (!date) {
-    return t("common.notSet");
-  }
-
-  return new Date(date).toLocaleDateString(locale, {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-}
-
 function formatShortDay(date: string, locale: string): string {
-  return new Date(date).toLocaleDateString(locale, {
-    day: "2-digit",
-    month: "2-digit",
+  return new Date(`${date.slice(0, 10)}T00:00:00`).toLocaleDateString(toIntlLocale(locale as Locale), {
+    day: "numeric",
+    month: "short",
   });
 }
 
@@ -92,21 +80,20 @@ export function SchoolUsageOverview({ title }: { title?: string }) {
     void dispatch(fetchOrganizationDashboard());
   }, [dispatch]);
 
-  const maxActivity = Math.max(
-    ...(dashboard?.activityByDay?.map((point) => point.generations) ?? [0]),
-    1,
-  );
+  // Oldest day first, like any timeline.
+  const activity = [...(dashboard?.activityByDay ?? [])].sort((a, b) => a.date.localeCompare(b.date));
+  const activityTotal = activity.reduce((sum, point) => sum + point.generations, 0);
+  const maxActivity = Math.max(...activity.map((point) => point.generations), 1);
+  // A seat limit of 0 means none was set for the school, not "no seats".
+  const unlimited = !dashboard?.seatLimit;
+  // "draft" is the internal default when there is no contract record: nothing a director needs to read.
+  const status = dashboard?.subscriptionStatus && dashboard.subscriptionStatus !== "draft" ? dashboard.subscriptionStatus : null;
 
   return (
     <PageContainer size="xl" contentClassName="py-4 sm:py-8">
       <PageHeader
         title={title ?? workspace?.organization?.name ?? t("common.fallbackName")}
         description={t("dashboard.description")}
-        icon={
-          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 sm:h-12 sm:w-12">
-            <Building2 className="h-5 w-5 text-primary sm:h-6 sm:w-6" />
-          </div>
-        }
       />
 
       {error && !loading && !dashboard ? (
@@ -141,6 +128,8 @@ export function SchoolUsageOverview({ title }: { title?: string }) {
                   <CardContent>
                     {pending ? (
                       <Skeleton className="h-9 w-14" />
+                    ) : item.key === "availableSeats" && unlimited ? (
+                      <div className="text-xl font-semibold tracking-tight">{t("dashboard.planCard.unlimited")}</div>
                     ) : (
                       <div className="text-3xl font-semibold tracking-tight">{value}</div>
                     )}
@@ -166,34 +155,28 @@ export function SchoolUsageOverview({ title }: { title?: string }) {
                     </span>
                   )}
                 </div>
-                <div className="flex items-center justify-between gap-3">
-                  <span>{t("dashboard.planCard.status")}</span>
-                  {pending ? (
-                    <Skeleton className="h-5 w-20" />
-                  ) : (
-                    <Badge variant="secondary">
-                      {formatSubscriptionStatus(dashboard.subscriptionStatus, t)}
-                    </Badge>
-                  )}
-                </div>
+                {status && (
+                  <div className="flex items-center justify-between gap-3">
+                    <span>{t("dashboard.planCard.status")}</span>
+                    <Badge variant="secondary">{formatSubscriptionStatus(status, t)}</Badge>
+                  </div>
+                )}
                 <div className="flex items-center justify-between gap-3">
                   <span>{t("dashboard.planCard.seatLimit")}</span>
                   {pending ? (
                     <Skeleton className="h-5 w-10" />
                   ) : (
-                    <span className="font-medium text-foreground">{dashboard.seatLimit ?? 0}</span>
-                  )}
-                </div>
-                <div className="flex items-center justify-between gap-3">
-                  <span>{t("dashboard.planCard.renewal")}</span>
-                  {pending ? (
-                    <Skeleton className="h-5 w-24" />
-                  ) : (
                     <span className="font-medium text-foreground">
-                      {formatDate(dashboard.renewalAt, locale, t)}
+                      {unlimited ? t("dashboard.planCard.unlimited") : dashboard.seatLimit}
                     </span>
                   )}
                 </div>
+                {dashboard?.renewalAt && (
+                  <div className="flex items-center justify-between gap-3">
+                    <span>{t("dashboard.planCard.renewal")}</span>
+                    <span className="font-medium text-foreground">{formatDay(dashboard.renewalAt, locale, true)}</span>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -248,16 +231,14 @@ export function SchoolUsageOverview({ title }: { title?: string }) {
                   </p>
                 </div>
                 <Badge variant="outline">
-                  {t("dashboard.activityCard.requestsThisMonthBadge", {
-                    count: dashboard?.generationsThisMonth ?? 0,
-                  })}
+                  {t("dashboard.activityCard.requestsInPeriodBadge", { count: activityTotal })}
                 </Badge>
               </CardHeader>
               <CardContent>
-                {dashboard?.activityByDay?.length ? (
+                {activity.length ? (
                   <div className="rounded-2xl border border-border/70 bg-background/40 p-4">
                     <div className="flex h-64 items-end gap-2 sm:gap-3">
-                      {dashboard.activityByDay.map((point) => {
+                      {activity.map((point) => {
                         const barHeight = Math.max((point.generations / maxActivity) * 100, point.generations > 0 ? 12 : 4);
 
                         return (

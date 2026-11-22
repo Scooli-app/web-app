@@ -1,6 +1,16 @@
 import { describe, expect, it } from "vitest";
 import type { DirectionTurma } from "@/shared/types/school-direction";
-import { departmentExecution } from "./format";
+import { departmentExecution, nextSchoolDay } from "./format";
+
+describe("nextSchoolDay", () => {
+  it("is tomorrow on a weekday before Friday and Monday from Friday or the weekend", () => {
+    const iso = (d: Date) => `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+    expect(iso(nextSchoolDay(new Date(2026, 10, 18)))).toBe("2026-11-19"); // Wed → Thu
+    expect(iso(nextSchoolDay(new Date(2026, 10, 20)))).toBe("2026-11-23"); // Fri → Mon
+    expect(iso(nextSchoolDay(new Date(2026, 10, 21)))).toBe("2026-11-23"); // Sat → Mon
+    expect(iso(nextSchoolDay(new Date(2026, 10, 22)))).toBe("2026-11-23"); // Sun → Mon
+  });
+});
 
 const turma = (over: Partial<DirectionTurma>): DirectionTurma => ({
   id: "t",
