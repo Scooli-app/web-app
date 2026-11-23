@@ -46,4 +46,8 @@ describe("stepAfterReplan", () => {
     expect(stepAfterReplan(proposal("failed", "partial"))).toEqual({ kind: "replanFailed" });
     expect(stepAfterReplan(proposal("no_change"))).toEqual({ kind: "replanNoChange" });
   });
+
+  it("a proposal that never settled is a failure the teacher can retry", () => {
+    expect(stepAfterReplan(null)).toEqual({ kind: "replanFailed" });
+  });
 });

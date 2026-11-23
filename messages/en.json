@@ -4078,6 +4078,7 @@
     "notHeldInProgress": "The AI is adjusting the following lessons…",
     "readyToast": "The proposal is ready. Review it on the class page.",
     "failedToast": "Could not suggest changes to the following lessons.",
+    "retry": "Try again",
     "requestTitle": "What happened in this lesson?",
     "requestDescription": "Tell us how this lesson went. We use the note to propose changes to the following lessons.",
     "requestTitleTurma": "What changed in the class?",

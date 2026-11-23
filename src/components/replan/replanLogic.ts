@@ -93,9 +93,12 @@ function delay(ms: number, signal: AbortSignal): Promise<void> {
   });
 }
 
-/** The banner and the toast check the proposal every 5 s; after 5 minutes they stop and the banner's next load takes over. */
+/**
+ * The toast checks the proposal every 5 s for 10 minutes: longer than the backend's 8-minute timeout (and its
+ * 1-minute sweep), which fails a proposal whose run died. A proposal still not settled by then reads as failed.
+ */
 export const REPLAN_POLL_MS = 5000;
-export const REPLAN_MAX_POLLS = 60;
+export const REPLAN_MAX_POLLS = 120;
 
 /** Fired on the window when a proposal is requested or settles, with `detail.timetableId`: the turma banner reloads. */
 export const REPLAN_CHANGED_EVENT = "scooli:replan-changed";
