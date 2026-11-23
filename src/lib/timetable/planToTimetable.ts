@@ -4,7 +4,11 @@
  * calendar/novo "from_plan" wizard step and the one-click
  * CreateCalendarFromPlanButton, so the mapping only lives in one place.
  */
-import { SUBJECTS } from "@/components/document-creation/constants";
+import {
+  DEFAULT_COUNTRY_CODE,
+  getCountryCatalog,
+  type CountryCode,
+} from "@/lib/curriculum/countryCatalog";
 import type {
   CreateTimetableParams,
   LessonSlotType,
@@ -181,10 +185,20 @@ export function planRecurringSlots(details: CurriculumPlanDetails): RecurringSlo
 }
 
 /** Resolves a plan's stored English subject value back to the internal SUBJECTS id. */
-export function resolvePlanSubjectId(plan: Document): string {
+export function resolvePlanSubjectId(plan: Document, countryCode: CountryCode = DEFAULT_COUNTRY_CODE): string {
   if (!plan.subject) return "";
-  const config = SUBJECTS.find((s) => s.value === plan.subject) ?? SUBJECTS.find((s) => s.id === plan.subject);
+  const subjects = getCountryCatalog(countryCode).subjects;
+  const config = subjects.find((s) => s.value === plan.subject) ?? subjects.find((s) => s.id === plan.subject);
   return config?.id ?? "";
+}
+
+/** "6.º" for Portugal; "6º ano" or "1ª série" (Ensino Médio) for Brazil. */
+export function planGradeLabel(gradeLevel: number, countryCode: CountryCode = DEFAULT_COUNTRY_CODE): string {
+  if (getCountryCatalog(countryCode).countryCode === "BR") {
+    const year = getCountryCatalog(countryCode).schoolYears.find((y) => y.value === gradeLevel);
+    return year?.label ?? `${gradeLevel}º ano`;
+  }
+  return `${gradeLevel}.º`;
 }
 
 export function inferSchoolYearLabel(details: CurriculumPlanDetails): string {
@@ -380,10 +394,10 @@ export function applyExerciseAndReviewCadence(slots: PreviewSlot[], subject?: st
   return applyPracticeCadence(thinMultiLessonDays(suggestReviewsBeforeAssessments(slots)), subject);
 }
 
-export function buildPlanAutoTitle(plan: Document): string {
-  const subjectId = resolvePlanSubjectId(plan);
-  const label = SUBJECTS.find((s) => s.id === subjectId)?.label ?? plan.subject ?? "";
-  const grade = plan.gradeLevel ? `${plan.gradeLevel}.º` : "";
+export function buildPlanAutoTitle(plan: Document, countryCode: CountryCode = DEFAULT_COUNTRY_CODE): string {
+  const subjectId = resolvePlanSubjectId(plan, countryCode);
+  const label = getCountryCatalog(countryCode).subjects.find((s) => s.id === subjectId)?.label ?? plan.subject ?? "";
+  const grade = plan.gradeLevel ? planGradeLabel(Number(plan.gradeLevel), countryCode) : "";
   return [grade, label].filter(Boolean).join(" ") || translate("timetable.autoTitleFallback");
 }
 
@@ -393,7 +407,10 @@ export function buildPlanAutoTitle(plan: Document): string {
  * (e.g. an imported plan with no weekSchedule) — callers should fall back to
  * the calendar/novo wizard, pre-filled, in that case.
  */
-export function buildCreateTimetableParamsFromPlan(plan: Document): CreateTimetableParams | null {
+export function buildCreateTimetableParamsFromPlan(
+  plan: Document,
+  countryCode: CountryCode = DEFAULT_COUNTRY_CODE,
+): CreateTimetableParams | null {
   const details = parsePlanDetails(plan);
   if (!isPlanCalendarReady(plan, details)) return null;
 
@@ -404,9 +421,9 @@ export function buildCreateTimetableParamsFromPlan(plan: Document): CreateTimeta
   const previewSlots = expandSlotsLocally(details.periodStart as string, details.periodEnd as string, recurringSlots);
   const holidays = previewSlots.filter((s) => s.slotType === "HOLIDAY").map((s) => s.date);
 
-  const subjectId = resolvePlanSubjectId(plan);
-  const subjectValue = SUBJECTS.find((s) => s.id === subjectId)?.value ?? plan.subject ?? "";
-  const choice = planSubjectChoice(plan);
+  const subjectId = resolvePlanSubjectId(plan, countryCode);
+  const subjectValue = getCountryCatalog(countryCode).subjects.find((s) => s.id === subjectId)?.value ?? plan.subject ?? "";
+  const choice = planSubjectChoice(plan, countryCode);
 
   return {
     title: buildPlanAutoTitle(plan),
@@ -432,7 +449,7 @@ export function buildCreateTimetableParamsFromPlan(plan: Document): CreateTimeta
  * profissional plan keeps its course and UC (or school-component subject), a
  * regular one its subject and formação geral/específica.
  */
-export function planSubjectChoice(plan: Document): SubjectChoice {
+export function planSubjectChoice(plan: Document, countryCode: CountryCode = DEFAULT_COUNTRY_CODE): SubjectChoice {
   const schoolYear = parsePlanGradeLevel(plan) ?? 0;
   if (plan.vocationalCourseCode) {
     return {
@@ -446,7 +463,7 @@ export function planSubjectChoice(plan: Document): SubjectChoice {
     };
   }
   return {
-    subject: resolvePlanSubjectId(plan),
+    subject: resolvePlanSubjectId(plan, countryCode),
     schoolYear,
     isSpecificComponent: !!plan.isSpecificComponent,
     subjectMode: "regular",

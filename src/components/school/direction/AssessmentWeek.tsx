@@ -1,5 +1,6 @@
 "use client";
 
+import { useCountry } from "@/hooks/useCountry";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -29,6 +30,7 @@ const CLASH_STICKY_BG = "bg-card bg-[image:linear-gradient(var(--direction-watch
 function ClashBanner({ clash }: { clash: DirectionAssessmentClass }) {
   const t = useTranslations("schoolDirection.assessments");
   const locale = useLocale();
+  const countryCode = useCountry();
   // A teacher with two of the tests is still one contact.
   const teachers = [...new Map(clash.assessments.map((a) => [a.teacher.userId, a.teacher])).values()];
 
@@ -37,12 +39,12 @@ function ClashBanner({ clash }: { clash: DirectionAssessmentClass }) {
       <AlertTriangle aria-hidden className="mt-0.5 size-4 shrink-0" />
       <div className="min-w-0 text-sm">
         <p className="font-semibold">
-          {t("clash", { class: formatClass(clash.grade, clash.classLabel, locale), n: clash.assessments.length })}
+          {t("clash", { class: formatClass(clash.grade, clash.classLabel, locale, countryCode), n: clash.assessments.length })}
         </p>
         <ul className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5">
           {clash.assessments.map((a) => (
             <li key={a.slotId}>
-              {formatSubject(a.subjectLabel, a.subjectLabel)} · {formatDay(a.date, locale)}
+              {formatSubject(a.subjectLabel, a.subjectLabel, countryCode)} · {formatDay(a.date, locale)}
             </li>
           ))}
         </ul>
@@ -69,6 +71,7 @@ function WeekGrid({ week, classes, clashKeys, onOpen }: WeekGridProps) {
   const t = useTranslations("schoolDirection.assessments");
   const tGrid = useTranslations("schoolDirection.grid");
   const locale = useLocale();
+  const countryCode = useCountry();
   const monday = new Date(`${week.weekStart}T00:00:00`);
   const days = getDayLabels(locale as Locale)
     .slice(0, 5)
@@ -92,7 +95,7 @@ function WeekGrid({ week, classes, clashKeys, onOpen }: WeekGridProps) {
         <tbody>
           {classes.map((row) => {
             const clash = clashKeys.has(classKey(row));
-            const classText = formatClass(row.grade, row.classLabel, locale);
+            const classText = formatClass(row.grade, row.classLabel, locale, countryCode);
             return (
               <tr key={classKey(row)} className={cn("border-t border-border", clash && "bg-direction-watch-bg")}>
                 <th
@@ -120,7 +123,7 @@ function WeekGrid({ week, classes, clashKeys, onOpen }: WeekGridProps) {
                           .filter((a) => a.date === iso)
                           .map((a) => {
                             // The assessment carries only the subject as typed; formatSubject translates the known ones.
-                            const text = t("test", { subject: formatSubject(a.subjectLabel, a.subjectLabel) });
+                            const text = t("test", { subject: formatSubject(a.subjectLabel, a.subjectLabel, countryCode) });
                             return (
                               <button
                                 key={a.slotId}

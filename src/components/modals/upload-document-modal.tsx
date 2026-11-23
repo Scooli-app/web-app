@@ -1,14 +1,7 @@
 "use client";
 
-import {
-  GRADE_GROUPS,
-  SUBJECTS,
-  SUBJECTS_BY_GRADE,
-  translateGradeGroupLabel,
-  translateGradeLabel,
-  translateSubjectCategory,
-  translateSubjectLabel,
-} from "@/components/document-creation/constants";
+import { translateSubjectCategory } from "@/components/document-creation/constants";
+import { useCountryCatalog } from "@/hooks/useCountryCatalog";
 import { documentTypes } from "@/components/document-creation/documentTypes";
 import { Button } from "@/components/ui/button";
 import {
@@ -69,6 +62,7 @@ export function UploadDocumentModal({
 }: UploadDocumentModalProps) {
   const t = useTranslations("modals.uploadDocument");
   const tEnums = useTranslations("enums");
+  const catalog = useCountryCatalog();
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState("");
   const [documentType, setDocumentType] = useState<DocumentType | "">("");
@@ -114,12 +108,12 @@ export function UploadDocumentModal({
 
   useEffect(() => {
     if (schoolYear && subject) {
-      const validSubjects = SUBJECTS_BY_GRADE[schoolYear];
-      if (validSubjects && !validSubjects.includes(subject)) {
+      const validSubjects = catalog.subjectIdsForYear(schoolYear);
+      if (validSubjects.length > 0 && !validSubjects.includes(subject)) {
         setSubject("");
       }
     }
-  }, [schoolYear, subject]);
+  }, [catalog, schoolYear, subject]);
 
   useEffect(() => {
     if (documentType !== "worksheet" && worksheetVariant) {
@@ -206,7 +200,7 @@ export function UploadDocumentModal({
       setError(null);
 
       const subjectValue =
-        SUBJECTS.find((item) => item.id === subject)?.value || subject;
+        catalog.findSubject(subject)?.value || subject;
 
       const importPromise = (async () => {
         const { uploadUrl, fileKey } = await getUploadUrl(
@@ -413,18 +407,18 @@ export function UploadDocumentModal({
                     <SelectValue placeholder={t("selectPlaceholder")} />
                   </SelectTrigger>
                   <SelectContent className="max-h-[300px]">
-                    {GRADE_GROUPS.map((group) => (
-                      <SelectGroup key={group.label}>
+                    {catalog.yearGroups.map((group) => (
+                      <SelectGroup key={group.groupId}>
                         <SelectLabel className="mb-1 border-b border-border/50 bg-background px-2 py-2 text-xs font-bold text-primary">
-                          {translateGradeGroupLabel(group.groupId)}
+                          {group.label}
                         </SelectLabel>
-                        {group.grades.map((grade) => (
+                        {group.years.map((grade) => (
                           <SelectItem
-                            key={grade.id}
-                            value={grade.id}
+                            key={grade.value}
+                            value={String(grade.value)}
                             className="cursor-pointer rounded-md py-2 pl-4 pr-3 text-sm focus:bg-accent focus:text-primary"
                           >
-                            {translateGradeLabel(grade.id)}
+                            {grade.label}
                           </SelectItem>
                         ))}
                       </SelectGroup>
@@ -481,8 +475,8 @@ export function UploadDocumentModal({
                 <SelectContent className="max-h-[300px]">
                   {schoolYear &&
                     (() => {
-                      const validSubjectsIds = SUBJECTS_BY_GRADE[schoolYear] || [];
-                      const validSubjects = SUBJECTS.filter((item) =>
+                      const validSubjectsIds = catalog.subjectIdsForYear(schoolYear);
+                      const validSubjects = catalog.subjects.filter((item) =>
                         validSubjectsIds.includes(item.id)
                       );
                       const categories = [
@@ -502,7 +496,7 @@ export function UploadDocumentModal({
                                 value={item.id}
                                 className="cursor-pointer rounded-md py-2 pl-4 pr-3 text-sm focus:bg-accent focus:text-primary"
                               >
-                                {translateSubjectLabel(item.id)}
+                                {item.label}
                               </SelectItem>
                             ))}
                         </SelectGroup>

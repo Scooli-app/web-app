@@ -186,3 +186,16 @@ describe("getDefaultTeachingMode", () => {
     expect(getDefaultTeachingMode(null)).toBe("regular");
   });
 });
+
+describe("buildRegularTeachingItems for Brazil (BR)", () => {
+  it("uses the Brazilian subject name as the backend value", () => {
+    expect(buildRegularTeachingItems(["Matemática"], "BR")).toEqual([
+      { qualificationCode: null, kind: "subject", code: "Matemática", label: "Matemática", trainingComponent: null },
+    ]);
+  });
+
+  it("drops Portuguese subject ids for a Brazilian teacher", () => {
+    expect(buildRegularTeachingItems(["matematica"], "BR")).toEqual([]);
+    expect(buildRegularTeachingItems(["matematica"])[0].label).toBe("Mathematics");
+  });
+});

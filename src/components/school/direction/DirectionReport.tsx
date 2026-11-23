@@ -1,5 +1,6 @@
 "use client";
 
+import { useCountry } from "@/hooks/useCountry";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -59,6 +60,7 @@ function Sheet({ overview, learning, reasons }: ReportData) {
   const t = useTranslations("schoolDirection");
   const tSchool = useTranslations("school");
   const locale = useLocale();
+  const countryCode = useCountry();
   const workspace = useAppSelector(selectWorkspaceContext);
   const departments = departmentExecution(overview.turmas);
   const coverage = recordCoverage(overview.turmas);
@@ -103,8 +105,8 @@ function Sheet({ overview, learning, reasons }: ReportData) {
             <ul className="mt-1 list-disc pl-5 text-sm">
               {noRecords.map((turma) => (
                 <li key={turma.id}>
-                  {formatClass(turma.grade, turma.classLabel, locale)} ·{" "}
-                  {formatSubject(turma.subjectKey, turma.subjectLabel)}
+                  {formatClass(turma.grade, turma.classLabel, locale, countryCode)} ·{" "}
+                  {formatSubject(turma.subjectKey, turma.subjectLabel, countryCode)}
                 </li>
               ))}
             </ul>
@@ -151,8 +153,8 @@ function Sheet({ overview, learning, reasons }: ReportData) {
                 </span>
                 <span className="min-w-0">
                   {[
-                    formatClass(turma.grade, turma.classLabel, locale),
-                    formatSubject(turma.subjectKey, turma.subjectLabel),
+                    formatClass(turma.grade, turma.classLabel, locale, countryCode),
+                    formatSubject(turma.subjectKey, turma.subjectLabel, countryCode),
                     t("states.lessonsBehind", { count: turma.lessonsBehind }),
                     turma.behindTopic,
                     reasons[turma.id] && t("reports.reason", { note: reasons[turma.id] }),
@@ -176,7 +178,7 @@ function Sheet({ overview, learning, reasons }: ReportData) {
                 <p className="text-sm font-medium">{item.text}</p>
                 <p className="text-sm text-slate-600">
                   {t("learning.summary", {
-                    subject: formatSubject(item.subjectKey, item.subjectLabel),
+                    subject: formatSubject(item.subjectKey, item.subjectLabel, countryCode),
                     grade: item.grade,
                     flagged: item.turmasFlagged,
                     total: item.turmasTotal,

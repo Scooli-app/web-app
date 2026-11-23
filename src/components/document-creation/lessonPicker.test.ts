@@ -83,3 +83,30 @@ describe("lessonChoices", () => {
     expect(choices[0].subjectId).toBeNull();
   });
 });
+
+describe("lessonChoices for Brazil (BR)", () => {
+  it("maps a Brazilian turma's subject to its catalog id", () => {
+    const choices = lessonChoices(
+      week([lesson("a", "2026-10-19")], { subject: "Matemática", gradeLevel: 6 }),
+      "quiz",
+      "BR",
+    );
+
+    expect(choices[0]).toMatchObject({ gradeLevel: 6, subjectId: "Matemática" });
+  });
+
+  it("leaves the subject null for a Brazilian turma with a Portuguese-only subject", () => {
+    const choices = lessonChoices(
+      week([lesson("a", "2026-10-19")], { subject: "Mathematics", gradeLevel: 6 }),
+      "quiz",
+      "BR",
+    );
+
+    expect(choices[0].subjectId).toBeNull();
+  });
+
+  it("keeps the Portuguese mapping when no country is given", () => {
+    const choices = lessonChoices(week([lesson("a", "2026-10-19")]), "quiz");
+    expect(choices[0].subjectId).toBe("matematica");
+  });
+});

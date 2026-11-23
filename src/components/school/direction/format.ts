@@ -1,13 +1,30 @@
-import { SUBJECTS, translateSubject } from "@/components/document-creation/constants";
+import {
+  DEFAULT_COUNTRY_CODE,
+  getCountryCatalog,
+  type CountryCode,
+} from "@/lib/curriculum/countryCatalog";
+import { translateSubject } from "@/components/document-creation/constants";
 import type { Locale } from "@/i18n/locales";
 import type { Department, DirectionTurma, TurmaState } from "@/shared/types/school-direction";
 import { toIntlLocale } from "@/shared/utils/calendar";
 
-/** A class as the school says it: "5.º B" in Portuguese, "Year 5 B" in English. */
-export function formatClass(grade: number, classLabel: string, locale: string): string {
+/**
+ * A class as the school says it: "5.º B" in Portuguese, "Year 5 B" in English.
+ * Brazil says "5º ano B" and, from the 10th year, "1ª série B".
+ */
+export function formatClass(
+  grade: number,
+  classLabel: string,
+  locale: string,
+  countryCode: CountryCode = DEFAULT_COUNTRY_CODE,
+): string {
   // A label that did not normalize can already carry its year ("5.º B/C"): show it as typed.
   if (/^\d/.test(classLabel)) return classLabel;
-  return locale.startsWith("pt") ? `${grade}.º ${classLabel}` : `Year ${grade} ${classLabel}`;
+  if (!locale.startsWith("pt")) return `Year ${grade} ${classLabel}`;
+  if (getCountryCatalog(countryCode).countryCode === "BR") {
+    return grade >= 10 ? `${grade - 9}ª série ${classLabel}` : `${grade}º ano ${classLabel}`;
+  }
+  return `${grade}.º ${classLabel}`;
 }
 
 /**
@@ -42,8 +59,16 @@ export function formatDayRange(startIso: string, endIso: string, locale: string)
  * A subject in the interface language. Turmas store the English canonical name ("Mathematics"); the key is the
  * backend's normalized one, the label the name as typed, used when the key isn't a known subject.
  */
-export function formatSubject(subjectKey: string, subjectLabel: string): string {
-  return translateSubject(SUBJECTS.some((s) => s.value === subjectKey) ? subjectKey : subjectLabel);
+export function formatSubject(
+  subjectKey: string,
+  subjectLabel: string,
+  countryCode: CountryCode = DEFAULT_COUNTRY_CODE,
+): string {
+  const catalog = getCountryCatalog(countryCode);
+  const known = catalog.subjects.some((s) => s.value === subjectKey);
+  // Brazilian subjects are stored under their pt-BR name, which is already the display label.
+  if (catalog.countryCode === "BR") return known ? subjectKey : subjectLabel;
+  return translateSubject(known ? subjectKey : subjectLabel);
 }
 
 /** The departments in the order the direction pages list them. */

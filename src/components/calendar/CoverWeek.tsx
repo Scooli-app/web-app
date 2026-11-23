@@ -1,5 +1,6 @@
 "use client";
 
+import { useCountry } from "@/hooks/useCountry";
 import { ClassHistory } from "@/components/school/direction/ClassHistory";
 import { formatClass, formatSubject } from "@/components/school/direction/format";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -21,6 +22,7 @@ type Cover = { substitution: DirectionSubstitution; lesson: DirectionHandoverLes
 export function CoverWeek({ weekStart }: { weekStart: Date }) {
   const t = useTranslations("calendar.covers");
   const locale = useLocale();
+  const countryCode = useCountry();
   const [covers, setCovers] = useState<Cover[]>([]);
   const [open, setOpen] = useState<Cover | null>(null);
   const from = toIso(weekStart);
@@ -48,8 +50,8 @@ export function CoverWeek({ weekStart }: { weekStart: Date }) {
   const nameOf = (s: DirectionSubstitution) => s.absent.name || s.absent.email || "—";
   const heading = (l: DirectionHandoverLesson) =>
     t("lessonHeading", {
-      class: formatClass(l.grade, l.classLabel, locale),
-      subject: formatSubject(l.subjectLabel, l.subjectLabel),
+      class: formatClass(l.grade, l.classLabel, locale, countryCode),
+      subject: formatSubject(l.subjectLabel, l.subjectLabel, countryCode),
       n: l.sequenceNumber,
     });
 

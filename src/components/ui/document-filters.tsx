@@ -12,7 +12,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { SUBJECTS, translateSubjectLabel } from "@/components/document-creation/constants";
+import { translateSubjectLabel } from "@/components/document-creation/constants";
+import { useCountry } from "@/hooks/useCountry";
+import { getCountryCatalog, gradeOptionsFor } from "@/lib/curriculum/countryCatalog";
 import type { Document } from "@/shared/types";
 import {
   selectIsCurriculumPlanEnabled,
@@ -54,7 +56,6 @@ interface DocumentFiltersProps {
   onOriginChange: (origin: DocumentOriginFilter) => void;
 }
 
-const GRADE_OPTIONS = Array.from({ length: 12 }, (_, i) => i + 1);
 
 const TYPE_OPTIONS: Array<Document["documentType"] | "all"> = [
   "all",
@@ -92,6 +93,14 @@ export function DocumentFilters({
   onOriginChange,
 }: DocumentFiltersProps) {
   const t = useTranslations("documents.filters");
+  const countryCode = useCountry();
+  const isBr = countryCode === "BR";
+  const gradeOptions = gradeOptionsFor(countryCode);
+  const subjectOptions = getCountryCatalog(countryCode).subjects.map((s) => ({
+    id: s.id,
+    value: s.value,
+    label: isBr ? s.label : translateSubjectLabel(s.id),
+  }));
   const isPresentationCreationEnabled = useAppSelector(selectIsPresentationCreationEnabled);
   const isCurriculumPlanEnabled = useAppSelector(selectIsCurriculumPlanEnabled);
 
@@ -179,9 +188,9 @@ export function DocumentFilters({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value={ALL}>{t("allSubjects")}</SelectItem>
-                {SUBJECTS.map((s) => (
+                {subjectOptions.map((s) => (
                   <SelectItem key={s.id} value={s.value}>
-                    {translateSubjectLabel(s.id)}
+                    {s.label}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -195,9 +204,9 @@ export function DocumentFilters({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value={ALL}>{t("allGrades")}</SelectItem>
-                {GRADE_OPTIONS.map((y) => (
-                  <SelectItem key={y} value={String(y)}>
-                    {t("gradeOption", { grade: y })}
+                {gradeOptions.map((y) => (
+                  <SelectItem key={y.value} value={y.value}>
+                    {isBr ? y.label : t("gradeOption", { grade: Number(y.value) })}
                   </SelectItem>
                 ))}
               </SelectContent>

@@ -4,6 +4,7 @@ import { startCompanionDocument } from "@/components/dashboard/LessonDocumentChi
 import { preparationCost, suggestedDocuments } from "@/components/dashboard/lessonSuggestions";
 import { companionTypesFor, type CompanionType } from "@/components/dashboard/weekWindow";
 import { useAccountAccess } from "@/hooks/useAccountAccess";
+import { useCountry } from "@/hooks/useCountry";
 import { invalidatePlanLimits, usePlanLimits } from "@/hooks/usePlanLimits";
 import type { MyWeekLessonDocument } from "@/shared/types/my-week";
 import { selectIsPresentationCreationEnabled, selectIsWorksheetCreationEnabled } from "@/store/features/selectors";
@@ -89,8 +90,9 @@ export function usePrepareLessonSet({
       return { lessonId, states };
     });
 
+  const countryCode = useCountry();
   const suggested: CompanionType[] = ready
-    ? suggestedDocuments(slotType, subject, documents, { worksheet, presentation }).filter(
+    ? suggestedDocuments(slotType, subject, documents, { worksheet, presentation }, countryCode).filter(
         (type) => !(type === "test" && testBlocked),
       )
     : [];

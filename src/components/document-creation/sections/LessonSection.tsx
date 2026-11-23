@@ -17,6 +17,7 @@ import { formatClassName } from "@/shared/utils/className";
 import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useCountry } from "@/hooks/useCountry";
 import { lessonChoices, type LessonChoice } from "../lessonPicker";
 import { FieldHeading, FormCard } from "./FormCard";
 
@@ -43,6 +44,7 @@ export function LessonSection({ documentType, selectedLessonId, onChange, initia
   const [choices, setChoices] = useState<LessonChoice[] | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
   const isTimetableEnabled = useAppSelector(selectIsHorarioPlanosEnabled);
+  const countryCode = useCountry();
 
   useEffect(() => {
     let cancelled = false;
@@ -50,7 +52,7 @@ export function LessonSection({ documentType, selectedLessonId, onChange, initia
       .getWindow(toIso(new Date()), WINDOW_DAYS)
       .then((week) => {
         if (cancelled) return;
-        const list = lessonChoices(week, documentType);
+        const list = lessonChoices(week, documentType, countryCode);
         setChoices(list);
         const initial = initialLessonId ? list.find((c) => c.lessonId === initialLessonId && !c.disabled) : null;
         if (initial) onChange(initial);
@@ -65,7 +67,7 @@ export function LessonSection({ documentType, selectedLessonId, onChange, initia
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [documentType, initialLessonId]);
+  }, [documentType, initialLessonId, countryCode]);
 
   if (!choices) return null;
 

@@ -23,6 +23,7 @@ import { getTimetablesByLinkedPlan } from "@/services/api/timetable.service";
 import { clampPeriodToFreeWindow } from "@/lib/freePlanWindow";
 import { isClassLimitReached, usePlanLimits } from "@/hooks/usePlanLimits";
 import { useAppDispatch } from "@/store/hooks";
+import { useCountry } from "@/hooks/useCountry";
 import { openUpgradeModalForReason } from "@/store/ui/uiSlice";
 import { Routes } from "@/shared/types/routes";
 import type { Document } from "@/shared/types/document";
@@ -57,6 +58,7 @@ export default function CreateCalendarFromPlanButton({
   const router = useRouter();
   const classCreation = useCreateClassWithTopics();
   const dispatch = useAppDispatch();
+  const countryCode = useCountry();
   const { limits } = usePlanLimits();
   const isCreating = classCreation.busy;
   // From "Criar turma" until the dialog closes, it shows the progress instead of the form.
@@ -112,20 +114,20 @@ export default function CreateCalendarFromPlanButton({
       dispatch(openUpgradeModalForReason("free_class_limit"));
       return;
     }
-    const params = buildCreateTimetableParamsFromPlan(plan);
+    const params = buildCreateTimetableParamsFromPlan(plan, countryCode);
     if (!params) {
       // Imported plan / no weekly schedule — deep-link into the wizard, pre-filled.
       router.push(`${Routes.CALENDAR_NEW}?planId=${plan.id}`);
       return;
     }
-    setName(buildPlanAutoTitle(plan));
+    setName(buildPlanAutoTitle(plan, countryCode));
     setClassLabel("");
     setAlreadyCoveredNotes("");
     setIsNameDialogOpen(true);
   };
 
   const handleCreate = async () => {
-    const params = buildCreateTimetableParamsFromPlan(plan);
+    const params = buildCreateTimetableParamsFromPlan(plan, countryCode);
     if (!params) return; // already validated in openNameDialog
 
     posthog.capture("calendar_created_from_plan_one_click", {
@@ -209,7 +211,7 @@ export default function CreateCalendarFromPlanButton({
                 autoFocus
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder={buildPlanAutoTitle(plan)}
+                placeholder={buildPlanAutoTitle(plan, countryCode)}
               />
             </div>
             <div className="space-y-1.5">

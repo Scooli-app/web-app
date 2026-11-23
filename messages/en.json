@@ -55,6 +55,15 @@
     },
     "saveError": "We couldn't save your language preference."
   },
+  "country": {
+    "title": "Country",
+    "options": {
+      "PT": "Portugal",
+      "BR": "Brazil"
+    },
+    "saveError": "Could not save the country. Try again.",
+    "note": "Sets the school years and subjects offered when you create documents and plans."
+  },
   "planGeneration": {
     "title": "Preparing your plan…",
     "stageTopics": "Writing the topics for the year",

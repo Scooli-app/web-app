@@ -1,4 +1,8 @@
-import { SUBJECTS_BY_GRADE } from "@/components/document-creation/constants";
+import {
+  DEFAULT_COUNTRY_CODE,
+  getCountryCatalog,
+  type CountryCode,
+} from "@/lib/curriculum/countryCatalog";
 import { suggestedTaughtCount } from "@/components/onboarding-v2/schoolCalendar";
 import type { TeachingProfile } from "@/shared/types/teaching-profile";
 
@@ -11,14 +15,16 @@ const MAX_EXAMPLES = 3;
  */
 export function profileExamplePairs(
   profile: TeachingProfile | null,
+  countryCode: CountryCode = DEFAULT_COUNTRY_CODE,
 ): { subjectId: string; year: number }[] {
   if (!profile) return [];
+  const subjectIdsByYear = getCountryCatalog(countryCode).subjectIdsByYear;
   const years = [...profile.schoolYears].sort((a, b) => a - b);
   const yearsBySubject = profile.items
     .filter((item) => item.kind === "subject" && item.qualificationCode === null)
     .map((item) => ({
       subjectId: item.code,
-      years: years.filter((year) => (SUBJECTS_BY_GRADE[String(year)] ?? []).includes(item.code)),
+      years: years.filter((year) => (subjectIdsByYear[String(year)] ?? []).includes(item.code)),
     }));
   const pairs: { subjectId: string; year: number }[] = [];
   for (let round = 0; pairs.length < MAX_EXAMPLES; round++) {
