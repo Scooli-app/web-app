@@ -9,6 +9,7 @@ import {
   parsePromoCookie,
   promoCodeFromSearch,
 } from "@/lib/trialPromo/promoStorage";
+import { BACKEND_TOKEN_COOKIE, reusableBackendToken } from "@/lib/backendTokenCookie";
 import { NextResponse } from "next/server";
 
 const isPublicRoute = createRouteMatcher([
@@ -27,7 +28,6 @@ const isPublicRoute = createRouteMatcher([
   "/robots.txt",
   "/sitemap.xml",
 ]);
-const TOKEN_COOKIE_NAME = "scooli_token";
 
 function getSafeRedirectPath(redirectUrl: string | null): string | null {
   if (
@@ -73,19 +73,24 @@ export default clerkMiddleware(async (auth, req) => {
   const setTokenCookie = async (res: NextResponse) => {
     try {
       if (!authObj.userId) {
-        res.cookies.delete(TOKEN_COOKIE_NAME);
+        res.cookies.delete(BACKEND_TOKEN_COOKIE);
         return;
       }
+
+      // A prefetch burst sends many requests within a second; keep a token that
+      // is still good for this user and organization instead of minting one each.
+      const current = req.cookies.get(BACKEND_TOKEN_COOKIE)?.value;
+      if (reusableBackendToken(current, authObj.userId, authObj.orgId)) return;
 
       const template = process.env.CLERK_JWT_TEMPLATE;
       const token = await authObj.getToken(template ? { template } : undefined);
 
       if (!token) {
-        res.cookies.delete(TOKEN_COOKIE_NAME);
+        res.cookies.delete(BACKEND_TOKEN_COOKIE);
         return;
       }
 
-      res.cookies.set(TOKEN_COOKIE_NAME, token, {
+      res.cookies.set(BACKEND_TOKEN_COOKIE, token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
@@ -96,7 +101,7 @@ export default clerkMiddleware(async (auth, req) => {
     } catch {
       // keep middleware resilient; auth cookie will simply not be set. Drop
       // any old one too, or it would keep a previous user's token alive.
-      res.cookies.delete(TOKEN_COOKIE_NAME);
+      res.cookies.delete(BACKEND_TOKEN_COOKIE);
     }
   };
 

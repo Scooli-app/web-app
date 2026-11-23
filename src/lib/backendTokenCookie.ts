@@ -1,4 +1,4 @@
-import { getTokenExpiry, getTokenSubject } from "./tokenSubject";
+import { getTokenExpiry, getTokenOrgId, getTokenSubject } from "./tokenSubject";
 
 /**
  * The middleware mirrors the Clerk session token into the `scooli_token`
@@ -27,4 +27,27 @@ export function cookieTokenForUser(
   if (!token || !userId || getTokenSubject(token) !== userId) return null;
   const exp = getTokenExpiry(token);
   return exp === null || exp * 1000 > now + EXPIRY_MARGIN_MS ? token : null;
+}
+
+/**
+ * How long a reused cookie token must still be valid. Clerk session tokens
+ * last about a minute; a prefetch burst on page load fits well inside that.
+ */
+export const REUSE_MARGIN_MS = 20_000;
+
+/**
+ * The cookie token when middleware can keep it instead of minting a new one:
+ * same user, same active organization, and at least `REUSE_MARGIN_MS` left.
+ * Otherwise null, and the caller asks Clerk for a fresh token.
+ */
+export function reusableBackendToken(
+  token: string | undefined,
+  userId: string | null | undefined,
+  orgId: string | null | undefined,
+  now: number = Date.now(),
+): string | null {
+  if (!token || !userId || getTokenSubject(token) !== userId) return null;
+  if (getTokenOrgId(token) !== (orgId ?? null)) return null;
+  const exp = getTokenExpiry(token);
+  return exp !== null && exp * 1000 > now + REUSE_MARGIN_MS ? token : null;
 }
