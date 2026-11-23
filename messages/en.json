@@ -605,7 +605,8 @@
       "stillProcessing": "Your sources are still being processed.",
       "allFailed": "None of your sources could be processed.",
       "schoolSources": "School sources",
-      "otherSchoolSources": "Other school sources"
+      "otherSchoolSources": "Other school sources",
+      "defaultsFailed": "We couldn’t load your default sources. Anything you don’t change here still follows them."
     },
     "slideCount": {
       "title": "Number of slides",

@@ -9,20 +9,27 @@ interface SourceDefaultsState {
   status: "idle" | "loading" | "loaded" | "failed";
   /** Toggles still in flight per source: how many, and the last value the server confirmed. */
   pending: Record<string, { count: number; confirmed: boolean }>;
+  /** Ticks once per toggle; `toggledAt[ref]` is the tick of that source's last toggle. */
+  clock: number;
+  toggledAt: Record<string, number>;
 }
 
-const initialState: SourceDefaultsState = { entries: [], status: "idle", pending: {} };
+const initialState: SourceDefaultsState = { entries: [], status: "idle", pending: {}, clock: 0, toggledAt: {} };
 
-export const fetchSourceDefaults = createAsyncThunk("sourceDefaults/fetch", () =>
-  listSourceDefaults()
-);
+export const fetchSourceDefaults = createAsyncThunk("sourceDefaults/fetch", async (_: void, { getState }) => {
+  // A source toggled after this tick was read before its PUT landed: the read must not overwrite it.
+  const startedAt = (getState() as RootState).sourceDefaults.clock;
+  return { entries: await listSourceDefaults(), startedAt };
+});
 
 export const toggleSourceDefault = createAsyncThunk(
   "sourceDefaults/toggle",
-  async ({ sourceRef, enabled }: { sourceRef: string; enabled: boolean }, { rejectWithValue }) => {
+  async ({ sourceRef, enabled }: { sourceRef: string; enabled: boolean }, { rejectWithValue, dispatch }) => {
     try {
       return await setSourceDefault(sourceRef, enabled);
     } catch (e) {
+      // Deleted meanwhile (an admin removed a school source): refetch so the row goes away.
+      if (e instanceof ApiRequestError && e.status === 404) void dispatch(fetchSourceDefaults());
       // A 4xx message is already in the teacher's language; an empty one or anything else gets the generic toast.
       if (e instanceof ApiRequestError && e.status >= 400 && e.status < 500 && e.message) return rejectWithValue(e.message);
       throw e;
@@ -51,10 +58,12 @@ const slice = createSlice({
         state.status = "loading";
       })
       .addCase(fetchSourceDefaults.fulfilled, (state, action) => {
-        // A read that started before a toggle landed must not flip that switch back.
+        // A read that started before a toggle landed (in flight or already settled) must not flip that switch back.
+        const { entries, startedAt } = action.payload;
         const optimistic = new Map(state.entries.map((e) => [e.sourceRef, e.effectiveDefault]));
-        state.entries = action.payload.map((e) =>
-          state.pending[e.sourceRef] && optimistic.has(e.sourceRef)
+        const toggledSince = (ref: string) => state.pending[ref] || (state.toggledAt[ref] ?? 0) > startedAt;
+        state.entries = entries.map((e) =>
+          toggledSince(e.sourceRef) && optimistic.has(e.sourceRef)
             ? { ...e, effectiveDefault: optimistic.get(e.sourceRef) as boolean }
             : e
         );
@@ -70,6 +79,8 @@ const slice = createSlice({
         const p = state.pending[sourceRef];
         if (p) p.count += 1;
         else state.pending[sourceRef] = { count: 1, confirmed: entry.effectiveDefault };
+        state.clock += 1;
+        state.toggledAt[sourceRef] = state.clock;
         entry.effectiveDefault = enabled;
       })
       .addCase(toggleSourceDefault.fulfilled, (state, action) => {

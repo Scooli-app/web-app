@@ -605,7 +605,8 @@
       "stillProcessing": "As tuas fontes ainda estão a ser processadas.",
       "allFailed": "Nenhuma das tuas fontes foi processada.",
       "schoolSources": "Fontes da escola",
-      "otherSchoolSources": "Outras fontes da escola"
+      "otherSchoolSources": "Outras fontes da escola",
+      "defaultsFailed": "Não conseguimos carregar as tuas fontes por omissão. O que não mudares aqui segue-as na mesma."
     },
     "slideCount": {
       "title": "Número de slides",

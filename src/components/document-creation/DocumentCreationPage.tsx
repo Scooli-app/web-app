@@ -57,6 +57,8 @@ const FIELD_FOCUS_SELECTORS = [
   "button:not(:disabled)",
 ];
 
+type SourceField = "sourceIds" | "includeAe" | "regulatorySourceIds";
+
 function focusFirstControl(container: HTMLElement) {
   for (const selector of FIELD_FOCUS_SELECTORS) {
     const control = container.querySelector<HTMLElement>(selector);
@@ -165,10 +167,11 @@ export default function DocumentCreationPage({
     selectDefaultFormSelection,
     (a, b) => JSON.stringify(a) === JSON.stringify(b)
   );
-  const sourcesTouchedRef = useRef(false);
+  // Which of the three source fields the teacher changed on this form.
+  const touchedFieldsRef = useRef(new Set<SourceField>());
   const touchedRowsRef = useRef(new Set<string>());
-  // True once the defaults were applied (or skipped because the teacher already picked): from then on the
-  // form's source fields are the teacher's choice and are sent; before, they are omitted (see the request).
+  // True once the defaults were applied (to every field the teacher hadn't touched): from then on the form's
+  // source fields are sent; before, only the touched ones are (see the request).
   const defaultsAppliedRef = useRef(false);
   const subjectValue = SUBJECTS.find((s) => s.id === formState.subject)?.value ?? formState.subject;
   const schoolYearValue = formState.schoolYear || undefined;
@@ -181,10 +184,10 @@ export default function DocumentCreationPage({
     if (!showSourcePicker || !defaultSelection) return;
     if (!defaultsAppliedRef.current) {
       defaultsAppliedRef.current = true;
-      if (sourcesTouchedRef.current) return;
-      updateForm("includeAe", defaultSelection.includeAe);
-      updateForm("regulatorySourceIds", defaultSelection.regulatorySourceIds);
-      updateForm("sourceIds", defaultSourceIds(defaultEntries, subjectValue, schoolYearValue));
+      const touched = touchedFieldsRef.current;
+      if (!touched.has("includeAe")) updateForm("includeAe", defaultSelection.includeAe);
+      if (!touched.has("regulatorySourceIds")) updateForm("regulatorySourceIds", defaultSelection.regulatorySourceIds);
+      if (!touched.has("sourceIds")) updateForm("sourceIds", defaultSourceIds(defaultEntries, subjectValue, schoolYearValue));
     } else {
       // A new subject or year re-decides the school rows the teacher hasn't touched.
       updateForm(
@@ -198,7 +201,7 @@ export default function DocumentCreationPage({
 
   const updateSources: FormUpdateFn = useCallback(
     (field, value) => {
-      if (field === "sourceIds" || field === "includeAe" || field === "regulatorySourceIds") sourcesTouchedRef.current = true;
+      if (field === "sourceIds" || field === "includeAe" || field === "regulatorySourceIds") touchedFieldsRef.current.add(field);
       if (field === "sourceIds") {
         const before = formState.sourceIds ?? [];
         const after = value as string[];
@@ -358,6 +361,8 @@ export default function DocumentCreationPage({
     [updateForm]
   );
 
+  const sendsSource = (field: SourceField) => defaultsAppliedRef.current || touchedFieldsRef.current.has(field);
+
   const handleCreateDocument = async () => {
     if (isLoading) return;
 
@@ -413,13 +418,11 @@ export default function DocumentCreationPage({
           vocationalCourseCode: formState.vocationalCourseCode || undefined,
           vocationalUnitCode: formState.vocationalUnitCode || undefined,
           vocationalSchoolSubjectName: formState.vocationalSchoolSubjectName || undefined,
-          // Only once the defaults are in the form or the teacher picked: otherwise null, so the server applies
-          // the teacher's own defaults (and their "off"), not the form's untouched starting values.
-          ...((defaultsAppliedRef.current || sourcesTouchedRef.current) && {
-            sourceIds: formState.sourceIds ?? [],
-            includeAe: formState.includeAe ?? true,
-            regulatorySourceIds: formState.regulatorySourceIds,
-          }),
+          // A field goes out once the defaults are in the form or the teacher changed it; otherwise null, so the
+          // server applies the teacher's own default for it (and their "off"), not the form's starting value.
+          ...(sendsSource("sourceIds") && { sourceIds: formState.sourceIds ?? [] }),
+          ...(sendsSource("includeAe") && { includeAe: formState.includeAe ?? true }),
+          ...(sendsSource("regulatorySourceIds") && { regulatorySourceIds: formState.regulatorySourceIds }),
           // Presentations: an explicit slide count wins; without one the backend
           // sizes the deck from the lesson duration.
           ...(isPresentation && formState.slideCount ? { slideCount: formState.slideCount } : {}),

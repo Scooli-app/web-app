@@ -11,7 +11,7 @@ import type { SourceDefault, UserSource } from "@/shared/types/sources";
 import { cn } from "@/shared/utils/utils";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { selectIsContextPipelineV2Enabled } from "@/store/features/selectors";
-import { selectSourceDefaults } from "@/store/sources/sourceDefaultsSlice";
+import { selectSourceDefaults, selectSourceDefaultsStatus } from "@/store/sources/sourceDefaultsSlice";
 import { fetchSources } from "@/store/sources/sourcesSlice";
 import { AlertCircle, Check, ExternalLink, Loader2, Scale, Upload } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -42,6 +42,7 @@ export function SourcePickerSection({
   const isContextPipelineV2Enabled = useAppSelector(selectIsContextPipelineV2Enabled);
   const isUserSourcesEnabled = useAppSelector((state) => state.features.flags[FeatureFlag.USER_SOURCES] === true);
   const defaults = useAppSelector(selectSourceDefaults);
+  const defaultsFailed = useAppSelector(selectSourceDefaultsStatus) === "failed";
   const tSchool = useTranslations("schoolSources");
   const tPage = useTranslations("sources.page");
 
@@ -148,6 +149,14 @@ export function SourcePickerSection({
             {t("manageSources")}
           </Link>
         </div>
+
+        {/* Nothing here is sent unless changed, so the ticks shown may not be the teacher's defaults: say so. */}
+        {defaultsFailed && (
+          <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
+            <AlertCircle className="mt-px h-3.5 w-3.5 shrink-0" aria-hidden />
+            {t("defaultsFailed")}
+          </p>
+        )}
 
         {/* Regulatory documents (scooli-managed) — only shown when context_pipeline_v2 is enabled */}
         {isContextPipelineV2Enabled && regulatoryLoading ? (

@@ -27,7 +27,7 @@ const mk = (o: Partial<SourceDefault>): SourceDefault => ({
 function render(locale: "pt-PT" | "en", messages: typeof pt, entries: SourceDefault[], status: "loaded" | "failed" | "loading" = "loaded") {
   const store = configureStore({
     reducer: { sourceDefaults },
-    preloadedState: { sourceDefaults: { entries, status, pending: {} } },
+    preloadedState: { sourceDefaults: { entries, status, pending: {}, clock: 0, toggledAt: {} } },
   });
   const container = document.createElement("div");
   document.body.appendChild(container);

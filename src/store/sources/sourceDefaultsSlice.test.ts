@@ -42,7 +42,7 @@ const initialRootState = () => rootReducer(undefined, { type: "@@init" });
 const loaded = (entries: SourceDefault[]): RootState =>
   ({
     ...initialRootState(),
-    sourceDefaults: { entries, status: "loaded", pending: {} },
+    sourceDefaults: { entries, status: "loaded", pending: {}, clock: 0, toggledAt: {} },
   }) as RootState;
 const makeStore = (entries: SourceDefault[]) =>
   configureStore({ reducer: rootReducer, preloadedState: loaded(entries) });
@@ -62,10 +62,52 @@ describe("sourceDefaults", () => {
   it("rejects without a message when the server's refusal has an empty body", async () => {
     const { ApiRequestError } = await import("@/services/api/client");
     api.setSourceDefault.mockRejectedValueOnce(new ApiRequestError("", 404, null));
+    api.listSourceDefaults.mockResolvedValueOnce([]);
     const store = makeStore([row("o1", "organization", true)]);
     const result = await store.dispatch(toggleSourceDefault({ sourceRef: "o1", enabled: false }));
     expect(toggleSourceDefault.rejected.match(result)).toBe(true);
     expect(result.payload).toBeUndefined();
+  });
+
+  it("refetches after a 404, so a source deleted meanwhile leaves the list", async () => {
+    const { ApiRequestError } = await import("@/services/api/client");
+    api.setSourceDefault.mockRejectedValueOnce(new ApiRequestError("Fonte não encontrada.", 404, null));
+    api.listSourceDefaults.mockResolvedValueOnce([row("ae", "ae", true)]);
+    const store = makeStore([row("ae", "ae", true), row("o1", "organization", true)]);
+    const result = await store.dispatch(toggleSourceDefault({ sourceRef: "o1", enabled: false }));
+    expect(result.payload).toBe("Fonte não encontrada.");
+    await vi.waitFor(() => expect(selectSourceDefaults(store.getState() as RootState).map((e) => e.sourceRef)).toEqual(["ae"]));
+  });
+
+  it("does not refetch on other refusals", async () => {
+    const { ApiRequestError } = await import("@/services/api/client");
+    api.setSourceDefault.mockRejectedValueOnce(new ApiRequestError("Sem acesso", 403, null));
+    const store = makeStore([row("o1", "organization", true)]);
+    await store.dispatch(toggleSourceDefault({ sourceRef: "o1", enabled: false }));
+    expect(api.listSourceDefaults).not.toHaveBeenCalled();
+  });
+
+  it("ignores a defaults read that resolves after a toggle it started before has already settled", async () => {
+    let resolveFetch: (v: SourceDefault[]) => void = () => undefined;
+    api.listSourceDefaults.mockReturnValueOnce(new Promise((r) => (resolveFetch = r)));
+    api.setSourceDefault.mockResolvedValueOnce(row("p1", "personal", false));
+    const store = makeStore([row("p1", "personal", true)]);
+    const fetching = store.dispatch(fetchSourceDefaults());
+    await store.dispatch(toggleSourceDefault({ sourceRef: "p1", enabled: false })); // PUT lands and settles first
+    resolveFetch([row("p1", "personal", true), row("p2", "personal", true)]); // read before the PUT
+    await fetching;
+    const entries = selectSourceDefaults(store.getState() as RootState);
+    expect(entries.find((e) => e.sourceRef === "p1")?.effectiveDefault).toBe(false);
+    expect(entries.map((e) => e.sourceRef)).toEqual(["p1", "p2"]); // the rest of the read still applies
+  });
+
+  it("takes a read that started after the toggle as the truth", async () => {
+    api.setSourceDefault.mockResolvedValueOnce(row("p1", "personal", false));
+    const store = makeStore([row("p1", "personal", true)]);
+    await store.dispatch(toggleSourceDefault({ sourceRef: "p1", enabled: false }));
+    api.listSourceDefaults.mockResolvedValueOnce([row("p1", "personal", true)]); // changed elsewhere since
+    await store.dispatch(fetchSourceDefaults());
+    expect(selectSourceDefaults(store.getState() as RootState)[0].effectiveDefault).toBe(true);
   });
 
   it("builds the full form's starting selection from the defaults", () => {

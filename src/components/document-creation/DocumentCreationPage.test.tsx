@@ -137,13 +137,25 @@ describe("DocumentCreationPage source fields", () => {
     expect(request).toMatchObject({ includeAe: false, sourceIds: [], regulatorySourceIds: [] });
   });
 
-  it("keeps what the teacher picked before the defaults arrived, and sends it", async () => {
+  it("keeps a field the teacher changed before the defaults arrived, and still applies the others", async () => {
     let resolve: (v: SourceDefault[]) => void = () => undefined;
     const container = await mountPage(new Promise((r) => (resolve = r)));
     await act(async () => mocks.picker?.onUpdate("includeAe", false));
     await act(async () => resolve([{ ...aeOff, effectiveDefault: true }, schoolRule("o1", ["Mathematics"])]));
-    expect(mocks.picker?.sourceIds).toEqual([]); // the defaults did not overwrite the teacher's pick
-    expect(await submit(container)).toMatchObject({ includeAe: false, sourceIds: [] });
+    expect(mocks.picker?.sourceIds).toEqual(["o1"]); // the untouched field still gets the default school rule
+    expect(await submit(container)).toMatchObject({ includeAe: false, sourceIds: ["o1"] });
+  });
+
+  it.each([
+    ["pending", () => new Promise<SourceDefault[]>(() => undefined)],
+    ["failed", () => Promise.reject(new Error("503"))],
+  ])("sends only the field the teacher changed while the defaults are %s, never a starting includeAe", async (_, defaults) => {
+    const container = await mountPage(defaults());
+    await act(async () => mocks.picker?.onUpdate("sourceIds", ["p1"]));
+    const request = await submit(container);
+    expect(request).toMatchObject({ sourceIds: ["p1"] });
+    expect(request).not.toHaveProperty("includeAe");
+    expect(request).not.toHaveProperty("regulatorySourceIds");
   });
 
   it("re-decides untouched school rules when the subject changes, keeping the ones the teacher touched", async () => {

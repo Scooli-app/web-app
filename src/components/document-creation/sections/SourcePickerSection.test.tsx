@@ -38,7 +38,7 @@ const DEFAULT_SCHOOL = [entry({}), entry({ sourceRef: "o2", type: "apoio", name:
 async function setup(
   locale: "pt-PT" | "en",
   props: { sourceIds: string[]; subject?: string; schoolYear?: number },
-  { school = DEFAULT_SCHOOL, mine = [] as UserSource[] } = {},
+  { school = DEFAULT_SCHOOL, mine = [] as UserSource[], status = "loaded" as "loaded" | "failed" } = {},
 ) {
   const messages = locale === "en" ? en : pt;
   registerTranslator(createTranslator({ locale, messages }) as never);
@@ -46,7 +46,7 @@ async function setup(
   const store = configureStore({
     reducer: rootReducer,
     preloadedState: {
-      sourceDefaults: { status: "loaded", entries: school, pending: {} },
+      sourceDefaults: { status, entries: school, pending: {}, clock: 0, toggledAt: {} },
       features: { flags: { [FeatureFlag.USER_SOURCES]: true }, loading: false, loaded: true, error: null },
     } as never,
   });
@@ -156,5 +156,13 @@ describe("SourcePickerSection with long and many sources", () => {
     const tag = [...(chip?.querySelectorAll("span") ?? [])].find((s) => s.textContent?.includes(pt.documentCreation.sourcePicker.recommended));
     expect(chip?.className).toContain("flex-wrap");
     expect(tag?.className).toContain("whitespace-nowrap");
+  });
+
+  it("says when the defaults could not load, since the ticks shown may not be the teacher's", async () => {
+    const failed = await setup("pt-PT", { sourceIds: [] }, { school: [], status: "failed" });
+    expect(failed.container.textContent).toContain(pt.documentCreation.sourcePicker.defaultsFailed);
+    document.body.innerHTML = "";
+    const loaded = await setup("en", { sourceIds: [] }, { school: [] });
+    expect(loaded.container.textContent).not.toContain(en.documentCreation.sourcePicker.defaultsFailed);
   });
 });
