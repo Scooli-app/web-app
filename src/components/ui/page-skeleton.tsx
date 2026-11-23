@@ -1,3 +1,8 @@
+"use client";
+
+// Client component on purpose: the loading.tsx files that render it are server
+// components with no locale param, and next-intl on the server would then read
+// request headers, turning every page under (main) dynamic.
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/shared/utils/utils";
 import { useTranslations } from "next-intl";

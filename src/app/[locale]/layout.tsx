@@ -49,6 +49,11 @@ const playfair = Playfair_Display({ variable: "--font-playfair", subsets: ["lati
 
 type LocaleParams = { params: Promise<{ locale: string }> };
 
+// Page shells must stay static. If anything under this layout reads headers or
+// cookies (e.g. next-intl in a server component with no locale param), fail the
+// build instead of silently serving every page per request again.
+export const dynamic = "error";
+
 /** One prerendered copy of every page per language; middleware picks which. */
 export function generateStaticParams() {
   return locales.map((locale) => ({ locale }));
