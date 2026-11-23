@@ -598,7 +598,7 @@
       "title": "Fontes de contexto",
       "optional": "(Opcional)",
       "description": "Escolha quais recursos usar na geração",
-      "manageSources": "Gerir fontes",
+      "manageSources": "Gerenciar fontes",
       "includeAe": "Incluir Aprendizagens Essenciais (AE)",
       "includeBncc": "Incluir habilidades da BNCC",
       "recommended": "Recomendado",
@@ -3668,7 +3668,7 @@
     "slotDialog": {
       "typeLabel": "Tipo:",
       "objectivesTitle": "Objetivos de aprendizagem",
-      "objectivesProcessing": "A processar…",
+      "objectivesProcessing": "Processando…",
       "objectivesEmpty": "Processando…",
       "documentsTitle": "Documentos gerados",
       "loadingDocuments": "Carregando documentos…",

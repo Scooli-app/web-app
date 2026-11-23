@@ -1,3 +1,5 @@
+import { isCurrencyDollar } from "./currency-dollar";
+
 /**
  * Repairs the maths the model writes into markdown documents (quizzes, worksheets, tests,
  * lesson plans). The editor and the PDF/DOCX exports only render LaTeX between `$...$` and
@@ -160,7 +162,7 @@ function scan(line: string, displayOpened: { value: boolean }): Segment[] {
       i += 2;
       continue;
     }
-    if (c !== "$") {
+    if (c !== "$" || isCurrencyDollar(line, i)) {
       text += c;
       i++;
       continue;

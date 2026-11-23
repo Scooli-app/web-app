@@ -1,5 +1,6 @@
 import * as showdown from "showdown";
 import { normalizeMathMarkdown } from "./math-markdown";
+import { maskCurrencyDollars, unmaskCurrencyDollars } from "./currency-dollar";
 import { stripHtmlTags } from "./stripHtmlTags";
 
 // Configure showdown converter with appropriate options for TipTap
@@ -655,8 +656,9 @@ function protectMathMarkdown(input: string): {
   const blockSegments: string[] = [];
   const inlineSegments: string[] = [];
 
-  // Block math first ($$...$$) to avoid false matches by inline pattern
-  let content = input.replace(MARKDOWN_BLOCK_MATH_PATTERN, (_match, latex) => {
+  // Block math first ($$...$$) to avoid false matches by inline pattern.
+  // Prices ("R$ 80,00") are masked so their "$" cannot open or close a formula.
+  let content = maskCurrencyDollars(input).replace(MARKDOWN_BLOCK_MATH_PATTERN, (_match, latex) => {
     const id = blockSegments.push(latex.trim()) - 1;
     return `${MATH_BLOCK_TOKEN_PREFIX}${id}${MATH_TOKEN_SUFFIX}`;
   });
@@ -694,7 +696,7 @@ function protectMathMarkdown(input: string): {
         const escaped = latex.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
         return `<span data-type="inline-math" data-latex="${escaped}"></span>`;
       });
-      return result;
+      return unmaskCurrencyDollars(result);
     },
   };
 }
