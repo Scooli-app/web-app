@@ -91,7 +91,7 @@ describe("SchoolSourceDialog errors", () => {
   });
 });
 
-const nameInput = () => document.querySelector<HTMLInputElement>('input[maxlength]');
+const nameInput = () => document.querySelector<HTMLInputElement>("input[maxlength]");
 
 describe("SchoolSourceDialog fields", () => {
   it("names the source after each picked file until the admin types a name", () => {

@@ -167,6 +167,8 @@ export default function DocumentCreationPage({
   );
   const sourcesTouchedRef = useRef(false);
   const touchedRowsRef = useRef(new Set<string>());
+  // True once the defaults were applied (or skipped because the teacher already picked): from then on the
+  // form's source fields are the teacher's choice and are sent; before, they are omitted (see the request).
   const defaultsAppliedRef = useRef(false);
   const subjectValue = SUBJECTS.find((s) => s.id === formState.subject)?.value ?? formState.subject;
   const schoolYearValue = formState.schoolYear || undefined;

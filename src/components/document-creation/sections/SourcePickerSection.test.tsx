@@ -11,6 +11,8 @@ import { registerTranslator } from "@/i18n/translate";
 import rootReducer from "@/store/rootReducer";
 import { FeatureFlag } from "@/shared/types/featureFlags";
 import type { SourceDefault, UserSource } from "@/shared/types/sources";
+import { ALL_YEARS, LONG_NAME } from "@/shared/test/longContent";
+import { SUBJECTS } from "../constants";
 import { SourcePickerSection } from "./SourcePickerSection";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -116,5 +118,44 @@ describe("SourcePickerSection personal sources", () => {
     expect(container.textContent).not.toContain("Manual Matemática 8.º");
     act(() => row?.click());
     expect(onUpdate).toHaveBeenCalledWith("sourceIds", []);
+  });
+
+  it("toggles a row from the keyboard (Space and Enter)", async () => {
+    const { container, onUpdate } = await setup("pt-PT", { sourceIds: [], subject: "portugues", schoolYear: 5 }, { school: [], mine: [personal({ subject: null, schoolYear: null })] });
+    const row = container.querySelector<HTMLElement>('[role="checkbox"][tabindex="0"]:not(button)');
+    act(() => row?.dispatchEvent(new KeyboardEvent("keydown", { key: " ", bubbles: true })));
+    act(() => row?.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true })));
+    expect(onUpdate).toHaveBeenCalledTimes(2);
+    expect(onUpdate).toHaveBeenLastCalledWith("sourceIds", ["p1"]);
+  });
+});
+
+describe("SourcePickerSection with long and many sources", () => {
+  it("clamps a very long name and an all-subject, all-year tag line, with the full text in the title", async () => {
+    const big = entry({ sourceRef: "o9", name: LONG_NAME, subjects: SUBJECTS.map((s) => s.value), schoolYears: ALL_YEARS });
+    const { container } = await setup("pt-PT", { sourceIds: ["o9"], subject: "matematica", schoolYear: 7 }, { school: [big], mine: [personal({ name: LONG_NAME })] });
+    const titles = [...container.querySelectorAll<HTMLElement>(`p[title="${LONG_NAME}"]`)];
+    expect(titles).toHaveLength(2); // the school row and the personal row
+    expect(titles.every((el) => el.className.includes("truncate"))).toBe(true);
+    const meta = [...container.querySelectorAll<HTMLElement>("p[title]")].find((el) => el.title.includes("1.º–12.º"));
+    expect(meta?.className).toContain("line-clamp-2");
+  });
+
+  it("keeps 50 school sources in scrollable lists, the non-matching ones under the fold", async () => {
+    const school = Array.from({ length: 50 }, (_, i) =>
+      entry({ sourceRef: `o${i}`, name: `Fonte ${i}`, subjects: i < 10 ? ["Mathematics"] : ["Portuguese"], schoolYears: [7] }),
+    );
+    const { container } = await setup("pt-PT", { sourceIds: [], subject: "matematica", schoolYear: 7 }, { school });
+    expect(container.textContent).toContain("Outras fontes da escola (40)");
+    const lists = [...container.querySelectorAll<HTMLElement>(".overflow-y-auto")];
+    expect(lists.map((l) => l.querySelectorAll('[role="checkbox"]').length)).toEqual([10, 40]);
+  });
+
+  it("keeps the recommended tag of the AE chip in one piece when it wraps", async () => {
+    const { container } = await setup("pt-PT", { sourceIds: [], subject: "matematica", schoolYear: 7 });
+    const chip = container.querySelector<HTMLElement>("button[role=checkbox]");
+    const tag = [...(chip?.querySelectorAll("span") ?? [])].find((s) => s.textContent?.includes(pt.documentCreation.sourcePicker.recommended));
+    expect(chip?.className).toContain("flex-wrap");
+    expect(tag?.className).toContain("whitespace-nowrap");
   });
 });

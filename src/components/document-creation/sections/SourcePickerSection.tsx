@@ -130,13 +130,15 @@ export function SourcePickerSection({
             role="checkbox"
             aria-checked={includeAe}
             className={cn(
-              "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+              "inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5 rounded-full border px-3 py-1 text-left text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
               includeAe ? "border-primary bg-primary/10 text-primary" : "border-input bg-card text-foreground hover:bg-accent",
             )}
           >
-            {includeAe && <Check className="h-3 w-3" aria-hidden />}
-            {t("includeAe")}
-            <span className="font-normal text-muted-foreground">· {t("recommended")}</span>
+            <span className="inline-flex items-center gap-1.5">
+              {includeAe && <Check className="h-3 w-3 shrink-0" aria-hidden />}
+              {t("includeAe")}
+            </span>
+            <span className="whitespace-nowrap font-normal text-muted-foreground">· {t("recommended")}</span>
           </button>
           <Link
             href={Routes.SOURCES}
@@ -161,57 +163,31 @@ export function SourcePickerSection({
                 {t("regulatoryDocuments", { count: regulatorySources.length })}
               </p>
             </div>
-            <div className="space-y-1">
-              {regulatorySources.map((source) => {
-                const selected = (regulatorySourceIds ?? []).includes(source.id);
-                return (
-                  <div
-                    key={source.id}
-                    className={cn(
-                      "flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition-colors select-none",
-                      selected ? "bg-primary/10" : "hover:bg-muted",
-                    )}
-                    onClick={() => toggleRegulatory(source.id)}
-                    role="checkbox"
-                    aria-checked={selected}
-                    tabIndex={0}
-                    onKeyDown={(e) => e.key === " " && toggleRegulatory(source.id)}
-                  >
-                    <div
-                      className={cn(
-                        "w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors",
-                        selected
-                          ? "bg-primary border-primary"
-                          : "border-border bg-background",
-                      )}
-                    >
-                      {selected && (
-                        <Check className="w-2.5 h-2.5 text-primary-foreground" />
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <p className="text-sm font-medium truncate">{source.name}</p>
-                        {source.externalUrl && (
-                          <a
-                            href={source.externalUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                            className="text-primary hover:text-primary/80 shrink-0"
-                            aria-label={t("openInNewWindow", { name: source.name })}
-                          >
-                            <ExternalLink className="w-3 h-3" />
-                          </a>
-                        )}
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        {t("excerpts", { count: source.chunkCount })}
-                      </p>
-                    </div>
-                  </div>
-                );
-              })}
+            <div className="max-h-48 space-y-1 overflow-y-auto pr-1">
+              {regulatorySources.map((source) => (
+                <PickerRow
+                  key={source.id}
+                  selected={(regulatorySourceIds ?? []).includes(source.id)}
+                  onToggle={() => toggleRegulatory(source.id)}
+                  title={source.name}
+                  titleExtra={
+                    source.externalUrl && (
+                      <a
+                        href={source.externalUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        onKeyDown={(e) => e.stopPropagation()}
+                        className="shrink-0 text-primary hover:text-primary/80"
+                        aria-label={t("openInNewWindow", { name: source.name })}
+                      >
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
+                    )
+                  }
+                  meta={t("excerpts", { count: source.chunkCount })}
+                />
+              ))}
             </div>
           </div>
         ) : null}
@@ -220,13 +196,15 @@ export function SourcePickerSection({
         {hasSchoolSources && (
           <div className="space-y-2">
             <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">{t("schoolSources")}</p>
-            {matchingSchool.length > 0 && <div className="space-y-1">{matchingSchool.map(schoolRow)}</div>}
+            {matchingSchool.length > 0 && (
+              <div className="max-h-64 space-y-1 overflow-y-auto pr-1">{matchingSchool.map(schoolRow)}</div>
+            )}
             {otherSchool.length > 0 && (
               <details className="group">
                 <summary className="cursor-pointer rounded text-xs text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                   {t("otherSchoolSources")} ({otherSchool.length})
                 </summary>
-                <div className="mt-1 space-y-1">{otherSchool.map(schoolRow)}</div>
+                <div className="mt-1 max-h-64 space-y-1 overflow-y-auto pr-1">{otherSchool.map(schoolRow)}</div>
               </details>
             )}
           </div>
@@ -274,47 +252,22 @@ export function SourcePickerSection({
               {t("mySources", { count: indexedSources.length })}
             </p>
             <div className="space-y-1 max-h-48 overflow-y-auto pr-1">
-              {indexedSources.map((source) => {
-                const selected = sourceIds.includes(source.id);
-                return (
-                  <div
-                    key={source.id}
-                    className={cn(
-                      "flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition-colors select-none",
-                      selected ? "bg-primary/10" : "hover:bg-muted",
-                    )}
-                    onClick={() => toggleSource(source.id)}
-                    role="checkbox"
-                    aria-checked={selected}
-                    tabIndex={0}
-                    onKeyDown={(e) => e.key === " " && toggleSource(source.id)}
-                  >
-                    <div
-                      className={cn(
-                        "w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors",
-                        selected
-                          ? "bg-primary border-primary"
-                          : "border-border bg-background",
-                      )}
-                    >
-                      {selected && (
-                        <Check className="w-2.5 h-2.5 text-primary-foreground" />
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{source.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {t("excerpts", { count: source.chunkCount })}
-                        {source.subject && ` · ${source.subject}`}
-                        {source.schoolYear && ` · ${source.schoolYear}${t("schoolYearSuffix")}`}
-                      </p>
-                    </div>
-                    <span className="text-xs text-muted-foreground shrink-0 uppercase">
-                      {source.fileKind}
-                    </span>
-                  </div>
-                );
-              })}
+              {indexedSources.map((source) => (
+                <PickerRow
+                  key={source.id}
+                  selected={sourceIds.includes(source.id)}
+                  onToggle={() => toggleSource(source.id)}
+                  title={source.name}
+                  meta={[
+                    t("excerpts", { count: source.chunkCount }),
+                    source.subject,
+                    source.schoolYear ? `${source.schoolYear}${t("schoolYearSuffix")}` : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
+                  trailing={<span className="shrink-0 text-xs uppercase text-muted-foreground">{source.fileKind}</span>}
+                />
+              ))}
             </div>
           </div>
         )}
@@ -323,11 +276,26 @@ export function SourcePickerSection({
   );
 }
 
-function PickerRow({ selected, onToggle, title, meta }: { selected: boolean; onToggle: () => void; title: string; meta: string }) {
+/** One selectable source row: the whole row toggles (Space/Enter too); a long title or meta clamps, full text in the title. */
+function PickerRow({
+  selected,
+  onToggle,
+  title,
+  titleExtra,
+  meta,
+  trailing,
+}: {
+  selected: boolean;
+  onToggle: () => void;
+  title: string;
+  titleExtra?: React.ReactNode;
+  meta: string;
+  trailing?: React.ReactNode;
+}) {
   return (
     <div
       className={cn(
-        "flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition-colors select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        "flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition-colors select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
         selected ? "bg-primary/10" : "hover:bg-muted",
       )}
       onClick={onToggle}
@@ -350,9 +318,17 @@ function PickerRow({ selected, onToggle, title, meta }: { selected: boolean; onT
         {selected && <Check className="w-2.5 h-2.5 text-primary-foreground" />}
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium truncate">{title}</p>
-        <p className="text-xs text-muted-foreground">{meta}</p>
+        <div className="flex min-w-0 items-center gap-1.5">
+          <p className="truncate text-sm font-medium" title={title}>
+            {title}
+          </p>
+          {titleExtra}
+        </div>
+        <p className="line-clamp-2 break-words text-xs text-muted-foreground" title={meta}>
+          {meta}
+        </p>
       </div>
+      {trailing}
     </div>
   );
 }
