@@ -140,7 +140,7 @@ Token wiring:
 
 ## Providers and Runtime Composition
 
-Root layout (`src/app/layout.tsx`) wraps app in:
+Root layout (`src/app/[locale]/layout.tsx`; pages live under a hidden `[locale]` segment that middleware fills from the `NEXT_LOCALE` cookie) wraps app in:
 1. `StoreProvider`
 2. `ThemeProvider`
 3. `ClerkThemeProvider`
@@ -246,8 +246,8 @@ Capabilities:
 
 Core files:
 - `src/services/api/subscription.service.ts`
-- `src/app/(checkout)/checkout/page.tsx`
-- `src/app/(main)/settings/page.tsx`
+- `src/app/[locale]/(checkout)/checkout/page.tsx`
+- `src/app/[locale]/(main)/settings/page.tsx`
 - `src/components/ui/upgrade-plan-modal.tsx`
 
 Capabilities:
@@ -263,8 +263,8 @@ Core files:
 - `src/services/api/community.service.ts`
 - `src/store/community/*`
 - `src/store/moderation/*`
-- `src/app/(main)/community/*`
-- `src/app/(main)/admin/moderation/page.tsx`
+- `src/app/[locale]/(main)/community/*`
+- `src/app/[locale]/(main)/admin/moderation/page.tsx`
 
 Capabilities:
 - discover resources with filters/pagination
@@ -278,12 +278,12 @@ Capabilities:
 User side:
 - `src/components/feedback/*`
 - `src/services/api/feedback.service.ts`
-- `src/app/(main)/support/page.tsx`
+- `src/app/[locale]/(main)/support/page.tsx`
 
 Admin side:
 - `src/services/api/admin-feedback.service.ts`
 - `src/store/admin-feedback/adminFeedbackSlice.ts`
-- `src/app/(main)/admin/feedback/*`
+- `src/app/[locale]/(main)/admin/feedback/*`
 
 Capabilities:
 - submit bug/suggestion with image attachments (`/uploads` + `/feedback`)
@@ -296,7 +296,7 @@ Core files:
 - `src/shared/types/featureFlags.ts`
 - `src/store/features/featuresSlice.ts`
 - `src/services/api/features.service.ts`
-- `src/app/(main)/admin/features/page.tsx`
+- `src/app/[locale]/(main)/admin/features/page.tsx`
 
 Current typed flags:
 - `community_library`
@@ -408,7 +408,7 @@ Important config files:
 - Assumes backend-provided content is safe/sanitized.
 
 7. Admin feature flags page uses inline API types.
-- `src/app/(main)/admin/features/page.tsx` bypasses a dedicated typed service layer and performs direct `apiClient` calls.
+- `src/app/[locale]/(main)/admin/features/page.tsx` bypasses a dedicated typed service layer and performs direct `apiClient` calls.
 
 8. Upload modal uses hard reload after successful import.
 - `UploadDocumentModal` eventually calls `window.location.reload()` instead of state-first refresh.

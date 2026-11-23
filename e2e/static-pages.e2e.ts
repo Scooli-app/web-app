@@ -41,6 +41,32 @@ test("a typed locale URL redirects to the plain one and keeps the query", async 
   await expect(page).toHaveURL(/\/checkout\?plan=monthly$/);
 });
 
+// Every route with an id renders on its first request instead of at build time,
+// so the build guard can't check it: a server-side dynamic call there would be a
+// 500 for teachers. The shell renders before any data loads, so any id will do.
+const ID_ROUTES = [
+  "/lesson-plan/ID",
+  "/worksheet/ID",
+  "/quiz/ID",
+  "/test/ID",
+  "/presentation/ID",
+  "/presentation/ID/present",
+  "/curriculum-plan/ID",
+  "/calendar/ID",
+];
+
+for (const locale of ["pt-PT", "en"] as const) {
+  test(`every document page shell renders for an unseen id, in ${locale}`, async ({ page }) => {
+    await page.context().addCookies([{ name: "NEXT_LOCALE", value: locale, url: page.url() }]);
+    for (const route of ID_ROUTES) {
+      const path = route.replace("ID", crypto.randomUUID());
+      const response = await page.goto(path);
+      expect(response?.status(), path).toBe(200);
+      expect(await response?.text(), path).toContain(`<html lang="${locale}"`);
+    }
+  });
+}
+
 test("a document page renders for an id never seen at build time", async ({ page, api }) => {
   const id = await api.createLessonPlan("static shell");
   try {

@@ -37,6 +37,8 @@ describe("isLocaleRewritable", () => {
       "/_ph/e",
       "/ingest/decide",
       "/_next/data/x",
+      "/_vercel/insights/view",
+      "/_vercel/speed-insights/vitals",
       "/robots.txt",
       "/sitemap.xml",
       "/en/dashboard",

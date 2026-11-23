@@ -7,7 +7,7 @@ import { isSupportedLocale, type Locale } from "./locales";
  */
 
 /** Route handlers, proxies and files that are not under `[locale]`. */
-const NEVER_REWRITE = ["/api", "/trpc", "/webhooks", "/.well-known", "/_ph", "/ingest", "/_next"];
+const NEVER_REWRITE = ["/api", "/trpc", "/webhooks", "/.well-known", "/_ph", "/ingest", "/_next", "/_vercel"];
 const NEVER_REWRITE_FILES = ["/robots.txt", "/sitemap.xml"];
 
 export function localePrefixOf(pathname: string): Locale | null {
