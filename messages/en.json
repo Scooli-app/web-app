@@ -483,9 +483,10 @@
       "courseLabel": "Course",
       "coursePlaceholder": "Select the course...",
       "courseSelectAriaLabel": "Select course",
+      "addCourse": "Add course",
       "yearLabel": "Year",
       "quickAddTitle": "Add your vocational course",
-      "quickAddDescription": "Search for the curso profissional you teach. We'll save it to your teaching profile and switch this document to it.",
+      "quickAddDescription": "Search for the curso profissional you teach. We'll save it to your teaching profile and select it here.",
       "quickAddSaving": "Saving course…",
       "quickAddError": "We couldn't save this course. Try again."
     },
