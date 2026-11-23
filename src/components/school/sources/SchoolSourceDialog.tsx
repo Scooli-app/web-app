@@ -45,8 +45,15 @@ function CheckRow({
   children: React.ReactNode;
 }) {
   return (
-    <label className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-muted/60 has-[:focus-visible]:bg-muted/60 has-[[data-state=checked]]:bg-primary/10 has-[[data-state=checked]]:font-medium has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-50 has-[:disabled]:hover:bg-transparent">
-      <Checkbox checked={checked} onCheckedChange={onChange} disabled={disabled} />
+    // relative: Radix renders a hidden absolute <input> per box; positioned here, it can't stretch a scroll box.
+    <label className="relative flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-muted/60 has-[:focus-visible]:bg-muted/60 has-[[data-state=checked]]:bg-primary/10 has-[[data-state=checked]]:font-medium has-[:disabled]:cursor-not-allowed has-[:disabled]:text-muted-foreground has-[:disabled]:hover:bg-transparent">
+      {/* Disabled (subject cap): the box stays visible in both themes; only the text dims. */}
+      <Checkbox
+        checked={checked}
+        onCheckedChange={onChange}
+        disabled={disabled}
+        className="disabled:border-muted-foreground/50 disabled:bg-muted disabled:opacity-100"
+      />
       <span className="min-w-0">{children}</span>
     </label>
   );
@@ -171,7 +178,7 @@ export function SchoolSourceDialog({ mode, source, maxFileBytes, onDone }: Schoo
                 {subjects.length}/{SCHOOL_SOURCE_SUBJECTS_MAX}
               </span>
             </div>
-            <div className="max-h-44 overflow-y-auto rounded-md border border-border bg-card p-1">
+            <div className="relative max-h-44 overflow-y-auto rounded-md border border-border bg-card p-1">
               {SUBJECT_OPTIONS.map((s) => (
                 <CheckRow
                   key={s.value}
@@ -188,7 +195,7 @@ export function SchoolSourceDialog({ mode, source, maxFileBytes, onDone }: Schoo
           <fieldset className="space-y-1">
             <legend className="text-sm font-medium">{t("form.years")}</legend>
             <p className="text-xs text-muted-foreground">{t("form.yearsHint")}</p>
-            <div className="grid grid-cols-3 gap-x-2 sm:grid-cols-4">
+            <div className="relative grid grid-cols-3 gap-x-2 sm:grid-cols-4">
               {YEARS.map((y) => (
                 <CheckRow key={y} checked={years.includes(y)} onChange={() => setYears(toggle(years, y))}>
                   {t("years.option", { n: y })}

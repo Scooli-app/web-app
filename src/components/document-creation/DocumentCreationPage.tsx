@@ -59,6 +59,10 @@ const FIELD_FOCUS_SELECTORS = [
 
 type SourceField = "sourceIds" | "includeAe" | "regulatorySourceIds";
 
+/** Ticked source documents besides the curriculum: personal, school and regulatory. */
+export const selectedSourceCount = (form: Pick<FormState, "sourceIds" | "regulatorySourceIds">) =>
+  (form.sourceIds?.length ?? 0) + (form.regulatorySourceIds?.length ?? 0);
+
 function focusFirstControl(container: HTMLElement) {
   for (const selector of FIELD_FOCUS_SELECTORS) {
     const control = container.querySelector<HTMLElement>(selector);
@@ -344,9 +348,9 @@ export default function DocumentCreationPage({
       ? t("moreOptions.summaryDuration", { minutes: formState.lessonTime })
       : t("moreOptions.summaryDurationFree"),
     isPresentation && formState.slideCount ? t("moreOptions.summarySlides", { count: formState.slideCount }) : null,
-    // Says which of the teacher's own sources this document will follow.
-    isUserSourcesEnabled && (formState.sourceIds?.length ?? 0) > 0
-      ? t("moreOptions.summarySources", { count: formState.sourceIds?.length ?? 0 })
+    // How many documents (personal, school and regulatory) this one will follow, besides the curriculum.
+    showSourcePicker && selectedSourceCount(formState) > 0
+      ? t("moreOptions.summarySources", { count: selectedSourceCount(formState) })
       : null,
   ]
     .filter(Boolean)

@@ -10,7 +10,7 @@ import { registerTranslator } from "@/i18n/translate";
 import { FeatureFlag } from "@/shared/types/featureFlags";
 import type { SourceDefault } from "@/shared/types/sources";
 import rootReducer from "@/store/rootReducer";
-import DocumentCreationPage from "./DocumentCreationPage";
+import DocumentCreationPage, { selectedSourceCount } from "./DocumentCreationPage";
 import { documentTypes } from "./documentTypes";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -169,5 +169,19 @@ describe("DocumentCreationPage source fields", () => {
     );
     expect([...(mocks.picker?.sourceIds ?? [])].sort()).toEqual(["pt"]);
     expect(await submit(container)).toMatchObject({ sourceIds: ["pt"] });
+  });
+
+  it("counts school, personal and regulatory sources in the summary, without calling them all the teacher's", async () => {
+    const regulatory: SourceDefault = { ...aeOff, sourceRef: "r1", kind: "regulatory", name: "DL 54/2018", effectiveDefault: true };
+    const container = await mountPage(Promise.resolve([schoolRule("o1", ["Mathematics"]), regulatory]));
+    expect(container.textContent).toContain("Usa 2 fontes");
+    expect(container.textContent).not.toMatch(/fontes? tuas?/);
+  });
+});
+
+describe("selectedSourceCount", () => {
+  it("adds personal and school ids to regulatory ids", () => {
+    expect(selectedSourceCount({ sourceIds: ["p1", "o1"], regulatorySourceIds: ["r1"] })).toBe(3);
+    expect(selectedSourceCount({ sourceIds: undefined, regulatorySourceIds: undefined })).toBe(0);
   });
 });

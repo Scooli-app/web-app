@@ -300,7 +300,8 @@ export default function SourcesPage() {
 
               {sources.map((source) => (
                 <Card key={source.id} className="p-4">
-                  <div className="flex items-start justify-between gap-3">
+                  {/* On a phone the badge, switch and bin go under the name, so the name keeps the width. */}
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
                     <div className="flex min-w-0 items-start gap-3">
                       <FileText className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground" />
                       <div className="min-w-0">
@@ -338,7 +339,7 @@ export default function SourcesPage() {
                       </div>
                     </div>
 
-                    <div className="flex shrink-0 items-center gap-2">
+                    <div className="flex shrink-0 flex-wrap items-center gap-2 pl-8 sm:pl-0">
                       <StatusBadge status={source.status} t={tStatus} />
                       {personalByRef[source.id] && <DefaultSwitch entry={personalByRef[source.id]} />}
 

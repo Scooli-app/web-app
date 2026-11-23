@@ -34,17 +34,21 @@ describe("formatQuota", () => {
   const quota = { filesUsed: 12, filesMax: 50, bytesUsed: 340 * 2 ** 20, bytesMax: 2 * 2 ** 30, maxFileBytes: 25 * 2 ** 20 };
 
   it("formats the school quota", () => {
-    expect(formatQuota(quota, useLocale("pt-PT"))).toBe("12 de 50 ficheiros · 340 MB de 2 GB");
-    expect(formatQuota(quota, useLocale("en"))).toBe("12 of 50 files · 340 MB of 2 GB");
+    expect(formatQuota(quota, useLocale("pt-PT"))).toBe("12 de 50 ficheiros · 340\u00a0MB de 2\u00a0GB");
+    expect(formatQuota(quota, useLocale("en"))).toBe("12 of 50 files · 340\u00a0MB of 2\u00a0GB");
+  });
+
+  it("never splits a number from its unit", () => {
+    expect(formatQuota(quota, useLocale("pt-PT"))).not.toMatch(/\d (KB|MB|GB)/);
   });
 
   it("shows KB below 1 MB, so a few small files never read as 0 MB", () => {
     const small = { ...quota, filesUsed: 1, bytesUsed: 140 * 1024 };
-    expect(formatQuota(small, useLocale("pt-PT"))).toBe("1 de 50 ficheiros · 140 KB de 2 GB");
-    expect(formatQuota({ ...small, bytesUsed: 0 }, useLocale("en"))).toBe("1 of 50 files · 0 MB of 2 GB");
-    expect(formatQuota({ ...small, bytesUsed: 100 }, useLocale("en"))).toBe("1 of 50 files · 1 KB of 2 GB");
+    expect(formatQuota(small, useLocale("pt-PT"))).toBe("1 de 50 ficheiros · 140\u00a0KB de 2\u00a0GB");
+    expect(formatQuota({ ...small, bytesUsed: 0 }, useLocale("en"))).toBe("1 of 50 files · 0\u00a0MB of 2\u00a0GB");
+    expect(formatQuota({ ...small, bytesUsed: 100 }, useLocale("en"))).toBe("1 of 50 files · 1\u00a0KB of 2\u00a0GB");
     // never "1024 KB": from 1023.5 KB it rounds to 1 MB
-    expect(formatQuota({ ...small, bytesUsed: Math.round(1023.4 * 1024) }, useLocale("en"))).toBe("1 of 50 files · 1023 KB of 2 GB");
-    expect(formatQuota({ ...small, bytesUsed: Math.round(1023.6 * 1024) }, useLocale("en"))).toBe("1 of 50 files · 1 MB of 2 GB");
+    expect(formatQuota({ ...small, bytesUsed: Math.round(1023.4 * 1024) }, useLocale("en"))).toBe("1 of 50 files · 1023\u00a0KB of 2\u00a0GB");
+    expect(formatQuota({ ...small, bytesUsed: Math.round(1023.6 * 1024) }, useLocale("en"))).toBe("1 of 50 files · 1\u00a0MB of 2\u00a0GB");
   });
 });

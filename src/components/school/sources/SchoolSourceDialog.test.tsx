@@ -60,7 +60,7 @@ describe("SchoolSourceDialog errors", () => {
   it("refuses a file over the per-file limit on pick, without uploading (en)", async () => {
     const copy = mount("en");
     pick(30 * MB);
-    expect(alertText()).toBe(copy.errors.fileTooBig.replace("{max}", "25 MB"));
+    expect(alertText()).toBe(copy.errors.fileTooBig.replace("{max}", "25\u00a0MB"));
     await submit();
     expect(api.uploadSchoolSource).not.toHaveBeenCalled();
   });

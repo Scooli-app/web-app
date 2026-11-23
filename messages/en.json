@@ -262,8 +262,8 @@
         "description": "Share and discover resources"
       },
       "sources": {
-        "title": "My sources",
-        "description": "Manage the material Scooli generates from"
+        "title": "Sources",
+        "description": "What Scooli draws on when you create materials"
       },
       "calendar": {
         "title": "Calendar",
@@ -924,7 +924,7 @@
       "summaryTemplate": "Template: {name}",
       "summaryDuration": "Length: {minutes} min",
       "summaryDurationFree": "Length: any",
-      "summarySources": "{count, plural, one {Uses # of your sources} other {Uses # of your sources}}",
+      "summarySources": "{count, plural, one {Uses # source} other {Uses # sources}}",
       "summarySlides": "{count} slides"
     },
     "missing": {
@@ -2716,6 +2716,7 @@
       "addedBy": "Added by {name}",
       "summary": "Summary",
       "saveError": "Couldn't save that. Please try again.",
+      "sourceGone": "This source no longer exists.",
       "openOfficialText": "Open the official text of {name}",
       "proTitle": "Upload your own sources with Pro",
       "proDescription": "With Pro, you upload a textbook or your school’s materials (PDF or DOCX), and the lesson plans and worksheets you create follow that content.",
@@ -4614,9 +4615,9 @@
       "bytes": "Your school’s storage is full ({max}). Delete a source to add another."
     },
     "size": {
-      "kb": "{n} KB",
-      "mb": "{n} MB",
-      "gb": "{n} GB"
+      "kb": "{n}\u00a0KB",
+      "mb": "{n}\u00a0MB",
+      "gb": "{n}\u00a0GB"
     },
     "menu": {
       "edit": "Edit",

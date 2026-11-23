@@ -130,7 +130,7 @@ describe("SchoolSourcesPanel rows", () => {
 
   it.each([
     [{ filesUsed: 50 }, pt.schoolSources.quotaFull.files.replace("{max}", "50")],
-    [{ bytesUsed: 2 ** 31 }, pt.schoolSources.quotaFull.bytes.replace("{max}", "2 GB")],
+    [{ bytesUsed: 2 ** 31 }, pt.schoolSources.quotaFull.bytes.replace("{max}", "2\u00a0GB")],
   ])("disables Adicionar with the reason when the quota is full (%j)", async (quota, reason) => {
     const c = await mountPanel([school({})], quota);
     const add = [...c.querySelectorAll("button")].find((b) => b.textContent?.includes(pt.schoolSources.add));

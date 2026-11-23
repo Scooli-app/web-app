@@ -262,8 +262,8 @@
         "description": "Partilhar e descobrir recursos"
       },
       "sources": {
-        "title": "As minhas fontes",
-        "description": "Gerir fontes de conteúdo para geração"
+        "title": "Fontes",
+        "description": "O que a Scooli consulta quando crias materiais"
       },
       "calendar": {
         "title": "Calendário",
@@ -924,7 +924,7 @@
       "summaryTemplate": "Modelo: {name}",
       "summaryDuration": "Duração: {minutes} min",
       "summaryDurationFree": "Duração: livre",
-      "summarySources": "{count, plural, one {Usa # fonte tua} other {Usa # fontes tuas}}",
+      "summarySources": "{count, plural, one {Usa # fonte} other {Usa # fontes}}",
       "summarySlides": "{count} diapositivos"
     },
     "missing": {
@@ -2716,6 +2716,7 @@
       "addedBy": "Adicionada por {name}",
       "summary": "Resumo",
       "saveError": "Não foi possível guardar. Tenta outra vez.",
+      "sourceGone": "Esta fonte já não existe.",
       "openOfficialText": "Abrir o texto oficial de {name}",
       "proTitle": "Carrega as tuas fontes com o Pro",
       "proDescription": "Com o Pro, carregas o manual ou os materiais da tua escola (PDF ou DOCX), e os planos e fichas que crias passam a seguir essa matéria.",
@@ -4614,9 +4615,9 @@
       "bytes": "O espaço da escola está cheio ({max}). Elimina uma fonte para adicionar outra."
     },
     "size": {
-      "kb": "{n} KB",
-      "mb": "{n} MB",
-      "gb": "{n} GB"
+      "kb": "{n}\u00a0KB",
+      "mb": "{n}\u00a0MB",
+      "gb": "{n}\u00a0GB"
     },
     "menu": {
       "edit": "Editar",

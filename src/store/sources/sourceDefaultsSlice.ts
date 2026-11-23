@@ -22,6 +22,12 @@ export const fetchSourceDefaults = createAsyncThunk("sourceDefaults/fetch", asyn
   return { entries: await listSourceDefaults(), startedAt };
 });
 
+/** Why the server refused a toggle. */
+export interface ToggleRefusal {
+  status: number;
+  message: string;
+}
+
 export const toggleSourceDefault = createAsyncThunk(
   "sourceDefaults/toggle",
   async ({ sourceRef, enabled }: { sourceRef: string; enabled: boolean }, { rejectWithValue, dispatch }) => {
@@ -30,8 +36,10 @@ export const toggleSourceDefault = createAsyncThunk(
     } catch (e) {
       // Deleted meanwhile (an admin removed a school source): refetch so the row goes away.
       if (e instanceof ApiRequestError && e.status === 404) void dispatch(fetchSourceDefaults());
-      // A 4xx message is already in the teacher's language; an empty one or anything else gets the generic toast.
-      if (e instanceof ApiRequestError && e.status >= 400 && e.status < 500 && e.message) return rejectWithValue(e.message);
+      // A 4xx says why (status + the server's message, already in the teacher's language); anything else is generic.
+      if (e instanceof ApiRequestError && e.status >= 400 && e.status < 500) {
+        return rejectWithValue({ status: e.status, message: e.message } satisfies ToggleRefusal);
+      }
       throw e;
     }
   }
@@ -55,7 +63,8 @@ const slice = createSlice({
   extraReducers: (builder) => {
     builder
       .addCase(fetchSourceDefaults.pending, (state) => {
-        state.status = "loading";
+        // A refetch (after a 404, say) keeps the list on screen: no skeleton, no lost focus.
+        if (state.status !== "loaded") state.status = "loading";
       })
       .addCase(fetchSourceDefaults.fulfilled, (state, action) => {
         // A read that started before a toggle landed (in flight or already settled) must not flip that switch back.
@@ -70,7 +79,8 @@ const slice = createSlice({
         state.status = "loaded";
       })
       .addCase(fetchSourceDefaults.rejected, (state) => {
-        state.status = "failed";
+        // A failed refetch keeps the list it has; only a first load with nothing to show fails.
+        if (state.status !== "loaded") state.status = "failed";
       })
       .addCase(toggleSourceDefault.pending, (state, action) => {
         const { sourceRef, enabled } = action.meta.arg;

@@ -59,14 +59,14 @@ describe("sourceDefaults", () => {
     expect(selectSourceDefaults(store.getState() as RootState)[0].effectiveDefault).toBe(true);
   });
 
-  it("rejects without a message when the server's refusal has an empty body", async () => {
+  it("rejects with the status and an empty message when the server's refusal has no body", async () => {
     const { ApiRequestError } = await import("@/services/api/client");
     api.setSourceDefault.mockRejectedValueOnce(new ApiRequestError("", 404, null));
     api.listSourceDefaults.mockResolvedValueOnce([]);
     const store = makeStore([row("o1", "organization", true)]);
     const result = await store.dispatch(toggleSourceDefault({ sourceRef: "o1", enabled: false }));
     expect(toggleSourceDefault.rejected.match(result)).toBe(true);
-    expect(result.payload).toBeUndefined();
+    expect(result.payload).toEqual({ status: 404, message: "" });
   });
 
   it("refetches after a 404, so a source deleted meanwhile leaves the list", async () => {
@@ -75,8 +75,32 @@ describe("sourceDefaults", () => {
     api.listSourceDefaults.mockResolvedValueOnce([row("ae", "ae", true)]);
     const store = makeStore([row("ae", "ae", true), row("o1", "organization", true)]);
     const result = await store.dispatch(toggleSourceDefault({ sourceRef: "o1", enabled: false }));
-    expect(result.payload).toBe("Fonte não encontrada.");
+    expect(result.payload).toEqual({ status: 404, message: "Fonte não encontrada." });
     await vi.waitFor(() => expect(selectSourceDefaults(store.getState() as RootState).map((e) => e.sourceRef)).toEqual(["ae"]));
+  });
+
+  it("keeps the list on screen while it refetches, and when the refetch fails", async () => {
+    let rejectFetch: (e: Error) => void = () => undefined;
+    api.listSourceDefaults.mockReturnValueOnce(new Promise((_, reject) => (rejectFetch = reject)));
+    const store = makeStore([row("ae", "ae", true)]);
+    const status = () => (store.getState() as RootState).sourceDefaults.status;
+    const fetching = store.dispatch(fetchSourceDefaults());
+    expect(status()).toBe("loaded"); // no skeleton over a list the teacher is using
+    rejectFetch(new Error("503"));
+    await fetching;
+    expect(status()).toBe("loaded");
+    expect(selectSourceDefaults(store.getState() as RootState)).toHaveLength(1);
+  });
+
+  it("shows loading, then failed, on a first load with nothing to show", async () => {
+    let rejectFetch: (e: Error) => void = () => undefined;
+    api.listSourceDefaults.mockReturnValueOnce(new Promise((_, reject) => (rejectFetch = reject)));
+    const store = configureStore({ reducer: rootReducer });
+    const fetching = store.dispatch(fetchSourceDefaults());
+    expect((store.getState() as RootState).sourceDefaults.status).toBe("loading");
+    rejectFetch(new Error("503"));
+    await fetching;
+    expect((store.getState() as RootState).sourceDefaults.status).toBe("failed");
   });
 
   it("does not refetch on other refusals", async () => {

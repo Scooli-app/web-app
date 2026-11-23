@@ -12,12 +12,19 @@ import {
   selectSourceDefaults,
   selectSourceDefaultsStatus,
   toggleSourceDefault,
+  type ToggleRefusal,
 } from "@/store/sources/sourceDefaultsSlice";
 import { BookOpen, ExternalLink, Scale } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useMemo } from "react";
 import { toast } from "sonner";
 import { groupSourceDefaults } from "./groupSourceDefaults";
+
+/** The toast for a refused toggle: gone (404) has its own copy, then the server's message, then the generic one. */
+export function toggleErrorMessage(refusal: ToggleRefusal | undefined, t: (key: string) => string): string {
+  if (refusal?.status === 404) return t("sourceGone");
+  return refusal?.message || t("saveError");
+}
 
 /** The "Usar por omissão" switch of one source; its label names the source. */
 export function DefaultSwitch({ entry }: { entry: SourceDefault }) {
@@ -29,9 +36,7 @@ export function DefaultSwitch({ entry }: { entry: SourceDefault }) {
       aria-label={`${t("useByDefault")}: ${entry.name}`}
       onCheckedChange={async (enabled) => {
         const result = await dispatch(toggleSourceDefault({ sourceRef: entry.sourceRef, enabled }));
-        if (toggleSourceDefault.rejected.match(result)) {
-          toast.error(typeof result.payload === "string" ? result.payload : t("saveError"));
-        }
+        if (toggleSourceDefault.rejected.match(result)) toast.error(toggleErrorMessage(result.payload as ToggleRefusal | undefined, t));
       }}
     />
   );

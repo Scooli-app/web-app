@@ -13,7 +13,7 @@ import { ALL_YEARS, LONG_NAME, MAX_SUBJECTS } from "@/shared/test/longContent";
 import type { SourceDefault } from "@/shared/types/sources";
 import { toast } from "sonner";
 import sourceDefaults from "@/store/sources/sourceDefaultsSlice";
-import { DefaultSourcesSections } from "./DefaultSourcesSections";
+import { DefaultSourcesSections, toggleErrorMessage } from "./DefaultSourcesSections";
 
 vi.mock("@/services/api/sources.service", () => ({ listSourceDefaults: vi.fn(), setSourceDefault: vi.fn() }));
 vi.mock("sonner", () => ({ toast: { error: vi.fn() } }));
@@ -122,5 +122,22 @@ describe.each([["pt-PT", pt], ["en", en]] as const)("DefaultSourcesSections %s",
     expect(c.querySelector('[role="switch"]')).toBeNull();
     await act(async () => (c.querySelector("button") as HTMLElement).click());
     expect(listSourceDefaults).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("toggleErrorMessage", () => {
+  const t = (key: string) => `t:${key}`;
+  it("says the source no longer exists on a 404, whatever the body", () => {
+    expect(toggleErrorMessage({ status: 404, message: "" }, t)).toBe("t:sourceGone");
+    expect(toggleErrorMessage({ status: 404, message: "Not Found" }, t)).toBe("t:sourceGone");
+  });
+  it("shows the server's message for another refusal, else the generic one", () => {
+    expect(toggleErrorMessage({ status: 400, message: "Pedido inválido." }, t)).toBe("Pedido inválido.");
+    expect(toggleErrorMessage({ status: 400, message: "" }, t)).toBe("t:saveError");
+    expect(toggleErrorMessage(undefined, t)).toBe("t:saveError");
+  });
+  it("has the copy in both locales", () => {
+    expect(pt.sources.page.sourceGone).toBe("Esta fonte já não existe.");
+    expect(en.sources.page.sourceGone).toBe("This source no longer exists.");
   });
 });
