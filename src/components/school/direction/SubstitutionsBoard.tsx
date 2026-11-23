@@ -1,5 +1,6 @@
 "use client";
 
+import { useCountry } from "@/hooks/useCountry";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -173,8 +174,9 @@ function AbsenceForm({
 function LessonCard({ lesson, substituteName }: { lesson: DirectionHandoverLesson; substituteName: string }) {
   const t = useTranslations("schoolDirection.substitutions");
   const locale = useLocale();
+  const countryCode = useCountry();
   // The handover carries the subject as typed only; formatSubject translates the known ones.
-  const subject = formatSubject(lesson.subjectLabel, lesson.subjectLabel);
+  const subject = formatSubject(lesson.subjectLabel, lesson.subjectLabel, countryCode);
 
   return (
     <Card className="gap-4 px-4 py-5 sm:px-6">
@@ -182,7 +184,7 @@ function LessonCard({ lesson, substituteName }: { lesson: DirectionHandoverLesso
         <Pill className={STATE_CLASSES.on_track}>{t("shared", { name: substituteName })}</Pill>
         <h3 className="mt-3 text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
           {t("lessonHeading", {
-            class: formatClass(lesson.grade, lesson.classLabel, locale),
+            class: formatClass(lesson.grade, lesson.classLabel, locale, countryCode),
             subject,
             n: lesson.sequenceNumber,
           })}

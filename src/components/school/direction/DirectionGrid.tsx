@@ -1,5 +1,6 @@
 "use client";
 
+import { useCountry } from "@/hooks/useCountry";
 import type { DirectionOverview, DirectionTurma, TurmaState } from "@/shared/types/school-direction";
 import { cn } from "@/shared/utils/utils";
 import { AlertTriangle, Eye, type LucideIcon } from "lucide-react";
@@ -63,6 +64,7 @@ interface DirectionGridProps {
 export function DirectionGrid({ turmas, subjects, onOpen }: DirectionGridProps) {
   const t = useTranslations("schoolDirection");
   const locale = useLocale();
+  const countryCode = useCountry();
   const columns = subjects.filter((subject) => turmas.some((turma) => turma.subjectKey === subject.key));
   const rows = classRows(turmas, locale);
 
@@ -70,7 +72,7 @@ export function DirectionGrid({ turmas, subjects, onOpen }: DirectionGridProps) 
     const Icon = STATE_ICONS[turma.state];
     const percent = turma.executionPercent === null ? null : `${turma.executionPercent}%`;
     const text = turma.state === "no_records" ? t("states.no_records") : (percent ?? "—");
-    const subject = formatSubject(turma.subjectKey, turma.subjectLabel);
+    const subject = formatSubject(turma.subjectKey, turma.subjectLabel, countryCode);
     // behindTopic is the reason for watch/behind; the tooltip alone does not reach touch and screen-reader users.
     const label = [classText, subject, t(`states.${turma.state}`), percent, shared && turma.title, turma.behindTopic]
       .filter(Boolean)
@@ -105,14 +107,14 @@ export function DirectionGrid({ turmas, subjects, onOpen }: DirectionGridProps) 
             </th>
             {columns.map((subject) => (
               <th key={subject.key} scope="col" className="px-1 pb-1 text-center text-xs font-normal text-muted-foreground">
-                {formatSubject(subject.key, subject.label)}
+                {formatSubject(subject.key, subject.label, countryCode)}
               </th>
             ))}
           </tr>
         </thead>
         <tbody>
           {rows.map((row) => {
-            const classText = formatClass(row.grade, row.classLabel, locale);
+            const classText = formatClass(row.grade, row.classLabel, locale, countryCode);
             return (
               <tr key={row.key}>
                 {/* The shadow covers the cell spacing so scrolled cells don't show through beside the sticky column. */}
