@@ -40,4 +40,12 @@ describe("SourceTypeCards", () => {
     await act(async () => hint?.dispatchEvent(new MouseEvent("click", { bubbles: true })));
     expect(onChange).toHaveBeenCalledWith("apoio");
   });
+
+  it("is one native radio group, so the arrow keys move between the cards", async () => {
+    await render();
+    const radios = [...container.querySelectorAll<HTMLInputElement>('input[type="radio"]')];
+    expect(new Set(radios.map((r) => r.name)).size).toBe(1);
+    expect(radios.map((r) => r.checked)).toEqual([true, false]);
+    expect(radios.every((r) => r.closest("label") && r.tabIndex !== -1)).toBe(true);
+  });
 });
