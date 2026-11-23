@@ -4084,6 +4084,7 @@
     "notHeldInProgress": "A IA está ajustando as aulas seguintes…",
     "readyToast": "A proposta de ajuste está pronta. Revise-a na página da turma.",
     "failedToast": "Não foi possível propor ajustes às aulas seguintes.",
+    "retry": "Tentar novamente",
     "requestTitle": "O que aconteceu nesta aula?",
     "requestDescription": "Conte como foi esta aula. Usamos a nota para propor ajustes às aulas seguintes.",
     "requestTitleTurma": "O que mudou na turma?",

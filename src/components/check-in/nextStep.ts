@@ -25,8 +25,9 @@ export function stepAfterSave(body: CheckInSubmission, saved: SavedCheckIn, slot
   return null;
 }
 
-/** Once the replan settled. A failure after "não houve aula" falls back to moving the lessons. */
-export function stepAfterReplan(proposal: ReplanProposal): NextStep {
+/** Once the replan settled (null: it never did, so it failed). A failure after "não houve aula" falls back to moving the lessons. */
+export function stepAfterReplan(proposal: ReplanProposal | null): NextStep {
+  if (!proposal) return { kind: "replanFailed" };
   const outcome = settledToast(proposal);
   if (outcome === "ready") return { kind: "replanReady", proposal };
   if (outcome === "noChange") return { kind: "replanNoChange" };

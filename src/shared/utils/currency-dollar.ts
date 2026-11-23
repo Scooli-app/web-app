@@ -16,7 +16,7 @@ export function isCurrencyDollar(text: string, i: number): boolean {
   } else if (text.slice(i - 2, i) === "US") {
     prefixStart = i - 2;
   } else {
-    return false;
+    return isBareDollarAmount(text, i);
   }
   // Part of a longer word ("PR$") is not a currency.
   if (prefixStart > 0 && /[\p{L}\p{N}]/u.test(text[prefixStart - 1])) return false;
@@ -24,6 +24,20 @@ export function isCurrencyDollar(text: string, i: number): boolean {
   if (text[j] === " ") j += 1;
   // An amount, or a blank for one ("R$ ___").
   return j < text.length && /[\d_]/.test(text[j]);
+}
+
+/**
+ * "$5" with nothing on the line that could close it is a price, not maths. A closer is a "$" not
+ * preceded by a space and not followed by a digit, so "$5 and $6" stays text while "$5$" is maths.
+ * "$3 + 4?" is unclosed maths (the normalizer closes it). Same rule as the backend's isBareDollarAmount.
+ */
+function isBareDollarAmount(text: string, i: number): boolean {
+  const amount = /^\d+(?:[.,]\d+)*\s*(.?)/.exec(text.slice(i + 1));
+  if (!amount || /[-+*/=^\\×÷<>]/.test(amount[1])) return false;
+  for (let j = i + 2; j < text.length && text[j] !== "\n"; j++) {
+    if (text[j] === "$" && !/\s/.test(text[j - 1]) && !/\d/.test(text[j + 1] ?? "")) return false;
+  }
+  return true;
 }
 
 /** Index of the next `$` from `from` that is not a currency sign, or -1. */
