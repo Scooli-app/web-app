@@ -44,6 +44,14 @@ export function isSupportedLocale(value: unknown): value is Locale {
 }
 
 /**
+ * The locale a request is served in, from the `NEXT_LOCALE` cookie value. Exact
+ * match only, no Accept-Language: many Portuguese teachers run English browsers.
+ */
+export function resolveRequestLocale(cookieValue: string | undefined): Locale {
+  return isSupportedLocale(cookieValue) ? cookieValue : defaultLocale;
+}
+
+/**
  * Resolves an arbitrary language tag to a supported locale.
  *
  * Matching is on the primary subtag, so `pt-BR` and `pt` both resolve to `pt-PT`

@@ -9,7 +9,15 @@ import {
   parsePromoCookie,
   promoCodeFromSearch,
 } from "@/lib/trialPromo/promoStorage";
+import { BACKEND_TOKEN_COOKIE, reusableBackendToken } from "@/lib/backendTokenCookie";
 import { NextResponse } from "next/server";
+import { LOCALE_COOKIE_NAME, resolveRequestLocale } from "@/i18n/locales";
+import {
+  isLocaleRewritable,
+  localePrefixOf,
+  withLocalePrefix,
+  withoutLocalePrefix,
+} from "@/i18n/localeRouting";
 
 const isPublicRoute = createRouteMatcher([
   "/sign-in(.*)",
@@ -27,7 +35,6 @@ const isPublicRoute = createRouteMatcher([
   "/robots.txt",
   "/sitemap.xml",
 ]);
-const TOKEN_COOKIE_NAME = "scooli_token";
 
 function getSafeRedirectPath(redirectUrl: string | null): string | null {
   if (
@@ -45,6 +52,14 @@ export default clerkMiddleware(async (auth, req) => {
   // Early return for webhook routes - skip all authentication
   if (req.nextUrl.pathname === "/webhooks/stripe") {
     return NextResponse.next();
+  }
+
+  // The [locale] segment is internal: a typed /en/… or /pt-PT/… goes to the
+  // plain URL, so a page never has two public addresses.
+  if (localePrefixOf(req.nextUrl.pathname)) {
+    const plainUrl = req.nextUrl.clone();
+    plainUrl.pathname = withoutLocalePrefix(req.nextUrl.pathname);
+    return NextResponse.redirect(plainUrl);
   }
 
   const authObj = await auth();
@@ -73,19 +88,24 @@ export default clerkMiddleware(async (auth, req) => {
   const setTokenCookie = async (res: NextResponse) => {
     try {
       if (!authObj.userId) {
-        res.cookies.delete(TOKEN_COOKIE_NAME);
+        res.cookies.delete(BACKEND_TOKEN_COOKIE);
         return;
       }
+
+      // A prefetch burst sends many requests within a second; keep a token that
+      // is still good for this user and organization instead of minting one each.
+      const current = req.cookies.get(BACKEND_TOKEN_COOKIE)?.value;
+      if (reusableBackendToken(current, authObj.userId, authObj.orgId)) return;
 
       const template = process.env.CLERK_JWT_TEMPLATE;
       const token = await authObj.getToken(template ? { template } : undefined);
 
       if (!token) {
-        res.cookies.delete(TOKEN_COOKIE_NAME);
+        res.cookies.delete(BACKEND_TOKEN_COOKIE);
         return;
       }
 
-      res.cookies.set(TOKEN_COOKIE_NAME, token, {
+      res.cookies.set(BACKEND_TOKEN_COOKIE, token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
@@ -96,7 +116,7 @@ export default clerkMiddleware(async (auth, req) => {
     } catch {
       // keep middleware resilient; auth cookie will simply not be set. Drop
       // any old one too, or it would keep a previous user's token alive.
-      res.cookies.delete(TOKEN_COOKIE_NAME);
+      res.cookies.delete(BACKEND_TOKEN_COOKIE);
     }
   };
 
@@ -186,15 +206,27 @@ export default clerkMiddleware(async (auth, req) => {
     }
   }
 
-  const res = rememberPromo(NextResponse.next());
+  const res = rememberPromo(localeResponse());
   await setTokenCookie(res);
   return res;
+
+  // Serve the page's prerendered copy for the cookie's language. Runs only after
+  // every auth check and redirect above, so it never replaces auth.protect.
+  function localeResponse(): NextResponse {
+    if (!isLocaleRewritable(req.nextUrl.pathname)) return NextResponse.next();
+    const url = req.nextUrl.clone();
+    url.pathname = withLocalePrefix(
+      req.nextUrl.pathname,
+      resolveRequestLocale(req.cookies.get(LOCALE_COOKIE_NAME)?.value),
+    );
+    return NextResponse.rewrite(url);
+  }
 });
 
 export const config = {
   matcher: [
     // Skip Next.js internals and all static files, unless found in search params
-    "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
+    "/((?!_next|_vercel|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
     // Always run for API routes and webhooks
     "/(api|trpc|webhooks)(.*)",
   ],

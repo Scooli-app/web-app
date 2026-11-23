@@ -1,0 +1,64 @@
+import { getTranslations, setRequestLocale } from "next-intl/server";
+import Image from "next/image";
+import Link from "next/link";
+
+export default async function CheckoutLayout({
+  children,
+  params,
+}: {
+  children: React.ReactNode;
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  setRequestLocale(locale);
+  const t = await getTranslations("checkout.footer");
+
+  return (
+    <div className="min-h-dvh bg-gradient-to-br from-accent via-background to-muted dark:from-background dark:via-background dark:to-muted/30">
+      {/* Simple header with logo */}
+      <header className="border-b border-border bg-background/80 backdrop-blur-sm sticky top-0 z-50">
+        <div className="max-w-5xl mx-auto px-4 py-3 sm:px-6 sm:py-4">
+          <Link href="/dashboard" className="flex items-center gap-2">
+            <Image
+              src="/scooli.svg"
+              alt="Scooli"
+              width={150}
+              height={120}
+              className="h-7 w-auto sm:h-8"
+            />
+          </Link>
+        </div>
+      </header>
+
+      {/* Main content */}
+      <main>{children}</main>
+
+      {/* Footer */}
+      <footer className="border-t border-border bg-background/50 mt-auto">
+        <div className="max-w-5xl mx-auto px-4 py-5 sm:px-6 sm:py-6">
+          <div className="flex flex-col items-center justify-between gap-3 text-center text-sm text-muted-foreground md:flex-row md:text-left">
+            <p>{t("rights", { year: new Date().getFullYear() })}</p>
+            <div className="flex items-center gap-6">
+              <a
+                href="https://scooli.app/terms"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-foreground transition-colors"
+              >
+                {t("terms")}
+              </a>
+              <a
+                href="https://scooli.app/privacy"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-foreground transition-colors"
+              >
+                {t("privacy")}
+              </a>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+}
