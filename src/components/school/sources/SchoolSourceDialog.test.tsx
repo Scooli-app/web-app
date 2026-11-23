@@ -7,7 +7,7 @@ import en from "../../../../messages/en.json";
 import pt from "../../../../messages/pt-PT.json";
 import { ApiRequestError } from "@/services/api/client";
 import { LONG_NAME } from "@/shared/test/longContent";
-import { SOURCE_NAME_MAX } from "@/shared/types/sources";
+import { SCHOOL_SOURCE_SUBJECTS_MAX, SOURCE_NAME_MAX, nameLength } from "@/shared/types/sources";
 import { SchoolSourceDialog } from "./SchoolSourceDialog";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -105,8 +105,7 @@ describe("SchoolSourceDialog fields", () => {
   it("caps the name at the API limit and shows the count, even from a very long file name", () => {
     mount("pt-PT");
     pick(MB, `${LONG_NAME}${LONG_NAME}.pdf`);
-    expect(nameInput()?.maxLength).toBe(SOURCE_NAME_MAX);
-    expect(nameInput()?.value).toHaveLength(SOURCE_NAME_MAX);
+    expect(nameLength(nameInput()?.value ?? "")).toBe(SOURCE_NAME_MAX);
     expect(document.body.textContent).toContain(`${SOURCE_NAME_MAX}/${SOURCE_NAME_MAX}`);
     // the chosen file's full name stays reachable on the truncated label
     expect(document.querySelector(`[title="${LONG_NAME}${LONG_NAME}.pdf"]`)?.className).toContain("truncate");
@@ -115,5 +114,39 @@ describe("SchoolSourceDialog fields", () => {
   it("labels the year options as years in English", () => {
     mount("en");
     expect(document.body.textContent).toContain("Year 7");
+  });
+
+  it("accepts a 200-character name with emoji, counting like the server, and cuts what goes past it", () => {
+    mount("pt-PT");
+    const input = nameInput();
+    if (!input) throw new Error("no name input");
+    const typed = `${"📚".repeat(SOURCE_NAME_MAX)}x`;
+    expect(input.maxLength).toBeGreaterThanOrEqual(typed.length - 1); // the native cap lets 200 emoji in
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set;
+    act(() => {
+      setter?.call(input, typed);
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    expect(input.value).toBe("📚".repeat(SOURCE_NAME_MAX));
+    expect(document.body.textContent).toContain(`${SOURCE_NAME_MAX}/${SOURCE_NAME_MAX}`);
+  });
+
+  it("stops at 20 subjects: the unticked rows disable until one is unticked", () => {
+    mount("pt-PT");
+    const boxes = () => [...document.querySelectorAll<HTMLButtonElement>('fieldset button[role="checkbox"]')];
+    const subjectBoxes = () => boxes().slice(0, boxes().length - 12); // the last 12 are the years
+    for (const box of subjectBoxes().slice(0, SCHOOL_SOURCE_SUBJECTS_MAX)) act(() => box.click());
+    expect(document.body.textContent).toContain(`${SCHOOL_SOURCE_SUBJECTS_MAX}/${SCHOOL_SOURCE_SUBJECTS_MAX}`);
+    const rest = subjectBoxes().slice(SCHOOL_SOURCE_SUBJECTS_MAX);
+    expect(rest.length).toBeGreaterThan(0);
+    expect(rest.every((b) => b.disabled)).toBe(true);
+    act(() => subjectBoxes()[0].click()); // untick one
+    expect(subjectBoxes().some((b) => !b.disabled && b.getAttribute("aria-checked") === "false")).toBe(true);
+    expect(document.body.textContent).toContain(`${SCHOOL_SOURCE_SUBJECTS_MAX - 1}/${SCHOOL_SOURCE_SUBJECTS_MAX}`);
+  });
+
+  it("says the subject limit in the hint", () => {
+    mount("en");
+    expect(document.body.textContent).toContain("Up to 20 subjects.");
   });
 });

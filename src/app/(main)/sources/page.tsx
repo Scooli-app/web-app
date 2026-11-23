@@ -8,7 +8,7 @@ import { LoadError } from "@/components/ui/load-error";
 import { usePlanLimits } from "@/hooks/usePlanLimits";
 import { DefaultSourcesSections, DefaultSwitch } from "@/components/sources/DefaultSourcesSections";
 import { groupSourceDefaults } from "@/components/sources/groupSourceDefaults";
-import { SOURCE_NAME_MAX, type UploadSourceParams } from "@/shared/types/sources";
+import { SOURCE_NAME_MAX, clipName, nameLength, type UploadSourceParams } from "@/shared/types/sources";
 import { cn } from "@/shared/utils/utils";
 import { selectIsUserSourcesEnabled } from "@/store/features/selectors";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
@@ -99,7 +99,7 @@ export default function SourcesPage() {
   const validateAndSetFile = useCallback(
     (selectedFile: File): boolean => {
       setFile(selectedFile);
-      if (!name) setName(selectedFile.name.replace(/\.[^.]+$/, "").slice(0, SOURCE_NAME_MAX));
+      if (!name) setName(clipName(selectedFile.name.replace(/\.[^.]+$/, "")));
       return true;
     },
     [name],
@@ -242,12 +242,12 @@ export default function SourcesPage() {
                       placeholder={t("namePlaceholder")}
                       aria-label={t("namePlaceholder")}
                       value={name}
-                      maxLength={SOURCE_NAME_MAX}
-                      onChange={(e) => setName(e.target.value)}
+                      maxLength={SOURCE_NAME_MAX * 2}
+                      onChange={(e) => setName(clipName(e.target.value))}
                       className="w-full rounded-lg border border-input bg-card px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                     />
                     <p className="mt-1 text-right text-xs tabular-nums text-muted-foreground" aria-hidden>
-                      {name.length}/{SOURCE_NAME_MAX}
+                      {nameLength(name)}/{SOURCE_NAME_MAX}
                     </p>
                   </div>
                   <button

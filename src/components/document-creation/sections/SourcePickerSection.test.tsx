@@ -11,8 +11,7 @@ import { registerTranslator } from "@/i18n/translate";
 import rootReducer from "@/store/rootReducer";
 import { FeatureFlag } from "@/shared/types/featureFlags";
 import type { SourceDefault, UserSource } from "@/shared/types/sources";
-import { ALL_YEARS, LONG_NAME } from "@/shared/test/longContent";
-import { SUBJECTS } from "../constants";
+import { ALL_YEARS, LONG_NAME, MAX_SUBJECTS } from "@/shared/test/longContent";
 import { SourcePickerSection } from "./SourcePickerSection";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -132,7 +131,7 @@ describe("SourcePickerSection personal sources", () => {
 
 describe("SourcePickerSection with long and many sources", () => {
   it("clamps a very long name and an all-subject, all-year tag line, with the full text in the title", async () => {
-    const big = entry({ sourceRef: "o9", name: LONG_NAME, subjects: SUBJECTS.map((s) => s.value), schoolYears: ALL_YEARS });
+    const big = entry({ sourceRef: "o9", name: LONG_NAME, subjects: MAX_SUBJECTS, schoolYears: ALL_YEARS });
     const { container } = await setup("pt-PT", { sourceIds: ["o9"], subject: "matematica", schoolYear: 7 }, { school: [big], mine: [personal({ name: LONG_NAME })] });
     const titles = [...container.querySelectorAll<HTMLElement>(`p[title="${LONG_NAME}"]`)];
     expect(titles).toHaveLength(2); // the school row and the personal row

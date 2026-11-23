@@ -7,11 +7,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import en from "../../../../messages/en.json";
 import pt from "../../../../messages/pt-PT.json";
 import { toast } from "sonner";
-import { SUBJECTS } from "@/components/document-creation/constants";
 import { ApiRequestError } from "@/services/api/client";
-import { listSchoolSources, updateSchoolSource } from "@/services/api/school-sources.service";
-import { ALL_YEARS, LONG_NAME } from "@/shared/test/longContent";
-import type { SchoolSource } from "@/shared/types/sources";
+import { getSchoolSourceQuota, listSchoolSources, updateSchoolSource } from "@/services/api/school-sources.service";
+import { ALL_YEARS, LONG_NAME, MAX_SUBJECTS } from "@/shared/test/longContent";
+import type { SchoolSource, SchoolSourceQuota } from "@/shared/types/sources";
 import { SchoolSourcesPanel } from "./SchoolSourcesPanel";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -65,8 +64,9 @@ const school = (over: Partial<SchoolSource>): SchoolSource => ({
   lastError: null, hasSummary: false, ...over,
 });
 
-async function mountPanel(list: SchoolSource[]) {
+async function mountPanel(list: SchoolSource[], quota?: Partial<SchoolSourceQuota>) {
   vi.mocked(listSchoolSources).mockResolvedValue(list);
+  vi.mocked(getSchoolSourceQuota).mockResolvedValue({ filesUsed: 0, filesMax: 50, bytesUsed: 0, bytesMax: 2 ** 31, maxFileBytes: 25 * 2 ** 20, ...quota });
   const container = document.createElement("div");
   document.body.appendChild(container);
   await act(async () => {
@@ -92,7 +92,7 @@ describe("SchoolSourcesPanel rows", () => {
 
   it("lists 50 sources, clamping long names and all-subject, all-year tags with the full text in the title", async () => {
     const many = Array.from({ length: 50 }, (_, i) =>
-      school({ id: `s${i}`, name: i === 0 ? LONG_NAME : `Fonte ${i}`, subjects: SUBJECTS.map((s) => s.value), schoolYears: ALL_YEARS }),
+      school({ id: `s${i}`, name: i === 0 ? LONG_NAME : `Fonte ${i}`, subjects: MAX_SUBJECTS, schoolYears: ALL_YEARS }),
     );
     const c = await mountPanel(many);
     expect(c.querySelectorAll('[data-testid="school-source-row"]')).toHaveLength(50);
@@ -126,5 +126,21 @@ describe("SchoolSourcesPanel rows", () => {
     await act(async () => items[1].click());
     expect(toast.error).toHaveBeenLastCalledWith(pt.schoolSources.errors.indexing);
     expect(listSchoolSources).toHaveBeenCalled();
+  });
+
+  it.each([
+    [{ filesUsed: 50 }, pt.schoolSources.quotaFull.files.replace("{max}", "50")],
+    [{ bytesUsed: 2 ** 31 }, pt.schoolSources.quotaFull.bytes.replace("{max}", "2 GB")],
+  ])("disables Adicionar with the reason when the quota is full (%j)", async (quota, reason) => {
+    const c = await mountPanel([school({})], quota);
+    const add = [...c.querySelectorAll("button")].find((b) => b.textContent?.includes(pt.schoolSources.add));
+    expect(add?.disabled).toBe(true);
+    expect(c.textContent).toContain(reason);
+  });
+
+  it("keeps Adicionar enabled below the limits", async () => {
+    const c = await mountPanel([school({})], { filesUsed: 49 });
+    const add = [...c.querySelectorAll("button")].find((b) => b.textContent?.includes(pt.schoolSources.add));
+    expect(add?.disabled).toBe(false);
   });
 });

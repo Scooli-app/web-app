@@ -10,8 +10,15 @@ export type SourceStatus =
 export type SourceScope = "personal" | "organization" | "scooli";
 export type SourceFileKind = "pdf" | "docx" | "md";
 
-/** Longest source name the API accepts (school and personal); the inputs stop there. */
+/** Longest source name the API accepts (school and personal), in code points as the server counts. */
 export const SOURCE_NAME_MAX = 200;
+/** Most subjects one school source can carry (the server refuses more). */
+export const SCHOOL_SOURCE_SUBJECTS_MAX = 20;
+
+/** A name's length as the server counts it: code points, so an emoji counts once. */
+export const nameLength = (name: string) => Array.from(name).length;
+/** A name cut to SOURCE_NAME_MAX code points, never splitting an emoji. */
+export const clipName = (name: string) => Array.from(name).slice(0, SOURCE_NAME_MAX).join("");
 
 export interface UserSource {
   id: string;

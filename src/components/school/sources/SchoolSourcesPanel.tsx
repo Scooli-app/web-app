@@ -25,7 +25,7 @@ import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { SchoolSourceDialog } from "./SchoolSourceDialog";
-import { formatQuota, formatTags, isSettled, schoolSourceError } from "./schoolSourceFormat";
+import { formatQuota, formatSize, formatTags, isSettled, schoolSourceError } from "./schoolSourceFormat";
 
 const POLL_MS = 5000;
 
@@ -77,6 +77,15 @@ export function SchoolSourcesPanel() {
     }
   };
 
+  // The server refuses an upload at either limit; say so before the admin picks a file.
+  const quotaFull = quota
+    ? quota.filesUsed >= quota.filesMax
+      ? t("quotaFull.files", { max: quota.filesMax })
+      : quota.bytesUsed >= quota.bytesMax
+        ? t("quotaFull.bytes", { max: formatSize(quota.bytesMax, t) })
+        : null
+    : null;
+
   const statusLine = (s: SchoolSource) =>
     s.status === "indexed"
       ? s.defaultEnabled
@@ -94,10 +103,23 @@ export function SchoolSourcesPanel() {
           <p className="text-sm text-muted-foreground">{t("intro")}</p>
           {quota && <p className="text-sm text-muted-foreground">{formatQuota(quota, t)}</p>}
         </div>
-        <Button type="button" onClick={() => setDialog({ mode: "create" })} className="w-full sm:w-auto">
-          <Plus className="size-4" aria-hidden />
-          {t("add")}
-        </Button>
+        <div className="flex flex-col gap-1.5 sm:max-w-64 sm:items-end">
+          <Button
+            type="button"
+            onClick={() => setDialog({ mode: "create" })}
+            disabled={quotaFull !== null}
+            aria-describedby={quotaFull ? "school-sources-quota-full" : undefined}
+            className="w-full sm:w-auto"
+          >
+            <Plus className="size-4" aria-hidden />
+            {t("add")}
+          </Button>
+          {quotaFull && (
+            <p id="school-sources-quota-full" className="text-xs text-muted-foreground sm:text-right">
+              {quotaFull}
+            </p>
+          )}
+        </div>
       </div>
 
       <div className="mt-6">

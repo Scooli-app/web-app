@@ -2709,7 +2709,7 @@
       "fromSchool": "Da tua escola · {name}",
       "yours": "As tuas fontes",
       "useByDefault": "Usar por omissão",
-      "aeOffNote": "Desligadas, os documentos rápidos deixam de seguir as Aprendizagens Essenciais.",
+      "aeOffNote": "Com as AE desligadas, os documentos rápidos deixam de as seguir.",
       "typeRegra": "Regra",
       "typeApoio": "Apoio",
       "addedBy": "Adicionada por {name}",
@@ -4608,6 +4608,10 @@
       "list": "{list}"
     },
     "quota": "{files} de {filesMax} ficheiros · {used} de {max}",
+    "quotaFull": {
+      "files": "Chegaste ao limite de {max} ficheiros. Elimina uma fonte para adicionar outra.",
+      "bytes": "O espaço da escola está cheio ({max}). Elimina uma fonte para adicionar outra."
+    },
     "size": {
       "kb": "{n} KB",
       "mb": "{n} MB",
@@ -4634,7 +4638,7 @@
       "fileHint": "PDF, Word ou Markdown.",
       "name": "Nome",
       "subjects": "Disciplinas",
-      "subjectsHint": "Sem nenhuma marcada, vale para todas as disciplinas.",
+      "subjectsHint": "Até {max} disciplinas. Sem nenhuma marcada, vale para todas.",
       "years": "Anos",
       "yearsHint": "Sem nenhum marcado, vale para todos os anos.",
       "cancel": "Cancelar",

@@ -43,5 +43,8 @@ describe("formatQuota", () => {
     expect(formatQuota(small, useLocale("pt-PT"))).toBe("1 de 50 ficheiros · 140 KB de 2 GB");
     expect(formatQuota({ ...small, bytesUsed: 0 }, useLocale("en"))).toBe("1 of 50 files · 0 MB of 2 GB");
     expect(formatQuota({ ...small, bytesUsed: 100 }, useLocale("en"))).toBe("1 of 50 files · 1 KB of 2 GB");
+    // never "1024 KB": from 1023.5 KB it rounds to 1 MB
+    expect(formatQuota({ ...small, bytesUsed: Math.round(1023.4 * 1024) }, useLocale("en"))).toBe("1 of 50 files · 1023 KB of 2 GB");
+    expect(formatQuota({ ...small, bytesUsed: Math.round(1023.6 * 1024) }, useLocale("en"))).toBe("1 of 50 files · 1 MB of 2 GB");
   });
 });

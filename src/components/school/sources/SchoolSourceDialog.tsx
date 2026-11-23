@@ -13,7 +13,14 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { updateSchoolSource, uploadSchoolSource } from "@/services/api/school-sources.service";
-import { SOURCE_NAME_MAX, type SchoolSource, type SchoolSourceType } from "@/shared/types/sources";
+import {
+  SCHOOL_SOURCE_SUBJECTS_MAX,
+  SOURCE_NAME_MAX,
+  clipName,
+  nameLength,
+  type SchoolSource,
+  type SchoolSourceType,
+} from "@/shared/types/sources";
 import { Loader2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useId, useRef, useState } from "react";
@@ -26,10 +33,20 @@ const SUBJECT_OPTIONS = SUBJECTS.filter((s, i) => SUBJECTS.findIndex((o) => o.va
 
 const toggle = <T,>(list: T[], item: T) => (list.includes(item) ? list.filter((x) => x !== item) : [...list, item]);
 
-function CheckRow({ checked, onChange, children }: { checked: boolean; onChange: () => void; children: React.ReactNode }) {
+function CheckRow({
+  checked,
+  onChange,
+  disabled = false,
+  children,
+}: {
+  checked: boolean;
+  onChange: () => void;
+  disabled?: boolean;
+  children: React.ReactNode;
+}) {
   return (
-    <label className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-muted/60 has-[:focus-visible]:bg-muted/60 has-[[data-state=checked]]:bg-primary/10 has-[[data-state=checked]]:font-medium">
-      <Checkbox checked={checked} onCheckedChange={onChange} />
+    <label className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-muted/60 has-[:focus-visible]:bg-muted/60 has-[[data-state=checked]]:bg-primary/10 has-[[data-state=checked]]:font-medium has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-50 has-[:disabled]:hover:bg-transparent">
+      <Checkbox checked={checked} onCheckedChange={onChange} disabled={disabled} />
       <span className="min-w-0">{children}</span>
     </label>
   );
@@ -113,7 +130,7 @@ export function SchoolSourceDialog({ mode, source, maxFileBytes, onDone }: Schoo
                   setError(null);
                   setFile(picked);
                   if (picked && (!name || name === autoName.current)) {
-                    autoName.current = picked.name.replace(/\.[^.]+$/, "").slice(0, SOURCE_NAME_MAX);
+                    autoName.current = clipName(picked.name.replace(/\.[^.]+$/, ""));
                     setName(autoName.current);
                   }
                 }}
@@ -133,24 +150,36 @@ export function SchoolSourceDialog({ mode, source, maxFileBytes, onDone }: Schoo
             <div className="flex items-baseline justify-between gap-2">
               <Label htmlFor={nameId}>{t("form.name")}</Label>
               <span className="text-xs tabular-nums text-muted-foreground" aria-hidden>
-                {name.length}/{SOURCE_NAME_MAX}
+                {nameLength(name)}/{SOURCE_NAME_MAX}
               </span>
             </div>
             <Input
               id={nameId}
               value={name}
-              onChange={(event) => setName(event.target.value)}
-              maxLength={SOURCE_NAME_MAX}
+              onChange={(event) => setName(clipName(event.target.value))}
+              // The real cap is 200 code points (clipName); this hard cap only lets emoji (2 units each) reach it.
+              maxLength={SOURCE_NAME_MAX * 2}
               autoComplete="off"
             />
           </div>
           <SourceTypeCards value={type} onChange={setType} />
           <fieldset className="space-y-1">
             <legend className="text-sm font-medium">{t("form.subjects")}</legend>
-            <p className="text-xs text-muted-foreground">{t("form.subjectsHint")}</p>
+            <div className="flex items-baseline justify-between gap-2">
+              <p className="text-xs text-muted-foreground">{t("form.subjectsHint", { max: SCHOOL_SOURCE_SUBJECTS_MAX })}</p>
+              <span className="shrink-0 text-xs tabular-nums text-muted-foreground" aria-live="polite">
+                {subjects.length}/{SCHOOL_SOURCE_SUBJECTS_MAX}
+              </span>
+            </div>
             <div className="max-h-44 overflow-y-auto rounded-md border border-border bg-card p-1">
               {SUBJECT_OPTIONS.map((s) => (
-                <CheckRow key={s.value} checked={subjects.includes(s.value)} onChange={() => setSubjects(toggle(subjects, s.value))}>
+                <CheckRow
+                  key={s.value}
+                  checked={subjects.includes(s.value)}
+                  // At the cap, only ticked rows stay usable (to untick).
+                  disabled={!subjects.includes(s.value) && subjects.length >= SCHOOL_SOURCE_SUBJECTS_MAX}
+                  onChange={() => setSubjects(toggle(subjects, s.value))}
+                >
                   {translateSubjectLabel(s.id)}
                 </CheckRow>
               ))}

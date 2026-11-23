@@ -9,9 +9,8 @@ import en from "../../../messages/en.json";
 import pt from "../../../messages/pt-PT.json";
 import { ApiRequestError } from "@/services/api/client";
 import { listSourceDefaults, setSourceDefault } from "@/services/api/sources.service";
-import { ALL_YEARS, LONG_NAME } from "@/shared/test/longContent";
+import { ALL_YEARS, LONG_NAME, MAX_SUBJECTS } from "@/shared/test/longContent";
 import type { SourceDefault } from "@/shared/types/sources";
-import { SUBJECTS } from "@/components/document-creation/constants";
 import { toast } from "sonner";
 import sourceDefaults from "@/store/sources/sourceDefaultsSlice";
 import { DefaultSourcesSections } from "./DefaultSourcesSections";
@@ -85,7 +84,7 @@ describe.each([["pt-PT", pt], ["en", en]] as const)("DefaultSourcesSections %s",
   it("clamps very long names and many tags, keeping the full text in the title", () => {
     const tagged = mk({
       sourceRef: "o9", kind: "organization", type: "apoio", name: LONG_NAME, organizationId: "A", organizationName: LONG_NAME,
-      subjects: SUBJECTS.map((s) => s.value), schoolYears: ALL_YEARS, uploadedByName: LONG_NAME,
+      subjects: MAX_SUBJECTS, schoolYears: ALL_YEARS, uploadedByName: LONG_NAME,
     });
     const { container: c } = render(locale, messages as typeof pt, [
       mk({ sourceRef: "r9", kind: "regulatory", name: LONG_NAME }),

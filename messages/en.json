@@ -2709,7 +2709,7 @@
       "fromSchool": "From your school · {name}",
       "yours": "Your sources",
       "useByDefault": "Use by default",
-      "aeOffNote": "Switched off, quick documents stop following the curriculum.",
+      "aeOffNote": "With this off, quick documents stop following the curriculum.",
       "typeRegra": "Rule",
       "typeApoio": "Support",
       "addedBy": "Added by {name}",
@@ -4608,6 +4608,10 @@
       "list": "Year {list}"
     },
     "quota": "{files} of {filesMax} files · {used} of {max}",
+    "quotaFull": {
+      "files": "You’ve reached the limit of {max} files. Delete a source to add another.",
+      "bytes": "Your school’s storage is full ({max}). Delete a source to add another."
+    },
     "size": {
       "kb": "{n} KB",
       "mb": "{n} MB",
@@ -4634,7 +4638,7 @@
       "fileHint": "PDF, Word or Markdown.",
       "name": "Name",
       "subjects": "Subjects",
-      "subjectsHint": "With none ticked, it applies to every subject.",
+      "subjectsHint": "Up to {max} subjects. With none ticked, it applies to every subject.",
       "years": "Years",
       "yearsHint": "With none ticked, it applies to every year.",
       "cancel": "Cancel",
