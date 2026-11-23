@@ -483,9 +483,10 @@
       "courseLabel": "Curso",
       "coursePlaceholder": "Escolhe o curso...",
       "courseSelectAriaLabel": "Selecionar curso",
+      "addCourse": "Adicionar curso",
       "yearLabel": "Ano",
       "quickAddTitle": "Adiciona o teu curso profissional",
-      "quickAddDescription": "Procura o curso profissional onde dás aulas. Vamos guardá-lo no teu perfil de ensino e mudar este documento para esse curso.",
+      "quickAddDescription": "Procura o curso profissional onde dás aulas. Vamos guardá-lo no teu perfil de ensino e selecioná-lo aqui.",
       "quickAddSaving": "A guardar curso…",
       "quickAddError": "Não foi possível guardar este curso. Tenta novamente."
     },

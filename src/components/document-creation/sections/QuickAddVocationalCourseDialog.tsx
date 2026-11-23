@@ -25,12 +25,15 @@ interface QuickAddVocationalCourseDialogProps {
    * wizard can switch into vocational mode with that course selected.
    */
   onCourseAdded: (profile: TeachingProfile, courseCode: string) => void;
+  /** Courses already on the teacher's profile, shown as added. */
+  addedCodes?: string[];
 }
 
 /**
- * Lets a first-time técnico teacher pick their curso profissional without
- * leaving the creation wizard: tapping "Curso profissional" with zero saved
- * courses opens this instead of redirecting to Settings. Reuses the same
+ * Lets a técnico teacher add a curso profissional without leaving the
+ * creation wizard: tapping "Curso profissional" with zero saved courses, or
+ * "Adicionar curso" beside the course picker, opens this instead of
+ * redirecting to Settings. Reuses the same
  * course-search catalogue/field as the Settings "O Meu Ensino" course
  * editor (VocationalCoursesEditor) so the picking experience matches.
  */
@@ -38,6 +41,7 @@ export function QuickAddVocationalCourseDialog({
   open,
   onOpenChange,
   onCourseAdded,
+  addedCodes = [],
 }: QuickAddVocationalCourseDialogProps) {
   const t = useTranslations("documentCreation.classContext");
   const tSettings = useTranslations("settings.teachingProfileCard");
@@ -88,7 +92,7 @@ export function QuickAddVocationalCourseDialog({
             onRetryCatalog={retryCatalog}
             results={results}
             partialMatch={partialMatch}
-            addedCodes={new Set<string>()}
+            addedCodes={new Set(addedCodes)}
             onSelect={(code) => void handleSelect(code)}
             disabled={isSaving}
             autoFocus

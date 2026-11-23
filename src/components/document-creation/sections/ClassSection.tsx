@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/select";
 import type { EducationType, TeachingProfile } from "@/shared/types/teaching-profile";
 import { cn } from "@/shared/utils/utils";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, Plus } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { translateGradeLabel } from "../constants";
@@ -176,7 +176,8 @@ interface ClassSectionProps {
  * `teacher_profile` feature flag is on, even for a teacher with zero saved
  * vocational courses: tapping "Curso profissional" with nothing saved opens a
  * quick-add dialog right here instead of a dead-end hint pointing at
- * Settings. When the flag is off, none of that renders — this falls back to
+ * Settings. Teachers who already have courses reach the same dialog through
+ * the "Adicionar curso" link beside the course picker. When the flag is off, none of that renders — this falls back to
  * the plain regular-year picker only.
  */
 export function ClassSection({
@@ -246,7 +247,19 @@ export function ClassSection({
         {vocationalEnabled && isVocational && selectedCourse ? (
           <div className="space-y-4">
             <div>
-              <p className={SECTION_LABEL_CLASS}>{t("courseLabel")}</p>
+              <div className="flex items-baseline justify-between gap-3">
+                <p className={SECTION_LABEL_CLASS}>{t("courseLabel")}</p>
+                {/* Without this, a teacher with one saved course is stuck on it:
+                    the quick-add dialog otherwise only opens with zero courses. */}
+                <button
+                  type="button"
+                  onClick={() => setIsQuickAddOpen(true)}
+                  className="flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                >
+                  <Plus className="h-3.5 w-3.5" aria-hidden />
+                  {t("addCourse")}
+                </button>
+              </div>
               {vocationalCourses.length === 1 ? (
                 <p className="rounded-xl border border-border bg-muted/50 px-4 py-2.5 text-sm font-medium text-foreground">
                   {selectedCourse.title}
@@ -296,6 +309,7 @@ export function ClassSection({
         <QuickAddVocationalCourseDialog
           open={isQuickAddOpen}
           onOpenChange={setIsQuickAddOpen}
+          addedCodes={vocationalCourses.map((course) => course.code)}
           onCourseAdded={(profile: TeachingProfile, courseCode: string) => {
             onVocationalCourseAdded(profile);
             onCourseChange(courseCode);
