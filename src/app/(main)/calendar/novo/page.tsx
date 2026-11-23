@@ -31,6 +31,7 @@ import {
   translateSubject,
 } from "@/components/document-creation/constants";
 import { useCountryCatalog } from "@/hooks/useCountryCatalog";
+import { useCountry } from "@/hooks/useCountry";
 import { selectIsHorarioPlanosEnabled } from "@/store/features/selectors";
 import { useFeatureAccess } from "@/components/feature/useFeatureAccess";
 import { FeatureUnavailable } from "@/components/feature/FeatureUnavailable";
@@ -943,10 +944,11 @@ function CalendarNewPageContent() {
   }, [autoTitle, titleTouched]);
 
 
+  const countryCode = useCountry();
   const handlePlanSelect = useCallback((plan: Document) => {
     setSelectedPlan(plan);
 
-    const planChoice = planSubjectChoice(plan);
+    const planChoice = planSubjectChoice(plan, countryCode);
     prefilledRef.current = { year: !!planChoice.schoolYear, subject: !!planChoice.subject };
     setChoice(planChoice);
 
@@ -966,7 +968,7 @@ function CalendarNewPageContent() {
 
     // Skip the period step when dates are already pre-filled from the planificação
     setStep(metaPeriodStart && metaPeriodEnd ? "mode_b_details" : "mode_b_period");
-  }, [setChoice]);
+  }, [setChoice, countryCode]);
 
   // Deep-link entry point: /calendar/novo?planId=... — used by the one-click
   // "Criar plano letivo" button on an incomplete plan (e.g. imported, no
