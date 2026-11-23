@@ -1,3 +1,5 @@
+import { isCurrencyDollar } from "./currency-dollar";
+
 /**
  * Repairs the maths the model writes into markdown documents (quizzes, worksheets, tests,
  * lesson plans). The editor and the PDF/DOCX exports only render LaTeX between `$...$` and
@@ -141,31 +143,6 @@ function normalizeLine(line: string, displayOpened: { value: boolean }): string 
     .join("");
 }
 
-/**
- * "R$ 3,75" (Brazilian real), "R$ ___" or "US$ 10": a dollar right after the currency letters is a currency sign,
- * never a maths opener. Same rule as the backend's MathMarkdownNormalizer.isCurrencySign.
- */
-export function isCurrencySign(s: string, dollar: number): boolean {
-  const start = s.startsWith("US", dollar - 2) ? dollar - 2 : s.startsWith("R", dollar - 1) ? dollar - 1 : -1;
-  if (start >= 0 && (start === 0 || !/[\p{L}\p{N}]/u.test(s[start - 1]))) return true;
-  return isDollarAmount(s, dollar);
-}
-
-/**
- * "$5" with nothing on the line that could close it is a price, not maths. A closer is a "$" not
- * preceded by a space and not followed by a digit, so "$5 and $6" stays text while "$5$" is maths.
- * Same rule as the backend's MathMarkdownNormalizer.isDollarAmount.
- */
-function isDollarAmount(s: string, dollar: number): boolean {
-  const amount = /^\d+(?:[.,]\d+)*\s*(.?)/.exec(s.slice(dollar + 1));
-  // "$3 + 4?" is unclosed maths (the repair closes it), not a price.
-  if (!amount || /[-+*/=^\\×÷<>]/.test(amount[1])) return false;
-  for (let j = dollar + 2; j < s.length && s[j] !== "\n"; j++) {
-    if (s[j] === "$" && !/\s/.test(s[j - 1]) && !/\d/.test(s[j + 1] ?? "")) return false;
-  }
-  return true;
-}
-
 /** Splits a line into text and maths, repairing mangled or missing closing delimiters. */
 function scan(line: string, displayOpened: { value: boolean }): Segment[] {
   const segments: Segment[] = [];
@@ -185,7 +162,7 @@ function scan(line: string, displayOpened: { value: boolean }): Segment[] {
       i += 2;
       continue;
     }
-    if (c !== "$" || isCurrencySign(line, i)) {
+    if (c !== "$" || isCurrencyDollar(line, i)) {
       text += c;
       i++;
       continue;

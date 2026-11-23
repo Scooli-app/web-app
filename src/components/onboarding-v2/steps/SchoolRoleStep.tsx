@@ -7,6 +7,7 @@ import { StepHeading } from "@/components/onboarding-v2/StepHeading";
 import type { OnboardingFlowController } from "@/components/onboarding-v2/useOnboardingV2";
 import { useStepFooter } from "@/components/onboarding-v2/useStepFooter";
 import { CountryPicker } from "@/components/settings/CountryPreference";
+import { StateCurriculumNote, StatePicker } from "@/components/settings/StatePreference";
 import { Input } from "@/components/ui/input";
 import { setCountryCode, useCountry } from "@/hooks/useCountry";
 import { isCountryCode, type CountryCode } from "@/lib/curriculum/countryCatalog";
@@ -64,9 +65,17 @@ export function SchoolRoleStep({ flow }: SchoolRoleStepProps) {
     }
   }, [profileCountry]);
 
+  // State (UF): Brazilian teachers only. Optional; it adds the state curriculum on top of the BNCC.
+  const [stateChoice, setStateChoice] = useState<string | null>(null);
+
   const persistCountry = (next: CountryCode) => {
     setCountryCode(next);
-    userService.updateCountryCode(next).catch(() => toast.error(tCountry("saveError")));
+    userService
+      .updateCountryCode(next)
+      .then(() => {
+        if (next === "BR" && stateChoice) return userService.updateStateCode(stateChoice);
+      })
+      .catch(() => toast.error(tCountry("saveError")));
   };
 
   const trimmed = schoolName.trim();
@@ -159,6 +168,14 @@ export function SchoolRoleStep({ flow }: SchoolRoleStepProps) {
             }}
           />
         </div>
+
+        {countryChoice === "BR" && (
+          <div className="space-y-2.5">
+            <p className="text-sm font-medium text-foreground">{tCountry("stateTitle")}</p>
+            <StatePicker value={stateChoice} onChange={setStateChoice} />
+            <StateCurriculumNote stateCode={stateChoice} />
+          </div>
+        )}
 
         <div className="space-y-2.5">
           <div className="relative">

@@ -62,7 +62,13 @@
       "BR": "Brazil"
     },
     "saveError": "Could not save the country. Try again.",
-    "note": "Sets the school years and subjects offered when you create documents and plans."
+    "note": "Sets the school years and subjects offered when you create documents and plans.",
+    "stateTitle": "State",
+    "statePlaceholder": "Choose your state",
+    "stateNote": "Optional. With your state, Scooli adds the state curriculum to the BNCC when it has it.",
+    "stateWithCurriculum": "This state's curriculum is used in your documents, together with the BNCC.",
+    "stateBnccOnly": "For this state Scooli still uses the BNCC alone.",
+    "stateSaveError": "Couldn't save the state. Please try again."
   },
   "planGeneration": {
     "title": "Preparing your plan…",
@@ -4627,9 +4633,9 @@
       "bytes": "Your school’s storage is full ({max}). Delete a source to add another."
     },
     "size": {
-      "kb": "{n}\u00a0KB",
-      "mb": "{n}\u00a0MB",
-      "gb": "{n}\u00a0GB"
+      "kb": "{n} KB",
+      "mb": "{n} MB",
+      "gb": "{n} GB"
     },
     "menu": {
       "edit": "Edit",
