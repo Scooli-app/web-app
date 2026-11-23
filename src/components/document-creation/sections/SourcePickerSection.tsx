@@ -1,6 +1,7 @@
 "use client";
 
 import { OptionRow } from "./FormCard";
+import { useCountry } from "@/hooks/useCountry";
 import { listRegulatorySources } from "@/services/api/sources.service";
 import { Routes } from "@/shared/types/routes";
 import type { UserSource } from "@/shared/types/sources";
@@ -32,6 +33,7 @@ export function SourcePickerSection({
   onUpdate,
 }: SourcePickerSectionProps) {
   const t = useTranslations("documentCreation.sourcePicker");
+  const country = useCountry();
   const dispatch = useAppDispatch();
   const { sources, loading } = useAppSelector((state) => state.sources);
   const isContextPipelineV2Enabled = useAppSelector(selectIsContextPipelineV2Enabled);
@@ -114,7 +116,7 @@ export function SourcePickerSection({
             )}
           >
             {includeAe && <Check className="h-3 w-3" aria-hidden />}
-            {t("includeAe")}
+            {country === "BR" ? t("includeBncc") : t("includeAe")}
             <span className="font-normal text-muted-foreground">· {t("recommended")}</span>
           </button>
           <Link

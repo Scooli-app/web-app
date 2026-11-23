@@ -595,6 +595,7 @@
       "description": "Choose which resources to use for generation",
       "manageSources": "Manage sources",
       "includeAe": "Include Aprendizagens Essenciais (AE)",
+      "includeBncc": "Include BNCC skills (habilidades)",
       "recommended": "Recommended",
       "loadingRegulatory": "Loading regulatory documents...",
       "regulatoryDocuments": "Regulatory Documents ({count})",
