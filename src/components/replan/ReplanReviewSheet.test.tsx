@@ -151,6 +151,17 @@ describe("ReplanReviewSheet with 14 lessons", () => {
     expect(details?.querySelectorAll('button[aria-label="Ver o texto completo"]')).toHaveLength(2);
   });
 
+  it("labels a merged lesson with a new title as a merge, not as a new topic", async () => {
+    const merged = item(3, "merged");
+    await renderSheet({
+      ...proposal,
+      items: [{ ...merged, after: { ...merged.after, outcomeTexts: merged.before.outcomeTexts } }],
+    });
+    const row = document.body.querySelector("ol > li");
+    expect(row?.textContent).toContain(messages.replan.changeMerged);
+    expect(row?.textContent).not.toContain(messages.replan.changeRetitled);
+  });
+
   it("opens the only lesson of a one-lesson proposal and hides 'Todas'", async () => {
     await renderSheet({ ...proposal, items: [item(0, "reinforcement")] });
     expect(document.body.textContent).toContain("Ajustar a próxima aula");

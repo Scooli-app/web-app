@@ -12,7 +12,9 @@ import {
 } from "@/store/workspace/selectors";
 import { fetchOrganizationDashboard } from "@/store/workspace/workspaceSlice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { Routes } from "@/shared/types/routes";
 import { useTranslations } from "next-intl";
+import Link from "next/link";
 import { useEffect } from "react";
 
 type Translator = ReturnType<typeof useTranslations>;
@@ -70,6 +72,11 @@ export default function SchoolSettingsPage() {
             </p>
             <p>
               {t.rich("settings.changes", {
+                members: (chunks) => (
+                  <Link className="font-medium text-primary underline-offset-2 hover:underline" href={Routes.SCHOOL_MEMBERS}>
+                    {chunks}
+                  </Link>
+                ),
                 email: (chunks) => (
                   <a className="font-medium text-primary underline-offset-2 hover:underline" href="mailto:info@scooli.app">
                     {chunks}

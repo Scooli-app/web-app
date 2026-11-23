@@ -192,9 +192,10 @@ function LessonCard({
           {!isHoliday && (
             // The left border carries the turma colour; as text a dark or pale colour was unreadable.
             <p className="mt-0.5 truncate text-[11px] font-medium text-muted-foreground">
-              {timetable.gradeLevel ? `${tTimetable("gradeShort", { grade: timetable.gradeLevel })} ` : ""}
-              {translateSubject(timetable.subject)}
-              {timetable.classLabel ? ` · ${timetable.classLabel}` : ""}
+              {formatClassName(timetable, {
+                gradeShort: (grade) => tTimetable("gradeShort", { grade }),
+                subject: translateSubject,
+              })}
             </p>
           )}
           {!isHoliday && (

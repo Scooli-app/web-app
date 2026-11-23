@@ -55,6 +55,12 @@ function formatSubscriptionStatus(status: string, t: Translator): string {
   return t.has(key) ? t(key) : status;
 }
 
+/** A school's plan code is free text set by Scooli: name the known ones, never show a raw code. */
+function formatPlan(code: string | null | undefined, t: Translator): string {
+  const key = `planCodes.${code}` as Parameters<Translator["has"]>[0];
+  return code && t.has(key) ? t(key) : t("dashboard.planCard.manualFallback");
+}
+
 function formatShortDay(date: string, locale: string): string {
   return new Date(`${date.slice(0, 10)}T00:00:00`).toLocaleDateString(toIntlLocale(locale as Locale), {
     day: "numeric",
@@ -151,7 +157,7 @@ export function SchoolUsageOverview({ title }: { title?: string }) {
                     <Skeleton className="h-5 w-20" />
                   ) : (
                     <span className="font-medium text-foreground">
-                      {dashboard.planCode ?? t("dashboard.planCard.manualFallback")}
+                      {formatPlan(dashboard.planCode, t)}
                     </span>
                   )}
                 </div>

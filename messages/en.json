@@ -2875,8 +2875,11 @@
     },
     "roles": {
       "director": "Director",
-      "school_admin": "School admin",
+      "school_admin": "School leadership",
       "teacher": "Teacher"
+    },
+    "planCodes": {
+      "school_pilot": "Pilot"
     },
     "subscriptionStatus": {
       "active": "Active",
@@ -3012,6 +3015,7 @@
           "send": "Send invites",
           "cancel": "Cancel",
           "invalidEmails": "Invalid emails: {emails}",
+          "alreadyMember": "Already in the school or already invited: {emails}",
           "notEnoughSeats": "{free, plural, =0 {There are no free seats} one {Only # seat is free} other {Only # seats are free}}.",
           "tooMany": "Up to {max} emails at a time."
         }
@@ -3024,7 +3028,7 @@
       "description": "Your school on Scooli.",
       "loadError": "We couldn't load the school settings",
       "currentRole": "Current role:",
-      "changes": "To change the school’s name, members or agreement, write to <email>info@scooli.app</email>."
+      "changes": "Manage the school’s teachers in <members>Members</members>. To change the school’s name or agreement, write to <email>info@scooli.app</email>."
     }
   },
   "schoolDirection": {
@@ -3165,10 +3169,13 @@
       "shared": "In {name}’s calendar",
       "sharedHint": "{name} sees this lesson in their calendar, with the class’s history. The teacher’s documents are not shared.",
       "coveredBy": "{absent} is away · {name} covers",
+      "substituteLeft": "{absent} is away · {name} has left the school. Register the absence again with another substitute.",
+      "uncovered": "No cover",
       "remove": "Remove absence",
       "removeConfirmTitle": "Remove this absence?",
       "removeConfirmDescription": "{name} will no longer see these lessons in their calendar.",
       "registeredToast": "Absence registered. We emailed {name}.",
+      "registeredNoEmailToast": "Absence registered",
       "removedToast": "Absence removed",
       "removeError": "We couldn’t remove the absence. Try again."
     },
