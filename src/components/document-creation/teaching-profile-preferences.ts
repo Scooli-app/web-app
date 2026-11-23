@@ -3,11 +3,18 @@ import type {
   TeachingItem,
   TeachingProfile,
 } from "@/shared/types/teaching-profile";
-import { SUBJECTS } from "./constants";
+import { DEFAULT_COUNTRY_CODE, getCountryCatalog, type CountryCode } from "@/lib/curriculum/countryCatalog";
 
-const subjectsById = new Map(SUBJECTS.map((subject) => [subject.id, subject]));
+/** Subjects of one country by id. Portugal is the default. */
+function subjectsByIdFor(countryCode: CountryCode): Map<string, { id: string; value: string }> {
+  return new Map(getCountryCatalog(countryCode).subjects.map((subject) => [subject.id, subject]));
+}
 
-export function buildRegularTeachingItems(subjectIds: string[]): TeachingItem[] {
+export function buildRegularTeachingItems(
+  subjectIds: string[],
+  countryCode: CountryCode = DEFAULT_COUNTRY_CODE,
+): TeachingItem[] {
+  const subjectsById = subjectsByIdFor(countryCode);
   const seen = new Set<string>();
 
   return subjectIds.flatMap((id) => {
@@ -27,10 +34,12 @@ export function buildRegularTeachingItems(subjectIds: string[]): TeachingItem[] 
 
 export function getPreferredRegularSubjectIds(
   profile: TeachingProfile | null,
-  availableSubjectIds: string[]
+  availableSubjectIds: string[],
+  countryCode: CountryCode = DEFAULT_COUNTRY_CODE,
 ): string[] {
   if (!profile) return [];
 
+  const subjectsById = subjectsByIdFor(countryCode);
   const available = new Set(availableSubjectIds);
   const preferred = new Set(
     profile.items

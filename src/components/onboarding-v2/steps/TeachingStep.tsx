@@ -98,7 +98,7 @@ export function TeachingStep({ flow, onProfileSaved }: TeachingStepProps) {
     setSaving(true);
     setError(false);
     const savedYears = preschool ? [] : chosenYears;
-    const items = preschool ? [] : vocational ? units : buildRegularTeachingItems(subjectIds);
+    const items = preschool ? [] : vocational ? units : buildRegularTeachingItems(subjectIds, catalog.countryCode);
     try {
       await onboardingV2Service.saveProfile({
         schoolName: answers.noSchool ? null : answers.schoolName.trim(),

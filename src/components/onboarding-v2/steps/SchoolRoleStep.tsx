@@ -12,7 +12,7 @@ import { setCountryCode, useCountry } from "@/hooks/useCountry";
 import { isCountryCode, type CountryCode } from "@/lib/curriculum/countryCatalog";
 import { useMotionSafe } from "@/lib/motion/useMotionSafe";
 import { onboardingV2Service } from "@/services/api/onboarding-v2.service";
-import { ROLE_ORDER } from "@/components/onboarding-v2/teachingRules";
+import { roleOrderFor } from "@/components/onboarding-v2/teachingRules";
 import { motion } from "motion/react";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
@@ -107,7 +107,9 @@ export function SchoolRoleStep({ flow }: SchoolRoleStepProps) {
     });
   }, [trimmed, noSchool, role]);
 
-  const valid = role !== null && (noSchool || trimmed.length >= MIN_QUERY_LENGTH);
+  // A vocational role picked before switching to Brazil is no longer offered, so it cannot continue.
+  const roleOffered = role !== null && roleOrderFor(countryChoice).includes(role);
+  const valid = roleOffered && (noSchool || trimmed.length >= MIN_QUERY_LENGTH);
 
   const handleContinue = () => {
     if (!valid) return;
@@ -216,7 +218,7 @@ export function SchoolRoleStep({ flow }: SchoolRoleStepProps) {
         <div className="space-y-2">
           <p className="text-sm font-medium text-foreground">{t("roleLabel")}</p>
           <div className="flex flex-wrap gap-2">
-            {ROLE_ORDER.map((value) => (
+            {roleOrderFor(countryChoice).map((value) => (
               <ChoiceChip
                 key={value}
                 selected={role === value}

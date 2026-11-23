@@ -123,8 +123,8 @@ export function useSubjectChoice({ choice, update, prefilledRef }: UseSubjectCho
     [choice.schoolYear, catalog]
   );
   const preferredSubjectIds = useMemo(
-    () => getPreferredRegularSubjectIds(teachingProfile, availableSubjectIds),
-    [teachingProfile, availableSubjectIds]
+    () => getPreferredRegularSubjectIds(teachingProfile, availableSubjectIds, catalog.countryCode),
+    [teachingProfile, availableSubjectIds, catalog.countryCode]
   );
   const preferredSchoolYears = useMemo(
     () => getPreferredSchoolYears(teachingProfile, Array.from({ length: 12 }, (_, index) => index + 1)),

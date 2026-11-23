@@ -7,6 +7,7 @@ import { ChoiceChip } from "@/components/ui/choice-chip";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { teachingProfileService } from "@/services/api/teaching-profile.service";
 import { useCountryCatalog } from "@/hooks/useCountryCatalog";
+import { useCountry } from "@/hooks/useCountry";
 import { buildRegularTeachingItems } from "@/components/document-creation/teaching-profile-preferences";
 import { EMPTY_TEACHING_PROFILE, type TeachingProfile } from "@/shared/types/teaching-profile";
 import {
@@ -62,6 +63,7 @@ function ProfileBlock({
 }
 
 export function TeachingProfileCard() {
+  const countryCode = useCountry();
   const t = useTranslations("settings.teachingProfileCard");
   const [draft, setDraft] = useState<TeachingProfile>(EMPTY_TEACHING_PROFILE);
   const [scope, setScope] = useState<TeachingScope>({ regular: true, vocational: false });
@@ -80,9 +82,9 @@ export function TeachingProfileCard() {
     setBaseline({
       profile,
       scope: nextScope,
-      fingerprint: profileFingerprint(buildProfileForSave(profile, nextScope)),
+      fingerprint: profileFingerprint(buildProfileForSave(profile, nextScope, countryCode)),
     });
-  }, []);
+  }, [countryCode]);
 
   const loadProfile = useCallback(async () => {
     setIsLoading(true);
@@ -101,7 +103,7 @@ export function TeachingProfileCard() {
     void loadProfile();
   }, [loadProfile]);
 
-  const profileToSave = useMemo(() => buildProfileForSave(draft, scope), [draft, scope]);
+  const profileToSave = useMemo(() => buildProfileForSave(draft, scope, countryCode), [draft, scope, countryCode]);
   const isDirty =
     baseline !== null && profileFingerprint(profileToSave) !== baseline.fingerprint;
 
@@ -152,7 +154,7 @@ export function TeachingProfileCard() {
       return {
         ...current,
         items: [
-          ...buildRegularTeachingItems(next),
+          ...buildRegularTeachingItems(next, countryCode),
           ...current.items.filter((item) => item.qualificationCode !== null),
         ],
       };
