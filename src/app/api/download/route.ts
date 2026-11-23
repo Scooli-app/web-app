@@ -27,6 +27,7 @@ import { cookies } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
+import { maskCurrencyDollars, unmaskCurrencyDollars } from "@/shared/utils/currency-dollar";
 // pdf-lib retained so dead-code functions compile; can be removed in a cleanup sprint.
 
 export const runtime = "nodejs";
@@ -283,7 +284,7 @@ function splitMathSegments(text: string): InlineMathSegment[] {
   const segments: InlineMathSegment[] = [];
   let lastIndex = 0;
 
-  for (const match of text.matchAll(MATH_SEGMENT_PATTERN)) {
+  for (const match of maskCurrencyDollars(text).matchAll(MATH_SEGMENT_PATTERN)) {
     const index = match.index ?? 0;
     if (index > lastIndex) {
       segments.push({ type: "text", value: text.slice(lastIndex, index) });
@@ -493,7 +494,7 @@ function renderKatexNodesToText(
 
 function createTextRun(text: string, style: InlineTextStyle): TextRun {
   return new TextRun({
-    text,
+    text: unmaskCurrencyDollars(text),
     size: style.size,
     ...(style.bold ? { bold: true } : {}),
     ...(style.italics ? { italics: true } : {}),
@@ -830,9 +831,11 @@ function convertMathToText(
   text: string,
   options: Required<MathTextRenderOptions> = DEFAULT_MATH_TEXT_RENDER_OPTIONS,
 ): string {
-  return text
-    .replace(BLOCK_MATH_PATTERN, (_m, latex) => latexToText(latex, options))
-    .replace(INLINE_MATH_PATTERN, (_m, latex) => latexToText(latex, options));
+  return unmaskCurrencyDollars(
+    maskCurrencyDollars(text)
+      .replace(BLOCK_MATH_PATTERN, (_m, latex) => latexToText(latex, options))
+      .replace(INLINE_MATH_PATTERN, (_m, latex) => latexToText(latex, options)),
+  );
 }
 
 function toArrayBuffer(bytes: Uint8Array): ArrayBuffer {
@@ -1835,7 +1838,8 @@ function parseInlineFormatting(
 ): ParagraphChild[] {
   const runs: ParagraphChild[] = [];
   const blankProtected = protectAnswerBlanks(text);
-  let remaining = blankProtected.content;
+  // Prices ("R$ 80,00") masked so their "$" cannot open a formula; createTextRun unmasks.
+  let remaining = maskCurrencyDollars(blankProtected.content);
   let match: RegExpMatchArray | null;
 
   const appendStyled = (

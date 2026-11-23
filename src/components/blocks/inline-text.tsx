@@ -22,6 +22,7 @@
 import katex from "katex";
 import "katex/dist/katex.min.css";
 import { Fragment, memo, type ReactNode } from "react";
+import { isCurrencyDollar, nextMathDollar } from "@/shared/utils/currency-dollar";
 
 // KaTeX is the cost of a re-render: an editor with hundreds of formulas re-ran it for every keystroke.
 const MATH_CACHE_MAX = 2000;
@@ -122,8 +123,8 @@ function tokenize(input: string): Token[] {
     }
 
     // $math$ — KaTeX inline. Skips when there's no closing $.
-    if (c === "$") {
-      const end = input.indexOf("$", i + 1);
+    if (c === "$" && !isCurrencyDollar(input, i)) {
+      const end = nextMathDollar(input, i + 1);
       if (end !== -1) {
         flushBuf();
         tokens.push({ type: "math", tex: input.slice(i + 1, end) });
