@@ -1,4 +1,5 @@
 import { expect, test } from "./support/fixtures";
+import { signIn } from "./support/auth";
 
 /**
  * Pages are prerendered once per language under a hidden [locale] segment and the
@@ -48,5 +49,49 @@ test("a document page renders for an id never seen at build time", async ({ page
     await expect(page.locator("body")).not.toContainText("404");
   } finally {
     await api.deleteDocument(id);
+  }
+});
+
+test("switching the language swaps the whole interface and survives a reload", async ({ page }) => {
+  const sidebar = page.locator("[data-sidebar=sidebar]").first();
+  const switchTo = async (current: RegExp, label: string) => {
+    await page.getByRole("button", { name: current }).click();
+    await page.getByRole("menuitem", { name: label }).click();
+  };
+  try {
+    await page.goto("/dashboard");
+    await switchTo(/Alterar idioma|Change language/, "English");
+    await expect(page.locator("html")).toHaveAttribute("lang", "en");
+    await expect(sidebar.getByText("Documents", { exact: true })).toBeVisible();
+
+    await page.reload();
+    await expect(page.locator("html")).toHaveAttribute("lang", "en");
+    await expect(sidebar.getByText("Documents", { exact: true })).toBeVisible();
+  } finally {
+    // The test user is shared: leave it in Portuguese.
+    await switchTo(/Alterar idioma|Change language/, "Português");
+    await expect(page.locator("html")).toHaveAttribute("lang", "pt-PT");
+    await expect(sidebar.getByText("Documentos", { exact: true })).toBeVisible();
+  }
+});
+
+test("a fresh browser picks up the profile's language after sign-in", async ({ page, browser }) => {
+  const toggle = /Alterar idioma|Change language/;
+  await page.goto("/dashboard");
+  await page.getByRole("button", { name: toggle }).click();
+  await page.getByRole("menuitem", { name: "English" }).click();
+  await expect(page.locator("html")).toHaveAttribute("lang", "en");
+
+  // A new device: no NEXT_LOCALE cookie, so the first shell is Portuguese.
+  const fresh = await (await browser.newContext()).newPage();
+  try {
+    await signIn(fresh);
+    await expect(fresh.locator("html")).toHaveAttribute("lang", "en", { timeout: 30_000 });
+    await expect(fresh.locator("[data-sidebar=sidebar]").first().getByText("Documents", { exact: true })).toBeVisible();
+  } finally {
+    await fresh.context().close();
+    await page.getByRole("button", { name: toggle }).click();
+    await page.getByRole("menuitem", { name: "Português" }).click();
+    await expect(page.locator("html")).toHaveAttribute("lang", "pt-PT");
   }
 });
