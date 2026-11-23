@@ -93,8 +93,8 @@ const ANSWER_BLANK_PATTERN = /_{3,}/g;
 const ANSWER_BLANK_TOKEN_PATTERN = /@@EXPORTBLANK(\d+)@@/g;
 const BLOCK_MATH_PATTERN = /\$\$([^$]+)\$\$/g;
 // A currency "R$"/"US$" never opens maths (see isCurrencySign in math-markdown.ts).
-const INLINE_MATH_PATTERN = /(?<!\bR|\bUS)\$([^$\n]+)\$/g;
-const MATH_SEGMENT_PATTERN = /\$\$([\s\S]+?)\$\$|(?<!\bR|\bUS)\$([^$\n]+?)\$/g;
+const INLINE_MATH_PATTERN = /(?<!\bR|\bUS)\$([^$\n]+)\$(?!\d)/g;
+const MATH_SEGMENT_PATTERN = /\$\$([\s\S]+?)\$\$|(?<!\bR|\bUS)\$([^$\n]+?)\$(?!\d)/g;
 const INLINE_MARKDOWN_SPECIAL_PATTERN = /[\*_`$]/;
 
 type InlineMathSegment =
@@ -1859,7 +1859,7 @@ function parseInlineFormatting(
 
     if (
       !isCurrencySign(blankProtected.content, blankProtected.content.length - remaining.length) &&
-      (match = remaining.match(/^\$([^$\n]+)\$/))
+      (match = remaining.match(/^\$([^$\n]+)\$(?!\d)/))
     ) {
       appendStyled(blankProtected.restore(match[0]));
       remaining = remaining.substring(match[0].length);

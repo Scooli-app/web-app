@@ -37,7 +37,7 @@ const HTML_IMAGE_TAG_PATTERN = /<img\b[^>]*>/gi;
 // Math protection patterns
 const MARKDOWN_BLOCK_MATH_PATTERN = /\$\$([^$]+)\$\$/g;
 // A currency "R$"/"US$" never opens maths (see isCurrencySign in math-markdown.ts).
-const MARKDOWN_INLINE_MATH_PATTERN = /(?<!\$)(?<!\bR|\bUS)\$([^$\n]+)\$(?!\$)/g;
+const MARKDOWN_INLINE_MATH_PATTERN = /(?<!\$)(?<!\bR|\bUS)\$([^$\n]+)\$(?!\$)(?!\d)/g;
 const HTML_BLOCK_MATH_PATTERN = /<div\b[^>]*\bdata-type="block-math"[^>]*>[\s\S]*?<\/div>/gi;
 const HTML_INLINE_MATH_PATTERN = /<span\b[^>]*\bdata-type="inline-math"[^>]*>[\s\S]*?<\/span>/gi;
 const MATH_BLOCK_TOKEN_PREFIX = "SCOOLIMATHBLOCK";

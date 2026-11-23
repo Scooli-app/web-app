@@ -121,3 +121,11 @@ describe("htmlToMarkdown: tables whose header row sits in <tbody>", () => {
     expect(performance.now() - started).toBeLessThan(2000);
   });
 });
+
+describe("markdownToHtml: bare dollar prices", () => {
+  it("keeps $5 and $6 as text", () => {
+    const html = markdownToHtml("A pen costs $5 and a book $6.");
+    expect(html).not.toContain("inline-math");
+    expect(html).toContain("$5 and a book $6");
+  });
+});
