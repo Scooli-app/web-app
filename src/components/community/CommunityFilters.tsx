@@ -5,6 +5,7 @@
 
 "use client";
 
+import { useGradeOptions } from "@/hooks/useCountryCatalog";
 import { translateSubject } from "@/components/document-creation/constants";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,7 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  GRADE_OPTIONS,
+
   RESOURCE_TYPE_OPTIONS,
   SUBJECT_OPTIONS,
   type DiscoverResourcesParams,
@@ -37,6 +38,7 @@ export function CommunityFilters({
   onFiltersChange,
   onSearch,
 }: CommunityFiltersProps) {
+  const gradeOptions = useGradeOptions();
   const t = useTranslations("community.filters");
   const tResourceTypes = useTranslations("community.resourceCard.resourceTypes");
 
@@ -109,7 +111,7 @@ export function CommunityFilters({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">{t("allGrades")}</SelectItem>
-            {GRADE_OPTIONS.map((option) => (
+            {gradeOptions.map((option) => (
               <SelectItem key={option.value} value={option.value}>
                 {t("gradeOption", { n: option.value })}
               </SelectItem>

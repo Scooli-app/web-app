@@ -5,12 +5,8 @@ import { isTeacherProfileFeatureEnabled } from "@/shared/types/featureFlags";
 import type { EducationType, TeachingProfile } from "@/shared/types/teaching-profile";
 import { useAppSelector } from "@/store/hooks";
 import { useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
-import {
-  AMBIGUOUS_COMPONENTS_SUBJECTS,
-  SUBJECTS,
-  SUBJECTS_BY_GRADE,
-  translateSubjectLabel,
-} from "./constants";
+import { SUBJECTS, translateSubjectLabel } from "./constants";
+import { useCountryCatalog } from "@/hooks/useCountryCatalog";
 import {
   getDefaultSchoolYear,
   getDefaultSubjectId,
@@ -101,6 +97,7 @@ export function useSubjectChoice({ choice, update, prefilledRef }: UseSubjectCho
     isTeacherProfileFeatureEnabled(state.features.flags),
   );
   const [teachingProfile, setTeachingProfile] = useState<TeachingProfile | null>(null);
+  const catalog = useCountryCatalog();
 
   // The regular years and subjects prefill for everyone (onboarding saves them
   // without the flag); only the vocational surface sits behind the flag.
@@ -122,15 +119,12 @@ export function useSubjectChoice({ choice, update, prefilledRef }: UseSubjectCho
   }, []);
 
   const availableSubjectIds = useMemo(
-    () =>
-      choice.schoolYear
-        ? SUBJECTS_BY_GRADE[String(choice.schoolYear)] ?? []
-        : SUBJECTS.map((subject) => subject.id),
-    [choice.schoolYear]
+    () => catalog.subjectIdsForYear(choice.schoolYear),
+    [choice.schoolYear, catalog]
   );
   const preferredSubjectIds = useMemo(
-    () => getPreferredRegularSubjectIds(teachingProfile, availableSubjectIds),
-    [teachingProfile, availableSubjectIds]
+    () => getPreferredRegularSubjectIds(teachingProfile, availableSubjectIds, catalog.countryCode),
+    [teachingProfile, availableSubjectIds, catalog.countryCode]
   );
   const preferredSchoolYears = useMemo(
     () => getPreferredSchoolYears(teachingProfile, Array.from({ length: 12 }, (_, index) => index + 1)),
@@ -237,21 +231,21 @@ export function useSubjectChoice({ choice, update, prefilledRef }: UseSubjectCho
   useEffect(() => {
     if (choice.subjectMode === "vocational") return;
     if (choice.schoolYear && choice.subject) {
-      const validSubjects = SUBJECTS_BY_GRADE[String(choice.schoolYear)];
-      if (validSubjects && !validSubjects.includes(choice.subject)) {
+      const validSubjects = catalog.subjectIdsForYear(choice.schoolYear);
+      if (validSubjects.length > 0 && !validSubjects.includes(choice.subject)) {
         update("subject", "");
       }
     }
-  }, [choice.schoolYear, choice.subject, choice.subjectMode, update]);
+  }, [catalog, choice.schoolYear, choice.subject, choice.subjectMode, update]);
 
   // Reset component type when subject changes
   useEffect(() => {
     if (choice.subject && choice.isSpecificComponent) {
-      if (!AMBIGUOUS_COMPONENTS_SUBJECTS.includes(choice.subject)) {
+      if (!catalog.ambiguousSubjectIds.includes(choice.subject)) {
         update("isSpecificComponent", false);
       }
     }
-  }, [choice.subject, choice.isSpecificComponent, update]);
+  }, [catalog, choice.subject, choice.isSpecificComponent, update]);
 
   return {
     teachingProfile,

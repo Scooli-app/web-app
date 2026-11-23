@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { SUBJECTS_BY_GRADE } from "@/components/document-creation/constants";
+import { useCountryCatalog } from "@/hooks/useCountryCatalog";
 import { ClassSection, NESTED_SECTION_CLASS, SubjectSection } from "@/components/document-creation/sections";
 import {
   subjectChoicePayload,
@@ -101,6 +101,7 @@ function detectContentType(filename: string): string {
 
 export default function CurriculumPlanImportPage() {
   const t = useTranslations("curriculumPlan.importar");
+  const catalog = useCountryCatalog();
   const tShared = useTranslations("curriculumPlan.shared");
   const tErrors = useTranslations("errors.curriculumPlan");
   const stepLabels: Record<StepId, string> = {
@@ -306,7 +307,7 @@ export default function CurriculumPlanImportPage() {
               subject={choice.subject}
               isSpecificComponent={choice.isSpecificComponent}
               onUpdate={updateChoice}
-              availableSubjects={choice.schoolYear ? SUBJECTS_BY_GRADE[String(choice.schoolYear)] : undefined}
+              availableSubjects={choice.schoolYear ? catalog.subjectIdsForYear(choice.schoolYear) : undefined}
               preferredSubjectIds={subjectPicker.preferredSubjectIds}
               mode={subjectPicker.teachingMode}
               vocationalCourse={subjectPicker.selectedVocationalCourse}

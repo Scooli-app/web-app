@@ -55,6 +55,15 @@
     },
     "saveError": "We couldn't save your language preference."
   },
+  "country": {
+    "title": "Country",
+    "options": {
+      "PT": "Portugal",
+      "BR": "Brazil"
+    },
+    "saveError": "Could not save the country. Try again.",
+    "note": "Sets the school years and subjects offered when you create documents and plans."
+  },
   "planGeneration": {
     "title": "Preparing your plan…",
     "stageTopics": "Writing the topics for the year",
@@ -590,6 +599,7 @@
       "description": "Choose which resources to use for generation",
       "manageSources": "Manage sources",
       "includeAe": "Include Aprendizagens Essenciais (AE)",
+      "includeBncc": "Include BNCC skills (habilidades)",
       "recommended": "Recommended",
       "loadingRegulatory": "Loading regulatory documents...",
       "regulatoryDocuments": "Regulatory Documents ({count})",

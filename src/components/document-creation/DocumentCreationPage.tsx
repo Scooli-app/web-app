@@ -18,13 +18,13 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { LessonChoice } from "./lessonPicker";
 import { getMissingFields, type MissingField } from "./missingField";
-import { SUBJECTS, SUBJECTS_BY_GRADE } from "./constants";
 import { defaultSourceIds, reconcileSchoolIds } from "./sourceSelection";
 import {
   fetchSourceDefaults,
   selectDefaultFormSelection,
   selectSourceDefaults,
 } from "@/store/sources/sourceDefaultsSlice";
+import { useCountryCatalog } from "@/hooks/useCountryCatalog";
 import {
   AdditionalDetailsSection,
   ClassSection,
@@ -139,6 +139,7 @@ export default function DocumentCreationPage({
 }: DocumentCreationPageProps) {
   const router = useRouter();
   const t = useTranslations("documentCreation");
+  const catalog = useCountryCatalog();
   const dispatch = useAppDispatch();
   const isProUser = useAppSelector(selectIsPro);
   const isEntitlementLoading = useAppSelector(selectEntitlementLoading);
@@ -177,7 +178,7 @@ export default function DocumentCreationPage({
   // True once the defaults were applied (to every field the teacher hadn't touched): from then on the form's
   // source fields are sent; before, only the touched ones are (see the request).
   const defaultsAppliedRef = useRef(false);
-  const subjectValue = SUBJECTS.find((s) => s.id === formState.subject)?.value ?? formState.subject;
+  const subjectValue = catalog.subjectValue(formState.subject);
   const schoolYearValue = formState.schoolYear || undefined;
 
   // Defaults loaded earlier in the session (e.g. on /sources) may be stale: the form starts only from its own fetch.
@@ -260,16 +261,16 @@ export default function DocumentCreationPage({
       updateForm("schoolYear", year);
     }
 
-    if (subjectId && SUBJECTS.some((subject) => subject.id === subjectId)) {
+    if (subjectId && catalog.findSubject(subjectId)) {
       const validForYear =
-        !hasValidYear || SUBJECTS_BY_GRADE[String(year)]?.includes(subjectId);
+        !hasValidYear || catalog.subjectIdsForYear(year).includes(subjectId);
       if (validForYear) {
         prefilledRef.current.subject = true;
         updateForm("subject", subjectId);
         if (hasValidYear) setShowFilledSummary(true);
       }
     }
-  }, [updateForm]);
+  }, [updateForm, catalog]);
 
   // Picking a lesson fills what its turma already knows: the topic (if empty), year and subject.
   const handleLessonChange = useCallback(
@@ -405,7 +406,7 @@ export default function DocumentCreationPage({
       setError("");
 
       const subjectValue =
-        SUBJECTS.find((s) => s.id === formState.subject)?.value ||
+        catalog.findSubject(formState.subject)?.value ||
         formState.subject;
 
       const durationValue = formState.lessonTime
@@ -569,7 +570,7 @@ export default function DocumentCreationPage({
                   subject={formState.subject}
                   isSpecificComponent={formState.isSpecificComponent}
                   onUpdate={updateForm}
-                  availableSubjects={formState.schoolYear ? SUBJECTS_BY_GRADE[String(formState.schoolYear)] : undefined}
+                  availableSubjects={formState.schoolYear ? catalog.subjectIdsForYear(formState.schoolYear) : undefined}
                   preferredSubjectIds={preferredSubjectIds}
                   mode={teachingMode}
                   vocationalCourse={selectedVocationalCourse}

@@ -72,3 +72,63 @@ describe("buildQuickCreateUrl", () => {
     expect(new URLSearchParams(url.split("?")[1]).get("topic")).toBe("frações");
   });
 });
+
+describe("Brazil (BR) quick-create", () => {
+  it("reads Brazilian subject names and their synonyms", () => {
+    expect(parseQuickCreate("Prova de Matemática sobre frações do 6º ano", "BR")).toEqual({
+      documentType: "test",
+      topic: "Prova de Matemática sobre frações do 6º ano",
+      schoolYear: 6,
+      subjectId: "Matemática",
+    });
+    expect(parseQuickCreate("plano de aula de português 6º ano", "BR").subjectId).toBe("Língua Portuguesa");
+    expect(parseQuickCreate("ficha de inglês 7º ano", "BR").subjectId).toBe("Língua Inglesa");
+  });
+
+  it("reads Ensino Médio series as years 10 to 12", () => {
+    expect(parseQuickCreate("plano de aula de português 1ª série", "BR").schoolYear).toBe(10);
+    expect(parseQuickCreate("plano de aula de matemática segunda série", "BR").schoolYear).toBe(11);
+    expect(parseQuickCreate("teste de física 3ª série", "BR")).toMatchObject({
+      documentType: "test",
+      schoolYear: 12,
+      subjectId: "Ciências da Natureza",
+    });
+  });
+
+  it("shifts a 1º-3º ano named inside Ensino Médio", () => {
+    expect(parseQuickCreate("aula sobre funções 1º ano do ensino médio", "BR").schoolYear).toBe(10);
+    expect(parseQuickCreate("aula sobre funções 1º ano", "BR").schoolYear).toBe(1);
+  });
+
+  it("drops a subject that the Brazilian year does not offer", () => {
+    // "Ciências" is a Ensino Fundamental subject: it is not offered in the 1ª série.
+    expect(parseQuickCreate("aula de ciências 1ª série", "BR").subjectId).toBeUndefined();
+  });
+
+  it("matches Brazilian topics to Brazilian subjects", () => {
+    expect(parseQuickCreate("Machado de Assis 9º ano", "BR").subjectId).toBe("Língua Portuguesa");
+    expect(parseQuickCreate("Revolução Francesa 8º ano", "BR").subjectId).toBe("História");
+  });
+
+  it("strips the Brazilian type, subject and series from the topic", () => {
+    const text = "Prova de Português sobre orações subordinadas 9º ano";
+    expect(stripParsedTokens(text, parseQuickCreate(text, "BR"), "BR")).toBe("orações subordinadas");
+    const series = "Plano de aula de física sobre óptica 2ª série";
+    expect(stripParsedTokens(series, parseQuickCreate(series, "BR"), "BR")).toBe("óptica");
+  });
+
+  it("builds the Brazilian creation URL with the Brazilian subject and year", () => {
+    const parse = parseQuickCreate("Prova de Matemática sobre frações do 6º ano", "BR");
+    const url = new URL(buildQuickCreateUrl(parse, "BR"), "http://localhost");
+    expect(url.searchParams.get("topic")).toBe("frações");
+    expect(url.searchParams.get("year")).toBe("6");
+    expect(url.searchParams.get("subject")).toBe("Matemática");
+  });
+
+  it("keeps the Portuguese reading when no country is given", () => {
+    expect(parseQuickCreate("prova de matemática 5.º ano").subjectId).toBe("matematica");
+    expect(parseQuickCreate("prova de matemática 5.º ano", "PT").subjectId).toBe("matematica");
+    // "prova" is a Brazilian word only: in Portugal it is not a test.
+    expect(parseQuickCreate("prova sobre frações 5.º ano").documentType).toBe("lessonPlan");
+  });
+});

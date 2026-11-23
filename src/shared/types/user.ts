@@ -1,3 +1,5 @@
+import type { CountryCode } from "@/lib/curriculum/countryCatalog";
+
 export interface CurrentUserProfile {
   id: string;
   clerkUserId: string;
@@ -23,5 +25,11 @@ export interface CurrentUserProfile {
   contentLanguage?: string | null;
   /** ISO weekday (1 Mon - 7 Sun) the teacher plans the next week on. `null`/absent means 7. */
   planningDay?: number | null;
+  /**
+   * Country whose school years and subjects the teacher works with. Defaults to
+   * "PT" on the server. Optional on the type so older backends that omit it
+   * still read as Portugal.
+   */
+  countryCode?: CountryCode;
   createdAt: string;
 }

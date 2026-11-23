@@ -2,6 +2,7 @@ import {
   buildRegularTeachingItems,
   VOCATIONAL_SCHOOL_YEARS,
 } from "@/components/document-creation/teaching-profile-preferences";
+import { DEFAULT_COUNTRY_CODE, type CountryCode } from "@/lib/curriculum/countryCatalog";
 import type {
   EducationType,
   TeachingItem,
@@ -50,7 +51,11 @@ export function schoolYearsForScope(scope: TeachingScope): number[] {
  * scope, years outside it — is dropped rather than silently kept, so what the
  * teacher sees is what gets saved.
  */
-export function buildProfileForSave(draft: TeachingProfile, scope: TeachingScope): TeachingProfile {
+export function buildProfileForSave(
+  draft: TeachingProfile,
+  scope: TeachingScope,
+  countryCode: CountryCode = DEFAULT_COUNTRY_CODE,
+): TeachingProfile {
   const allowedYears = new Set(schoolYearsForScope(scope));
   const courses = scope.vocational ? [...draft.courses] : [];
   const courseSet = new Set(courses);
@@ -59,7 +64,8 @@ export function buildProfileForSave(draft: TeachingProfile, scope: TeachingScope
     ? buildRegularTeachingItems(
         draft.items
           .filter((item) => item.qualificationCode === null && item.kind === "subject")
-          .map((item) => item.code)
+          .map((item) => item.code),
+        countryCode,
       )
     : [];
   const vocationalItems = draft.items.filter(

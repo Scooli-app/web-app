@@ -13,6 +13,7 @@
 
 "use client";
 
+import { useGradeOptions } from "@/hooks/useCountryCatalog";
 import { translateSubject } from "@/components/document-creation/constants";
 import { Button } from "@/components/ui/button";
 import {
@@ -33,7 +34,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  GRADE_OPTIONS,
+
   RESOURCE_TYPE_OPTIONS,
   SUBJECT_OPTIONS,
   type ShareDestination,
@@ -141,6 +142,7 @@ export function ShareResourceModal({
   organizationName = null,
   documentId,
 }: ShareResourceModalProps) {
+  const gradeOptions = useGradeOptions();
   const t = useTranslations("community.shareModal");
   // Off, a community share is published at once: no "revisto em 24-48h" promise.
   const review = useAppSelector(selectIsDocumentReviewEnabled);
@@ -415,7 +417,7 @@ export function ShareResourceModal({
                     <SelectValue placeholder={t("gradePlaceholder")} />
                   </SelectTrigger>
                   <SelectContent className="max-md:[&_[role=option]]:min-h-11">
-                    {GRADE_OPTIONS.map((option) => (
+                    {gradeOptions.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
                         {tFilters("gradeOption", { n: option.value })}
                       </SelectItem>

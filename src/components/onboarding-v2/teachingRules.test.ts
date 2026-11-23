@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  roleOrderFor,
   ROLE_ORDER,
   isFirstCycleOnly,
   isTeachingValid,
@@ -63,5 +64,13 @@ describe("ROLE_ORDER", () => {
       "tutor",
       "other",
     ]);
+  });
+});
+
+describe("roleOrderFor", () => {
+  it("offers vocational only in Portugal", () => {
+    expect(roleOrderFor("PT")).toContain("vocational");
+    expect(roleOrderFor("BR")).not.toContain("vocational");
+    expect(roleOrderFor("BR")).toEqual(ROLE_ORDER.filter((role) => role !== "vocational"));
   });
 });

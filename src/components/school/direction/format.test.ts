@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { DirectionTurma } from "@/shared/types/school-direction";
-import { departmentExecution, nextSchoolDay, recordCoverage } from "./format";
+import { departmentExecution, formatClass, formatSubject, nextSchoolDay, recordCoverage } from "./format";
 
 describe("nextSchoolDay", () => {
   it("is tomorrow on a weekday before Friday and Monday from Friday or the weekend", () => {
@@ -69,5 +69,24 @@ describe("recordCoverage", () => {
         turma({ state: "not_started", lessonsPast: 0 }),
       ]),
     ).toEqual({ measured: 2, expected: 3 });
+  });
+});
+
+describe("formatClass and formatSubject for Brazil (BR)", () => {
+  it("names Brazilian years and series", () => {
+    expect(formatClass(6, "B", "pt-BR", "BR")).toBe("6º ano B");
+    expect(formatClass(10, "A", "pt-BR", "BR")).toBe("1ª série A");
+    expect(formatClass(12, "C", "pt-BR", "BR")).toBe("3ª série C");
+  });
+
+  it("keeps the Portuguese class names by default", () => {
+    expect(formatClass(5, "B", "pt-PT")).toBe("5.º B");
+    expect(formatClass(10, "A", "pt-PT", "PT")).toBe("10.º A");
+    expect(formatClass(5, "B", "en")).toBe("Year 5 B");
+  });
+
+  it("shows a Brazilian subject by its pt-BR name", () => {
+    expect(formatSubject("Matemática", "Matemática", "BR")).toBe("Matemática");
+    expect(formatSubject("Língua Portuguesa", "Língua Portuguesa", "BR")).toBe("Língua Portuguesa");
   });
 });

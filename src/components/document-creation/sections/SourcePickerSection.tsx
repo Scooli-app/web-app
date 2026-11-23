@@ -2,8 +2,8 @@
 
 import { OptionRow } from "./FormCard";
 import { formatTags } from "@/components/school/sources/schoolSourceFormat";
-import { SUBJECTS } from "../constants";
 import { orderSchoolSources } from "../sourceSelection";
+import { useCountryCatalog } from "@/hooks/useCountryCatalog";
 import { listRegulatorySources } from "@/services/api/sources.service";
 import { FeatureFlag } from "@/shared/types/featureFlags";
 import { Routes } from "@/shared/types/routes";
@@ -37,6 +37,7 @@ export function SourcePickerSection({
   onUpdate,
 }: SourcePickerSectionProps) {
   const t = useTranslations("documentCreation.sourcePicker");
+  const catalog = useCountryCatalog();
   const dispatch = useAppDispatch();
   const { sources, loading } = useAppSelector((state) => state.sources);
   const isContextPipelineV2Enabled = useAppSelector(selectIsContextPipelineV2Enabled);
@@ -79,7 +80,7 @@ export function SourcePickerSection({
 
   const { matching: matchingSchool, others: otherSchool } = orderSchoolSources(
     defaults,
-    SUBJECTS.find((s) => s.id === subject)?.value ?? subject,
+    subject ? catalog.subjectValue(subject) : subject,
     schoolYear,
   );
 
@@ -137,7 +138,7 @@ export function SourcePickerSection({
           >
             <span className="inline-flex items-center gap-1.5">
               {includeAe && <Check className="h-3 w-3 shrink-0" aria-hidden />}
-              {t("includeAe")}
+              {catalog.countryCode === "BR" ? t("includeBncc") : t("includeAe")}
             </span>
             <span className="whitespace-nowrap font-normal text-muted-foreground">· {t("recommended")}</span>
           </button>

@@ -55,6 +55,15 @@
     },
     "saveError": "Não foi possível guardar a preferência de idioma."
   },
+  "country": {
+    "title": "País",
+    "options": {
+      "PT": "Portugal",
+      "BR": "Brasil"
+    },
+    "saveError": "Não foi possível guardar o país. Tenta novamente.",
+    "note": "Define os anos de escolaridade e as disciplinas que aparecem na criação de documentos e planificações."
+  },
   "planGeneration": {
     "title": "A preparar o teu plano…",
     "stageTopics": "A criar os temas do ano",
@@ -590,6 +599,7 @@
       "description": "Escolhe que recursos usar na geração",
       "manageSources": "Gerir fontes",
       "includeAe": "Incluir Aprendizagens Essenciais (AE)",
+      "includeBncc": "Incluir habilidades da BNCC",
       "recommended": "Recomendado",
       "loadingRegulatory": "A carregar documentos regulatórios...",
       "regulatoryDocuments": "Documentos Regulatórios ({count})",

@@ -250,15 +250,14 @@ export async function getLibraryStats(
 // CURRICULUM METADATA (for filters)
 // ============================================================================
 
-import { GRADE_GROUPS, SUBJECTS } from "@/components/document-creation/constants";
+import { SUBJECTS } from "@/components/document-creation/constants";
+import { gradeOptionsFor } from "@/lib/curriculum/countryCatalog";
 
 /**
- * Available grade levels for filtering.
- * Mapped from the single source of truth in document-creation constants.
+ * Portuguese grade levels for filtering. Components read the teacher's country
+ * through `useGradeOptions()` (src/hooks/useCountryCatalog.ts).
  */
-export const GRADE_OPTIONS = GRADE_GROUPS.flatMap(group => 
-  group.grades.map(grade => ({ value: grade.id, label: grade.label }))
-);
+export const GRADE_OPTIONS = gradeOptionsFor("PT");
 
 /**
  * Available subjects for filtering.

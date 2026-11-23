@@ -8,11 +8,7 @@ import { StepHeading } from "@/components/onboarding-v2/StepHeading";
 import { isFirstCycleOnly, isTeachingValid } from "@/components/onboarding-v2/teachingRules";
 import type { OnboardingFlowController } from "@/components/onboarding-v2/useOnboardingV2";
 import { useStepFooter } from "@/components/onboarding-v2/useStepFooter";
-import {
-  SUBJECTS,
-  SUBJECTS_BY_GRADE,
-  translateSubjectLabel,
-} from "@/components/document-creation/constants";
+import { useCountryCatalog } from "@/hooks/useCountryCatalog";
 import { buildRegularTeachingItems } from "@/components/document-creation/teaching-profile-preferences";
 import { VocationalCoursesEditor } from "@/components/teaching-profile/VocationalCoursesEditor";
 import { onboardingV2Service } from "@/services/api/onboarding-v2.service";
@@ -36,6 +32,7 @@ interface TeachingStepProps {
  */
 export function TeachingStep({ flow, onProfileSaved }: TeachingStepProps) {
   const t = useTranslations("onboardingV2");
+  const catalog = useCountryCatalog();
   const { answers, update, trackCompleted } = flow;
   const { userId } = useAuth();
   const { years, subjectIds, role, courses, units } = answers;
@@ -57,10 +54,10 @@ export function TeachingStep({ flow, onProfileSaved }: TeachingStepProps) {
   const availableSubjectIds = useMemo(() => {
     const available = new Set<string>();
     for (const year of chosenYears) {
-      for (const id of SUBJECTS_BY_GRADE[String(year)] ?? []) available.add(id);
+      for (const id of catalog.subjectIdsForYear(year)) available.add(id);
     }
-    return SUBJECTS.map((subject) => subject.id).filter((id) => available.has(id));
-  }, [chosenYears]);
+    return catalog.subjects.map((subject) => subject.id).filter((id) => available.has(id));
+  }, [catalog, chosenYears]);
 
   const toggleYear = (year: number) => {
     const nextYears = chosenYears.includes(year)
@@ -68,7 +65,7 @@ export function TeachingStep({ flow, onProfileSaved }: TeachingStepProps) {
       : [...chosenYears, year].sort((a, b) => a - b);
     const stillAvailable = new Set<string>();
     for (const y of nextYears) {
-      for (const id of SUBJECTS_BY_GRADE[String(y)] ?? []) stillAvailable.add(id);
+      for (const id of catalog.subjectIdsForYear(y)) stillAvailable.add(id);
     }
     update({
       years: nextYears,
@@ -101,7 +98,7 @@ export function TeachingStep({ flow, onProfileSaved }: TeachingStepProps) {
     setSaving(true);
     setError(false);
     const savedYears = preschool ? [] : chosenYears;
-    const items = preschool ? [] : vocational ? units : buildRegularTeachingItems(subjectIds);
+    const items = preschool ? [] : vocational ? units : buildRegularTeachingItems(subjectIds, catalog.countryCode);
     try {
       await onboardingV2Service.saveProfile({
         schoolName: answers.noSchool ? null : answers.schoolName.trim(),
@@ -208,7 +205,7 @@ export function TeachingStep({ flow, onProfileSaved }: TeachingStepProps) {
                   <MultiSelectPopover
                     options={availableSubjectIds.map((id) => ({
                       id,
-                      label: translateSubjectLabel(id),
+                      label: catalog.subjectLabel(id),
                     }))}
                     values={subjectIds}
                     onToggle={toggleSubject}

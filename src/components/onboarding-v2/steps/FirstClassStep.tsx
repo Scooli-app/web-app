@@ -1,10 +1,6 @@
 "use client";
 
-import {
-  SUBJECTS,
-  SUBJECTS_BY_GRADE,
-  translateSubjectLabel,
-} from "@/components/document-creation/constants";
+import { useCountryCatalog } from "@/hooks/useCountryCatalog";
 import { ClassIllustration } from "@/components/onboarding-v2/illustrations/StepIllustrations";
 import { toLocalIso } from "@/components/onboarding-v2/freeWeek";
 import { queueDraft } from "@/components/onboarding-v2/onboardingDraft";
@@ -85,6 +81,7 @@ interface FirstClassStepProps {
 export function FirstClassStep({ flow }: FirstClassStepProps) {
   const t = useTranslations("onboardingV2");
   const locale = useLocale();
+  const catalog = useCountryCatalog();
   const dispatch = useAppDispatch();
   const { answers, update, next, goTo, trackCompleted, generation } = flow;
 
@@ -123,21 +120,21 @@ export function FirstClassStep({ flow }: FirstClassStepProps) {
   const vocational = answers.role === "vocational" && answers.units.length > 0;
 
   // A year with no mapped subjects would leave the subject select empty and the form stuck.
-  const hasSubjects = (y: number) => vocational || (SUBJECTS_BY_GRADE[String(y)] ?? []).length > 0;
+  const hasSubjects = (y: number) => vocational || catalog.subjectIdsForYear(y).length > 0;
   const preferredYears = answers.years.filter(hasSubjects);
   const yearOptions = preferredYears.length > 0 ? preferredYears : ALL_YEARS.filter(hasSubjects);
   const year = chosenYear !== null && yearOptions.includes(chosenYear) ? chosenYear : yearOptions[0];
 
   const subjectOptions = useMemo(() => {
     if (vocational) return answers.units.map(unitValue);
-    const forYear = SUBJECTS_BY_GRADE[String(year)] ?? [];
+    const forYear = catalog.subjectIdsForYear(year);
     const preferred = answers.subjectIds.filter((id) => forYear.includes(id));
     return preferred.length > 0 ? preferred : forYear;
-  }, [vocational, year, answers.subjectIds, answers.units]);
+  }, [catalog, vocational, year, answers.subjectIds, answers.units]);
   const optionLabel = (id: string) =>
     vocational
       ? (answers.units.find((unit) => unitValue(unit) === id)?.label ?? id)
-      : translateSubjectLabel(id);
+      : catalog.subjectLabel(id);
   const subjectId =
     chosenSubject !== null && subjectOptions.includes(chosenSubject)
       ? chosenSubject
@@ -160,7 +157,7 @@ export function FirstClassStep({ flow }: FirstClassStepProps) {
 
   const handleCreate = async () => {
     if (!formValid || phase !== "form" || !subjectId || creatingRef.current) return;
-    const subject = SUBJECTS.find((s) => s.id === subjectId);
+    const subject = catalog.findSubject(subjectId);
     const unit = vocational ? answers.units.find((item) => unitValue(item) === subjectId) : undefined;
     if (!subject && !unit) return;
     creatingRef.current = true;
@@ -296,7 +293,7 @@ export function FirstClassStep({ flow }: FirstClassStepProps) {
 
         {year !== undefined && (
           <AlreadyTaughtField
-            subject={vocational ? null : (SUBJECTS.find((s) => s.id === subjectId)?.value ?? null)}
+            subject={vocational ? null : (catalog.findSubject(subjectId)?.value ?? null)}
             gradeLevel={year}
             classLabel={
               // "B" reads as "o 5.º B"; a label that already names the year is kept as typed.

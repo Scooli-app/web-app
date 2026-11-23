@@ -5,10 +5,12 @@
 
 "use client";
 
+import { useCountry } from "@/hooks/useCountry";
+import { gradeOptionsFor, type CountryCode } from "@/lib/curriculum/countryCatalog";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
-  GRADE_OPTIONS,
+
   SUBJECT_OPTIONS,
   type SharedResource,
 } from "@/services/api/community.service";
@@ -30,12 +32,9 @@ function getSubjectLabel(value: string): string {
   return subjectLabelMap.get(value) ?? value;
 }
 
-/** Map grade id → display label (e.g. "2" → "2º ano") */
-const gradeLabelMap = new Map(
-  GRADE_OPTIONS.map((g) => [String(g.value), g.label]),
-);
-function getGradeLabel(value: string): string {
-  return gradeLabelMap.get(value) ?? value;
+/** Map grade id to the display label of the teacher's country (e.g. "2" -> "2º ano"; Brazil "10" -> "1ª série"). */
+function getGradeLabel(value: string, countryCode: CountryCode): string {
+  return gradeOptionsFor(countryCode).find((option) => option.value === value)?.label ?? value;
 }
 
 /** Map resource type key → human readable label */
@@ -69,7 +68,8 @@ export function ResourceCard({
   const t = useTranslations("community.resourceCard");
   const resourceTypeLabels = t.raw("resourceTypes") as Record<string, string>;
   const subjectLabel = getSubjectLabel(resource.subject);
-  const gradeLabel = getGradeLabel(resource.grade);
+  const countryCode = useCountry();
+  const gradeLabel = getGradeLabel(resource.grade, countryCode);
   const typeLabel = getResourceTypeLabel(resource.resourceType, resourceTypeLabels);
   const gradient = getTypeGradient(resource.resourceType);
 

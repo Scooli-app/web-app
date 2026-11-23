@@ -1,5 +1,6 @@
 "use client";
 
+import { useCountry } from "@/hooks/useCountry";
 import { Button } from "@/components/ui/button";
 import { LoadError } from "@/components/ui/load-error";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
@@ -116,6 +117,7 @@ function MissedItem({ lesson, locale }: { lesson: MissedLesson; locale: string }
 function DrawerBody({ detail }: { detail: DirectionTurmaDetail }) {
   const t = useTranslations("schoolDirection.drawer");
   const locale = useLocale();
+  const countryCode = useCountry();
   const { turma, missedLessons, behindTopics, difficulties, teacherPlan, nextAssessment } = detail;
   const [allMissed, setAllMissed] = useState(false);
   const [allBehind, setAllBehind] = useState(false);
@@ -138,10 +140,10 @@ function DrawerBody({ detail }: { detail: DirectionTurmaDetail }) {
     <div className="flex flex-col gap-6 p-5 sm:p-8">
       <header className="flex min-w-0 flex-col items-start gap-1.5 pr-10">
         <p className="max-w-full truncate text-sm text-muted-foreground">
-          {formatSubject(turma.subjectKey, turma.subjectLabel)} · {t("yearLabel", { grade: turma.grade })}
+          {formatSubject(turma.subjectKey, turma.subjectLabel, countryCode)} · {t("yearLabel", { grade: turma.grade })}
         </p>
         <SheetTitle className="max-w-full wrap-anywhere text-3xl font-bold tracking-tight">
-          {formatClass(turma.grade, turma.classLabel, locale)}
+          {formatClass(turma.grade, turma.classLabel, locale, countryCode)}
         </SheetTitle>
         <StatePill state={turma.state} lessonsBehind={turma.lessonsBehind} />
       </header>

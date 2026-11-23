@@ -1,4 +1,5 @@
 import type { TeacherRole } from "@/shared/types/onboarding-v2";
+import type { CountryCode } from "@/lib/curriculum/countryCatalog";
 
 /** Step-1 role chips, teaching roles first. */
 export const ROLE_ORDER: TeacherRole[] = [
@@ -37,3 +38,11 @@ export const skipsClassStep = (role: TeacherRole | null): boolean => role === "p
 /** Only 1.º–4.º chosen: the "Sou titular de turma" shortcut applies. */
 export const isFirstCycleOnly = (years: number[]): boolean =>
   years.length > 0 && years.every((year) => year <= 4);
+
+/**
+ * The role chips offered for a country. Vocational (cursos profissionais) is a
+ * Portuguese offer: Brazilian teachers do not get it.
+ */
+export function roleOrderFor(countryCode: CountryCode): TeacherRole[] {
+  return countryCode === "BR" ? ROLE_ORDER.filter((role) => role !== "vocational") : ROLE_ORDER;
+}
