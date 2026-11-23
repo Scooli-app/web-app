@@ -10,7 +10,9 @@ import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import type { Metadata } from "next";
 import { NextIntlClientProvider } from "next-intl";
-import { getLocale, getTranslations } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
+import { notFound } from "next/navigation";
+import { isSupportedLocale, locales } from "@/i18n/locales";
 import { TranslatorBridge } from "@/i18n/TranslatorBridge";
 import { Lato, Lexend, Merriweather, Montserrat, Nunito, Playfair_Display, Poppins, Raleway } from "next/font/google";
 import "./globals.css";
@@ -45,8 +47,16 @@ const merriweather = Merriweather({ variable: "--font-merriweather", subsets: ["
 const nunito = Nunito({ variable: "--font-nunito", subsets: ["latin"], weight: ["300", "400", "500", "600", "700"] });
 const playfair = Playfair_Display({ variable: "--font-playfair", subsets: ["latin"], weight: ["400", "500", "600", "700"] });
 
-export async function generateMetadata(): Promise<Metadata> {
-  const t = await getTranslations("appMeta");
+type LocaleParams = { params: Promise<{ locale: string }> };
+
+/** One prerendered copy of every page per language; middleware picks which. */
+export function generateStaticParams() {
+  return locales.map((locale) => ({ locale }));
+}
+
+export async function generateMetadata({ params }: LocaleParams): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "appMeta" });
   return {
     title: t("title"),
     description: t("description"),
@@ -67,12 +77,14 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function RootLayout({
   children,
-}: {
-  children: React.ReactNode;
-}) {
-  // Resolved from the NEXT_LOCALE cookie in src/i18n/request.ts. Falls back to
-  // pt-PT, so a visitor with no cookie sees exactly what they see today.
-  const locale = await getLocale();
+  params,
+}: LocaleParams & { children: React.ReactNode }) {
+  // Middleware rewrites every page to /{locale}/… from the NEXT_LOCALE cookie
+  // (pt-PT when missing), so the language comes from the segment, not a cookie
+  // read here, and the page stays static.
+  const { locale } = await params;
+  if (!isSupportedLocale(locale)) notFound();
+  setRequestLocale(locale);
 
   return (
     <html lang={locale} className={`${lexend.variable} ${poppins.variable} ${montserrat.variable} ${raleway.variable} ${lato.variable} ${merriweather.variable} ${nunito.variable} ${playfair.variable}`} suppressHydrationWarning>

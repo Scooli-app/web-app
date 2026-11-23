@@ -11,6 +11,13 @@ import {
 } from "@/lib/trialPromo/promoStorage";
 import { BACKEND_TOKEN_COOKIE, reusableBackendToken } from "@/lib/backendTokenCookie";
 import { NextResponse } from "next/server";
+import { LOCALE_COOKIE_NAME, resolveRequestLocale } from "@/i18n/locales";
+import {
+  isLocaleRewritable,
+  localePrefixOf,
+  withLocalePrefix,
+  withoutLocalePrefix,
+} from "@/i18n/localeRouting";
 
 const isPublicRoute = createRouteMatcher([
   "/sign-in(.*)",
@@ -45,6 +52,14 @@ export default clerkMiddleware(async (auth, req) => {
   // Early return for webhook routes - skip all authentication
   if (req.nextUrl.pathname === "/webhooks/stripe") {
     return NextResponse.next();
+  }
+
+  // The [locale] segment is internal: a typed /en/… or /pt-PT/… goes to the
+  // plain URL, so a page never has two public addresses.
+  if (localePrefixOf(req.nextUrl.pathname)) {
+    const plainUrl = req.nextUrl.clone();
+    plainUrl.pathname = withoutLocalePrefix(req.nextUrl.pathname);
+    return NextResponse.redirect(plainUrl);
   }
 
   const authObj = await auth();
@@ -191,9 +206,21 @@ export default clerkMiddleware(async (auth, req) => {
     }
   }
 
-  const res = rememberPromo(NextResponse.next());
+  const res = rememberPromo(localeResponse());
   await setTokenCookie(res);
   return res;
+
+  // Serve the page's prerendered copy for the cookie's language. Runs only after
+  // every auth check and redirect above, so it never replaces auth.protect.
+  function localeResponse(): NextResponse {
+    if (!isLocaleRewritable(req.nextUrl.pathname)) return NextResponse.next();
+    const url = req.nextUrl.clone();
+    url.pathname = withLocalePrefix(
+      req.nextUrl.pathname,
+      resolveRequestLocale(req.cookies.get(LOCALE_COOKIE_NAME)?.value),
+    );
+    return NextResponse.rewrite(url);
+  }
 });
 
 export const config = {

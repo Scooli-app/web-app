@@ -1,8 +1,10 @@
-import { Loader2 } from "lucide-react";
-import { getTranslations } from "next-intl/server";
+"use client";
 
-export default async function CancelLoading() {
-  const t = await getTranslations("checkout");
+import { Loader2 } from "lucide-react";
+import { useTranslations } from "next-intl";
+
+export default function CancelLoading() {
+  const t = useTranslations("checkout");
 
   return (
     <div className="min-h-[80vh] flex flex-col items-center justify-center">

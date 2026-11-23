@@ -5,7 +5,7 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { Provider } from "react-redux";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import pt from "../../../../messages/pt-PT.json";
+import pt from "../../../../../messages/pt-PT.json";
 import { FeatureFlag } from "@/shared/types/featureFlags";
 import { LONG_NAME } from "@/shared/test/longContent";
 import type { UserSource } from "@/shared/types/sources";
