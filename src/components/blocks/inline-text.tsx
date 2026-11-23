@@ -22,6 +22,7 @@
 import katex from "katex";
 import "katex/dist/katex.min.css";
 import { Fragment, memo, type ReactNode } from "react";
+import { isCurrencySign } from "@/shared/utils/math-markdown";
 
 // KaTeX is the cost of a re-render: an editor with hundreds of formulas re-ran it for every keystroke.
 const MATH_CACHE_MAX = 2000;
@@ -121,8 +122,8 @@ function tokenize(input: string): Token[] {
       }
     }
 
-    // $math$ — KaTeX inline. Skips when there's no closing $.
-    if (c === "$") {
+    // $math$ — KaTeX inline. Skips when there's no closing $, and a currency "R$"/"US$" never opens one.
+    if (c === "$" && !isCurrencySign(input, i)) {
       const end = input.indexOf("$", i + 1);
       if (end !== -1) {
         flushBuf();

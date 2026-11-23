@@ -141,6 +141,15 @@ function normalizeLine(line: string, displayOpened: { value: boolean }): string 
     .join("");
 }
 
+/**
+ * "R$ 3,75" (Brazilian real), "R$ ___" or "US$ 10": a dollar right after the currency letters is a currency sign,
+ * never a maths opener. Same rule as the backend's MathMarkdownNormalizer.isCurrencySign.
+ */
+export function isCurrencySign(s: string, dollar: number): boolean {
+  const start = s.startsWith("US", dollar - 2) ? dollar - 2 : s.startsWith("R", dollar - 1) ? dollar - 1 : -1;
+  return start >= 0 && (start === 0 || !/[\p{L}\p{N}]/u.test(s[start - 1]));
+}
+
 /** Splits a line into text and maths, repairing mangled or missing closing delimiters. */
 function scan(line: string, displayOpened: { value: boolean }): Segment[] {
   const segments: Segment[] = [];
@@ -160,7 +169,7 @@ function scan(line: string, displayOpened: { value: boolean }): Segment[] {
       i += 2;
       continue;
     }
-    if (c !== "$") {
+    if (c !== "$" || isCurrencySign(line, i)) {
       text += c;
       i++;
       continue;

@@ -17,3 +17,15 @@ describe("InlineText maths limits", () => {
     expect(render(`$\\def\\a{x}${"\\a".repeat(150)}$`)).toContain("katex-error");
   });
 });
+
+describe("InlineText currency", () => {
+  it("keeps Brazilian prices as text, not one formula between two R$", () => {
+    expect(render("custa R$ 3,75 e R$ 2,40")).toBe("custa R$ 3,75 e R$ 2,40");
+  });
+
+  it("still renders maths next to a price", () => {
+    const html = render("R$ 1,50 é $x$");
+    expect(html.startsWith("R$ 1,50 é ")).toBe(true);
+    expect(html).toContain("katex");
+  });
+});

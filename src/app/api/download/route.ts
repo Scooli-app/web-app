@@ -2,7 +2,7 @@
 import { downloadAccessDenial, resolveDownloadAccess, type DownloadAccess } from "@/lib/downloadAccess";
 import { getPostHogClient } from "@/lib/posthog-server";
 import { markdownToHtml, rejoinSplitOptionReferences } from "@/shared/utils/markdown";
-import { normalizeMathMarkdown } from "@/shared/utils/math-markdown";
+import { isCurrencySign, normalizeMathMarkdown } from "@/shared/utils/math-markdown";
 import { auth } from "@clerk/nextjs/server";
 import {
   AlignmentType,
@@ -92,8 +92,9 @@ const ESCAPED_ANSWER_BLANK_PATTERN = /(?:\\_){3,}/g;
 const ANSWER_BLANK_PATTERN = /_{3,}/g;
 const ANSWER_BLANK_TOKEN_PATTERN = /@@EXPORTBLANK(\d+)@@/g;
 const BLOCK_MATH_PATTERN = /\$\$([^$]+)\$\$/g;
-const INLINE_MATH_PATTERN = /\$([^$\n]+)\$/g;
-const MATH_SEGMENT_PATTERN = /\$\$([\s\S]+?)\$\$|\$([^$\n]+?)\$/g;
+// A currency "R$"/"US$" never opens maths (see isCurrencySign in math-markdown.ts).
+const INLINE_MATH_PATTERN = /(?<!\bR|\bUS)\$([^$\n]+)\$/g;
+const MATH_SEGMENT_PATTERN = /\$\$([\s\S]+?)\$\$|(?<!\bR|\bUS)\$([^$\n]+?)\$/g;
 const INLINE_MARKDOWN_SPECIAL_PATTERN = /[\*_`$]/;
 
 type InlineMathSegment =
@@ -1856,7 +1857,10 @@ function parseInlineFormatting(
       continue;
     }
 
-    if ((match = remaining.match(/^\$([^$\n]+)\$/))) {
+    if (
+      !isCurrencySign(blankProtected.content, blankProtected.content.length - remaining.length) &&
+      (match = remaining.match(/^\$([^$\n]+)\$/))
+    ) {
       appendStyled(blankProtected.restore(match[0]));
       remaining = remaining.substring(match[0].length);
       continue;
