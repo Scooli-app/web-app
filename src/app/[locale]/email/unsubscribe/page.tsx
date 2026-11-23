@@ -1,6 +1,6 @@
 "use client";
 
-import { emailCategory } from "@/app/email/emailCategory";
+import { emailCategory } from "@/app/[locale]/email/emailCategory";
 import { AuthLayout } from "@/components/auth/AuthLayout";
 import { Button } from "@/components/ui/button";
 import { Loader2, MailX } from "lucide-react";
