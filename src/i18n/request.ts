@@ -1,6 +1,11 @@
 import { cookies } from "next/headers";
 import { getRequestConfig } from "next-intl/server";
 import { defaultLocale, isSupportedLocale, LOCALE_COOKIE_NAME } from "./locales";
+import {
+  COUNTRY_COOKIE_NAME,
+  mergeCatalogues,
+  regionalOverlayFor,
+} from "./regionalMessages";
 
 /**
  * Resolves the request locale from the `NEXT_LOCALE` cookie.
@@ -13,6 +18,9 @@ import { defaultLocale, isSupportedLocale, LOCALE_COOKIE_NAME } from "./locales"
  *
  * Anything unrecognised falls back to `pt-PT`, so a missing or tampered cookie
  * leaves today's Portuguese behaviour exactly as it is.
+ *
+ * The `scooli-country` cookie may add a regional overlay on top (Brazilian
+ * Portuguese for a BR teacher on `pt-PT`); see `regionalMessages.ts`.
  *
  * ── Cost, measured ──
  * Reading a cookie here is a dynamic API, so every page under the root layout
@@ -30,9 +38,14 @@ export default getRequestConfig(async () => {
   const cookieStore = await cookies();
   const requested = cookieStore.get(LOCALE_COOKIE_NAME)?.value;
   const locale = isSupportedLocale(requested) ? requested : defaultLocale;
+  const base = (await import(`../../messages/${locale}.json`)).default;
 
-  return {
+  const overlay = regionalOverlayFor(
     locale,
-    messages: (await import(`../../messages/${locale}.json`)).default,
-  };
+    cookieStore.get(COUNTRY_COOKIE_NAME)?.value,
+  );
+  if (!overlay) return { locale, messages: base };
+
+  const regional = (await import(`../../messages/${overlay}.json`)).default;
+  return { locale, messages: mergeCatalogues(base, regional) };
 });
