@@ -196,7 +196,7 @@ export function SchoolMembersPanel({ members, invitations, seatLimit, invitation
       )}
 
       <div>
-        <div className="hidden items-center gap-3 border-b border-border/70 pb-2 text-xs font-medium text-muted-foreground sm:flex">
+        <div className="hidden items-center gap-3 border-b border-border/70 pb-2 text-xs font-medium text-muted-foreground lg:flex">
           <span className="flex-1 pl-12">{t("columnPerson")}</span>
           <span className="w-24">{t("columnRole")}</span>
           <span className="w-20">{t("columnStatus")}</span>
@@ -237,7 +237,7 @@ export function SchoolMembersPanel({ members, invitations, seatLimit, invitation
                     {isInvite ? "?" : initials(row.name)}
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium text-foreground" title={row.name}>
+                    <p className="break-words font-medium text-foreground lg:truncate" title={row.name}>
                       {row.name}
                       {isMe && <span className="font-normal text-muted-foreground"> {t("you")}</span>}
                     </p>
@@ -255,10 +255,13 @@ export function SchoolMembersPanel({ members, invitations, seatLimit, invitation
                         })}
                       </p>
                     )}
-                    <p className="text-xs text-muted-foreground sm:hidden">{roleLabel}</p>
+                    {/* On a phone or tablet the role and status sit under the name, which then has the row's width. */}
+                    <p className="text-xs text-muted-foreground lg:hidden">
+                      {roleLabel} · {status}
+                    </p>
                   </div>
-                  <span className="hidden w-24 shrink-0 text-sm sm:block">{roleLabel}</span>
-                  <span className="shrink-0 sm:w-20">
+                  <span className="hidden w-24 shrink-0 text-sm lg:block">{roleLabel}</span>
+                  <span className="hidden shrink-0 lg:block lg:w-20">
                     <Badge variant={isInvite ? "secondary" : row.member.status === "active" ? "default" : "outline"}>
                       {status}
                     </Badge>
@@ -350,6 +353,10 @@ export function SchoolMembersPanel({ members, invitations, seatLimit, invitation
         open={inviteOpen}
         onOpenChange={setInviteOpen}
         freeSeats={limited ? Math.max(0, seatLimit - used) : null}
+        takenEmails={[
+          ...members.filter((m) => m.status === "active").map((m) => m.email),
+          ...invitations.map((i) => i.email),
+        ]}
         onInvited={onChanged}
       />
       <ConfirmationDialog

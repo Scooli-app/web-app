@@ -14,6 +14,11 @@ describe("formatClassName", () => {
   it("says the year once when the class label already has it (audit: \"7.º Matemática · 7.º B\")", () => {
     expect(formatClassName({ gradeLevel: 2, subject: "Mathematics", classLabel: "2.º A" }, labels)).toBe("Matemática · 2.º A");
     expect(formatClassName({ gradeLevel: 2, subject: "Mathematics", classLabel: "2.ºA" }, labels)).toBe("Matemática · 2.ºA");
+    expect(formatClassName({ gradeLevel: 7, subject: "Mathematics", classLabel: "7ºB" }, labels)).toBe("Matemática · 7ºB");
+    expect(formatClassName({ gradeLevel: 7, subject: "Mathematics", classLabel: "7B" }, labels)).toBe("Matemática · 7B");
+    // Another number is not the year: "10" in year 1, "1" in year 7.
+    expect(formatClassName({ gradeLevel: 1, subject: "Mathematics", classLabel: "10" }, labels)).toBe("1.º Matemática · 10");
+    expect(formatClassName({ gradeLevel: 7, subject: "Mathematics", classLabel: "1" }, labels)).toBe("7.º Matemática · 1");
   });
 
   it("drops the parts a turma doesn't have", () => {

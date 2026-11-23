@@ -20,6 +20,7 @@ import {
   type Timetable,
 } from "@/services/api/timetable.service";
 import { translateSubject } from "@/components/document-creation/constants";
+import { formatClassName } from "@/shared/utils/className";
 import { dashboardCache, CACHE_KEYS, CACHE_TTL } from "@/lib/dashboardCache";
 import { Routes } from "@/shared/types";
 import {
@@ -320,9 +321,10 @@ export function CalendarDashboardWidget() {
                         {dateLabel}
                       </span>
                       {" · "}
-                      {lesson.timetable.gradeLevel ? `${tTimetable("gradeShort", { grade: lesson.timetable.gradeLevel })} ` : ""}
-                      {translateSubject(lesson.timetable.subject)}
-                      {lesson.timetable.classLabel ? ` · ${lesson.timetable.classLabel}` : ""}
+                      {formatClassName(lesson.timetable, {
+                        gradeShort: (grade) => tTimetable("gradeShort", { grade }),
+                        subject: translateSubject,
+                      })}
                     </p>
                   </div>
 

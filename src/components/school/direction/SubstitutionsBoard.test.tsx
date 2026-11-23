@@ -5,7 +5,7 @@ import { NextIntlClientProvider } from "next-intl";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import messages from "../../../../messages/pt-PT.json";
 import type { DirectionSubstitution } from "@/shared/types/school-direction";
-import { SubstitutionsBoard } from "./SubstitutionsBoard";
+import { emailsSubstitute, SubstitutionsBoard } from "./SubstitutionsBoard";
 
 const api = vi.hoisted(() => ({
   getDirectionSubstitutions: vi.fn(),
@@ -108,6 +108,17 @@ describe("SubstitutionsBoard", () => {
     expect(text()).not.toContain(messages.schoolDirection.substitutions.covered);
   });
 
+  it("shows an absence as uncovered once its substitute has left the school", async () => {
+    api.getDirectionSubstitutions.mockResolvedValue([
+      substitution({ substitute: { userId: "u-gone", name: "Eva Lopes", email: "eva@aevale.example" } }),
+    ]);
+    await renderBoard();
+
+    expect(text()).toContain(messages.schoolDirection.substitutions.uncovered);
+    expect(text()).not.toContain(messages.schoolDirection.substitutions.covered);
+    expect(text()).toContain("Eva Lopes já não está na escola");
+  });
+
   it("removes an absence after confirming", async () => {
     api.getDirectionSubstitutions.mockResolvedValue([substitution()]);
     api.deleteDirectionSubstitution.mockResolvedValue(undefined);
@@ -129,5 +140,17 @@ describe("SubstitutionsBoard", () => {
 
     expect(api.getDirectionSubstitutions).toHaveBeenCalled();
     expect(text()).not.toContain("Ana Costa");
+  });
+});
+
+describe("emailsSubstitute", () => {
+  const rui = substitution();
+  const ana = substitution({ substitute: { userId: "u-ana", name: "Ana Costa", email: "ana@aevale.example" } });
+
+  it("is true only for a new substitute on a day with lessons, like the backend", () => {
+    expect(emailsSubstitute(undefined, rui)).toBe(true);
+    expect(emailsSubstitute(ana, rui)).toBe(true);
+    expect(emailsSubstitute(rui, rui)).toBe(false);
+    expect(emailsSubstitute(undefined, substitution({ lessons: [] }))).toBe(false);
   });
 });

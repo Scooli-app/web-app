@@ -25,8 +25,9 @@ export function sameClassWords(a: string, b: string): boolean {
 
 export function formatClassName(parts: ClassNameParts, labels: ClassNameLabels): string {
   const grade = parts.gradeLevel ? labels.gradeShort(parts.gradeLevel) : null;
-  // A class label that already says the year ("7.º B") is not prefixed with it again ("7.º Matemática · 7.º B").
-  const labelHasGrade = !!grade && !!parts.classLabel && parts.classLabel.replace(/\s/g, "").startsWith(grade.replace(/\s/g, ""));
+  // A class label that already says the year ("7.º B", "7ºB", "7B") is not prefixed with it again
+  // ("7.º Matemática · 7.º B").
+  const labelHasGrade = !!grade && Number(parts.classLabel?.trim().match(/^\d+/)?.[0]) === parts.gradeLevel;
   const base = parts.subject
     ? [labelHasGrade ? null : grade, labels.subject(parts.subject)].filter(Boolean).join(" ")
     : (parts.title ?? "");

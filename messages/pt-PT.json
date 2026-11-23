@@ -2875,8 +2875,11 @@
     },
     "roles": {
       "director": "Diretor",
-      "school_admin": "Administrador escolar",
+      "school_admin": "Direção",
       "teacher": "Professor"
+    },
+    "planCodes": {
+      "school_pilot": "Piloto"
     },
     "subscriptionStatus": {
       "active": "Ativa",
@@ -3012,6 +3015,7 @@
           "send": "Enviar convites",
           "cancel": "Cancelar",
           "invalidEmails": "Emails inválidos: {emails}",
+          "alreadyMember": "Já está na escola ou já tem convite: {emails}",
           "notEnoughSeats": "{free, plural, =0 {Não há lugares livres} one {Só há # lugar livre} other {Só há # lugares livres}}.",
           "tooMany": "Até {max} emails de cada vez."
         }
@@ -3024,7 +3028,7 @@
       "description": "A tua escola na Scooli.",
       "loadError": "Não foi possível carregar as definições da escola",
       "currentRole": "O teu papel:",
-      "changes": "Para mudar o nome da escola, os membros ou o acordo, escreve para <email>info@scooli.app</email>."
+      "changes": "Os professores da escola geres em <members>Membros</members>. Para mudar o nome da escola ou o acordo, escreve para <email>info@scooli.app</email>."
     }
   },
   "schoolDirection": {
@@ -3165,10 +3169,13 @@
       "shared": "Na agenda de {name}",
       "sharedHint": "{name} vê esta aula na agenda, com o percurso da turma. Os documentos do professor não são partilhados.",
       "coveredBy": "{absent} falta · substitui {name}",
+      "substituteLeft": "{absent} falta · {name} já não está na escola. Regista a ausência de novo com outro substituto.",
+      "uncovered": "Sem substituto",
       "remove": "Remover ausência",
       "removeConfirmTitle": "Remover esta ausência?",
       "removeConfirmDescription": "{name} deixa de ver estas aulas na agenda.",
       "registeredToast": "Ausência registada. Enviámos um email a {name}.",
+      "registeredNoEmailToast": "Ausência registada",
       "removedToast": "Ausência removida",
       "removeError": "Não foi possível remover a ausência. Tenta de novo."
     },

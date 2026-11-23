@@ -2875,8 +2875,11 @@
     },
     "roles": {
       "director": "Diretor",
-      "school_admin": "Administrador escolar",
+      "school_admin": "Direção",
       "teacher": "Professor"
+    },
+    "planCodes": {
+      "school_pilot": "Piloto"
     },
     "subscriptionStatus": {
       "active": "Ativa",
@@ -3012,6 +3015,7 @@
           "send": "Enviar convites",
           "cancel": "Cancelar",
           "invalidEmails": "E-mails inválidos: {emails}",
+          "alreadyMember": "Já está na escola ou já tem convite: {emails}",
           "notEnoughSeats": "{free, plural, =0 {Não há vagas livres} one {Só há # vaga livre} other {Só há # vagas livres}}.",
           "tooMany": "Até {max} e-mails por vez."
         }
@@ -3024,7 +3028,7 @@
       "description": "Sua escola na Scooli.",
       "loadError": "Não foi possível carregar as configurações da escola",
       "currentRole": "Seu papel:",
-      "changes": "Para mudar o nome da escola, os membros ou o acordo, escreva para <email>info@scooli.app</email>."
+      "changes": "Os professores da escola você gerencia em <members>Membros</members>. Para mudar o nome da escola ou o acordo, escreva para <email>info@scooli.app</email>."
     }
   },
   "schoolDirection": {
@@ -3165,10 +3169,13 @@
       "shared": "Na agenda de {name}",
       "sharedHint": "{name} vê esta aula na agenda, com o percurso da turma. Os documentos do professor não são compartilhados.",
       "coveredBy": "{absent} falta · {name} substitui",
+      "substituteLeft": "{absent} falta · {name} não está mais na escola. Registre a ausência de novo com outro substituto.",
+      "uncovered": "Sem substituto",
       "remove": "Remover ausência",
       "removeConfirmTitle": "Remover esta ausência?",
       "removeConfirmDescription": "{name} deixa de ver estas aulas na agenda.",
       "registeredToast": "Ausência registrada. Enviamos um e-mail para {name}.",
+      "registeredNoEmailToast": "Ausência registrada",
       "removedToast": "Ausência removida",
       "removeError": "Não foi possível remover a ausência. Tente de novo."
     },
