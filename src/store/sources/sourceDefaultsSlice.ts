@@ -16,7 +16,8 @@ interface SourceDefaultsState {
 
 const initialState: SourceDefaultsState = { entries: [], status: "idle", pending: {}, clock: 0, toggledAt: {} };
 
-export const fetchSourceDefaults = createAsyncThunk("sourceDefaults/fetch", async (_: void, { getState }) => {
+/** `quiet`: a background refetch (after a 404) that keeps the list on screen instead of loading/failed states. */
+export const fetchSourceDefaults = createAsyncThunk("sourceDefaults/fetch", async (_: { quiet?: boolean } | void, { getState }) => {
   // A source toggled after this tick was read before its PUT landed: the read must not overwrite it.
   const startedAt = (getState() as RootState).sourceDefaults.clock;
   return { entries: await listSourceDefaults(), startedAt };
@@ -35,7 +36,7 @@ export const toggleSourceDefault = createAsyncThunk(
       return await setSourceDefault(sourceRef, enabled);
     } catch (e) {
       // Deleted meanwhile (an admin removed a school source): refetch so the row goes away.
-      if (e instanceof ApiRequestError && e.status === 404) void dispatch(fetchSourceDefaults());
+      if (e instanceof ApiRequestError && e.status === 404) void dispatch(fetchSourceDefaults({ quiet: true }));
       // A 4xx says why (status + the server's message, already in the teacher's language); anything else is generic.
       if (e instanceof ApiRequestError && e.status >= 400 && e.status < 500) {
         return rejectWithValue({ status: e.status, message: e.message } satisfies ToggleRefusal);
@@ -62,9 +63,9 @@ const slice = createSlice({
   reducers: {},
   extraReducers: (builder) => {
     builder
-      .addCase(fetchSourceDefaults.pending, (state) => {
-        // A refetch (after a 404, say) keeps the list on screen: no skeleton, no lost focus.
-        if (state.status !== "loaded") state.status = "loading";
+      .addCase(fetchSourceDefaults.pending, (state, action) => {
+        // The quiet refetch after a 404 keeps the list on screen: no skeleton, no lost focus.
+        if (!(action.meta.arg?.quiet && state.status === "loaded")) state.status = "loading";
       })
       .addCase(fetchSourceDefaults.fulfilled, (state, action) => {
         // A read that started before a toggle landed (in flight or already settled) must not flip that switch back.
@@ -78,9 +79,9 @@ const slice = createSlice({
         );
         state.status = "loaded";
       })
-      .addCase(fetchSourceDefaults.rejected, (state) => {
-        // A failed refetch keeps the list it has; only a first load with nothing to show fails.
-        if (state.status !== "loaded") state.status = "failed";
+      .addCase(fetchSourceDefaults.rejected, (state, action) => {
+        // A failed quiet refetch keeps the list it has.
+        if (!(action.meta.arg?.quiet && state.status === "loaded")) state.status = "failed";
       })
       .addCase(toggleSourceDefault.pending, (state, action) => {
         const { sourceRef, enabled } = action.meta.arg;

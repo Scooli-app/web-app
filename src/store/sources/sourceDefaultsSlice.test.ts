@@ -79,17 +79,24 @@ describe("sourceDefaults", () => {
     await vi.waitFor(() => expect(selectSourceDefaults(store.getState() as RootState).map((e) => e.sourceRef)).toEqual(["ae"]));
   });
 
-  it("keeps the list on screen while it refetches, and when the refetch fails", async () => {
+  it("keeps the list on screen during a quiet refetch, and when it fails", async () => {
     let rejectFetch: (e: Error) => void = () => undefined;
     api.listSourceDefaults.mockReturnValueOnce(new Promise((_, reject) => (rejectFetch = reject)));
     const store = makeStore([row("ae", "ae", true)]);
     const status = () => (store.getState() as RootState).sourceDefaults.status;
-    const fetching = store.dispatch(fetchSourceDefaults());
+    const fetching = store.dispatch(fetchSourceDefaults({ quiet: true }));
     expect(status()).toBe("loaded"); // no skeleton over a list the teacher is using
     rejectFetch(new Error("503"));
     await fetching;
     expect(status()).toBe("loaded");
     expect(selectSourceDefaults(store.getState() as RootState)).toHaveLength(1);
+  });
+
+  it("goes back to loading on a normal refetch, so a page waiting for fresh defaults can tell", async () => {
+    api.listSourceDefaults.mockReturnValueOnce(new Promise(() => undefined));
+    const store = makeStore([row("ae", "ae", true)]);
+    void store.dispatch(fetchSourceDefaults());
+    expect((store.getState() as RootState).sourceDefaults.status).toBe("loading");
   });
 
   it("shows loading, then failed, on a first load with nothing to show", async () => {

@@ -19,7 +19,7 @@ const mocks = vi.hoisted(() => ({
   created: [] as Record<string, unknown>[],
   listSourceDefaults: vi.fn(),
   // The latest props the page gave the (stubbed) picker and lesson picker.
-  picker: null as null | { sourceIds: string[]; onUpdate: (field: string, value: unknown) => void },
+  picker: null as null | { sourceIds: string[]; includeAe: boolean; onUpdate: (field: string, value: unknown) => void },
   lesson: null as null | { onChange: (choice: unknown) => void },
 }));
 
@@ -44,7 +44,7 @@ vi.mock("./sections", async (importOriginal) => ({
     mocks.lesson = props;
     return null;
   },
-  SourcePickerSection: (props: { sourceIds: string[]; onUpdate: (field: string, value: unknown) => void }) => {
+  SourcePickerSection: (props: { sourceIds: string[]; includeAe: boolean; onUpdate: (field: string, value: unknown) => void }) => {
     mocks.picker = props;
     return null;
   },
@@ -70,7 +70,7 @@ const aeOff: SourceDefault = {
   summary: null, externalUrl: null, chunkCount: 0,
 };
 
-async function mountPage(defaults: Promise<SourceDefault[]>) {
+async function mountPage(defaults: Promise<SourceDefault[]>, stale?: SourceDefault[]) {
   mocks.listSourceDefaults.mockReturnValue(defaults);
   // Arrives pre-filled from the dashboard box, so "Criar" is enabled straight away.
   window.history.replaceState({}, "", "/presentation?topic=Frações&year=7&subject=matematica");
@@ -78,6 +78,8 @@ async function mountPage(defaults: Promise<SourceDefault[]>) {
     reducer: rootReducer,
     preloadedState: {
       features: { flags: { [FeatureFlag.USER_SOURCES]: true }, loading: false, loaded: true, error: null },
+      // Defaults already loaded earlier in the session (e.g. on /sources).
+      ...(stale && { sourceDefaults: { entries: stale, status: "loaded", pending: {}, clock: 0, toggledAt: {} } }),
     } as never,
   });
   const container = document.createElement("div");
@@ -176,6 +178,21 @@ describe("DocumentCreationPage source fields", () => {
     const container = await mountPage(Promise.resolve([schoolRule("o1", ["Mathematics"]), regulatory]));
     expect(container.textContent).toContain("Usa 2 fontes");
     expect(container.textContent).not.toMatch(/fontes? tuas?/);
+  });
+
+  it("starts from the defaults it fetched itself, not ones loaded earlier in the session", async () => {
+    const personal = (sourceRef: string, effectiveDefault: boolean): SourceDefault => ({
+      ...aeOff, sourceRef, kind: "personal", name: sourceRef, effectiveDefault, status: "indexed",
+    });
+    const stale = [{ ...aeOff, effectiveDefault: true }, personal("p1", true), personal("p2", false)];
+    let resolve: (v: SourceDefault[]) => void = () => undefined;
+    const container = await mountPage(new Promise((r) => (resolve = r)), stale);
+    expect(mocks.picker?.sourceIds).toEqual([]); // nothing applied from the stale copy
+    // Changed since: AE off, p1 off, p2 on.
+    await act(async () => resolve([{ ...aeOff, effectiveDefault: false }, personal("p1", false), personal("p2", true)]));
+    expect(mocks.picker?.includeAe).toBe(false);
+    expect(mocks.picker?.sourceIds).toEqual(["p2"]);
+    expect(await submit(container)).toMatchObject({ includeAe: false, sourceIds: ["p2"] });
   });
 });
 

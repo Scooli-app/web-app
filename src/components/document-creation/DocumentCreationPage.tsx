@@ -180,12 +180,17 @@ export default function DocumentCreationPage({
   const subjectValue = SUBJECTS.find((s) => s.id === formState.subject)?.value ?? formState.subject;
   const schoolYearValue = formState.schoolYear || undefined;
 
+  // Defaults loaded earlier in the session (e.g. on /sources) may be stale: the form starts only from its own fetch.
+  const [ownDefaultsLoaded, setOwnDefaultsLoaded] = useState(false);
   useEffect(() => {
-    if (showSourcePicker) dispatch(fetchSourceDefaults());
+    if (!showSourcePicker) return;
+    void dispatch(fetchSourceDefaults()).then((action) => {
+      if (fetchSourceDefaults.fulfilled.match(action)) setOwnDefaultsLoaded(true);
+    });
   }, [dispatch, showSourcePicker]);
 
   useEffect(() => {
-    if (!showSourcePicker || !defaultSelection) return;
+    if (!showSourcePicker || !defaultSelection || !ownDefaultsLoaded) return;
     if (!defaultsAppliedRef.current) {
       defaultsAppliedRef.current = true;
       const touched = touchedFieldsRef.current;
@@ -201,7 +206,7 @@ export default function DocumentCreationPage({
     }
     // Re-runs only when the defaults or the subject/year change, not on every tick.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showSourcePicker, defaultSelection, defaultEntries, subjectValue, schoolYearValue]);
+  }, [showSourcePicker, ownDefaultsLoaded, defaultSelection, defaultEntries, subjectValue, schoolYearValue]);
 
   const updateSources: FormUpdateFn = useCallback(
     (field, value) => {
