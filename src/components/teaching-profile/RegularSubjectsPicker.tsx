@@ -1,12 +1,8 @@
 "use client";
 
-import {
-  getSubjectsForGrade,
-  groupSubjectsByCategory,
-  SUBJECTS,
-  translateSubjectCategory,
-  translateSubjectLabel,
-} from "@/components/document-creation/constants";
+import { groupSubjectsByCategory, translateSubjectCategory } from "@/components/document-creation/constants";
+import { useCountryCatalog } from "@/hooks/useCountryCatalog";
+import { getCountryCatalog } from "@/lib/curriculum/countryCatalog";
 import { ChoiceChip } from "@/components/ui/choice-chip";
 import { Input } from "@/components/ui/input";
 import { ChevronDown, ChevronUp, Plus, Search, X } from "lucide-react";
@@ -35,26 +31,33 @@ export function RegularSubjectsPicker({
   const [term, setTerm] = useState("");
   const [isCatalogueOpen, setIsCatalogueOpen] = useState(selectedIds.length === 0);
 
+  const catalog = useCountryCatalog();
+  // Canonical (unlocalised) names, so search keeps matching the Portuguese label too.
+  const canonicalLabel = useMemo(
+    () => new Map(getCountryCatalog(catalog.countryCode).subjects.map((s) => [s.id, s.label])),
+    [catalog.countryCode],
+  );
+
   const selectedSet = useMemo(() => new Set(selectedIds), [selectedIds]);
-  const selectedSubjects = SUBJECTS.filter((subject) => selectedSet.has(subject.id));
+  const selectedSubjects = catalog.subjects.filter((subject) => selectedSet.has(subject.id));
 
   const catalogueGroups = useMemo(() => {
     const availableIds = new Set(
       schoolYears.length > 0
-        ? schoolYears.flatMap((year) => getSubjectsForGrade(String(year)).map((s) => s.id))
-        : SUBJECTS.map((subject) => subject.id)
+        ? schoolYears.flatMap((year) => catalog.subjectIdsForYear(year))
+        : catalog.subjects.map((subject) => subject.id)
     );
     const key = normalizeSearch(term);
-    const matching = SUBJECTS.filter(
+    const matching = catalog.subjects.filter(
       (subject) =>
         availableIds.has(subject.id) &&
         !selectedSet.has(subject.id) &&
         (!key ||
-          normalizeSearch(translateSubjectLabel(subject.id)).includes(key) ||
-          normalizeSearch(subject.label).includes(key))
+          normalizeSearch(subject.label).includes(key) ||
+          normalizeSearch(canonicalLabel.get(subject.id) ?? subject.label).includes(key))
     );
     return groupSubjectsByCategory(matching);
-  }, [schoolYears, selectedSet, term]);
+  }, [catalog, canonicalLabel, schoolYears, selectedSet, term]);
 
   return (
     <div className="space-y-4">
@@ -67,7 +70,7 @@ export function RegularSubjectsPicker({
         ) : (
           <div className="flex flex-wrap gap-2">
             {selectedSubjects.map((subject) => {
-              const label = translateSubjectLabel(subject.id);
+              const label = subject.label;
               return (
                 <ChoiceChip
                   key={subject.id}
@@ -137,7 +140,7 @@ export function RegularSubjectsPicker({
                           selected={false}
                           onClick={() => onToggle(subject.id)}
                         >
-                          {translateSubjectLabel(subject.id)}
+                          {subject.label}
                         </ChoiceChip>
                       ))}
                     </div>

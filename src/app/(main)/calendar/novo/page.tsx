@@ -27,10 +27,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  SUBJECTS_BY_GRADE,
   TIMETABLE_COLORS,
   translateSubject,
 } from "@/components/document-creation/constants";
+import { useCountryCatalog } from "@/hooks/useCountryCatalog";
 import { selectIsHorarioPlanosEnabled } from "@/store/features/selectors";
 import { useFeatureAccess } from "@/components/feature/useFeatureAccess";
 import { FeatureUnavailable } from "@/components/feature/FeatureUnavailable";
@@ -472,6 +472,7 @@ function StepDetails({
   onAlreadyCoveredNotesChange,
 }: StepDetailsProps) {
   const t = useTranslations("calendar.novo");
+  const catalog = useCountryCatalog();
 
   const lpw = weekScheduleLessonsPerWeek(schedule);
   const weeks = weeksBetweenIso(periodStart, periodEnd);
@@ -509,7 +510,7 @@ function StepDetails({
         subject={choice.subject}
         isSpecificComponent={choice.isSpecificComponent}
         onUpdate={onChoiceChange}
-        availableSubjects={choice.schoolYear ? SUBJECTS_BY_GRADE[String(choice.schoolYear)] : undefined}
+        availableSubjects={choice.schoolYear ? catalog.subjectIdsForYear(choice.schoolYear) : undefined}
         preferredSubjectIds={subjectPicker.preferredSubjectIds}
         mode={subjectPicker.teachingMode}
         vocationalCourse={subjectPicker.selectedVocationalCourse}

@@ -21,13 +21,11 @@ import { cn } from "@/shared/utils/utils";
 import { ChevronDown, ChevronUp, Loader2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
+import { translateSubjectCategory } from "../constants";
 import {
-  AMBIGUOUS_COMPONENTS_SUBJECTS,
-  SUBJECT_CATEGORY_ORDER,
-  SUBJECTS,
-  translateSubjectCategory,
-  translateSubjectLabel,
-} from "../constants";
+  useCountryCatalog,
+  type CatalogSubjectView,
+} from "@/hooks/useCountryCatalog";
 import type { VocationalCourseOption } from "../teaching-profile-preferences";
 import type { SubjectChoiceUpdateFn } from "../useSubjectChoice";
 
@@ -135,21 +133,22 @@ export function SubjectSection({
   disabled,
 }: SubjectSectionProps) {
   const t = useTranslations("documentCreation.subject");
+  const catalog = useCountryCatalog();
   const isVocational = mode === "vocational" && !!vocationalCourse;
   const [showAllSubjects, setShowAllSubjects] = useState(false);
   const [showAllVocational, setShowAllVocational] = useState(false);
 
   // ---- Regular ----------------------------------------------------------
   const visibleSubjects = availableSubjects
-    ? SUBJECTS.filter((s) => availableSubjects.includes(s.id))
-    : SUBJECTS;
+    ? catalog.subjects.filter((s) => availableSubjects.includes(s.id))
+    : catalog.subjects;
   const visibleSubjectIds = new Set(visibleSubjects.map((item) => item.id));
   const preferredIds = new Set(preferredSubjectIds.filter((id) => visibleSubjectIds.has(id)));
   const preferredSubjects = visibleSubjects.filter((item) => preferredIds.has(item.id));
   const remainingSubjects = visibleSubjects.filter((item) => !preferredIds.has(item.id));
   const hasPreferredSubjects = preferredSubjects.length > 0;
 
-  const groupedSubjects = remainingSubjects.reduce<Record<string, typeof SUBJECTS>>(
+  const groupedSubjects = remainingSubjects.reduce<Record<string, CatalogSubjectView[]>>(
     (acc, item) => {
       (acc[item.category] ??= []).push(item);
       return acc;
@@ -157,11 +156,11 @@ export function SubjectSection({
     {}
   );
   const categories = [
-    ...SUBJECT_CATEGORY_ORDER,
-    ...Object.keys(groupedSubjects).filter((c) => !SUBJECT_CATEGORY_ORDER.includes(c)),
+    ...catalog.categoryOrder,
+    ...Object.keys(groupedSubjects).filter((c) => !catalog.categoryOrder.includes(c)),
   ];
 
-  const isAmbiguous = !!subject && AMBIGUOUS_COMPONENTS_SUBJECTS.includes(subject);
+  const isAmbiguous = !!subject && catalog.ambiguousSubjectIds.includes(subject);
   const showRegularSelect =
     !hasPreferredSubjects || showAllSubjects || (!!subject && !preferredIds.has(subject));
 
@@ -343,7 +342,7 @@ export function SubjectSection({
                   disabled={disabled}
                   onClick={() => onUpdate("subject", isSelected ? "" : option.id)}
                 >
-                  {translateSubjectLabel(option.id)}
+                  {option.label}
                 </ChoiceChip>
               );
             })}
@@ -366,7 +365,7 @@ export function SubjectSection({
                   <SelectLabel className={SELECT_GROUP_LABEL_CLASS}>{translateSubjectCategory(category)}</SelectLabel>
                   {categorySubjects.map((option) => (
                     <SelectItem key={option.id} value={option.id} className={cn(SELECT_ITEM_CLASS, "pl-4")}>
-                      {translateSubjectLabel(option.id)}
+                      {option.label}
                     </SelectItem>
                   ))}
                 </SelectGroup>

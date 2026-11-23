@@ -6,11 +6,7 @@ import { LoadError } from "@/components/ui/load-error";
 import { ChoiceChip } from "@/components/ui/choice-chip";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { teachingProfileService } from "@/services/api/teaching-profile.service";
-import {
-  GRADE_GROUPS,
-  translateGradeGroupLabel,
-  translateGradeLabel,
-} from "@/components/document-creation/constants";
+import { useCountryCatalog } from "@/hooks/useCountryCatalog";
 import { buildRegularTeachingItems } from "@/components/document-creation/teaching-profile-preferences";
 import { EMPTY_TEACHING_PROFILE, type TeachingProfile } from "@/shared/types/teaching-profile";
 import {
@@ -117,10 +113,12 @@ export function TeachingProfileCard() {
   }, [isDirty]);
 
   const visibleYears = useMemo(() => new Set(schoolYearsForScope(scope)), [scope]);
-  const visibleGradeGroups = GRADE_GROUPS.map((group) => ({
+  const catalog = useCountryCatalog();
+  const visibleGradeGroups = catalog.yearGroups.map((group) => ({
     groupId: group.groupId,
-    grades: group.grades.filter((grade) => visibleYears.has(Number(grade.id))),
-  })).filter((group) => group.grades.length > 0);
+    label: group.label,
+    years: group.years.filter((year) => visibleYears.has(year.value)),
+  })).filter((group) => group.years.length > 0);
   const selectedYears = draft.schoolYears.filter((year) => visibleYears.has(year));
 
   const regularSubjectIds = draft.items
@@ -232,21 +230,21 @@ export function TeachingProfileCard() {
           >
             <div className="space-y-3">
               {visibleGradeGroups.map((group) => (
-                <div key={group.groupId} role="group" aria-label={translateGradeGroupLabel(group.groupId)}>
+                <div key={group.groupId} role="group" aria-label={group.label}>
                   <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                    {translateGradeGroupLabel(group.groupId)}
+                    {group.label}
                   </p>
                   <div className="flex flex-wrap gap-2">
-                    {group.grades.map((grade) => {
-                      const year = Number(grade.id);
+                    {group.years.map((grade) => {
+                      const year = grade.value;
                       return (
                         <ChoiceChip
-                          key={grade.id}
+                          key={year}
                           selected={selectedYears.includes(year)}
                           showCheck
                           onClick={() => toggleSchoolYear(year)}
                         >
-                          {translateGradeLabel(grade.id)}
+                          {grade.label}
                         </ChoiceChip>
                       );
                     })}

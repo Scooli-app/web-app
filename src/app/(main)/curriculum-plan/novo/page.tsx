@@ -18,7 +18,8 @@ import { Stepper } from "@/components/ui/stepper";
 import { AlreadyCoveredSection } from "@/components/document-creation/AlreadyCoveredSection";
 import { WizardShell } from "@/components/document-creation/WizardShell";
 import { WeekSchedulePicker } from "@/components/document-creation/WeekSchedulePicker";
-import { SUBJECTS, SUBJECTS_BY_GRADE } from "@/components/document-creation/constants";
+import { useCountryCatalog } from "@/hooks/useCountryCatalog";
+import { getCountryCatalog } from "@/lib/curriculum/countryCatalog";
 import { ClassSection, NESTED_SECTION_CLASS, SubjectSection } from "@/components/document-creation/sections";
 import {
   subjectChoiceLabel,
@@ -193,9 +194,11 @@ export default function CurriculumPlanNewPage() {
     [periodStartISO, periodEndISO, lpw, schedule],
   );
 
+  const catalog = useCountryCatalog();
+  // The raw catalog entry keeps the canonical Portuguese label the AI prompt is built from.
   const selectedSubject = useMemo(
-    () => SUBJECTS.find((s) => s.id === choice.subject),
-    [choice.subject]
+    () => getCountryCatalog(catalog.countryCode).subjects.find((s) => s.id === choice.subject),
+    [catalog.countryCode, choice.subject]
   );
   const { contentLanguage: contentLanguagePreference, interfaceLocale: interfaceLocalePreference } =
     useAppSelector((state) => state.ui);
@@ -442,7 +445,7 @@ export default function CurriculumPlanNewPage() {
                 subject={choice.subject}
                 isSpecificComponent={choice.isSpecificComponent}
                 onUpdate={updateChoice}
-                availableSubjects={choice.schoolYear ? SUBJECTS_BY_GRADE[String(choice.schoolYear)] : undefined}
+                availableSubjects={choice.schoolYear ? catalog.subjectIdsForYear(choice.schoolYear) : undefined}
                 preferredSubjectIds={subjectPicker.preferredSubjectIds}
                 mode={subjectPicker.teachingMode}
                 vocationalCourse={subjectPicker.selectedVocationalCourse}

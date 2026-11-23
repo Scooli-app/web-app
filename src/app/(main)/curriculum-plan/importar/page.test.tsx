@@ -12,7 +12,7 @@ const sections = vi.hoisted(() => ({
 }));
 const post = vi.hoisted(() => vi.fn());
 
-vi.mock("next-intl", () => ({ useTranslations: () => (key: string) => key }));
+vi.mock("next-intl", () => ({ useTranslations: () => (key: string) => key, useLocale: () => "pt-PT" }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), back: vi.fn() }) }));
 vi.mock("@/hooks/useAccountAccess", () => ({ useAccountAccess: () => ({ isLocked: false, guard: () => true }) }));
 vi.mock("@/components/feature/useFeatureAccess", () => ({ useFeatureAccess: () => ({ loaded: true, enabled: true }) }));
