@@ -1,5 +1,9 @@
 import { Routes } from "@/shared/types";
-import { SUBJECTS, SUBJECTS_BY_GRADE } from "./constants";
+import {
+  DEFAULT_COUNTRY_CODE,
+  getCountryCatalog,
+  type CountryCode,
+} from "@/lib/curriculum/countryCatalog";
 
 export type QuickCreateDocumentType =
   | "lessonPlan"
@@ -22,10 +26,20 @@ const CREATION_ROUTES: Record<QuickCreateDocumentType, string> = {
   worksheet: Routes.WORKSHEET,
 };
 
-const TYPE_KEYWORDS: { type: QuickCreateDocumentType; keywords: string[] }[] = [
+type TypeKeywords = { type: QuickCreateDocumentType; keywords: string[] }[];
+
+const PT_TYPE_KEYWORDS: TypeKeywords = [
   { type: "lessonPlan", keywords: ["plano de aula", "plano"] },
   { type: "worksheet", keywords: ["ficha de trabalho", "ficha"] },
   { type: "test", keywords: ["teste"] },
+  { type: "quiz", keywords: ["quiz"] },
+];
+
+/** Brazilian words for the same documents: "prova" is the usual word for a test, "lista de exercícios" for a worksheet. */
+const BR_TYPE_KEYWORDS: TypeKeywords = [
+  { type: "lessonPlan", keywords: ["plano de aula", "plano"] },
+  { type: "worksheet", keywords: ["ficha de trabalho", "lista de exercicios", "ficha"] },
+  { type: "test", keywords: ["prova", "teste"] },
   { type: "quiz", keywords: ["quiz"] },
 ];
 
@@ -34,7 +48,7 @@ function normalize(text: string): string {
   return text
     .toLowerCase()
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "");
+    .replace(/[̀-ͯ]/g, "");
 }
 
 function escapeRegExp(text: string): string {
@@ -53,18 +67,13 @@ function indexOfKeyword(haystack: string, keyword: string): number {
   return match ? match.index : -1;
 }
 
-// Longest labels first so "matematica a" wins over "matematica" when both apply
-const SUBJECTS_BY_LABEL_LENGTH = [...SUBJECTS].sort(
-  (a, b) => b.label.length - a.label.length,
-);
-
 /**
  * High-confidence topical cues that imply a subject even when the subject
  * itself is never named — e.g. "Os Lusíadas" clearly means Português. Curated
  * to well-known curriculum topics, not exhaustive: this is a fallback for
  * when the exact-label match above finds nothing, not a replacement for it.
  */
-const SUBJECT_TOPIC_KEYWORDS: { subjectId: string; keywords: string[] }[] = [
+const PT_SUBJECT_TOPIC_KEYWORDS: { subjectId: string; keywords: string[] }[] = [
   {
     subjectId: "portugues",
     keywords: [
@@ -96,21 +105,134 @@ const SUBJECT_TOPIC_KEYWORDS: { subjectId: string; keywords: string[] }[] = [
   },
 ];
 
+/** Brazilian subject ids are the display names; topics are keyed by those names. */
+const BR_SUBJECT_TOPIC_KEYWORDS: { subjectId: string; keywords: string[] }[] = [
+  {
+    subjectId: "Língua Portuguesa",
+    keywords: ["lusiadas", "camoes", "machado de assis", "graciliano ramos", "clarice lispector"],
+  },
+  {
+    subjectId: "História",
+    keywords: [
+      "revolucao francesa", "segunda guerra mundial", "primeira guerra mundial",
+      "revolucao industrial", "guerra fria", "idade media", "renascimento",
+      "ditadura militar", "independencia do brasil", "proclamacao da republica", "era vargas",
+    ],
+  },
+  {
+    subjectId: "Ciências",
+    keywords: ["fotossintese", "sistema solar", "ciclo da agua", "ecossistema"],
+  },
+  {
+    subjectId: "Matemática",
+    keywords: ["fracoes", "equacoes", "trigonometria", "numeros primos"],
+  },
+  {
+    subjectId: "Geografia",
+    keywords: ["placas tectonicas", "uniao europeia"],
+  },
+];
+
+/**
+ * Brazilian synonyms a teacher types for a subject, keyed by the subject id
+ * (its display name). Normalized, like the labels.
+ */
+const BR_SUBJECT_SYNONYMS: Record<string, string[]> = {
+  "Língua Portuguesa": ["portugues"],
+  "Língua Inglesa": ["ingles"],
+  Arte: ["artes visuais", "educacao artistica"],
+  "Educação Física": ["ed fisica", "ed. fisica"],
+  "Ensino Religioso": ["religiao"],
+  Ciências: ["ciencias naturais"],
+  Computação: ["informatica"],
+  "Ciências da Natureza": ["biologia", "fisica", "quimica"],
+  "Ciências Humanas e Sociais Aplicadas": ["ciencias humanas", "filosofia", "sociologia"],
+};
+
+interface MatchConfig {
+  typeKeywords: TypeKeywords;
+  /** Subject search terms, longest first: a normalized term and the subject id it names. */
+  subjectTerms: { term: string; subjectId: string }[];
+  subjectTopicKeywords: { subjectId: string; keywords: string[] }[];
+  /** Regex source for the year phrase that the Tema field should drop. */
+  yearPhrase: string;
+}
+
+const PT_YEAR_PHRASE = String.raw`(?:(?:para|do|da|de|no|na)\s+(?:o\s+|a\s+)?)?\d{1,2}\s*(?:\.\s*)?(?:[ºo°]\s*)?ano\b`;
+const BR_YEAR_PHRASE = String.raw`(?:(?:para|do|da|de|no|na)\s+(?:o\s+|a\s+)?)?(?:\d{1,2}\s*(?:\.\s*)?(?:[ºo°]\s*)?ano\b|[123]\s*[ªº°a]?\s*serie\b|(?:primeira|segunda|terceira)\s+serie\b)`;
+
+const matchConfigs = new Map<CountryCode, MatchConfig>();
+
+/** Subject terms per country. Longest raw label first, so "Matemática A" wins over "Matemática". */
+function matchConfigFor(countryCode: CountryCode): MatchConfig {
+  const cached = matchConfigs.get(countryCode);
+  if (cached) return cached;
+
+  const catalog = getCountryCatalog(countryCode);
+  const isBr = catalog.countryCode === "BR";
+  const entries = catalog.subjects.flatMap((subject) => {
+    const synonyms = isBr ? BR_SUBJECT_SYNONYMS[subject.id] ?? [] : [];
+    return [
+      { term: normalize(subject.label), rank: subject.label.length, subjectId: subject.id },
+      ...synonyms.map((term) => ({ term, rank: term.length, subjectId: subject.id })),
+    ];
+  });
+  const config: MatchConfig = {
+    typeKeywords: isBr ? BR_TYPE_KEYWORDS : PT_TYPE_KEYWORDS,
+    subjectTerms: entries
+      .sort((a, b) => b.rank - a.rank)
+      .map(({ term, subjectId }) => ({ term, subjectId })),
+    subjectTopicKeywords: isBr ? BR_SUBJECT_TOPIC_KEYWORDS : PT_SUBJECT_TOPIC_KEYWORDS,
+    yearPhrase: isBr ? BR_YEAR_PHRASE : PT_YEAR_PHRASE,
+  };
+  matchConfigs.set(countryCode, config);
+  return config;
+}
+
+const BR_SERIES_ORDINALS: Record<string, number> = { primeira: 10, segunda: 11, terceira: 12 };
+
+/**
+ * The school year named in normalized text. PT: "3.º ano". BR: "6º ano" for
+ * the Ensino Fundamental, "1ª série" (or "primeira série") for the Ensino Médio,
+ * and "1º ano do ensino médio" shifted to the 10.º.
+ */
+function parseSchoolYear(norm: string, countryCode: CountryCode): number | undefined {
+  if (countryCode === "BR") {
+    const series = norm.match(/\b([123])\s*[ªº°a]?\s*serie\b/);
+    if (series) return 9 + Number(series[1]);
+    const ordinal = norm.match(/\b(primeira|segunda|terceira)\s+serie\b/);
+    if (ordinal) return BR_SERIES_ORDINALS[ordinal[1]];
+  }
+
+  // School year: "3.º ano", "3º ano", "3o ano", "3 ano"
+  const yearMatch = norm.match(/\b(\d{1,2})\s*(?:\.\s*)?(?:[ºo°]\s*)?ano\b/);
+  if (!yearMatch) return undefined;
+  let year = Number(yearMatch[1]);
+  if (countryCode === "BR" && year <= 3 && /\bmedio\b/.test(norm)) year += 9;
+  return year >= 1 && year <= 12 ? year : undefined;
+}
+
 /**
  * Best-effort extraction of document type, school year and subject from a
  * teacher's free-text request (e.g. "plano de aula sobre frações para o 3.º ano").
  *
  * Vague inputs like "frações" are fine: the type falls back to lesson plan and
  * year/subject stay undefined — the creation form asks for whatever is missing.
+ * The country picks the vocabulary: Portuguese curriculum names or Brazilian ones.
  */
-export function parseQuickCreate(input: string): QuickCreateParse {
+export function parseQuickCreate(
+  input: string,
+  countryCode: CountryCode = DEFAULT_COUNTRY_CODE,
+): QuickCreateParse {
   const topic = input.trim();
   const norm = normalize(topic);
+  const config = matchConfigFor(countryCode);
+  const catalog = getCountryCatalog(countryCode);
 
   // Document type: earliest keyword occurrence wins
   let documentType: QuickCreateDocumentType = "lessonPlan";
   let bestIndex = Number.POSITIVE_INFINITY;
-  for (const { type, keywords } of TYPE_KEYWORDS) {
+  for (const { type, keywords } of config.typeKeywords) {
     for (const keyword of keywords) {
       const index = indexOfKeyword(norm, keyword);
       if (index !== -1 && index < bestIndex) {
@@ -120,29 +242,21 @@ export function parseQuickCreate(input: string): QuickCreateParse {
     }
   }
 
-  // School year: "3.º ano", "3º ano", "3o ano", "3 ano"
-  let schoolYear: number | undefined;
-  const yearMatch = norm.match(/\b(\d{1,2})\s*(?:\.\s*)?(?:[ºo°]\s*)?ano\b/);
-  if (yearMatch) {
-    const year = Number(yearMatch[1]);
-    if (year >= 1 && year <= 12) {
-      schoolYear = year;
-    }
-  }
+  const schoolYear = parseSchoolYear(norm, countryCode);
 
-  // Subject: explicit mention of a known subject label
+  // Subject: explicit mention of a known subject label or synonym
   let subjectId: string | undefined;
-  for (const subject of SUBJECTS_BY_LABEL_LENGTH) {
-    if (indexOfKeyword(norm, normalize(subject.label)) !== -1) {
-      subjectId = subject.id;
+  for (const { term, subjectId: sid } of config.subjectTerms) {
+    if (indexOfKeyword(norm, term) !== -1) {
+      subjectId = sid;
       break;
     }
   }
 
   // Fallback: no subject named outright, but a well-known topic implies one
-  // (e.g. "Camões" implies Português) — see SUBJECT_TOPIC_KEYWORDS above.
+  // (e.g. "Camões" implies Português) — see the topic keyword lists above.
   if (!subjectId) {
-    for (const { subjectId: sid, keywords } of SUBJECT_TOPIC_KEYWORDS) {
+    for (const { subjectId: sid, keywords } of config.subjectTopicKeywords) {
       if (keywords.some((keyword) => indexOfKeyword(norm, keyword) !== -1)) {
         subjectId = sid;
         break;
@@ -154,7 +268,7 @@ export function parseQuickCreate(input: string): QuickCreateParse {
   // "matemática" in the 10.º ano, where only Matemática A/B exist) —
   // the form would reset it anyway.
   if (subjectId && schoolYear) {
-    const validSubjects = SUBJECTS_BY_GRADE[String(schoolYear)];
+    const validSubjects = catalog.subjectIdsByYear[String(schoolYear)];
     if (validSubjects && !validSubjects.includes(subjectId)) {
       subjectId = undefined;
     }
@@ -171,17 +285,25 @@ export function parseQuickCreate(input: string): QuickCreateParse {
  * part of the topic: "Plano inclinado", "Teste de hipóteses" and "A história de
  * Portugal" stay whole. Falls back to the original text when nothing would be left.
  */
-export function stripParsedTokens(text: string, parse: QuickCreateParse): string {
+export function stripParsedTokens(
+  text: string,
+  parse: QuickCreateParse,
+  countryCode: CountryCode = DEFAULT_COUNTRY_CODE,
+): string {
   // Normalize char by char so indices in `norm` match indices in `text`.
   const norm = Array.from(text, (ch) => normalize(ch).charAt(0) || " ").join("");
+  const config = matchConfigFor(countryCode);
   const patterns: RegExp[] = [];
-  const subject = parse.subjectId
-    ? SUBJECTS.find((s) => s.id === parse.subjectId)
-    : undefined;
-  const subjectLabel = subject ? escapeRegExp(normalize(subject.label)) : null;
-  const yearPhrase = String.raw`(?:(?:para|do|da|de|no|na)\s+(?:o\s+|a\s+)?)?\d{1,2}\s*(?:\.\s*)?(?:[ºo°]\s*)?ano\b`;
+  // Every term that names the chosen subject: its label and, for Brazil, its synonyms.
+  const subjectTerms = parse.subjectId
+    ? config.subjectTerms.filter((entry) => entry.subjectId === parse.subjectId).map((entry) => entry.term)
+    : [];
+  const subjectLabel = subjectTerms.length > 0
+    ? `(?:${subjectTerms.map(escapeRegExp).join("|")})`
+    : null;
+  const yearPhrase = config.yearPhrase;
 
-  for (const { type, keywords } of TYPE_KEYWORDS) {
+  for (const { type, keywords } of config.typeKeywords) {
     if (type !== parse.documentType) continue;
     for (const keyword of [...keywords].sort((a, b) => b.length - a.length)) {
       const word = String.raw`^\s*${escapeRegExp(keyword)}(?:e?s)?(?![a-z0-9])`;
@@ -241,9 +363,12 @@ export function stripParsedTokens(text: string, parse: QuickCreateParse): string
 }
 
 /** Build the creation-page URL with prefill query params */
-export function buildQuickCreateUrl(parse: QuickCreateParse): string {
+export function buildQuickCreateUrl(
+  parse: QuickCreateParse,
+  countryCode: CountryCode = DEFAULT_COUNTRY_CODE,
+): string {
   const params = new URLSearchParams();
-  params.set("topic", stripParsedTokens(parse.topic, parse));
+  params.set("topic", stripParsedTokens(parse.topic, parse, countryCode));
   if (parse.schoolYear) params.set("year", String(parse.schoolYear));
   if (parse.subjectId) params.set("subject", parse.subjectId);
   return `${CREATION_ROUTES[parse.documentType]}?${params.toString()}`;
