@@ -31,5 +31,7 @@ export interface CurrentUserProfile {
    * still read as Portugal.
    */
   countryCode?: CountryCode;
+  /** Brazilian UF ("MT") a BR teacher works in; null when not chosen or outside Brazil. */
+  stateCode?: string | null;
   createdAt: string;
 }

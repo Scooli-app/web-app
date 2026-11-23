@@ -62,7 +62,13 @@
       "BR": "Brasil"
     },
     "saveError": "Não foi possível guardar o país. Tenta novamente.",
-    "note": "Define os anos de escolaridade e as disciplinas que aparecem na criação de documentos e planificações."
+    "note": "Define os anos de escolaridade e as disciplinas que aparecem na criação de documentos e planificações.",
+    "stateTitle": "Estado",
+    "statePlaceholder": "Escolhe o estado",
+    "stateNote": "Opcional. Com o estado, a Scooli junta o currículo estadual à BNCC quando o tiver.",
+    "stateWithCurriculum": "O currículo deste estado entra nos documentos, junto com a BNCC.",
+    "stateBnccOnly": "Para este estado a Scooli ainda usa só a BNCC.",
+    "stateSaveError": "Não foi possível guardar o estado. Tenta novamente."
   },
   "planGeneration": {
     "title": "A preparar o teu plano…",
@@ -4626,9 +4632,9 @@
       "bytes": "O espaço da escola está cheio ({max}). Elimina uma fonte para adicionar outra."
     },
     "size": {
-      "kb": "{n}\u00a0KB",
-      "mb": "{n}\u00a0MB",
-      "gb": "{n}\u00a0GB"
+      "kb": "{n} KB",
+      "mb": "{n} MB",
+      "gb": "{n} GB"
     },
     "menu": {
       "edit": "Editar",
