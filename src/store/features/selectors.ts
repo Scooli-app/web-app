@@ -50,6 +50,22 @@ export const selectIsContextPipelineV2Enabled = createSelector(
   (enabledFeatures) => enabledFeatures.includes(FeatureFlag.CONTEXT_PIPELINE_V2)
 );
 
+export const selectIsOrganizationSourcesEnabled = createSelector(
+  [selectEnabledFeatureFlags],
+  (enabledFeatures) => enabledFeatures.includes(FeatureFlag.ORGANIZATION_SOURCES)
+);
+
+export const selectIsUserSourcesEnabled = createSelector(
+  [selectEnabledFeatureFlags],
+  (enabledFeatures) => enabledFeatures.includes(FeatureFlag.USER_SOURCES)
+);
+
+/** The Fontes page and its sidebar item: personal sources or school sources. */
+export const selectIsSourcesPageEnabled = createSelector(
+  [selectIsUserSourcesEnabled, selectIsOrganizationSourcesEnabled],
+  (userSources, organizationSources) => userSources || organizationSources
+);
+
 export const selectIsCurriculumPlanEnabled = createSelector(
   [selectEnabledFeatureFlags],
   (enabledFeatures) => enabledFeatures.includes(FeatureFlag.CURRICULUM_PLAN_ENABLED)

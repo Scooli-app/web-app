@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Routes } from "@/shared/types";
 import { cn } from "@/shared/utils/utils";
-import { selectIsClassStateEnabled } from "@/store/features/selectors";
+import { selectIsClassStateEnabled, selectIsOrganizationSourcesEnabled } from "@/store/features/selectors";
 import { useAppSelector } from "@/store/hooks";
 import { selectWorkspaceContext } from "@/store/workspace/selectors";
 import { ChevronDown } from "lucide-react";
@@ -27,6 +27,7 @@ const PAGES = [
 const MANAGE = [
   { href: Routes.SCHOOL_MEMBERS, key: "schoolMembers" },
   { href: Routes.SCHOOL_USAGE, key: "schoolUsage" },
+  { href: Routes.SCHOOL_SOURCES, key: "schoolSources" },
   { href: Routes.SCHOOL_SETTINGS, key: "schoolSettings" },
 ] as const;
 
@@ -52,9 +53,11 @@ export function SchoolAreaNav() {
   const tNav = useTranslations("nav.items");
   const pathname = usePathname();
   const enabled = useAppSelector(selectIsClassStateEnabled);
+  const sourcesEnabled = useAppSelector(selectIsOrganizationSourcesEnabled);
   const schoolName = useAppSelector(selectWorkspaceContext)?.organization?.name;
 
   if (!enabled) return null;
+  const manage = MANAGE.filter((item) => item.href !== Routes.SCHOOL_SOURCES || sourcesEnabled);
 
   return (
     <PageContainer size="xl" contentClassName="pt-2 sm:pt-4" className="print:hidden">
@@ -73,12 +76,12 @@ export function SchoolAreaNav() {
           </Tab>
         ))}
         <DropdownMenu>
-          <DropdownMenuTrigger className={tabClass(MANAGE.some((item) => pathname === item.href))}>
+          <DropdownMenuTrigger className={tabClass(manage.some((item) => pathname === item.href))}>
             {t("manage")}
             <ChevronDown className="size-3.5" aria-hidden />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            {MANAGE.map((item) => (
+            {manage.map((item) => (
               <DropdownMenuItem key={item.href} asChild>
                 <Link href={item.href}>{tNav(`${item.key}.title`)}</Link>
               </DropdownMenuItem>

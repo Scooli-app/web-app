@@ -271,8 +271,8 @@
         "description": "Partilhar e descobrir recursos"
       },
       "sources": {
-        "title": "As minhas fontes",
-        "description": "Gerir fontes de conteúdo para geração"
+        "title": "Fontes",
+        "description": "O que a Scooli consulta quando crias materiais"
       },
       "calendar": {
         "title": "Calendário",
@@ -325,6 +325,10 @@
       "schoolMembers": {
         "title": "Membros",
         "description": "Ver membros e lugares da escola"
+      },
+      "schoolSources": {
+        "title": "Fontes da escola",
+        "description": "Documentos que os professores da escola recebem"
       },
       "schoolDirection": {
         "title": "Painel da direção",
@@ -610,7 +614,10 @@
       "openInNewWindow": "Abrir {name} numa nova janela",
       "noneMatch": "Nenhuma das tuas fontes corresponde a esta disciplina e ano.",
       "stillProcessing": "As tuas fontes ainda estão a ser processadas.",
-      "allFailed": "Nenhuma das tuas fontes foi processada."
+      "allFailed": "Nenhuma das tuas fontes foi processada.",
+      "schoolSources": "Fontes da escola",
+      "otherSchoolSources": "Outras fontes da escola",
+      "defaultsFailed": "Não conseguimos carregar as tuas fontes por omissão. O que não mudares aqui segue-as na mesma."
     },
     "slideCount": {
       "title": "Número de slides",
@@ -928,7 +935,7 @@
       "summaryTemplate": "Modelo: {name}",
       "summaryDuration": "Duração: {minutes} min",
       "summaryDurationFree": "Duração: livre",
-      "summarySources": "{count, plural, one {Usa # fonte tua} other {Usa # fontes tuas}}",
+      "summarySources": "{count, plural, one {Usa # fonte} other {Usa # fontes}}",
       "summarySlides": "{count} diapositivos"
     },
     "missing": {
@@ -2687,32 +2694,40 @@
     },
     "page": {
       "title": "Fontes",
-      "description": "O que a Scooli consulta quando crias materiais: as fontes da Scooli e os materiais que carregas.",
-      "addSource": "Adicionar fonte",
+      "description": "O que a Scooli consulta quando crias materiais.",
       "dropzoneEmpty": "Clica ou arrasta um ficheiro",
       "dropzoneHint": "PDF ou DOCX",
       "namePlaceholder": "Nome da fonte *",
       "uploading": "A carregar...",
       "upload": "Carregar",
-      "loadedSources": "Fontes carregadas",
       "processingBadge": "A processar...",
       "loadingSources": "A carregar fontes...",
       "emptyState": "Ainda não tens fontes carregadas.",
       "confirm": "Confirmar",
       "cancel": "Cancelar",
       "deleteAriaLabel": "Eliminar fonte",
-      "proNote": "Só tu vês as tuas fontes. A Scooli lê-as em segundo plano e usa-as nos documentos que crias.",
       "strippedBackMatterTooltip": "Excluímos {size} de {heading} antes de processar.",
       "strippedSectionOmitted": "Secção {heading} omitida",
       "sectionFallback": "final",
       "backMatterFallback": "back-matter",
       "emptyDescription": "Carrega o manual ou os materiais da tua escola e a Scooli usa-os nos documentos que crias.",
       "emptyAction": "Carregar uma fonte",
-      "scooliSources": "Fontes da Scooli",
-      "scooliSourcesDescription": "Já estão incluídas. A Scooli usa-as por defeito em todos os materiais que crias, e podes desligá-las em cada documento.",
-      "aeName": "Aprendizagens Essenciais",
       "aeDescription": "O currículo nacional, por disciplina e ano de escolaridade.",
       "regulatoryDescription": "Documento regulatório",
+      "defaultsTitle": "Fontes usadas por omissão",
+      "defaultsDescription": "Estas fontes entram nos documentos que crias sem o formulário completo (chat, Gerar semana, documento da aula…). No formulário completo podes mudar só para esse documento.",
+      "curriculum": "Currículo nacional",
+      "regulatory": "Documentos regulatórios",
+      "fromSchool": "Da tua escola · {name}",
+      "yours": "As tuas fontes",
+      "useByDefault": "Usar por omissão",
+      "aeOffNote": "Com as AE desligadas, os documentos rápidos deixam de as seguir.",
+      "typeRegra": "Regra",
+      "typeApoio": "Apoio",
+      "addedBy": "Adicionada por {name}",
+      "summary": "Resumo",
+      "saveError": "Não foi possível guardar. Tenta outra vez.",
+      "sourceGone": "Esta fonte já não existe.",
       "openOfficialText": "Abrir o texto oficial de {name}",
       "proTitle": "Carrega as tuas fontes com o Pro",
       "proDescription": "Com o Pro, carregas o manual ou os materiais da tua escola (PDF ou DOCX), e os planos e fichas que crias passam a seguir essa matéria.",
@@ -2724,6 +2739,7 @@
       "parsing": "A ler ficheiro",
       "chunking": "A segmentar",
       "embedding": "A indexar",
+      "summarising": "A resumir",
       "indexed": "Indexado",
       "failed": "Falhou"
     },
@@ -4576,5 +4592,78 @@
     "searchFree": "Pesquisar fotos gratuitas",
     "subscribe": "Ver planos Pro",
     "dismiss": "Fechar aviso"
+  },
+  "schoolSources": {
+    "title": "Fontes da escola",
+    "intro": "Os professores da escola recebem estas fontes. Cada um pode desligá-las para si.",
+    "add": "Adicionar fonte",
+    "addTitle": "Adicionar fonte da escola",
+    "editTitle": "Editar fonte",
+    "type": {
+      "label": "Tipo",
+      "regra": {
+        "title": "Regra da escola",
+        "hint": "Entra sempre nos documentos destas disciplinas e anos"
+      },
+      "apoio": {
+        "title": "Material de apoio",
+        "hint": "Entra quando o tema corresponde"
+      }
+    },
+    "defaultEnabled": "Ligada por omissão para os professores",
+    "onForAll": "Ligada para todos",
+    "offByDefault": "Desligada por omissão",
+    "all": "Todas",
+    "years": {
+      "single": "{n}.º",
+      "range": "{from}.º–{to}.º",
+      "option": "{n}.º",
+      "list": "{list}"
+    },
+    "quota": "{files} de {filesMax} ficheiros · {used} de {max}",
+    "quotaFull": {
+      "files": "Chegaste ao limite de {max} ficheiros. Elimina uma fonte para adicionar outra.",
+      "bytes": "O espaço da escola está cheio ({max}). Elimina uma fonte para adicionar outra."
+    },
+    "size": {
+      "kb": "{n}\u00a0KB",
+      "mb": "{n}\u00a0MB",
+      "gb": "{n}\u00a0GB"
+    },
+    "menu": {
+      "edit": "Editar",
+      "turnOff": "Desligar por omissão",
+      "turnOn": "Ligar por omissão",
+      "delete": "Eliminar",
+      "actions": "Ações de {name}"
+    },
+    "deleteConfirm": "Eliminar “{name}”? Os professores deixam de a receber.",
+    "empty": "Ainda não há fontes da escola. Adiciona os critérios de avaliação ou o regulamento interno.",
+    "status": {
+      "indexing": "A indexar…",
+      "failed": "Falhou a indexação",
+      "failedHint": "Não conseguimos ler este ficheiro. Elimina-o e carrega-o de novo."
+    },
+    "form": {
+      "file": "Ficheiro",
+      "chooseFile": "Escolher ficheiro",
+      "noFile": "Nenhum ficheiro escolhido",
+      "fileHint": "PDF, Word ou Markdown.",
+      "name": "Nome",
+      "subjects": "Disciplinas",
+      "subjectsHint": "Até {max} disciplinas. Sem nenhuma marcada, vale para todas.",
+      "years": "Anos",
+      "yearsHint": "Sem nenhum marcado, vale para todos os anos.",
+      "cancel": "Cancelar",
+      "save": "Guardar",
+      "upload": "Adicionar"
+    },
+    "errors": {
+      "load": "Não foi possível carregar as fontes da escola.",
+      "generic": "Não foi possível concluir. Tenta outra vez.",
+      "fileTooBig": "O ficheiro tem mais de {max}. Escolhe um ficheiro mais pequeno.",
+      "duplicate": "Este ficheiro já está nas fontes da escola.",
+      "indexing": "Esta fonte ainda está a ser indexada. Tenta de novo quando terminar."
+    }
   }
 }
