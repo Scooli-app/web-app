@@ -2,6 +2,7 @@
 
 import {
   getCountryCatalog,
+  gradeOptionsFor,
   subjectIdsForYear,
   type CountryCode,
 } from "@/lib/curriculum/countryCatalog";
@@ -103,4 +104,10 @@ export function useCountryCatalog(): CountryCatalogView {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [countryCode, locale],
   );
+}
+
+/** Grade options of the teacher's country (see `gradeOptionsFor`). */
+export function useGradeOptions(): { value: string; label: string }[] {
+  const countryCode = useCountry();
+  return useMemo(() => gradeOptionsFor(countryCode), [countryCode]);
 }

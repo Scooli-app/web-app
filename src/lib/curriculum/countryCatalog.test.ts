@@ -8,6 +8,7 @@ import {
 import {
   COUNTRY_CODES,
   DEFAULT_COUNTRY_CODE,
+  gradeOptionsFor,
   getCountryCatalog,
   isCountryCode,
   subjectIdsForYear,
@@ -158,5 +159,19 @@ describe("countryCatalog", () => {
       expect(getCountryCatalog("US").countryCode).toBe("PT");
       expect(getCountryCatalog("BR").countryCode).toBe("BR");
     });
+  });
+});
+
+describe("gradeOptionsFor", () => {
+  it("lists the Portuguese grades as the string year", () => {
+    const options = gradeOptionsFor("PT");
+    expect(options).toHaveLength(12);
+    expect(options[0]).toEqual({ value: "1", label: "1º ano" });
+  });
+
+  it("lists the Brazilian years and series", () => {
+    const options = gradeOptionsFor("BR");
+    expect(options).toHaveLength(12);
+    expect(options[9]).toEqual({ value: "10", label: "1ª série (Ensino Médio)" });
   });
 });

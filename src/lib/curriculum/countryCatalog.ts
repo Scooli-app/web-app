@@ -929,3 +929,13 @@ export function subjectIdsForYear(
   }
   return catalog.subjectIdsByYear[String(year)] ?? [];
 }
+
+/** Grade options (id is the year as a string) for filters and selects. Labels are the catalog's default labels. */
+export function gradeOptionsFor(
+  countryCode: CountryCode | string | null | undefined,
+): { value: string; label: string }[] {
+  return getCountryCatalog(countryCode).schoolYears.map((year) => ({
+    value: String(year.value),
+    label: year.label,
+  }));
+}
