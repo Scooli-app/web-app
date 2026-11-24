@@ -12,6 +12,7 @@ import {
   effectiveWeeklyEmail,
 } from "@/components/onboarding-v2/ritualState";
 import { termAndWeek } from "@/components/onboarding-v2/schoolCalendar";
+import { useCountry } from "@/hooks/useCountry";
 import { StepHeading } from "@/components/onboarding-v2/StepHeading";
 import type { OnboardingFlowController } from "@/components/onboarding-v2/useOnboardingV2";
 import { useStepFooter } from "@/components/onboarding-v2/useStepFooter";
@@ -83,6 +84,7 @@ interface WaitStepProps {
  */
 export function WaitStep({ flow, onFinished }: WaitStepProps) {
   const t = useTranslations("onboardingV2");
+  const country = useCountry();
   const tEnum = useTranslations("enums");
   const locale = useLocale();
   const { answers, trackCompleted, generation, ritual, updateRitual } = flow;
@@ -129,7 +131,7 @@ export function WaitStep({ flow, onFinished }: WaitStepProps) {
   const dayMonth = (date: Date) =>
     new Intl.DateTimeFormat(locale, { day: "numeric", month: "long" }).format(date);
   const parse = (iso: string) => new Date(`${iso}T00:00:00`);
-  const term = termAndWeek(today);
+  const term = termAndWeek(today, country);
   const first = answers.firstClass;
   const context = [
     dayMonth(today),

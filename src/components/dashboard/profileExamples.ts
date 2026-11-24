@@ -38,7 +38,7 @@ export function profileExamplePairs(
 }
 
 /** The topic that usually comes next at this point of the school year (the one after those usually taught). */
-export function currentTopic(topics: string[], today: Date): string | null {
+export function currentTopic(topics: string[], today: Date, countryCode: CountryCode = DEFAULT_COUNTRY_CODE): string | null {
   if (topics.length === 0) return null;
-  return topics[Math.min(suggestedTaughtCount(topics.length, today), topics.length - 1)];
+  return topics[Math.min(suggestedTaughtCount(topics.length, today, countryCode), topics.length - 1)];
 }

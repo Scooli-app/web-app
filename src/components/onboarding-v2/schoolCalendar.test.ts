@@ -31,6 +31,21 @@ describe("suggestedTaughtCount", () => {
   });
 });
 
+describe("Brazil (2 Feb → 18 Dec, four bimestres)", () => {
+  it("follows the calendar year", () => {
+    expect(schoolYearProgress(day(2027, 1, 20), "BR")).toBe(0);
+    expect(schoolYearProgress(day(2027, 2, 2), "BR")).toBe(0);
+    expect(schoolYearProgress(day(2027, 12, 20), "BR")).toBe(1);
+    expect(suggestedTaughtCount(10, day(2027, 7, 1), "BR")).toBe(4);
+  });
+  it("names the bimestre and its week, and nothing in the July recess", () => {
+    expect(termAndWeek(day(2027, 2, 2), "BR")).toEqual({ term: 1, week: 1 });
+    expect(termAndWeek(day(2027, 5, 4), "BR")).toEqual({ term: 2, week: 3 });
+    expect(termAndWeek(day(2027, 7, 20), "BR")).toBeNull();
+    expect(termAndWeek(day(2027, 11, 24), "BR")).toEqual({ term: 4, week: 8 });
+  });
+});
+
 describe("termAndWeek", () => {
   it("gives the term and its week", () => {
     expect(termAndWeek(day(2026, 11, 5))).toEqual({ term: 1, week: 8 });

@@ -68,6 +68,10 @@ describe("countryCatalog", () => {
       ]);
     });
 
+    it("drops the repeated stage from the years under the Ensino Médio heading", () => {
+      expect(catalog.yearGroups[1].years.map((y) => y.label)).toEqual(["1ª série", "2ª série", "3ª série"]);
+    });
+
     it("offers the Fundamental subjects in years 1 to 9", () => {
       const expected = [
         "Língua Portuguesa",

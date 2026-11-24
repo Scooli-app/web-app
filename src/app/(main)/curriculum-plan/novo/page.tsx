@@ -18,6 +18,7 @@ import { Stepper } from "@/components/ui/stepper";
 import { AlreadyCoveredSection } from "@/components/document-creation/AlreadyCoveredSection";
 import { WizardShell } from "@/components/document-creation/WizardShell";
 import { WeekSchedulePicker } from "@/components/document-creation/WeekSchedulePicker";
+import { useCountry } from "@/hooks/useCountry";
 import { useCountryCatalog } from "@/hooks/useCountryCatalog";
 import { getCountryCatalog } from "@/lib/curriculum/countryCatalog";
 import { ClassSection, NESTED_SECTION_CLASS, SubjectSection } from "@/components/document-creation/sections";
@@ -179,7 +180,8 @@ export default function CurriculumPlanNewPage() {
   const showUnitHours = isVocational && Boolean(choice.vocationalUnitCode);
   const [submitting, setSubmitting] = useState(false);
 
-  const PRESETS = useMemo(() => buildSchoolPeriodPresets(), []);
+  const presetCountry = useCountry();
+  const PRESETS = useMemo(() => buildSchoolPeriodPresets(presetCountry), [presetCountry]);
 
   const lpw = useMemo(() => weekScheduleLessonsPerWeek(schedule), [schedule]);
   const periodStartISO = useMemo(() => (periodStart ? toISO(periodStart) : ""), [periodStart]);
