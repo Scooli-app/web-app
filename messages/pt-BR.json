@@ -3772,14 +3772,14 @@
       },
       "period": {
         "title": "Período letivo",
-        "subtitle": "Define as datas de início e fim da turma.",
+        "subtitle": "Defina as datas de início e fim da turma.",
         "presetsLabel": "Atalhos",
         "startLabel": "Início *",
         "startPlaceholder": "Selecione a data de início",
         "endLabel": "Fim *",
         "endPlaceholder": "Selecione a data de fim",
         "schoolYearLabel": "Ano letivo",
-        "schoolYearPlaceholder": "Ex: 2025/2026",
+        "schoolYearPlaceholder": "Ex: 2027",
         "freeLimitNote": "No plano gratuito você pode planejar até 4 semanas (até {date}).",
         "freeLimitUpgrade": "Atualizar para Pro"
       },
