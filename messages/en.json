@@ -4636,6 +4636,12 @@
     "onForAll": "On for everyone",
     "offByDefault": "Off by default",
     "all": "All",
+    "scope": {
+      "allSubjects": "All subjects",
+      "allYears": "All years",
+      "subjects": "{count, plural, one {# subject} other {# subjects}}",
+      "years": "{count, plural, one {# year} other {# years}}"
+    },
     "years": {
       "single": "{n}",
       "range": "{from}–{to}",
@@ -4673,9 +4679,9 @@
       "fileHint": "PDF, Word or Markdown.",
       "name": "Name",
       "subjects": "Subjects",
-      "subjectsHint": "Up to {max} subjects. With none ticked, it applies to every subject.",
+      "pickSubject": "Tick at least one subject.",
       "years": "Years",
-      "yearsHint": "With none ticked, it applies to every year.",
+      "pickYear": "Tick at least one year.",
       "cancel": "Cancel",
       "save": "Save",
       "upload": "Add"

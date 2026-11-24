@@ -4636,6 +4636,12 @@
     "onForAll": "Ativada para todos",
     "offByDefault": "Desativada por padrão",
     "all": "Todas",
+    "scope": {
+      "allSubjects": "Todas as disciplinas",
+      "allYears": "Todos os anos",
+      "subjects": "{count, plural, one {# disciplina} other {# disciplinas}}",
+      "years": "{count, plural, one {# ano} other {# anos}}"
+    },
     "years": {
       "single": "{n, select, 10 {1ª série} 11 {2ª série} 12 {3ª série} other {{n}º}}",
       "range": "{from, select, 10 {1ª} 11 {2ª} other {{from}º}}–{to, select, 10 {1ª série} 11 {2ª série} 12 {3ª série} other {{to}º}}",
@@ -4673,9 +4679,9 @@
       "fileHint": "PDF, Word ou Markdown.",
       "name": "Nome",
       "subjects": "Disciplinas",
-      "subjectsHint": "Até {max} disciplinas. Sem nenhuma marcada, vale para todas.",
+      "pickSubject": "Marque pelo menos uma disciplina.",
       "years": "Anos",
-      "yearsHint": "Sem nenhum marcado, vale para todos os anos.",
+      "pickYear": "Marque pelo menos um ano.",
       "cancel": "Cancelar",
       "save": "Salvar",
       "upload": "Adicionar"

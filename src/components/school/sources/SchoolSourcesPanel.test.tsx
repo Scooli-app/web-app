@@ -90,19 +90,25 @@ describe("SchoolSourcesPanel rows", () => {
     document.body.innerHTML = "";
   });
 
-  it("lists 50 sources, clamping long names and all-subject, all-year tags with the full text in the title", async () => {
+  it("lists 50 sources as cards, clamping long names and summing up the scope instead of listing every subject", async () => {
     const many = Array.from({ length: 50 }, (_, i) =>
       school({ id: `s${i}`, name: i === 0 ? LONG_NAME : `Fonte ${i}`, subjects: MAX_SUBJECTS, schoolYears: ALL_YEARS }),
     );
     const c = await mountPanel(many);
-    expect(c.querySelectorAll('[data-testid="school-source-row"]')).toHaveLength(50);
-    const name = c.querySelector<HTMLElement>(`[title="${LONG_NAME}"]`);
-    expect(name?.className).toContain("line-clamp-2");
-    const tags = name?.nextElementSibling as HTMLElement;
-    expect(tags.className).toContain("line-clamp-2");
-    expect(tags.title).toContain("1.º–12.º");
-    // the menu stays a sibling of the text, never pushed out by it
-    expect(c.querySelector('[data-testid="school-source-row"] > button[aria-haspopup]')).not.toBeNull();
+    const cards = c.querySelectorAll('[data-testid="school-source-card"]');
+    expect(cards).toHaveLength(50);
+    expect(c.querySelector<HTMLElement>(`[title="${LONG_NAME}"]`)?.className).toContain("line-clamp-2");
+    const scope = c.querySelector<HTMLElement>(`[title="${MAX_SUBJECTS.length} disciplinas · 1.º–12.º"]`);
+    expect(scope?.className).toContain("truncate");
+    expect(cards[1].textContent).not.toContain("Matemática"); // card 0 has the long name, which says it
+    expect(cards[0].querySelector("button[aria-haspopup]")).not.toBeNull();
+  });
+
+  it("says a source with no tags applies to every subject and year", async () => {
+    const c = await mountPanel([school({})]);
+    expect(c.textContent).toContain("Todas as disciplinas · Todos os anos");
+    expect(c.textContent).toContain(pt.schoolSources.type.regra.title);
+    expect(c.textContent).toContain(pt.schoolSources.onForAll);
   });
 
   it("marks a failed source and says what to do", async () => {
@@ -113,7 +119,7 @@ describe("SchoolSourcesPanel rows", () => {
 
   it("disables edit, toggle and delete while a source indexes", async () => {
     const c = await mountPanel([school({ status: "embedding" })]);
-    const items = await openMenu(c.querySelector('[data-testid="school-source-row"]') as Element);
+    const items = await openMenu(c.querySelector('[data-testid="school-source-card"]') as Element);
     expect(items).toHaveLength(3);
     expect(items.every((i) => i.getAttribute("aria-disabled") === "true")).toBe(true);
   });
@@ -122,7 +128,7 @@ describe("SchoolSourcesPanel rows", () => {
     const c = await mountPanel([school({})]);
     vi.mocked(updateSchoolSource).mockRejectedValueOnce(new ApiRequestError("Esta fonte ainda…", 409, "source_indexing"));
     vi.mocked(listSchoolSources).mockClear();
-    const items = await openMenu(c.querySelector('[data-testid="school-source-row"]') as Element);
+    const items = await openMenu(c.querySelector('[data-testid="school-source-card"]') as Element);
     await act(async () => items[1].click());
     expect(toast.error).toHaveBeenLastCalledWith(pt.schoolSources.errors.indexing);
     expect(listSchoolSources).toHaveBeenCalled();
