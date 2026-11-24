@@ -36,7 +36,8 @@
       "followBrowser": "Navegador",
       "followBrowserHint": "A seguir o teu navegador",
       "options": {
-        "pt-PT": "Português",
+        "pt-PT": "Português (Portugal)",
+        "pt-BR": "Português (Brasil)",
         "en": "English",
         "system": "Navegador"
       }
@@ -48,7 +49,8 @@
       "sameAsInterfaceHint": "Igual ao idioma da interface",
       "curriculumNote": "O currículo continua a ser o português. Só muda a língua em que os materiais são escritos — útil para quem ensina Inglês.",
       "options": {
-        "pt-PT": "Português",
+        "pt-PT": "Português (Portugal)",
+        "pt-BR": "Português (Brasil)",
         "en": "English",
         "interface": "Igual à interface"
       }
@@ -229,7 +231,8 @@
     "outcomesCount": "{count} {source, select, unit {da unidade} catalogue {do programa} other {da aula}}"
   },
   "previousCheckIn": {
-    "question": "Como correu a aula?",
+    "question": "Como correu a última aula?",
+    "lessonOn": "Aula de {day}",
     "notNow": "Agora não",
     "saved": "Registado.",
     "savedWithContext": "Registado. A próxima aula vai ter isto em conta."
@@ -616,7 +619,6 @@
       "noIndexedSourcesSuffix": "para enriquecer a geração.",
       "mySources": "As minhas fontes ({count})",
       "excerpts": "{count} excertos",
-      "schoolYearSuffix": "º ano",
       "openInNewWindow": "Abrir {name} numa nova janela",
       "noneMatch": "Nenhuma das tuas fontes corresponde a esta disciplina e ano.",
       "stillProcessing": "As tuas fontes ainda estão a ser processadas.",

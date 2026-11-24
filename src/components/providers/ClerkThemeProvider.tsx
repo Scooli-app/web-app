@@ -2,7 +2,7 @@
 
 import type { Locale } from "@/i18n/locales";
 import type { RootState } from "@/store/store";
-import { enUS, ptPT } from "@clerk/localizations";
+import { enUS, ptBR, ptPT } from "@clerk/localizations";
 import { ClerkProvider } from "@clerk/nextjs";
 import { dark } from "@clerk/themes";
 import { useLocale } from "next-intl";
@@ -91,6 +91,7 @@ const PT_PT_CORRECTIONS: Partial<typeof ptPT> = {
  */
 const CLERK_LOCALIZATIONS: Record<Locale, typeof ptPT> = {
   "pt-PT": { ...ptPT, ...PT_PT_CORRECTIONS },
+  "pt-BR": ptBR,
   en: enUS,
 };
 

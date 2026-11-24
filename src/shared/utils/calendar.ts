@@ -8,6 +8,7 @@ import type { Locale } from "@/i18n/locales";
  */
 const INTL_LOCALE_BY_LOCALE: Record<Locale, string> = {
   "pt-PT": "pt-PT",
+  "pt-BR": "pt-BR",
   en: "en-GB",
 };
 

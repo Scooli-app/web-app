@@ -15,6 +15,7 @@ import { locales, LOCALE_LABELS, type Locale } from "@/i18n/locales";
 
 const LOCALE_CODES: Record<Locale, string> = {
   "pt-PT": "PT",
+  "pt-BR": "BR",
   en: "EN",
 };
 

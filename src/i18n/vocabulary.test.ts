@@ -46,9 +46,10 @@ describe("ENG-313 vocabulary", () => {
     expect(en.checkIns.mark.taught).toBe("Taught");
   });
 
-  it("asks the previous lesson in the same words in the strip and in the lesson dialog", () => {
-    expect(pt.previousCheckIn.question).toBe(pt.checkIns.title);
+  it("asks about the previous lesson as the last lesson taught in the dialog of a later lesson", () => {
+    // The strip lists each past lesson with its day; the dialog sits on a later lesson, so it must say "última".
     expect(pt.checkIns.title).toBe("Como correu a aula?");
-    expect(en.previousCheckIn.question).toBe(en.checkIns.title);
+    expect(pt.previousCheckIn.question).toBe("Como correu a última aula?");
+    expect(en.previousCheckIn.question).toBe("How did your last lesson go?");
   });
 });

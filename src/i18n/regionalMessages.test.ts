@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import ptBR from "../../messages/pt-BR.json";
 import ptPT from "../../messages/pt-PT.json";
-import { mergeCatalogues, regionalOverlayFor } from "./regionalMessages";
+import { mergeCatalogues } from "./regionalMessages";
 
 function leaves(node: unknown, path = "", out = new Map<string, string>()) {
   if (typeof node === "string") {
@@ -17,24 +17,9 @@ function leaves(node: unknown, path = "", out = new Map<string, string>()) {
 
 /** Simple ICU argument names (`{count}`, `{count, plural, ...}`), not the text inside branches. */
 function argumentNames(text: string): string[] {
-  return [...text.matchAll(/\{\s*([A-Za-z_][\w]*)\s*[,}]/g)]
-    .map((match) => match[1])
-    .sort();
+  // Unique names: a Brazilian `select` may use an argument twice ("{grade, select, … other {{grade}º ano}}").
+  return [...new Set([...text.matchAll(/\{\s*([A-Za-z_][\w]*)\s*[,}]/g)].map((match) => match[1]))].sort();
 }
-
-describe("regionalOverlayFor", () => {
-  it("gives Brazilian teachers on Portuguese the pt-BR overlay", () => {
-    expect(regionalOverlayFor("pt-PT", "BR")).toBe("pt-BR");
-    expect(regionalOverlayFor("pt-PT", "br")).toBe("pt-BR");
-  });
-
-  it("leaves Portugal, English and a missing country alone", () => {
-    expect(regionalOverlayFor("pt-PT", "PT")).toBeNull();
-    expect(regionalOverlayFor("pt-PT", null)).toBeNull();
-    expect(regionalOverlayFor("pt-PT", undefined)).toBeNull();
-    expect(regionalOverlayFor("en", "BR")).toBeNull();
-  });
-});
 
 describe("mergeCatalogues", () => {
   it("keeps base keys the overlay lacks and ignores shape mismatches", () => {
