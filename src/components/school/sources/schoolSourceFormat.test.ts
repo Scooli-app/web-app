@@ -3,7 +3,7 @@ import { createTranslator } from "next-intl";
 import { describe, expect, it } from "vitest";
 import en from "../../../../messages/en.json";
 import pt from "../../../../messages/pt-PT.json";
-import { formatQuota, formatTags, type SchoolSourcesT } from "./schoolSourceFormat";
+import { formatQuota, formatScope, formatTags, type SchoolSourcesT } from "./schoolSourceFormat";
 
 function useLocale(locale: "pt-PT" | "en") {
   const messages = locale === "en" ? en : pt;
@@ -27,6 +27,23 @@ describe("formatTags", () => {
     expect(formatTags(["Mathematics"], [7, 8, 9], t)).toBe("Mathematics · Year 7–9");
     expect(formatTags([], [5, 7], t)).toBe("Year 5, 7");
     expect(formatTags([], [], t)).toBe("All");
+  });
+});
+
+describe("formatScope", () => {
+  it("sums up the scope without listing every subject (pt-PT)", () => {
+    const t = useLocale("pt-PT");
+    expect(formatScope([], [], t)).toBe("Todas as disciplinas · Todos os anos");
+    expect(formatScope(["Mathematics"], [7, 8, 9], t)).toBe("Matemática · 7.º–9.º");
+    expect(formatScope(["Mathematics", "Natural Sciences", "History"], [5], t)).toBe("3 disciplinas · 5.º");
+    expect(formatScope([], [5, 7, 8, 7], t)).toBe("Todas as disciplinas · 3 anos");
+  });
+
+  it("is written for the English locale", () => {
+    const t = useLocale("en");
+    expect(formatScope([], [], t)).toBe("All subjects · All years");
+    expect(formatScope(["Mathematics", "History"], [7, 8, 9], t)).toBe("2 subjects · Year 7–9");
+    expect(formatScope(["Mathematics"], [1, 12], t)).toBe("Mathematics · 2 years");
   });
 });
 

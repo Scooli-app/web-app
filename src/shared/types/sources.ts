@@ -12,8 +12,6 @@ export type SourceFileKind = "pdf" | "docx" | "md";
 
 /** Longest source name the API accepts (school and personal), in code points as the server counts. */
 export const SOURCE_NAME_MAX = 200;
-/** Most subjects one school source can carry (the server refuses more). */
-export const SCHOOL_SOURCE_SUBJECTS_MAX = 20;
 
 /** A name's length as the server counts it: code points, so an emoji counts once. */
 export const nameLength = (name: string) => Array.from(name).length;

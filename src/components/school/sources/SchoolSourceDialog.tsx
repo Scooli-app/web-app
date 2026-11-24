@@ -14,13 +14,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { updateSchoolSource, uploadSchoolSource } from "@/services/api/school-sources.service";
 import {
-  SCHOOL_SOURCE_SUBJECTS_MAX,
   SOURCE_NAME_MAX,
   clipName,
   nameLength,
   type SchoolSource,
   type SchoolSourceType,
 } from "@/shared/types/sources";
+import { cn } from "@/shared/utils/utils";
 import { Loader2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useId, useRef, useState } from "react";
@@ -30,32 +30,59 @@ import { formatSize, schoolSourceError } from "./schoolSourceFormat";
 const YEARS = Array.from({ length: 12 }, (_, i) => i + 1);
 // "Visual Arts" appears twice in SUBJECTS; one row per backend value.
 const SUBJECT_OPTIONS = SUBJECTS.filter((s, i) => SUBJECTS.findIndex((o) => o.value === s.value) === i);
+const SUBJECT_VALUES = SUBJECT_OPTIONS.map((s) => s.value);
 
 const toggle = <T,>(list: T[], item: T) => (list.includes(item) ? list.filter((x) => x !== item) : [...list, item]);
 
-function CheckRow({
-  checked,
-  onChange,
-  disabled = false,
-  children,
-}: {
-  checked: boolean;
-  onChange: () => void;
-  disabled?: boolean;
-  children: React.ReactNode;
-}) {
+function CheckRow({ checked, onChange, children }: { checked: boolean; onChange: () => void; children: React.ReactNode }) {
   return (
     // relative: Radix renders a hidden absolute <input> per box; positioned here, it can't stretch a scroll box.
-    <label className="relative flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-muted/60 has-[:focus-visible]:bg-muted/60 has-[[data-state=checked]]:bg-primary/10 has-[[data-state=checked]]:font-medium has-[:disabled]:cursor-not-allowed has-[:disabled]:text-muted-foreground has-[:disabled]:hover:bg-transparent">
-      {/* Disabled (subject cap): the box stays visible in both themes; only the text dims. */}
-      <Checkbox
-        checked={checked}
-        onCheckedChange={onChange}
-        disabled={disabled}
-        className="disabled:border-muted-foreground/50 disabled:bg-muted disabled:opacity-100"
-      />
+    <label className="relative flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-muted/60 has-[:focus-visible]:bg-muted/60">
+      <Checkbox checked={checked} onCheckedChange={onChange} />
       <span className="min-w-0">{children}</span>
     </label>
+  );
+}
+
+/** A tick list headed by a small "all" row. Ticking "all" selects every option; unticking it clears them. */
+function PickList<T>({
+  legend,
+  allLabel,
+  emptyHint,
+  options,
+  selected,
+  onChange,
+  className,
+  render,
+}: {
+  legend: string;
+  allLabel: string;
+  emptyHint: string;
+  options: T[];
+  selected: T[];
+  onChange: (next: T[]) => void;
+  className: string;
+  render: (option: T) => React.ReactNode;
+}) {
+  const all = options.every((o) => selected.includes(o));
+  const none = !options.some((o) => selected.includes(o));
+  return (
+    <fieldset className="space-y-1">
+      <legend className="text-sm font-medium">{legend}</legend>
+      <div className="rounded-md border border-border bg-card p-1">
+        <CheckRow checked={all} onChange={() => onChange(all ? [] : options)}>
+          <span className="font-medium">{allLabel}</span>
+        </CheckRow>
+        <div className={cn("relative border-t border-border/70 pt-1", className)}>
+          {options.map((o) => (
+            <CheckRow key={String(o)} checked={selected.includes(o)} onChange={() => onChange(toggle(selected, o))}>
+              {render(o)}
+            </CheckRow>
+          ))}
+        </div>
+      </div>
+      {none && <p className="text-xs text-destructive">{emptyHint}</p>}
+    </fieldset>
   );
 }
 
@@ -80,18 +107,27 @@ export function SchoolSourceDialog({ mode, source, maxFileBytes, onDone }: Schoo
   const [file, setFile] = useState<File | null>(null);
   const [name, setName] = useState(source?.name ?? "");
   const [type, setType] = useState<SchoolSourceType>(source?.type ?? "regra");
-  const [subjects, setSubjects] = useState<string[]>(source?.subjects ?? []);
-  const [years, setYears] = useState<number[]>(source?.schoolYears ?? []);
+  // A source tagged with nothing applies to everything, so it opens with every box ticked.
+  const [subjects, setSubjects] = useState<string[]>(source?.subjects.length ? source.subjects : SUBJECT_VALUES);
+  const [years, setYears] = useState<number[]>(source?.schoolYears.length ? source.schoolYears : YEARS);
   const [defaultEnabled, setDefaultEnabled] = useState(source?.defaultEnabled ?? true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const canSave = name.trim() !== "" && (mode === "edit" || file !== null) && !saving;
+  const canSave =
+    name.trim() !== "" && subjects.length > 0 && years.length > 0 && (mode === "edit" || file !== null) && !saving;
 
   const save = async () => {
     setSaving(true);
     setError(null);
-    const fields = { name: name.trim(), type, subjects, schoolYears: years, defaultEnabled };
+    // Everything ticked is saved as "all" (empty), so it also covers subjects added later.
+    const fields = {
+      name: name.trim(),
+      type,
+      subjects: SUBJECT_VALUES.every((v) => subjects.includes(v)) ? [] : subjects,
+      schoolYears: YEARS.every((y) => years.includes(y)) ? [] : years,
+      defaultEnabled,
+    };
     try {
       if (mode === "create" && file) await uploadSchoolSource({ file, ...fields });
       else if (source) await updateSchoolSource(source.id, fields);
@@ -170,39 +206,26 @@ export function SchoolSourceDialog({ mode, source, maxFileBytes, onDone }: Schoo
             />
           </div>
           <SourceTypeCards value={type} onChange={setType} />
-          <fieldset className="space-y-1">
-            <legend className="text-sm font-medium">{t("form.subjects")}</legend>
-            <div className="flex items-baseline justify-between gap-2">
-              <p className="text-xs text-muted-foreground">{t("form.subjectsHint", { max: SCHOOL_SOURCE_SUBJECTS_MAX })}</p>
-              <span className="shrink-0 text-xs tabular-nums text-muted-foreground" aria-live="polite">
-                {subjects.length}/{SCHOOL_SOURCE_SUBJECTS_MAX}
-              </span>
-            </div>
-            <div className="relative max-h-44 overflow-y-auto rounded-md border border-border bg-card p-1">
-              {SUBJECT_OPTIONS.map((s) => (
-                <CheckRow
-                  key={s.value}
-                  checked={subjects.includes(s.value)}
-                  // At the cap, only ticked rows stay usable (to untick).
-                  disabled={!subjects.includes(s.value) && subjects.length >= SCHOOL_SOURCE_SUBJECTS_MAX}
-                  onChange={() => setSubjects(toggle(subjects, s.value))}
-                >
-                  {translateSubjectLabel(s.id)}
-                </CheckRow>
-              ))}
-            </div>
-          </fieldset>
-          <fieldset className="space-y-1">
-            <legend className="text-sm font-medium">{t("form.years")}</legend>
-            <p className="text-xs text-muted-foreground">{t("form.yearsHint")}</p>
-            <div className="relative grid grid-cols-3 gap-x-2 sm:grid-cols-4">
-              {YEARS.map((y) => (
-                <CheckRow key={y} checked={years.includes(y)} onChange={() => setYears(toggle(years, y))}>
-                  {t("years.option", { n: y })}
-                </CheckRow>
-              ))}
-            </div>
-          </fieldset>
+          <PickList
+            legend={t("form.subjects")}
+            allLabel={t("scope.allSubjects")}
+            emptyHint={t("form.pickSubject")}
+            options={SUBJECT_VALUES}
+            selected={subjects}
+            onChange={setSubjects}
+            className="max-h-44 overflow-y-auto"
+            render={(v) => translateSubjectLabel(SUBJECT_OPTIONS.find((o) => o.value === v)?.id ?? v)}
+          />
+          <PickList
+            legend={t("form.years")}
+            allLabel={t("scope.allYears")}
+            emptyHint={t("form.pickYear")}
+            options={YEARS}
+            selected={years}
+            onChange={setYears}
+            className="grid grid-cols-3 gap-x-2 sm:grid-cols-4"
+            render={(y) => t("years.option", { n: y })}
+          />
           <CheckRow checked={defaultEnabled} onChange={() => setDefaultEnabled(!defaultEnabled)}>
             {t("defaultEnabled")}
           </CheckRow>

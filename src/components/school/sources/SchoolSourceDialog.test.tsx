@@ -7,7 +7,7 @@ import en from "../../../../messages/en.json";
 import pt from "../../../../messages/pt-PT.json";
 import { ApiRequestError } from "@/services/api/client";
 import { LONG_NAME } from "@/shared/test/longContent";
-import { SCHOOL_SOURCE_SUBJECTS_MAX, SOURCE_NAME_MAX, nameLength } from "@/shared/types/sources";
+import { SOURCE_NAME_MAX, nameLength, type SchoolSource } from "@/shared/types/sources";
 import { SchoolSourceDialog } from "./SchoolSourceDialog";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -23,14 +23,14 @@ vi.mock("@/services/api/school-sources.service", () => api);
 
 const MB = 2 ** 20;
 
-function mount(locale: "pt-PT" | "en") {
+function mount(locale: "pt-PT" | "en", source?: SchoolSource) {
   const messages = locale === "en" ? en : pt;
   const container = document.createElement("div");
   document.body.appendChild(container);
   act(() => {
     createRoot(container).render(
       <NextIntlClientProvider locale={locale} messages={messages}>
-        <SchoolSourceDialog mode="create" maxFileBytes={25 * MB} onDone={vi.fn()} />
+        <SchoolSourceDialog mode={source ? "edit" : "create"} source={source} maxFileBytes={25 * MB} onDone={vi.fn()} />
       </NextIntlClientProvider>,
     );
   });
@@ -91,6 +91,10 @@ describe("SchoolSourceDialog errors", () => {
   });
 });
 
+/** Checkboxes of the nth pick list (0 subjects, 1 years); the first is its "all" row. */
+const boxes = (n: number) => [...document.querySelectorAll("fieldset")[n].querySelectorAll<HTMLButtonElement>('button[role="checkbox"]')];
+const checked = (b: HTMLButtonElement) => b.getAttribute("aria-checked") === "true";
+
 const nameInput = () => document.querySelector<HTMLInputElement>("input[maxlength]");
 
 describe("SchoolSourceDialog fields", () => {
@@ -131,22 +135,37 @@ describe("SchoolSourceDialog fields", () => {
     expect(document.body.textContent).toContain(`${SOURCE_NAME_MAX}/${SOURCE_NAME_MAX}`);
   });
 
-  it("stops at 20 subjects: the unticked rows disable until one is unticked", () => {
+  it("opens with every subject and year ticked and saves that as all (empty tags)", async () => {
     mount("pt-PT");
-    const boxes = () => [...document.querySelectorAll<HTMLButtonElement>('fieldset button[role="checkbox"]')];
-    const subjectBoxes = () => boxes().slice(0, boxes().length - 12); // the last 12 are the years
-    for (const box of subjectBoxes().slice(0, SCHOOL_SOURCE_SUBJECTS_MAX)) act(() => box.click());
-    expect(document.body.textContent).toContain(`${SCHOOL_SOURCE_SUBJECTS_MAX}/${SCHOOL_SOURCE_SUBJECTS_MAX}`);
-    const rest = subjectBoxes().slice(SCHOOL_SOURCE_SUBJECTS_MAX);
-    expect(rest.length).toBeGreaterThan(0);
-    expect(rest.every((b) => b.disabled)).toBe(true);
-    act(() => subjectBoxes()[0].click()); // untick one
-    expect(subjectBoxes().some((b) => !b.disabled && b.getAttribute("aria-checked") === "false")).toBe(true);
-    expect(document.body.textContent).toContain(`${SCHOOL_SOURCE_SUBJECTS_MAX - 1}/${SCHOOL_SOURCE_SUBJECTS_MAX}`);
+    expect(boxes(0).every(checked)).toBe(true);
+    expect(boxes(1).every(checked)).toBe(true);
+    pick(MB);
+    await submit();
+    expect(api.uploadSchoolSource).toHaveBeenCalledWith(expect.objectContaining({ subjects: [], schoolYears: [] }));
   });
 
-  it("says the subject limit in the hint", () => {
-    mount("en");
-    expect(document.body.textContent).toContain("Up to 20 subjects.");
+  it("clears with the all row, blocks saving with a hint, and takes more than 20 subjects", async () => {
+    const copy = mount("pt-PT");
+    act(() => boxes(0)[0].click()); // untick "Todas as disciplinas"
+    expect(boxes(0).some(checked)).toBe(false);
+    expect(document.body.textContent).toContain(copy.form.pickSubject);
+    pick(MB);
+    expect(document.querySelector<HTMLButtonElement>('button[type="submit"]')?.disabled).toBe(true);
+    for (const box of boxes(0).slice(1, 26)) act(() => box.click());
+    expect(document.body.textContent).not.toContain(copy.form.pickSubject);
+    await submit();
+    const sent = api.uploadSchoolSource.mock.calls[0][0] as { subjects: string[] };
+    expect(sent.subjects).toHaveLength(25);
+  });
+
+  it("opens an existing untagged source with everything ticked", () => {
+    mount("en", {
+      id: "s1", name: "Rules", type: "regra", subjects: [], schoolYears: [7, 8], defaultEnabled: true, status: "indexed",
+      chunkCount: 1, fileSizeBytes: MB, fileKind: "pdf", uploadedByName: null, createdAt: "2026-11-22T10:00:00Z",
+      lastError: null, hasSummary: false,
+    });
+    expect(boxes(0).every(checked)).toBe(true);
+    expect(checked(boxes(1)[0])).toBe(false); // not every year
+    expect(boxes(1).filter(checked)).toHaveLength(2);
   });
 });
