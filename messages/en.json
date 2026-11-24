@@ -3850,7 +3850,11 @@
       "term3": "Term 3",
       "semester1": "Semester 1",
       "semester2": "Semester 2",
-      "schoolYear": "School year {range}"
+      "schoolYear": "School year {range}",
+      "bimester1": "1st bimester",
+      "bimester2": "2nd bimester",
+      "bimester3": "3rd bimester",
+      "bimester4": "4th bimester"
     },
     "covers": {
       "title": "Covering this week",

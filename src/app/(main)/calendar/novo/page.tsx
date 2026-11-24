@@ -11,8 +11,8 @@ import { Stepper } from "@/components/ui/stepper";
 import { WizardShell } from "@/components/document-creation/WizardShell";
 import {
   buildSchoolPeriodPresets,
-  currentSchoolYearBase,
   formatPresetRange,
+  schoolYearLabelFor,
 } from "@/lib/periodPresets";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Input } from "@/components/ui/input";
@@ -358,7 +358,8 @@ function StepPeriod({ periodStart, periodEnd, schoolYearLabel, limits, onChange 
   const maxDate = isoToDate(bounds.max ?? "");
   const rawLocale = useLocale();
   const locale = isSupportedLocale(rawLocale) ? rawLocale : defaultLocale;
-  const periodPresets = buildSchoolPeriodPresets();
+  const country = useCountry();
+  const periodPresets = buildSchoolPeriodPresets(country);
 
   return (
     <div className="space-y-5">
@@ -885,10 +886,16 @@ function CalendarNewPageContent() {
   const [color, setColor] = useState<string>(TIMETABLE_COLORS[0]);
   const [periodStart, setPeriodStart] = useState("");
   const [periodEnd, setPeriodEnd] = useState("");
-  const [schoolYearLabel, setSchoolYearLabel] = useState(() => {
-    const y = currentSchoolYearBase();
-    return `${y}/${y + 1}`;
-  });
+  const countryCode = useCountry();
+  // "2026/2027" in Portugal, "2027" in Brazil; follows the country until the teacher edits it.
+  const [schoolYearLabel, setSchoolYearLabel] = useState(() => schoolYearLabelFor(countryCode));
+  useEffect(() => {
+    setSchoolYearLabel((current) =>
+      current === schoolYearLabelFor("PT") || current === schoolYearLabelFor("BR")
+        ? schoolYearLabelFor(countryCode)
+        : current,
+    );
+  }, [countryCode]);
   const [schedule, setSchedule] = useState<WeekSchedule>(DEFAULT_WEEK_SCHEDULE);
   const [alreadyCoveredNotes, setAlreadyCoveredNotes] = useState("");
   const [previewSlots, setPreviewSlots] = useState<PreviewSlot[]>([]);
@@ -944,7 +951,6 @@ function CalendarNewPageContent() {
   }, [autoTitle, titleTouched]);
 
 
-  const countryCode = useCountry();
   const handlePlanSelect = useCallback((plan: Document) => {
     setSelectedPlan(plan);
 

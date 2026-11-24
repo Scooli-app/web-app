@@ -3850,7 +3850,11 @@
       "term3": "3.º Período",
       "semester1": "1.º Semestre",
       "semester2": "2.º Semestre",
-      "schoolYear": "Ano letivo {range}"
+      "schoolYear": "Ano letivo {range}",
+      "bimester1": "1.º Bimestre",
+      "bimester2": "2.º Bimestre",
+      "bimester3": "3.º Bimestre",
+      "bimester4": "4.º Bimestre"
     },
     "covers": {
       "title": "Substituições desta semana",

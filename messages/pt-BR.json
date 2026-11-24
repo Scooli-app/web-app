@@ -1103,7 +1103,7 @@
       "titleNoClass": "Só mais umas perguntas",
       "subtitleNoClass": "Todas opcionais. Elas nos ajudam a mostrar quanto tempo você economiza.",
       "progressLabel": "Progresso do planejamento",
-      "term": "{term}º período, semana {week}",
+      "term": "{term}º bimestre, semana {week}",
       "classOf": "{subject}, {year}º ano",
       "lines": {
         "reading": "Lendo a BNCC de {subject}, {year}º ano",
@@ -3845,12 +3845,16 @@
       }
     },
     "periods": {
-      "term1": "1º Trimestre",
-      "term2": "2º Trimestre",
-      "term3": "3º Trimestre",
-      "semester1": "1º Semestre",
-      "semester2": "2º Semestre",
-      "schoolYear": "Ano letivo {range}"
+      "term1": "1º trimestre",
+      "term2": "2º trimestre",
+      "term3": "3º trimestre",
+      "semester1": "1º semestre",
+      "semester2": "2º semestre",
+      "schoolYear": "Ano letivo {range}",
+      "bimester1": "1º bimestre",
+      "bimester2": "2º bimestre",
+      "bimester3": "3º bimestre",
+      "bimester4": "4º bimestre"
     },
     "covers": {
       "title": "Substituições desta semana",
