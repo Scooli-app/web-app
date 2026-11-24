@@ -3873,7 +3873,8 @@
         "annual": "Anual",
         "semester": "Semestral",
         "trimester": "Trimestral",
-        "custom": "Personalizado"
+        "custom": "Personalizado",
+        "bimester": "Bimestral"
       }
     },
     "novo": {
@@ -3901,7 +3902,8 @@
         "endLabel": "Data de término",
         "endPlaceholder": "Fim do período",
         "summary": "<strong>{weeks, plural, one {# semana} other {# semanas}}</strong> de <strong>{start}</strong> a <strong>{end}</strong>",
-        "planningTypeLabel": "Tipo de período"
+        "planningTypeLabel": "Tipo de período",
+        "levelHint": "O nível de detalhe do planejamento acompanha a duração do período: aula a aula em um bimestre ou trimestre, por unidades em um semestre ou ano."
       },
       "class": {
         "title": "Detalhes da turma",

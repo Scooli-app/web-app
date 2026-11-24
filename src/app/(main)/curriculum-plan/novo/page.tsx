@@ -7,20 +7,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Stepper } from "@/components/ui/stepper";
 import { AlreadyCoveredSection } from "@/components/document-creation/AlreadyCoveredSection";
 import { WizardShell } from "@/components/document-creation/WizardShell";
 import { WeekSchedulePicker } from "@/components/document-creation/WeekSchedulePicker";
 import { useCountry } from "@/hooks/useCountry";
 import { useCountryCatalog } from "@/hooks/useCountryCatalog";
-import { getCountryCatalog } from "@/lib/curriculum/countryCatalog";
+import { getCountryCatalog, type CountryCode } from "@/lib/curriculum/countryCatalog";
 import { ClassSection, NESTED_SECTION_CLASS, SubjectSection } from "@/components/document-creation/sections";
 import {
   subjectChoiceLabel,
@@ -41,6 +34,9 @@ import { resolveEffectiveContentLanguage } from "@/i18n/clientLocale";
 import {
   buildSchoolPeriodPresets,
   formatPresetRange,
+  periodKindFor,
+  planningTypeFor,
+  type PeriodKind,
   type SchoolPeriodPreset,
 } from "@/lib/periodPresets";
 import {
@@ -51,7 +47,6 @@ import {
   weeksBetweenIso,
   type WeekSchedule,
 } from "@/lib/timetable/planToTimetable";
-import { type CurriculumPlanningType } from "@/shared/types";
 import { cn } from "@/shared/utils/utils";
 import { toIntlLocale } from "@/shared/utils/calendar";
 import { isSupportedLocale, defaultLocale, type Locale } from "@/i18n/locales";
@@ -87,22 +82,24 @@ function formatDate(iso: string, locale: Locale): string {
  * regardless of interface locale, like the rest of `buildPrompt`'s domain
  * vocabulary (see the "Aprendizagens Essenciais" convention).
  */
-function planningTypeLabelPT(t: CurriculumPlanningType): string {
-  const map: Record<CurriculumPlanningType, string> = {
-    annual: "Anual",
-    semester: "Semestral",
-    trimester: "Trimestral",
-    custom: "Personalizado",
-  };
-  return map[t];
-}
+const PERIOD_KIND_LABEL_PT: Record<PeriodKind, string> = {
+  annual: "anual",
+  semester: "semestral",
+  trimester: "trimestral",
+  bimester: "bimestral",
+};
 
-const PLANNING_TYPE_LABEL_EN: Record<CurriculumPlanningType, string> = {
+const PERIOD_KIND_LABEL_EN: Record<PeriodKind, string> = {
   annual: "Annual",
   semester: "Semester",
   trimester: "Term",
-  custom: "Custom",
+  bimester: "Bimester",
 };
+
+/** "6º ano" / "1ª série do Ensino Médio" for a Brazilian school year (10-12 are the Ensino Médio séries). */
+function brazilianYear(schoolYear: number): string {
+  return schoolYear >= 10 ? `${schoolYear - 9}ª série do Ensino Médio` : `${schoolYear}º ano`;
+}
 
 /**
  * The prompt sent to the AI is written in the effective content language — the
@@ -115,7 +112,8 @@ const PLANNING_TYPE_LABEL_EN: Record<CurriculumPlanningType, string> = {
  * EnglishPromptLanguage).
  */
 function buildPrompt(p: {
-  planningType: CurriculumPlanningType;
+  periodKind: PeriodKind;
+  country: CountryCode;
   subjectLabel: string;
   schoolYear: number;
   periodStart: string;
@@ -126,15 +124,24 @@ function buildPrompt(p: {
 }) {
   if (p.locale === "en") {
     return (
-      `${PLANNING_TYPE_LABEL_EN[p.planningType]} curriculum plan for ${p.subjectLabel}, Year ${p.schoolYear}, ` +
+      `${PERIOD_KIND_LABEL_EN[p.periodKind]} curriculum plan for ${p.subjectLabel}, Year ${p.schoolYear}, ` +
       `from ${p.periodStart} to ${p.periodEnd}, with about ${p.lessonsPerWeek} lessons per week ` +
       `(${p.totalLessons} lessons total, estimated). ` +
       "Generate the 7 canonical sections (Identification, Pupil Profile, Aprendizagens Essenciais, " +
       "Schedule, Development by Unit, Assessment, Curricular Alignment)."
     );
   }
+  if (p.country === "BR") {
+    return (
+      `Planejamento ${PERIOD_KIND_LABEL_PT[p.periodKind]} de ${p.subjectLabel} para o ${brazilianYear(p.schoolYear)}, ` +
+      `de ${p.periodStart} a ${p.periodEnd}, com cerca de ${p.lessonsPerWeek} aulas por semana ` +
+      `(${p.totalLessons} aulas no total, estimadas). ` +
+      "Gere as 7 seções canônicas (Identificação, Perfil do Aluno, Habilidades da BNCC, Cronograma, " +
+      "Desenvolvimento por Unidades, Avaliação, Articulação Curricular)."
+    );
+  }
   return (
-    `Planificação ${planningTypeLabelPT(p.planningType).toLowerCase()} de ${p.subjectLabel} para o ` +
+    `Planificação ${PERIOD_KIND_LABEL_PT[p.periodKind]} de ${p.subjectLabel} para o ` +
     `${p.schoolYear}.º ano, de ${p.periodStart} a ${p.periodEnd}, com cerca de ` +
     `${p.lessonsPerWeek} aulas por semana (${p.totalLessons} aulas totais estimadas). ` +
     "Gera as 7 secções canónicas (Identificação, Perfil do Aluno, AEs, Calendarização, " +
@@ -165,7 +172,6 @@ export default function CurriculumPlanNewPage() {
   const { guard } = useAccountAccess();
 
   const [step, setStep] = useState<StepId>("period");
-  const [planningType, setPlanningType] = useState<CurriculumPlanningType>("trimester");
   const [periodStart, setPeriodStart] = useState<Date | undefined>(undefined);
   const [periodEnd, setPeriodEnd] = useState<Date | undefined>(undefined);
   // Year and subject (or course and UC) — the same pickers as document creation.
@@ -186,6 +192,13 @@ export default function CurriculumPlanNewPage() {
   const lpw = useMemo(() => weekScheduleLessonsPerWeek(schedule), [schedule]);
   const periodStartISO = useMemo(() => (periodStart ? toISO(periodStart) : ""), [periodStart]);
   const periodEndISO = useMemo(() => (periodEnd ? toISO(periodEnd) : ""), [periodEnd]);
+  // How detailed the plan is follows from the period's length (a bimestre, a term, a semester, a year);
+  // the teacher no longer picks it, and a BR bimestre is never shown as "Trimestral".
+  const periodKind = useMemo(
+    () => periodKindFor(periodStartISO, periodEndISO, presetCountry),
+    [periodStartISO, periodEndISO, presetCountry],
+  );
+  const planningType = planningTypeFor(periodKind);
   const weeks = useMemo(() => weeksBetweenIso(periodStartISO, periodEndISO), [periodStartISO, periodEndISO]);
   // Real expanded slot count (respects the actual calendar), not weeks × lpw.
   const totalLessons = useMemo(
@@ -211,7 +224,6 @@ export default function CurriculumPlanNewPage() {
   function applyPreset(preset: SchoolPeriodPreset) {
     setPeriodStart(new Date(`${preset.start}T00:00:00`));
     setPeriodEnd(new Date(`${preset.end}T00:00:00`));
-    setPlanningType(preset.planningType);
   }
 
   // step validation
@@ -256,7 +268,8 @@ export default function CurriculumPlanNewPage() {
       : choice.subject;
 
     const prompt = buildPrompt({
-      planningType,
+      periodKind,
+      country: presetCountry,
       subjectLabel,
       schoolYear,
       periodStart: periodStartISO,
@@ -393,27 +406,10 @@ export default function CurriculumPlanNewPage() {
                     strong: (chunks) => <span className="font-medium">{chunks}</span>,
                   })}
                   {" · "}
-                  <span className="text-muted-foreground capitalize">{tShared(`planningType.${planningType}`)}</span>
+                  <span className="text-muted-foreground">{tShared(`planningType.${periodKind}`)}</span>
+                  <p className="mt-1 text-xs text-muted-foreground">{t("period.levelHint")}</p>
                 </div>
               )}
-
-              <div className="space-y-2">
-                <Label htmlFor="planningType">{t("period.planningTypeLabel")}</Label>
-                <Select
-                  value={planningType}
-                  onValueChange={(v) => setPlanningType(v as CurriculumPlanningType)}
-                >
-                  <SelectTrigger id="planningType">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="annual">{tShared("planningType.annual")}</SelectItem>
-                    <SelectItem value="semester">{tShared("planningType.semester")}</SelectItem>
-                    <SelectItem value="trimester">{tShared("planningType.trimester")}</SelectItem>
-                    <SelectItem value="custom">{tShared("planningType.custom")}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
             </div>
           )}
 
@@ -521,7 +517,7 @@ export default function CurriculumPlanNewPage() {
                 </div>
                 <div className="flex items-center justify-between px-4 py-3">
                   <span className="text-sm text-muted-foreground">{t("review.type")}</span>
-                  <span className="text-sm font-medium">{tShared(`planningType.${planningType}`)}</span>
+                  <span className="text-sm font-medium">{tShared(`planningType.${periodKind}`)}</span>
                 </div>
                 {isVocational && subjectPicker.selectedVocationalCourse && (
                   <div className="flex items-center justify-between gap-4 px-4 py-3">
