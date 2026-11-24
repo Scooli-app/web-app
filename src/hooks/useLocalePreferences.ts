@@ -6,7 +6,7 @@ import {
   writeStoredContentPreference,
   writeStoredInterfacePreference,
 } from "@/i18n/clientLocale";
-import { detectBrowserLocale, type Locale } from "@/i18n/locales";
+import { detectBrowserLocale, portugueseVariantFor, type Locale } from "@/i18n/locales";
 import {
   contentPreferenceToApi,
   interfacePreferenceToApi,
@@ -43,6 +43,11 @@ interface UseLocalePreferencesResult {
   changeContentPreference: (
     preference: ContentLanguagePreference,
   ) => Promise<void>;
+  /**
+   * The default that follows the country picked: a Portuguese interface switches to that country's variant
+   * (Brazil → pt-BR, else pt-PT). English stays English. The language setting can change it afterwards.
+   */
+  followCountry: (country: string) => Promise<void>;
 }
 
 /**
@@ -90,6 +95,15 @@ export function useLocalePreferences(): UseLocalePreferencesResult {
     [dispatch],
   );
 
+  const followCountry = useCallback(
+    async (country: string) => {
+      if (!interfaceLocale.startsWith("pt")) return;
+      const variant = portugueseVariantFor(country);
+      if (variant !== interfaceLocale) await changeInterfacePreference(variant);
+    },
+    [interfaceLocale, changeInterfacePreference],
+  );
+
   return {
     interfacePreference,
     contentPreference,
@@ -97,6 +111,7 @@ export function useLocalePreferences(): UseLocalePreferencesResult {
     contentLocale: resolveContentLanguage(contentPreference, interfaceLocale),
     changeInterfacePreference,
     changeContentPreference,
+    followCountry,
   };
 }
 

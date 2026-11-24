@@ -23,7 +23,8 @@ export function StatePicker({ value, onChange, disabled = false }: StatePickerPr
       <SelectTrigger className="w-full sm:w-72" aria-label={t("stateTitle")}>
         <SelectValue placeholder={t("statePlaceholder")} />
       </SelectTrigger>
-      <SelectContent>
+      {/* Also used inside the z-[9999] onboarding overlay: the portalled list must clear it. */}
+      <SelectContent className="z-[10000]">
         {BRAZIL_STATES.map((state) => (
           <SelectItem key={state.code} value={state.code}>
             {state.name}

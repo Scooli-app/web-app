@@ -10,6 +10,7 @@ import { CountryPicker } from "@/components/settings/CountryPreference";
 import { StateCurriculumNote, StatePicker } from "@/components/settings/StatePreference";
 import { Input } from "@/components/ui/input";
 import { setCountryCode, useCountry } from "@/hooks/useCountry";
+import { useLocalePreferences } from "@/hooks/useLocalePreferences";
 import { isCountryCode, type CountryCode } from "@/lib/curriculum/countryCatalog";
 import { useMotionSafe } from "@/lib/motion/useMotionSafe";
 import { onboardingV2Service } from "@/services/api/onboarding-v2.service";
@@ -33,6 +34,7 @@ export function SchoolRoleStep({ flow }: SchoolRoleStepProps) {
   const { stagger, item } = useMotionSafe();
   const { answers, update, next, trackCompleted } = flow;
   const { schoolName, noSchool, role } = answers;
+  const { followCountry } = useLocalePreferences();
 
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [listOpen, setListOpen] = useState(false);
@@ -73,6 +75,8 @@ export function SchoolRoleStep({ flow }: SchoolRoleStepProps) {
     userService
       .updateCountryCode(next)
       .then(() => {
+        // Best effort: the country is saved even if the language default does not land.
+        void followCountry(next).catch(() => undefined);
         if (next === "BR" && stateChoice) return userService.updateStateCode(stateChoice);
       })
       .catch(() => toast.error(tCountry("saveError")));

@@ -21,6 +21,12 @@ describe("formatClassName", () => {
     expect(formatClassName({ gradeLevel: 7, subject: "Mathematics", classLabel: "1" }, labels)).toBe("7.º Matemática · 1");
   });
 
+  it("matches the shown number, so a Brazilian 1ª série (year 10) class \"1A\" says it once", () => {
+    const br = { ...labels, gradeShort: (grade: number) => (grade >= 10 ? `${grade - 9}ª série` : `${grade}º`) };
+    expect(formatClassName({ gradeLevel: 10, subject: "Mathematics", classLabel: "1A" }, br)).toBe("Matemática · 1A");
+    expect(formatClassName({ gradeLevel: 10, subject: "Mathematics", classLabel: "B" }, br)).toBe("1ª série Matemática · B");
+  });
+
   it("drops the parts a turma doesn't have", () => {
     expect(formatClassName({ gradeLevel: 2, subject: "Mathematics", classLabel: "" }, labels)).toBe("2.º Matemática");
     expect(formatClassName({ subject: "Mathematics" }, labels)).toBe("Matemática");

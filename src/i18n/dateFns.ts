@@ -1,6 +1,6 @@
 "use client";
 
-import { enGB, pt as rdpPt } from "react-day-picker/locale";
+import { enGB, pt as rdpPt, ptBR } from "react-day-picker/locale";
 import type { Locale as DateFnsLocale } from "date-fns";
 import { useLocale } from "next-intl";
 import { defaultLocale, isSupportedLocale, type Locale } from "./locales";
@@ -24,6 +24,7 @@ const pt = {
 
 const DATE_FNS_LOCALES: Record<Locale, DateFnsLocale> = {
   "pt-PT": pt,
+  "pt-BR": ptBR,
   en: enGB,
 };
 

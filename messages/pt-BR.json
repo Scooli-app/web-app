@@ -36,7 +36,8 @@
       "followBrowser": "Navegador",
       "followBrowserHint": "Seguindo o seu navegador",
       "options": {
-        "pt-PT": "Português",
+        "pt-PT": "Português (Portugal)",
+        "pt-BR": "Português (Brasil)",
         "en": "English",
         "system": "Navegador"
       }
@@ -48,7 +49,8 @@
       "sameAsInterfaceHint": "Igual ao idioma da interface",
       "curriculumNote": "O currículo continua sendo o português. Só muda o idioma em que os materiais são escritos — útil para quem ensina Inglês.",
       "options": {
-        "pt-PT": "Português",
+        "pt-PT": "Português (Portugal)",
+        "pt-BR": "Português (Brasil)",
         "en": "English",
         "interface": "Igual à interface"
       }
@@ -229,7 +231,8 @@
     "outcomesCount": "{count} {source, select, unit {da unidade} catalogue {do currículo} other {da aula}}"
   },
   "previousCheckIn": {
-    "question": "Como foi a aula?",
+    "question": "Como foi a última aula?",
+    "lessonOn": "Aula de {day}",
     "notNow": "Agora não",
     "saved": "Registrado.",
     "savedWithContext": "Registrado. A próxima aula vai levar isso em conta."
@@ -616,7 +619,6 @@
       "noIndexedSourcesSuffix": "para enriquecer a geração.",
       "mySources": "Minhas fontes ({count})",
       "excerpts": "{count} excertos",
-      "schoolYearSuffix": "º ano",
       "openInNewWindow": "Abrir {name} em uma nova janela",
       "noneMatch": "Nenhuma das suas fontes corresponde a esta disciplina e ano.",
       "stillProcessing": "Suas fontes ainda estão sendo processadas.",
@@ -896,7 +898,7 @@
         "cycle3": "7º ao 9º ano",
         "secondary": "Ensino Médio"
       },
-      "gradeLabel": "{grade}º ano",
+      "gradeLabel": "{grade, select, 10 {1ª série} 11 {2ª série} 12 {3ª série} other {{grade}º ano}}",
       "presentationThemes": {
         "dark": "Noir",
         "aurora": "Aurora",
@@ -933,7 +935,7 @@
       }
     },
     "filledSummary": {
-      "year": "{year}º ano",
+      "year": "{year, select, 10 {1ª série} 11 {2ª série} 12 {3ª série} other {{year}º ano}}",
       "change": "Alterar"
     },
     "moreOptions": {
@@ -981,7 +983,7 @@
         "testFracoes": "Prova: Frações · 5º ano",
         "quizDescobrimentos": "Quiz: As Grandes Navegações · 5º ano"
       },
-      "exampleLabel": "{type}: {topic} · {year}º ano",
+      "exampleLabel": "{type}: {topic} · {year, select, 10 {1ª série} 11 {2ª série} 12 {3ª série} other {{year}º ano}}",
       "exampleTypes": {
         "lessonPlan": "Plano",
         "test": "Prova",
@@ -1017,7 +1019,7 @@
       "title": "O que você ensina?",
       "subtitle": "Escolha os anos e as disciplinas. Você pode mudar isso depois em Configurações.",
       "yearsLabel": "Anos",
-      "yearChip": "{year}º",
+      "yearChip": "{year, select, 10 {1ª série} 11 {2ª série} 12 {3ª série} other {{year}º}}",
       "cycles": {
         "c1": "1º–4º",
         "c2": "5º–6º",
@@ -1041,7 +1043,7 @@
       "subjectLabel": "Disciplina",
       "unitLabel": "UC",
       "yearLabel": "Ano",
-      "yearOption": "{year}º ano",
+      "yearOption": "{year, select, 10 {1ª série} 11 {2ª série} 12 {3ª série} other {{year}º ano}}",
       "labelLabel": "Turma",
       "labelPlaceholder": "7º B",
       "daysLabel": "Em quais dias você tem aula?",
@@ -1063,7 +1065,7 @@
       "noTimetable": "Ainda não tenho horário",
       "createFailed": "Não foi possível criar a turma. Tente de novo.",
       "titularHint": "Comece por uma disciplina; você junta as outras depois em Turmas.",
-      "yearLetter": "{year}º {label}",
+      "yearLetter": "{year, select, 10 {1ª série} 11 {2ª série} 12 {3ª série} other {{year}º}} {label}",
       "taught": {
         "title": "O que você já deu com o {label}?",
         "titleNoLabel": "O que você já deu com esta turma?",
@@ -1104,9 +1106,9 @@
       "subtitleNoClass": "Todas opcionais. Elas nos ajudam a mostrar quanto tempo você economiza.",
       "progressLabel": "Progresso do planejamento",
       "term": "{term}º bimestre, semana {week}",
-      "classOf": "{subject}, {year}º ano",
+      "classOf": "{subject}, {year, select, 10 {1ª série} 11 {2ª série} 12 {3ª série} other {{year}º ano}}",
       "lines": {
-        "reading": "Lendo a BNCC de {subject}, {year}º ano",
+        "reading": "Lendo a BNCC de {subject}, {year, select, 10 {1ª série} 11 {2ª série} 12 {3ª série} other {{year}º ano}}",
         "readingUnit": "Lendo o referencial de {subject}",
         "readingGeneric": "Lendo a BNCC da sua turma",
         "skipping": "Pulando o que você já deu: {topics}",
@@ -2220,7 +2222,7 @@
       "allTypes": "Todos os tipos",
       "sortPopular": "Mais reutilizados",
       "sortRecent": "Mais recentes",
-      "gradeOption": "{n}º ano",
+      "gradeOption": "{n, select, 10 {1ª série} 11 {2ª série} 12 {3ª série} other {{n}º ano}}",
       "moreFilters": "Mais filtros"
     },
     "dashboardPage": {
@@ -2396,7 +2398,7 @@
       "sharedCommunityTitle": "Compartilhado na biblioteca da comunidade",
       "community": "Comunidade",
       "sharedOrgTitle": "Compartilhado na biblioteca de {org}",
-      "gradeYear": "{grade}º ano",
+      "gradeYear": "{grade, select, 10 {1ª série} 11 {2ª série} 12 {3ª série} other {{grade}º ano}}",
       "createdOn": "Criado em {date}",
       "moreActions": "Mais ações",
       "delete": "Excluir"
@@ -2415,7 +2417,7 @@
       "allSubjects": "Todas as disciplinas",
       "gradePlaceholder": "Ano",
       "allGrades": "Todos os anos",
-      "gradeOption": "{grade}º ano",
+      "gradeOption": "{grade, select, 10 {1ª série} 11 {2ª série} 12 {3ª série} other {{grade}º ano}}",
       "originPlaceholder": "Origem",
       "origin": {
         "all": "Qualquer origem",
@@ -3080,7 +3082,7 @@
       "title": "Onde está cada turma",
       "subtitle": "% do currículo previsto até hoje",
       "allYears": "Todos os anos",
-      "year": "{grade}º",
+      "year": "{grade, select, 10 {1ª série} 11 {2ª série} 12 {3ª série} other {{grade}º}}",
       "department": "Departamento",
       "allDepartments": "Todos os departamentos",
       "noMatch": "Nenhuma turma com estes filtros.",
@@ -3103,7 +3105,7 @@
       "partlyLeft": "parte a dar",
       "planSummaryLabel": "O que a Scooli disse ao professor",
       "executionLabel": "Aulas em dia, das previstas",
-      "yearLabel": "{grade}º ano",
+      "yearLabel": "{grade, select, 10 {1ª série} 11 {2ª série} 12 {3ª série} other {{grade}º ano}}",
       "kpiBehind": "{count, plural, one {aula em atraso} other {aulas em atraso}}",
       "kpiMissed": "{count, plural, one {aula com problemas} other {aulas com problemas}}",
       "showMore": "Ver mais {count}",
@@ -3118,14 +3120,14 @@
       "title": "Onde a escola precisa de reforço",
       "subtitle": "Habilidades que mais turmas assinalaram nas últimas 4 semanas",
       "allSubjects": "Todas as disciplinas",
-      "summary": "{subject} · {grade}º ano · {flagged} de {total, plural, one {# turma} other {# turmas}} {flagged, plural, one {assinalou} other {assinalaram}} dificuldades",
+      "summary": "{subject} · {grade, select, 10 {1ª série} 11 {2ª série} 12 {3ª série} other {{grade}º ano}} · {flagged} de {total, plural, one {# turma} other {# turmas}} {flagged, plural, one {assinalou} other {assinalaram}} dificuldades",
       "reinforcement": "Lista de reforço criada",
       "empty": "Nenhuma turma marcou uma aula como “Com dificuldades” nas últimas 4 semanas. As aulas que ficaram pela metade aparecem no Painel."
     },
     "assessments": {
       "title": "Calendário de avaliações",
       "subtitle": "Semana de {range}",
-      "subtitleYear": "Semana de {range} · {grade}º ano",
+      "subtitleYear": "Semana de {range} · {grade, select, 10 {1ª série} 11 {2ª série} 12 {3ª série} other {{grade}º ano}}",
       "previous": "Semana anterior",
       "next": "Semana seguinte",
       "test": "Prova · {subject}",
@@ -3531,8 +3533,8 @@
       "review": "Revisão",
       "holiday": "Feriado"
     },
-    "gradeYear": "{grade}º ano",
-    "gradeShort": "{grade}º",
+    "gradeYear": "{grade, select, 10 {1ª série} 11 {2ª série} 12 {3ª série} other {{grade}º ano}}",
+    "gradeShort": "{grade, select, 10 {1ª série} 11 {2ª série} 12 {3ª série} other {{grade}º}}",
     "autoTitleFallback": "Nova turma"
   },
   "calendar": {
@@ -4635,9 +4637,9 @@
     "offByDefault": "Desativada por padrão",
     "all": "Todas",
     "years": {
-      "single": "{n}º",
-      "range": "{from}º–{to}º",
-      "option": "{n}º",
+      "single": "{n, select, 10 {1ª série} 11 {2ª série} 12 {3ª série} other {{n}º}}",
+      "range": "{from, select, 10 {1ª} 11 {2ª} other {{from}º}}–{to, select, 10 {1ª série} 11 {2ª série} 12 {3ª série} other {{to}º}}",
+      "option": "{n, select, 10 {1ª série} 11 {2ª série} 12 {3ª série} other {{n}º}}",
       "list": "{list}"
     },
     "quota": "{files} de {filesMax} arquivos · {used} de {max}",

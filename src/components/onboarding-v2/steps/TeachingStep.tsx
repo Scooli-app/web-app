@@ -158,22 +158,49 @@ export function TeachingStep({ flow, onProfileSaved }: TeachingStepProps) {
             <p id="onboarding-years" className="text-sm font-medium text-foreground">
               {t("teaching.yearsLabel")}
             </p>
-            <div
-              className={
-                vocational ? "grid grid-cols-3 gap-2 sm:max-w-xs" : "grid grid-cols-6 gap-2 sm:grid-cols-12"
-              }
-            >
-              {yearOptions.map((year) => (
-                <ChoiceChip
-                  key={year}
-                  selected={chosenYears.includes(year)}
-                  onClick={() => toggleYear(year)}
-                  className="w-full min-w-12"
-                >
-                  {t("teaching.yearChip", { year })}
-                </ChoiceChip>
-              ))}
-            </div>
+            {catalog.countryCode === "BR" ? (
+              // Brazil names the Ensino Médio years "1ª–3ª série": two labelled rows instead of a 1–12 strip.
+              <div className="space-y-3">
+                {catalog.yearGroups.map((group) => (
+                  <div key={group.groupId} className="space-y-1.5">
+                    <p className="text-xs text-muted-foreground">{group.label}</p>
+                    <div
+                      className={
+                        group.years.length > 3 ? "grid grid-cols-5 gap-2 sm:grid-cols-9" : "grid grid-cols-3 gap-2 sm:max-w-sm"
+                      }
+                    >
+                      {group.years.map(({ value: year }) => (
+                        <ChoiceChip
+                          key={year}
+                          selected={chosenYears.includes(year)}
+                          onClick={() => toggleYear(year)}
+                          className="w-full min-w-12"
+                        >
+                          {t("teaching.yearChip", { year })}
+                        </ChoiceChip>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div
+                className={
+                  vocational ? "grid grid-cols-3 gap-2 sm:max-w-xs" : "grid grid-cols-6 gap-2 sm:grid-cols-12"
+                }
+              >
+                {yearOptions.map((year) => (
+                  <ChoiceChip
+                    key={year}
+                    selected={chosenYears.includes(year)}
+                    onClick={() => toggleYear(year)}
+                    className="w-full min-w-12"
+                  >
+                    {t("teaching.yearChip", { year })}
+                  </ChoiceChip>
+                ))}
+              </div>
+            )}
           </section>
 
           {vocational ? (

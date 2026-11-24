@@ -26,8 +26,9 @@ export function sameClassWords(a: string, b: string): boolean {
 export function formatClassName(parts: ClassNameParts, labels: ClassNameLabels): string {
   const grade = parts.gradeLevel ? labels.gradeShort(parts.gradeLevel) : null;
   // A class label that already says the year ("7.º B", "7ºB", "7B") is not prefixed with it again
-  // ("7.º Matemática · 7.º B").
-  const labelHasGrade = !!grade && Number(parts.classLabel?.trim().match(/^\d+/)?.[0]) === parts.gradeLevel;
+  // ("7.º Matemática · 7.º B"). Compared with the shown number, so Brazil's "1ª série" (year 10) matches "1A".
+  const leadingNumber = (s: string | null | undefined) => s?.trim().match(/^\d+/)?.[0];
+  const labelHasGrade = !!grade && Number(leadingNumber(parts.classLabel)) === Number(leadingNumber(grade));
   const base = parts.subject
     ? [labelHasGrade ? null : grade, labels.subject(parts.subject)].filter(Boolean).join(" ")
     : (parts.title ?? "");

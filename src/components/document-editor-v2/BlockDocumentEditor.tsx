@@ -2182,6 +2182,7 @@ export function BlockDocumentEditor({ documentId }: Props) {
           phase={progress.phase}
           imageProgress={progress.imageProgress}
           error={progress.error}
+          themeId={urlThemeId}
         />
       );
     }
