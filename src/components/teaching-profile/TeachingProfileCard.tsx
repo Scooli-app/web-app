@@ -62,6 +62,9 @@ function ProfileBlock({
   );
 }
 
+/** Vocational courses only exist in Portugal's catalogue for now; elsewhere the card is regular-only. */
+const REGULAR_ONLY: TeachingScope = { regular: true, vocational: false };
+
 export function TeachingProfileCard() {
   const countryCode = useCountry();
   const t = useTranslations("settings.teachingProfileCard");
@@ -76,7 +79,10 @@ export function TeachingProfileCard() {
   const [profileLoadFailed, setProfileLoadFailed] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  const applyBaseline = useCallback((profile: TeachingProfile, nextScope: TeachingScope) => {
+  const vocationalOffered = countryCode === "PT";
+
+  const applyBaseline = useCallback((profile: TeachingProfile, loadedScope: TeachingScope) => {
+    const nextScope = countryCode === "PT" ? loadedScope : REGULAR_ONLY;
     setDraft(profile);
     setScope(nextScope);
     setBaseline({
@@ -207,6 +213,7 @@ export function TeachingProfileCard() {
         <LoadError message={t("loadError")} onRetry={() => void loadProfile()} />
       ) : (
         <>
+      {vocationalOffered && (
       <fieldset className="mb-6 space-y-3">
         <legend className="mb-3">
           <span className="block font-semibold text-foreground">{t("scopeLabel")}</span>
@@ -223,6 +230,7 @@ export function TeachingProfileCard() {
           ]}
         />
       </fieldset>
+      )}
 
       <div className="space-y-6">
         <ProfileBlock
