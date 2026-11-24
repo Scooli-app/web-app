@@ -78,6 +78,29 @@ export function buildSchoolPeriodPresets(country: CountryCode = "PT", now: Date 
   ];
 }
 
+/**
+ * What a plan for this period is called and how detailed it should be, read from its length rather than asked:
+ * a Brazilian bimestre (≤ 85 days), a term (≤ 110 days), a semester (≤ 200 days), otherwise a year.
+ * Covers every preset above and any dates the teacher types in.
+ */
+export type PeriodKind = "bimester" | "trimester" | "semester" | "annual";
+
+export function periodKindFor(startIso: string, endIso: string, country: CountryCode = "PT"): PeriodKind {
+  const start = Date.parse(`${startIso}T00:00:00Z`);
+  const end = Date.parse(`${endIso}T00:00:00Z`);
+  if (Number.isNaN(start) || Number.isNaN(end) || end < start) return "trimester";
+  const days = Math.round((end - start) / 86_400_000) + 1;
+  if (country === "BR" && days <= 85) return "bimester";
+  if (days <= 110) return "trimester";
+  if (days <= 200) return "semester";
+  return "annual";
+}
+
+/** The backend's detail level for a period kind: a bimestre gets the finest one, like a term. */
+export function planningTypeFor(kind: PeriodKind): CurriculumPlanningType {
+  return kind === "bimester" ? "trimester" : kind;
+}
+
 export function formatPresetRange(start: string, end: string, locale: Locale): string {
   const fmt = (iso: string) =>
     new Date(`${iso}T00:00:00`).toLocaleDateString(toIntlLocale(locale), {

@@ -3873,7 +3873,8 @@
         "annual": "Annual",
         "semester": "Semester",
         "trimester": "Term",
-        "custom": "Custom"
+        "custom": "Custom",
+        "bimester": "Bimester"
       }
     },
     "novo": {
@@ -3901,7 +3902,8 @@
         "endLabel": "End date",
         "endPlaceholder": "End of period",
         "summary": "<strong>{weeks, plural, one {# week} other {# weeks}}</strong> from <strong>{start}</strong> to <strong>{end}</strong>",
-        "planningTypeLabel": "Period type"
+        "planningTypeLabel": "Period type",
+        "levelHint": "The plan's level of detail follows the length of the period: lesson by lesson for a term, by unit for a semester or a year."
       },
       "class": {
         "title": "Class details",

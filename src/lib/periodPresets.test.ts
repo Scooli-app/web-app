@@ -5,7 +5,13 @@ vi.mock("@/i18n/translate", () => ({
     values?.range ? `${key}:${values.range}` : key,
 }));
 
-import { buildSchoolPeriodPresets, currentSchoolYearBase, schoolYearLabelFor } from "./periodPresets";
+import {
+  buildSchoolPeriodPresets,
+  currentSchoolYearBase,
+  periodKindFor,
+  planningTypeFor,
+  schoolYearLabelFor,
+} from "./periodPresets";
 
 const day = (y: number, m: number, d: number) => new Date(y, m - 1, d, 12);
 
@@ -43,5 +49,30 @@ describe("buildSchoolPeriodPresets", () => {
     expect(presets).toHaveLength(6);
     expect(presets[0]).toMatchObject({ label: "calendar.periods.term1", start: "2026-09-16" });
     expect(presets.at(-1)).toMatchObject({ start: "2026-09-16", end: "2027-06-19" });
+  });
+});
+
+describe("periodKindFor", () => {
+  it("reads every Brazilian preset as what it is called", () => {
+    const kinds = buildSchoolPeriodPresets("BR", day(2027, 3, 1)).map((p) => periodKindFor(p.start, p.end, "BR"));
+    expect(kinds).toEqual(["bimester", "bimester", "bimester", "bimester", "semester", "semester", "annual"]);
+  });
+
+  it("reads every Portuguese preset as its own planning type", () => {
+    for (const preset of buildSchoolPeriodPresets("PT", day(2026, 11, 24))) {
+      expect(planningTypeFor(periodKindFor(preset.start, preset.end, "PT"))).toBe(preset.planningType);
+    }
+  });
+
+  it("handles typed-in dates and never calls a Portuguese period a bimestre", () => {
+    expect(periodKindFor("2026-10-01", "2026-11-30", "PT")).toBe("trimester");
+    expect(periodKindFor("2026-10-01", "2026-11-30", "BR")).toBe("bimester");
+    expect(periodKindFor("2026-02-01", "2026-12-20", "BR")).toBe("annual");
+    expect(periodKindFor("", "", "PT")).toBe("trimester");
+  });
+
+  it("gives a bimestre the finest detail level", () => {
+    expect(planningTypeFor("bimester")).toBe("trimester");
+    expect(planningTypeFor("annual")).toBe("annual");
   });
 });
