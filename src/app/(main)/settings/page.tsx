@@ -4,6 +4,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import SettingsLoading from "./loading";
 import { BillingNifCard } from "@/components/billing/BillingNifCard";
 import { LanguagePreferences } from "@/components/settings/LanguagePreferences";
+import { CountryPreference } from "@/components/settings/CountryPreference";
+import { StatePreference } from "@/components/settings/StatePreference";
 import { PlanningRitualPreferences } from "@/components/settings/PlanningRitualPreferences";
 import { TrialStatusCard } from "@/components/billing/TrialStatusCard";
 import { Button } from "@/components/ui/button";
@@ -699,6 +701,10 @@ function SettingsContent() {
             </div>
 
             <LanguagePreferences />
+
+            <CountryPreference />
+
+            <StatePreference />
 
             <PlanningRitualPreferences />
           </div>

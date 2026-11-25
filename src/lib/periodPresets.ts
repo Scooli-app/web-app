@@ -1,10 +1,17 @@
 /**
  * Shared school-period preset builder, used by both the curriculum-plan and
- * calendar creation wizards so the 6 canonical Portuguese school periods
- * (períodos, semestres, ano letivo) only live in one place.
+ * calendar creation wizards so each country's school periods only live in one place.
+ *
+ * - Portugal: the school year runs September to June, in three períodos (or two semestres).
+ * - Brazil: the school year is the calendar year, February to December, usually in four
+ *   bimestres (or two semestres), with a recess in July.
+ *
+ * The dates are typical values, not any network's official calendar: the teacher can
+ * change both ends after picking a preset.
  */
 import type { CurriculumPlanningType } from "@/shared/types";
 import type { Locale } from "@/i18n/locales";
+import type { CountryCode } from "@/lib/curriculum/countryCatalog";
 import { toIntlLocale } from "@/shared/utils/calendar";
 import { translate } from "@/i18n/translate";
 
@@ -15,18 +22,47 @@ export interface SchoolPeriodPreset {
   end: string; // ISO date
 }
 
-export function currentSchoolYearBase(): number {
-  const now = new Date();
+/**
+ * The year the current (or next) school year starts in.
+ * Portugal: from September it is this year's, before that last year's.
+ * Brazil: the calendar year; from December on, the next one (planning for February).
+ */
+export function currentSchoolYearBase(country: CountryCode = "PT", now: Date = new Date()): number {
+  if (country === "BR") {
+    return now.getMonth() >= 11 ? now.getFullYear() + 1 : now.getFullYear();
+  }
   return now.getMonth() >= 8 ? now.getFullYear() : now.getFullYear() - 1;
 }
 
+/** "2026/2027" in Portugal, "2027" in Brazil. */
+export function schoolYearLabelFor(country: CountryCode = "PT", now: Date = new Date()): string {
+  const y = currentSchoolYearBase(country, now);
+  return country === "BR" ? String(y) : `${y}/${y + 1}`;
+}
+
 /**
- * Builds the 6 canonical school-period presets. Labels are resolved via
+ * Builds the country's school-period presets. Labels are resolved via
  * `translate()` at call time (never cached in a module-level constant) so
  * they always reflect the interface locale active when the wizard renders.
  */
-export function buildSchoolPeriodPresets(): SchoolPeriodPreset[] {
-  const y = currentSchoolYearBase();
+export function buildSchoolPeriodPresets(country: CountryCode = "PT", now: Date = new Date()): SchoolPeriodPreset[] {
+  const y = currentSchoolYearBase(country, now);
+  if (country === "BR") {
+    return [
+      { label: translate("calendar.periods.bimester1"), planningType: "trimester", start: `${y}-02-02`, end: `${y}-04-17` },
+      { label: translate("calendar.periods.bimester2"), planningType: "trimester", start: `${y}-04-20`, end: `${y}-07-10` },
+      { label: translate("calendar.periods.bimester3"), planningType: "trimester", start: `${y}-07-27`, end: `${y}-10-02` },
+      { label: translate("calendar.periods.bimester4"), planningType: "trimester", start: `${y}-10-05`, end: `${y}-12-18` },
+      { label: translate("calendar.periods.semester1"), planningType: "semester", start: `${y}-02-02`, end: `${y}-07-10` },
+      { label: translate("calendar.periods.semester2"), planningType: "semester", start: `${y}-07-27`, end: `${y}-12-18` },
+      {
+        label: translate("calendar.periods.schoolYear", { range: String(y) }),
+        planningType: "annual",
+        start: `${y}-02-02`,
+        end: `${y}-12-18`,
+      },
+    ];
+  }
   return [
     { label: translate("calendar.periods.term1"), planningType: "trimester", start: `${y}-09-16`, end: `${y}-12-19` },
     { label: translate("calendar.periods.term2"), planningType: "trimester", start: `${y + 1}-01-06`, end: `${y + 1}-03-27` },
@@ -40,6 +76,29 @@ export function buildSchoolPeriodPresets(): SchoolPeriodPreset[] {
       end: `${y + 1}-06-19`,
     },
   ];
+}
+
+/**
+ * What a plan for this period is called and how detailed it should be, read from its length rather than asked:
+ * a Brazilian bimestre (≤ 85 days), a term (≤ 110 days), a semester (≤ 200 days), otherwise a year.
+ * Covers every preset above and any dates the teacher types in.
+ */
+export type PeriodKind = "bimester" | "trimester" | "semester" | "annual";
+
+export function periodKindFor(startIso: string, endIso: string, country: CountryCode = "PT"): PeriodKind {
+  const start = Date.parse(`${startIso}T00:00:00Z`);
+  const end = Date.parse(`${endIso}T00:00:00Z`);
+  if (Number.isNaN(start) || Number.isNaN(end) || end < start) return "trimester";
+  const days = Math.round((end - start) / 86_400_000) + 1;
+  if (country === "BR" && days <= 85) return "bimester";
+  if (days <= 110) return "trimester";
+  if (days <= 200) return "semester";
+  return "annual";
+}
+
+/** The backend's detail level for a period kind: a bimestre gets the finest one, like a term. */
+export function planningTypeFor(kind: PeriodKind): CurriculumPlanningType {
+  return kind === "bimester" ? "trimester" : kind;
 }
 
 export function formatPresetRange(start: string, end: string, locale: Locale): string {

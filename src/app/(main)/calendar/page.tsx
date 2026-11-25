@@ -67,6 +67,7 @@ import {
 
 import { SLOT_STATUS_CONFIG } from "@/shared/constants/lessonSlotStatus";
 import { SlotDialog } from "@/components/calendar/SlotDialog";
+import { CoverWeek } from "@/components/calendar/CoverWeek";
 import { WeekJumpPicker } from "@/components/calendar/WeekJumpPicker";
 import { TeachingMarkBadge, TeachingMarkLegend } from "@/components/calendar/TeachingMarkBadge";
 import { formatClassName } from "@/shared/utils/className";
@@ -191,9 +192,10 @@ function LessonCard({
           {!isHoliday && (
             // The left border carries the turma colour; as text a dark or pale colour was unreadable.
             <p className="mt-0.5 truncate text-[11px] font-medium text-muted-foreground">
-              {timetable.gradeLevel ? `${tTimetable("gradeShort", { grade: timetable.gradeLevel })} ` : ""}
-              {translateSubject(timetable.subject)}
-              {timetable.classLabel ? ` · ${timetable.classLabel}` : ""}
+              {formatClassName(timetable, {
+                gradeShort: (grade) => tTimetable("gradeShort", { grade }),
+                subject: translateSubject,
+              })}
             </p>
           )}
           {!isHoliday && (
@@ -1111,6 +1113,7 @@ function CalendarPageInner() {
 
       {/* ── Calendar grid ─────────────────────────────────────────────── */}
       <div className="mx-auto w-full max-w-[1400px] px-4 pb-24 pt-4 md:pb-8">
+        {classStateEnabled && <CoverWeek weekStart={weekStart} />}
         {isLoadingTimetables && timetables.length === 0 ? (
           <CalendarGridSkeleton weekDays={weekDays} today={today} dayLabels={dayLabels} />
         ) : timetablesError && timetables.length === 0 ? (

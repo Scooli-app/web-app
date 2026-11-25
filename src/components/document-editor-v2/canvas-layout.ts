@@ -471,11 +471,29 @@ export function clampCanvasSlide(cs: CanvasSlide): CanvasSlide {
   };
 }
 
+/** Slides draw plain text (bold is per text box, not per word), so the model's `**bold**` markers would show as asterisks. */
+const withoutBoldMarkers = (text: string) => text.replace(/\*\*(.+?)\*\*/g, "$1");
+
+function slideWithoutBoldMarkers(slide: SlideBlock): SlideBlock {
+  return {
+    ...slide,
+    title: withoutBoldMarkers(slide.title),
+    subtitle: slide.subtitle && withoutBoldMarkers(slide.subtitle),
+    content: slide.content?.map((block) =>
+      "text" in block
+        ? { ...block, text: withoutBoldMarkers(block.text) }
+        : "items" in block
+          ? { ...block, items: block.items.map(withoutBoldMarkers) }
+          : block,
+    ),
+  };
+}
+
 export function presentationToCanvas(doc: PresentationDocument): CanvasPresentation {
   const canvas: CanvasPresentation = {
     schemaVersion: 2,
     documentType: "presentation",
-    slides: doc.blocks.map(slideToCanvas),
+    slides: doc.blocks.map((slide) => slideToCanvas(slideWithoutBoldMarkers(slide))),
   };
   // The theme the model picked at generation (lesson decks); unknown ids are ignored.
   return doc.themeId && THEMES.some((t) => t.id === doc.themeId) ? applyTheme(canvas, doc.themeId) : canvas;

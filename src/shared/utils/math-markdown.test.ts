@@ -131,3 +131,24 @@ describe("normalizeMathMarkdown — a fill-in box is always a square", () => {
     expect(normalizeMathMarkdown(input)).toBe(input);
   });
 });
+
+describe("normalizeMathMarkdown — currency signs (staging worksheet 39f14dea, pt-BR)", () => {
+  it.each([
+    "Uma borracha custa R$ 3,75 e um lápis custa R$ 2,40. Qual é o preço total?",
+    "R$ 5,15",
+    "Custa R$3,75 e US$ 2.",
+    "O caderno custa R$ ___ e a caneta R$ 2,40.",
+    "Somando, $3,75 + 2,40 = 6,15$ e paga R$ 6,15.",
+    "o raio $R$ mede 5 cm e a área é $2R$",
+    "A pen costs $5 and a book $6. How much in total?",
+    "It costs $5.",
+  ])("leaves it alone: %s", (input) => {
+    expect(normalizeMathMarkdown(input)).toBe(input);
+  });
+});
+
+describe("normalizeMathMarkdown — bare dollar amounts", () => {
+  it("still reads a closed number as maths", () => {
+    expect(normalizeMathMarkdown("Write $5$ and $2x+1$.")).toBe("Write $5$ and $2x+1$.");
+  });
+});

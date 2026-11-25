@@ -11,6 +11,8 @@ import { preparationCost } from "@/components/dashboard/lessonSuggestions";
 import { hasGeneratingDocument, pickFocusDay, weekTitle, windowDays } from "@/components/dashboard/weekWindow";
 import { translateSubject } from "@/components/document-creation/constants";
 import { PlanGenerationBanner } from "@/components/plan-generation/PlanGenerationBanner";
+import { REPLAN_CHANGED_EVENT } from "@/components/replan/replanLogic";
+import { CHECK_INS_CHANGED_EVENT } from "@/hooks/checkInSession";
 import { ReviewFeedChips } from "@/components/review-feed/ReviewFeedChips";
 import { Button } from "@/components/ui/button";
 import {
@@ -135,6 +137,13 @@ export function YourWeekCard() {
     lastRefreshKeyRef.current = planGen.refreshKey;
     reload();
   }, [planGen.refreshKey, reload]);
+
+  // A replan applied or a check-in saved elsewhere on the dashboard changes the lessons: show them without a refresh.
+  useEffect(() => {
+    const events = [REPLAN_CHANGED_EVENT, CHECK_INS_CHANGED_EVENT];
+    events.forEach((name) => window.addEventListener(name, reload));
+    return () => events.forEach((name) => window.removeEventListener(name, reload));
+  }, [reload]);
 
   // While any lesson document is still being written, poll until it's ready.
   const isPolling = week !== null && (hasGeneratingDocument(week) || generatingIds.size > 0);

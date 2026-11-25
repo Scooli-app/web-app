@@ -1,4 +1,5 @@
 import type { Locale } from "@/i18n/locales";
+import type { CountryCode } from "@/lib/curriculum/countryCatalog";
 import type { CurrentUserProfile } from "@/shared/types/user";
 import { isAxiosError } from "axios";
 import apiClient from "./client";
@@ -48,5 +49,15 @@ export const userService = {
     preferences: UpdateLocalePreferencesRequest,
   ): Promise<void> => {
     await apiClient.put("/users/me", preferences);
+  },
+
+  /** Saves the teacher's country on the profile (PUT /users/me, partial update). */
+  updateCountryCode: async (countryCode: CountryCode): Promise<void> => {
+    await apiClient.put("/users/me", { countryCode });
+  },
+
+  /** Saves a Brazilian teacher's state (UF), or clears it with null. Only accepted for BR on the server. */
+  updateStateCode: async (stateCode: string | null): Promise<void> => {
+    await apiClient.put("/users/me", { stateCode });
   },
 };

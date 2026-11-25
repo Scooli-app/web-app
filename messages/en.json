@@ -36,7 +36,8 @@
       "followBrowser": "Browser",
       "followBrowserHint": "Following your browser",
       "options": {
-        "pt-PT": "Português",
+        "pt-PT": "Português (Portugal)",
+        "pt-BR": "Português (Brasil)",
         "en": "English",
         "system": "Browser"
       }
@@ -48,12 +49,28 @@
       "sameAsInterfaceHint": "Same as the interface language",
       "curriculumNote": "The curriculum stays Portuguese. Only the language the materials are written in changes — handy if you teach English.",
       "options": {
-        "pt-PT": "Português",
+        "pt-PT": "Português (Portugal)",
+        "pt-BR": "Português (Brasil)",
         "en": "English",
         "interface": "Same as interface"
       }
     },
     "saveError": "We couldn't save your language preference."
+  },
+  "country": {
+    "title": "Country",
+    "options": {
+      "PT": "Portugal",
+      "BR": "Brazil"
+    },
+    "saveError": "Could not save the country. Try again.",
+    "note": "Sets the school years and subjects offered when you create documents and plans.",
+    "stateTitle": "State",
+    "statePlaceholder": "Choose your state",
+    "stateNote": "Optional. With your state, Scooli adds the state curriculum to the BNCC when it has it.",
+    "stateWithCurriculum": "This state's curriculum is used in your documents, together with the BNCC.",
+    "stateBnccOnly": "For this state Scooli still uses the BNCC alone.",
+    "stateSaveError": "Couldn't save the state. Please try again."
   },
   "planGeneration": {
     "title": "Preparing your plan…",
@@ -82,7 +99,6 @@
     "lessonMinutes": "{minutes} min",
     "noObjectivesYet": "Objectives appear once the lesson plan is ready.",
     "preparePlan": "Prepare lesson plan",
-    "documentGenerating": "Preparing…",
     "companionError": "Couldn’t create this document. Try again.",
     "companionInProgress": "This document is already being prepared.",
     "backToToday": "Today",
@@ -109,7 +125,14 @@
     "dayToPrepare": "{count, plural, one {# to prepare} other {# to prepare}}",
     "ready": "Ready",
     "toPrepare": "To prepare",
-    "seeAllInCalendar": "See all {count} lessons in the calendar"
+    "seeAllInCalendar": "See all {count} lessons in the calendar",
+    "docState": {
+      "writing": "writing…",
+      "waiting": "after the plan",
+      "generating": "generating…",
+      "failed": "failed",
+      "retry": "Retry"
+    }
   },
   "nextSteps": {
     "title": "What to do next",
@@ -198,11 +221,18 @@
     "afterSaveClose": "Close",
     "carryOverDone": "Objectives moved to the lesson on {day}.",
     "reinforcementDone": "Reinforcement sheet being prepared for the lesson on {day}.",
-    "openLesson": "Open lesson"
+    "openLesson": "Open lesson",
+    "outcomesFromUnit": "This lesson had no learning outcomes linked. These come from the unit in your curriculum plan; the ones you pick will be linked to the lesson.",
+    "outcomesFromCatalogue": "This lesson had no learning outcomes linked. These are the outcomes for this subject and year; the ones you pick will be linked to the lesson.",
+    "outcomeSearch": "Search outcomes…",
+    "outcomeSearchEmpty": "No outcome matches “{query}”.",
+    "outcomesShowMore": "Show {count} more",
+    "outcomesLoading": "Loading learning outcomes…",
+    "outcomesCount": "{count} {source, select, unit {from the unit} catalogue {for the subject and year} other {from the lesson}}"
   },
   "previousCheckIn": {
-    "question": "How did the lesson go?",
-    "questionWithTopic": "How did the lesson ({topic}) go?",
+    "question": "How did your last lesson go?",
+    "lessonOn": "Lesson on {day}",
     "notNow": "Not now",
     "saved": "Saved.",
     "savedWithContext": "Saved. The next lesson will take this into account."
@@ -250,8 +280,8 @@
         "description": "Share and discover resources"
       },
       "sources": {
-        "title": "My sources",
-        "description": "Manage the material Scooli generates from"
+        "title": "Sources",
+        "description": "What Scooli draws on when you create materials"
       },
       "calendar": {
         "title": "Calendar",
@@ -304,6 +334,10 @@
       "schoolMembers": {
         "title": "Members",
         "description": "See your school's members and seats"
+      },
+      "schoolSources": {
+        "title": "School sources",
+        "description": "Documents every teacher at your school gets"
       },
       "schoolDirection": {
         "title": "School overview",
@@ -462,9 +496,10 @@
       "courseLabel": "Course",
       "coursePlaceholder": "Select the course...",
       "courseSelectAriaLabel": "Select course",
+      "addCourse": "Add course",
       "yearLabel": "Year",
       "quickAddTitle": "Add your vocational course",
-      "quickAddDescription": "Search for the curso profissional you teach. We'll save it to your teaching profile and switch this document to it.",
+      "quickAddDescription": "Search for the curso profissional you teach. We'll save it to your teaching profile and select it here.",
       "quickAddSaving": "Saving course…",
       "quickAddError": "We couldn't save this course. Try again."
     },
@@ -574,6 +609,7 @@
       "description": "Choose which resources to use for generation",
       "manageSources": "Manage sources",
       "includeAe": "Include Aprendizagens Essenciais (AE)",
+      "includeBncc": "Include BNCC skills (habilidades)",
       "recommended": "Recommended",
       "loadingRegulatory": "Loading regulatory documents...",
       "regulatoryDocuments": "Regulatory Documents ({count})",
@@ -583,11 +619,13 @@
       "noIndexedSourcesSuffix": "to enrich the generation.",
       "mySources": "My sources ({count})",
       "excerpts": "{count} excerpts",
-      "schoolYearSuffix": "th grade",
       "openInNewWindow": "Open {name} in a new window",
       "noneMatch": "None of your sources match this subject and year.",
       "stillProcessing": "Your sources are still being processed.",
-      "allFailed": "None of your sources could be processed."
+      "allFailed": "None of your sources could be processed.",
+      "schoolSources": "School sources",
+      "otherSchoolSources": "Other school sources",
+      "defaultsFailed": "We couldn’t load your default sources. Anything you don’t change here still follows them."
     },
     "slideCount": {
       "title": "Number of slides",
@@ -905,7 +943,7 @@
       "summaryTemplate": "Template: {name}",
       "summaryDuration": "Length: {minutes} min",
       "summaryDurationFree": "Length: any",
-      "summarySources": "{count, plural, one {Uses # of your sources} other {Uses # of your sources}}",
+      "summarySources": "{count, plural, one {Uses # source} other {Uses # sources}}",
       "summarySlides": "{count} slides"
     },
     "missing": {
@@ -2664,32 +2702,40 @@
     },
     "page": {
       "title": "Sources",
-      "description": "What Scooli draws on when you create materials: Scooli sources and the materials you upload.",
-      "addSource": "Add Source",
+      "description": "What Scooli draws on when you create materials.",
       "dropzoneEmpty": "Click or drag a file",
       "dropzoneHint": "PDF or DOCX",
       "namePlaceholder": "Source name *",
       "uploading": "Uploading...",
       "upload": "Upload",
-      "loadedSources": "Loaded sources",
       "processingBadge": "Processing...",
       "loadingSources": "Loading sources...",
       "emptyState": "You don't have any sources uploaded yet.",
       "confirm": "Confirm",
       "cancel": "Cancel",
       "deleteAriaLabel": "Delete source",
-      "proNote": "Only you can see your sources. Scooli reads them in the background and uses them in the documents you create.",
       "strippedBackMatterTooltip": "We removed {size} from {heading} before processing.",
       "strippedSectionOmitted": "{heading} section omitted",
       "sectionFallback": "final",
       "backMatterFallback": "back matter",
       "emptyDescription": "Upload a textbook or your own materials and Scooli will use them in the documents you create.",
       "emptyAction": "Upload a source",
-      "scooliSources": "Scooli sources",
-      "scooliSourcesDescription": "Already included. Scooli uses them by default in everything you create, and you can turn them off for each document.",
-      "aeName": "Aprendizagens Essenciais",
-      "aeDescription": "Portugal’s national curriculum, by subject and school year.",
+      "aeDescription": "The national curriculum, by subject and school year.",
       "regulatoryDescription": "Regulatory document",
+      "defaultsTitle": "Sources used by default",
+      "defaultsDescription": "These sources go into documents you create without the full form (chat, weekly planning, lesson documents…). In the full form you can change them for that one document.",
+      "curriculum": "Curriculum",
+      "regulatory": "Regulatory documents",
+      "fromSchool": "From your school · {name}",
+      "yours": "Your sources",
+      "useByDefault": "Use by default",
+      "aeOffNote": "With this off, quick documents stop following the curriculum.",
+      "typeRegra": "Rule",
+      "typeApoio": "Support",
+      "addedBy": "Added by {name}",
+      "summary": "Summary",
+      "saveError": "Couldn't save that. Please try again.",
+      "sourceGone": "This source no longer exists.",
       "openOfficialText": "Open the official text of {name}",
       "proTitle": "Upload your own sources with Pro",
       "proDescription": "With Pro, you upload a textbook or your school’s materials (PDF or DOCX), and the lesson plans and worksheets you create follow that content.",
@@ -2701,6 +2747,7 @@
       "parsing": "Reading file",
       "chunking": "Chunking",
       "embedding": "Indexing",
+      "summarising": "Summarising",
       "indexed": "Indexed",
       "failed": "Failed"
     },
@@ -2830,8 +2877,11 @@
     },
     "roles": {
       "director": "Director",
-      "school_admin": "School admin",
+      "school_admin": "School leadership",
       "teacher": "Teacher"
+    },
+    "planCodes": {
+      "school_pilot": "Pilot"
     },
     "subscriptionStatus": {
       "active": "Active",
@@ -2848,23 +2898,24 @@
       "suspended": "Suspended"
     },
     "dashboard": {
-      "description": "An operational view of the organization, team usage and recent activity.",
+      "description": "How your team is using Scooli.",
       "loadError": "We couldn't load the school dashboard",
       "stats": {
         "activeSeats": "Active seats",
         "availableSeats": "Available seats",
-        "activeTeachers": "Active teachers",
+        "activeTeachers": "Used AI this month",
         "aiRequestsThisMonth": "AI requests this month",
         "totalDocuments": "School documents",
         "sharedResources": "Internal library"
       },
       "planCard": {
-        "title": "Plan and contract",
+        "title": "Agreement with Scooli",
         "plan": "Plan",
         "status": "Status",
         "seatLimit": "Seat limit",
         "renewal": "Renewal",
-        "manualFallback": "Manual"
+        "manualFallback": "Direct agreement",
+        "unlimited": "No limit"
       },
       "usageCard": {
         "title": "Usage summary",
@@ -2876,10 +2927,10 @@
       "activityCard": {
         "title": "Activity in the last 14 days",
         "description": "AI requests the school completed successfully over the last fourteen days.",
-        "requestsThisMonthBadge": "{count, plural, one {# request} other {# requests}} this month",
         "tooltip": "{day}: {count, plural, one {# request} other {# requests}}",
         "empty": "The chart shows up once the team starts creating with Scooli.",
-        "emptyTitle": "No activity yet"
+        "emptyTitle": "No activity yet",
+        "requestsInPeriodBadge": "{count, plural, one {# request} other {# requests}} in 14 days"
       },
       "documentTypesCard": {
         "title": "Document types",
@@ -2890,33 +2941,96 @@
     },
     "members": {
       "title": "School members",
-      "description": "Track the team's activity, roles and participation in {organizationName}.",
+      "description": "Your team at {organizationName}: who has access, roles and invites.",
       "fallbackOrganization": "this organization",
       "stats": {
         "total": "Total members",
-        "active": "Active members",
-        "aiActivity": "With AI activity",
+        "active": "With access",
+        "aiActivity": "Active this month",
         "internalShares": "Internal shares"
       },
-      "listTitle": "Members",
       "loading": "Loading members...",
       "empty": "Teachers appear here once they accept the school invitation.",
       "unnamedMember": "Unnamed user",
       "noEmail": "No email available",
+      "emptyTitle": "No teachers yet",
+      "manage": {
+        "title": "Teachers",
+        "seats": "{used} of {total} seats",
+        "seatsUnlimited": "{used} seats used · No limit",
+        "seatBarLabel": "Seats used",
+        "invite": "Invite teacher",
+        "full": "No free seats ({pending, plural, one {# pending invite takes} other {# pending invites take}} the rest). Cancel an invite or contact us to add seats.",
+        "fullNoPending": "No free seats. Contact us to add seats.",
+        "search": "Search by name or email",
+        "filterLabel": "Status",
+        "filterAll": "All",
+        "filterActive": "Active",
+        "filterPending": "Pending {count}",
+        "columnPerson": "Person",
+        "columnRole": "Role",
+        "columnStatus": "Status",
+        "you": "(you)",
+        "roleAdmin": "Admin",
+        "roleTeacher": "Teacher",
+        "statusActive": "Active",
+        "statusPending": "Pending",
+        "invitedOn": "Invited on {date}",
+        "actions": "Actions for {name}",
+        "makeAdmin": "Make admin",
+        "makeTeacher": "Make teacher",
+        "remove": "Remove from school",
+        "resend": "Resend invite",
+        "cancelInvite": "Cancel invite",
+        "removeTitle": "Remove {name} from the school?",
+        "removeDescription": "They lose the school library and admins stop seeing their classes. Their personal documents stay theirs. This frees a seat.",
+        "removeConfirm": "Remove",
+        "cancelInviteTitle": "Cancel the invite for {email}?",
+        "cancelInviteDescription": "The link in the email stops working and the seat is freed.",
+        "keep": "Keep",
+        "noMatch": "No one matches \"{query}\".",
+        "noneInFilter": "No one with this status.",
+        "pageRange": "{from}–{to} of {total}",
+        "previous": "Previous",
+        "next": "Next",
+        "invitedToast": "{count, plural, one {Invite sent} other {# invites sent}}",
+        "resentToast": "Invite sent again",
+        "cancelledToast": "Invite cancelled",
+        "removedToast": "{name} was removed from the school",
+        "roleToast": "Role updated",
+        "invitationsError": "Couldn't load pending invites.",
+        "errors": {
+          "seat_limit_reached": "There aren't enough free seats for these invites.",
+          "already_member": "One of these emails is already in the school or already invited.",
+          "last_admin": "The school needs at least one admin.",
+          "self": "You can't change your own access.",
+          "invalid_emails": "Some emails aren't valid.",
+          "generic": "That didn't work. Please try again.",
+          "member_limit_reached": "Your school has reached its account member limit. Write to info@scooli.app to raise it."
+        },
+        "dialog": {
+          "title": "Invite teachers",
+          "emailsLabel": "Emails",
+          "emailsPlaceholder": "One per line, or separated by commas",
+          "roleLabel": "Role",
+          "hint": "They get an email to join the school. Each invite takes a seat until it's accepted or cancelled.",
+          "send": "Send invites",
+          "cancel": "Cancel",
+          "invalidEmails": "Invalid emails: {emails}",
+          "alreadyMember": "Already in the school or already invited: {emails}",
+          "notEnoughSeats": "{free, plural, =0 {There are no free seats} one {Only # seat is free} other {Only # seats are free}}.",
+          "tooMany": "Up to {max} emails at a time."
+        }
+      },
       "joinedAndLastActive": "Joined: {joinedDate} · Last active: {lastActiveDate}",
-      "documentsLabel": "Documents",
-      "documentsCount": "{count, plural, one {# document} other {# documents}}",
-      "createdThisMonth": "{count, plural, one {# created this month} other {# created this month}}",
-      "statusLabel": "Status",
-      "internalSharesCount": "{count, plural, one {# internal share} other {# internal shares}}",
-      "emptyTitle": "No teachers yet"
+      "never": "No activity yet"
     },
     "settings": {
       "title": "School settings",
-      "description": "Initial overview of the organization workspace.",
+      "description": "Your school on Scooli.",
       "loadError": "We couldn't load the school settings",
       "currentRole": "Current role:",
-      "contractStatus": "Contract status:"
+      "changes": "Manage the school’s teachers in <members>Members</members>. To change the school’s name or agreement, write to <email>info@scooli.app</email>."
     }
   },
   "schoolDirection": {
@@ -2943,12 +3057,12 @@
     },
     "homeCard": {
       "fallbackName": "Your school",
-      "figures": "{percent}% of plan delivered · {behind, plural, =0 {no classes behind} one {# class behind} other {# classes behind}}",
+      "figures": "{percent}% of lessons on plan · {behind, plural, =0 {no classes behind} one {# class behind} other {# classes behind}}",
       "hint": "See where every class stands in its curriculum.",
       "open": "Open school overview"
     },
     "dashboard": {
-      "title": "Curriculum progress",
+      "title": "Lesson plan progress",
       "subtitle": "{year} school year · updated just now",
       "subtitleNoYear": "Updated just now",
       "coverage": "Based on {turmas, plural, one {# class} other {# classes}} planned in Scooli by {teachers, plural, one {# teacher} other {# teachers}}.",
@@ -2956,8 +3070,8 @@
       "empty": "Teachers show up here once Scooli has added them to your school and they plan their first classes."
     },
     "kpis": {
-      "execution": "Curriculum delivered",
-      "executionHint": "of what was planned to date",
+      "execution": "Lessons on plan",
+      "executionHint": "of those planned to date",
       "onTrack": "On track",
       "watch": "Watch",
       "behind": "Behind",
@@ -2976,21 +3090,31 @@
     },
     "drawer": {
       "fallbackTitle": "Class details",
-      "execution": "Progress: {percent}% of the plan to date",
-      "executionUnknown": "Progress: —",
-      "why": "Why",
-      "missedTitle": "Missed or unfinished lessons",
+      "missedTitle": "What happened",
       "lessonNumber": "Lesson {n}",
       "notHeld": "Not held",
       "leftHalfway": "Left halfway",
-      "behindTitle": "Topics behind",
+      "behindTitle": "Still to teach",
       "plannedFor": "planned for {date}",
       "difficultiesTitle": "Where the class struggled",
       "flagged": "{count, plural, one {flagged once} other {flagged # times}}",
       "planTitle": "Plan adjustment",
       "planAdjusted": "Adjusted on {date}",
       "planPending": "Proposal awaiting review since {date}",
-      "nextTest": "Next test"
+      "nextTest": "Next test",
+      "partlyLeft": "partly left to teach",
+      "planSummaryLabel": "What Scooli told the teacher",
+      "executionLabel": "On plan, of lessons to date",
+      "yearLabel": "Year {grade}",
+      "kpiBehind": "{count, plural, one {lesson behind} other {lessons behind}}",
+      "kpiMissed": "{count, plural, one {lesson with issues} other {lessons with issues}}",
+      "showMore": "Show {count} more",
+      "showLess": "Show less",
+      "readAll": "Read all",
+      "readLess": "Read less",
+      "copyEmail": "Copy email",
+      "emailCopied": "Email copied",
+      "copyFailed": "Could not copy the email."
     },
     "learning": {
       "title": "Where the school needs reinforcement",
@@ -2998,7 +3122,7 @@
       "allSubjects": "All subjects",
       "summary": "{subject} · Year {grade} · {flagged} of {total, plural, one {# class} other {# classes}} flagged it",
       "reinforcement": "Reinforcement sheet created",
-      "empty": "No class flagged anything as hard in the last 4 weeks."
+      "empty": "No class marked a lesson as “Some difficulties” in the last 4 weeks. Lessons left halfway show on the Overview."
     },
     "assessments": {
       "title": "Assessment calendar",
@@ -3028,13 +3152,11 @@
         "choose": "Choose a teacher",
         "cancel": "Cancel",
         "confirm": "Report an absence",
-        "error": "We couldn’t load the lessons for that day. Try again."
+        "error": "We couldn’t register the absence. Try again.",
+        "substituteHint": "They get an email and see that day’s lessons in their calendar, with the class’s history."
       },
-      "ready": "Ready for the substitute",
-      "sent": "Sent",
       "lessonHeading": "{class} · {subject} · Lesson {n}",
-      "substitute": "Substitute: {name}",
-      "leftOff": "Where the class left off",
+      "leftOff": "The class’s recent lessons",
       "leftOffNone": "No lessons have been recorded for this class yet.",
       "status": {
         "taught": "Taught",
@@ -3044,24 +3166,41 @@
       "topic": "Lesson topic",
       "documents": "Lesson documents",
       "noDocuments": "No documents attached to this lesson.",
-      "send": "Send to {name}",
-      "sentToast": "Sent to {name}",
-      "noLessons": "{name} has no lessons on this day."
+      "noLessons": "{name} has no lessons on this day.",
+      "noLessonsPill": "No lessons",
+      "shared": "In {name}’s calendar",
+      "sharedHint": "{name} sees this lesson in their calendar, with the class’s history. The teacher’s documents are not shared.",
+      "coveredBy": "{absent} is away · {name} covers",
+      "substituteLeft": "{absent} is away · {name} has left the school. Register the absence again with another substitute.",
+      "uncovered": "No cover",
+      "remove": "Remove absence",
+      "removeConfirmTitle": "Remove this absence?",
+      "removeConfirmDescription": "{name} will no longer see these lessons in their calendar.",
+      "registeredToast": "Absence registered. We emailed {name}.",
+      "registeredNoEmailToast": "Absence registered",
+      "removedToast": "Absence removed",
+      "removeError": "We couldn’t remove the absence. Try again."
     },
     "reports": {
       "title": "Reports",
-      "subtitle": "Curriculum progress report · {label}",
-      "subtitleNoYear": "Curriculum progress report",
+      "subtitle": "Progress against lesson plans · {label}",
+      "subtitleNoYear": "Progress against lesson plans",
       "export": "Export PDF",
-      "sheetTitle": "Curriculum progress report",
+      "sheetTitle": "Progress against lesson plans",
       "sheetYear": "School year {label}",
       "generated": "Generated on {date}",
       "audience": "",
-      "byDepartment": "1. Progress by department",
+      "measures": "Percentages count the lessons planned to date whose content is not behind, from teachers' own records. They don't measure what students have mastered.",
+      "coverage": "1. Records",
+      "coverageLine": "Confirmed records for {measured} of {expected, plural, one {# class} other {# classes}} with lessons planned to date.",
+      "coverageMissing": "No records yet (left out of the figures below):",
+      "byDepartment": "2. Lessons on plan, by department",
+      "departmentFigure": "{onPlan} of {past} lessons · {percent}%",
+      "reason": "Reason: {note}",
       "byDepartmentEmpty": "There are no lesson records yet to work out progress.",
-      "followUp": "2. Classes to follow up",
+      "followUp": "3. Classes to follow up",
       "followUpEmpty": "No classes to follow up: every class with records is on track.",
-      "reinforce": "3. Learning to reinforce"
+      "reinforce": "4. Learning to reinforce"
     }
   },
   "checkout": {
@@ -3243,7 +3382,8 @@
     "workspace": {
       "fetchContextFailed": "We couldn't load the workspace context",
       "fetchDashboardFailed": "We couldn't load the school dashboard",
-      "fetchMembersFailed": "We couldn't load the school members"
+      "fetchMembersFailed": "We couldn't load the school members",
+      "fetchInvitationsFailed": "We couldn't load the pending invites"
     },
     "onboarding": {
       "fetchStatusFailed": "We couldn't load the onboarding status"
@@ -3348,6 +3488,13 @@
     "appUpdate": {
       "message": "A new version of Scooli is available. Refresh the page when you've finished what you're doing.",
       "action": "Refresh"
+    },
+    "notFound": {
+      "title": "Page not found",
+      "description": "The page you’re looking for doesn’t exist or has moved.",
+      "home": "Go to Home",
+      "back": "Go back",
+      "support": "If you think this is a mistake, write to info@scooli.app."
     }
   },
   "ui": {
@@ -3584,7 +3731,11 @@
           "s6": "Reviewing and polishing the details"
         },
         "hint": "You can close this window — we'll keep preparing in the background."
-      }
+      },
+      "prepareLesson": "Prepare lesson",
+      "moreOptions": "More options",
+      "suggestedSet": "suggested for this lesson",
+      "openPlanShort": "Open plan"
     },
     "dashboardWidget": {
       "title": "Upcoming lessons",
@@ -3701,7 +3852,19 @@
       "term3": "Term 3",
       "semester1": "Semester 1",
       "semester2": "Semester 2",
-      "schoolYear": "School year {range}"
+      "schoolYear": "School year {range}",
+      "bimester1": "1st bimester",
+      "bimester2": "2nd bimester",
+      "bimester3": "3rd bimester",
+      "bimester4": "4th bimester"
+    },
+    "covers": {
+      "title": "Covering this week",
+      "lessonHeading": "{class} · {subject} · Lesson {n}",
+      "for": "Covering for {name}",
+      "description": "You’re covering this lesson for {name}. You see the class’s history, not the teacher’s materials.",
+      "topic": "Lesson topic",
+      "history": "The class’s recent lessons"
     }
   },
   "curriculumPlan": {
@@ -3712,7 +3875,8 @@
         "annual": "Annual",
         "semester": "Semester",
         "trimester": "Term",
-        "custom": "Custom"
+        "custom": "Custom",
+        "bimester": "Bimester"
       }
     },
     "novo": {
@@ -3740,7 +3904,8 @@
         "endLabel": "End date",
         "endPlaceholder": "End of period",
         "summary": "<strong>{weeks, plural, one {# week} other {# weeks}}</strong> from <strong>{start}</strong> to <strong>{end}</strong>",
-        "planningTypeLabel": "Period type"
+        "planningTypeLabel": "Period type",
+        "levelHint": "The plan's level of detail follows the length of the period: lesson by lesson for a term, by unit for a semester or a year."
       },
       "class": {
         "title": "Class details",
@@ -3934,6 +4099,7 @@
     "notHeldInProgress": "The AI is adjusting the following lessons…",
     "readyToast": "The proposal is ready. Review it on the class page.",
     "failedToast": "Could not suggest changes to the following lessons.",
+    "retry": "Try again",
     "requestTitle": "What happened in this lesson?",
     "requestDescription": "Tell us how this lesson went. We use the note to propose changes to the following lessons.",
     "requestTitleTurma": "What changed in the class?",
@@ -3952,10 +4118,11 @@
     "changeReinforcement": "Reinforcement",
     "lessonNumber": "Lesson {number}",
     "lessonCheck": "Apply lesson {number}",
+    "lessonDetails": "Show lesson {number} details",
     "addition": "Adds: {text}",
     "newOutcome": "New",
     "documentsNote": "This lesson's materials are updated by themselves when you apply (the previous version is kept)",
-    "applyLabel": "{count, plural, =0 {No change selected} one {Apply # change} other {Apply # changes}}",
+    "applyLabel": "{count, plural, one {Apply to # lesson} other {Apply to # lessons}}",
     "reject": "Reject",
     "applied": "Changes applied",
     "rejected": "Proposal rejected",
@@ -3967,7 +4134,15 @@
     "readyHint": "Applying updates those lessons' topics and the materials already created, by themselves.",
     "seeChanges": "See changes",
     "applyAll": "Apply",
-    "appliedAll": "Changes applied. Those lessons' materials are being updated."
+    "appliedAll": "Changes applied. Those lessons' materials are being updated.",
+    "sheetActionTitle": "{count, plural, one {Adjust the next lesson} other {Adjust # lessons}}",
+    "selectAll": "All",
+    "chipOutcomes": "{count, plural, one {+# outcome} other {+# outcomes}}",
+    "detailTopic": "Topic",
+    "detailChange": "What changes",
+    "detailOutcomes": "Outcomes",
+    "topicKept": "unchanged",
+    "outcomeFull": "See the full text"
   },
   "adminPromos": {
     "title": "Promo links",
@@ -4439,5 +4614,84 @@
     "searchFree": "Search free photos",
     "subscribe": "See Pro plans",
     "dismiss": "Dismiss"
+  },
+  "schoolSources": {
+    "title": "School sources",
+    "intro": "Every teacher at your school gets these sources. Each teacher can switch them off for themselves.",
+    "add": "Add source",
+    "addTitle": "Add a school source",
+    "editTitle": "Edit source",
+    "type": {
+      "label": "Type",
+      "regra": {
+        "title": "School rule",
+        "hint": "Always used in documents for these subjects and years"
+      },
+      "apoio": {
+        "title": "Support material",
+        "hint": "Used when the topic matches"
+      }
+    },
+    "defaultEnabled": "On by default for teachers",
+    "onForAll": "On for everyone",
+    "offByDefault": "Off by default",
+    "all": "All",
+    "scope": {
+      "allSubjects": "All subjects",
+      "allYears": "All years",
+      "subjects": "{count, plural, one {# subject} other {# subjects}}",
+      "years": "{count, plural, one {# year} other {# years}}"
+    },
+    "years": {
+      "single": "{n}",
+      "range": "{from}–{to}",
+      "option": "Year {n}",
+      "list": "Year {list}"
+    },
+    "quota": "{files} of {filesMax} files · {used} of {max}",
+    "quotaFull": {
+      "files": "You’ve reached the limit of {max} files. Delete a source to add another.",
+      "bytes": "Your school’s storage is full ({max}). Delete a source to add another."
+    },
+    "size": {
+      "kb": "{n} KB",
+      "mb": "{n} MB",
+      "gb": "{n} GB"
+    },
+    "menu": {
+      "edit": "Edit",
+      "turnOff": "Turn off by default",
+      "turnOn": "Turn on by default",
+      "delete": "Delete",
+      "actions": "Actions for {name}"
+    },
+    "deleteConfirm": "Delete “{name}”? Teachers will stop getting it.",
+    "empty": "No school sources yet. Add your assessment criteria or school rules.",
+    "status": {
+      "indexing": "Indexing…",
+      "failed": "Indexing failed",
+      "failedHint": "We couldn’t read this file. Delete it and upload it again."
+    },
+    "form": {
+      "file": "File",
+      "chooseFile": "Choose file",
+      "noFile": "No file chosen",
+      "fileHint": "PDF, Word or Markdown.",
+      "name": "Name",
+      "subjects": "Subjects",
+      "pickSubject": "Tick at least one subject.",
+      "years": "Years",
+      "pickYear": "Tick at least one year.",
+      "cancel": "Cancel",
+      "save": "Save",
+      "upload": "Add"
+    },
+    "errors": {
+      "load": "Couldn't load the school sources.",
+      "generic": "Something went wrong. Try again.",
+      "fileTooBig": "This file is over {max}. Choose a smaller one.",
+      "duplicate": "This file is already in your school’s sources.",
+      "indexing": "This source is still being indexed. Try again when it’s done."
+    }
   }
 }

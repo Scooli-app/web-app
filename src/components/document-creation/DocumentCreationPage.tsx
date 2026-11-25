@@ -18,7 +18,13 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { LessonChoice } from "./lessonPicker";
 import { getMissingFields, type MissingField } from "./missingField";
-import { SUBJECTS, SUBJECTS_BY_GRADE } from "./constants";
+import { defaultSourceIds, reconcileSchoolIds } from "./sourceSelection";
+import {
+  fetchSourceDefaults,
+  selectDefaultFormSelection,
+  selectSourceDefaults,
+} from "@/store/sources/sourceDefaultsSlice";
+import { useCountryCatalog } from "@/hooks/useCountryCatalog";
 import {
   AdditionalDetailsSection,
   ClassSection,
@@ -50,6 +56,12 @@ const FIELD_FOCUS_SELECTORS = [
   "[role=combobox]:not(:disabled)",
   "button:not(:disabled)",
 ];
+
+type SourceField = "sourceIds" | "includeAe" | "regulatorySourceIds";
+
+/** Ticked source documents besides the curriculum: personal, school and regulatory. */
+export const selectedSourceCount = (form: Pick<FormState, "sourceIds" | "regulatorySourceIds">) =>
+  (form.sourceIds?.length ?? 0) + (form.regulatorySourceIds?.length ?? 0);
 
 function focusFirstControl(container: HTMLElement) {
   for (const selector of FIELD_FOCUS_SELECTORS) {
@@ -127,12 +139,17 @@ export default function DocumentCreationPage({
 }: DocumentCreationPageProps) {
   const router = useRouter();
   const t = useTranslations("documentCreation");
+  const catalog = useCountryCatalog();
   const dispatch = useAppDispatch();
   const isProUser = useAppSelector(selectIsPro);
   const isEntitlementLoading = useAppSelector(selectEntitlementLoading);
   const isUserSourcesEnabled = useAppSelector(
     (state) => state.features.flags[FeatureFlag.USER_SOURCES] === true
   );
+  const isOrgSourcesEnabled = useAppSelector(
+    (state) => state.features.flags[FeatureFlag.ORGANIZATION_SOURCES] === true
+  );
+  const showSourcePicker = isUserSourcesEnabled || isOrgSourcesEnabled;
   const [isLoading, setIsLoading] = useState(false);
   // Quick-create already filled year and subject: show them as one line until the teacher asks to change them.
   const [showFilledSummary, setShowFilledSummary] = useState(false);
@@ -148,6 +165,64 @@ export default function DocumentCreationPage({
   const usesTemplate = documentType.id !== "presentation" && !isStructured;
   const { formState, error, setError, updateForm, isFormValid, handleTemplateSelect } =
     useDocumentForm(documentType.id, usesTemplate);
+
+  // The picker starts from the teacher's defaults; what changes here applies to this one document and never writes them.
+  const defaultEntries = useAppSelector(selectSourceDefaults);
+  const defaultSelection = useAppSelector(
+    selectDefaultFormSelection,
+    (a, b) => JSON.stringify(a) === JSON.stringify(b)
+  );
+  // Which of the three source fields the teacher changed on this form.
+  const touchedFieldsRef = useRef(new Set<SourceField>());
+  const touchedRowsRef = useRef(new Set<string>());
+  // True once the defaults were applied (to every field the teacher hadn't touched): from then on the form's
+  // source fields are sent; before, only the touched ones are (see the request).
+  const defaultsAppliedRef = useRef(false);
+  const subjectValue = catalog.subjectValue(formState.subject);
+  const schoolYearValue = formState.schoolYear || undefined;
+
+  // Defaults loaded earlier in the session (e.g. on /sources) may be stale: the form starts only from its own fetch.
+  const [ownDefaultsLoaded, setOwnDefaultsLoaded] = useState(false);
+  useEffect(() => {
+    if (!showSourcePicker) return;
+    void dispatch(fetchSourceDefaults()).then((action) => {
+      if (fetchSourceDefaults.fulfilled.match(action)) setOwnDefaultsLoaded(true);
+    });
+  }, [dispatch, showSourcePicker]);
+
+  useEffect(() => {
+    if (!showSourcePicker || !defaultSelection || !ownDefaultsLoaded) return;
+    if (!defaultsAppliedRef.current) {
+      defaultsAppliedRef.current = true;
+      const touched = touchedFieldsRef.current;
+      if (!touched.has("includeAe")) updateForm("includeAe", defaultSelection.includeAe);
+      if (!touched.has("regulatorySourceIds")) updateForm("regulatorySourceIds", defaultSelection.regulatorySourceIds);
+      if (!touched.has("sourceIds")) updateForm("sourceIds", defaultSourceIds(defaultEntries, subjectValue, schoolYearValue));
+    } else {
+      // A new subject or year re-decides the school rows the teacher hasn't touched.
+      updateForm(
+        "sourceIds",
+        reconcileSchoolIds(formState.sourceIds ?? [], defaultEntries, subjectValue, schoolYearValue, touchedRowsRef.current)
+      );
+    }
+    // Re-runs only when the defaults or the subject/year change, not on every tick.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showSourcePicker, ownDefaultsLoaded, defaultSelection, defaultEntries, subjectValue, schoolYearValue]);
+
+  const updateSources: FormUpdateFn = useCallback(
+    (field, value) => {
+      if (field === "sourceIds" || field === "includeAe" || field === "regulatorySourceIds") touchedFieldsRef.current.add(field);
+      if (field === "sourceIds") {
+        const before = formState.sourceIds ?? [];
+        const after = value as string[];
+        for (const id of [...before.filter((i) => !after.includes(i)), ...after.filter((i) => !before.includes(i))]) {
+          touchedRowsRef.current.add(id);
+        }
+      }
+      updateForm(field, value);
+    },
+    [formState.sourceIds, updateForm]
+  );
 
   // A year or subject from the URL wins over the profile defaults.
   const prefilledRef = useRef({ year: false, subject: false });
@@ -186,16 +261,16 @@ export default function DocumentCreationPage({
       updateForm("schoolYear", year);
     }
 
-    if (subjectId && SUBJECTS.some((subject) => subject.id === subjectId)) {
+    if (subjectId && catalog.findSubject(subjectId)) {
       const validForYear =
-        !hasValidYear || SUBJECTS_BY_GRADE[String(year)]?.includes(subjectId);
+        !hasValidYear || catalog.subjectIdsForYear(year).includes(subjectId);
       if (validForYear) {
         prefilledRef.current.subject = true;
         updateForm("subject", subjectId);
         if (hasValidYear) setShowFilledSummary(true);
       }
     }
-  }, [updateForm]);
+  }, [updateForm, catalog]);
 
   // Picking a lesson fills what its turma already knows: the topic (if empty), year and subject.
   const handleLessonChange = useCallback(
@@ -279,9 +354,9 @@ export default function DocumentCreationPage({
       ? t("moreOptions.summaryDuration", { minutes: formState.lessonTime })
       : t("moreOptions.summaryDurationFree"),
     isPresentation && formState.slideCount ? t("moreOptions.summarySlides", { count: formState.slideCount }) : null,
-    // Says which of the teacher's own sources this document will follow.
-    isUserSourcesEnabled && (formState.sourceIds?.length ?? 0) > 0
-      ? t("moreOptions.summarySources", { count: formState.sourceIds?.length ?? 0 })
+    // How many documents (personal, school and regulatory) this one will follow, besides the curriculum.
+    showSourcePicker && selectedSourceCount(formState) > 0
+      ? t("moreOptions.summarySources", { count: selectedSourceCount(formState) })
       : null,
   ]
     .filter(Boolean)
@@ -295,6 +370,8 @@ export default function DocumentCreationPage({
     },
     [updateForm]
   );
+
+  const sendsSource = (field: SourceField) => defaultsAppliedRef.current || touchedFieldsRef.current.has(field);
 
   const handleCreateDocument = async () => {
     if (isLoading) return;
@@ -329,7 +406,7 @@ export default function DocumentCreationPage({
       setError("");
 
       const subjectValue =
-        SUBJECTS.find((s) => s.id === formState.subject)?.value ||
+        catalog.findSubject(formState.subject)?.value ||
         formState.subject;
 
       const durationValue = formState.lessonTime
@@ -351,11 +428,11 @@ export default function DocumentCreationPage({
           vocationalCourseCode: formState.vocationalCourseCode || undefined,
           vocationalUnitCode: formState.vocationalUnitCode || undefined,
           vocationalSchoolSubjectName: formState.vocationalSchoolSubjectName || undefined,
-          ...(isUserSourcesEnabled && {
-            sourceIds: formState.sourceIds ?? [],
-            includeAe: formState.includeAe ?? true,
-            regulatorySourceIds: formState.regulatorySourceIds,
-          }),
+          // A field goes out once the defaults are in the form or the teacher changed it; otherwise null, so the
+          // server applies the teacher's own default for it (and their "off"), not the form's starting value.
+          ...(sendsSource("sourceIds") && { sourceIds: formState.sourceIds ?? [] }),
+          ...(sendsSource("includeAe") && { includeAe: formState.includeAe ?? true }),
+          ...(sendsSource("regulatorySourceIds") && { regulatorySourceIds: formState.regulatorySourceIds }),
           // Presentations: an explicit slide count wins; without one the backend
           // sizes the deck from the lesson duration.
           ...(isPresentation && formState.slideCount ? { slideCount: formState.slideCount } : {}),
@@ -493,7 +570,7 @@ export default function DocumentCreationPage({
                   subject={formState.subject}
                   isSpecificComponent={formState.isSpecificComponent}
                   onUpdate={updateForm}
-                  availableSubjects={formState.schoolYear ? SUBJECTS_BY_GRADE[String(formState.schoolYear)] : undefined}
+                  availableSubjects={formState.schoolYear ? catalog.subjectIdsForYear(formState.schoolYear) : undefined}
                   preferredSubjectIds={preferredSubjectIds}
                   mode={teachingMode}
                   vocationalCourse={selectedVocationalCourse}
@@ -545,14 +622,14 @@ export default function DocumentCreationPage({
               onUpdate={updateForm}
             />
 
-            {isUserSourcesEnabled && (
+            {showSourcePicker && (
               <SourcePickerSection
                 sourceIds={formState.sourceIds ?? []}
                 includeAe={formState.includeAe ?? true}
                 regulatorySourceIds={formState.regulatorySourceIds}
                 subject={formState.subject}
                 schoolYear={formState.schoolYear || undefined}
-                onUpdate={updateForm}
+                onUpdate={updateSources}
               />
             )}
           </MoreOptions>

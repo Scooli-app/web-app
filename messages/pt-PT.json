@@ -36,7 +36,8 @@
       "followBrowser": "Navegador",
       "followBrowserHint": "A seguir o teu navegador",
       "options": {
-        "pt-PT": "Português",
+        "pt-PT": "Português (Portugal)",
+        "pt-BR": "Português (Brasil)",
         "en": "English",
         "system": "Navegador"
       }
@@ -48,12 +49,28 @@
       "sameAsInterfaceHint": "Igual ao idioma da interface",
       "curriculumNote": "O currículo continua a ser o português. Só muda a língua em que os materiais são escritos — útil para quem ensina Inglês.",
       "options": {
-        "pt-PT": "Português",
+        "pt-PT": "Português (Portugal)",
+        "pt-BR": "Português (Brasil)",
         "en": "English",
         "interface": "Igual à interface"
       }
     },
     "saveError": "Não foi possível guardar a preferência de idioma."
+  },
+  "country": {
+    "title": "País",
+    "options": {
+      "PT": "Portugal",
+      "BR": "Brasil"
+    },
+    "saveError": "Não foi possível guardar o país. Tenta novamente.",
+    "note": "Define os anos de escolaridade e as disciplinas que aparecem na criação de documentos e planificações.",
+    "stateTitle": "Estado",
+    "statePlaceholder": "Escolhe o estado",
+    "stateNote": "Opcional. Com o estado, a Scooli junta o currículo estadual à BNCC quando o tiver.",
+    "stateWithCurriculum": "O currículo deste estado entra nos documentos, junto com a BNCC.",
+    "stateBnccOnly": "Para este estado a Scooli ainda usa só a BNCC.",
+    "stateSaveError": "Não foi possível guardar o estado. Tenta novamente."
   },
   "planGeneration": {
     "title": "A preparar o teu plano…",
@@ -82,7 +99,6 @@
     "lessonMinutes": "{minutes} min",
     "noObjectivesYet": "Os objetivos aparecem quando o plano de aula estiver pronto.",
     "preparePlan": "Preparar plano de aula",
-    "documentGenerating": "A preparar…",
     "companionError": "Não foi possível criar este documento. Tenta novamente.",
     "companionInProgress": "Este documento já está a ser preparado.",
     "backToToday": "Hoje",
@@ -109,7 +125,14 @@
     "dayToPrepare": "{count, plural, one {# por preparar} other {# por preparar}}",
     "ready": "Pronta",
     "toPrepare": "Por preparar",
-    "seeAllInCalendar": "Ver as {count} aulas no calendário"
+    "seeAllInCalendar": "Ver as {count} aulas no calendário",
+    "docState": {
+      "writing": "a escrever…",
+      "waiting": "usa o plano",
+      "generating": "a gerar…",
+      "failed": "falhou",
+      "retry": "Tentar de novo"
+    }
   },
   "nextSteps": {
     "title": "O que fazer a seguir",
@@ -136,7 +159,7 @@
     "resultDifficulties": "Com dificuldades",
     "resultPartial": "Ficou a meio",
     "resultNotHeld": "Não houve aula",
-    "difficultiesQuestion": "Em que tiveram dificuldades?",
+    "difficultiesQuestion": "Em que teve dificuldades?",
     "uncoveredQuestion": "O que ficou por dar?",
     "back": "Voltar",
     "assessmentQuestion": "Já aplicaste o teste?",
@@ -198,11 +221,18 @@
     "afterSaveClose": "Fechar",
     "carryOverDone": "Objetivos passados para a aula de {day}.",
     "reinforcementDone": "Ficha de reforço a preparar para a aula de {day}.",
-    "openLesson": "Abrir aula"
+    "openLesson": "Abrir aula",
+    "outcomesFromUnit": "Esta aula não tinha aprendizagens ligadas. Estas são da unidade da tua planificação; as que escolheres ficam ligadas à aula.",
+    "outcomesFromCatalogue": "Esta aula não tinha aprendizagens ligadas. Estas são das Aprendizagens Essenciais da disciplina e do ano; as que escolheres ficam ligadas à aula.",
+    "outcomeSearch": "Procurar aprendizagem…",
+    "outcomeSearchEmpty": "Nenhuma aprendizagem com “{query}”.",
+    "outcomesShowMore": "Ver mais {count}",
+    "outcomesLoading": "A carregar aprendizagens…",
+    "outcomesCount": "{count} {source, select, unit {da unidade} catalogue {do programa} other {da aula}}"
   },
   "previousCheckIn": {
-    "question": "Como correu a aula?",
-    "questionWithTopic": "Como correu a aula ({topic})?",
+    "question": "Como correu a última aula?",
+    "lessonOn": "Aula de {day}",
     "notNow": "Agora não",
     "saved": "Registado.",
     "savedWithContext": "Registado. A próxima aula vai ter isto em conta."
@@ -250,8 +280,8 @@
         "description": "Partilhar e descobrir recursos"
       },
       "sources": {
-        "title": "As minhas fontes",
-        "description": "Gerir fontes de conteúdo para geração"
+        "title": "Fontes",
+        "description": "O que a Scooli consulta quando crias materiais"
       },
       "calendar": {
         "title": "Calendário",
@@ -304,6 +334,10 @@
       "schoolMembers": {
         "title": "Membros",
         "description": "Ver membros e lugares da escola"
+      },
+      "schoolSources": {
+        "title": "Fontes da escola",
+        "description": "Documentos que os professores da escola recebem"
       },
       "schoolDirection": {
         "title": "Painel da direção",
@@ -462,9 +496,10 @@
       "courseLabel": "Curso",
       "coursePlaceholder": "Escolhe o curso...",
       "courseSelectAriaLabel": "Selecionar curso",
+      "addCourse": "Adicionar curso",
       "yearLabel": "Ano",
       "quickAddTitle": "Adiciona o teu curso profissional",
-      "quickAddDescription": "Procura o curso profissional onde dás aulas. Vamos guardá-lo no teu perfil de ensino e mudar este documento para esse curso.",
+      "quickAddDescription": "Procura o curso profissional onde dás aulas. Vamos guardá-lo no teu perfil de ensino e selecioná-lo aqui.",
       "quickAddSaving": "A guardar curso…",
       "quickAddError": "Não foi possível guardar este curso. Tenta novamente."
     },
@@ -574,6 +609,7 @@
       "description": "Escolhe que recursos usar na geração",
       "manageSources": "Gerir fontes",
       "includeAe": "Incluir Aprendizagens Essenciais (AE)",
+      "includeBncc": "Incluir habilidades da BNCC",
       "recommended": "Recomendado",
       "loadingRegulatory": "A carregar documentos regulatórios...",
       "regulatoryDocuments": "Documentos Regulatórios ({count})",
@@ -583,11 +619,13 @@
       "noIndexedSourcesSuffix": "para enriquecer a geração.",
       "mySources": "As minhas fontes ({count})",
       "excerpts": "{count} excertos",
-      "schoolYearSuffix": "º ano",
       "openInNewWindow": "Abrir {name} numa nova janela",
       "noneMatch": "Nenhuma das tuas fontes corresponde a esta disciplina e ano.",
       "stillProcessing": "As tuas fontes ainda estão a ser processadas.",
-      "allFailed": "Nenhuma das tuas fontes foi processada."
+      "allFailed": "Nenhuma das tuas fontes foi processada.",
+      "schoolSources": "Fontes da escola",
+      "otherSchoolSources": "Outras fontes da escola",
+      "defaultsFailed": "Não conseguimos carregar as tuas fontes por omissão. O que não mudares aqui segue-as na mesma."
     },
     "slideCount": {
       "title": "Número de slides",
@@ -905,7 +943,7 @@
       "summaryTemplate": "Modelo: {name}",
       "summaryDuration": "Duração: {minutes} min",
       "summaryDurationFree": "Duração: livre",
-      "summarySources": "{count, plural, one {Usa # fonte tua} other {Usa # fontes tuas}}",
+      "summarySources": "{count, plural, one {Usa # fonte} other {Usa # fontes}}",
       "summarySlides": "{count} diapositivos"
     },
     "missing": {
@@ -2664,32 +2702,40 @@
     },
     "page": {
       "title": "Fontes",
-      "description": "O que a Scooli consulta quando crias materiais: as fontes da Scooli e os materiais que carregas.",
-      "addSource": "Adicionar fonte",
+      "description": "O que a Scooli consulta quando crias materiais.",
       "dropzoneEmpty": "Clica ou arrasta um ficheiro",
       "dropzoneHint": "PDF ou DOCX",
       "namePlaceholder": "Nome da fonte *",
       "uploading": "A carregar...",
       "upload": "Carregar",
-      "loadedSources": "Fontes carregadas",
       "processingBadge": "A processar...",
       "loadingSources": "A carregar fontes...",
       "emptyState": "Ainda não tens fontes carregadas.",
       "confirm": "Confirmar",
       "cancel": "Cancelar",
       "deleteAriaLabel": "Eliminar fonte",
-      "proNote": "Só tu vês as tuas fontes. A Scooli lê-as em segundo plano e usa-as nos documentos que crias.",
       "strippedBackMatterTooltip": "Excluímos {size} de {heading} antes de processar.",
       "strippedSectionOmitted": "Secção {heading} omitida",
       "sectionFallback": "final",
       "backMatterFallback": "back-matter",
       "emptyDescription": "Carrega o manual ou os materiais da tua escola e a Scooli usa-os nos documentos que crias.",
       "emptyAction": "Carregar uma fonte",
-      "scooliSources": "Fontes da Scooli",
-      "scooliSourcesDescription": "Já estão incluídas. A Scooli usa-as por defeito em todos os materiais que crias, e podes desligá-las em cada documento.",
-      "aeName": "Aprendizagens Essenciais",
       "aeDescription": "O currículo nacional, por disciplina e ano de escolaridade.",
       "regulatoryDescription": "Documento regulatório",
+      "defaultsTitle": "Fontes usadas por omissão",
+      "defaultsDescription": "Estas fontes entram nos documentos que crias sem o formulário completo (chat, Gerar semana, documento da aula…). No formulário completo podes mudar só para esse documento.",
+      "curriculum": "Currículo nacional",
+      "regulatory": "Documentos regulatórios",
+      "fromSchool": "Da tua escola · {name}",
+      "yours": "As tuas fontes",
+      "useByDefault": "Usar por omissão",
+      "aeOffNote": "Com as AE desligadas, os documentos rápidos deixam de as seguir.",
+      "typeRegra": "Regra",
+      "typeApoio": "Apoio",
+      "addedBy": "Adicionada por {name}",
+      "summary": "Resumo",
+      "saveError": "Não foi possível guardar. Tenta outra vez.",
+      "sourceGone": "Esta fonte já não existe.",
       "openOfficialText": "Abrir o texto oficial de {name}",
       "proTitle": "Carrega as tuas fontes com o Pro",
       "proDescription": "Com o Pro, carregas o manual ou os materiais da tua escola (PDF ou DOCX), e os planos e fichas que crias passam a seguir essa matéria.",
@@ -2701,6 +2747,7 @@
       "parsing": "A ler ficheiro",
       "chunking": "A segmentar",
       "embedding": "A indexar",
+      "summarising": "A resumir",
       "indexed": "Indexado",
       "failed": "Falhou"
     },
@@ -2818,7 +2865,7 @@
     }
   },
   "appMeta": {
-    "title": "Scooli - Plataforma AI para Professores",
+    "title": "Scooli - Plataforma de IA para Professores",
     "description": "Cria conteúdo educativo de qualidade em segundos com inteligência artificial."
   },
   "school": {
@@ -2830,8 +2877,11 @@
     },
     "roles": {
       "director": "Diretor",
-      "school_admin": "Administrador escolar",
+      "school_admin": "Direção",
       "teacher": "Professor"
+    },
+    "planCodes": {
+      "school_pilot": "Piloto"
     },
     "subscriptionStatus": {
       "active": "Ativa",
@@ -2848,23 +2898,24 @@
       "suspended": "Suspenso"
     },
     "dashboard": {
-      "description": "Visão operacional da organização, utilização da equipa e atividade recente.",
+      "description": "Como a equipa está a usar a Scooli.",
       "loadError": "Não foi possível carregar o painel da escola",
       "stats": {
         "activeSeats": "Lugares ativos",
         "availableSeats": "Lugares disponíveis",
-        "activeTeachers": "Professores ativos",
+        "activeTeachers": "Usaram a IA este mês",
         "aiRequestsThisMonth": "Pedidos à IA este mês",
         "totalDocuments": "Documentos da escola",
         "sharedResources": "Biblioteca interna"
       },
       "planCard": {
-        "title": "Plano e contrato",
+        "title": "Acordo com a Scooli",
         "plan": "Plano",
         "status": "Estado",
         "seatLimit": "Limite de lugares",
         "renewal": "Renovação",
-        "manualFallback": "Manual"
+        "manualFallback": "Acordo direto",
+        "unlimited": "Sem limite"
       },
       "usageCard": {
         "title": "Resumo de utilização",
@@ -2876,10 +2927,10 @@
       "activityCard": {
         "title": "Atividade dos últimos 14 dias",
         "description": "Pedidos à IA concluídos com sucesso pela escola nos últimos catorze dias.",
-        "requestsThisMonthBadge": "{count, plural, one {# pedido} other {# pedidos}} este mês",
         "tooltip": "{day}: {count, plural, one {# pedido} other {# pedidos}}",
         "empty": "O gráfico aparece quando a equipa começar a criar com a Scooli.",
-        "emptyTitle": "Ainda sem atividade"
+        "emptyTitle": "Ainda sem atividade",
+        "requestsInPeriodBadge": "{count, plural, one {# pedido} other {# pedidos}} em 14 dias"
       },
       "documentTypesCard": {
         "title": "Tipos de documento",
@@ -2890,33 +2941,96 @@
     },
     "members": {
       "title": "Membros da escola",
-      "description": "Acompanhe a atividade, os papéis e a participação da equipa em {organizationName}.",
+      "description": "A equipa de {organizationName}: quem tem acesso, papéis e convites.",
       "fallbackOrganization": "esta organização",
       "stats": {
         "total": "Total de membros",
-        "active": "Membros ativos",
-        "aiActivity": "Com atividade de IA",
+        "active": "Com acesso",
+        "aiActivity": "Ativos este mês",
         "internalShares": "Partilhas internas"
       },
-      "listTitle": "Membros",
       "loading": "A carregar membros...",
       "empty": "Os professores aparecem aqui assim que aceitarem o convite da escola.",
       "unnamedMember": "Utilizador sem nome",
       "noEmail": "Sem email disponível",
+      "emptyTitle": "Ainda não há professores",
+      "manage": {
+        "title": "Professores",
+        "seats": "{used} de {total} lugares",
+        "seatsUnlimited": "{used} lugares usados · Sem limite",
+        "seatBarLabel": "Lugares usados",
+        "invite": "Convidar professor",
+        "full": "Sem lugares livres ({pending, plural, one {# convite pendente ocupa} other {# convites pendentes ocupam}} o resto). Cancela um convite ou fala connosco para aumentar os lugares.",
+        "fullNoPending": "Sem lugares livres. Fala connosco para aumentar os lugares.",
+        "search": "Procurar por nome ou email",
+        "filterLabel": "Estado",
+        "filterAll": "Todos",
+        "filterActive": "Ativos",
+        "filterPending": "Pendentes {count}",
+        "columnPerson": "Pessoa",
+        "columnRole": "Papel",
+        "columnStatus": "Estado",
+        "you": "(tu)",
+        "roleAdmin": "Direção",
+        "roleTeacher": "Professor",
+        "statusActive": "Ativo",
+        "statusPending": "Pendente",
+        "invitedOn": "Convite enviado a {date}",
+        "actions": "Ações para {name}",
+        "makeAdmin": "Tornar direção",
+        "makeTeacher": "Tornar professor",
+        "remove": "Remover da escola",
+        "resend": "Reenviar convite",
+        "cancelInvite": "Cancelar convite",
+        "removeTitle": "Remover {name} da escola?",
+        "removeDescription": "Deixa de ver a biblioteca da escola e a direção deixa de ver as suas turmas. Os documentos pessoais continuam a ser seus. Liberta um lugar.",
+        "removeConfirm": "Remover",
+        "cancelInviteTitle": "Cancelar o convite para {email}?",
+        "cancelInviteDescription": "O link do email deixa de funcionar e o lugar fica livre.",
+        "keep": "Manter",
+        "noMatch": "Ninguém com \"{query}\".",
+        "noneInFilter": "Ninguém neste estado.",
+        "pageRange": "{from}–{to} de {total}",
+        "previous": "Anterior",
+        "next": "Seguinte",
+        "invitedToast": "{count, plural, one {Convite enviado} other {# convites enviados}}",
+        "resentToast": "Convite reenviado",
+        "cancelledToast": "Convite cancelado",
+        "removedToast": "{name} saiu da escola",
+        "roleToast": "Papel atualizado",
+        "invitationsError": "Não foi possível carregar os convites pendentes.",
+        "errors": {
+          "seat_limit_reached": "Não há lugares livres para estes convites.",
+          "already_member": "Algum destes emails já está na escola ou já tem convite.",
+          "last_admin": "A escola precisa de pelo menos uma pessoa na direção.",
+          "self": "Não podes alterar o teu próprio lugar.",
+          "invalid_emails": "Há emails inválidos.",
+          "generic": "Não foi possível concluir. Tenta de novo.",
+          "member_limit_reached": "A escola chegou ao limite de membros da conta. Fala connosco em info@scooli.app para o aumentar."
+        },
+        "dialog": {
+          "title": "Convidar professores",
+          "emailsLabel": "Emails",
+          "emailsPlaceholder": "Um por linha, ou separados por vírgulas",
+          "roleLabel": "Papel",
+          "hint": "Recebem um email para entrar na escola. Cada convite ocupa um lugar até ser aceite ou cancelado.",
+          "send": "Enviar convites",
+          "cancel": "Cancelar",
+          "invalidEmails": "Emails inválidos: {emails}",
+          "alreadyMember": "Já está na escola ou já tem convite: {emails}",
+          "notEnoughSeats": "{free, plural, =0 {Não há lugares livres} one {Só há # lugar livre} other {Só há # lugares livres}}.",
+          "tooMany": "Até {max} emails de cada vez."
+        }
+      },
       "joinedAndLastActive": "Entrou em: {joinedDate} · Última atividade: {lastActiveDate}",
-      "documentsLabel": "Documentos",
-      "documentsCount": "{count, plural, one {# documento} other {# documentos}}",
-      "createdThisMonth": "{count, plural, one {# criado este mês} other {# criados este mês}}",
-      "statusLabel": "Estado",
-      "internalSharesCount": "{count, plural, one {# partilha interna} other {# partilhas internas}}",
-      "emptyTitle": "Ainda não há professores"
+      "never": "Ainda sem atividade"
     },
     "settings": {
       "title": "Definições da escola",
-      "description": "Resumo da tua escola.",
+      "description": "A tua escola na Scooli.",
       "loadError": "Não foi possível carregar as definições da escola",
       "currentRole": "O teu papel:",
-      "contractStatus": "Estado do contrato:"
+      "changes": "Os professores da escola geres em <members>Membros</members>. Para mudar o nome da escola ou o acordo, escreve para <email>info@scooli.app</email>."
     }
   },
   "schoolDirection": {
@@ -2926,7 +3040,7 @@
       "behind": "Atrasada",
       "no_records": "Sem registos",
       "not_started": "Ainda sem aulas",
-      "lessonsBehind": "{count, plural, one {# aula atrás} other {# aulas atrás}}"
+      "lessonsBehind": "{count, plural, one {# aula em atraso} other {# aulas em atraso}}"
     },
     "departments": {
       "languages": "Línguas",
@@ -2943,12 +3057,12 @@
     },
     "homeCard": {
       "fallbackName": "A tua escola",
-      "figures": "{percent}% do previsto · {behind, plural, =0 {nenhuma turma atrasada} one {# turma atrasada} other {# turmas atrasadas}}",
+      "figures": "{percent}% das aulas em dia · {behind, plural, =0 {nenhuma turma atrasada} one {# turma atrasada} other {# turmas atrasadas}}",
       "hint": "Vê em que ponto do currículo está cada turma.",
       "open": "Abrir painel da direção"
     },
     "dashboard": {
-      "title": "Execução curricular",
+      "title": "Cumprimento das planificações",
       "subtitle": "Ano letivo {year} · atualizado agora",
       "subtitleNoYear": "Atualizado agora",
       "coverage": "Com base em {turmas, plural, one {# turma} other {# turmas}} de {teachers, plural, one {# professor} other {# professores}} que planeiam na Scooli.",
@@ -2956,8 +3070,8 @@
       "empty": "Os professores que a Scooli adicionar à escola aparecem aqui quando planearem as primeiras turmas."
     },
     "kpis": {
-      "execution": "Execução do currículo",
-      "executionHint": "do previsto para hoje",
+      "execution": "Aulas em dia",
+      "executionHint": "das previstas até hoje",
       "onTrack": "Em dia",
       "watch": "A acompanhar",
       "behind": "Atrasadas",
@@ -2976,21 +3090,31 @@
     },
     "drawer": {
       "fallbackTitle": "Detalhe da turma",
-      "execution": "Execução: {percent}% do previsto",
-      "executionUnknown": "Execução: —",
-      "why": "Porquê",
-      "missedTitle": "Aulas não dadas ou a meio",
+      "missedTitle": "O que aconteceu",
       "lessonNumber": "Aula {n}",
       "notHeld": "Não dada",
       "leftHalfway": "Ficou a meio",
-      "behindTitle": "Conteúdos atrasados",
+      "behindTitle": "Ainda por dar",
       "plannedFor": "previsto para {date}",
       "difficultiesTitle": "Dificuldades da turma",
       "flagged": "{count, plural, one {assinalada # vez} other {assinalada # vezes}}",
       "planTitle": "Ajuste ao plano",
       "planAdjusted": "Reajustado a {date}",
       "planPending": "Proposta por rever desde {date}",
-      "nextTest": "Próximo teste"
+      "nextTest": "Próximo teste",
+      "partlyLeft": "parte por dar",
+      "planSummaryLabel": "O que a Scooli disse ao professor",
+      "executionLabel": "Aulas em dia, das previstas",
+      "yearLabel": "{grade}.º ano",
+      "kpiBehind": "{count, plural, one {aula em atraso} other {aulas em atraso}}",
+      "kpiMissed": "{count, plural, one {aula com problemas} other {aulas com problemas}}",
+      "showMore": "Ver mais {count}",
+      "showLess": "Ver menos",
+      "readAll": "Ler tudo",
+      "readLess": "Ler menos",
+      "copyEmail": "Copiar email",
+      "emailCopied": "Email copiado",
+      "copyFailed": "Não foi possível copiar o email."
     },
     "learning": {
       "title": "Onde a escola precisa de reforço",
@@ -2998,7 +3122,7 @@
       "allSubjects": "Todas as disciplinas",
       "summary": "{subject} · {grade}.º ano · {flagged} de {total, plural, one {# turma} other {# turmas}} {flagged, plural, one {assinalou} other {assinalaram}} dificuldades",
       "reinforcement": "Ficha de reforço criada",
-      "empty": "Nenhuma turma assinalou dificuldades nas últimas 4 semanas."
+      "empty": "Nenhuma turma marcou uma aula como “Com dificuldades” nas últimas 4 semanas. As aulas que ficaram a meio aparecem no Painel."
     },
     "assessments": {
       "title": "Calendário de avaliações",
@@ -3028,13 +3152,11 @@
         "choose": "Escolher docente",
         "cancel": "Cancelar",
         "confirm": "Registar ausência",
-        "error": "Não conseguimos carregar as aulas desse dia. Tenta de novo."
+        "error": "Não foi possível registar a ausência. Tenta de novo.",
+        "substituteHint": "Recebe um email e vê as aulas desse dia na agenda, com o percurso da turma."
       },
-      "ready": "Pronta para quem substitui",
-      "sent": "Enviada",
       "lessonHeading": "{class} · {subject} · Aula {n}",
-      "substitute": "Quem substitui: {name}",
-      "leftOff": "Onde a turma ficou",
+      "leftOff": "Últimas aulas da turma",
       "leftOffNone": "Ainda não há aulas registadas nesta turma.",
       "status": {
         "taught": "Lecionada",
@@ -3044,24 +3166,41 @@
       "topic": "Tema da aula",
       "documents": "Documentos da aula",
       "noDocuments": "Sem documentos associados a esta aula.",
-      "send": "Enviar a {name}",
-      "sentToast": "Enviado a {name}",
-      "noLessons": "{name} não tem aulas neste dia."
+      "noLessons": "{name} não tem aulas neste dia.",
+      "noLessonsPill": "Sem aulas",
+      "shared": "Na agenda de {name}",
+      "sharedHint": "{name} vê esta aula na agenda, com o percurso da turma. Os documentos do professor não são partilhados.",
+      "coveredBy": "{absent} falta · substitui {name}",
+      "substituteLeft": "{absent} falta · {name} já não está na escola. Regista a ausência de novo com outro substituto.",
+      "uncovered": "Sem substituto",
+      "remove": "Remover ausência",
+      "removeConfirmTitle": "Remover esta ausência?",
+      "removeConfirmDescription": "{name} deixa de ver estas aulas na agenda.",
+      "registeredToast": "Ausência registada. Enviámos um email a {name}.",
+      "registeredNoEmailToast": "Ausência registada",
+      "removedToast": "Ausência removida",
+      "removeError": "Não foi possível remover a ausência. Tenta de novo."
     },
     "reports": {
       "title": "Relatórios",
-      "subtitle": "Relatório de execução curricular · ano letivo {label}",
-      "subtitleNoYear": "Relatório de execução curricular",
+      "subtitle": "Balanço do cumprimento das planificações · ano letivo {label}",
+      "subtitleNoYear": "Balanço do cumprimento das planificações",
       "export": "Exportar PDF",
-      "sheetTitle": "Relatório de execução curricular",
+      "sheetTitle": "Balanço do cumprimento das planificações",
       "sheetYear": "Ano letivo {label}",
       "generated": "Gerado a {date}",
       "audience": "Para o Conselho Pedagógico",
-      "byDepartment": "1. Execução por departamento",
+      "measures": "As percentagens contam as aulas previstas até hoje cuja matéria não ficou em atraso, segundo os registos dos professores. Não medem o que os alunos consolidaram.",
+      "coverage": "1. Registos",
+      "coverageLine": "Registos confirmados em {measured} de {expected, plural, one {# turma} other {# turmas}} com aulas previstas até hoje.",
+      "coverageMissing": "Sem registos (ficam fora dos números abaixo):",
+      "byDepartment": "2. Aulas em dia face ao previsto, por departamento",
+      "departmentFigure": "{onPlan} de {past} aulas · {percent}%",
+      "reason": "Motivo: {note}",
       "byDepartmentEmpty": "Ainda não há registos de aulas para calcular a execução.",
-      "followUp": "2. Turmas a acompanhar",
+      "followUp": "3. Turmas a acompanhar",
       "followUpEmpty": "Nenhuma turma a acompanhar: todas as turmas com registos estão em dia.",
-      "reinforce": "3. Aprendizagens a reforçar"
+      "reinforce": "4. Aprendizagens a reforçar"
     }
   },
   "checkout": {
@@ -3243,7 +3382,8 @@
     "workspace": {
       "fetchContextFailed": "Não foi possível carregar os dados da escola",
       "fetchDashboardFailed": "Não foi possível carregar o painel da escola",
-      "fetchMembersFailed": "Não foi possível carregar os membros da escola"
+      "fetchMembersFailed": "Não foi possível carregar os membros da escola",
+      "fetchInvitationsFailed": "Não foi possível carregar os convites pendentes"
     },
     "onboarding": {
       "fetchStatusFailed": "Não foi possível carregar o estado de onboarding"
@@ -3348,6 +3488,13 @@
     "appUpdate": {
       "message": "Há uma versão nova da Scooli. Atualiza a página quando terminares o que estás a fazer.",
       "action": "Atualizar"
+    },
+    "notFound": {
+      "title": "Página não encontrada",
+      "description": "A página que procuras não existe ou foi movida.",
+      "home": "Ir para o Início",
+      "back": "Voltar atrás",
+      "support": "Se achas que isto é um erro, fala connosco em info@scooli.app."
     }
   },
   "ui": {
@@ -3584,7 +3731,11 @@
           "s6": "A rever e afinar os detalhes"
         },
         "hint": "Podes fechar esta janela — continuamos a preparar em segundo plano."
-      }
+      },
+      "prepareLesson": "Preparar aula",
+      "moreOptions": "Mais opções",
+      "suggestedSet": "sugerido para esta aula",
+      "openPlanShort": "Abrir plano"
     },
     "dashboardWidget": {
       "title": "Próximas aulas",
@@ -3701,7 +3852,19 @@
       "term3": "3.º Período",
       "semester1": "1.º Semestre",
       "semester2": "2.º Semestre",
-      "schoolYear": "Ano letivo {range}"
+      "schoolYear": "Ano letivo {range}",
+      "bimester1": "1.º Bimestre",
+      "bimester2": "2.º Bimestre",
+      "bimester3": "3.º Bimestre",
+      "bimester4": "4.º Bimestre"
+    },
+    "covers": {
+      "title": "Substituições desta semana",
+      "lessonHeading": "{class} · {subject} · Aula {n}",
+      "for": "Em substituição de {name}",
+      "description": "Vais substituir {name} nesta aula. Vês o percurso da turma, não os materiais do professor.",
+      "topic": "Tema da aula",
+      "history": "Últimas aulas da turma"
     }
   },
   "curriculumPlan": {
@@ -3712,7 +3875,8 @@
         "annual": "Anual",
         "semester": "Semestral",
         "trimester": "Trimestral",
-        "custom": "Personalizado"
+        "custom": "Personalizado",
+        "bimester": "Bimestral"
       }
     },
     "novo": {
@@ -3740,7 +3904,8 @@
         "endLabel": "Data de fim",
         "endPlaceholder": "Fim do período",
         "summary": "<strong>{weeks, plural, one {# semana} other {# semanas}}</strong> de <strong>{start}</strong> a <strong>{end}</strong>",
-        "planningTypeLabel": "Tipo de período"
+        "planningTypeLabel": "Tipo de período",
+        "levelHint": "O nível de detalhe do plano segue a duração do período: aula a aula num período, por unidades num semestre ou num ano."
       },
       "class": {
         "title": "Detalhes da turma",
@@ -3934,6 +4099,7 @@
     "notHeldInProgress": "A IA está a ajustar as aulas seguintes…",
     "readyToast": "A proposta de ajuste está pronta. Revê-a na página da turma.",
     "failedToast": "Não foi possível propor ajustes às aulas seguintes.",
+    "retry": "Tentar novamente",
     "requestTitle": "O que se passou nesta aula?",
     "requestDescription": "Conta como correu esta aula. Usamos a nota para propor ajustes às aulas seguintes.",
     "requestTitleTurma": "O que mudou na turma?",
@@ -3952,10 +4118,11 @@
     "changeReinforcement": "Reforço",
     "lessonNumber": "Aula {number}",
     "lessonCheck": "Aplicar a aula {number}",
+    "lessonDetails": "Ver detalhes da aula {number}",
     "addition": "Acrescenta: {text}",
     "newOutcome": "Novo",
     "documentsNote": "Os materiais desta aula são atualizados sozinhos ao aplicar (a versão anterior fica guardada)",
-    "applyLabel": "{count, plural, =0 {Nenhuma alteração selecionada} one {Aplicar # alteração} other {Aplicar # alterações}}",
+    "applyLabel": "{count, plural, one {Aplicar a # aula} other {Aplicar a # aulas}}",
     "reject": "Rejeitar",
     "applied": "Alterações aplicadas",
     "rejected": "Proposta rejeitada",
@@ -3967,7 +4134,15 @@
     "readyHint": "Ao aplicar, os temas e os materiais já criados dessas aulas são atualizados sozinhos.",
     "seeChanges": "Ver alterações",
     "applyAll": "Aplicar",
-    "appliedAll": "Ajustes aplicados. Os materiais dessas aulas estão a ser atualizados."
+    "appliedAll": "Ajustes aplicados. Os materiais dessas aulas estão a ser atualizados.",
+    "sheetActionTitle": "{count, plural, one {Ajustar a próxima aula} other {Ajustar # aulas}}",
+    "selectAll": "Todas",
+    "chipOutcomes": "+{count} AE",
+    "detailTopic": "Tema",
+    "detailChange": "Muda",
+    "detailOutcomes": "Aprendizagens",
+    "topicKept": "mantém-se",
+    "outcomeFull": "Ver o texto completo"
   },
   "adminPromos": {
     "title": "Links de oferta",
@@ -4439,5 +4614,84 @@
     "searchFree": "Pesquisar fotos gratuitas",
     "subscribe": "Ver planos Pro",
     "dismiss": "Fechar aviso"
+  },
+  "schoolSources": {
+    "title": "Fontes da escola",
+    "intro": "Os professores da escola recebem estas fontes. Cada um pode desligá-las para si.",
+    "add": "Adicionar fonte",
+    "addTitle": "Adicionar fonte da escola",
+    "editTitle": "Editar fonte",
+    "type": {
+      "label": "Tipo",
+      "regra": {
+        "title": "Regra da escola",
+        "hint": "Entra sempre nos documentos destas disciplinas e anos"
+      },
+      "apoio": {
+        "title": "Material de apoio",
+        "hint": "Entra quando o tema corresponde"
+      }
+    },
+    "defaultEnabled": "Ligada por omissão para os professores",
+    "onForAll": "Ligada para todos",
+    "offByDefault": "Desligada por omissão",
+    "all": "Todas",
+    "scope": {
+      "allSubjects": "Todas as disciplinas",
+      "allYears": "Todos os anos",
+      "subjects": "{count, plural, one {# disciplina} other {# disciplinas}}",
+      "years": "{count, plural, one {# ano} other {# anos}}"
+    },
+    "years": {
+      "single": "{n}.º",
+      "range": "{from}.º–{to}.º",
+      "option": "{n}.º",
+      "list": "{list}"
+    },
+    "quota": "{files} de {filesMax} ficheiros · {used} de {max}",
+    "quotaFull": {
+      "files": "Chegaste ao limite de {max} ficheiros. Elimina uma fonte para adicionar outra.",
+      "bytes": "O espaço da escola está cheio ({max}). Elimina uma fonte para adicionar outra."
+    },
+    "size": {
+      "kb": "{n} KB",
+      "mb": "{n} MB",
+      "gb": "{n} GB"
+    },
+    "menu": {
+      "edit": "Editar",
+      "turnOff": "Desligar por omissão",
+      "turnOn": "Ligar por omissão",
+      "delete": "Eliminar",
+      "actions": "Ações de {name}"
+    },
+    "deleteConfirm": "Eliminar “{name}”? Os professores deixam de a receber.",
+    "empty": "Ainda não há fontes da escola. Adiciona os critérios de avaliação ou o regulamento interno.",
+    "status": {
+      "indexing": "A indexar…",
+      "failed": "Falhou a indexação",
+      "failedHint": "Não conseguimos ler este ficheiro. Elimina-o e carrega-o de novo."
+    },
+    "form": {
+      "file": "Ficheiro",
+      "chooseFile": "Escolher ficheiro",
+      "noFile": "Nenhum ficheiro escolhido",
+      "fileHint": "PDF, Word ou Markdown.",
+      "name": "Nome",
+      "subjects": "Disciplinas",
+      "pickSubject": "Marca pelo menos uma disciplina.",
+      "years": "Anos",
+      "pickYear": "Marca pelo menos um ano.",
+      "cancel": "Cancelar",
+      "save": "Guardar",
+      "upload": "Adicionar"
+    },
+    "errors": {
+      "load": "Não foi possível carregar as fontes da escola.",
+      "generic": "Não foi possível concluir. Tenta outra vez.",
+      "fileTooBig": "O ficheiro tem mais de {max}. Escolhe um ficheiro mais pequeno.",
+      "duplicate": "Este ficheiro já está nas fontes da escola.",
+      "indexing": "Esta fonte ainda está a ser indexada. Tenta de novo quando terminar."
+    }
   }
 }

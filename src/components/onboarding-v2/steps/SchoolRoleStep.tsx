@@ -6,13 +6,20 @@ import { queueDraft } from "@/components/onboarding-v2/onboardingDraft";
 import { StepHeading } from "@/components/onboarding-v2/StepHeading";
 import type { OnboardingFlowController } from "@/components/onboarding-v2/useOnboardingV2";
 import { useStepFooter } from "@/components/onboarding-v2/useStepFooter";
+import { CountryPicker } from "@/components/settings/CountryPreference";
+import { StateCurriculumNote, StatePicker } from "@/components/settings/StatePreference";
 import { Input } from "@/components/ui/input";
+import { setCountryCode, useCountry } from "@/hooks/useCountry";
+import { useLocalePreferences } from "@/hooks/useLocalePreferences";
+import { isCountryCode, type CountryCode } from "@/lib/curriculum/countryCatalog";
 import { useMotionSafe } from "@/lib/motion/useMotionSafe";
 import { onboardingV2Service } from "@/services/api/onboarding-v2.service";
-import { ROLE_ORDER } from "@/components/onboarding-v2/teachingRules";
+import { roleOrderFor } from "@/components/onboarding-v2/teachingRules";
 import { motion } from "motion/react";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
+import { userService } from "@/services/api/user.service";
 
 const SUGGEST_DEBOUNCE_MS = 250;
 const MIN_QUERY_LENGTH = 2;
@@ -23,13 +30,57 @@ interface SchoolRoleStepProps {
 
 export function SchoolRoleStep({ flow }: SchoolRoleStepProps) {
   const t = useTranslations("onboardingV2.school");
+  const tCountry = useTranslations("country");
   const { stagger, item } = useMotionSafe();
   const { answers, update, next, trackCompleted } = flow;
   const { schoolName, noSchool, role } = answers;
+  const { followCountry } = useLocalePreferences();
 
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [listOpen, setListOpen] = useState(false);
   const requestRef = useRef(0);
+
+  // Country: pre-filled from the visitor's IP until the teacher picks one.
+  const profileCountry = useCountry();
+  const [countryChoice, setCountryChoice] = useState<CountryCode>(profileCountry);
+  const countryTouchedRef = useRef(false);
+  const geoCountryRef = useRef<CountryCode | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/geo/country", { cache: "no-store" })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((body: { countryCode?: unknown } | null) => {
+        if (cancelled || !body || !isCountryCode(body.countryCode)) return;
+        geoCountryRef.current = body.countryCode;
+        if (!countryTouchedRef.current) setCountryChoice(body.countryCode);
+      })
+      .catch(() => {
+        // No geo answer: the profile's country stays.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  useEffect(() => {
+    if (!countryTouchedRef.current && geoCountryRef.current === null) {
+      setCountryChoice(profileCountry);
+    }
+  }, [profileCountry]);
+
+  // State (UF): Brazilian teachers only. Optional; it adds the state curriculum on top of the BNCC.
+  const [stateChoice, setStateChoice] = useState<string | null>(null);
+
+  const persistCountry = (next: CountryCode) => {
+    setCountryCode(next);
+    userService
+      .updateCountryCode(next)
+      .then(() => {
+        // Best effort: the country is saved even if the language default does not land.
+        void followCountry(next).catch(() => undefined);
+        if (next === "BR" && stateChoice) return userService.updateStateCode(stateChoice);
+      })
+      .catch(() => toast.error(tCountry("saveError")));
+  };
 
   const trimmed = schoolName.trim();
 
@@ -69,7 +120,9 @@ export function SchoolRoleStep({ flow }: SchoolRoleStepProps) {
     });
   }, [trimmed, noSchool, role]);
 
-  const valid = role !== null && (noSchool || trimmed.length >= MIN_QUERY_LENGTH);
+  // A vocational role picked before switching to Brazil is no longer offered, so it cannot continue.
+  const roleOffered = role !== null && roleOrderFor(countryChoice).includes(role);
+  const valid = roleOffered && (noSchool || trimmed.length >= MIN_QUERY_LENGTH);
 
   const handleContinue = () => {
     if (!valid) return;
@@ -82,6 +135,7 @@ export function SchoolRoleStep({ flow }: SchoolRoleStepProps) {
       },
       { immediate: true },
     );
+    persistCountry(countryChoice);
     trackCompleted(1, {
       has_school: !noSchool,
       role,
@@ -108,6 +162,25 @@ export function SchoolRoleStep({ flow }: SchoolRoleStepProps) {
       />
 
       <div className="space-y-4 sm:space-y-6">
+        <div className="space-y-2.5">
+          <p className="text-sm font-medium text-foreground">{tCountry("title")}</p>
+          <CountryPicker
+            value={countryChoice}
+            onChange={(next) => {
+              countryTouchedRef.current = true;
+              setCountryChoice(next);
+            }}
+          />
+        </div>
+
+        {countryChoice === "BR" && (
+          <div className="space-y-2.5">
+            <p className="text-sm font-medium text-foreground">{tCountry("stateTitle")}</p>
+            <StatePicker value={stateChoice} onChange={setStateChoice} />
+            <StateCurriculumNote stateCode={stateChoice} />
+          </div>
+        )}
+
         <div className="space-y-2.5">
           <div className="relative">
             <Input
@@ -166,7 +239,7 @@ export function SchoolRoleStep({ flow }: SchoolRoleStepProps) {
         <div className="space-y-2">
           <p className="text-sm font-medium text-foreground">{t("roleLabel")}</p>
           <div className="flex flex-wrap gap-2">
-            {ROLE_ORDER.map((value) => (
+            {roleOrderFor(countryChoice).map((value) => (
               <ChoiceChip
                 key={value}
                 selected={role === value}

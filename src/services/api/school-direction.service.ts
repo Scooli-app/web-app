@@ -5,9 +5,9 @@
 
 import type {
   DirectionAssessmentWeek,
-  DirectionHandover,
   DirectionLearning,
   DirectionOverview,
+  DirectionSubstitution,
   DirectionTurmaDetail,
 } from "@/shared/types/school-direction";
 import apiClient from "./client";
@@ -37,9 +37,31 @@ export async function getDirectionAssessments(weekStart?: string): Promise<Direc
   return response.data;
 }
 
-export async function getDirectionHandover(teacherId: string, date: string): Promise<DirectionHandover> {
-  const response = await apiClient.get<DirectionHandover>(`${BASE}/handover`, {
-    params: { teacherId, date },
+export async function getDirectionSubstitutions(): Promise<DirectionSubstitution[]> {
+  const response = await apiClient.get<DirectionSubstitution[]>(`${BASE}/substitutions`);
+  return response.data;
+}
+
+/** Registers an absence (or replaces its substitute); the substitute sees the lessons and is emailed. */
+export async function registerDirectionSubstitution(
+  absentUserId: string,
+  substituteUserId: string,
+  date: string,
+): Promise<DirectionSubstitution> {
+  const response = await apiClient.post<DirectionSubstitution>(`${BASE}/substitutions`, {
+    absentUserId,
+    substituteUserId,
+    date,
   });
+  return response.data;
+}
+
+export async function deleteDirectionSubstitution(id: string): Promise<void> {
+  await apiClient.delete(`${BASE}/substitutions/${encodeURIComponent(id)}`);
+}
+
+/** The lessons the signed-in teacher covers for absent colleagues between two days (YYYY-MM-DD, both included). */
+export async function getMyCovers(from: string, to: string): Promise<DirectionSubstitution[]> {
+  const response = await apiClient.get<DirectionSubstitution[]>("/timetable/covers", { params: { from, to } });
   return response.data;
 }

@@ -1,13 +1,14 @@
 "use client";
 
 import { currentTopic, profileExamplePairs } from "@/components/dashboard/profileExamples";
-import { SUBJECTS } from "@/components/document-creation/constants";
 import {
   buildQuickCreateUrl,
   parseQuickCreate,
   type QuickCreateParse,
 } from "@/components/document-creation/quickCreate";
 import { Button } from "@/components/ui/button";
+import { useCountry } from "@/hooks/useCountry";
+import { getCountryCatalog, type CountryCode } from "@/lib/curriculum/countryCatalog";
 import { Input } from "@/components/ui/input";
 import { teachingProfileService } from "@/services/api/teaching-profile.service";
 import { getTopicDomains } from "@/services/api/timetable.service";
@@ -69,17 +70,19 @@ interface ProfileExample {
 const PROFILE_EXAMPLE_TYPES: ProfileExample["documentType"][] = ["lessonPlan", "test", "quiz"];
 
 /** Examples from the teacher's years and subjects; empty when the profile gives none (the fixed ones show then). */
-async function loadProfileExamples(): Promise<ProfileExample[]> {
-  const pairs = profileExamplePairs(await teachingProfileService.get());
+async function loadProfileExamples(countryCode: CountryCode): Promise<ProfileExample[]> {
+  const pairs = profileExamplePairs(await teachingProfileService.get(), countryCode);
+  const subjects = getCountryCatalog(countryCode).subjects;
   const today = new Date();
   const found = await Promise.all(
     pairs.map(async (pair) => {
-      const subject = SUBJECTS.find((s) => s.id === pair.subjectId);
+      const subject = subjects.find((s) => s.id === pair.subjectId);
       if (!subject) return null;
       const topics = await getTopicDomains(subject.value, pair.year).catch(() => []);
       const topic = currentTopic(
         topics.map((t) => t.label),
         today,
+        countryCode,
       );
       return topic ? { ...pair, topic } : null;
     }),
@@ -107,11 +110,14 @@ export function QuickCreateCard({
   const [profileExamples, setProfileExamples] = useState<ProfileExample[] | null>(null);
   // The card sits under the onboarding overlay: read the profile once onboarding has saved it.
   const onboardingOpen = useAppSelector((state) => state.ui.isOnboardingModalOpen);
+  const country = useCountry();
+  // The fixed examples are Portuguese curriculum topics: Brazilian teachers get only their own.
+  const fixedExamples = country === "PT" ? QUICK_START_EXAMPLES : [];
 
   useEffect(() => {
     if (!showExamples || onboardingOpen) return;
     let cancelled = false;
-    loadProfileExamples()
+    loadProfileExamples(country)
       .catch(() => [])
       .then((examples) => {
         if (!cancelled) setProfileExamples(examples);
@@ -119,7 +125,7 @@ export function QuickCreateCard({
     return () => {
       cancelled = true;
     };
-  }, [showExamples, onboardingOpen]);
+  }, [showExamples, onboardingOpen, country]);
 
   const handleProfileExampleClick = (example: ProfileExample) => {
     posthog.capture("dashboard_quick_start_clicked", {
@@ -133,7 +139,7 @@ export function QuickCreateCard({
         topic: example.topic,
         schoolYear: example.year,
         subjectId: example.subjectId,
-      }),
+      }, country),
     );
   };
 
@@ -142,7 +148,7 @@ export function QuickCreateCard({
     const trimmed = text.trim();
     if (!trimmed) return;
 
-    const parse = parseQuickCreate(trimmed);
+    const parse = parseQuickCreate(trimmed, country);
     const requestedType = parse.documentType;
     if (parse.documentType === "worksheet" && !isWorksheetCreationEnabled) {
       parse.documentType = "lessonPlan";
@@ -156,7 +162,7 @@ export function QuickCreateCard({
       text_length: trimmed.length,
     });
 
-    router.push(buildQuickCreateUrl(parse));
+    router.push(buildQuickCreateUrl(parse, country));
   };
 
   const handleExampleClick = (example: QuickStartExample) => {
@@ -168,7 +174,7 @@ export function QuickCreateCard({
       example_id: example.id,
       document_type: parse.documentType,
     });
-    router.push(buildQuickCreateUrl(parse));
+    router.push(buildQuickCreateUrl(parse, country));
   };
 
   return (
@@ -198,7 +204,7 @@ export function QuickCreateCard({
         </Button>
       </form>
 
-      {showExamples && profileExamples !== null && (
+      {showExamples && profileExamples !== null && (profileExamples.length > 0 || fixedExamples.length > 0) && (
       <div className="mt-3 flex flex-wrap items-center gap-1.5">
         <span className="text-xs text-muted-foreground">{t("examplesLabel")}</span>
         {profileExamples.length > 0
@@ -216,7 +222,7 @@ export function QuickCreateCard({
                 })}
               </button>
             ))
-          : QUICK_START_EXAMPLES.map((example) => (
+          : fixedExamples.map((example) => (
               <button
                 key={example.id}
                 type="button"

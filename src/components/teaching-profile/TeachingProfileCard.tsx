@@ -6,11 +6,8 @@ import { LoadError } from "@/components/ui/load-error";
 import { ChoiceChip } from "@/components/ui/choice-chip";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { teachingProfileService } from "@/services/api/teaching-profile.service";
-import {
-  GRADE_GROUPS,
-  translateGradeGroupLabel,
-  translateGradeLabel,
-} from "@/components/document-creation/constants";
+import { useCountryCatalog } from "@/hooks/useCountryCatalog";
+import { useCountry } from "@/hooks/useCountry";
 import { buildRegularTeachingItems } from "@/components/document-creation/teaching-profile-preferences";
 import { EMPTY_TEACHING_PROFILE, type TeachingProfile } from "@/shared/types/teaching-profile";
 import {
@@ -65,7 +62,11 @@ function ProfileBlock({
   );
 }
 
+/** Vocational courses only exist in Portugal's catalogue for now; elsewhere the card is regular-only. */
+const REGULAR_ONLY: TeachingScope = { regular: true, vocational: false };
+
 export function TeachingProfileCard() {
+  const countryCode = useCountry();
   const t = useTranslations("settings.teachingProfileCard");
   const [draft, setDraft] = useState<TeachingProfile>(EMPTY_TEACHING_PROFILE);
   const [scope, setScope] = useState<TeachingScope>({ regular: true, vocational: false });
@@ -78,15 +79,18 @@ export function TeachingProfileCard() {
   const [profileLoadFailed, setProfileLoadFailed] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  const applyBaseline = useCallback((profile: TeachingProfile, nextScope: TeachingScope) => {
+  const vocationalOffered = countryCode === "PT";
+
+  const applyBaseline = useCallback((profile: TeachingProfile, loadedScope: TeachingScope) => {
+    const nextScope = countryCode === "PT" ? loadedScope : REGULAR_ONLY;
     setDraft(profile);
     setScope(nextScope);
     setBaseline({
       profile,
       scope: nextScope,
-      fingerprint: profileFingerprint(buildProfileForSave(profile, nextScope)),
+      fingerprint: profileFingerprint(buildProfileForSave(profile, nextScope, countryCode)),
     });
-  }, []);
+  }, [countryCode]);
 
   const loadProfile = useCallback(async () => {
     setIsLoading(true);
@@ -105,7 +109,7 @@ export function TeachingProfileCard() {
     void loadProfile();
   }, [loadProfile]);
 
-  const profileToSave = useMemo(() => buildProfileForSave(draft, scope), [draft, scope]);
+  const profileToSave = useMemo(() => buildProfileForSave(draft, scope, countryCode), [draft, scope, countryCode]);
   const isDirty =
     baseline !== null && profileFingerprint(profileToSave) !== baseline.fingerprint;
 
@@ -117,10 +121,12 @@ export function TeachingProfileCard() {
   }, [isDirty]);
 
   const visibleYears = useMemo(() => new Set(schoolYearsForScope(scope)), [scope]);
-  const visibleGradeGroups = GRADE_GROUPS.map((group) => ({
+  const catalog = useCountryCatalog();
+  const visibleGradeGroups = catalog.yearGroups.map((group) => ({
     groupId: group.groupId,
-    grades: group.grades.filter((grade) => visibleYears.has(Number(grade.id))),
-  })).filter((group) => group.grades.length > 0);
+    label: group.label,
+    years: group.years.filter((year) => visibleYears.has(year.value)),
+  })).filter((group) => group.years.length > 0);
   const selectedYears = draft.schoolYears.filter((year) => visibleYears.has(year));
 
   const regularSubjectIds = draft.items
@@ -154,7 +160,7 @@ export function TeachingProfileCard() {
       return {
         ...current,
         items: [
-          ...buildRegularTeachingItems(next),
+          ...buildRegularTeachingItems(next, countryCode),
           ...current.items.filter((item) => item.qualificationCode !== null),
         ],
       };
@@ -207,6 +213,7 @@ export function TeachingProfileCard() {
         <LoadError message={t("loadError")} onRetry={() => void loadProfile()} />
       ) : (
         <>
+      {vocationalOffered && (
       <fieldset className="mb-6 space-y-3">
         <legend className="mb-3">
           <span className="block font-semibold text-foreground">{t("scopeLabel")}</span>
@@ -223,6 +230,7 @@ export function TeachingProfileCard() {
           ]}
         />
       </fieldset>
+      )}
 
       <div className="space-y-6">
         <ProfileBlock
@@ -232,21 +240,21 @@ export function TeachingProfileCard() {
           >
             <div className="space-y-3">
               {visibleGradeGroups.map((group) => (
-                <div key={group.groupId} role="group" aria-label={translateGradeGroupLabel(group.groupId)}>
+                <div key={group.groupId} role="group" aria-label={group.label}>
                   <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                    {translateGradeGroupLabel(group.groupId)}
+                    {group.label}
                   </p>
                   <div className="flex flex-wrap gap-2">
-                    {group.grades.map((grade) => {
-                      const year = Number(grade.id);
+                    {group.years.map((grade) => {
+                      const year = grade.value;
                       return (
                         <ChoiceChip
-                          key={grade.id}
+                          key={year}
                           selected={selectedYears.includes(year)}
                           showCheck
                           onClick={() => toggleSchoolYear(year)}
                         >
-                          {translateGradeLabel(grade.id)}
+                          {grade.label}
                         </ChoiceChip>
                       );
                     })}

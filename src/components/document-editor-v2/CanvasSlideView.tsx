@@ -183,12 +183,7 @@ export function CanvasSlideView({ slide, pendingImage }: Props) {
         ? pendingBoxes.map((el) => (
             <div
               key={el.id}
-              className={cn(
-                "absolute z-10 flex flex-col items-center justify-center gap-1.5 overflow-hidden rounded border border-dashed p-2 text-center text-[11px] font-medium leading-tight sm:text-xs",
-                // Mid-grey reads on light and dark slide themes alike.
-                "border-neutral-400/70 bg-neutral-500/15 text-neutral-500",
-                pendingImage.active && "animate-pulse border-solid",
-              )}
+              className="absolute z-10 flex flex-col items-center justify-center gap-1.5 overflow-hidden rounded-md p-2 text-center text-[11px] font-medium leading-tight text-neutral-700 sm:text-xs"
               style={{
                 left: `${el.x * 100}%`,
                 top: `${el.y * 100}%`,
@@ -197,12 +192,22 @@ export function CanvasSlideView({ slide, pendingImage }: Props) {
                 transform: el.rotation ? `rotate(${el.rotation}deg)` : undefined,
               }}
             >
+              {/* A blurred, slowly turning wash of colour: the picture "developing". A light frost keeps the caption readable on any slide theme. */}
+              <div
+                aria-hidden
+                className={cn(
+                  "absolute -inset-1/2 blur-2xl",
+                  pendingImage.active ? "opacity-70 motion-safe:animate-[spin_8s_linear_infinite]" : "opacity-35",
+                )}
+                style={{ background: "conic-gradient(from 0deg, #6753FF, #38bdf8, #fbbf24, #f472b6, #6753FF)" }}
+              />
+              <div aria-hidden className="absolute inset-0 bg-white/30 backdrop-blur-md" />
               {pendingImage.active ? (
-                <Loader2 className="h-4 w-4 shrink-0 animate-spin" aria-hidden />
+                <Loader2 className="relative h-4 w-4 shrink-0 animate-spin" aria-hidden />
               ) : (
-                <ImageIcon className="h-4 w-4 shrink-0" aria-hidden />
+                <ImageIcon className="relative h-4 w-4 shrink-0" aria-hidden />
               )}
-              <span className="line-clamp-2">{pendingImage.label}</span>
+              <span className="relative line-clamp-2">{pendingImage.label}</span>
             </div>
           ))
         : null}

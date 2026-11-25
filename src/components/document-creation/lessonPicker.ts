@@ -1,5 +1,5 @@
+import { DEFAULT_COUNTRY_CODE, getCountryCatalog, type CountryCode } from "@/lib/curriculum/countryCatalog";
 import type { MyWeek, MyWeekClass } from "@/shared/types/my-week";
-import { SUBJECTS } from "./constants";
 
 /** One lesson the teacher can attach a new document to ("Para que aula?"). */
 export interface LessonChoice {
@@ -16,10 +16,15 @@ export interface LessonChoice {
 }
 
 /** The teaching lessons in the window, by date, ready for the create form's lesson picker. */
-export function lessonChoices(week: MyWeek, documentType: string): LessonChoice[] {
+export function lessonChoices(
+  week: MyWeek,
+  documentType: string,
+  countryCode: CountryCode = DEFAULT_COUNTRY_CODE,
+): LessonChoice[] {
+  const subjects = getCountryCatalog(countryCode).subjects;
   const choices: LessonChoice[] = [];
   for (const klass of week.classes) {
-    const subjectId = SUBJECTS.find((s) => s.value === klass.subject || s.id === klass.subject)?.id ?? null;
+    const subjectId = subjects.find((s) => s.value === klass.subject || s.id === klass.subject)?.id ?? null;
     for (const lesson of klass.lessons) {
       if (lesson.slotType === "HOLIDAY" || lesson.status === "skipped") continue;
       choices.push({

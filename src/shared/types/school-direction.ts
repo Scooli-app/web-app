@@ -107,23 +107,40 @@ export interface DirectionAssessmentWeek {
   clashes: DirectionAssessmentClass[];
 }
 
+/** A past lesson of a class as its teacher confirmed it. */
+export interface DirectionLastLesson {
+  date: string;
+  topicTitle: string | null;
+  teachingStatus: string;
+  note: string | null;
+}
+
+export interface DirectionHandoverLesson {
+  slotId: string;
+  turmaId: string;
+  grade: number;
+  classLabel: string;
+  subjectLabel: string;
+  sequenceNumber: number;
+  topicTitle: string | null;
+  lastLesson: DirectionLastLesson | null;
+  /** The class's latest confirmed lessons before the day, newest first. */
+  history: DirectionLastLesson[];
+  /** The absent teacher's documents; always empty for the substitute. */
+  documents: { title: string; documentType: string }[];
+}
+
 export interface DirectionHandover {
   teacher: Teacher;
   date: string;
-  lessons: {
-    slotId: string;
-    turmaId: string;
-    grade: number;
-    classLabel: string;
-    subjectLabel: string;
-    sequenceNumber: number;
-    topicTitle: string | null;
-    lastLesson: {
-      date: string;
-      topicTitle: string | null;
-      teachingStatus: string;
-      note: string | null;
-    } | null;
-    documents: { title: string; documentType: string }[];
-  }[];
+  lessons: DirectionHandoverLesson[];
+}
+
+/** A registered absence: who is away on the day, who covers, and that day's lessons. */
+export interface DirectionSubstitution {
+  id: string;
+  date: string;
+  absent: Teacher;
+  substitute: Teacher;
+  lessons: DirectionHandoverLesson[];
 }

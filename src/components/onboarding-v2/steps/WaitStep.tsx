@@ -12,6 +12,7 @@ import {
   effectiveWeeklyEmail,
 } from "@/components/onboarding-v2/ritualState";
 import { termAndWeek } from "@/components/onboarding-v2/schoolCalendar";
+import { useCountry } from "@/hooks/useCountry";
 import { StepHeading } from "@/components/onboarding-v2/StepHeading";
 import type { OnboardingFlowController } from "@/components/onboarding-v2/useOnboardingV2";
 import { useStepFooter } from "@/components/onboarding-v2/useStepFooter";
@@ -54,7 +55,18 @@ const LINE_MS = 3500;
 const ASSUMED_TOPICS_MS = 15000;
 const TOPICS_SHOWN_IN_LINE = 3;
 
-function Row({ label, stacked = false, children }: { label: string; stacked?: boolean; children: ReactNode }) {
+function Row({
+  label,
+  stacked = false,
+  extra,
+  children,
+}: {
+  label: string;
+  stacked?: boolean;
+  /** A follow-up field ("Outro dia", "Outro"), opened on its own line so the choices above never move or resize. */
+  extra?: ReactNode;
+  children: ReactNode;
+}) {
   return (
     <div
       role="group"
@@ -66,6 +78,7 @@ function Row({ label, stacked = false, children }: { label: string; stacked?: bo
     >
       <p className="text-sm text-foreground">{label}</p>
       <div className="flex flex-wrap gap-1.5">{children}</div>
+      {extra && <div className="flex sm:col-start-2 sm:justify-end">{extra}</div>}
     </div>
   );
 }
@@ -83,6 +96,7 @@ interface WaitStepProps {
  */
 export function WaitStep({ flow, onFinished }: WaitStepProps) {
   const t = useTranslations("onboardingV2");
+  const country = useCountry();
   const tEnum = useTranslations("enums");
   const locale = useLocale();
   const { answers, trackCompleted, generation, ritual, updateRitual } = flow;
@@ -129,7 +143,7 @@ export function WaitStep({ flow, onFinished }: WaitStepProps) {
   const dayMonth = (date: Date) =>
     new Intl.DateTimeFormat(locale, { day: "numeric", month: "long" }).format(date);
   const parse = (iso: string) => new Date(`${iso}T00:00:00`);
-  const term = termAndWeek(today);
+  const term = termAndWeek(today, country);
   const first = answers.firstClass;
   const context = [
     dayMonth(today),
@@ -343,7 +357,26 @@ export function WaitStep({ flow, onFinished }: WaitStepProps) {
             </ChoiceChip>
           ))}
         </Row>
-        <Row label={t("wait.emailTitle")}>
+        <Row
+          label={t("wait.emailTitle")}
+          extra={
+            weeklyEmail &&
+            planningDay !== SUNDAY && (
+              <Select value={String(planningDay)} onValueChange={(value) => updateRitual({ planningDay: Number(value) })}>
+                <SelectTrigger aria-label={t("wait.emailDay")} className="h-10 w-36">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="z-[10000]">
+                  {OTHER_DAYS.map((day) => (
+                    <SelectItem key={day} value={String(day)} className="min-h-10 text-base">
+                      {t(`wait.days.${day}`)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )
+          }
+        >
           <ChoiceChip
             selected={weeklyEmail && planningDay === SUNDAY}
             onClick={() => updateRitual({ weeklyEmail: true, planningDay: SUNDAY })}
@@ -361,22 +394,23 @@ export function WaitStep({ flow, onFinished }: WaitStepProps) {
           <ChoiceChip selected={!weeklyEmail} onClick={() => updateRitual({ weeklyEmail: false })}>
             {t("wait.emailNo")}
           </ChoiceChip>
-          {weeklyEmail && planningDay !== SUNDAY && (
-            <Select value={String(planningDay)} onValueChange={(value) => updateRitual({ planningDay: Number(value) })}>
-              <SelectTrigger aria-label={t("wait.emailDay")} className="h-10 w-36">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="z-[10000]">
-                {OTHER_DAYS.map((day) => (
-                  <SelectItem key={day} value={String(day)} className="min-h-10 text-base">
-                    {t(`wait.days.${day}`)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
         </Row>
-        <Row label={t("wait.sourceTitle")}>
+        <Row
+          label={t("wait.sourceTitle")}
+          extra={
+            source === "OTHER" && (
+              <Input
+                value={sourceOther}
+                onChange={(event) => updateRitual({ sourceOther: event.target.value })}
+                placeholder={t("wait.sourceOtherPlaceholder")}
+                // Appears below the fold on a phone: focusing scrolls to it and opens the keyboard.
+                autoFocus
+                maxLength={200}
+                className="h-10 w-full sm:w-56"
+              />
+            )
+          }
+        >
           <Select value={source ?? ""} onValueChange={(value) => updateRitual({ source: value as AcquisitionSource })}>
             <SelectTrigger aria-label={t("wait.sourceTitle")} className="h-10 w-full min-w-0 sm:w-56">
               <SelectValue placeholder={t("wait.sourcePlaceholder")} />
@@ -390,17 +424,6 @@ export function WaitStep({ flow, onFinished }: WaitStepProps) {
               ))}
             </SelectContent>
           </Select>
-          {source === "OTHER" && (
-            <Input
-              value={sourceOther}
-              onChange={(event) => updateRitual({ sourceOther: event.target.value })}
-              placeholder={t("wait.sourceOtherPlaceholder")}
-              // Appears below the fold on a phone: focusing scrolls to it and opens the keyboard.
-              autoFocus
-              maxLength={200}
-              className="h-10 sm:w-56"
-            />
-          )}
         </Row>
       </div>
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { useCountry } from "@/hooks/useCountry";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
@@ -34,6 +35,7 @@ function LearningRow({
 }) {
   const t = useTranslations("schoolDirection.learning");
   const locale = useLocale();
+  const countryCode = useCountry();
   const { turmasFlagged: flagged, turmasTotal: total } = item;
 
   return (
@@ -53,7 +55,7 @@ function LearningRow({
               <span className="block font-medium text-foreground">{item.text}</span>
               <span className="mt-0.5 block text-sm text-muted-foreground">
                 {t("summary", {
-                  subject: formatSubject(item.subjectKey, item.subjectLabel),
+                  subject: formatSubject(item.subjectKey, item.subjectLabel, countryCode),
                   grade: item.grade,
                   flagged,
                   total,
@@ -89,7 +91,7 @@ function LearningRow({
                 onClick={() => onOpenTurma(turma.id)}
                 className="rounded font-semibold text-foreground outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
               >
-                {formatClass(turma.grade, turma.classLabel, locale)}
+                {formatClass(turma.grade, turma.classLabel, locale, countryCode)}
               </button>
               <TeacherContact teacher={turma.teacher} />
             </li>
@@ -101,6 +103,7 @@ function LearningRow({
 }
 
 function Learning({ items }: { items: Item[] }) {
+  const countryCode = useCountry();
   const t = useTranslations("schoolDirection.learning");
   const [subject, setSubject] = useState<string | null>(null);
   const [openOutcomeId, setOpenOutcomeId] = useState<string | null>(null);
@@ -122,7 +125,7 @@ function Learning({ items }: { items: Item[] }) {
               selected={subject === item.subjectKey}
               onClick={() => setSubject(item.subjectKey)}
             >
-              {formatSubject(item.subjectKey, item.subjectLabel)}
+              {formatSubject(item.subjectKey, item.subjectLabel, countryCode)}
             </ChoiceChip>
           ))}
         </div>

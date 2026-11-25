@@ -60,6 +60,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSelector } from "react-redux";
 import { selectPlanGeneration } from "@/store/planGeneration/selectors";
 import { useAuth } from "@clerk/nextjs";
+import { differenceInCalendarWeeks, parseISO } from "date-fns";
 import posthog from "posthog-js";
 import { useLocale, useTranslations } from "next-intl";
 import { isSupportedLocale, defaultLocale } from "@/i18n/locales";
@@ -364,6 +365,9 @@ export default function CalendarViewPage() {
         timetable_id: id,
         lesson_id: slot.id,
         slot_type: slot.slotType,
+        // How far ahead teachers prepare material: 0 = this week, negative = a past lesson.
+        lesson_date: slot.slotDate,
+        weeks_ahead: differenceInCalendarWeeks(parseISO(slot.slotDate), new Date(), { weekStartsOn: 1 }),
         mode,
         with_instructions: withInstructions,
         outcome,

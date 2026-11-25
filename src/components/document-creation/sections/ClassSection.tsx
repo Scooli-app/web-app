@@ -11,10 +11,11 @@ import {
 } from "@/components/ui/select";
 import type { EducationType, TeachingProfile } from "@/shared/types/teaching-profile";
 import { cn } from "@/shared/utils/utils";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, Plus } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
-import { GRADE_GROUPS, translateGradeGroupLabel, translateGradeLabel } from "../constants";
+import { translateGradeLabel } from "../constants";
+import { useCountryCatalog, type CatalogYearView } from "@/hooks/useCountryCatalog";
 import {
   VOCATIONAL_SCHOOL_YEARS,
   getDefaultVocationalSchoolYear,
@@ -45,13 +46,13 @@ function YearPicker({ schoolYear, preferredSchoolYears, onSelect }: YearPickerPr
   const showAllYears =
     expanded ?? (!hasPreferredYears || (schoolYear > 0 && !preferred.has(schoolYear)));
 
-  const renderGrade = (grade: { id: string }) => {
-    const year = parseInt(grade.id);
+  const catalog = useCountryCatalog();
+
+  const renderGrade = ({ value: year, label }: CatalogYearView) => {
     const isSelected = schoolYear === year;
-    const label = translateGradeLabel(grade.id);
     return (
       <ChoiceChip
-        key={grade.id}
+        key={year}
         selected={isSelected}
         highlighted={preferred.has(year)}
         onClick={() => onSelect(isSelected ? 0 : year)}
@@ -70,8 +71,8 @@ function YearPicker({ schoolYear, preferredSchoolYears, onSelect }: YearPickerPr
     <div className="space-y-2.5">
       {hasPreferredYears && (
         <div className="flex flex-wrap items-center gap-1.5">
-          {GRADE_GROUPS.flatMap((group) => group.grades as readonly { id: string }[])
-            .filter((grade) => preferred.has(parseInt(grade.id)))
+          {catalog.schoolYears
+            .filter((year) => preferred.has(year.value))
             .map(renderGrade)}
           <button
             type="button"
@@ -91,10 +92,10 @@ function YearPicker({ schoolYear, preferredSchoolYears, onSelect }: YearPickerPr
 
       {showAllYears && (
         <div className="space-y-2.5 sm:space-y-3">
-          {GRADE_GROUPS.map((group) => (
+          {catalog.yearGroups.map((group) => (
             <div key={group.groupId}>
-              <p className={SECTION_LABEL_CLASS}>{translateGradeGroupLabel(group.groupId)}</p>
-              <div className="flex flex-wrap gap-1.5 sm:gap-2">{group.grades.map(renderGrade)}</div>
+              <p className={SECTION_LABEL_CLASS}>{group.label}</p>
+              <div className="flex flex-wrap gap-1.5 sm:gap-2">{group.years.map(renderGrade)}</div>
             </div>
           ))}
         </div>
@@ -175,7 +176,8 @@ interface ClassSectionProps {
  * `teacher_profile` feature flag is on, even for a teacher with zero saved
  * vocational courses: tapping "Curso profissional" with nothing saved opens a
  * quick-add dialog right here instead of a dead-end hint pointing at
- * Settings. When the flag is off, none of that renders — this falls back to
+ * Settings. Teachers who already have courses reach the same dialog through
+ * the "Adicionar curso" link beside the course picker. When the flag is off, none of that renders — this falls back to
  * the plain regular-year picker only.
  */
 export function ClassSection({
@@ -194,7 +196,10 @@ export function ClassSection({
   const t = useTranslations("documentCreation.classContext");
   const tGrade = useTranslations("documentCreation.grade");
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
-  const isVocational = mode === "vocational" && vocationalCourses.length > 0;
+  const catalog = useCountryCatalog();
+  // Curso profissional is a Portuguese path only; other countries get the regular picker.
+  const vocationalEnabled = isVocationalFeatureEnabled && catalog.countryCode === "PT";
+  const isVocational = vocationalEnabled && mode === "vocational" && vocationalCourses.length > 0;
   const selectedCourse =
     vocationalCourses.find((course) => course.code === vocationalCourseCode) ?? vocationalCourses[0];
 
@@ -213,7 +218,7 @@ export function ClassSection({
           title={isVocational ? t("titleVocational") : tGrade("title")}
           required
           aside={
-            isVocationalFeatureEnabled ? (
+            vocationalEnabled ? (
               // The kind of teaching as a small switch beside the heading, not a full-width bar.
               <div className="flex shrink-0 rounded-md border border-input bg-card p-0.5 text-xs" role="radiogroup" aria-label={t("modeLabel")}>
                 {(["regular", "vocational"] as const).map((value) => {
@@ -239,10 +244,22 @@ export function ClassSection({
           }
         />
 
-        {isVocationalFeatureEnabled && isVocational && selectedCourse ? (
+        {vocationalEnabled && isVocational && selectedCourse ? (
           <div className="space-y-4">
             <div>
-              <p className={SECTION_LABEL_CLASS}>{t("courseLabel")}</p>
+              <div className="flex items-baseline justify-between gap-3">
+                <p className={SECTION_LABEL_CLASS}>{t("courseLabel")}</p>
+                {/* Without this, a teacher with one saved course is stuck on it:
+                    the quick-add dialog otherwise only opens with zero courses. */}
+                <button
+                  type="button"
+                  onClick={() => setIsQuickAddOpen(true)}
+                  className="flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                >
+                  <Plus className="h-3.5 w-3.5" aria-hidden />
+                  {t("addCourse")}
+                </button>
+              </div>
               {vocationalCourses.length === 1 ? (
                 <p className="rounded-xl border border-border bg-muted/50 px-4 py-2.5 text-sm font-medium text-foreground">
                   {selectedCourse.title}
@@ -288,10 +305,11 @@ export function ClassSection({
         )}
       </div>
 
-      {isVocationalFeatureEnabled && (
+      {vocationalEnabled && (
         <QuickAddVocationalCourseDialog
           open={isQuickAddOpen}
           onOpenChange={setIsQuickAddOpen}
+          addedCodes={vocationalCourses.map((course) => course.code)}
           onCourseAdded={(profile: TeachingProfile, courseCode: string) => {
             onVocationalCourseAdded(profile);
             onCourseChange(courseCode);

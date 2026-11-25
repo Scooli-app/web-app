@@ -1,11 +1,13 @@
 import { translate } from "@/i18n/translate";
 import {
   getCurrentOrganizationDashboard,
+  getCurrentOrganizationInvitations,
   getCurrentOrganizationMembers,
   getCurrentWorkspace,
 } from "@/services/api";
 import type {
   OrganizationDashboard,
+  OrganizationInvitation,
   OrganizationMember,
   WorkspaceContext,
 } from "@/shared/types";
@@ -44,10 +46,23 @@ export const fetchOrganizationMembers = createAsyncThunk(
   }
 );
 
+export const fetchOrganizationInvitations = createAsyncThunk(
+  "workspace/fetchOrganizationInvitations",
+  async (_, { rejectWithValue }) => {
+    try {
+      return await getCurrentOrganizationInvitations();
+    } catch {
+      return rejectWithValue(translate("errors.workspace.fetchInvitationsFailed"));
+    }
+  }
+);
+
 interface WorkspaceState {
   context: WorkspaceContext | null;
   dashboard: OrganizationDashboard | null;
   members: OrganizationMember[];
+  invitations: OrganizationInvitation[];
+  invitationsError: string | null;
   loading: boolean;
   ready: boolean;
   error: string | null;
@@ -57,6 +72,8 @@ const initialState: WorkspaceState = {
   context: null,
   dashboard: null,
   members: [],
+  invitations: [],
+  invitationsError: null,
   loading: false,
   ready: false,
   error: null,
@@ -70,6 +87,8 @@ const workspaceSlice = createSlice({
       state.context = null;
       state.dashboard = null;
       state.members = [];
+      state.invitations = [];
+      state.invitationsError = null;
       state.loading = false;
       state.ready = false;
       state.error = null;
@@ -115,6 +134,14 @@ const workspaceSlice = createSlice({
       .addCase(fetchOrganizationMembers.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
+      })
+      // Apart from loading/error: the members list must not wait on, or be hidden by, a Clerk hiccup.
+      .addCase(fetchOrganizationInvitations.fulfilled, (state, action) => {
+        state.invitations = action.payload;
+        state.invitationsError = null;
+      })
+      .addCase(fetchOrganizationInvitations.rejected, (state, action) => {
+        state.invitationsError = action.payload as string;
       });
   },
 });

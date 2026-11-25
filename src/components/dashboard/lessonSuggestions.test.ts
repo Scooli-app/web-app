@@ -105,3 +105,16 @@ describe("preparationCost", () => {
     expect(preparationCost([{ slotDate: "2026-10-14", types: ["lessonPlan", "quiz"] }], null)).toBe(2);
   });
 });
+
+describe("subjectProfile for Brazil (BR)", () => {
+  it("treats Brazilian humanities and sciences as visual subjects", () => {
+    expect(subjectProfile("História", "BR")).toBe("visual");
+    expect(subjectProfile("Ciências da Natureza", "BR")).toBe("visual");
+    expect(subjectProfile("Matemática", "BR")).toBe("practical");
+  });
+
+  it("keeps the Portuguese profile by default", () => {
+    expect(subjectProfile("History")).toBe("visual");
+    expect(subjectProfile("Mathematics")).toBe("practical");
+  });
+});

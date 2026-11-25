@@ -15,6 +15,10 @@ import { toast } from "sonner";
 /** The outcome arrives while the teacher may be elsewhere; the default 4 s is too short to notice it. */
 const OUTCOME_TOAST_MS = 15000;
 
+type ReplanBody = { triggerSlotId?: string; note?: string };
+/** Null: the proposal never settled, so it failed. */
+type OnSettled = (proposal: ReplanProposal | null) => void;
+
 /** Tells the turma banner (if open) to reload its state. */
 function notifyChanged(timetableId: string) {
   window.dispatchEvent(new CustomEvent(REPLAN_CHANGED_EVENT, { detail: { timetableId } }));
@@ -47,12 +51,17 @@ export function useReplan() {
     };
   }, []);
 
+  /** Asks for the proposal again; set below, read by the failure toast's "Tentar novamente". */
+  const retryRef = useRef<(timetableId: string, body: ReplanBody, onSettled?: OnSettled) => Promise<boolean>>(null);
+
   /**
    * Polls until a proposal other than `skipId` settles, then tells `onSettled` (the screen that asked shows the
-   * outcome and its next step in place) and says it in a toast with no action, for a teacher who moved on.
+   * outcome and its next step in place) and says it in a toast, for a teacher who moved on. A proposal that never
+   * settles (the backend fails it after 8 minutes) reads as failed: `onSettled(null)`. A failure toast offers to ask
+   * again with `retryBody`.
    */
   const watch = useCallback(
-    (timetableId: string, skipId: string | null, onSettled?: (proposal: ReplanProposal) => void) => {
+    (timetableId: string, skipId: string | null, onSettled?: OnSettled, retryBody: ReplanBody = {}) => {
       notifyChanged(timetableId);
       const controller = new AbortController();
       watches.current.add(controller);
@@ -63,16 +72,22 @@ export function useReplan() {
             (value) => value !== null && value.status !== "generating" && value.id !== skipId,
             { intervalMs: REPLAN_POLL_MS, maxAttempts: REPLAN_MAX_POLLS, signal: controller.signal },
           );
-          if (!proposal) return;
+          if (controller.signal.aborted) return;
           notifyChanged(timetableId);
-          onSettled?.(proposal);
-          const outcome = settledToast(proposal);
+          onSettled?.(proposal ?? null);
+          const outcome = proposal ? settledToast(proposal) : "failed";
           if (outcome === "ready") {
             toast.success(t("readyToast"), { duration: OUTCOME_TOAST_MS });
           } else if (outcome === "noChange") {
             toast.info(t("noChangeToast"), { duration: OUTCOME_TOAST_MS });
           } else {
-            toast.error(t("failedToast"), { duration: OUTCOME_TOAST_MS });
+            toast.error(t("failedToast"), {
+              duration: OUTCOME_TOAST_MS,
+              action: {
+                label: t("retry"),
+                onClick: () => void retryRef.current?.(timetableId, retryBody, onSettled),
+              },
+            });
           }
         } catch {
           // The banner on the turma page shows the latest state on its next load.
@@ -86,9 +101,9 @@ export function useReplan() {
 
   /** Pro, after a check-in that started a replan: the backend is already replanning, so only wait for it. */
   const watchAfterCheckIn = useCallback(
-    async (timetableId: string, onSettled?: (proposal: ReplanProposal) => void) => {
+    async (timetableId: string, onSettled?: OnSettled, triggerSlotId?: string) => {
       const skipId = await settledProposalId(timetableId);
-      watch(timetableId, skipId, onSettled);
+      watch(timetableId, skipId, onSettled, { triggerSlotId });
     },
     [watch],
   );
@@ -97,15 +112,15 @@ export function useReplan() {
   const requestReplan = useCallback(
     async (
       timetableId: string,
-      body: { triggerSlotId?: string; note?: string } = {},
-      onSettled?: (proposal: ReplanProposal) => void,
+      body: ReplanBody = {},
+      onSettled?: OnSettled,
     ): Promise<boolean> => {
       // Read-only account (ENG-321): a replan is an AI generation; the paywall opens instead.
       if (!guard("generate")) return false;
       const skipId = await settledProposalId(timetableId);
       try {
         const started = await replanService.start(timetableId, body);
-        watch(timetableId, skipId, onSettled);
+        watch(timetableId, skipId, onSettled, body);
         return started.status === "generating";
       } catch (error) {
         // The API client already opened the upgrade modal (lock, free-plan limit).
@@ -117,6 +132,10 @@ export function useReplan() {
     },
     [guard, t, watch],
   );
+
+  useEffect(() => {
+    retryRef.current = requestReplan;
+  }, [requestReplan]);
 
   return { isPro, requestReplan, watchAfterCheckIn, shift };
 }

@@ -11,8 +11,8 @@ import { Stepper } from "@/components/ui/stepper";
 import { WizardShell } from "@/components/document-creation/WizardShell";
 import {
   buildSchoolPeriodPresets,
-  currentSchoolYearBase,
   formatPresetRange,
+  schoolYearLabelFor,
 } from "@/lib/periodPresets";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Input } from "@/components/ui/input";
@@ -27,10 +27,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  SUBJECTS_BY_GRADE,
   TIMETABLE_COLORS,
   translateSubject,
 } from "@/components/document-creation/constants";
+import { useCountryCatalog } from "@/hooks/useCountryCatalog";
+import { useCountry } from "@/hooks/useCountry";
 import { selectIsHorarioPlanosEnabled } from "@/store/features/selectors";
 import { useFeatureAccess } from "@/components/feature/useFeatureAccess";
 import { FeatureUnavailable } from "@/components/feature/FeatureUnavailable";
@@ -357,7 +358,8 @@ function StepPeriod({ periodStart, periodEnd, schoolYearLabel, limits, onChange 
   const maxDate = isoToDate(bounds.max ?? "");
   const rawLocale = useLocale();
   const locale = isSupportedLocale(rawLocale) ? rawLocale : defaultLocale;
-  const periodPresets = buildSchoolPeriodPresets();
+  const country = useCountry();
+  const periodPresets = buildSchoolPeriodPresets(country);
 
   return (
     <div className="space-y-5">
@@ -472,6 +474,7 @@ function StepDetails({
   onAlreadyCoveredNotesChange,
 }: StepDetailsProps) {
   const t = useTranslations("calendar.novo");
+  const catalog = useCountryCatalog();
 
   const lpw = weekScheduleLessonsPerWeek(schedule);
   const weeks = weeksBetweenIso(periodStart, periodEnd);
@@ -509,7 +512,7 @@ function StepDetails({
         subject={choice.subject}
         isSpecificComponent={choice.isSpecificComponent}
         onUpdate={onChoiceChange}
-        availableSubjects={choice.schoolYear ? SUBJECTS_BY_GRADE[String(choice.schoolYear)] : undefined}
+        availableSubjects={choice.schoolYear ? catalog.subjectIdsForYear(choice.schoolYear) : undefined}
         preferredSubjectIds={subjectPicker.preferredSubjectIds}
         mode={subjectPicker.teachingMode}
         vocationalCourse={subjectPicker.selectedVocationalCourse}
@@ -883,10 +886,16 @@ function CalendarNewPageContent() {
   const [color, setColor] = useState<string>(TIMETABLE_COLORS[0]);
   const [periodStart, setPeriodStart] = useState("");
   const [periodEnd, setPeriodEnd] = useState("");
-  const [schoolYearLabel, setSchoolYearLabel] = useState(() => {
-    const y = currentSchoolYearBase();
-    return `${y}/${y + 1}`;
-  });
+  const countryCode = useCountry();
+  // "2026/2027" in Portugal, "2027" in Brazil; follows the country until the teacher edits it.
+  const [schoolYearLabel, setSchoolYearLabel] = useState(() => schoolYearLabelFor(countryCode));
+  useEffect(() => {
+    setSchoolYearLabel((current) =>
+      current === schoolYearLabelFor("PT") || current === schoolYearLabelFor("BR")
+        ? schoolYearLabelFor(countryCode)
+        : current,
+    );
+  }, [countryCode]);
   const [schedule, setSchedule] = useState<WeekSchedule>(DEFAULT_WEEK_SCHEDULE);
   const [alreadyCoveredNotes, setAlreadyCoveredNotes] = useState("");
   const [previewSlots, setPreviewSlots] = useState<PreviewSlot[]>([]);
@@ -945,7 +954,7 @@ function CalendarNewPageContent() {
   const handlePlanSelect = useCallback((plan: Document) => {
     setSelectedPlan(plan);
 
-    const planChoice = planSubjectChoice(plan);
+    const planChoice = planSubjectChoice(plan, countryCode);
     prefilledRef.current = { year: !!planChoice.schoolYear, subject: !!planChoice.subject };
     setChoice(planChoice);
 
@@ -965,7 +974,7 @@ function CalendarNewPageContent() {
 
     // Skip the period step when dates are already pre-filled from the planificação
     setStep(metaPeriodStart && metaPeriodEnd ? "mode_b_details" : "mode_b_period");
-  }, [setChoice]);
+  }, [setChoice, countryCode]);
 
   // Deep-link entry point: /calendar/novo?planId=... — used by the one-click
   // "Criar plano letivo" button on an incomplete plan (e.g. imported, no
@@ -998,7 +1007,7 @@ function CalendarNewPageContent() {
 
   const handleGoToReverDatas = () => {
     const slots = applyExerciseAndReviewCadence(
-      expandSlotsLocally(periodStart, periodEnd, weekScheduleToRecurringSlots(schedule)),
+      expandSlotsLocally(periodStart, periodEnd, weekScheduleToRecurringSlots(schedule), countryCode),
       subjectChoicePayload(choice).subject
     );
     setPreviewSlots(slots);

@@ -1,12 +1,18 @@
 "use client";
 
+import { translateGradeLabel } from "@/components/document-creation/constants";
 import { OptionRow } from "./FormCard";
+import { formatTags } from "@/components/school/sources/schoolSourceFormat";
+import { orderSchoolSources } from "../sourceSelection";
+import { useCountryCatalog } from "@/hooks/useCountryCatalog";
 import { listRegulatorySources } from "@/services/api/sources.service";
+import { FeatureFlag } from "@/shared/types/featureFlags";
 import { Routes } from "@/shared/types/routes";
-import type { UserSource } from "@/shared/types/sources";
+import type { SourceDefault, UserSource } from "@/shared/types/sources";
 import { cn } from "@/shared/utils/utils";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { selectIsContextPipelineV2Enabled } from "@/store/features/selectors";
+import { selectSourceDefaults, selectSourceDefaultsStatus } from "@/store/sources/sourceDefaultsSlice";
 import { fetchSources } from "@/store/sources/sourcesSlice";
 import { AlertCircle, Check, ExternalLink, Loader2, Scale, Upload } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -32,9 +38,15 @@ export function SourcePickerSection({
   onUpdate,
 }: SourcePickerSectionProps) {
   const t = useTranslations("documentCreation.sourcePicker");
+  const catalog = useCountryCatalog();
   const dispatch = useAppDispatch();
   const { sources, loading } = useAppSelector((state) => state.sources);
   const isContextPipelineV2Enabled = useAppSelector(selectIsContextPipelineV2Enabled);
+  const isUserSourcesEnabled = useAppSelector((state) => state.features.flags[FeatureFlag.USER_SOURCES] === true);
+  const defaults = useAppSelector(selectSourceDefaults);
+  const defaultsFailed = useAppSelector(selectSourceDefaultsStatus) === "failed";
+  const tSchool = useTranslations("schoolSources");
+  const tPage = useTranslations("sources.page");
 
   const [regulatorySources, setRegulatorySources] = useState<UserSource[]>([]);
   const [regulatoryLoading, setRegulatoryLoading] = useState(true);
@@ -55,14 +67,6 @@ export function SourcePickerSection({
       .then((data) => {
         if (cancelled) return;
         setRegulatorySources(data);
-        // Default: pre-select everything so behavior matches today's auto-injection,
-        // but only if the form hasn't been initialised yet (regulatorySourceIds is undefined).
-        if (regulatorySourceIds === undefined && data.length > 0) {
-          onUpdate(
-            "regulatorySourceIds",
-            data.map((s) => s.id),
-          );
-        }
       })
       .catch(() => {
         if (!cancelled) setRegulatorySources([]);
@@ -73,21 +77,41 @@ export function SourcePickerSection({
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isContextPipelineV2Enabled]);
 
+  const { matching: matchingSchool, others: otherSchool } = orderSchoolSources(
+    defaults,
+    subject ? catalog.subjectValue(subject) : subject,
+    schoolYear,
+  );
+
+  // A ticked source stays listed whatever the subject/year, so the teacher can always see and untick what is sent.
   const indexedSources = sources.filter(
     (s) =>
       s.status === "indexed" &&
-      (!subject || !s.subject || s.subject === subject) &&
-      (!schoolYear || !s.schoolYear || s.schoolYear === schoolYear),
+      (sourceIds.includes(s.id) ||
+        ((!subject || !s.subject || s.subject === subject) && (!schoolYear || !s.schoolYear || s.schoolYear === schoolYear))),
   );
+  const hasSchoolSources = matchingSchool.length + otherSchool.length > 0;
 
   const toggleSource = (id: string) => {
     const next = sourceIds.includes(id)
       ? sourceIds.filter((s) => s !== id)
       : [...sourceIds, id];
     onUpdate("sourceIds", next);
+  };
+
+  const schoolRow = (entry: SourceDefault) => {
+    const selected = sourceIds.includes(entry.sourceRef);
+    return (
+      <PickerRow
+        key={entry.sourceRef}
+        selected={selected}
+        onToggle={() => toggleSource(entry.sourceRef)}
+        title={entry.name}
+        meta={`${entry.type === "regra" ? tPage("typeRegra") : tPage("typeApoio")} · ${formatTags(entry.subjects, entry.schoolYears, tSchool)}`}
+      />
+    );
   };
 
   const toggleRegulatory = (id: string) => {
@@ -109,13 +133,15 @@ export function SourcePickerSection({
             role="checkbox"
             aria-checked={includeAe}
             className={cn(
-              "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+              "inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5 rounded-full border px-3 py-1 text-left text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
               includeAe ? "border-primary bg-primary/10 text-primary" : "border-input bg-card text-foreground hover:bg-accent",
             )}
           >
-            {includeAe && <Check className="h-3 w-3" aria-hidden />}
-            {t("includeAe")}
-            <span className="font-normal text-muted-foreground">· {t("recommended")}</span>
+            <span className="inline-flex items-center gap-1.5">
+              {includeAe && <Check className="h-3 w-3 shrink-0" aria-hidden />}
+              {catalog.countryCode === "BR" ? t("includeBncc") : t("includeAe")}
+            </span>
+            <span className="whitespace-nowrap font-normal text-muted-foreground">· {t("recommended")}</span>
           </button>
           <Link
             href={Routes.SOURCES}
@@ -125,6 +151,14 @@ export function SourcePickerSection({
             {t("manageSources")}
           </Link>
         </div>
+
+        {/* Nothing here is sent unless changed, so the ticks shown may not be the teacher's defaults: say so. */}
+        {defaultsFailed && (
+          <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
+            <AlertCircle className="mt-px h-3.5 w-3.5 shrink-0" aria-hidden />
+            {t("defaultsFailed")}
+          </p>
+        )}
 
         {/* Regulatory documents (scooli-managed) — only shown when context_pipeline_v2 is enabled */}
         {isContextPipelineV2Enabled && regulatoryLoading ? (
@@ -140,63 +174,55 @@ export function SourcePickerSection({
                 {t("regulatoryDocuments", { count: regulatorySources.length })}
               </p>
             </div>
-            <div className="space-y-1">
-              {regulatorySources.map((source) => {
-                const selected = (regulatorySourceIds ?? []).includes(source.id);
-                return (
-                  <div
-                    key={source.id}
-                    className={cn(
-                      "flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition-colors select-none",
-                      selected ? "bg-primary/10" : "hover:bg-muted",
-                    )}
-                    onClick={() => toggleRegulatory(source.id)}
-                    role="checkbox"
-                    aria-checked={selected}
-                    tabIndex={0}
-                    onKeyDown={(e) => e.key === " " && toggleRegulatory(source.id)}
-                  >
-                    <div
-                      className={cn(
-                        "w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors",
-                        selected
-                          ? "bg-primary border-primary"
-                          : "border-border bg-background",
-                      )}
-                    >
-                      {selected && (
-                        <Check className="w-2.5 h-2.5 text-primary-foreground" />
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <p className="text-sm font-medium truncate">{source.name}</p>
-                        {source.externalUrl && (
-                          <a
-                            href={source.externalUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                            className="text-primary hover:text-primary/80 shrink-0"
-                            aria-label={t("openInNewWindow", { name: source.name })}
-                          >
-                            <ExternalLink className="w-3 h-3" />
-                          </a>
-                        )}
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        {t("excerpts", { count: source.chunkCount })}
-                      </p>
-                    </div>
-                  </div>
-                );
-              })}
+            <div className="max-h-48 space-y-1 overflow-y-auto pr-1">
+              {regulatorySources.map((source) => (
+                <PickerRow
+                  key={source.id}
+                  selected={(regulatorySourceIds ?? []).includes(source.id)}
+                  onToggle={() => toggleRegulatory(source.id)}
+                  title={source.name}
+                  titleExtra={
+                    source.externalUrl && (
+                      <a
+                        href={source.externalUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        onKeyDown={(e) => e.stopPropagation()}
+                        className="shrink-0 text-primary hover:text-primary/80"
+                        aria-label={t("openInNewWindow", { name: source.name })}
+                      >
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
+                    )
+                  }
+                  meta={t("excerpts", { count: source.chunkCount })}
+                />
+              ))}
             </div>
           </div>
         ) : null}
 
-        {/* User sources */}
-        {loading ? (
+        {/* School sources: the ones that fit this subject and year first, the rest under a fold. */}
+        {hasSchoolSources && (
+          <div className="space-y-2">
+            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">{t("schoolSources")}</p>
+            {matchingSchool.length > 0 && (
+              <div className="max-h-64 space-y-1 overflow-y-auto pr-1">{matchingSchool.map(schoolRow)}</div>
+            )}
+            {otherSchool.length > 0 && (
+              <details className="group">
+                <summary className="cursor-pointer rounded text-xs text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                  {t("otherSchoolSources")} ({otherSchool.length})
+                </summary>
+                <div className="mt-1 max-h-64 space-y-1 overflow-y-auto pr-1">{otherSchool.map(schoolRow)}</div>
+              </details>
+            )}
+          </div>
+        )}
+
+        {/* User sources; with none at all but school sources above, no note (it would read as if those were unindexed). */}
+        {!isUserSourcesEnabled || (!loading && sources.length === 0 && hasSchoolSources) ? null : loading ? (
           <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
             <Loader2 className="w-4 h-4 animate-spin" />
             {t("loadingSources")}
@@ -237,51 +263,83 @@ export function SourcePickerSection({
               {t("mySources", { count: indexedSources.length })}
             </p>
             <div className="space-y-1 max-h-48 overflow-y-auto pr-1">
-              {indexedSources.map((source) => {
-                const selected = sourceIds.includes(source.id);
-                return (
-                  <div
-                    key={source.id}
-                    className={cn(
-                      "flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition-colors select-none",
-                      selected ? "bg-primary/10" : "hover:bg-muted",
-                    )}
-                    onClick={() => toggleSource(source.id)}
-                    role="checkbox"
-                    aria-checked={selected}
-                    tabIndex={0}
-                    onKeyDown={(e) => e.key === " " && toggleSource(source.id)}
-                  >
-                    <div
-                      className={cn(
-                        "w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors",
-                        selected
-                          ? "bg-primary border-primary"
-                          : "border-border bg-background",
-                      )}
-                    >
-                      {selected && (
-                        <Check className="w-2.5 h-2.5 text-primary-foreground" />
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{source.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {t("excerpts", { count: source.chunkCount })}
-                        {source.subject && ` · ${source.subject}`}
-                        {source.schoolYear && ` · ${source.schoolYear}${t("schoolYearSuffix")}`}
-                      </p>
-                    </div>
-                    <span className="text-xs text-muted-foreground shrink-0 uppercase">
-                      {source.fileKind}
-                    </span>
-                  </div>
-                );
-              })}
+              {indexedSources.map((source) => (
+                <PickerRow
+                  key={source.id}
+                  selected={sourceIds.includes(source.id)}
+                  onToggle={() => toggleSource(source.id)}
+                  title={source.name}
+                  meta={[
+                    t("excerpts", { count: source.chunkCount }),
+                    source.subject,
+                    source.schoolYear ? translateGradeLabel(String(source.schoolYear)) : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
+                  trailing={<span className="shrink-0 text-xs uppercase text-muted-foreground">{source.fileKind}</span>}
+                />
+              ))}
             </div>
           </div>
         )}
       </div>
     </OptionRow>
+  );
+}
+
+/** One selectable source row: the whole row toggles (Space/Enter too); a long title or meta clamps, full text in the title. */
+function PickerRow({
+  selected,
+  onToggle,
+  title,
+  titleExtra,
+  meta,
+  trailing,
+}: {
+  selected: boolean;
+  onToggle: () => void;
+  title: string;
+  titleExtra?: React.ReactNode;
+  meta: string;
+  trailing?: React.ReactNode;
+}) {
+  return (
+    <div
+      className={cn(
+        "flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition-colors select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
+        selected ? "bg-primary/10" : "hover:bg-muted",
+      )}
+      onClick={onToggle}
+      role="checkbox"
+      aria-checked={selected}
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === " " || e.key === "Enter") {
+          e.preventDefault();
+          onToggle();
+        }
+      }}
+    >
+      <div
+        className={cn(
+          "w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors",
+          selected ? "bg-primary border-primary" : "border-border bg-background",
+        )}
+      >
+        {selected && <Check className="w-2.5 h-2.5 text-primary-foreground" />}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex min-w-0 items-center gap-1.5">
+          <p className="truncate text-sm font-medium" title={title}>
+            {title}
+          </p>
+          {titleExtra}
+        </div>
+        <p className="line-clamp-2 break-words text-xs text-muted-foreground" title={meta}>
+          {meta}
+        </p>
+      </div>
+      {trailing}
+    </div>
   );
 }

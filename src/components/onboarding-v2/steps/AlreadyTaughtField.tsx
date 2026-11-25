@@ -1,6 +1,7 @@
 "use client";
 
 import { suggestedTaughtCount } from "@/components/onboarding-v2/schoolCalendar";
+import { useCountry } from "@/hooks/useCountry";
 import { Textarea } from "@/components/ui/textarea";
 import { getTopicDomains, type CurriculumTopic } from "@/services/api/timetable.service";
 import { selectIsAlreadyCoveredEnabled } from "@/store/features/selectors";
@@ -42,6 +43,7 @@ export function AlreadyTaughtField({
   const t = useTranslations("onboardingV2.class.taught");
   const locale = useLocale();
   const enabled = useSelector(selectIsAlreadyCoveredEnabled);
+  const country = useCountry();
   const textareaId = useId();
   const [topics, setTopics] = useState<CurriculumTopic[]>([]);
   const [touched, setTouched] = useState(false);
@@ -59,7 +61,7 @@ export function AlreadyTaughtField({
         if (cancelled) return;
         setTopics(loaded);
         setTouched(false);
-        onTaughtChange(loaded.slice(0, suggestedTaughtCount(loaded.length, new Date())));
+        onTaughtChange(loaded.slice(0, suggestedTaughtCount(loaded.length, new Date(), country)));
       })
       .catch(() => {
         // The text box still works without the chips.
@@ -70,7 +72,7 @@ export function AlreadyTaughtField({
     };
     // onTaughtChange is a state setter from the parent.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enabled, subject, gradeLevel]);
+  }, [enabled, subject, gradeLevel, country]);
 
   if (!enabled) return null;
 

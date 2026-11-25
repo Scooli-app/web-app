@@ -6,7 +6,18 @@ import { PageContainer } from "@/components/layout/PageContainer";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { useAdmin } from "@/hooks/useAdmin";
-import { Activity, DollarSign, Gift, Library, MapPin, MessageSquare, Shield, ToggleLeft, Users } from "lucide-react";
+import {
+  Activity,
+  BookOpen,
+  DollarSign,
+  Gift,
+  Library,
+  MapPin,
+  MessageSquare,
+  Shield,
+  ToggleLeft,
+  Users,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
@@ -19,6 +30,7 @@ const SECTIONS = [
   { href: "/admin/features", label: "Funcionalidades", icon: ToggleLeft },
   { href: "/admin/promos", label: "Ofertas", icon: Gift },
   { href: "/admin/moderation", label: "Moderação", icon: Library },
+  { href: "/admin/curricula", label: "Currículos", icon: BookOpen },
 ];
 
 export default function AdminPage() {

@@ -1,6 +1,6 @@
 "use client";
 
-import { enGB, pt } from "date-fns/locale";
+import { enGB, pt as rdpPt, ptBR } from "react-day-picker/locale";
 import type { Locale as DateFnsLocale } from "date-fns";
 import { useLocale } from "next-intl";
 import { defaultLocale, isSupportedLocale, type Locale } from "./locales";
@@ -13,8 +13,18 @@ import { defaultLocale, isSupportedLocale, type Locale } from "./locales";
  * interface used by teachers in Portugal should not suddenly start writing dates
  * the American way round.
  */
+/**
+ * react-day-picker's locales are date-fns locales plus the calendar's screen-reader labels (without them the
+ * month/year dropdowns read in English). Its Portuguese ones say "Escolha"; the app speaks with "tu".
+ */
+const pt = {
+  ...rdpPt,
+  labels: { ...rdpPt.labels, labelMonthDropdown: "Escolhe o mês", labelYearDropdown: "Escolhe o ano" },
+};
+
 const DATE_FNS_LOCALES: Record<Locale, DateFnsLocale> = {
   "pt-PT": pt,
+  "pt-BR": ptBR,
   en: enGB,
 };
 

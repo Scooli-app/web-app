@@ -7,6 +7,7 @@ import type {
   CheckInSubmission,
   ConfirmAllCheckInsResult,
   CarryOverResult,
+  CheckInOutcomeOptions,
   PendingCheckIn,
   ReinforcementRequested,
   ShiftFollowingResult,
@@ -25,6 +26,14 @@ export const checkInService = {
       .post<CheckInRecord>(
         `/timetable/${encodeURIComponent(timetableId)}/lessons/${encodeURIComponent(slotId)}/check-in`,
         body,
+      )
+      .then((r) => r.data),
+
+  /** The outcomes to offer in the check-in's detail step, with a fallback when the lesson has none (ENG-424). */
+  getOutcomes: (timetableId: string, slotId: string) =>
+    apiClient
+      .get<CheckInOutcomeOptions>(
+        `/timetable/${encodeURIComponent(timetableId)}/lessons/${encodeURIComponent(slotId)}/check-in/outcomes`,
       )
       .then((r) => r.data),
 

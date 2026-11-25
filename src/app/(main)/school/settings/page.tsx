@@ -12,7 +12,9 @@ import {
 } from "@/store/workspace/selectors";
 import { fetchOrganizationDashboard } from "@/store/workspace/workspaceSlice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { Routes } from "@/shared/types/routes";
 import { useTranslations } from "next-intl";
+import Link from "next/link";
 import { useEffect } from "react";
 
 type Translator = ReturnType<typeof useTranslations>;
@@ -20,11 +22,6 @@ type Translator = ReturnType<typeof useTranslations>;
 function formatRole(role: string, t: Translator): string {
   const key = `roles.${role}` as Parameters<Translator["has"]>[0];
   return t.has(key) ? t(key) : role;
-}
-
-function formatSubscriptionStatus(status: string, t: Translator): string {
-  const key = `subscriptionStatus.${status}` as Parameters<Translator["has"]>[0];
-  return t.has(key) ? t(key) : status;
 }
 
 export default function SchoolSettingsPage() {
@@ -74,10 +71,18 @@ export default function SchoolSettingsPage() {
               </span>
             </p>
             <p>
-              {t("settings.contractStatus")}{" "}
-              <span className="font-medium text-foreground">
-                {formatSubscriptionStatus(dashboard?.subscriptionStatus ?? "draft", t)}
-              </span>
+              {t.rich("settings.changes", {
+                members: (chunks) => (
+                  <Link className="font-medium text-primary underline-offset-2 hover:underline" href={Routes.SCHOOL_MEMBERS}>
+                    {chunks}
+                  </Link>
+                ),
+                email: (chunks) => (
+                  <a className="font-medium text-primary underline-offset-2 hover:underline" href="mailto:info@scooli.app">
+                    {chunks}
+                  </a>
+                ),
+              })}
             </p>
           </CardContent>
         </Card>

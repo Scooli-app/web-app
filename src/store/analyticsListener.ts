@@ -1,4 +1,5 @@
 import { createListenerMiddleware } from "@reduxjs/toolkit";
+import { differenceInCalendarWeeks, parseISO } from "date-fns";
 import posthog from "posthog-js";
 import {
   createTimetable,
@@ -21,8 +22,20 @@ export const analyticsListener = createListenerMiddleware();
 type TimetableSlice = {
   timetable: {
     currentTimetable: { id: string; subject: string; gradeLevel: number } | null;
+    slots: { id: string; slotDate: string }[];
   };
 };
+
+/** The lesson's date and how many calendar weeks ahead it is (0 = this week, negative = past). */
+function lessonTiming(state: unknown, lessonId: string) {
+  const slotDate = (state as TimetableSlice).timetable.slots.find((s) => s.id === lessonId)?.slotDate;
+  return slotDate
+    ? {
+        lesson_date: slotDate,
+        weeks_ahead: differenceInCalendarWeeks(parseISO(slotDate), new Date(), { weekStartsOn: 1 }),
+      }
+    : {};
+}
 
 function classContext(state: unknown, timetableId: string) {
   const current = (state as TimetableSlice).timetable.currentTimetable;
@@ -68,6 +81,7 @@ analyticsListener.startListening({
       lesson_id: lessonId,
       changed_fields: Object.keys(params),
       slot_type: params.slotType ?? null,
+      ...lessonTiming(api.getState(), lessonId),
       ...classContext(api.getState(), timetableId),
     });
   },

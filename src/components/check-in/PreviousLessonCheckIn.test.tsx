@@ -24,7 +24,11 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
 // Not about the read-only lock (ENG-321): an account that may do everything.
 vi.mock("@/hooks/useAccountAccess", () => ({ useAccountAccess: () => ({ isLocked: false, guard: () => true }) }));
 vi.mock("@/services/api/check-in.service", () => ({
-  checkInService: { submit: vi.fn(), shiftFollowing: vi.fn() },
+  checkInService: {
+    submit: vi.fn(),
+    shiftFollowing: vi.fn(),
+    getOutcomes: vi.fn(() => Promise.resolve({ source: null, outcomes: [] })),
+  },
 }));
 vi.mock("sonner", () => ({
   toast: Object.assign(vi.fn(), { success: vi.fn(), error: vi.fn(), warning: vi.fn() }),
@@ -45,7 +49,7 @@ const noop = () => undefined;
 function view(overrides: Partial<Parameters<typeof PreviousLessonCheckInView>[0]> = {}) {
   return renderToStaticMarkup(
     createElement(PreviousLessonCheckInView, {
-      question: "Como correu a aula (Frações)?",
+      lessonName: "Frações",
       saved: null,
       saveFailed: false,
       outcomeResult: null,
@@ -180,9 +184,15 @@ describe("PreviousLessonCheckIn (saving)", () => {
 });
 
 describe("PreviousLessonCheckInView", () => {
-  it("asks the one-line question with the four results and 'Agora não'", () => {
+  it("names the previous lesson's day with its topic, so the question is about the last lesson taught", () => {
+    expect(view({ lessonDate: "2026-11-25" })).toContain("lessonOn · Frações");
+  });
+
+  it("asks the question with the lesson's name under it, the four results and 'Agora não'", () => {
     const html = view();
-    expect(html).toContain("Como correu a aula (Frações)?");
+    expect(html).toContain(">question<");
+    expect(html).toContain('title="Frações"');
+    expect(html).toContain("truncate");
     expect(html).toContain("resultTaught");
     expect(html).toContain("resultDifficulties");
     expect(html).toContain("resultPartial");
@@ -213,13 +223,14 @@ describe("PreviousLessonCheckInView", () => {
 
   it("keeps the lesson's header line above the outcome question", () => {
     const partial = view({ outcomeResult: "PARTIAL" });
-    expect(partial).toContain("Como correu a aula (Frações)?");
-    expect(partial.indexOf("A última aula (Frações)")).toBeLessThan(partial.indexOf("uncoveredQuestion"));
+    expect(partial).toContain('title="Frações"');
+    expect(partial.indexOf('title="Frações"')).toBeLessThan(partial.indexOf("uncoveredQuestion"));
+    expect(partial).not.toContain("notNow");
   });
 
   it("keeps the question and says so when the save failed", () => {
     const html = view({ saveFailed: true });
-    expect(html).toContain("Como correu a aula (Frações)?");
+    expect(html).toContain(">question<");
     expect(html).toContain("saveError");
     expect(html).not.toContain('role="status"');
   });

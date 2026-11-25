@@ -25,6 +25,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 import { Routes } from "@/shared/types";
 import { LessonDocumentChips } from "@/components/dashboard/LessonDocumentChips";
@@ -41,6 +48,7 @@ import { useAssessmentScope } from "@/components/calendar/useAssessmentScope";
 import { testBlocked, testRequestOutcomeIds } from "@/components/calendar/assessmentScopeLogic";
 import { SLOT_STATUS_CONFIG } from "@/shared/constants/lessonSlotStatus";
 import { translateSubject } from "@/components/document-creation/constants";
+import { formatClassName } from "@/shared/utils/className";
 import type { CheckInRecord, CheckInSlotType, CheckInSubmission, SavedCheckIn } from "@/shared/types/check-in";
 import { savedCheckIn } from "@/shared/utils/savedCheckIn";
 import type { SlotWithTimetable } from "@/shared/types/calendar";
@@ -56,7 +64,6 @@ import { formatLessonDay, lessonCalendarHref, reinforcementTarget } from "@/hook
 import { useCheckInNextStep } from "@/components/check-in/useCheckInNextStep";
 import type { WeekLessonTarget } from "@/components/dashboard/WeekLessonDialog";
 import { useReplan } from "@/hooks/useReplan";
-import { ReplanRequestDialog } from "@/components/replan/ReplanRequestDialog";
 import { selectIsClassStateEnabled } from "@/store/features/selectors";
 import { useAppSelector } from "@/store/hooks";
 import { toast } from "sonner";
@@ -188,7 +195,6 @@ export function SlotDialog({
       }),
   });
   const clearNextStep = nextStep.clear;
-  const [replanOpen, setReplanOpen] = useState(false);
   /** After the reinforcement was asked for here: the line that says where it is. Kept for this lesson. */
   const [reinforcementNote, setReinforcementNote] = useState<ReinforcementNote | null>(null);
   /** The topic proposal is being accepted or rejected. */
@@ -252,13 +258,7 @@ export function SlotDialog({
     status: d.status ?? "completed",
   }));
   // While the documents load we don't know what's missing yet, so nothing is suggested.
-  const {
-    suggested,
-    label: prepareLabel,
-    preparing,
-    prepare: handlePrepare,
-    inFlight: preparingTypes,
-  } = usePrepareLessonSet({
+  const { suggested, sets: prepareSets, preparing, prepare: handlePrepare, runStates } = usePrepareLessonSet({
     timetableId: slot?.timetable.id ?? "",
     lessonId: slot?.id ?? "",
     slotDate: slot?.slotDate ?? "",
@@ -296,7 +296,9 @@ export function SlotDialog({
   /** The other documents still being prepared: the ones this run has yet to start, then the ones the server is writing. */
   const setTypesInProgress = Array.from(
     new Set<string>([
-      ...preparingTypes,
+      ...Object.entries(runStates)
+        .filter(([, state]) => state === "waiting" || state === "generating")
+        .map(([type]) => type),
       ...slotDocs.filter((d) => isDocumentInProgress(d.status ?? "completed")).map((d) => d.documentRole),
     ]),
   ).filter((type) => type !== "lessonPlan" && SHORT_TYPES.has(type));
@@ -307,6 +309,8 @@ export function SlotDialog({
   const checkInTooltip = [...difficultOutcomeTexts(slot), ...(slot.teachingNote ? [slot.teachingNote] : [])].join("\n");
   const missingAmountLabel = MISSING_AMOUNTS.find((amount) => amount.value === slot.missingAmount);
   const checkInItem = {
+    timetableId: slot.timetable.id,
+    slotId: slot.id,
     slotDate: slot.slotDate,
     // Only shown for checkable types (see showCheckIn), so the cast holds wherever the card renders.
     slotType: slot.slotType as CheckInSlotType,
@@ -345,9 +349,6 @@ export function SlotDialog({
   const canShiftLater =
     slot.teachingStatus === "not_held" && slot.status !== "skipped" && !isAssessment && !isHoliday;
 
-  /** Pro, for a lesson that is past or today: asks for a proposal from here. A not-held lesson has its own button. */
-  const showReplanRequest = isPro && checkInEnabled && slot.slotDate <= todayIso && !canShiftLater;
-
   /** Pro: asks the replanning agent for the lessons after this one. The wait and the outcome show on the step line. */
   const handleReplanRequest = async (triggerSlotId: string) => {
     const track = nextStep.trackReplan({ timetableId: slot.timetable.id, slotId: triggerSlotId, slotType: slot.slotType });
@@ -376,6 +377,15 @@ export function SlotDialog({
     } finally {
       setProposalBusy(false);
     }
+  };
+
+  // A past lesson's main business is its check-in: preparing documents for it stays possible, not primary.
+  const mainOutline = prepareSets.length > 0 && slot.slotDate < todayIso;
+
+  const openLessonPlan = () => {
+    const plan = visibleDocs.find((d) => d.documentRole === "lessonPlan");
+    onClose();
+    router.push(plan ? docUrl(plan.documentRole, plan.documentId) : Routes.DOCUMENTS);
   };
 
   const handleTitleSave = () => {
@@ -407,9 +417,10 @@ export function SlotDialog({
                 style={{ backgroundColor: color, color: readableTextOn(color) }}
               >
                 <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-current opacity-70" />
-                {slot.timetable.gradeLevel ? `${tTimetable("gradeShort", { grade: slot.timetable.gradeLevel })} ` : ""}
-                {translateSubject(slot.timetable.subject)}
-                {slot.timetable.classLabel ? ` · ${slot.timetable.classLabel}` : ""}
+                {formatClassName(slot.timetable, {
+                  gradeShort: (grade) => tTimetable("gradeShort", { grade }),
+                  subject: translateSubject,
+                })}
               </span>
               <Badge className={`gap-1 border text-xs ${cfg.badgeCls}`}>
                 {cfg.icon}
@@ -671,6 +682,7 @@ export function SlotDialog({
                     </div>
                   )}
                   {nextStep.row}
+                  {nextStep.sheet}
                   {reinforcementNote?.slotId === slot.id && (
                     <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-rose-500/30 bg-rose-500/5 px-3 py-2">
                       <span className="flex items-center gap-2 text-sm text-foreground">
@@ -750,8 +762,13 @@ export function SlotDialog({
                       compact
                       timetableId={slot.timetable.id}
                       onLessonPlan={() => void onGenerate(slot, customMessage || undefined)}
-                      lessonPlanBusy={isSlotGenerating}
-                      busyTypes={preparingTypes}
+                      // The plan streams through the page, so its state comes from there: written now, or its last run failed.
+                      runStates={{
+                        ...runStates,
+                        ...(isSlotGenerating
+                          ? { lessonPlan: "writing" }
+                          : slot.status === "failed" && { lessonPlan: "failed" }),
+                      }}
                       lesson={{ id: slot.id, slotType: slot.slotType, documents: lessonDocuments }}
                       testOutcomeIds={testRequestOutcomeIds(assessment.scope, assessment.selected)}
                       instruction={customMessage || undefined}
@@ -799,64 +816,79 @@ export function SlotDialog({
           </div>
         </div>
 
-        {/* Footer actions */}
-        {!isHoliday && (
-          // Phones: a two-column grid, main action first, so four stacked buttons don't hide the lesson.
-          <DialogFooter className="border-t bg-muted/30 px-6 py-4 gap-2 max-sm:grid max-sm:grid-cols-2">
-            {showReplanRequest && (
-              <Button variant="outline" onClick={() => setReplanOpen(true)} className={cn("h-9 rounded-lg max-sm:order-3", !isCompleted && "max-sm:col-span-2")}>
-                {tReplan("actionLesson")}
-              </Button>
-            )}
-            {isCompleted && (
-              <>
-                <Button
-                  variant="outline"
-                  onClick={() => onRegenerate(slot, customMessage || undefined)}
-                  disabled={isSlotGenerating || preparing}
-                  className={cn("h-9 rounded-lg max-sm:order-3", !showReplanRequest && "max-sm:col-span-2")}
-                >
-                  {accountLocked ? <Lock className="mr-1.5 h-4 w-4" aria-hidden /> : <RotateCcw className="mr-1.5 h-4 w-4" />}
-                  {t("regenerate")}
+        {/* Footer: the lesson's main action and its menu. Adjusting the following lessons comes from the check-in
+            answer (for Pro, any answer other than "correu bem" proposes it), or from the turma page by hand. */}
+        {!isHoliday && (isCompleted || prepareSets.length > 0 || isSlotGenerating || preparing) && (
+          <DialogFooter className="flex-row items-center gap-2 border-t bg-muted/30 px-3 py-3 sm:px-6 sm:py-4">
+            <div className="ml-auto flex shrink-0">
+              {isSlotGenerating || preparing ? (
+                <Button disabled className="h-9 rounded-lg">
+                  <Loader2 className="motion-safe:animate-spin" aria-hidden />
+                  {t("generating")}
                 </Button>
-                <Button
-                  variant={suggested.length > 0 ? "outline" : "default"}
-                  onClick={() => {
-                    const plan = visibleDocs.find((d) => d.documentRole === "lessonPlan");
-                    onClose();
-                    router.push(
-                      plan ? docUrl(plan.documentRole, plan.documentId) : Routes.DOCUMENTS,
-                    );
-                  }}
-                  className="h-9 rounded-lg max-sm:order-2 max-sm:col-span-2"
-                >
-                  <FileText className="mr-1.5 h-4 w-4" />
-                  {t("openLessonPlan")}
-                </Button>
-              </>
-            )}
-            {isSlotGenerating || preparing ? (
-              <Button disabled className="h-9 rounded-lg max-sm:order-1 max-sm:col-span-2">
-                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-                {t("generating")}
-              </Button>
-            ) : suggested.length > 0 ? (
-              // A past lesson's main business is its check-in: preparing documents for it stays possible, not primary.
-              <Button onClick={() => void handlePrepare()} variant={slot.slotDate < todayIso ? "outline" : "default"} className="h-9 rounded-lg max-sm:order-1 max-sm:col-span-2">
-                {accountLocked ? <Lock className="mr-1.5 h-4 w-4" aria-hidden /> : <Sparkles className="mr-1.5 h-4 w-4" />}
-                {prepareLabel}
-              </Button>
-            ) : null}
+              ) : prepareSets.length > 0 || isCompleted ? (
+                <>
+                  {prepareSets.length > 0 ? (
+                    <Button
+                      onClick={() => void handlePrepare(prepareSets[0].types)}
+                      variant={mainOutline ? "outline" : "default"}
+                      title={prepareSets[0].label}
+                      className="h-9 rounded-lg rounded-r-none max-sm:px-2.5"
+                    >
+                      {accountLocked ? <Lock aria-hidden /> : <Sparkles className="max-sm:hidden" aria-hidden />}
+                      {t("prepareLesson")}
+                    </Button>
+                  ) : (
+                    <Button onClick={openLessonPlan} className="h-9 rounded-lg rounded-r-none">
+                      <FileText aria-hidden />
+                      {t("openPlanShort")}
+                    </Button>
+                  )}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant={mainOutline ? "outline" : "default"}
+                        aria-label={t("moreOptions")}
+                        className={cn(
+                          "h-9 w-8 rounded-lg rounded-l-none px-0",
+                          mainOutline ? "-ml-px" : "border-l border-l-primary-foreground/30",
+                        )}
+                      >
+                        <ChevronDown aria-hidden />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="max-w-[calc(100vw-2rem)]">
+                      {prepareSets.map((set, i) => (
+                        <DropdownMenuItem key={set.types.join()} onSelect={() => void handlePrepare(set.types)}>
+                          <span className="flex flex-col">
+                            <span className={cn(i === 0 && "font-semibold")}>{set.label}</span>
+                            {i === 0 && set.types.join() === suggested.join() && (
+                              <span className="text-xs text-muted-foreground">{t("suggestedSet")}</span>
+                            )}
+                          </span>
+                        </DropdownMenuItem>
+                      ))}
+                      {isCompleted && (
+                        <>
+                          {prepareSets.length > 0 && <DropdownMenuSeparator />}
+                          {prepareSets.length > 0 && (
+                            <DropdownMenuItem onSelect={openLessonPlan}>
+                              <FileText aria-hidden />
+                              {t("openLessonPlan")}
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuItem onSelect={() => onRegenerate(slot, customMessage || undefined)}>
+                            {accountLocked ? <Lock aria-hidden /> : <RotateCcw aria-hidden />}
+                            {t("regenerate")}
+                          </DropdownMenuItem>
+                        </>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </>
+              ) : null}
+            </div>
           </DialogFooter>
-        )}
-        {isPro && checkInEnabled && (
-          <ReplanRequestDialog
-            timetableId={slot.timetable.id}
-            triggerSlotId={slot.id}
-            open={replanOpen}
-            onOpenChange={setReplanOpen}
-            {...nextStep.trackReplan({ timetableId: slot.timetable.id, slotId: slot.id, slotType: slot.slotType })}
-          />
         )}
       </DialogContent>
     </Dialog>

@@ -1,0 +1,204 @@
+// @vitest-environment jsdom
+import { configureStore, createAsyncThunk } from "@reduxjs/toolkit";
+import { NextIntlClientProvider, createTranslator } from "next-intl";
+import { act } from "react";
+import { createRoot } from "react-dom/client";
+import { Provider } from "react-redux";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import pt from "../../../messages/pt-PT.json";
+import { registerTranslator } from "@/i18n/translate";
+import { FeatureFlag } from "@/shared/types/featureFlags";
+import type { SourceDefault } from "@/shared/types/sources";
+import rootReducer from "@/store/rootReducer";
+import DocumentCreationPage, { selectedSourceCount } from "./DocumentCreationPage";
+import { documentTypes } from "./documentTypes";
+
+(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+
+const mocks = vi.hoisted(() => ({
+  created: [] as Record<string, unknown>[],
+  listSourceDefaults: vi.fn(),
+  // The latest props the page gave the (stubbed) picker and lesson picker.
+  picker: null as null | { sourceIds: string[]; includeAe: boolean; onUpdate: (field: string, value: unknown) => void },
+  lesson: null as null | { onChange: (choice: unknown) => void },
+}));
+
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
+vi.mock("posthog-js", () => ({ default: { capture: vi.fn(), captureException: vi.fn() } }));
+vi.mock("@/hooks/useAccountAccess", () => ({
+  useAccountAccess: () => ({ isLocked: false, guard: () => true, hasCredits: false }),
+}));
+vi.mock("@/services/api/sources.service", () => ({ listSourceDefaults: mocks.listSourceDefaults }));
+// Records the request instead of streaming a document.
+vi.mock("@/store/documents/documentSlice", async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  createDocument: createAsyncThunk("test/createDocument", async (args: Record<string, unknown>) => {
+    mocks.created.push(args);
+    return { id: "doc-1" };
+  }),
+}));
+// Sections that fetch on their own are out of this test's scope.
+vi.mock("./sections", async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  LessonSection: (props: { onChange: (choice: unknown) => void }) => {
+    mocks.lesson = props;
+    return null;
+  },
+  SourcePickerSection: (props: { sourceIds: string[]; includeAe: boolean; onUpdate: (field: string, value: unknown) => void }) => {
+    mocks.picker = props;
+    return null;
+  },
+}));
+vi.mock("@/components/document-editor-v2/ThemePicker", () => ({ ThemeGallery: () => null }));
+vi.mock("./useSubjectChoice", () => ({
+  useSubjectChoice: () => ({
+    teachingMode: "regular",
+    vocationalCourseOptions: [],
+    selectedVocationalCourse: undefined,
+    preferredSchoolYears: [],
+    preferredSubjectIds: [],
+    handleTeachingModeChange: vi.fn(),
+    handleVocationalCourseChange: vi.fn(),
+    onVocationalCourseAdded: vi.fn(),
+    isVocationalFeatureEnabled: false,
+  }),
+}));
+
+const aeOff: SourceDefault = {
+  sourceRef: "ae", kind: "ae", type: null, name: "Aprendizagens Essenciais", effectiveDefault: false, startingState: true,
+  status: null, subjects: [], schoolYears: [], organizationId: null, organizationName: null, uploadedByName: null,
+  summary: null, externalUrl: null, chunkCount: 0,
+};
+
+async function mountPage(defaults: Promise<SourceDefault[]>, stale?: SourceDefault[]) {
+  mocks.listSourceDefaults.mockReturnValue(defaults);
+  // Arrives pre-filled from the dashboard box, so "Criar" is enabled straight away.
+  window.history.replaceState({}, "", "/presentation?topic=Frações&year=7&subject=matematica");
+  const store = configureStore({
+    reducer: rootReducer,
+    preloadedState: {
+      features: { flags: { [FeatureFlag.USER_SOURCES]: true }, loading: false, loaded: true, error: null },
+      // Defaults already loaded earlier in the session (e.g. on /sources).
+      ...(stale && { sourceDefaults: { entries: stale, status: "loaded", pending: {}, clock: 0, toggledAt: {} } }),
+    } as never,
+  });
+  const container = document.createElement("div");
+  document.body.appendChild(container);
+  await act(async () => {
+    createRoot(container).render(
+      <Provider store={store}>
+        <NextIntlClientProvider locale="pt-PT" messages={pt}>
+          <DocumentCreationPage documentType={documentTypes.presentation} />
+        </NextIntlClientProvider>
+      </Provider>,
+    );
+  });
+  return container;
+}
+
+async function submit(container: HTMLElement) {
+  const create = container.querySelector<HTMLButtonElement>('button[aria-label^="Criar"]');
+  expect(create?.disabled).toBe(false);
+  await act(async () => create?.click());
+  expect(mocks.created).toHaveLength(1);
+  return mocks.created[0];
+}
+
+const createWithDefaults = async (defaults: Promise<SourceDefault[]>) => submit(await mountPage(defaults));
+
+const schoolRule = (sourceRef: string, subjects: string[]): SourceDefault => ({
+  ...aeOff, sourceRef, kind: "organization", type: "regra", name: sourceRef, effectiveDefault: true, status: "indexed",
+  subjects, schoolYears: [7], organizationId: "org", organizationName: "Escola",
+});
+
+beforeEach(() => {
+  registerTranslator(createTranslator({ locale: "pt-PT", messages: pt }) as never);
+  mocks.created.length = 0;
+});
+
+afterEach(() => {
+  document.body.innerHTML = "";
+});
+
+describe("DocumentCreationPage source fields", () => {
+  it("sends no source fields while the defaults are still loading, so the server applies the teacher's own", async () => {
+    const request = await createWithDefaults(new Promise(() => undefined));
+    expect(request).not.toHaveProperty("sourceIds");
+    expect(request).not.toHaveProperty("includeAe");
+    expect(request).not.toHaveProperty("regulatorySourceIds");
+  });
+
+  it("sends no source fields when the defaults failed to load", async () => {
+    const request = await createWithDefaults(Promise.reject(new Error("503")));
+    expect(request).not.toHaveProperty("sourceIds");
+    expect(request).not.toHaveProperty("includeAe");
+  });
+
+  it("sends the teacher's defaults once they are in the form, AE off included", async () => {
+    const request = await createWithDefaults(Promise.resolve([aeOff]));
+    expect(request).toMatchObject({ includeAe: false, sourceIds: [], regulatorySourceIds: [] });
+  });
+
+  it("keeps a field the teacher changed before the defaults arrived, and still applies the others", async () => {
+    let resolve: (v: SourceDefault[]) => void = () => undefined;
+    const container = await mountPage(new Promise((r) => (resolve = r)));
+    await act(async () => mocks.picker?.onUpdate("includeAe", false));
+    await act(async () => resolve([{ ...aeOff, effectiveDefault: true }, schoolRule("o1", ["Mathematics"])]));
+    expect(mocks.picker?.sourceIds).toEqual(["o1"]); // the untouched field still gets the default school rule
+    expect(await submit(container)).toMatchObject({ includeAe: false, sourceIds: ["o1"] });
+  });
+
+  it.each([
+    ["pending", () => new Promise<SourceDefault[]>(() => undefined)],
+    ["failed", () => Promise.reject(new Error("503"))],
+  ])("sends only the field the teacher changed while the defaults are %s, never a starting includeAe", async (_, defaults) => {
+    const container = await mountPage(defaults());
+    await act(async () => mocks.picker?.onUpdate("sourceIds", ["p1"]));
+    const request = await submit(container);
+    expect(request).toMatchObject({ sourceIds: ["p1"] });
+    expect(request).not.toHaveProperty("includeAe");
+    expect(request).not.toHaveProperty("regulatorySourceIds");
+  });
+
+  it("re-decides untouched school rules when the subject changes, keeping the ones the teacher touched", async () => {
+    const container = await mountPage(
+      Promise.resolve([schoolRule("math", ["Mathematics"]), schoolRule("pt", ["Portuguese"]), schoolRule("all", [])]),
+    );
+    expect(mocks.picker?.sourceIds).toEqual(["math", "all"]);
+    await act(async () => mocks.picker?.onUpdate("sourceIds", ["math"])); // unticks "all" for this document
+    await act(async () =>
+      mocks.lesson?.onChange({ timetableId: "t", lessonId: "l", slotDate: "2026-11-23", topicTitle: "", klass: {}, gradeLevel: 7, subjectId: "portugues", disabled: false }),
+    );
+    expect([...(mocks.picker?.sourceIds ?? [])].sort()).toEqual(["pt"]);
+    expect(await submit(container)).toMatchObject({ sourceIds: ["pt"] });
+  });
+
+  it("counts school, personal and regulatory sources in the summary, without calling them all the teacher's", async () => {
+    const regulatory: SourceDefault = { ...aeOff, sourceRef: "r1", kind: "regulatory", name: "DL 54/2018", effectiveDefault: true };
+    const container = await mountPage(Promise.resolve([schoolRule("o1", ["Mathematics"]), regulatory]));
+    expect(container.textContent).toContain("Usa 2 fontes");
+    expect(container.textContent).not.toMatch(/fontes? tuas?/);
+  });
+
+  it("starts from the defaults it fetched itself, not ones loaded earlier in the session", async () => {
+    const personal = (sourceRef: string, effectiveDefault: boolean): SourceDefault => ({
+      ...aeOff, sourceRef, kind: "personal", name: sourceRef, effectiveDefault, status: "indexed",
+    });
+    const stale = [{ ...aeOff, effectiveDefault: true }, personal("p1", true), personal("p2", false)];
+    let resolve: (v: SourceDefault[]) => void = () => undefined;
+    const container = await mountPage(new Promise((r) => (resolve = r)), stale);
+    expect(mocks.picker?.sourceIds).toEqual([]); // nothing applied from the stale copy
+    // Changed since: AE off, p1 off, p2 on.
+    await act(async () => resolve([{ ...aeOff, effectiveDefault: false }, personal("p1", false), personal("p2", true)]));
+    expect(mocks.picker?.includeAe).toBe(false);
+    expect(mocks.picker?.sourceIds).toEqual(["p2"]);
+    expect(await submit(container)).toMatchObject({ includeAe: false, sourceIds: ["p2"] });
+  });
+});
+
+describe("selectedSourceCount", () => {
+  it("adds personal and school ids to regulatory ids", () => {
+    expect(selectedSourceCount({ sourceIds: ["p1", "o1"], regulatorySourceIds: ["r1"] })).toBe(3);
+    expect(selectedSourceCount({ sourceIds: undefined, regulatorySourceIds: undefined })).toBe(0);
+  });
+});

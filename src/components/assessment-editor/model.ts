@@ -31,6 +31,7 @@ export const MAX_SCHOOL = 200;
 export const MAX_CLASS = 100;
 export const MAX_ITEMS = 30;
 
+import { maskCurrencyDollars, unmaskCurrencyDollars } from "@/shared/utils/currency-dollar";
 const BLANK = /_{3,}/g;
 
 export const countBlanks = (prompt: string) => (prompt.match(BLANK) ?? []).length;
@@ -47,8 +48,9 @@ export function splitBlanks(prompt: string, inMaths: (gap: number) => string): {
   const parts = [""];
   const gaps: number[] = [];
   let gap = 0;
-  for (const chunk of prompt.split(MATHS)) {
-    if (chunk.length > 1 && chunk.startsWith("$") && chunk.endsWith("$")) {
+  for (const masked of maskCurrencyDollars(prompt).split(MATHS)) {
+    const chunk = unmaskCurrencyDollars(masked);
+    if (masked.length > 1 && masked.startsWith("$") && masked.endsWith("$")) {
       parts[parts.length - 1] += chunk.replace(BLANK, () => inMaths(gap++));
       continue;
     }

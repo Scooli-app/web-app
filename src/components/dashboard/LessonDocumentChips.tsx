@@ -19,7 +19,8 @@ import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { openUpgradeModalForReason, setUpgradeModalOpen } from "@/store/ui/uiSlice";
 import type { AppDispatch } from "@/store/store";
 import { useAuth } from "@clerk/nextjs";
-import { Check, Loader2, Lock, Plus, Target } from "lucide-react";
+import type { RunStates } from "@/components/dashboard/usePrepareLessonSet";
+import { AlertCircle, Check, CircleDashed, Loader2, Lock, Plus, RotateCcw, Target } from "lucide-react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import posthog from "posthog-js";
@@ -38,7 +39,7 @@ type Translate = (key: string) => string;
 
 /**
  * Starts a one-click document (anything but the lesson plan) and reports failures the same way
- * everywhere. Returns false when it didn't start.
+ * everywhere. "blocked" (plan limit, already there, already running) is not a failure: no retry to offer.
  */
 export async function startCompanionDocument(
   timetableId: string,
@@ -48,23 +49,27 @@ export async function startCompanionDocument(
   dispatch: AppDispatch,
   outcomeIds?: string[],
   instruction?: string,
-): Promise<boolean> {
+): Promise<"started" | "blocked" | "failed"> {
   try {
     await generateLessonDocument(timetableId, lessonId, type, outcomeIds, instruction);
-    return true;
+    return "started";
   } catch (err) {
     if (err instanceof UpgradeLimitError) {
       // The API client already opened the upgrade modal (no credits / free-plan limit).
-    } else if (err instanceof ApiRequestError && err.status === 409) {
+      return "blocked";
+    }
+    if (err instanceof ApiRequestError && err.status === 409) {
       toast.info(err.code === "ja_existe" ? t("companionExists") : t("companionInProgress"));
-    } else if (err instanceof ApiRequestError && err.status === 403) {
+      return "blocked";
+    }
+    if (err instanceof ApiRequestError && err.status === 403) {
       // Presentations are Pro-only: say so, not "out of credits".
       dispatch(type === "presentation" ? openUpgradeModalForReason("presentation_pro") : setUpgradeModalOpen(true));
-    } else {
-      toast.error(t("companionError"));
-      posthog.captureException(err);
+      return "blocked";
     }
-    return false;
+    toast.error(t("companionError"));
+    posthog.captureException(err);
+    return "failed";
   }
 }
 
@@ -124,12 +129,10 @@ interface LessonDocumentChipsProps {
    * given, the plan chip is a plain "+ Plano de aula" chip that calls this instead.
    */
   onLessonPlan?: () => void;
-  /** The plan is being written by the surface that owns `onLessonPlan`. */
-  lessonPlanBusy?: boolean;
   /** The surface shows its own main "Preparar …" button, so the plan is a plain chip here too. */
   planAsChip?: boolean;
-  /** Types a "Preparar …" run will start: shown as busy before the server reports them. */
-  busyTypes?: CompanionType[];
+  /** Where each document of a "Preparar …" run is before the server lists it (the plan "writing" too). */
+  runStates?: RunStates;
   /** A test on an assessment: the outcomes it must assess (ENG-209). Left out, the server uses the whole scope. */
   testOutcomeIds?: string[];
   /** The lesson dialog's "Instrução adicional": sent with every document a chip starts, like with the lesson plan. */
@@ -147,9 +150,8 @@ export function LessonDocumentChips({
   compact = false,
   omit = [],
   onLessonPlan,
-  lessonPlanBusy = false,
   planAsChip = false,
-  busyTypes = [],
+  runStates = {},
   testOutcomeIds,
   instruction,
 }: LessonDocumentChipsProps) {
@@ -214,8 +216,8 @@ export function LessonDocumentChips({
             key={doc.id}
             className={cn("inline-flex items-center gap-1.5 rounded-full bg-muted font-medium text-muted-foreground", size)}
           >
-            <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
-            {t(`types.${doc.role}`)} · {t("documentGenerating")}
+            <Loader2 className="h-3.5 w-3.5 motion-safe:animate-spin" aria-hidden />
+            {t(`types.${doc.role}`)} · {t("docState.generating")}
           </span>
         ) : (
           // A reinforcement worksheet (a worksheet made after a check-in) is its own chip, rose and with a target,
@@ -250,31 +252,68 @@ export function LessonDocumentChips({
         ),
       )}
       {addable.map((type) => {
-        const busy = starting.has(type) || busyTypes.includes(type) || (type === "lessonPlan" && lessonPlanBusy);
+        // A click here outranks a run's state; the last attempt failing (to start, or on the server) offers a retry.
+        const lastFailed = lesson.documents.some((d) => d.role === type && d.status === "failed");
+        const state = starting.has(type)
+          ? type === "lessonPlan"
+            ? "writing"
+            : "generating"
+          : (runStates[type] ?? (lastFailed ? "failed" : undefined));
+        if (state && state !== "failed") {
+          return (
+            <span
+              key={type}
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded-full font-medium text-muted-foreground",
+                state === "waiting" ? "border border-dashed border-border" : "bg-muted",
+                size,
+              )}
+            >
+              {state === "waiting" ? (
+                <CircleDashed className="h-3.5 w-3.5" aria-hidden />
+              ) : (
+                <Loader2 className="h-3.5 w-3.5 motion-safe:animate-spin" aria-hidden />
+              )}
+              {t(`types.${type}`)} · {t(`docState.${state}`)}
+            </span>
+          );
+        }
+        if (state === "failed") {
+          return (
+            <span
+              key={type}
+              className={cn("inline-flex items-center gap-1.5 rounded-full border border-destructive/50 text-destructive", size)}
+            >
+              <AlertCircle className="h-3.5 w-3.5" aria-hidden />
+              {t(`types.${type}`)} · {t("docState.failed")} ·
+              <button
+                type="button"
+                onClick={() => void handleAdd(type)}
+                className="inline-flex items-center gap-1 rounded font-semibold underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <RotateCcw className="h-3 w-3" aria-hidden />
+                {t("docState.retry")}
+              </button>
+            </span>
+          );
+        }
         // The dashboard's plan chip is the card's main action; in the pop-up it is one chip among others.
         const isPlan = type === "lessonPlan" && !onLessonPlan && !planAsChip;
         return (
           <button
             key={type}
             type="button"
-            disabled={busy}
             onClick={() => void handleAdd(type)}
             className={cn(
-              "inline-flex items-center gap-1 rounded-full font-medium transition-colors disabled:cursor-wait disabled:opacity-70",
+              "inline-flex items-center gap-1 rounded-full font-medium transition-colors",
               isPlan
                 ? "bg-primary text-primary-foreground hover:bg-primary/90"
                 : "border border-dashed border-primary/50 text-primary hover:bg-primary/10",
               size,
             )}
           >
-            {busy ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
-            ) : isLocked ? (
-              <Lock className="h-3.5 w-3.5" aria-hidden />
-            ) : (
-              <Plus className="h-3.5 w-3.5" aria-hidden />
-            )}
-            {busy ? t("documentGenerating") : isPlan ? t("preparePlan") : t(`types.${type}`)}
+            {isLocked ? <Lock className="h-3.5 w-3.5" aria-hidden /> : <Plus className="h-3.5 w-3.5" aria-hidden />}
+            {isPlan ? t("preparePlan") : t(`types.${type}`)}
           </button>
         );
       })}

@@ -1,4 +1,8 @@
-import { SUBJECTS } from "@/components/document-creation/constants";
+import {
+  DEFAULT_COUNTRY_CODE,
+  getCountryCatalog,
+  type CountryCode,
+} from "@/lib/curriculum/countryCatalog";
 import type { CompanionType } from "@/components/dashboard/weekWindow";
 import type { MyWeekLessonDocument } from "@/shared/types/my-week";
 
@@ -18,6 +22,12 @@ const VISUAL_SUBJECT_IDS: ReadonlySet<string> = new Set([
   "artes_visuais", "educacao_visual", "desenho_a",
 ]);
 
+/** Brazilian subject ids are their display names. */
+const BR_VISUAL_SUBJECT_IDS: ReadonlySet<string> = new Set([
+  "Ciências", "Ciências da Natureza", "Ciências Humanas e Sociais Aplicadas",
+  "Geografia", "História", "Arte", "Ensino Religioso",
+]);
+
 const DISPLAY_ORDER: readonly CompanionType[] = ["lessonPlan", "worksheet", "quiz", "presentation", "test"];
 
 /** What each kind of lesson needs, for each kind of subject (agreed with Miguel, 16 Oct 2026). */
@@ -29,10 +39,15 @@ const SUGGESTIONS: Record<string, Record<SubjectProfile, CompanionType[]>> = {
 };
 
 /** The subject as stored on the turma (its English value, e.g. "History") or its id. */
-export function subjectProfile(subject: string | null | undefined): SubjectProfile {
+export function subjectProfile(
+  subject: string | null | undefined,
+  countryCode: CountryCode = DEFAULT_COUNTRY_CODE,
+): SubjectProfile {
   if (!subject) return "practical";
-  const match = SUBJECTS.find((s) => s.value === subject || s.id === subject);
-  return match && VISUAL_SUBJECT_IDS.has(match.id) ? "visual" : "practical";
+  const isBr = getCountryCatalog(countryCode).countryCode === "BR";
+  const match = getCountryCatalog(countryCode).subjects.find((s) => s.value === subject || s.id === subject);
+  const visual = isBr ? BR_VISUAL_SUBJECT_IDS : VISUAL_SUBJECT_IDS;
+  return match && visual.has(match.id) ? "visual" : "practical";
 }
 
 /**
@@ -45,10 +60,11 @@ export function suggestedDocuments(
   subject: string | null | undefined,
   documents: MyWeekLessonDocument[],
   flags: { worksheet: boolean; presentation: boolean },
+  countryCode: CountryCode = DEFAULT_COUNTRY_CODE,
 ): CompanionType[] {
   const byProfile = SUGGESTIONS[slotType] ?? (slotType === "HOLIDAY" ? null : SUGGESTIONS.LESSON);
   if (!byProfile) return [];
-  const wanted = new Set(byProfile[subjectProfile(subject)]);
+  const wanted = new Set(byProfile[subjectProfile(subject, countryCode)]);
   const existing = new Set(documents.filter((d) => d.status !== "failed").map((d) => d.role));
   return DISPLAY_ORDER.filter(
     (type) =>
