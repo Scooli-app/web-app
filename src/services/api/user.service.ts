@@ -55,4 +55,9 @@ export const userService = {
   updateCountryCode: async (countryCode: CountryCode): Promise<void> => {
     await apiClient.put("/users/me", { countryCode });
   },
+
+  /** Saves a Brazilian teacher's state (UF), or clears it with null. Only accepted for BR on the server. */
+  updateStateCode: async (stateCode: string | null): Promise<void> => {
+    await apiClient.put("/users/me", { stateCode });
+  },
 };

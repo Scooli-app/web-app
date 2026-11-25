@@ -1,7 +1,6 @@
 "use client";
 
 import { PageContainer } from "@/components/layout/PageContainer";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import {
@@ -20,12 +19,13 @@ import {
   updateSchoolSource,
 } from "@/services/api/school-sources.service";
 import type { SchoolSource, SchoolSourceQuota } from "@/shared/types/sources";
-import { FileText, MoreHorizontal, Plus } from "lucide-react";
+import { cn } from "@/shared/utils/utils";
+import { BookOpen, FileText, Loader2, MoreHorizontal, Plus, ScrollText } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { SchoolSourceDialog } from "./SchoolSourceDialog";
-import { formatQuota, formatSize, formatTags, isSettled, schoolSourceError } from "./schoolSourceFormat";
+import { formatQuota, formatScope, formatSize, isSettled, schoolSourceError } from "./schoolSourceFormat";
 
 const POLL_MS = 5000;
 
@@ -130,55 +130,84 @@ export function SchoolSourcesPanel() {
         ) : sources.length === 0 ? (
           <EmptyState size="inline" icon={FileText} title={t("title")} description={t("empty")} />
         ) : (
-          <ul className="divide-y divide-border/70">
+          <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {sources.map((s) => {
               const settled = isSettled(s.status);
-              const tags = `${t(`type.${s.type}.title`)} · ${formatTags(s.subjects, s.schoolYears, t)}`;
+              const scope = formatScope(s.subjects, s.schoolYears, t);
+              const TypeIcon = s.type === "regra" ? ScrollText : BookOpen;
               return (
-                <li key={s.id} data-testid="school-source-row" className="flex items-start gap-3 py-3">
-                  {/* On a phone the badge drops under the text, so the name and tags keep the width. */}
-                  <div className="flex min-w-0 flex-1 flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-3">
+                <li
+                  key={s.id}
+                  data-testid="school-source-card"
+                  className="flex min-w-0 flex-col gap-3 rounded-xl border border-border bg-card p-4 shadow-xs"
+                >
+                  <div className="flex items-start gap-3">
+                    <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground" aria-hidden>
+                      <TypeIcon className="size-4" />
+                    </span>
                     <div className="min-w-0 flex-1">
-                      <p className="line-clamp-2 break-words font-medium" title={s.name}>
+                      <p className="line-clamp-2 break-words font-medium leading-snug" title={s.name}>
                         {s.name}
                       </p>
-                      <p className="line-clamp-2 break-words text-sm text-muted-foreground" title={tags}>
-                        {tags}
-                      </p>
-                      {s.status === "failed" && <p className="mt-0.5 text-xs text-destructive">{t("status.failedHint")}</p>}
+                      <p className="mt-0.5 text-sm text-muted-foreground">{t(`type.${s.type}.title`)}</p>
                     </div>
-                    <Badge
-                      variant={s.status === "failed" ? "destructive" : s.status === "indexed" && s.defaultEnabled ? "default" : "outline"}
-                      className="shrink-0 self-start sm:self-auto"
-                    >
-                      {statusLine(s)}
-                    </Badge>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          disabled={busy}
+                          aria-label={t("menu.actions", { name: s.name })}
+                          className="-mr-2 -mt-1.5 shrink-0"
+                        >
+                          <MoreHorizontal className="size-4" aria-hidden />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem disabled={!settled} onSelect={() => setDialog({ mode: "edit", source: s })}>
+                          {t("menu.edit")}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          disabled={!settled}
+                          onSelect={() => void run(() => updateSchoolSource(s.id, { defaultEnabled: !s.defaultEnabled }))}
+                        >
+                          {s.defaultEnabled ? t("menu.turnOff") : t("menu.turnOn")}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          disabled={!settled}
+                          className="text-destructive focus:text-destructive"
+                          onSelect={() => setDeleting(s)}
+                        >
+                          {t("menu.delete")}
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button type="button" variant="ghost" size="icon" disabled={busy} aria-label={t("menu.actions", { name: s.name })}>
-                        <MoreHorizontal className="size-4" aria-hidden />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem disabled={!settled} onSelect={() => setDialog({ mode: "edit", source: s })}>
-                        {t("menu.edit")}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        disabled={!settled}
-                        onSelect={() => void run(() => updateSchoolSource(s.id, { defaultEnabled: !s.defaultEnabled }))}
-                      >
-                        {s.defaultEnabled ? t("menu.turnOff") : t("menu.turnOn")}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        disabled={!settled}
-                        className="text-destructive focus:text-destructive"
-                        onSelect={() => setDeleting(s)}
-                      >
-                        {t("menu.delete")}
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  <div className="mt-auto space-y-2 border-t border-border/70 pt-3">
+                    <p className="truncate text-sm" title={scope}>
+                      {scope}
+                    </p>
+                    <p className="flex items-center gap-2 text-xs text-muted-foreground">
+                      {settled ? (
+                        <span
+                          aria-hidden
+                          className={cn(
+                            "size-2 shrink-0 rounded-full",
+                            s.status === "failed"
+                              ? "bg-destructive"
+                              : s.defaultEnabled
+                                ? "bg-emerald-500"
+                                : "bg-muted-foreground/40",
+                          )}
+                        />
+                      ) : (
+                        <Loader2 className="size-3 shrink-0 animate-spin" aria-hidden />
+                      )}
+                      <span className={cn(s.status === "failed" && "font-medium text-destructive")}>{statusLine(s)}</span>
+                    </p>
+                    {s.status === "failed" && <p className="text-xs text-destructive">{t("status.failedHint")}</p>}
+                  </div>
                 </li>
               );
             })}

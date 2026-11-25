@@ -9,9 +9,11 @@
  * backend enum uses the tag form and rejects anything else.
  *
  * Adding a language: one entry in `locales`, one `messages/{locale}.json`, and one
- * entry in `LOCALE_LABELS` / `DATE_FNS_LOCALE_BY_LOCALE`.
+ * entry in `LOCALE_LABELS` / `DATE_FNS_LOCALE_BY_LOCALE`. A regional variant
+ * (`pt-BR`) only holds the keys it words differently; `request.ts` merges it
+ * over its base language (`BASE_LOCALE`).
  */
-export const locales = ["pt-PT", "en"] as const;
+export const locales = ["pt-PT", "pt-BR", "en"] as const;
 
 export type Locale = (typeof locales)[number];
 
@@ -35,9 +37,21 @@ export const LOCALE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
  * looking for their language recognises "English", not "Inglês".
  */
 export const LOCALE_LABELS: Record<Locale, string> = {
-  "pt-PT": "Português",
+  "pt-PT": "Português (Portugal)",
+  "pt-BR": "Português (Brasil)",
   en: "English",
 };
+
+/** A regional variant's base catalogue: `messages/pt-BR.json` holds only the keys Brazil words differently. */
+export const BASE_LOCALE: Partial<Record<Locale, Locale>> = { "pt-BR": "pt-PT" };
+
+/**
+ * The Portuguese variant a country speaks, for an interface already in Portuguese. Picking the country where
+ * one teaches sets it as the default; the language setting can still change it afterwards.
+ */
+export function portugueseVariantFor(country: string | null | undefined): Locale {
+  return country === "BR" ? "pt-BR" : "pt-PT";
+}
 
 export function isSupportedLocale(value: unknown): value is Locale {
   return typeof value === "string" && (locales as readonly string[]).includes(value);
@@ -46,9 +60,8 @@ export function isSupportedLocale(value: unknown): value is Locale {
 /**
  * Resolves an arbitrary language tag to a supported locale.
  *
- * Matching is on the primary subtag, so `pt-BR` and `pt` both resolve to `pt-PT`
- * and `en-GB` to `en`. A Brazilian teacher gets Portuguese rather than being
- * bounced to English on a region mismatch.
+ * An exact tag wins (`pt-BR`); otherwise matching is on the primary subtag, so
+ * `pt` and `pt-AO` resolve to `pt-PT` (declared first) and `en-GB` to `en`.
  *
  * Returns `null` — not the default — when nothing matches, so callers can tell
  * "no preference expressed" apart from "explicitly chose Portuguese". That

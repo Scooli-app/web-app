@@ -200,12 +200,8 @@ function LessonRow({ item, locale, checked, onToggle, defaultOpen }: LessonRowPr
   const topicChanged = !!item.before.topicTitle && item.before.topicTitle !== item.after.topicTitle;
   const dateLabel = new Date(`${item.date}T00:00:00`).toLocaleDateString(locale, { day: "numeric", month: "short" });
   const title = `${t("lessonNumber", { number: item.sequenceNumber })} · ${topic}`;
-  const chip =
-    added.length > 0
-      ? t("chipOutcomes", { count: added.length })
-      : topicChanged
-        ? t("changeRetitled")
-        : t(CHANGE_LABEL_KEY[item.change]);
+  // The chip names the kind of change (a merged lesson usually gets a new title too, but it is a merge).
+  const chip = added.length > 0 ? t("chipOutcomes", { count: added.length }) : t(CHANGE_LABEL_KEY[item.change]);
 
   return (
     // The whole card selects the lesson (a rule for every selectable card); its own controls keep their click. The

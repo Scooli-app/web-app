@@ -45,6 +45,8 @@ export function ChoiceChip({
         selected
           ? "border-primary bg-primary text-primary-foreground shadow-sm shadow-primary/20"
           : "border-input bg-card text-foreground hover:border-primary/60 hover:bg-accent",
+        // Unchecked chips keep the check's room (16px icon + 6px gap) as padding, so ticking one never reflows the row.
+        showCheck && !selected && "px-[1.4375rem]",
         className,
       )}
     >

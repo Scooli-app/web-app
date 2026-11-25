@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "sonner";
 import { SkeletonRows } from "@/components/ui/page-skeleton";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -88,9 +89,11 @@ export default function SourcesPage() {
   // A school member without user_sources gets the school sections only: the personal endpoints follow that flag.
   const isUserSourcesEnabled = useAppSelector(selectIsUserSourcesEnabled);
 
+  // The default switches come from the defaults list: reload it when a source is added, removed or finishes indexing.
+  const defaultsKey = sources.map((s) => `${s.id}:${s.status === "indexed"}`).join(",");
   useEffect(() => {
-    dispatch(fetchSourceDefaults());
-  }, [dispatch]);
+    dispatch(fetchSourceDefaults({ quiet: true }));
+  }, [dispatch, defaultsKey]);
 
   useEffect(() => {
     if (isUserSourcesEnabled) dispatch(fetchSources());
@@ -132,8 +135,10 @@ export default function SourcesPage() {
   };
 
   const handleDelete = async (id: string) => {
-    await dispatch(deleteUserSource(id));
+    const result = await dispatch(deleteUserSource(id));
     setDeleteConfirmId(null);
+    // A failed delete left the source listed with no word why.
+    if (deleteUserSource.rejected.match(result)) toast.error(result.payload as string);
   };
 
   return (

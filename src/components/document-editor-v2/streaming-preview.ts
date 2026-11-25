@@ -9,7 +9,11 @@ import { presentationToCanvas } from "./canvas-layout";
  * The backend only streams whole slides; any slide that still does not parse is left out rather than shown
  * broken. Null until there is at least one slide.
  */
-export function partialPresentationToCanvas(partial: Record<string, unknown> | null): CanvasPresentation | null {
+export function partialPresentationToCanvas(
+  partial: Record<string, unknown> | null,
+  /** The theme picked in the creation form (`?theme=`), used while the stream carries none, like the editor does. */
+  fallbackThemeId?: string,
+): CanvasPresentation | null {
   if (!partial || !Array.isArray(partial.blocks)) return null;
   const slides: SlideBlock[] = [];
   for (const block of partial.blocks) {
@@ -22,7 +26,7 @@ export function partialPresentationToCanvas(partial: Record<string, unknown> | n
   const doc = {
     schemaVersion: 1,
     documentType: "presentation",
-    themeId: typeof partial.themeId === "string" ? partial.themeId : undefined,
+    themeId: typeof partial.themeId === "string" ? partial.themeId : fallbackThemeId,
     blocks: slides,
   } as PresentationDocument;
   try {

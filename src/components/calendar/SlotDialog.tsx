@@ -48,6 +48,7 @@ import { useAssessmentScope } from "@/components/calendar/useAssessmentScope";
 import { testBlocked, testRequestOutcomeIds } from "@/components/calendar/assessmentScopeLogic";
 import { SLOT_STATUS_CONFIG } from "@/shared/constants/lessonSlotStatus";
 import { translateSubject } from "@/components/document-creation/constants";
+import { formatClassName } from "@/shared/utils/className";
 import type { CheckInRecord, CheckInSlotType, CheckInSubmission, SavedCheckIn } from "@/shared/types/check-in";
 import { savedCheckIn } from "@/shared/utils/savedCheckIn";
 import type { SlotWithTimetable } from "@/shared/types/calendar";
@@ -416,9 +417,10 @@ export function SlotDialog({
                 style={{ backgroundColor: color, color: readableTextOn(color) }}
               >
                 <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-current opacity-70" />
-                {slot.timetable.gradeLevel ? `${tTimetable("gradeShort", { grade: slot.timetable.gradeLevel })} ` : ""}
-                {translateSubject(slot.timetable.subject)}
-                {slot.timetable.classLabel ? ` · ${slot.timetable.classLabel}` : ""}
+                {formatClassName(slot.timetable, {
+                  gradeShort: (grade) => tTimetable("gradeShort", { grade }),
+                  subject: translateSubject,
+                })}
               </span>
               <Badge className={`gap-1 border text-xs ${cfg.badgeCls}`}>
                 {cfg.icon}

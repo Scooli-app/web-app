@@ -16,6 +16,7 @@ import { ChevronDown } from "lucide-react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useRef } from "react";
 
 const PAGES = [
   { href: Routes.SCHOOL_LEARNING, key: "schoolLearning" },
@@ -41,7 +42,12 @@ const tabClass = (active: boolean) =>
 
 function Tab({ href, active, children }: { href: string; active: boolean; children: React.ReactNode }) {
   return (
-    <Link href={href} aria-current={active ? "page" : undefined} className={tabClass(active)}>
+    <Link
+      href={href}
+      aria-current={active ? "page" : undefined}
+      data-active={active || undefined}
+      className={tabClass(active)}
+    >
       {children}
     </Link>
   );
@@ -55,6 +61,14 @@ export function SchoolAreaNav() {
   const enabled = useAppSelector(selectIsClassStateEnabled);
   const sourcesEnabled = useAppSelector(selectIsOrganizationSourcesEnabled);
   const schoolName = useAppSelector(selectWorkspaceContext)?.organization?.name;
+  const navRef = useRef<HTMLElement>(null);
+
+  // On a phone the tabs overflow: bring the current one into view (horizontally only, the page stays put).
+  useEffect(() => {
+    const nav = navRef.current;
+    const active = nav?.querySelector<HTMLElement>("[data-active]");
+    if (nav && active) nav.scrollLeft = active.offsetLeft + active.offsetWidth / 2 - nav.clientWidth / 2;
+  }, [pathname, enabled]);
 
   if (!enabled) return null;
   const manage = MANAGE.filter((item) => item.href !== Routes.SCHOOL_SOURCES || sourcesEnabled);
@@ -64,8 +78,9 @@ export function SchoolAreaNav() {
       <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">{t("label")}</p>
       {schoolName && <p className="mt-0.5 text-lg font-semibold tracking-tight">{schoolName}</p>}
       <nav
+        ref={navRef}
         aria-label={t("label")}
-        className="mt-3 flex items-end overflow-x-auto border-b border-border [scrollbar-width:none]"
+        className="relative mt-3 flex items-end overflow-x-auto border-b border-border [scrollbar-width:none]"
       >
         <Tab href={Routes.SCHOOL} active={pathname === Routes.SCHOOL}>
           {t("overviewTab")}
@@ -76,7 +91,10 @@ export function SchoolAreaNav() {
           </Tab>
         ))}
         <DropdownMenu>
-          <DropdownMenuTrigger className={tabClass(manage.some((item) => pathname === item.href))}>
+          <DropdownMenuTrigger
+            className={tabClass(manage.some((item) => pathname === item.href))}
+            data-active={manage.some((item) => pathname === item.href) || undefined}
+          >
             {t("manage")}
             <ChevronDown className="size-3.5" aria-hidden />
           </DropdownMenuTrigger>

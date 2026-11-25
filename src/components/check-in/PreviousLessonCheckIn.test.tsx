@@ -184,6 +184,10 @@ describe("PreviousLessonCheckIn (saving)", () => {
 });
 
 describe("PreviousLessonCheckInView", () => {
+  it("names the previous lesson's day with its topic, so the question is about the last lesson taught", () => {
+    expect(view({ lessonDate: "2026-11-25" })).toContain("lessonOn · Frações");
+  });
+
   it("asks the question with the lesson's name under it, the four results and 'Agora não'", () => {
     const html = view();
     expect(html).toContain(">question<");

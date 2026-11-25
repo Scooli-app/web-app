@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { getRequestConfig } from "next-intl/server";
-import { defaultLocale, isSupportedLocale, LOCALE_COOKIE_NAME } from "./locales";
+import { BASE_LOCALE, defaultLocale, isSupportedLocale, LOCALE_COOKIE_NAME } from "./locales";
+import { mergeCatalogues } from "./regionalMessages";
 
 /**
  * Resolves the request locale from the `NEXT_LOCALE` cookie.
@@ -13,6 +14,9 @@ import { defaultLocale, isSupportedLocale, LOCALE_COOKIE_NAME } from "./locales"
  *
  * Anything unrecognised falls back to `pt-PT`, so a missing or tampered cookie
  * leaves today's Portuguese behaviour exactly as it is.
+ *
+ * A regional variant (`pt-BR`) is its base catalogue with the variant's own
+ * wording merged over it; see `regionalMessages.ts`.
  *
  * ── Cost, measured ──
  * Reading a cookie here is a dynamic API, so every page under the root layout
@@ -31,8 +35,12 @@ export default getRequestConfig(async () => {
   const requested = cookieStore.get(LOCALE_COOKIE_NAME)?.value;
   const locale = isSupportedLocale(requested) ? requested : defaultLocale;
 
-  return {
-    locale,
-    messages: (await import(`../../messages/${locale}.json`)).default,
-  };
+  const base = BASE_LOCALE[locale];
+  if (!base) return { locale, messages: (await import(`../../messages/${locale}.json`)).default };
+
+  const [baseMessages, variant] = await Promise.all([
+    import(`../../messages/${base}.json`).then((m) => m.default),
+    import(`../../messages/${locale}.json`).then((m) => m.default),
+  ]);
+  return { locale, messages: mergeCatalogues(baseMessages, variant) };
 });

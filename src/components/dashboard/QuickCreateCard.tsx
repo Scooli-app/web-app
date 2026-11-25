@@ -82,6 +82,7 @@ async function loadProfileExamples(countryCode: CountryCode): Promise<ProfileExa
       const topic = currentTopic(
         topics.map((t) => t.label),
         today,
+        countryCode,
       );
       return topic ? { ...pair, topic } : null;
     }),

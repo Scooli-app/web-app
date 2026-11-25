@@ -18,7 +18,7 @@ function CalendarCaption({
   displayIndex: number;
   children?: React.ReactNode;
 }) {
-  const { goToMonth, nextMonth, previousMonth } = useDayPicker();
+  const { goToMonth, nextMonth, previousMonth, labels } = useDayPicker();
 
   return (
     <div className="flex items-center justify-between px-1 pb-1">
@@ -26,6 +26,7 @@ function CalendarCaption({
         type="button"
         onClick={() => previousMonth && goToMonth(previousMonth)}
         disabled={!previousMonth}
+        aria-label={labels.labelPrevious(previousMonth)}
         className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-input bg-transparent opacity-60 transition-opacity hover:bg-accent hover:opacity-100 disabled:pointer-events-none disabled:opacity-30"
       >
         <ChevronLeft className="h-4 w-4" />
@@ -37,6 +38,7 @@ function CalendarCaption({
         type="button"
         onClick={() => nextMonth && goToMonth(nextMonth)}
         disabled={!nextMonth}
+        aria-label={labels.labelNext(nextMonth)}
         className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-input bg-transparent opacity-60 transition-opacity hover:bg-accent hover:opacity-100 disabled:pointer-events-none disabled:opacity-30"
       >
         <ChevronRight className="h-4 w-4" />

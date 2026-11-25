@@ -426,7 +426,7 @@ export function buildCreateTimetableParamsFromPlan(
   const choice = planSubjectChoice(plan, countryCode);
 
   return {
-    title: buildPlanAutoTitle(plan),
+    title: buildPlanAutoTitle(plan, countryCode),
     subject: subjectValue,
     gradeLevel,
     periodStart: details.periodStart as string,

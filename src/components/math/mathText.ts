@@ -1,5 +1,6 @@
 import type { JSONContent } from "@tiptap/core";
 import { splitInlineMath, type InlineSegment } from "@/components/document-editor-v2/inline-math";
+import { isCurrencyDollar, nextMathDollar } from "@/shared/utils/currency-dollar";
 
 /**
  * Which `$…$` are formulas follows the renderer of the text: "slide" keeps prices ("custa $5") as text
@@ -14,7 +15,7 @@ function splitSheetMath(text: string): InlineSegment[] {
   let i = 0;
   let buf = "";
   while (i < text.length) {
-    const end = text[i] === "$" ? text.indexOf("$", i + 1) : -1;
+    const end = text[i] === "$" && !isCurrencyDollar(text, i) ? nextMathDollar(text, i + 1) : -1;
     if (end === -1) {
       buf += text[i];
       i += 1;

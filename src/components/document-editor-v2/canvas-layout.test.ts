@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { SlideBlock } from "@/shared/types/blocks";
 import type { CanvasElement } from "@/shared/types/canvas-presentation";
-import { slideToCanvas } from "./canvas-layout";
+import { presentationToCanvas, slideToCanvas } from "./canvas-layout";
 
 // Generated slides now carry an explanation paragraph plus 3-5 full-sentence bullets
 // (50-80 words). The layout used to assume one line per bullet and never shrank the
@@ -67,5 +67,31 @@ describe("slideToCanvas text fitting", () => {
     const narrow = slideToCanvas(slide("image-left", 3));
     const listH = (els: CanvasElement[]) => els.find((e) => e.type === "bullet_list")?.h ?? 0;
     expect(listH(narrow.elements)).toBeGreaterThan(listH(wide.elements));
+  });
+});
+
+describe("presentationToCanvas bold markers", () => {
+  it("drops **bold** markers, which slides cannot draw per word", () => {
+    const canvas = presentationToCanvas({
+      schemaVersion: 1,
+      documentType: "presentation",
+      blocks: [
+        {
+          id: "s1",
+          type: "slide",
+          layout: "title-content",
+          title: "Placas **informam**",
+          content: [
+            { id: "p", type: "paragraph", text: "A placa **PARE** orienta, 2 * 3 fica." },
+            { id: "l", type: "bullet_list", items: ["**LÁPIS** e **BORRACHA**"] },
+          ],
+        },
+      ],
+    } as never);
+    const texts = JSON.stringify(canvas.slides[0].elements);
+    expect(texts).not.toContain("**");
+    expect(texts).toContain("Placas informam");
+    expect(texts).toContain("A placa PARE orienta, 2 * 3 fica.");
+    expect(texts).toContain("LÁPIS e BORRACHA");
   });
 });

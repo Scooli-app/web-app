@@ -8,7 +8,8 @@ import { isCheckableSlot, type TeachingSlotInput } from "@/shared/utils/teaching
 import { toIso } from "@/shared/utils/calendar";
 import { selectIsClassStateEnabled } from "@/store/features/selectors";
 import { useAppSelector } from "@/store/hooks";
-import { useTranslations } from "next-intl";
+import { formatLessonDay } from "@/hooks/useCheckInFollowUps";
+import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useState, type ReactNode } from "react";
 import { readAsked } from "@/hooks/checkInSession";
 import { buildSubmission, initialOutcomeSelection, needsDetailStep } from "@/hooks/checkInQueue";
@@ -106,6 +107,7 @@ export function PreviousLessonCheckIn({
     <>
       <PreviousLessonCheckInView
         lessonName={pending.topicTitle || null}
+        lessonDate={pending.date}
         lesson={{ timetableId, slotId: pending.slotId }}
         saved={saved}
         step={nextStep.row}
@@ -144,6 +146,7 @@ export function PreviousLessonCheckIn({
  */
 export function PreviousLessonCheckInView({
   lessonName,
+  lessonDate,
   lesson,
   saved,
   step = null,
@@ -160,6 +163,8 @@ export function PreviousLessonCheckInView({
 }: {
   /** The previous lesson's title, on one truncated line under the question. */
   lessonName: string | null;
+  /** The previous lesson's day (YYYY-MM-DD), so the question clearly points at the last lesson taught, not this one. */
+  lessonDate?: string;
   /** The previous lesson's ids, so the outcome step can offer fallback outcomes. */
   lesson?: { timetableId: string; slotId: string };
   saved: SavedPhase | null;
@@ -180,6 +185,7 @@ export function PreviousLessonCheckInView({
 }) {
   const t = useTranslations("previousCheckIn");
   const tc = useTranslations("checkIns");
+  const locale = useLocale();
 
   if (saved) {
     const savedText = saved === "savedWithContext" ? t("savedWithContext") : t("saved");
@@ -194,6 +200,9 @@ export function PreviousLessonCheckInView({
   }
 
   const question = t("question");
+  const lessonLine = [lessonDate && t("lessonOn", { day: formatLessonDay(lessonDate, locale) }), lessonName]
+    .filter(Boolean)
+    .join(" · ");
   return (
     <section aria-label={question} className="space-y-3 rounded-lg border border-primary/25 bg-primary/5 px-3 py-3">
       {/* Keeps the lesson in view in both steps: the outcome question alone does not say which lesson it is about. */}
@@ -202,9 +211,9 @@ export function PreviousLessonCheckInView({
           <p className="text-sm font-semibold text-foreground">
             {outcomeResult ? tc(outcomeResult === "PARTIAL" ? "resultPartial" : "resultDifficulties") : question}
           </p>
-          {lessonName && (
-            <p className="truncate text-xs text-muted-foreground" title={lessonName}>
-              {lessonName}
+          {lessonLine && (
+            <p className="truncate text-xs text-muted-foreground" title={lessonLine}>
+              {lessonLine}
             </p>
           )}
         </div>

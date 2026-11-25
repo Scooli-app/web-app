@@ -1,5 +1,6 @@
 "use client";
 
+import { translateGradeLabel } from "@/components/document-creation/constants";
 import { OptionRow } from "./FormCard";
 import { formatTags } from "@/components/school/sources/schoolSourceFormat";
 import { orderSchoolSources } from "../sourceSelection";
@@ -271,7 +272,7 @@ export function SourcePickerSection({
                   meta={[
                     t("excerpts", { count: source.chunkCount }),
                     source.subject,
-                    source.schoolYear ? `${source.schoolYear}${t("schoolYearSuffix")}` : null,
+                    source.schoolYear ? translateGradeLabel(String(source.schoolYear)) : null,
                   ]
                     .filter(Boolean)
                     .join(" · ")}

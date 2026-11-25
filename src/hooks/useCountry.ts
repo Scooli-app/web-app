@@ -51,6 +51,8 @@ export function hydrateCountryFromProfile(): Promise<void> {
         hydrated = true;
         failedAttempts = 0;
         if (isCountryCode(profile.countryCode)) setCountryCode(profile.countryCode);
+        // Tell subscribers the value is now the profile's, even when it did not change.
+        listeners.forEach((listener) => listener());
       })
       .catch(() => {
         scheduleRetry();
@@ -81,6 +83,22 @@ export function resetCountryStoreForTests(): void {
   if (retryTimer) clearTimeout(retryTimer);
   retryTimer = null;
   listeners.clear();
+}
+
+/**
+ * The profile's country, or null until the profile has loaded. Use this, not
+ * `useCountry`, when acting on the default "PT" would be wrong (writing it
+ * somewhere that outlives the page).
+ */
+export function useLoadedCountry(): CountryCode | null {
+  useEffect(() => {
+    void hydrateCountryFromProfile();
+  }, []);
+  return useSyncExternalStore(
+    subscribe,
+    () => (hydrated ? currentCountry : null),
+    () => null,
+  );
 }
 
 /** The teacher's country (`countryCode` on the profile). Defaults to "PT". */

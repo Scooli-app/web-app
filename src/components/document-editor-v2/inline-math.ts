@@ -5,6 +5,7 @@
  * present mode, thumbnails and both exports share this one layout.
  */
 import { renderInlineKatexToPngDataUrl } from "./math-render";
+import { maskCurrencyDollars, unmaskCurrencyDollars } from "@/shared/utils/currency-dollar";
 
 /** `raw`: the formula as written (`$…$` or `$$…$$`), so text the teacher didn't touch is saved back unchanged. */
 export type InlineSegment = { kind: "text"; text: string } | { kind: "math"; tex: string; raw: string };
@@ -15,15 +16,17 @@ const INLINE_MATH = /\$\$([^$]+?)\$\$|\$(?!\s)([^$\n]+?)(?<!\s)\$(?!\d)/g;
 
 export function hasInlineMath(text: string | undefined): boolean {
   // search() leaves lastIndex alone, which matchAll in splitInlineMath starts from
-  return !!text && text.search(INLINE_MATH) !== -1;
+  return !!text && maskCurrencyDollars(text).search(INLINE_MATH) !== -1;
 }
 
 export function splitInlineMath(text: string): InlineSegment[] {
   const out: InlineSegment[] = [];
   let last = 0;
-  for (const m of text.matchAll(INLINE_MATH)) {
+  // Matched on the masked text (same indices) and sliced from the original, so prices stay text.
+  for (const m of maskCurrencyDollars(text).matchAll(INLINE_MATH)) {
     if (m.index > last) out.push({ kind: "text", text: text.slice(last, m.index) });
-    out.push({ kind: "math", tex: (m[1] ?? m[2]).trim(), raw: m[0] });
+    const raw = text.slice(m.index, m.index + m[0].length);
+    out.push({ kind: "math", tex: unmaskCurrencyDollars((m[1] ?? m[2]).trim()), raw });
     last = m.index + m[0].length;
   }
   if (last < text.length) out.push({ kind: "text", text: text.slice(last) });
@@ -38,7 +41,9 @@ export function inlineMathTex(text: string, index: number): string | undefined {
 /** `text` with formula number `index` replaced by `tex`, written back as `$…$`. */
 export function replaceInlineMath(text: string, index: number, tex: string): string {
   let n = 0;
-  return text.replace(INLINE_MATH, (whole) => (n++ === index ? `$${tex}$` : whole));
+  return unmaskCurrencyDollars(
+    maskCurrencyDollars(text).replace(INLINE_MATH, (whole) => (n++ === index ? `$${tex}$` : whole)),
+  );
 }
 
 export type LaidItem =

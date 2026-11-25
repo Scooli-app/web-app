@@ -19,15 +19,18 @@ export function PresentationStreamingPreview({
   phase,
   imageProgress,
   error,
+  themeId,
 }: {
   partial: PartialDocument;
   phase: GenerationPhase;
   imageProgress: ImageProgress | null;
   error: string | null;
+  /** The theme chosen before generating; the slides wear it from the first one. */
+  themeId?: string;
 }) {
   const t = useTranslations("blocks.generationProgress");
   const tBlocks = useTranslations("blocks");
-  const canvas = useMemo(() => partialPresentationToCanvas(partial), [partial]);
+  const canvas = useMemo(() => partialPresentationToCanvas(partial, themeId), [partial, themeId]);
   const slides = canvas?.slides ?? [];
   const writing = phase === "preparing" || phase === "generating";
   const images = imageProgress && imageProgress.total > 0 ? imageProgress : null;

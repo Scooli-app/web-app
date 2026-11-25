@@ -30,12 +30,14 @@ import { toast } from "sonner";
 
 const INTERFACE_OPTIONS: InterfaceLocalePreference[] = [
   "pt-PT",
+  "pt-BR",
   "en",
   FOLLOW_BROWSER,
 ];
 
 const CONTENT_OPTIONS: ContentLanguagePreference[] = [
   "pt-PT",
+  "pt-BR",
   "en",
   SAME_AS_INTERFACE,
 ];

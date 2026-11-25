@@ -139,6 +139,19 @@ describe("SchoolMembersPanel", () => {
     expect(onChanged).toHaveBeenCalled();
   });
 
+  it("names the emails already in the school or invited, before sending", async () => {
+    await renderPanel([me, member(1)], [invitation(2)], 10);
+
+    await act(async () => inviteButton().click());
+    await typeInto(
+      dialog().querySelector("textarea") as HTMLTextAreaElement,
+      "PROF1@agrupamento.pt, convidado2@agrupamento.pt, nova@escola.pt",
+    );
+
+    expect(text()).toContain("Já está na escola ou já tem convite: prof1@agrupamento.pt, convidado2@agrupamento.pt");
+    expect(button(m.dialog.send, dialog()).disabled).toBe(true);
+  });
+
   it("shows the seat limit reason the server gives", async () => {
     api.inviteToCurrentOrganization.mockRejectedValue(new ApiRequestError("x", 409, "seat_limit_reached"));
     await renderPanel([me], [], 10);

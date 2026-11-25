@@ -35,10 +35,18 @@ interface InviteMembersDialogProps {
   onOpenChange: (open: boolean) => void;
   /** Seats still free, or null when the school has no seat limit. */
   freeSeats: number | null;
+  /** Emails already in the school or invited, so the error can name them before the server refuses the batch. */
+  takenEmails?: (string | null | undefined)[];
   onInvited: () => void;
 }
 
-export function InviteMembersDialog({ open, onOpenChange, freeSeats, onInvited }: InviteMembersDialogProps) {
+export function InviteMembersDialog({
+  open,
+  onOpenChange,
+  freeSeats,
+  takenEmails = [],
+  onInvited,
+}: InviteMembersDialogProps) {
   const t = useTranslations("school.members.manage");
   const emailsId = useId();
   const problemId = useId();
@@ -48,14 +56,18 @@ export function InviteMembersDialog({ open, onOpenChange, freeSeats, onInvited }
   const [serverError, setServerError] = useState<string | null>(null);
 
   const { valid, invalid } = parseEmails(text);
+  const takenSet = new Set(takenEmails.flatMap((e) => (e ? [e.toLowerCase()] : [])));
+  const taken = valid.filter((e) => takenSet.has(e));
   const problem =
     invalid.length > 0
       ? t("dialog.invalidEmails", { emails: invalid.join(", ") })
-      : valid.length > MAX_EMAILS
-        ? t("dialog.tooMany", { max: MAX_EMAILS })
-        : freeSeats !== null && valid.length > freeSeats
-          ? t("dialog.notEnoughSeats", { free: freeSeats })
-          : serverError;
+      : taken.length > 0
+        ? t("dialog.alreadyMember", { emails: taken.join(", ") })
+        : valid.length > MAX_EMAILS
+          ? t("dialog.tooMany", { max: MAX_EMAILS })
+          : freeSeats !== null && valid.length > freeSeats
+            ? t("dialog.notEnoughSeats", { free: freeSeats })
+            : serverError;
   const canSend = valid.length > 0 && !problem && !sending;
 
   const close = (next: boolean) => {

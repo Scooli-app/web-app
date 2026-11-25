@@ -42,7 +42,7 @@ export function useCheckInNextStep({
 } = {}): {
   afterSave: (lesson: StepLesson, body: CheckInSubmission, saved: SavedCheckIn) => void;
   /** For a replan asked by hand from the same surface: shows its wait and its outcome on the same line. */
-  trackReplan: (lesson: StepLesson) => { onStarted: () => void; onSettled: (proposal: ReplanProposal) => void };
+  trackReplan: (lesson: StepLesson) => { onStarted: () => void; onSettled: (proposal: ReplanProposal | null) => void };
   row: ReactNode;
   sheet: ReactNode;
   active: boolean;
@@ -51,7 +51,7 @@ export function useCheckInNextStep({
   const t = useTranslations("checkIns");
   const tr = useTranslations("replan");
   const locale = useLocale();
-  const { watchAfterCheckIn, shift } = useReplan();
+  const { watchAfterCheckIn, requestReplan, shift } = useReplan();
   const { reinforce } = useCheckInFollowUps();
   const [current, setCurrent] = useState<{ lesson: StepLesson; step: NextStep } | null>(null);
   const [busy, setBusy] = useState(false);
@@ -63,7 +63,7 @@ export function useCheckInNextStep({
   }, []);
 
   const settle = useCallback(
-    (lesson: StepLesson) => (proposal: ReplanProposal) =>
+    (lesson: StepLesson) => (proposal: ReplanProposal | null) =>
       setCurrent((now) => (now && now.lesson.slotId === lesson.slotId ? { lesson, step: stepAfterReplan(proposal) } : now)),
     [],
   );
@@ -73,7 +73,7 @@ export function useCheckInNextStep({
       if (saved.carriedTo) toast.success(t("carryOverDone", { day: formatLessonDay(saved.carriedTo, locale) }));
       const step = stepAfterSave(body, saved, lesson.slotType);
       setCurrent(step ? { lesson, step } : null);
-      if (saved.replanStarted) void watchAfterCheckIn(lesson.timetableId, settle(lesson));
+      if (saved.replanStarted) void watchAfterCheckIn(lesson.timetableId, settle(lesson), lesson.slotId);
     },
     [locale, settle, t, watchAfterCheckIn],
   );
@@ -163,7 +163,26 @@ export function useCheckInNextStep({
         row = <ActionNotice message={prefix(tr("noChangeToast"))} actions={[close]} />;
         break;
       case "replanFailed":
-        row = <ActionNotice message={prefix(tr("failedToast"))} actions={[close]} />;
+        row = (
+          <ActionNotice
+            message={prefix(tr("failedToast"))}
+            actions={[
+              {
+                label: tr("retry"),
+                primary: true,
+                busy,
+                onClick: () =>
+                  void run(async () => {
+                    if (await requestReplan(lesson.timetableId, { triggerSlotId: lesson.slotId }, settle(lesson))) {
+                      setCurrent({ lesson, step: { kind: "replanning" } });
+                    }
+                    return false;
+                  }),
+              },
+              close,
+            ]}
+          />
+        );
         break;
       case "shift":
         row = (

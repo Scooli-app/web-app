@@ -2,6 +2,7 @@
 
 import { ChoiceChip } from "@/components/ui/choice-chip";
 import { setCountryCode, useCountry } from "@/hooks/useCountry";
+import { useLocalePreferences } from "@/hooks/useLocalePreferences";
 import { COUNTRY_CODES, type CountryCode } from "@/lib/curriculum/countryCatalog";
 import { userService } from "@/services/api/user.service";
 import { Globe } from "lucide-react";
@@ -39,6 +40,7 @@ export function CountryPicker({ value, onChange, disabled = false }: CountryPick
 export function CountryPreference() {
   const t = useTranslations("country");
   const country = useCountry();
+  const { followCountry } = useLocalePreferences();
   const [isSaving, setIsSaving] = useState(false);
 
   const change = async (next: CountryCode) => {
@@ -47,6 +49,8 @@ export function CountryPreference() {
     setIsSaving(true);
     try {
       await userService.updateCountryCode(next);
+      // Best effort: the country is saved even if the language default does not land.
+      await followCountry(next).catch(() => undefined);
     } catch {
       setCountryCode(country);
       toast.error(t("saveError"));

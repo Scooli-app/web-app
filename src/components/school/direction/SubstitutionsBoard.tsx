@@ -225,6 +225,10 @@ function LessonCard({ lesson, substituteName }: { lesson: DirectionHandoverLesso
 }
 
 /** A director's cover sheet: absences are stored, and each substitute sees that day's lessons in their calendar. */
+/** Mirrors the backend: it emails only a new substitute, and only when the day has lessons. */
+export const emailsSubstitute = (before: DirectionSubstitution | undefined, after: DirectionSubstitution) =>
+  after.lessons.length > 0 && before?.substitute.userId !== after.substitute.userId;
+
 export function SubstitutionsBoard() {
   const t = useTranslations("schoolDirection.substitutions");
   const tSchool = useTranslations("school");
@@ -251,16 +255,21 @@ export function SubstitutionsBoard() {
   useEffect(load, [load]);
 
   const activeMembers = members.filter((m) => m.status === "active");
+  // A substitute who has left the school no longer sees these lessons, so the absence is not covered. Unknown
+  // until the members load, so nothing is flagged before then.
+  const substituteLeft = (s: DirectionSubstitution) =>
+    members.length > 0 && !activeMembers.some((m) => m.userId === s.substitute.userId);
   const list = substitutions ?? [];
   const selected = list.find((s) => s.id === selectedId) ?? list[0];
   const nameOf = (person: { name: string | null; email: string | null }) =>
     person.name || person.email || tSchool("members.unnamedMember");
 
   const register = (substitution: DirectionSubstitution) => {
+    const emailed = emailsSubstitute(list.find((s) => s.id === substitution.id), substitution);
     setSubstitutions((prev) => [substitution, ...(prev ?? []).filter((s) => s.id !== substitution.id)]);
     setSelectedId(substitution.id);
     setDialogOpen(false);
-    toast.success(t("registeredToast", { name: nameOf(substitution.substitute) }));
+    toast.success(emailed ? t("registeredToast", { name: nameOf(substitution.substitute) }) : t("registeredNoEmailToast"));
   };
 
   const remove = async () => {
@@ -319,10 +328,12 @@ export function SubstitutionsBoard() {
                         {t("absenceSummary", { day: formatDay(s.date, locale), count: s.lessons.length })}
                       </span>
                     </span>
-                    {s.lessons.length > 0 ? (
-                      <Pill className={STATE_CLASSES.on_track}>{t("covered")}</Pill>
-                    ) : (
+                    {s.lessons.length === 0 ? (
                       <Pill className="bg-muted text-muted-foreground">{t("noLessonsPill")}</Pill>
+                    ) : substituteLeft(s) ? (
+                      <Pill className={STATE_CLASSES.behind}>{t("uncovered")}</Pill>
+                    ) : (
+                      <Pill className={STATE_CLASSES.on_track}>{t("covered")}</Pill>
                     )}
                   </button>
                 </li>
@@ -335,7 +346,10 @@ export function SubstitutionsBoard() {
           <div className="flex min-w-0 flex-col gap-4 sm:gap-6">
             <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
               <p className="text-sm text-muted-foreground">
-                {t("coveredBy", { absent: nameOf(selected.absent), name: nameOf(selected.substitute) })}
+                {t(substituteLeft(selected) ? "substituteLeft" : "coveredBy", {
+                  absent: nameOf(selected.absent),
+                  name: nameOf(selected.substitute),
+                })}
               </p>
               <Button type="button" variant="outline" size="sm" onClick={() => setRemoving(selected)}>
                 {t("remove")}

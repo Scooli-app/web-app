@@ -36,7 +36,8 @@
       "followBrowser": "Browser",
       "followBrowserHint": "Following your browser",
       "options": {
-        "pt-PT": "Português",
+        "pt-PT": "Português (Portugal)",
+        "pt-BR": "Português (Brasil)",
         "en": "English",
         "system": "Browser"
       }
@@ -48,7 +49,8 @@
       "sameAsInterfaceHint": "Same as the interface language",
       "curriculumNote": "The curriculum stays Portuguese. Only the language the materials are written in changes — handy if you teach English.",
       "options": {
-        "pt-PT": "Português",
+        "pt-PT": "Português (Portugal)",
+        "pt-BR": "Português (Brasil)",
         "en": "English",
         "interface": "Same as interface"
       }
@@ -62,7 +64,13 @@
       "BR": "Brazil"
     },
     "saveError": "Could not save the country. Try again.",
-    "note": "Sets the school years and subjects offered when you create documents and plans."
+    "note": "Sets the school years and subjects offered when you create documents and plans.",
+    "stateTitle": "State",
+    "statePlaceholder": "Choose your state",
+    "stateNote": "Optional. With your state, Scooli adds the state curriculum to the BNCC when it has it.",
+    "stateWithCurriculum": "This state's curriculum is used in your documents, together with the BNCC.",
+    "stateBnccOnly": "For this state Scooli still uses the BNCC alone.",
+    "stateSaveError": "Couldn't save the state. Please try again."
   },
   "planGeneration": {
     "title": "Preparing your plan…",
@@ -223,7 +231,8 @@
     "outcomesCount": "{count} {source, select, unit {from the unit} catalogue {for the subject and year} other {from the lesson}}"
   },
   "previousCheckIn": {
-    "question": "How did the lesson go?",
+    "question": "How did your last lesson go?",
+    "lessonOn": "Lesson on {day}",
     "notNow": "Not now",
     "saved": "Saved.",
     "savedWithContext": "Saved. The next lesson will take this into account."
@@ -610,7 +619,6 @@
       "noIndexedSourcesSuffix": "to enrich the generation.",
       "mySources": "My sources ({count})",
       "excerpts": "{count} excerpts",
-      "schoolYearSuffix": "th grade",
       "openInNewWindow": "Open {name} in a new window",
       "noneMatch": "None of your sources match this subject and year.",
       "stillProcessing": "Your sources are still being processed.",
@@ -2869,8 +2877,11 @@
     },
     "roles": {
       "director": "Director",
-      "school_admin": "School admin",
+      "school_admin": "School leadership",
       "teacher": "Teacher"
+    },
+    "planCodes": {
+      "school_pilot": "Pilot"
     },
     "subscriptionStatus": {
       "active": "Active",
@@ -3006,6 +3017,7 @@
           "send": "Send invites",
           "cancel": "Cancel",
           "invalidEmails": "Invalid emails: {emails}",
+          "alreadyMember": "Already in the school or already invited: {emails}",
           "notEnoughSeats": "{free, plural, =0 {There are no free seats} one {Only # seat is free} other {Only # seats are free}}.",
           "tooMany": "Up to {max} emails at a time."
         }
@@ -3018,7 +3030,7 @@
       "description": "Your school on Scooli.",
       "loadError": "We couldn't load the school settings",
       "currentRole": "Current role:",
-      "changes": "To change the school’s name, members or agreement, write to <email>info@scooli.app</email>."
+      "changes": "Manage the school’s teachers in <members>Members</members>. To change the school’s name or agreement, write to <email>info@scooli.app</email>."
     }
   },
   "schoolDirection": {
@@ -3159,10 +3171,13 @@
       "shared": "In {name}’s calendar",
       "sharedHint": "{name} sees this lesson in their calendar, with the class’s history. The teacher’s documents are not shared.",
       "coveredBy": "{absent} is away · {name} covers",
+      "substituteLeft": "{absent} is away · {name} has left the school. Register the absence again with another substitute.",
+      "uncovered": "No cover",
       "remove": "Remove absence",
       "removeConfirmTitle": "Remove this absence?",
       "removeConfirmDescription": "{name} will no longer see these lessons in their calendar.",
       "registeredToast": "Absence registered. We emailed {name}.",
+      "registeredNoEmailToast": "Absence registered",
       "removedToast": "Absence removed",
       "removeError": "We couldn’t remove the absence. Try again."
     },
@@ -3837,7 +3852,11 @@
       "term3": "Term 3",
       "semester1": "Semester 1",
       "semester2": "Semester 2",
-      "schoolYear": "School year {range}"
+      "schoolYear": "School year {range}",
+      "bimester1": "1st bimester",
+      "bimester2": "2nd bimester",
+      "bimester3": "3rd bimester",
+      "bimester4": "4th bimester"
     },
     "covers": {
       "title": "Covering this week",
@@ -3856,7 +3875,8 @@
         "annual": "Annual",
         "semester": "Semester",
         "trimester": "Term",
-        "custom": "Custom"
+        "custom": "Custom",
+        "bimester": "Bimester"
       }
     },
     "novo": {
@@ -3884,7 +3904,8 @@
         "endLabel": "End date",
         "endPlaceholder": "End of period",
         "summary": "<strong>{weeks, plural, one {# week} other {# weeks}}</strong> from <strong>{start}</strong> to <strong>{end}</strong>",
-        "planningTypeLabel": "Period type"
+        "planningTypeLabel": "Period type",
+        "levelHint": "The plan's level of detail follows the length of the period: lesson by lesson for a term, by unit for a semester or a year."
       },
       "class": {
         "title": "Class details",
@@ -4078,6 +4099,7 @@
     "notHeldInProgress": "The AI is adjusting the following lessons…",
     "readyToast": "The proposal is ready. Review it on the class page.",
     "failedToast": "Could not suggest changes to the following lessons.",
+    "retry": "Try again",
     "requestTitle": "What happened in this lesson?",
     "requestDescription": "Tell us how this lesson went. We use the note to propose changes to the following lessons.",
     "requestTitleTurma": "What changed in the class?",
@@ -4614,6 +4636,12 @@
     "onForAll": "On for everyone",
     "offByDefault": "Off by default",
     "all": "All",
+    "scope": {
+      "allSubjects": "All subjects",
+      "allYears": "All years",
+      "subjects": "{count, plural, one {# subject} other {# subjects}}",
+      "years": "{count, plural, one {# year} other {# years}}"
+    },
     "years": {
       "single": "{n}",
       "range": "{from}–{to}",
@@ -4626,9 +4654,9 @@
       "bytes": "Your school’s storage is full ({max}). Delete a source to add another."
     },
     "size": {
-      "kb": "{n}\u00a0KB",
-      "mb": "{n}\u00a0MB",
-      "gb": "{n}\u00a0GB"
+      "kb": "{n} KB",
+      "mb": "{n} MB",
+      "gb": "{n} GB"
     },
     "menu": {
       "edit": "Edit",
@@ -4651,9 +4679,9 @@
       "fileHint": "PDF, Word or Markdown.",
       "name": "Name",
       "subjects": "Subjects",
-      "subjectsHint": "Up to {max} subjects. With none ticked, it applies to every subject.",
+      "pickSubject": "Tick at least one subject.",
       "years": "Years",
-      "yearsHint": "With none ticked, it applies to every year.",
+      "pickYear": "Tick at least one year.",
       "cancel": "Cancel",
       "save": "Save",
       "upload": "Add"

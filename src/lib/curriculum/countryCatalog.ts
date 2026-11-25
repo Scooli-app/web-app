@@ -900,7 +900,12 @@ const BR_CATALOG: CountryCatalog = {
     {
       groupId: "medio",
       label: "Ensino Médio",
-      years: BR_SCHOOL_YEARS.filter((year) => year.value >= 10),
+      // Under the "Ensino Médio" heading the stage is already said: "1ª série", not "1ª série (Ensino Médio)".
+      // The flat `schoolYears` list keeps the full label for places with no heading.
+      years: BR_SCHOOL_YEARS.filter((year) => year.value >= 10).map((year) => ({
+        value: year.value,
+        label: year.label.replace(/\s*\(Ensino Médio\)$/, ""),
+      })),
     },
   ],
   subjects: BR_SUBJECTS,
