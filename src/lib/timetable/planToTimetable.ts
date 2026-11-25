@@ -14,7 +14,7 @@ import type {
   LessonSlotType,
   RecurringSlot,
 } from "@/services/api/timetable.service";
-import { getPortugueseHolidays } from "@/shared/constants/portugueseHolidays";
+import { getSchoolHolidays } from "@/shared/constants/schoolHolidays";
 import type { Document } from "@/shared/types/document";
 import type { SubjectChoice } from "@/components/document-creation/useSubjectChoice";
 import { translate } from "@/i18n/translate";
@@ -233,11 +233,15 @@ export function isPlanCalendarReady(plan: Document, details: CurriculumPlanDetai
   );
 }
 
-/** Expands a period + weekly recurring schedule into per-date preview slots, auto-marking Portuguese public holidays and honoring any pinned per-period slotType. */
+/**
+ * Expands a period + weekly recurring schedule into per-date preview slots, auto-marking the country's holidays
+ * (Portugal's by default, Brazil's for a Brazilian teacher) and honoring any pinned per-period slotType.
+ */
 export function expandSlotsLocally(
   periodStart: string,
   periodEnd: string,
-  recurringSlots: RecurringSlot[]
+  recurringSlots: RecurringSlot[],
+  countryCode: CountryCode = DEFAULT_COUNTRY_CODE,
 ): PreviewSlot[] {
   if (!periodStart || !periodEnd || recurringSlots.length === 0) return [];
 
@@ -251,7 +255,7 @@ export function expandSlotsLocally(
 
   const startYear = parseInt(periodStart.slice(0, 4), 10);
   const endYear = parseInt(periodEnd.slice(0, 4), 10);
-  const holidays = getPortugueseHolidays(startYear, endYear);
+  const holidays = getSchoolHolidays(countryCode, startYear, endYear);
 
   const slots: PreviewSlot[] = [];
   let seq = 1;
@@ -418,7 +422,8 @@ export function buildCreateTimetableParamsFromPlan(
   if (gradeLevel === null) return null; // never invent a "0.º ano" turma — send the user to the wizard
 
   const recurringSlots = planRecurringSlots(details);
-  const previewSlots = expandSlotsLocally(details.periodStart as string, details.periodEnd as string, recurringSlots);
+  const previewSlots = expandSlotsLocally(details.periodStart as string, details.periodEnd as string, recurringSlots,
+    countryCode);
   const holidays = previewSlots.filter((s) => s.slotType === "HOLIDAY").map((s) => s.date);
 
   const subjectId = resolvePlanSubjectId(plan, countryCode);

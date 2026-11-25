@@ -1007,7 +1007,7 @@ function CalendarNewPageContent() {
 
   const handleGoToReverDatas = () => {
     const slots = applyExerciseAndReviewCadence(
-      expandSlotsLocally(periodStart, periodEnd, weekScheduleToRecurringSlots(schedule)),
+      expandSlotsLocally(periodStart, periodEnd, weekScheduleToRecurringSlots(schedule), countryCode),
       subjectChoicePayload(choice).subject
     );
     setPreviewSlots(slots);
